@@ -169,12 +169,12 @@ PESAPI_EXTERN bool pesapi_is_array(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy);
 PESAPI_EXTERN void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value value);
-PESAPI_EXTERN bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value value);
+PESAPI_EXTERN bool pesapi_is_instance_of(pesapi_env env, const void* class_id, pesapi_value value);
 
-PESAPI_EXTERN pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value value);
-PESAPI_EXTERN pesapi_value pesapi_get_value_ref(pesapi_env env, pesapi_value value);
-PESAPI_EXTERN void pesapi_update_value_ref(pesapi_env env, pesapi_value ref, pesapi_value value);
-PESAPI_EXTERN bool pesapi_is_ref(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN void pesapi_update_boxed_value(pesapi_env env, pesapi_value ref, pesapi_value value);
+PESAPI_EXTERN bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value);
 
 PESAPI_EXTERN int pesapi_get_args_len(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_arg(pesapi_callback_info info, int index);

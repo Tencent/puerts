@@ -348,14 +348,14 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
     return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>(), 1);
 }
 
-bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value pvalue)
+bool pesapi_is_instance_of(pesapi_env env, const void* class_id, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
     return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), static_cast<const char*>(class_id), value.As<v8::Object>());
 }
 
-pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value pvalue)
+pesapi_value pesapi_boxing(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
@@ -365,7 +365,7 @@ pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value pvalue)
     return v8impl::PesapiValueFromV8LocalValue(result);
 }
 
-pesapi_value pesapi_get_value_ref(pesapi_env env, pesapi_value pvalue)
+pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
@@ -375,7 +375,7 @@ pesapi_value pesapi_get_value_ref(pesapi_env env, pesapi_value pvalue)
     return v8impl::PesapiValueFromV8LocalValue(realvalue);
 }
 
-void pesapi_update_value_ref(pesapi_env env, pesapi_value ref, pesapi_value pvalue)
+void pesapi_update_boxed_value(pesapi_env env, pesapi_value ref, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto holder = v8impl::V8LocalValueFromPesapiValue(ref);
@@ -387,7 +387,7 @@ void pesapi_update_value_ref(pesapi_env env, pesapi_value ref, pesapi_value pval
     }
 }
 
-bool pesapi_is_ref(pesapi_env env, pesapi_value value)
+bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
     return pesapi_is_object(env, value);
 }

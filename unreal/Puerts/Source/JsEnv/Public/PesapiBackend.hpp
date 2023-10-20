@@ -138,7 +138,7 @@ struct API
     {
         if (pesapi_is_object(env, holder))
         {
-            pesapi_update_value_ref(env, holder, value);
+            pesapi_update_boxed_value(env, holder, value);
         }
     }
 
@@ -485,17 +485,17 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objectty
 {
     static pesapi_value toScript(pesapi_env env, const T& value)
     {
-        return pesapi_create_ref(env, Converter<T>::toScript(env, value));
+        return pesapi_boxing(env, Converter<T>::toScript(env, value));
     }
 
     static T toCpp(pesapi_env env, pesapi_value value)
     {
-        return Converter<T>::toCpp(env, pesapi_get_value_ref(env, value));
+        return Converter<T>::toCpp(env, pesapi_unboxing(env, value));
     }
 
     static bool accept(pesapi_env env, pesapi_value value)
     {
-        return pesapi_is_ref(env, value);    // do not checked inner
+        return pesapi_is_boxed_value(env, value);    // do not checked inner
     }
 };
 
@@ -504,21 +504,21 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
 {
     static pesapi_value toScript(pesapi_env env, const T& value)
     {
-        return pesapi_create_ref(env, Converter<T>::toScript(env, value));
+        return pesapi_boxing(env, Converter<T>::toScript(env, value));
     }
 
     static T* toCpp(pesapi_env env, pesapi_value value)
     {
         if (pesapi_is_object(env, value))
         {
-            return Converter<T*>::toCpp(env, pesapi_get_value_ref(env, value));
+            return Converter<T*>::toCpp(env, pesapi_unboxing(env, value));
         }
         return nullptr;
     }
 
     static bool accept(pesapi_env env, pesapi_value value)
     {
-        return pesapi_is_ref(env, value);    // do not checked inner
+        return pesapi_is_boxed_value(env, value);    // do not checked inner
     }
 };
 
@@ -573,7 +573,7 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     }
     static bool accept(pesapi_env env, pesapi_value value)
     {
-        return pesapi_is_native_object(env, StaticTypeId<T>::get(), value);
+        return pesapi_is_instance_of(env, StaticTypeId<T>::get(), value);
     }
 };
 
