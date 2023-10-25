@@ -2762,6 +2762,46 @@ void FJsEnvImpl::BindStruct(
 
     if (!PassByPointer)
     {
+// Optimization branch:
+// ArrayBuffer will be gced on v8 worker thread
+// for pod ustruct it's safe to use it        
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || defined(WITH_BACKING_STORE_AUTO_FREE)
+        bool bStructTriviallyFreed = false;
+        if (ScriptStructWrapper->Struct.IsValid())
+        {
+            UScriptStruct* Struct = Cast<UScriptStruct>(ScriptStructWrapper->Struct.Get());
+            bStructTriviallyFreed = Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData;
+        }
+        if (bStructTriviallyFreed)
+        {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(
+                MainIsolate, Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
+                [](void* Data, size_t Length, void* DeleterData)
+                {
+                    // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
+                    FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+                    FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
+                },
+                ScriptStructWrapper);
+            __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
+            return; // early return
+#elif WITH_BACKING_STORE_AUTO_FREE
+            auto Backing = v8::ArrayBuffer::NewBackingStore(
+                Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
+                [](void* Data, size_t Length, void* DeleterData)
+                {
+                    // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
+                    FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+                    FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
+                },
+                ScriptStructWrapper);
+            auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
+            __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
+            return; // early return
+#endif
+        }
+#endif
         auto CacheNodePtr = StructCache.Find(Ptr);
         if (CacheNodePtr)
         {
