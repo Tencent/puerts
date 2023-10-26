@@ -6,7 +6,7 @@
 
 * 下载v8
 
-    - UE4.25及以上版本：[V8_8.4.371.19_0323](https://github.com/puerts/backend-v8/releases/tag/V8_8.4.371.19_230822)
+    - UE4.25及以上版本：[V8 8.4.371.19](https://github.com/puerts/backend-v8/releases/tag/V8_8.4.371.19_230822), [V8 9.4.146.24 (支持M1)](https://github.com/puerts/backend-v8/releases/tag/V8_9.4.146.24_230822)
     
     - UE4.24及以下版本：[V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/tag/v8_for_ue424_or_below)
     
