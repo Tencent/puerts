@@ -143,8 +143,6 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 [Github Discussion](https://github.com/Tencent/puerts/discussions)
 
-QQ频道：cees1s2p9p
-
 QQ群：942696334
 
 UE4专属群：689643903
