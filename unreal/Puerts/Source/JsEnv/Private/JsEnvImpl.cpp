@@ -2609,12 +2609,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         SysObjectRetainer.Release(Iter->second.Proxy.Get());
     }
 
-    auto JsCallbacks = Iter->second.JsCallbacks.Get(Isolate);
-    for (uint32_t i = 0; i < JsCallbacks->Length(); ++i)
-    {
-        (void) (JsCallbacks->Delete(Context, i));
-    }
-
+    Iter->second.JsCallbacks.Reset(Isolate, v8::Array::New(Isolate));
     return true;
 }
 
