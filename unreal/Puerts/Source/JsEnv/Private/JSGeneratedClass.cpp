@@ -304,7 +304,15 @@ void UJSGeneratedClass::Restore(UClass* Class)
                 JGF->Original->FunctionFlags = JGF->OriginalFunctionFlags;
             }
             JGF->JsFunction.Reset();
+
             *PP = JGF->Next;
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+            if (PP == &ChildrenPtr)
+            {
+                Class->Children = ChildrenPtr;
+            }
+#endif
+
             Class->RemoveFunctionFromFunctionMap(JGF);
             if (JGF->IsRooted())
             {
@@ -319,7 +327,6 @@ void UJSGeneratedClass::Restore(UClass* Class)
         }
     }
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
-    ChildrenPtr = Class->Children.Get();
     PP = &ChildrenPtr;
 #else
     PP = &Class->Children;
