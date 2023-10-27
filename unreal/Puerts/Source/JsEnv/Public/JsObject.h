@@ -50,6 +50,15 @@ public:
         JsEnvLifeCycleTracker = PUERTS_NAMESPACE::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
+    ~FJsObject()
+    {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            GObject.Empty();
+            GContext.Empty();
+        }
+    }
+
     FJsObject& operator=(const FJsObject& InOther)
     {
         if (InOther.JsEnvLifeCycleTracker.expired())
