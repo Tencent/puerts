@@ -894,6 +894,15 @@ void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, con
         static_cast<const puerts::NamedPropertyInfo*>(variables_info));
 }
 
+const void* pesapi_find_type_id(const char* module_name, const char* type_name)
+{
+    std::string fullname = module_name;
+    fullname += ".";
+    fullname += type_name;
+    const auto class_def = puerts::FindCppTypeClassByName(fullname);
+    return class_def ? class_def->TypeId : nullptr;
+}
+
 EXTERN_C_END
 
 #endif

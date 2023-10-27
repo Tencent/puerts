@@ -113,6 +113,27 @@
 
 #define UsingCppType(CLS) UsingNamedCppType(CLS, CLS)
 
+#if defined(BUILDING_PES_EXTENSION) && !defined(PES_EXTENSION_WITH_V8_API)
+#define UsingOtherModuleCppType(MODULE, CLS)                                \
+    namespace PUERTS_NAMESPACE                                              \
+    {                                                                       \
+    template <>                                                             \
+    struct StaticTypeId<CLS>                                                \
+    {                                                                       \
+        static void* get()                                                  \
+        {                                                                   \
+            static void* cache_type_id = nullptr;                           \
+            if (!cache_type_id)                                             \
+            {                                                               \
+                cache_type_id = (void*) pesapi_find_type_id(#MODULE, #CLS); \
+            }                                                               \
+            return cache_type_id;                                           \
+        }                                                                   \
+    };                                                                      \
+    }                                                                       \
+    UsingNamedCppType(CLS, CLS)
+#endif
+
 namespace PUERTS_NAMESPACE
 {
 template <typename T, typename API, typename RegisterAPI>

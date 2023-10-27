@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 9
+#define PESAPI_VERSION 10
 
 #define PESAPI_EXTERN
 
@@ -238,6 +238,8 @@ PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_ty
 
 PESAPI_EXTERN void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info,
     const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info);
+
+PESAPI_EXTERN const void* pesapi_find_type_id(const char* module_name, const char* type_name);
 
 EXTERN_C_END
 
