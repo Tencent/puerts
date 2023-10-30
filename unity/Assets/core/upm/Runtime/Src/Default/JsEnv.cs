@@ -814,6 +814,7 @@ namespace Puerts
             {
                 if (disposed) return;
                 if (OnDispose != null) OnDispose();
+                genericDelegateFactory.CloseAll();
                 jsEnvs[Idx] = null;
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
@@ -825,7 +826,7 @@ namespace Puerts
         {
             if (disposed)
             {
-                throw new InvalidOperationException("JsEnv had disposed!");
+                throw new InvalidOperationException("JsEnv has been disposed!");
             }
         }
 
