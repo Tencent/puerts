@@ -67,6 +67,12 @@ namespace Puerts
 
         private string PathToUse(string filepath)
         {
+#if !PUERTS_GENERAL
+            if (filepath.EndsWith(".js"))
+            {
+                UnityEngine.Debug.LogWarning("It is not recommended to use '*.js' in using Puer's DefaultLoader because '.js' is a reserved extension in older Unity3D. Use '.mjs' or '.cjs' instead");
+            }
+#endif
             return 
             // .cjs asset is only supported in unity2018+
 #if UNITY_2018_1_OR_NEWER
