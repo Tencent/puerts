@@ -215,7 +215,7 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
     static void Throw(const char* error_msg)
     {
 #if defined(WITH_JS_THROW_IN_CPP)
-        thread_local std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
+        std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
         SetCallbackInfoOrThrow(*pinfo, error_msg);
 #endif
     }
