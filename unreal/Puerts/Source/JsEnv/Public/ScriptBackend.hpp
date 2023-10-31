@@ -158,4 +158,9 @@ ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, PUERTS_BINDING_IMPL::API> Define
 using Object = PUERTS_BINDING_IMPL::Object;
 
 using Function = PUERTS_BINDING_IMPL::Function;
+
+inline void ThrowException(const char* msg)
+{
+    internal::ExceptionHandle<PUERTS_BINDING_IMPL::API>::Throw(msg);
+}
 }    // namespace PUERTS_NAMESPACE

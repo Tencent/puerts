@@ -165,6 +165,62 @@ struct ArgumentChecker<API, Pos, StopPos, ArgType, Rest...>
     }
 };
 
+template <typename API, typename Enable = void>
+struct ExceptionHandle;
+
+template <typename API>
+struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API::CallbackInfoType>::value>::type>
+{
+    static void SetCallbackInfoOrThrow(typename API::CallbackInfoType info, const char* error_msg)
+    {
+#if defined(WITH_JS_THROW_IN_CPP)
+        thread_local typename API::CallbackInfoType s_info;
+        if (error_msg)
+        {
+            API::ThrowException(s_info, error_msg);
+        }
+        else
+        {
+            s_info = info;
+        }
+#endif
+    }
+
+    static void Throw(const char* error_msg)
+    {
+#if defined(WITH_JS_THROW_IN_CPP)
+        SetCallbackInfoOrThrow(nullptr, error_msg);
+#endif
+    }
+};
+
+template <typename API>
+struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename API::CallbackInfoType>::value>::type>
+{
+    static void SetCallbackInfoOrThrow(typename API::CallbackInfoType info, const char* error_msg)
+    {
+#if defined(WITH_JS_THROW_IN_CPP)
+        thread_local std::decay<typename API::CallbackInfoType>::type* s_info;
+        if (error_msg)
+        {
+            API::ThrowException(*s_info, error_msg);
+        }
+        else
+        {
+            s_info = (std::decay<typename API::CallbackInfoType>::type*) &info;
+        }
+#endif
+    }
+
+    static void Throw(const char* error_msg)
+    {
+#if defined(WITH_JS_THROW_IN_CPP)
+        thread_local std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
+        SetCallbackInfoOrThrow(*pinfo, error_msg);
+#endif
+    }
+};
+
 template <typename, typename, bool, bool, bool, bool>
 struct FuncCallHelper
 {
@@ -718,6 +774,7 @@ public:
     static bool call(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+        ExceptionHandle<API>::SetCallbackInfoOrThrow(info, nullptr);
         return call(func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
     }
 
@@ -725,6 +782,7 @@ public:
     static bool callMethod(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+        ExceptionHandle<API>::SetCallbackInfoOrThrow(info, nullptr);
         return callMethod<Ins>(
             func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
     }
@@ -733,6 +791,7 @@ public:
     static bool callExtension(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+        ExceptionHandle<API>::SetCallbackInfoOrThrow(info, nullptr);
         return callExtension<Ins>(
             func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
     }
