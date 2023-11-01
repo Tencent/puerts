@@ -44,6 +44,7 @@ namespace Puerts.Editor
                     .Cast<Type>()
                     .Where(t => !t.IsGenericTypeDefinition)
                     .Concat(genTypes)
+                    .Concat(new Type[] { typeof(System.Type) }) // System.Type will be use in puerts.d.ts, so always generate it 
                     .Distinct();
 
                 if (loader == null)
