@@ -394,7 +394,7 @@ static void* CtorCallback(pesapi_callback_info info)
         }
     }
     
-    if (IsValueType)
+    if (isValueType)
     {
         ValueTypeFree(Ptr);
     }
