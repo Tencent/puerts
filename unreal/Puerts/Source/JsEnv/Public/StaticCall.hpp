@@ -13,6 +13,9 @@
 #include <vector>
 #include "TypeInfo.hpp"
 #include <type_traits>
+#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+#include <exception>
+#endif
 
 namespace PUERTS_NAMESPACE
 {
@@ -171,9 +174,9 @@ struct ExceptionHandle;
 template <typename API>
 struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API::CallbackInfoType>::value>::type>
 {
+#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
     static void SetCallbackInfoOrThrow(typename API::CallbackInfoType info, const char* error_msg)
     {
-#if defined(WITH_JS_THROW_IN_CPP)
         thread_local typename API::CallbackInfoType s_info;
         if (error_msg)
         {
@@ -183,12 +186,12 @@ struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API
         {
             s_info = info;
         }
-#endif
     }
+#endif
 
     static void Throw(const char* error_msg)
     {
-#if defined(WITH_JS_THROW_IN_CPP)
+#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
         SetCallbackInfoOrThrow(nullptr, error_msg);
 #endif
     }
@@ -197,9 +200,9 @@ struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API
 template <typename API>
 struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename API::CallbackInfoType>::value>::type>
 {
+#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
     static void SetCallbackInfoOrThrow(typename API::CallbackInfoType info, const char* error_msg)
     {
-#if defined(WITH_JS_THROW_IN_CPP)
         thread_local std::decay<typename API::CallbackInfoType>::type* s_info;
         if (error_msg)
         {
@@ -209,12 +212,12 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
         {
             s_info = (std::decay<typename API::CallbackInfoType>::type*) &info;
         }
-#endif
     }
+#endif
 
     static void Throw(const char* error_msg)
     {
-#if defined(WITH_JS_THROW_IN_CPP)
+#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
         std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
         SetCallbackInfoOrThrow(*pinfo, error_msg);
 #endif
@@ -774,26 +777,77 @@ public:
     static bool call(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+#if defined(WITH_JS_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_JS_THROW)
+        try
+        {
+#else
         ExceptionHandle<API>::SetCallbackInfoOrThrow(info, nullptr);
-        return call(func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
+#endif
+#endif
+            return call(func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
+#if defined(WITH_JS_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_JS_THROW)
+        }
+        catch (std::exception& e)
+        {
+            API::ThrowException(info, e.what());
+            return true;
+        }
+#endif
+#endif
     }
 
     template <typename Ins, typename Func, class... DefaultArguments>
     static bool callMethod(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+#if defined(WITH_JS_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_JS_THROW)
+        try
+        {
+#else
         ExceptionHandle<API>::SetCallbackInfoOrThrow(info, nullptr);
-        return callMethod<Ins>(
-            func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
+#endif
+#endif
+            return callMethod<Ins>(
+                func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
+#if defined(WITH_JS_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_JS_THROW)
+        }
+        catch (std::exception& e)
+        {
+            API::ThrowException(info, e.what());
+            return true;
+        }
+#endif
+#endif
     }
 
     template <typename Ins, typename Func, class... DefaultArguments>
     static bool callExtension(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+#if defined(WITH_JS_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_JS_THROW)
+        try
+        {
+#else
         ExceptionHandle<API>::SetCallbackInfoOrThrow(info, nullptr);
-        return callExtension<Ins>(
-            func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
+#endif
+#endif
+            return callExtension<Ins>(
+                func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
+#if defined(WITH_JS_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_JS_THROW)
+        }
+        catch (std::exception& e)
+        {
+            API::ThrowException(info, e.what());
+            return true;
+        }
+#endif
+#endif
     }
 };
 
