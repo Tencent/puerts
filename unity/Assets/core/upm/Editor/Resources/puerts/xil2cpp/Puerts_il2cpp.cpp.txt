@@ -369,7 +369,9 @@ static void* CtorCallback(pesapi_callback_info info)
         }
         
 
-        if (!(isValueType && pesapi_get_args_len(info) == 0))
+        if (isValueType && pesapi_get_args_len(info) == 0)
+            return Ptr;
+        else
             pesapi_throw_by_string(info, "invalid arguments");
         
     } 
@@ -392,7 +394,7 @@ static void* CtorCallback(pesapi_callback_info info)
         }
     }
     
-    if(Class::IsValuetype(classInfo->Class))
+    if (IsValueType)
     {
         ValueTypeFree(Ptr);
     }
