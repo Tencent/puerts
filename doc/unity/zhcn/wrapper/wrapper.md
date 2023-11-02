@@ -42,7 +42,7 @@ public class ExamplesCfg
     }
 }
 ```
-然后使用unity菜单中的`Generate Code`，即可为`Debug`和`Vector3`生成可快速调用的版本。
+然后使用unity菜单中的`Tools/PuerTS/Generate Code`，即可为`Debug`和`Vector3`生成可快速调用的版本。
 
 > 提示：这个列表的配置写法其实很灵活，你可以通过动态分析的方式产生自己的生成列表，参见官方 Demo 中的 StartTemplate 例子
 
