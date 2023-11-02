@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.3] - 2023-11-02
+1. 重要：遵循Assetstore策略，生成菜单由PuerTS改到了Tools/PuerTS内
+2. 功能：支持dynamic import（即`import()`）#1540
+3. 修复：权限控制的一些bug #1512
+4. 修复：dts生成时关于interface的一些问题 #1541
+5. 修复：返回DateTime类型的函数dts错误的问题 #1565
+6. 修复：xil2cpp模式下对带params构造函数调用出错的问题 #1519
+7. 修复：xil2cpp模式下适配Thread::GetThreadStaticDataForThread参数变更 #1503
+8. 修复：xil2cpp模式下某些类生成出错的问题 #1520
+9. 修复：xil2cpp模式下调用结构体无参构造函数时导致的内存问题 #1563
+
 ## [2.0.2] - 2023-09-07
 1. 修复：静态wrapper里params参数获取到的默认值不正确的问题 @ctxdegithub
 2. 修复：使用v8_8.4版本build的问题。unity2020及以下xil2cpp模式armv7可能需要v8_8.4才能编通 #1469

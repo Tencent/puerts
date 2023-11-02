@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.3] - 2023-11-02
+1. important!: to follow the rules of Assetstore, move the generation menu from `PuerTS` to `Tools/PuerTS`
+2. feature: support dynamic import (`import()`) #1540
+3. fix: a bug in access control #1512
+4. fix: a bug about Interface in DTS generation #1541
+5. fix: a bug about functions returning Datetime in DTS generation #1565
+6. fix: a bug in invoking ctors with params in xil2cpp mode #1519
+7. fix: compating the latest Thread::GetThreadStaticDataForThread in xil2cpp mode #1503
+8. fix: some generation error in xil2cpp mode #1520
+9. fix: a memory issue after invoking paramless ctor of valuetype #1563
+
 ## [2.0.2] - 2023-09-07
 1. fix: defaultParam's value is not as expected when StaticWrapper in generated @ctxdegithub
 2. fix: could not build puerts with v8_8.4. In Unity2020-, the xil2cpp mode binary with v8_9.4 of android armv7 may not work. #1469
