@@ -20,9 +20,7 @@ namespace PuertsIl2cpp.Editor
     namespace Generator {
 
         public class UnityMenu {
-            public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
-
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate For xIl2cpp mode (all in one)", false, 2)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For xIl2cpp mode (all in one)", false, 2)]
             public static void GenV2() {
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
@@ -34,7 +32,7 @@ namespace PuertsIl2cpp.Editor
 #endif
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/xIl2cpp c file", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp c file", false, 6)]
             public static void GenerateCppPlugin()
             {   
 #if CPP_OUTPUT_TO_NATIVE_SRC
@@ -49,7 +47,7 @@ namespace PuertsIl2cpp.Editor
                 FileExporter.GenMarcoHeader(saveTo);
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h", false, 6)]
             public static void GenerateCppWrappers()
             {   
                 var start = DateTime.Now;
@@ -66,7 +64,7 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
             
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h(Configure)", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h(Configure)", false, 6)]
             public static void GenerateCppWrappersInConfigure()
             {
                 var start = DateTime.Now;
@@ -83,7 +81,7 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/xIl2cpp ExtensionMethodInfos_Gen.cs", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp ExtensionMethodInfos_Gen.cs", false, 6)]
             public static void GenerateExtensionMethodInfos()
             {
                 var start = DateTime.Now;
@@ -95,7 +93,7 @@ namespace PuertsIl2cpp.Editor
                 AssetDatabase.Refresh();
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/Link.xml", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/Link.xml", false, 6)]
             public static void GenerateLinkXML()
             {
                 var start = DateTime.Now;
