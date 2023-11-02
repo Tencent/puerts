@@ -18,7 +18,7 @@ namespace Puerts.Editor
     namespace Generator {
 
         public class UnityMenu {
-            public const string PUERTS_MENU_PREFIX = "PuerTS";
+            public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
 
 #if !PUERTS_GENERAL
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate (all in one)", false, 1)]

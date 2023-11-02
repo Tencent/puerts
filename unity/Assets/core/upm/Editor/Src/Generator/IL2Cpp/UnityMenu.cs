@@ -20,7 +20,7 @@ namespace PuertsIl2cpp.Editor
     namespace Generator {
 
         public class UnityMenu {
-            public const string PUERTS_MENU_PREFIX = "PuerTS";
+            public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate For xIl2cpp mode (all in one)", false, 2)]
             public static void GenV2() {
