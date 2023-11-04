@@ -154,9 +154,10 @@ var global = global || (function () { return this; }());
                         m.exports = r;
                     }
                 }
-            } catch(_) {
+            } catch(e) {
                 localModuleCache[moduleName] = undefined;
                 moduleCache[key] = undefined;
+                throw e;
             } finally {
                 tmpModuleStorage[sid] = undefined;
             }
