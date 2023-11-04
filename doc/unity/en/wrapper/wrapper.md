@@ -41,7 +41,7 @@ public class ExamplesCfg
     }
 }
 ```
-Then use the Generate Code command in the Unity menu to generate the quick-callable versions for Debug and Vector3.
+Then use the `Tools/PuerTS/Generate Code` command in the Unity menu to generate the quick-callable versions for Debug and Vector3.
 
 > Note: The configuration of this list is actually very flexible. You can generate your own list by dynamically analyzing it. See the StartTemplate example in the official Demo for reference.
 

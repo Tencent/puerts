@@ -137,7 +137,7 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 * Macos
 
 
-## Ask for help | 技术支持
+## 技术支持
 
 [Discord](https://discord.gg/RYRY7D833n)
 
