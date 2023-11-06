@@ -40,6 +40,8 @@ public:
         TypeId = rhs.TypeId;
         Next = rhs.Next;
         Value = std::move(rhs.Value);
+        UserData = rhs.UserData;
+        rhs.UserData = nullptr;
         rhs.TypeId = nullptr;
         rhs.Next = nullptr;
         return *this;
