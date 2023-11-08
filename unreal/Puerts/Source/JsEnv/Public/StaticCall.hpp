@@ -13,7 +13,7 @@
 #include <vector>
 #include "TypeInfo.hpp"
 #include <type_traits>
-#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && !defined(THREAD_LOCAL_IMPL_THROW)
 #include <exception>
 #include <cstring>
 #endif
@@ -175,7 +175,7 @@ struct ExceptionHandle;
 template <typename API>
 struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API::CallbackInfoType>::value>::type>
 {
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
     // TripleOp : 1. init; 2. get state; 3. throw
     static bool TripleOp(typename API::CallbackInfoType info, const char* error_msg, bool b_get_state)
     {
@@ -202,14 +202,14 @@ struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API
 
     static void Throw(const char* error_msg)
     {
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
         // throw
         TripleOp(nullptr, error_msg, false);
 #endif
     }
 };
 
-#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && !defined(THREAD_LOCAL_IMPL_THROW)
 struct UserException : std::exception
 {
     UserException(const char* msg)
@@ -237,7 +237,7 @@ struct UserException : std::exception
 template <typename API>
 struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename API::CallbackInfoType>::value>::type>
 {
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
     // Triple operate
     // 1. init: info is not null, error_msg is null, b_get_state is false;
     // 2. get state: b_get_state is true;
@@ -267,8 +267,8 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
 
     static void Throw(const char* error_msg)
     {
-#if defined(WITH_JS_THROW_IN_CPP)
-#if defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP)
+#if defined(THREAD_LOCAL_IMPL_THROW)
         std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
         // throw
         TripleOp(*pinfo, error_msg, false);
@@ -832,8 +832,8 @@ public:
     static bool call(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
-#if defined(WITH_JS_THROW_IN_CPP)
-#if !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_IMPL_THROW)
         try
         {
 #else
@@ -842,8 +842,8 @@ public:
 #endif
 #endif
             return call(func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
-#if defined(WITH_JS_THROW_IN_CPP)
-#if !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_IMPL_THROW)
         }
         catch (std::exception& e)
         {
@@ -858,8 +858,8 @@ public:
     static bool callMethod(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
-#if defined(WITH_JS_THROW_IN_CPP)
-#if !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_IMPL_THROW)
         try
         {
 #else
@@ -869,8 +869,8 @@ public:
 #endif
             return callMethod<Ins>(
                 func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
-#if defined(WITH_JS_THROW_IN_CPP)
-#if !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_IMPL_THROW)
         }
         catch (std::exception& e)
         {
@@ -885,8 +885,8 @@ public:
     static bool callExtension(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
-#if defined(WITH_JS_THROW_IN_CPP)
-#if !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_IMPL_THROW)
         try
         {
 #else
@@ -896,8 +896,8 @@ public:
 #endif
             return callExtension<Ins>(
                 func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
-#if defined(WITH_JS_THROW_IN_CPP)
-#if !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP)
+#if !defined(THREAD_LOCAL_IMPL_THROW)
         }
         catch (std::exception& e)
         {
@@ -1115,11 +1115,11 @@ private:
             return nullptr;
         }
 
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
         internal::ExceptionHandle<API>::TripleOp(info, nullptr, false);
 #endif
         T* obj = new T(DecayTypeConverter<Args>::toCpp(context, API::GetArg(info, index))...);
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
         // get state
         if (internal::ExceptionHandle<API>::TripleOp(info, nullptr, true))
         {
@@ -1137,7 +1137,7 @@ public:
     }
     static void* checkedCall(typename API::CallbackInfoType info)
     {
-#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && !defined(THREAD_LOCAL_IMPL_THROW)
         try
         {
 #endif
@@ -1145,14 +1145,14 @@ public:
 
             if (!ret)
             {
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
                 // get state, if not exception
                 if (!internal::ExceptionHandle<API>::TripleOp(info, nullptr, true))
 #endif
                     API::ThrowException(info, "invalid parameter!");
             }
             return ret;
-#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && !defined(THREAD_LOCAL_IMPL_THROW)
         }
         catch (std::exception& e)
         {
@@ -1179,7 +1179,7 @@ struct ConstructorsCombiner
             if (Ret)
                 return Ret;
 
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
             // get state, if not exception
             if (internal::ExceptionHandle<API>::TripleOp(info, nullptr, true))
             {
@@ -1192,21 +1192,21 @@ struct ConstructorsCombiner
 
         static void* call(typename API::CallbackInfoType info)
         {
-#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && !defined(THREAD_LOCAL_IMPL_THROW)
             try
             {
 #endif
                 auto Ret = _call(info);
                 if (!Ret)
                 {
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
                     // get state, if not exception
                     if (!internal::ExceptionHandle<API>::TripleOp(info, nullptr, true))
 #endif
                         API::ThrowException(info, "invalid parameter!");
                 }
                 return Ret;
-#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_THROW_IN_CPP) && !defined(THREAD_LOCAL_IMPL_THROW)
             }
             catch (std::exception& e)
             {
