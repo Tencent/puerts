@@ -97,8 +97,11 @@ void FStructWrapper::InitTemplateProperties(
                                                : v8::Local<v8::Value>();
 
                 Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, PropertyInfo->Name),
-                    v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data),
-                    v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data), PropertyAttribute);
+                    PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyAttribute);
             }
             ++PropertyInfo;
         }
@@ -115,8 +118,11 @@ void FStructWrapper::InitTemplateProperties(
                                                : v8::Local<v8::Value>();
 
                 Template->SetAccessorProperty(FV8Utils::InternalString(Isolate, PropertyInfo->Name),
-                    v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data),
-                    v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data), PropertyAttribute);
+                    PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyAttribute);
                 ++PropertyInfo;
             }
         }
