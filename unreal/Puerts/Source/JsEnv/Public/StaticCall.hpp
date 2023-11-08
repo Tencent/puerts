@@ -15,6 +15,7 @@
 #include <type_traits>
 #if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
 #include <exception>
+#include <cstring>
 #endif
 
 namespace PUERTS_NAMESPACE
@@ -208,6 +209,31 @@ struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API
     }
 };
 
+#if defined(WITH_JS_THROW_IN_CPP) && !defined(THREAD_LOCAL_JS_THROW)
+struct UserException : std::exception
+{
+    UserException(const char* msg)
+    {
+        auto len = strlen(msg);
+        Msg = new char[len + 1];
+        strncpy(Msg, msg, len);
+        Msg[len] = '\0';
+    }
+
+    ~UserException() noexcept
+    {
+        delete[] Msg;
+    }
+
+    const char* what() const noexcept override
+    {
+        return Msg;
+    }
+
+    char* Msg;
+};
+#endif
+
 template <typename API>
 struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename API::CallbackInfoType>::value>::type>
 {
@@ -241,10 +267,14 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
 
     static void Throw(const char* error_msg)
     {
-#if defined(WITH_JS_THROW_IN_CPP) && defined(THREAD_LOCAL_JS_THROW)
+#if defined(WITH_JS_THROW_IN_CPP)
+#if defined(THREAD_LOCAL_JS_THROW)
         std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
         // throw
         TripleOp(*pinfo, error_msg, false);
+#else
+        throw UserException(error_msg);
+#endif
 #endif
     }
 };
