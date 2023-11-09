@@ -244,7 +244,7 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
     // 3. throw: error_msg is not null, b_get_state is false;
     static bool TripleOp(typename API::CallbackInfoType info, const char* error_msg, bool b_get_state)
     {
-        thread_local std::decay<typename API::CallbackInfoType>::type* s_info;
+        thread_local typename std::decay<typename API::CallbackInfoType>::type* s_info;
         thread_local bool s_throwed;
         if (b_get_state)
         {
@@ -258,7 +258,7 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
         }
         else
         {
-            s_info = (std::decay<typename API::CallbackInfoType>::type*) &info;
+            s_info = (typename std::decay<typename API::CallbackInfoType>::type*) &info;
             s_throwed = false;
             return false;
         }
@@ -269,7 +269,7 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
     {
 #if defined(WITH_THROW_IN_CPP)
 #if defined(THREAD_LOCAL_IMPL_THROW)
-        std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
+        typename std::decay<typename API::CallbackInfoType>::type* pinfo = nullptr;
         // throw
         TripleOp(*pinfo, error_msg, false);
 #else
