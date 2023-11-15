@@ -48,6 +48,26 @@
     }                                          \
     __DefObjectType(TArray<CLS>) __DefCDataPointerConverter(TArray<CLS>)
 
+#define UsingCrossModuleCppType(CLS)                                        \
+    namespace PUERTS_NAMESPACE                                              \
+    {                                                                       \
+    template <>                                                             \
+    struct StaticTypeId<CLS>                                                \
+    {                                                                       \
+        static const void* get()                                            \
+        {                                                                   \
+            static const void* cache_type_id = nullptr;                     \
+            if (!cache_type_id)                                             \
+            {                                                               \
+                auto info = PUERTS_NAMESPACE::FindCppTypeClassByName(#CLS); \
+                cache_type_id = info ? info->TypeId : &cache_type_id;       \
+            }                                                               \
+            return cache_type_id;                                           \
+        }                                                                   \
+    };                                                                      \
+    }                                                                       \
+    UsingNamedCppType(CLS, CLS)
+
 #define RegisterTArray(CLS)                                                                              \
     PUERTS_NAMESPACE::DefineClass<TArray<CLS>>()                                                         \
         .Method("Add", SelectFunction(int (TArray<CLS>::*)(const CLS&), &TArray<CLS>::Add))              \

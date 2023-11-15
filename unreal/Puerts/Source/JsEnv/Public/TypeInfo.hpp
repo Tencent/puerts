@@ -220,7 +220,7 @@ struct ScriptTypeName<void>
 template <typename T>
 struct StaticTypeId
 {
-    static void* get()
+    static const void* get()
     {
         static T* dummy = nullptr;
         return &dummy;
@@ -230,7 +230,7 @@ struct StaticTypeId
 template <typename T, typename Enable = void>
 struct DynamicTypeId
 {
-    static void* get(T* Obj)
+    static const void* get(T* Obj)
     {
         return StaticTypeId<T>::get();
     }

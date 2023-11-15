@@ -120,7 +120,7 @@
     template <>                                                             \
     struct StaticTypeId<CLS>                                                \
     {                                                                       \
-        static void* get()                                                  \
+        static const void* get()                                            \
         {                                                                   \
             static void* cache_type_id = nullptr;                           \
             if (!cache_type_id)                                             \
