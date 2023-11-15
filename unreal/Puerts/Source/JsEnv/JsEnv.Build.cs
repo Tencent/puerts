@@ -588,12 +588,26 @@ public class JsEnv : ModuleRules
             if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
+#if UE_5_2_OR_LATER
+                if (Target.Architecture == UnrealArch.Arm64)
+                {
+                    V8LibraryPath = Path.Combine(LibraryPath, "macOS_arm64");
+                }
+#endif
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
             }
             else
             {
-                string V8LibraryPath = Path.Combine(LibraryPath, "macOSdylib");
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.dylib"));
+               string V8LibraryPath = Path.Combine(LibraryPath, "macOSdylib");
+               string QJSDylibName = "libquickjs.dylib";
+#if UE_5_2_OR_LATER
+                if (Target.Architecture == UnrealArch.Arm64)
+                {
+                    V8LibraryPath = Path.Combine(LibraryPath, "macOS_arm64");
+                    QJSDylibName = "libquickjs.a";
+                }
+#endif
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, QJSDylibName));
             }
         }
         else if (Target.Platform == UnrealTargetPlatform.IOS)
