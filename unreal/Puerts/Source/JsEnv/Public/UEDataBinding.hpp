@@ -114,7 +114,7 @@ public:
 
     TCharStringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value)
     {
-        Str = UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
+        Str = FV8Utils::ToFString(context->GetIsolate(), value);
     }
 
     const TCHAR* Data() const
@@ -138,12 +138,12 @@ struct Converter<FString>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FString value)
     {
-        return v8::String::NewFromUtf8(context->GetIsolate(), TCHAR_TO_UTF8(*value), v8::NewStringType::kNormal).ToLocalChecked();
+        return FV8Utils::ToV8String(context->GetIsolate(), value);
     }
 
     static FString toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
+        return FV8Utils::ToFString(context->GetIsolate(),value);
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -157,8 +157,7 @@ struct Converter<FName>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FName value)
     {
-        return v8::String::NewFromUtf8(context->GetIsolate(), TCHAR_TO_UTF8(*value.ToString()), v8::NewStringType::kNormal)
-            .ToLocalChecked();
+        return FV8Utils::ToV8String(context->GetIsolate(), value.ToString());
     }
 
     static FName toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -173,7 +172,7 @@ struct Converter<FName>
                 return *static_cast<FName*>(Data);
             }
         }
-        return UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
+        return FV8Utils::ToFName(context->GetIsolate(), value);
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -187,7 +186,7 @@ struct Converter<const TCHAR*>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const TCHAR* value)
     {
-        return v8::String::NewFromUtf8(context->GetIsolate(), TCHAR_TO_UTF8(value), v8::NewStringType::kNormal).ToLocalChecked();
+        return FV8Utils::ToV8String(context->GetIsolate(), value);
     }
 
     static TCharStringHolder toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -207,13 +206,12 @@ struct Converter<FText>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FText value)
     {
-        return v8::String::NewFromUtf8(context->GetIsolate(), TCHAR_TO_UTF8(*value.ToString()), v8::NewStringType::kNormal)
-            .ToLocalChecked();
+        return FV8Utils::ToV8String(context->GetIsolate(), value.ToString());
     }
 
     static FText toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return FText::FromString(UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value)));
+        return FText::FromString(FV8Utils::ToFString(context->GetIsolate(),value));
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
