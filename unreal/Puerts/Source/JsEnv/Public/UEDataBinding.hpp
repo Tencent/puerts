@@ -143,7 +143,7 @@ struct Converter<FString>
 
     static FString toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return FV8Utils::ToFString(context->GetIsolate(),value);
+        return FV8Utils::ToFString(context->GetIsolate(), value);
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -211,7 +211,7 @@ struct Converter<FText>
 
     static FText toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return FText::FromString(FV8Utils::ToFString(context->GetIsolate(),value));
+        return FText::FromString(FV8Utils::ToFString(context->GetIsolate(), value));
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
