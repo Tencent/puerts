@@ -226,7 +226,7 @@ struct ${valueTypeInfo.Signature}
     returnToCS(signature) {
         return `
 ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
-    return ret;
+    *__pret = ret;
         `
     },
 
@@ -441,7 +441,7 @@ function genBridge(bridgeInfo) {
     var parameterSignatures = listToJsArray(bridgeInfo.ParameterSignatures);
     let hasVarArgs = parameterSignatures.length > 0 && parameterSignatures[parameterSignatures.length -1][0] == 'V'
     return t`
-static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}void* method) {
+static void b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} * __pret, void* method) {
     // PLog(LogLevel::Log, "Running b_${bridgeInfo.Signature}");
 
     ${IF(bridgeInfo.ReturnSignature && !(getSignatureWithoutRefAndPrefix(bridgeInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap))}
@@ -458,7 +458,7 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
     {
         ThrowInvalidOperationException("JsEnv had been destroy");
         ${IF(bridgeInfo.ReturnSignature != 'v')}
-        return {};
+        return;
         ${ENDIF()}
     }
     v8::Isolate* isolate = delegateInfo->EnvInfo->Isolate;
@@ -479,11 +479,11 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
     ${IF(bridgeInfo.ReturnSignature == 'v')}
     }
     ${ELSE()}
-        return {};
+        return;
     }
     if (MaybeRet.IsEmpty())
     {
-        return {};
+        return;
     }
     ${CODE_SNIPPETS.returnToCS(bridgeInfo.ReturnSignature)}
     ${ENDIF()}
