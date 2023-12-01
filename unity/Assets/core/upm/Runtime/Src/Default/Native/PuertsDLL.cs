@@ -121,7 +121,9 @@ namespace Puerts
 
         private const int TEMP_STRING_BUFFER_SIZE = 1024;
 
+#if UNITY_2017_1_OR_NEWER
         [ThreadStatic]
+#endif
         private static byte[] s_tempNativeStringBuffer;
 
         private static byte[] GetTempNativeStringBuff(int strlen)
