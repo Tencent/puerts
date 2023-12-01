@@ -235,13 +235,14 @@ namespace Puerts
             return args;
         }
 
-        public void FillByRefParameters(JSCallInfo callInfo)
+        public void FillByRefParameters(JSCallInfo callInfo, object[] argsWithNewRef = null)
         {
+            if (argsWithNewRef == null) argsWithNewRef = args; 
             for (int i = 0; i < paramLength; i++)
             {
                 if (paramIsByRef[i])
                 {
-                    byRefValueSetFuncs[i](jsEnv.Idx, callInfo.Isolate, NativeValueApi.SetValueToByRefArgument, callInfo.NativePtrs[i], args[i]);
+                    byRefValueSetFuncs[i](jsEnv.Idx, callInfo.Isolate, NativeValueApi.SetValueToByRefArgument, callInfo.NativePtrs[i], argsWithNewRef[i]);
                 }
             }
         }
@@ -316,7 +317,7 @@ namespace Puerts
                     args = new object[] { jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, jsCallInfo.Self) }.Concat(args).ToArray();
                 }
                 object ret = methodInfo.Invoke(target, args);
-                parameters.FillByRefParameters(jsCallInfo);
+                parameters.FillByRefParameters(jsCallInfo, args);
                 resultSetter(jsEnv.Idx, jsCallInfo.Isolate, NativeValueApi.SetValueToResult, jsCallInfo.Info, ret);
             }
             finally
