@@ -472,8 +472,29 @@ namespace Puerts.UnitTest
         }
 
         /**
-        * CS侧暂无法处理，判断引用即可
+        * JSObject
         */
+        public JSObject jsObjectTestField = default(JSObject);
+        protected JSObject _jsObjectTestProp = default(JSObject);
+        public JSObject jsObjectTestProp 
+        {
+            get { return _jsObjectTestProp; }
+            set { _jsObjectTestProp = value; }
+        }
+        public static JSObject jsObjectTestFieldStatic = default(JSObject);
+        protected static JSObject _jsObjectTestPropStatic = default(JSObject);
+        public static JSObject jsObjectTestPropStatic
+        {
+            get { return _jsObjectTestPropStatic; }
+            set { _jsObjectTestPropStatic = value; }
+        }
+        public void JSObjectTestCheckMemberValue()
+        {
+            AssertAndPrint("CSJSObjectTestField", jsObjectTestField.Get<string>("puerts") == "niubi");
+            AssertAndPrint("CSJSObjectTestProp", jsObjectTestProp.Get<string>("puerts") == "niubi");
+            AssertAndPrint("CSJSObjectTestFieldStatic", jsObjectTestFieldStatic.Get<string>("puerts") == "niubi");
+            AssertAndPrint("CSJSObjectTestPropStatic", jsObjectTestPropStatic.Get<string>("puerts") == "niubi");
+        }
         public JSObject JSObjectTestPipeLine(JSObject initialValue, Func<JSObject, JSObject> JSValueHandler) 
         {
             AssertAndPrint("CSGetJSObjectArgFromJS", initialValue.Get<string>("puerts") == "niubi");
@@ -815,6 +836,13 @@ namespace Puerts.UnitTest
                     });
                     assertAndPrint('JSGetJSObjectReturnFromCS', rJSObject == oJSObject);
 
+                    assertAndPrint('JSGetJSObjectField', testHelper.jsObjectTestField == null);
+                    assertAndPrint('JSGetJSObjectStaticField', TestHelper.jsObjectTestFieldStatic == null);
+                    testHelper.jsObjectTestField = { 'puerts': 'niubi' }
+                    testHelper.jsObjectTestProp = { 'puerts': 'niubi' }
+                    TestHelper.jsObjectTestFieldStatic = { 'puerts': 'niubi' }
+                    TestHelper.jsObjectTestPropStatic = { 'puerts': 'niubi' }
+                    testHelper.JSObjectTestCheckMemberValue();
                 })()
             ");
             jsEnv.Tick();

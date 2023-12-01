@@ -501,7 +501,14 @@ namespace Puerts
 
         private static void JSObjectTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            setValueApi.SetJSObject(isolate, holder, ((JSObject)obj).getJsObjPtr());
+            if (obj == null)
+            {
+                setValueApi.SetNull(isolate, holder);
+            }
+            else
+            {
+                setValueApi.SetJSObject(isolate, holder, ((JSObject)obj).getJsObjPtr());
+            }
         }
 
         internal void AnyTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
