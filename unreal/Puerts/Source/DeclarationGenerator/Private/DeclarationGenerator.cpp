@@ -898,6 +898,27 @@ bool FTypeScriptDeclarationGenerator::GenFunction(
     }
     OwnerBuffer << "(";
     PropertyMacro* ReturnValue = nullptr;
+
+    TSet<FString> NameDeDupSet{};
+    auto const DeDup = [&NameDeDupSet](FString const& Name)
+    {
+        if (!NameDeDupSet.Contains(Name))
+        {
+            NameDeDupSet.Add(Name);
+            return Name;
+        }
+
+        int Cnt = 1;
+        FString NewName = FString::Printf(TEXT("%s_%d"), *Name, Cnt);
+        while (NameDeDupSet.Contains(NewName))
+        {
+            Cnt++;
+            NewName = FString::Printf(TEXT("%s_%d"), *Name, Cnt);
+        }
+
+        return NewName;
+    };
+
     TArray<UObject*> RefTypes;
     TArray<FString> ParamDecls;
     bool First = true;
@@ -928,7 +949,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(
                     DefaultValuePtr = MetaMap->Find(MetadataCppDefaultValueKey);
                 }
 
-                TmpBuf << SafeParamName(Property->GetName());
+                TmpBuf << DeDup(SafeParamName(Property->GetName()));
                 if (DefaultValuePtr)
                 {
                     TmpBuf << "?";
