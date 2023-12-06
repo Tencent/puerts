@@ -54,5 +54,6 @@ void Update()
 }
 ```
 * In VSCode, open the setting, search for "auto attach", and set "Debug>Node:Auto Attach" to "on" (this option may not exist in higher versions of VSCode and can be left unset).
+* Or cereate a launch.json to attach it manually: ![node.js attach](https://github.com/kanezgyang/puerts/assets/32905484/85a696f3-6971-4f5e-9f65-14005fce34db)
 
 * Open the "ProjectSetting/Player" page and check "Run In Background".
