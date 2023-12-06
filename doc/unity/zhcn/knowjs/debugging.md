@@ -61,8 +61,8 @@ void Update()
 }
 ```
 
-* vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”（高版本vscode没有该选项，可以不设置）。或是自行创建vscode debug的launch.json，将其端口号配置改为你上面设置的端口号。
-* vscode debug的launch.json配置指引：![node.js attach](https://github.com/kanezgyang/puerts/assets/32905484/85a696f3-6971-4f5e-9f65-14005fce34db)选择node.js attach
+* vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”（高版本vscode没有该选项，可以不设置）。
+* 或是自行创建vscode debug的launch.json，将其端口号配置改为你上面设置的端口号：![node.js attach](https://github.com/kanezgyang/puerts/assets/32905484/85a696f3-6971-4f5e-9f65-14005fce34db)选择node.js attach
 
 
 
