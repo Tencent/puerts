@@ -54,7 +54,7 @@ export class FunctionCallbackInfoPtrManager {
     private recycleRefMemory(bufferptr: number) {
         if (this.freeRefMemory.length > 20) {
             this.engine.unityApi._free(bufferptr);
-        } 
+        }
         else {
             this.freeRefMemory.push(bufferptr);
         }
@@ -83,7 +83,7 @@ export class FunctionCallbackInfoPtrManager {
     }
     /**
      * intptr的格式为id左移四位
-     * 
+     *
      * 右侧四位，是为了在右四位存储参数的序号，这样可以用于表示callbackinfo参数的intptr
      */
     // static GetMockPointer(args: any[]): MockIntPtr {
@@ -128,7 +128,7 @@ export class FunctionCallbackInfoPtrManager {
                 this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
                     this.engine, args[i], jsValueType,
                     0
-                );   
+                );
 
                 const refPtrIn8 = this.engine.unityApi.HEAP32[jsValuePtr + 2] = this.allocRefMemory();
                 const refPtr = refPtrIn8 >> 2
@@ -143,8 +143,8 @@ export class FunctionCallbackInfoPtrManager {
                     this.engine.unityApi.HEAP32[refPtr + 1] = $GetArgumentFinalValue(
                         this.engine, args[i][0], refValueType,
                         (refPtr + 2) << 2
-                    );  
-                } 
+                    );
+                }
                 this.engine.unityApi.HEAP32[refPtr + 3] = bufferPtrIn8; // a pointer to the info
 
             } else {
@@ -152,7 +152,7 @@ export class FunctionCallbackInfoPtrManager {
                 this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
                     this.engine, args[i], jsValueType,
                     (jsValuePtr + 2) << 2
-                );   
+                );
             }
             this.engine.unityApi.HEAP32[jsValuePtr + 3] = bufferPtrIn8; // a pointer to the info
         }
@@ -261,7 +261,7 @@ export class jsFunctionOrObjectFactory {
             id = this.freeID.pop();
         } else {
             id = jsFunctionOrObjectFactory.regularID++;
-        } 
+        }
 
         const func = new JSFunction(id, funcValue);
         jsFunctionOrObjectFactory.idMap.set(funcValue, id);
@@ -280,7 +280,7 @@ export class jsFunctionOrObjectFactory {
             id = this.freeID.pop();
         } else {
             id = jsFunctionOrObjectFactory.regularID++;
-        } 
+        }
 
         const jsObject = new JSObject(id, obj);
         jsFunctionOrObjectFactory.idMap.set(obj, id);
@@ -645,6 +645,7 @@ export class PuertsJSEngine {
 
 export function GetType(engine: PuertsJSEngine, value: any): number {
     if (value === null || value === undefined) { return 1 }
+    if (isBigInt(value)) { return 2 }
     if (typeof value == 'number') { return 4 }
     if (typeof value == 'string') { return 8 }
     if (typeof value == 'boolean') { return 16 }
@@ -667,4 +668,27 @@ export function setOutValue32(engine: PuertsJSEngine, valuePtr: number, value: a
 
 export function setOutValue8(engine: PuertsJSEngine, valuePtr: number, value: any) {
     engine.unityApi.HEAP8[valuePtr] = value;
+}
+
+export function isBigInt(value: unknown): value is bigint {
+    return value instanceof BigInt || typeof value === 'bigint';
+}
+
+function BigInt2Tuple(value: bigint): [low: number, high: number] {
+    const high = Number(value >> 32n);
+    const low = Number(value & 0xffffffffn);
+
+    return [low, high];
+}
+
+export function writeBigInt(engine: PuertsJSEngine, value: bigint) {
+    // 可能环境不支持
+    // const buff = new BigInt64Array([value]);
+    const buff = new Uint32Array(BigInt2Tuple(value));
+
+    // TODO free?
+    const ptr = engine.unityApi._malloc(buff.byteLength);
+    engine.unityApi.HEAP8.set(new Int8Array(buff.buffer), ptr);
+
+    return ptr;
 }
