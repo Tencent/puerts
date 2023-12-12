@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32 } from "../library";
+import { FunctionCallbackInfoPtrManager, GetType, isBigInt, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32, writeBigInt } from "../library";
 
 // export function GetNumberFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
 //     return engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
@@ -49,6 +49,12 @@ import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObject
 export function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValueType: number, lengthOffset: number): number {
     if (!jsValueType) jsValueType = GetType(engine, val);
     switch (jsValueType) {
+        case 2: {
+            const ptr = writeBigInt(engine, val);
+            // ValueIsBigInt可据此判断
+            setOutValue32(engine, lengthOffset, 8/*long == 8byte*/);
+            return ptr;
+        }
         case 4: return +val;
         case 8: return engine.JSStringToCSString(val, lengthOffset);
         case 16: return +val;
@@ -70,9 +76,9 @@ export function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValue
 /**
  * mixin
  * JS调用C#时，C#侧获取JS调用参数的值
- * 
- * @param engine 
- * @returns 
+ *
+ * @param engine
+ * @returns
  */
 export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine) {
     return {
@@ -94,7 +100,7 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
         // /**
         //  * 为c#侧提供一个获取callbackinfo里jsvalue的intptr的接口
         //  * 并不是得的到这个argument的值
-        //  * 
+        //  *
         //  * 该接口只有位运算，由C++实现
         //  */
         // GetArgumentValue/*inCallbackInfo*/: function (infoptr: MockIntPtr, index: int) {
@@ -125,7 +131,7 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
 
         GetTypeIdFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
             var obj = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
-            
+
             if (isByRef) {
                 // @ts-ignore
                 obj = obj[0]

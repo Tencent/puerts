@@ -1,11 +1,11 @@
-import { PuertsJSEngine } from "../library";
+import { PuertsJSEngine, makeBigInt } from "../library";
 
 /**
  * mixin
  * JS调用C#时，C#侧设置out参数值
- * 
- * @param engine 
- * @returns 
+ *
+ * @param engine
+ * @returns
  */
 export default function WebGLBackendSetToJSOutArgumentAPI(engine: PuertsJSEngine) {
     return {
@@ -26,9 +26,9 @@ export default function WebGLBackendSetToJSOutArgumentAPI(engine: PuertsJSEngine
             var obj = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
             obj[0] = !!b; // 传过来的是1和0
         },
-        SetBigIntToOutValue: function (isolate: IntPtr, value: IntPtr, /*long */bigInt: any) {
-            throw new Error('not implemented')
-
+        SetBigIntToOutValue: function (isolate: IntPtr, value: MockIntPtr, low: number, high: number) {
+            const obj = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+            obj[0] = makeBigInt(low, high);
         },
         SetObjectToOutValue: function (isolate: IntPtr, value: MockIntPtr, classID: int, self: CSIdentifier) {
             var obj = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);

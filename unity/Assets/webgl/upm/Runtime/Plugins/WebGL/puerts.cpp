@@ -1,3 +1,5 @@
+#include <cstdint>
+
 struct MockV8Value
 {
     int JSValueType;
@@ -15,7 +17,7 @@ struct MockV8NumberOrDate
 };
 
 extern "C" {
-    void* GetArgumentValue(void* infoptr, int index) 
+    void *GetArgumentValue(void *infoptr, int index)
     {
         int step = sizeof(int);
         return (void*)((long)infoptr + (index * 4 + 1) * step);
@@ -59,11 +61,18 @@ extern "C" {
             value = (MockV8Value*)value->extra;
         return (bool)(int)value->FinalValuePointer;
     }
-    int GetBigIntFromValue(void* isolate, MockV8Value* value, bool byref)
+    bool ValueIsBigInt(void *isolate, MockV8Value *value, bool byref)
     {
         if (byref)
-            value = (MockV8Value*)value->extra;
-        return (int)value->FinalValuePointer;
+            value = (MockV8Value *)value->extra;
+        return value->extra == 8; // long == 8byte
+    }
+    int64_t GetBigIntFromValue(void *isolate, MockV8Value *value, bool byref)
+    {
+        if (byref)
+            value = (MockV8Value *)value->extra;
+        int64_t *ptr = reinterpret_cast<int64_t *>(value->FinalValuePointer);
+        return *ptr;
     }
     void* GetObjectFromValue(void* isolate, MockV8Value* value, bool byref)
     {

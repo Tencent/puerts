@@ -11,7 +11,7 @@ var exportDLL = {
             _free: _free,
             stringToUTF8: stringToUTF8,
             lengthBytesUTF8: lengthBytesUTF8,
-            
+
             unityInstance: Module,
         });
         global.PuertsWebGL.inited = true;
@@ -66,7 +66,7 @@ var exportDLL = {
     // "GetDateFromValue",
     // "GetStringFromValue",
     // "GetBooleanFromValue",
-    "ValueIsBigInt",
+    // "ValueIsBigInt",
     // "GetBigIntFromValue",
     // "GetObjectFromValue",
     // "GetFunctionFromValue",
@@ -118,9 +118,9 @@ var exportDLL = {
 ].forEach(function (methodName) {
 
     exportDLL[methodName] = new Function(
-        "var global = typeof global != 'undefined' ? global : window; " + 
+        "var global = typeof global != 'undefined' ? global : window; " +
         "if (!global.PuertsWebGL) throw new Error('cannot found PuertsWebGL script. please find some way to load puerts-runtime.js');" +
-        "if (!global.PuertsWebGL.inited) throw new Error('please use Puerts.WebGL.MainEnv.Get() to create JsEnv'); " + 
+        "if (!global.PuertsWebGL.inited) throw new Error('please use Puerts.WebGL.MainEnv.Get() to create JsEnv'); " +
         "if (global.PuertsWebGL.debug) console.log('WebGL DLL:" + methodName + "'); "+
         "return global.PuertsWebGL['" + methodName + "'].apply(this, arguments)"
     );
