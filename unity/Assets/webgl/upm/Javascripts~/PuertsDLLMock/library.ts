@@ -512,7 +512,8 @@ export namespace PuertsJSEngine {
         _free: (ptr: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
         lengthBytesUTF8: (str: string) => number,
-        HEAP8: Uint8Array,
+        HEAP8: Int8Array,
+        HEAPU8: Uint8Array,
         HEAP32: Uint32Array,
         HEAPF32: Float32Array,
         HEAPF64: Float64Array,
@@ -557,6 +558,7 @@ export class PuertsJSEngine {
             dynCall_viiiii: unityInstance.dynCall_viiiii.bind(unityInstance),
             HEAP32: null,
             HEAP8: null,
+            HEAPU8: null,
             HEAPF32: null,
             HEAPF64: null
         };
@@ -578,6 +580,11 @@ export class PuertsJSEngine {
         Object.defineProperty(this.unityApi, 'HEAP8', {
             get: function () {
                 return unityInstance.HEAP8
+            }
+        });
+        Object.defineProperty(this.unityApi, 'HEAPU8', {
+            get: function () {
+                return unityInstance.HEAPU8
             }
         });
 
@@ -675,8 +682,8 @@ export function isBigInt(value: unknown): value is bigint {
 }
 
 function BigInt2Tuple(value: bigint): [low: number, high: number] {
-    const high = Number(value >> 32n);
-    const low = Number(value & 0xffffffffn);
+    const high = Number(value >> BigInt(32));
+    const low = Number(value & BigInt(0xffffffff));
 
     return [low, high];
 }

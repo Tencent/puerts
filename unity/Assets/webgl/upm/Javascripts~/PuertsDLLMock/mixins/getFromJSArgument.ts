@@ -64,11 +64,8 @@ export function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValue
         case 256: return jsFunctionOrObjectFactory.getOrCreateJSFunction(val).id;
         case 512: return val.getTime();
         case 1024:
-            if (val instanceof Uint8Array) {
-                val = val.buffer;
-            }
             var ptr = engine.unityApi._malloc(val.byteLength);
-            engine.unityApi.HEAP8.set(new Int8Array(val), ptr);
+            engine.unityApi.HEAPU8.set(val, ptr);
             setOutValue32(engine, lengthOffset, val.byteLength);
             return ptr;
     }
