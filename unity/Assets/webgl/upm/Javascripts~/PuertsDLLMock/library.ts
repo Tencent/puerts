@@ -675,8 +675,8 @@ export function isBigInt(value: unknown): value is bigint {
 }
 
 function BigInt2Tuple(value: bigint): [low: number, high: number] {
-    const high = Number(value >> 32n);
-    const low = Number(value & 0xffffffffn);
+    const high = Number(value >> BigInt(32));
+    const low = Number(value & BigInt(0xffffffff));
 
     return [low, high];
 }
