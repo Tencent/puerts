@@ -326,19 +326,19 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
             const start = parseInt(JSName.match(/info\[(\d+)\]/)[1]);
             if (si in PrimitiveSignatureCppTypeMap) { 
                 return `    // JSValToCSVal primitive with default
-    ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(context, info, method, wrapData->IsExtensionMethod ? ${start + 1} : ${start});
+    ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(context, info, method, wrapData, ${start});
                 `
             } else if (si == 's') {
                 return `    // JSValToCSVal string  with default
-    void* ${CSName} = OptionalParameter<void*>::GetString(context, info, method, wrapData->IsExtensionMethod ? ${start + 1} : ${start});
+    void* ${CSName} = OptionalParameter<void*>::GetString(context, info, method, wrapData, ${start});
                 `
             } else if (si == 'o' || si == 'O' || si == 'a') {
                 return `    // JSValToCSVal ref  with default
-    void* ${CSName} = OptionalParameter<void*>::GetRefType(context, info, method, wrapData->IsExtensionMethod ? ${start + 1} : ${start}, TI${CSName});
+    void* ${CSName} = OptionalParameter<void*>::GetRefType(context, info, method, wrapData, ${start}, TI${CSName});
                 `
             } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
                 return `    // JSValToCSVal valuetype  with default
-    ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(context, info, method, wrapData->IsExtensionMethod ? ${start + 1} : ${start});
+    ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(context, info, method, wrapData, ${start});
                 `
             } else {
                 return `    // JSValToCSVal unknow type with default

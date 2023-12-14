@@ -569,7 +569,7 @@ struct RestArguments
 template <typename T>
 struct OptionalParameter
 {
-    static T GetPrimitive(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index)
+    static T GetPrimitive(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, puerts::WrapData* wrapData, int index)
     {
         if (index < info.Length())
         {
@@ -577,6 +577,7 @@ struct OptionalParameter
         }
         else
         {
+            if (wrapData->IsExtensionMethod) ++index;
             auto pret = (T*)GetDefaultValuePtr(methodInfo, index);
             if (pret) 
             {
@@ -586,7 +587,7 @@ struct OptionalParameter
         }
     }
     
-    static T GetValueType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index)
+    static T GetValueType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, puerts::WrapData* wrapData, int index)
     {
         if (index < info.Length())
         {
@@ -594,6 +595,7 @@ struct OptionalParameter
         }
         else
         {
+            if (wrapData->IsExtensionMethod) ++index;
             auto pret = (T*)GetDefaultValuePtr(methodInfo, index);
             if (pret) 
             {
@@ -605,7 +607,7 @@ struct OptionalParameter
         }
     }
     
-    static void* GetString(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index)
+    static void* GetString(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, puerts::WrapData* wrapData, int index)
     {
         if (index < info.Length())
         {
@@ -614,11 +616,12 @@ struct OptionalParameter
         }
         else
         {
+            if (wrapData->IsExtensionMethod) ++index;
             return GetDefaultValuePtr(methodInfo, index);
         }
     }
     
-    static void* GetRefType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index, const void* typeId)
+    static void* GetRefType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, puerts::WrapData* wrapData, int index, const void* typeId)
     {
         if (index < info.Length())
         {
@@ -626,6 +629,7 @@ struct OptionalParameter
         }
         else
         {
+            if (wrapData->IsExtensionMethod) ++index;
             return GetDefaultValuePtr(methodInfo, index);
         }
     }
