@@ -17,6 +17,10 @@
 #include "Binding.hpp"
 #include "JSLogger.h"
 #include "V8Utils.h"
+namespace PUERTS_NAMESPACE
+{
+class FJsObjectPropertyTranslator;
+}
 
 #include "CoreMinimal.h"
 #include "JsObject.generated.h"
@@ -184,6 +188,7 @@ public:
         return {};
     }
 
+private:
     FORCEINLINE v8::Local<v8::Object> GetJsObject() const
     {
         if (JsEnvLifeCycleTracker.expired())
@@ -201,7 +206,6 @@ public:
         }
     }
 
-private:
     template <typename... Args>
     FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
     {
@@ -221,6 +225,7 @@ private:
     std::weak_ptr<int> JsEnvLifeCycleTracker;
 
     friend struct PUERTS_NAMESPACE::v8_impl::Converter<FJsObject>;
+    friend class PUERTS_NAMESPACE::FJsObjectPropertyTranslator;
 };
 
 namespace PUERTS_NAMESPACE
