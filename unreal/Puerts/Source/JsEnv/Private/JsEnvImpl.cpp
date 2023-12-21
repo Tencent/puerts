@@ -3031,9 +3031,9 @@ bool FJsEnvImpl::IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject)
     }
 }
 
-bool FJsEnvImpl::IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject)
+bool FJsEnvImpl::IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
 {
-    return CppObjectMapper.IsInstanceOfCppObject(TypeId, JsObject);
+    return CppObjectMapper.IsInstanceOfCppObject(Isolate, TypeId, JsObject);
 }
 
 std::weak_ptr<int> FJsEnvImpl::GetJsEnvLifeCycleTracker()

@@ -100,9 +100,19 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     }
 }
 
-bool FCppObjectMapper::IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject)
+bool FCppObjectMapper::IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
 {
-    return DataTransfer::GetPointerFast<const void>(JsObject, 1) == TypeId;
+    if (DataTransfer::GetPointerFast<const void>(JsObject, 1) == TypeId)
+    {
+        return true;
+    }
+    auto ClassDefinition = FindClassByID(TypeId);
+    if (ClassDefinition)
+    {
+        auto Template = GetTemplateOfClass(Isolate, ClassDefinition);
+        return Template->HasInstance(JsObject);
+    }
+    return false;
 }
 
 std::weak_ptr<int> FCppObjectMapper::GetJsEnvLifeCycleTracker()

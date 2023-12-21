@@ -36,7 +36,7 @@ public:
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
 
-    virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
+    virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
