@@ -40,6 +40,12 @@ public:
         if (InOther.JsEnvLifeCycleTracker.expired())
         {
             JsEnvLifeCycleTracker = InOther.JsEnvLifeCycleTracker;
+            if (!JsEnvLifeCycleTracker.expired())
+            {
+                GObject.Reset();
+                GContext.Reset();
+                Isolate = nullptr;
+            }
             return;
         }
         Isolate = InOther.Isolate;
@@ -68,6 +74,12 @@ public:
         if (InOther.JsEnvLifeCycleTracker.expired())
         {
             JsEnvLifeCycleTracker = InOther.JsEnvLifeCycleTracker;
+            if (!JsEnvLifeCycleTracker.expired())
+            {
+                GObject.Reset();
+                GContext.Reset();
+                Isolate = nullptr;
+            }
             return *this;
         }
         Isolate = InOther.Isolate;
