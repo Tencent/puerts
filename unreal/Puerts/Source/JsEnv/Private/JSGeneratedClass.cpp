@@ -298,7 +298,14 @@ void UJSGeneratedClass::Restore(UClass* Class)
         {
             if (JGF->Original)
             {
-                JGF->Original->Script = JGF->Script;
+                if (JGF->Script.Num() == 0)
+                {
+                    JGF->Original->Script.Empty();
+                }
+                else
+                {
+                    JGF->Original->Script = JGF->Script;
+                }
                 JGF->Original->SetNativeFunc(JGF->OriginalFunc);
                 Class->AddNativeFunction(*JGF->Original->GetName(), JGF->OriginalFunc);
                 JGF->Original->FunctionFlags = JGF->OriginalFunctionFlags;
