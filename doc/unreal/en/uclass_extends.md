@@ -186,6 +186,28 @@ class TsTestActor extends UE.Actor {
     TsOnlyField: number;
 }
 ~~~
+### uproperty ufunction 
+
+~~~typescript
+import * as UE from 'ue'
+import { uproperty,uparam,ufunction } from 'ue';  
+class TsTestActor extends UE.Actor
+{
+    //Note: Direct invocation from UE is not allowed; instead, import uproperty, ufunction, uparam and then make the call.
+    //@UE.uproperty.umeta(UE.uproperty.Category="TEST Property") //Error
+    
+    @uproperty.umeta(uproperty.ToolTip="Test Value")
+    @uproperty.uproperty(uproperty.BlueprintReadOnly,uproperty.Category="TEST Category")
+    TestValue:number;
+
+    @ufunction.ufunction(ufunction.BlueprintPure)
+    public update(AA:number , BB:number):void 
+    {   
+    }
+}
+export default TsTestActor;
+
+~~~
 
 ### rpc
 
