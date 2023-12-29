@@ -2540,7 +2540,7 @@ bool FJsEnvImpl::RemoveFromDelegate(
 
         __USE(RemoveListItem.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 2, Args));
 
-        if (JsCallbacks->Length() == 0)
+        if (JsCallbacks->Length() == 0 && Iter->second.Proxy.IsValid())
         {
             auto DelegateProxy = Iter->second.Proxy.Get();
 
