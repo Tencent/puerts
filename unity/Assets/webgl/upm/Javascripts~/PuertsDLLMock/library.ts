@@ -1,5 +1,3 @@
-import { $GetArgumentFinalValue } from "./mixins/getFromJSArgument";
-
 /**
  * 一次函数调用的info
  * 对应v8::FunctionCallbackInfo
@@ -119,7 +117,7 @@ export class FunctionCallbackInfoPtrManager {
             this.engine.unityApi.HEAP32[jsValuePtr] = jsValueType;    // jsvaluetype
             if (jsValueType == 4 || jsValueType == 512) {
                 // number or date
-                this.engine.unityApi.HEAPF32[jsValuePtr + 1] = $GetArgumentFinalValue(
+                this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
                     this.engine, args[i], jsValueType, 0
                 );    // value
 
@@ -135,7 +133,7 @@ export class FunctionCallbackInfoPtrManager {
                 const refValueType = this.engine.unityApi.HEAP32[refPtr] = GetType(this.engine, args[i][0])
                 if (refValueType == 4 || refValueType == 512) {
                     // number or date
-                    this.engine.unityApi.HEAPF32[refPtr + 1] = $GetArgumentFinalValue(
+                    this.engine.unityApi.HEAP32[refPtr + 1] = $GetArgumentFinalValue(
                         this.engine, args[i][0], refValueType, 0
                     );    // value
 
@@ -695,7 +693,48 @@ export function writeBigInt(engine: PuertsJSEngine, value: bigint) {
 
     // TODO free?
     const ptr = engine.unityApi._malloc(buff.byteLength);
-    engine.unityApi.HEAP8.set(new Int8Array(buff.buffer), ptr);
+    engine.unityApi.HEAPU8.set(new Uint8Array(buff.buffer), ptr);
 
     return ptr;
+}
+
+export function writeDouble(engine: PuertsJSEngine, value: number) {
+    const buff = new Float64Array([value]);
+    // TODO free?
+    const ptr = engine.unityApi._malloc(buff.byteLength);
+    engine.unityApi.HEAPF64.set(buff, ptr >> 3);
+
+    return ptr;
+}
+
+function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValueType: number, lengthOffset: number): number {
+    if (!jsValueType) jsValueType = GetType(engine, val);
+
+    const writeNumber = (val: number) => {
+        const ptr = writeDouble(engine, val);
+        setOutValue32(engine, lengthOffset, 8/*double == 8byte*/);
+        return ptr;
+    };
+
+    switch (jsValueType) {
+        case 2: {
+            const ptr = writeBigInt(engine, val);
+            // ValueIsBigInt可据此判断
+            setOutValue32(engine, lengthOffset, 8/*long == 8byte*/);
+            return ptr;
+        }
+        case 4: return writeNumber(+val);
+        case 8: return engine.JSStringToCSString(val, lengthOffset);
+        case 16: return +val;
+        case 32: return engine.csharpObjectMap.getCSIdentifierFromObject(val);
+        case 64: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
+        case 128: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
+        case 256: return jsFunctionOrObjectFactory.getOrCreateJSFunction(val).id;
+        case 512: return writeNumber(val.getTime());
+        case 1024:
+            var ptr = engine.unityApi._malloc(val.byteLength);
+            engine.unityApi.HEAPU8.set(val, ptr);
+            setOutValue32(engine, lengthOffset, val.byteLength);
+            return ptr;
+    }
 }
