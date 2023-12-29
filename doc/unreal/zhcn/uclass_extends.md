@@ -197,6 +197,27 @@ class TsTestActor extends UE.Actor {
 }
 ~~~
 
+### uproperty ufunction 
+~~~typescript
+import * as UE from 'ue'
+import { uproperty,uparam,ufunction } from 'ue';  
+class TsTestActor extends UE.Actor
+{
+    //注:不可以直接从UE中调用，应该import uproperty,ufuncion,uparam后调用
+    //@UE.uproperty.umeta(UE.uproperty.Category="TEST Property") //错误
+    
+    @uproperty.umeta(uproperty.ToolTip="Test Value")
+    @uproperty.uproperty(uproperty.BlueprintReadOnly,uproperty.Category="TEST Category")
+    TestValue:number;
+
+    @ufunction.ufunction(ufunction.BlueprintPure)
+    public update(AA:number , BB:number):void 
+    {   
+    }
+}
+export default TsTestActor;
+~~~
+
 ### rpc
 
 可以通过decorator来设置方法、字段的RPC属性。
