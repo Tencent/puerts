@@ -1,4 +1,4 @@
-import { JSFunction, PuertsJSEngine } from "../library";
+import { FunctionCallbackInfoPtrManager, GetType, isBigInt, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32, writeBigInt } from "../library";
 
 // export function GetNumberFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
 //     return engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
@@ -46,7 +46,30 @@ import { JSFunction, PuertsJSEngine } from "../library";
 //     setOutValue32(engine, lengthOffset, ab.byteLength);
 //     return ptr;
 // }
-
+export function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValueType: number, lengthOffset: number): number {
+    if (!jsValueType) jsValueType = GetType(engine, val);
+    switch (jsValueType) {
+        case 2: {
+            const ptr = writeBigInt(engine, val);
+            // ValueIsBigInt可据此判断
+            setOutValue32(engine, lengthOffset, 8/*long == 8byte*/);
+            return ptr;
+        }
+        case 4: return +val;
+        case 8: return engine.JSStringToCSString(val, lengthOffset);
+        case 16: return +val;
+        case 32: return engine.csharpObjectMap.getCSIdentifierFromObject(val);
+        case 64: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
+        case 128: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
+        case 256: return jsFunctionOrObjectFactory.getOrCreateJSFunction(val).id;
+        case 512: return val.getTime();
+        case 1024:
+            var ptr = engine.unityApi._malloc(val.byteLength);
+            engine.unityApi.HEAPU8.set(val, ptr);
+            setOutValue32(engine, lengthOffset, val.byteLength);
+            return ptr;
+    }
+}
 /**
  * mixin
  * JS调用C#时，C#侧获取JS调用参数的值
