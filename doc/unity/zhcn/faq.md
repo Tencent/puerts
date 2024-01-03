@@ -148,3 +148,12 @@ sm.install({
     }
 });
 ```
+
+#### 概率报Maximum call stack size exceeded
+
+注意是概率报，不是必报，这种情况通常是因为多线程访问了JsEnv，可以尝试打开多线程支持，方法如下：
+ * 在C#中加入THREAD_SAFE宏
+ * 在plugins中加入THREAD_SAFE宏重新编译并替换各平台的plugins
+
+ps：以上是v8后端的解决方案
+ps：如果是必报，应该是js代码中有递归死循环了。

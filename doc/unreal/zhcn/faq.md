@@ -141,3 +141,10 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 * 如果这种蓝图的量比较小，可以加入到黑名单（项目配置->Puerts）。
 
 * 如果这种蓝图数量比较大，可以把需要在代码访问的、合法的蓝图放入一个目录，然后在编辑器控制台下输入命令来生成，这种方式可以指定蓝图搜索的路径，比如 ·Puerts.Gen PATH=/Game/StarterContent· 只会搜索"Content\StarterContent"目录。
+
+## 概率报Maximum call stack size exceeded
+
+注意是概率报，不是必报，这种情况通常是因为多线程访问了FJsEnv，可以尝试在JsEnv.Build.cs中加入THREAD_SAFE宏看能否解决。
+
+ps：以上是v8后端的解决方案
+ps：如果是必报，应该是js代码中有递归死循环了。
