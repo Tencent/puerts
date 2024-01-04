@@ -346,8 +346,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     {
 #if !defined(WITH_NODEJS) && !defined(WITH_QUICKJS)
         TArray<FString> FlagArray;
-        InFlags.ParseIntoArray(Flags, TEXT(" "));
-        for (auto& Flag : Flags)
+        InFlags.ParseIntoArray(FlagArray, TEXT(" "));
+        for (auto& Flag : FlagArray)
         {
             static FString Max_Old_Space_Size_Name(TEXT("--max-old-space-size="));
             if (Flag.StartsWith(Max_Old_Space_Size_Name))
