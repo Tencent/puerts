@@ -345,7 +345,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     if (!InFlags.IsEmpty())
     {
 #if !defined(WITH_NODEJS) && !defined(WITH_QUICKJS)
-        TArray<FString> Flags;
+        TArray<FString> FlagArray;
         InFlags.ParseIntoArray(Flags, TEXT(" "));
         for (auto& Flag : Flags)
         {
