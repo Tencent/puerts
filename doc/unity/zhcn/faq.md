@@ -155,5 +155,5 @@ sm.install({
  * 在C#中加入THREAD_SAFE宏
  * 在plugins中加入THREAD_SAFE宏重新编译并替换各平台的plugins
 
-ps：以上是v8后端的解决方案
+ps：以上是v8后端的的现象和解决方案，qjs后端如果多线程访问有可能会抛个没有文件信息的异常（<unknow>:-1）
 ps：如果是必报，应该是js代码中有递归死循环了。

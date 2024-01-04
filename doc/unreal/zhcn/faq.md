@@ -146,5 +146,5 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 注意是概率报，不是必报，这种情况通常是因为多线程访问了FJsEnv，可以尝试在JsEnv.Build.cs中加入THREAD_SAFE宏看能否解决。
 
-ps：以上是v8后端的解决方案
+ps：以上是v8后端的的现象和解决方案，qjs后端如果多线程访问有可能会抛个没有文件信息的异常（<unknow>:-1），而且qjs后端目前不支持多线程
 ps：如果是必报，应该是js代码中有递归死循环了。
