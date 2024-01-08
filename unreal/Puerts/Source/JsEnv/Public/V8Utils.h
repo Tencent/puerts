@@ -34,7 +34,7 @@ enum ArgType
     EArgObject
 };
 
-class FV8Utils
+class JSENV_API FV8Utils
 {
 public:
     FORCEINLINE static void ThrowException(v8::Isolate* Isolate, const FString& Message)
