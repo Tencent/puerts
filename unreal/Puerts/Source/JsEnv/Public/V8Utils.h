@@ -96,7 +96,7 @@ public:
 
     FORCEINLINE static v8::Local<v8::String> InternalString(v8::Isolate* Isolate, const FString& String)
     {
-        return ToV8String(Isolate, String); 
+        return ToV8String(Isolate, String);
     }
 
     FORCEINLINE static v8::Local<v8::String> InternalString(v8::Isolate* Isolate, const char* String)
