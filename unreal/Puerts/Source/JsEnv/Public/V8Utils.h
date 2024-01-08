@@ -96,7 +96,7 @@ public:
 
     FORCEINLINE static v8::Local<v8::String> InternalString(v8::Isolate* Isolate, const FString& String)
     {
-        return v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*String), v8::NewStringType::kNormal).ToLocalChecked();
+        return ToV8String(Isolate, String); 
     }
 
     FORCEINLINE static v8::Local<v8::String> InternalString(v8::Isolate* Isolate, const char* String)
@@ -106,7 +106,7 @@ public:
 
     FORCEINLINE static FString ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
     {
-        return UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Value)));
+        return UTF16_TO_TCHAR(*(v8::String::Value(Isolate, Value)));
     }
 
     FORCEINLINE static FName ToFName(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
@@ -148,7 +148,7 @@ public:
 
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const TCHAR* String)
     {
-        return v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(String), v8::NewStringType::kNormal).ToLocalChecked();
+        return v8::String::NewFromTwoByte(Isolate, TCHAR_TO_UTF16(String), v8::NewStringType::kNormal).ToLocalChecked();
     }
 
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const char* String)
