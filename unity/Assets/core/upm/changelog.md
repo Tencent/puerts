@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.4] - 2024-01-09
+1. fix: the error when invoking extension method with out/ref args.
+2. fix: the error when set a JSObject to `null`.
+3. fix: the error when getting the arg index when invoking extension method with default arguments value.
+4. fix: members of valuetype created by paramless ctor will be random value.
+
 ## [2.0.3] - 2023-11-02
 1. important!: to follow the rules of Assetstore, move the generation menu from `PuerTS` to `Tools/PuerTS`
 2. feature: support dynamic import (`import()`) #1540
