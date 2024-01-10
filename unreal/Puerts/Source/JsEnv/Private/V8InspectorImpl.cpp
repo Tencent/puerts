@@ -37,6 +37,7 @@
 
 #if USING_UE
 #include "Containers/Ticker.h"
+#include "UECompatible.h"
 #else
 #include "Log.h"
 #endif
