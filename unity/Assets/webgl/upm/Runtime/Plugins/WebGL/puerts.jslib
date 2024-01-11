@@ -9,6 +9,7 @@ var exportDLL = {
             _malloc: _malloc,
             _memcpy: _emscripten_memcpy_big,
             _free: _free,
+            _setTempRet0,
             stringToUTF8: stringToUTF8,
             lengthBytesUTF8: lengthBytesUTF8,
 
