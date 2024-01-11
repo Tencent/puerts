@@ -1,4 +1,4 @@
-import { GetType, isBigInt, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32, writeBigInt } from "../library";
+import { GetType, isBigInt, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32, returnBigInt } from "../library";
 /**
  * mixin
  * C#调用JS时，获取JS函数返回值
@@ -29,7 +29,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
         },
         GetBigIntFromResult: function (resultInfo: IntPtr) {
             // puerts core v2.0.4开始支持
-            return writeBigInt(engine, engine.lastReturnCSResult);
+            return returnBigInt(engine, engine.lastReturnCSResult);
         },
         GetObjectFromResult: function (resultInfo: IntPtr) {
             return engine.csharpObjectMap.getCSIdentifierFromObject(engine.lastReturnCSResult);

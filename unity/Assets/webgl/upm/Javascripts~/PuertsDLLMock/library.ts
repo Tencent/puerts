@@ -16,6 +16,14 @@ export class FunctionCallbackInfo {
     }
 }
 
+// struct MockV8Value
+// {
+//     int JSValueType;  // 0
+//     int FinalValuePointer[2]; // 1 2 if value is bigint FinalValuePointer[0] for low, FinalValuePointer[1] for high
+//     int extra; // 3
+//     int FunctionCallbackInfo; // 4
+// };
+const ArgumentValueLengthIn32 = 5; // int count
 /**
  * 把FunctionCallbackInfo以及其参数转化为c#可用的intptr
  */
@@ -29,54 +37,53 @@ export class FunctionCallbackInfoPtrManager {
     } = {};
     private freeRefMemory: number[] = []
 
-    private readonly argumentValueLengthIn32 = 4;
     private readonly engine: PuertsJSEngine;
 
     constructor(engine: PuertsJSEngine) {
         this.engine = engine;
     }
 
-    private allocCallbackInfoMemory(argslength: number): number {
-        const cacheArray = this.freeCallbackInfoMemoryByLength[argslength];
+    private allocCallbackInfoMemory(argsLength: number): number {
+        const cacheArray = this.freeCallbackInfoMemoryByLength[argsLength];
         if (cacheArray && cacheArray.length) {
             return cacheArray.pop();
 
         } else {
-            return this.engine.unityApi._malloc((argslength * this.argumentValueLengthIn32 + 1) << 2);
+            return this.engine.unityApi._malloc((argsLength * ArgumentValueLengthIn32 + 1) << 2);
         }
     }
     private allocRefMemory() {
         if (this.freeRefMemory.length) return this.freeRefMemory.pop();
-        return this.engine.unityApi._malloc(this.argumentValueLengthIn32 << 2);
+        return this.engine.unityApi._malloc(ArgumentValueLengthIn32 << 2);
     }
-    private recycleRefMemory(bufferptr: number) {
+    private recycleRefMemory(bufferPtr: number) {
         if (this.freeRefMemory.length > 20) {
-            this.engine.unityApi._free(bufferptr);
+            this.engine.unityApi._free(bufferPtr);
         }
         else {
-            this.freeRefMemory.push(bufferptr);
+            this.freeRefMemory.push(bufferPtr);
         }
     }
-    private recycleCallbackInfoMemory(bufferptr: number, args: any[]) {
-        const argslength = args.length;
-        if (!this.freeCallbackInfoMemoryByLength[argslength] && argslength < 5) {
-            this.freeCallbackInfoMemoryByLength[argslength] = [];
+    private recycleCallbackInfoMemory(bufferPtr: number, args: any[]) {
+        const argsLength = args.length;
+        if (!this.freeCallbackInfoMemoryByLength[argsLength] && argsLength < 5) {
+            this.freeCallbackInfoMemoryByLength[argsLength] = [];
         }
-        const cacheArray = this.freeCallbackInfoMemoryByLength[argslength];
+        const cacheArray = this.freeCallbackInfoMemoryByLength[argsLength];
         if (!cacheArray) return;
 
-        const bufferPtrIn32 = bufferptr << 2;
-        args.forEach((arg, i) => {
-            if (arg instanceof Array && arg.length == 1) {
-                this.recycleRefMemory(this.engine.unityApi.HEAP32[bufferPtrIn32 + i * this.argumentValueLengthIn32 + 1])
+        const bufferPtrIn32 = bufferPtr << 2;
+        for (let i = 0; i < argsLength; ++i) {
+            if (args[i] instanceof Array && args[i].length == 1) {
+                this.recycleRefMemory(this.engine.unityApi.HEAP32[bufferPtrIn32 + i * ArgumentValueLengthIn32 + 1])
             }
-        })
+        }
         // 拍脑袋定的最大缓存个数大小。 50 - 参数个数 * 10
-        if (cacheArray.length > (50 - argslength * 10)) {
-            this.engine.unityApi._free(bufferptr);
+        if (cacheArray.length > (50 - argsLength * 10)) {
+            this.engine.unityApi._free(bufferPtr);
 
         } else {
-            cacheArray.push(bufferptr);
+            cacheArray.push(bufferPtr);
         }
     }
     /**
@@ -96,10 +103,10 @@ export class FunctionCallbackInfoPtrManager {
     //     return index << 4;
     // }
     GetMockPointer(args: any[]): MockIntPtr {
-        var bufferPtrIn8 = this.allocCallbackInfoMemory(args.length);
+        const argsLength = args.length;
+        let bufferPtrIn8 = this.allocCallbackInfoMemory(argsLength);
 
-        let index: number;
-        index = this.freeInfosIndex.pop();
+        let index: number = this.freeInfosIndex.pop();
         // index最小为1
         if (index) {
             this.infos[index].args = args;
@@ -107,52 +114,45 @@ export class FunctionCallbackInfoPtrManager {
             index = this.infos.push(new FunctionCallbackInfo(args)) - 1;
         }
 
-        const bufferPtrIn32 = bufferPtrIn8 >> 2
-        this.engine.unityApi.HEAP32[bufferPtrIn32] = index;
-        for (var i = 0; i < args.length; i++) {
+        let unityApi = this.engine.unityApi;
+        const bufferPtrIn32 = bufferPtrIn8 >> 2;
+        unityApi.HEAP32[bufferPtrIn32] = index;
+        for (let i = 0; i < argsLength; i++) {
+            let arg = args[i];
             // init each value
-            const jsValueType = GetType(this.engine, args[i]);
-            const jsValuePtr = bufferPtrIn32 + i * this.argumentValueLengthIn32 + 1;
+            const jsValueType = GetType(this.engine, arg);
+            const jsValuePtr = bufferPtrIn32 + i * ArgumentValueLengthIn32 + 1;
 
-            this.engine.unityApi.HEAP32[jsValuePtr] = jsValueType;    // jsvaluetype
-            if (jsValueType == 4 || jsValueType == 512) {
-                // number or date
-                this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
-                    this.engine, args[i], jsValueType, 0
-                );    // value
-
-            } else if (jsValueType == 64 && args[i] instanceof Array && args[i].length == 1) {
+            unityApi.HEAP32[jsValuePtr] = jsValueType;    // jsvaluetype
+            if (jsValueType == 2 || jsValueType == 4 || jsValueType == 512) {
+                // bigint、number or date
+                $FillArgumentFinalNumberValue(this.engine, arg, jsValueType, jsValuePtr + 1);    // value
+            } else if (jsValueType == 64 && arg instanceof Array && arg.length == 1) {
                 // maybe a ref
-                this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
-                    this.engine, args[i], jsValueType,
-                    0
+                unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
+                    this.engine, arg, jsValueType, 0
                 );
 
-                const refPtrIn8 = this.engine.unityApi.HEAP32[jsValuePtr + 2] = this.allocRefMemory();
+                const refPtrIn8 = unityApi.HEAP32[jsValuePtr + 3] = this.allocRefMemory();
                 const refPtr = refPtrIn8 >> 2
-                const refValueType = this.engine.unityApi.HEAP32[refPtr] = GetType(this.engine, args[i][0])
-                if (refValueType == 4 || refValueType == 512) {
+                const refValueType = unityApi.HEAP32[refPtr] = GetType(this.engine, arg[0])
+                if (refValueType == 2 || refValueType == 4 || refValueType == 512) {
                     // number or date
-                    this.engine.unityApi.HEAP32[refPtr + 1] = $GetArgumentFinalValue(
-                        this.engine, args[i][0], refValueType, 0
-                    );    // value
-
+                    $FillArgumentFinalNumberValue(this.engine, arg[0], refValueType, refPtr + 1);    // value
                 } else {
-                    this.engine.unityApi.HEAP32[refPtr + 1] = $GetArgumentFinalValue(
-                        this.engine, args[i][0], refValueType,
-                        (refPtr + 2) << 2
+                    unityApi.HEAP32[refPtr + 1] = $GetArgumentFinalValue(
+                        this.engine, arg[0], refValueType, (refPtr + 3) << 2
                     );
                 }
-                this.engine.unityApi.HEAP32[refPtr + 3] = bufferPtrIn8; // a pointer to the info
+                unityApi.HEAP32[refPtr + 4] = bufferPtrIn8; // a pointer to the info
 
             } else {
                 // other
-                this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
-                    this.engine, args[i], jsValueType,
-                    (jsValuePtr + 2) << 2
+                unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
+                    this.engine, arg, jsValueType, (jsValuePtr + 3) << 2
                 );
             }
-            this.engine.unityApi.HEAP32[jsValuePtr + 3] = bufferPtrIn8; // a pointer to the info
+            unityApi.HEAP32[jsValuePtr + 4] = bufferPtrIn8; // a pointer to the info
         }
         return bufferPtrIn8;
     }
@@ -189,12 +189,12 @@ export class FunctionCallbackInfoPtrManager {
     }
 
     GetArgsByMockIntPtr<T>(valuePtrIn8: MockIntPtr): T {
-        const infoptrIn8 = this.engine.unityApi.HEAP32[(valuePtrIn8 >> 2) + 3];
-        const callbackInfoIndex = this.engine.unityApi.HEAP32[infoptrIn8 >> 2];
+        let heap32 = this.engine.unityApi.HEAP32;
+        const infoPtrIn8 = heap32[(valuePtrIn8 >> 2) + 4];
+        const callbackInfoIndex = heap32[infoPtrIn8 >> 2];
 
-        const argsIndex = (valuePtrIn8 - infoptrIn8 - 4) / (4 * this.argumentValueLengthIn32);
-        const info: FunctionCallbackInfo = this.infos[callbackInfoIndex];
-        return info.args[argsIndex] as T;
+        const argsIndex = (valuePtrIn8 - infoPtrIn8 - 4) / (4 * ArgumentValueLengthIn32);
+        return this.infos[callbackInfoIndex].args[argsIndex] as T;
     }
 }
 
@@ -347,9 +347,7 @@ export class CSharpObjectMap {
         // this.nativeObjectKV[csID] = createWeakRef(obj);
         // this.csIDWeakMap.set(obj, csID);
         this.nativeObjectKV.set(csID, createWeakRef(obj));
-        Object.defineProperty(obj, '_puerts_csid_', {
-            value: csID
-        })
+        obj['$csid'] = csID;
     }
     remove(csID: CSIdentifier) {
         this._memoryDebug && this.removeCalled++;
@@ -368,7 +366,7 @@ export class CSharpObjectMap {
     }
     getCSIdentifierFromObject(obj: any) {
         // return this.csIDWeakMap.get(obj);
-        return obj ? obj._puerts_csid_ : 0;
+        return obj ? obj.$csid : 0;
     }
 }
 
@@ -499,6 +497,7 @@ export namespace PuertsJSEngine {
         _malloc: (size: number) => number,
         _memcpy: (dst: number, src: number, size: number) => void,
         _free: (ptr: number) => void,
+        _setTempRet0: (value: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
         lengthBytesUTF8: (str: string) => number,
         unityInstance: any,
@@ -508,6 +507,7 @@ export namespace PuertsJSEngine {
         _malloc: (size: number) => number,
         _memcpy: (dst: number, src: number, size: number) => void,
         _free: (ptr: number) => void,
+        _setTempRet0: (value: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
         lengthBytesUTF8: (str: string) => number,
         HEAP8: Int8Array,
@@ -542,50 +542,36 @@ export class PuertsJSEngine {
     constructor(ctorParam: PuertsJSEngine.EngineConstructorParam) {
         this.csharpObjectMap = new CSharpObjectMap();
         this.functionCallbackInfoPtrManager = new FunctionCallbackInfoPtrManager(this);
-        const { UTF8ToString, _malloc, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance } = ctorParam;
+        const { UTF8ToString, _malloc, _memcpy, _free, _setTempRet0, stringToUTF8, lengthBytesUTF8, unityInstance } = ctorParam;
         this.unityApi = {
             UTF8ToString,
             _malloc,
             _memcpy,
             _free,
+            _setTempRet0,
             stringToUTF8,
             lengthBytesUTF8,
 
             dynCall_iiiii: unityInstance.dynCall_iiiii.bind(unityInstance),
             dynCall_viii: unityInstance.dynCall_viii.bind(unityInstance),
             dynCall_viiiii: unityInstance.dynCall_viiiii.bind(unityInstance),
-            HEAP32: null,
-            HEAP8: null,
-            HEAPU8: null,
-            HEAPF32: null,
-            HEAPF64: null
+            get HEAP32() {
+                return unityInstance.HEAP32;
+            },
+            get HEAP8() {
+                return unityInstance.HEAP32;
+            },
+            get HEAPU8() {
+                return unityInstance.HEAP32;
+            },
+            get HEAPF32() {
+                return unityInstance.HEAP32;
+            },
+            get HEAPF64() {
+                return unityInstance.HEAPF64;
+            },
         };
-        Object.defineProperty(this.unityApi, 'HEAP32', {
-            get: function () {
-                return unityInstance.HEAP32
-            }
-        })
-        Object.defineProperty(this.unityApi, 'HEAPF32', {
-            get: function () {
-                return unityInstance.HEAPF32
-            }
-        })
-        Object.defineProperty(this.unityApi, 'HEAPF64', {
-            get: function () {
-                return unityInstance.HEAPF64
-            }
-        })
-        Object.defineProperty(this.unityApi, 'HEAP8', {
-            get: function () {
-                return unityInstance.HEAP8
-            }
-        });
-        Object.defineProperty(this.unityApi, 'HEAPU8', {
-            get: function () {
-                return unityInstance.HEAPU8
-            }
-        });
-
+        
         global.__tgjsEvalScript = typeof eval == "undefined" ? () => { } : eval;
         global.__tgjsSetPromiseRejectCallback = function (callback: (...args: any[]) => any) {
             if (typeof wx != 'undefined') {
@@ -600,12 +586,12 @@ export class PuertsJSEngine {
         }
     }
 
-    JSStringToCSString(returnStr: string, /** out int */length: number) {
+    JSStringToCSString(returnStr: string, /** out int */lengthOffset: number) {
         if (returnStr === null || returnStr === undefined) {
             return 0;
         }
         var byteCount = this.unityApi.lengthBytesUTF8(returnStr);
-        setOutValue32(this, length, byteCount);
+        setOutValue32(this, lengthOffset, byteCount);
         var buffer = this.unityApi._malloc(byteCount + 1);
         this.unityApi.stringToUTF8(returnStr, buffer, byteCount + 1);
         return buffer;
@@ -629,7 +615,7 @@ export class PuertsJSEngine {
                 return engine.functionCallbackInfoPtrManager.GetReturnValueAndRecycle(callbackInfoPtr);
 
             } catch (e) {
-                engine.functionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr,);
+                engine.functionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
                 throw e;
             }
         }
@@ -664,7 +650,7 @@ export function GetType(engine: PuertsJSEngine, value: any): number {
 }
 
 export function makeBigInt(low: number, high: number) {
-    return (BigInt(high >>> 0) << BigInt(32)) + BigInt(low >>> 0)
+    return (BigInt(high) << 32n) | BigInt(low >>> 0);
 }
 
 export function setOutValue32(engine: PuertsJSEngine, valuePtr: number, value: any) {
@@ -679,62 +665,59 @@ export function isBigInt(value: unknown): value is bigint {
     return value instanceof BigInt || typeof value === 'bigint';
 }
 
-function BigInt2Tuple(value: bigint): [low: number, high: number] {
-    const high = Number(value >> BigInt(32));
-    const low = Number(value & BigInt(0xffffffff));
-
-    return [low, high];
+export function returnBigInt(engine: PuertsJSEngine, value: bigint): number {
+    engine.unityApi._setTempRet0(Number(value >> 32n)); // high
+    return Number(value & 0xffffffffn); // low
 }
 
-export function writeBigInt(engine: PuertsJSEngine, value: bigint) {
-    // 可能环境不支持
-    // const buff = new BigInt64Array([value]);
-    const buff = new Uint32Array(BigInt2Tuple(value));
-
-    // TODO free?
-    const ptr = engine.unityApi._malloc(buff.byteLength);
-    engine.unityApi.HEAPU8.set(new Uint8Array(buff.buffer), ptr);
-
-    return ptr;
+function writeBigInt(engine: PuertsJSEngine, ptrIn32: number, value: bigint) {
+    engine.unityApi.HEAP32[ptrIn32] = Number(value & 0xffffffffn); // low
+    engine.unityApi.HEAP32[ptrIn32 + 1] = Number(value >> 32n); // high
 }
 
-export function writeDouble(engine: PuertsJSEngine, value: number) {
-    const buff = new Float64Array([value]);
-    // TODO free?
-    const ptr = engine.unityApi._malloc(buff.byteLength);
-    engine.unityApi.HEAPF64.set(buff, ptr >> 3);
+const tmpInt3Arr = new Int32Array(2);
+const tmpFloat64Arr = new Float64Array(tmpInt3Arr.buffer);
 
-    return ptr;
+function writeNumber(engine: PuertsJSEngine, ptrIn32: number, value: number): void {
+    // number in js is double
+    tmpFloat64Arr[0] = value;
+    engine.unityApi.HEAP32[ptrIn32] = tmpInt3Arr[0];
+    engine.unityApi.HEAP32[ptrIn32 + 1] = tmpInt3Arr[1];
+}
+
+function $FillArgumentFinalNumberValue(engine: PuertsJSEngine, val: any, jsValueType: number, valPtrIn32: number): number {
+    if (val === null || val === undefined) { return; }
+    switch (jsValueType) {
+        case 2: {
+            writeBigInt(engine, valPtrIn32, val);
+            // ValueIsBigInt可据此判断
+            engine.unityApi.HEAP32[valPtrIn32 + 2] = 8; /*long == 8byte*/
+        }
+        break;
+        case 4: 
+            writeNumber(engine, valPtrIn32, +val);
+            break;
+        case 512:
+            writeNumber(engine, valPtrIn32, val.getTime());
+            break;
+    }
 }
 
 function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValueType: number, lengthOffset: number): number {
     if (!jsValueType) jsValueType = GetType(engine, val);
 
-    const writeNumber = (val: number) => {
-        const ptr = writeDouble(engine, val);
-        setOutValue32(engine, lengthOffset, 8/*double == 8byte*/);
-        return ptr;
-    };
-
     switch (jsValueType) {
-        case 2: {
-            const ptr = writeBigInt(engine, val);
-            // ValueIsBigInt可据此判断
-            setOutValue32(engine, lengthOffset, 8/*long == 8byte*/);
-            return ptr;
-        }
-        case 4: return writeNumber(+val);
         case 8: return engine.JSStringToCSString(val, lengthOffset);
         case 16: return +val;
         case 32: return engine.csharpObjectMap.getCSIdentifierFromObject(val);
         case 64: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
         case 128: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
         case 256: return jsFunctionOrObjectFactory.getOrCreateJSFunction(val).id;
-        case 512: return writeNumber(val.getTime());
-        case 1024:
-            var ptr = engine.unityApi._malloc(val.byteLength);
+        case 1024: {
+            let ptr = engine.unityApi._malloc(val.byteLength);
             engine.unityApi.HEAPU8.set(val, ptr);
             setOutValue32(engine, lengthOffset, val.byteLength);
             return ptr;
+        }
     }
 }
