@@ -1,3 +1,81 @@
+### v1.0.6 2024年1月11日
+
+#### 新增特性
+
+* 支持通过赋值去清空一个JsObject
+
+* 添加UsingCrossModuleCppType，能避免不同模块引用同一个类typeid不同的问题
+
+* 静态绑定支持在原生函数中跑异常，有两种实现，线程本地存储以及异常，前者有侵入性，后者不能跨动态库使用
+
+* 容器添加[Symbol.iterator]支持
+
+* puerts::Object尝试添加SetWeakAndOwnBy方法，用于某种场景下避免循环引用
+
+* 静态绑定新增MethodProxy，PropertyProxy，用于解决多重继承virtual public静态绑定，子类对象调用父类方法时，this指针错误的问题
+
+* 静态绑定添加从Function数据获取this的选项：GetSelfFromData
+
+* ue5.3兼容
+
+* v8后端拓展esm的支持：引用ue，cpp模块，继承ue类支持esm（*.mts)
+
+* TArray.Add() 变参函数 (#1513)
+
+
+#### 优化
+
+* v8 和 UE 字符串传递默认使用 UTF16 避免编码转换
+
+* 声明生成排除PropertyMetaRoot
+
+* 重构静态绑定，支持同时使用多种后端
+
+* 支持在puerts名字空间加个_qjs后缀
+
+* 默认打开UE绕行优化 fix #1537
+
+* 容器以及纯c++类型修改为使用InstanceTemplate()->NewInstance实现FindOrAdd，fix #1496
+
+* 优化timer实现，fix #1506
+
+
+#### 变更
+
+* 内部使用的GetJsObject方法改为私有，防止业务调用
+
+* pesapi版本升级以及api新增
+
+* v8编译参数v8_use_external_startup_data改为false，去掉SnapshotBlob.h，fix #1478
+
+#### bug修复
+
+* 修复在windows下使用远程IOS编译，变量名重名导致的编译失败
+
+* Delegate没调用Bind就Unbind会报错 (#1622)
+
+* mixin原生类，然后恢复，导致后续原生实现调用参数不对的问题，fix #1618
+
+* 解决静态绑定下，需要检查参数类型，子类不能通过基类参数的检查的问题
+
+* 修复 codegen .d.ts 函数参数列表可能重名的问题 (#1609)
+
+* V8Object.hpp加上线程安全支持
+
+* FJsObject析构时加入JsEnv生命周期的判断，fix #1582
+
+* 属性的meta在ts删除了，生成蓝图要同步删除，fix #1551
+
+* UStruct 析构可能发生在后台线程 fix #1539
+
+* js分配的容器，在关闭JsEnv时可能会有内存泄露，fix #1530
+
+* 防止toManualReleaseDelegate传给多个不同签名的回调，导致后面的参数处理错误
+
+* 函数返回const FXXStruct&时，静态绑定报错，fix #1516
+
+* 如果require脚本发送错误，不应该放cache，这会导致第二次require能成功返回（但模块不正常）
+
 ### v1.0.5 2023年8月31日
 
 #### 新增特性
