@@ -356,9 +356,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 CreateParams.constraints.set_max_old_generation_size_in_bytes(Val * 1024 * 1024);
             }
         }
-#else
-        v8::V8::SetFlagsFromString(TCHAR_TO_UTF8(*InFlags));
 #endif
+        v8::V8::SetFlagsFromString(TCHAR_TO_UTF8(*InFlags));
     }
 
     Started = false;
