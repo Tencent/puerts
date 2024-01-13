@@ -1,20 +1,21 @@
 #include <cstdint>
+#include <stdio.h>>
 
 struct MockV8Value
 {
     int JSValueType;
-    int FinalValuePointer;
+    int FinalValuePointer[2];
     int extra;
     int FunctionCallbackInfo;
 };
 
-const int IntSizeOfV8Value = 4;
+const int IntSizeOfV8Value = 5;
 
 void *GetPointerFromValue(void *isolate, MockV8Value *value, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
-    return (void *)(int)value->FinalValuePointer;
+    return (void *)value->FinalValuePointer[0];
 }
 
 void *GetBufferFromValue(void *isolate, MockV8Value *value, int &length, bool byref)
@@ -22,7 +23,7 @@ void *GetBufferFromValue(void *isolate, MockV8Value *value, int &length, bool by
     if (byref)
         value = (MockV8Value *)value->extra;
     length = value->extra;
-    return (void *)(int)value->FinalValuePointer;
+    return (void *)value->FinalValuePointer[0];
 }
 
 double GetDoubleFromValue(void *isolate, MockV8Value *value, bool byref)
@@ -84,7 +85,7 @@ extern "C"
     {
         if (byref)
             value = (MockV8Value *)value->extra;
-        return (bool)(int)value->FinalValuePointer;
+        return (bool)value->FinalValuePointer[0];
     }
 
     bool ValueIsBigInt(void *isolate, MockV8Value *value, bool byref)

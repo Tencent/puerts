@@ -5,13 +5,13 @@ var exportDLL = {
             throw new Error('cannot found PuertsWebGL script. please find some way to load puerts-runtime.js');
         }
         global.PuertsWebGL.Init({
-            UTF8ToString: UTF8ToString,
-            _malloc: _malloc,
+            UTF8ToString,
+            _malloc,
             _memcpy: _emscripten_memcpy_big,
-            _free: _free,
+            _free,
             _setTempRet0,
-            stringToUTF8: stringToUTF8,
-            lengthBytesUTF8: lengthBytesUTF8,
+            stringToUTF8,
+            lengthBytesUTF8,
 
             unityInstance: Module,
         });
