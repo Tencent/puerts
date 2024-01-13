@@ -559,13 +559,13 @@ export class PuertsJSEngine {
                 return unityInstance.HEAP32;
             },
             get HEAP8() {
-                return unityInstance.HEAP32;
+                return unityInstance.HEAP8;
             },
             get HEAPU8() {
-                return unityInstance.HEAP32;
+                return unityInstance.HEAPU8;
             },
             get HEAPF32() {
-                return unityInstance.HEAP32;
+                return unityInstance.HEAPF32;
             },
             get HEAPF64() {
                 return unityInstance.HEAPF64;
