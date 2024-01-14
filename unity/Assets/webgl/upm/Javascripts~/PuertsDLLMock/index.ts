@@ -51,15 +51,6 @@ global.PuertsWebGL = {
             WebGLBackendRegisterAPI(engine),
             {
                 // bridgeLog: true,
-                SetCallV8: function (
-                    callV8Function: MockIntPtr,
-                    callV8Constructor: MockIntPtr,
-                    callV8Destructor: MockIntPtr
-                ) {
-                    engine.callV8Function = callV8Function;
-                    engine.callV8Constructor = callV8Constructor;
-                    engine.callV8Destructor = callV8Destructor;
-                },
                 GetLibVersion: function () {
                     return 32;
                 },

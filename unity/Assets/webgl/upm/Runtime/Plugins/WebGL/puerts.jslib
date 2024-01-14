@@ -17,15 +17,10 @@ var exportDLL = {
         });
         global.PuertsWebGL.inited = true;
     },
-    InitPuertsWebGLRollback: function() {
-        // rollback the init when CSharp creating failed.
-        global.PuertsWebGL.inited = false;
-    }
 };
 
 
 [
-    "SetCallV8",
     "GetLibVersion",
     "GetApiLevel",
     "GetLibBackend",

@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <stdio.h>>
+#include <emscripten.h>
 
 struct MockV8Value
 {
@@ -118,5 +118,24 @@ extern "C"
     void *GetArrayBufferFromValue(void *isolate, MockV8Value *value, int &length, bool byref)
     {
         return GetBufferFromValue(isolate, value, length, byref);
+    }
+    
+    typedef void(*V8FunctionCallback)(void* Isolate, void* Info, void* Self, int ParamLen, int64_t UserData);
+    typedef void* (*V8ConstructorCallback)(void* Isolate, void* Info, int ParamLen, int64_t UserData);
+    typedef void(*V8DestructorCallback)(void* Self, int64_t UserData);
+
+    void EMSCRIPTEN_KEEPALIVE CallCSharpFunctionCallback(V8FunctionCallback functionPtr, void* infoIntPtr, void *selfPtr, int paramLen, int callbackIdx)
+    {
+        functionPtr(nullptr, infoIntPtr, selfPtr, paramLen, (int64_t)callbackIdx << 32);
+    }
+
+    void* EMSCRIPTEN_KEEPALIVE CallCSharpConstructorCallback(V8ConstructorCallback functionPtr, void* infoIntPtr, int paramLen, int callbackIdx)
+    {
+        return functionPtr(nullptr, infoIntPtr, paramLen, (int64_t)callbackIdx << 32);
+    }
+
+    void EMSCRIPTEN_KEEPALIVE CallCSharpDestructorCallback(V8DestructorCallback functionPtr, void *selfPtr, int callbackIdx)
+    {
+        functionPtr(selfPtr, (int64_t)callbackIdx << 32);
     }
 }

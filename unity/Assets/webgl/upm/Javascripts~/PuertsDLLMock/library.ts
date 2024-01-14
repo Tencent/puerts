@@ -515,9 +515,9 @@ export namespace PuertsJSEngine {
         HEAP32: Uint32Array,
         HEAPF32: Float32Array,
         HEAPF64: Float64Array,
-        dynCall_viiiii: Function,
-        dynCall_viii: Function,
-        dynCall_iiiii: Function
+        CallCSharpFunctionCallback: Function,
+        CallCSharpConstructorCallback: Function,
+        CallCSharpDestructorCallback: Function,
     }
 }
 
@@ -529,11 +529,6 @@ export class PuertsJSEngine {
 
     public lastReturnCSResult: any = null;
     public lastException: Error = null;
-
-    // 这四个是Puerts.WebGL里用于wasm通信的的CSharp Callback函数指针。
-    public callV8Function: MockIntPtr;
-    public callV8Constructor: MockIntPtr;
-    public callV8Destructor: MockIntPtr;
 
     // 这两个是Puerts用的的真正的CSharp函数指针
     public GetJSArgumentsCallback: IntPtr
@@ -552,9 +547,9 @@ export class PuertsJSEngine {
             stringToUTF8,
             lengthBytesUTF8,
 
-            dynCall_iiiii: unityInstance.dynCall_iiiii.bind(unityInstance),
-            dynCall_viii: unityInstance.dynCall_viii.bind(unityInstance),
-            dynCall_viiiii: unityInstance.dynCall_viiiii.bind(unityInstance),
+            CallCSharpFunctionCallback: unityInstance.asm.CallCSharpFunctionCallback,
+            CallCSharpConstructorCallback: unityInstance.asm.CallCSharpConstructorCallback,
+            CallCSharpDestructorCallback: unityInstance.asm.CallCSharpDestructorCallback,
             get HEAP32() {
                 return unityInstance.HEAP32;
             },
@@ -597,13 +592,13 @@ export class PuertsJSEngine {
         return buffer;
     }
 
-    makeV8FunctionCallbackFunction(isStatic: bool, functionPtr: IntPtr, callbackIdx: number) {
+    makeCSharpFunctionCallbackFunction(isStatic: bool, functionPtr: IntPtr, callbackIdx: number) {
         // 不能用箭头函数！此处返回的函数会赋值到具体的class上，其this指针有含义。
         const engine = this;
         return function (...args: any[]) {
             let callbackInfoPtr = engine.functionCallbackInfoPtrManager.GetMockPointer(args);
             try {
-                engine.callV8FunctionCallback(
+                engine.callCSharpFunctionCallback(
                     functionPtr,
                     // getIntPtrManager().GetPointerForJSValue(this),
                     isStatic ? 0 : engine.csharpObjectMap.getCSIdentifierFromObject(this),
@@ -621,16 +616,16 @@ export class PuertsJSEngine {
         }
     }
 
-    callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) {
-        this.unityApi.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, callbackIdx);
+    callCSharpFunctionCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) {
+        this.unityApi.CallCSharpFunctionCallback(functionPtr, infoIntPtr, selfPtr, paramLen, callbackIdx);
     }
 
-    callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) {
-        return this.unityApi.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, callbackIdx);
+    callCSharpConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) {
+        return this.unityApi.CallCSharpConstructorCallback(functionPtr, infoIntPtr, paramLen, callbackIdx);
     }
 
-    callV8DestructorCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, callbackIdx: number) {
-        this.unityApi.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, callbackIdx);
+    callCSharpDestructorCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, callbackIdx: number) {
+        this.unityApi.CallCSharpDestructorCallback(functionPtr, selfPtr, callbackIdx);
     }
 }
 
