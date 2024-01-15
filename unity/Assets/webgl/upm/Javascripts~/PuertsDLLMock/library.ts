@@ -641,6 +641,7 @@ export class PuertsJSEngine {
         var byteCount = this.unityApi.lengthBytesUTF8(returnStr);
         setOutValue32(this, lengthOffset, byteCount);
         if (this.stringBufferSize < byteCount + 1) {
+            this.unityApi._free(this.strBuffer);
             this.strBuffer = this.unityApi._malloc(this.stringBufferSize = Math.max(2 * this.stringBufferSize, byteCount + 1));
         }
         this.unityApi.stringToUTF8(returnStr, this.strBuffer, byteCount + 1);
