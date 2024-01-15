@@ -27,12 +27,8 @@ global.PuertsWebGL = {
     inited: false,
     debug: false,
     // puerts首次初始化时会调用这里，并把Unity的通信接口传入
-    Init({
-        UTF8ToString, _malloc, _memcpy, _free, _setTempRet0, stringToUTF8, lengthBytesUTF8, unityInstance
-    }: PuertsJSEngine.EngineConstructorParam) {
-        const engine = new PuertsJSEngine({
-            UTF8ToString, _malloc, _memcpy, _free, _setTempRet0, stringToUTF8, lengthBytesUTF8, unityInstance
-        });
+    Init(ctorParam: PuertsJSEngine.EngineConstructorParam) {
+        const engine = new PuertsJSEngine(ctorParam);
 
         const executeModuleCache: { [filename: string]: any } = {};
 
@@ -42,7 +38,9 @@ global.PuertsWebGL = {
         // PuertsDLL的所有接口实现
         global.PuertsWebGL = Object.assign(
             global.PuertsWebGL,
-            { unityInstance },
+            { 
+                updateGlobalBufferAndViews: engine.updateGlobalBufferAndViews.bind(engine) 
+            },
             WebGLBackendGetFromJSArgumentAPI(engine),
             WebGLBackendGetFromJSReturnAPI(engine),
             WebGLBackendSetToInvokeJSArgumentApi(engine),
@@ -175,7 +173,7 @@ global.PuertsWebGL = {
                         throw new Error("eval is not supported");
                     }
                     try {
-                        const code = UTF8ToString(codeString);
+                        const code = engine.unityApi.UTF8ToString(codeString);
                         const result = global.eval(code);
                         // return getIntPtrManager().GetPointerForJSValue(result);
                         engine.lastReturnCSResult = result;
@@ -190,7 +188,7 @@ global.PuertsWebGL = {
                     engine.GetJSArgumentsCallback = callback;
                 },
                 ThrowException: function (isolate: IntPtr, /*byte[] */messageString: CSString) {
-                    throw new Error(UTF8ToString(messageString));
+                    throw new Error(engine.unityApi.UTF8ToString(messageString));
                 },
 
                 InvokeJSFunction: function (_function: JSFunctionPtr, hasResult: bool) {

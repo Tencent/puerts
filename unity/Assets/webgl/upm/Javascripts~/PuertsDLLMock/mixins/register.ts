@@ -44,7 +44,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 // blittable
                 if (size) {
                     let csNewID = engine.unityApi._malloc(size);
-                    engine.unityApi._memcpy(csNewID, csID, size);
+                    engine.memcpy(csNewID, csID, size);
                     csharpObjectMap.add(csNewID, this);
                     OnFinalize(this, csNewID, (csIdentifier) => {
                         csharpObjectMap.remove(csIdentifier);

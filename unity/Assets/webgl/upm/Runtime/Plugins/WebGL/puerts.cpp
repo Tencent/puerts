@@ -11,14 +11,14 @@ struct MockV8Value
 
 const int IntSizeOfV8Value = 5;
 
-void *GetPointerFromValue(void *isolate, MockV8Value *value, bool byref)
+inline void *GetPointerFromValue(void *isolate, MockV8Value *value, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
     return (void *)value->FinalValuePointer[0];
 }
 
-void *GetBufferFromValue(void *isolate, MockV8Value *value, int &length, bool byref)
+inline void *GetBufferFromValue(void *isolate, MockV8Value *value, int &length, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
@@ -26,7 +26,7 @@ void *GetBufferFromValue(void *isolate, MockV8Value *value, int &length, bool by
     return (void *)value->FinalValuePointer[0];
 }
 
-double GetDoubleFromValue(void *isolate, MockV8Value *value, bool byref)
+inline double GetDoubleFromValue(void *isolate, MockV8Value *value, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
@@ -34,7 +34,7 @@ double GetDoubleFromValue(void *isolate, MockV8Value *value, bool byref)
     return *ptr;
 }
 
-int64_t GetLongFromValue(void *isolate, MockV8Value *value, bool byref)
+inline int64_t GetLongFromValue(void *isolate, MockV8Value *value, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
