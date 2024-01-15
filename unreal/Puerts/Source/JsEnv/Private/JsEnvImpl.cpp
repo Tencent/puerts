@@ -3883,7 +3883,10 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    uint32_t DelegateHandleId = ++TimerID;
+    while (!(++TimerID))    // TimerID > 0
+    {
+    }
+    uint32_t DelegateHandleId = TimerID;
     FTimerInfo& TimerInfo = TimerInfos.Emplace(DelegateHandleId, FTimerInfo());
     TimerInfo.Callback.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
 
