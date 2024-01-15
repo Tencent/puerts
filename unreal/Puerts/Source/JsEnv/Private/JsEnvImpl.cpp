@@ -781,8 +781,8 @@ FJsEnvImpl::~FJsEnvImpl()
 
         for (auto Iter = TimerInfos.CreateIterator(); Iter; ++Iter)
         {
-            Iter->Callback.Reset();
-            FUETicker::GetCoreTicker().RemoveTicker(Iter->TickerHandle);
+            Iter->Value.Callback.Reset();
+            FUETicker::GetCoreTicker().RemoveTicker(Iter->Value.TickerHandle);
         }
         TimerInfos.Empty();
 
@@ -3883,13 +3883,14 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    int DelegateHandleId = TimerInfos.Add(FTimerInfo());
-    TimerInfos[DelegateHandleId].Callback.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
+    uint32_t DelegateHandleId = TimerID++;
+    FTimerInfo& TimerInfo = TimerInfos.Emplace(DelegateHandleId, FTimerInfo());
+    TimerInfo.Callback.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
 
     float Millisecond = Info[1]->NumberValue(Context).ToChecked();
     float Delay = Millisecond / 1000.f;
 
-    TimerInfos[DelegateHandleId].TickerHandle =
+    TimerInfo.TickerHandle =
         FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this, DelegateHandleId, Continue](float)
                                                  { return this->TimerCallback(DelegateHandleId, Continue); }),
             Delay);
@@ -3912,13 +3913,14 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
     v8::Local<v8::Context> Context = DefaultContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
 
-    if (!TimerInfos.IsValidIndex(DelegateHandleId))
+    FTimerInfo* PTimeInfo = TimerInfos.Find(DelegateHandleId);
+    if (!PTimeInfo)
     {
         Logger->Warn(FString::Printf(TEXT("Try to callback a invalid timer: %d"), DelegateHandleId));
         return false;
     }
 
-    auto OriginHandle = TimerInfos[DelegateHandleId].TickerHandle;
+    auto OriginHandle = PTimeInfo->TickerHandle;
     v8::Local<v8::Function> Function = TimerInfos[DelegateHandleId].Callback.Get(Isolate);
 
     v8::TryCatch TryCatch(Isolate);
@@ -3931,8 +3933,7 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
         Logger->Error(Message);
     }
 
-    auto ClearInCallback =
-        !TimerInfos.IsValidIndex(DelegateHandleId) || (OriginHandle != TimerInfos[DelegateHandleId].TickerHandle);
+    auto ClearInCallback = !TimerInfos.Contains(DelegateHandleId) || (OriginHandle != TimerInfos[DelegateHandleId].TickerHandle);
 
     if (!Continue && !ClearInCallback)
     {
@@ -3944,12 +3945,12 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
 
 void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
 {
-    if (!TimerInfos.IsValidIndex(DelegateHandleId))
+    if (!TimerInfos.Contains(DelegateHandleId))
     {
         return;
     }
     FUETicker::GetCoreTicker().RemoveTicker(TimerInfos[DelegateHandleId].TickerHandle);
-    TimerInfos.RemoveAt(DelegateHandleId);
+    TimerInfos.Remove(DelegateHandleId);
 }
 
 void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)

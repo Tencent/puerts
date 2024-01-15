@@ -685,7 +685,8 @@ private:
         v8::Global<v8::Function> Callback;
         FUETickDelegateHandle TickerHandle;
     };
-    TSparseArray<FTimerInfo> TimerInfos;
+    uint32_t TimerID = 0;
+    TMap<uint32_t, FTimerInfo> TimerInfos;
 
     FUETickDelegateHandle DelegateProxiesCheckerHandler;
 
