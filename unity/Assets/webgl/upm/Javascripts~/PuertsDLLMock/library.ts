@@ -547,9 +547,9 @@ export class PuertsJSEngine {
             stringToUTF8,
             lengthBytesUTF8,
 
-            CallCSharpFunctionCallback: unityInstance.asm.CallCSharpFunctionCallback,
-            CallCSharpConstructorCallback: unityInstance.asm.CallCSharpConstructorCallback,
-            CallCSharpDestructorCallback: unityInstance.asm.CallCSharpDestructorCallback,
+            CallCSharpFunctionCallback: unityInstance._CallCSharpFunctionCallback,
+            CallCSharpConstructorCallback: unityInstance._CallCSharpConstructorCallback,
+            CallCSharpDestructorCallback: unityInstance._CallCSharpDestructorCallback,
             get HEAP32() {
                 return unityInstance.HEAP32;
             },
