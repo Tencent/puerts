@@ -19,7 +19,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
             return (engine.lastReturnCSResult as Date).getTime();
         },
         GetStringFromResult: function (resultInfo: IntPtr, /*out int */length: number) {
-            return engine.JSStringToCSString(engine.lastReturnCSResult, length);
+            return engine.JSStringToTempCSString(engine.lastReturnCSResult, length);
         },
         GetBooleanFromResult: function (resultInfo: IntPtr) {
             return engine.lastReturnCSResult;

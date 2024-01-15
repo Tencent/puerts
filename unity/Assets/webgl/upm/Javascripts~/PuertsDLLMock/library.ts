@@ -539,6 +539,9 @@ export class PuertsJSEngine {
 
     public readonly unityApi: PuertsJSEngine.UnityAPI;
 
+    /** 字符串缓存，默认为256字节 */
+    public strBuffer: number;
+    public stringBufferSize: number = 256;
     public lastReturnCSResult: any = null;
     public lastException: Error = null;
 
@@ -602,6 +605,19 @@ export class PuertsJSEngine {
         var buffer = this.unityApi._malloc(byteCount + 1);
         this.unityApi.stringToUTF8(returnStr, buffer, byteCount + 1);
         return buffer;
+    }
+
+    JSStringToTempCSString(returnStr: string, /** out int */lengthOffset: number) {
+        if (returnStr === null || returnStr === undefined) {
+            return 0;
+        }
+        var byteCount = this.unityApi.lengthBytesUTF8(returnStr);
+        setOutValue32(this, lengthOffset, byteCount);
+        if (this.stringBufferSize < byteCount + 1) {
+            this.strBuffer = this.unityApi._malloc(this.stringBufferSize = Math.max(2 * this.stringBufferSize, byteCount + 1));
+        }
+        this.unityApi.stringToUTF8(returnStr, this.strBuffer, byteCount + 1);
+        return this.strBuffer;
     }
 
     JSStringToCSStringOnStack(returnStr: string, /** out int */lengthOffset: number) {
