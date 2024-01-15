@@ -5,12 +5,14 @@
 export class FunctionCallbackInfo {
     args: any[];
     returnValue: any;
+    stack: number = 0;
 
     constructor(args: any[]) {
         this.args = args;
     }
 
     recycle(): void {
+        this.stack = 0;
         this.args = null;
         this.returnValue = void 0;
     }
@@ -107,11 +109,12 @@ export class FunctionCallbackInfoPtrManager {
         let bufferPtrIn8 = this.allocCallbackInfoMemory(argsLength);
 
         let index: number = this.freeInfosIndex.pop();
+        let functionCallbackInfo: FunctionCallbackInfo;
         // index最小为1
         if (index) {
-            this.infos[index].args = args;
+            (functionCallbackInfo = this.infos[index]).args = args;
         } else {
-            index = this.infos.push(new FunctionCallbackInfo(args)) - 1;
+            index = this.infos.push(functionCallbackInfo = new FunctionCallbackInfo(args)) - 1;
         }
 
         let unityApi = this.engine.unityApi;
@@ -127,6 +130,13 @@ export class FunctionCallbackInfoPtrManager {
             if (jsValueType == 2 || jsValueType == 4 || jsValueType == 512) {
                 // bigint、number or date
                 $FillArgumentFinalNumberValue(this.engine, arg, jsValueType, jsValuePtr + 1);    // value
+            } else if (jsValueType == 8) {
+                if (functionCallbackInfo.stack == 0) {
+                    functionCallbackInfo.stack = unityApi.stackSave();
+                }
+                unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
+                    this.engine, arg, jsValueType, (jsValuePtr + 3) << 2
+                );
             } else if (jsValueType == 64 && arg instanceof Array && arg.length == 1) {
                 // maybe a ref
                 unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
@@ -173,6 +183,9 @@ export class FunctionCallbackInfoPtrManager {
         let info = this.infos[index];
         let ret = info.returnValue;
         this.recycleCallbackInfoMemory(ptrIn8, info.args);
+        if (info.stack) {
+            this.engine.unityApi.stackRestore(info.stack);
+        }
         info.recycle();
         this.freeInfosIndex.push(index);
         return ret;
@@ -184,6 +197,9 @@ export class FunctionCallbackInfoPtrManager {
 
         let info = this.infos[index];
         this.recycleCallbackInfoMemory(ptrIn8, info.args);
+        if (info.stack) {
+            this.engine.unityApi.stackRestore(info.stack);
+        }
         info.recycle();
         this.freeInfosIndex.push(index);
     }
@@ -196,10 +212,6 @@ export class FunctionCallbackInfoPtrManager {
         const argsIndex = (valuePtrIn8 - infoPtrIn8 - 4) / (4 * ArgumentValueLengthIn32);
         return this.infos[callbackInfoIndex].args[argsIndex] as T;
     }
-}
-
-export class Ref<T> {
-    public value: T
 }
 
 /**
@@ -592,6 +604,17 @@ export class PuertsJSEngine {
         return buffer;
     }
 
+    JSStringToCSStringOnStack(returnStr: string, /** out int */lengthOffset: number) {
+        if (returnStr === null || returnStr === undefined) {
+            return 0;
+        }
+        var byteCount = this.unityApi.lengthBytesUTF8(returnStr);
+        setOutValue32(this, lengthOffset, byteCount);
+        var buffer = this.unityApi.stackAlloc(byteCount + 1);
+        this.unityApi.stringToUTF8(returnStr, buffer, byteCount + 1);
+        return buffer;
+    }
+
     makeCSharpFunctionCallbackFunction(isStatic: bool, functionPtr: IntPtr, callbackIdx: number) {
         // 不能用箭头函数！此处返回的函数会赋值到具体的class上，其this指针有含义。
         const engine = this;
@@ -702,7 +725,7 @@ function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValueType: n
     if (!jsValueType) jsValueType = GetType(engine, val);
 
     switch (jsValueType) {
-        case 8: return engine.JSStringToCSString(val, lengthOffset);
+        case 8: return engine.JSStringToCSStringOnStack(val, lengthOffset);
         case 16: return +val;
         case 32: return engine.csharpObjectMap.getCSIdentifierFromObject(val);
         case 64: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
