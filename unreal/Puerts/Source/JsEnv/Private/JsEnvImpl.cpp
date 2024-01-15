@@ -3918,6 +3918,7 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
         return false;
     }
 
+    auto OriginHandle = TimerInfos[DelegateHandleId].TickerHandle;
     v8::Local<v8::Function> Function = TimerInfos[DelegateHandleId].Callback.Get(Isolate);
 
     v8::TryCatch TryCatch(Isolate);
@@ -3930,12 +3931,15 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
         Logger->Error(Message);
     }
 
-    if (!Continue)
+    auto ClearInCallback =
+        !TimerInfos.IsValidIndex(DelegateHandleId) || (OriginHandle != TimerInfos[DelegateHandleId].TickerHandle);
+
+    if (!Continue && !ClearInCallback)
     {
         RemoveFTickerDelegateHandle(DelegateHandleId);
     }
 
-    return Continue && TimerInfos.IsAllocated(DelegateHandleId);
+    return Continue && !ClearInCallback;
 }
 
 void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
