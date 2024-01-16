@@ -357,7 +357,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
             }
         }
 #endif
-        v8::V8::SetFlagsFromString(TCHAR_TO_UTF8(*InFlags));
     }
 
     Started = false;
