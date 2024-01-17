@@ -14,6 +14,10 @@
 
 #if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX || WITH_INSPECTOR) && !defined(WITHOUT_INSPECTOR)
 
+#if USING_UE
+#include "UECompatible.h"
+#endif
+
 #include "V8InspectorImpl.h"
 
 #include <functional>
@@ -37,7 +41,6 @@
 
 #if USING_UE
 #include "Containers/Ticker.h"
-#include "UECompatible.h"
 #else
 #include "Log.h"
 #endif
