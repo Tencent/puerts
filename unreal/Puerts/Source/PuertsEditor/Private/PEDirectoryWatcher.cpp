@@ -56,7 +56,10 @@ bool UPEDirectoryWatcher::Watch(const FString& InDirectory)
                             continue;
                     }
                 }
-                OnChanged.Broadcast(Added, Modified, Removed);
+                if (Added.Num() || Modified.Num() || Removed.Num())
+                {
+                    OnChanged.Broadcast(Added, Modified, Removed);
+                }
             });
         FDirectoryWatcherModule& DirectoryWatcherModule =
             FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
