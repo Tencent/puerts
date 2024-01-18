@@ -44,18 +44,36 @@ class Object
 public:
     Object(pesapi_env env, pesapi_value value)
     {
-        env_holder = pesapi_create_env_ref(env);
-        value_holder = pesapi_create_value_ref(env, value);
+        if (!env || !value || IsNullOrUndefined(env, value))
+        {
+            env_holder = nullptr;
+            value_holder = nullptr;
+        }
+        else
+        {
+            env_holder = pesapi_create_env_ref(env);
+            value_holder = pesapi_create_value_ref(env, value);
+        }
     }
 
     Object(const Object& InOther)
     {
-        env_holder = pesapi_duplicate_env_ref(InOther.env_holder);
-        value_holder = pesapi_duplicate_value_ref(InOther.value_holder);
+        if (!InOther.env_holder || !InOther.value_holder)
+        {
+            env_holder = nullptr;
+            value_holder = nullptr;
+        }
+        else
+        {
+            env_holder = pesapi_duplicate_env_ref(InOther.env_holder);
+            value_holder = pesapi_duplicate_value_ref(InOther.value_holder);
+        }
     }
 
     ~Object()
     {
+        if (!env_holder || !value_holder)
+            return;
         pesapi_release_value_ref(value_holder);
         pesapi_release_env_ref(env_holder);
     }
@@ -63,6 +81,8 @@ public:
     template <typename T>
     T Get(const char* key) const
     {
+        if (!env_holder || !value_holder)
+            return {};
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_ref(env_holder);
         auto object = pesapi_get_value_from_ref(env, value_holder);
@@ -78,6 +98,8 @@ public:
     template <typename T>
     void Set(const char* key, T val) const
     {
+        if (!env_holder || !value_holder)
+            return;
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_ref(env_holder);
         auto object = pesapi_get_value_from_ref(env, value_holder);
@@ -87,6 +109,8 @@ public:
 
     bool IsValid() const
     {
+        if (!env_holder || !value_holder)
+            return false;
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_ref(env_holder);
         auto val = pesapi_get_value_from_ref(env, value_holder);
@@ -115,6 +139,8 @@ public:
     template <typename... Args>
     void Action(Args... cppArgs) const
     {
+        if (!env_holder || !value_holder)
+            return;
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_ref(env_holder);
         auto object = pesapi_get_value_from_ref(env, value_holder);
@@ -130,6 +156,8 @@ public:
     template <typename Ret, typename... Args>
     Ret Func(Args... cppArgs) const
     {
+        if (!env_holder || !value_holder)
+            return {};
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_ref(env_holder);
         auto object = pesapi_get_value_from_ref(env, value_holder);
@@ -149,6 +177,8 @@ public:
 
     bool IsValid() const
     {
+        if (!env_holder || !value_holder)
+            return false;
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_ref(env_holder);
         auto val = pesapi_get_value_from_ref(env, value_holder);
