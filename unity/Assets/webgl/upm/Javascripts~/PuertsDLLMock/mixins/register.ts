@@ -11,7 +11,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
     const returnee = {
         SetGlobalFunction: function (isolate: IntPtr, nameString: CSString, v8FunctionCallback: IntPtr, jsEnvIdx: number, callbackidx: number) {
             const name = engine.unityApi.UTF8ToString(nameString);
-            global[name] = engine.makeV8FunctionCallbackFunction(true, v8FunctionCallback, callbackidx);
+            global[name] = engine.makeCSharpFunctionCallbackFunction(true, v8FunctionCallback, callbackidx);
         },
         _RegisterClass: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, jsEnvIdx: number, callbackidx: number, size: number) {
             const fullName = engine.unityApi.UTF8ToString(fullNameString);
@@ -34,7 +34,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                     const callbackInfoPtr = engine.functionCallbackInfoPtrManager.GetMockPointer(args);
                     // 虽然puerts内Constructor的返回值叫self，但它其实就是CS对象的一个id而已。
                     try {
-                        csID = engine.callV8ConstructorCallback(constructor, callbackInfoPtr, args.length, callbackidx);
+                        csID = engine.callCSharpConstructorCallback(constructor, callbackInfoPtr, args.length, callbackidx);
                     } catch(e) {
                         engine.functionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
                         throw e;
@@ -44,7 +44,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 // blittable
                 if (size) {
                     let csNewID = engine.unityApi._malloc(size);
-                    engine.unityApi._memcpy(csNewID, csID, size);
+                    engine.memcpy(csNewID, csID, size);
                     csharpObjectMap.add(csNewID, this);
                     OnFinalize(this, csNewID, (csIdentifier) => {
                         csharpObjectMap.remove(csIdentifier);
@@ -54,7 +54,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                     csharpObjectMap.add(csID, this);
                     OnFinalize(this, csID, (csIdentifier) => {
                         csharpObjectMap.remove(csIdentifier);
-                        engine.callV8DestructorCallback(destructor || engine.generalDestructor, csIdentifier, callbackidx);
+                        engine.callCSharpDestructorCallback(destructor || engine.generalDestructor, csIdentifier, callbackidx);
                     })
                 }
             }
@@ -83,9 +83,9 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             if (!cls) {
                 return false;
             }
-            const name = engine.unityApi.UTF8ToString(nameString);
 
-            var fn = engine.makeV8FunctionCallbackFunction(isStatic, callback, callbackidx)
+            var fn = engine.makeCSharpFunctionCallbackFunction(isStatic, callback, callbackidx)
+            const name = engine.unityApi.UTF8ToString(nameString);
             if (isStatic) {
                 cls[name] = fn
             } else {
@@ -115,9 +115,9 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 configurable: !dontDelete,
                 enumerable: false
             };
-            attr.get = engine.makeV8FunctionCallbackFunction(isStatic, getter, gettercallbackidx);
+            attr.get = engine.makeCSharpFunctionCallbackFunction(isStatic, getter, gettercallbackidx);
             if (setter) {
-                attr.set = engine.makeV8FunctionCallbackFunction(isStatic, setter, settercallbackidx);
+                attr.set = engine.makeCSharpFunctionCallbackFunction(isStatic, setter, settercallbackidx);
             }
 
             if (isStatic) {

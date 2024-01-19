@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <emscripten.h>
 
 struct MockV8Value
 {
@@ -7,37 +8,49 @@ struct MockV8Value
     int extra;
     int FunctionCallbackInfo;
 };
+struct MockV8ValueNumberOrDate
+{
+    int JSValueType;
+    double value;
+    int FunctionCallbackInfo;
+};
+struct MockV8ValueLong
+{
+    int JSValueType;
+    int64_t value;
+    int FunctionCallbackInfo;
+};
 
 const int IntSizeOfV8Value = 4;
 
-void *GetPointerFromValue(void *isolate, MockV8Value *value, bool byref)
+inline void *GetPointerFromValue(void *isolate, MockV8Value *value, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
-    return (void *)(int)value->FinalValuePointer;
+    return (void *)value->FinalValuePointer;
 }
 
-void *GetBufferFromValue(void *isolate, MockV8Value *value, int &length, bool byref)
+inline void *GetBufferFromValue(void *isolate, MockV8Value *value, int &length, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
     length = value->extra;
-    return (void *)(int)value->FinalValuePointer;
+    return (void *)value->FinalValuePointer;
 }
 
-double GetDoubleFromValue(void *isolate, MockV8Value *value, bool byref)
+inline double GetDoubleFromValue(void *isolate, MockV8Value *value, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
-    double *ptr = reinterpret_cast<double *>(value->FinalValuePointer);
+    double *ptr = reinterpret_cast<double *>(&value->FinalValuePointer);
     return *ptr;
 }
 
-int64_t GetLongFromValue(void *isolate, MockV8Value *value, bool byref)
+inline int64_t GetLongFromValue(void *isolate, MockV8Value *value, bool byref)
 {
     if (byref)
         value = (MockV8Value *)value->extra;
-    int64_t *ptr = reinterpret_cast<int64_t *>(value->FinalValuePointer);
+    int64_t *ptr = reinterpret_cast<int64_t *>(&value->FinalValuePointer);
     return *ptr;
 }
 
@@ -84,19 +97,26 @@ extern "C"
     {
         if (byref)
             value = (MockV8Value *)value->extra;
-        return (bool)(int)value->FinalValuePointer;
+        return (bool)value->FinalValuePointer;
     }
 
     bool ValueIsBigInt(void *isolate, MockV8Value *value, bool byref)
     {
         if (byref)
             value = (MockV8Value *)value->extra;
-        return value->extra == 8; // long == 8byte
+        return value->JSValueType == 2 || value->JSValueType == 4;
     }
 
     int64_t GetBigIntFromValue(void *isolate, MockV8Value *value, bool byref)
     {
-        return GetLongFromValue(isolate, value, byref);
+        if (value->JSValueType == 2) 
+        {
+            return GetLongFromValue(isolate, value, byref);
+        } 
+        else 
+        {
+            return (int64_t)GetDoubleFromValue(isolate, value, byref);
+        }
     }
 
     void *GetObjectFromValue(void *isolate, MockV8Value *value, bool byref)
@@ -117,5 +137,24 @@ extern "C"
     void *GetArrayBufferFromValue(void *isolate, MockV8Value *value, int &length, bool byref)
     {
         return GetBufferFromValue(isolate, value, length, byref);
+    }
+    
+    typedef void(*V8FunctionCallback)(void* Isolate, void* Info, void* Self, int ParamLen, int64_t UserData);
+    typedef void* (*V8ConstructorCallback)(void* Isolate, void* Info, int ParamLen, int64_t UserData);
+    typedef void(*V8DestructorCallback)(void* Self, int64_t UserData);
+
+    void EMSCRIPTEN_KEEPALIVE CallCSharpFunctionCallback(V8FunctionCallback functionPtr, void* infoIntPtr, void *selfPtr, int paramLen, int callbackIdx)
+    {
+        functionPtr(nullptr, infoIntPtr, selfPtr, paramLen, (int64_t)callbackIdx << 32);
+    }
+
+    void* EMSCRIPTEN_KEEPALIVE CallCSharpConstructorCallback(V8ConstructorCallback functionPtr, void* infoIntPtr, int paramLen, int callbackIdx)
+    {
+        return functionPtr(nullptr, infoIntPtr, paramLen, (int64_t)callbackIdx << 32);
+    }
+
+    void EMSCRIPTEN_KEEPALIVE CallCSharpDestructorCallback(V8DestructorCallback functionPtr, void *selfPtr, int callbackIdx)
+    {
+        functionPtr(selfPtr, (int64_t)callbackIdx << 32);
     }
 }

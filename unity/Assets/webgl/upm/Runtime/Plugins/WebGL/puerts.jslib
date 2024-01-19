@@ -4,27 +4,43 @@ var exportDLL = {
         if (!global.PuertsWebGL) {
             throw new Error('cannot found PuertsWebGL script. please find some way to load puerts-runtime.js');
         }
+        let oldUpdateGlobalBufferAndViews = updateGlobalBufferAndViews;
+        updateGlobalBufferAndViews = function (buf) {
+            oldUpdateGlobalBufferAndViews(buf);
+            global.PuertsWebGL.updateGlobalBufferAndViews(
+                HEAP8,
+                HEAPU8,
+                HEAP32,
+                HEAPF32,
+                HEAPF64
+            );
+        }
         global.PuertsWebGL.Init({
-            UTF8ToString: UTF8ToString,
-            _malloc: _malloc,
-            _memcpy: _emscripten_memcpy_big,
-            _free: _free,
-            stringToUTF8: stringToUTF8,
-            lengthBytesUTF8: lengthBytesUTF8,
-
-            unityInstance: Module,
+            UTF8ToString,
+            _malloc,
+            _free,
+            _setTempRet0,
+            stringToUTF8,
+            lengthBytesUTF8,
+            stackAlloc,
+            stackSave,
+            stackRestore,
+            _CallCSharpFunctionCallback: Module._CallCSharpFunctionCallback,
+            _CallCSharpConstructorCallback: Module._CallCSharpConstructorCallback,
+            _CallCSharpDestructorCallback: Module._CallCSharpDestructorCallback,
+            
+            HEAP8,
+            HEAPU8,
+            HEAP32,
+            HEAPF32,
+            HEAPF64,
         });
         global.PuertsWebGL.inited = true;
     },
-    InitPuertsWebGLRollback: function() {
-        // rollback the init when CSharp creating failed.
-        global.PuertsWebGL.inited = false;
-    }
 };
 
 
 [
-    "SetCallV8",
     "GetLibVersion",
     "GetApiLevel",
     "GetLibBackend",
