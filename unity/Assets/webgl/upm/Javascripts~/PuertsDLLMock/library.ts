@@ -25,7 +25,7 @@ export class FunctionCallbackInfo {
 //     int extra; // 3
 //     int FunctionCallbackInfo; // 4
 // };
-const ArgumentValueLengthIn32 = 5; // int count
+const ArgumentValueLengthIn32 = 4; // int count
 /**
  * 把FunctionCallbackInfo以及其参数转化为c#可用的intptr
  */
@@ -135,7 +135,7 @@ export class FunctionCallbackInfoPtrManager {
                     functionCallbackInfo.stack = unityApi.stackSave();
                 }
                 unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
-                    this.engine, arg, jsValueType, (jsValuePtr + 3) << 2
+                    this.engine, arg, jsValueType, (jsValuePtr + 2) << 2
                 );
             } else if (jsValueType == 64 && arg instanceof Array && arg.length == 1) {
                 // maybe a ref
@@ -143,7 +143,7 @@ export class FunctionCallbackInfoPtrManager {
                     this.engine, arg, jsValueType, 0
                 );
 
-                const refPtrIn8 = unityApi.HEAP32[jsValuePtr + 3] = this.allocRefMemory();
+                const refPtrIn8 = unityApi.HEAP32[jsValuePtr + 2] = this.allocRefMemory();
                 const refPtr = refPtrIn8 >> 2
                 const refValueType = unityApi.HEAP32[refPtr] = GetType(this.engine, arg[0])
                 if (refValueType == 2 || refValueType == 4 || refValueType == 512) {
@@ -151,18 +151,18 @@ export class FunctionCallbackInfoPtrManager {
                     $FillArgumentFinalNumberValue(this.engine, arg[0], refValueType, refPtr + 1);    // value
                 } else {
                     unityApi.HEAP32[refPtr + 1] = $GetArgumentFinalValue(
-                        this.engine, arg[0], refValueType, (refPtr + 3) << 2
+                        this.engine, arg[0], refValueType, (refPtr + 2) << 2
                     );
                 }
-                unityApi.HEAP32[refPtr + 4] = bufferPtrIn8; // a pointer to the info
+                unityApi.HEAP32[refPtr + 3] = bufferPtrIn8; // a pointer to the info
 
             } else {
                 // other
                 unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
-                    this.engine, arg, jsValueType, (jsValuePtr + 3) << 2
+                    this.engine, arg, jsValueType, (jsValuePtr + 2) << 2
                 );
             }
-            unityApi.HEAP32[jsValuePtr + 4] = bufferPtrIn8; // a pointer to the info
+            unityApi.HEAP32[jsValuePtr + 3] = bufferPtrIn8; // a pointer to the info
         }
         return bufferPtrIn8;
     }
@@ -206,7 +206,7 @@ export class FunctionCallbackInfoPtrManager {
 
     GetArgsByMockIntPtr<T>(valuePtrIn8: MockIntPtr): T {
         let heap32 = this.engine.unityApi.HEAP32;
-        const infoPtrIn8 = heap32[(valuePtrIn8 >> 2) + 4];
+        const infoPtrIn8 = heap32[(valuePtrIn8 >> 2) + 3];
         const callbackInfoIndex = heap32[infoPtrIn8 >> 2];
 
         const argsIndex = (valuePtrIn8 - infoPtrIn8 - 4) / (4 * ArgumentValueLengthIn32);
@@ -750,12 +750,9 @@ function writeNumber(engine: PuertsJSEngine, ptrIn32: number, value: number): vo
 function $FillArgumentFinalNumberValue(engine: PuertsJSEngine, val: any, jsValueType: number, valPtrIn32: number): number {
     if (val === null || val === undefined) { return; }
     switch (jsValueType) {
-        case 2: {
+        case 2: 
             writeBigInt(engine, valPtrIn32, val);
-            // ValueIsBigInt可据此判断
-            engine.unityApi.HEAP32[valPtrIn32 + 2] = 8; /*long == 8byte*/
-        }
-        break;
+            break;
         case 4: 
             writeNumber(engine, valPtrIn32, +val);
             break;
