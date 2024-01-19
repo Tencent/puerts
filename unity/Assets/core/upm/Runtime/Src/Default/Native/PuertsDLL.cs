@@ -553,11 +553,7 @@ namespace Puerts
         public static extern bool ResultIsBigInt(IntPtr resultInfo);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-#if UNITY_WEBGL && !UNITY_EDITOR
-        public static extern IntPtr GetBigIntFromResult(IntPtr resultInfo);
-#else
         public static extern long GetBigIntFromResult(IntPtr resultInfo);
-#endif
 
         public static long GetBigIntFromResultCheck(IntPtr resultInfo)
         {
@@ -565,11 +561,7 @@ namespace Puerts
             {
                 return 0;
             }
-#if UNITY_WEBGL && !UNITY_EDITOR
-            return Marshal.ReadInt64(GetBigIntFromResult(resultInfo));
-#else
             return GetBigIntFromResult(resultInfo);
-#endif
         }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
