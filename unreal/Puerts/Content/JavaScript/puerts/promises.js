@@ -25,7 +25,9 @@ var global = global || (function () { return this; }());
                 maybeUnhandledRejection.set(promise, {
                     reason,
                 }); //maybe unhandledRejection
-                Promise.resolve().then(_ => unhandledRejection(promise, reason));
+                Promise.resolve()
+                    .then(() => Promise.resolve()) // run after all microtasks
+                    .then(_ => unhandledRejection(promise, reason));
                 break;
             case kPromiseHandlerAddedAfterReject:
                 handlerAddedAfterReject(promise);
