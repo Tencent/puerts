@@ -353,6 +353,13 @@ void UJSGeneratedClass::Restore(UClass* Class)
         PP = &(*PP)->Next;
     }
     Class->ClearFunctionMapsCaches();
+    for (TObjectIterator<UClass> It; It; ++It)
+    {
+        if (It->IsChildOf(Class) && !It->HasAnyClassFlags(CLASS_Abstract))
+        {
+            It->ClearFunctionMapsCaches();
+        }
+    }
 }
 
 void UJSGeneratedClass::InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr)
