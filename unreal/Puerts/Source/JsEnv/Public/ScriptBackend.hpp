@@ -87,18 +87,20 @@
     {                            \
     };
 
-#define DeclOverload(Name, SIGNATURE, M, ...)                                                                                   \
-    template <>                                                                                                                 \
-    struct Name##PuertsOverloads<SIGNATURE>                                                                                     \
-    {                                                                                                                           \
-        static bool overloadCall(::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                           \
-        {                                                                                                                       \
-            return ::PUERTS_NAMESPACE::FuncCallWrapper<SIGNATURE, M, true>::overloadCallWithDefaultValues(info, ##__VA_ARGS__); \
-        }                                                                                                                       \
-        static const ::PUERTS_NAMESPACE::CFunctionInfo* info()                                                                  \
-        {                                                                                                                       \
-            return ::PUERTS_NAMESPACE::FuncCallWrapper<SIGNATURE, M>::info(PUERTS_NAMESPACE::Count(__VA_ARGS__));               \
-        }                                                                                                                       \
+#define DeclOverload(Name, SIGNATURE, M, ...)                                                                           \
+    template <>                                                                                                         \
+    struct Name##PuertsOverloads<SIGNATURE>                                                                             \
+    {                                                                                                                   \
+        static bool overloadCall(::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                   \
+        {                                                                                                               \
+            return ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M,        \
+                true>::overloadCallWithDefaultValues(info, ##__VA_ARGS__);                                              \
+        }                                                                                                               \
+        static const ::PUERTS_NAMESPACE::CFunctionInfo* info()                                                          \
+        {                                                                                                               \
+            return ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M>::info( \
+                PUERTS_NAMESPACE::Count(__VA_ARGS__));                                                                  \
+        }                                                                                                               \
     };
 
 #define SelectOverload(Name, SIGNATURE) Name##PuertsOverloads<SIGNATURE>
