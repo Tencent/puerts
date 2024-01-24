@@ -1627,7 +1627,12 @@ public:
 
     void Register()
     {
-        RegisterAPI::template Register<T>(FinalizeBuilder<T>::Build(), *this);
+        Register(FinalizeBuilder<T>::Build());
+    }
+
+    void Register(FinalizeFuncType Finalize)
+    {
+        RegisterAPI::template Register<T>(Finalize, *this);
     }
 };
 
