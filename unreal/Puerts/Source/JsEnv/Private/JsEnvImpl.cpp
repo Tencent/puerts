@@ -686,7 +686,7 @@ FJsEnvImpl::~FJsEnvImpl()
 
     for (int i = 0; i < ManualReleaseCallbackList.size(); i++)
     {
-        if (ManualReleaseCallbackList[i].IsValid())
+        if (ManualReleaseCallbackList[i].IsValid(true))
         {
             ManualReleaseCallbackList[i].Get()->JsFunction.Reset();
         }
@@ -747,7 +747,7 @@ FJsEnvImpl::~FJsEnvImpl()
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
             Iter->second.JSObject.Reset();
-            if (Iter->second.Proxy.IsValid())
+            if (Iter->second.Proxy.IsValid(true))
             {
                 Iter->second.Proxy->JsFunction.Reset();
             }
@@ -763,7 +763,7 @@ FJsEnvImpl::~FJsEnvImpl()
         {
             for (auto& Callback : KV.Value)
             {
-                if (Callback.IsValid())
+                if (Callback.IsValid(true))
                 {
                     Callback->JsFunction.Reset();
                 }
