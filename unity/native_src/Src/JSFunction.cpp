@@ -98,6 +98,7 @@ namespace puerts
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
 
+        v8::TryCatch TryCatch(Isolate);
         std::vector< v8::Local<v8::Value>> V8Args;
         for (int i = 0; i < Arguments.size(); ++i)
         {
@@ -105,7 +106,15 @@ namespace puerts
             Arguments[i].Persistent.Reset();
         }
         Arguments.clear();
-        v8::TryCatch TryCatch(Isolate);
+        
+        if (TryCatch.HasCaught())
+        {
+            v8::Local<v8::Value> Exception = TryCatch.Exception();
+            LastException.Reset(Isolate, Exception);
+            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, Exception);
+            return false;
+        }
+        
         auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         
         if (TryCatch.HasCaught())

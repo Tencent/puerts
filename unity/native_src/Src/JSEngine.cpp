@@ -585,7 +585,7 @@ namespace puerts
         return Result;
     }
 
-    v8::Local<v8::Value> JSEngine::FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context, int ClassID, void *Ptr)
+    v8::MaybeLocal<v8::Value> JSEngine::FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context, int ClassID, void *Ptr)
     {
         if (!Ptr)
         {
@@ -597,11 +597,22 @@ namespace puerts
         {
             auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
             v8::Local<v8::Value> Args[] = { BindTo };
-            return Templates[ClassID].Get(Isolate)->GetFunction(Context).ToLocalChecked()->NewInstance(Context, 1, Args).ToLocalChecked();
+            auto MaybeFunc = Templates[ClassID].Get(Isolate)->GetFunction(Context);
+            v8::Local<v8::Function> Func;
+            if (MaybeFunc.ToLocal(&Func))
+            {
+                auto MaybeObj = Func->NewInstance(Context, 1, Args);
+                v8::Local<v8::Object> Obj;
+                if (MaybeObj.ToLocal(&Obj))
+                {
+                    return v8::MaybeLocal<v8::Value>(Obj);
+                }
+            }
+            return v8::MaybeLocal<v8::Value>();
         }
         else
         {
-            return v8::Local<v8::Value>::New(Isolate, Iter->second);
+            return v8::MaybeLocal<v8::Value>(v8::Local<v8::Value>::New(Isolate, Iter->second));
         }
     }
 

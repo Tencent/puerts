@@ -463,9 +463,13 @@ V8_EXPORT void SetObjectToOutValue(v8::Isolate* Isolate, v8::Value *Value, int C
     {
         auto Context = Isolate->GetCurrentContext();
         auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-        auto Object = JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr);
-        auto Outer = Value->ToObject(Context).ToLocalChecked();
-        auto ReturnVal = Outer->Set(Context, 0, Object);
+        auto MaybeObj = JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr);
+        v8::Local<v8::Value> Obj;
+        if (MaybeObj.ToLocal(&Obj))
+        {
+            auto Outer = Value->ToObject(Context).ToLocalChecked();
+            auto ReturnVal = Outer->Set(Context, 0, Obj);
+        }
     }
 }
 
@@ -546,7 +550,12 @@ V8_EXPORT void ReturnClass(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<
 V8_EXPORT void ReturnObject(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ClassID, void* Ptr)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    Info.GetReturnValue().Set(JsEngine->FindOrAddObject(Isolate, Isolate->GetCurrentContext(), ClassID, Ptr));
+    auto MaybeObj = JsEngine->FindOrAddObject(Isolate, Isolate->GetCurrentContext(), ClassID, Ptr);
+    v8::Local<v8::Value> Obj;
+    if (MaybeObj.ToLocal(&Obj))
+    {
+        Info.GetReturnValue().Set(Obj);
+    }
 }
 
 V8_EXPORT void ReturnNumber(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, double Number)
@@ -685,9 +694,13 @@ V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* 
     v8::Local<v8::Context> Context = Function->ResultInfo.Context.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    auto localObj = JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr);
-    Value.Persistent.Reset(Isolate, localObj);
-    Function->Arguments.push_back(std::move(Value));
+    auto MaybeObj = JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr);
+    v8::Local<v8::Value> Obj;
+    if (MaybeObj.ToLocal(&Obj))
+    {
+        Value.Persistent.Reset(Isolate, Obj);
+        Function->Arguments.push_back(std::move(Value));
+    }
 }
 
 V8_EXPORT void PushJSFunctionForJSFunction(JSFunction *F, JSFunction *V)
