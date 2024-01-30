@@ -14,11 +14,11 @@
 
 #if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX || WITH_INSPECTOR) && !defined(WITHOUT_INSPECTOR)
 
+#include "V8InspectorImpl.h"
+
 #if USING_UE
 #include "UECompatible.h"
 #endif
-
-#include "V8InspectorImpl.h"
 
 #include <functional>
 #include <string>
