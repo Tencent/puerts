@@ -77,6 +77,8 @@ public:
     std::string LastExceptionInfo;
 
     v8::UniquePersistent<v8::Value> LastException;
+    
+    bool PushArgumentException;
 
     FResultInfo ResultInfo;
 

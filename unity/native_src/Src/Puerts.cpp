@@ -691,6 +691,7 @@ V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* 
     auto Isolate = Function->ResultInfo.Isolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
+    v8::TryCatch TryCatch(Isolate);
     v8::Local<v8::Context> Context = Function->ResultInfo.Context.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
@@ -700,6 +701,15 @@ V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* 
     {
         Value.Persistent.Reset(Isolate, Obj);
         Function->Arguments.push_back(std::move(Value));
+    }
+    else
+    {
+        if (TryCatch.HasCaught())
+        {
+            v8::Local<v8::Value> Exception = TryCatch.Exception();
+            Function->LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, Exception);
+            Function->PushArgumentException = true;
+        }
     }
 }
 

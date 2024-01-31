@@ -100,6 +100,7 @@ namespace puerts
 
         v8::TryCatch TryCatch(Isolate);
         std::vector< v8::Local<v8::Value>> V8Args;
+        PushArgumentException = false;
         for (int i = 0; i < Arguments.size(); ++i)
         {
             V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
@@ -107,11 +108,9 @@ namespace puerts
         }
         Arguments.clear();
         
-        if (TryCatch.HasCaught())
+        if (PushArgumentException)
         {
-            v8::Local<v8::Value> Exception = TryCatch.Exception();
-            LastException.Reset(Isolate, Exception);
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, Exception);
+            PushArgumentException = false;
             return false;
         }
         
