@@ -34,6 +34,7 @@
 #include <mutex>
 #include <map>
 
+// Because we need to hold the pointer, we must ensure that GC does not do memory reorganization.
 static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
 
 using namespace il2cpp::vm;
