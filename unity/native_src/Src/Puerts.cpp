@@ -706,8 +706,8 @@ V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* 
     {
         if (TryCatch.HasCaught())
         {
-            v8::Local<v8::Value> Exception = TryCatch.Exception();
-            Function->LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, Exception);
+            //v8::Local<v8::Value> Exception = TryCatch.Exception();
+            Function->LastExceptionInfo = "abcd";
             Function->PushArgumentException = true;
         }
     }
