@@ -2353,7 +2353,8 @@ bool FJsEnvImpl::AddToDelegate(
 
     auto JsCallbacks = Iter->second.JsCallbacks.Get(Isolate);
 
-    (void) (JsCallbacks->Set(Context, JsCallbacks->Length(), JsFunction));    // push
+    bool bSingleDelegate = Iter->second.DelegateProperty != nullptr;
+    (void) (JsCallbacks->Set(Context, bSingleDelegate ? 0 : JsCallbacks->Length(), JsFunction));    // push
 
     if (Iter->second.Proxy.IsValid())
     {
