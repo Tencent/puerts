@@ -2417,12 +2417,18 @@ bool FJsEnvImpl::AddToDelegate(
 
     if (InitApplyFunc)
     {
+        v8::TryCatch TryCatch(Isolate);
         v8::Local<v8::Value> Args[] = {JsCallbacks};
 
         v8::Local<v8::Value> Apply;
         if (!GenListApply.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args).ToLocal(&Apply) || !Apply->IsFunction())
         {
-            Logger->Error("gen callback apply fail!");
+            FString ErrMsg = TEXT("Unknow");
+            if (TryCatch.HasCaught())
+            {
+                ErrMsg = FV8Utils::TryCatchToString(Isolate, &TryCatch);
+            }
+            Logger->Error(FString::Printf(TEXT("gen callback apply fail: %s"), *ErrMsg));
             return false;
         }
         DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(Apply));
