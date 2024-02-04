@@ -2652,7 +2652,6 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Iter->second.Proxy.IsValid())
     {
         Iter->second.Proxy->JsFunction.Reset();
-        Iter->second.Proxy.Reset();
         SysObjectRetainer.Release(Iter->second.Proxy.Get());
     }
 
