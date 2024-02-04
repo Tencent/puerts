@@ -14,16 +14,20 @@ var global = global || (function () { return this; }());
     let loadCPPType = global.puerts.loadCPPType;
     
     let cache = Object.create(null);
-    
+
     let UE = new Proxy(cache, {
-        get: function(classWrapers, name) {
-            if (!(name in classWrapers)) {
-                classWrapers[name] = loadUEType(name);
+        get : function(classWrapers, name)
+        {
+            let value = classWrapers[name];
+            if (!value)
+            {
+                value = loadUEType(name);
+                classWrapers[name] = value;
             }
-            return classWrapers[name];
+            return value;
         }
     });
-    
+
     const TNAMESPACE = 0;
     const TENUM = 1
     const TBLUEPRINT = 2;
@@ -76,10 +80,13 @@ var global = global || (function () { return this; }());
     
     let CPP = new Proxy(cache, {
         get: function(classWrapers, name) {
-            if (!(name in classWrapers)) {
-                classWrapers[name] = loadCPPType(name);
+            let value = classWrapers[name];
+            if (!value)
+            {
+                value = loadCPPType(name);
+                classWrapers[name] = value;
             }
-            return classWrapers[name];
+            return value;
         }
     });
     
