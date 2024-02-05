@@ -70,12 +70,12 @@
 
 #define RegisterTArray(CLS)                                                                              \
     PUERTS_NAMESPACE::DefineClass<TArray<CLS>>()                                                         \
-        .Method("Add", SelectFunction(int (TArray<CLS>::*)(const CLS&), &TArray<CLS>::Add))              \
+        .Method("Add", SelectFunction(int (TArray<CLS>::*)(CLS const&), &TArray<CLS>::Add))              \
         .Method("Get", SelectFunction(CLS& (TArray<CLS>::*) (int), &TArray<CLS>::operator[]))            \
         .Method("GetRef", SelectFunction(CLS& (TArray<CLS>::*) (int), &TArray<CLS>::operator[]))         \
         .Method("Num", MakeFunction(&TArray<CLS>::Num))                                                  \
         .Method("Contains", MakeFunction(&TArray<CLS>::Contains<CLS>))                                   \
-        .Method("FindIndex", SelectFunction(int (TArray<CLS>::*)(const CLS&) const, &TArray<CLS>::Find)) \
+        .Method("FindIndex", SelectFunction(int (TArray<CLS>::*)(CLS const&) const, &TArray<CLS>::Find)) \
         .Method("RemoveAt", SelectFunction(void (TArray<CLS>::*)(int), &TArray<CLS>::RemoveAt))          \
         .Method("IsValidIndex", MakeFunction(&TArray<CLS>::IsValidIndex))                                \
         .Method("Empty", MakeFunction(&TArray<CLS>::Empty))                                              \
