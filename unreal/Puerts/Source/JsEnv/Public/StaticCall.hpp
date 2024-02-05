@@ -781,7 +781,7 @@ private:
             return false;
 
         ArgumentsHolder cppArgHolders(
-            std::tuple<typename API::ContextType, typename API::ValueType>{context, GetArg(info, index)}...);
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, API::GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
             cppArgHolders, API::GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
@@ -813,10 +813,10 @@ private:
             return false;
 
         ArgumentsHolder cppArgHolders(
-            std::tuple<typename API::ContextType, typename API::ValueType>{context, GetArg(info, index)}...);
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, API::GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
-            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+            cppArgHolders, API::GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         API::SetReturn(
             info, ReturnConverter<Ret>::Convert(context,
