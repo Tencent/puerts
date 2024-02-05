@@ -51,7 +51,7 @@ enum { max_signal_number = 128 };
 
 extern ASIO_DECL struct signal_state* get_signal_state();
 
-extern "C" ASIO_DECL void asio_signal_handler(int signal_number);
+extern "C" ASIO_DECL void puerts_asio_signal_handler(int signal_number);
 
 class signal_set_service :
   public execution_context_service_base<signal_set_service>

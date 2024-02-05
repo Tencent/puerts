@@ -58,7 +58,7 @@ signal_state* get_signal_state()
   return &state;
 }
 
-void asio_signal_handler(int signal_number)
+void puerts_asio_signal_handler(int signal_number)
 {
 #if defined(ASIO_WINDOWS) \
   || defined(ASIO_WINDOWS_RUNTIME) \
@@ -78,7 +78,7 @@ void asio_signal_handler(int signal_number)
        //   || defined(__CYGWIN__)
 
 #if defined(ASIO_HAS_SIGNAL) && !defined(ASIO_HAS_SIGACTION)
-  ::signal(signal_number, asio_signal_handler);
+  ::signal(signal_number, puerts_asio_signal_handler);
 #endif // defined(ASIO_HAS_SIGNAL) && !defined(ASIO_HAS_SIGACTION)
 }
 
@@ -276,11 +276,11 @@ puerts_asio::error_code signal_set_service::add(
       using namespace std; // For memset.
       struct sigaction sa;
       memset(&sa, 0, sizeof(sa));
-      sa.sa_handler = asio_signal_handler;
+      sa.sa_handler = puerts_asio_signal_handler;
       sigfillset(&sa.sa_mask);
       if (::sigaction(signal_number, &sa, 0) == -1)
 # else // defined(ASIO_HAS_SIGACTION)
-      if (::signal(signal_number, asio_signal_handler) == SIG_ERR)
+      if (::signal(signal_number, puerts_asio_signal_handler) == SIG_ERR)
 # endif // defined(ASIO_HAS_SIGACTION)
       {
 # if defined(ASIO_WINDOWS) || defined(__CYGWIN__)
