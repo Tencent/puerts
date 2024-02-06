@@ -773,6 +773,7 @@ function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValueType: n
         case 128: return jsFunctionOrObjectFactory.getOrCreateJSObject(val).id;
         case 256: return jsFunctionOrObjectFactory.getOrCreateJSFunction(val).id;
         case 1024: {
+            if (val instanceof ArrayBuffer) val = new Uint8Array(val);
             let ptr = engine.unityApi._malloc(val.byteLength);
             engine.unityApi.HEAPU8.set(val, ptr);
             setOutValue32(engine, lengthOffset, val.byteLength);
