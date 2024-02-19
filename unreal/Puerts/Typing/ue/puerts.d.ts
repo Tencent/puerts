@@ -122,7 +122,7 @@ declare module "ue" {
         [P in DataPropertyNames<T>]: T[P] extends object ? DataPropertiesOnly<T[P]> : T[P]
     };
 
-    function NewObject(Cls: Class, Outer?: Object, Name?:string, ObjectFlags?: number): Object;
+    function NewObject(Cls: Class, Outer?: Object, Name?:string, ObjectFlags?: number, JsTakeRef?: boolean): Object;
     
     function NewStruct(St: ScriptStruct): object;
 

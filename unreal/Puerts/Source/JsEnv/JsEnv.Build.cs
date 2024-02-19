@@ -87,6 +87,16 @@ public class JsEnv : ModuleRules
             PublicDefinitions.Add("PUERTS_FORCE_CPP_UFUNCTION=0");
         }
 
+        bool bTsKeepReference = true;
+        if(bTsKeepReference)
+        {
+            PublicDefinitions.Add("PUERTS_TS_KEEP_REFERENCE=1");
+        }
+        else
+        {
+            PublicDefinitions.Add("PUERTS_TS_KEEP_REFERENCE=0");
+        }
+
         bool UseWasm = false;
         if (UseWasm)
         {
