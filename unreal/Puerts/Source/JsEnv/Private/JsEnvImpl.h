@@ -134,7 +134,7 @@ public:
 
 public:
     bool IsTypeScriptGeneratedClass(UClass* Class);
-    
+
     void SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper);
 
     virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) override;

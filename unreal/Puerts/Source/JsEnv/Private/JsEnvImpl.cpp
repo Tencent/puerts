@@ -1059,21 +1059,21 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         {
             if (Info[4]->BooleanValue(Isolate))
             {
-
             }
             else
             {
                 NeedJsTakeRef = false;
             }
         }
-    #if PUERTS_TS_KEEP_REFERENCE
-    #else
-        if (NeedJsTakeRef) {
+#if PUERTS_TS_KEEP_REFERENCE
+#else
+        if (NeedJsTakeRef)
+        {
             bool Existed;
             auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
-            SetJsTakeRef(Object,static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
+            SetJsTakeRef(Object, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
         }
-    #endif
+#endif
         Info.GetReturnValue().Set(Result);
     }
     else
@@ -1708,8 +1708,9 @@ void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
 #if PUERTS_TS_KEEP_REFERENCE
     const bool IsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;
 #else
-    const bool ClassWrapperIsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef; //这个值只有mixin会进行设置
-    const bool IsAsset = UEObject->HasAnyFlags(RF_DefaultSubObject | RF_ClassDefaultObject | RF_ArchetypeObject) || UEObject->IsAsset();
+    const bool ClassWrapperIsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;    //这个值只有mixin会进行设置
+    const bool IsAsset =
+        UEObject->HasAnyFlags(RF_DefaultSubObject | RF_ClassDefaultObject | RF_ArchetypeObject) || UEObject->IsAsset();
     const bool IsUClass = UEObject->IsA<UClass>();
     const bool IsNativeTakeJsRef = (IsAsset || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
 #endif
@@ -1727,7 +1728,8 @@ void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
 void FJsEnvImpl::SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper)
 {
     UserObjectRetainer.Retain(UEObject);
-    ObjectMap[UEObject].SetWeak<UClass>(Cast<UClass>(ClassWrapper->Struct.Get()), FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+    ObjectMap[UEObject].SetWeak<UClass>(
+        Cast<UClass>(ClassWrapper->Struct.Get()), FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)

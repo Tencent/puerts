@@ -87,7 +87,7 @@ protected:
 
     TWeakObjectPtr<UStruct> Struct;
 
-    #if PUERTS_TS_KEEP_REFERENCE
+#if PUERTS_TS_KEEP_REFERENCE
     bool IsNativeTakeJsRef = false;
 #else
     bool IsNativeTakeJsRef = true;
