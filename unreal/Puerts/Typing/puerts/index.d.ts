@@ -90,5 +90,5 @@ declare module "puerts" {
 
     function $async<T>(x: T) : AsyncObject<T>;*/
 
-    function SetJsTakeRef(object : Object) : void;
+    function setJsTakeRef(object : Object) : void;
 }
