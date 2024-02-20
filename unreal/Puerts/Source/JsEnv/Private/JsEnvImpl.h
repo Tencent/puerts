@@ -135,6 +135,8 @@ public:
 public:
     bool IsTypeScriptGeneratedClass(UClass* Class);
 
+    void SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper);
+
     virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) override;
 
     virtual void UnBind(UClass* Class, UObject* UEObject) override;
@@ -280,6 +282,8 @@ private:
     void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void SetJsTakeRefInTs(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     bool GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro** PropertyPtr);
 

@@ -498,6 +498,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MethodBindingHelper<&FJsEnvImpl::NewObjectByClass>::Bind(Isolate, Context, Global, "__tgjsNewObject", This);
 
+    MethodBindingHelper<&FJsEnvImpl::SetJsTakeRefInTs>::Bind(Isolate, Context, Global, "__tgjsSetJsTakeRef", This);
+
     MethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Isolate, Context, Global, "__tgjsNewStruct", This);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -1032,7 +1034,7 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
 
     if (Class)
     {
-        if (Info.Length() > 1)
+        if (Info.Length() > 1 && !Info[1]->IsNullOrUndefined())
         {
             Outer = FV8Utils::GetUObject(Context, Info[1]);
             if (FV8Utils::IsReleasedPtr(Outer))
@@ -1041,17 +1043,37 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
                 return;
             }
         }
-        if (Info.Length() > 2)
+        if (Info.Length() > 2 && !Info[2]->IsNullOrUndefined())
         {
             Name = FName(*FV8Utils::ToFString(Isolate, Info[2]));
         }
-        if (Info.Length() > 3)
+        if (Info.Length() > 3 && !Info[3]->IsNullOrUndefined())
         {
             ObjectFlags = (EObjectFlags) (Info[3]->Int32Value(Context).ToChecked());
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
         auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
+        bool NeedJsTakeRef = true;
+        if (Info.Length() > 4 && !Info[4]->IsNullOrUndefined())
+        {
+            if (Info[4]->BooleanValue(Isolate))
+            {
+            }
+            else
+            {
+                NeedJsTakeRef = false;
+            }
+        }
+#if PUERTS_KEEP_UOBJECT_REFERENCE
+#else
+        if (NeedJsTakeRef)
+        {
+            bool Existed;
+            auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
+            SetJsTakeRef(Object, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
+        }
+#endif
         Info.GetReturnValue().Set(Result);
     }
     else
@@ -1683,20 +1705,31 @@ bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
 void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
     v8::Local<v8::Object> JSObject)    // Just call in FClassReflection::Call, new a Object
 {
-    if (!ClassWrapper->IsNativeTakeJsRef)
-    {
-        UserObjectRetainer.Retain(UEObject);
-    }
+#if PUERTS_KEEP_UOBJECT_REFERENCE
+    const bool IsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;
+#else
+    const bool ClassWrapperIsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;    //这个值只有mixin会进行设置
+    const bool IsAsset =
+        UEObject->HasAnyFlags(RF_DefaultSubObject | RF_ClassDefaultObject | RF_ArchetypeObject) || UEObject->IsAsset();
+    const bool IsUClass = UEObject->IsA<UClass>();
+    const bool IsNativeTakeJsRef = (IsAsset || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
+#endif
 
     DataTransfer::SetPointer(MainIsolate, JSObject, UEObject, 0);
     DataTransfer::SetPointer(MainIsolate, JSObject, nullptr, 1);
     ObjectMap.Emplace(UEObject, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
 
-    if (!ClassWrapper->IsNativeTakeJsRef)
+    if (!IsNativeTakeJsRef)
     {
-        ObjectMap[UEObject].SetWeak<UClass>(
-            (UClass*) ClassWrapper->Struct.Get(), FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        SetJsTakeRef(UEObject, ClassWrapper);
     }
+}
+
+void FJsEnvImpl::SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper)
+{
+    UserObjectRetainer.Retain(UEObject);
+    ObjectMap[UEObject].SetWeak<UClass>(
+        Cast<UClass>(ClassWrapper->Struct.Get()), FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)
@@ -3012,9 +3045,9 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
                         .ToLocalChecked());
 #endif
             }
-
+#if PUERTS_KEEP_UOBJECT_REFERENCE
             StructWrapper->IsNativeTakeJsRef = StructWrapper->IsTypeScriptGeneratedClass = IsTypeScriptGeneratedClass(Class);
-
+#endif
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)
             {
@@ -3284,6 +3317,19 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
     {
         FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("argument #0 expect a UField")));
     }
+}
+
+void FJsEnvImpl::SetJsTakeRefInTs(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    CHECK_V8_ARGS(EArgObject);
+
+    UObject* Object = FV8Utils::GetUObject(Context, Info[0]);
+
+    bool Existed;
+    auto TemplateInfoPtr = GetTemplateInfoOfType(Object->GetClass(), Existed);
+    SetJsTakeRef(Object, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
 }
 
 bool FJsEnvImpl::GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro** PropertyPtr)
