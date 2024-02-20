@@ -3052,10 +3052,15 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
             if (SuperClass)
             {
                 bool Dummy;
-                if (IsReuseTemplate)
-                    __USE(GetTemplateInfoOfType(SuperClass, Dummy));
-                else
-                    Template->Inherit(GetTemplateInfoOfType(SuperClass, Dummy)->Template.Get(Isolate));
+                auto SuperTemplateInfo = GetTemplateInfoOfType(SuperClass, Dummy);
+                if (!IsReuseTemplate)
+                {
+                    Template->Inherit(SuperTemplateInfo->Template.Get(Isolate));
+                }
+                if (SuperTemplateInfo->StructWrapper->IsNativeTakeJsRef)
+                {
+                    StructWrapper->IsNativeTakeJsRef = true;
+                }
             }
         }
 
@@ -4315,6 +4320,16 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     bool IsReuseTemplate = false;
     auto StructWrapper = GetStructWrapper(New, IsReuseTemplate);
     StructWrapper->IsNativeTakeJsRef = TakeJsObjectRef;
+    if (TakeJsObjectRef)
+    {
+        for (auto& KV : TypeToTemplateInfoMap)
+        {
+            if (New != KV.Key && KV.Key->IsChildOf(New))
+            {
+                KV.Value.StructWrapper->IsNativeTakeJsRef = true;
+            }
+        }
+    }
     Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, New->GetClass(), New));
 }
 #endif
