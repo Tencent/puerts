@@ -1065,7 +1065,7 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
                 NeedJsTakeRef = false;
             }
         }
-#if PUERTS_TS_KEEP_REFERENCE
+#if PUERTS_KEEP_UOBJECT_REFERENCE
 #else
         if (NeedJsTakeRef)
         {
@@ -1705,7 +1705,7 @@ bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
 void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
     v8::Local<v8::Object> JSObject)    // Just call in FClassReflection::Call, new a Object
 {
-#if PUERTS_TS_KEEP_REFERENCE
+#if PUERTS_KEEP_UOBJECT_REFERENCE
     const bool IsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;
 #else
     const bool ClassWrapperIsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;    //这个值只有mixin会进行设置
@@ -3045,7 +3045,7 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
                         .ToLocalChecked());
 #endif
             }
-#if PUERTS_TS_KEEP_REFERENCE
+#if PUERTS_KEEP_UOBJECT_REFERENCE
             StructWrapper->IsNativeTakeJsRef = StructWrapper->IsTypeScriptGeneratedClass = IsTypeScriptGeneratedClass(Class);
 #endif
             auto SuperClass = Class->GetSuperClass();

@@ -123,7 +123,7 @@ var global = global || (function () { return this; }());
     let rawmakeclass = global.__tgjsMakeUClass
     global.__tgjsMakeUClass = undefined;
 
-    puerts.SetJsTakeRef = global.__tgjsSetJsTakeRef
+    puerts.setJsTakeRef = global.__tgjsSetJsTakeRef
     global.__tgjsSetJsTakeRef = undefined
     
     function defaultUeConstructor(){};
