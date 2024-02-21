@@ -4320,14 +4320,11 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     bool IsReuseTemplate = false;
     auto StructWrapper = GetStructWrapper(New, IsReuseTemplate);
     StructWrapper->IsNativeTakeJsRef = TakeJsObjectRef;
-    if (TakeJsObjectRef)
+    for (auto& KV : TypeToTemplateInfoMap)
     {
-        for (auto& KV : TypeToTemplateInfoMap)
+        if (New != KV.Key && KV.Key->IsChildOf(New))
         {
-            if (New != KV.Key && KV.Key->IsChildOf(New))
-            {
-                KV.Value.StructWrapper->IsNativeTakeJsRef = true;
-            }
+            KV.Value.StructWrapper->IsNativeTakeJsRef = TakeJsObjectRef;
         }
     }
     Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, New->GetClass(), New));
