@@ -1709,10 +1709,9 @@ void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
     const bool IsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;
 #else
     const bool ClassWrapperIsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;    //这个值只有mixin会进行设置
-    const bool IsAsset =
-        UEObject->HasAnyFlags(RF_DefaultSubObject | RF_ClassDefaultObject | RF_ArchetypeObject) || UEObject->IsAsset();
     const bool IsUClass = UEObject->IsA<UClass>();
-    const bool IsNativeTakeJsRef = (IsAsset || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
+    const bool IsCDO = UEObject->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
+    const bool IsNativeTakeJsRef = (IsCDO || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
 #endif
 
     DataTransfer::SetPointer(MainIsolate, JSObject, UEObject, 0);
