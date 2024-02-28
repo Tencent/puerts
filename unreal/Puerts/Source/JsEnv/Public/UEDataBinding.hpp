@@ -303,7 +303,8 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
     {
-        return DataTransfer::FindOrAddObject<T>(context->GetIsolate(), context, value);
+        using TypeWithoutConst = typename std::remove_const<T>::type;
+        return DataTransfer::FindOrAddObject<TypeWithoutConst>(context->GetIsolate(), context, (TypeWithoutConst*) (value));
     }
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
