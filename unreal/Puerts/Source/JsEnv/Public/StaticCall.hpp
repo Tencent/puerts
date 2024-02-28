@@ -356,9 +356,10 @@ private:
                                 (is_objecttype<typename std::decay<T>::type>::value ||
                                     is_uetype<typename std::decay<T>::type>::value)>::type>
     {
-        static typename API::ValueType Convert(typename API::ContextType context, typename std::decay<T>::type ret)
+        static typename API::ValueType Convert(typename API::ContextType context, const typename std::decay<T>::type& ret)
         {
-            return DecayTypeConverter<typename std::decay<T>::type*>::toScript(context, &ret);
+            return DecayTypeConverter<typename std::decay<T>::type*>::toScript(
+                context, &(const_cast<typename std::decay<T>::type&>(ret)));
         }
     };
 
