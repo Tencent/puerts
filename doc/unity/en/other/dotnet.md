@@ -6,4 +6,10 @@ PuerTS Unity is not only limited to Unity C#, but can also be used in a pure Dot
 2. Add the PUERTS_GENERAL macro.
 3. Write a specific Loader to allow PuerTS to load the built-in JS.
 
-You can find a Dotnet unit test project made using PuerTS in the unity/test directory of the official repository. You can refer to it to set up your own Dotnet project.
+
+## Sample
+PuerTS itself doing code unittest by DotNet. Your can refer to the `github action` configuration file: `<repository>/.github/workflows/unity-unittest.yml`, do the following:
+
+cd into `<repository>/unity/test/dotnet`, run `node ../../cli dotnet-test v8_9.4` .
+
+then a Dotnet project named `vsauto-static` will be generated in the working directory
