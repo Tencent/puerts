@@ -1,3 +1,5 @@
+#if defined(__EMSCRIPTEN__)
+
 #include <cstdint>
 #include <emscripten.h>
 
@@ -158,3 +160,5 @@ extern "C"
         functionPtr(selfPtr, (int64_t)callbackIdx << 32);
     }
 }
+
+#endif
