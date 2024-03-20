@@ -557,7 +557,7 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
     v8::ScriptCompiler::Source source(emptyStrV8, origin);
     v8::Local<v8::Module> entryModule;
     
-    if (v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions).ToLocal(&entryModule))
+    if (!v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions).ToLocal(&entryModule))
     {
         FV8Utils::ThrowException(Isolate, "Syntax error");
         return;
