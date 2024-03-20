@@ -757,8 +757,19 @@ bool puerts::esmodule::LinkModule(
         }
         if (!isFromCache) 
         {
-            if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
+            v8::Local<v8::Module> Module = MaybeModule.ToLocalChecked();
+            if (!LinkModule(Context, Module)) 
             {
+                puerts::BackendEnv* mm = puerts::BackendEnv::Get(Isolate);
+
+#if V8_94_OR_NEWER
+                auto Specifier_std = mm->ScriptIdToPathMap[Module->ScriptId()];
+                mm->ScriptIdToPathMap.erase(Module->ScriptId());
+#else 
+                auto Specifier_std =  = mm->ScriptIdToPathMap[Module->GetIdentityHash()];
+                mm->ScriptIdToPathMap.erase(Module->GetIdentityHash());
+#endif
+                mm->PathToModuleMap.erase(Specifier_std);
                 return false;
             }
         }
