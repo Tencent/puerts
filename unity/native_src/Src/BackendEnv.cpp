@@ -13,8 +13,6 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#include "V8Utils.h"
-
 #if WITH_NODEJS
 
 #pragma warning(push, 0)
@@ -555,13 +553,8 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
                     v8::PrimitiveArray::New(Isolate, 10)
     );
     v8::ScriptCompiler::Source source(emptyStrV8, origin);
-    v8::Local<v8::Module> entryModule;
-    
-    if (!v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions).ToLocal(&entryModule))
-    {
-        FV8Utils::ThrowException(Isolate, "Syntax error");
-        return;
-    }
+    v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
+            .ToLocalChecked();
 
     v8::MaybeLocal<v8::Module> mod = puerts::esmodule::ResolveModule(Context, Specifier_v8, entryModule);
     if (mod.IsEmpty())
