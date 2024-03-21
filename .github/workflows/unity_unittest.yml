@@ -5,7 +5,7 @@ on:
   push:
     paths: 
       - unity/Assets/**
-      - unity/dotnet-test/**
+      - unity/test/**
       - unity/native_src/**
       - unity/native_src_il2cpp/**
       - unity/cli/**
