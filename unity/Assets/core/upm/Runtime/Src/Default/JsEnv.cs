@@ -20,6 +20,13 @@ namespace Puerts
     public delegate void JSFunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
 
+    public enum BackendType: int
+    {
+        V8 = 0,
+        Node = 1,
+        QuickJS = 2
+    }
+
     public class JsEnv : IDisposable
     {
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
@@ -79,21 +86,21 @@ namespace Puerts
         internal Action OnDispose;
 
         public JsEnv() 
-            : this(new DefaultLoader(), -1, IntPtr.Zero, IntPtr.Zero)
+            : this(new DefaultLoader(), -1, BackendType.V8, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
         public JsEnv(ILoader loader, int debugPort = -1)
-             : this(loader, debugPort, IntPtr.Zero, IntPtr.Zero)
+             : this(loader, debugPort, BackendType.V8, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
         public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
-            : this(loader, -1, externalRuntime, externalContext)
+            : this(loader, -1, BackendType.V8, externalRuntime, externalContext)
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
+        public JsEnv(ILoader loader, int debugPort, BackendType backend, IntPtr externalRuntime, IntPtr externalContext)
         {
             const int libVersionExpect = 32;
             int libVersion = PuertsDLL.GetApiLevel();
@@ -107,11 +114,11 @@ namespace Puerts
             
             if (externalRuntime != IntPtr.Zero)
             {
-                isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
+                isolate = PuertsDLL.CreateJSEngineWithExternalEnv((int)backend, externalRuntime, externalContext);
             }
             else
             {
-                isolate = PuertsDLL.CreateJSEngine();
+                isolate = PuertsDLL.CreateJSEngine((int)backend);
             }
             
             if (isolate == IntPtr.Zero)
