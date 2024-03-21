@@ -12,7 +12,7 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
-      - .github/workflows/unity-unittest.yml
+      - .github/workflows/unity_unittest.yml
   
 env:
   RUNID: 613573412
