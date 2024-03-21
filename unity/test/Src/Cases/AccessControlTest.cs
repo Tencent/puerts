@@ -60,8 +60,8 @@ namespace Puerts.UnitTest
         [OneTimeTearDown]
         public void Cleanup()
         {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            //GC.Collect();
+            //GC.WaitForPendingFinalizers();
             DefaultDontBindingEnv.Dispose();
         }
 #endif

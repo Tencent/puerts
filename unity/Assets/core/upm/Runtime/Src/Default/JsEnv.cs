@@ -822,12 +822,13 @@ namespace Puerts
             }
         }
 
-        internal void CheckLiveness()
+        internal bool CheckLiveness(bool shouldThrow = true)
         {
-            if (disposed)
+            if (disposed && shouldThrow)
             {
                 throw new InvalidOperationException("JsEnv has been disposed!");
             }
+            return !disposed;
         }
 
         Dictionary<IntPtr, int> funcRefCount = new Dictionary<IntPtr, int>();

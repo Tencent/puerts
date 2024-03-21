@@ -366,11 +366,13 @@ namespace Puerts
         ~GenericDelegate() 
         {
             if (nativeJsFuncPtr == IntPtr.Zero) return;
-            CheckLiveness(false);
 #if THREAD_SAFE
             lock(jsEnv) {
 #endif
-            jsEnv.DecFuncRef(nativeJsFuncPtr);
+            if (jsEnv.CheckLiveness(false))
+            {
+                jsEnv.DecFuncRef(nativeJsFuncPtr);
+            }
 #if THREAD_SAFE
             }
 #endif
