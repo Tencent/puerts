@@ -253,6 +253,9 @@ public:
             const int length = str->Utf8Length(isolate);
             data = new char[length + 1];
             str->WriteUtf8(isolate, data);
+#if defined(WITH_QUICKJS)
+			data[length] = 0;
+#endif
             needFree = true;
         }
     }
