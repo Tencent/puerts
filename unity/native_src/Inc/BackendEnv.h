@@ -12,6 +12,7 @@
 
 #include <map>
 #include <algorithm>
+#include "Common.h"
 #include "Log.h"
 #include "V8InspectorImpl.h"
 #if WITH_QUICKJS
@@ -27,7 +28,7 @@
 
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
     class BackendEnv 
     {

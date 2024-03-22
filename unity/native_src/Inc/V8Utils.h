@@ -9,31 +9,16 @@
 
 #include <string>
 #include <sstream>
+#include "Common.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 const intptr_t OBJECT_MAGIC = 0xFA0E5D68; // a random value
-
-enum JsValueType
-{
-    NullOrUndefined = 1,
-    BigInt          = 2,
-    Number          = 4,
-    String          = 8,
-    Boolean         = 16,
-    NativeObject    = 32,
-    JsObject        = 64,
-    Array           = 128,
-    Function        = 256,
-    Date            = 512,
-    ArrayBuffer     = 1024,
-    Unknow          = 2048,
-};
 
 class FV8Utils
 {

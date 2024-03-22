@@ -8,8 +8,9 @@
 #pragma once
 
 #include <string>
+#include "Common.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 enum LogLevel
 {

@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <string>
+#include "Common.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -19,7 +20,7 @@
 
 #define FUNCTION_INDEX_KEY  "_psid"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class JSObject
 {
@@ -47,7 +48,7 @@ struct FValue
         bool Boolean;
         int64_t BigInt;
         class JSFunction *FunctionPtr;
-        class puerts::JSObject *JSObjectPtr;
+        class JSObject *JSObjectPtr;
     };
     v8::UniquePersistent<v8::Value> Persistent;
 };

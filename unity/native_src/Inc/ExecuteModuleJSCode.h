@@ -1,4 +1,6 @@
-namespace puerts
+#include "Common.h"
+
+namespace PUERTS_NAMESPACE
 {
     static const char* ExecuteModuleJSCode = "                                                      \n"
 "(function() {                                                                                      \n"

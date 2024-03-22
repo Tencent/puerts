@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include "ExecuteModuleJSCode.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
     static void JSObjectValueGetterFunction(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
@@ -233,7 +233,7 @@ namespace puerts
             v8::Context::Scope ContextScope(Context);
             ModuleExecutor = CreateJSFunction(
                 MainIsolate, Context, 
-                v8::FunctionTemplate::New(MainIsolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()
+                v8::FunctionTemplate::New(MainIsolate, esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()
             );
         }
         return ModuleExecutor;

@@ -33,7 +33,7 @@ V8_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallba
 }
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 
 void PLog(LogLevel Level, const std::string Fmt, ...)

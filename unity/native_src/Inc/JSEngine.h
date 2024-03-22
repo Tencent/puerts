@@ -13,6 +13,7 @@
 #include <mutex>
 #include <string>
 #include <memory>
+#include "Common.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -31,6 +32,8 @@
 
 #endif
 
+namespace PUERTS_NAMESPACE
+{
 typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx, char*& pathForDebug);
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
@@ -39,8 +42,6 @@ typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::Funct
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 
-namespace puerts
-{
 struct FCallbackInfo
 {
     FCallbackInfo(bool InIsStatic, CSharpFunctionCallback InCallback, int64_t InData) : IsStatic(InIsStatic), Callback(InCallback), Data(InData) {}
@@ -146,7 +147,7 @@ public:
 
     int32_t Idx;
 
-    puerts::BackendEnv BackendEnv;
+    BackendEnv BackendEnv;
     
 private:
     std::vector<FCallbackInfo*> CallbackInfos;

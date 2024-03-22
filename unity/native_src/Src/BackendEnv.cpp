@@ -33,6 +33,9 @@
 
 #endif // WITH_NODEJS
 
+namespace PUERTS_NAMESPACE
+{
+
 static std::unique_ptr<v8::Platform> GPlatform;
 #if defined(WITH_NODEJS)
 static std::vector<std::string>* Args;
@@ -42,7 +45,7 @@ static std::vector<std::string>* Errors;
 
 
 #if defined(WITH_NODEJS)
-void puerts::BackendEnv::StartPolling()
+void BackendEnv::StartPolling()
 {
     uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
     uv_sem_init(&PollingSem, 0);
@@ -50,7 +53,7 @@ void puerts::BackendEnv::StartPolling()
         &PollingThread,
         [](void* arg)
         {
-            auto* self = static_cast<puerts::BackendEnv*>(arg);
+            auto* self = static_cast<BackendEnv*>(arg);
             while (true)
             {
                 uv_sem_wait(&self->PollingSem);
@@ -95,7 +98,7 @@ void puerts::BackendEnv::StartPolling()
     UvRunOnce();
 }
 
-void puerts::BackendEnv::UvRunOnce()
+void BackendEnv::UvRunOnce()
 {
     auto Isolate = MainIsolate;
 #ifdef THREAD_SAFE
@@ -125,7 +128,7 @@ void puerts::BackendEnv::UvRunOnce()
     uv_sem_post(&PollingSem);
 }
 
-void puerts::BackendEnv::PollEvents()
+void BackendEnv::PollEvents()
 {
 #if PLATFORM_WINDOWS
     DWORD bytes;
@@ -175,20 +178,20 @@ void puerts::BackendEnv::PollEvents()
 #endif
 }
 
-void puerts::BackendEnv::OnWatcherQueueChanged(uv_loop_t* loop)
+void BackendEnv::OnWatcherQueueChanged(uv_loop_t* loop)
 {
 #if !PLATFORM_WINDOWS
-    puerts::BackendEnv* self = static_cast<puerts::BackendEnv*>(loop->data);
+    BackendEnv* self = static_cast<BackendEnv*>(loop->data);
     self->WakeupPollingThread();
 #endif
 }
 
-void puerts::BackendEnv::WakeupPollingThread()
+void BackendEnv::WakeupPollingThread()
 {
     uv_async_send(&DummyUVHandle);
 }
 
-void puerts::BackendEnv::StopPolling()
+void BackendEnv::StopPolling()
 {
     PollingClosed = true;
 
@@ -202,7 +205,7 @@ void puerts::BackendEnv::StopPolling()
 }
 #endif
 
-void puerts::BackendEnv::GlobalPrepare()
+void BackendEnv::GlobalPrepare()
 {
     if (!GPlatform)
     {
@@ -230,7 +233,7 @@ void puerts::BackendEnv::GlobalPrepare()
     }
 }
 
-v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
+v8::Isolate* BackendEnv::CreateIsolate(void* external_quickjs_runtime)
 {
 #if defined(WITH_NODEJS)
     const int Ret = uv_loop_init(&NodeUVLoop);
@@ -242,7 +245,7 @@ v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
     }
 
     NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
-    // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
+    // PLog(Log, "[PuertsDLL][JSEngineWithNode]isolate");
 
     auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
     MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop,
@@ -265,7 +268,7 @@ v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
     return MainIsolate;
 }
 
-void puerts::BackendEnv::FreeIsolate()
+void BackendEnv::FreeIsolate()
 {
 #if WITH_NODEJS
     // node::EmitExit(NodeEnv);
@@ -297,7 +300,7 @@ void puerts::BackendEnv::FreeIsolate()
 #endif
 }
 
-void puerts::BackendEnv::LogicTick()
+void BackendEnv::LogicTick()
 {
 #if WITH_NODEJS
     v8::Isolate::Scope IsolateScope(MainIsolate);
@@ -310,7 +313,7 @@ void puerts::BackendEnv::LogicTick()
 #endif
 }
 
-void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context)
+void BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context)
 {
     MainContext.Reset(Isolate, Context);
 #if defined(WITH_NODEJS)
@@ -337,21 +340,21 @@ void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context>
     }
 #endif
 
-    Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<puerts::BackendEnv>);
+    Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<BackendEnv>);
 
 #if !WITH_QUICKJS
-    Isolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
-    Isolate->SetHostImportModuleDynamicallyCallback(&puerts::esmodule::DynamicImport);
+    Isolate->SetHostInitializeImportMetaObjectCallback(&esmodule::HostInitializeImportMetaObject);
+    Isolate->SetHostImportModuleDynamicallyCallback(&esmodule::DynamicImport);
 #endif
 
-    Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
+    Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
 
 #if defined(WITH_NODEJS)
     StartPolling();
 #endif
 }
 
-void puerts::BackendEnv::CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port)
+void BackendEnv::CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port)
 {
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
@@ -367,7 +370,7 @@ void puerts::BackendEnv::CreateInspector(v8::Isolate* Isolate, const v8::Global<
     }
 }
 
-void puerts::BackendEnv::DestroyInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal)
+void BackendEnv::DestroyInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal)
 {
     if (Inspector != nullptr)
     {
@@ -384,7 +387,7 @@ void puerts::BackendEnv::DestroyInspector(v8::Isolate* Isolate, const v8::Global
     }
 }
 
-bool puerts::BackendEnv::InspectorTick()
+bool BackendEnv::InspectorTick()
 {
     if (Inspector != nullptr)
     {
@@ -393,7 +396,7 @@ bool puerts::BackendEnv::InspectorTick()
     return true;
 }
 
-bool puerts::BackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path)
+bool BackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path)
 {
     std::string key(Path);
     if (key.size() == 0) 
@@ -481,7 +484,7 @@ static v8::MaybeLocal<v8::Value> CallRead(
     return maybeRet;
 }
 #if !WITH_QUICKJS
-v8::MaybeLocal<v8::Promise> puerts::esmodule::DynamicImport(
+v8::MaybeLocal<v8::Promise> esmodule::DynamicImport(
     v8::Local<v8::Context> Context, 
     v8::Local<v8::ScriptOrModule> Referrer,
     v8::Local<v8::String> Specifier
@@ -491,7 +494,7 @@ v8::MaybeLocal<v8::Promise> puerts::esmodule::DynamicImport(
     v8::Local<v8::Value> ReferrerName = Referrer->GetResourceName();
     
     v8::TryCatch TryCatch(Context->GetIsolate());
-    v8::MaybeLocal<v8::Module> mod = puerts::esmodule::_ResolveModule(Context, Specifier, ReferrerName, isFromCache);
+    v8::MaybeLocal<v8::Module> mod = esmodule::_ResolveModule(Context, Specifier, ReferrerName, isFromCache);
 
     v8::Local<v8::Promise::Resolver> resolver;
     if (!v8::Promise::Resolver::New(Context).ToLocal(&resolver)) return v8::MaybeLocal<v8::Promise> {};
@@ -502,12 +505,12 @@ v8::MaybeLocal<v8::Promise> puerts::esmodule::DynamicImport(
         return resolver->GetPromise();
     }
     v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-    if (!puerts::esmodule::LinkModule(Context, moduleChecked))
+    if (!esmodule::LinkModule(Context, moduleChecked))
     {
         resolver->Reject(Context, TryCatch.Exception());
         return resolver->GetPromise();
     }
-    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts::esmodule::ResolveModule);
+    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, esmodule::ResolveModule);
     if (ret.IsNothing() || !ret.ToChecked())
     {
         resolver->Reject(Context, TryCatch.Exception());
@@ -526,7 +529,7 @@ v8::MaybeLocal<v8::Promise> puerts::esmodule::DynamicImport(
 }
 #endif
 
-void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
+void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
 {
     v8::Isolate* Isolate = info.GetIsolate();
 #ifdef THREAD_SAFE
@@ -556,19 +559,19 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
     v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
             .ToLocalChecked();
 
-    v8::MaybeLocal<v8::Module> mod = puerts::esmodule::ResolveModule(Context, Specifier_v8, entryModule);
+    v8::MaybeLocal<v8::Module> mod = esmodule::ResolveModule(Context, Specifier_v8, entryModule);
     if (mod.IsEmpty())
     {
         // TODO
         return;
     }
     v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-    if (!puerts::esmodule::LinkModule(Context, moduleChecked))
+    if (!esmodule::LinkModule(Context, moduleChecked))
     {
         // TODO
         return;
     }
-    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts::esmodule::ResolveModule);
+    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, esmodule::ResolveModule);
     if (ret.IsNothing() || !ret.ToChecked())
     {
         // TODO
@@ -583,13 +586,13 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
     info.GetReturnValue().Set(moduleChecked->GetModuleNamespace());
 
 #else 
-    JS_SetModuleLoaderFunc(Isolate->runtime_, puerts::esmodule::js_module_resolver, puerts::esmodule::js_module_loader, NULL);
+    JS_SetModuleLoaderFunc(Isolate->runtime_, esmodule::js_module_resolver, esmodule::js_module_loader, NULL);
     JSContext* ctx = Context->context_;
 
     v8::String::Utf8Value Specifier_utf8(Isolate, Specifier_v8);
     std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
 
-    char* resolved_name = puerts::esmodule::js_module_resolver(ctx, "", Specifier_std.c_str(), nullptr);
+    char* resolved_name = esmodule::js_module_resolver(ctx, "", Specifier_std.c_str(), nullptr);
     if (resolved_name == nullptr)
     {
         // should be a exception on mockV8's VM
@@ -597,7 +600,7 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
         return;
     }
 
-    JSModuleDef* EntryModule = puerts::esmodule::js_module_loader(ctx, resolved_name, nullptr);
+    JSModuleDef* EntryModule = esmodule::js_module_loader(ctx, resolved_name, nullptr);
     if (EntryModule == nullptr) 
     {
         // should be a exception on mockV8's VM
@@ -633,7 +636,7 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
 }
 
 #if !WITH_QUICKJS
-v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
+v8::MaybeLocal<v8::Module> esmodule::_ResolveModule(
     v8::Local<v8::Context> Context,
     v8::Local<v8::String> Specifier,
     v8::Local<v8::Value> ReferrerName,
@@ -706,7 +709,7 @@ v8::Local<v8::Value> GetModuleName(
     v8::Local<v8::Module> Referrer
 ) 
 {
-    puerts::BackendEnv* mm = puerts::BackendEnv::Get(Isolate);
+    BackendEnv* mm = BackendEnv::Get(Isolate);
     v8::Local<v8::Value> ReferrerName;
 #if V8_94_OR_NEWER
     const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
@@ -725,7 +728,7 @@ v8::Local<v8::Value> GetModuleName(
     return ReferrerName;
 }
 
-v8::MaybeLocal<v8::Module> puerts::esmodule::ResolveModule(
+v8::MaybeLocal<v8::Module> esmodule::ResolveModule(
     v8::Local<v8::Context> Context,
     v8::Local<v8::String> Specifier,
     v8::Local<v8::Module> Referrer
@@ -738,7 +741,7 @@ v8::MaybeLocal<v8::Module> puerts::esmodule::ResolveModule(
     return _ResolveModule(Context, Specifier, ReferrerName, isFromCache);
 }
 
-bool puerts::esmodule::LinkModule(
+bool esmodule::LinkModule(
     v8::Local<v8::Context> Context,
     v8::Local<v8::Module> RefModule
 )
@@ -760,7 +763,7 @@ bool puerts::esmodule::LinkModule(
             v8::Local<v8::Module> Module = MaybeModule.ToLocalChecked();
             if (!LinkModule(Context, Module)) 
             {
-                puerts::BackendEnv* mm = puerts::BackendEnv::Get(Isolate);
+                BackendEnv* mm = BackendEnv::Get(Isolate);
 
 #if V8_94_OR_NEWER
                 auto Specifier_std = mm->ScriptIdToPathMap[Module->ScriptId()];
@@ -778,7 +781,7 @@ bool puerts::esmodule::LinkModule(
     return true;
 }
 
-void puerts::esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
+void esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
 {
     v8::Isolate* Isolate = Context->GetIsolate();
     BackendEnv* mm = BackendEnv::Get(Isolate);
@@ -799,7 +802,7 @@ void puerts::esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Con
 }
 
 #else 
-char* puerts::esmodule::js_module_resolver(
+char* esmodule::js_module_resolver(
     JSContext *ctx, const char *base_name, const char *name, void* opaque
 )
 {
@@ -836,7 +839,7 @@ char* puerts::esmodule::js_module_resolver(
     return rname;
 }
 
-JSModuleDef* puerts::esmodule::js_module_loader(
+JSModuleDef* esmodule::js_module_loader(
     JSContext* ctx, const char *name, void *opaque
 ) 
 {
@@ -896,3 +899,5 @@ JSModuleDef* puerts::esmodule::js_module_loader(
     return module_;
 }
 #endif
+
+}

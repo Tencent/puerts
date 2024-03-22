@@ -9,7 +9,7 @@
 #include "V8Utils.h"
 #include "JSEngine.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
     JSObject::JSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject, int32_t InIndex) 
     {
