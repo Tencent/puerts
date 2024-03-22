@@ -351,7 +351,7 @@ namespace Puerts
         public static extern void ReturnJSObject(IntPtr isolate, IntPtr info, IntPtr JSObject);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetArgumentValue(IntPtr info, int index);
+        public static extern IntPtr GetArgumentValue(IntPtr isolate, IntPtr info, int index);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern JsValueType GetJsValueType(IntPtr isolate, IntPtr value, bool isByRef);

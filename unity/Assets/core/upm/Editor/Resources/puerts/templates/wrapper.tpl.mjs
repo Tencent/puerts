@@ -29,7 +29,7 @@ class ArgumentCodeGenerator {
     }
 
     declareAndGetV8Value() {
-        return `IntPtr v8Value${this.index} = PuertsDLL.GetArgumentValue(info, ${this.index})`
+        return `IntPtr v8Value${this.index} = PuertsDLL.GetArgumentValue(isolate, info, ${this.index})`
     }
 
     v8Value() {

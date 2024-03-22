@@ -95,7 +95,7 @@ namespace Puerts
             {
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
-                    var valuePtr = PuertsDLL.GetArgumentValue(info, 0);
+                    var valuePtr = PuertsDLL.GetArgumentValue(isolate, info, 0);
                     var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);                    
                     object value = null;
                     if (
@@ -125,7 +125,7 @@ namespace Puerts
             {
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
-                    var valuePtr = PuertsDLL.GetArgumentValue(info, 0);
+                    var valuePtr = PuertsDLL.GetArgumentValue(isolate, info, 0);
                     var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);
                     object value = null;
                     if (

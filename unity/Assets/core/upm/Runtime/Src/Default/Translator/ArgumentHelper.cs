@@ -19,7 +19,7 @@ namespace Puerts
 
             for (int i = start; i < end; i++)
             {
-                var val = i == start ? v8Value : PuertsDLL.GetArgumentValue(info, i);
+                var val = i == start ? v8Value : PuertsDLL.GetArgumentValue(isolate, info, i);
                 result[i - start] = StaticTranslate<T>.Get(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, val, false);
             }
 
@@ -47,7 +47,7 @@ namespace Puerts
             }
             for (int i = start + 1; i < end; i++)
             {
-                IntPtr value = PuertsDLL.GetArgumentValue(info, i);
+                IntPtr value = PuertsDLL.GetArgumentValue(isolate, info, i);
                 object argObj = null;
                 JsValueType valueType = JsValueType.Invalid;
                 if (!ArgHelper.IsMatch(jsEnvIdx, isolate,  expectJsType, expectCsType, false, false,  value, ref argObj, ref valueType))

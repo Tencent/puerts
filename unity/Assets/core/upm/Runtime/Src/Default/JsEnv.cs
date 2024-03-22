@@ -480,7 +480,7 @@ namespace Puerts
                 }
 
                 IntPtr fn = IntPtr.Zero;
-                var value1 = PuertsDLL.GetArgumentValue(info, 0);
+                var value1 = PuertsDLL.GetArgumentValue(isolate, info, 0);
                 if (PuertsDLL.GetJsValueType(isolate, value1, false) == JsValueType.Function)
                 {
                     fn = PuertsDLL.GetFunctionFromValue(isolate, value1, false);
@@ -503,7 +503,7 @@ namespace Puerts
         Type GetTypeFromJs(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
         {
             Type type = null;
-            var value = PuertsDLL.GetArgumentValue(info, 0);
+            var value = PuertsDLL.GetArgumentValue(isolate, info, 0);
             if (PuertsDLL.GetJsValueType(isolate, value, false) == JsValueType.String)
             {
                 string classFullName = PuertsDLL.GetStringFromValue(isolate, value, false);
@@ -519,7 +519,7 @@ namespace Puerts
                     var genericArguments = new Type[paramLen - 1];
                     for (int i = 1; i < paramLen; i++)
                     {
-                        value = PuertsDLL.GetArgumentValue(info, i);
+                        value = PuertsDLL.GetArgumentValue(isolate, info, i);
                         if (PuertsDLL.GetJsValueType(isolate, value, false) != JsValueType.Function) return null;
                         var argTypeId = PuertsDLL.GetTypeIdFromValue(isolate, value, false);
                         if (argTypeId == -1) return null;
@@ -543,17 +543,17 @@ namespace Puerts
                 if (paramLen < 3) {
                     throw new Exception("invalid arguments length");
                 }
-                var csTypeJSValue = PuertsDLL.GetArgumentValue(info, 0);
+                var csTypeJSValue = PuertsDLL.GetArgumentValue(isolate, info, 0);
                 if (PuertsDLL.GetJsValueType(isolate, csTypeJSValue, false) != JsValueType.NativeObject) {
                     throw new Exception("the class must be a constructor");
                 }
                 Type type = StaticTranslate<Type>.Get(Index, isolate, NativeValueApi.GetValueFromArgument, csTypeJSValue, false);
-                string methodName = PuertsDLL.GetStringFromValue(isolate, PuertsDLL.GetArgumentValue(info, 1), false);
+                string methodName = PuertsDLL.GetStringFromValue(isolate, PuertsDLL.GetArgumentValue(isolate, info, 1), false);
                 
                 var genericArguments = new Type[paramLen - 2];
                 for (int i = 2; i < paramLen; i++)
                 {
-                    var value = PuertsDLL.GetArgumentValue(info, i);
+                    var value = PuertsDLL.GetArgumentValue(isolate, info, i);
                     if (PuertsDLL.GetJsValueType(isolate, value, false) != JsValueType.Function) 
                     {
                         throw new Exception("invalid Type for generic arguments " + (i - 2));

@@ -40,7 +40,7 @@ namespace Puerts
 
             for(int i = 0; i < Length; i++)
             {
-                var nativeValuePtr = PuertsDLL.GetArgumentValue(info, i);
+                var nativeValuePtr = PuertsDLL.GetArgumentValue(isolate, info, i);
                 NativePtrs[i] = nativeValuePtr;
                 var type = PuertsDLL.GetJsValueType(isolate, nativeValuePtr, false);
                 JsTypes[i] = type;
@@ -357,7 +357,7 @@ namespace Puerts
             {
                 try
                 {
-                    var arg0 = PuertsDLL.GetArgumentValue(info, 0);
+                    var arg0 = PuertsDLL.GetArgumentValue(isolate, info, 0);
                     var arg0type = NativeValueApi.GetValueFromArgument.GetJsValueType(isolate, arg0, false);
                     if (arg0type == JsValueType.Function || arg0type == JsValueType.NativeObject)
                     {

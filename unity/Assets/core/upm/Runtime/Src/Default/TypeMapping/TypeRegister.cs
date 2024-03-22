@@ -149,7 +149,7 @@ namespace Puerts
                 {
                     return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                     {
-                        var valuePtr = PuertsDLL.GetArgumentValue(info, 0);
+                        var valuePtr = PuertsDLL.GetArgumentValue(isolate, info, 0);
                         var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);
                         object value = null;
                         if (
@@ -179,7 +179,7 @@ namespace Puerts
                 {
                     return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                     {
-                        var valuePtr = PuertsDLL.GetArgumentValue(info, 0);
+                        var valuePtr = PuertsDLL.GetArgumentValue(isolate, info, 0);
                         var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);
                         object value = null;
                         if (
@@ -230,7 +230,7 @@ namespace Puerts
                 try
                 {
                     Array array = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self) as Array;
-                    uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(info, 0), false);
+                    uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(isolate, info, 0), false);
                     if (FastArrayGet(isolate1, info, self, array, index)) return;
                     var transalteFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(array.GetType().GetElementType());
                     transalteFunc(jsEnv.Idx, isolate1, NativeValueApi.SetValueToResult, info, array.GetValue((int)index));
@@ -246,8 +246,8 @@ namespace Puerts
                 try
                 {
                     Array array = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self) as Array;
-                    uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(info, 0), false);
-                    var val = PuertsDLL.GetArgumentValue(info, 1);
+                    uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(isolate, info, 0), false);
+                    var val = PuertsDLL.GetArgumentValue(isolate, info, 1);
                     if (FastArraySet(isolate1, info, self, array, index, val)) return;
                     var transalteFunc = jsEnv.GeneralGetterManager.GetTranslateFunc(array.GetType().GetElementType());
                     array.SetValue(transalteFunc(jsEnv.Idx, isolate1, NativeValueApi.GetValueFromArgument, val, false), index);
