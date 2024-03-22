@@ -169,7 +169,7 @@ V8_EXPORT JSFunction* GetModuleExecutor(v8::Isolate *Isolate)
 }
 
 //-------------------------- begin js call cs --------------------------
-V8_EXPORT const v8::Value *GetArgumentValue(const v8::FunctionCallbackInfo<v8::Value>& Info, int Index)
+V8_EXPORT const v8::Value *GetArgumentValue(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int Index)
 {
     return *Info[Index];
 }
