@@ -36,6 +36,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: BuildAndroidMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   ios:
     runs-on: macos-11
@@ -57,6 +62,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: BuildAndroidMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   osx:
     runs-on: macos-11
@@ -78,6 +88,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
+      - name: BuildAndroidMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   windows:
     runs-on: windows-2019
@@ -99,6 +114,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: BuildAndroidMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   linux64:
     runs-on: ubuntu-latest
@@ -110,8 +130,18 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: BuildWindowsQuickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
       - name: BuildLinuxNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: BuildAndroidMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
