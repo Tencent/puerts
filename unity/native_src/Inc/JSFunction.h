@@ -10,6 +10,9 @@
 #include <vector>
 #include <string>
 #include "Common.h"
+#ifdef MULT_BACKENDS
+#include "IPuertsPlugin.h"
+#endif
 
 #include "V8Utils.h"
 
@@ -48,10 +51,14 @@ struct FValue
     v8::UniquePersistent<v8::Value> Persistent;
 };
 
+#ifdef MULT_BACKENDS
+struct FResultInfo : public puerts::PuertsPluginStore
+#else
 struct FResultInfo
+#endif
 {
     v8::Isolate* Isolate;
-
+    
     v8::UniquePersistent<v8::Context> Context;
 
     v8::UniquePersistent<v8::Value> Result;
@@ -60,7 +67,13 @@ struct FResultInfo
 class JSFunction
 {
 public:
+    FResultInfo ResultInfo;
+
+#ifdef MULT_BACKENDS
+    JSFunction(puerts::IPuertsPlugin* PuertsPlugin, v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction, int32_t InIndex);
+#else
     JSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction, int32_t InIndex);
+#endif
 
     ~JSFunction();
 
@@ -73,8 +86,6 @@ public:
     std::string LastExceptionInfo;
 
     v8::UniquePersistent<v8::Value> LastException;
-
-    FResultInfo ResultInfo;
 
     int32_t Index;
 };

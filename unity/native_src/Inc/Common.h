@@ -16,6 +16,10 @@
 #define PUERTS_NAMESPACE puerts
 #endif
 
+#if defined(QJS_BACKEND)
+namespace v8 = v8_qjs;
+#endif
+
 namespace puerts
 {
 

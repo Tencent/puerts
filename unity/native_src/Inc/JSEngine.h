@@ -18,6 +18,9 @@
 #include "JSFunction.h"
 #include "V8InspectorImpl.h"
 #include "BackendEnv.h"
+#ifdef MULT_BACKENDS
+#include "IPuertsPlugin.h"
+#endif
 
 #if WITH_NODEJS
 #pragma warning(push, 0)
@@ -31,9 +34,15 @@ namespace PUERTS_NAMESPACE
 {
 typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx, char*& pathForDebug);
 
+#ifdef MULT_BACKENDS
+typedef void(*CSharpFunctionCallback)(puerts::IPuertsPlugin* plugin, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
+
+typedef void* (*CSharpConstructorCallback)(puerts::IPuertsPlugin* plugin, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
+#else
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
 
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
+#endif
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 
@@ -72,7 +81,11 @@ private:
     static void HostInitializeImportMetaObject(v8::Local<v8::Context> context, v8::Local<v8::Module> module, v8::Local<v8::Object> meta);
 #endif
 public:
+#ifdef MULT_BACKENDS
+    JSEngine(puerts::IPuertsPlugin* InPuertsPlugin, void* external_quickjs_runtime, void* external_quickjs_context);
+#else
     JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
+#endif
 
     ~JSEngine();
 

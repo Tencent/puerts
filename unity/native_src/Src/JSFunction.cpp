@@ -25,8 +25,14 @@ namespace PUERTS_NAMESPACE
         GObject.Reset();
     }
 
+#ifdef MULT_BACKENDS
+    JSFunction::JSFunction(puerts::IPuertsPlugin* InPuertsPlugin, v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction, int32_t InIndex)
+    {
+        ResultInfo.PuertsPlugin = InPuertsPlugin;
+#else
     JSFunction::JSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction, int32_t InIndex)
     {
+#endif
         ResultInfo.Isolate = InIsolate;
         ResultInfo.Context.Reset(InIsolate, InContext);
         GFunction.Reset(InIsolate, InFunction);
