@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define API_LEVEL 32
+#define API_LEVEL 33
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -975,9 +975,9 @@ V8_EXPORT void LogicTick(v8::Isolate *Isolate)
 
 typedef void(*LogCallback)(const char* value);
 
-extern LogCallback GLogCallback = nullptr;
-extern LogCallback GLogWarningCallback = nullptr;
-extern LogCallback GLogErrorCallback = nullptr;
+extern LogCallback GLogCallback;
+extern LogCallback GLogWarningCallback;
+extern LogCallback GLogErrorCallback;
 
 V8_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
 {
