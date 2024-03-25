@@ -57,25 +57,25 @@ namespace PUERTS_NAMESPACE
     {
         switch (Value.Type)
         {
-        case NullOrUndefined:
+        case puerts::NullOrUndefined:
             return v8::Null(Isolate);
-        case BigInt:
+        case puerts::BigInt:
             return v8::BigInt::New(Isolate, Value.BigInt);
-        case Number:
+        case puerts::Number:
             return v8::Number::New(Isolate, Value.Number);
-        case Date:
+        case puerts::Date:
             return v8::Date::New(Context, Value.Number).ToLocalChecked();
-        case String:
+        case puerts::String:
             return FV8Utils::V8String(Isolate, Value.Str.c_str());
-        case NativeObject:
+        case puerts::NativeObject:
             return Value.Persistent.Get(Isolate);
-        case Function:
+        case puerts::Function:
             return Value.FunctionPtr->GFunction.Get(Isolate);
-        case JsObject:
+        case puerts::JsObject:
             return Value.JSObjectPtr->GObject.Get(Isolate);
-        case Boolean:
+        case puerts::Boolean:
             return v8::Boolean::New(Isolate, Value.Boolean);
-        case ArrayBuffer:
+        case puerts::ArrayBuffer:
             return Value.Persistent.Get(Isolate);
         default:
             return v8::Undefined(Isolate);

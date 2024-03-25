@@ -13,13 +13,7 @@
 #pragma warning(pop)
 
 #if !defined(PUERTS_NAMESPACE)
-#if defined(WITH_QJS_NAMESPACE_SUFFIX)
-#define PUERTS_NAMESPACE puerts_qjs
-#elif defined(WITH_V8_NAMESPACE_SUFFIX)
-#define PUERTS_NAMESPACE puerts_v8
-#else
 #define PUERTS_NAMESPACE puerts
-#endif
 #endif
 
 namespace puerts

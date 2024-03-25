@@ -35,7 +35,7 @@ public:
 
 struct FValue
 {
-    JsValueType Type;
+    puerts::JsValueType Type;
     std::string Str;
     union
     {

@@ -115,57 +115,57 @@ public:
             Object->GetAlignedPointerFromInternalField(Index) : nullptr;
     }
 
-    V8_INLINE static JsValueType GetType(v8::Local<v8::Context> Context, const v8::Value *Value)
+    V8_INLINE static puerts::JsValueType GetType(v8::Local<v8::Context> Context, const v8::Value *Value)
     {
-        if (!Value) return NullOrUndefined;
+        if (!Value) return puerts::NullOrUndefined;
 
         if (Value->IsNullOrUndefined())
         {
-            return NullOrUndefined;
+            return puerts::NullOrUndefined;
         }
         else if (Value->IsBigInt())
         {
-            return BigInt;
+            return puerts::BigInt;
         }
         else if (Value->IsNumber())
         {
-            return Number;
+            return puerts::Number;
         }
         else if (Value->IsString() || Value->IsRegExp())
         {
-            return String;
+            return puerts::String;
         }
         else if (Value->IsBoolean())
         {
-            return Boolean;
+            return puerts::Boolean;
         }
         else if (Value->IsFunction())
         {
-            return Function;
+            return puerts::Function;
         }
         else if (Value->IsDate())
         {
-            return Date;
+            return puerts::Date;
         }
         else if (Value->IsArrayBufferView() || Value->IsArrayBuffer())
         {
-            return ArrayBuffer;
+            return puerts::ArrayBuffer;
         }
         else if (Value->IsObject())
         {
             auto Object = Value->ToObject(Context).ToLocalChecked();
             if (Object->InternalFieldCount() == 3 && (intptr_t)Object->GetAlignedPointerFromInternalField(2) == OBJECT_MAGIC)
             {
-                return NativeObject;
+                return puerts::NativeObject;
             }
             else
             { 
-                return JsObject;
+                return puerts::JsObject;
             }
         }
         else
         {
-            return Unknow;
+            return puerts::Unknow;
         }
     }
 };

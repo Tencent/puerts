@@ -15,21 +15,6 @@ LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
 LogCallback GLogErrorCallback = nullptr;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-V8_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
-{
-    GLogCallback = Log;
-    GLogWarningCallback = LogError;
-    GLogErrorCallback = LogWarning;
-}
-
-#ifdef __cplusplus
-}
-#endif
-
 namespace PUERTS_NAMESPACE
 {
 

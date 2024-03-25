@@ -973,6 +973,19 @@ V8_EXPORT void LogicTick(v8::Isolate *Isolate)
     return JsEngine->LogicTick();
 }
 
+typedef void(*LogCallback)(const char* value);
+
+extern LogCallback GLogCallback = nullptr;
+extern LogCallback GLogWarningCallback = nullptr;
+extern LogCallback GLogErrorCallback = nullptr;
+
+V8_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
+{
+    GLogCallback = Log;
+    GLogWarningCallback = LogError;
+    GLogErrorCallback = LogWarning;
+}
+
 //-------------------------- end debug --------------------------
 
 #ifdef __cplusplus
