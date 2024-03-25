@@ -7,6 +7,7 @@
 #include "JSEngine.h"
 #include <cstring>
 #include "V8Utils.h"
+#include "Log.h"
 
 #define API_LEVEL 33
 
@@ -17,6 +18,10 @@ using puerts::JSFunction;
 using puerts::FV8Utils;
 using puerts::FLifeCycleInfo;
 using puerts::JsValueType;
+
+LogCallback GLogCallback = nullptr;
+LogCallback GLogWarningCallback = nullptr;
+LogCallback GLogErrorCallback = nullptr;
 
 #ifdef __cplusplus
 extern "C" {
@@ -972,12 +977,6 @@ V8_EXPORT void LogicTick(v8::Isolate *Isolate)
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     return JsEngine->LogicTick();
 }
-
-typedef void(*LogCallback)(const char* value);
-
-extern LogCallback GLogCallback;
-extern LogCallback GLogWarningCallback;
-extern LogCallback GLogErrorCallback;
 
 V8_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
 {

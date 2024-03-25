@@ -9,11 +9,9 @@
 #include <stdarg.h>
 #include "Common.h"
 
-typedef void(*LogCallback)(const char* value);
-
-LogCallback GLogCallback = nullptr;
-LogCallback GLogWarningCallback = nullptr;
-LogCallback GLogErrorCallback = nullptr;
+extern LogCallback GLogCallback;
+extern LogCallback GLogWarningCallback;
+extern LogCallback GLogErrorCallback;
 
 namespace PUERTS_NAMESPACE
 {

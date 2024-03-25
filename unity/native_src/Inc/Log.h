@@ -10,6 +10,8 @@
 #include <string>
 #include "Common.h"
 
+typedef void(*LogCallback)(const char* value);
+
 namespace PUERTS_NAMESPACE
 {
 enum LogLevel
