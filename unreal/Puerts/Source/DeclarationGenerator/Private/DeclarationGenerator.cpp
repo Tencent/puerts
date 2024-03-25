@@ -1244,7 +1244,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
         TryToAddOverload(Outputs, FunctionIt->GetName(), (FunctionIt->FunctionFlags & FUNC_Static) != 0, TmpBuff.Buffer);
     }
 
-    for (int i = 0 ; i < Class->Interfaces.Num(); i++)
+    for (int i = 0; i < Class->Interfaces.Num(); i++)
     {
         for (TFieldIterator<UFunction> FunctionIt(Class->Interfaces[i].Class, EFieldIteratorFlags::IncludeSuper); FunctionIt; ++FunctionIt)
         {
