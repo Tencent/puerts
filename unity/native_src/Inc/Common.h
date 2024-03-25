@@ -7,6 +7,11 @@
 
 #pragma once
 
+#pragma warning(push, 0)  
+#include "libplatform/libplatform.h"
+#include "v8.h"
+#pragma warning(pop)
+
 #if !defined(PUERTS_NAMESPACE)
 #if defined(WITH_QJS_NAMESPACE_SUFFIX)
 #define PUERTS_NAMESPACE puerts_qjs

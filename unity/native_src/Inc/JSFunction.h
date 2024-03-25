@@ -11,11 +11,6 @@
 #include <string>
 #include "Common.h"
 
-#pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-
 #include "V8Utils.h"
 
 #define FUNCTION_INDEX_KEY  "_psid"

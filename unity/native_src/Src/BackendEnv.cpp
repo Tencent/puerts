@@ -8,11 +8,6 @@
 #include "Log.h"
 #include "PromiseRejectCallback.hpp"
 
-#pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-
 #if WITH_NODEJS
 
 #pragma warning(push, 0)

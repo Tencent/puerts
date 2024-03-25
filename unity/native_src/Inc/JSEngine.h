@@ -15,11 +15,6 @@
 #include <memory>
 #include "Common.h"
 
-#pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-
 #include "JSFunction.h"
 #include "V8InspectorImpl.h"
 #include "BackendEnv.h"

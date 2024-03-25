@@ -7,10 +7,7 @@
 
 #include "Log.h"
 #include <stdarg.h>
-
-#pragma warning(push, 0)  
-#include "v8.h"
-#pragma warning(pop)
+#include "Common.h"
 
 typedef void(*LogCallback)(const char* value);
 
