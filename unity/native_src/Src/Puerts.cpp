@@ -32,7 +32,7 @@ V8_EXPORT int GetApiLevel()
     return API_LEVEL;
 }
 
-V8_EXPORT int GetLibBackend()
+V8_EXPORT int GetLibBackend(v8::Isolate *Isolate)
 {
 #if WITH_NODEJS
     return puerts::JSEngineBackend::Node;

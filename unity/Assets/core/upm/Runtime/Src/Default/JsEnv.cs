@@ -102,7 +102,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, BackendType backend, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 32;
+            const int libVersionExpect = 33;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
@@ -152,11 +152,11 @@ namespace Puerts
             GeneralGetterManager = new GeneralGetterManager();
             GeneralSetterManager = new GeneralSetterManager();
 
-            if (PuertsDLL.GetLibBackend() == 0) 
+            if (PuertsDLL.GetLibBackend(isolate) == 0) 
                 Backend = new BackendV8(this);
-            else if (PuertsDLL.GetLibBackend() == 1)
+            else if (PuertsDLL.GetLibBackend(isolate) == 1)
                 Backend = new BackendNodeJS(this);
-            else if (PuertsDLL.GetLibBackend() == 2)
+            else if (PuertsDLL.GetLibBackend(isolate) == 2)
                 Backend = new BackendQuickJS(this);
 
             // 注册JS对象通用GC回调
