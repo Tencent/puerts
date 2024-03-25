@@ -62,7 +62,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
-      - name: BuildAndroidMultBackend
+      - name: BuildiOSMultBackend
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -88,7 +88,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
-      - name: BuildAndroidMultBackend
+      - name: BuildOSXMultBackend
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -114,7 +114,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
-      - name: BuildAndroidMultBackend
+      - name: BuildWindowsMultBackend
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -140,7 +140,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
-      - name: BuildAndroidMultBackend
+      - name: BuildLinuxMultBackend
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

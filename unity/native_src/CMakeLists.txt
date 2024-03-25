@@ -146,6 +146,7 @@ if("${JS_ENGINE}" STREQUAL "mult")
     target_compile_definitions (v8backend PRIVATE PUERTS_NAMESPACE=puerts_v8)
     target_compile_definitions (v8backend PRIVATE MULT_BACKENDS)
     target_compile_definitions (v8backend PRIVATE V8_BACKEND)
+    set_target_properties(v8backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
     # -------------------end v8 backend-------------------------
     
     # -------------------begin qjs backend-------------------------
@@ -164,6 +165,7 @@ if("${JS_ENGINE}" STREQUAL "mult")
     target_compile_definitions (qjsbackend PRIVATE WITH_QUICKJS)
     target_compile_definitions (qjsbackend PRIVATE WITHOUT_INSPECTOR)
     target_compile_definitions (qjsbackend PRIVATE CUSTOMV8NAMESPACE=v8_qjs)
+    set_target_properties(qjsbackend PROPERTIES POSITION_INDEPENDENT_CODE ON)
     # -------------------end qjs backend-------------------------
     
     target_include_directories(puerts PRIVATE "${BACKEND_ROOT}/Inc/v8") #只需要用到V8_EXPORT
