@@ -138,7 +138,11 @@ backendProgram
 program
     .command("dotnet-test [backend]")
     .option("--filter <filter>", "testcase will be filtered", "")
+    .option('-sq, --switch_qjs', 'switch to quickjs backend')
     .action((backend: string, options: any) => {
+        if (options.switch_qjs) {
+            process.env.SwitchToQJS = '1';
+        }
         dotnetTest(cwd, backend || "quickjs", options.filter);
     });
 

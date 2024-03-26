@@ -69,10 +69,14 @@ jobs:
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test quickjs
-      - name: UnitTest-mult
+      - name: UnitTest-mult-v8
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test mult
+      - name: UnitTest-mult-v8-qjs
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test mult -sq
           
   unittest-osx-dotnet:
     runs-on: macos-latest
@@ -96,7 +100,11 @@ jobs:
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test quickjs
-      - name: UnitTest-mult
+      - name: UnitTest-mult-v8
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test mult
+      - name: UnitTest-mult-v8-qjs
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test mult -sq

@@ -129,7 +129,17 @@ namespace Puerts.UnitTest
             if (env == null) 
             {
                 loader = new TxtLoader();
-                env = new JsEnv(loader);
+                if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
+                {
+                    System.Console.Write("---------------------SwitchToQJS------------------------\n");
+                    env = new JsEnv(loader, -1, BackendType.QuickJS, System.IntPtr.Zero, System.IntPtr.Zero);
+                }
+                else
+                {
+                    System.Console.Write("---------------------Default JsEnv------------------------\n");
+                    env = new JsEnv(loader);
+                }
+                
                 CommonJS.InjectSupportForCJS(env);
 #if PUERTS_GENERAL && !TESTING_REFLECTION
                 PuertsStaticWrap.PuerRegisterInfo_Gen.AddRegisterInfoGetterIntoJsEnv(env);
