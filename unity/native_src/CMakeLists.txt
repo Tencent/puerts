@@ -152,7 +152,7 @@ if("${JS_ENGINE}" STREQUAL "mult")
         target_compile_definitions (v8backend PRIVATE V8_BACKEND)
         set_target_properties(v8backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(puerts v8backend )
-        target_compile_definitions (v8backend PRIVATE V8_BACKEND)
+        target_compile_definitions (puerts PRIVATE V8_BACKEND)
     endif ()
     # -------------------end v8 backend-------------------------
     
@@ -177,7 +177,7 @@ if("${JS_ENGINE}" STREQUAL "mult")
         endif ()
         set_target_properties(qjsbackend PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(puerts qjsbackend )
-        target_compile_definitions (qjsbackend PRIVATE QJS_BACKEND)
+        target_compile_definitions (puerts PRIVATE QJS_BACKEND)
     endif ()
     # -------------------end qjs backend-------------------------
 endif ()
