@@ -7,19 +7,28 @@
 
 #pragma once
 
-#include "CommonTypes.h"
+namespace puerts
+{
 
-#pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
+typedef void (*FuncPtr)(void);
 
-#if !defined(PUERTS_NAMESPACE)
-#define PUERTS_NAMESPACE puerts
-#endif
 
-#if defined(USING_QJS_SUFFIX) && defined(CUSTOMV8NAMESPACE)
-namespace v8 = CUSTOMV8NAMESPACE;
-#endif
+enum JsValueType
+{
+    NullOrUndefined = 1,
+    BigInt          = 2,
+    Number          = 4,
+    String          = 8,
+    Boolean         = 16,
+    NativeObject    = 32,
+    JsObject        = 64,
+    Array           = 128,
+    Function        = 256,
+    Date            = 512,
+    ArrayBuffer     = 1024,
+    Unknow          = 2048,
+};
 
+
+}
 

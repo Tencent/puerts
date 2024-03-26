@@ -60,18 +60,20 @@ PUERTS_EXPORT int GetLibBackend(puerts::IPuertsPlugin* plugin)
 
 PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngine(int backend)
 {
+#ifdef V8_BACKEND
     if (0 == backend)
     {
         return puerts::CreateV8Plugin(nullptr, nullptr);
     }
-    else if (2 == backend)
+#endif
+
+#ifdef QJS_BACKEND
+    if (2 == backend)
     {
         return puerts::CreateQJSPlugin(nullptr, nullptr);
     }
-    else
-    {
-        return nullptr;
-    }
+#endif
+    return nullptr;
 }
 
 PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngineWithExternalEnv(int backend, void* external_quickjs_runtime, void* external_quickjs_context)

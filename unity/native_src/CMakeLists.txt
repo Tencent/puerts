@@ -132,42 +132,54 @@ else ()
 endif ()
 
 set(PUERTS_COMPILE_DEFINITIONS)
+option ( USING_V8 "using v8" ON )
+option ( USING_QJS "using quickjs" ON )
+option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
 
 if("${JS_ENGINE}" STREQUAL "mult")
     # -------------------begin v8 backend-------------------------
-    add_library(v8backend STATIC
-        Src/BackendEnv.cpp
-        Src/JSEngine.cpp
-        Src/JSFunction.cpp
-        ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
-        Src/PluginImpl.cpp
-    )
-    target_include_directories (v8backend PRIVATE "${BACKEND_ROOT}/Inc/v8")
-    target_compile_definitions (v8backend PRIVATE PUERTS_NAMESPACE=puerts_v8)
-    target_compile_definitions (v8backend PRIVATE MULT_BACKENDS)
-    target_compile_definitions (v8backend PRIVATE V8_BACKEND)
-    set_target_properties(v8backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    if ( USING_V8)
+        add_library(v8backend STATIC
+            Src/BackendEnv.cpp
+            Src/JSEngine.cpp
+            Src/JSFunction.cpp
+            ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+            Src/PluginImpl.cpp
+        )
+        target_include_directories (v8backend PRIVATE "${BACKEND_ROOT}/Inc/v8")
+        target_compile_definitions (v8backend PRIVATE PUERTS_NAMESPACE=puerts_v8)
+        target_compile_definitions (v8backend PRIVATE MULT_BACKENDS)
+        target_compile_definitions (v8backend PRIVATE V8_BACKEND)
+        set_target_properties(v8backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        target_link_libraries(puerts v8backend )
+        target_compile_definitions (v8backend PRIVATE V8_BACKEND)
+    endif ()
     # -------------------end v8 backend-------------------------
     
     # -------------------begin qjs backend-------------------------
-    add_library(qjsbackend STATIC
-        Src/BackendEnv.cpp
-        Src/JSEngine.cpp
-        Src/JSFunction.cpp
-        ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
-        Src/PluginImpl.cpp
-    )
-    target_include_directories (qjsbackend PRIVATE "${BACKEND_ROOT}/Inc/quickjs")
-    target_compile_definitions (qjsbackend PRIVATE PUERTS_NAMESPACE=puerts_qjs)
-    target_compile_definitions (qjsbackend PRIVATE MULT_BACKENDS)
-    target_compile_definitions (qjsbackend PRIVATE QJS_BACKEND)
-    target_compile_definitions (qjsbackend PRIVATE WITH_QUICKJS)
-    target_compile_definitions (qjsbackend PRIVATE WITHOUT_INSPECTOR)
-    target_compile_definitions (qjsbackend PRIVATE CUSTOMV8NAMESPACE=v8_qjs)
-    set_target_properties(qjsbackend PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    if ( USING_QJS)
+        add_library(qjsbackend STATIC
+            Src/BackendEnv.cpp
+            Src/JSEngine.cpp
+            Src/JSFunction.cpp
+            ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+            Src/PluginImpl.cpp
+        )
+        target_include_directories (qjsbackend PRIVATE "${BACKEND_ROOT}/Inc/quickjs")
+        target_compile_definitions (qjsbackend PRIVATE PUERTS_NAMESPACE=puerts_qjs)
+        target_compile_definitions (qjsbackend PRIVATE MULT_BACKENDS)
+        target_compile_definitions (qjsbackend PRIVATE QJS_BACKEND)
+        target_compile_definitions (qjsbackend PRIVATE WITH_QUICKJS)
+        target_compile_definitions (qjsbackend PRIVATE WITHOUT_INSPECTOR)
+        if (USING_QJS_SUFFIX)
+            target_compile_definitions (qjsbackend PRIVATE USING_QJS_SUFFIX)
+            target_compile_definitions (qjsbackend PRIVATE CUSTOMV8NAMESPACE=v8_qjs)
+        endif ()
+        set_target_properties(qjsbackend PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        target_link_libraries(puerts qjsbackend )
+        target_compile_definitions (qjsbackend PRIVATE QJS_BACKEND)
+    endif ()
     # -------------------end qjs backend-------------------------
-    
-    target_link_libraries(puerts v8backend qjsbackend )
 endif ()
 
 # list(APPEND PUERTS_COMPILE_DEFINITIONS THREAD_SAFE)
@@ -265,16 +277,20 @@ list(APPEND PUERTS_COMPILE_DEFINITIONS ${BACKEND_DEFINITIONS})
 
 target_compile_definitions (puerts PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
 if("${JS_ENGINE}" STREQUAL "mult")
-    target_compile_definitions (v8backend PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
-    if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
-        set_property(TARGET v8backend PROPERTY
-                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if ( USING_V8)
+        target_compile_definitions (v8backend PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
+        if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
+            set_property(TARGET v8backend PROPERTY
+                     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        endif ()
     endif ()
     
-    target_compile_definitions (qjsbackend PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
-    if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
-        set_property(TARGET qjsbackend PROPERTY
-                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if ( USING_QJS)
+        target_compile_definitions (qjsbackend PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
+        if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
+            set_property(TARGET qjsbackend PROPERTY
+                     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        endif ()
     endif ()
 endif ()
 
