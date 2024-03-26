@@ -8,11 +8,10 @@
 #pragma once
 
 #include <stdint.h>
-#include "Common.h"
 
 namespace puerts
 {
-
+enum JsValueType;
 typedef void (*FuncPtr)(void);
 
 class IPuertsPlugin

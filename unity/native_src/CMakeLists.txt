@@ -88,6 +88,7 @@ source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_SRC)
 if("${JS_ENGINE}" STREQUAL "mult")
     message("mult backend>>>>>>>>>>>>>>>>>>>>>>>>")
     set ( PUERTS_SRC
+        Src/Log.cpp
         Src/PuertsMultBackend.cpp
     )
 else ()
@@ -135,7 +136,6 @@ set(PUERTS_COMPILE_DEFINITIONS)
 if("${JS_ENGINE}" STREQUAL "mult")
     # -------------------begin v8 backend-------------------------
     add_library(v8backend STATIC
-        Src/Log.cpp
         Src/BackendEnv.cpp
         Src/JSEngine.cpp
         Src/JSFunction.cpp
@@ -151,7 +151,6 @@ if("${JS_ENGINE}" STREQUAL "mult")
     
     # -------------------begin qjs backend-------------------------
     add_library(qjsbackend STATIC
-        Src/Log.cpp
         Src/BackendEnv.cpp
         Src/JSEngine.cpp
         Src/JSFunction.cpp
@@ -168,7 +167,6 @@ if("${JS_ENGINE}" STREQUAL "mult")
     set_target_properties(qjsbackend PROPERTIES POSITION_INDEPENDENT_CODE ON)
     # -------------------end qjs backend-------------------------
     
-    target_include_directories(puerts PRIVATE "${BACKEND_ROOT}/Inc/v8") #只需要用到V8_EXPORT
     target_link_libraries(puerts v8backend qjsbackend )
 endif ()
 

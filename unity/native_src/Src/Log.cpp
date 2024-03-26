@@ -7,13 +7,12 @@
 
 #include "Log.h"
 #include <stdarg.h>
-#include "Common.h"
 
 extern LogCallback GLogCallback;
 extern LogCallback GLogWarningCallback;
 extern LogCallback GLogErrorCallback;
 
-namespace PUERTS_NAMESPACE
+namespace puerts
 {
 
 void PLog(LogLevel Level, const std::string Fmt, ...)

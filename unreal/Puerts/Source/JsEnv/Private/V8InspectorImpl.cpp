@@ -338,8 +338,8 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
 #if USING_UE
         ReportException(Exception, TEXT("Failed to Startup Inspector"));
 #else
-        PLog(Error, "V8InspectorClientImpl: %s", Exception.what());
-        PLog(Error, "Failed to Startup Inspector.");
+        puerts::PLog(puerts::Error, "V8InspectorClientImpl: %s", Exception.what());
+        puerts::PLog(puerts::Error, "Failed to Startup Inspector.");
 #endif
     }
 
@@ -407,7 +407,7 @@ bool V8InspectorClientImpl::Tick(float /* DeltaTime */)
 #if USING_UE
         ReportException(Exception, TEXT("Tick"));
 #else
-        PLog(Error, "Tick: %s", Exception.what());
+        puerts::PLog(puerts::Error, "Tick: %s", Exception.what());
 #endif
     }
     return true;
@@ -431,7 +431,7 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 #if USING_UE
             UE_LOG(LogV8Inspector, Display, TEXT("request /json/list"));
 #else
-            PLog(Log, "request /json/list");
+            puerts::PLog(puerts::Log, "request /json/list");
 #endif
             Connection->set_body(JSONList);
             Connection->set_status(websocketpp::http::status_code::ok);
@@ -441,7 +441,7 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 #if USING_UE
             UE_LOG(LogV8Inspector, Display, TEXT("request /json/version"));
 #else
-            PLog(Log, "request /json/version");
+            puerts::PLog(puerts::Log, "request /json/version");
 #endif
             Connection->set_body(JSONVersion);
             Connection->set_status(websocketpp::http::status_code::ok);
@@ -451,7 +451,7 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 #if USING_UE
             UE_LOG(LogV8Inspector, Display, TEXT("404 Not Found"));
 #else
-            PLog(Log, "404 Not Found");
+            puerts::PLog(puerts::Log, "404 Not Found");
 #endif
             Connection->set_body("404 Not Found");
             Connection->set_status(websocketpp::http::status_code::not_found);
@@ -462,7 +462,7 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 #if USING_UE
         ReportException(Exception, TEXT("OnHTTP"));
 #else
-        PLog(Error, "OnHTTP: %s", Exception.what());
+        puerts::PLog(puerts::Error, "OnHTTP: %s", Exception.what());
 #endif
     }
 }
@@ -475,7 +475,7 @@ void V8InspectorClientImpl::OnOpen(wspp_connection_hdl Handle)
 #if USING_UE
     UE_LOG(LogV8Inspector, Display, TEXT("Inspector: Connect"));
 #else
-    PLog(Log, "Inspector: Connect");
+    puerts::PLog(puerts::Log, "Inspector: Connect");
 #endif
 }
 
@@ -484,7 +484,7 @@ void V8InspectorClientImpl::OnReceiveMessage(wspp_connection_hdl Handle, wspp_me
     //#if USING_UE
     //    UE_LOG(LogV8Inspector, Display, TEXT("<---: %s"), ANSI_TO_TCHAR(Message->get_payload().c_str()));
     //#else
-    //    PLog(Log, "<---: %s", Message->get_payload().c_str());
+    //    puerts::PLog(puerts::Log, "<---: %s", Message->get_payload().c_str());
     //#endif
     auto channel = V8InspectorChannels[Handle.lock().get()];
 
@@ -501,7 +501,7 @@ void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std:
     //#if USING_UE
     //    UE_LOG(LogV8Inspector, Display, TEXT("--->: %s"), ANSI_TO_TCHAR(Message.c_str()));
     //#else
-    //    PLog(Log, "--->: %s", Message.c_str());
+    //    puerts::PLog(puerts::Log, "--->: %s", Message.c_str());
     //#endif
 
     try
@@ -513,7 +513,7 @@ void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std:
 #if USING_UE
         ReportException(Exception, TEXT("OnSendMessage"));
 #else
-        PLog(Error, "OnSendMessage: %s", Exception.what());
+        puerts::PLog(puerts::Error, "OnSendMessage: %s", Exception.what());
 #endif
     }
 }
