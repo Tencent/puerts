@@ -59,6 +59,58 @@ namespace Puerts.UnitTest
         }
 #endif
         [Test]
+        public void ESModuleCompileErrorInNested() //https://github.com/Tencent/puerts/issues/1670
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("compile-error/AModule.mjs", @"import BModule from ""./BModule.mjs""
+
+class AModule
+{
+
+}
+
+console.log(`===AModule=====`);
+
+export default AModule;");
+            loader.AddMockFileContent("compile-error/BModule.mjs", @"import CrashTest from ""CrashTest.mjs""
+
+class BModule
+{
+
+}
+
+console.log(`===BModule=====`);
+
+export default BModule;");
+            loader.AddMockFileContent("compile-error/CrashTest.mjs", @"
+
+class CrashTest
+{
+    async doSomthine(content) {
+        let content = '123';        //这里声明的变量，和输入参数一样，语法错误导致，启动后Unity崩溃。
+        return content;
+    }
+}
+
+console.log(`======CrashTest======`)
+
+export default CrashTest;");
+            var jsEnv = UnitTestEnv.GetEnv();
+            for (int i = 0; i < 10; ++i)
+            {
+                try 
+                {
+                    jsEnv.ExecuteModule("compile-error/AModule.mjs");
+                } 
+                catch(Exception e) 
+                {
+                    continue;
+                }
+                throw new Exception("unexpected to reach here");
+            }
+        }
+        
+        [Test]
         public void ESModuleEvaluateError()
         {
             var loader = UnitTestEnv.GetLoader();
