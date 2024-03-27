@@ -117,6 +117,8 @@ namespace PUERTS_NAMESPACE
         if (TryCatch.HasCaught())
         {
             v8::Local<v8::Value> Exception = TryCatch.Exception();
+            const auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+            JsEngine->SetLastException(Exception);
             LastException.Reset(Isolate, Exception);
             LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, Exception);
             return false;
