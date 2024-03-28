@@ -428,6 +428,12 @@ struct Converter<const char*>
         return v8::String::NewFromUtf8(context->GetIsolate(), value, v8::NewStringType::kNormal).ToLocalChecked();
     }
 
+    static const char* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        // This method is just for compiling. It will never reached here because of class StringHolder.
+        return nullptr;
+    }
+
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         return value->IsString();
