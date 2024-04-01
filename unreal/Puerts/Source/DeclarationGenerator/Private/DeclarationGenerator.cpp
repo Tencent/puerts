@@ -1246,7 +1246,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
     for (int i = 0; i < Class->Interfaces.Num(); i++)
     {
-        for (TFieldIterator<UFunction> FunctionIt(Class->Interfaces[i].Class, EFieldIteratorFlags::IncludeSuper); FunctionIt;++FunctionIt)
+        for (TFieldIterator<UFunction> FunctionIt(Class->Interfaces[i].Class, EFieldIteratorFlags::IncludeSuper); FunctionIt; ++FunctionIt)
         {
             FStringBuffer TmpBuff;
             if (!GenFunction(TmpBuff, *FunctionIt))
