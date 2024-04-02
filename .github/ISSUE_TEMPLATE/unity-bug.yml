@@ -3,7 +3,7 @@ description: 提交一个Puer for Unity的问题 / Report a bug in puer for Unit
 title: "[Unity] Bug: "
 labels: ["bug", "Unity"]
 assignees:
-  - zombieyang
+  - chexiongsheng
 body:
   - type: checkboxes
     id: read
