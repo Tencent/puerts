@@ -141,18 +141,14 @@ namespace PUERTS_NAMESPACE
             Isolate, Context, 
             v8::FunctionTemplate::New(Isolate, &JSObjectValueGetterFunction)->GetFunction(Context).ToLocalChecked()
         );
-            
-#if defined(WITH_NODEJS)
+
         BackendEnv.StartPolling();
-#endif
     }
 
     JSEngine::~JSEngine()
     {
-#if WITH_NODEJS
         LogicTick();
         BackendEnv.StopPolling();
-#endif
         DestroyInspector();
 
         JSObjectIdMap.Reset();

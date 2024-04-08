@@ -38,10 +38,9 @@ static std::vector<std::string>* ExecArgs;
 static std::vector<std::string>* Errors;
 #endif
 
-
-#if defined(WITH_NODEJS)
 void BackendEnv::StartPolling()
 {
+#if defined(WITH_NODEJS)
     uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
     uv_sem_init(&PollingSem, 0);
     uv_thread_create(
@@ -91,8 +90,10 @@ void BackendEnv::StartPolling()
     NodeUVLoop.on_watcher_queue_updated = OnWatcherQueueChanged;
 #endif
     UvRunOnce();
+#endif
 }
 
+#if defined(WITH_NODEJS)
 void BackendEnv::UvRunOnce()
 {
     auto Isolate = MainIsolate;
@@ -185,9 +186,11 @@ void BackendEnv::WakeupPollingThread()
 {
     uv_async_send(&DummyUVHandle);
 }
+#endif
 
 void BackendEnv::StopPolling()
 {
+#if defined(WITH_NODEJS)
     PollingClosed = true;
 
     uv_sem_post(&PollingSem);
@@ -197,8 +200,8 @@ void BackendEnv::StopPolling()
     uv_thread_join(&PollingThread);
 
     uv_sem_destroy(&PollingSem);
-}
 #endif
+}
 
 void BackendEnv::GlobalPrepare()
 {

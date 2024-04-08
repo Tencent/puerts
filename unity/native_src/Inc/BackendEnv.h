@@ -46,6 +46,10 @@ namespace PUERTS_NAMESPACE
         v8::Isolate::CreateParams* CreateParams;
 
         void LogicTick();
+        
+        void StartPolling();
+        
+        void StopPolling();
 
 #if defined(WITH_NODEJS)
         uv_loop_t NodeUVLoop;
@@ -73,8 +77,6 @@ namespace PUERTS_NAMESPACE
         int Epoll;
 #endif
 
-        void StartPolling();
-
         void UvRunOnce();
 
         void PollEvents();
@@ -82,9 +84,6 @@ namespace PUERTS_NAMESPACE
         static void OnWatcherQueueChanged(uv_loop_t* loop);
 
         void WakeupPollingThread();
-
-        void StopPolling();
-
 #endif
 
         // Module

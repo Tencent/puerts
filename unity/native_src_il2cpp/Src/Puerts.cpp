@@ -759,23 +759,13 @@ struct JSEnv
             }
         })->GetFunction(Context).ToLocalChecked()).Check();
         
-#if defined(WITH_NODEJS)
         BackendEnv.StartPolling();
-#endif
     }
     
     ~JSEnv()
     {
-#if WITH_NODEJS
-        {
-            v8::Isolate::Scope IsolateScope(MainIsolate);
-            v8::HandleScope HandleScope(MainIsolate);
-            auto Context = MainContext.Get(MainIsolate);
-            v8::Context::Scope ContextScope(Context);
-            BackendEnv.LogicTick();
-            BackendEnv.StopPolling();
-        }
-#endif
+        BackendEnv.LogicTick();
+        BackendEnv.StopPolling();
 
         CppObjectMapper.UnInitialize(MainIsolate);
         BackendEnv.PathToModuleMap.clear();
