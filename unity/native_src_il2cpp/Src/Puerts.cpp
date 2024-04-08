@@ -706,7 +706,7 @@ struct JSEnv
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
         
-        BackendEnv.Initialize();
+        BackendEnv.Initialize(nullptr, nullptr);
         MainIsolate = BackendEnv.MainIsolate;
 
         auto Isolate = MainIsolate;
