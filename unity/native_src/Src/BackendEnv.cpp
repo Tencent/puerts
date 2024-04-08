@@ -228,7 +228,7 @@ void BackendEnv::GlobalPrepare()
     }
 }
 
-v8::Isolate* BackendEnv::CreateIsolate(void* external_quickjs_runtime)
+void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quickjs_context)
 {
 #if defined(WITH_NODEJS)
     const int Ret = uv_loop_init(&NodeUVLoop);
@@ -254,16 +254,28 @@ v8::Isolate* BackendEnv::CreateIsolate(void* external_quickjs_runtime)
     CreateParams->array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
     
 #if WITH_QUICKJS
-        MainIsolate = (external_quickjs_runtime == nullptr) ? v8::Isolate::New(*CreateParams) : v8::Isolate::New(external_quickjs_runtime);
+    MainIsolate = (external_quickjs_runtime == nullptr) ? v8::Isolate::New(*CreateParams) : v8::Isolate::New(external_quickjs_runtime);
 #else
-        MainIsolate = v8::Isolate::New(*CreateParams);
+    MainIsolate = v8::Isolate::New(*CreateParams);
 #endif
 #endif
 
-    return MainIsolate;
+    auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope Isolatescope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+
+#if WITH_QUICKJS
+    v8::Local<v8::Context> Context = (external_quickjs_runtime && external_quickjs_context) ? v8::Context::New(Isolate, external_quickjs_context) : v8::Context::New(Isolate);
+#else
+    v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+#endif
+    MainContext.Reset(Isolate, Context);
 }
 
-void BackendEnv::FreeIsolate()
+void BackendEnv::UnInitialize()
 {
 #if WITH_NODEJS
     // node::EmitExit(NodeEnv);
@@ -308,9 +320,10 @@ void BackendEnv::LogicTick()
 #endif
 }
 
-void BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context)
+void BackendEnv::InitInject()
 {
-    MainContext.Reset(Isolate, Context);
+    v8::Isolate* Isolate = MainIsolate;
+    v8::Local<v8::Context> Context = MainContext.Get(Isolate);
 #if defined(WITH_NODEJS)
     v8::Local<v8::Object> Global = Context->Global();
     auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();

@@ -29,12 +29,11 @@ namespace PUERTS_NAMESPACE
 {
     class BackendEnv 
     {
-    private:
+    public:
         v8::Isolate* MainIsolate;
 
         v8::Global<v8::Context> MainContext;
 
-    public:
         ~BackendEnv() {
             PathToModuleMap.clear();
             ScriptIdToPathMap.clear();
@@ -108,11 +107,11 @@ namespace PUERTS_NAMESPACE
         }
         static void GlobalPrepare();
 
-        v8::Isolate* CreateIsolate(void* external_quickjs_runtime);
+        void Initialize(void* external_quickjs_runtime, void* external_quickjs_context);
 
-        void FreeIsolate();
+        void UnInitialize();
 
-        void InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context);
+        void InitInject();
         
         void CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port);
 
