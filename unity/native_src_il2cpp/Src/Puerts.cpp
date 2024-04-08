@@ -719,7 +719,6 @@ struct JSEnv
         
         MainContext.Reset(Isolate, Context);
 
-        BackendEnv.InitInject();
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
         Isolate->SetData(BACKENDENV_DATA_POS, &BackendEnv);
@@ -759,6 +758,10 @@ struct JSEnv
                 GLogCallback(str.c_str());
             }
         })->GetFunction(Context).ToLocalChecked()).Check();
+        
+#if defined(WITH_NODEJS)
+        BackendEnv.StartPolling();
+#endif
     }
     
     ~JSEnv()

@@ -131,7 +131,6 @@ namespace PUERTS_NAMESPACE
         v8::Local<v8::Object> Global = Context->Global();
         if (external_quickjs_runtime == nullptr) 
         {
-            BackendEnv.InitInject();
             Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
         }
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
@@ -142,6 +141,10 @@ namespace PUERTS_NAMESPACE
             Isolate, Context, 
             v8::FunctionTemplate::New(Isolate, &JSObjectValueGetterFunction)->GetFunction(Context).ToLocalChecked()
         );
+            
+#if defined(WITH_NODEJS)
+        BackendEnv.StartPolling();
+#endif
     }
 
     JSEngine::~JSEngine()

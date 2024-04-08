@@ -110,8 +110,6 @@ namespace PUERTS_NAMESPACE
         void Initialize(void* external_quickjs_runtime, void* external_quickjs_context);
 
         void UnInitialize();
-
-        void InitInject();
         
         void CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port);
 

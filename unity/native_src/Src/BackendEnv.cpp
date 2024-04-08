@@ -272,7 +272,43 @@ void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quick
 #else
     v8::Local<v8::Context> Context = v8::Context::New(Isolate);
 #endif
+    v8::Context::Scope ContextScope(Context);
     MainContext.Reset(Isolate, Context);
+    
+    v8::Local<v8::Object> Global = Context->Global();
+#if defined(WITH_NODEJS)
+    auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
+    v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
+
+    NodeIsolateData = node::CreateIsolateData(Isolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+
+    NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, (node::EnvironmentFlags::Flags)(node::EnvironmentFlags::kOwnsProcessState | node::EnvironmentFlags::kNoRegisterESMLoader | node::EnvironmentFlags::kNoCreateInspector));
+
+    Global->Set(Context, strConsole, Console).Check();
+
+    v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
+        NodeEnv,
+        "const publicRequire ="
+        "  require('module').createRequire(process.cwd() + '/');"
+        "globalThis.require = publicRequire;");
+
+    if (LoadenvRet.IsEmpty())  // There has been a JS exception.
+    {
+        return;
+    }
+#endif
+    
+    if (external_quickjs_runtime == nullptr) 
+    {
+        Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<BackendEnv>);
+
+#if !WITH_QUICKJS
+        Isolate->SetHostInitializeImportMetaObjectCallback(&esmodule::HostInitializeImportMetaObject);
+        Isolate->SetHostImportModuleDynamicallyCallback(&esmodule::DynamicImport);
+#endif
+
+        Global->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
+    }
 }
 
 void BackendEnv::UnInitialize()
@@ -317,48 +353,6 @@ void BackendEnv::LogicTick()
 
     if (hasPendingTask)
         UvRunOnce();
-#endif
-}
-
-void BackendEnv::InitInject()
-{
-    v8::Isolate* Isolate = MainIsolate;
-    v8::Local<v8::Context> Context = MainContext.Get(Isolate);
-#if defined(WITH_NODEJS)
-    v8::Local<v8::Object> Global = Context->Global();
-    auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
-    v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
-    auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
-
-    NodeIsolateData = node::CreateIsolateData(Isolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
-
-    NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, (node::EnvironmentFlags::Flags)(node::EnvironmentFlags::kOwnsProcessState | node::EnvironmentFlags::kNoRegisterESMLoader | node::EnvironmentFlags::kNoCreateInspector));
-
-    Global->Set(Context, strConsole, Console).Check();
-
-    v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
-        NodeEnv,
-        "const publicRequire ="
-        "  require('module').createRequire(process.cwd() + '/');"
-        "globalThis.require = publicRequire;");
-
-    if (LoadenvRet.IsEmpty())  // There has been a JS exception.
-    {
-        return;
-    }
-#endif
-
-    Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<BackendEnv>);
-
-#if !WITH_QUICKJS
-    Isolate->SetHostInitializeImportMetaObjectCallback(&esmodule::HostInitializeImportMetaObject);
-    Isolate->SetHostImportModuleDynamicallyCallback(&esmodule::DynamicImport);
-#endif
-
-    Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
-
-#if defined(WITH_NODEJS)
-    StartPolling();
 #endif
 }
 
