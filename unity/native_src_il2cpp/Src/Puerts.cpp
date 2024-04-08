@@ -706,19 +706,20 @@ struct JSEnv
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
         
-        MainIsolate = BackendEnv.CreateIsolate(nullptr);
+        BackendEnv.Initialize();
+        MainIsolate = BackendEnv.MainIsolate;
 
         auto Isolate = MainIsolate;
         
         v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
 
-        v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+        v8::Local<v8::Context> Context = BackendEnv.MainContext.Get(Isolate);;
         v8::Context::Scope ContextScope(Context);
         
         MainContext.Reset(Isolate, Context);
 
-        BackendEnv.InitInject(MainIsolate, Context);
+        BackendEnv.InitInject();
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
         Isolate->SetData(BACKENDENV_DATA_POS, &BackendEnv);
@@ -784,7 +785,7 @@ struct JSEnv
         }
 
         MainContext.Reset();
-        BackendEnv.FreeIsolate();
+        BackendEnv.UnInitialize();
     }
     
     v8::Isolate* MainIsolate;
