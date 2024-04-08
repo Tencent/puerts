@@ -236,7 +236,7 @@ void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quick
     {
         // TODO log
         printf("uv_loop_init failed\n");
-        return nullptr;
+        return;
     }
 
     NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
