@@ -300,7 +300,7 @@ static v8::Value* GetModuleExecutor(v8::Context* env)
         return *Func;
     }
 
-    return nullptr;
+    return *v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked();;
 }
 
 static void* GetJSObjectValue(const PersistentObjectInfo* objectInfo, const char* key, const void* Typeid)
