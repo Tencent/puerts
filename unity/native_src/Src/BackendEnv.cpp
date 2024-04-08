@@ -312,8 +312,6 @@ void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quick
 
         Global->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     }
-    
-    Global->Set(Context, v8::String::NewFromUtf8(Isolate, EXECUTEMODULEGLOBANAME).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()).Check();
 }
 
 void BackendEnv::UnInitialize()

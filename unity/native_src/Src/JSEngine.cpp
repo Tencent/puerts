@@ -234,16 +234,10 @@ namespace PUERTS_NAMESPACE
             v8::HandleScope HandleScope(MainIsolate);
             v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);
             v8::Context::Scope ContextScope(Context);
-            v8::Local<v8::Object> Global = Context->Global();
-            auto Ret = Global->Get(Context, v8::String::NewFromUtf8(MainIsolate, EXECUTEMODULEGLOBANAME).ToLocalChecked());
-            v8::Local<v8::Value> Func;
-            if (Ret.ToLocal(&Func) && Func->IsFunction())
-            {
-                ModuleExecutor = CreateJSFunction(
-                    MainIsolate, Context, 
-                    Func.As<v8::Function>()
-                );
-            }
+            ModuleExecutor = CreateJSFunction(
+                MainIsolate, Context, 
+                v8::FunctionTemplate::New(MainIsolate, esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()
+            );
         }
         return ModuleExecutor;
     }

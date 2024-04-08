@@ -25,8 +25,6 @@
 
 #endif
 
-#define EXECUTEMODULEGLOBANAME "__puertsExecuteModule"
-
 namespace PUERTS_NAMESPACE
 {
     class BackendEnv 

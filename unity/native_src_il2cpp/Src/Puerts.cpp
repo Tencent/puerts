@@ -291,7 +291,7 @@ static v8::Value* GetModuleExecutor(v8::Context* env)
 
     auto Isolate = Context->GetIsolate();
 
-    return *v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked();;
+    return *v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked();
 }
 
 static void* GetJSObjectValue(const PersistentObjectInfo* objectInfo, const char* key, const void* Typeid)
