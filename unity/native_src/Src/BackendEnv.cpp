@@ -269,8 +269,9 @@ void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quick
 #endif
     v8::Isolate::Scope Isolatescope(Isolate);
     v8::HandleScope HandleScope(Isolate);
-
-#if WITH_QUICKJS
+#if defined(WITH_NODEJS)
+    v8::Local<v8::Context> Context = node::NewContext(Isolate);
+#elif defined(WITH_QUICKJS)
     v8::Local<v8::Context> Context = (external_quickjs_runtime && external_quickjs_context) ? v8::Context::New(Isolate, external_quickjs_context) : v8::Context::New(Isolate);
 #else
     v8::Local<v8::Context> Context = v8::Context::New(Isolate);
@@ -312,6 +313,8 @@ void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quick
 
         Global->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     }
+    
+    Global->Set(Context, v8::String::NewFromUtf8(Isolate, EXECUTEMODULEGLOBANAME).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()).Check();
 }
 
 void BackendEnv::UnInitialize()
