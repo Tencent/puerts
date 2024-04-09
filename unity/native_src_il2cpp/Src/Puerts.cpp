@@ -290,8 +290,6 @@ static v8::Value* GetModuleExecutor(v8::Context* env)
     auto ret = pesapi_eval((pesapi_env) env, (const uint8_t*) ExecuteModuleJSCode, strlen(ExecuteModuleJSCode), "__puer_execute__.mjs");
 
     auto Isolate = Context->GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Context::Scope ContextScope(Context);
     v8::Local<v8::Object> Global = Context->Global();
     auto Ret = Global->Get(Context, v8::String::NewFromUtf8(Isolate, EXECUTEMODULEGLOBANAME).ToLocalChecked());
     v8::Local<v8::Value> Func;
@@ -300,7 +298,7 @@ static v8::Value* GetModuleExecutor(v8::Context* env)
         return *Func;
     }
 
-    return *v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked();;
+    return nullptr;
 }
 
 static void* GetJSObjectValue(const PersistentObjectInfo* objectInfo, const char* key, const void* Typeid)
