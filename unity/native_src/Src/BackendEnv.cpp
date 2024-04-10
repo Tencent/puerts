@@ -512,14 +512,29 @@ char* BackendEnv::ResolveQjsModule(JSContext *ctx, const char *base_name, const 
 
 char* BackendEnv::NormalizeModuleName(JSContext *ctx, const char *base_name, const char *name)
 {
-    // can not throw in this function
-    char* ret = ResolveQjsModule(ctx, base_name, name, false);
+    char* ret = ResolveQjsModule(ctx, base_name, name, true);
     
-    return ret ? ret : JS_DefaultModuleNameNormalize(ctx, base_name, name);
+    return ret ? ret : js_strdup(ctx, "");;
 }
+
+//static bool StringIsNullOrEmpty(const char * str)
+//{
+//    return str == nullptr || str[0] == '\0';
+//}
 
 JSModuleDef* BackendEnv::LoadModule(JSContext* ctx, const char *name)
 {
+    //if (StringIsNullOrEmpty(name))
+    //{
+        // exception from Normalize
+    //    return nullptr;
+    //}
+    auto Ex = JS_GetException(ctx);
+    if (!JS_IsUndefined(Ex) && !JS_IsNull(Ex))
+    {
+        JS_Throw(ctx, Ex);
+        return nullptr;
+    }
     // quickjs本身已经做了cache，这只是为了支持ClearModuleCache ///
     auto Iter = PathToModuleMap.find(name);
     if (Iter != PathToModuleMap.end())
