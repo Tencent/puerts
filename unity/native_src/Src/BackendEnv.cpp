@@ -471,95 +471,6 @@ bool BackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> C
 }
 
 #if defined(WITH_QUICKJS)
-// copy form quickjs.c
-static void pstrcpy(char *buf, int buf_size, const char *str)
-{
-    int c;
-    char *q = buf;
-
-    if (buf_size <= 0)
-        return;
-
-    for(;;) {
-        c = *str++;
-        if (c == 0 || q >= buf + buf_size - 1)
-            break;
-        *q++ = c;
-    }
-    *q = '\0';
-}
-
-// copy form quickjs.c
-static char *pstrcat(char *buf, int buf_size, const char *s)
-{
-    int len;
-    len = strlen(buf);
-    if (len < buf_size)
-        pstrcpy(buf + len, buf_size - len, s);
-    return buf;
-}
-
-
-// copy form quickjs.c
-static char *js_default_module_normalize_name(JSContext *ctx,
-                                              const char *base_name,
-                                              const char *name)
-{
-    char *filename, *p;
-    const char *r;
-    int cap;
-    int len;
-
-    if (name[0] != '.') {
-        /* if no initial dot, the module name is not modified */
-        return js_strdup(ctx, name);
-    }
-
-    p = (char*)strrchr(base_name, '/');
-    if (p)
-        len = p - base_name;
-    else
-        len = 0;
-
-    cap = len + strlen(name) + 1 + 1;
-    filename = (char*)js_malloc(ctx, cap);
-    if (!filename)
-        return NULL;
-    memcpy(filename, base_name, len);
-    filename[len] = '\0';
-
-    /* we only normalize the leading '..' or '.' */
-    r = name;
-    for(;;) {
-        if (r[0] == '.' && r[1] == '/') {
-            r += 2;
-        } else if (r[0] == '.' && r[1] == '.' && r[2] == '/') {
-            /* remove the last path element of filename, except if "."
-               or ".." */
-            if (filename[0] == '\0')
-                break;
-            p = strrchr(filename, '/');
-            if (!p)
-                p = filename;
-            else
-                p++;
-            if (!strcmp(p, ".") || !strcmp(p, ".."))
-                break;
-            if (p > filename)
-                p--;
-            *p = '\0';
-            r += 3;
-        } else {
-            break;
-        }
-    }
-    if (filename[0] != '\0')
-        pstrcat(filename, cap, "/");
-    pstrcat(filename, cap, r);
-    //    printf("normalize: %s %s -> %s\n", base_name, name, filename);
-    return filename;
-}
-
 char* BackendEnv::ResolveQjsModule(JSContext *ctx, const char *base_name, const char *name, bool throwIfFail)
 {
     if (JS_IsUndefined(JsFileNormalize))
@@ -604,7 +515,7 @@ char* BackendEnv::NormalizeModuleName(JSContext *ctx, const char *base_name, con
     // can not throw in this function
     char* ret = ResolveQjsModule(ctx, base_name, name, false);
     
-    return ret ? ret : js_default_module_normalize_name(ctx, base_name, name);
+    return ret ? ret : JS_DefaultModuleNameNormalize(ctx, base_name, name);
 }
 
 JSModuleDef* BackendEnv::LoadModule(JSContext* ctx, const char *name)
@@ -778,21 +689,14 @@ JSValue esmodule::ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc,
         char *Path = Backend->ResolveQjsModule(ctx, "", Specifier, true);
         if (!Path)
         {
-            JSValue ret;
-            ret.u.int32 = 0;
-            ret.tag = JS_TAG_EXCEPTION;
-            return ret;
+            return JS_Exception();
         }
         JSModuleDef* EntryModule = Backend->LoadModule(ctx, Path);
         JS_FreeCString(ctx, Specifier);
         js_free(ctx, Path);
         if (!EntryModule)
         {
-            //return JS_EXCEPTION();
-            JSValue ret;
-            ret.u.int32 = 0;
-            ret.tag = JS_TAG_EXCEPTION;
-            return ret;
+            return JS_Exception();
         }
         auto Func = JS_DupModule(ctx, EntryModule);
         auto EvalRet = JS_EvalFunction(ctx, Func);
