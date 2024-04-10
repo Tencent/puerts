@@ -376,8 +376,7 @@ export default CrashTest;");
                     })
             ");
             jsEnv.Tick();
-            string msg = jsEnv.Eval<string>("error_ESDynamicModuleNotFound.toString()");
-            Assert.True(msg.Contains("notfound/whatever.mjs") || msg.Contains("notfound\\whatever.mjs"));
+            StringAssert.Contains("notfound/whatever.mjs", jsEnv.Eval<string>("error_ESDynamicModuleNotFound.toString()"));
         }
 #if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
