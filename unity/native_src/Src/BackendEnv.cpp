@@ -48,7 +48,7 @@ static std::vector<std::string>* ExecArgs;
 static std::vector<std::string>* Errors;
 #endif
 
-void BackendEnv::StartPolling()
+void FBackendEnv::StartPolling()
 {
 #if defined(WITH_NODEJS)
     uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
@@ -57,7 +57,7 @@ void BackendEnv::StartPolling()
         &PollingThread,
         [](void* arg)
         {
-            auto* self = static_cast<BackendEnv*>(arg);
+            auto* self = static_cast<FBackendEnv*>(arg);
             while (true)
             {
                 uv_sem_wait(&self->PollingSem);
@@ -104,7 +104,7 @@ void BackendEnv::StartPolling()
 }
 
 #if defined(WITH_NODEJS)
-void BackendEnv::UvRunOnce()
+void FBackendEnv::UvRunOnce()
 {
     auto Isolate = MainIsolate;
 #ifdef THREAD_SAFE
@@ -134,7 +134,7 @@ void BackendEnv::UvRunOnce()
     uv_sem_post(&PollingSem);
 }
 
-void BackendEnv::PollEvents()
+void FBackendEnv::PollEvents()
 {
 #if PLATFORM_WINDOWS
     DWORD bytes;
@@ -184,21 +184,21 @@ void BackendEnv::PollEvents()
 #endif
 }
 
-void BackendEnv::OnWatcherQueueChanged(uv_loop_t* loop)
+void FBackendEnv::OnWatcherQueueChanged(uv_loop_t* loop)
 {
 #if !PLATFORM_WINDOWS
-    BackendEnv* self = static_cast<BackendEnv*>(loop->data);
+    FBackendEnv* self = static_cast<FBackendEnv*>(loop->data);
     self->WakeupPollingThread();
 #endif
 }
 
-void BackendEnv::WakeupPollingThread()
+void FBackendEnv::WakeupPollingThread()
 {
     uv_async_send(&DummyUVHandle);
 }
 #endif
 
-void BackendEnv::StopPolling()
+void FBackendEnv::StopPolling()
 {
 #if defined(WITH_NODEJS)
     PollingClosed = true;
@@ -213,7 +213,7 @@ void BackendEnv::StopPolling()
 #endif
 }
 
-void BackendEnv::GlobalPrepare()
+void FBackendEnv::GlobalPrepare()
 {
     if (!GPlatform)
     {
@@ -241,7 +241,7 @@ void BackendEnv::GlobalPrepare()
     }
 }
 
-void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quickjs_context)
+void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quickjs_context)
 {
 #if defined(WITH_NODEJS)
     const int Ret = uv_loop_init(&NodeUVLoop);
@@ -314,14 +314,14 @@ void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quick
     
     if (external_quickjs_runtime == nullptr) 
     {
-        Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<BackendEnv>);
+        Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FBackendEnv>);
 
 #if !WITH_QUICKJS
         Isolate->SetHostInitializeImportMetaObjectCallback(&esmodule::HostInitializeImportMetaObject);
         Isolate->SetHostImportModuleDynamicallyCallback(&esmodule::DynamicImport);
 #endif
 
-        Global->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
+        Global->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FBackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     }
     
 #if defined(WITH_QUICKJS)
@@ -344,7 +344,7 @@ void BackendEnv::Initialize(void* external_quickjs_runtime, void* external_quick
 #endif
 }
 
-void BackendEnv::UnInitialize()
+void FBackendEnv::UnInitialize()
 {
 #if defined(WITH_QUICKJS)
     JS_FreeValueRT(MainIsolate->runtime_, JsFileNormalize);
@@ -380,7 +380,7 @@ void BackendEnv::UnInitialize()
 #endif
 }
 
-void BackendEnv::LogicTick()
+void FBackendEnv::LogicTick()
 {
 #if WITH_NODEJS
     v8::Isolate::Scope IsolateScope(MainIsolate);
@@ -393,7 +393,7 @@ void BackendEnv::LogicTick()
 #endif
 }
 
-void BackendEnv::CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port)
+void FBackendEnv::CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port)
 {
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
@@ -409,7 +409,7 @@ void BackendEnv::CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Cont
     }
 }
 
-void BackendEnv::DestroyInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal)
+void FBackendEnv::DestroyInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal)
 {
     if (Inspector != nullptr)
     {
@@ -426,7 +426,7 @@ void BackendEnv::DestroyInspector(v8::Isolate* Isolate, const v8::Global<v8::Con
     }
 }
 
-bool BackendEnv::InspectorTick()
+bool FBackendEnv::InspectorTick()
 {
     if (Inspector != nullptr)
     {
@@ -435,7 +435,7 @@ bool BackendEnv::InspectorTick()
     return true;
 }
 
-bool BackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path)
+bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path)
 {
     std::string key(Path);
     if (key.size() == 0) 
@@ -471,7 +471,7 @@ bool BackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> C
 }
 
 #if defined(WITH_QUICKJS)
-char* BackendEnv::ResolveQjsModule(JSContext *ctx, const char *base_name, const char *name, bool throwIfFail)
+char* FBackendEnv::ResolveQjsModule(JSContext *ctx, const char *base_name, const char *name, bool throwIfFail)
 {
     if (JS_IsUndefined(JsFileNormalize))
     {
@@ -510,7 +510,7 @@ char* BackendEnv::ResolveQjsModule(JSContext *ctx, const char *base_name, const 
     return nullptr;
 }
 
-char* BackendEnv::NormalizeModuleName(JSContext *ctx, const char *base_name, const char *name)
+char* FBackendEnv::NormalizeModuleName(JSContext *ctx, const char *base_name, const char *name)
 {
     char* ret = ResolveQjsModule(ctx, base_name, name, true);
     
@@ -522,7 +522,7 @@ char* BackendEnv::NormalizeModuleName(JSContext *ctx, const char *base_name, con
 //    return str == nullptr || str[0] == '\0';
 //}
 
-JSModuleDef* BackendEnv::LoadModule(JSContext* ctx, const char *name)
+JSModuleDef* FBackendEnv::LoadModule(JSContext* ctx, const char *name)
 {
     //if (StringIsNullOrEmpty(name))
     //{
@@ -700,7 +700,7 @@ JSValue esmodule::ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc,
     if (argc == 1)
     {
         const char * Specifier = JS_ToCString(ctx, argv[0]);
-        BackendEnv* Backend = (BackendEnv*)(JS_VALUE_GET_PTR(func_data[0]));
+        FBackendEnv* Backend = (FBackendEnv*)(JS_VALUE_GET_PTR(func_data[0]));
         char *Path = Backend->ResolveQjsModule(ctx, "", Specifier, true);
         if (!Path)
         {
@@ -798,7 +798,7 @@ v8::MaybeLocal<v8::Module> esmodule::_ResolveModule(
 )
 {
     v8::Isolate* Isolate = Context->GetIsolate();
-    BackendEnv* mm = BackendEnv::Get(Isolate);
+    FBackendEnv* mm = FBackendEnv::Get(Isolate);
 
     v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
     if (maybeRet.IsEmpty()) 
@@ -863,7 +863,7 @@ v8::Local<v8::Value> GetModuleName(
     v8::Local<v8::Module> Referrer
 ) 
 {
-    BackendEnv* mm = BackendEnv::Get(Isolate);
+    FBackendEnv* mm = FBackendEnv::Get(Isolate);
     v8::Local<v8::Value> ReferrerName;
 #if V8_94_OR_NEWER
     const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
@@ -917,7 +917,7 @@ bool esmodule::LinkModule(
             v8::Local<v8::Module> Module = MaybeModule.ToLocalChecked();
             if (!LinkModule(Context, Module)) 
             {
-                BackendEnv* mm = BackendEnv::Get(Isolate);
+                FBackendEnv* mm = FBackendEnv::Get(Isolate);
 
 #if V8_94_OR_NEWER
                 auto Specifier_std = mm->ScriptIdToPathMap[Module->ScriptId()];
@@ -938,7 +938,7 @@ bool esmodule::LinkModule(
 void esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
 {
     v8::Isolate* Isolate = Context->GetIsolate();
-    BackendEnv* mm = BackendEnv::Get(Isolate);
+    FBackendEnv* mm = FBackendEnv::Get(Isolate);
 
 #if V8_94_OR_NEWER
     auto iter = mm->ScriptIdToPathMap.find(Module->ScriptId());
@@ -961,14 +961,14 @@ JSModuleDef* esmodule::js_module_loader(
     JSContext* ctx, const char *name, void *opaque
 ) 
 {
-    return static_cast<BackendEnv*>(opaque)->LoadModule(ctx, name);
+    return static_cast<FBackendEnv*>(opaque)->LoadModule(ctx, name);
 }
 
 char* esmodule::module_normalize(
     JSContext *ctx, const char *base_name, const char *name, void* opaque
 )
 {
-    return static_cast<BackendEnv*>(opaque)->NormalizeModuleName(ctx, base_name, name);
+    return static_cast<FBackendEnv*>(opaque)->NormalizeModuleName(ctx, base_name, name);
 }
 #endif
 

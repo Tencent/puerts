@@ -155,7 +155,7 @@ public:
 
     int32_t Idx;
 
-    BackendEnv BackendEnv;
+    FBackendEnv BackendEnv;
     
 private:
     std::vector<FCallbackInfo*> CallbackInfos;

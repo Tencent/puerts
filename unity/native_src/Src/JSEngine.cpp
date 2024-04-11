@@ -94,7 +94,7 @@ namespace PUERTS_NAMESPACE
 #endif
     {
         GeneralDestructor = nullptr;
-        BackendEnv::GlobalPrepare();
+        FBackendEnv::GlobalPrepare();
 
         std::string Flags = "--no-harmony-top-level-await --stack_size=856";
 #if PUERTS_DEBUG

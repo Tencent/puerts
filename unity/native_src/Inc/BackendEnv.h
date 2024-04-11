@@ -29,18 +29,18 @@
 
 namespace PUERTS_NAMESPACE
 {
-    class BackendEnv 
+    class FBackendEnv 
     {
     public:
         v8::Isolate* MainIsolate;
 
         v8::Global<v8::Context> MainContext;
 
-        ~BackendEnv() {
+        ~FBackendEnv() {
             PathToModuleMap.clear();
             ScriptIdToPathMap.clear();
         }
-        BackendEnv()
+        FBackendEnv()
         {
             Inspector = nullptr;
         } 
@@ -110,9 +110,9 @@ namespace PUERTS_NAMESPACE
         // Inspector
         V8Inspector* Inspector;
 
-        V8_INLINE static BackendEnv* Get(v8::Isolate* Isolate)
+        V8_INLINE static FBackendEnv* Get(v8::Isolate* Isolate)
         {
-            return (BackendEnv*)Isolate->GetData(1);
+            return (FBackendEnv*)Isolate->GetData(1);
         }
         static void GlobalPrepare();
 
