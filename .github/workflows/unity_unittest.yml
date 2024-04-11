@@ -108,3 +108,41 @@ jobs:
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test mult -sq
+          
+  unittest-linux-dotnet:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
+      - uses: actions/checkout@v3
+      - name: Install LibC++
+        run: |
+          sudo apt-get update
+          sudo apt-get install clang
+          sudo apt-get install build-essential
+          sudo apt-get install libc++-dev
+          sudo apt-get install libc++abi-dev
+      - name: UnitTest-v8
+        run: |
+          cd unity
+          npm i
+          cd test/dotnet
+          node ../../cli dotnet-test v8_9.4
+      #- name: UnitTest-nodejs
+      #  run: |
+      #    cd unity/test/dotnet
+      #    node ../../cli dotnet-test nodejs_16
+      - name: UnitTest-quickjs
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test quickjs
+      - name: UnitTest-mult-v8
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test mult
+      - name: UnitTest-mult-v8-qjs
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test mult -sq

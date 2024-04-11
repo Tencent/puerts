@@ -120,7 +120,7 @@ async function runTest(cwd: string, copyConfig: any, runInReflection: boolean, f
 export async function dotnetTest(cwd: string, backend: string, filter: string = '') {
     // 编译binary
     const copyConfig = await runPuertsMake(join(cwd, '../../native_src'), {
-        platform: process.platform == 'win32' ? 'win' : 'osx',
+        platform: process.platform == 'win32' ? 'win' : (process.platform == 'linux' ? 'linux' : 'osx'),
         config: "Debug",
         backend: backend || 'v8_9.4',
         arch: process.arch as any
