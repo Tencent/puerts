@@ -700,7 +700,7 @@ struct JSEnv
 {
     JSEnv()
     {
-        puerts::BackendEnv::GlobalPrepare();
+        puerts::FBackendEnv::GlobalPrepare();
         
 #if defined(WITH_NODEJS)
         std::string Flags = "--stack_size=856";
@@ -792,7 +792,7 @@ struct JSEnv
     v8::Global<v8::Context> MainContext;
     
     puerts::FCppObjectMapper CppObjectMapper;
-    puerts::BackendEnv BackendEnv;
+    puerts::FBackendEnv BackendEnv;
 };
 
 }
