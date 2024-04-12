@@ -304,7 +304,9 @@ namespace Puerts
                 ModuleExecutor = new GenericDelegate(ptr, this);
             }
             JSObject jso = ModuleExecutor.Func<string, JSObject>(specifier);
-            
+
+            if (exportee == "") return (T)(object)jso;
+
             return jso.Get<T>(exportee);
         }
         public JSObject ExecuteModule(string specifier)
