@@ -13,7 +13,7 @@ on:
 env:
   Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.0/Mini427_wami.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz"
-  QJS_URL: "https://github.com/puerts/backend-quickjs/releases/download/QJS_231011/qjs_v8_bin.tgz"
+  QJS_URL: "https://github.com/puerts/backend-quickjs/releases/download/QJS_240412/qjs_v8_bin.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
 jobs:

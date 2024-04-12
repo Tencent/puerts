@@ -11,7 +11,7 @@ env:
   UE424_V8: "https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz"
   V8_84: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz"
   V8_94: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_230822/v8_bin_9.4.146.24.tgz"
-  quickjs: "https://github.com/puerts/backend-quickjs/releases/download/QJS_231011/qjs_v8_bin.tgz"
+  quickjs: "https://github.com/puerts/backend-quickjs/releases/download/QJS_240412/qjs_v8_bin.tgz"
   nodejs: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
 jobs:
