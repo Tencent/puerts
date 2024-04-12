@@ -78,8 +78,11 @@ PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngine(int backend)
 
 PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngineWithExternalEnv(int backend, void* external_quickjs_runtime, void* external_quickjs_context)
 {
-#if WITH_QUICKJS
-    return nullptr;
+#if QJS_BACKEND
+    if (2 == backend)
+    {
+        return puerts::CreateQJSPlugin(external_quickjs_runtime, external_quickjs_context);
+    }
 #else
     return nullptr;
 #endif
