@@ -28,6 +28,11 @@ if ( NOT DEFINED JS_ENGINE )
     set(JS_ENGINE v8)
 endif()
 
+set(USING_MULT_BACKEND OFF)
+if("${JS_ENGINE}" MATCHES "^mult")
+    set(USING_MULT_BACKEND ON)
+endif()
+
 set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/../native_src/.backends/${JS_ENGINE})
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
@@ -85,7 +90,7 @@ endmacro(source_group_by_dir)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_INC)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_SRC)
 
-if("${JS_ENGINE}" STREQUAL "mult")
+if( USING_MULT_BACKEND )
     message("mult backend>>>>>>>>>>>>>>>>>>>>>>>>")
     set ( PUERTS_SRC
         Src/Log.cpp
@@ -136,7 +141,7 @@ option ( USING_V8 "using v8" ON )
 option ( USING_QJS "using quickjs" ON )
 option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
 
-if("${JS_ENGINE}" STREQUAL "mult")
+if ( USING_MULT_BACKEND )
     # -------------------begin v8 backend-------------------------
     if ( USING_V8)
         add_library(v8backend STATIC
@@ -278,7 +283,7 @@ target_link_libraries(puerts
 list(APPEND PUERTS_COMPILE_DEFINITIONS ${BACKEND_DEFINITIONS})
 
 target_compile_definitions (puerts PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
-if("${JS_ENGINE}" STREQUAL "mult")
+if( USING_MULT_BACKEND )
     if ( USING_V8)
         target_compile_definitions (v8backend PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
         if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
