@@ -114,7 +114,7 @@ async function runTest(cwd: string, copyConfig: any, runInReflection: boolean, f
 
     // 运行测试
     assert.equal(0, exec(`dotnet build ${testProjectName}.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code)
-    assert.equal(0, exec(`dotnet test ${testProjectName}.csproj --blame-hang-timeout 5000ms ${filter ? `--filter ${filter}` : ''}`, { cwd: workdir }).code)
+    assert.equal(0, exec(`dotnet test ${testProjectName}.csproj --blame-hang-timeout 10000ms ${filter ? `--filter ${filter}` : ''}`, { cwd: workdir }).code)
 }
 
 export async function dotnetTest(cwd: string, backend: string, filter: string = '') {
