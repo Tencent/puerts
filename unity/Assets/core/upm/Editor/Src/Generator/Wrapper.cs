@@ -363,6 +363,7 @@ namespace Puerts.Editor
                 public bool IsIn;
                 public bool IsOut;
                 public bool IsByRef;
+                public bool IsValueType;
                 public string ExpectJsType;
                 public string ExpectCsType; 
                 public bool IsParams;
@@ -379,6 +380,7 @@ namespace Puerts.Editor
                         IsOut = !parameterInfo.IsIn && parameterInfo.IsOut && parameterInfo.ParameterType.IsByRef,
                         IsIn = parameterInfo.IsIn,
                         IsByRef = parameterInfo.ParameterType.IsByRef,
+                        IsValueType = parameterInfo.ParameterType.IsValueType,
                         TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType).GetFriendlyName(),
                         ExpectJsType = Utils.ToCode(ExpectJsType),
                         IsParams = isParams
