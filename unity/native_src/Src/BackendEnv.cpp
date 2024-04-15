@@ -440,13 +440,6 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
     std::string key(Path);
     if (key.size() == 0) 
     {
-#if !WITH_QUICKJS
-        for (auto Iter = PathToModuleMap.begin(); Iter != PathToModuleMap.end(); ++Iter)
-        {
-            Iter->second.Reset();
-        }
-#else
-#endif
         PathToModuleMap.clear();
         return true;
     } 
@@ -457,7 +450,6 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
         {
             PathToModuleMap.erase(key);
 #if !WITH_QUICKJS
-            finder->second.Reset();
             return true;
 #else
             v8::Isolate::Scope IsolateScope(Isolate);
