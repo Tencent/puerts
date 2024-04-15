@@ -49,6 +49,13 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.ExecuteModule("CSharpModuleTest/console_log_test.mjs");
         }
+        
+        [Test]
+        public void EmptyModule()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.ExecuteModule("CSharpModuleTest/empty.mjs");
+        }
 
         public class Inner {
             [UnityEngine.Scripting.Preserve]
