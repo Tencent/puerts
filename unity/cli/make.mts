@@ -10,13 +10,31 @@ const glob = createRequire(fileURLToPath(import.meta.url))('glob');
 
 interface BuildOptions {
     config: 'Debug' | 'Release' | "RelWithDebInfo",
-    platform: 'osx' | 'win' | 'ios' | 'android' | 'linux',
-    arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'auto',
+    platform: 'osx' | 'win' | 'ios' | 'android' | 'linux' | 'web',
+    arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'auto' | 'wasm',
     backend: string
 }
 
 //// 脚本 scripts
 const platformCompileConfig = {
+    // ... (other platform configs)
+    'web': {
+        'wasm': {
+            outputPluginPath: 'web/wasm',
+            hook: function(CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
+                // We are assuming you are using Emscripten's emcmake tool to use CMake for WebAssembly compilation
+                const EMSDK_PATH = process.env.EMSDK_PATH || "~/emsdk";
+                const EMSCRIPTEN_CMAKE_TOOLCHAIN_FILE = `${EMSDK_PATH}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake`;
+
+                // Invoking emcmake with cmake for WebAssembly compilation
+                assert.equal(0, exec(`${EMSDK_PATH}/upstream/emscripten/emcmake cmake ${cmakeDArgs} -DCMAKE_TOOLCHAIN_FILE=${EMSCRIPTEN_CMAKE_TOOLCHAIN_FILE} -DJS_ENGINE=${options.backend} -H. -B${CMAKE_BUILD_PATH}`).code);
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
+
+                // Assuming your output is in the format of .wasm
+                return `${CMAKE_BUILD_PATH}/${cmakeAddedLibraryName}.wasm`;
+            }
+        }
+    },
     'android': {
         'armv7': {
             outputPluginPath: 'Android/libs/armeabi-v7a/',
