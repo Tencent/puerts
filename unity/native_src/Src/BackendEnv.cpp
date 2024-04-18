@@ -713,6 +713,18 @@ JSValue esmodule::ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc,
         if (JS_IsException(EvalRet)) {
             return EvalRet;
         }
+#if defined(JS_EVAL_FLAG_ASYNC)
+        if (!JS_IsUndefined(EvalRet))
+        {
+            JSPromiseStateEnum state = JS_PromiseState(ctx, EvalRet);
+            if (state == JS_PROMISE_REJECTED)
+            {
+                auto ret = JS_Throw(ctx, JS_PromiseResult(ctx, EvalRet));
+                JS_FreeValue(ctx, EvalRet);
+                return ret;
+            }
+        }
+#endif
         JS_FreeValue(ctx, EvalRet);
         auto Namespace = JS_GET_MODULE_NS(ctx, EntryModule);
         if (JS_IsUndefined(Namespace) || JS_IsNull(Namespace))
