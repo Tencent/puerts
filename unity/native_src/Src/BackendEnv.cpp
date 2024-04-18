@@ -710,6 +710,7 @@ JSValue esmodule::ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc,
         if (JS_IsException(EvalRet)) {
             return EvalRet;
         }
+        JS_FreeValue(ctx, EvalRet);
         auto Namespace = JS_GET_MODULE_NS(ctx, EntryModule);
         if (JS_IsUndefined(Namespace) || JS_IsNull(Namespace))
         {
