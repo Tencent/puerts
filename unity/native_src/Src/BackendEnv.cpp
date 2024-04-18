@@ -482,6 +482,8 @@ char* FBackendEnv::ResolveQjsModule(JSContext *ctx, const char *base_name, const
         Args[0] = JS_NewString(ctx, name);
         Args[1] = JS_NewString(ctx, base_name);
         JSValue Resolved = JS_Call(ctx, JsFileNormalize, JS_Undefined(), 2, &Args[0]);
+        JS_FreeValue(ctx,  Args[1]);
+        JS_FreeValue(ctx,  Args[0]);
         if (!JS_IsException(Resolved))
         {
             const char* ResolvedName = JS_ToCString(ctx, Resolved);
@@ -549,6 +551,7 @@ JSModuleDef* FBackendEnv::LoadModule(JSContext* ctx, const char *name)
     
     JSValue Url = JS_NewString(ctx, name);
     JSValue Context = JS_Call(ctx, JsFileLoader, JS_Undefined(), 1, &Url);
+    JS_FreeValue(ctx, Url);
     
     if (JS_IsException(Context))
     {
