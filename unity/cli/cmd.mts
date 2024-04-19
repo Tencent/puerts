@@ -18,7 +18,7 @@ program
     .addOption(
         new Option("--platform <platform>", "the target platform")
             .default("")
-            .choices(["win", "osx", "linux", "android", "ios"])
+            .choices(["win", "osx", "linux", "android", "ios", "ohos"])
     )
     .addOption(
         new Option("--arch <arch>", "the target architecture. 'auto' means build all available archs for the platform and universal binary will be created in osx.")

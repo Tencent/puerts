@@ -38,6 +38,14 @@
                         "/Lib/Android/x86_64/libquickjs.a"
                     ]
                 },
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libquickjs.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libquickjs.a"
+                    ]
+                },
                 "linux": {
                     "x64": [
                         "/Lib/Linux/libquickjs.a"

@@ -208,7 +208,19 @@ if ( MSYS OR WIN32 )
 
     # definition
     list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_WINDOWS)
+elseif ( OHOS )
+    set(BACKEND_LIB_NAMES "-Wl,--whole-archive$<SEMICOLON>${BACKEND_LIB_NAMES}$<SEMICOLON>-Wl,--no-whole-archive")
+    if ( ANDROID_ABI STREQUAL "armeabi-v7a")
+        # definition
+        list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_ANDROID_ARM)
 
+    elseif ( ANDROID_ABI STREQUAL "arm64-v8a")
+        # definition
+        list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_ANDROID_ARM64)
+    else ()
+        # definition
+        list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_ANDROID_x64)
+    endif ()
 elseif ( ANDROID )
 
     find_library(log-lib log)

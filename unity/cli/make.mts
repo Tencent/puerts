@@ -10,7 +10,7 @@ const glob = createRequire(fileURLToPath(import.meta.url))('glob');
 
 interface BuildOptions {
     config: 'Debug' | 'Release' | "RelWithDebInfo",
-    platform: 'osx' | 'win' | 'ios' | 'android' | 'linux',
+    platform: 'osx' | 'win' | 'ios' | 'android' | 'linux' | 'ohos',
     arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'auto',
     backend: string
 }
@@ -67,6 +67,42 @@ const platformCompileConfig = {
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
                 else
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
+            }
+        }
+    },
+    'ohos': {
+        'armv7': {
+            outputPluginPath: 'OHOS/libs/armeabi-v7a/',
+            hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
+                const NDK = process.env.OHOS_NDK || process.env.OHOS_NDK_HOME;
+                if (!NDK) throw new Error("pleace set OHOS_NDK environment variable first!")
+                const ABI = 'armeabi-v7a';
+                const cmake_bin_path = `${NDK}//linux/native/build-tools/cmake/bin/cmake`
+
+                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/linux/native/build/cmake/ohos.toolchain.cmake`).code)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
+
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
+                else
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`]
+            }
+        },
+        'arm64': {
+            outputPluginPath: 'OHOS/libs/arm64-v8a/',
+            hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
+                const NDK = process.env.OHOS_NDK || process.env.OHOS_NDK_HOME;
+                if (!NDK) throw new Error("pleace set OHOS_NDK environment variable first!")
+                const ABI = 'arm64-v8a';
+                const cmake_bin_path = `${NDK}//linux/native/build-tools/cmake/bin/cmake`
+
+                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/linux/native/build/cmake/ohos.toolchain.cmake`).code)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
+
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
+                else
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`]
             }
         }
     },
@@ -137,7 +173,7 @@ const platformCompileConfig = {
             outputPluginPath: 'x86_64',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} ..`).code)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DCMAKE_BUILD_TYPE=${options.config} ..`).code)
                 cd("..")
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
