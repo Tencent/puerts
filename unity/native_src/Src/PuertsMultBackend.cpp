@@ -83,9 +83,8 @@ PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngineWithExternalEnv(int backend, 
     {
         return puerts::CreateQJSPlugin(external_quickjs_runtime, external_quickjs_context);
     }
-#else
-    return nullptr;
 #endif
+    return nullptr;
 }
 
 PUERTS_EXPORT void DestroyJSEngine(puerts::IPuertsPlugin* plugin)
