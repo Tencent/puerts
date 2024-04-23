@@ -58,6 +58,19 @@ namespace Puerts.UnitTest
             throw new Exception("unexpected to reach here");
         }
 #endif
+
+        /*[Test]
+        public void ESModuleCallExecuteModuleAndModuleThrow()
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("eval-error/module1.mjs", @"throw new Error('aa');");
+            //loader.AddMockFileContent("eval-error/main.mjs", @"CS.Puerts.UnitTest.UnitTestEnv.GetEnv().ExecuteModule('eval-error/module1.mjs');");
+            //loader.AddMockFileContent("eval-error/main.mjs", @"globalThis.__puertsExecuteModule('eval-error/module1.mjs');");
+            loader.AddMockFileContent("eval-error/main.mjs", @"require('eval-error/module1.mjs');");
+            var jsEnv = UnitTestEnv.GetEnv();
+            //jsEnv.ExecuteModule("eval-error/main.mjs");
+        }*/
+        
         [Test]
         public void ESModuleCompileErrorInNested() //https://github.com/Tencent/puerts/issues/1670
         {
@@ -203,6 +216,43 @@ export default CrashTest;");
 
         //     Assert.AreEqual(str, "hello world");
         // }
+        
+        [Test]
+        public void ESModuleImportNullFile() //https://github.com/Tencent/puerts/issues/1670
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("compile-error/CModule.mjs", @"import BModule from ""./DModule.mjs""
+
+class CModule
+{
+
+}
+
+console.log(`===CModule=====`);
+
+export default CModule;");
+            loader.AddMockFileContent("compile-error/DModule.mjs", @"import NullTest from ""NullTest.mjs""
+
+class DModule
+{
+
+}
+
+console.log(`===DModule=====`);
+
+export default DModule;");
+            loader.AddNullFile("NullTest.mjs");
+            var jsEnv = UnitTestEnv.GetEnv();
+            try 
+            {
+                jsEnv.ExecuteModule("compile-error/CModule.mjs");
+            } 
+            catch(Exception e) 
+            {
+                return;
+            }
+            throw new Exception("unexpected to reach here");
+        }
         [Test]
         public void ESModuleImportRelative()
         {
