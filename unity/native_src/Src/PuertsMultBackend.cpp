@@ -521,6 +521,11 @@ PUERTS_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCa
     GLogErrorCallback = LogWarning;
 }
 
+PUERTS_EXPORT const char* GetJSStackTrace(puerts::IPuertsPlugin* plugin, int* Length)
+{
+    return plugin->GetJSStackTrace(Length);
+}
+
 //-------------------------- end debug --------------------------
 
 #ifdef __cplusplus

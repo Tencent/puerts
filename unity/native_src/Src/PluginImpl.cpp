@@ -58,6 +58,8 @@ public:
     
     virtual void* GetResultInfo() override;
 
+    virtual const char* GetJSStackTrace(int* Length) override;
+
     //-------------------------- begin js call cs --------------------------
     virtual void* GetArgumentValue(const void* Info, int Index) override;
 
@@ -300,6 +302,16 @@ void* V8Plugin::GetModuleExecutor()
 void* V8Plugin::GetResultInfo()
 {
     return &(jsEngine.ResultInfo);
+}
+
+const char* V8Plugin::GetJSStackTrace(int* Length)
+{
+    std::string str = jsEngine.GetJSStackTrace();
+    *Length = static_cast<int>(str.length());
+    if (jsEngine.StrBuffer.size() < *Length + 1)
+        jsEngine.StrBuffer.reserve(*Length + 1);
+    memcpy(jsEngine.StrBuffer.data(), str.c_str(), *Length);
+    return jsEngine.StrBuffer.data();
 }
 
 //-------------------------- begin js call cs --------------------------

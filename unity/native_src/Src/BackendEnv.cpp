@@ -983,4 +983,39 @@ char* esmodule::module_normalize(
 }
 #endif
 
+
+std::string FBackendEnv::GetJSStackTrace()
+{
+    v8::Isolate* Isolate = MainIsolate;
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = MainContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+#if defined(WITH_QUICKJS)
+    auto ctx = Context->context_;
+    // new Error("").stack
+    JSValue global = JS_GetGlobalObject(ctx);
+    JSValue error_t = JS_GetPropertyStr(ctx, global, "Error");
+    if (JS_IsUndefined(error_t))
+    {
+        JS_FreeValue(ctx, global);
+        return "";
+    };
+    JS_FreeValue(ctx, global);
+    JSValue message = JS_NewString(ctx, "");
+    JSValue argv[] = {message};
+    JSValue error = JS_CallConstructor(ctx, error_t, 1, argv);
+    JS_FreeValue(ctx, message);
+    JS_FreeValue(ctx, error_t);
+    JSValue stack = JS_GetPropertyStr(ctx, error, "stack");
+    JS_FreeValue(ctx, error);
+    const char* cstr = JS_ToCString(ctx, stack);
+    std::string ret = cstr;
+    JS_FreeCString(ctx, cstr);
+    JS_FreeValue(ctx, stack);
+    return ret;
+#else
+    return StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
+#endif
+}
 }

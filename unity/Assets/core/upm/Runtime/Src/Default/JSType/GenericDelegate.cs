@@ -84,7 +84,7 @@ namespace Puerts
         {
             if (obj != null)
             {
-                var gd = new GenericDelegate(IntPtr.Zero, null);
+                var gd = new GenericDelegate(IntPtr.Zero, null, null);
                 gd.Action();
                 gd.Action(obj);
                 gd.Action(obj, obj);
@@ -113,7 +113,13 @@ namespace Puerts
             {
                 return maybeOne.Target as GenericDelegate;
             }
-            GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
+
+            string stacktrace = null;
+#if UNITY_EDITOR
+            //stacktrace = jsEnv.Eval<string>("new Error().stack");
+            stacktrace = PuertsDLL.GetJSStackTrace(jsEnv.isolate);
+#endif
+            GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv, stacktrace);
             nativePtrToGenericDelegate[ptr] = new WeakReference(genericDelegate);
             return genericDelegate;
         }
@@ -331,17 +337,21 @@ namespace Puerts
         private Delegate firstValue = null;
         private Dictionary<Type, Delegate> bindTo = null;
 
+        private string stacktrace;
+
         internal IntPtr getJsFuncPtr() 
         {
             return nativeJsFuncPtr;
         }
 
-        internal GenericDelegate(IntPtr nativeJsFuncPtr, JsEnv jsEnv)
+        internal GenericDelegate(IntPtr nativeJsFuncPtr, JsEnv jsEnv, string stacktrace)
         {
             this.nativeJsFuncPtr = nativeJsFuncPtr;
             jsEnv.IncFuncRef(nativeJsFuncPtr);
             isolate = jsEnv != null ? jsEnv.isolate : IntPtr.Zero;
             this.jsEnv = jsEnv;
+            this.stacktrace = stacktrace;
+
         }
 
         internal void Close()
@@ -355,8 +365,8 @@ namespace Puerts
         {
             if (nativeJsFuncPtr == IntPtr.Zero)
             {
-                if (shouldThrow) throw new Exception("JsEnv has been disposed");
-            } 
+                if (shouldThrow) throw new Exception("JsEnv has been disposed, stacktrace:" + (string.IsNullOrEmpty(this.stacktrace) ? "unknown" : this.stacktrace));
+            }
             else 
             {
                 jsEnv.CheckLiveness();

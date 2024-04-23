@@ -731,4 +731,9 @@ namespace PUERTS_NAMESPACE
 
         return BackendEnv.ClearModuleCache(MainIsolate, Context, Path);
     }
+
+    std::string JSEngine::GetJSStackTrace()
+	{
+        return BackendEnv.GetJSStackTrace();
+	}
 }
