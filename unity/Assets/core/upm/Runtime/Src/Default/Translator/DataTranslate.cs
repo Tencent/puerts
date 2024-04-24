@@ -562,6 +562,10 @@ namespace Puerts
                     {
                         setValueApi.SetNull(isolate, holder);
                     }
+                    else if(obj is UnityEngine.Object && (UnityEngine.Object)obj == null)
+                    {
+                        setValueApi.SetNull(isolate, holder);
+                    }
                     else
                     {
                         int typeId = jsEnv.TypeManager.GetTypeId(isolate, obj.GetType());
