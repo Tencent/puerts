@@ -1,6 +1,6 @@
 {
     "quickjs": {
-        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_240419/qjs_v8_bin.tgz",
+        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_240424/qjs_v8_bin.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER",

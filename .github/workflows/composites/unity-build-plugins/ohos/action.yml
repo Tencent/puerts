@@ -1,0 +1,42 @@
+name: build harmony unity plugin
+
+inputs:
+  backend:
+    description: 'js backend'     
+    required: true
+  config:
+    type: choice
+    description: Release Or Debug
+    default: 'Release'
+    options:
+    - Release
+    - Debug
+  GITHUB_TOKEN:
+    required:
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install NDK
+      shell: bash
+      run: |
+        cd ~
+        curl -O https://repo.huaweicloud.com/harmonyos/os/4.1-Release/ohos-sdk-windows_linux-public.tar.gz
+        tar xvfz ohos-sdk-windows_linux-public.tar.gz
+        cd ohos-sdk/linux
+        unzip -o -d ./ native-linux-x64-4.1.7.5-Release.zip
+    - name: Build
+      shell: bash
+      run: |
+        cd unity
+        npm i
+        cd native_src
+        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../cli make --platform ohos --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        path: ./unity/Assets/core/upm/Plugins/**/*
+        name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})
+    - name: Clean
+      shell: bash
+      run: rm -rf ./unity/Assets/core/upm/Plugins/**/*

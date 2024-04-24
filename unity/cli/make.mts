@@ -77,9 +77,9 @@ const platformCompileConfig = {
                 const NDK = process.env.OHOS_NDK || process.env.OHOS_NDK_HOME;
                 if (!NDK) throw new Error("pleace set OHOS_NDK environment variable first!")
                 const ABI = 'armeabi-v7a';
-                const cmake_bin_path = `${NDK}//linux/native/build-tools/cmake/bin/cmake`
+                const cmake_bin_path = `${NDK}/build-tools/cmake/bin/cmake`
 
-                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/linux/native/build/cmake/ohos.toolchain.cmake`).code)
+                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/ohos.toolchain.cmake`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
@@ -94,9 +94,9 @@ const platformCompileConfig = {
                 const NDK = process.env.OHOS_NDK || process.env.OHOS_NDK_HOME;
                 if (!NDK) throw new Error("pleace set OHOS_NDK environment variable first!")
                 const ABI = 'arm64-v8a';
-                const cmake_bin_path = `${NDK}//linux/native/build-tools/cmake/bin/cmake`
+                const cmake_bin_path = `${NDK}/build-tools/cmake/bin/cmake`
 
-                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/linux/native/build/cmake/ohos.toolchain.cmake`).code)
+                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/ohos.toolchain.cmake`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
