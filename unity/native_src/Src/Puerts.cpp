@@ -9,7 +9,7 @@
 #include "V8Utils.h"
 #include "Log.h"
 
-#define API_LEVEL 33
+#define API_LEVEL 34
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -983,6 +983,17 @@ V8_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallba
     GLogCallback = Log;
     GLogWarningCallback = LogError;
     GLogErrorCallback = LogWarning;
+}
+
+V8_EXPORT const char* GetJSStackTrace(v8::Isolate* Isolate, int* Length)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    std::string str = JsEngine->GetJSStackTrace();
+    *Length = static_cast<int>(str.length());
+    if (JsEngine->StrBuffer.size() < *Length + 1)
+        JsEngine->StrBuffer.reserve(*Length + 1);
+    memcpy(JsEngine->StrBuffer.data(), str.c_str(), *Length);
+    return JsEngine->StrBuffer.data();
 }
 
 //-------------------------- end debug --------------------------

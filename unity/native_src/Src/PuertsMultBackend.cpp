@@ -33,7 +33,7 @@
 #endif
 #endif  // _WIN32
 
-#define API_LEVEL 33
+#define API_LEVEL 34
 
 LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
