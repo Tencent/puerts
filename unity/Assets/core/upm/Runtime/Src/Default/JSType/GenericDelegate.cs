@@ -337,7 +337,9 @@ namespace Puerts
         private Delegate firstValue = null;
         private Dictionary<Type, Delegate> bindTo = null;
 
+#if UNITY_EDITOR
         private string stacktrace;
+#endif
 
         internal IntPtr getJsFuncPtr() 
         {
@@ -350,8 +352,9 @@ namespace Puerts
             jsEnv.IncFuncRef(nativeJsFuncPtr);
             isolate = jsEnv != null ? jsEnv.isolate : IntPtr.Zero;
             this.jsEnv = jsEnv;
+#if UNITY_EDITOR
             this.stacktrace = stacktrace;
-
+#endif
         }
 
         internal void Close()
@@ -365,7 +368,11 @@ namespace Puerts
         {
             if (nativeJsFuncPtr == IntPtr.Zero)
             {
+#if UNITY_EDITOR
                 if (shouldThrow) throw new Exception("JsEnv has been disposed, stacktrace:" + (string.IsNullOrEmpty(this.stacktrace) ? "unknown" : this.stacktrace));
+#else
+                if (shouldThrow) throw new Exception("JsEnv has been disposed");
+#endif
             }
             else 
             {
