@@ -70,7 +70,7 @@ namespace CSharpParamDefaultValueMetas
                 .Where(t => t is UhtClass).Cast<UhtClass>()
                 .Where(c => !c.ClassFlags.HasAnyFlags(EClassFlags.Interface));
 
-            classes.Distinct().ToList().ForEach(ExportClass);
+            classes.Distinct().OrderBy(c => c.SourceName).ToList().ForEach(ExportClass);
         }
         
         private void ExportClass(UhtClass uhtClass)
@@ -85,7 +85,7 @@ namespace CSharpParamDefaultValueMetas
                 }
             };
             
-            foreach (UhtFunction uhtFunction in uhtClass.Functions)
+            foreach (UhtFunction uhtFunction in uhtClass.Functions.OrderBy(Func => Func.SourceName))
             {
                 if (!uhtFunction.MetaData.IsEmpty())
                 {
@@ -120,7 +120,7 @@ namespace CSharpParamDefaultValueMetas
                 .Cast<UhtProperty>()
                 .Where(p => p.PropertyFlags.HasAnyFlags(EPropertyFlags.Parm) && !p.PropertyFlags.HasAnyFlags(EPropertyFlags.ReturnParm));
             
-            foreach(var property in properties)
+            foreach (var property in properties.OrderBy(Property => Property.SourceName))
             {
                 if (TryGetDefaultValue(uhtFunction.MetaData, property, out string defaultValue))
                 {
