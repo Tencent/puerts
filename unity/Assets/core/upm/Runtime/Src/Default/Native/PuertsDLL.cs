@@ -619,6 +619,15 @@ namespace Puerts
         public static extern IntPtr GetArrayBufferFromValue(IntPtr isolate, IntPtr value, out int length, bool isOut);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetJSStackTrace(IntPtr isolate, out int len);
+        public static string GetJSStackTrace(IntPtr isolate)
+        {
+            int strlen;
+            IntPtr str = GetJSStackTrace(isolate, out strlen);
+            return GetStringFromNative(str, strlen);
+        }
     }
 }
 

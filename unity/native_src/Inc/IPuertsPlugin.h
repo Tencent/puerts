@@ -179,6 +179,8 @@ public:
 
     virtual const char* GetFunctionLastExceptionInfo(void* Function, int *Length) = 0;
 
+    virtual const char* GetJSStackTrace(int *Length) = 0;
+
     //-------------------------- end cs call js --------------------------
 
     //-------------------------- begin debug --------------------------

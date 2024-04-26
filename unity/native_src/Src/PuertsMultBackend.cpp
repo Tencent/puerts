@@ -33,7 +33,7 @@
 #endif
 #endif  // _WIN32
 
-#define API_LEVEL 33
+#define API_LEVEL 34
 
 LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
@@ -83,9 +83,8 @@ PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngineWithExternalEnv(int backend, 
     {
         return puerts::CreateQJSPlugin(external_quickjs_runtime, external_quickjs_context);
     }
-#else
-    return nullptr;
 #endif
+    return nullptr;
 }
 
 PUERTS_EXPORT void DestroyJSEngine(puerts::IPuertsPlugin* plugin)
@@ -520,6 +519,11 @@ PUERTS_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCa
     GLogCallback = Log;
     GLogWarningCallback = LogError;
     GLogErrorCallback = LogWarning;
+}
+
+PUERTS_EXPORT const char* GetJSStackTrace(puerts::IPuertsPlugin* plugin, int* Length)
+{
+    return plugin->GetJSStackTrace(Length);
 }
 
 //-------------------------- end debug --------------------------

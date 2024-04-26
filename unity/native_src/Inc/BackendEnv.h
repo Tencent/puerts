@@ -127,6 +127,8 @@ namespace PUERTS_NAMESPACE
         bool InspectorTick();
 
         bool ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path);
+
+        std::string GetJSStackTrace();
     };
 
 #if WITH_NODEJS

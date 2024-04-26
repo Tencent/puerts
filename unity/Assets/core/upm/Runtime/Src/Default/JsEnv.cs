@@ -102,7 +102,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, BackendType backend, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 33;
+            const int libVersionExpect = 34;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
@@ -199,7 +199,7 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
                 throw new Exception(exceptionInfo);
             }
-            JSObjectValueGetter = new GenericDelegate(ptr, this);
+            JSObjectValueGetter = new GenericDelegate(ptr, this, "JSObjectValueGetter");
 #if THREAD_SAFE
             }
 #endif
@@ -301,7 +301,7 @@ namespace Puerts
                     string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
                     throw new Exception(exceptionInfo);
                 }
-                ModuleExecutor = new GenericDelegate(ptr, this);
+                ModuleExecutor = new GenericDelegate(ptr, this, "ModuleExecutor");
             }
             JSObject jso = ModuleExecutor.Func<string, JSObject>(specifier);
 
@@ -319,7 +319,7 @@ namespace Puerts
                     string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
                     throw new Exception(exceptionInfo);
                 }
-                ModuleExecutor = new GenericDelegate(ptr, this);
+                ModuleExecutor = new GenericDelegate(ptr, this, "ModuleExecutor");
             }
             return ModuleExecutor.Func<string, JSObject>(specifier);
         }
