@@ -257,7 +257,7 @@
         }
     },
     "v8": {
-        "url": "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230426/v8_bin_8.4.371.19.tgz",
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz",
         "config": {
             "include": [
                 "/Inc"
