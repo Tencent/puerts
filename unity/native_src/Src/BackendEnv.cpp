@@ -934,7 +934,7 @@ bool esmodule::LinkModule(
                 auto Specifier_std = mm->ScriptIdToPathMap[Module->ScriptId()];
                 mm->ScriptIdToPathMap.erase(Module->ScriptId());
 #else 
-                auto Specifier_std =  = mm->ScriptIdToPathMap[Module->GetIdentityHash()];
+                auto Specifier_std = mm->ScriptIdToPathMap[Module->GetIdentityHash()];
                 mm->ScriptIdToPathMap.erase(Module->GetIdentityHash());
 #endif
                 mm->PathToModuleMap.erase(Specifier_std);
