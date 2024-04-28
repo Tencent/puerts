@@ -645,14 +645,20 @@ static v8::MaybeLocal<v8::Value> CallRead(
     return maybeRet;
 }
 #if !WITH_QUICKJS
+#if V8_MAJOR_VERSION >= 10
+v8::MaybeLocal<v8::Promise> esmodule::DynamicImport(v8::Local<v8::Context> Context, v8::Local<v8::Data> HostDefinedOptions,
+    v8::Local<v8::Value> ResourceName, v8::Local<v8::String> Specifier, v8::Local<v8::FixedArray> ImportAssertions)
+#else
 v8::MaybeLocal<v8::Promise> esmodule::DynamicImport(
-    v8::Local<v8::Context> Context, 
-    v8::Local<v8::ScriptOrModule> Referrer,
-    v8::Local<v8::String> Specifier
-) 
+    v8::Local<v8::Context> Context, v8::Local<v8::ScriptOrModule> Referrer, v8::Local<v8::String> Specifier) 
+#endif
 {
     bool isFromCache;
+#if V8_MAJOR_VERSION >= 10
+    v8::Local<v8::Value> ReferrerName = ResourceName;
+#else
     v8::Local<v8::Value> ReferrerName = Referrer->GetResourceName();
+#endif
     
     v8::TryCatch TryCatch(Context->GetIsolate());
     v8::MaybeLocal<v8::Module> mod = esmodule::_ResolveModule(Context, Specifier, ReferrerName, isFromCache);
@@ -783,7 +789,11 @@ void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info)
     v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
             .ToLocalChecked();
 
+#if V8_94_OR_NEWER
+    v8::MaybeLocal<v8::Module> mod = esmodule::ResolveModule(Context, Specifier_v8, v8::Local<v8::FixedArray>(), entryModule);
+#else
     v8::MaybeLocal<v8::Module> mod = esmodule::ResolveModule(Context, Specifier_v8, entryModule);
+#endif
     if (mod.IsEmpty())
     {
         // TODO
@@ -925,6 +935,9 @@ v8::Local<v8::Value> GetModuleName(
 v8::MaybeLocal<v8::Module> esmodule::ResolveModule(
     v8::Local<v8::Context> Context,
     v8::Local<v8::String> Specifier,
+#if V8_94_OR_NEWER
+    v8::Local<v8::FixedArray> ImportAttributes, // not implement yet
+#endif
     v8::Local<v8::Module> Referrer
 )
 {

@@ -256,6 +256,69 @@
             }
         }
     },
+    "v8_10.6.194": {
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240428/v8_bin_10.6.194.tgz",
+        "config": {
+            "definition": [
+                "V8_94_OR_NEWER"
+            ],
+            "include": [
+                "/Inc"
+            ],
+            "link-libraries": {
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libwee8.a"
+                    ],
+                    "x64": [
+                        "/Lib/OHOS/x64/libwee8.a"
+                    ]
+                },
+                "android": {
+                    "armv7": [
+                        "/Lib/Android/armeabi-v7a/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Android/arm64-v8a/libwee8.a"
+                    ],
+                    "x64": [
+                        "/Lib/Android/x64/libwee8.a"
+                    ]
+                },
+                "win": {
+                    "ia32": [
+                        "/Lib/Win32/wee8.lib"
+                    ],
+                    "x64": [
+                        "/Lib/Win64/wee8.lib"
+                    ]
+                },
+                "osx": {
+                    "x64": [
+                        "/Lib/macOS/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/macOS_arm64/libwee8.a"
+                    ]
+                },
+                "linux": {
+                    "x64": [
+                        "/Lib/Linux/libwee8.a"
+                    ]
+                }
+            },
+            "copy-libraries": {
+                "ios": {
+                    "arm64": [
+                        "/Lib/iOS/arm64/libwee8.a"
+                    ]
+                }
+            }
+        }
+    },
     "v8": {
         "url": "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz",
         "config": {

@@ -148,11 +148,20 @@ namespace PUERTS_NAMESPACE
             bool& isFromCache
         );
 
-        v8::MaybeLocal<v8::Module> ResolveModule( v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier, v8::Local<v8::Module> Referrer);
+        v8::MaybeLocal<v8::Module> ResolveModule( v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier, 
+#if V8_94_OR_NEWER
+            v8::Local<v8::FixedArray> ImportAttributes,    // not implement yet
+#endif
+            v8::Local<v8::Module> Referrer);
 
         bool LinkModule(v8::Local<v8::Context> Context, v8::Local<v8::Module> RefModule);
 
+#if V8_MAJOR_VERSION >= 10
+        v8::MaybeLocal<v8::Promise> DynamicImport(v8::Local<v8::Context> Context, v8::Local<v8::Data> HostDefinedOptions,
+            v8::Local<v8::Value> ResourceName, v8::Local<v8::String> Specifier, v8::Local<v8::FixedArray> ImportAssertions);
+#else
         v8::MaybeLocal<v8::Promise> DynamicImport(v8::Local<v8::Context> Context, v8::Local<v8::ScriptOrModule> Referrer, v8::Local<v8::String> Specifier); 
+#endif
 
         void HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta);
         

@@ -89,7 +89,11 @@ V8InspectorChannelImpl::V8InspectorChannelImpl(
 {
     v8_inspector::StringView DummyState;
     Isolate = InIsolate;
+#if V8_MAJOR_VERSION >= 10
+    V8InspectorSession = InV8Inspector->connect(InCxtGroupID, this, DummyState, v8_inspector::V8Inspector::kFullyTrusted);
+#else
     V8InspectorSession = InV8Inspector->connect(InCxtGroupID, this, DummyState);
+#endif
 }
 
 void V8InspectorChannelImpl::DispatchProtocolMessage(const std::string& Message)
