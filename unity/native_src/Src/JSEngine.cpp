@@ -60,7 +60,11 @@ namespace PUERTS_NAMESPACE
 
         v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
         v8::Local<v8::String> Name = Info[1]->ToString(Context).ToLocalChecked();
+#ifdef V8_94_OR_NEWER
+        v8::ScriptOrigin Origin(Isolate, Name);
+#else
         v8::ScriptOrigin Origin(Name);
+#endif
         auto Script = v8::Script::Compile(Context, Source, &Origin);
         if (Script.IsEmpty())
         {
@@ -261,7 +265,11 @@ namespace PUERTS_NAMESPACE
 
         v8::Local<v8::String> Url = FV8Utils::V8String(Isolate, Path == nullptr ? "" : Path);
         v8::Local<v8::String> Source = FV8Utils::V8String(Isolate, Code);
+#ifdef V8_94_OR_NEWER
+        v8::ScriptOrigin Origin(Isolate, Url);
+#else
         v8::ScriptOrigin Origin(Url);
+#endif
         v8::TryCatch TryCatch(Isolate);
 
         auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);

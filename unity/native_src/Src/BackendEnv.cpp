@@ -755,6 +755,18 @@ void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info)
     v8::Local<v8::String> Specifier_v8 = info[0]->ToString(Context).ToLocalChecked();
 
     auto emptyStrV8 = v8::String::NewFromUtf8(Isolate, "", v8::NewStringType::kNormal).ToLocalChecked();
+#ifdef V8_94_OR_NEWER
+    v8::ScriptOrigin origin(Isolate, emptyStrV8,
+                    0,                      // line offset
+                    0,                    // column offset
+                    true,                    // is cross origin
+                    -1,                 // script id
+                    v8::Local<v8::Value>(),                   // source map URL
+                    false,                   // is opaque (?)
+                    false,                   // is WASM
+                    true                    // is ES Module
+    );
+#else
     v8::ScriptOrigin origin(emptyStrV8,
                     v8::Integer::New(Isolate, 0),                      // line offset
                     v8::Integer::New(Isolate, 0),                    // column offset
@@ -766,6 +778,7 @@ void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info)
                     v8::True(Isolate),                    // is ES Module
                     v8::PrimitiveArray::New(Isolate, 10)
     );
+#endif
     v8::ScriptCompiler::Source source(emptyStrV8, origin);
     v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
             .ToLocalChecked();
@@ -836,6 +849,21 @@ v8::MaybeLocal<v8::Module> esmodule::_ResolveModule(
     }
     v8::Local<v8::String> Code = v8::Local<v8::String>::Cast(ReadRet);
 
+#ifdef V8_94_OR_NEWER
+    v8::ScriptOrigin Origin(Isolate, pathForDebug.size() == 0 ? 
+        Specifier : 
+        v8::String::NewFromUtf8(Isolate, pathForDebug.c_str()).ToLocalChecked(),
+        0,                      // line offset
+        0,                    // column offset
+        true,                    // is cross origin
+        -1,                 // script id
+        v8::Local<v8::Value>(),                   // source map URL
+        false,                   // is opaque (?)
+        false,                   // is WASM
+        true,                    // is ES Module
+        v8::PrimitiveArray::New(Isolate, 10)
+    );
+#else
     v8::ScriptOrigin Origin(pathForDebug.size() == 0 ? 
         Specifier : 
         v8::String::NewFromUtf8(Isolate, pathForDebug.c_str()).ToLocalChecked(),
@@ -849,6 +877,7 @@ v8::MaybeLocal<v8::Module> esmodule::_ResolveModule(
         v8::True(Isolate),                    // is ES Module
         v8::PrimitiveArray::New(Isolate, 10)
     );
+#endif
 
     v8::ScriptCompiler::CompileOptions options;
 
