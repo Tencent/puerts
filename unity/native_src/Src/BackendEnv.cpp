@@ -941,11 +941,17 @@ bool esmodule::LinkModule(
 )
 {
     v8::Isolate* Isolate = Context->GetIsolate();
-
+#ifdef V8_94_OR_NEWER
+    v8::Local<v8::FixedArray> ModuleRequests = RefModule->GetModuleRequests();
+    for (int i = 0, length = ModuleRequests->Length(); i < length; ++i) {
+        v8::Local<v8::ModuleRequest> ModuleRequest =
+            ModuleRequests->Get(Context, i).As<v8::ModuleRequest>();
+        v8::Local<v8::String> Specifier_v8 = ModuleRequest->GetSpecifier();
+#else
     for (int i = 0, length = RefModule->GetModuleRequestsLength(); i < length; i++)
     {
         v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
-
+#endif
         bool isFromCache = false;
         v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, GetModuleName(Isolate, RefModule), isFromCache);
         if (MaybeModule.IsEmpty())
