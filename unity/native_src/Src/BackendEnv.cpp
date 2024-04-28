@@ -755,7 +755,7 @@ void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info)
     v8::Local<v8::String> Specifier_v8 = info[0]->ToString(Context).ToLocalChecked();
 
     auto emptyStrV8 = v8::String::NewFromUtf8(Isolate, "", v8::NewStringType::kNormal).ToLocalChecked();
-#ifdef V8_94_OR_NEWER
+#if defined(V8_94_OR_NEWER) && !defined(WITH_QUICKJS)
     v8::ScriptOrigin origin(Isolate, emptyStrV8,
                     0,                      // line offset
                     0,                    // column offset
@@ -849,7 +849,7 @@ v8::MaybeLocal<v8::Module> esmodule::_ResolveModule(
     }
     v8::Local<v8::String> Code = v8::Local<v8::String>::Cast(ReadRet);
 
-#ifdef V8_94_OR_NEWER
+#if defined(V8_94_OR_NEWER) && !defined(WITH_QUICKJS)
     v8::ScriptOrigin Origin(Isolate, pathForDebug.size() == 0 ? 
         Specifier : 
         v8::String::NewFromUtf8(Isolate, pathForDebug.c_str()).ToLocalChecked(),
