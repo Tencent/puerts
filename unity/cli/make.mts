@@ -216,6 +216,10 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         console.log("=== Puer ===");
         return;
     }
+    if (options.config == 'Debug') {
+        BackendConfig.definition = BackendConfig.definition || [];
+        BackendConfig.definition.push("WITH_INSPECTOR");
+    }
     const definitionD = (BackendConfig.definition || []).join(';')
     const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';')
     const incD = (BackendConfig.include || []).join(';')
