@@ -225,6 +225,14 @@
                         "/Lib/Android/x64/libwee8.a"
                     ]
                 },
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libwee8.a"
+                    ]
+                },
                 "win": {
                     "ia32": [
                         "/Lib/Win32/wee8.lib"
