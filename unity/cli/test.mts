@@ -90,6 +90,20 @@ async function runTest(cwd: string, copyConfig: any, runInReflection: boolean, f
         const ext = extname(fileToCopy)
         cp(fileToCopy, binPath + (ext == '.bundle' ? `/lib${basename(fileToCopy, ext)}.dylib`: ''));
     })
+    
+    mkdir("-p", join(workdir, 'Properties'));
+    // 生成launchSettings.json
+    writeFileSync(
+        join(workdir, 'Properties', 'launchSettings.json'),
+        JSON.stringify({
+          "profiles": {
+            "vsauto-static": {
+              "commandName": "Project",
+              "nativeDebugging": true
+            }
+          }
+        })
+    );
 
     if (!runInReflection) {
         // 生成project 用于跑wrapper
