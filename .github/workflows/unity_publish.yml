@@ -47,7 +47,17 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
-      - name: BuildAndroidQuickJS
+      - name: BuildOHOS
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildOHOSQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
