@@ -198,6 +198,9 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         console.error("[Puer] CMake is not installed");
         process.exit();
     }
+    if (options.backend == "v8_9.4") {
+        options.backend = "v8_9.4.146.24"
+    }
     if (!existsSync(`${cwd}/.backends/${options.backend}`)) {
         await downloadBackend(cwd, options.backend);
     }
