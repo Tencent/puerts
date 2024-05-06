@@ -88,6 +88,14 @@ namespace Puerts
                 if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingMethod.Contains(methodKey.Name))
                 {
                     List<MethodInfo> overloads;
+                    if (methodKey.IsExtension)
+                    {
+                        MethodKey tmp = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = false };
+                        if (slowBindingMethodGroup.ContainsKey(tmp))
+                        {
+                            methodKey = tmp;
+                        }
+                    }
                     if (!slowBindingMethodGroup.TryGetValue(methodKey, out overloads))
                     {
                         overloads = new List<MethodInfo>();
