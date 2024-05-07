@@ -15,8 +15,8 @@ if (!UnityEngine_Debug) {
         UnityEngine_Debug = 
         {
             Log: (...args) => CSConsole.WriteLine(["[Log]", ...args].join(' ')),
-            LogWarn: (...args) => CSConsole.WriteLine(["[LogWarn]", ...args].join(' ')),
-            LogError: (...args) => CSConsole.WriteLine(["[LogError]", ...args].join(' ')),
+            LogWarn: (...args) => CSConsole.Error.WriteLine(["[LogWarn]", ...args].join(' ')),
+            LogError: (...args) => CSConsole.Error.WriteLine(["[LogError]", ...args].join(' ')),
             Assert: () => {}
         }
     }
