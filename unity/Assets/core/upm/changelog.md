@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.5] - 2024-05-07
+1. fix: problem about GenericDelegate accessing JsEnv after JsEnv is disposed. #1677 81c3be7
+2. fix: Unity will crash when there are syntax errors in ESM. #1670
+
 ## [2.0.4] - 2024-01-09
 1. fix: the error when invoking extension method with out/ref args.
 2. fix: the error when set a JSObject to `null`.
