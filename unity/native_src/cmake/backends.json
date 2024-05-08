@@ -265,7 +265,7 @@
         }
     },
     "v8_10.6.194": {
-        "url": "https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240429/v8_bin_10.6.194.tgz",
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240508/v8_bin_10.6.194.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
