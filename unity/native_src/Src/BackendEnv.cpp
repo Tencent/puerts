@@ -866,9 +866,19 @@ void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info)
         maybe_result = root_module->Evaluate(context);
     }
     
-    if (maybe_result.IsEmpty())
+    v8::Local<v8::Value> result;
+    if (!maybe_result.ToLocal(&result))
     {
         return;
+    }
+    
+    if (result->IsPromise())
+    {
+        v8::Local<v8::Promise> result_promise = result.As<v8::Promise>();
+        if (result_promise->State() == v8::Promise::kRejected)
+        {
+            isolate->ThrowException(result_promise->Result());
+        }
     }
     
     info.GetReturnValue().Set(root_module->GetModuleNamespace());
