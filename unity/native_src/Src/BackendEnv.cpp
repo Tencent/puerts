@@ -319,7 +319,7 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
 
 #if !WITH_QUICKJS
         Isolate->SetHostInitializeImportMetaObjectCallback(&esmodule::HostInitializeImportMetaObject);
-        Isolate->SetHostImportModuleDynamicallyCallback(&esmodule::DynamicImport);
+        Isolate->SetHostImportModuleDynamicallyCallback(&esmodule::HostImportModuleDynamically);
 #endif
 
         Global->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FBackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
@@ -590,113 +590,6 @@ JSModuleDef* FBackendEnv::LoadModule(JSContext* ctx, const char *name)
     return Ret;
 }
 
-#endif
-
-static v8::MaybeLocal<v8::Value> CallResolver(
-    v8::Isolate* Isolate,
-    v8::Local<v8::Context> Context,
-    v8::Local<v8::Value> Specifier,
-    v8::Local<v8::Value> ReferrerName
-)
-{
-    std::vector< v8::Local<v8::Value>> V8Args;
-
-    v8::Local<v8::Function> URLResolveFunction = v8::Local<v8::Function>::Cast(Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "__puer_resolve_module_url__").ToLocalChecked()).ToLocalChecked());
-    V8Args.push_back(Specifier);
-    V8Args.push_back(ReferrerName);
-    v8::MaybeLocal<v8::Value> maybeRet = URLResolveFunction->Call(Context, Context->Global(), 2, V8Args.data());
-    V8Args.clear();
-
-    return maybeRet;
-}
-
-static v8::MaybeLocal<v8::Value> CallRead(
-    v8::Isolate* Isolate,
-    v8::Local<v8::Context> Context,
-    v8::Local<v8::Value> URL,
-    std::string &pathForDebug
-)
-{
-    std::vector< v8::Local<v8::Value>> V8Args;
-
-    v8::Local<v8::Function> ModuleReadFunction = v8::Local<v8::Function>::Cast(Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "__puer_resolve_module_content__").ToLocalChecked()).ToLocalChecked());
-
-    V8Args.push_back(URL);
-
-#if !WITH_QUICKJS
-    v8::Local<v8::Array> pathForDebugRef = v8::Array::New(Isolate, 0);
-    V8Args.push_back(pathForDebugRef);
-    v8::MaybeLocal<v8::Value> maybeRet = ModuleReadFunction->Call(Context, Context->Global(), 2, V8Args.data());
-#else
-    v8::MaybeLocal<v8::Value> maybeRet = ModuleReadFunction->Call(Context, Context->Global(), 1, V8Args.data());
-#endif
-
-    v8::Local<v8::Value> pathForDebugValue;
-
-    V8Args.clear();
-#if !WITH_QUICKJS
-    if (pathForDebugRef->Length() == 1 && pathForDebugRef->Get(Context, 0).ToLocal(&pathForDebugValue))
-    {
-        v8::String::Utf8Value pathForDebug_utf8(Isolate, pathForDebugValue);
-        pathForDebug = std::string(*pathForDebug_utf8, pathForDebug_utf8.length());
-    }
-#endif
-
-    return maybeRet;
-}
-#if !WITH_QUICKJS
-#if V8_MAJOR_VERSION >= 10
-v8::MaybeLocal<v8::Promise> esmodule::DynamicImport(v8::Local<v8::Context> Context, v8::Local<v8::Data> HostDefinedOptions,
-    v8::Local<v8::Value> ResourceName, v8::Local<v8::String> Specifier, v8::Local<v8::FixedArray> ImportAssertions)
-#else
-v8::MaybeLocal<v8::Promise> esmodule::DynamicImport(
-    v8::Local<v8::Context> Context, v8::Local<v8::ScriptOrModule> Referrer, v8::Local<v8::String> Specifier) 
-#endif
-{
-    bool isFromCache;
-#if V8_MAJOR_VERSION >= 10
-    v8::Local<v8::Value> ReferrerName = ResourceName;
-#else
-    v8::Local<v8::Value> ReferrerName = Referrer->GetResourceName();
-#endif
-    
-    v8::TryCatch TryCatch(Context->GetIsolate());
-    v8::MaybeLocal<v8::Module> mod = esmodule::_ResolveModule(Context, Specifier, ReferrerName, isFromCache);
-
-    v8::Local<v8::Promise::Resolver> resolver;
-    if (!v8::Promise::Resolver::New(Context).ToLocal(&resolver)) return v8::MaybeLocal<v8::Promise> {};
-    
-    if (mod.IsEmpty())
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-    v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-    if (!esmodule::LinkModule(Context, moduleChecked))
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, esmodule::ResolveModule);
-    if (ret.IsNothing() || !ret.ToChecked())
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-    v8::MaybeLocal<v8::Value> evalRet = moduleChecked->Evaluate(Context);
-    if (evalRet.IsEmpty())
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-
-    resolver->Resolve(Context, moduleChecked->GetModuleNamespace());
-
-    return resolver->GetPromise();
-}
-#endif
-
-#if defined(WITH_QUICKJS)
 JSValue esmodule::ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data)
 {
     if (argc == 1)
@@ -746,252 +639,402 @@ JSValue esmodule::ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc,
     
     return JS_Undefined();
 }
-#else
-void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
-{
-    v8::Isolate* Isolate = info.GetIsolate();
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
-    v8::Local<v8::String> Specifier_v8 = info[0]->ToString(Context).ToLocalChecked();
-
-    auto emptyStrV8 = v8::String::NewFromUtf8(Isolate, "", v8::NewStringType::kNormal).ToLocalChecked();
-#if defined(V8_94_OR_NEWER) && !defined(WITH_QUICKJS)
-    v8::ScriptOrigin origin(Isolate, emptyStrV8,
-                    0,                      // line offset
-                    0,                    // column offset
-                    true,                    // is cross origin
-                    -1,                 // script id
-                    v8::Local<v8::Value>(),                   // source map URL
-                    false,                   // is opaque (?)
-                    false,                   // is WASM
-                    true                    // is ES Module
-    );
-#else
-    v8::ScriptOrigin origin(emptyStrV8,
-                    v8::Integer::New(Isolate, 0),                      // line offset
-                    v8::Integer::New(Isolate, 0),                    // column offset
-                    v8::True(Isolate),                    // is cross origin
-                    v8::Local<v8::Integer>(),                 // script id
-                    v8::Local<v8::Value>(),                   // source map URL
-                    v8::False(Isolate),                   // is opaque (?)
-                    v8::False(Isolate),                   // is WASM
-                    v8::True(Isolate),                    // is ES Module
-                    v8::PrimitiveArray::New(Isolate, 10)
-    );
-#endif
-    v8::ScriptCompiler::Source source(emptyStrV8, origin);
-    v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
-            .ToLocalChecked();
-
-#if V8_94_OR_NEWER
-    v8::MaybeLocal<v8::Module> mod = esmodule::ResolveModule(Context, Specifier_v8, v8::Local<v8::FixedArray>(), entryModule);
-#else
-    v8::MaybeLocal<v8::Module> mod = esmodule::ResolveModule(Context, Specifier_v8, entryModule);
-#endif
-    if (mod.IsEmpty())
-    {
-        // TODO
-        return;
-    }
-    v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-    if (!esmodule::LinkModule(Context, moduleChecked))
-    {
-        // TODO
-        return;
-    }
-    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, esmodule::ResolveModule);
-    if (ret.IsNothing() || !ret.ToChecked())
-    {
-        // TODO
-        return;
-    }
-    v8::MaybeLocal<v8::Value> evalRet = moduleChecked->Evaluate(Context);
-    if (evalRet.IsEmpty())
-    {
-        // TODO
-        return;
-    }
-    info.GetReturnValue().Set(moduleChecked->GetModuleNamespace());
-}
-#endif
-
-#if !WITH_QUICKJS
-v8::MaybeLocal<v8::Module> esmodule::_ResolveModule(
-    v8::Local<v8::Context> Context,
-    v8::Local<v8::String> Specifier,
-    v8::Local<v8::Value> ReferrerName,
-    bool& isFromCache
-)
-{
-    v8::Isolate* Isolate = Context->GetIsolate();
-    FBackendEnv* mm = FBackendEnv::Get(Isolate);
-
-    v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
-    if (maybeRet.IsEmpty()) 
-    {
-        return v8::MaybeLocal<v8::Module> {};
-    }
-    Specifier = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
-
-    v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
-    std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-
-    const auto cacheIter = mm->PathToModuleMap.find(Specifier_std);
-    if (cacheIter != mm->PathToModuleMap.end())//create and link
-    {
-        isFromCache = true;
-        return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
-    }
-    
-    std::string pathForDebug;
-    maybeRet = CallRead(Isolate, Context, Specifier, pathForDebug);
-    v8::Local<v8::Value> ReadRet;
-    if (!maybeRet.ToLocal(&ReadRet) || !ReadRet->IsString()) 
-    {
-        FV8Utils::ThrowException(Isolate, "Load Module Context fail!");
-        return v8::MaybeLocal<v8::Module> {};
-    }
-    v8::Local<v8::String> Code = v8::Local<v8::String>::Cast(ReadRet);
-
-#if defined(V8_94_OR_NEWER) && !defined(WITH_QUICKJS)
-    v8::ScriptOrigin Origin(Isolate, pathForDebug.size() == 0 ? 
-        Specifier : 
-        v8::String::NewFromUtf8(Isolate, pathForDebug.c_str()).ToLocalChecked(),
-        0,                      // line offset
-        0,                    // column offset
-        true,                    // is cross origin
-        -1,                 // script id
-        v8::Local<v8::Value>(),                   // source map URL
-        false,                   // is opaque (?)
-        false,                   // is WASM
-        true,                    // is ES Module
-        v8::PrimitiveArray::New(Isolate, 10)
-    );
-#else
-    v8::ScriptOrigin Origin(pathForDebug.size() == 0 ? 
-        Specifier : 
-        v8::String::NewFromUtf8(Isolate, pathForDebug.c_str()).ToLocalChecked(),
-        v8::Integer::New(Isolate, 0),                      // line offset
-        v8::Integer::New(Isolate, 0),                    // column offset
-        v8::True(Isolate),                    // is cross origin
-        v8::Local<v8::Integer>(),                 // script id
-        v8::Local<v8::Value>(),                   // source map URL
-        v8::False(Isolate),                   // is opaque (?)
-        v8::False(Isolate),                   // is WASM
-        v8::True(Isolate),                    // is ES Module
-        v8::PrimitiveArray::New(Isolate, 10)
-    );
-#endif
-
-    v8::ScriptCompiler::CompileOptions options;
-
-    v8::ScriptCompiler::Source Source(Code, Origin);
-    v8::Local<v8::Module> Module;
-
-    if (!v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
-            .ToLocal(&Module)) 
-    {
-        return v8::MaybeLocal<v8::Module> {};
-    }
-#if V8_94_OR_NEWER
-    mm->ScriptIdToPathMap[Module->ScriptId()] = Specifier_std;
-#else 
-    mm->ScriptIdToPathMap[Module->GetIdentityHash()] = Specifier_std;
-#endif
-    mm->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
-    return Module;
-}
-
-v8::Local<v8::Value> GetModuleName(
-    v8::Isolate* Isolate,
-    v8::Local<v8::Module> Referrer
+JSModuleDef* esmodule::js_module_loader(
+    JSContext* ctx, const char *name, void *opaque
 ) 
 {
-    FBackendEnv* mm = FBackendEnv::Get(Isolate);
-    v8::Local<v8::Value> ReferrerName;
-#if V8_94_OR_NEWER
-    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
-#else 
-    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->GetIdentityHash()); 
-#endif
-    if (referIter != mm->ScriptIdToPathMap.end())
+    return static_cast<FBackendEnv*>(opaque)->LoadModule(ctx, name);
+}
+
+char* esmodule::module_normalize(
+    JSContext *ctx, const char *base_name, const char *name, void* opaque
+)
+{
+    return static_cast<FBackendEnv*>(opaque)->NormalizeModuleName(ctx, base_name, name);
+}
+
+#else
+    
+v8::MaybeLocal<v8::Value> FBackendEnv::ResolvePath(
+    v8::Isolate* Isolate,
+    v8::Local<v8::Context> Context,
+    v8::Local<v8::Value> Specifier,
+    v8::Local<v8::Value> ReferrerName
+)
+{
+    v8::Local<v8::Value> Args[2] = {Specifier, ReferrerName};
+
+    v8::Local<v8::Function> URLResolveFunction = v8::Local<v8::Function>::Cast(Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "__puer_resolve_module_url__").ToLocalChecked()).ToLocalChecked());
+    return URLResolveFunction->Call(Context, Context->Global(), 2, Args);
+}
+
+v8::MaybeLocal<v8::Value> FBackendEnv::ReadFile(
+    v8::Isolate* Isolate,
+    v8::Local<v8::Context> Context,
+    v8::Local<v8::Value> URL,
+    std::string &pathForDebug
+)
+{
+    v8::Local<v8::Array> pathForDebugRef = v8::Array::New(Isolate, 0);
+    v8::Local<v8::Value> Args[2] = {URL, pathForDebugRef};
+
+    v8::Local<v8::Function> ModuleReadFunction = v8::Local<v8::Function>::Cast(Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "__puer_resolve_module_content__").ToLocalChecked()).ToLocalChecked());
+
+    v8::MaybeLocal<v8::Value> maybeRet = ModuleReadFunction->Call(Context, Context->Global(), 2, Args);
+
+    v8::Local<v8::Value> pathForDebugValue;
+
+    if (pathForDebugRef->Length() == 1 && pathForDebugRef->Get(Context, 0).ToLocal(&pathForDebugValue))
     {
-        std::string referPath_std = referIter->second;
-        ReferrerName = v8::String::NewFromUtf8(Isolate, referPath_std.c_str()).ToLocalChecked();
+        v8::String::Utf8Value pathForDebug_utf8(Isolate, pathForDebugValue);
+        pathForDebug = std::string(*pathForDebug_utf8, pathForDebug_utf8.length());
+    }
+
+    return maybeRet;
+}
+
+v8::MaybeLocal<v8::Module> FBackendEnv::FetchModuleTree(v8::Isolate* isolate, v8::Local<v8::Context> context,
+    v8::Local<v8::String> absolute_file_path)
+{
+    std::string absolute_file_path_str = *v8::String::Utf8Value(isolate, absolute_file_path);
+    //fprintf(stdout, "o fetch:%s\n", absolute_file_path_str.c_str());
+    //fprintf(stderr, "e fetch:%s\n", absolute_file_path_str.c_str());
+    auto cached_module = PathToModuleMap.find(absolute_file_path_str);
+    if (cached_module!= PathToModuleMap.end())
+    {
+        return cached_module->second.Get(isolate);
+    }
+    std::string pathForDebug;
+    
+    v8::Local<v8::Value> source_text;
+    
+    if (!ReadFile(isolate, context, absolute_file_path, pathForDebug).ToLocal(&source_text))
+    {
+        return v8::MaybeLocal<v8::Module>();
+    }
+    if (!source_text->IsString())
+    {
+        FV8Utils::ThrowException(isolate, "source_text is not a string!");
+        return v8::MaybeLocal<v8::Module>();
+    }
+#if defined(V8_94_OR_NEWER) && !defined(WITH_QUICKJS)
+    v8::ScriptOrigin origin(isolate, absolute_file_path, 0, 0, true, -1, v8::Local<v8::Value>(), false, false, true);
+#else
+    v8::ScriptOrigin origin(absolute_file_path, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0), v8::True(isolate),
+        v8::Local<v8::Integer>(), v8::Local<v8::Value>(), v8::False(isolate), v8::False(isolate), v8::True(isolate),
+        v8::PrimitiveArray::New(isolate, 10));
+#endif
+    v8::ScriptCompiler::Source source(source_text.As<v8::String>(), origin);
+    v8::Local<v8::Module> module;
+    if (!v8::ScriptCompiler::CompileModule(isolate, &source).ToLocal(&module))
+    {
+        return v8::MaybeLocal<v8::Module>();
+    }
+
+    FModuleInfo* info = new FModuleInfo;
+    info->Module.Reset(isolate, module);
+#if V8_94_OR_NEWER
+    int script_id = module->ScriptId();
+#else 
+    int script_id = module->GetIdentityHash();
+#endif
+    ScriptIdToModuleInfo.emplace(script_id, info);
+    PathToModuleMap[absolute_file_path_str] = v8::UniquePersistent<v8::Module>(isolate, module);
+    ScriptIdToPathMap[script_id] = absolute_file_path_str;
+    bool load_ref_modules_fail = false;
+
+#ifdef V8_94_OR_NEWER
+    v8::Local<v8::FixedArray> module_requests = module->GetModuleRequests();
+    for (int i = 0, length = module_requests->Length(); i < length; ++i)
+    {
+        v8::Local<v8::ModuleRequest> module_request =
+            module_requests->Get(context, i).As<v8::ModuleRequest>();
+        v8::Local<v8::String> request_specifier = module_request->GetSpecifier();
+#else
+    for (int i = 0, length = module->GetModuleRequestsLength(); i < length; i++)
+    {
+        v8::Local<v8::String> request_specifier = module->GetModuleRequest(i);
+#endif
+        v8::Local<v8::Value> resolved_path;
+        if (!ResolvePath(isolate, context, request_specifier, absolute_file_path).ToLocal(&resolved_path))
+        {
+            load_ref_modules_fail = true;
+            break;
+        }
+        if (!resolved_path->IsString())
+        {
+            FV8Utils::ThrowException(isolate, "resolved_path is not a string!");
+            load_ref_modules_fail = true;
+            break;
+        }
+        
+        auto request_absolute_file_path = resolved_path.As<v8::String>();
+        std::string request_absolute_file_path_str = *v8::String::Utf8Value(isolate, request_absolute_file_path);
+        v8::Local<v8::Module> request_module;
+        if (!FetchModuleTree(isolate, context, request_absolute_file_path).ToLocal(&request_module))
+        {
+            load_ref_modules_fail = true;
+            break;
+        }
+        info->ResolveCache[*v8::String::Utf8Value(isolate, request_specifier)] = v8::Global<v8::Module>(isolate, request_module);
+    }
+    
+    if (load_ref_modules_fail)
+    {
+        // for issue: https://github.com/Tencent/puerts/issues/1670
+        ScriptIdToPathMap.erase(script_id);
+        PathToModuleMap.erase(absolute_file_path_str);
+        ScriptIdToModuleInfo.erase(script_id);
+        delete info;
+        return v8::MaybeLocal<v8::Module>();
+    }
+
+    return module;
+}
+
+std::unordered_multimap<int, FBackendEnv::FModuleInfo*>::iterator FBackendEnv::FindModuleInfo(v8::Local<v8::Module> module)
+{
+#if V8_94_OR_NEWER
+    int script_id = module->ScriptId();
+#else 
+    int script_id = module->GetIdentityHash();
+#endif
+    auto range = ScriptIdToModuleInfo.equal_range(script_id);
+    for (auto It = range.first; It != range.second; ++It)
+    {
+        if (It->second->Module == module)
+        {
+            return It;
+        }
+    }
+    return ScriptIdToModuleInfo.end();
+}
+
+v8::MaybeLocal<v8::Module> FBackendEnv::ResolveModuleCallback(
+    v8::Local<v8::Context> context, v8::Local<v8::String> specifier, 
+#if V8_94_OR_NEWER
+    v8::Local<v8::FixedArray> import_attributes,    // not implement yet
+#endif
+    v8::Local<v8::Module> referrer)
+{
+    auto isolate = context->GetIsolate();
+    auto self = FBackendEnv::Get(isolate);
+    const auto module_info_iter = self->FindModuleInfo(referrer);
+    if(module_info_iter == self->ScriptIdToModuleInfo.end())
+    {
+        return v8::MaybeLocal<v8::Module>();
+    }
+    assert(module_info_iter != self->ScriptIdToModuleInfo.end());
+    auto ref_module_iter = module_info_iter->second->ResolveCache.find(*(v8::String::Utf8Value(isolate, specifier)));
+    if (ref_module_iter == module_info_iter->second->ResolveCache.end())
+    {
+        return v8::MaybeLocal<v8::Module>();
+    }
+    //fprintf(stderr, "e m:%s, e:%d\n", *(v8::String::Utf8Value(isolate, specifier)), ref_module_iter != module_info_iter->second->ResolveCache.end());
+    assert(ref_module_iter != module_info_iter->second->ResolveCache.end());
+    return ref_module_iter->second.Get(isolate);
+}
+
+void esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
+{
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    auto backend_env = FBackendEnv::Get(isolate);
+
+    v8::Local<v8::String> specifier = info[0]->ToString(context).ToLocalChecked();
+
+    v8::Local<v8::Value> resolved_path;
+    if (!backend_env->ResolvePath(isolate, context, specifier, v8::String::Empty(isolate)).ToLocal(&resolved_path))
+    {
+        return;
+    }
+    if (!resolved_path->IsString())
+    {
+        FV8Utils::ThrowException(isolate, "resolved_path is not a string!");
+        return;
+    }
+    
+    v8::Local<v8::Module> root_module;
+
+    if (!backend_env->FetchModuleTree(isolate, context, resolved_path.As<v8::String>()).ToLocal(&root_module))
+    {
+        return;
+    }
+    
+    v8::MaybeLocal<v8::Value> maybe_result;
+    if (root_module->InstantiateModule(context, FBackendEnv::ResolveModuleCallback).FromMaybe(false))
+    {
+        maybe_result = root_module->Evaluate(context);
+    }
+    
+    if (maybe_result.IsEmpty())
+    {
+        return;
+    }
+    
+    info.GetReturnValue().Set(root_module->GetModuleNamespace());
+}
+
+struct ModuleResolutionData
+{
+    ModuleResolutionData(v8::Isolate* isolate_, v8::Local<v8::Value> module_namespace_,
+        v8::Local<v8::Promise::Resolver> resolver_)
+          : isolate(isolate_)
+    {
+        module_namespace.Reset(isolate, module_namespace_);
+        resolver.Reset(isolate, resolver_);
+    }
+
+    v8::Isolate* isolate;
+    v8::Global<v8::Value> module_namespace;
+    v8::Global<v8::Promise::Resolver> resolver;
+};
+
+static void ModuleResolutionSuccessCallback(const v8::FunctionCallbackInfo<v8::Value>& info)
+{
+    std::unique_ptr<ModuleResolutionData> module_resolution_data( 
+        static_cast<ModuleResolutionData*>(info.Data().As<v8::External>()->Value()));
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+    v8::Local<v8::Promise::Resolver> resolver(
+        module_resolution_data->resolver.Get(isolate));
+    v8::Local<v8::Value> module_namespace(
+          module_resolution_data->module_namespace.Get(isolate));
+    
+    resolver->Resolve(context, module_namespace).ToChecked();
+}
+
+static void ModuleResolutionFailureCallback(const v8::FunctionCallbackInfo<v8::Value>& info)
+{
+    std::unique_ptr<ModuleResolutionData> module_resolution_data( 
+        static_cast<ModuleResolutionData*>(info.Data().As<v8::External>()->Value()));
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+ 
+    v8::Local<v8::Promise::Resolver> resolver(
+        module_resolution_data->resolver.Get(isolate));
+    v8::Local<v8::Value> module_namespace(
+          module_resolution_data->module_namespace.Get(isolate));
+
+    resolver->Reject(context, info[0]).ToChecked();
+}
+
+struct DynamicImportData
+{
+    DynamicImportData(v8::Isolate* isolate_, v8::Local<v8::String> referrer_,
+                    v8::Local<v8::String> specifier_,
+                    v8::Local<v8::Promise::Resolver> resolver_)
+        : isolate(isolate_)
+    {
+        referrer.Reset(isolate, referrer_);
+        specifier.Reset(isolate, specifier_);
+        resolver.Reset(isolate, resolver_);
+    }
+
+    v8::Isolate* isolate;
+    v8::Global<v8::String> referrer;
+    v8::Global<v8::String> specifier;
+    v8::Global<v8::Promise::Resolver> resolver;
+};
+
+static void DoHostImportModuleDynamically(void* import_data_)
+{
+    std::unique_ptr<DynamicImportData> import_data(
+        static_cast<DynamicImportData*>(import_data_));
+      
+    v8::Isolate* isolate(import_data->isolate);
+    auto backend_env = FBackendEnv::Get(isolate);
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Context> context = backend_env->MainContext.Get(isolate);
+    v8::Context::Scope context_scope(context);
+    
+    v8::Local<v8::String> referrer(import_data->referrer.Get(isolate));
+    v8::Local<v8::String> specifier(import_data->specifier.Get(isolate));
+    v8::Local<v8::Promise::Resolver> resolver(import_data->resolver.Get(isolate));
+    
+    v8::TryCatch try_catch(isolate);
+    v8::Local<v8::Value> resolved_path;
+    if (!backend_env->ResolvePath(isolate, context, specifier, referrer).ToLocal(&resolved_path))
+    {
+        resolver->Reject(context, try_catch.Exception());
+        return;
+    }
+    std::string absolute_file_path_str = *v8::String::Utf8Value(isolate, resolved_path);
+    v8::Local<v8::Module> root_module;
+    auto cached_module = backend_env->PathToModuleMap.find(absolute_file_path_str);
+    if (cached_module!= backend_env->PathToModuleMap.end())
+    {
+        root_module = cached_module->second.Get(isolate);
+    }
+    else if(!backend_env->FetchModuleTree(isolate, context, resolved_path.As<v8::String>()).ToLocal(&root_module))
+    {
+        resolver->Reject(context, try_catch.Exception());
+        return;
+    }
+    
+    v8::MaybeLocal<v8::Value> maybe_result;
+    if (root_module->InstantiateModule(context, FBackendEnv::ResolveModuleCallback).FromMaybe(false))
+    {
+        maybe_result = root_module->Evaluate(context);
+    }
+    
+    v8::Local<v8::Value> result;
+    if (!maybe_result.ToLocal(&result))
+    {
+        resolver->Reject(context, try_catch.Exception());
+        return;
+    }
+    
+    if (result->IsPromise())
+    {
+        v8::Local<v8::Promise> result_promise = result.As<v8::Promise>();
+        auto module_resolution_data = new ModuleResolutionData(isolate, root_module->GetModuleNamespace(), resolver);
+        v8::Local<v8::External> edata = v8::External::New(isolate, module_resolution_data);
+        v8::Local<v8::Function> callback_success;
+        if(!v8::Function::New(context, ModuleResolutionSuccessCallback, edata).ToLocal(&callback_success))
+        {
+            resolver->Reject(context, try_catch.Exception());
+            return;
+        }
+        v8::Local<v8::Function> callback_failure;
+        if(!v8::Function::New(context, ModuleResolutionFailureCallback, edata).ToLocal(&callback_failure))
+        {
+            resolver->Reject(context, try_catch.Exception());
+            return;
+        }
+        result_promise->Then(context, callback_success, callback_failure).ToLocalChecked();
     }
     else
     {
-        ReferrerName = v8::String::NewFromUtf8(Isolate, "").ToLocalChecked();
+        resolver->Resolve(context, root_module->GetModuleNamespace());
     }
-    return ReferrerName;
 }
 
-v8::MaybeLocal<v8::Module> esmodule::ResolveModule(
-    v8::Local<v8::Context> Context,
-    v8::Local<v8::String> Specifier,
-#if V8_94_OR_NEWER
-    v8::Local<v8::FixedArray> ImportAttributes, // not implement yet
-#endif
-    v8::Local<v8::Module> Referrer
-)
+#if V8_MAJOR_VERSION >= 10
+v8::MaybeLocal<v8::Promise> esmodule::HostImportModuleDynamically(v8::Local<v8::Context> context, v8::Local<v8::Data> host_defined_options,
+    v8::Local<v8::Value> resource_name, v8::Local<v8::String> specifier, v8::Local<v8::FixedArray> import_assertions)
 {
-    v8::Isolate* Isolate = Context->GetIsolate();
-    bool isFromCache = false;
-    v8::Local<v8::Value> ReferrerName = GetModuleName(Isolate, Referrer);
-
-    return _ResolveModule(Context, Specifier, ReferrerName, isFromCache);
-}
-
-bool esmodule::LinkModule(
-    v8::Local<v8::Context> Context,
-    v8::Local<v8::Module> RefModule
-)
-{
-    v8::Isolate* Isolate = Context->GetIsolate();
-#ifdef V8_94_OR_NEWER
-    v8::Local<v8::FixedArray> ModuleRequests = RefModule->GetModuleRequests();
-    for (int i = 0, length = ModuleRequests->Length(); i < length; ++i) {
-        v8::Local<v8::ModuleRequest> ModuleRequest =
-            ModuleRequests->Get(Context, i).As<v8::ModuleRequest>();
-        v8::Local<v8::String> Specifier_v8 = ModuleRequest->GetSpecifier();
+    v8::Local<v8::Value> referrer_name = resource_name;
 #else
-    for (int i = 0, length = RefModule->GetModuleRequestsLength(); i < length; i++)
-    {
-        v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
+v8::MaybeLocal<v8::Promise> esmodule::HostImportModuleDynamically(
+    v8::Local<v8::Context> context, v8::Local<v8::ScriptOrModule> referrer, v8::Local<v8::String> specifier) 
+{
+    v8::Local<v8::Value> referrer_name = referrer->GetResourceName();
 #endif
-        bool isFromCache = false;
-        v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, GetModuleName(Isolate, RefModule), isFromCache);
-        if (MaybeModule.IsEmpty())
-        {
-            return false;
-        }
-        if (!isFromCache) 
-        {
-            v8::Local<v8::Module> Module = MaybeModule.ToLocalChecked();
-            if (!LinkModule(Context, Module)) 
-            {
-                FBackendEnv* mm = FBackendEnv::Get(Isolate);
+    auto isolate = context->GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    v8::Context::Scope context_scope(context);
+    v8::Local<v8::Promise::Resolver> resolver;
+    if (!v8::Promise::Resolver::New(context).ToLocal(&resolver)) return v8::MaybeLocal<v8::Promise> {};
+    
+    DynamicImportData* data = new DynamicImportData(
+        isolate, v8::Local<v8::String>::Cast(referrer_name), specifier,
+        resolver);
+    isolate->EnqueueMicrotask(DoHostImportModuleDynamically, data);
 
-#if V8_94_OR_NEWER
-                auto Specifier_std = mm->ScriptIdToPathMap[Module->ScriptId()];
-                mm->ScriptIdToPathMap.erase(Module->ScriptId());
-#else 
-                auto Specifier_std = mm->ScriptIdToPathMap[Module->GetIdentityHash()];
-                mm->ScriptIdToPathMap.erase(Module->GetIdentityHash());
-#endif
-                mm->PathToModuleMap.erase(Specifier_std);
-                return false;
-            }
-        }
-    }
-
-    return true;
+    return resolver->GetPromise();
 }
 
 void esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
@@ -1014,21 +1057,6 @@ void esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8
     }
 }
 
-#else 
-
-JSModuleDef* esmodule::js_module_loader(
-    JSContext* ctx, const char *name, void *opaque
-) 
-{
-    return static_cast<FBackendEnv*>(opaque)->LoadModule(ctx, name);
-}
-
-char* esmodule::module_normalize(
-    JSContext *ctx, const char *base_name, const char *name, void* opaque
-)
-{
-    return static_cast<FBackendEnv*>(opaque)->NormalizeModuleName(ctx, base_name, name);
-}
 #endif
 
 
