@@ -825,14 +825,12 @@ v8::MaybeLocal<v8::Module> FBackendEnv::ResolveModuleCallback(
     {
         return v8::MaybeLocal<v8::Module>();
     }
-    assert(module_info_iter != self->ScriptIdToModuleInfo.end());
     auto ref_module_iter = module_info_iter->second->ResolveCache.find(*(v8::String::Utf8Value(isolate, specifier)));
     if (ref_module_iter == module_info_iter->second->ResolveCache.end())
     {
         return v8::MaybeLocal<v8::Module>();
     }
     //fprintf(stderr, "e m:%s, e:%d\n", *(v8::String::Utf8Value(isolate, specifier)), ref_module_iter != module_info_iter->second->ResolveCache.end());
-    assert(ref_module_iter != module_info_iter->second->ResolveCache.end());
     return ref_module_iter->second.Get(isolate);
 }
 
