@@ -15,7 +15,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
-#if ENABLE_IL2CPP
+#if !PUERTS_GENERAL
     [UnityEngine.Scripting.Preserve]
 #endif
     public static class PuerRegisterInfo_Gen

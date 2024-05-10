@@ -179,6 +179,9 @@ using Puerts;
 namespace PuertsStaticWrap
 {
 #pragma warning disable 0219
+#if !PUERTS_GENERAL
+    [UnityEngine.Scripting.Preserve]
+#endif
     public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeGenericAlphaBet(data.GenericArgumentsInfo)}>` : ''} ${data.IsGenericWrapper ? makeConstraints(data.GenericArgumentsInfo) : ''}
     {
     ${IF(data.BlittableCopy)}
