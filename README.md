@@ -70,8 +70,6 @@
 
 ## Ask for help
 
-[Discord](https://discord.gg/RYRY7D833n)
-
 [Github Discussion](https://github.com/Tencent/puerts/discussions)
 
 ------
@@ -138,8 +136,6 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 
 ## 技术支持
-
-[Discord](https://discord.gg/RYRY7D833n)
 
 [Github Discussion](https://github.com/Tencent/puerts/discussions)
 
