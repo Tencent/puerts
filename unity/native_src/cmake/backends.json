@@ -33,9 +33,6 @@
                     ],
                     "arm64": [
                         "/Lib/Android/arm64-v8a/libquickjs.a"
-                    ],
-                    "x64": [
-                        "/Lib/Android/x86_64/libquickjs.a"
                     ]
                 },
                 "ohos": {
@@ -280,9 +277,6 @@
                     ],
                     "arm64": [
                         "/Lib/OHOS/arm64-v8a/libwee8.a"
-                    ],
-                    "x64": [
-                        "/Lib/OHOS/x64/libwee8.a"
                     ]
                 },
                 "android": {
@@ -377,7 +371,7 @@
         }
     },
     "mult": {
-        "url": "https://github.com/puerts/backend-mult/releases/download/MULT_240419/mult_backends.tgz",
+        "url": "https://github.com/puerts/backend-mult/releases/download/MULT_240510/mult_backends.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
@@ -398,6 +392,16 @@
                     "x64": [
                         "/Lib/Android/x64/libwee8.a",
                          "/Lib/Android/x86_64/libquickjs.a"
+                    ]
+                },
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libwee8.a",
+                        "/Lib/OHOS/armeabi-v7a/libquickjs.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libwee8.a",
+                        "/Lib/Android/arm64-v8a/libquickjs.a"
                     ]
                 },
                 "win": {
