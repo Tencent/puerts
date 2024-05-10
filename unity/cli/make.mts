@@ -72,7 +72,7 @@ const platformCompileConfig = {
     },
     'ohos': {
         'armv7': {
-            outputPluginPath: 'OHOS/libs/armeabi-v7a/',
+            outputPluginPath: 'OpenHarmony/libs/armeabi-v7a/',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 const NDK = process.env.OHOS_NDK || process.env.OHOS_NDK_HOME;
                 if (!NDK) throw new Error("pleace set OHOS_NDK environment variable first!")
@@ -89,7 +89,7 @@ const platformCompileConfig = {
             }
         },
         'arm64': {
-            outputPluginPath: 'OHOS/libs/arm64-v8a/',
+            outputPluginPath: 'OpenHarmony/libs/arm64-v8a/',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 const NDK = process.env.OHOS_NDK || process.env.OHOS_NDK_HOME;
                 if (!NDK) throw new Error("pleace set OHOS_NDK environment variable first!")
