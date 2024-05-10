@@ -26,6 +26,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: BuildAndroid_V8_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
       - name: BuildAndroidQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -52,6 +57,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: BuildOHOS_V8_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
       - name: BuildOHOSQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
@@ -68,6 +78,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: BuildiOS_V8_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
       - name: BuildiOSQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -94,6 +109,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: BuildOSX_V8_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
       - name: BuildOSXNodejs
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -120,6 +140,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: BuildWindows_V8_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -146,6 +171,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: BuildLinux_V8_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:

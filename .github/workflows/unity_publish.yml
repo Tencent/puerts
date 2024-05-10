@@ -26,6 +26,16 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildAndroid_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
       - name: BuildAndroidQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -57,6 +67,16 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildOHOS_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
       - name: BuildOHOSQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
@@ -73,6 +93,16 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildiOS_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
       - name: reset
         shell: bash
         run: |
@@ -109,6 +139,16 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildOSX_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
       - name: BuildOSXNodejs
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -140,6 +180,16 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildWindows_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -166,6 +216,31 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildLinux_10_6
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_10.6.194
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildWindowsQuickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
       - name: BuildLinuxNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
@@ -186,7 +261,12 @@ jobs:
         with:
           name: Unity_Plugins (v8_9.4_Release)
           path: V8/upm/Plugins/
-          
+
+      - uses: actions/download-artifact@v1
+        with:
+          name: Unity_Plugins (v8_10.6.194_Release)
+          path: V8_10/upm/Plugins/
+
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins (quickjs_Release)
@@ -202,6 +282,7 @@ jobs:
           cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/core/upm
           ls -l $GITHUB_WORKSPACE/unity/Assets/core/upm
           cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz upm && cd -
+          cd V8_10/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_V8_10_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           
@@ -229,6 +310,17 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
           asset_name: PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
+          asset_content_type: application/tgz
+          
+      - name: Upload V8_10 Plugins
+        #id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PuerTS_V8_10_${{ github.event.inputs.tag_name }}.tgz
+          asset_name: PuerTS_V8_10_${{ github.event.inputs.tag_name }}.tgz
           asset_content_type: application/tgz
           
       - name: Upload Quickjs Plugins
