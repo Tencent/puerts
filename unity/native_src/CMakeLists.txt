@@ -231,10 +231,6 @@ elseif ( ANDROID )
     target_link_libraries(puerts
         ${log-lib}
     )
-    
-    if ("${JS_ENGINE}" STREQUAL "v8_10.6.194")
-        target_link_libraries(puerts c) # src/base/logging.cc:0: error: undefined reference to 'stdout'
-    endif ()
 
     set(BACKEND_LIB_NAMES "-Wl,--whole-archive$<SEMICOLON>${BACKEND_LIB_NAMES}$<SEMICOLON>-Wl,--no-whole-archive")
     if ( ANDROID_ABI STREQUAL "armeabi-v7a")

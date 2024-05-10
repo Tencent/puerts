@@ -22,7 +22,7 @@ const platformCompileConfig = {
             outputPluginPath: 'Android/libs/armeabi-v7a/',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
-                const API = options.backend.indexOf('node') != -1 ? 'android-24' : 'android-21';
+                const API = options.backend.indexOf('node') != -1 ? 'android-24' : (options.backend.indexOf('10.6.194') != -1 ? 'android-23' : 'android-21');
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
 
@@ -39,7 +39,7 @@ const platformCompileConfig = {
             outputPluginPath: 'Android/libs/arm64-v8a/',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
-                const API = options.backend.indexOf('node') != -1 ? 'android-24' : 'android-21';
+                const API = options.backend.indexOf('node') != -1 ? 'android-24' : (options.backend.indexOf('10.6.194') != -1 ? 'android-23' : 'android-21');
                 const ABI = 'arm64-v8a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
 
@@ -56,7 +56,7 @@ const platformCompileConfig = {
             outputPluginPath: 'Android/libs/x86_64/',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
-                const API = options.backend.indexOf('node') != -1 ? 'android-24' : 'android-21';
+                const API = options.backend.indexOf('node') != -1 ? 'android-24' : (options.backend.indexOf('10.6.194') != -1 ? 'android-23' : 'android-21');
                 const ABI = 'x86_64';
                 const TOOLCHAIN_NAME = 'x86_64-4.9';
 
