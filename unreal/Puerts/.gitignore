@@ -1,0 +1,6 @@
+/Intermediate
+/Binaries
+/ThirdParty/nodejs*
+/ThirdParty/v8*
+/Source/**/*.props
+/Source/*/obj
