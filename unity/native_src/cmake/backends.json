@@ -374,7 +374,7 @@
         }
     },
     "mult": {
-        "url": "https://github.com/puerts/backend-mult/releases/download/MULT_240510/mult_backends.tgz",
+        "url": "https://github.com/puerts/backend-mult/releases/download/MULT_240516/mult_backends.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
