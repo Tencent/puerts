@@ -1110,7 +1110,7 @@ std::string FBackendEnv::GetJSStackTrace()
   target                                                                       \
       ->Set(context,                                                           \
             v8::String::NewFromUtf8(isolate, #name).ToLocalChecked(),          \
-            v8::Number::New(isolate, static_cast<double>(stat.##name())))        \
+            v8::Number::New(isolate, static_cast<double>(stat.name())))        \
       .Check();
 
 void GetHeapStatistics(const v8::FunctionCallbackInfo<v8::Value>& info)
