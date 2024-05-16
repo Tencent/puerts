@@ -317,7 +317,7 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
     {
         Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FBackendEnv>);
 
-#if !WITH_QUICKJS
+#if !defined(WITH_QUICKJS)
         Isolate->SetHostInitializeImportMetaObjectCallback(&esmodule::HostInitializeImportMetaObject);
         Isolate->SetHostImportModuleDynamicallyCallback(&esmodule::HostImportModuleDynamically);
 #endif
@@ -342,6 +342,7 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
     JS_FreeValue(ctx, G);
 #else
     Global->Set(Context, v8::String::NewFromUtf8(Isolate, EXECUTEMODULEGLOBANAME).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()).Check();
+    Global->Set(Context, v8::String::NewFromUtf8(Isolate, "v8").ToLocalChecked(), GetV8Extras(Isolate, Context));
 #endif
 }
 
@@ -1102,4 +1103,74 @@ std::string FBackendEnv::GetJSStackTrace()
     return StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
 #endif
 }
+
+#if !defined(WITH_QUICKJS)
+
+#define SetNumericStatProperty(name)                                           \
+  target                                                                       \
+      ->Set(context,                                                           \
+            v8::String::NewFromUtf8(isolate, #name).ToLocalChecked(),          \
+            v8::Number::New(isolate, static_cast<double>(stat.##name())))        \
+      .Check();
+
+void GetHeapStatistics(const v8::FunctionCallbackInfo<v8::Value>& info)
+{
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Object> target = v8::Object::New(isolate);
+    v8::HeapStatistics stat;
+    isolate->GetHeapStatistics(&stat);
+    
+    SetNumericStatProperty(total_heap_size);
+    SetNumericStatProperty(total_heap_size_executable);
+    SetNumericStatProperty(total_physical_size);
+    SetNumericStatProperty(total_available_size);
+    SetNumericStatProperty(total_global_handles_size);
+    SetNumericStatProperty(used_global_handles_size);
+    SetNumericStatProperty(used_heap_size);
+    SetNumericStatProperty(heap_size_limit);
+    SetNumericStatProperty(malloced_memory);
+    SetNumericStatProperty(external_memory);
+    SetNumericStatProperty(peak_malloced_memory);
+    SetNumericStatProperty(number_of_native_contexts);
+    SetNumericStatProperty(number_of_detached_contexts);
+    SetNumericStatProperty(does_zap_garbage);
+    
+    info.GetReturnValue().Set(target);
+}
+
+void GetHeapSpaceStatistics(const v8::FunctionCallbackInfo<v8::Value>& info)
+{
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Object> ret = v8::Object::New(isolate);
+    
+    for (size_t i = 0; i < isolate->NumberOfHeapSpaces(); i++)
+    {
+        v8::HeapSpaceStatistics stat;
+        isolate->GetHeapSpaceStatistics(&stat, i);
+        v8::Local<v8::Object> target = v8::Object::New(isolate);
+        
+        SetNumericStatProperty(space_size);
+        SetNumericStatProperty(space_used_size);
+        SetNumericStatProperty(space_available_size);
+        SetNumericStatProperty(physical_space_size);
+        
+        ret->Set(context, v8::String::NewFromUtf8(isolate, stat.space_name()).ToLocalChecked(), target).Check();
+    }
+    info.GetReturnValue().Set(ret);
+}
+
+#undef SetUIntStatProperty
+
+v8::Local<v8::Object> FBackendEnv::GetV8Extras(v8::Isolate* isolate, v8::Local<v8::Context> context)
+{
+    v8::Local<v8::Object> ret = v8::Object::New(isolate);
+    ret->Set(context, v8::String::NewFromUtf8(isolate, "getHeapStatistics").ToLocalChecked(), 
+        v8::Function::New(context, GetHeapStatistics).ToLocalChecked()).Check();
+    ret->Set(context, v8::String::NewFromUtf8(isolate, "getHeapSpaceStatistics").ToLocalChecked(), 
+        v8::Function::New(context, GetHeapSpaceStatistics).ToLocalChecked()).Check();
+    return ret;
+}
+#endif
 }
