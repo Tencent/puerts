@@ -51,6 +51,16 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildAndroidMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
   
   ohos:
     runs-on: ubuntu-latest
@@ -82,6 +92,16 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildOHOSMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   ios:
     runs-on: macos-11
@@ -123,6 +143,16 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildiOSMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   osx:
     runs-on: macos-11
@@ -164,6 +194,16 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildOSXMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   windows:
     runs-on: windows-2019
@@ -205,6 +245,16 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildWindowsMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   linux64:
     runs-on: ubuntu-latest
@@ -246,6 +296,17 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
+      - name: reset
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          rm -rf unity/Assets/core/upm/Plugins
+      - name: BuildWindowsMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
+
   publish:
     runs-on: ubuntu-latest
     needs: [windows,osx,ios,android,linux64,ohos]
@@ -277,6 +338,11 @@ jobs:
           name: Unity_Plugins (nodejs_16_Release)
           path: Nodejs/upm/Plugins/
           
+      - uses: actions/download-artifact@v1
+        with:
+          name: Unity_Plugins (mult_Release)
+          path: Mult/upm/Plugins/
+          
       - name: Create Release Asset
         run: |
           cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/core/upm
@@ -285,6 +351,7 @@ jobs:
           cd V8_10/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_V8_10_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
+          cd Mult/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Mult_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           
       - name: Create Release
         id: create_release
@@ -343,6 +410,17 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz
           asset_name: "PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz"
+          asset_content_type: application/tgz
+      
+      - name: Upload MutiBackend Plugins
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PuerTS_Mult_${{ github.event.inputs.tag_name }}.tgz
+          asset_name: "PuerTS_Mult_${{ github.event.inputs.tag_name }}.tgz"
           asset_content_type: application/tgz
 
       # - name: Trigger demo/upm repository update
