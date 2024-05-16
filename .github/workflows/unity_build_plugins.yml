@@ -67,6 +67,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
+      - name: BuildOHOSMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: mult
 
   ios:
     runs-on: macos-11
