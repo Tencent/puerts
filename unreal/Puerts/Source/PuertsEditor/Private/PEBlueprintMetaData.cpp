@@ -116,7 +116,7 @@ void UPEClassMetaData::MergeClassCategories(UClass* InParentClass)
     {
         return;
     }
-    
+
     TArray<FString> ParentShowCategories = GetClassMetaDataValues(InParentClass, NAME_ShowCategories);
     TArray<FString> ParentHideFunctions = GetClassMetaDataValues(InParentClass, NAME_HideFunctions);
     TArray<FString> ParentAutoExpandCategories = GetClassMetaDataValues(InParentClass, NAME_AutoExpandCategories);
@@ -125,13 +125,13 @@ void UPEClassMetaData::MergeClassCategories(UClass* InParentClass)
     //	add parent categories
     ShowSubCategories.Append(MoveTemp(ParentShowCategories));
     HideFunctions.Append(MoveTemp(ParentHideFunctions));
-    //If metadata is collected from ts
+    // If metadata is collected from ts
     FString* ExistingValue = MetaData.Find(NAME_HideCategories);
     if (ExistingValue)
     {
         ExistingValue->ParseIntoArray(HideCategories, TEXT(" "), true);
     }
-    
+
     //	for show categories
     for (const FString& Value : ShowCategories)
     {
