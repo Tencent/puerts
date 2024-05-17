@@ -10,6 +10,7 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+      - unreal/Puerts/ThirdParty/**
       - .github/workflows/unity_build_plugins.yml
 
 env:
