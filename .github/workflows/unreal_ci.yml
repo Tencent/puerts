@@ -5,10 +5,13 @@ on:
   push:
     paths: 
       - unreal/Puerts/Source/**
+      - unreal/Puerts/ThirdParty/**
       - .github/workflows/unreal_ci.yml
   pull_request:
     paths: 
       - unreal/Puerts/Source/**
+      - unreal/Puerts/ThirdParty/**
+      - .github/workflows/unreal_ci.yml
 
 env:
   Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.0/Mini427_wami.tgz"
