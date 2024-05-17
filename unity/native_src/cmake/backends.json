@@ -404,7 +404,7 @@
                     ],
                     "arm64": [
                         "/Lib/OHOS/arm64-v8a/libwee8.a",
-                        "/Lib/Android/arm64-v8a/libquickjs.a"
+                        "/Lib/OHOS/arm64-v8a/libquickjs.a"
                     ]
                 },
                 "win": {
