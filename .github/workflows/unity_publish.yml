@@ -82,7 +82,7 @@ jobs:
           curl -O https://repo.huaweicloud.com/harmonyos/os/4.1-Release/ohos-sdk-windows_linux-public.tar.gz
           tar xvfz ohos-sdk-windows_linux-public.tar.gz
           cd ohos-sdk/linux
-          unzip -o -d ./ native-linux-x64-4.1.7.5-Release.zip
+          unzip -q -o -d ./ native-linux-x64-4.1.7.5-Release.zip
       - name: BuildOHOS
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
