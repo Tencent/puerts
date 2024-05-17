@@ -181,6 +181,17 @@ const platformCompileConfig = {
 
                 return `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`;
             }
+        },
+        'arm64': {
+            outputPluginPath: 'Linux/libs/arm64/',
+            hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
+                cd(CMAKE_BUILD_PATH);
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DCMAKE_BUILD_TYPE=${options.config} ..`).code)
+                cd("..")
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
+
+                return `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`;
+            }
         }
     }
 }
