@@ -252,6 +252,9 @@
                 "linux": {
                     "x64": [
                         "/Lib/Linux/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Linux_arm64/libwee8.a"
                     ]
                 }
             },
@@ -312,6 +315,9 @@
                 "linux": {
                     "x64": [
                         "/Lib/Linux/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Linux_arm64/libwee8.a"
                     ]
                 }
             },
