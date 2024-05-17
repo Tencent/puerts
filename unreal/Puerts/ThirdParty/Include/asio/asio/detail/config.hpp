@@ -1207,6 +1207,11 @@
 
 // Standard library has invoke_result (which supersedes result_of).
 #if !defined(ASIO_HAS_STD_INVOKE_RESULT)
+#  if __cplusplus >= 202002L
+#    define ASIO_HAS_STD_INVOKE_RESULT 1
+#  endif
+#endif // !defined(ASIO_HAS_STD_INVOKE_RESULT)
+#if !defined(ASIO_HAS_STD_INVOKE_RESULT)
 # if !defined(ASIO_DISABLE_STD_INVOKE_RESULT)
 #  if defined(ASIO_MSVC)
 #   if (_MSC_VER >= 1911 && _MSVC_LANG >= 201703)
