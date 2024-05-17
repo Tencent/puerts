@@ -14,6 +14,8 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Templates/Function.h"
 #include "Templates/SharedPointer.h"
+#include "Runtime/CoreUObject/Public/UObject/Package.h"
+
 #include "TypeScriptGeneratedClass.generated.h"
 
 struct PendingConstructJobInfo
