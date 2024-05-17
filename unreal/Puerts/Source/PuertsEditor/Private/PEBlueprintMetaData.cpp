@@ -116,18 +116,22 @@ void UPEClassMetaData::MergeClassCategories(UClass* InParentClass)
     {
         return;
     }
-
-    TArray<FString> ParentHideCategories = GetClassMetaDataValues(InParentClass, NAME_HideCategories);
+    
     TArray<FString> ParentShowCategories = GetClassMetaDataValues(InParentClass, NAME_ShowCategories);
     TArray<FString> ParentHideFunctions = GetClassMetaDataValues(InParentClass, NAME_HideFunctions);
     TArray<FString> ParentAutoExpandCategories = GetClassMetaDataValues(InParentClass, NAME_AutoExpandCategories);
     TArray<FString> ParentAutoCollapseCategories = GetClassMetaDataValues(InParentClass, NAME_AutoCollapseCategories);
 
     //	add parent categories
-    HideCategories.Append(MoveTemp(ParentHideCategories));
     ShowSubCategories.Append(MoveTemp(ParentShowCategories));
     HideFunctions.Append(MoveTemp(ParentHideFunctions));
-
+    //If metadata is collected from ts
+    FString* ExistingValue = MetaData.Find(NAME_HideCategories);
+    if (ExistingValue)
+    {
+        ExistingValue->ParseIntoArray(HideCategories, TEXT(" "), true);
+    }
+    
     //	for show categories
     for (const FString& Value : ShowCategories)
     {
@@ -203,10 +207,6 @@ void UPEClassMetaData::MergeClassCategories(UClass* InParentClass)
     if (AutoExpandCategories.Num() > 0)
     {
         MetaData.Add(NAME_AutoExpandCategories, FString::Join(AutoExpandCategories, TEXT(" ")));
-    }
-    if (HideCategories.Num() > 0)
-    {
-        MetaData.Add(NAME_HideCategories, FString::Join(HideCategories, TEXT(" ")));
     }
     if (ShowSubCategories.Num() > 0)
     {
@@ -330,10 +330,7 @@ void UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBluep
         InClass->HasMetaData(TEXT("DisplayName")) ? InClass->GetMetaData(TEXT("DisplayName")) : FString{};
     InBlueprint->BlueprintType = (InClass->ClassFlags & CLASS_Const) ? BPTYPE_Const : BPTYPE_Normal;
     InBlueprint->BlueprintCategory = InClass->HasMetaData(TEXT("Category")) ? InClass->GetMetaData(TEXT("Category")) : FString{};
-    if (InClass->HasMetaData(TEXT("HideCategories")))
-    {
-        InClass->GetMetaData(TEXT("HideCategories")).ParseIntoArray(InBlueprint->HideCategories, TEXT(" "), true);
-    }
+    InBlueprint->HideCategories = HideCategories;
 }
 
 void UPEClassMetaData::SetAndValidateWithinClass(UClass* InClass)
