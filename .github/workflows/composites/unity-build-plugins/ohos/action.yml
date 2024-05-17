@@ -17,14 +17,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install NDK
-      shell: bash
-      run: |
-        cd ~
-        curl -O https://repo.huaweicloud.com/harmonyos/os/4.1-Release/ohos-sdk-windows_linux-public.tar.gz
-        tar xvfz ohos-sdk-windows_linux-public.tar.gz
-        cd ohos-sdk/linux
-        unzip -o -d ./ native-linux-x64-4.1.7.5-Release.zip
     - name: Build
       shell: bash
       run: |

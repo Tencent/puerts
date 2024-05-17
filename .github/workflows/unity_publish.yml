@@ -16,6 +16,14 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+      - name: Install NDK
+        shell: bash
+        run: |
+          cd ~
+          rm -rf ~/android-ndk-r21b
+          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
+          sudo apt install unzip -y
+          unzip -q NDK
       - name: BuildAndroid
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -67,6 +75,14 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+      - name: Install NDK
+        shell: bash
+        run: |
+          cd ~
+          curl -O https://repo.huaweicloud.com/harmonyos/os/4.1-Release/ohos-sdk-windows_linux-public.tar.gz
+          tar xvfz ohos-sdk-windows_linux-public.tar.gz
+          cd ohos-sdk/linux
+          unzip -o -d ./ native-linux-x64-4.1.7.5-Release.zip
       - name: BuildOHOS
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:

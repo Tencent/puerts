@@ -17,14 +17,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install NDK
-      shell: bash
-      run: |
-        cd ~
-        rm -rf ~/android-ndk-r21b
-        wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
-        sudo apt install unzip -y
-        unzip -q NDK
     - name: Build
       shell: bash
       run: |
