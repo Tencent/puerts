@@ -29,7 +29,7 @@ runs:
         cd unity
         npm i
         cd native_src
-        node ../cli make --platform linux --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+        node ../cli make --platform linux --arch x64 --backend ${{ inputs.backend }} --config ${{ inputs.config }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
