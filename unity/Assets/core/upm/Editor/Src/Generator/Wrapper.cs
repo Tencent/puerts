@@ -404,12 +404,25 @@ namespace Puerts.Editor
                         }
                         else if (valueType.IsEnum)
                         {
-                            // if the default value is 'default' but the enum does not has item equals to 0
-                            // we should translate it into default(TypeName)
+                            // value not defined in Enum or value is combined values (flag)
                             var enumName = valueType.FullName.Replace("+", ".");
-                            var valueName = value.ToString();
-                            if (valueName == "0") return "default(" + enumName + ")";
-                            else return enumName + "." + valueName;
+                            var valueString = "";
+                            var enumUnderlyingType = valueType.GetEnumUnderlyingType();
+                            if (enumUnderlyingType == typeof(int) ||
+                                enumUnderlyingType == typeof(long) ||
+                                enumUnderlyingType == typeof(short) ||
+                                enumUnderlyingType == typeof(sbyte))
+                            {
+                                valueString = Convert.ToInt64(value).ToString();
+                            }
+                            else if (enumUnderlyingType == typeof(uint) ||
+                                enumUnderlyingType == typeof(ulong) ||
+                                enumUnderlyingType == typeof(ushort) ||
+                                enumUnderlyingType == typeof(byte))
+                            {
+                                valueString = Convert.ToUInt64(value).ToString();
+                            }
+                            return $"({enumName})({valueString})";
                         } 
                         else if (valueType.IsPrimitive)
                         {
