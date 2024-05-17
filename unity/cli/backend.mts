@@ -21,18 +21,24 @@ export default async function downloadBackend(cwd: string, name: string, url: st
         const down = download(url, backendDir, { extract: true });
         await down;
 
-    } else if (url = readBackendsJSON(cwd)[name].url) {
-        console.log(`[Puer] downloading ${name} from ${url}`);
-        const down = download(url, backendDir, { extract: true });
-        await down;
-
     } else {
-        throw new Error(`invalid backend: ${name}, backend url not found`);
+        const cfg = readBackendsConfig(cwd);
+        if (!(name in cfg)) {
+            throw new Error(`invalid backend: ${name}, available backends:${Object.keys(cfg).join(', ')}`);
+        }
+        if (url = cfg[name].url) {
+            console.log(`[Puer] downloading ${name} from ${url}`);
+            const down = download(url, backendDir, { extract: true });
+            await down;
+
+        } else {
+            throw new Error(`invalid backend: ${name}, backend url not found`);
+        }
     }
 }
 
 
-function readBackendsJSON(cwd: string): {[key: string]: any} {
+function readBackendsConfig(cwd: string): {[key: string]: any} {
     const backendsJSONPath = join(cwd, 'cmake', 'backends.json');
     if (existsSync(backendsJSONPath)) {
         return JSON.parse(readFileSync(backendsJSONPath, 'utf-8'));
