@@ -603,6 +603,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
 
     FARFilter BPFilter;
     BPFilter.PackagePaths.Add(PackagePath);
+    BPFilter.PackagePaths.Add(FName(TEXT("/Engine")));
     BPFilter.bRecursivePaths = true;
     BPFilter.bRecursiveClasses = true;
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
