@@ -245,11 +245,8 @@ bool UPEClassMetaData::MergeAndValidateClassFlags(UClass* InClass)
 
     InClass->ClassFlags |= ClassFlags;
     const auto OldWithInClass = InClass->ClassWithin;
-    const auto OldConfigName = InClass->ClassConfigName;
-    InClass->ClassConfigName = FName(*ConfigName);
 
     SetAndValidateWithinClass(InClass);
-    SetAndValidateConfigName(InClass);
 
     if (!!(InClass->ClassFlags & CLASS_EditInlineNew) && InClass->IsChildOf(AActor::StaticClass()))
     {
@@ -264,7 +261,7 @@ bool UPEClassMetaData::MergeAndValidateClassFlags(UClass* InClass)
         return false;
     }
 
-    return OldFlags != InClass->ClassFlags || OldWithInClass != InClass->ClassWithin || OldConfigName != InClass->ClassConfigName;
+    return OldFlags != InClass->ClassFlags || OldWithInClass != InClass->ClassWithin;
 }
 
 bool UPEClassMetaData::SetClassMetaData(UClass* InClass)
