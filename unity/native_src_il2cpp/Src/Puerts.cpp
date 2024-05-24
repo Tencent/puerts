@@ -510,7 +510,7 @@ struct RestArguments
         for(int i = start; i < info.Length();++i)
         {
             v8::String::Utf8Value t(isolate, info[i]);
-            ArraySetRef(ret, i - start, CStringToCSharpString(*t));
+            ArraySetRef(ret, i - start, CStringToCSharpString(*t, t.length()));
         }
         return ret;
     }
