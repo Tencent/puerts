@@ -492,7 +492,7 @@ namespace Puerts
             }
             else
             {
-                __PushStringForJSFunction(function, str + '\0');
+                __PushStringForJSFunction(function, Encoding.UTF8.GetBytes(str + '\0'));
             }
         }
 #else
