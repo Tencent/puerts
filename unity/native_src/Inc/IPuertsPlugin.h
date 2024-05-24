@@ -68,7 +68,7 @@ public:
 
     virtual const char *GetStringFromValue(void* Value, int *Length, int IsOut) = 0;
 
-    virtual void SetStringToOutValue(void* Value, const char *Str, int size) = 0;
+    virtual void SetStringToOutValue(void* Value, const char *Str) = 0;
 
     virtual int GetBooleanFromValue(void* Value, int IsOut) = 0;
 
@@ -108,7 +108,7 @@ public:
 
     virtual void ReturnNumber(const void* Info, double Number) = 0;
 
-    virtual void ReturnString(const void* Info, const char* String, int size) = 0;
+    virtual void ReturnString(const void* Info, const char* String) = 0;
 
     virtual void ReturnBigInt(const void* Info, int64_t BigInt) = 0;
 
@@ -139,7 +139,7 @@ public:
 
     virtual void PushArrayBufferForJSFunction(void* Function, unsigned char * Bytes, int Length) = 0;
 
-    virtual void PushStringForJSFunction(void* Function, const char* S, int size) = 0;
+    virtual void PushStringForJSFunction(void* Function, const char* S) = 0;
 
     virtual void PushNumberForJSFunction(void* Function, double D) = 0;
 

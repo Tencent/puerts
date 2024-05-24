@@ -77,7 +77,7 @@ public:
 
     virtual const char *GetStringFromValue(void* Value, int *Length, int IsOut) override;
 
-    virtual void SetStringToOutValue(void* Value, const char *Str, int size) override;
+    virtual void SetStringToOutValue(void* Value, const char *Str) override;
 
     virtual int GetBooleanFromValue(void* Value, int IsOut) override;
 
@@ -117,7 +117,7 @@ public:
 
     virtual void ReturnNumber(const void* Info, double Number) override;
 
-    virtual void ReturnString(const void* Info, const char* String, int size) override;
+    virtual void ReturnString(const void* Info, const char* String) override;
 
     virtual void ReturnBigInt(const void* Info, int64_t BigInt) override;
 
@@ -148,7 +148,7 @@ public:
 
     virtual void PushArrayBufferForJSFunction(void* Function, unsigned char * Bytes, int Length) override;
 
-    virtual void PushStringForJSFunction(void* Function, const char* S, int size) override;
+    virtual void PushStringForJSFunction(void* Function, const char* S) override;
 
     virtual void PushNumberForJSFunction(void* Function, double D) override;
 
@@ -448,7 +448,7 @@ const char *V8Plugin::GetStringFromValue(void* pValue, int *Length, int IsOut)
     }
 }
 
-void V8Plugin::SetStringToOutValue(void* pValue, const char *Str, int size)
+void V8Plugin::SetStringToOutValue(void* pValue, const char *Str)
 {
     v8::Isolate* Isolate = jsEngine.MainIsolate;
     const v8::Value *Value = (const v8::Value *)pValue;
@@ -456,7 +456,7 @@ void V8Plugin::SetStringToOutValue(void* pValue, const char *Str, int size)
     {
         auto Context = Isolate->GetCurrentContext();
         auto Outer = Value->ToObject(Context).ToLocalChecked();
-        auto ReturnVal = Outer->Set(Context, 0, v8::String::NewFromUtf8(Isolate, Str, v8::NewStringType::kNormal, size).ToLocalChecked());
+        auto ReturnVal = Outer->Set(Context, 0, FV8Utils::V8String(Isolate, Str));
     }
 }
 
@@ -742,11 +742,11 @@ void V8Plugin::ReturnNumber(const void* pInfo, double Number)
     Info.GetReturnValue().Set(Number);
 }
 
-void V8Plugin::ReturnString(const void* pInfo, const char* String, int size)
+void V8Plugin::ReturnString(const void* pInfo, const char* String)
 {
     v8::Isolate* Isolate = jsEngine.MainIsolate;
     const v8::FunctionCallbackInfo<v8::Value>& Info =  *(const v8::FunctionCallbackInfo<v8::Value>*)pInfo;
-    Info.GetReturnValue().Set(v8::String::NewFromUtf8(Isolate, String, v8::NewStringType::kNormal, size).ToLocalChecked());
+    Info.GetReturnValue().Set(PUERTS_NAMESPACE::FV8Utils::V8String(Isolate, String));
 }
 
 void V8Plugin::ReturnBigInt(const void* pInfo, int64_t BigInt)
@@ -868,12 +868,12 @@ void V8Plugin::PushArrayBufferForJSFunction(void* pFunction, unsigned char * Byt
     Function->Arguments.push_back(std::move(Value));
 }
 
-void V8Plugin::PushStringForJSFunction(void* pFunction, const char* S, int size)
+void V8Plugin::PushStringForJSFunction(void* pFunction, const char* S)
 {
     PUERTS_NAMESPACE::JSFunction *Function = (PUERTS_NAMESPACE::JSFunction *)pFunction;
     FValue Value;
     Value.Type = puerts::String;
-    Value.Str = std::string(S, size);
+    Value.Str = S;
     Function->Arguments.push_back(std::move(Value));
 }
 

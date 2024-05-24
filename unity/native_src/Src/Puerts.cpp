@@ -9,7 +9,7 @@
 #include "V8Utils.h"
 #include "Log.h"
 
-#define API_LEVEL 35
+#define API_LEVEL 34
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -294,13 +294,13 @@ V8_EXPORT const char *GetStringFromValue(v8::Isolate* Isolate, v8::Value *Value,
     }
 }
 
-V8_EXPORT void SetStringToOutValue(v8::Isolate* Isolate, v8::Value *Value, const char *Str, int size)
+V8_EXPORT void SetStringToOutValue(v8::Isolate* Isolate, v8::Value *Value, const char *Str)
 {
     if (Value->IsObject())
     {
         auto Context = Isolate->GetCurrentContext();
         auto Outer = Value->ToObject(Context).ToLocalChecked();
-        auto ReturnVal = Outer->Set(Context, 0, v8::String::NewFromUtf8(Isolate, Str, v8::NewStringType::kNormal, size).ToLocalChecked());
+        auto ReturnVal = Outer->Set(Context, 0, FV8Utils::V8String(Isolate, Str));
     }
 }
 
@@ -559,9 +559,9 @@ V8_EXPORT void ReturnNumber(v8::Isolate* Isolate, const v8::FunctionCallbackInfo
     Info.GetReturnValue().Set(Number);
 }
 
-V8_EXPORT void ReturnString(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, const char* String, int size)
+V8_EXPORT void ReturnString(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, const char* String)
 {
-    Info.GetReturnValue().Set(v8::String::NewFromUtf8(Isolate, String, v8::NewStringType::kNormal, size).ToLocalChecked());
+    Info.GetReturnValue().Set(FV8Utils::V8String(Isolate, String));
 }
 
 V8_EXPORT void ReturnBigInt(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int64_t BigInt)
@@ -664,11 +664,11 @@ V8_EXPORT void PushArrayBufferForJSFunction(JSFunction *Function, unsigned char 
     Function->Arguments.push_back(std::move(Value));
 }
 
-V8_EXPORT void PushStringForJSFunction(JSFunction *Function, const char* S, int size)
+V8_EXPORT void PushStringForJSFunction(JSFunction *Function, const char* S)
 {
     FValue Value;
     Value.Type = puerts::String;
-    Value.Str = std::string(S, size);
+    Value.Str = S;
     Function->Arguments.push_back(std::move(Value));
 }
 

@@ -33,7 +33,7 @@
 #endif
 #endif  // _WIN32
 
-#define API_LEVEL 35
+#define API_LEVEL 34
 
 LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
@@ -217,9 +217,9 @@ PUERTS_EXPORT const char *GetStringFromValue(puerts::IPuertsPlugin* plugin, void
     return plugin->GetStringFromValue(Value, Length, IsOut);
 }
 
-PUERTS_EXPORT void SetStringToOutValue(puerts::IPuertsPlugin* plugin, void* Value, const char *Str, int size)
+PUERTS_EXPORT void SetStringToOutValue(puerts::IPuertsPlugin* plugin, void* Value, const char *Str)
 {
-    plugin->SetStringToOutValue(Value, Str, size);
+    plugin->SetStringToOutValue(Value, Str);
 }
 
 PUERTS_EXPORT int GetBooleanFromValue(puerts::IPuertsPlugin* plugin, void* Value, int IsOut)
@@ -316,9 +316,9 @@ PUERTS_EXPORT void ReturnNumber(puerts::IPuertsPlugin* plugin, const void* Info,
     plugin->ReturnNumber(Info, Number);
 }
 
-PUERTS_EXPORT void ReturnString(puerts::IPuertsPlugin* plugin, const void* Info, const char* String, int size)
+PUERTS_EXPORT void ReturnString(puerts::IPuertsPlugin* plugin, const void* Info, const char* String)
 {
-    plugin->ReturnString(Info, String, size);
+    plugin->ReturnString(Info, String);
 }
 
 PUERTS_EXPORT void ReturnBigInt(puerts::IPuertsPlugin* plugin, const void* Info, int64_t BigInt)
@@ -390,9 +390,9 @@ PUERTS_EXPORT void PushArrayBufferForJSFunction(puerts::PuertsPluginStore* Funct
     Function->PuertsPlugin->PushArrayBufferForJSFunction(Function, Bytes, Length);
 }
 
-PUERTS_EXPORT void PushStringForJSFunction(puerts::PuertsPluginStore* Function, const char* S, int size)
+PUERTS_EXPORT void PushStringForJSFunction(puerts::PuertsPluginStore* Function, const char* S)
 {
-    Function->PuertsPlugin->PushStringForJSFunction(Function, S, size);
+    Function->PuertsPlugin->PushStringForJSFunction(Function, S);
 }
 
 PUERTS_EXPORT void PushNumberForJSFunction(puerts::PuertsPluginStore* Function, double D)

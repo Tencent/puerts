@@ -72,7 +72,7 @@ namespace PUERTS_NAMESPACE
         case puerts::Date:
             return v8::Date::New(Context, Value.Number).ToLocalChecked();
         case puerts::String:
-            return v8::String::NewFromUtf8(Isolate, Value.Str.c_str(), v8::NewStringType::kNormal, Value.Str.size()).ToLocalChecked();
+            return FV8Utils::V8String(Isolate, Value.Str.c_str());
         case puerts::NativeObject:
             return Value.Persistent.Get(Isolate);
         case puerts::Function:
