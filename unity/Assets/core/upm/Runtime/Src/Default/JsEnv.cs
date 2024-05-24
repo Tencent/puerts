@@ -102,7 +102,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, BackendType backend, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 34;
+            const int libVersionExpect = 35;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
