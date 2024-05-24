@@ -619,7 +619,7 @@ struct OptionalParameter
         if (index < info.Length())
         {
             v8::String::Utf8Value t(context->GetIsolate(), info[index]);
-            return CStringToCSharpString(*t);
+            return CStringToCSharpString(*t, t.length());
         }
         else
         {
