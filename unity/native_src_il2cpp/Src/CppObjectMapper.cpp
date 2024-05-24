@@ -268,10 +268,16 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-            Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
-                    FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
-                                       : v8::Local<v8::Value>()));
+#if defined(WITH_QUICKJS)
+            auto Temp = v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
+                FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
+                    : v8::Local<v8::Value>());
+#else
+            auto Temp = v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
+                FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
+                    : v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,  v8::ConstructorBehavior::kThrow);
+#endif
+            Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(), Temp);
             ++FunctionInfo;
         }
 

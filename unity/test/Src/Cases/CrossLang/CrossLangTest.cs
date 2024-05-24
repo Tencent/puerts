@@ -556,6 +556,27 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
         [Test]
+        public void NoNewOnStaticFunction()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            try 
+            {
+                jsEnv.Eval(@"
+                    (function() {
+                        const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                        new TestHelper.GetInstance();
+                    })()
+                ");
+            } 
+            catch(Exception e) 
+            {
+                StringAssert.Contains("not a constructor", e.Message);
+                jsEnv.Tick();
+                return;
+            }
+            throw new Exception("unexpected to reach here");
+        }
+        [Test]
         public void NumberInstanceTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();

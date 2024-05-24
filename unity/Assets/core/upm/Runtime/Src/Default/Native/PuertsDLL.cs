@@ -480,6 +480,22 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushBigIntForJSFunction(IntPtr function, long l);
 
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PushStringForJSFunction")]
+        public static extern void __PushStringForJSFunction(IntPtr function, byte[] str);
+
+        public static void PushStringForJSFunction(IntPtr function, string str)
+        {
+            if (str == null)
+            {
+                PushNullForJSFunction(function);
+            }
+            else
+            {
+                __PushStringForJSFunction(function, Encoding.UTF8.GetBytes(str + '\0'));
+            }
+        }
+#else
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PushStringForJSFunction")]
         public static extern void __PushStringForJSFunction(IntPtr function, string str);
 
@@ -494,6 +510,7 @@ namespace Puerts
                 __PushStringForJSFunction(function, str);
             }
         }
+#endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushNumberForJSFunction(IntPtr function, double d);
