@@ -234,7 +234,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
         if (signature == 's') { // string
             return `    // JSValToCSVal s
     v8::String::Utf8Value t${CSName}(isolate, ${JSName});
-    void* ${CSName} = CStringToCSharpString(*t${CSName});`;
+    void* ${CSName} = CStringToCSharpString(*t${CSName}, t${CSName}.length());`;
 
         } else if (signature == 'Ps') { // string ref
             return `    // JSValToCSVal Ps
@@ -244,7 +244,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
     if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
         o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
         v8::String::Utf8Value t${CSName}(isolate, o${CSName}->Get(context, 0).ToLocalChecked());
-        u${CSName} = CStringToCSharpString(*t${CSName});
+        u${CSName} = CStringToCSharpString(*t${CSName}, t${CSName}.length());
     }
         `
         } else if (signature == 'o' || signature == 'O' || signature == 'a') { // object

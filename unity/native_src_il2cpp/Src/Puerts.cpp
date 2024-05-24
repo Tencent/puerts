@@ -447,9 +447,9 @@ inline static void ThrowInvalidOperationException(const char* msg)
     GUnityExports.ThrowInvalidOperationException(msg);
 }
 
-inline static void* CStringToCSharpString(const char* str)
+inline static void* CStringToCSharpString(const char* str, uint32_t len)
 {
-    return GUnityExports.CStringToCSharpString(str);
+    return GUnityExports.CStringToCSharpString(str, len);
 }
 
 inline static const void* GetReturnType(const void* method)

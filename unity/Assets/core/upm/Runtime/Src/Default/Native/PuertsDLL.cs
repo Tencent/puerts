@@ -296,13 +296,8 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnNumber(IntPtr isolate, IntPtr info, double number);
 
-#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ReturnString")]
         public static extern void __ReturnString(IntPtr isolate, IntPtr info, byte[] str, int len);
-#else
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ReturnString")]
-        public static extern void __ReturnString(IntPtr isolate, IntPtr info, string str, int len);
-#endif
 
         public static void ReturnString(IntPtr isolate, IntPtr info, string str)
         {
@@ -312,12 +307,7 @@ namespace Puerts
             }
             else
             {
-#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
                 __ReturnString(isolate, info, Encoding.UTF8.GetBytes(str), Encoding.UTF8.GetByteCount(str));
-#else
-                //目前为止Unity下pinvoke string转换默认是UTF8，直接声明为string有可能能剩下一个byte[]的分配和gc
-                __ReturnString(isolate, info, str, Encoding.UTF8.GetByteCount(str));
-#endif
             }
         }
 
@@ -411,7 +401,6 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetDateToOutValue(IntPtr isolate, IntPtr value, double date);
 
-#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetStringToOutValue(IntPtr isolate, IntPtr value, byte[] str, int size);
 
@@ -426,21 +415,6 @@ namespace Puerts
                 SetStringToOutValue(isolate, value, Encoding.UTF8.GetBytes(str), Encoding.UTF8.GetByteCount(str));
             }
         }
-#else
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetStringToOutValue")]
-        protected static extern void __SetStringToOutValue(IntPtr isolate, IntPtr value, string str, int size);
-        public static void SetStringToOutValue(IntPtr isolate, IntPtr value, string str)
-        {
-            if (str == null)
-            {
-                SetNullToOutValue(isolate, value);
-            }
-            else
-            {
-                __SetStringToOutValue(isolate, value, str, Encoding.UTF8.GetByteCount(str));
-            }
-        }
-#endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetBooleanToOutValue(IntPtr isolate, IntPtr value, bool b);
@@ -481,9 +455,6 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushBigIntForJSFunction(IntPtr function, long l);
 
-
-
-#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PushStringForJSFunction")]
         public static extern void __PushStringForJSFunction(IntPtr function, byte[] str, int size);
         public static void PushStringForJSFunction(IntPtr function, string str)
@@ -497,21 +468,6 @@ namespace Puerts
                 __PushStringForJSFunction(function, Encoding.UTF8.GetBytes(str), Encoding.UTF8.GetByteCount(str));
             }
         }
-#else
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PushStringForJSFunction")]
-        public static extern void __PushStringForJSFunction(IntPtr function, string str, int size);
-        public static void PushStringForJSFunction(IntPtr function, string str)
-        {
-            if (str == null)
-            {
-                PushNullForJSFunction(function);
-            }
-            else
-            {
-                __PushStringForJSFunction(function, str, Encoding.UTF8.GetByteCount(str));
-            }
-        }
-#endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushNumberForJSFunction(IntPtr function, double d);

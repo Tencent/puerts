@@ -43,7 +43,7 @@ typedef void* (*JsValueToCSRefFunc)(const void *typeId, v8::Context* env, v8::Va
 
 typedef const void* (*CSharpTypeToTypeIdFunc)(const void *type);
 
-typedef void* (*CStringToCSharpStringFunc)(const char* str);
+typedef void* (*CStringToCSharpStringFunc)(const char* str, uint32_t len);
 
 typedef pesapi_value (*TryTranslateFunc)(v8::Context* env, const void* obj);
 
@@ -108,7 +108,7 @@ typedef Il2CppObject* (*JsValueToCSRefFunc)(Il2CppClass *klass, pesapi_env env, 
 
 typedef const void* (*CSharpTypeToTypeIdFunc)(Il2CppObject *type);
 
-typedef Il2CppString* (*CStringToCSharpStringFunc)(const char* str);
+typedef Il2CppString* (*CStringToCSharpStringFunc)(const char* str, uint32_t len);
 
 typedef pesapi_value (*TryTranslateFunc)(pesapi_env env, Il2CppObject* obj);
 

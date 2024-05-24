@@ -1,11 +1,11 @@
 {
     "quickjs": {
-        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_240412/qjs_v8_bin.tgz",
+        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_240424/qjs_v8_bin.tgz",
         "config": {
             "definition": [
+                "V8_94_OR_NEWER",
                 "WITH_QUICKJS",
-                "WITHOUT_INSPECTOR",
-                "V8_94_OR_NEWER"
+                "WITHOUT_INSPECTOR"
             ],
             "include": [
                 "/Inc"
@@ -27,6 +27,25 @@
                         "/Lib/macOS_arm64/libquickjs.a"
                     ]
                 },
+                "android": {
+                    "armv7": [
+                        "/Lib/Android/armeabi-v7a/libquickjs.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Android/arm64-v8a/libquickjs.a"
+                    ],
+                    "x64": [
+                        "/Lib/Android/x86_64/libquickjs.a"
+                    ]
+                },
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libquickjs.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libquickjs.a"
+                    ]
+                },
                 "linux": {
                     "x64": [
                         "/Lib/Linux/libquickjs.a"
@@ -42,17 +61,6 @@
                         "/Lib/Win64/*.dll"
                     ]
                 },
-                "android": {
-                    "armv7": [
-                        "/Lib/Android/armeabi-v7a/libquickjs.a"
-                    ],
-                    "arm64": [
-                        "/Lib/Android/arm64-v8a/libquickjs.a"
-                    ],
-                    "x64": [
-                        "/Lib/Android/x86_64/libquickjs.a"
-                    ]
-                },
                 "ios": {
                     "arm64": [
                         "/Lib/iOS/arm64/libquickjs.a"
@@ -65,8 +73,8 @@
         "url": "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_1115/nodejs_bin_16.16.0.tgz",
         "config": {
             "definition": [
-                "WITH_NODEJS",
-                "V8_94_OR_NEWER"
+                "V8_94_OR_NEWER",
+                "WITH_NODEJS"
             ],
             "include": [
                 "/include",
@@ -88,29 +96,6 @@
                     ],
                     "x64": [
                         "/Lib/Win64/libnode.lib"
-                    ]
-                },
-                "osx": {
-                    "x64": [
-                        "/lib/macOS/libnode.93.dylib"
-                    ],
-                    "arm64": [
-                        "/lib/macOS_arm64/libnode.93.dylib"
-                    ]
-                },
-                "linux": {
-                    "x64": [
-                        "/lib/Linux/libnode.so.93"
-                    ]
-                }
-            },
-            "copy-libraries": {
-                "win": {
-                    "ia32": [
-                        "/lib/Win32/libnode.dll"
-                    ],
-                    "x64": [
-                        "/lib/Win64/libnode.dll"
                     ]
                 },
                 "android": {
@@ -182,6 +167,30 @@
                         "/lib/macOS_arm64/libnode.93.dylib"
                     ]
                 },
+                "linux": {
+                    "x64": [
+                        "/lib/Linux/libnode.so.93"
+                    ]
+                }
+            },
+            "copy-libraries": {
+                "win": {
+                    "ia32": [
+                        "/lib/Win32/libnode.dll"
+                    ],
+                    "x64": [
+                        "/lib/Win64/libnode.dll"
+                    ]
+                },
+                "android": {},
+                "osx": {
+                    "x64": [
+                        "/lib/macOS/libnode.93.dylib"
+                    ],
+                    "arm64": [
+                        "/lib/macOS_arm64/libnode.93.dylib"
+                    ]
+                },
                 "ios": {
                     "arm64": [
                         "/lib/iOS/*.a"
@@ -195,8 +204,8 @@
             }
         }
     },
-    "v8_9.4": {
-        "url": "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_230822/v8_bin_9.4.146.24.tgz",
+    "v8_9.4.146.24": {
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
@@ -216,6 +225,14 @@
                         "/Lib/Android/x64/libwee8.a"
                     ]
                 },
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libwee8.a"
+                    ]
+                },
                 "win": {
                     "ia32": [
                         "/Lib/Win32/wee8.lib"
@@ -235,6 +252,72 @@
                 "linux": {
                     "x64": [
                         "/Lib/Linux/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Linux_arm64/libwee8.a"
+                    ]
+                }
+            },
+            "copy-libraries": {
+                "ios": {
+                    "arm64": [
+                        "/Lib/iOS/arm64/libwee8.a"
+                    ]
+                }
+            }
+        }
+    },
+    "v8_10.6.194": {
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240508/v8_bin_10.6.194.tgz",
+        "config": {
+            "definition": [
+                "V8_94_OR_NEWER"
+            ],
+            "include": [
+                "/Inc"
+            ],
+            "link-libraries": {
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libwee8.a"
+                    ]
+                },
+                "android": {
+                    "armv7": [
+                        "/Lib/Android/armeabi-v7a/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Android/arm64-v8a/libwee8.a"
+                    ],
+                    "x64": [
+                        "/Lib/Android/x64/libwee8.a"
+                    ]
+                },
+                "win": {
+                    "ia32": [
+                        "/Lib/Win32/wee8.lib"
+                    ],
+                    "x64": [
+                        "/Lib/Win64/wee8.lib"
+                    ]
+                },
+                "osx": {
+                    "x64": [
+                        "/Lib/macOS/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/macOS_arm64/libwee8.a"
+                    ]
+                },
+                "linux": {
+                    "x64": [
+                        "/Lib/Linux/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Linux_arm64/libwee8.a"
                     ]
                 }
             },
@@ -248,7 +331,7 @@
         }
     },
     "v8": {
-        "url": "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230426/v8_bin_8.4.371.19.tgz",
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz",
         "config": {
             "include": [
                 "/Inc"
@@ -291,6 +374,85 @@
                 "ios": {
                     "arm64": [
                         "/Lib/iOS/arm64/libwee8.a"
+                    ]
+                }
+            }
+        }
+    },
+    "mult": {
+        "url": "https://github.com/puerts/backend-mult/releases/download/MULT_240516/mult_backends.tgz",
+        "config": {
+            "definition": [
+                "V8_94_OR_NEWER"
+            ],
+            "include": [
+                "/Inc"
+            ],
+            "link-libraries": {
+                "android": {
+                    "armv7": [
+                        "/Lib/Android/armeabi-v7a/libwee8.a",
+                        "/Lib/Android/armeabi-v7a/libquickjs.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Android/arm64-v8a/libwee8.a",
+                        "/Lib/Android/arm64-v8a/libquickjs.a"
+                    ],
+                    "x64": [
+                        "/Lib/Android/x64/libwee8.a",
+                         "/Lib/Android/x86_64/libquickjs.a"
+                    ]
+                },
+                "ohos": {
+                    "armv7": [
+                        "/Lib/OHOS/armeabi-v7a/libwee8.a",
+                        "/Lib/OHOS/armeabi-v7a/libquickjs.a"
+                    ],
+                    "arm64": [
+                        "/Lib/OHOS/arm64-v8a/libwee8.a",
+                        "/Lib/OHOS/arm64-v8a/libquickjs.a"
+                    ]
+                },
+                "win": {
+                    "ia32": [
+                        "/Lib/Win32/wee8.lib",
+                        "/Lib/Win32/quickjs.dll.lib"
+                    ],
+                    "x64": [
+                        "/Lib/Win64/wee8.lib",
+                        "/Lib/Win64/quickjs.dll.lib"
+                    ]
+                },
+                "osx": {
+                    "x64": [
+                        "/Lib/macOS/libwee8.a",
+                        "/Lib/macOS/libquickjs.a"
+                    ],
+                    "arm64": [
+                        "/Lib/macOS_arm64/libwee8.a",
+                        "/Lib/macOS_arm64/libquickjs.a"
+                    ]
+                },
+                "linux": {
+                    "x64": [
+                        "/Lib/Linux/libwee8.a",
+                        "/Lib/Linux/libquickjs.a"
+                    ]
+                }
+            },
+            "copy-libraries": {
+                "ios": {
+                    "arm64": [
+                        "/Lib/iOS/arm64/libwee8.a",
+                        "/Lib/iOS/arm64/libquickjs.a"
+                    ]
+                },
+                "win": {
+                    "ia32": [
+                        "/Lib/Win32/*.dll"
+                    ],
+                    "x64": [
+                        "/Lib/Win64/*.dll"
                     ]
                 }
             }

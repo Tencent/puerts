@@ -655,29 +655,29 @@ namespace Puerts.UnitTest
         public void StringContainNullTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            int len = jsEnv.Eval<int>(@"
+            string str = jsEnv.Eval<string>(@"
                 (function() {
                     const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
                     const testHelper = TestHelper.GetInstance();
-                    return testHelper.GetStringContainNull().length;
+                    return testHelper.GetStringContainNull();
                 })()
             ");
-            Assert.AreEqual(len, TestHelper.GetInstance().GetStringContainNull().Length);
+            Assert.AreEqual(str, TestHelper.GetInstance().GetStringContainNull());
             
-            len = jsEnv.Eval<int>(@"
+            str = jsEnv.Eval<string>(@"
                 (function() {
                     const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
                     const testHelper = TestHelper.GetInstance();
-                    return testHelper.StringContainNull.length;
+                    return testHelper.StringContainNull;
                 })()
             ");
-            Assert.AreEqual(len, TestHelper.GetInstance().StringContainNull.Length);
+            Assert.AreEqual(str, TestHelper.GetInstance().StringContainNull);
             
-            len = jsEnv.Eval<int>(@"
+            str = jsEnv.Eval<string>(@"
                 (function() {
                     const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
@@ -685,12 +685,12 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
                     let o = puer.$ref();
                     testHelper.OutStringContainNull(o);
-                    return puer.$unref(o).length
+                    return puer.$unref(o)
                 })()
             ");
-            Assert.AreEqual(len, TestHelper.GetInstance().StringContainNull.Length);
+            Assert.AreEqual(str, TestHelper.GetInstance().StringContainNull);
             
-            len = jsEnv.Eval<int>(@"
+            str = jsEnv.Eval<string>(@"
                 (function() {
                     const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
@@ -698,10 +698,10 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
                     let str
                     testHelper.CallbackPassStringContainNull(s => str = s);
-                    return str.length
+                    return str
                 })()
             ");
-            Assert.AreEqual(len, TestHelper.GetInstance().StringContainNull.Length);
+            Assert.AreEqual(str, TestHelper.GetInstance().StringContainNull);
         }
         [Test]
         public void BoolInstanceTest()

@@ -26,6 +26,7 @@
 #include "vm/Parameter.h"
 #include "vm/Image.h"
 #include "utils/StringUtils.h"
+#include "utils/utf8-cpp/source/utf8/unchecked.h"
 #include "gc/WriteBarrier.h"
 #include "pesapi.h"
 #include "UnityExports4Puerts.h"
@@ -463,6 +464,17 @@ pesapi_value TryTranslateBuiltin(pesapi_env env, Il2CppObject* obj)
     return nullptr;
 }
 
+static std::string Il2cppString2StdString(Il2CppString* str)
+{
+    const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(str);
+    const int32_t utf16len = il2cpp::utils::StringUtils::GetLength(str);
+    std::string utf8String;
+    utf8String.reserve(utf16len);
+    // the same in every unity version?
+    utf8::unchecked::utf16to8(utf16, utf16 + utf16len, std::back_inserter(utf8String));
+    return utf8String;
+}
+
 static pesapi_value TryTranslatePrimitiveWithClass(pesapi_env env, Il2CppObject* obj, Il2CppClass *klass = nullptr)
 {
     if (obj)
@@ -471,8 +483,7 @@ static pesapi_value TryTranslatePrimitiveWithClass(pesapi_env env, Il2CppObject*
         int t = type->type;
         if (t == IL2CPP_TYPE_STRING)
         {
-            const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars((Il2CppString*)obj);
-            std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
+            std::string str = Il2cppString2StdString((Il2CppString*)obj);
             return pesapi_create_string_utf8(env, str.c_str(), str.size());
         }
         void* ptr = Object::Unbox(obj);
@@ -692,15 +703,14 @@ handle_underlying:
             auto str = pesapi_get_value_string_utf8(env, jsval, nullptr, &bufsize);
             if (str)
             {
-                return (Il2CppObject*)il2cpp::vm::String::NewWrapper(str);
+                return (Il2CppObject*)il2cpp::vm::String::NewLen(str, bufsize);
             }
             std::vector<char> buff;
             buff.resize(bufsize + 1);
             str = pesapi_get_value_string_utf8(env, jsval, buff.data(), &bufsize);
             if (str)
             {
-                buff[bufsize] = '\0';
-                return (Il2CppObject*)il2cpp::vm::String::NewWrapper(str);
+                return (Il2CppObject*)il2cpp::vm::String::NewLen(str, bufsize);
             }
             return nullptr;
         }
@@ -1629,7 +1639,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.IsAssignableFrom = &Class::IsAssignableFrom;
     g_unityExports.JsValueToCSRef = &JsValueToCSRef;
     g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;
-    g_unityExports.CStringToCSharpString = &String::NewWrapper;
+    g_unityExports.CStringToCSharpString = &String::NewLen;
     g_unityExports.TryTranslatePrimitive = &TryTranslatePrimitive;
     g_unityExports.TryTranslateBuiltin = &TryTranslateBuiltin;
     g_unityExports.TryTranslateValueType = &TryTranslateValueType;
