@@ -106,8 +106,8 @@ bool UPEClassMetaData::Apply(UClass* InClass, UBlueprint* InBlueprint)
     MergeClassCategories(InClass);
     const bool bFlagsChanged = MergeAndValidateClassFlags(InClass);
     const bool bMetaDataChanged = SetClassMetaData(InClass);
-    SyncClassToBlueprint(InClass, InBlueprint);
-    return bFlagsChanged || bMetaDataChanged;
+    const bool bBlueprintMetaDataChange = SyncClassToBlueprint(InClass, InBlueprint);
+    return bFlagsChanged || bMetaDataChanged || bBlueprintMetaDataChange;
 }
 
 void UPEClassMetaData::MergeClassCategories(UClass* InParentClass)
@@ -313,21 +313,56 @@ TArray<FString> UPEClassMetaData::GetClassMetaDataValues(
     return Result;
 }
 
-void UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBlueprint)
+bool UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBlueprint)
 {
     if (!IsValid(InClass) || !IsValid(InBlueprint))
     {
-        return;
+        return false;
     }
 
-    InBlueprint->bDeprecate = (bool) (InClass->ClassFlags & CLASS_Deprecated);
-    InBlueprint->bGenerateAbstractClass = (bool) (InClass->ClassFlags & CLASS_Abstract);
-    InBlueprint->BlueprintDescription = InClass->HasMetaData(TEXT("Tooltip")) ? InClass->GetMetaData(TEXT("Tooltip")) : FString{};
-    InBlueprint->BlueprintDisplayName =
-        InClass->HasMetaData(TEXT("DisplayName")) ? InClass->GetMetaData(TEXT("DisplayName")) : FString{};
-    InBlueprint->BlueprintType = (InClass->ClassFlags & CLASS_Const) ? BPTYPE_Const : BPTYPE_Normal;
-    InBlueprint->BlueprintCategory = InClass->HasMetaData(TEXT("Category")) ? InClass->GetMetaData(TEXT("Category")) : FString{};
-    InBlueprint->HideCategories = HideCategories;
+    bool onChange = false;
+
+    if (InBlueprint->bDeprecate != (bool) (InClass->ClassFlags & CLASS_Deprecated))
+    {
+        InBlueprint->bDeprecate = (bool) (InClass->ClassFlags & CLASS_Deprecated);
+        onChange = true;
+    }
+    if (InBlueprint->bGenerateAbstractClass != (bool) (InClass->ClassFlags & CLASS_Abstract))
+    {
+        InBlueprint->bGenerateAbstractClass = (bool) (InClass->ClassFlags & CLASS_Abstract);
+        onChange = true;
+    }
+    FString newDescription = InClass->HasMetaData(TEXT("Tooltip")) ? InClass->GetMetaData(TEXT("Tooltip")) : FString{};
+    if (InBlueprint->BlueprintDescription != newDescription)
+    {
+        InBlueprint->BlueprintDescription = newDescription;
+        onChange = true;
+    }
+    FString newDisplayName = InClass->HasMetaData(TEXT("DisplayName")) ? InClass->GetMetaData(TEXT("DisplayName")) : FString{};
+    if (InBlueprint->BlueprintDisplayName != newDisplayName)
+    {
+        InBlueprint->BlueprintDisplayName = newDisplayName;
+        onChange = true;
+    }
+    EBlueprintType newType = (InClass->ClassFlags & CLASS_Const) ? BPTYPE_Const : BPTYPE_Normal;
+    if (InBlueprint->BlueprintType != newType)
+    {
+        InBlueprint->BlueprintType = newType;
+        onChange = true;
+    }
+    FString newCategory = InClass->HasMetaData(TEXT("Category")) ? InClass->GetMetaData(TEXT("Category")) : FString{};
+    if (InBlueprint->BlueprintCategory != newCategory)
+    {
+        InBlueprint->BlueprintCategory = newCategory;
+        onChange = true;
+    }
+    if (InBlueprint->HideCategories != HideCategories)
+    {
+        InBlueprint->HideCategories = HideCategories;
+        onChange = true;
+    }
+
+    return onChange;
 }
 
 void UPEClassMetaData::SetAndValidateWithinClass(UClass* InClass)
