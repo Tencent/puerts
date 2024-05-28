@@ -90,18 +90,20 @@ std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace>
             }
             else
             {
-                stm << "    at [eval] (" << *ScriptName << ":" << LineNumber << ":" << Column << ")" << std::endl;
+                stm << "    at [eval] (" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << ")"
+                    << std::endl;
             }
             break;
         }
 
         if (FuncName.length() == 0)
         {
-            stm << "    at " << *ScriptName << ":" << LineNumber << ":" << Column << std::endl;
+            stm << "    at " << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << std::endl;
         }
         else
         {
-            stm << "    at " << *FuncName << "(" << *ScriptName << ":" << LineNumber << ":" << Column << ")" << std::endl;
+            stm << "    at " << *FuncName << "(" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column
+                << ")" << std::endl;
         }
     }
     return stm.str();
