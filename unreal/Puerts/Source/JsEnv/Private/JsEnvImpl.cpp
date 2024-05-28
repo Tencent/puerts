@@ -330,13 +330,15 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
 #if PLATFORM_IOS
-    char Flags[] = "--jitless --no-expose-wasm";
-    v8::V8::SetFlagsFromString(Flags, sizeof(Flags));
+    v8::V8::SetFlagsFromString("--jitless --no-expose-wasm");
 #endif
 
 #ifdef WITH_V8_FAST_CALL
-    char FCFlags[] = "--turbo-fast-api-calls";
-    v8::V8::SetFlagsFromString(FCFlags, sizeof(FCFlags));
+    v8::V8::SetFlagsFromString("--turbo-fast-api-calls");
+#endif
+
+#if defined(USING_SINGLE_THREAD_PLATFORM)
+    v8::V8::SetFlagsFromString("--single-threaded");
 #endif
 
     // char GCFlags[] = "--expose-gc";
