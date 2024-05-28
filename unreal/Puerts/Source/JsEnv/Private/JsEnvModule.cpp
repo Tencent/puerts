@@ -178,7 +178,11 @@ void FJsEnvModule::StartupModule()
 #if defined(WITH_NODEJS)
     platform_ = node::MultiIsolatePlatform::Create(4);
 #else
+#if defined(USING_SINGLE_THREAD_PLATFORM)
+    platform_ = v8::platform::NewSingleThreadedDefaultPlatform();
+#else
     platform_ = v8::platform::NewDefaultPlatform();
+#endif
 #endif
     v8::V8::InitializePlatform(platform_.get());
     v8::V8::Initialize();

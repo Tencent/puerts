@@ -33,6 +33,9 @@ public class JsEnv : ModuleRules
     private bool ThreadSafe = false;
 
     private bool FTextAsString = true;
+
+    // v8 9.4+
+    private bool SingleThreaded = false;
     
     public static bool WithSourceControl = false;
     
@@ -356,6 +359,10 @@ public class JsEnv : ModuleRules
 
     void ThirdParty(ReadOnlyTargetRules Target)
     {
+        if (SingleThreaded)
+        {
+            PrivateDefinitions.Add("USING_SINGLE_THREAD_PLATFORM");
+        }
         //Add header
         string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "websocketpp") });
