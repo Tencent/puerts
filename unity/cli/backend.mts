@@ -1,7 +1,7 @@
 import { mkdir } from "@puerts/shell-util";
 import { existsSync, readFileSync, statSync } from "fs";
 import { createRequire } from "module";
-import { join } from "path";
+import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const download = createRequire(fileURLToPath(import.meta.url))('download');
@@ -39,7 +39,8 @@ export default async function downloadBackend(cwd: string, name: string, url: st
 
 
 function readBackendsConfig(cwd: string): {[key: string]: any} {
-    const backendsJSONPath = join(cwd, 'cmake', 'backends.json');
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const backendsJSONPath = join(__dirname, 'backends.json');
     if (existsSync(backendsJSONPath)) {
         return JSON.parse(readFileSync(backendsJSONPath, 'utf-8'));
     } else {

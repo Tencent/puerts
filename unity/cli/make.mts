@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { cd, cp, exec, mkdir, mv, rm } from "@puerts/shell-util"
-import { basename, join, normalize } from "path";
+import { basename, join, normalize, dirname } from "path";
 import assert from "assert";
 import downloadBackend from "./backend.mjs";
 import { createRequire } from "module";
@@ -224,7 +224,8 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     const BuildConfig = (platformCompileConfig as any)[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
     const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath;
-    const BackendConfig = JSON.parse(readFileSync(cwd + `/cmake/backends.json`, 'utf-8'))[options.backend]?.config;
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const BackendConfig = JSON.parse(readFileSync(join(__dirname, 'backends.json'), 'utf-8'))[options.backend]?.config;
 
     if (BackendConfig?.skip?.[options.platform]?.[options.arch]) {
         console.log("=== Puer ===");
