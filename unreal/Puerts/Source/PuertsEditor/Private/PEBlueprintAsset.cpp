@@ -1170,6 +1170,16 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
     }
     AddMemberVariable(InNewVarName, InGraphPinType, InPinValueType, InLFlags, InHFLags, InLifetimeCondition);
     const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, InNewVarName);
+    if (VarIndex != INDEX_NONE && VarIndex != VariableIndexInTS)
+    {
+        Blueprint->NewVariables.Swap(VarIndex, VariableIndexInTS);
+        VarIndex = VariableIndexInTS;
+        NeedSave = true;
+    }
+    if (VarIndex != INDEX_NONE)
+    {
+        ++VariableIndexInTS;
+    }
     if (VarIndex == INDEX_NONE)
     {
         return;

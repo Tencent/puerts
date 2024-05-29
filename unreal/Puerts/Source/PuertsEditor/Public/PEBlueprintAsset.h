@@ -79,6 +79,9 @@ public:
     UPROPERTY()
     bool HasConstructor;
 
+    // Record the variable's location in the .ts file.
+    int32 VariableIndexInTS = 0;
+
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     static bool Existed(const FString& InName, const FString& InPath);
 
