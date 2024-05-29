@@ -1172,9 +1172,16 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
     const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, InNewVarName);
     if (VarIndex != INDEX_NONE && VarIndex != VariableIndexInTS)
     {
-        Blueprint->NewVariables.Swap(VarIndex, VariableIndexInTS);
-        VarIndex = VariableIndexInTS;
-        NeedSave = true;
+        if(Blueprint->NewVariables.IsValidIndex(VariableIndexInTS))
+        {
+            Blueprint->NewVariables.Swap(VarIndex, VariableIndexInTS);
+            VarIndex = VariableIndexInTS;
+            NeedSave = true;
+        }
+        else
+        {
+            UE_LOG(PuertsEditorModule, Error, TEXT("The added variables have been deleted elsewhere, making it impossible to correctly adjust the variable order."))
+        }
     }
     if (VarIndex != INDEX_NONE)
     {
