@@ -68,6 +68,19 @@
     }                                                                       \
     UsingNamedCppType(CLS, CLS)
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+#define RegisterTArray(CLS)                                                                                                        \
+    PUERTS_NAMESPACE::DefineClass<TArray<CLS>>()                                                                                   \
+        .Method("Get", SelectFunction(CLS& (TArray<CLS>::*) (int), &TArray<CLS>::operator[]))                                      \
+        .Method("GetRef", SelectFunction(CLS& (TArray<CLS>::*) (int), &TArray<CLS>::operator[]))                                   \
+        .Method("Num", MakeFunction(&TArray<CLS>::Num))                                                                            \
+        .Method("Contains", MakeFunction(&TArray<CLS>::Contains<CLS>))                                                             \
+        .Method(                                                                                                                   \
+            "RemoveAt", SelectFunction(void (TArray<CLS>::*)(int, /* New param in 5.4*/ EAllowShrinking), &TArray<CLS>::RemoveAt)) \
+        .Method("IsValidIndex", MakeFunction(&TArray<CLS>::IsValidIndex))                                                          \
+        .Method("Empty", MakeFunction(&TArray<CLS>::Empty))                                                                        \
+        .Register()
+#else
 #define RegisterTArray(CLS)                                                                              \
     PUERTS_NAMESPACE::DefineClass<TArray<CLS>>()                                                         \
         .Method("Add", SelectFunction(int (TArray<CLS>::*)(CLS const&), &TArray<CLS>::Add))              \
@@ -80,6 +93,7 @@
         .Method("IsValidIndex", MakeFunction(&TArray<CLS>::IsValidIndex))                                \
         .Method("Empty", MakeFunction(&TArray<CLS>::Empty))                                              \
         .Register()
+#endif
 
 #define UsingUStruct(CLS) UsingUClass(CLS)
 
