@@ -105,10 +105,11 @@ namespace Puerts.TypeMapping
                 flag = flag | BindingFlags.NonPublic;
             }
 
-            Register(type, type.GetConstructors(flag), type.GetMethods(flag), type.GetProperties(flag), type.GetFields(flag), throwIfMemberFail);
+            BindingFlags nonPublicInstance = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            Register(type, type.GetConstructors(flag), type.GetMethods(flag), type.GetProperties(flag), type.GetProperties(nonPublicInstance), type.GetFields(flag), throwIfMemberFail);
         }
 
-        private static void Register(Type type, MethodBase[] ctors = null, MethodBase[] methods = null, PropertyInfo[] properties = null, FieldInfo[] fields = null, bool throwIfMemberFail = false)
+        private static void Register(Type type, MethodBase[] ctors = null, MethodBase[] methods = null, PropertyInfo[] properties = null, PropertyInfo[] nonpublic_properties = null, FieldInfo[] fields = null, bool throwIfMemberFail = false)
         {
             IntPtr typeInfo = IntPtr.Zero;
             try
@@ -280,6 +281,29 @@ namespace Puerts.TypeMapping
                             if (setter != null && !setter.IsGenericMethodDefinition && !setter.IsAbstract)
                             {
                                 AddMethodToType(prop.Name, setter, false, true, false);
+                            }
+                        }
+                    }
+                    
+                    if (nonpublic_properties != null)
+                    {
+                        foreach (var prop in nonpublic_properties)
+                        {
+                            int dotPos = prop.Name.LastIndexOf('.');
+                            if (prop.Attributes == PropertyAttributes.None && dotPos != -1)
+                            {
+                                var typeNameWithDot = prop.Name.Substring(0, dotPos + 1);
+                                var propName = prop.Name.Substring(dotPos + 1);
+                                var getter = type.GetMethod(typeNameWithDot + "get_" + propName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                                if (getter != null && !getter.IsGenericMethodDefinition && !getter.IsAbstract)
+                                {
+                                    AddMethodToType(propName, getter, true, false, false);
+                                }
+                                var setter = type.GetMethod(typeNameWithDot + "set_" + propName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                                if (setter != null && !setter.IsGenericMethodDefinition && !setter.IsAbstract)
+                                {
+                                    AddMethodToType(propName, setter, false, true, false);
+                                }
                             }
                         }
                     }

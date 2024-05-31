@@ -588,12 +588,12 @@ namespace Puerts
                     var typeNameWithDot = prop.Name.Substring(0, dotPos + 1);
                     var propName = prop.Name.Substring(dotPos + 1);
                     var getter = type.GetMethod(typeNameWithDot + "get_" + propName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                    if (getter != null)
+                    if (getter != null && !getter.IsGenericMethodDefinition && !getter.IsAbstract)
                     {
                         sbr.AddMethod(new MethodKey { Name = "get_" + propName, IsStatic = false }, getter);
                     }
                     var setter = type.GetMethod(typeNameWithDot + "set_" + propName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                    if (setter != null)
+                    if (setter != null && !setter.IsGenericMethodDefinition && !setter.IsAbstract)
                     {
                         sbr.AddMethod(new MethodKey { Name = "set_" + propName, IsStatic = false }, setter);
                     }
