@@ -1130,7 +1130,7 @@ function processPropertyMetaData(specifiers, metaData) {
                 PropertyFlags = PropertyFlags | (BigInt(UE.PropertyFlags.CPF_Edit) | BigInt(UE.PropertyFlags.CPF_DisableEditOnTemplate));
                 bSeenEditSpecifier = true;
                 break;
-            case 'EditDefaultOnly'.toLowerCase():
+            case 'EditDefaultsOnly'.toLowerCase():
                 if (!value.IsMetaKey()) {
                     return markInvalidSince(`${value.Specifier} should be a meta key`);
                 }
