@@ -1127,24 +1127,33 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
             NeedSave = true;
         }
 
-        if ((Variable.PropertyFlags & CPF_DisableEditOnInstance) != (InFlags & CPF_DisableEditOnInstance))
-        {
-            CanChangeCheck();
-            if (InFlags & CPF_DisableEditOnInstance)
-            {
-                Blueprint->NewVariables[VarIndex].PropertyFlags |= CPF_DisableEditOnInstance;
-            }
-            else
-            {
-                Blueprint->NewVariables[VarIndex].PropertyFlags &= ~CPF_DisableEditOnInstance;
-            }
-            NeedSave = true;
-        }
-
         if (InLifetimeCondition < COND_Max && Variable.ReplicationCondition != InLifetimeCondition)
         {
             CanChangeCheck();
             Variable.ReplicationCondition = (ELifetimeCondition) InLifetimeCondition;
+            NeedSave = true;
+        }
+
+        // Variables added to the blueprint via FBlueprintEditorUtils::AddMemberVariable come with some default flags. To make the TS implementation consistent with C++, some of these default flags have been removed.
+        // InFlags |= (CPF_Edit | CPF_BlueprintVisible);
+        if(Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_MCDelegate)
+        {
+            InFlags |= CPF_BlueprintAssignable | CPF_BlueprintCallable;
+        }
+        else if ((Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_Object) || (Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_Interface)){
+            check(Blueprint->NewVariables[VarIndex].VarType.PinSubCategoryObject.IsValid());
+            const UClass* ClassObject = Cast<UClass>(Blueprint->NewVariables[VarIndex].VarType.PinSubCategoryObject.Get());
+            check(ClassObject != nullptr);
+            if (ClassObject->IsChildOf(AActor::StaticClass()))
+            {
+                InFlags |= CPF_DisableEditOnTemplate;
+            }
+        }
+        
+        if(Variable.PropertyFlags!=InFlags)
+        {
+            CanChangeCheck();
+            Blueprint->NewVariables[VarIndex].PropertyFlags = InFlags;
             NeedSave = true;
         }
     }
@@ -1159,12 +1168,6 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
         EPropertyFlags InputFlags = static_cast<EPropertyFlags>((static_cast<uint64>(InHFLags) << 32) + InLFlags);
 
         InputFlags |= InMetaData->PropertyFlags;
-        //	meta data has instanced specifier
-        if (InMetaData->MetaData.Contains(TEXT("EditInline")))
-        {
-            InputFlags &= ~CPF_DisableEditOnInstance;
-        }
-
         InLFlags = (static_cast<uint64>(InputFlags) & 0xffffffff);
         InHFLags = (static_cast<uint64>(InputFlags) >> 32);
     }

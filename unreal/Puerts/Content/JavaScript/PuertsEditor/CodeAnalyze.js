@@ -997,9 +997,10 @@ function watch(configFilePath) {
                                     }
                                 });
                             }
-                            if (!hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
-                                flags = flags | BigInt(PropertyFlags.CPF_DisableEditOnInstance);
-                            }
+                            // Invalid code, only recognizes UPROPERTY UMETA, causing the DisableEditOnInstance flag to be added every time.
+                            // if (!hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
+                            //     flags = flags | BigInt(PropertyFlags.CPF_DisableEditOnInstance);
+                            // }
                             // bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond);
                             bp.AddMemberVariableWithMetaData(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond, uemeta.compilePropertyMetaData(symbol));
                         }
