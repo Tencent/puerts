@@ -521,6 +521,35 @@ namespace Puerts.UnitTest
             AssertAndPrint("InvokeReturnNativeStructTestFunc", srcValue.value, ret.value);
         }
     }
+    
+            
+    public class FooVE
+    {
+        public IFoo foo;
+
+        public FooVE()
+        {
+            foo = new FooAccess();
+        }
+        
+        static FooVE _instance;
+
+        public static FooVE Instance()
+        {
+            if (_instance == null) _instance = new FooVE();
+            return _instance;
+        }
+    }
+
+    public interface IFoo
+    {
+        float width { get; }
+    }
+
+    internal class FooAccess : IFoo
+    {
+        float IFoo.width => 125f; // Note the explicit interface `IFoo.`
+    }
 
     [TestFixture]
     public class CrossLangTest
@@ -897,6 +926,24 @@ namespace Puerts.UnitTest
                 })()
             ");
             Assert.AreEqual("213 1 213", ret);
+            jsEnv.Tick();
+        }
+        
+        [Test]
+        public void AccessExplicitnterfaceImplementation()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+
+            var ret = jsEnv.Eval<float>(@"
+                (function() {
+                    const foove = CS.Puerts.UnitTest.FooVE.Instance();
+                    console.log(foove);
+                    console.log(foove.foo);
+                    console.log(foove.foo.width);
+                    return foove.foo.width;
+                })()
+            ");
+            Assert.AreEqual(FooVE.Instance().foo.width, ret);
             jsEnv.Tick();
         }
     }

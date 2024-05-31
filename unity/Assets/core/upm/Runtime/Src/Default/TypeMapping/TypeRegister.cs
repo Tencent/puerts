@@ -55,9 +55,9 @@ namespace Puerts
                 method = method.MakeGenericMethod(constraintedArgumentTypes);
             }
 
-            if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
+            if (method.IsSpecialName && methodKey.Name.StartsWith("get_") && method.GetParameters().Length == 0) // getter of property
             {
-                string propName = method.Name.Substring(4);
+                string propName = methodKey.Name.Substring(4);
                 if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingProperty.Contains(propName))
                 {
                     PropertyMethods properyMethods;
@@ -69,9 +69,9 @@ namespace Puerts
                     properyMethods.Getter = method;
                 }
             }
-            else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length != 2) // setter of property
+            else if (method.IsSpecialName && methodKey.Name.StartsWith("set_") && method.GetParameters().Length == 1) // setter of property
             {
-                string propName = method.Name.Substring(4);
+                string propName = methodKey.Name.Substring(4);
                 if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingProperty.Contains(propName))
                 {
                     PropertyMethods properyMethods;
@@ -90,7 +90,7 @@ namespace Puerts
                     List<MethodInfo> overloads;
                     if (methodKey.IsExtension)
                     {
-                        MethodKey tmp = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = false };
+                        MethodKey tmp = new MethodKey { Name = methodKey.Name, IsStatic = false, IsExtension = false };
                         if (slowBindingMethodGroup.ContainsKey(tmp))
                         {
                             methodKey = tmp;
@@ -576,6 +576,26 @@ namespace Puerts
                     if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
                     {
                         readonlyStaticFields.Add(field.Name);
+                    }
+                }
+            }
+
+            foreach(var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+            {
+                int dotPos = prop.Name.LastIndexOf('.');
+                if (prop.Attributes == PropertyAttributes.None && dotPos != -1)
+                {
+                    var typeNameWithDot = prop.Name.Substring(0, dotPos + 1);
+                    var propName = prop.Name.Substring(dotPos + 1);
+                    var getter = type.GetMethod(typeNameWithDot + "get_" + propName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                    if (getter != null)
+                    {
+                        sbr.AddMethod(new MethodKey { Name = "get_" + propName, IsStatic = false }, getter);
+                    }
+                    var setter = type.GetMethod(typeNameWithDot + "set_" + propName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                    if (setter != null)
+                    {
+                        sbr.AddMethod(new MethodKey { Name = "set_" + propName, IsStatic = false }, setter);
                     }
                 }
             }
