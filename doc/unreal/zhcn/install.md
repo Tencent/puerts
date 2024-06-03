@@ -6,7 +6,7 @@
 
 * 下载v8
 
-    - UE4.25及以上版本：[V8 8.4.371.19](https://github.com/puerts/backend-v8/releases/tag/V8_8.4.371.19_230822), [V8 9.4.146.24 (支持M1)](https://github.com/puerts/backend-v8/releases/tag/V8_9.4.146.24_230822)
+    - UE4.25及以上版本：[V8 backends](https://github.com/puerts/backend-v8/releases)
     
     - UE4.24及以下版本：[V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/tag/v8_for_ue424_or_below)
     
@@ -41,9 +41,9 @@ puerts支持多种脚本后端：V8，quickjs，nodejs
 * 对于包大小苛刻的场景，可以选用quickjs
 * nodejs相比v8版本，可以使用更多的npm模块，但包体比v8还要大些
 
-quickjs后端[下载](https://github.com/puerts/backend-quickjs/releases/tag/QJS_231011)
+quickjs后端[下载](https://github.com/puerts/backend-quickjs/releases)
 
-nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases/tag/NodeJS_16.16.0_230216)
+nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases)
 
 解压到`YouProject/Plugins/Puerts/ThirdParty`
 
