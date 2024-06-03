@@ -548,7 +548,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             if (EventGraph && !Iter)
             {
                 CanChangeCheck();
-                //处理标签改变的情况
+                // 处理标签改变的情况
                 Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
 
                 UEdGraph* ExistingGraph = FindObject<UEdGraph>(Blueprint, *(InName.ToString()));
@@ -1134,13 +1134,16 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
             NeedSave = true;
         }
 
-        // Variables added to the blueprint via FBlueprintEditorUtils::AddMemberVariable come with some default flags. To make the TS implementation consistent with C++, some of these default flags have been removed.
-        // InFlags |= (CPF_Edit | CPF_BlueprintVisible);
-        if(Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_MCDelegate)
+        // Variables added to the blueprint via FBlueprintEditorUtils::AddMemberVariable come with some default flags. To make the
+        // TS implementation consistent with C++, some of these default flags have been removed. InFlags |= (CPF_Edit |
+        // CPF_BlueprintVisible);
+        if (Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_MCDelegate)
         {
             InFlags |= CPF_BlueprintAssignable | CPF_BlueprintCallable;
         }
-        else if ((Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_Object) || (Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_Interface)){
+        else if ((Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_Object) ||
+                 (Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_Interface))
+        {
             check(Blueprint->NewVariables[VarIndex].VarType.PinSubCategoryObject.IsValid());
             const UClass* ClassObject = Cast<UClass>(Blueprint->NewVariables[VarIndex].VarType.PinSubCategoryObject.Get());
             check(ClassObject != nullptr);
@@ -1149,8 +1152,8 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
                 InFlags |= CPF_DisableEditOnTemplate;
             }
         }
-        
-        if(Variable.PropertyFlags!=InFlags)
+
+        if (Variable.PropertyFlags != InFlags)
         {
             CanChangeCheck();
             Blueprint->NewVariables[VarIndex].PropertyFlags = InFlags;
