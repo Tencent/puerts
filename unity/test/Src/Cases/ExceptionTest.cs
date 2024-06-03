@@ -314,5 +314,20 @@ namespace Puerts.UnitTest
         //     Assert.True(jsErrorMessage == "hello error");
         //     jsEnv.Dispose();
         // }
+        
+        [Test]
+        public void ThrowNull()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                jsEnv.Eval(@"
+                    (function() {
+                        throw null;
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
     }
 }
