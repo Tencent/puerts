@@ -329,5 +329,80 @@ namespace Puerts.UnitTest
             });
             jsEnv.Tick();
         }
+        
+        [Test]
+        public void ThrowUndefined()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                jsEnv.Eval(@"
+                    (function() {
+                        throw undefined;
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
+        
+        [Test]
+        public void ThrowNullInModule()
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("throw-null/whatever.mjs", @"(function() {throw null;})()");
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                jsEnv.ExecuteModule("throw-null/whatever.mjs");
+            });
+            jsEnv.Tick();
+        }
+        
+        [Test]
+        public void ThrowUndefinedInModule()
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("throw-undefined/whatever.mjs", @"(function() {throw undefined;})()");
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                jsEnv.ExecuteModule("throw-undefined/whatever.mjs");
+            });
+            jsEnv.Tick();
+        }
+        
+        [Test]
+        public void ThrowNullInFunction()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                var foo = jsEnv.Eval<Action>(@"
+                    function t() {
+                        throw null;
+                    }
+                    t;
+                ");
+                foo();
+            });
+            jsEnv.Tick();
+        }
+        
+        [Test]
+        public void ThrowUndefinedInFunction()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                var foo = jsEnv.Eval<Action>(@"
+                    function t() {
+                        throw undefined;
+                    }
+                    t;
+                ");
+                foo();
+            });
+            jsEnv.Tick();
+        }
     }
 }
