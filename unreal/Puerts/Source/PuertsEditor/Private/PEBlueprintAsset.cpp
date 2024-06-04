@@ -42,6 +42,8 @@
 #include "Kismet2/ComponentEditorUtils.h"
 #include "Editor.h"
 #include "HAL/PlatformFileManager.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Misc/MessageDialog.h"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
@@ -1080,8 +1082,22 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
     if (VarIndex == INDEX_NONE)
     {
         CanChangeCheck();
-        FBlueprintEditorUtils::AddMemberVariable(Blueprint, NewVarName, PinType);
-        NeedSave = true;
+        if (NewVarName == NAME_None)
+        {
+            FString Message = FString::Printf(TEXT("VariableName  is None, unable to add variable"));
+            FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(Message));
+        }
+        else if (FBlueprintEditorUtils::AddMemberVariable(Blueprint, NewVarName, PinType))
+        {
+            NeedSave = true;
+        }
+        else
+        {
+            FString Message = FString::Printf(
+                TEXT("Failed to add variable: %s. Please check if the parent class already has a variable with the same name."),
+                *NewVarName.ToString());
+            FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(Message));
+        }
     }
     else
     {
