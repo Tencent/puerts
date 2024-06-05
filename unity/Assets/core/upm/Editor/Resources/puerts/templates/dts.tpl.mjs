@@ -53,7 +53,7 @@
     const __keep_incompatibility: unique symbol;
 
     interface $Ref<T> {
-        value: T
+        __doNoAccess: T
     }
     namespace System {
         interface Array$1<T> extends System.Array {
