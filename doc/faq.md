@@ -39,3 +39,7 @@
     ]
 }
 ~~~
+
+## vscode 1.82.x-1.85.x之间的版本不能调试
+
+据说是vscode本身的bug： https://github.com/microsoft/vscode-js-debug/issues/1848#issuecomment-1765152784
