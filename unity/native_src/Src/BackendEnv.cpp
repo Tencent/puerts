@@ -719,10 +719,15 @@ v8::MaybeLocal<v8::Module> FBackendEnv::FetchModuleTree(v8::Isolate* isolate, v8
         FV8Utils::ThrowException(isolate, "source_text is not a string!");
         return v8::MaybeLocal<v8::Module>();
     }
+    v8::Local<v8::String> script_url = absolute_file_path;
+    if (pathForDebug.size() > 0 )
+    {
+        script_url = FV8Utils::V8String(isolate, pathForDebug.c_str());
+    }
 #if defined(V8_94_OR_NEWER) && !defined(WITH_QUICKJS)
-    v8::ScriptOrigin origin(isolate, absolute_file_path, 0, 0, true, -1, v8::Local<v8::Value>(), false, false, true);
+    v8::ScriptOrigin origin(isolate, script_url, 0, 0, true, -1, v8::Local<v8::Value>(), false, false, true);
 #else
-    v8::ScriptOrigin origin(absolute_file_path, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0), v8::True(isolate),
+    v8::ScriptOrigin origin(script_url, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0), v8::True(isolate),
         v8::Local<v8::Integer>(), v8::Local<v8::Value>(), v8::False(isolate), v8::False(isolate), v8::True(isolate),
         v8::PrimitiveArray::New(isolate, 10));
 #endif
