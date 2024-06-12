@@ -14,6 +14,9 @@ namespace Puerts
     {
         private static char SLASH = (char)47;
         private static char DOT = (char)46;
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
         public static bool IsRelative(string filepath)
         {
             if (filepath[0] == '.') {
@@ -24,6 +27,9 @@ namespace Puerts
             }
             return false;
         }
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
         public static string Dirname(string filepath)
         {
             if (filepath.Length == 0) return ".";
@@ -173,6 +179,9 @@ namespace Puerts
             }
         }
 
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
         public static string normalize(string p)
         {
             if (p == null) throw new Exception("invalid filepath");
