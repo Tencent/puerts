@@ -282,7 +282,8 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
     IsAlive = false;
     Connected = false;
 
-    CtxGroupID = 1;
+    static int32_t CurrentCtxGroupID = 1;
+    CtxGroupID = CurrentCtxGroupID++;
     const uint8_t CtxNameConst[] = "V8InspectorContext";
     v8_inspector::StringView CtxName(CtxNameConst, sizeof(CtxNameConst) - 1);
     V8Inspector = v8_inspector::V8Inspector::create(Isolate, this);
