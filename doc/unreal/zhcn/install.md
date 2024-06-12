@@ -10,7 +10,7 @@
     
     - UE4.24及以下版本：[V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz)
     
-* 解压到`YouProject/Plugins/Puerts/ThirdParty`
+* 解压到`YouProject/Plugins/Puerts/ThirdParty`，并在JsEnv.build.cs中修改UseV8Version设置为你所下载的版本。
 
 ### 发布包安装方式
 
