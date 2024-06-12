@@ -66,11 +66,6 @@ public:
         OnSendMessage = nullptr;
     }
 
-    void Resume()
-    {
-        V8InspectorSession->resume();
-    }
-
 private:
     void SendMessage(v8_inspector::StringBuffer& MessageBuffer);
 
@@ -530,7 +525,6 @@ void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std:
 void V8InspectorClientImpl::OnClose(wspp_connection_hdl Handle)
 {
     void* HandlePtr = Handle.lock().get();
-    V8InspectorChannels[HandlePtr]->Resume();
     delete V8InspectorChannels[HandlePtr];
     V8InspectorChannels.erase(HandlePtr);
 #if USING_UE
