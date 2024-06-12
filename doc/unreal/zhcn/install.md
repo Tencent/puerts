@@ -6,11 +6,11 @@
 
 * 下载v8
 
-    - UE4.25及以上版本：[V8 backends](https://github.com/puerts/backend-v8/releases)
+    - UE4.25及以上版本有多个版本选择：[8.4.371.19](https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz), [9.4.146.24](https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz), [10.6.194](https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240612/v8_bin_10.6.194.tgz)
     
-    - UE4.24及以下版本：[V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/tag/v8_for_ue424_or_below)
+    - UE4.24及以下版本：[V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz)
     
-* 解压到`YouProject/Plugins/Puerts/ThirdParty`，如果下载的是9.4版本请手动重命名v8_9.4目录为v8
+* 解压到`YouProject/Plugins/Puerts/ThirdParty`
 
 ### 发布包安装方式
 

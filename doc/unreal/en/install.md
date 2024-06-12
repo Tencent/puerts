@@ -8,8 +8,8 @@
 2. Copy the `Puerts` directory from `puerts/unreal` to your project's `Plugins` directory. You can refer to the Unreal demo for guidance.
 
 3. Download V8:
-    - For UE4.25 and above: [V8 backends](https://github.com/Tencent/puerts/releases)
-    - For UE4.24 and below: [V8 for UE4.24 or below](https://github.com/Tencent/puerts/releases)
+    - For UE4.25 and above: [8.4.371.19](https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz), [9.4.146.24](https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz), [10.6.194](https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240612/v8_bin_10.6.194.tgz)
+    - For UE4.24 and below: [V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz)
 
 4. Extract the downloaded V8 to `YourProject/Plugins/Puerts/ThirdParty`. If you downloaded version 9.4, manually rename the `v8_9.4` directory to `v8`.
 
