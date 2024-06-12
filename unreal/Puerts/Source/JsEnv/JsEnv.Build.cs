@@ -10,12 +10,20 @@ using System.IO;
 using System.Reflection;
 
 public class JsEnv : ModuleRules
-{
-    private bool UseNewV8 = 
+{    
+    enum SupportedV8Versions
+    {
+        VDeprecated, // for 4.24 or blow only
+        V8_4_371_19,
+        V9_4_146_24,
+        V10_6_194
+    }
+
+    private SupportedV8Versions UseV8Version = 
 #if UE_4_25_OR_LATER
-        true;
+        SupportedV8Versions.V8_4_371_19;
 #else
-        false;
+        SupportedV8Versions.VDeprecated;
 #endif
 
     private bool UseNodejs = false;
@@ -132,7 +140,7 @@ public class JsEnv : ModuleRules
             ForceStaticLibInEditor = true;
             ThirdPartyQJS(Target);
         }
-        else if (UseNewV8)
+        else if (UseV8Version > SupportedV8Versions.VDeprecated)
         {
             ThirdParty(Target);
         }
@@ -363,13 +371,31 @@ public class JsEnv : ModuleRules
         {
             PrivateDefinitions.Add("USING_SINGLE_THREAD_PLATFORM");
         }
+
+        string v8LibSuffix = "";
+        
+        if (UseV8Version == SupportedV8Versions.V8_4_371_19)
+        {
+            if(Directory.Exists(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8_8.4.371.19")))
+            {
+                v8LibSuffix = "_8.4.371.19";
+            }
+        }
+        else if (UseV8Version == SupportedV8Versions.V9_4_146_24)
+        {
+            v8LibSuffix = "_9.4.146.24";
+        }
+        else if (UseV8Version == SupportedV8Versions.V10_6_194)
+        {
+            v8LibSuffix = "_10.6.194";
+        }
         //Add header
         string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "websocketpp") });
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "asio") });
-        PublicIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8", "Inc") });
+        PublicIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8" + v8LibSuffix, "Inc") });
 
-        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8", "Lib"));
+        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8" + v8LibSuffix, "Lib"));
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
             if (!Target.bBuildEditor || ForceStaticLibInEditor)
