@@ -3541,8 +3541,11 @@ std::unordered_multimap<int, FJsEnvImpl::FModuleInfo*>::iterator FJsEnvImpl::Fin
     return HashToModuleInfo.end();
 }
 
-v8::MaybeLocal<v8::Module> FJsEnvImpl::ResolveModuleCallback(
-    v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier, v8::Local<v8::Module> Referrer)
+v8::MaybeLocal<v8::Module> FJsEnvImpl::ResolveModuleCallback(v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier,
+#if V8_MAJOR_VERSION >= 9
+    v8::Local<v8::FixedArray> ImportAttributes,    // not implement yet
+#endif
+    v8::Local<v8::Module> Referrer)
 {
     auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Context->GetIsolate()));
     const auto ItModuleInfo = Self->FindModuleInfo(Referrer);
@@ -3678,10 +3681,17 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
 
     auto DirName = FPaths::GetPath(FileName);
 
+#if V8_MAJOR_VERSION >= 9
+    v8::Local<v8::FixedArray> module_requests = Module->GetModuleRequests();
+    for (int i = 0, Length = module_requests->Length(); i < Length; ++i)
+    {
+        v8::Local<v8::ModuleRequest> module_request = module_requests->Get(Context, i).As<v8::ModuleRequest>();
+        auto RefModuleName = FV8Utils::ToFString(Isolate, module_request->GetSpecifier());
+#else
     for (int i = 0, Length = Module->GetModuleRequestsLength(); i < Length; ++i)
     {
         auto RefModuleName = FV8Utils::ToFString(Isolate, Module->GetModuleRequest(i));
-
+#endif
         FString OutPath;
         FString OutDebugPath;
         if (ModuleLoader->Search(DirName, RefModuleName, OutPath, OutDebugPath))

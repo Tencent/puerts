@@ -208,7 +208,11 @@ void FJsEnvModule::ShutdownModule()
     // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
     // we call this function before unloading the module.
     v8::V8::Dispose();
+#if V8_MAJOR_VERSION > 9
+    v8::V8::DisposePlatform();
+#else
     v8::V8::ShutdownPlatform();
+#endif
 
     if (MallocWrapper && MallocWrapper == GMalloc)
     {
