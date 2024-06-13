@@ -21,15 +21,15 @@ puerts里js的宿主环境是游戏引擎，又添加了哪些api呢？
 puerts并未重定义引擎，只是定义了ts和引擎相互调用的规则。puerts的demo也倾向于演示这些规则，而不是做一个游戏。
 
 
-## 虚拟机启动
+## puerts::FJsEnv
 
-### 自行构造puerts::FJsEnv
+一个puerts::FJsEnv实例代表一个虚拟机实例（可以类比一个nodejs进程）
 
 * 在合适的地方（比如GameInstance）根据需要构造一个或者多个虚拟机
-    - 如果启动多个虚拟机，这些虚拟机间是相互隔离的
+    - 如果启动多个虚拟机，这些虚拟机间是相互隔离的（可以类比多个nodejs进程间数据是隔离的）
 
 * 通过Start函数启动一个脚本，作为脚本逻辑的入口（类似c的main函数）
-    - Start可以传入一些数据作为参数，供脚本获取使用
+    - Start可以传入一些数据作为参数，供脚本获取使用（可以类比为nodejs命令输入的入口脚本）
 
 示例，在GameInstance的OnStart构造虚拟机，并在Shutdown删除
 
@@ -65,19 +65,6 @@ import {argv} from 'puerts';
 let world = (argv.getByName("GameInstance") as UE.GameInstance).GetWorld();
 ~~~
 
-### 开启“继承引擎类功能”
-
-开启该功能，Puerts会构造一个默认的虚拟机
-
-* 引擎构造一个继承了UE类TypeScript类（代理对象）时，这个TypeScript类以及其引用的代码，都是跑在这个默认虚拟机上
-
-  - 这个虚拟机本身相比自行构造的虚拟机没什么两样，和UE的交互规则都一样
-  
-  - 由于虚拟机间相互隔离，所以如果你自己创建了虚拟机，你会发现那里的代码和继承了UE类TypeScript类相互访问不了
-
-* 该虚拟机不会启动一个启动脚本，也不会传参数，因而argv不可用，也没必要用
-
-* 原来的入口脚本可以通过覆盖ReceiveBeginPlay之类的回调来实现
 
 ## TypeScript和引擎的相互调用
 
@@ -131,4 +118,18 @@ UE里头，支持反射的API（标注了UCLASS，UPPROPERTY，UFUNCTION，USTRU
 该功能的滥用会导致密集的跨语言交互进而导致性能问题。
 
 实际上该功能建议使用场景是：项目已经开发了挺久了，已经是一个成型的项目，要贸然添加脚本对原有架构冲击很大，于是可以用这功能，写些继承ue类的ts类作为原有系统和新脚本系统间的边界（原有系统能认识这种ts类生成的代理蓝图），而且在这个场景下也是作为边界有限的使用，仍然切记不要滥用。
+
+## puerts::FJsEnv、蓝图mixin功能、继承引擎类功能间的关系
+
+* 一个puerts::FJsEnv就是一个虚拟机实例，虚拟机间数据是隔离的。
+
+* 蓝图mixin功能是puerts::FJsEnv的一个特性，或者说任意一个puerts::FJsEnv都有蓝图mixin功能。
+
+* 继承引擎类功能是基于puerts::FJsEnv之上构建的功能
+
+  - 它会分析ts类，并生成相应的（代理）蓝图，代理蓝图的特点是只有数据，没有逻辑（空函数）；
+  
+  - 代理蓝图启动，空函数会被重定向到ts（准确来说是ts编译后的js），对于ue引擎来说，代理蓝图就是普通蓝图，并无特殊性；
+  
+  - 由于（代理）蓝图由ue引擎实例化，其构建就关联到某个虚拟机上的js逻辑，并需要执行构造逻辑，于是该功能需要启动一个默认的puerts::FJsEnv，这个puerts::FJsEnv和你new的puerts::FJsEnv实例没有区别，也有蓝图mixin功能，而且根据第一条，和其它地方new的puerts::FJsEnv是相互隔离的。
 
