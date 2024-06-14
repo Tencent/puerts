@@ -61,11 +61,11 @@
 * Node.js: Supports Node.js API (OpenSSL-related APIs are not supported on Unreal Engine's mobile platform), but has a larger code size.
 
 
-| Script Engine | ECMAScript | Node api | Code Size | Debugging | Notes |
-| --- | --- | --- | --- | --- | --- |
-| V8 | ✔️ | ❌ | `***` | ✔️ | |
-| QuickJS | ✔️ | ❌ | `*` | ❌ | |
-| Node.js | ✔️ | ✔️ | `*****` | ✔️ | OpenSSL may be disabled |
+| Script Engine | ECMAScript | Node api | Performance | Code Size | Debugging | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8 | ✔️ | ❌ | `*****` | `***` | ✔️ | |
+| QuickJS | ✔️ | ❌ | `**` | `*` | ❌ | |
+| Node.js | ✔️ | ✔️ | `*****` | `*****` | ✔️ | OpenSSL may be disabled |
 
 ## Avaliable on these Engine
 
@@ -143,11 +143,11 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 * nodejs：支持nodejs api（unreal engine的移动平台下不支持openssl相关api），代码体积较大
 
-| 脚本引擎 | ECMAScript | Node api | 代码体积 | 调试 | 补充 |
-| --- | --- | --- | --- | --- | --- |
-| V8 | ✔️ | ❌ | `***` | ✔️ | |
-| QuickJS | ✔️ | ❌ | `*` | ❌ | |
-| Node.js | ✔️ | ✔️ | `*****` | ✔️ | OpenSSL 可能被禁用 |
+| 脚本引擎 | ECMAScript | Node api | 性能 | 代码体积 | 调试 | 补充 |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8 | ✔️ | ❌ | `*****` | `***` | ✔️ | |
+| QuickJS | ✔️ | ❌ | `**` | `*` | ❌ | |
+| Node.js | ✔️ | ✔️ | `*****` | `*****` | ✔️ | OpenSSL 可能被禁用 |
 
 ## 可用引擎
 
