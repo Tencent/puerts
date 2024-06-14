@@ -52,6 +52,21 @@
 
 ---
 
+## Select Script Engine
+
+* V8 (default): Generally excellent performance, moderate code size, only includes the implementation of the ECMAScript specification, does not include Node.js API or browser API.
+
+* QuickJS: Performance is not as good as V8, does not support debugging, but has a small code size, suitable for scenarios where code size is critical.
+
+* Node.js: Supports Node.js API (OpenSSL-related APIs are not supported on Unreal Engine's mobile platform), but has a larger code size.
+
+
+| Script Engine | ECMAScript | Node api | Code Size | Debugging | Notes |
+| --- | --- | --- | --- | --- | --- |
+| V8 | [x] | [] | `***` | [x] | |
+| quickjs | [x] | [] | `*` | []  | |
+| nodejs | [x] | [x] | `*****` | [x] | OpenSSL may be disabled |
+
 ## Avaliable on these Engine
 
 * unreal engine 4.22 ~ latest
@@ -64,6 +79,7 @@
 
 * iOS
 * Android
+* OpenHarmony
 * Windows
 * Macos
 
@@ -119,6 +135,20 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 ---
 
+## 脚本引擎选择
+
+* v8（默认）：综合比较优秀，高性能，代码体积适中，仅包含ecmascript规范的实现，不包含nodejs api、浏览器 api
+
+* quickjs： 性能不如v8，不支持调试，但代码体积小，适用于代码段大小敏感型业务
+
+* nodejs：支持nodejs api（unreal engine的移动平台下不支持openssl相关api），代码体积较大
+
+| 脚本引擎 | ECMAScript | Node api | 代码体积 | 调试 | 补充 |
+| --- | --- | --- | --- | --- | --- |
+| V8 | [x] | [] | `***` | [x] | |
+| quickjs | [x] | [] | `*` | []  | |
+| nodejs | [x] | [x] | `*****` | [x] | openssl可能被禁用 |
+
 ## 可用引擎
 
 * unreal engine 4.22 ~ latest
@@ -131,6 +161,7 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 * iOS
 * Android
+* 鸿蒙（OpenHarmony）
 * Windows
 * Macos
 
