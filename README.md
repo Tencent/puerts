@@ -62,6 +62,7 @@
 
 
 | Script Engine | ECMAScript | Node api | Code Size | Debugging | Notes |
+| --- | --- | --- | --- | --- | --- |
 | V8 | ✔️ | ❌ | `***` | ✔️ | |
 | QuickJS | ✔️ | ❌ | `*` | ❌ | |
 | Node.js | ✔️ | ✔️ | `*****` | ✔️ | OpenSSL may be disabled |
