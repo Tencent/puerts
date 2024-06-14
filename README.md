@@ -62,10 +62,9 @@
 
 
 | Script Engine | ECMAScript | Node api | Code Size | Debugging | Notes |
-| --- | --- | --- | --- | --- | --- |
-| V8 | [x] | [] | `***` | [x] | |
-| quickjs | [x] | [] | `*` | []  | |
-| nodejs | [x] | [x] | `*****` | [x] | OpenSSL may be disabled |
+| V8 | ✔️ | ❌ | `***` | ✔️ | |
+| QuickJS | ✔️ | ❌ | `*` | ❌ | |
+| Node.js | ✔️ | ✔️ | `*****` | ✔️ | OpenSSL may be disabled |
 
 ## Avaliable on these Engine
 
@@ -145,9 +144,9 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 | 脚本引擎 | ECMAScript | Node api | 代码体积 | 调试 | 补充 |
 | --- | --- | --- | --- | --- | --- |
-| V8 | [x] | [] | `***` | [x] | |
-| quickjs | [x] | [] | `*` | []  | |
-| nodejs | [x] | [x] | `*****` | [x] | openssl可能被禁用 |
+| V8 | ✔️ | ❌ | `***` | ✔️ | |
+| QuickJS | ✔️ | ❌ | `*` | ❌ | |
+| Node.js | ✔️ | ✔️ | `*****` | ✔️ | OpenSSL 可能被禁用 |
 
 ## 可用引擎
 
