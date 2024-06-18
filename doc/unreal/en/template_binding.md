@@ -31,7 +31,6 @@ If you want to use this feature outside of the `JsEnv` module itself, such as an
     - Find the `JsEnv.Build.cs` file and change `UseNewV8` to `true`
 - In the module's `*.Build.cs`
     - Add a dependency to the `JsEnv` module
-    - Set `bEnableUndefinedIdentifierWarnings` to `false` (for ue5.3, ue5.4, set `PCHUsage = PCHUsageMode.NoPCHs`)
 
 ## Examples
 

@@ -20,9 +20,16 @@
 
 #include <string>
 
+#ifdef USING_IN_UNREAL_ENGINE
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4668))
+#endif
 #pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
+#ifdef USING_IN_UNREAL_ENGINE
+MSVC_PRAGMA(warning(pop))
+#endif
 
 #include "NamespaceDef.h"
 

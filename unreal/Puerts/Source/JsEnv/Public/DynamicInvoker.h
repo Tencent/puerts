@@ -8,14 +8,20 @@
 
 #pragma once
 
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-
 #include "NamespaceDef.h"
 
 #include "CoreUObject.h"
+
+#ifdef USING_IN_UNREAL_ENGINE
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4668))
+#endif
+#pragma warning(push, 0)
+#include "v8.h"
+#pragma warning(pop)
+#ifdef USING_IN_UNREAL_ENGINE
+MSVC_PRAGMA(warning(pop))
+#endif
 
 class UDynamicDelegateProxy;
 class UJSGeneratedFunction;

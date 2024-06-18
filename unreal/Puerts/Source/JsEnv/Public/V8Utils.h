@@ -12,12 +12,6 @@
 
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
-
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-
 #include "NamespaceDef.h"
 #include "DataTransfer.h"
 #include "UECompatible.h"

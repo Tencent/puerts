@@ -8,15 +8,12 @@
 
 #pragma once
 
-#pragma warning(push, 0)
-#include "v8.h"
-#pragma warning(pop)
-
 #include "NamespaceDef.h"
 
 #include "Binding.hpp"
 #include "JSLogger.h"
 #include "V8Utils.h"
+
 namespace PUERTS_NAMESPACE
 {
 class FJsObjectPropertyTranslator;
