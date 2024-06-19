@@ -64,6 +64,7 @@
 #endif
 
 #else
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if PLATFORM_WINDOWS
 #include <windows.h>
 #elif PLATFORM_LINUX
@@ -74,6 +75,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #endif
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #endif
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
