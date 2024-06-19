@@ -21,10 +21,10 @@
 #pragma warning(disable : 4668)
 #elif defined(__clang__)
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wundef"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wundef"
 #endif
 #pragma warning(push, 0)
 #include "v8.h"
