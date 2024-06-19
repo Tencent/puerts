@@ -15,12 +15,6 @@ public class WasmCore : ModuleRules
 	
 	public WasmCore(ReadOnlyTargetRules Target) : base(Target)
 	{
-#if UE_5_3_OR_LATER
-        PCHUsage = PCHUsageMode.NoPCHs;
-#endif
-
-        bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
-
 		if(bUObjectHasFastPointerSupport)
         {
 			PublicDefinitions.Add("UOBJECT_HAVE_FAST_WASM_POINTER=1");
