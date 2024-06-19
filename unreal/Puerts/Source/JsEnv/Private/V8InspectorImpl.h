@@ -39,6 +39,7 @@
 #elif defined(__GNUC__)
 #define PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS _Pragma("GCC diagnostic pop")
 #endif
+#endif    // PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 namespace PUERTS_NAMESPACE
 {
