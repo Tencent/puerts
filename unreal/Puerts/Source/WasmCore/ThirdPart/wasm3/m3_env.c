@@ -8,7 +8,7 @@
 #include <stdarg.h>
 //#pragma warning(push)
 //#pragma warning(disable: 4668)
-//#include <limits.h>
+#include <limits.h>
 //#pragma warning(pop)
 
 #include "m3_env.h"

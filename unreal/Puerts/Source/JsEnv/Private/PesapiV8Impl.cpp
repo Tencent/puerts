@@ -17,6 +17,10 @@
 #include <vector>
 #include <cstring>
 
+#pragma warning(push, 0)
+#include "v8.h"
+#pragma warning(pop)
+
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(v8::Local<v8::Context> context)

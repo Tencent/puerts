@@ -17,6 +17,12 @@
 #include "PropertyTranslator.h"
 #include "FunctionTranslator.h"
 #include "JSClassRegister.h"
+
+#pragma warning(push, 0)
+#include "libplatform/libplatform.h"
+#include "v8.h"
+#pragma warning(pop)
+
 #include "NamespaceDef.h"
 
 #define PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE 1

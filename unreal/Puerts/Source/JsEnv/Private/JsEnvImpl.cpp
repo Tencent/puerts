@@ -32,6 +32,11 @@
 #endif
 #include "ContainerMeta.h"
 
+#pragma warning(push, 0)
+#include "libplatform/libplatform.h"
+#include "v8.h"
+#pragma warning(pop)
+
 #include "V8InspectorImpl.h"
 #if USE_WASM3
 #include "WasmModuleInstance.h"
@@ -64,7 +69,6 @@
 #endif
 
 #else
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if PLATFORM_WINDOWS
 #include <windows.h>
 #elif PLATFORM_LINUX
@@ -75,7 +79,6 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include <sys/time.h>
 #include <sys/types.h>
 #endif
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #endif
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -378,7 +381,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #endif
 
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-#ifdef WITH_QUICKJS
+#if WITH_QUICKJS
     MainIsolate = InExternalRuntime ? v8::Isolate::New(InExternalRuntime) : v8::Isolate::New(CreateParams);
 #else
     check(!InExternalRuntime && !InExternalContext);
@@ -393,7 +396,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     v8::Isolate::Scope Isolatescope(Isolate);
     v8::HandleScope HandleScope(Isolate);
 
-#ifdef WITH_QUICKJS
+#if WITH_QUICKJS
     v8::Local<v8::Context> Context =
         (InExternalRuntime && InExternalContext) ? v8::Context::New(Isolate, InExternalContext) : v8::Context::New(Isolate);
 #else

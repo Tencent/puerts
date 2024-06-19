@@ -7,7 +7,7 @@
  */
 
 #include "FFIBinding.h"
-#ifdef WITH_FFI
+#if WITH_FFI
 #include "JSClassRegister.h"
 #include "V8Utils.h"
 #if _MSC_VER

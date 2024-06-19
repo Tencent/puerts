@@ -15,13 +15,11 @@
 #endif
 #include "JSClassRegister.h"
 
-#include "NamespaceDef.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+
+#include "NamespaceDef.h"
 
 #include <memory>
 
