@@ -24,9 +24,10 @@
 #if defined(_MSC_VER)
 #define PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS __pragma(warning(push)) __pragma(warning(disable : 4668))
 #elif defined(__clang__)
-#define PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS pragma clang diagnostic push pragma clang diagnostic ignored "-Wundef"
+#define PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS \
+    _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Wundef\"")
 #elif defined(__GNUC__)
-#define PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS pragma GCC diagnostic push pragma GCC diagnostic ignored "-Wundef"
+#define PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wundef\"")
 #endif
 #endif    // PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
@@ -34,11 +35,10 @@
 #if defined(_MSC_VER)
 #define PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS __pragma(warning(pop))
 #elif defined(__clang__)
-#define PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS pragma clang diagnostic pop
+#define PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS _Pragma("clang diagnostic pop")
 #elif defined(__GNUC__)
-#define PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS pragma GCC diagnostic pop
+#define PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS _Pragma("GCC diagnostic pop")
 #endif
-#endif    // PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 namespace PUERTS_NAMESPACE
 {
