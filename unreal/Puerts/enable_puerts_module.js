@@ -16,6 +16,7 @@ const jsDefaultConfig = {
     "target": "esnext",
     "module": "commonjs",
     "experimentalDecorators": true,
+    "useDefineForClassFields": false,
     "jsx": "react",
     "sourceMap": true,
     "typeRoots": [
