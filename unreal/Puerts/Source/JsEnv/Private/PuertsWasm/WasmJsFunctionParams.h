@@ -10,13 +10,14 @@
 #if USE_WASM3
 #include "CoreMinimal.h"
 #include "WasmModule.h"
+#include "PuertsNamespaceDef.h"
 
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
-
-#include "PuertsNamespaceDef.h"
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include "WasmFunction.h"
 

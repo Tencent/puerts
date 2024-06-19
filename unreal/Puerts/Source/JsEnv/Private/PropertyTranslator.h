@@ -19,14 +19,16 @@
 #include "UObject/WeakFieldPtr.h"
 #endif
 
-#pragma warning(push, 0)
+#include "NamespaceDef.h"
 #include "ArrayBuffer.h"
 #include "JsObject.h"
+
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#pragma warning(push, 0)
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
-
-#include "NamespaceDef.h"
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 namespace PUERTS_NAMESPACE
 {
