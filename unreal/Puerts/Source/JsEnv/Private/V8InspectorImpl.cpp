@@ -266,7 +266,7 @@ void MicroTasksRunnerFunction(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     // throw an error so the v8 will clean pending exception later
     Info.GetIsolate()->ThrowException(
-        v8::Exception::Error(v8::String::NewFromUtf8(Info.GetIsolate(), "test", v8::NewStringType::kNormal).ToLocalChecked()));
+        v8::String::NewFromUtf8(Info.GetIsolate(), "test", v8::NewStringType::kNormal).ToLocalChecked());
 }
 
 V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Context> InContext)
