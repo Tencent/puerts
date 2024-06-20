@@ -6,10 +6,14 @@
 //
 
 #include <stdarg.h>
-//#pragma warning(push)
-//#pragma warning(disable: 4668)
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
 #include <limits.h>
-//#pragma warning(pop)
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #include "m3_env.h"
 #include "m3_compile.h"

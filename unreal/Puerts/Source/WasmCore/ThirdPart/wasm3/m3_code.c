@@ -4,10 +4,14 @@
 //  Created by Steven Massey on 4/19/19.
 //  Copyright © 2019 Steven Massey. All rights reserved.
 //
-//#pragma warning(push)
-//#pragma warning(disable: 4668)
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
 #include <limits.h>
-//#pragma warning(pop)
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 #include "m3_code.h"
 #include "m3_env.h"
 

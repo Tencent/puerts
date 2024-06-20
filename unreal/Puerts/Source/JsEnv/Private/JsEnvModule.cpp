@@ -9,12 +9,19 @@
 #include "JsEnvModule.h"
 //#include "TGameJSCorePCH.h"
 #include "HAL/MemoryBase.h"
+#include "NamespaceDef.h"
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if defined(WITH_NODEJS)
 #pragma warning(push, 0)
 #include "node.h"
 #include "uv.h"
 #pragma warning(pop)
 #endif
+#pragma warning(push, 0)
+#include "v8.h"
+#include "libplatform/libplatform.h"
+#pragma warning(pop)
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 class FMallocWrapper final : public FMalloc
 {
@@ -136,13 +143,6 @@ public:
         InnerMalloc->DumpAllocatorStats(Ar);
     }
 };
-
-#pragma warning(push, 0)
-#include "v8.h"
-#include "libplatform/libplatform.h"
-#pragma warning(pop)
-
-#include "NamespaceDef.h"
 
 DEFINE_LOG_CATEGORY_STATIC(JsEnvModule, Log, All);
 

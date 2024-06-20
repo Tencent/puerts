@@ -12,7 +12,7 @@
 #define USING_UE 0
 #endif
 
-#if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX || WITH_INSPECTOR) && !defined(WITHOUT_INSPECTOR)
+#if (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX || defined(WITH_INSPECTOR)) && !defined(WITHOUT_INSPECTOR)
 
 #include "V8InspectorImpl.h"
 
@@ -25,8 +25,11 @@
 #include <locale>
 #include <codecvt>
 
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push)
+#if defined(_MSC_VER)
 #pragma warning(disable : 4251)
+#endif
 #include "v8.h"
 #include "v8-inspector.h"
 #include "libplatform/libplatform.h"
@@ -38,6 +41,7 @@
 #define _WEBSOCKETPP_CPP11_TYPE_TRAITS_
 #include "websocketpp/config/asio_no_tls.hpp"
 #include "websocketpp/server.hpp"
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #if USING_UE
 #include "Containers/Ticker.h"
