@@ -445,8 +445,7 @@ void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
     v8::Isolate* isolate = info->GetIsolate();
-    isolate->ThrowException(
-        v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
+    isolate->ThrowException(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked());
 }
 
 pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
