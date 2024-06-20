@@ -54,6 +54,8 @@
 
 ## Select Script Engine
 
+Currently puerts supports three script engines: v8, quickjs, nodejs, choose the one that suits you.
+
 * V8 (default): Generally excellent performance, moderate code size, only includes the implementation of the ECMAScript specification, does not include Node.js API or browser API.
 
 * QuickJS: Performance is not as good as V8, does not support debugging, but has a small code size, suitable for scenarios where code size is critical.
@@ -136,6 +138,8 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 ---
 
 ## 脚本引擎选择
+
+目前puerts支持三种脚本引擎：v8、quickjs、nodejs，选择合适你的那个。
 
 * v8（默认）：综合比较优秀，高性能，代码体积适中，仅包含ecmascript规范的实现，不包含nodejs api、浏览器 api
 
