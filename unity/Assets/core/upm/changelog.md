@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [2.0.6] - 2024-06-24
+## [2.1.0] - 2024-06-25
 
 1. Feature: Support for specifying whether the Backend is V8 or quickjs through JsEnv parameters.
 2. Fix: Unity crashes when there are syntax errors in the loaded module during the execution of ExecuteModule in C#.

@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [2.0.6] - 2024-06-24
+## [2.1.0] - 2024-06-25
 1. 功能：支持JsEnv参数指定Backend是V8还是quickjs；
 2. 修复：C#中执行ExecuteModule时如果被加载模块有语法错误Unity会崩溃
 3. 功能：让puer.getLastException可以拿到ExecuteModule的错误 (#1686)

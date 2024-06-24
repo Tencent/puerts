@@ -1,3 +1,86 @@
+### v1.0.7 2024年6月25日
+
+#### 新增特性
+
+* 静态绑定的Register支持自定义析构
+
+* 增加一个宏，允许ts不持有ueobject (#1660) 
+
+* JsEnv.Build.cs增加KeepUObjectReference配置，支持js不强引用uobject
+
+* JsEnv.Build.cs增加SingleThreaded选项，用于指定v8别开线程池
+
+* 支持V8 10.6.194
+
+#### 优化
+
+* 只在有文件更改的时候广播 (#1637)
+
+* 如果是插件的蓝图类，生成到ue.d.ts文件
+
+* 如果生成Delegate调用器失败打印错误信息
+
+* 修复静态函数每次调用的时候会查两次hash表 (#1654)
+
+* 导出C++的类的Interface函数 (#1681) 
+
+* 生成默认值元信息头文件（InitParamDefaultMetas.inl）保证顺序，以免每次都重新编译FunctionTranslator.cpp
+
+* UE 5.4的一些编译错误
+
+* 将蓝图中显示的变量顺序与TS文件中定义的变量顺序保持一致 (#1740) 
+
+* 去除bEnableUndefinedIdentifierWarnings的依赖，可以支持在ue5.3+下开PCH
+
+* 默认的tsconfig.json添加useDefineForClassFields: false，优化8.4、9.4版本v8的性能
+
+
+#### 变更
+
+
+#### bug修复
+
+* 修复这个commit导致ue5.3编译报GenericplatformProcess的错误：9258c33
+
+* 修正pesapi静态绑定，对puerts::Object赋值为空仍然持有context引用的问题
+
+* Mixin 基类，PIE第二次启动后会崩溃
+
+* 确保unhandledRejection() 在所有microtasks跑完后才执行
+
+* PaddingKill状态的对象在虚拟机释放是没有回收 UEGC时崩溃 (#1645)
+
+* 修复在IWYU模式下的编译报错问题 (#1648) 
+
+* AddToDelegate 区分 SingleDeleagte 和MultipleDelegate，解决单播变成多播的问题
+
+* 在js绑定delegate时，应该考虑在c++侧被clear的情况，fix #1653
+
+* 不必要的Reset导致内存泄露，Release传入的地址是null (#1652)
+
+* 解决如果有多个plugin使用了asio，asio_signal_handler会符号冲突的问题
+
+* asio在C++ 20下编译报错的问题
+
+* 静态绑定的报错解决（找不到API）
+
+* RegisterTArray 支持指针成员类型 (#1657) 
+
+* mixin基类的objectTakeByNative设置同步到其子类
+
+* 解决错误的将父类的hideCategories赋值给蓝图以及错误的覆盖了ts收集到的hideCategories元数据
+
+* 把Engine也加入扫描目录，生成相应的ts声明，fix #1727
+
+* 移除已弃用的configname避免出现没有任何改动也会进行重新编译保存的bug (#1730)
+
+* 增加对metadata的修改检查来修复删除元数据不会被检测为更改而不重新编译的问题 (#1733)
+
+* 修复删除uproperty中Property Specifiers不生效的问题 (#1744) 
+
+* 增加对未能正确添加变量的情况进行提示 (#1748)
+
+
 ### v1.0.6p1 2024年1月16日
 
 #### bug修复
