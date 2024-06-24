@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.6] - 2024-06-24
+
+1. Feature: Support for specifying whether the Backend is V8 or quickjs through JsEnv parameters.
+2. Fix: Unity crashes when there are syntax errors in the loaded module during the execution of ExecuteModule in C#.
+3. Feature: Allow puer.getLastException to retrieve errors from ExecuteModule (#1686).
+4. Optimization: Refactor quickjs's esm to prevent the mixed use of quickjs api and v8 api in the same function, improving the previous situation where esm was heavily dependent on a certain version of quickjs backend, which prevented the upgrade of quickjs backend. Also, upgrade quickjs backend.
+5. Fix: Issue of not finding symbols in the nodejs backend under Linux.
+6. Fix: Issue of failing to load empty module files, fix #1700.
+7. Optimization: Correct the gc issue of value type parameters, fix #1527.
+8. Fix: Resolve the String leaks in the quickjs version.
+9. Feature: Support for HarmonyOS compilation.
+10. Fix: Encoding.UTF8.GetBytes returns bytes without a 0 at the end, which needs to be added manually, otherwise it will crash under AOT, fix #1691.
+11. Feature: Record js stack when creating GenericDelegate in the editor, attach the stack when CheckLiveness fails for easy positioning (#1704).
+12. Feature: Enable debugger support by default during debug builds (#1707).
+13. Feature: Added support for v8 10.6.194.
+14. Fix: Avoid properties with the same key in FunctionTemplate, fix #1714.
+15. Optimization: console.log should output through Console.Error in non-unity environments.
+16. Optimization: Refactor v8 esm implementation, support top-level-await.
+17. Feature: Add v8.getHeapStatistics, v8.getHeapSpaceStatistics.
+18. Optimization: Do not allow the new operator to be used on static functions.
+19. Fix: Support for Explicit Interface Implementation, fix #1741.
+20. Fix: quickjs backend js throw null/undefined will cause a crash, fix #1747.
+21. Optimization: Remove the value field in $Ref<T>, fix #1752.
+22. Optimization: Increment CtxGroupID for debugging each time (previously a fixed ID might have multiple JsEnv, single JsEnv multiple inspectors might have problems).
+
+## [2.0.5] - 2024-05-07
+1. fix: compat with zombieyang/puerts_unity_webgl_demo#53
+
 ## [2.0.4] - 2024-01-09
 1. fix: the error when invoking extension method with out/ref args.
 2. fix: the error when set a JSObject to `null`.
