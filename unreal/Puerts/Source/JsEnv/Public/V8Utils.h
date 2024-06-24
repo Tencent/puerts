@@ -39,7 +39,7 @@ public:
     FORCEINLINE static void ThrowException(v8::Isolate* Isolate, const char* Message)
     {
         auto ExceptionStr = v8::String::NewFromUtf8(Isolate, Message, v8::NewStringType::kNormal).ToLocalChecked();
-        Isolate->ThrowException(ExceptionStr);
+        Isolate->ThrowException(v8::Exception::Error(ExceptionStr));
     }
 
     FORCEINLINE static void* GetPointer(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
