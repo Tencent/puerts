@@ -35,11 +35,13 @@ jobs:
           wget -O v8_94.tgz -q  ${{env.V8_94}} 
           tar xvfz v8_94.tgz -C unreal/Puerts/ThirdParty
           cd unreal
+          cp Puerts/Source/JsEnv/JsEnv.Build.cs ..
           sed -i 's/SupportedV8Versions.V8_4_371_19/SupportedV8Versions.V9_4_146_24/g' Puerts/Source/JsEnv/JsEnv.Build.cs
           tar cvfz puerts_v8_94.tgz Puerts README.md LICENSE doc
           mv puerts_v8_94.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8_9.4.146.24
+          cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
           wget -O V8_106.tgz -q  ${{env.V8_106}} 
           tar xvfz V8_106.tgz -C unreal/Puerts/ThirdParty
           cd unreal
@@ -48,6 +50,7 @@ jobs:
           mv puerts_v8_106.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8_10.6.194
+          cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
           tar xvfz v8_for_ue424.tgz -C unreal/Puerts/ThirdParty
           cd unreal
@@ -63,6 +66,7 @@ jobs:
           mv puerts_quickjs.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/quickjs
+          cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
           git checkout .
           wget -O nodejs_bin.tgz -q  ${{env.nodejs}}
           tar xvfz nodejs_bin.tgz -C unreal/Puerts/ThirdParty
