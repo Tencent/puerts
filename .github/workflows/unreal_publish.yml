@@ -10,8 +10,9 @@ on:
 env:
   UE424_V8: "https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz"
   V8_84: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz"
-  V8_94: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_230822/v8_bin_9.4.146.24.tgz"
-  quickjs: "https://github.com/puerts/backend-quickjs/releases/download/QJS_240603/qjs_v8_bin.tgz"
+  V8_94: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz"
+  V8_106: "https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240612/v8_bin_10.6.194.tgz"
+  quickjs: "https://github.com/puerts/backend-quickjs/releases/download/QJS_240604/qjs_v8_bin.tgz"
   nodejs: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
 jobs:
@@ -33,12 +34,20 @@ jobs:
           rm -r unreal/Puerts/ThirdParty/v8
           wget -O v8_94.tgz -q  ${{env.V8_94}} 
           tar xvfz v8_94.tgz -C unreal/Puerts/ThirdParty
-          mv unreal/Puerts/ThirdParty/v8_9.4 unreal/Puerts/ThirdParty/v8
           cd unreal
+          sed -i 's/SupportedV8Versions.V8_4_371_19/SupportedV8Versions.V9_4_146_24/g' Puerts/Source/JsEnv/JsEnv.Build.cs
           tar cvfz puerts_v8_94.tgz Puerts README.md LICENSE doc
           mv puerts_v8_94.tgz ..
           cd ..
-          rm -r unreal/Puerts/ThirdParty/v8
+          rm -r unreal/Puerts/ThirdParty/v8_9.4.146.24
+          wget -O V8_106.tgz -q  ${{env.V8_106}} 
+          tar xvfz V8_106.tgz -C unreal/Puerts/ThirdParty
+          cd unreal
+          sed -i 's/SupportedV8Versions.V8_4_371_19/SupportedV8Versions.V10_6_194/g' Puerts/Source/JsEnv/JsEnv.Build.cs
+          tar cvfz puerts_v8_106.tgz Puerts README.md LICENSE doc
+          mv puerts_v8_106.tgz ..
+          cd ..
+          rm -r unreal/Puerts/ThirdParty/v8_10.6.194
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
           tar xvfz v8_for_ue424.tgz -C unreal/Puerts/ThirdParty
           cd unreal
@@ -99,6 +108,17 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./puerts_v8_94.tgz
           asset_name: puerts_v8_94.tgz
+          asset_content_type: application/tgz
+          
+      - name: Upload Puerts Plugins with v8 10.6.194
+        #id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./puerts_v8_106.tgz
+          asset_name: puerts_v8_106.tgz
           asset_content_type: application/tgz
         
       - name: Upload Puerts Plugins UE424 Or Below
