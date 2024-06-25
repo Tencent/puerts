@@ -6,7 +6,7 @@
  * which is part of this source code package.
  */
 
-#if defined(UE_GAME) || defined(UE_EDITOR)
+#if defined(UE_GAME) || defined(UE_EDITOR) || defined(UE_SERVER) || defined(USING_IN_UNREAL_ENGINE)
 #define USING_UE 1
 #else
 #define USING_UE 0
