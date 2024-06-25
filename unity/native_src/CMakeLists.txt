@@ -136,9 +136,15 @@ if ( APPLE )
         )
     endif ()
 else ()
-    add_library(puerts SHARED
-        ${PUERTS_SRC} ${PUERTS_INC}
-    )
+    if (CMAKE_SYSTEM_NAME MATCHES "Emscripten") 
+        add_library(puerts STATIC
+            ${PUERTS_SRC} ${PUERTS_INC}
+        )
+    else ()
+        add_library(puerts SHARED
+            ${PUERTS_SRC} ${PUERTS_INC}
+        )
+   endif ()
 endif ()
 
 set(PUERTS_COMPILE_DEFINITIONS)

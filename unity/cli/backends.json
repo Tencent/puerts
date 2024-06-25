@@ -1,6 +1,6 @@
 {
     "quickjs": {
-        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_240604/qjs_v8_bin.tgz",
+        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_240625/qjs_v8_bin.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER",
@@ -64,6 +64,11 @@
                 "ios": {
                     "arm64": [
                         "/Lib/iOS/arm64/libquickjs.a"
+                    ]
+                },
+                "wasm": {
+                    "wasm32": [
+                        "/Lib/wasm/wasm32/libquickjs.a"
                     ]
                 }
             }

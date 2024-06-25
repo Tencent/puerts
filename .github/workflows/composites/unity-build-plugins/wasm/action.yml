@@ -1,0 +1,48 @@
+name: build linux unity plugin
+
+inputs:
+  backend:
+    description: 'js backend'     
+    required: true
+  config:
+    type: choice
+    description: Release Or Debug
+    default: 'Release'
+    options:
+    - Release
+    - Debug
+  GITHUB_TOKEN:
+    required:
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install libc++-dev
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install clang
+        sudo apt-get install build-essential
+        sudo apt-get install libc++-dev
+        sudo apt-get install libc++abi-dev
+    - name: Build
+      shell: bash
+      run: |
+        cd unity
+        npm i
+        git clone https://github.com/emscripten-core/emsdk.git
+        cd emsdk
+        git pull
+        ./emsdk install latest
+        ./emsdk activate latest
+        source ./emsdk_env.sh
+        cd ../native_src
+        node ../cli make --platform wasm --arch wasm32 --backend quickjs --config ${{ inputs.config }}
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        path: ./unity/Assets/core/upm/Plugins/**/*
+        name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})
+    - name: Clean
+      shell: bash
+      run: rm -rf ./unity/Assets/core/upm/Plugins/**/*

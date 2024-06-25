@@ -18,12 +18,12 @@ program
     .addOption(
         new Option("--platform <platform>", "the target platform")
             .default("")
-            .choices(["win", "osx", "linux", "android", "ios", "ohos"])
+            .choices(["win", "osx", "linux", "android", "ios", "ohos", "wasm"])
     )
     .addOption(
         new Option("--arch <arch>", "the target architecture. 'auto' means build all available archs for the platform and universal binary will be created in osx.")
             .default("auto")
-            .choices(["auto", "ia32", "x64", "arm64", "armv7"])
+            .choices(["auto", "ia32", "x64", "arm64", "armv7", "wasm32"])
     )
     .addOption(
         new Option("--config <ReleaseOrDebug>", "Debug ver or Release ver. In Windows, Debug means DebugWithRelInfo")

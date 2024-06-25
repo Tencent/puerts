@@ -10,8 +10,8 @@ const glob = createRequire(fileURLToPath(import.meta.url))('glob');
 
 interface BuildOptions {
     config: 'Debug' | 'Release' | "RelWithDebInfo",
-    platform: 'osx' | 'win' | 'ios' | 'android' | 'linux' | 'ohos',
-    arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'auto',
+    platform: 'osx' | 'win' | 'ios' | 'android' | 'linux' | 'ohos' | 'wasm',
+    arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'wasm32' | 'auto',
     backend: string
 }
 
@@ -189,6 +189,19 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DCMAKE_BUILD_TYPE=${options.config} ..`).code)
                 cd("..")
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
+
+                return `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`;
+            }
+        }
+    },
+    'wasm': {
+        'wasm32': {
+            outputPluginPath: 'WebGL',
+            hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
+                cd(CMAKE_BUILD_PATH);
+                assert.equal(0, exec(`emcmake cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DCMAKE_BUILD_TYPE=${options.config} ..`).code)
+                assert.equal(0, exec(`emmake make`).code)
+                cd("..")
 
                 return `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`;
             }
