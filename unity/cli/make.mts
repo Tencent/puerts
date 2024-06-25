@@ -203,7 +203,7 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`emmake make`).code)
                 cd("..")
 
-                return `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`;
+                return `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`;
             }
         }
     }
