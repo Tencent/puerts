@@ -297,7 +297,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           rm -rf unity/Assets/core/upm/Plugins
-      - name: BuildWindowsQuickjs
+      - name: BuildLinuxQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -317,8 +317,8 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           rm -rf unity/Assets/core/upm/Plugins
-      - name: BuildWindowsMultBackend
-        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+      - name: BuildLinuxMultBackend
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
