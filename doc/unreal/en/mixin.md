@@ -4,7 +4,7 @@
 
 * 如果A和B都有同样的函数，A的逻辑会替换B的
 
-* 一些事件（比如，ReceiveBeginPlay），如果A有，继续B没有，也会被回调
+* 支持UE的事件（比如：ReceiveBeginPlay）
 
 * 可新增方法或字段
 
@@ -28,10 +28,14 @@
    
    - 支持原生类的BlueprintNativeEvent、BlueprintImplementableEvent方法的mixin
    
+### 注意事项
+
+* 如果要覆盖UE的事件，要注意被mixin的类中有对应的事件（逻辑可以为空），否则在子类调用时可能会有可能调用不到 ts的逻辑，见： https://github.com/Tencent/puerts/issues/1762
+   
    
 ### 基本用法
 
-本文完整例子看[这里](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingMixin.ts)，将Start脚本改为UsingMixin即可运行。
+本文完整例子看[这里](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/UsingMixin.ts)，将Start脚本改为UsingMixin即可运行。
 
 
 #### 加载被mixin的蓝图类
@@ -149,7 +153,7 @@ class DerivedClassMixin extends MixinSuperTestBasePlaceHold {
 
 * objectTakeByNative为false时，需要保持对stub对象的引用，否则stub对象释放后，ue对象回传将会建立一个新对象，原来的数据就丢失了
 
-* objectTakeByNative为false不需要保持stub对象引用，但注意不要期望通过持有stub对象进而引用ue对象，该ue对象应保证被引擎持有
+* objectTakeByNative为true不需要保持stub对象引用，但注意不要期望通过持有stub对象进而引用ue对象，该ue对象应保证被引擎持有
 
 #### 原生类的mixin
 

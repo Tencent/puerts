@@ -4,7 +4,7 @@
 
 * 如果A和B都有同样的函数，A的逻辑会替换B的
 
-* 一些事件（比如，ReceiveBeginPlay），如果A有，继续B没有，也会被回调
+* 支持UE的事件（比如：ReceiveBeginPlay）
 
 * 可新增方法或字段
 
@@ -27,6 +27,10 @@
    - 对象声明周期支持脚本持有和引擎持有
    
    - 支持原生类的BlueprintNativeEvent、BlueprintImplementableEvent方法的mixin
+   
+### 注意事项
+
+* 如果要覆盖UE的事件，要注意被mixin的类中有对应的事件（逻辑可以为空），否则在子类调用时可能会有可能调用不到 ts的逻辑，见： https://github.com/Tencent/puerts/issues/1762
    
    
 ### 基本用法
