@@ -19,7 +19,7 @@ var global = global || (function () { return this; }());
         get : function(classWrapers, name)
         {
             let value = classWrapers[name];
-            if (!value)
+            if (value === undefined)
             {
                 value = loadUEType(name);
                 classWrapers[name] = value;
@@ -81,7 +81,7 @@ var global = global || (function () { return this; }());
     let CPP = new Proxy(cache, {
         get: function(classWrapers, name) {
             let value = classWrapers[name];
-            if (!value)
+            if (value === undefined)
             {
                 value = loadCPPType(name);
                 classWrapers[name] = value;
