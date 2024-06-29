@@ -56,7 +56,7 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
     FString NormalizedPath = PathNormalize(PathIn);
     if (PlatformFile.FileExists(*NormalizedPath))
     {
-        AbsolutePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*NormalizedPath);
+        AbsolutePath = FPaths::ConvertRelativePathToFull(*NormalizedPath);
         Path = NormalizedPath;
         return true;
     }
