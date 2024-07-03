@@ -3412,7 +3412,7 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
-void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments, bool IsScript)
+void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -3470,38 +3470,14 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
         (void) (ArgvAdd->Call(Context, Argv, 2, Args));
     }
 
-    if (IsScript)
+    v8::TryCatch TryCatch(Isolate);
+    v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, ModuleNameOrScript)};
+    __USE(Require.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args));
+    if (TryCatch.HasCaught())
     {
-#if V8_MAJOR_VERSION > 8
-        v8::ScriptOrigin Origin(Isolate, FV8Utils::ToV8String(Isolate, "chunk"));
-#else
-        v8::ScriptOrigin Origin(FV8Utils::ToV8String(Isolate, "chunk"));
-#endif
-        v8::Local<v8::String> Source = FV8Utils::ToV8String(Isolate, ModuleNameOrScript);
-        v8::TryCatch TryCatch(Isolate);
+        Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+    }
 
-        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
-        if (CompiledScript.IsEmpty())
-        {
-            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-            return;
-        }
-        (void) (CompiledScript.ToLocalChecked()->Run(Context));
-        if (TryCatch.HasCaught())
-        {
-            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-        }
-    }
-    else
-    {
-        v8::TryCatch TryCatch(Isolate);
-        v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, ModuleNameOrScript)};
-        __USE(Require.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args));
-        if (TryCatch.HasCaught())
-        {
-            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-        }
-    }
     Started = true;
 }
 
