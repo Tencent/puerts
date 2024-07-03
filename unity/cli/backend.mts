@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 const download = createRequire(fileURLToPath(import.meta.url))('download');
 
 export default async function downloadBackend(cwd: string, name: string, url: string = "") {
-    if (!existsSync(join(cwd, "CMakeLists.txt")) || !existsSync(join(cwd, "cmake"))) {
+    if (!existsSync(join(cwd, "CMakeLists.txt"))) {
         throw new Error("invalid puerts native_src directory: " + cwd);
     }
     const backendDir = join(cwd, '../native_src/.backends');

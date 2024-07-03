@@ -217,7 +217,16 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         console.error("[Puer] Cannot find CMakeLists.txt");
         process.exit();
     }
-    const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
+    const cmakeListFile = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8');
+    let cmakeAddedLibraryName: string;
+    let match = cmakeListFile.match(/add_library\((\w*)/);
+    let isExecutable = false;
+    if (match) {
+        cmakeAddedLibraryName = match[1];
+    } else {
+        cmakeAddedLibraryName = cmakeListFile.match(/add_executable\((\w*)/)[1];
+        isExecutable = true;
+    }
 
     const checkCMake = exec("cmake --version", { silent: true });
     if (checkCMake.stderr && !checkCMake.stdout) {
@@ -264,6 +273,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         cmakeAddedLibraryName,
         [definitionD, linkD, incD].map((r, index) => r ? DArgsName[index] + '"' + r + '"' : null).filter(t => t).join(' ')
     );
+    if (isExecutable) return {};
     if (!(outputFile instanceof Array)) outputFile = [outputFile];
     const copyConfig = (BackendConfig['copy-libraries'][options.platform]?.[options.arch] || [])
         .map((pathToBackend: string) => join(cwd, '../native_src/.backends', options.backend, pathToBackend))
