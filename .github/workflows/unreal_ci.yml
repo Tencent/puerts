@@ -121,7 +121,7 @@ jobs:
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xfz temp.tgz
         mkdir output
-        sudo xcode-select -s /Applications/Xcode_12.5.1.app
+        sudo xcode-select -s /Applications/Xcode_13.1.app
     - name: Build
       shell: bash
       run: |
