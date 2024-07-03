@@ -85,9 +85,6 @@ var global = global || (function () { return this; }());
                     return;
                 }
                 let m = puerts.getModuleByUrl(url);
-                if (contextInfo) {
-                    await sendCommand("Runtime.compileScript", {expression:source, sourceURL:"", persistScript:false, executionContextId:contextInfo.id});
-                } 
                 puerts.emit('HMR.prepare', moduleName, m, url);
                 let res = await sendCommand("Debugger.setScriptSource", {scriptId:"" + scriptId,scriptSource:source});
                 puerts.emit('HMR.finish', moduleName, m, url);
