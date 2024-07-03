@@ -112,6 +112,9 @@ jobs:
             change_backend: "sed -i '' 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '12.5.1'
     - name: Prepare
       shell: bash
       run: |
@@ -121,7 +124,7 @@ jobs:
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xfz temp.tgz
         mkdir output
-        sudo xcode-select -s /Applications/Xcode_13.1.app
+        sudo xcode-select -s /Applications/Xcode_12.5.1.app
     - name: Build
       shell: bash
       run: |
