@@ -100,7 +100,7 @@ jobs:
   mac_ios_ci:
     needs: urls
     name: Mac and IOS
-    runs-on: macos-11
+    runs-on: macos-12
     strategy:
       matrix:
         cmdinfo:

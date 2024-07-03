@@ -120,7 +120,7 @@ jobs:
           backend: mult
 
   ios:
-    runs-on: macos-11
+    runs-on: macos-12
 
     steps:
       - uses: actions/checkout@v3
@@ -171,7 +171,7 @@ jobs:
           backend: mult
 
   osx:
-    runs-on: macos-11
+    runs-on: macos-12
 
     steps:
       - uses: actions/checkout@v3
