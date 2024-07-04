@@ -145,14 +145,14 @@ var global = global || (function () { return this; }());
             localModuleCache[moduleName] = m;
             moduleCache[key] = m;
             let sid = addModule(m);
-            let script = loadModule(fullPath);
+            let isESM = outerIsESM === true || fullPath.endsWith(".mjs") || fullPath.endsWith(".mbc");
+            if (fullPath.endsWith(".cjs") || fullPath.endsWith(".cbc")) isESM = false;
+            let script = isESM ? undefined : loadModule(fullPath);
             let bytecode = undefined;
             if (fullPath.endsWith(".mbc") || fullPath.endsWith(".cbc")) {
                 bytecode = script;
                 script = generateEmptyCode(getSourceLengthFromBytecode(bytecode));
             }
-            let isESM = outerIsESM === true || fullPath.endsWith(".mjs") || fullPath.endsWith(".mbc");
-            if (fullPath.endsWith(".cjs") || fullPath.endsWith(".cbc")) isESM = false;
             try {
                 if (fullPath.endsWith(".json")) {
                     let packageConfigure = JSON.parse(script);

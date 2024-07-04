@@ -3835,7 +3835,6 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(EArgString, EArgString);
 #ifndef WITH_QUICKJS
     bool IsESM = Info[2]->BooleanValue(Isolate);
 
