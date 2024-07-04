@@ -557,6 +557,10 @@ private:
 
     v8::Global<v8::Function> GenListApply;
 
+#if defined(WITH_V8_BYTECODE)
+    v8::Global<v8::Function> GenEmptyCode;
+#endif
+
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
     TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;

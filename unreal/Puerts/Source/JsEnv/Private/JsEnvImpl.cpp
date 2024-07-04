@@ -650,6 +650,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     GenListApply.Reset(
         Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__genListApply")).ToLocalChecked().As<v8::Function>());
+#if defined(WITH_V8_BYTECODE)
+    GenEmptyCode.Reset(
+        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "generateEmptyCode")).ToLocalChecked().As<v8::Function>());
+#endif
 
     DelegateProxiesCheckerHandler =
         FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
@@ -875,6 +879,9 @@ FJsEnvImpl::~FJsEnvImpl()
 #endif
         RemoveListItem.Reset();
         GenListApply.Reset();
+#if defined(WITH_V8_BYTECODE)
+        GenEmptyCode.Reset();
+#endif
     }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -3653,8 +3660,39 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
         return v8::MaybeLocal<v8::Module>();
     }
 
-    FString Script;
-    FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+    v8::Local<v8::String> Source;
+
+    v8::ScriptCompiler::CachedData* CachedCode = nullptr;
+    v8::ScriptCompiler::CompileOptions Options = v8::ScriptCompiler::CompileOptions::kNoCompileOptions;
+#if defined(WITH_V8_BYTECODE)
+    if (FileName.EndsWith(TEXT(".mbc")))
+    {
+        FCodeCacheHeader* CodeCacheHeader = (FCodeCacheHeader*) Data.GetData();
+        if (CodeCacheHeader->FlagHash != Expect_FlagHash)
+        {
+            UE_LOG(Puerts, Warning, TEXT("FlagHash not match expect %u, but got %u"), Expect_FlagHash, CodeCacheHeader->FlagHash);
+            CodeCacheHeader->FlagHash = Expect_FlagHash;
+        }
+        static constexpr uint32_t kModuleFlagMask = (1 << 31);
+        uint32_t Len = CodeCacheHeader->SourceHash & ~kModuleFlagMask;
+        v8::Local<v8::Value> Args[] = {v8::Integer::New(Isolate, Len)};
+        v8::Local<v8::Value> Ret;
+        if (!GenEmptyCode.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args).ToLocal(&Ret) || !Ret->IsString())
+        {
+            FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("generate code for bytecode [%s] fail!"), *FileName));
+            return v8::MaybeLocal<v8::Module>();
+        }
+        CachedCode = new v8::ScriptCompiler::CachedData(Data.GetData(), Data.Num());    // will delete by ~Source
+        Options = v8::ScriptCompiler::CompileOptions::kConsumeCodeCache;
+        Source = Ret.As<v8::String>();
+    }
+    else
+#endif
+    {
+        FString Script;
+        FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+        Source = FV8Utils::ToV8String(Isolate, Script);
+    }
 
 #if V8_MAJOR_VERSION > 8
     v8::ScriptOrigin Origin(
@@ -3664,10 +3702,10 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
         v8::Local<v8::Boolean>(), v8::Local<v8::Integer>(), v8::Local<v8::Value>(), v8::Local<v8::Boolean>(),
         v8::Local<v8::Boolean>(), v8::True(Isolate));
 #endif
-    v8::ScriptCompiler::Source Source(FV8Utils::ToV8String(Isolate, Script), Origin);
+    v8::ScriptCompiler::Source ScriptSource(Source, Origin, CachedCode);
 
     v8::Local<v8::Module> Module;
-    if (!v8::ScriptCompiler::CompileModule(Isolate, &Source).ToLocal(&Module))
+    if (!v8::ScriptCompiler::CompileModule(Isolate, &ScriptSource, Options).ToLocal(&Module))
     {
         return v8::MaybeLocal<v8::Module>();
     }

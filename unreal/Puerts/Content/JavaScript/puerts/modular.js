@@ -245,4 +245,6 @@ var global = global || (function () { return this; }());
     puerts.forceReload = forceReload;
     
     puerts.getModuleByUrl = getModuleByUrl;
+    
+    puerts.generateEmptyCode = generateEmptyCode;
 }(global));
