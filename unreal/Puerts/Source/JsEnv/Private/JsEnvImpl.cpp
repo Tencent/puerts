@@ -3892,10 +3892,9 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
 #else
     v8::ScriptOrigin Origin(Name);
 #endif
-
-#if defined(WITH_V8_BYTECODE)
     v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
 
+#if defined(WITH_V8_BYTECODE)
     v8::ScriptCompiler::CachedData* CachedCode = nullptr;
     uint8_t* Cache = nullptr;
     v8::ScriptCompiler::CompileOptions Options = v8::ScriptCompiler::CompileOptions::kNoCompileOptions;
