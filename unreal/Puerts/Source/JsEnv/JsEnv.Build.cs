@@ -46,6 +46,8 @@ public class JsEnv : ModuleRules
     private bool SingleThreaded = false;
     
     public static bool WithSourceControl = false;
+
+    public bool WithByteCode = true;
     
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
@@ -366,6 +368,11 @@ public class JsEnv : ModuleRules
         if (SingleThreaded)
         {
             PrivateDefinitions.Add("USING_SINGLE_THREAD_PLATFORM");
+        }
+
+        if (WithByteCode)
+        {
+            PrivateDefinitions.Add("WITH_V8_BYTECODE");
         }
 
         string v8LibSuffix = "";

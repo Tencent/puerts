@@ -746,6 +746,9 @@ private:
                 .Check();
         }
     };
+#if defined(WITH_V8_BYTECODE)
+    uint32_t Expect_FlagHash = 0;
+#endif
 };
 
 }    // namespace PUERTS_NAMESPACE
