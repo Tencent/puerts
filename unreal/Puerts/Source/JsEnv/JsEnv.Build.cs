@@ -47,7 +47,7 @@ public class JsEnv : ModuleRules
     
     public static bool WithSourceControl = false;
 
-    public bool WithByteCode = true;
+    public bool WithByteCode = false;
     
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
