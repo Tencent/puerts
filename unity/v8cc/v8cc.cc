@@ -158,7 +158,11 @@ int main(int argc, char* argv[]) {
     // Dispose the isolate and tear down V8.
     isolate->Dispose();
     v8::V8::Dispose();
+#if V8_MAJOR_VERSION > 9
+    v8::V8::DisposePlatform();
+#else
     v8::V8::ShutdownPlatform();
+#endif
     delete create_params.array_buffer_allocator;
     // --- end get code cache ---
     
