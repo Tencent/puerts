@@ -426,6 +426,12 @@ void FStructWrapper::StaticClass(const v8::FunctionCallbackInfo<v8::Value>& Info
 
     FStructWrapper* This = reinterpret_cast<FStructWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
 
+    if (!This->Struct.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        return;
+    }
+
     auto Result =
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, This->Struct->GetClass(), This->Struct.Get());
     Info.GetReturnValue().Set(Result);
@@ -440,6 +446,12 @@ void FStructWrapper::Find(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Context::Scope ContextScope(Context);
 
     FStructWrapper* This = reinterpret_cast<FStructWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+
+    if (!This->Struct.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        return;
+    }
 
     UClass* Class = Cast<UClass>(This->Struct);
 
@@ -486,6 +498,12 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     FStructWrapper* This = reinterpret_cast<FStructWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
 
+    if (!This->Struct.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        return;
+    }
+
     UClass* Class = Cast<UClass>(This->Struct);
 
     if (Class && Info.Length() > 0 && Info[0]->IsString())
@@ -523,6 +541,11 @@ void FScriptStructWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Context::Scope ContextScope(Context);
 
     FScriptStructWrapper* This = reinterpret_cast<FScriptStructWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    if (!This->Struct.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        return;
+    }
     This->New(Isolate, Context, Info);
 }
 
@@ -612,6 +635,11 @@ void FClassWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Context::Scope ContextScope(Context);
 
     FClassWrapper* This = reinterpret_cast<FClassWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    if (!This->Struct.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        return;
+    }
     This->New(Isolate, Context, Info);
 }
 
