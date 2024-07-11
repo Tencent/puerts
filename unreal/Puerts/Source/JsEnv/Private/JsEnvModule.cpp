@@ -184,6 +184,26 @@ void FJsEnvModule::StartupModule()
     platform_ = v8::platform::NewDefaultPlatform();
 #endif
 #endif
+
+#if PLATFORM_IOS
+    v8::V8::SetFlagsFromString("--jitless --no-expose-wasm");
+#endif
+
+#ifdef WITH_V8_FAST_CALL
+    v8::V8::SetFlagsFromString("--turbo-fast-api-calls");
+#endif
+
+#if defined(USING_SINGLE_THREAD_PLATFORM)
+    v8::V8::SetFlagsFromString("--single-threaded");
+#endif
+
+#if defined(WITH_V8_BYTECODE)
+    v8::V8::SetFlagsFromString("--no-lazy --no-flush-bytecode --no-enable_lazy_source_positions");
+#endif
+
+    // v8::V8::SetFlagsFromString("--expose-gc");
+    // v8::V8::SetFlagsFromString("--no-freeze-flags-after-init");
+
     v8::V8::InitializePlatform(platform_.get());
     v8::V8::Initialize();
 

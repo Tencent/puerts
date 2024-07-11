@@ -338,25 +338,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
-#if PLATFORM_IOS
-    v8::V8::SetFlagsFromString("--jitless --no-expose-wasm");
-#endif
-
-#ifdef WITH_V8_FAST_CALL
-    v8::V8::SetFlagsFromString("--turbo-fast-api-calls");
-#endif
-
-#if defined(USING_SINGLE_THREAD_PLATFORM)
-    v8::V8::SetFlagsFromString("--single-threaded");
-#endif
-
-#if defined(WITH_V8_BYTECODE)
-    v8::V8::SetFlagsFromString("--no-lazy --no-flush-bytecode --no-enable_lazy_source_positions");
-#endif
-
-    // char GCFlags[] = "--expose-gc";
-    // v8::V8::SetFlagsFromString(GCFlags, sizeof(GCFlags));
-
     if (!InFlags.IsEmpty())
     {
 #if !defined(WITH_NODEJS) && !defined(WITH_QUICKJS)
