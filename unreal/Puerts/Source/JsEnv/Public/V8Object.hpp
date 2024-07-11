@@ -88,13 +88,20 @@ public:
 
     ~Object()
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         if (JsEnvLifeCycleTracker.expired())
         {
-#ifdef THREAD_SAFE
-            v8::Locker Locker(Isolate);
-#endif
+#if V8_MAJOR_VERSION < 11
             GObject.Empty();
             GContext.Empty();
+#endif
+        }
+        else
+        {
+            GObject.Reset();
+            GContext.Reset();
         }
     }
 
@@ -191,8 +198,13 @@ public:
     }
 
     v8::Isolate* Isolate;
+#if V8_MAJOR_VERSION >= 11
+    v8::Persistent<v8::Context> GContext;
+    v8::Persistent<v8::Object> GObject;
+#else
     v8::Global<v8::Context> GContext;
     v8::Global<v8::Object> GObject;
+#endif
 
     std::weak_ptr<int> JsEnvLifeCycleTracker;
 

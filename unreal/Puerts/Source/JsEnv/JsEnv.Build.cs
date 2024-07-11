@@ -5,6 +5,7 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+using System.Collections.Generic;
 using UnrealBuildTool;
 using System.IO;
 using System.Reflection;
@@ -16,12 +17,13 @@ public class JsEnv : ModuleRules
         VDeprecated, // for 4.24 or blow only
         V8_4_371_19,
         V9_4_146_24,
-        V10_6_194
+        V10_6_194,
+        V11_8_172
     }
 
     private SupportedV8Versions UseV8Version = 
 #if UE_4_25_OR_LATER
-        SupportedV8Versions.V8_4_371_19;
+        SupportedV8Versions.V9_4_146_24;
 #else
         SupportedV8Versions.VDeprecated;
 #endif
@@ -346,13 +348,14 @@ public class JsEnv : ModuleRules
         PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "v8.dll.lib"));
         PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "v8_libplatform.dll.lib"));
 
-        AddRuntimeDependencies(new string[]
-        {
+        List<string> deps = new List<string> {
             "v8.dll",
             "v8_libplatform.dll",
-            "v8_libbase.dll",
-            "zlib.dll"
-        }, V8LibraryPath, false);
+            "v8_libbase.dll"
+        };
+        deps.Add(UseV8Version == SupportedV8Versions.V11_8_172 ? "third_party_zlib.dll" : "zlib.dll");
+
+        AddRuntimeDependencies(deps.ToArray(), V8LibraryPath, false);
     }
     
     void MacDylib(string LibraryPath)
@@ -391,6 +394,10 @@ public class JsEnv : ModuleRules
         else if (UseV8Version == SupportedV8Versions.V10_6_194)
         {
             v8LibSuffix = "_10.6.194";
+        }
+        else if (UseV8Version == SupportedV8Versions.V11_8_172)
+        {
+            v8LibSuffix = "_11.8.172";
         }
         //Add header
         string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
