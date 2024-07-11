@@ -364,6 +364,10 @@ public class JsEnv : ModuleRules
         PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "libv8_libplatform.dylib"));
         PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "libv8_libbase.dylib"));
         PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "libchrome_zlib.dylib"));
+        if (UseV8Version == SupportedV8Versions.V11_8_172)
+        {
+            PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "libthird_party_abseil-cpp_absl.dylib"));
+        }
     }
 
     void ThirdParty(ReadOnlyTargetRules Target)
