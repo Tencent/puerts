@@ -9,7 +9,7 @@ cmake_policy(SET CMP0091 NEW)
 
 project(V8CC)
 
-if("${JS_ENGINE}" MATCHES "^v8_10.6.194")
+if(("${JS_ENGINE}" MATCHES "^v8_10.6.194") OR ("${JS_ENGINE}" MATCHES "^v8_11.8.172"))
     set(CMAKE_CXX_STANDARD 17)
 else ()
     set(CMAKE_CXX_STANDARD 14)
