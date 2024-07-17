@@ -198,7 +198,7 @@ void FJsEnvModule::StartupModule()
 #endif
 
 #if defined(WITH_V8_BYTECODE)
-    v8::V8::SetFlagsFromString("--no-lazy --no-flush-bytecode --no-enable_lazy_source_positions");
+    v8::V8::SetFlagsFromString("--no-lazy --no-flush-bytecode --no-enable-lazy-source-positions");
 #endif
 
     // v8::V8::SetFlagsFromString("--expose-gc");
