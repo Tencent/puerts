@@ -22,6 +22,14 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+    - name: Install NDK
+      shell: bash
+      run: |
+        cd ~
+        rm -rf ~/android-ndk-r21b
+        wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
+        sudo apt install unzip -y
+        unzip -q NDK
     - name: BuildAndroid
       uses: ./.github/workflows/composites/unity-build-plugins/android/
       with:
