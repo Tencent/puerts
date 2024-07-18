@@ -345,8 +345,7 @@ private:
     {
         static typename API::ValueType Convert(typename API::ContextType context, T ret)
         {
-            return DecayTypeConverter<typename std::remove_reference<T>::type>::toScript(
-                context, std::forward<typename std::remove_reference<T>::type>(ret));
+            return DecayTypeConverter<typename std::remove_reference<T>::type>::toScript(context, std::forward<T>(ret));
         }
     };
 
