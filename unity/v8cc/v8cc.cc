@@ -52,7 +52,7 @@ struct CodeCacheHeader {
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <filename> [--module] [--no-cjs-wrap] [--verbose] [v8_flag1] [v8_flag2] ..." << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <filename> [--module] [--no-cjs-wrap] [--verbose] [--url=<string>] [--ln=<number>] [--col=<number>] [v8_flag1] [v8_flag2] ..." << std::endl;
         return 1;
     }
 
@@ -60,7 +60,10 @@ int main(int argc, char* argv[]) {
     bool is_module = endsWith(filename, ".mjs");
     bool no_cjs_wrap = false;
     bool verbose = false;
-    std::string flags = "--no-lazy --no-flush-bytecode --no-enable_lazy_source_positions";
+    std::string flags = "--no-lazy --no-flush-bytecode --no-enable-lazy-source-positions";
+    std::string url = filename;
+    int ln = 0;
+    int col = 0;
     if (argc > 2) {
         for (int i = 2; i < argc; ++i) {
             std::string arg = argv[i];
@@ -74,6 +77,18 @@ int main(int argc, char* argv[]) {
             }
             if (arg == "--verbose") {
                 verbose = true;
+                continue;
+            }
+            if (arg.rfind("--url=", 0) == 0) {
+                url = arg.substr(6);
+                continue;
+            }
+            if (arg.rfind("--ln=", 0) == 0) {
+                ln = std::stoi(arg.substr(5));
+                continue;
+            }
+            if (arg.rfind("--col=", 0) == 0) {
+                col = std::stoi(arg.substr(6));
                 continue;
             }
             flags += (" " + arg);
@@ -113,7 +128,7 @@ int main(int argc, char* argv[]) {
         v8::Local<v8::Context> context = v8::Context::New(isolate);
         v8::Context::Scope context_scope(context);
         v8::TryCatch try_catch(isolate);
-        auto script_url = v8::String::NewFromUtf8(isolate, filename.c_str()).ToLocalChecked();
+        auto script_url = v8::String::NewFromUtf8(isolate, url.c_str()).ToLocalChecked();
         if (!is_module && !no_cjs_wrap) {
             fileContent = "(function (exports, require, module, __filename, __dirname) { " + fileContent + "\n});";
         }
@@ -122,9 +137,9 @@ int main(int argc, char* argv[]) {
         source_length = source->Length();
         if (is_module) {
 #if V8_MAJOR_VERSION > 8
-            v8::ScriptOrigin origin(isolate, script_url, 0, 0, true, -1, v8::Local<v8::Value>(), false, false, true);
+            v8::ScriptOrigin origin(isolate, script_url, ln, col, true, -1, v8::Local<v8::Value>(), false, false, true);
 #else
-            v8::ScriptOrigin origin(script_url, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0), v8::True(isolate),
+            v8::ScriptOrigin origin(script_url, v8::Integer::New(isolate, ln), v8::Integer::New(isolate, col), v8::True(isolate),
                 v8::Local<v8::Integer>(), v8::Local<v8::Value>(), v8::False(isolate), v8::False(isolate), v8::True(isolate));
 #endif
             auto module = CompileString<v8::Module>(context, source, origin);
@@ -134,9 +149,9 @@ int main(int argc, char* argv[]) {
             }
         } else {
 #if V8_MAJOR_VERSION > 8
-            v8::ScriptOrigin origin(isolate, script_url);
+            v8::ScriptOrigin origin(isolate, script_url, ln, col);
 #else
-            v8::ScriptOrigin origin(script_url);
+            v8::ScriptOrigin origin(script_url, v8::Integer::New(isolate, ln), v8::Integer::New(isolate, col));
 #endif
             
             auto script = CompileString<v8::Script>(context, source, origin);
@@ -190,6 +205,9 @@ int main(int argc, char* argv[]) {
         //std::cout << fileContent << std::endl;
         std::cout << "input : " << filename << ", source length: " << source_length << std::endl;
         std::cout << "output: " << output_filename << ", bytecode length: " << cached_data->length << std::endl;
+        std::cout << "url: " << url << std::endl;
+        std::cout << "line offset: " << ln << std::endl;
+        std::cout << "column offset: " << col << std::endl;
         
         const CodeCacheHeader *cch = (const CodeCacheHeader *)cached_data->data;
         std::cout << "MagicNumber : " << cch->MagicNumber << std::endl;
