@@ -92,7 +92,7 @@ void FStructWrapper::InitTemplateProperties(
             {
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
-                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                    PropertyAttribute = (v8::PropertyAttribute) (PropertyAttribute | v8::ReadOnly);
                 auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
                                                : v8::Local<v8::Value>();
 
@@ -113,7 +113,7 @@ void FStructWrapper::InitTemplateProperties(
             {
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
-                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                    PropertyAttribute = (v8::PropertyAttribute) (PropertyAttribute | v8::ReadOnly);
                 auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
                                                : v8::Local<v8::Value>();
 
@@ -253,14 +253,13 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
 #if PUERTS_WITH_EDITOR_SUFFIX
             // 这里同时绑定带Suffix和不带Suffix的后缀是为了兼容现有的一些js写的代码(PuertsEditor)
             v8::Local<v8::String> AdditionalKey{};
-            if(puerts::IsEditorOnlyUFunction(Function))
+            if (puerts::IsEditorOnlyUFunction(Function))
             {
                 FString SuffixFuncName = FuncName + EditorOnlyPropertySuffix.GetData();
                 AdditionalKey = FV8Utils::InternalString(Isolate, SuffixFuncName);
             }
 #endif
             // 这里同时绑定带Suffix和不带Suffix的后缀是为了兼容现有的一些js写的代码(PuertsEditor)
-                
 
             if (Function->HasAnyFunctionFlags(FUNC_Static))
             {
@@ -270,7 +269,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                 {
                     Result->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
 #if PUERTS_WITH_EDITOR_SUFFIX
-                    if(!AdditionalKey.IsEmpty())
+                    if (!AdditionalKey.IsEmpty())
                     {
                         Result->Set(AdditionalKey, FunctionTranslator->ToFunctionTemplate(Isolate));
                     }
@@ -285,7 +284,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                 {
                     Result->PrototypeTemplate()->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
 #if PUERTS_WITH_EDITOR_SUFFIX
-                    if(!AdditionalKey.IsEmpty())
+                    if (!AdditionalKey.IsEmpty())
                     {
                         Result->PrototypeTemplate()->Set(AdditionalKey, FunctionTranslator->ToFunctionTemplate(Isolate));
                     }

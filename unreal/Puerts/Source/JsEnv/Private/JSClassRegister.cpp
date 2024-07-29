@@ -301,10 +301,19 @@ const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
 bool IsEditorOnlyUFunction(const UFunction* Func)
 {
     // a simplified version of IsEditorOnlyObject(), sadly it's a EditorOnly Function so I have to reimplement a toy one
-    if (!Func) { return false; }
-    if (Func->HasAnyFunctionFlags(FUNC_EditorOnly)) { return true; }
+    if (!Func)
+    {
+        return false;
+    }
+    if (Func->HasAnyFunctionFlags(FUNC_EditorOnly))
+    {
+        return true;
+    }
     auto InObject = Func;
-    if (InObject->HasAnyMarks(OBJECTMARK_EditorOnly) || InObject->IsEditorOnly()) { return true; }
+    if (InObject->HasAnyMarks(OBJECTMARK_EditorOnly) || InObject->IsEditorOnly())
+    {
+        return true;
+    }
 
     auto Package = Func->GetPackage();
     if (Package && Package->HasAnyPackageFlags(PKG_EditorOnly))
@@ -314,7 +323,7 @@ bool IsEditorOnlyUFunction(const UFunction* Func)
 
     return false;
 }
-    
+
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
 {
     GetJSClassRegister()->RegisterAddon(Name, RegisterFunc);

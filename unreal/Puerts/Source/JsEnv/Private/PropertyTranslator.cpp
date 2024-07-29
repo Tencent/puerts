@@ -164,7 +164,7 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
         {
             auto DelegateGetterTemplate = v8::FunctionTemplate::New(Isolate, DelegateGetter, v8::External::New(Isolate, this));
             Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, Property->GetName()),
-                DelegateGetterTemplate, v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
+                DelegateGetterTemplate, v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute) (v8::DontDelete | v8::ReadOnly));
         }
     }
     else
@@ -176,22 +176,20 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         FString PropertyName = OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-                                                                                                    Property->GetAuthoredName()
+                                                                                     Property->GetAuthoredName()
 #else
-                                                                                                    Property->GetDisplayNameText()
-                                                                                                        .ToString()
+                                                                                     Property->GetDisplayNameText().ToString()
 #endif
-                                                                                                    : Property->GetName();
+                                                                                     : Property->GetName();
 #if PUERTS_WITH_EDITOR_SUFFIX
-        if(Property->IsEditorOnlyProperty())
+        if (Property->IsEditorOnlyProperty())
         {
             PropertyName += EditorOnlyPropertySuffix;
         }
 #endif
-        
+
         Template->PrototypeTemplate()->SetAccessorProperty(
-            FV8Utils::InternalString(Isolate, PropertyName),
-            GetterTemplate, SetterTemplate, v8::DontDelete);
+            FV8Utils::InternalString(Isolate, PropertyName), GetterTemplate, SetterTemplate, v8::DontDelete);
 #else
         Template->PrototypeTemplate()->SetAccessorProperty(
             FV8Utils::InternalString(Isolate, Property->GetName()), GetterTemplate, SetterTemplate, v8::DontDelete);

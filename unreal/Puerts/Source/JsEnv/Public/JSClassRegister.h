@@ -103,7 +103,7 @@ AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
-    
+
 JSENV_API bool IsEditorOnlyUFunction(const UFunction* Func);
 
 #endif
