@@ -248,21 +248,49 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                 continue;
             }
 
-            auto Key = FV8Utils::InternalString(Isolate, Function->GetName());
+            FString FuncName = Function->GetName();
+            auto Key = FV8Utils::InternalString(Isolate, FuncName);
+#if PUERTS_WITH_EDITOR_SUFFIX
+            // 这里同时绑定带Suffix和不带Suffix的后缀是为了兼容现有的一些js写的代码(PuertsEditor)
+            v8::Local<v8::String> AdditionalKey{};
+            if(puerts::IsEditorOnlyUFunction(Function))
+            {
+                FString SuffixFuncName = FuncName + EditorOnlyPropertySuffix.GetData();
+                AdditionalKey = FV8Utils::InternalString(Isolate, SuffixFuncName);
+            }
+#endif
+            // 这里同时绑定带Suffix和不带Suffix的后缀是为了兼容现有的一些js写的代码(PuertsEditor)
+                
 
             if (Function->HasAnyFunctionFlags(FUNC_Static))
             {
                 auto FunctionTranslator = GetFunctionTranslator(Function);
                 AddedFunctions.Add(Function->GetFName());
                 if (!IsReuseTemplate)
+                {
                     Result->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
+#if PUERTS_WITH_EDITOR_SUFFIX
+                    if(!AdditionalKey.IsEmpty())
+                    {
+                        Result->Set(AdditionalKey, FunctionTranslator->ToFunctionTemplate(Isolate));
+                    }
+#endif
+                }
             }
             else
             {
                 auto FunctionTranslator = GetMethodTranslator(Function, false);
                 AddedMethods.Add(Function->GetFName());
                 if (!IsReuseTemplate)
+                {
                     Result->PrototypeTemplate()->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
+#if PUERTS_WITH_EDITOR_SUFFIX
+                    if(!AdditionalKey.IsEmpty())
+                    {
+                        Result->PrototypeTemplate()->Set(AdditionalKey, FunctionTranslator->ToFunctionTemplate(Isolate));
+                    }
+#endif
+                }
             }
         }
 

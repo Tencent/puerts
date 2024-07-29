@@ -174,15 +174,23 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
         auto GetterTemplate = v8::FunctionTemplate::New(Isolate, Getter, Self);
         auto SetterTemplate = v8::FunctionTemplate::New(Isolate, Setter, Self);
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        Template->PrototypeTemplate()->SetAccessorProperty(
-            FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
+        FString PropertyName = OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
                                                                                                     Property->GetAuthoredName()
 #else
                                                                                                     Property->GetDisplayNameText()
                                                                                                         .ToString()
 #endif
-                                                                                                    : Property->GetName()),
+                                                                                                    : Property->GetName();
+#if PUERTS_WITH_EDITOR_SUFFIX
+        if(Property->IsEditorOnlyProperty())
+        {
+            PropertyName += EditorOnlyPropertySuffix;
+        }
+#endif
+        
+        Template->PrototypeTemplate()->SetAccessorProperty(
+            FV8Utils::InternalString(Isolate, PropertyName),
             GetterTemplate, SetterTemplate, v8::DontDelete);
 #else
         Template->PrototypeTemplate()->SetAccessorProperty(
