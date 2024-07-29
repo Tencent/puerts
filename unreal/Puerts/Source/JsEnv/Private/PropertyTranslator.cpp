@@ -164,7 +164,7 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
         {
             auto DelegateGetterTemplate = v8::FunctionTemplate::New(Isolate, DelegateGetter, v8::External::New(Isolate, this));
             Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, Property->GetName()),
-                DelegateGetterTemplate, v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute) (v8::DontDelete | v8::ReadOnly));
+                DelegateGetterTemplate, v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
         }
     }
     else

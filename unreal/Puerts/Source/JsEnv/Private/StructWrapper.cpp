@@ -92,7 +92,7 @@ void FStructWrapper::InitTemplateProperties(
             {
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
-                    PropertyAttribute = (v8::PropertyAttribute) (PropertyAttribute | v8::ReadOnly);
+                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
                 auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
                                                : v8::Local<v8::Value>();
 
@@ -113,7 +113,7 @@ void FStructWrapper::InitTemplateProperties(
             {
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
-                    PropertyAttribute = (v8::PropertyAttribute) (PropertyAttribute | v8::ReadOnly);
+                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
                 auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
                                                : v8::Local<v8::Value>();
 
@@ -164,7 +164,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
     auto Result = CachedFunctionTemplate.Get(Isolate);
 #else
     auto Result = v8::FunctionTemplate::New(
-        Isolate, Construtor, v8::External::New(Isolate, this));    //和class的区别就这里传的函数不一样，后续尽量重用
+        Isolate, Construtor, v8::External::New(Isolate, this));    // 和class的区别就这里传的函数不一样，后续尽量重用
     Result->InstanceTemplate()->SetInternalFieldCount(4);
 #endif
 
