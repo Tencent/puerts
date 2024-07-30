@@ -30,7 +30,9 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include "TypeInfo.hpp"
 
+#if USING_IN_UNREAL_ENGINE
 static const FAnsiStringView EditorOnlyPropertySuffix = "_EditorOnly";
+#endif
 
 namespace PUERTS_NAMESPACE
 {
