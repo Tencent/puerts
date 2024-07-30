@@ -43,6 +43,8 @@ public class JsEnv : ModuleRules
     private bool ThreadSafe = false;
 
     private bool FTextAsString = true;
+    
+    private bool bEditorSuffix = true;
 
     // v8 9.4+
     private bool SingleThreaded = false;
@@ -59,6 +61,11 @@ public class JsEnv : ModuleRules
         PublicDefinitions.Add("TS_BLUEPRINT_PATH=\"/Blueprints/TypeScript/\"");
         
         PublicDefinitions.Add(ThreadSafe ? "THREAD_SAFE" : "NOT_THREAD_SAFE");
+
+        if (bEditorSuffix)
+        {
+            PublicDefinitions.Add("PUERTS_WITH_EDITOR_SUFFIX");
+        }
 
         ShadowVariableWarningLevel = WarningLevel.Warning;
 
