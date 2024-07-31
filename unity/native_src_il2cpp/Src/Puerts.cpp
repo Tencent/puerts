@@ -708,7 +708,7 @@ struct JSEnv
         std::string Flags = "--no-harmony-top-level-await --stack_size=856";
 #endif
         Flags += " --expose-gc";
-#if PLATFORM_IOS
+#if defined(PLATFORM_IOS) || defined(PLATFORM_OHOS)
         Flags += " --jitless --no-expose-wasm";
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));

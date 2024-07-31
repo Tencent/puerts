@@ -107,7 +107,7 @@ namespace PUERTS_NAMESPACE
         Flags += " --jitless --no-expose-wasm";
 #endif
 #endif
-#if PLATFORM_IOS
+#if defined(PLATFORM_IOS) || defined(PLATFORM_OHOS)
         Flags += " --jitless --no-expose-wasm";
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));

@@ -191,6 +191,20 @@ elseif ( ANDROID )
             COMMENT "combine wee8."
         )
     endif()
+elseif ( OHOS )
+    set(BACKEND_LIB_NAMES "-Wl,--whole-archive$<SEMICOLON>${BACKEND_LIB_NAMES}$<SEMICOLON>-Wl,--no-whole-archive")
+    list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_OHOS)
+    if ( OHOS_ARCH STREQUAL "armeabi-v7a")
+        # definition
+        list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_OHOS_ARM)
+
+    elseif ( OHOS_ARCH STREQUAL "arm64-v8a")
+        # definition
+        list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_OHOS_ARM64)
+    else ()
+        # definition
+        list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_OHOS_x64)
+    endif ()
 elseif ( APPLE )
 
     if ( IOS )
