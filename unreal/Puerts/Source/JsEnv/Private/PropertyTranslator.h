@@ -155,12 +155,6 @@ public:
 #endif
     };
 
-#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
-    TWeakObjectPtr<PropertyMacro> PropertyWeakPtr;
-#else
-    TWeakFieldPtr<PropertyMacro> PropertyWeakPtr;
-#endif
-
     bool OwnerIsClass;
 
     bool NeedLinkOuter;
@@ -181,5 +175,28 @@ public:
     static void DelegateGetter(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template);
+
+    bool IsPropertyValid()
+    {
+        if (!PropertyWeakPtr.IsValid())
+        {
+            return false;
+        }
+#if WITH_EDITOR
+        FProperty* TestP = PropertyWeakPtr.Get();
+        if (TestP != Property)
+        {
+            Init(TestP);
+        }
+#endif
+        return true;
+    }
+
+private:
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+    TWeakObjectPtr<PropertyMacro> PropertyWeakPtr;
+#else
+    TWeakFieldPtr<PropertyMacro> PropertyWeakPtr;
+#endif
 };
 }    // namespace PUERTS_NAMESPACE
