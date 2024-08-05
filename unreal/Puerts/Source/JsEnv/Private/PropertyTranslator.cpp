@@ -34,7 +34,7 @@ void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info
 void FPropertyTranslator::Getter(
     v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    if (!PropertyWeakPtr.IsValid())
+    if (!IsPropertyValid())
     {
         FV8Utils::ThrowException(Isolate, "Property is invalid!");
         return;
@@ -86,7 +86,7 @@ void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info
 void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value,
     const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    if (!PropertyWeakPtr.IsValid())
+    if (!IsPropertyValid())
     {
         FV8Utils::ThrowException(Isolate, "Property is invalid!");
         return;
@@ -129,7 +129,7 @@ void FPropertyTranslator::DelegateGetter(const v8::FunctionCallbackInfo<v8::Valu
 
     FPropertyTranslator* PropertyTranslator =
         static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    if (!PropertyTranslator->PropertyWeakPtr.IsValid())
+    if (!PropertyTranslator->IsPropertyValid())
     {
         FV8Utils::ThrowException(Isolate, "Property is invalid!");
         return;
