@@ -752,6 +752,9 @@ private:
     };
 #if defined(WITH_V8_BYTECODE)
     uint32_t Expect_FlagHash = 0;
+#if V8_MAJOR_VERSION >= 11
+    uint32_t Expect_ReadOnlySnapshotChecksum = 0;
+#endif
 #endif
 };
 

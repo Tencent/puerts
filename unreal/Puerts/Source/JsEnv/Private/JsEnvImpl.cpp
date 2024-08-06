@@ -327,6 +327,9 @@ struct FCodeCacheHeader
     uint32_t VersionHash;
     uint32_t SourceHash;
     uint32_t FlagHash;
+#if V8_MAJOR_VERSION >= 11
+    uint32_t ReadOnlySnapshotChecksum;
+#endif
     uint32_t PayloadLength;
     uint32_t Checksum;
 };
@@ -659,6 +662,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     auto CachedCode = v8::ScriptCompiler::CreateCodeCache(Script->GetUnboundScript());
     const FCodeCacheHeader* CodeCacheHeader = (const FCodeCacheHeader*) CachedCode->data;
     Expect_FlagHash = CodeCacheHeader->FlagHash;    // get FlagHash
+#if V8_MAJOR_VERSION >= 11
+    Expect_ReadOnlySnapshotChecksum = CodeCacheHeader->ReadOnlySnapshotChecksum;
+#endif
 #if !WITH_EDITOR
     delete CachedCode;    //编辑器下是v8.dll分配的，ue里的delete被重载了，这delete会有问题
 #endif
@@ -3654,6 +3660,14 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
             UE_LOG(Puerts, Warning, TEXT("FlagHash not match expect %u, but got %u"), Expect_FlagHash, CodeCacheHeader->FlagHash);
             CodeCacheHeader->FlagHash = Expect_FlagHash;
         }
+#if V8_MAJOR_VERSION >= 11
+        if (CodeCacheHeader->ReadOnlySnapshotChecksum != Expect_ReadOnlySnapshotChecksum)
+        {
+            UE_LOG(Puerts, Warning, TEXT("ReadOnlySnapshotChecksum not match expect %u, but got %u"),
+                Expect_ReadOnlySnapshotChecksum, CodeCacheHeader->ReadOnlySnapshotChecksum);
+            CodeCacheHeader->ReadOnlySnapshotChecksum = Expect_ReadOnlySnapshotChecksum;
+        }
+#endif
         static constexpr uint32_t kModuleFlagMask = (1 << 31);
         uint32_t Len = CodeCacheHeader->SourceHash & ~kModuleFlagMask;
         v8::Local<v8::Value> Args[] = {v8::Integer::New(Isolate, Len)};
