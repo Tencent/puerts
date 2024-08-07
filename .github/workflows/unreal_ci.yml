@@ -14,7 +14,7 @@ on:
       - .github/workflows/unreal_ci.yml
 
 env:
-  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_wami_new_xcode.tgz"
+  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_new_xcode.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240709/v8_bin_9.4.146.24.tgz"
   QJS_URL: "https://github.com/puerts/backend-quickjs/releases/download/QJS_240603/qjs_v8_bin.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
