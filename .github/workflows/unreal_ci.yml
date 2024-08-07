@@ -115,7 +115,6 @@ jobs:
     - name: Prepare
       shell: bash
       run: |
-        brew install --cask dotnet
         wget -O jslib.tgz -q  ${{ matrix.cmdinfo['jslib_path'] }}
         tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
         ${{ matrix.cmdinfo['change_backend'] }}
@@ -127,3 +126,7 @@ jobs:
       shell: bash
       run: |
         Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
+    - name: Print Log
+      shell: bash
+      run: |
+        cat "/Users/runner/Library/Logs/Unreal Engine/LocalBuildLogs/UBT-UE4Editor-Mac-Development.txt"
