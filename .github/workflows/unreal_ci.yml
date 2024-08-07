@@ -100,7 +100,7 @@ jobs:
   mac_ios_ci:
     needs: urls
     name: Mac and IOS
-    runs-on: macos-12
+    runs-on: macos-14
     strategy:
       matrix:
         cmdinfo:
@@ -121,7 +121,6 @@ jobs:
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xfz temp.tgz
         mkdir output
-        sudo xcode-select -s /Applications/Xcode_13.1.app
     - name: Build
       shell: bash
       continue-on-error: true
