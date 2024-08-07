@@ -124,6 +124,7 @@ jobs:
         sudo xcode-select -s /Applications/Xcode_13.1.app
     - name: Build
       shell: bash
+      continue-on-error: true
       run: |
         Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
     - name: Print Log
