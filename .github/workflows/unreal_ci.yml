@@ -115,6 +115,7 @@ jobs:
     - name: Prepare
       shell: bash
       run: |
+        brew install mono
         wget -O jslib.tgz -q  ${{ matrix.cmdinfo['jslib_path'] }}
         tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
         ${{ matrix.cmdinfo['change_backend'] }}
