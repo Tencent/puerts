@@ -1072,19 +1072,15 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
         auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
+#if !PUERTS_KEEP_UOBJECT_REFERENCE
         bool NeedJsTakeRef = true;
         if (Info.Length() > 4 && !Info[4]->IsNullOrUndefined())
         {
-            if (Info[4]->BooleanValue(Isolate))
-            {
-            }
-            else
+            if (!Info[4]->BooleanValue(Isolate))
             {
                 NeedJsTakeRef = false;
             }
         }
-#if PUERTS_KEEP_UOBJECT_REFERENCE
-#else
         if (NeedJsTakeRef)
         {
             bool Existed;

@@ -14,7 +14,7 @@ on:
       - .github/workflows/unreal_ci.yml
 
 env:
-  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.0/Mini427_wami.tgz"
+  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_wami_new_xcode.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240709/v8_bin_9.4.146.24.tgz"
   QJS_URL: "https://github.com/puerts/backend-quickjs/releases/download/QJS_240603/qjs_v8_bin.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
@@ -97,32 +97,32 @@ jobs:
       run: |
         Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Android -VS2019
 
-#  mac_ios_ci:
-#    needs: urls
-#    name: Mac and IOS
-#    runs-on: macos-12
-#    strategy:
-#      matrix:
-#        cmdinfo:
-#          - jslib_path: ${{ needs.urls.outputs.v8 }}
-#            change_backend: ''
-#          - jslib_path: ${{ needs.urls.outputs.qjs }}
-#            change_backend: "sed -i '' 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
-#          - jslib_path: ${{ needs.urls.outputs.node }}
-#            change_backend: "sed -i '' 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
-#    steps:
-#    - uses: actions/checkout@v3
-#    - name: Prepare
-#      shell: bash
-#      run: |
-#        wget -O jslib.tgz -q  ${{ matrix.cmdinfo['jslib_path'] }}
-#        tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
-#        ${{ matrix.cmdinfo['change_backend'] }}
-#        wget -O temp.tgz -q  ${{env.Engine}} 
-#        tar xfz temp.tgz
-#        mkdir output
-#        sudo xcode-select -s /Applications/Xcode_13.1.app
-#    - name: Build
-#      shell: bash
-#      run: |
-#        Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
+  mac_ios_ci:
+    needs: urls
+    name: Mac and IOS
+    runs-on: macos-12
+    strategy:
+      matrix:
+        cmdinfo:
+          - jslib_path: ${{ needs.urls.outputs.v8 }}
+            change_backend: ''
+          - jslib_path: ${{ needs.urls.outputs.qjs }}
+            change_backend: "sed -i '' 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
+          - jslib_path: ${{ needs.urls.outputs.node }}
+            change_backend: "sed -i '' 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
+    steps:
+    - uses: actions/checkout@v3
+    - name: Prepare
+      shell: bash
+      run: |
+        wget -O jslib.tgz -q  ${{ matrix.cmdinfo['jslib_path'] }}
+        tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
+        ${{ matrix.cmdinfo['change_backend'] }}
+        wget -O temp.tgz -q  ${{env.Engine}} 
+        tar xfz temp.tgz
+        mkdir output
+        sudo xcode-select -s /Applications/Xcode_13.1.app
+    - name: Build
+      shell: bash
+      run: |
+        Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
