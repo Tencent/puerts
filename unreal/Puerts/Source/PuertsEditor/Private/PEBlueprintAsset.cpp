@@ -1150,9 +1150,10 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
             NeedSave = true;
         }
 
-        // Variables added to the blueprint via FBlueprintEditorUtils::AddMemberVariable come with some default flags. To make the
-        // TS implementation consistent with C++, some of these default flags have been removed. InFlags |= (CPF_Edit |
-        // CPF_BlueprintVisible);
+        // The following code recalculates the final flags.
+        // Variables added to the blueprint via FBlueprintEditorUtils::AddMemberVariable come with some default flags.
+        InFlags |= CPF_Edit | CPF_BlueprintVisible | CPF_DisableEditOnInstance;
+
         if (Blueprint->NewVariables[VarIndex].VarType.PinCategory == UEdGraphSchema_K2::PC_MCDelegate)
         {
             InFlags |= CPF_BlueprintAssignable | CPF_BlueprintCallable;
