@@ -897,7 +897,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(
         }
 
         FString FuncName = Function->GetName();
-#if PUERTS_WITH_EDITOR_SUFFIX
+#ifdef PUERTS_WITH_EDITOR_SUFFIX
         if (puerts::IsEditorOnlyUFunction(Function))
         {
             FuncName += EditorOnlyPropertySuffix;
@@ -1229,10 +1229,12 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
         FStringBuffer TmpBuff;
         FString SN = Property->GetName();
+#ifdef PUERTS_WITH_EDITOR_SUFFIX
         if (Property->IsEditorOnlyProperty())
         {
             SN += EditorOnlyPropertySuffix;
         }
+#endif
         TmpBuff << SafeFieldName(SN) << ": ";
         TArray<UObject*> RefTypesTmp;
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))

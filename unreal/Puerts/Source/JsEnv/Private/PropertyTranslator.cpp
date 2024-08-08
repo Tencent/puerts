@@ -181,7 +181,7 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
                                                                                      Property->GetDisplayNameText().ToString()
 #endif
                                                                                      : Property->GetName();
-#if PUERTS_WITH_EDITOR_SUFFIX
+#ifdef PUERTS_WITH_EDITOR_SUFFIX
         if (Property->IsEditorOnlyProperty())
         {
             PropertyName += EditorOnlyPropertySuffix;
