@@ -408,7 +408,7 @@ public class JsEnv : ModuleRules
         }
         else if (UseV8Version == SupportedV8Versions.V11_8_172)
         {
-#if !UE_4_27_OR_LATER
+#if !UE_5_0_OR_LATER
             CppStandard = CppStandardVersion.Cpp17;
 #endif
             v8LibSuffix = "_11.8.172";
