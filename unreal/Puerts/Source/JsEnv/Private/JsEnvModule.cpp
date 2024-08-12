@@ -158,7 +158,11 @@ public:
     void* GetV8Platform() override;
 
 private:
+#if defined(V8_HAS_WRAP_API_WITHOUT_STL)
+    v8::Platform* platform_;
+#else
     std::unique_ptr<v8::Platform> platform_;
+#endif
 };
 
 IMPLEMENT_MODULE(FJsEnvModule, JsEnv)
@@ -178,10 +182,18 @@ void FJsEnvModule::StartupModule()
 #if defined(WITH_NODEJS)
     platform_ = node::MultiIsolatePlatform::Create(4);
 #else
+#if defined(V8_HAS_WRAP_API_WITHOUT_STL)
+#if defined(USING_SINGLE_THREAD_PLATFORM)
+    platform_ = v8::platform::NewSingleThreadedDefaultPlatform_Without_Stl();
+#else
+    platform_ = v8::platform::NewDefaultPlatform_Without_Stl();
+#endif
+#else
 #if defined(USING_SINGLE_THREAD_PLATFORM)
     platform_ = v8::platform::NewSingleThreadedDefaultPlatform();
 #else
     platform_ = v8::platform::NewDefaultPlatform();
+#endif
 #endif
 #endif
 
@@ -204,7 +216,11 @@ void FJsEnvModule::StartupModule()
     // v8::V8::SetFlagsFromString("--expose-gc");
     // v8::V8::SetFlagsFromString("--no-freeze-flags-after-init");
 
+#if defined(V8_HAS_WRAP_API_WITHOUT_STL)
+    v8::V8::InitializePlatform(platform_);
+#else
     v8::V8::InitializePlatform(platform_.get());
+#endif
     v8::V8::Initialize();
 
 #if defined(WITH_NODEJS)
@@ -234,6 +250,10 @@ void FJsEnvModule::ShutdownModule()
     v8::V8::ShutdownPlatform();
 #endif
 
+#if defined(V8_HAS_WRAP_API_WITHOUT_STL)
+    v8::platform::DeletePlatform_Without_Stl(platform_);
+#endif
+
     if (MallocWrapper && MallocWrapper == GMalloc)
     {
         GMalloc = MallocWrapper->InnerMalloc;
@@ -245,5 +265,9 @@ void FJsEnvModule::ShutdownModule()
 
 void* FJsEnvModule::GetV8Platform()
 {
+#if defined(V8_HAS_WRAP_API_WITHOUT_STL)
+    return reinterpret_cast<void*>(platform_);
+#else
     return reinterpret_cast<void*>(platform_.get());
+#endif
 }

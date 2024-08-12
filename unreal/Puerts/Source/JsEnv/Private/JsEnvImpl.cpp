@@ -3584,7 +3584,12 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
     }
 
     v8::Local<v8::Module> SyntheticModule =
+#if defined(V8_HAS_WRAP_API_WITHOUT_STL)
+        v8::Module_CreateSyntheticModule_Without_Stl(Isolate, FV8Utils::ToV8String(Isolate, ModuleName), ExportNames.data(),
+            ExportNames.size(),
+#else
         v8::Module::CreateSyntheticModule(Isolate, FV8Utils::ToV8String(Isolate, ModuleName), ExportNames,
+#endif
             [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
             {
                 const auto IsolateInner = ContextInner->GetIsolate();
