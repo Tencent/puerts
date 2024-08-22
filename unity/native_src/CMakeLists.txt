@@ -104,6 +104,13 @@ else ()
     )
 endif()
 
+set(PUERTS_COMPILE_DEFINITIONS)
+
+if ( WITH_WEBSOCKET )
+    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET)
+    list(APPEND PUERTS_SRC ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp)
+endif()
+
 if(DEFINED PUERTS_EXTRA_SRC)
     list(APPEND PUERTS_SRC ${PUERTS_EXTRA_SRC})
 endif()
@@ -147,7 +154,6 @@ else ()
    endif ()
 endif ()
 
-set(PUERTS_COMPILE_DEFINITIONS)
 option ( USING_V8 "using v8" ON )
 option ( USING_QJS "using quickjs" ON )
 option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )

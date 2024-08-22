@@ -31,6 +31,7 @@ program
             .choices(["Release", "Debug"])
     )
     .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
+    .option('-ws, --websocket', 'with websocket support')
     .action(function (quickcommand, options) {
         let backend = options.backend;
         let config = options.config;

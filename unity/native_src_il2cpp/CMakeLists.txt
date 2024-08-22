@@ -64,6 +64,13 @@ set ( PUERTS_SRC
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
+set(PUERTS_COMPILE_DEFINITIONS)
+
+if ( WITH_WEBSOCKET )
+    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET)
+    list(APPEND PUERTS_SRC ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp)
+endif()
+
 if(DEFINED PUERTS_EXTRA_SRC)
     list(APPEND PUERTS_SRC ${PUERTS_EXTRA_SRC})
 endif()
@@ -243,6 +250,7 @@ target_link_libraries(puerts_il2cpp
     ${BACKEND_LIB_NAMES}
 )
 target_compile_definitions (puerts_il2cpp PRIVATE ${BACKEND_DEFINITIONS})
+target_compile_definitions (puerts_il2cpp PRIVATE ${PUERTS_COMPILE_DEFINITIONS})
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
 	set_property(TARGET puerts_il2cpp PROPERTY

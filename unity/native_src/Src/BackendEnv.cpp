@@ -39,6 +39,10 @@
 #endif
 #endif
 
+#if defined(WITH_WEBSOCKET)
+void InitWebsocketPPWrap(v8::Local<v8::Context> Context);
+#endif
+
 namespace PUERTS_NAMESPACE
 {
 
@@ -343,6 +347,10 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
 #else
     Global->Set(Context, v8::String::NewFromUtf8(Isolate, EXECUTEMODULEGLOBANAME).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()).Check();
     Global->Set(Context, v8::String::NewFromUtf8(Isolate, "v8").ToLocalChecked(), GetV8Extras(Isolate, Context));
+#endif
+
+#if defined(WITH_WEBSOCKET)
+    InitWebsocketPPWrap(Context);
 #endif
 }
 

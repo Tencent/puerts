@@ -232,6 +232,8 @@ namespace Puerts
                 {
                     ExecuteModule("puerts/nodepatch.mjs");
                 }
+                
+                ExecuteModule("puerts/websocketpp.mjs");
 
 #if UNITY_EDITOR
                 if (OnJsEnvCreate != null) 

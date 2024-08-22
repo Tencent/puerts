@@ -137,7 +137,8 @@ export async function dotnetTest(cwd: string, backend: string, filter: string = 
         platform: process.platform == 'win32' ? 'win' : (process.platform == 'linux' ? 'linux' : 'osx'),
         config: "Debug",
         backend: backend || 'v8_9.4',
-        arch: process.arch as any
+        arch: process.arch as any,
+        websocket: true
     })
 
     // await runTest(cwd, copyConfig, true, filter);
@@ -163,7 +164,8 @@ export async function unityTest(cwd: string, unityPath: string) {
             backend: 'nodejs_16',
             platform: 'win',
             config: 'Debug',
-            arch: 'x64'
+            arch: 'x64',
+            websocket: true
         });
 
         console.log("[Puer] Generating wrapper");
@@ -189,7 +191,8 @@ export async function unityTest(cwd: string, unityPath: string) {
             backend: 'nodejs_16',
             platform: 'win',
             config: 'Debug',
-            arch: 'x64'
+            arch: 'x64',
+            websocket: true
         });
 
         console.log("[Puer] Building testplayer for v2");
