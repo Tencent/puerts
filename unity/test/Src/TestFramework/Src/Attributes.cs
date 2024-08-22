@@ -65,31 +65,13 @@ namespace NUnit {
             // }
             public static void AreEqual(object a, object b) 
             {
-                Type aType = a.GetType();
-                Type bType = b.GetType();
-                if (
-                    (aType.IsPrimitive || aType == typeof(string)) &&
-                    (bType.IsPrimitive || bType == typeof(string))
-                )
-                {
-                    if (a.ToString() != b.ToString()) 
-                        throw new Exception($"expect {a} == {b} but failed");
-                } 
-                else if (a != b) throw new Exception($"expect {a} == {b} but failed");
+                bool eq = (a == null) ? b == null : a.Equals(b);
+                if (!eq) throw new Exception($"expect [{a}] == [{b}]");
             }
             public static void AreNotEqual(object a, object b) 
             {
-                Type aType = a.GetType();
-                Type bType = b.GetType();
-                if (
-                    (aType.IsPrimitive || aType == typeof(string)) &&
-                    (bType.IsPrimitive || bType == typeof(string))
-                )
-                {
-                    if (a.ToString() == b.ToString()) 
-                        throw new Exception($"expect {a} != {b} but failed");
-                } 
-                else if (a == b) throw new Exception($"expect {a} != {b} but failed");
+                bool eq = (a == null) ? b == null : a.Equals(b);
+                if (eq) throw new Exception($"expect [{a}] != [{b}]");
             }
 
             public static void True(bool b)
