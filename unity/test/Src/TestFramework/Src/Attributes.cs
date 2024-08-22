@@ -66,11 +66,26 @@ namespace NUnit {
             public static void AreEqual(object a, object b) 
             {
                 bool eq = (a == null) ? b == null : a.Equals(b);
+                if (a != null && b != null) // for unity
+                {
+                    if (a.GetType().IsPrimitive && b.GetType().IsPrimitive || a is string && b is string)
+                    {
+                        eq = a.ToString() == b.ToString();
+                    }
+                }
                 if (!eq) throw new Exception($"expect [{a}] == [{b}]");
+                
             }
             public static void AreNotEqual(object a, object b) 
             {
                 bool eq = (a == null) ? b == null : a.Equals(b);
+                if (a != null && b != null) // for unity
+                {
+                    if (a.GetType().IsPrimitive && b.GetType().IsPrimitive || a is string && b is string)
+                    {
+                        eq = a.ToString() == b.ToString();
+                    }
+                }
                 if (eq) throw new Exception($"expect [{a}] != [{b}]");
             }
 
