@@ -1,7 +1,6 @@
 #if PUERTS_GENERAL
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.WebSockets;
@@ -10,16 +9,16 @@ using System.Threading;
 
 namespace Puerts.UnitTest
 {
-
-    [TestFixture]
-    public class WebsocketTest
+    public class WebSocketEchoServer
     {
-        static async Task RunEchoServer()
+        private HttpListener httpListener;
+
+        public async Task StartAsync(string uriPrefix)
         {
-            HttpListener httpListener = new HttpListener();
-            httpListener.Prefixes.Add("http://localhost:5000/");
+            httpListener = new HttpListener();
+            httpListener.Prefixes.Add(uriPrefix);
             httpListener.Start();
-            Console.WriteLine("Server started at http://localhost:5000/");
+            Console.WriteLine($"Server started at {uriPrefix}");
 
             while (true)
             {
@@ -30,7 +29,7 @@ namespace Puerts.UnitTest
                     HttpListenerWebSocketContext webSocketContext = await httpContext.AcceptWebSocketAsync(null);
                     WebSocket webSocket = webSocketContext.WebSocket;
 
-                    await Echo(webSocket);
+                    await EchoAsync(webSocket);
                 }
                 else
                 {
@@ -40,7 +39,7 @@ namespace Puerts.UnitTest
             }
         }
 
-        static async Task Echo(WebSocket webSocket)
+        private async Task EchoAsync(WebSocket webSocket)
         {
             byte[] buffer = new byte[1024];
 
@@ -63,10 +62,24 @@ namespace Puerts.UnitTest
                 }
             }
         }
-    
+
+        public void Stop()
+        {
+            if (httpListener != null)
+            {
+                httpListener.Stop();
+                httpListener = null;
+            }
+        }
+    }
+
+    [TestFixture]
+    public class WebsocketTest
+    {
         [Test]
         public void SmokeTest () {
-            RunEchoServer();
+            WebSocketEchoServer wses = new WebSocketEchoServer();
+            wses.StartAsync("http://localhost:5000/");
 #if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
@@ -89,9 +102,11 @@ namespace Puerts.UnitTest
             ");
             for(int i =0; i < 20; i++) {
                 jsEnv.Tick();
+                Task.Yield();
                 Thread.Sleep(10);
             }
-            
+
+            wses.Stop();
             var res = jsEnv.Eval<string>("global.webSocketMessage");
             Assert.AreEqual(res, "puerts websocket");
         }
