@@ -86,6 +86,10 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "PuertsWasm/WasmJsFunctionParams.h"
 #endif
 
+#if defined(WITH_WEBSOCKET)
+void InitWebsocketPPWrap(v8::Local<v8::Context> Context);
+#endif
+
 namespace PUERTS_NAMESPACE
 {
 #if !defined(WITH_QUICKJS)
@@ -668,6 +672,11 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if !WITH_EDITOR
     delete CachedCode;    //编辑器下是v8.dll分配的，ue里的delete被重载了，这delete会有问题
 #endif
+#endif
+
+#if defined(WITH_WEBSOCKET)
+    InitWebsocketPPWrap(Context);
+    ExecuteModule("puerts/websocketpp.js");
 #endif
 }
 
