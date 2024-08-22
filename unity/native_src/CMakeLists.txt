@@ -105,10 +105,15 @@ else ()
 endif()
 
 set(PUERTS_COMPILE_DEFINITIONS)
+set(PUERTS_BACKEND_SRC)
 
 if ( WITH_WEBSOCKET )
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET)
-    list(APPEND PUERTS_SRC ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp)
+    if (USING_MULT_BACKEND)
+        list(APPEND PUERTS_BACKEND_SRC ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp)
+    else ()
+        list(APPEND PUERTS_SRC ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp)
+    endif()
 endif()
 
 if(DEFINED PUERTS_EXTRA_SRC)
@@ -167,6 +172,7 @@ if ( USING_MULT_BACKEND )
             Src/JSFunction.cpp
             ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
             Src/PluginImpl.cpp
+            ${PUERTS_BACKEND_SRC}
         )
         target_include_directories (v8backend PRIVATE "${BACKEND_ROOT}/Inc/v8")
         target_compile_definitions (v8backend PRIVATE PUERTS_NAMESPACE=puerts_v8)
@@ -186,6 +192,7 @@ if ( USING_MULT_BACKEND )
             Src/JSFunction.cpp
             ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
             Src/PluginImpl.cpp
+            ${PUERTS_BACKEND_SRC}
         )
         target_include_directories (qjsbackend PRIVATE "${BACKEND_ROOT}/Inc/quickjs")
         target_compile_definitions (qjsbackend PRIVATE PUERTS_NAMESPACE=puerts_qjs)
