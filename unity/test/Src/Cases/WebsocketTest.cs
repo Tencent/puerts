@@ -1,3 +1,4 @@
+#if PUERTS_GENERAL
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 
-//#if PUERTS_GENERAL
 namespace Puerts.UnitTest
 {
 
@@ -70,7 +70,7 @@ namespace Puerts.UnitTest
 #if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
-            var jsEnv = new JsEnv(new UnitTestLoader());
+            var jsEnv = new JsEnv(new DefaultLoader());
 #endif
 
             jsEnv.Eval(@"
@@ -97,4 +97,4 @@ namespace Puerts.UnitTest
         }
     }
 }
-//#endif
+#endif
