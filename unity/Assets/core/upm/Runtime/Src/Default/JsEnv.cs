@@ -233,7 +233,9 @@ namespace Puerts
                     ExecuteModule("puerts/nodepatch.mjs");
                 }
                 
+#if !UNITY_WEBGL
                 ExecuteModule("puerts/websocketpp.mjs");
+#endif
 
 #if UNITY_EDITOR
                 if (OnJsEnvCreate != null) 

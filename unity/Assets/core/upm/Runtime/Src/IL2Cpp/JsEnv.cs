@@ -127,7 +127,9 @@ namespace Puerts
             ExecuteModule("puerts/events.mjs");
             ExecuteModule("puerts/timer.mjs");
             ExecuteModule("puerts/promises.mjs");
+#if !UNITY_WEBGL
             ExecuteModule("puerts/websocketpp.mjs");
+#endif
 
             this.debugPort = debugPort;
             if (loader is IBuiltinLoadedListener)
