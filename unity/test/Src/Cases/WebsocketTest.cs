@@ -108,13 +108,20 @@ namespace Puerts.UnitTest
             }
             await acceptTask;
 
+            for (int i = 0; i < 10; i++)
+            {
+                Thread.Sleep(2);
+                jsEnv.Tick();
+            }
             string msg = await wss.ReceiveAsync();
             Assert.AreEqual(msg, "puerts websocket");
             await wss.SendAsync(msg);
-            Thread.Sleep(2);
-            jsEnv.Tick();
-            Thread.Sleep(2);
-            jsEnv.Tick();
+
+            for (int i = 0; i < 10; i++)
+            {
+                Thread.Sleep(2);
+                jsEnv.Tick();
+            }
 
             wss.Stop();
             var res = jsEnv.Eval<string>("global.webSocketMessage");
