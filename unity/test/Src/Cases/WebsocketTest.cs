@@ -1,4 +1,4 @@
-#if PUERTS_GENERAL
+//#if PUERTS_GENERAL
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
@@ -9,67 +9,65 @@ using System.Threading;
 
 namespace Puerts.UnitTest
 {
-    public class WebSocketEchoServer
+    public class WebSocketServer
     {
-        private HttpListener httpListener;
+        private HttpListener _httpListener;
+        private WebSocket _webSocket;
 
-        public async Task StartAsync(string uriPrefix)
+        public WebSocketServer(string url)
         {
-            httpListener = new HttpListener();
-            httpListener.Prefixes.Add(uriPrefix);
-            httpListener.Start();
-            Console.WriteLine($"Server started at {uriPrefix}");
+            _httpListener = new HttpListener();
+            _httpListener.Prefixes.Add(url);
+        }
 
-            while (true)
+        public void Listen()
+        {
+            _httpListener.Start();
+            Console.WriteLine("Server started, waiting for connection...");
+        }
+
+        public async Task AcceptAsync()
+        {
+            HttpListenerContext context = await _httpListener.GetContextAsync();
+            if (context.Request.IsWebSocketRequest)
             {
-                HttpListenerContext httpContext = await httpListener.GetContextAsync();
-
-                if (httpContext.Request.IsWebSocketRequest)
-                {
-                    HttpListenerWebSocketContext webSocketContext = await httpContext.AcceptWebSocketAsync(null);
-                    WebSocket webSocket = webSocketContext.WebSocket;
-
-                    await EchoAsync(webSocket);
-                }
-                else
-                {
-                    httpContext.Response.StatusCode = 400;
-                    httpContext.Response.Close();
-                }
+                HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
+                _webSocket = webSocketContext.WebSocket;
+                Console.WriteLine("Client connected.");
+            }
+            else
+            {
+                context.Response.StatusCode = 400;
+                context.Response.Close();
             }
         }
 
-        private async Task EchoAsync(WebSocket webSocket)
+        public async Task<string> ReceiveAsync()
         {
             byte[] buffer = new byte[1024];
+            WebSocketReceiveResult result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            string clientMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            Console.WriteLine($"Received message from client: {clientMessage}");
+            return clientMessage;
+        }
 
-            while (webSocket.State == WebSocketState.Open)
-            {
-                WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        public async Task SendAsync(string message)
+        {
+            byte[] responseBuffer = Encoding.UTF8.GetBytes(message);
+            await _webSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            Console.WriteLine($"Sent message to client: {message}");
+        }
 
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-                }
-                else
-                {
-                    string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    Console.WriteLine("Received: " + receivedMessage);
-
-                    byte[] responseBuffer = Encoding.UTF8.GetBytes(receivedMessage);
-                    await webSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
-                    Console.WriteLine("Echoed: " + receivedMessage);
-                }
-            }
+        public async Task CloseAsync()
+        {
+            await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+            Console.WriteLine("Connection closed.");
         }
 
         public void Stop()
         {
-            if (httpListener != null)
-            {
-                httpListener.Stop();
-                httpListener = null;
-            }
+            _httpListener.Stop();
+            Console.WriteLine("Server stopped.");
         }
     }
 
@@ -77,14 +75,16 @@ namespace Puerts.UnitTest
     public class WebsocketTest
     {
         [Test]
-        public void SmokeTest () {
-            WebSocketEchoServer wses = new WebSocketEchoServer();
-            wses.StartAsync("http://localhost:5000/");
+        public async Task SmokeTest()
+        {
+            WebSocketServer wss = new WebSocketServer("http://localhost:5000/");
 #if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
+            wss.Listen();
+            var acceptTask = wss.AcceptAsync();
 
             jsEnv.Eval(@"
                 (function() {
@@ -100,16 +100,26 @@ namespace Puerts.UnitTest
                     });
                 })();
             ");
-            for(int i =0; i < 20; i++) {
-                jsEnv.Tick();
-                Task.Yield();
-                Thread.Sleep(10);
-            }
 
-            wses.Stop();
+            for (int i = 0; i < 10; i++)
+            {
+                Thread.Sleep(2);
+                jsEnv.Tick();
+            }
+            await acceptTask;
+
+            string msg = await wss.ReceiveAsync();
+            Assert.AreEqual(msg, "puerts websocket");
+            await wss.SendAsync(msg);
+            Thread.Sleep(2);
+            jsEnv.Tick();
+            Thread.Sleep(2);
+            jsEnv.Tick();
+
+            wss.Stop();
             var res = jsEnv.Eval<string>("global.webSocketMessage");
             Assert.AreEqual(res, "puerts websocket");
         }
     }
 }
-#endif
+//#endif
