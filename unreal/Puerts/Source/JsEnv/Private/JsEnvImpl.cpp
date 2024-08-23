@@ -2119,6 +2119,10 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     {
         for (auto Callback : *CallbacksPtr)
         {
+            if (Callback.IsValid())
+            {
+                Callback.Get()->JsFunction.Reset();
+            }
             SysObjectRetainer.Release(Callback.Get());
         }
         AutoReleaseCallbacksMap.Remove((UObject*) ObjectBase);
