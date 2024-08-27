@@ -15,13 +15,11 @@ if (!fs.existsSync(__dirname + '/../node_modules')) {
 }
 
 function executeCommand() {
-  const command = `node --loader ts-node/esm ${__dirname}/cmd.mts ${process.argv.slice(2).join(' ')}`;
-  console.log(command);
+  const command = `node`;
+  const args = [`--loader`, `ts-node/esm`, `${__dirname}/cmd.mts`, ...process.argv.slice(2)];
+  console.log(`${command} ${args.join(' ')}`);
 
-  const p = cp.exec(command);
-
-  p.stdout.on('data', console.log);
-  p.stderr.on('data', console.error);
+  const p = cp.spawn(command, args, { stdio: 'inherit' });
 
   p.on('exit', (code) => {
     process.exit(code);

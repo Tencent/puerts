@@ -12,23 +12,33 @@ const pipelineAsync = promisify(pipeline);
 const require = createRequire(import.meta.url);
 const tar = require('tar');
 const axios = require('axios');
+const ProgressBar = require('progress');
 
 async function downloadAndExtractTarGz(url: string, outputDir: string) {
   const tempFilePath = path.join(outputDir, 'temp.tar.gz');
+  
+  const { headers } = await axios.head(url);
+  const totalSize = parseInt(headers['content-length'], 10);
+  
+  const progressBar = new ProgressBar('Downloading [:bar] :percent :etas', {
+    width: 40,
+    complete: '=',
+    incomplete: ' ',
+    renderThrottle: 16,
+    total: totalSize,
+  });
 
   // Step 1: Download the tar.gz file
   const response = await axios({
     url,
     method: 'GET',
     responseType: 'stream',
-    onDownloadProgress: (progressEvent:any) => {
-      const total = progressEvent.total || 0;
-      const current = progressEvent.loaded;
-      const percentCompleted = Math.round((current / total) * 100);
-      console.log(`Download progress: ${percentCompleted}%`);
-    },
   });
-
+  
+  response.data.on('data', (chunk: Buffer) => {
+    progressBar.tick(chunk.length);
+  });
+  
   // Ensure the output directory exists
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
