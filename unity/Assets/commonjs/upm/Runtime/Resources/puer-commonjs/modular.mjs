@@ -22,7 +22,7 @@ function addModule(m) {
 
 function getModuleBySID(id) {
     return tmpModuleStorage[id];
-}``
+}
 
 let buildinModule = Object.create(null);
 function executeModule(fullPath, script, debugPath, sid) {
