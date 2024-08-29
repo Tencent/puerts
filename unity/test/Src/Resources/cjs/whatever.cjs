@@ -1,1 +1,1 @@
-module.exports = 'hello world';
+exports["default"] = 'hello world';
