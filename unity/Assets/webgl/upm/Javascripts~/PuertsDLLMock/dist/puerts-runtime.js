@@ -1316,10 +1316,10 @@ library_1.global.PuertsWebGL = {
         }, (0, getFromJSArgument_1.default)(engine), (0, getFromJSReturn_1.default)(engine), (0, setToInvokeJSArgument_1.default)(engine), (0, setToJSInvokeReturn_1.default)(engine), (0, setToJSOutArgument_1.default)(engine), (0, register_1.default)(engine), {
             // bridgeLog: true,
             GetLibVersion: function () {
-                return 32;
+                return 34;
             },
             GetApiLevel: function () {
-                return 32;
+                return 34;
             },
             GetLibBackend: function () {
                 return 0;

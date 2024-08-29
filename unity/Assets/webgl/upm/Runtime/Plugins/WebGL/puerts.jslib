@@ -58,6 +58,7 @@ var exportDLL = {
     "ClearModuleCache",
     "GetModuleExecutor",
     "GetJSObjectValueGetter",
+    "GetJSStackTrace",
     "_RegisterClass",
     "RegisterStruct",
     "RegisterFunction",

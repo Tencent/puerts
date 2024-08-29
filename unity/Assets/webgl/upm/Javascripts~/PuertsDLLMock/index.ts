@@ -50,10 +50,10 @@ global.PuertsWebGL = {
             {
                 // bridgeLog: true,
                 GetLibVersion: function () {
-                    return 32;
+                    return 34;
                 },
                 GetApiLevel: function () {
-                    return 32;
+                    return 34;
                 },
                 GetLibBackend: function () {
                     return 0;

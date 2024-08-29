@@ -58,7 +58,7 @@ inline int64_t GetLongFromValue(void *isolate, MockV8Value *value, bool byref)
 
 extern "C"
 {
-    void *GetArgumentValue(void *infoptr, int index)
+    void *GetArgumentValue(void* Isolate, void *infoptr, int index)
     {
         int step = sizeof(int);
         return (void *)((long)infoptr + (index * IntSizeOfV8Value + 1) * step);
