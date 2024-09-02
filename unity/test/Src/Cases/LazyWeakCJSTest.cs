@@ -58,7 +58,8 @@ namespace Puerts.UnitTest
             var res = jsEnv.Eval<string>("puer.module.statModuleCache()");
             Assert.AreEqual("key\tweak?\tvalid?\nlazymodule.cjs\ttrue\ttrue\n", res);
             
-            jsEnv.Eval<string>("lm = undefined;gc()");
+            jsEnv.Eval<string>("lm = undefined;");
+            jsEnv.Backend.LowMemoryNotification();
             
             res = jsEnv.Eval<string>("puer.module.statModuleCache()");
             Assert.AreEqual("key\tweak?\tvalid?\nlazymodule.cjs\ttrue\tfalse\n", res);

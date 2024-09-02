@@ -8,13 +8,15 @@
 
 namespace Puerts
 {
-    public class Backend
+    public abstract class Backend
     {
         protected JsEnv env;
         public Backend(JsEnv env)
         {
             this.env = env;
         }
+
+        public abstract void LowMemoryNotification();
     }
 
     public class BackendV8 : Backend
@@ -38,7 +40,7 @@ namespace Puerts
 #endif
         }
 
-        public void LowMemoryNotification()
+        public override void LowMemoryNotification()
         {
 #if THREAD_SAFE
             lock(this) {
@@ -92,7 +94,7 @@ namespace Puerts
         {
         }
 
-        public void LowMemoryNotification()
+        public override void LowMemoryNotification()
         {
 #if THREAD_SAFE
             lock(this) {
