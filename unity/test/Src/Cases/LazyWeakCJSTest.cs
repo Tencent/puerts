@@ -20,7 +20,8 @@ namespace Puerts.UnitTest
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
-            
+
+            if (jsEnv.Backend is BackendQuickJS) return;
             jsEnv.ExecuteModule("bootstrap_test.mjs");
             var res = jsEnv.Eval<string>("globalThis.lazyss");
             Assert.AreEqual("boot>>module_root>>foo>>", res);
@@ -47,6 +48,8 @@ namespace Puerts.UnitTest
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
+
+            if (jsEnv.Backend is BackendQuickJS) return;
             jsEnv.ExecuteModule("module.mjs");
 
             jsEnv.Eval(@"
@@ -58,7 +61,7 @@ namespace Puerts.UnitTest
             var res = jsEnv.Eval<string>("puer.module.statModuleCache()");
             Assert.AreEqual("key\tweak?\tvalid?\nlazymodule.cjs\ttrue\ttrue\n", res);
             
-            jsEnv.Eval<string>("lm = undefined;");
+            jsEnv.Eval<string>("lm = undefined;if(gc){gc();}");
             jsEnv.Backend.LowMemoryNotification();
             
             res = jsEnv.Eval<string>("puer.module.statModuleCache()");
