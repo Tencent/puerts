@@ -222,6 +222,21 @@ void FBackendEnv::GlobalPrepare()
 {
     if (!GPlatform)
     {
+        std::string Flags = "--stack_size=856";
+#if PUERTS_DEBUG
+        Flags += " --expose-gc";
+#if PLATFORM_MAC
+        Flags += " --jitless --no-expose-wasm";
+#endif
+#endif
+#if defined(PLATFORM_IOS) || defined(PLATFORM_OHOS)
+        Flags += " --jitless --no-expose-wasm";
+#endif
+#if V8_MAJOR_VERSION <= 9
+        Flags += " --no-harmony-top-level-await";
+#endif
+        v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
+
 #if defined(WITH_NODEJS)
         int Argc = 2;
         char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};

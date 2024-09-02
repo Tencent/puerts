@@ -100,18 +100,6 @@ namespace PUERTS_NAMESPACE
         GeneralDestructor = nullptr;
         FBackendEnv::GlobalPrepare();
 
-        std::string Flags = "--no-harmony-top-level-await --stack_size=856";
-#if PUERTS_DEBUG
-        Flags += " --expose-gc";
-#if PLATFORM_MAC
-        Flags += " --jitless --no-expose-wasm";
-#endif
-#endif
-#if defined(PLATFORM_IOS) || defined(PLATFORM_OHOS)
-        Flags += " --jitless --no-expose-wasm";
-#endif
-        v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
-
         BackendEnv.Initialize(external_quickjs_runtime, external_quickjs_context);
         MainIsolate = BackendEnv.MainIsolate;
 
