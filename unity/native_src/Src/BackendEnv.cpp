@@ -548,12 +548,18 @@ JSModuleDef* FBackendEnv::LoadModule(JSContext* ctx, const char *name)
         // exception from Normalize
     //    return nullptr;
     //}
+#if defined(QUICKJS_VERSION) && QUICKJS_VERSION >= 20240214
+    if (JS_HasException(ctx))
+    {
+        return nullptr;
+    }
+#else
     auto Ex = JS_GetException(ctx);
     if (!JS_IsUndefined(Ex) && !JS_IsNull(Ex))
     {
         JS_Throw(ctx, Ex);
         return nullptr;
-    }
+#endif
     // quickjs本身已经做了cache，这只是为了支持ClearModuleCache ///
     auto Iter = PathToModuleMap.find(name);
     if (Iter != PathToModuleMap.end())
