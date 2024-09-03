@@ -559,6 +559,7 @@ JSModuleDef* FBackendEnv::LoadModule(JSContext* ctx, const char *name)
     {
         JS_Throw(ctx, Ex);
         return nullptr;
+    }
 #endif
     // quickjs本身已经做了cache，这只是为了支持ClearModuleCache ///
     auto Iter = PathToModuleMap.find(name);
