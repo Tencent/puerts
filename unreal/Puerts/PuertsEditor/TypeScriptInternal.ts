@@ -5,18 +5,13 @@ import * as UE from 'ue'
 function some<T>(array: ReadonlyArray<T> | undefined): array is ReadonlyArray<T>;
 function some<T>(array: ReadonlyArray<T> | undefined, predicate: (value: T) => boolean): boolean;
 function some<T>(array: ReadonlyArray<T> | undefined, predicate?: (value: T) => boolean): boolean {
-    if (array) {
-        if (predicate) {
-            for (const v of array) {
-                if (predicate(v)) {
-                    return true;
-                }
-            }
-        }
-        else {
-            return array.length > 0;
-        }
+    if (!array) return false;
+    if (!predicate) return array.length > 0;
+
+    for (const value of array) {
+        if (predicate(value) return true;
     }
+
     return false;
 }
 
