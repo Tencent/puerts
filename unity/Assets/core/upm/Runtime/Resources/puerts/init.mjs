@@ -12,22 +12,22 @@ global.global = global;
 let puer = global.puer = global.puerts = global.puer || global.puerts || {};
 
 puer.loadType = global.__tgjsLoadType;
-delete global.__tgjsLoadType;
+global.__tgjsLoadType = undefined;
 puer.getNestedTypes = global.__tgjsGetNestedTypes;
-delete global.__tgjsGetNestedTypes;
+global.__tgjsGetNestedTypes = undefined;
 puer.getGenericMethod = global.__tgjsGetGenericMethod;
-delete global.__tgjsGetGenericMethod;
+global.__tgjsGetGenericMethod = undefined;
 
 puer.evalScript = global.__tgjsEvalScript || function (script, debugPath) {
     return eval(script);
 }
-delete global.__tgjsEvalScript;
+global.__tgjsEvalScript = undefined;
 
 puer.getLastException = global.__puertsGetLastException
-delete global.__puertsGetLastException;
+global.__puertsGetLastException = undefined;
 
 let loader = global.__tgjsGetLoader();
-delete global.__tgjsGetLoader;
+global.__tgjsGetLoader = undefined;
 
 function loadFile(path) {
     let debugPath = [];
