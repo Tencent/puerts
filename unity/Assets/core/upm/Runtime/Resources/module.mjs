@@ -216,6 +216,7 @@ function dirname(path) {
 }
 
 function executeModule(fullPath, script, debugPath, sid) {
+    if (debugPath === undefined) debugPath = fullPath;
     let exports = {};
     let module = getModuleBySID(sid);
     module.exports = exports;
