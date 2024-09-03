@@ -163,6 +163,7 @@ class ModuleCache extends Map {
 
 const exportsCache = new ModuleCache();
 const tmpModuleStorage = []; // sid to module
+const builtinModules = new Map([["csharp", CS], ["puer", puer], ["puerts", puer]]);
 
 //console.log(joinAsPosix('a/b/c', '../..'));
 //console.log(joinAsPosix('a\\b\\c', '../..'));
@@ -319,6 +320,9 @@ function createLazyRequire(referer) {
     }
 
     function lazyRequire(specifier, immediate) {
+        if (builtinModules.has(specifier)) {
+            return builtinModules.get(specifier);
+        }
         if (immediate) {
             //console.warn(`load module [${joinAsPosix(requiringDir, specifier)}] immediate`);
             return require(specifier);
