@@ -1,4 +1,4 @@
-import { createRequire } from 'module.mjs';
+import { createRequire } from 'puerts/module.mjs';
 
 const require = createRequire(import.meta.url);
 

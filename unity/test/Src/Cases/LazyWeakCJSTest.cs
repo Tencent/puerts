@@ -50,7 +50,7 @@ namespace Puerts.UnitTest
 #endif
 
             if (jsEnv.Backend is BackendQuickJS) return;
-            jsEnv.ExecuteModule("module.mjs");
+            jsEnv.ExecuteModule("puerts/module.mjs");
 
             jsEnv.Eval(@"
                 const require = puer.module.createRequire('');
