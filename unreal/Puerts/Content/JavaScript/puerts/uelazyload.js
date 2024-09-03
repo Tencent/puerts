@@ -249,7 +249,7 @@ var global = global || (function () { return this; }());
     
     function blueprint_unload(cls) {
         if (cls.__puerts_ufield) {
-            delete cls.__puerts_ufield;
+            cls.__puerts_ufield = undefined;
             if (cls.__parent) {
                 cls.__parent[cls.__name] = createNamespaceOrClass(cls.__name, cls.__parent);
             }

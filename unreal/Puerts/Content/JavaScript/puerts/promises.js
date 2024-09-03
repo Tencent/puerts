@@ -15,7 +15,7 @@ var global = global || (function () { return this; }());
     const kPromiseResolveAfterResolved = 3;
     
     global.__tgjsSetPromiseRejectCallback(promiseRejectHandler)
-    delete global.__tgjsSetPromiseRejectCallback;
+    global.__tgjsSetPromiseRejectCallback = undefined;
     
     const maybeUnhandledRejection = new WeakMap();
     

@@ -69,7 +69,7 @@ var global = global || (function () { return this; }());
         return callbackId;
     }
     function unregisterCallback(callbackId) {
-        delete registerCallbacks[callbackId];
+        registerCallbacks[callbackId] = undefined;
     }
 
     let wrapGenerators = Object.create(null);
