@@ -162,27 +162,13 @@ class ModuleCache extends Map {
 }
 
 const exportsCache = new ModuleCache();
-const tmpModuleStorage = []; // sid to module
+const tmpModuleStorage = new Map();
 const builtinModules = new Map([["csharp", CS], ["puer", puer], ["puerts", puer]]);
 
 //console.log(joinAsPosix('a/b/c', '../..'));
 //console.log(joinAsPosix('a\\b\\c', '../..'));
 //console.log(joinAsPosix('a/b\\c', '../..'));
 //console.log(joinAsPosix('a.js'));
-
-function addModule(m) {
-    for (var i = 0; i < tmpModuleStorage.length; i++) {
-        if (!tmpModuleStorage[i]) {
-            tmpModuleStorage[i] = m;
-            return i;
-        }
-    }
-    return tmpModuleStorage.push(m) - 1;
-}
-
-function getModuleBySID(id) {
-    return tmpModuleStorage[id];
-}
 
 function fileURLToPath(url) {
     if (url.startsWith('file:') || url.startsWith('puer:')) {
@@ -216,10 +202,10 @@ function dirname(path) {
     return path.slice(0, end);
 }
 
-function executeModule(fullPath, script, debugPath, sid) {
+function executeModule(fullPath, script, debugPath) {
     if (debugPath === undefined) debugPath = fullPath;
     let exports = {};
-    let module = getModuleBySID(sid);
+    let module = tmpModuleStorage.get(fullPath);
     module.exports = exports;
     let wrapped = puer.evalScript(
         // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
@@ -244,7 +230,7 @@ function createLazyRequire(referer) {
         let fullPath = joinAsPosix(requiringDir, specifier);
         
         let key = fullPath;
-        let res = exportsCache.get(key);
+        let res = exportsCache.get(key) || tmpModuleStorage.get(key);
         if (res) {
             return res;
         }
@@ -255,7 +241,7 @@ function createLazyRequire(referer) {
         }
         
         let module = {"exports":{}};
-        let sid = addModule(module);
+        tmpModuleStorage.set(fullPath, module);
         try {
             if (fullPath.endsWith(".json")) {
                 let packageConfigure = JSON.parse(content);
@@ -271,14 +257,14 @@ function createLazyRequire(referer) {
                 }
             } else {
                 //console.warn(`executeModule(${fullPath})`)
-                executeModule(fullPath, content, debugPath, sid);
+                executeModule(fullPath, content, debugPath);
             }
             exportsCache.set(key, module.exports, typeof module.exports.__auto_release !== 'boolean' ? __default_is_weak : module.exports.__auto_release );
         } catch(e) {
             exportsCache.delete(key);
             throw e;
         } finally {
-            tmpModuleStorage[sid] = undefined;
+            tmpModuleStorage.delete(fullPath);
         }
         return module.exports;
     }
