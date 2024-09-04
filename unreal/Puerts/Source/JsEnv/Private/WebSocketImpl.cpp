@@ -11,6 +11,14 @@
 #include "V8InspectorImpl.h"    // for PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "V8Utils.h"
 
+#ifndef THIRD_PARTY_INCLUDES_START
+#define THIRD_PARTY_INCLUDES_START
+#endif
+
+#ifndef THIRD_PARTY_INCLUDES_END
+#define THIRD_PARTY_INCLUDES_END
+#endif
+
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push)
 #if defined(_MSC_VER)
@@ -23,8 +31,16 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #define ASIO_STANDALONE
 #define _WEBSOCKETPP_CPP11_TYPE_TRAITS_
+#define UI UI_ST
+THIRD_PARTY_INCLUDES_START
+#if defined(WITH_WEBSOCKET_SSL)
+#include <websocketpp/config/asio.hpp>
+#else
 #include "websocketpp/config/asio_no_tls.hpp"
+#endif
 #include "websocketpp/client.hpp"
+THIRD_PARTY_INCLUDES_END
+#undef UI
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include <sstream>
@@ -78,7 +94,11 @@ class V8WebSocketClientImpl
 public:
     V8WebSocketClientImpl(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InSelf);
 
+#if defined(WITH_WEBSOCKET_SSL)
+    using wspp_client = websocketpp::client<websocketpp::config::asio_tls>;
+#else
     using wspp_client = websocketpp::client<websocketpp::config::asio>;
+#endif
 
     using wspp_connection_hdl = websocketpp::connection_hdl;
 
@@ -148,6 +168,15 @@ V8WebSocketClientImpl::V8WebSocketClientImpl(v8::Isolate* InIsolate, v8::Local<v
     // UE_LOG(LogTemp, Warning, TEXT(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> set weak %p"), this);
 }
 
+#if defined(WITH_WEBSOCKET_SSL)
+websocketpp::lib::shared_ptr<puerts_asio::ssl::context> on_tls_init(websocketpp::connection_hdl)
+{
+    auto ctx = websocketpp::lib::make_shared<puerts_asio::ssl::context>(websocketpp::lib::puerts_asio::ssl::context::sslv23);
+    ctx->set_verify_mode(puerts_asio::ssl::verify_none);
+    return ctx;
+}
+#endif
+
 void V8WebSocketClientImpl::Connect(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     std::string uri = *(v8::String::Utf8Value(Isolate, Info[0]));
@@ -159,6 +188,9 @@ void V8WebSocketClientImpl::Connect(const v8::FunctionCallbackInfo<v8::Value>& I
     Client.set_message_handler(std::bind(&V8WebSocketClientImpl::OnMessage, this, std::placeholders::_1, std::placeholders::_2));
     Client.set_close_handler(std::bind(&V8WebSocketClientImpl::OnClose, this, std::placeholders::_1));
     Client.set_fail_handler(std::bind(&V8WebSocketClientImpl::OnFail, this, std::placeholders::_1));
+#if defined(WITH_WEBSOCKET_SSL)
+    Client.set_tls_init_handler(&on_tls_init);
+#endif
 
     Client.init_asio();
 

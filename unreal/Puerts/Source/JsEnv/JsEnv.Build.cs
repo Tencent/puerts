@@ -72,6 +72,8 @@ public class JsEnv : ModuleRules
         if (WithWebsocket)
         {
             PublicDefinitions.Add("WITH_WEBSOCKET");
+            PublicDefinitions.Add("WITH_WEBSOCKET_SSL");
+            PublicDependencyModuleNames.Add("OpenSSL");
         }
 
         ShadowVariableWarningLevel = WarningLevel.Warning;
