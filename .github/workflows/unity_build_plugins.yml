@@ -40,7 +40,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_10.6.194
-          websocket: '--websocket'
+          websocket: '--websocket=1'
       - name: BuildAndroidQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -80,7 +80,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_10.6.194
-          websocket: '--websocket'
+          websocket: '--websocket=1'
       - name: BuildOHOSQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
@@ -107,7 +107,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_10.6.194
-          websocket: '--websocket'
+          websocket: '--websocket=1'
       - name: BuildiOSQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -139,7 +139,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_10.6.194
-          websocket: '--websocket'
+          websocket: '--websocket=1'
       - name: BuildOSXNodejs
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -171,7 +171,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_10.6.194
-          websocket: '--websocket'
+          websocket: '--websocket=1'
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -203,7 +203,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_10.6.194
-          websocket: '--websocket'
+          websocket: '--websocket=1'
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:

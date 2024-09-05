@@ -12,12 +12,8 @@ inputs:
     - Release
     - Debug
   websocket:
-    type: choice
     description: enable websocket
-    default: ''
-    options:
-    - ''
-    - '--websocket'
+    default: '0'
   GITHUB_TOKEN:
     required:
 
@@ -30,7 +26,7 @@ runs:
         cd unity
         npm i
         cd native_src
-        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../cli make --platform ohos --backend ${{ inputs.backend }} --config ${{ inputs.config }} ${{ inputs.websocket }}
+        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../cli make --platform ohos --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:

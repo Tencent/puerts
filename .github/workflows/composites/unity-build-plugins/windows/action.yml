@@ -20,12 +20,8 @@ inputs:
       - x64
       - ia32
   websocket:
-    type: choice
     description: enable websocket
-    default: ''
-    options:
-    - ''
-    - '--websocket'
+    default: '0'
   GITHUB_TOKEN:
     required:
 
@@ -38,7 +34,7 @@ runs:
         cd unity
         npm i
         cd native_src
-        node ../cli make --platform win --backend ${{ inputs.backend }} --config ${{ inputs.config }} --arch ${{ inputs.arch }} ${{ inputs.websocket }}
+        node ../cli make --platform win --backend ${{ inputs.backend }} --config ${{ inputs.config }} --arch ${{ inputs.arch }} --websocket ${{ inputs.websocket }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
