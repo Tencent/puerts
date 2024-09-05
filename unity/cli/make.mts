@@ -13,7 +13,7 @@ interface BuildOptions {
     platform: 'osx' | 'win' | 'ios' | 'android' | 'linux' | 'ohos' | 'wasm',
     arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'wasm32' | 'auto',
     backend: string,
-    websocket?: boolean
+    websocket?: number
 }
 
 //// 脚本 scripts
@@ -269,9 +269,8 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     const DArgsName = ['-DBACKEND_DEFINITIONS=', '-DBACKEND_LIB_NAMES=', '-DBACKEND_INC_NAMES=']
     let CmakeDArgs = [definitionD, linkD, incD].map((r, index) => r ? DArgsName[index] + '"' + r + '"' : null).filter(t => t).join(' ');
     
-    if (options.websocket) {
-        CmakeDArgs += " -DWITH_WEBSOCKET=1";
-    }
+    options.websocket = options.websocket || 0
+    CmakeDArgs += ` -DWITH_WEBSOCKET=${options.websocket}`;
 
     var outputFile = BuildConfig.hook(
         CMAKE_BUILD_PATH,

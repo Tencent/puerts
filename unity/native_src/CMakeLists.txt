@@ -159,6 +159,62 @@ else ()
    endif ()
 endif ()
 
+if ( WITH_WEBSOCKET EQUAL 2 )
+set(OPENSSL_PLATFORM_CONF_ARG "")
+set(OPENSSL_BUILD_COMMAND make)
+set(OPENSSL_LIBRARY_SUFFIX a)
+if(WIN32)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        # 32位 Windows
+        set(OPENSSL_PLATFORM_CONF_ARG "VC-WIN32")
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # 64位 Windows
+        set(OPENSSL_PLATFORM_CONF_ARG "VC-WIN64A")
+    endif()
+    set(OPENSSL_BUILD_COMMAND nmake)
+    set(OPENSSL_LIBRARY_SUFFIX lib)
+endif()
+
+include(ExternalProject)
+
+set(OPENSSL_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl-src) # default path by CMake
+set(OPENSSL_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl)
+set(OPENSSL_INCLUDE_DIR ${OPENSSL_INSTALL_DIR}/include)
+set(OPENSSL_CONFIGURE_COMMAND perl ${OPENSSL_SOURCE_DIR}/Configure ${OPENSSL_PLATFORM_CONF_ARG})
+ExternalProject_Add(
+  OpenSSL
+  SOURCE_DIR ${OPENSSL_SOURCE_DIR}
+  GIT_REPOSITORY https://github.com/openssl/openssl.git
+  GIT_TAG OpenSSL_1_1_1t
+  #GIT_TAG openssl-3.0.5
+  USES_TERMINAL_DOWNLOAD TRUE
+  CONFIGURE_COMMAND
+    ${OPENSSL_CONFIGURE_COMMAND}
+    --prefix=${OPENSSL_INSTALL_DIR}
+    --openssldir=${OPENSSL_INSTALL_DIR}
+  BUILD_COMMAND ${OPENSSL_BUILD_COMMAND}
+  TEST_COMMAND ""
+  INSTALL_COMMAND ${OPENSSL_BUILD_COMMAND} install
+  INSTALL_DIR ${OPENSSL_INSTALL_DIR}
+)
+
+file(MAKE_DIRECTORY ${OPENSSL_INCLUDE_DIR})
+
+add_library(OpenSSL::SSL STATIC IMPORTED GLOBAL)
+set_property(TARGET OpenSSL::SSL PROPERTY IMPORTED_LOCATION ${OPENSSL_INSTALL_DIR}/lib/libssl.${OPENSSL_LIBRARY_SUFFIX})
+set_property(TARGET OpenSSL::SSL PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
+add_dependencies(OpenSSL::SSL OpenSSL)
+
+add_library(OpenSSL::Crypto STATIC IMPORTED GLOBAL)
+set_property(TARGET OpenSSL::Crypto PROPERTY IMPORTED_LOCATION ${OPENSSL_INSTALL_DIR}/lib/libcrypto.${OPENSSL_LIBRARY_SUFFIX})
+set_property(TARGET OpenSSL::Crypto PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
+add_dependencies(OpenSSL::Crypto OpenSSL)
+
+add_dependencies(puerts OpenSSL)
+target_link_libraries(puerts OpenSSL::SSL OpenSSL::Crypto)
+list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL)
+endif ()
+
 option ( USING_V8 "using v8" ON )
 option ( USING_QJS "using quickjs" ON )
 option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
