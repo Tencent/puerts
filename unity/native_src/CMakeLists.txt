@@ -159,7 +159,7 @@ else ()
    endif ()
 endif ()
 
-if ( WITH_WEBSOCKET EQUAL 2 )
+if ( WITH_WEBSOCKET EQUAL 3 )
     set(OPENSSL_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl-src) # default path by CMake
     set(OPENSSL_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl)
     set(OPENSSL_INCLUDE_DIR ${OPENSSL_INSTALL_DIR}/include)
@@ -213,6 +213,34 @@ if ( WITH_WEBSOCKET EQUAL 2 )
     add_dependencies(puerts OpenSSL)
     target_link_libraries(puerts OpenSSL::SSL OpenSSL::Crypto)
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL)
+endif ()
+
+if ( WITH_WEBSOCKET EQUAL 2 )
+    include(FetchContent)
+
+    FetchContent_Declare(
+        wolfssl
+        GIT_REPOSITORY https://github.com/wolfSSL/wolfssl.git
+        GIT_TAG        v5.7.2-stable 
+    )
+    set(WOLFSSL_EXAMPLES  OFF)
+    set(WOLFSSL_CRYPT_TESTS OFF)
+    #set(BUILD_SHARED_LIBS OFF)
+
+    FetchContent_MakeAvailable(wolfssl)
+    
+    target_compile_definitions(wolfssl PUBLIC WOLFSSL_OPENSSLEXTRA WOLFSSL_OPENSSLALL OPENSSL_EXTRA OPENSSL_ALL HAVE_EX_DATA WOLFSSL_OPENSSH)
+    
+    target_link_libraries(puerts wolfssl)
+    
+    target_include_directories(puerts PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
+
+    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL OPENSSL_EXTRA OPENSSL_ALL WOLFSSL_OPENSSH PUERTS_USE_WOLFSSL)
+    #if(WIN32)
+        # For Windows link ws2_32
+    #    target_link_libraries(puerts
+    #        $<$<PLATFORM_ID:Windows>:ws2_32 crypt32>)
+    #endif()
 endif ()
 
 option ( USING_V8 "using v8" ON )

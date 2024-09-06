@@ -85,7 +85,7 @@ public:
 #endif // (OPENSSL_VERSION_NUMBER >= 0x10002000L)
        // && (OPENSSL_VERSION_NUMBER < 0x10100000L)
        // && !defined(SSL_OP_NO_COMPRESSION)
-#if !defined(OPENSSL_IS_BORINGSSL) && !defined(ASIO_USE_WOLFSSL)
+#if !defined(OPENSSL_IS_BORINGSSL) && !defined(ASIO_USE_WOLFSSL) && !defined(PUERTS_USE_WOLFSSL)
     ::CONF_modules_unload(1);
 #endif // !defined(OPENSSL_IS_BORINGSSL) && !defined(ASIO_USE_WOLFSSL)
 #if !defined(OPENSSL_NO_ENGINE) \
