@@ -27,6 +27,8 @@ runs:
         npm i
         cd native_src
         ANDROID_NDK=~/android-ndk-r21b node ../cli make --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        sudo apt-get -y install tree
+        tree .backends/${{ inputs.backend }}/
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
