@@ -4,6 +4,9 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2023-08-29
+1. compat with core@2.1.0
+
 ## [2.0.5] - 2023-05-07
 1. compat with core@2.0.5
 2. make `puerts.cpp` only available in webgl, prevent ios crash #58 @xtutu
