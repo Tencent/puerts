@@ -225,7 +225,8 @@ if ( WITH_WEBSOCKET EQUAL 2 )
     )
     set(WOLFSSL_EXAMPLES  OFF)
     set(WOLFSSL_CRYPT_TESTS OFF)
-    #set(BUILD_SHARED_LIBS OFF)
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
     FetchContent_MakeAvailable(wolfssl)
     
@@ -236,11 +237,11 @@ if ( WITH_WEBSOCKET EQUAL 2 )
     target_include_directories(puerts PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
 
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL OPENSSL_EXTRA OPENSSL_ALL WOLFSSL_OPENSSH PUERTS_USE_WOLFSSL)
-    #if(WIN32)
-        # For Windows link ws2_32
-    #    target_link_libraries(puerts
-    #        $<$<PLATFORM_ID:Windows>:ws2_32 crypt32>)
-    #endif()
+    
+    if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
+	    set_property(TARGET wolfssl PROPERTY
+             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif ()
 endif ()
 
 option ( USING_V8 "using v8" ON )
