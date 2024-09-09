@@ -19,6 +19,6 @@ PuerTS的优势在于：它可以将JS脚本发送到浏览器的JS环境里，�
 |xLua WebGL   |    6200ms    |
 |Puerts WebGL |   165ms     |
 
-WebGL目前处在一个子包中，并不在puerts本体里。如果你想了解更多关于WebGL能力的信息，可以查看[PuerTS-WebGL](https://github.com/Tencent/puerts/tree/master/unity/Assets/webgl)。
+我们将相关的能力封装成了一个第三方包。如果你想了解更多关于WebGL能力的信息，可以查看[PuerTS-WebGL](https://github.com/zombieyang/puerts_unity_webgl_demo/edit/master/README.md)。
 
 > 上面的测试是关于执行速度的。在跨语言性能上，这个方案并不优秀。但我们还是可以利用WebGL平台的特性，通过别的方式解决问题，参见[这篇知乎文章](https://zhuanlan.zhihu.com/p/646932579)
