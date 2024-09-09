@@ -10,8 +10,8 @@
 #include "CommonTypes.h"
 
 #pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
-#include "v8.h"
+#include <libplatform/libplatform.h>
+#include <v8.h>
 #pragma warning(pop)
 
 #if !defined(PUERTS_NAMESPACE)
