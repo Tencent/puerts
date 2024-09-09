@@ -43,7 +43,7 @@ jobs:
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8_9.4.146.24
       - name: BuildAndroid_V8_10_6
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
