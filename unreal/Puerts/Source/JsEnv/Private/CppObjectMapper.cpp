@@ -67,7 +67,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
 {
     if (Ptr == nullptr)
     {
-        return v8::Undefined(Isolate);
+        return v8::Null(Isolate);
     }
 
     if (PassByPointer)

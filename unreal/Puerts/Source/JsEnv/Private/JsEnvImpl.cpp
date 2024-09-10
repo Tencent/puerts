@@ -1786,7 +1786,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(
 {
     if (!UEObject)
     {
-        return v8::Undefined(Isolate);
+        return v8::Null(Isolate);
     }
 
     auto PersistentValuePtr = ObjectMap.Find(UEObject);
@@ -1818,7 +1818,10 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(
     v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
-    check(Ptr);    // must not null
+    if (!Ptr)
+    {
+        return v8::Null(Isolate);
+    }
 
     auto HeaderPtr = StructCache.Find(Ptr);
     if (HeaderPtr)
