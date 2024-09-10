@@ -346,11 +346,21 @@ function gcModuleCache () {
     return exportsCache.gc();
 }
 
+function deleteModuleCache (specifier) {
+    return exportsCache.delete(specifier);
+}
+
+function hasModuleCache (specifier) {
+    return exportsCache.has(specifier);
+}
+
 puer.module = {
     createRequire: createLazyRequire,
     clearModuleCache: clearModuleCache,
     statModuleCache: statModuleCache,
     gcModuleCache: gcModuleCache,
+    deleteModuleCache: deleteModuleCache,
+    hasModuleCache: hasModuleCache
 }
 
-export { createLazyRequire as createRequire, clearModuleCache, statModuleCache,  gcModuleCache};
+export { createLazyRequire as createRequire, clearModuleCache, statModuleCache, gcModuleCache, deleteModuleCache, hasModuleCache};
