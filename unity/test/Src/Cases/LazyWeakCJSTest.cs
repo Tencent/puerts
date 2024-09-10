@@ -21,7 +21,6 @@ namespace Puerts.UnitTest
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
 
-            if (jsEnv.Backend is BackendQuickJS) return;
             jsEnv.ExecuteModule("bootstrap_test.mjs");
             var res = jsEnv.Eval<string>("globalThis.lazyss");
             Assert.AreEqual("boot>>module_root>>foo>>", res);

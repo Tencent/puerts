@@ -161,7 +161,7 @@ class ModuleCache extends Map {
     }
 }
 
-const exportsCache = new ModuleCache();
+const exportsCache = typeof WeakRef === 'function' ? new ModuleCache() : new Map();
 const tmpModuleStorage = new Map();
 const builtinModules = new Map([["csharp", CS], ["puer", puer], ["puerts", puer]]);
 
