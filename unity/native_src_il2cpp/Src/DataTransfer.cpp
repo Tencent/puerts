@@ -12,7 +12,7 @@
 #include "V8Utils.h"
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 v8::Local<v8::Value> DataTransfer::FindOrAddCData(
     v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer)
@@ -28,22 +28,15 @@ bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Lo
 
 v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value)
 {
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::EscapableHandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
     v8::Local<v8::Value> ReturnValue = Value->ToObject(Context).ToLocalChecked()->Get(Context, 0).ToLocalChecked();
 
-    return HandleScope.Escape(ReturnValue);
+    return ReturnValue;
 }
 
 void DataTransfer::UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value)
 {
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::EscapableHandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Ret = Outer->ToObject(Context).ToLocalChecked()->Set(Context, 0, Value);
 }
@@ -81,6 +74,9 @@ bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local
     return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(Struct, JsObject);
 }
 
+void DataTransfer::ThrowException(v8::Isolate* Isolate, const char* Message)
+{
+    FV8Utils::ThrowException(Isolate, Message);
+}
 #endif
-
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

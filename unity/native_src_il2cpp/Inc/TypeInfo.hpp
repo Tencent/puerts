@@ -9,21 +9,43 @@
 #pragma once
 
 #include <string>
+#ifdef WITH_V8_FAST_CALL
+#include "V8FastCall.hpp"
+#endif
+#include "PuertsNamespaceDef.h"
 
-#define __DefScriptTTypeName(CLSNAME, CLS) \
-    namespace puerts                       \
-    {                                      \
-    template <>                            \
-    struct ScriptTypeName<CLS>             \
-    {                                      \
-        static constexpr auto value()      \
-        {                                  \
-            return Literal(#CLSNAME);      \
-        }                                  \
-    };                                     \
+#define __DefScriptTTypeName(CLSNAME, CLS)      \
+    namespace PUERTS_NAMESPACE                  \
+    {                                           \
+    template <>                                 \
+    struct ScriptTypeName<CLS>                  \
+    {                                           \
+        static constexpr auto value()           \
+        {                                       \
+            return internal::Literal(#CLSNAME); \
+        }                                       \
+    };                                          \
     }
 
-namespace puerts
+#define PUERTS_BINDING_PROTO_ID() "fdq4falqlqcq"
+
+#if defined(WITH_QJS_NAMESPACE_SUFFIX)
+namespace v8_qjs
+{
+class CFunction;
+}
+
+namespace v8 = v8_qjs;
+#else
+namespace v8
+{
+class CFunction;
+}
+#endif
+
+namespace PUERTS_NAMESPACE
+{
+namespace internal
 {
 template <std::size_t N>
 class StringLiteral
@@ -88,6 +110,8 @@ constexpr auto Literal(const char (&value)[N])
     return StringLiteral<N - 1>(value, typename std::make_index_sequence<N - 1>{});
 }
 
+}    // namespace internal
+
 template <typename T, typename Enable = void>
 struct ScriptTypeName
 {
@@ -134,7 +158,7 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && s
 {
     static constexpr auto value()
     {
-        return Literal("bigint");
+        return internal::Literal("bigint");
     }
 };
 
@@ -143,7 +167,7 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_enum<T>::value>::type>
 {
     static constexpr auto value()
     {
-        return Literal("number");
+        return internal::Literal("number");
     }
 };
 
@@ -153,7 +177,7 @@ struct ScriptTypeName<T,
 {
     static constexpr auto value()
     {
-        return Literal("number");
+        return internal::Literal("number");
     }
 };
 
@@ -162,7 +186,7 @@ struct ScriptTypeName<std::string>
 {
     static constexpr auto value()
     {
-        return Literal("string");
+        return internal::Literal("string");
     }
 };
 
@@ -171,7 +195,7 @@ struct ScriptTypeName<const char*>
 {
     static constexpr auto value()
     {
-        return Literal("cstring");
+        return internal::Literal("cstring");
     }
 };
 
@@ -180,7 +204,7 @@ struct ScriptTypeName<bool>
 {
     static constexpr auto value()
     {
-        return Literal("boolean");
+        return internal::Literal("boolean");
     }
 };
 
@@ -189,14 +213,14 @@ struct ScriptTypeName<void>
 {
     static constexpr auto value()
     {
-        return Literal("void");
+        return internal::Literal("void");
     }
 };
 
 template <typename T>
 struct StaticTypeId
 {
-    static void* get()
+    static const void* get()
     {
         static T* dummy = nullptr;
         return &dummy;
@@ -206,7 +230,7 @@ struct StaticTypeId
 template <typename T, typename Enable = void>
 struct DynamicTypeId
 {
-    static void* get(T* Obj)
+    static const void* get(T* Obj)
     {
         return StaticTypeId<T>::get();
     }
@@ -233,6 +257,38 @@ struct is_script_type<T, typename std::enable_if<std::is_fundamental<T>::value &
 {
 };
 
+template <>
+struct is_script_type<std::string> : std::true_type
+{
+};
+
+template <typename T, size_t Size>
+struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    static constexpr auto value()
+    {
+        return internal::Literal("ArrayBuffer");
+    }
+};
+
+template <>
+struct ScriptTypeName<void*>
+{
+    static constexpr auto value()
+    {
+        return internal::Literal("any");
+    }
+};
+
+template <>
+struct ScriptTypeName<const void*>
+{
+    static constexpr auto value()
+    {
+        return internal::Literal("any");
+    }
+};
+
 class CTypeInfo
 {
 public:
@@ -252,6 +308,7 @@ public:
     virtual unsigned int DefaultCount() const = 0;
     virtual const CTypeInfo* Argument(unsigned int index) const = 0;
     virtual const char* CustomSignature() const = 0;
+    virtual const class v8::CFunction* FastCallInfo() const = 0;
 };
 
 template <typename T, bool ScriptTypePtrAsRef>
@@ -272,7 +329,8 @@ public:
         return (std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value) ||
                (std::is_pointer<T>::value &&
                    !std::is_same<void, typename std::decay<typename std::remove_pointer<T>::type>::type>::value &&
-                   ScriptTypePtrAsRef && !IsConst() && !IsUEType() && !IsObjectType());
+                   !std::is_same<char, typename std::decay<typename std::remove_pointer<T>::type>::type>::value &&
+                   ScriptTypePtrAsRef && !IsUEType() && !IsObjectType());
     };
     virtual bool IsConst() const override
     {
@@ -337,6 +395,10 @@ public:
     {
         return nullptr;
     }
+    virtual const class v8::CFunction* FastCallInfo() const override
+    {
+        return nullptr;
+    };
 
     static const CFunctionInfo* get(unsigned int defaultCount)
     {
@@ -359,6 +421,12 @@ public:
     virtual ~CFunctionInfoByPtrImpl()
     {
     }
+#ifdef WITH_V8_FAST_CALL
+    virtual const class v8::CFunction* FastCallInfo() const override
+    {
+        return V8FastCall<Ret (*)(Args...), func>::info();
+    };
+#endif
 
     static const CFunctionInfo* get(unsigned int defaultCount)
     {
@@ -376,6 +444,12 @@ public:
     virtual ~CFunctionInfoByPtrImpl()
     {
     }
+#ifdef WITH_V8_FAST_CALL
+    virtual const class v8::CFunction* FastCallInfo() const override
+    {
+        return V8FastCall<Ret (Inc::*)(Args...), func>::info();
+    };
+#endif
 
     static const CFunctionInfo* get(unsigned int defaultCount)
     {
@@ -393,6 +467,12 @@ public:
     virtual ~CFunctionInfoByPtrImpl()
     {
     }
+#ifdef WITH_V8_FAST_CALL
+    virtual const class v8::CFunction* FastCallInfo() const override
+    {
+        return V8FastCall<Ret (Inc::*)(Args...) const, func>::info();
+    };
+#endif
 
     static const CFunctionInfo* get(unsigned int defaultCount)
     {
@@ -435,6 +515,22 @@ public:
     {
         return _signature;
     }
+    virtual const class v8::CFunction* FastCallInfo() const override
+    {
+        return nullptr;
+    };
 };
 
-}    // namespace puerts
+struct NamedFunctionInfo
+{
+    const char* Name;
+    const CFunctionInfo* Type;
+};
+
+struct NamedPropertyInfo
+{
+    const char* Name;
+    const CTypeInfo* Type;
+};
+
+}    // namespace PUERTS_NAMESPACE

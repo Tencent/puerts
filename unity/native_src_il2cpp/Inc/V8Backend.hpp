@@ -14,8 +14,8 @@
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
 
-#define __DefObjectType(CLS)                          \
-    namespace puerts                                  \
+#define __DefObjectType_v8_impl(CLS)                  \
+    namespace PUERTS_NAMESPACE                        \
     {                                                 \
     template <>                                       \
     struct is_objecttype<CLS> : public std::true_type \
@@ -23,117 +23,207 @@
     };                                                \
     }
 
-#define __DefCDataPointerConverter(CLS)                                                               \
-    namespace puerts                                                                                  \
-    {                                                                                                 \
-    namespace converter                                                                               \
-    {                                                                                                 \
-    template <>                                                                                       \
-    struct Converter<CLS*>                                                                            \
-    {                                                                                                 \
-        static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS* value)              \
-        {                                                                                             \
-            return ::puerts::DataTransfer::FindOrAddCData(                                            \
-                context->GetIsolate(), context, puerts::DynamicTypeId<CLS>::get(value), value, true); \
-        }                                                                                             \
-        static CLS* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)          \
-        {                                                                                             \
-            return ::puerts::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>());               \
-        }                                                                                             \
-        static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)         \
-        {                                                                                             \
-            return ::puerts::DataTransfer::IsInstanceOf(                                              \
-                context->GetIsolate(), puerts::StaticTypeId<CLS>::get(), value.As<v8::Object>());     \
-        }                                                                                             \
-    };                                                                                                \
-    }                                                                                                 \
+#define __DefCDataPointerConverter_v8_impl(CLS)                                                   \
+    namespace PUERTS_NAMESPACE                                                                    \
+    {                                                                                             \
+    namespace v8_impl                                                                             \
+    {                                                                                             \
+    template <>                                                                                   \
+    struct Converter<CLS*>                                                                        \
+    {                                                                                             \
+        static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS* value)          \
+        {                                                                                         \
+            return ::PUERTS_NAMESPACE::DataTransfer::FindOrAddCData(                              \
+                context->GetIsolate(), context, DynamicTypeId<CLS>::get(value), value, true);     \
+        }                                                                                         \
+        static CLS* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)      \
+        {                                                                                         \
+            return ::PUERTS_NAMESPACE::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>()); \
+        }                                                                                         \
+        static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)     \
+        {                                                                                         \
+            return ::PUERTS_NAMESPACE::DataTransfer::IsInstanceOf(                                \
+                context->GetIsolate(), StaticTypeId<CLS>::get(), value.As<v8::Object>());         \
+        }                                                                                         \
+    };                                                                                            \
+    }                                                                                             \
     }
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
-typedef const v8::FunctionCallbackInfo<v8::Value>& CallbackInfoType;
-typedef v8::Local<v8::Context> ContextType;
-typedef v8::Local<v8::Value> ValueType;
-typedef v8::FunctionCallback FunctionCallbackType;
-typedef InitializeFunc InitializeFuncType;
-typedef JSFunctionInfo GeneralFunctionInfo;
-typedef JSPropertyInfo GeneralPropertyInfo;
-#if USING_IN_UNREAL_ENGINE
-typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
-typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
-#endif
+namespace v8_impl
+{
+template <typename T, typename Enable = void>
+struct Converter;
 
-V8_INLINE int GetArgsLen(const v8::FunctionCallbackInfo<v8::Value>& info)
+template <typename T, typename = void>
+struct CustomArgumentBufferType
 {
-    return info.Length();
-}
+    static constexpr bool enable = false;
+};
 
-V8_INLINE v8::Local<v8::Value> GetArg(const v8::FunctionCallbackInfo<v8::Value>& info, int index)
+struct API
 {
-    return info[index];
-}
+    typedef const v8::FunctionCallbackInfo<v8::Value>& CallbackInfoType;
+    typedef v8::Local<v8::Context> ContextType;
+    typedef v8::Local<v8::Value> ValueType;
+    typedef v8::FunctionCallback FunctionCallbackType;
+    typedef InitializeFunc InitializeFuncType;
+    typedef JSFunctionInfo GeneralFunctionInfo;
+    typedef JSPropertyInfo GeneralPropertyInfo;
+    typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
+    typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
 
-V8_INLINE v8::Local<v8::Context> GetContext(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    return info.GetIsolate()->GetCurrentContext();
-}
-V8_INLINE v8::Local<v8::Object> GetThis(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    return info.This();
-}
-
-V8_INLINE v8::Local<v8::Object> GetHolder(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    return info.Holder();
-}
-
-V8_INLINE void ThrowException(const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
-{
-    v8::Isolate* isolate = info.GetIsolate();
-    isolate->ThrowException(
-        v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
-}
-
-V8_INLINE void SetReturn(const v8::FunctionCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value)
-{
-    info.GetReturnValue().Set(value);
-}
-
-template <typename T1, typename T2>
-V8_INLINE void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
-{
-    LinkOuterImpl(Context, Outer, Inner);
-}
-
-V8_INLINE void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, v8::Local<v8::Value> value)
-{
-    if (holder->IsObject())
+    V8_INLINE static int GetArgsLen(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        auto outer = holder->ToObject(context).ToLocalChecked();
-        auto _unused = outer->Set(context, 0, value);
+        return info.Length();
     }
-}
 
-template <typename T>
-V8_INLINE T* FastGetNativeObjectPointer(v8::Local<v8::Context> context, v8::Local<v8::Object> Object)
-{
-    return DataTransfer::GetPointerFast<T>(Object);
-}
+    V8_INLINE static v8::Local<v8::Value> GetArg(const v8::FunctionCallbackInfo<v8::Value>& info, int index)
+    {
+        return info[index];
+    }
 
-V8_INLINE v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
-{
-    return v8::Undefined(context->GetIsolate());
-}
+    V8_INLINE static v8::Local<v8::Context> GetContext(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return info.GetIsolate()->GetCurrentContext();
+    }
+    V8_INLINE static v8::Local<v8::Object> GetThis(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return info.This();
+    }
 
-V8_INLINE bool IsNullOrUndefined(v8::Local<v8::Context> context, v8::Local<v8::Value> val)
-{
-    return val->IsNullOrUndefined();
-}
+    V8_INLINE static v8::Local<v8::Object> GetHolder(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return info.Holder();
+    }
 
-}    // namespace puerts
+    // use where GetSelfFromData is true
+    V8_INLINE static void* GetFunctionData(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return v8::Local<v8::External>::Cast(info.Data())->Value();
+    }
 
-namespace puerts
-{
+    V8_INLINE static void ThrowException(const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        isolate->ThrowException(
+            v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
+    }
+
+    V8_INLINE static void SetReturn(const v8::FunctionCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value)
+    {
+        info.GetReturnValue().Set(value);
+    }
+
+    template <typename T1, typename T2>
+    V8_INLINE static void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+        LinkOuterImpl(Context, Outer, Inner);
+    }
+
+    V8_INLINE static void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, v8::Local<v8::Value> value)
+    {
+        if (holder->IsObject())
+        {
+            auto outer = holder->ToObject(context).ToLocalChecked();
+            (void) (outer->Set(context, 0, value));
+        }
+    }
+
+    template <typename T>
+    V8_INLINE static T* FastGetNativeObjectPointer(v8::Local<v8::Context> context, v8::Local<v8::Object> Object)
+    {
+        return DataTransfer::GetPointerFast<T>(Object);
+    }
+
+    V8_INLINE static v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
+    {
+        return v8::Undefined(context->GetIsolate());
+    }
+
+    V8_INLINE static bool IsNullOrUndefined(v8::Local<v8::Context> context, v8::Local<v8::Value> val)
+    {
+        return val->IsNullOrUndefined();
+    }
+
+    template <typename T, typename CDB>
+    static void Register(FinalizeFunc Finalize, const CDB& Cdb)
+    {
+        const bool isUEType = is_uetype<T>::value;
+        static std::vector<JSFunctionInfo> s_functions_{};
+        static std::vector<JSFunctionInfo> s_methods_{};
+        static std::vector<JSPropertyInfo> s_properties_{};
+        static std::vector<JSPropertyInfo> s_variables_{};
+
+        static std::vector<NamedFunctionInfo> s_constructorInfos_{};
+        static std::vector<NamedFunctionInfo> s_methodInfos_{};
+        static std::vector<NamedFunctionInfo> s_functionInfos_{};
+        static std::vector<NamedPropertyInfo> s_propertyInfos_{};
+        static std::vector<NamedPropertyInfo> s_variableInfos_{};
+
+        JSClassDefinition ClassDef = JSClassEmptyDefinition;
+
+        if (isUEType)
+        {
+            ClassDef.UETypeName = Cdb.className_;
+        }
+        else
+        {
+            ClassDef.ScriptName = Cdb.className_;
+            ClassDef.TypeId = StaticTypeId<T>::get();
+            ClassDef.SuperTypeId = Cdb.superTypeId_;
+        }
+
+        ClassDef.Initialize = Cdb.constructor_;
+        ClassDef.Finalize = Finalize;
+
+        s_functions_ = std::move(Cdb.functions_);
+        s_functions_.push_back({nullptr, nullptr, nullptr});
+        ClassDef.Functions = s_functions_.data();
+
+        s_methods_ = std::move(Cdb.methods_);
+        s_methods_.push_back({nullptr, nullptr, nullptr});
+        ClassDef.Methods = s_methods_.data();
+
+        s_properties_ = std::move(Cdb.properties_);
+        s_properties_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
+        ClassDef.Properties = s_properties_.data();
+
+        s_variables_ = std::move(Cdb.variables_);
+        s_variables_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
+        ClassDef.Variables = s_variables_.data();
+
+        s_constructorInfos_ = std::move(Cdb.constructorInfos_);
+        s_constructorInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+        ClassDef.ConstructorInfos = s_constructorInfos_.data();
+
+        s_methodInfos_ = std::move(Cdb.methodInfos_);
+        s_methodInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+        ClassDef.MethodInfos = s_methodInfos_.data();
+
+        s_functionInfos_ = std::move(Cdb.functionInfos_);
+        s_functionInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+        ClassDef.FunctionInfos = s_functionInfos_.data();
+
+        s_propertyInfos_ = std::move(Cdb.propertyInfos_);
+        s_propertyInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
+        ClassDef.PropertyInfos = s_propertyInfos_.data();
+
+        s_variableInfos_ = std::move(Cdb.variableInfos_);
+        s_variableInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
+        ClassDef.VariableInfos = s_variableInfos_.data();
+
+        RegisterJSClass(ClassDef);
+    }
+
+    template <typename T>
+    using Converter = Converter<T>;
+
+    template <typename T>
+    using CustomArgumentBufferType = CustomArgumentBufferType<T>;
+};
+
 class StringHolder
 {
 public:
@@ -144,20 +234,12 @@ public:
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
-#else
-            data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
-#endif
+            data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
         }
         else if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
-#else
-            data = static_cast<char*>(Ab->GetContents().Data());
-#endif
+            data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
         }
         else
         {
@@ -199,16 +281,11 @@ private:
 };
 
 template <>
-struct ArgumentBufferType<const char*>
+struct CustomArgumentBufferType<const char*>
 {
     using type = StringHolder;
-    static constexpr bool is_custom = true;
+    static constexpr bool enable = true;
 };
-
-namespace converter
-{
-template <typename T, typename Enable = void>
-struct Converter;
 
 template <typename T>
 struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8 && std::is_signed<T>::value>::type>
@@ -220,11 +297,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        if (value->IsBigInt())
-        {
-            return value.As<v8::BigInt>()->Int64Value();
-        }
-        return 0;
+        return value->IsBigInt() ? static_cast<T>(value->ToBigInt(context).ToLocalChecked()->Int64Value()) : 0;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -243,11 +316,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        if (value->IsBigInt())
-        {
-            return value.As<v8::BigInt>()->Uint64Value();
-        }
-        return 0;
+        return value->IsBigInt() ? static_cast<T>(value->ToBigInt(context).ToLocalChecked()->Uint64Value()) : 0;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -370,11 +439,7 @@ struct Converter<void*>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, void* value)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value, 0);
-#else
-        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
-#endif
+        return DataTransfer::NewArrayBuffer(context, value, 0);
     }
 
     static void* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -383,24 +448,16 @@ struct Converter<void*>
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
-#else
-            return static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
-#endif
+            return static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
         }
         if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return v8::ArrayBuffer_Get_Data(Ab);
-#else
-            return Ab->GetContents().Data();
-#endif
+            return DataTransfer::GetArrayBufferData(Ab);
         }
         if (value->IsObject())
         {
-            return ::puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>());
+            return DataTransfer::GetPointerFast<void>(value.As<v8::Object>());
         }
 
         return nullptr;
@@ -492,11 +549,7 @@ struct Converter<T,
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value, 0);
-#else
-        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
-#endif
+        return DataTransfer::NewArrayBuffer(context, value, 0);
     }
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -505,20 +558,12 @@ struct Converter<T,
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return reinterpret_cast<T>(static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset());
-#else
-            return reinterpret_cast<T>(static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset());
-#endif
+            return reinterpret_cast<T>(static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset());
         }
         if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return static_cast<T>(v8::ArrayBuffer_Get_Data(Ab));
-#else
-            return static_cast<T>(Ab->GetContents().Data());
-#endif
+            return static_cast<T>(DataTransfer::GetArrayBufferData(Ab));
         }
         return nullptr;
     }
@@ -534,11 +579,7 @@ struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !s
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value[Size])
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), &(value[0]), sizeof(T) * Size);
-#else
-        return v8::ArrayBuffer::New(context->GetIsolate(), value, sizeof(T) * Size);
-#endif
+        return DataTransfer::NewArrayBuffer(context, &(value[0]), sizeof(T) * Size);
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -551,13 +592,9 @@ struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !s
         if (value->IsArrayBuffer())
         {
             auto ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
             size_t byteLength;
-            auto _UnUsed = v8::ArrayBuffer_Get_Data(ab, byteLength);
+            (void) (DataTransfer::GetArrayBufferData(ab, byteLength));
             return byteLength >= sizeof(T) * Size;
-#else
-            return ab->GetContents().ByteLength() >= sizeof(T) * Size;
-#endif
         }
         return false;
     }
@@ -601,38 +638,5 @@ struct Converter<const T*,
     }
 };
 
-}    // namespace converter
-
-template <>
-struct is_script_type<std::string> : std::true_type
-{
-};
-
-template <typename T, size_t Size>
-struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
-{
-    static constexpr auto value()
-    {
-        return Literal("ArrayBuffer");
-    }
-};
-
-template <>
-struct ScriptTypeName<void*>
-{
-    static constexpr auto value()
-    {
-        return Literal("any");
-    }
-};
-
-template <>
-struct ScriptTypeName<const void*>
-{
-    static constexpr auto value()
-    {
-        return Literal("any");
-    }
-};
-
-}    // namespace puerts
+}    // namespace v8_impl
+}    // namespace PUERTS_NAMESPACE
