@@ -833,7 +833,7 @@ V8_EXPORT v8::Isolate* GetIsolate(puerts::JSEnv* jsEnv)
     return jsEnv->MainIsolate;
 }
 
-V8_EXPORT pesapi_env_holder GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
+V8_EXPORT pesapi_env_ref GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
 {
     v8::Isolate* Isolate = jsEnv->MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
@@ -842,7 +842,7 @@ V8_EXPORT pesapi_env_holder GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
     v8::Context::Scope ContextScope(Context);
     
     auto env = reinterpret_cast<pesapi_env>(*Context);
-    return pesapi_hold_env(env);
+    return pesapi_create_env_ref(env);
 }
 
 V8_EXPORT puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, const void* type_id, const void* super_type_id, void* klass, bool isValueType, bool isDelegate, const char* delegateSignature)

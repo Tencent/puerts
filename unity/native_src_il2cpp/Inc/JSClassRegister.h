@@ -20,23 +20,31 @@
 
 #include <string>
 
+#include "NamespaceDef.h"
+
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #if USING_IN_UNREAL_ENGINE
 #include "TypeInfo.hpp"
+
+static const FAnsiStringView EditorOnlyPropertySuffix = "_EditorOnly";
 #endif
 
 #include <mutex>
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
+class CFunctionInfo;
 struct JSENV_API JSFunctionInfo
 {
     const char* Name;
     v8::FunctionCallback Callback;
     void* Data = nullptr;
+    const CFunctionInfo* ReflectionInfo = nullptr;
 };
 
 struct JSENV_API JSPropertyInfo
@@ -52,19 +60,8 @@ typedef void (*FinalizeFunc)(void* Ptr);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-#if USING_IN_UNREAL_ENGINE
-struct NamedFunctionInfo
-{
-    const char* Name;
-    const CFunctionInfo* Type;
-};
-
-struct NamedPropertyInfo
-{
-    const char* Name;
-    const CTypeInfo* Type;
-};
-#endif
+struct NamedFunctionInfo;
+struct NamedPropertyInfo;
 
 struct JSENV_API JSClassDefinition
 {
@@ -105,6 +102,9 @@ void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 
 std::recursive_mutex& JSENV_API RegisterMutex();
 
+void JSENV_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+    const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
+
 void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
 JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId, bool TryLazyLoad = false);
@@ -112,25 +112,28 @@ JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId, bool TryLaz
 typedef void (*LoadTypeFunc) (const void* typeId);
 JSENV_API void SetLazyLoadCallback(LoadTypeFunc Callback);
 
-const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
+JSENV_API const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
+#if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
 AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
-#if USING_IN_UNREAL_ENGINE
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
+
+JSENV_API bool IsEditorOnlyUFunction(const UFunction* Func);
+
 #endif
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE
 
-#define PUERTS_MODULE(Name, RegFunc)                 \
-    static struct FAutoRegisterFor##Name             \
-    {                                                \
-        FAutoRegisterFor##Name()                     \
-        {                                            \
-            puerts::RegisterAddon(#Name, (RegFunc)); \
-        }                                            \
+#define PUERTS_MODULE(Name, RegFunc)                           \
+    static struct FAutoRegisterFor##Name                       \
+    {                                                          \
+        FAutoRegisterFor##Name()                               \
+        {                                                      \
+            PUERTS_NAMESPACE::RegisterAddon(#Name, (RegFunc)); \
+        }                                                      \
     } _AutoRegisterFor##Name

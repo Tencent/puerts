@@ -11,8 +11,9 @@
 #include "UObject/Class.h"
 #endif
 #include <map>
+#include <cstring>
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 template <class T>
 static T* PropertyInfoDuplicate(T* Arr)
@@ -79,6 +80,9 @@ public:
         return RegInfoMutex;
     }
 
+    void SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+        const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
+
     void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
     const JSClassDefinition* FindClassByID(const void* TypeId, bool TryLazyLoad);
@@ -90,21 +94,21 @@ public:
 
     const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
+#if USING_IN_UNREAL_ENGINE
     void RegisterAddon(const std::string& Name, AddonRegisterFunc RegisterFunc);
 
     AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 
-#if USING_IN_UNREAL_ENGINE
     const JSClassDefinition* FindClassByType(UStruct* Type);
 #endif
 
 private:
     std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
-    std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
     LoadTypeFunc LazyLoad = nullptr;
     std::recursive_mutex RegInfoMutex;
 #if USING_IN_UNREAL_ENGINE
+    std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
 #endif
 };
@@ -191,15 +195,14 @@ const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const std::stri
     }
 }
 
+#if USING_IN_UNREAL_ENGINE
 void JSClassRegister::RegisterAddon(const std::string& Name, AddonRegisterFunc RegisterFunc)
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     AddonRegisterInfos[Name] = RegisterFunc;
 }
 
 AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const std::string& Name)
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     auto Iter = AddonRegisterInfos.find(Name);
     if (Iter == AddonRegisterInfos.end())
     {
@@ -211,10 +214,8 @@ AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const std::string& Name
     }
 }
 
-#if USING_IN_UNREAL_ENGINE
 const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     auto Iter = StructNameToClassDefinition.find(Type->GetName());
     if (Iter == StructNameToClassDefinition.end())
     {
@@ -278,6 +279,34 @@ const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
 
+#if USING_IN_UNREAL_ENGINE
+
+bool IsEditorOnlyUFunction(const UFunction* Func)
+{
+    // a simplified version of IsEditorOnlyObject(), sadly it's a EditorOnly Function so I have to reimplement a toy one
+    if (!Func)
+    {
+        return false;
+    }
+    if (Func->HasAnyFunctionFlags(FUNC_EditorOnly))
+    {
+        return true;
+    }
+    auto InObject = Func;
+    if (InObject->HasAnyMarks(OBJECTMARK_EditorOnly) || InObject->IsEditorOnly())
+    {
+        return true;
+    }
+
+    auto Package = Func->GetPackage();
+    if (Package && Package->HasAnyPackageFlags(PKG_EditorOnly))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
 {
     GetJSClassRegister()->RegisterAddon(Name, RegisterFunc);
@@ -288,11 +317,10 @@ AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name)
     return GetJSClassRegister()->FindAddonRegisterFunc(Name);
 }
 
-#if USING_IN_UNREAL_ENGINE
 const JSClassDefinition* FindClassByType(UStruct* Type)
 {
     return GetJSClassRegister()->FindClassByType(Type);
 }
 #endif
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE
