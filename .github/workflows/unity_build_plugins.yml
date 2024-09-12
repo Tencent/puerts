@@ -226,6 +226,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4.146.24
           build_proj_dir: native_src_il2cpp
+          arch: x64
 
   linux64:
     runs-on: ubuntu-latest
