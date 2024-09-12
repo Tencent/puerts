@@ -5,6 +5,7 @@ import assert from "assert";
 import downloadBackend from "./backend.mjs";
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
+import * as process from "process";
 
 const glob = createRequire(fileURLToPath(import.meta.url))('glob');
 
@@ -237,7 +238,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     if (options.backend == "v8_9.4") {
         options.backend = "v8_9.4.146.24"
     }
-    if (!existsSync(`${cwd}/.backends/${options.backend}`)) {
+    if (!existsSync(`${cwd}/../native_src/.backends/${options.backend}`)) {
         await downloadBackend(cwd, options.backend);
     }
     if (options.platform == "win" && options.config != "Release") {
@@ -263,6 +264,11 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     const definitionD = (BackendConfig.definition || []).join(';')
     const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';')
     const incD = (BackendConfig.include || []).join(';')
+    
+    if ('native_src_il2cpp' == basename(cwd) && !existsSync(`${cwd}/Src/FunctionBridge.Gen.h`)) {
+         console.log(`${cwd}/Src/FunctionBridge.Gen.h not existed! using default one`);
+         cp(join(cwd, '../cli/FunctionBridge.Gen.h'), join(cwd, 'Src/FunctionBridge.Gen.h'));
+    }
 
     mkdir('-p', CMAKE_BUILD_PATH);
     mkdir('-p', OUTPUT_PATH)
