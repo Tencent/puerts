@@ -76,27 +76,18 @@ struct JSENV_API JSClassDefinition
     JSPropertyInfo* Variables;     //静态属性
     FinalizeFunc Finalize;
     // int InternalFieldCount;
-#if USING_IN_UNREAL_ENGINE
     NamedFunctionInfo* ConstructorInfos;
     NamedFunctionInfo* MethodInfos;
     NamedFunctionInfo* FunctionInfos;
     NamedPropertyInfo* PropertyInfos;
     NamedPropertyInfo* VariableInfos;
-#endif
     void* Data = nullptr;
 };
 
-#if USING_IN_UNREAL_ENGINE
 #define JSClassEmptyDefinition                      \
     {                                               \
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
     }
-#else
-#define JSClassEmptyDefinition                      \
-    {                                               \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0             \
-    }
-#endif
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 

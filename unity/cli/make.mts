@@ -274,6 +274,10 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
              console.warn(`${join(cwd, '../Assets/core/upm/Plugins/puerts_il2cpp/unityenv_for_puerts.h')} not existed! using default one`);
              cp(join(cwd, '../cli/unityenv_for_puerts.h'), join(cwd, 'Inc/unityenv_for_puerts.h'));
          }
+         if (!existsSync(join(cwd, '../Assets/core/upm/Plugins/puerts_il2cpp/UnityExports4Puerts.h'))) {
+             console.warn(`${join(cwd, '../Assets/core/upm/Plugins/puerts_il2cpp/UnityExports4Puerts.h')} not existed! using default one`);
+             cp(join(cwd, '../cli/UnityExports4Puerts.h'), join(cwd, 'Inc/UnityExports4Puerts.h'));
+         }
     }
 
     mkdir('-p', CMAKE_BUILD_PATH);
