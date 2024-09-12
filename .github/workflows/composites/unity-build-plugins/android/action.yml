@@ -14,6 +14,10 @@ inputs:
   websocket:
     description: enable websocket
     default: '0'
+  build_proj_dir:
+    description: 'build project dir'     
+    required: false
+    default: 'native_src'
   GITHUB_TOKEN:
     required:
 
@@ -25,7 +29,7 @@ runs:
       run: |
         cd unity
         npm i
-        cd native_src
+        cd ${{ inputs.build_proj_dir }}
         ANDROID_NDK=~/android-ndk-r21b node ../cli make --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
         rm -rf .backends/${{ inputs.backend }}
     - name: Upload

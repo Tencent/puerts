@@ -14,6 +14,10 @@ inputs:
   websocket:
     description: enable websocket
     default: '0'
+  build_proj_dir:
+    description: 'build project dir'     
+    required: false
+    default: 'native_src'
   GITHUB_TOKEN:
     required:
 
@@ -25,7 +29,7 @@ runs:
       run: |
         cd unity
         npm i
-        cd native_src
+        cd ${{ inputs.build_proj_dir }}
         OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../cli make --platform ohos --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
     - name: Upload
       uses: actions/upload-artifact@v3
