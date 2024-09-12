@@ -32,6 +32,7 @@ program
     )
     .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
     .option('-ws, --websocket <number>', 'with websocket support')
+    .option('-G, --generator <generator-name>', 'cmake generator name')
     .action(function (quickcommand, options) {
         let backend = options.backend;
         let config = options.config;

@@ -14,7 +14,8 @@ interface BuildOptions {
     platform: 'osx' | 'win' | 'ios' | 'android' | 'linux' | 'ohos' | 'wasm',
     arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'wasm32' | 'auto',
     backend: string,
-    websocket?: number
+    websocket?: number,
+    generator?: string
 }
 
 //// 脚本 scripts
@@ -153,7 +154,8 @@ const platformCompileConfig = {
             outputPluginPath: 'x86_64',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A x64 ..`).code)
+                const generator = options.generator || 'Visual Studio 16 2019';
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "${generator}" -A x64 ..`).code)
                 cd("..")
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
@@ -164,7 +166,8 @@ const platformCompileConfig = {
             outputPluginPath: 'x86',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeAddedLibraryName: string, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A Win32 ..`).code)
+                const generator = options.generator || 'Visual Studio 16 2019';
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "${generator}" -A Win32 ..`).code)
                 cd("..")
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
