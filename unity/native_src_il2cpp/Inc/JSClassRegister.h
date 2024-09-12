@@ -28,9 +28,9 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(pop)
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
-#if USING_IN_UNREAL_ENGINE
 #include "TypeInfo.hpp"
 
+#if USING_IN_UNREAL_ENGINE
 static const FAnsiStringView EditorOnlyPropertySuffix = "_EditorOnly";
 #endif
 
