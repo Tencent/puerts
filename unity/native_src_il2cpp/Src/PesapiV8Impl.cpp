@@ -879,7 +879,6 @@ MSVC_PRAGMA(warning(pop))
 void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
     const void* functions_info, const void* properties_info, const void* variables_info)
 {
-#if USING_IN_UNREAL_ENGINE
     if (strcmp(proto_magic_id, PUERTS_BINDING_PROTO_ID()) != 0)
     {
         return;
@@ -889,7 +888,6 @@ void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, con
         static_cast<const puerts::NamedFunctionInfo*>(methods_info), static_cast<const puerts::NamedFunctionInfo*>(functions_info),
         static_cast<const puerts::NamedPropertyInfo*>(properties_info),
         static_cast<const puerts::NamedPropertyInfo*>(variables_info));
-#endif
 }
 
 const void* pesapi_find_type_id(const char* module_name, const char* type_name)
