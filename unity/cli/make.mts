@@ -266,7 +266,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     const incD = (BackendConfig.include || []).join(';')
     
     if ('native_src_il2cpp' == basename(cwd) && !existsSync(`${cwd}/Src/FunctionBridge.Gen.h`)) {
-         console.log(`${cwd}/Src/FunctionBridge.Gen.h not existed! using default one`);
+         console.warn(`${cwd}/Src/FunctionBridge.Gen.h not existed! using default one`);
          cp(join(cwd, '../cli/FunctionBridge.Gen.h'), join(cwd, 'Src/FunctionBridge.Gen.h'));
     }
 

@@ -65,6 +65,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
+      - name: BuildAndroidIl2cpp
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4.146.24
+          build_proj_dir: native_src_il2cpp
           
   ohos:
     runs-on: ubuntu-latest
@@ -83,7 +89,7 @@ jobs:
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8_9.4.146.24
       - name: BuildOHOS_V8_10_6
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
@@ -100,6 +106,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
+      - name: BuildOHOSIl2cpp
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4.146.24
+          build_proj_dir: native_src_il2cpp
 
   ios:
     runs-on: macos-12
@@ -110,7 +122,7 @@ jobs:
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8_9.4.146.24
       - name: BuildiOS_V8_10_6
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -132,6 +144,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
+      - name: BuildiOSIl2cpp
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4.146.24
+          build_proj_dir: native_src_il2cpp
 
   osx:
     runs-on: macos-12
@@ -142,7 +160,7 @@ jobs:
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8_9.4.146.24
       - name: BuildOSX_V8_10_6
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -164,6 +182,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
+      - name: BuildOSXIl2cpp
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4.146.24
+          build_proj_dir: native_src_il2cpp
 
   windows:
     runs-on: windows-2019
@@ -174,7 +198,7 @@ jobs:
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8_9.4.146.24
       - name: BuildWindows_V8_10_6
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -196,6 +220,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
+      - name: BuildWindowsIl2cpp
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4.146.24
+          build_proj_dir: native_src_il2cpp
 
   linux64:
     runs-on: ubuntu-latest
@@ -206,7 +236,7 @@ jobs:
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8_9.4.146.24
       - name: BuildLinux_V8_10_6
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
@@ -228,6 +258,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
+      - name: BuildLinuxIl2cpp
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4.146.24
+          build_proj_dir: native_src_il2cpp
           
   wasm:
     runs-on: ubuntu-latest
