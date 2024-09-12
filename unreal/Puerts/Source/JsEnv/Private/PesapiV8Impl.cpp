@@ -150,6 +150,12 @@ pesapi_value pesapi_create_array(pesapi_env env)
     return v8impl::PesapiValueFromV8LocalValue(v8::Array::New(context->GetIsolate()));
 }
 
+pesapi_value pesapi_create_object(pesapi_env env)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    return v8impl::PesapiValueFromV8LocalValue(v8::Object::New(context->GetIsolate()));
+}
+
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -704,7 +710,8 @@ struct pesapi_property_descriptor__
     pesapi_callback method;
     pesapi_callback getter;
     pesapi_callback setter;
-    void* data;
+    void* data0;
+    void* data1;
 
     union
     {
@@ -745,18 +752,19 @@ void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index,
     properties[index].name = name;
     properties[index].is_static = is_static;
     properties[index].method = method;
-    properties[index].data = data;
+    properties[index].data0 = data;
     properties[index].info.signature_info = signature_info;
 }
 
 void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback getter, pesapi_callback setter, void* data, pesapi_type_info type_info)
+    pesapi_callback getter, pesapi_callback setter, void* getter_userdata, void* setter_userdata, pesapi_type_info type_info)
 {
     properties[index].name = name;
     properties[index].is_static = is_static;
     properties[index].getter = getter;
     properties[index].setter = setter;
-    properties[index].data = data;
+    properties[index].data0 = getter_userdata;
+    properties[index].data1 = setter_userdata;
     properties[index].info.type_info = type_info;
 }
 
@@ -838,17 +846,17 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
             if (p->is_static)
             {
                 p_variables.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data});
+                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
             }
             else
             {
                 p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data});
+                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
             }
         }
         else if (p->method != nullptr)
         {
-            puerts::JSFunctionInfo finfo{p->name, reinterpret_cast<v8::FunctionCallback>(p->method), p->data};
+            puerts::JSFunctionInfo finfo{p->name, reinterpret_cast<v8::FunctionCallback>(p->method), p->data0};
             if (p->is_static)
             {
                 p_functions.push_back(finfo);

@@ -50,7 +50,8 @@ struct JSENV_API JSPropertyInfo
     const char* Name;
     v8::FunctionCallback Getter;
     v8::FunctionCallback Setter;
-    void* Data = nullptr;
+    void* GetterData = nullptr;
+    void* SetterData = nullptr;
 };
 
 typedef void (*FinalizeFunc)(void* Ptr);

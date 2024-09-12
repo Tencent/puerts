@@ -187,11 +187,11 @@ struct API
         ClassDef.Methods = s_methods_.data();
 
         s_properties_ = std::move(Cdb.properties_);
-        s_properties_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
+        s_properties_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr, nullptr});
         ClassDef.Properties = s_properties_.data();
 
         s_variables_ = std::move(Cdb.variables_);
-        s_variables_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
+        s_variables_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr, nullptr});
         ClassDef.Variables = s_variables_.data();
 
         s_constructorInfos_ = std::move(Cdb.constructorInfos_);

@@ -181,13 +181,13 @@ struct API
         for (const auto& prop : Cdb.properties_)
         {
             pesapi_set_property_info(properties, pos++, prop.Name, false, reinterpret_cast<FunctionCallbackType>(prop.Getter),
-                reinterpret_cast<FunctionCallbackType>(prop.Setter), nullptr, nullptr);
+                reinterpret_cast<FunctionCallbackType>(prop.Setter), nullptr, nullptr, nullptr);
         }
 
         for (const auto& prop : Cdb.variables_)
         {
             pesapi_set_property_info(properties, pos++, prop.Name, true, reinterpret_cast<FunctionCallbackType>(prop.Getter),
-                reinterpret_cast<FunctionCallbackType>(prop.Setter), nullptr, nullptr);
+                reinterpret_cast<FunctionCallbackType>(prop.Setter), nullptr, nullptr, nullptr);
         }
 
         pesapi_finalize finalize = Finalize;
