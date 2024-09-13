@@ -230,9 +230,13 @@ function createLazyRequire(referer) {
         let fullPath = joinAsPosix(requiringDir, specifier);
         
         let key = fullPath;
-        let res = exportsCache.get(key) || tmpModuleStorage.get(key);
+        let res = exportsCache.get(key);
         if (res) {
             return res;
+        }
+        const tmpModule = tmpModuleStorage.get(key);
+        if (tmpModule) {
+            return tmpModule.exports;
         }
         
         let {content , debugPath} = puer.loadFile(fullPath);
