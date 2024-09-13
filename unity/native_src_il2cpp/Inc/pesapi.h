@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 10
+#define PESAPI_VERSION 11
 
 #define PESAPI_EXTERN
 
@@ -141,6 +141,7 @@ PESAPI_EXTERN pesapi_value pesapi_create_double(pesapi_env env, double value);
 PESAPI_EXTERN pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t length);
 PESAPI_EXTERN pesapi_value pesapi_create_binary(pesapi_env env, void* str, size_t length);
 PESAPI_EXTERN pesapi_value pesapi_create_array(pesapi_env env);
+PESAPI_EXTERN pesapi_value pesapi_create_object(pesapi_env env);
 
 PESAPI_EXTERN bool pesapi_get_value_bool(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value value);
@@ -230,7 +231,7 @@ PESAPI_EXTERN void pesapi_set_method_info(pesapi_property_descriptor properties,
     pesapi_callback method, void* userdata, pesapi_signature_info signature_info);
 
 PESAPI_EXTERN void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback getter, pesapi_callback setter, void* userdata, pesapi_type_info type_info);
+    pesapi_callback getter, pesapi_callback setter, void* getter_userdata, void* setter_userdata, pesapi_type_info type_info);
 
 PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name,
     pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties,
