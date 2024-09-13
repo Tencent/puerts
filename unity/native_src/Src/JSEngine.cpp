@@ -222,6 +222,9 @@ namespace PUERTS_NAMESPACE
             bool success = Eval(ExecuteModuleJSCode, "__puer_execute__.mjs");
             if (!success) return nullptr;
             
+#ifdef THREAD_SAFE
+            v8::Locker Locker(MainIsolate);
+#endif
             v8::Isolate::Scope IsolateScope(MainIsolate);
             v8::HandleScope HandleScope(MainIsolate);
             v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);
