@@ -267,6 +267,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         BackendConfig.definition.push("WITH_INSPECTOR");
     }
     if (options.thread_safe) {
+        console.log('################################## thread_safe ##################################');
         BackendConfig.definition.push("THREAD_SAFE");
     }
     const definitionD = (BackendConfig.definition || []).join(';')
