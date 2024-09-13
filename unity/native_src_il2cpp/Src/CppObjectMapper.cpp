@@ -215,6 +215,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         {
             return v8::Local<v8::FunctionTemplate>();
         }
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::EscapableHandleScope HandleScope(Isolate);
 
         auto Template = v8::FunctionTemplate::New(

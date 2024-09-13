@@ -304,6 +304,9 @@ static v8::Value* GetModuleExecutor(v8::Context* env)
 static void* GetJSObjectValue(const PersistentObjectInfo* objectInfo, const char* key, const void* Typeid)
 {
     auto Isolate = objectInfo->EnvInfo->Isolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     v8::Isolate::Scope Isolatescope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto LocalContext = objectInfo->EnvInfo->Context.Get(Isolate);
@@ -718,6 +721,9 @@ struct JSEnv
 
         auto Isolate = MainIsolate;
         
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
 

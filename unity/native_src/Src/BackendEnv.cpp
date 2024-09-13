@@ -995,6 +995,9 @@ static void DoHostImportModuleDynamically(void* import_data_)
       
     v8::Isolate* isolate(import_data->isolate);
     auto backend_env = FBackendEnv::Get(isolate);
+#ifdef THREAD_SAFE
+    v8::Locker Locker(isolate);
+#endif
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Context> context = backend_env->MainContext.Get(isolate);
     v8::Context::Scope context_scope(context);
@@ -1073,6 +1076,9 @@ v8::MaybeLocal<v8::Promise> esmodule::HostImportModuleDynamically(
     v8::Local<v8::Value> referrer_name = referrer->GetResourceName();
 #endif
     auto isolate = context->GetIsolate();
+#ifdef THREAD_SAFE
+    v8::Locker Locker(isolate);
+#endif
     v8::HandleScope handle_scope(isolate);
     v8::Context::Scope context_scope(context);
     v8::Local<v8::Promise::Resolver> resolver;
@@ -1112,6 +1118,9 @@ void esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8
 std::string FBackendEnv::GetJSStackTrace()
 {
     v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = MainContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
