@@ -83,6 +83,10 @@ jobs:
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test mult -sq
+      - name: UnitTest-v8-ts
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test v8_9.4 -ts
           
   unittest-osx-dotnet:
     runs-on: macos-latest
@@ -120,6 +124,10 @@ jobs:
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test mult -sq
+      - name: UnitTest-v8-ts
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test v8_9.4 -ts
           
   unittest-linux-dotnet:
     runs-on: ubuntu-20.04
@@ -164,3 +172,7 @@ jobs:
         run: |
           cd unity/test/dotnet
           node ../../cli dotnet-test mult -sq
+      - name: UnitTest-v8-ts
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test v8_9.4 -ts
