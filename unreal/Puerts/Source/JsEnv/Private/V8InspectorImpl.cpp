@@ -555,8 +555,12 @@ void V8InspectorClientImpl::OnClose(wspp_connection_hdl Handle)
 
 void V8InspectorClientImpl::OnFail(wspp_connection_hdl Handle)
 {
+    wspp_server::connection_ptr con = Server.get_con_from_hdl(Handle);
+    std::string message = con->get_ec().message();
 #if USING_UE
-    UE_LOG(LogV8Inspector, Error, TEXT("Connection OnFail"));
+    UE_LOG(LogV8Inspector, Error, TEXT("Connection OnFail %s"), UTF8_TO_TCHAR(message.c_str()));
+#else
+    puerts::PLog(puerts::Error, "Connection OnFail %s", message.c_str());
 #endif
 }
 
