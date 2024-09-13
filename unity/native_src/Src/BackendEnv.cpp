@@ -408,6 +408,9 @@ void FBackendEnv::UnInitialize()
 void FBackendEnv::LogicTick()
 {
 #if WITH_NODEJS
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
     v8::Isolate::Scope IsolateScope(MainIsolate);
     v8::HandleScope HandleScope(MainIsolate);
     auto Context = MainContext.Get(MainIsolate);
@@ -477,6 +480,9 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
 #if !WITH_QUICKJS
             return true;
 #else
+#ifdef THREAD_SAFE
+            v8::Locker Locker(Isolate);
+#endif
             v8::Isolate::Scope IsolateScope(Isolate);
             v8::HandleScope HandleScope(Isolate);
             JSContext* ctx = Context->context_;

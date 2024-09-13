@@ -727,6 +727,9 @@ namespace PUERTS_NAMESPACE
     
     bool JSEngine::ClearModuleCache(const char* Path)
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(MainIsolate);
+#endif
         v8::Isolate::Scope IsolateScope(MainIsolate);
         v8::HandleScope HandleScope(MainIsolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);

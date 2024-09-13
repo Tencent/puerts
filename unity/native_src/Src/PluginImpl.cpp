@@ -892,6 +892,9 @@ void V8Plugin::PushObjectForJSFunction(void* pFunction, int ClassID, void* Ptr)
     FValue Value;
     Value.Type = puerts::NativeObject;
     auto Isolate = Function->ResultInfo.Isolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Function->ResultInfo.Context.Get(Isolate);
