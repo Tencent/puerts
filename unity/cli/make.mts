@@ -15,7 +15,9 @@ interface BuildOptions {
     arch: 'x64' | 'ia32' | 'armv7' | 'arm64' | 'wasm32' | 'auto',
     backend: string,
     websocket?: number,
-    generator?: string
+    generator?: string,
+    with_inspector?: boolean,
+    thread_safe?: boolean
 }
 
 //// 脚本 scripts
@@ -260,9 +262,12 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         console.log("=== Puer ===");
         return;
     }
-    if (options.config == 'Debug') {
-        BackendConfig.definition = BackendConfig.definition || [];
+    BackendConfig.definition = BackendConfig.definition || [];
+    if (options.config == 'Debug' || options.with_inspector) {
         BackendConfig.definition.push("WITH_INSPECTOR");
+    }
+    if (options.thread_safe) {
+        BackendConfig.definition.push("THREAD_SAFE");
     }
     const definitionD = (BackendConfig.definition || []).join(';')
     const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';')
