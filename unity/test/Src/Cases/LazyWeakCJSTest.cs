@@ -118,7 +118,7 @@ namespace Puerts.UnitTest
         [Test]
         public void ManualReleaseTest()
         {
-            #if PUERTS_GENERAL
+#if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
@@ -137,6 +137,25 @@ namespace Puerts.UnitTest
             jsEnv.Eval<string>("puer.module.deleteModuleCache('lazymodule.cjs');if(typeof lm != 'object')throw new Error('abcdf')");
             
             Assert.AreEqual(false, jsEnv.Eval<bool>("puer.module.hasModuleCache('lazymodule.cjs')"));
+        }
+        
+        [Test]
+        public void CircularReqireTest()
+        {
+#if PUERTS_GENERAL
+            var jsEnv = new JsEnv(new TxtLoader());
+#else
+            var jsEnv = new JsEnv(new DefaultLoader());
+#endif
+            jsEnv.ExecuteModule("puerts/module.mjs");
+            
+            var res = jsEnv.Eval<string>(@"
+                const require = puer.module.createRequire('');
+                var lm = require('circular_m1.cjs');
+                lm.foo();
+            ");
+            
+            Assert.AreEqual("hello john", res);
         }
     }
 }
