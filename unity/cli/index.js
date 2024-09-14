@@ -15,9 +15,5 @@ if (!fs.existsSync(__dirname + '/../node_modules')) {
 }
 
 async function executeCommand () {
-    try {
-        await import('./cmd.mjs');
-    } catch (error) {
-        throw error; 
-    }
+    await import('./cmd.mjs');
 };
