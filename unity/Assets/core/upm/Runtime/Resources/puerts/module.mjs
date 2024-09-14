@@ -321,6 +321,7 @@ function createLazyRequire(referer) {
         const res = {__specifier: specifier}
         const proxy = new Proxy(res, {
             get: function(target, name, receiver) {
+                if (name === '__esModule') return true;
                 //console.log(`proxy for ${name} get`);
                 let m = doRequire(target);
                 return Reflect.get(m, name, receiver);
