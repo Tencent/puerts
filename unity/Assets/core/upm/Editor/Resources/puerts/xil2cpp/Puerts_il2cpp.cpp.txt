@@ -113,14 +113,14 @@ static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static Il2CppClass *g_typeofTypedValue;
 
-const Il2CppClass* GetReturnType(const MethodInfo* method) {
+Il2CppClass* GetReturnType(const MethodInfo* method) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
         Class::Init(method->klass);
     }
     return Class::FromIl2CppType(Method::GetReturnType(method), false);
 }
 
-const Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
+Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
         Class::Init(method->klass);
     }
