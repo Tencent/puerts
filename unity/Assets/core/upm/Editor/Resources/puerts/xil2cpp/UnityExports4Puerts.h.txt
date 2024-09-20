@@ -157,7 +157,7 @@ struct WrapData
     bool IsExtensionMethod;
     bool HasParamArray;
     int OptionalNum;
-    void* TypeInfos[0];
+    TypeIdType* TypeInfos[0];
 };
 
 struct JsClassInfoHeader
