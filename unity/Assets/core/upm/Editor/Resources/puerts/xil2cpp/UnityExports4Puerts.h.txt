@@ -114,9 +114,9 @@ typedef pesapi_value (*TryTranslateFunc)(pesapi_env env, Il2CppObject* obj);
 
 typedef int (*GetTIDFunc)(Il2CppObject* obj);
 
-typedef const Il2CppClass* (*GetReturnTypeFunc)(const MethodInfo* method);
+typedef Il2CppClass* (*GetReturnTypeFunc)(const MethodInfo* method);
 
-typedef const Il2CppClass* (*GetParameterTypeFunc)(const MethodInfo* method, int index);
+typedef Il2CppClass* (*GetParameterTypeFunc)(const MethodInfo* method, int index);
 
 typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo);
 
