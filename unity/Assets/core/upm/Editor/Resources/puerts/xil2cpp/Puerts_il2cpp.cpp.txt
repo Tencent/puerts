@@ -229,7 +229,8 @@ void SetGlobalType_TypedValue(Il2CppReflectionType *type)
     g_typeofTypedValue = il2cpp_codegen_class_from_type(type->type);
 }
 
-static void MethodCallback(pesapi_callback_info info) {
+static void MethodCallback(pesapi_callback_info info)
+{
     try 
     {
         WrapData** wrapDatas = (WrapData**)pesapi_get_userdata(info);
