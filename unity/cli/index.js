@@ -14,6 +14,14 @@ if (!fs.existsSync(__dirname + '/../node_modules')) {
   executeCommand();
 }
 
-async function executeCommand () {
-    await import('./cmd.mjs');
-};
+function executeCommand() {
+  const command = `node`;
+  const args = [`--loader`, `ts-node/esm`, `${__dirname}/cmd.mts`, ...process.argv.slice(2)];
+  console.log(`${command} ${args.join(' ')}`);
+
+  const p = cp.spawn(command, args, { stdio: 'inherit' });
+
+  p.on('exit', (code) => {
+    process.exit(code);
+  });
+}
