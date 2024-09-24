@@ -50,6 +50,11 @@
                     "x64": [
                         "/Lib/Linux/libquickjs.a"
                     ]
+                },
+                "ns":{
+                    "arm64": [
+                        "/Lib/ns/arm64-v8a/libquickjs.a"
+                    ]
                 }
             },
             "copy-libraries": {

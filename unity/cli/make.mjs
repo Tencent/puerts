@@ -201,6 +201,20 @@ const platformCompileConfig = {
                 return `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`;
             }
         }
+    },
+    'ns':{
+        'arm64': {
+            outputPluginPath: 'ns/libs/arm64-v8a/',
+            hook: function (CMAKE_BUILD_PATH, options, cmakeAddedLibraryName, cmakeDArgs) {
+                const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
+                const NINTENDO_SDK_ROOT_CMAKE=process.env.NINTENDO_SDK_ROOT.replace(/\\/g, '/');
+            
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -H. -B${CMAKE_BUILD_PATH} -G "Unix Makefiles" -DCMAKE_SYSTEM_NAME=Switch -DSWITCH_PLATFORM=1 -DCMAKE_C_COMPILER=${NINTENDO_SDK_ROOT_CMAKE}/Compilers/NX/nx/aarch64/bin/clang.exe -DCMAKE_CXX_COMPILER=${NINTENDO_SDK_ROOT_CMAKE}/Compilers/NX/nx/aarch64/bin/clang++.exe ..`).code)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
+
+                return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
+            }
+        }
     }
 }
 
