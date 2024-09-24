@@ -45,6 +45,7 @@ namespace PuertsIl2cpp.Editor
                 Directory.CreateDirectory(saveTo);
                 FileExporter.CopyXIl2cppCPlugin(saveTo);
                 FileExporter.GenMarcoHeader(saveTo);
+                FileExporter.GenCPPWrap("puerts/templates/il2cppwrapper.tpl.mjs", Path.Combine(saveTo, "PuertsIl2cppWrapper.cpp"), true);
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h", false, 6)]
@@ -60,7 +61,7 @@ namespace PuertsIl2cpp.Editor
 #endif
                 
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap(saveTo);
+                FileExporter.GenCPPWrap("puerts/templates/cppwrapper.tpl.mjs", Path.Combine(saveTo, "FunctionBridge.Gen.h"));
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
             
@@ -77,7 +78,7 @@ namespace PuertsIl2cpp.Editor
 #endif
                 
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap(saveTo, true);
+                FileExporter.GenCPPWrap("puerts/templates/cppwrapper.tpl.mjs", Path.Combine(saveTo, "FunctionBridge.Gen.h"), true);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 

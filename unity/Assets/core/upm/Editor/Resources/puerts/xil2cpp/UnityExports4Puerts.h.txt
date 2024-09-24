@@ -148,6 +148,12 @@ typedef void* (*GetRuntimeObjectFromPersistentObjectFunc)(pesapi_env env, pesapi
 
 typedef void (*SetRuntimeObjectToPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, void* runtimeObject);
 
+typedef WrapFuncPtr (*FindWrapFuncFunc)(const char* signature);
+
+typedef struct FieldWrapFuncInfo * (*FindFieldWrapFuncInfoFunc)(const char* signature);
+
+typedef void(*LogCallbackFunc)(const char* value);
+
 struct WrapData 
 {
     WrapFuncPtr Wrap;
@@ -221,6 +227,10 @@ struct UnityExports
 
     GetRuntimeObjectFromPersistentObjectFunc GetRuntimeObjectFromPersistentObject = nullptr;
     SetRuntimeObjectToPersistentObjectFunc SetRuntimeObjectToPersistentObject = nullptr;
+    LogCallbackFunc LogCallback = nullptr;
+    
+    FindWrapFuncFunc FindWrapFunc = nullptr;
+    FindFieldWrapFuncInfoFunc FindFieldWrapFuncInfo = nullptr;
 };
 
 }

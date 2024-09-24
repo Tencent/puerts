@@ -1612,6 +1612,17 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2Cpp
     return g_unityExports.GetJSObjectValue(objectInfo, key_std.c_str(), type);
 }
 
+WrapFuncPtr FindWrapFunc(const char* signature);
+struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
+
+void IL2cppLog(const char* value)
+{
+    if (g_unityExports.LogCallback)
+    {
+        g_unityExports.LogCallback(value);
+    }
+}
+
 puerts::UnityExports* GetUnityExports()
 {
     g_unityExports.ObjectAllocate = &ObjectAllocate;
@@ -1648,6 +1659,8 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.ReflectionGetFieldWrapper = ReflectionGetFieldWrapper;
     g_unityExports.ReflectionSetFieldWrapper = ReflectionSetFieldWrapper;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
+    g_unityExports.FindWrapFunc = FindWrapFunc;
+    g_unityExports.FindFieldWrapFuncInfo = FindFieldWrapFuncInfo;
     return &g_unityExports;
 }
 

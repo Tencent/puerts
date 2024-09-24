@@ -902,9 +902,13 @@ static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* 
 V8_EXPORT puerts::WrapFuncPtr FindWrapFunc(const char* signature)
 {
     if (signature == nullptr)
+    {
         return puerts::GUnityExports.ReflectionWrapper;
+    }
     else 
-        return puerts::FindWrapFunc(signature);
+    {
+        return puerts::GUnityExports.FindWrapFunc(signature);
+    }
 }
 
 V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
@@ -974,9 +978,10 @@ V8_EXPORT puerts::FieldWrapFuncInfo* FindFieldWrap(const char* signature)
         
         return ReflectionFuncWrap;
     }
-
     else 
-        return puerts::FindFieldWrapFuncInfo(signature);
+    {
+        return puerts::GUnityExports.FindFieldWrapFuncInfo(signature);
+    }
 }
 
 V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, puerts::FieldWrapFuncInfo* wrapFuncInfo, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
@@ -1146,6 +1151,7 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
     exports->GetRuntimeObjectFromPersistentObject = &puerts::GetRuntimeObjectFromPersistentObject;
     exports->GetJSObjectValue = &puerts::GetJSObjectValue;
     exports->GetModuleExecutor = &puerts::GetModuleExecutor;
+    exports->LogCallback = puerts::GLogCallback;
     puerts::GUnityExports = *exports;
 }
 

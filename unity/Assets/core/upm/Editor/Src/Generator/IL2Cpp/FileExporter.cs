@@ -145,7 +145,7 @@ namespace PuertsIl2cpp.Editor
                 return true;
             }
 
-            public static void GenCPPWrap(string saveTo, bool onlyConfigure = false)
+            public static void GenCPPWrap(string templatePath, string saveTo, bool onlyConfigure = false)
             {
                 Utils.SetFilters(Puerts.Configure.GetFilters());
                 
@@ -364,8 +364,8 @@ namespace PuertsIl2cpp.Editor
                 using (var jsEnv = new Puerts.JsEnv())
                 {
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
-                    var cppWrapRender = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/cppwrapper.tpl.mjs", "default");
-                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "FunctionBridge.Gen.h"), false, Encoding.UTF8))
+                    var cppWrapRender = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>(templatePath, "default");
+                    using (StreamWriter textWriter = new StreamWriter(saveTo, false, Encoding.UTF8))
                     {
                         string fileContext = cppWrapRender(new CppWrappersInfo
                         {
@@ -448,7 +448,8 @@ namespace PuertsIl2cpp.Editor
                     { "pesapi_adpt.c", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_adpt.c").text },
                     { "pesapi.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi.h").text },
                     { "Puerts_il2cpp.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text },
-                    { "UnityExports4Puerts.h", Resources.Load<TextAsset>("puerts/xil2cpp/UnityExports4Puerts.h").text }
+                    { "UnityExports4Puerts.h", Resources.Load<TextAsset>("puerts/xil2cpp/UnityExports4Puerts.h").text },
+                    { "TDataTrans.h", Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text }
                 };
 
                 foreach (var cPlugin in cPluginCode)
