@@ -118,13 +118,13 @@ struct JsClassInfo : public JsClassInfoHeader
 
 static void GetterCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    FieldWrapData* wrapData = reinterpret_cast<FieldWrapData*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     wrapData->Getter(Info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
 static void SetterCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    FieldWrapData* wrapData = reinterpret_cast<FieldWrapData*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     wrapData->Setter(Info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
@@ -147,7 +147,7 @@ static void* _GetRuntimeObjectFromPersistentObject(v8::Local<v8::Context> Contex
     auto Isolate = Context->GetIsolate();
     auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
 
-    puerts::FCppObjectMapper* mapper = reinterpret_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
+    puerts::FCppObjectMapper* mapper = static_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
     mapper->ClearPendingPersistentObject(Isolate, Context);
 
     v8::MaybeLocal<v8::Value> maybeValue = Obj->Get(Context, POEnv->SymbolCSPtr.Get(Isolate));
@@ -203,7 +203,7 @@ static void* FunctionToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context> Con
     void* Ptr = _GetRuntimeObjectFromPersistentObject(Context, Func);
     if (Ptr == nullptr)
     {
-        JsClassInfo* classInfo = reinterpret_cast<JsClassInfo*>(ClassDefinition->Data);
+        JsClassInfo* classInfo = static_cast<JsClassInfo*>(ClassDefinition->Data);
 
         PersistentObjectInfo* delegateInfo = nullptr;
         Ptr = GUnityExports.DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
@@ -374,7 +374,7 @@ inline static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Loca
         return Ret;
     }
     
-    void* Class = *reinterpret_cast<void**>(Obj);
+    void* Class = *static_cast<void**>(Obj);
     
     return DataTransfer::FindOrAddCData(Isolate, Context, Class, Obj, true);
 }
@@ -476,7 +476,7 @@ static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Inf
     }
     
     JSClassDefinition* ClassDefinition =
-        reinterpret_cast<JSClassDefinition*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+        static_cast<JSClassDefinition*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
         
     return FunctionToDelegate(Isolate, Context, Info[0]->ToObject(Context).ToLocalChecked(), ClassDefinition);
 }
@@ -1184,7 +1184,7 @@ V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *ob
         v8::Local<v8::Context> Context = jsEnv->MainContext.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
         
-        void* klass = *reinterpret_cast<void**>(obj);
+        void* klass = *static_cast<void**>(obj);
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, key).ToLocalChecked(), puerts::DataTransfer::FindOrAddCData(Isolate, Context, klass, obj, true)).Check();
     }
 }
