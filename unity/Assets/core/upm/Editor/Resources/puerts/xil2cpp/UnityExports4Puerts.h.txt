@@ -154,6 +154,8 @@ typedef struct FieldWrapFuncInfo * (*FindFieldWrapFuncInfoFunc)(const char* sign
 
 typedef void(*LogCallbackFunc)(const char* value);
 
+typedef void (*AddPendingReleasePersistentObjectFunc)(pesapi_env env, pesapi_value pvalue);
+
 struct WrapData 
 {
     WrapFuncPtr Wrap;
@@ -184,6 +186,7 @@ struct UnityExports
     ValueTypeDeallocateFunc ValueTypeDeallocate = nullptr;
     FunctionCallbackFunc MethodCallback = nullptr;
     InitializeFunc ConstructorCallback = nullptr;
+    InitializeFunc DelegateConstructorCallback = nullptr;
     FieldOperationFunc FieldGet = nullptr;
     FieldOperationFunc FieldSet = nullptr;
     GetValueTypeFieldPtrFunc GetValueTypeFieldPtr = nullptr;
@@ -212,6 +215,10 @@ struct UnityExports
     WrapFuncPtr ReflectionWrapper = nullptr;
     FieldWrapFuncPtr ReflectionGetFieldWrapper = nullptr;
     FieldWrapFuncPtr ReflectionSetFieldWrapper = nullptr;
+
+    FindWrapFuncFunc FindWrapFunc = nullptr;
+    FindFieldWrapFuncInfoFunc FindFieldWrapFuncInfo = nullptr;
+
     int SizeOfRuntimeObject = 0;
     //plugin api
     
@@ -227,10 +234,10 @@ struct UnityExports
 
     GetRuntimeObjectFromPersistentObjectFunc GetRuntimeObjectFromPersistentObject = nullptr;
     SetRuntimeObjectToPersistentObjectFunc SetRuntimeObjectToPersistentObject = nullptr;
-    LogCallbackFunc LogCallback = nullptr;
     
-    FindWrapFuncFunc FindWrapFunc = nullptr;
-    FindFieldWrapFuncInfoFunc FindFieldWrapFuncInfo = nullptr;
+    AddPendingReleasePersistentObjectFunc AddPendingReleasePersistentObject = nullptr;
+    
+    LogCallbackFunc LogCallback = nullptr;
 };
 
 }

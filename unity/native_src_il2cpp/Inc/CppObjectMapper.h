@@ -75,6 +75,8 @@ public:
     void* ObjectPoolInstance = nullptr;
 
     FPersistentObjectEnvInfo PersistentObjectEnvInfo;
+    
+    void AddPendingReleasePersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj);
 
     void ClearPendingPersistentObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context);
 

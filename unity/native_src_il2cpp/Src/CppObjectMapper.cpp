@@ -185,6 +185,12 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
+void FCppObjectMapper::AddPendingReleasePersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
+{
+    std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
+    PersistentObjectEnvInfo.PendingReleaseObjects.push_back(v8::Global<v8::Object>(Context->GetIsolate(), Obj));
+}
+
 void FCppObjectMapper::ClearPendingPersistentObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context) 
 {
     std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);

@@ -492,6 +492,28 @@ static void UnrefJsObject(PersistentObjectInfo* objectInfo)
     objectInfo->EnvInfo = nullptr;
 }
 
+static void _AddPendingReleasePersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
+{
+    auto Isolate = Context->GetIsolate();
+    auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
+
+    puerts::FCppObjectMapper* mapper = static_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
+    
+    mapper->AddPendingReleasePersistentObject(Context, Obj);
+
+}
+
+static void AddPendingReleasePersistentObject(pesapi_env env, pesapi_value pvalue)
+{
+    // TODO: quickjs兼容 ///
+    v8::Local<v8::Context> Context;
+    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
+    v8::Local<v8::Object> Obj;
+    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
+
+    _AddPendingReleasePersistentObject(Context, Obj);
+}
+
 template <typename T>
 struct RestArguments
 {
@@ -1027,7 +1049,7 @@ V8_EXPORT bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
     ClassDef.TypeId = classInfo->TypeId;
     ClassDef.SuperTypeId = classInfo->SuperTypeId;
     
-    ClassDef.Initialize = classInfo->DelegateBridge ? puerts::DelegateCtorCallback : puerts::GUnityExports.ConstructorCallback;
+    ClassDef.Initialize = classInfo->DelegateBridge ? puerts::GUnityExports.DelegateConstructorCallback : puerts::GUnityExports.ConstructorCallback;
     ClassDef.Finalize = classInfo->IsValueType ? puerts::GUnityExports.ValueTypeDeallocate : (puerts::FinalizeFunc)nullptr;
     ClassDef.Data = classInfo;
     
@@ -1152,6 +1174,7 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
     exports->GetJSObjectValue = &puerts::GetJSObjectValue;
     exports->GetModuleExecutor = &puerts::GetModuleExecutor;
     exports->LogCallback = puerts::GLogCallback;
+    exports->AddPendingReleasePersistentObject = &puerts::AddPendingReleasePersistentObject;
     puerts::GUnityExports = *exports;
 }
 

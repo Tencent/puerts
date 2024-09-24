@@ -342,7 +342,17 @@ void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
 
 static void* CtorCallback(pesapi_callback_info info);
 
+static void* DelegateCtorCallback(pesapi_callback_info Info);
+
 static puerts::UnityExports g_unityExports;
+
+void IL2cppLog(const char* value)
+{
+    if (g_unityExports.LogCallback)
+    {
+        g_unityExports.LogCallback(value);
+    }
+}
 
 static void* CtorCallback(pesapi_callback_info info)
 {
@@ -405,6 +415,21 @@ static void* CtorCallback(pesapi_callback_info info)
     }
     
     return nullptr;
+}
+
+static void* DelegateCtorCallback(pesapi_callback_info info)
+{
+    IL2cppLog("DelegateCtorCallback in Puerts_il2cpp.cpp");
+    pesapi_env env = pesapi_get_env(info);
+    pesapi_value jsval = pesapi_get_arg(info, 0);
+    if (!pesapi_is_function(env, jsval))
+    {
+        pesapi_throw_by_string(info, "expect a function");
+        return nullptr;
+    }
+    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_constructor_userdata(info));
+    
+    return g_unityExports.FunctionToDelegate(env, jsval, classInfo->Class, true);
 }
 
 void ReleaseScriptObject(RuntimeObject* obj)
@@ -1615,14 +1640,6 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2Cpp
 WrapFuncPtr FindWrapFunc(const char* signature);
 struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
 
-void IL2cppLog(const char* value)
-{
-    if (g_unityExports.LogCallback)
-    {
-        g_unityExports.LogCallback(value);
-    }
-}
-
 puerts::UnityExports* GetUnityExports()
 {
     g_unityExports.ObjectAllocate = &ObjectAllocate;
@@ -1630,6 +1647,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.ValueTypeDeallocate = &ValueTypeFree;
     g_unityExports.MethodCallback = &MethodCallback;
     g_unityExports.ConstructorCallback = &CtorCallback;
+    g_unityExports.DelegateConstructorCallback = &DelegateCtorCallback;
     g_unityExports.FieldGet = &GetFieldValue;
     g_unityExports.FieldSet = &SetFieldValue;
     g_unityExports.GetValueTypeFieldPtr = &GetValueTypeFieldPtr;
