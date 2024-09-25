@@ -196,7 +196,7 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
     IL2CPP_OBJECT_SETREF(delegate, target, target);
 #endif
 
-    *outTargetData = reinterpret_cast<PObjectRefInfo*>(target + 1);
+    *outTargetData = GetPObjectRefInfo(target);
 
     delegate->method_ptr = functionPtr;
 
