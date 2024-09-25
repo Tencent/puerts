@@ -29,6 +29,7 @@
 #include "gc/WriteBarrier.h"
 #include "pesapi.h"
 #include "UnityExports4Puerts.h"
+#include "TDataTrans.h"
 
 #include <vector>
 #include <mutex>
@@ -176,13 +177,13 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
     return (Il2CppDelegate*)delegate;
 }
 
-static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPtr, void** outTargetData)
+static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPtr, PObjectRefInfo** outTargetData)
 {
     Il2CppClass *delegateInfoClass = g_typeofPersistentObjectInfo;
     if (!delegateInfoClass) return nullptr;
     
     auto target = il2cpp::vm::Object::New(delegateInfoClass);
-
+    
     Il2CppDelegate* delegate = FunctionPointerToDelegate(functionPtr, klass, target);
 
     if (MethodIsStatic(delegate->method)) return nullptr;
@@ -195,7 +196,7 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
     IL2CPP_OBJECT_SETREF(delegate, target, target);
 #endif
 
-    *outTargetData = target + 1;
+    *outTargetData = reinterpret_cast<PObjectRefInfo*>(target + 1);
 
     delegate->method_ptr = functionPtr;
 
@@ -354,6 +355,20 @@ void IL2cppLog(const char* value)
     }
 }
 
+void PLog(const char* Fmt, ...)
+{
+    static char SLogBuffer[1024];
+    va_list list;
+    va_start(list, Fmt);
+    vsnprintf(SLogBuffer, sizeof(SLogBuffer), Fmt, list);
+    va_end(list);
+
+    if (g_unityExports.LogCallback)
+    {
+        g_unityExports.LogCallback(SLogBuffer);
+    }
+}
+
 static void* CtorCallback(pesapi_callback_info info)
 {
     JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_constructor_userdata(info));
@@ -417,6 +432,39 @@ static void* CtorCallback(pesapi_callback_info info)
     return nullptr;
 }
 
+static void SetPObjectRefInfoValue(pesapi_env env, PObjectRefInfo* objectInfo, pesapi_value jsval)
+{
+    objectInfo->EnvRef = pesapi_create_env_ref(env);
+    objectInfo->ValueRef = pesapi_create_value_ref(env, jsval);
+    g_unityExports.SetExtraData(env, objectInfo);
+}
+
+
+static pesapi_value GetPObjectRefInfoValue(pesapi_env env, const PObjectRefInfo* objectInfo)
+{    
+    return pesapi_get_value_from_ref(env, objectInfo->ValueRef);
+}
+
+static pesapi_value GetPObjectRefInfoValue(const PObjectRefInfo* objectInfo)
+{    
+    auto env = pesapi_get_env_from_ref(objectInfo->EnvRef);
+    return GetPObjectRefInfoValue(env, objectInfo);
+}
+
+static RuntimeObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
+{
+    RuntimeObject* ret = (RuntimeObject*)g_unityExports.GetRuntimeObjectFromPersistentObject(env, jsval);
+    if (ret == nullptr)
+    {
+        PObjectRefInfo* delegateInfo;
+        ret = (RuntimeObject *)DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
+        SetPObjectRefInfoValue(env, delegateInfo, jsval);
+        PLog("FunctionToDelegate (Puerts_il2cpp.cpp):%p, %p, %p, %p", ret, delegateInfo, delegateInfo->EnvRef, delegateInfo->ValueRef);
+        g_unityExports.SetRuntimeObjectToPersistentObject(env, jsval, ret);
+    }
+    return ret;
+}
+
 static void* DelegateCtorCallback(pesapi_callback_info info)
 {
     IL2cppLog("DelegateCtorCallback in Puerts_il2cpp.cpp");
@@ -429,13 +477,15 @@ static void* DelegateCtorCallback(pesapi_callback_info info)
     }
     JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_constructor_userdata(info));
     
-    return g_unityExports.FunctionToDelegate(env, jsval, classInfo->Class, true);
+    return FunctionToDelegate(env, jsval, classInfo);
 }
 
 void ReleaseScriptObject(RuntimeObject* obj)
 {
-    int32_t _offset = 1;
-    g_unityExports.UnrefJsObject(obj + _offset);
+    //TODO: 优化性能 ///
+    PObjectRefInfo* objectInfo = GetPObjectRefInfo(obj);
+    PLog(">>>>>> ReleaseScriptObject: %p, %p, %p, %p", obj, objectInfo, objectInfo->EnvRef, objectInfo->ValueRef);
+    g_unityExports.UnrefJsObject(objectInfo);
 }
 
 
@@ -467,8 +517,8 @@ pesapi_value TryTranslateBuiltin(pesapi_env env, Il2CppObject* obj)
     {
         if (obj->klass == g_typeofPersistentObjectInfo)
         {
-            PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(obj + 1);
-            return g_unityExports.GetPersistentObject(env, objectInfo);
+            PObjectRefInfo* objectInfo = GetPObjectRefInfo(obj);
+            return GetPObjectRefInfoValue(env, objectInfo);
         }
         if (obj->klass == g_typeofArrayBuffer)
         {
@@ -769,13 +819,15 @@ handle_underlying:
                     if (ret == nullptr) 
                     {
                         ret = il2cpp::vm::Object::New(persistentObjectInfoClass);
+                        
 
                         const MethodInfo* ctor = il2cpp_class_get_method_from_name(persistentObjectInfoClass, ".ctor", 0);
                         typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const MethodInfo* method);
                         ((NativeCtorPtr)ctor->methodPointer)(ret, ctor);
                         
-                        PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(ret + 1);
-                        g_unityExports.SetPersistentObject(env, jsval, objectInfo);
+                        PObjectRefInfo* objectInfo = GetPObjectRefInfo(ret);
+                        SetPObjectRefInfoValue(env, objectInfo, jsval);
+                        PLog("JsValueToCSRef: %p, %p, %p, %p", ret, objectInfo, objectInfo->EnvRef, objectInfo->ValueRef);
                         g_unityExports.SetRuntimeObjectToPersistentObject(env, jsval, ret);
                     }
                     return ret;
@@ -1626,19 +1678,30 @@ void ArraySetRef(Il2CppArray *array, uint32_t index, void* value)
 {
     il2cpp_array_setref(array, index, value);
 }
+
 Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2CppReflectionType* rtype)
 {
-    PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(jsObject + 1);
+    PObjectRefInfo* objectInfo = GetPObjectRefInfo(jsObject);
 
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(key);
     std::string key_std = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
 
     auto type = il2cpp_codegen_class_from_type(rtype->type);
-    return g_unityExports.GetJSObjectValue(objectInfo, key_std.c_str(), type);
+    
+    AutoValueScope ValueScope(objectInfo->EnvRef);
+    auto env = pesapi_get_env_from_ref(objectInfo->EnvRef);
+    auto obj = pesapi_get_value_from_ref(env, objectInfo->ValueRef);
+    auto val = pesapi_get_property(env, obj, key_std.c_str());
+    if (!val)
+    {
+        return nullptr;
+    }
+    return JsValueToCSRef(type, env, val);
 }
 
 WrapFuncPtr FindWrapFunc(const char* signature);
 struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
+MethodPointer FindBridgeFunc(const char* signature);
 
 puerts::UnityExports* GetUnityExports()
 {
@@ -1678,6 +1741,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.ReflectionSetFieldWrapper = ReflectionSetFieldWrapper;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
     g_unityExports.FindWrapFunc = FindWrapFunc;
+    g_unityExports.FindBridgeFunc = FindBridgeFunc;
     g_unityExports.FindFieldWrapFuncInfo = FindFieldWrapFuncInfo;
     return &g_unityExports;
 }

@@ -9,12 +9,20 @@
 #pragma once
 namespace puerts
 {
+struct PObjectRefInfo
+{
+    pesapi_env_ref EnvRef;
+    pesapi_value_ref ValueRef;
+    void* ExtraData;
+    std::weak_ptr<int> EnvLifeCycleTracker; // TODO: 增加pesapi_env_ref有效性判断后去掉
+};
+
 #if defined(USE_OUTSIZE_UNITY)
 
 typedef void (*MethodPointer)();
 typedef void* (*ObjectAllocateFunc)(const void* type);
 typedef void (*ValueTypeDeallocateFunc)(void* ptr);
-typedef void* (*DelegateAllocateFunc)(const void* type, MethodPointer methodPointer, struct PersistentObjectInfo** outDelegateInfo);
+typedef void* (*DelegateAllocateFunc)(const void* type, MethodPointer methodPointer, struct PObjectRefInfo** outDelegateInfo);
 typedef void (*FieldOperationFunc)(void *obj, void *fieldInfo, size_t offset, void *value);
 typedef void* (*GetValueTypeFieldPtrFunc)(void *obj, void *field, size_t offset);
 typedef void MethodType;
@@ -29,7 +37,7 @@ typedef void (*SetNativePtrFunc)(v8::Object* obj, void* ptr, void* type_id);
 
 typedef v8::Value* (*CreateJSArrayBufferFunc)(v8::Context* env, void* buffer, size_t length);
 
-typedef void (*UnrefJsObjectFunc)(struct PersistentObjectInfo* objectInfo);
+typedef void (*UnrefJsObjectFunc)(struct PObjectRefInfo* objectInfo);
 
 typedef void* (*IsInstFunc)(void * obj, void* typeId); 
 
@@ -53,12 +61,6 @@ typedef const void* (*GetReturnTypeFunc)(const void* method);
 
 typedef const void* (*GetParameterTypeFunc)(const void* method, int index);
 
-typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo);
-
-typedef v8::Value* (*GetPersistentObjectFunc)(v8::Context* env, const PersistentObjectInfo* objectInfo);
-
-typedef void* (*GetJSObjectValueFunc)(const PersistentObjectInfo* objectInfo, const char* key, const void* type);
-
 typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
 
 typedef void* (*NewArrayFunc)(const void *typeId, uint32_t length);
@@ -74,12 +76,12 @@ typedef uint32_t (*GetArrayLengthFunc)(void *array);
 typedef void* (*GetDefaultValuePtrFunc)(const void* methodInfo, uint32_t index);
 
 #else
-    
+
 #define MethodPointer Il2CppMethodPointer
+
 typedef void* (*ObjectAllocateFunc)(Il2CppClass *klass);
 typedef void (*ValueTypeDeallocateFunc)(void* ptr);
-typedef void PersistentObjectInfo;
-typedef void* (*DelegateAllocateFunc)(Il2CppClass* klass, MethodPointer methodPointer, PersistentObjectInfo** outDelegateInfo);
+typedef void* (*DelegateAllocateFunc)(Il2CppClass* klass, MethodPointer methodPointer, struct PObjectRefInfo** outDelegateInfo);
 typedef void (*FieldOperationFunc)(void *obj, FieldInfo *fieldInfo, size_t offset, void *value);
 typedef void* (*GetValueTypeFieldPtrFunc)(void *obj, FieldInfo *field, size_t offset);
 typedef MethodInfo MethodType;
@@ -94,7 +96,7 @@ typedef void (*SetNativePtrFunc)(pesapi_value obj, void* ptr, const void* type_i
 
 typedef pesapi_value (*CreateJSArrayBufferFunc)(pesapi_env env, void* buffer, size_t length);
 
-typedef void (*UnrefJsObjectFunc)(PersistentObjectInfo* delegateInfo);
+typedef void (*UnrefJsObjectFunc)(struct PObjectRefInfo* delegateInfo);
 
 typedef Il2CppObject* (*IsInstFunc)(Il2CppObject* obj, Il2CppClass* typeId); 
 
@@ -117,12 +119,6 @@ typedef int (*GetTIDFunc)(Il2CppObject* obj);
 typedef Il2CppClass* (*GetReturnTypeFunc)(const MethodInfo* method);
 
 typedef Il2CppClass* (*GetParameterTypeFunc)(const MethodInfo* method, int index);
-
-typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo);
-
-typedef pesapi_value (*GetPersistentObjectFunc)(pesapi_env env, const PersistentObjectInfo* objectInfo);
-
-typedef Il2CppObject* (*GetJSObjectValueFunc)(const PersistentObjectInfo* objectInfo, const char* key, Il2CppClass* type);
 
 typedef pesapi_value (*GetModuleExecutorFunc)(pesapi_env env);
 
@@ -152,9 +148,11 @@ typedef WrapFuncPtr (*FindWrapFuncFunc)(const char* signature);
 
 typedef struct FieldWrapFuncInfo * (*FindFieldWrapFuncInfoFunc)(const char* signature);
 
+typedef MethodPointer (*FindBridgeFuncFunc)(const char* signature);
+
 typedef void(*LogCallbackFunc)(const char* value);
 
-typedef void (*AddPendingReleasePersistentObjectFunc)(pesapi_env env, pesapi_value pvalue);
+typedef void (*SetExtraDataFunc)(pesapi_env env, struct PObjectRefInfo* objectInfo);
 
 struct WrapData 
 {
@@ -218,6 +216,7 @@ struct UnityExports
 
     FindWrapFuncFunc FindWrapFunc = nullptr;
     FindFieldWrapFuncInfoFunc FindFieldWrapFuncInfo = nullptr;
+    FindBridgeFuncFunc FindBridgeFunc = nullptr;
 
     int SizeOfRuntimeObject = 0;
     //plugin api
@@ -227,15 +226,12 @@ struct UnityExports
     UnrefJsObjectFunc UnrefJsObject = nullptr;
     FunctionToDelegateFunc FunctionToDelegate = nullptr;
 
-    SetPersistentObjectFunc SetPersistentObject = nullptr;
-    GetPersistentObjectFunc GetPersistentObject = nullptr;
-    GetJSObjectValueFunc GetJSObjectValue = nullptr;
     GetModuleExecutorFunc GetModuleExecutor = nullptr;
 
     GetRuntimeObjectFromPersistentObjectFunc GetRuntimeObjectFromPersistentObject = nullptr;
     SetRuntimeObjectToPersistentObjectFunc SetRuntimeObjectToPersistentObject = nullptr;
     
-    AddPendingReleasePersistentObjectFunc AddPendingReleasePersistentObject = nullptr;
+    SetExtraDataFunc SetExtraData = nullptr;
     
     LogCallbackFunc LogCallback = nullptr;
 };

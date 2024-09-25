@@ -57,17 +57,7 @@ static void LazyLoad(const void* typeId)
     GTryLazyLoadType(typeId, false, GTryLoadTypeMethodInfo);
 }
 
-#define GetObjectData(Value, Type) ((Type*)(((uint8_t*)Value) + GUnityExports.SizeOfRuntimeObject))
-
-struct PersistentObjectInfo
-{
-    FPersistentObjectEnvInfo* EnvInfo;
-    v8::Global<v8::Object> JsObject;
-    std::weak_ptr<int> JsEnvLifeCycleTracker;
-    //std::map<void*, void*> 
-};
-
-static_assert(sizeof(PersistentObjectInfo) <= sizeof(int64_t) * 8, "PersistentObjectInfo Size invalid");
+static_assert(sizeof(PObjectRefInfo) <= sizeof(int64_t) * 8, "PersistentObjectInfo Size invalid");
 
 void PLog(LogLevel Level, const std::string Fmt, ...)
 {
@@ -190,91 +180,50 @@ static void SetRuntimeObjectToPersistentObject(pesapi_env env, pesapi_value pval
     _SetRuntimeObjectToPersistentObject(Context, Obj, runtimeObject);
 }
 
-static void* FunctionToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Func, const JSClassDefinition* ClassDefinition)
-{
-    //auto MaybeDelegate = Func->Get(Context, 0);
-    
-    //TODO: 缓存delegate，实现用同一个function可以remove
-    //if (!MaybeDelegate.IsEmpty() && MaybeDelegate.ToLocalChecked()->IsExternal())
-    //{
-    //    PersistentObjectInfo* delegateInfo = static_cast<PersistentObjectInfo*>((v8::Local<v8::External>::Cast(MaybeDelegate.ToLocalChecked()))->Value());
-    //}
 
-    void* Ptr = _GetRuntimeObjectFromPersistentObject(Context, Func);
-    if (Ptr == nullptr)
-    {
-        JsClassInfo* classInfo = static_cast<JsClassInfo*>(ClassDefinition->Data);
-
-        PersistentObjectInfo* delegateInfo = nullptr;
-        Ptr = GUnityExports.DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
-        memset(delegateInfo, 0, sizeof(PersistentObjectInfo));
-        delegateInfo->EnvInfo = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
-        
-        delegateInfo->JsObject.Reset(Isolate, Func);
-        delegateInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
-        _SetRuntimeObjectToPersistentObject(Context, Func, Ptr);
-    }
-    
-    return Ptr;
-}
-
-static void* FunctionToDelegate(v8::Local<v8::Context> Context, v8::Local<v8::Object> Func, const void* TypeId, bool throwIfFail)
-{
-    auto ClassDefinition = FindClassByID(TypeId, true);
-    if (!ClassDefinition)
-    {
-        if (throwIfFail)
-        {
-            DataTransfer::ThrowException(Context->GetIsolate(), "call not load type of delegate");
-        }
-        return nullptr;
-    }
-    return FunctionToDelegate(Context->GetIsolate(), Context, Func, ClassDefinition);
-}
-
-static void* FunctionToDelegate_pesapi(pesapi_env env, pesapi_value pvalue, const void* TypeId, bool throwIfFail)
+static void* FunctionToDelegate_pesapi(pesapi_env env, pesapi_value jsval, const void* TypeId, bool throwIfFail)
 {
     //TODO: pesapi 数据到v8的转换应该交给pesapi实现来提供
     v8::Local<v8::Context> Context;
     memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-    v8::Local<v8::Value> Func;
-    memcpy(static_cast<void*>(&Func), &pvalue, sizeof(pvalue));
-    if (!Func->IsFunction()) return nullptr;
-    return FunctionToDelegate(Context, Func.As<v8::Object>(), TypeId, throwIfFail);
-}
-
-static void SetPersistentObject(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo)
-{
-    v8::Local<v8::Context> Context;
-    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-    v8::Local<v8::Object> Obj;
-    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
+    v8::Local<v8::Object> Func;
+    memcpy(static_cast<void*>(&Func), &jsval, sizeof(jsval));
     
-    v8::Isolate* Isolate = Context->GetIsolate();
-    
-    objectInfo->EnvInfo = DataTransfer::GetPersistentObjectEnvInfo(Isolate);;
-    objectInfo->JsObject.Reset(Isolate, Obj);
-    objectInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
-}
-
-
-static v8::Value* GetPersistentObject(v8::Context* env, const PersistentObjectInfo* objectInfo)
-{    
-    if (objectInfo->JsEnvLifeCycleTracker.expired())
+    if (!Func->IsFunction()) 
     {
-        GUnityExports.ThrowInvalidOperationException("JsEnv had been destroy");
+        if (throwIfFail)
+        {
+            DataTransfer::ThrowException(Context->GetIsolate(), "not a function, can not use as Delegate");
+        }
         return nullptr;
     }
-    
-    v8::Isolate* Isolate = env->GetIsolate();
-    
-    if (Isolate != objectInfo->EnvInfo->Isolate)
+    void* Ptr = _GetRuntimeObjectFromPersistentObject(Context, Func);
+    if (Ptr == nullptr)
     {
-        GUnityExports.ThrowInvalidOperationException("js object from other JsEnv");
-        return nullptr;
+        auto ClassDefinition = FindClassByID(TypeId, true);
+        if (!ClassDefinition)
+        {
+            if (throwIfFail)
+            {
+                DataTransfer::ThrowException(Context->GetIsolate(), "call not load type of delegate");
+            }
+            return nullptr;
+        }
+        
+        JsClassInfo* classInfo = static_cast<JsClassInfo*>(ClassDefinition->Data);
+
+        PObjectRefInfo* delegateInfo = nullptr;
+        Ptr = GUnityExports.DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
+        memset(delegateInfo, 0, sizeof(PObjectRefInfo));
+        
+        delegateInfo->EnvRef = pesapi_create_env_ref(env);
+        delegateInfo->ValueRef = pesapi_create_value_ref(env, jsval);
+        puerts::PLog(puerts::LogLevel::Log, "FunctionToDelegate (Plugin):%p, %p, %p, %p", Ptr, delegateInfo, delegateInfo->EnvRef, delegateInfo->ValueRef);
+        
+        _SetRuntimeObjectToPersistentObject(Context, Func, Ptr);
     }
     
-    return *objectInfo->JsObject.Get(Isolate);
+    return Ptr;
 }
 
 static void* JsValueToCSRef(v8::Local<v8::Context> context, v8::Local<v8::Value> val, const void *typeId)
@@ -299,27 +248,6 @@ static v8::Value* GetModuleExecutor(v8::Context* env)
     }
 
     return nullptr;
-}
-
-static void* GetJSObjectValue(const PersistentObjectInfo* objectInfo, const char* key, const void* Typeid)
-{
-    auto Isolate = objectInfo->EnvInfo->Isolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto LocalContext = objectInfo->EnvInfo->Context.Get(Isolate);
-    v8::Context::Scope ContextScope(LocalContext);
-
-    v8::Local<v8::Value> Key = v8::String::NewFromUtf8(Isolate, key).ToLocalChecked();
-
-    v8::Local<v8::Object> Obj = v8::Local<v8::Object>::Cast(objectInfo->JsObject.Get(Isolate));
-
-    auto maybeValue = Obj->Get(LocalContext, Key);
-    if (maybeValue.IsEmpty()) return nullptr;
-
-    return puerts::JsValueToCSRef(LocalContext, maybeValue.ToLocalChecked(), Typeid);
 }
 
 static bool IsDelegate(const void* typeId)
@@ -465,53 +393,30 @@ inline const void* GetParameterType(const void* method, int index)
     return GUnityExports.GetParameterType(method, index);
 }
 
-static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
+static void SetExtraData(pesapi_env env, struct PObjectRefInfo* objectInfo)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    if (!Info[0]->IsFunction()) 
-    {
-        DataTransfer::ThrowException(Context->GetIsolate(), "expect a function");
-        return nullptr;
-    }
-    
-    JSClassDefinition* ClassDefinition =
-        static_cast<JSClassDefinition*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        
-    return FunctionToDelegate(Isolate, Context, Info[0]->ToObject(Context).ToLocalChecked(), ClassDefinition);
-}
-
-static void UnrefJsObject(PersistentObjectInfo* objectInfo)
-{
-    if (!objectInfo->JsEnvLifeCycleTracker.expired())
-    {
-        std::lock_guard<std::mutex> guard(objectInfo->EnvInfo->Mutex);
-        objectInfo->EnvInfo->PendingReleaseObjects.push_back(std::move(objectInfo->JsObject));
-        //PLog("add jsobject to pending release list");
-    }
-    objectInfo->EnvInfo = nullptr;
-}
-
-static void _AddPendingReleasePersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
-{
-    auto Isolate = Context->GetIsolate();
-    auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
-
-    puerts::FCppObjectMapper* mapper = static_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
-    
-    mapper->AddPendingReleasePersistentObject(Context, Obj);
-
-}
-
-static void AddPendingReleasePersistentObject(pesapi_env env, pesapi_value pvalue)
-{
-    // TODO: quickjs兼容 ///
     v8::Local<v8::Context> Context;
     memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-    v8::Local<v8::Object> Obj;
-    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
+    
+    v8::Isolate* Isolate = Context->GetIsolate();
+    
+    objectInfo->ExtraData = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
+    //objectInfo->ExtraData = static_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
+    objectInfo->EnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
+}
 
-    _AddPendingReleasePersistentObject(Context, Obj);
+static void UnrefJsObject(PObjectRefInfo* objectInfo)
+{
+    // gc线程不能访问v8虚拟机，访问就会崩溃 ///
+    if (!objectInfo->EnvLifeCycleTracker.expired())
+    {
+        auto envInfo = static_cast<puerts::FPersistentObjectEnvInfo*>(objectInfo->ExtraData);
+        std::lock_guard<std::mutex> guard(envInfo->Mutex);
+        
+        v8::Global<v8::Object> *obj = reinterpret_cast<v8::Global<v8::Object> *>(objectInfo->ValueRef); // TODO: 和实现绑定了，需优化
+        envInfo->PendingReleaseObjects.push_back(std::move(*obj));
+    }
+    objectInfo->ExtraData = nullptr;
 }
 
 template <typename T>
@@ -686,41 +591,6 @@ struct FieldWrapFuncInfo
     FieldWrapFuncPtr Setter;
 };
 
-#include "FunctionBridge.Gen.h"
-
-MethodPointer FindBridgeFunc(const char* signature)
-{
-    auto begin = &g_bridgeFuncInfos[0];
-    auto end = &g_bridgeFuncInfos[sizeof(g_bridgeFuncInfos) / sizeof(BridgeFuncInfo) - 1];
-    auto first = std::lower_bound(begin, end, signature, [](const BridgeFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});
-    if (first != end && strcmp(first->Signature, signature) == 0) {
-        return first->Method;
-    }
-    return nullptr;
-}
-
-WrapFuncPtr FindWrapFunc(const char* signature)
-{
-    auto begin = &g_wrapFuncInfos[0];
-    auto end = &g_wrapFuncInfos[sizeof(g_wrapFuncInfos) / sizeof(WrapFuncInfo) - 1];
-    auto first = std::lower_bound(begin, end, signature, [](const WrapFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});
-    if (first != end && strcmp(first->Signature, signature) == 0) {
-        return first->Method;
-    }
-    return nullptr;
-}
-
-FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature)
-{
-    auto begin = &g_fieldWrapFuncInfos[0];
-    auto end = &g_fieldWrapFuncInfos[sizeof(g_fieldWrapFuncInfos) / sizeof(FieldWrapFuncInfo) - 1];
-    auto first = std::lower_bound(begin, end, signature, [](const FieldWrapFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});
-    if (first != end && strcmp(first->Signature, signature) == 0) {
-        return first;
-    }
-    return nullptr;
-}
-
 struct JSEnv
 {
     JSEnv()
@@ -881,7 +751,7 @@ V8_EXPORT puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, const void
     puerts::MethodPointer delegateBridge = nullptr;
     if (isDelegate)
     {
-        delegateBridge = puerts::FindBridgeFunc(delegateSignature);
+        delegateBridge = puerts::GUnityExports.FindBridgeFunc(delegateSignature);
         if (!delegateBridge) return nullptr;
     }
     puerts::JsClassInfo* ret = new puerts::JsClassInfo();
@@ -1165,16 +1035,13 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
 {
     exports->SetNativePtr = &puerts::SetNativePtr;
     exports->CreateJSArrayBuffer = &puerts::CreateJSArrayBuffer;
+    exports->SetExtraData = &puerts::SetExtraData;
     exports->UnrefJsObject = &puerts::UnrefJsObject;
     exports->FunctionToDelegate = &puerts::FunctionToDelegate_pesapi;
-    exports->SetPersistentObject = &puerts::SetPersistentObject;
-    exports->GetPersistentObject = &puerts::GetPersistentObject;
     exports->SetRuntimeObjectToPersistentObject = &puerts::SetRuntimeObjectToPersistentObject;
     exports->GetRuntimeObjectFromPersistentObject = &puerts::GetRuntimeObjectFromPersistentObject;
-    exports->GetJSObjectValue = &puerts::GetJSObjectValue;
     exports->GetModuleExecutor = &puerts::GetModuleExecutor;
     exports->LogCallback = puerts::GLogCallback;
-    exports->AddPendingReleasePersistentObject = &puerts::AddPendingReleasePersistentObject;
     puerts::GUnityExports = *exports;
 }
 

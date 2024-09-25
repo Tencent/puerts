@@ -6,6 +6,7 @@
 */
 
 #include "pesapi.h"
+#include <stdarg.h>
 
 namespace puerts
 {
@@ -28,13 +29,9 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value);
 
 void IL2cppLog(const char* value);
 
-// end function in Puerts_il2cpp.cpp
+void PLog(const char* Fmt, ...);
 
-struct PObjectRefInfo
-{
-    pesapi_env_ref EnvRef;
-    pesapi_value_ref ValueRef;
-};
+// end function in Puerts_il2cpp.cpp
 
 #define GetPObjectRefInfo(Value) ((PObjectRefInfo*)(((uint8_t*)Value) + sizeof(RuntimeObject)))
 
