@@ -31,7 +31,7 @@ jobs:
           cachekey: '2021'
           UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_AUTHENTICATOR_KEY: ${{ secrets.UNITY_AUTHENTICATOR_KEY }}
       - name: UnitTest
         run: |
           cd unity

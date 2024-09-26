@@ -11,7 +11,7 @@ inputs:
     required:
   UNITY_PASSWORD:
     required:
-  UNITY_SERIAL:
+  UNITY_AUTHENTICATOR_KEY:
     required:
 
 runs:
@@ -45,4 +45,4 @@ runs:
         unity-path: C:/UNITY/${{ inputs.version }}/Editor/Unity.exe
         unity-username: ${{ inputs.UNITY_USERNAME }}
         unity-password: ${{ inputs.UNITY_PASSWORD }}
-        unity-serial: ${{ inputs.UNITY_SERIAL }}
+        unity-authenticator-key: ${{ inputs.UNITY_AUTHENTICATOR_KEY }}
