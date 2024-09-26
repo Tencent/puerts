@@ -269,6 +269,9 @@ static void UnrefJsObject(PObjectRefInfo* objectInfo)
         envInfo->PendingReleaseObjects.push_back(std::move(*obj));
     }
     objectInfo->ExtraData = nullptr;
+    // 两个delete，可以通过直接用PObjectRefInfo placement new的方式优化，但需要p-api新增api
+    pesapi_release_value_ref(objectInfo->ValueRef);
+    pesapi_release_env_ref(objectInfo->EnvRef);
 }
 
 struct FieldWrapFuncInfo
