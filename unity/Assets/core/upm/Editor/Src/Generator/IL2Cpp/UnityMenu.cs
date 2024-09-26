@@ -47,7 +47,7 @@ namespace PuertsIl2cpp.Editor
                 FileExporter.GenMarcoHeader(saveTo);
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp wrapper bridge", false, 6)]
             public static void GenerateCppWrappers()
             {   
                 var start = DateTime.Now;
@@ -64,7 +64,7 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
             
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h(Configure)", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp wrapper bridge(Configure)", false, 6)]
             public static void GenerateCppWrappersInConfigure()
             {
                 var start = DateTime.Now;
