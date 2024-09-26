@@ -50,39 +50,26 @@ export function isStructOrNullableStruct(signature) {
     return (signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_');
 }
 
+export function isNullableStruct(signature) {
+    return signature.startsWith(sigs.NullableStructPrefix);
+}
+
 export function SToCPPType(signature) {
-        if (signature[0] == 'D') {
-            signature = signature.substring(1);
-        }
-        if (signature == 's') return 'Il2CppString*';
-        if (signature == 'o' || signature == 'O' || signature == 'a') return 'Il2CppObject*';
-        if (signature[0] == 'V') return 'Il2CppArray*';
-        var t = (signature in PrimitiveSignatureCppTypeMap) ? PrimitiveSignatureCppTypeMap[signature] : "void*";
-        if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
-            t = `struct ${signature}`;
-        }
-        if (signature[0] == 'P') {
-            t = `${SToCPPType(signature.substring(1))}*`
-        }
-        return t;
+    if (signature[0] == 'D') {
+        signature = signature.substring(1);
     }
-    
-export function defineValueType(valueTypeInfo) {
-        // TODO 会存在一个 IsEnum 且 IsGenericParameter 的类型，signature为空，先过滤处理，晚点彻查。
-        if (!valueTypeInfo.Signature) return ''
-        return t`// ${valueTypeInfo.CsName}
-struct ${valueTypeInfo.Signature}
-{
-    ${FOR(listToJsArray(valueTypeInfo.FieldSignatures), (s, i) => t`
-    ${IF(valueTypeInfo.Signature.startsWith(sigs.NullableStructPrefix) && i == valueTypeInfo.NullableHasValuePosition)}
-    ${SToCPPType(s)} hasValue;
-    ${ELSE()}
-    ${SToCPPType(s)} p${i};
-    ${ENDIF()}
-    `)}
-};
-    `;
+    if (signature == 's') return 'Il2CppString*';
+    if (signature == 'o' || signature == 'O' || signature == 'a') return 'Il2CppObject*';
+    if (signature[0] == 'V') return 'Il2CppArray*';
+    var t = (signature in PrimitiveSignatureCppTypeMap) ? PrimitiveSignatureCppTypeMap[signature] : "void*";
+    if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
+        t = `struct ${signature}`;
     }
+    if (signature[0] == 'P') {
+        t = `${SToCPPType(signature.substring(1))}*`
+    }
+    return t;
+}
     
 export function getThis(signature) {
     let getJsThis = 'pesapi_value jsThis = pesapi_get_holder(info);'

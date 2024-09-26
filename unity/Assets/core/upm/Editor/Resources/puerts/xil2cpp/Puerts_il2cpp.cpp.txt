@@ -347,14 +347,6 @@ static void* DelegateCtorCallback(pesapi_callback_info Info);
 
 static puerts::UnityExports g_unityExports;
 
-void IL2cppLog(const char* value)
-{
-    if (g_unityExports.LogCallback)
-    {
-        g_unityExports.LogCallback(value);
-    }
-}
-
 void PLog(const char* Fmt, ...)
 {
     static char SLogBuffer[1024];
@@ -467,7 +459,7 @@ static RuntimeObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsC
 
 static void* DelegateCtorCallback(pesapi_callback_info info)
 {
-    IL2cppLog("DelegateCtorCallback in Puerts_il2cpp.cpp");
+    PLog("DelegateCtorCallback in Puerts_il2cpp.cpp");
     pesapi_env env = pesapi_get_env(info);
     pesapi_value jsval = pesapi_get_arg(info, 0);
     if (!pesapi_is_function(env, jsval))

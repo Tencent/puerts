@@ -45,7 +45,6 @@ namespace PuertsIl2cpp.Editor
                 Directory.CreateDirectory(saveTo);
                 FileExporter.CopyXIl2cppCPlugin(saveTo);
                 FileExporter.GenMarcoHeader(saveTo);
-                FileExporter.GenCPPWrap("puerts/templates/il2cppwrapper.tpl.mjs", Path.Combine(saveTo, "PuertsIl2cppWrapper.cpp"), true);
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp FunctionBridge.Gen.h", false, 6)]
@@ -53,15 +52,15 @@ namespace PuertsIl2cpp.Editor
             {   
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
-                var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
+                var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
 #elif PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
-                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "../../../", "native_src_il2cpp", "Src");
+                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
 #else
-                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
 #endif
-                
+
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap("puerts/templates/cppwrapper.tpl.mjs", Path.Combine(saveTo, "FunctionBridge.Gen.h"));
+                FileExporter.GenCPPWrap(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
             
@@ -70,15 +69,15 @@ namespace PuertsIl2cpp.Editor
             {
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
-                var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
+                var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
 #elif PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
-                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "../../../", "native_src_il2cpp", "Src");
+                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
 #else
-                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
 #endif
-                
+
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap("puerts/templates/cppwrapper.tpl.mjs", Path.Combine(saveTo, "FunctionBridge.Gen.h"), true);
+                FileExporter.GenCPPWrap(saveTo, true);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 

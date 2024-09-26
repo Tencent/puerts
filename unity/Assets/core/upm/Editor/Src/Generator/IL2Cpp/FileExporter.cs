@@ -145,7 +145,7 @@ namespace PuertsIl2cpp.Editor
                 return true;
             }
 
-            public static void GenCPPWrap(string templatePath, string saveTo, bool onlyConfigure = false)
+            public static void GenCPPWrap(string saveTo, bool onlyConfigure = false)
             {
                 Utils.SetFilters(Puerts.Configure.GetFilters());
                 
@@ -364,16 +364,43 @@ namespace PuertsIl2cpp.Editor
                 using (var jsEnv = new Puerts.JsEnv())
                 {
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
-                    var cppWrapRender = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>(templatePath, "default");
-                    using (StreamWriter textWriter = new StreamWriter(saveTo, false, Encoding.UTF8))
+                    
+                    var cppWrapInfo = new CppWrappersInfo
                     {
-                        string fileContext = cppWrapRender(new CppWrappersInfo
-                        {
-                            ValueTypeInfos = valueTypeInfos,
-                            WrapperInfos = wrapperInfos,
-                            BridgeInfos = bridgeInfos,
-                            FieldWrapperInfos = fieldWrapperInfos
-                        });
+                        ValueTypeInfos = valueTypeInfos,
+                        WrapperInfos = wrapperInfos,
+                        BridgeInfos = bridgeInfos,
+                        FieldWrapperInfos = fieldWrapperInfos
+                    };
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppWrapper.cpp"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapper.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsValueType.h"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppvaluetype.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppFieldWrapper.cpp"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppfieldwrapper.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppBridge.cpp"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppbridge.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
                         textWriter.Write(fileContext);
                         textWriter.Flush();
                     }

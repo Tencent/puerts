@@ -27,8 +27,6 @@ void* GetValueTypeFieldPtr(void *obj, FieldInfo *field, size_t offset);
 
 void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value);
 
-void IL2cppLog(const char* value);
-
 void PLog(const char* Fmt, ...);
 
 // end function in Puerts_il2cpp.cpp
