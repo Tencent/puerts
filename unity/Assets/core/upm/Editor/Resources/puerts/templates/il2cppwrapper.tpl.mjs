@@ -48,10 +48,7 @@ ${parameterSignatures.map((x, i) => il2cpp_snippets.JSValToCSVal(x, `_sv${i}`, `
 }
 
 export default function Gen(genInfos) {
-    var valueTypeInfos = il2cpp_snippets.listToJsArray(genInfos.ValueTypeInfos)
     var wrapperInfos = il2cpp_snippets.listToJsArray(genInfos.WrapperInfos);
-    var bridgeInfos = il2cpp_snippets.listToJsArray(genInfos.BridgeInfos);
-    var fieldWrapperInfos = il2cpp_snippets.listToJsArray(genInfos.FieldWrapperInfos);
     console.log(`wrappers:${wrapperInfos.length}`);
     return `// Auto Gen
 
