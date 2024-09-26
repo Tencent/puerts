@@ -45,4 +45,4 @@ runs:
         unity-path: C:/UNITY/${{ inputs.version }}/Editor/Unity.exe
         unity-username: ${{ inputs.UNITY_USERNAME }}
         unity-password: ${{ inputs.UNITY_PASSWORD }}
-        unity-serial: ${{ inputs.UNITY_SERIAL }}
+        unity-authenticator-key: ${{ secrets.UNITY_AUTHENTICATOR_KEY }}
