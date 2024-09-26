@@ -36,13 +36,17 @@ struct pesapi_env_ref__
 struct pesapi_value_ref__
 {
     explicit pesapi_value_ref__(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
-        : value_persistent(context->GetIsolate(), value), isolate(context->GetIsolate()), ref_count(1)
+        : value_persistent(context->GetIsolate(), value)
+        , isolate(context->GetIsolate())
+        , ref_count(1)
+        , env_life_cycle_tracker(puerts::DataTransfer::GetJsEnvLifeCycleTracker(context->GetIsolate()))
     {
     }
 
     v8::Persistent<v8::Value> value_persistent;
     v8::Isolate* const isolate;
     int ref_count;
+    std::weak_ptr<int> env_life_cycle_tracker;
 };
 
 struct pesapi_scope__
@@ -490,13 +494,15 @@ void pesapi_release_env_ref(pesapi_env_ref env_ref)
         {
 #if V8_MAJOR_VERSION < 11
             env_ref->context_persistent.Empty();
+            delete env_ref;
+#else
+            ::operator delete(static_cast<void*>(env_ref));
 #endif
         }
         else
         {
-            env_ref->context_persistent.Reset();
+            delete env_ref;
         }
-        delete env_ref;
     }
 }
 
@@ -575,7 +581,19 @@ void pesapi_release_value_ref(pesapi_value_ref value_ref)
 {
     if (--value_ref->ref_count == 0)
     {
-        delete value_ref;
+        if (value_ref->env_life_cycle_tracker.expired())
+        {
+#if V8_MAJOR_VERSION < 11
+            value_ref->value_persistent.Empty();
+            delete value_ref;
+#else
+            ::operator delete(static_cast<void*>(value_ref));
+#endif
+        }
+        else
+        {
+            delete value_ref;
+        }
     }
 }
 
