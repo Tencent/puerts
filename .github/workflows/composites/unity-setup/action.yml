@@ -40,7 +40,7 @@ runs:
         key: ${{ inputs.os }}-${{ inputs.cachekey }}-unity 
 
     - name: Activate Unity
-      uses: kuler90/activate-unity@v1
+      uses: kuler90/activate-unity@v1.1.3
       with:
         unity-path: C:/UNITY/${{ inputs.version }}/Editor/Unity.exe
         unity-username: ${{ inputs.UNITY_USERNAME }}
