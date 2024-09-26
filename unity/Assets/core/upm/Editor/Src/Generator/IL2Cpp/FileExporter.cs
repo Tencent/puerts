@@ -381,6 +381,14 @@ namespace PuertsIl2cpp.Editor
                         textWriter.Flush();
                     }
 
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppWrapperDef0.cpp"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapperdef.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+
                     using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsValueType.h"), false, Encoding.UTF8))
                     {
                         var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppvaluetype.tpl.mjs", "default");
