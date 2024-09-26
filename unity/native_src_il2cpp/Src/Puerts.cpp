@@ -17,7 +17,6 @@
 #include "DataTransfer.h"
 #include "pesapi.h"
 #include "JSClassRegister.h"
-#include "Binding.hpp"   
 #include <stdarg.h>
 #include "BackendEnv.h"
 #include "ExecuteModuleJSCode.h"
