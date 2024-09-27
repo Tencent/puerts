@@ -217,7 +217,7 @@ static void* FunctionToDelegate_pesapi(pesapi_env env, pesapi_value jsval, const
         
         delegateInfo->EnvRef = pesapi_create_env_ref(env);
         delegateInfo->ValueRef = pesapi_create_value_ref(env, jsval);
-        puerts::PLog(puerts::LogLevel::Log, "FunctionToDelegate (Plugin):%p, %p, %p, %p", Ptr, delegateInfo, delegateInfo->EnvRef, delegateInfo->ValueRef);
+        //puerts::PLog(puerts::LogLevel::Log, "FunctionToDelegate (Plugin):%p, %p, %p, %p", Ptr, delegateInfo, delegateInfo->EnvRef, delegateInfo->ValueRef);
         
         _SetRuntimeObjectToPersistentObject(Context, Func, Ptr);
     }
