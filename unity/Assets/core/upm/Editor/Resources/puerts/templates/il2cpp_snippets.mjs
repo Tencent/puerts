@@ -54,6 +54,10 @@ export function isNullableStruct(signature) {
     return signature.startsWith(sigs.NullableStructPrefix);
 }
 
+export function isStruct(signature) {
+    return signature.startsWith(sigs.StructPrefix) && signature.endsWith('_');
+}
+
 export function SToCPPType(signature) {
     if (signature[0] == 'D') {
         signature = signature.substring(1);
@@ -323,10 +327,19 @@ export function CSValToJSVal(signature, CSName) {
     } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
         return `pesapi_create_binary(env, ${CSName}, 0)`;
     } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
-        return `DataTransfer::CopyValueType(env, ${CSName}, ${TIName})`
-    } else { //TODO: 能处理的就处理, DateTime是否要处理呢？
-        return `// unknow ret signature: ${signature}`
+        return `DataTransfer::CopyValueType(env, ${CSName}, ${TIName})`;
+    } else if (signature == 'Ps') { // string ref
+        return `converter::Converter<std::reference_wrapper<Il2CppString*>>::toScript(env, *${CSName})`;
+    } else if (signature[0] == 'P' && signature != 'Pv') {
+        const elemSignature = signature.substring(1);
+        if (elemSignature in PrimitiveSignatureCppTypeMap) {
+            return `converter::Converter<std::reference_wrapper<${PrimitiveSignatureCppTypeMap[elemSignature]}>>::toScript(env, *${CSName})`;
+        } else if (isStruct(elemSignature)) {
+            return `pesapi_native_object_to_value(env, ${TIName}, ${CSName}, false)`;
+        }
     }
+    //TODO: 能处理的就处理, DateTime是否要处理呢？
+    return `// unknow ret signature: ${signature}`
 }
 
 
