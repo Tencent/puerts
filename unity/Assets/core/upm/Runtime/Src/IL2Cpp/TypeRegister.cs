@@ -51,7 +51,12 @@ namespace Puerts.TypeMapping
             if (bindingMode == BindingMode.FastBinding) 
             {
                 wrapper = NativeAPI.FindWrapFunc(signature);
-            } 
+            }
+            
+            if (member is MethodBase && wrapper == IntPtr.Zero)
+            {
+                UnityEngine.Debug.LogWarning(string.Format("can't get static wrapper for {0} declare in {1}, signature:{2}", member, member.DeclaringType, TypeUtils.GetMethodSignature(member as MethodBase)));
+            }
 
             if (wrapper == IntPtr.Zero && bindingMode != BindingMode.DontBinding)
             {
