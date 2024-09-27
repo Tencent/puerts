@@ -80,9 +80,9 @@ export function getThis(signature) {
         return `${getJsThis}
     auto self = pesapi_get_native_object_ptr(env, jsThis);
     auto ptrType = (Il2CppClass*) pesapi_get_native_object_typeid(env, jsThis);
-    if (Class::IsValuetype(ptrType))
+    if (il2cpp::vm::Class::IsValuetype(ptrType))
     {
-        self = Object::Box(ptrType, self);
+        self = il2cpp::vm::Object::Box(ptrType, self);
     }
 `;
     } else {
