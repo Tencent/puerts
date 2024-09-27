@@ -76,7 +76,7 @@ public class InstructionsFilter
     {
         if (!type.IsByRef && !type.IsPointer) return false;
         var etype = type.GetElementType();
-        return etype.IsByRef || etype.IsPointer;
+        return etype.IsByRef || etype.IsPointer || etype == typeof(System.IntPtr) || etype == typeof(System.UIntPtr);
     }
 
     [Filter]
@@ -93,7 +93,7 @@ public class InstructionsFilter
                 {
                     return BindingMode.DontBinding;
                 }
-                if (ptype.IsByRef || ptype.IsPointer)
+                if (ptype.IsByRef || ptype.IsPointer || ptype == typeof(System.IntPtr) || ptype == typeof(System.UIntPtr))
                 {
                     return BindingMode.DontBinding;
                 }
