@@ -72,26 +72,39 @@ public class InstructionsFilter
         return res;
     }
 
+    public static bool IsPointerOfPointer(System.Type type)
+    {
+        if (!type.IsByRef && !type.IsPointer) return false;
+        var etype = type.GetElementType();
+        return etype.IsByRef || etype.IsPointer;
+    }
+
     [Filter]
-    static BindingMode FilterBigStruct(MemberInfo memberInfo)
+    static BindingMode FilterBigStructAndPointerOfPointer(MemberInfo memberInfo)
     {
         MethodBase methodBase = memberInfo as MethodBase;
         if (methodBase != null)
         {
-            var paramTypes = methodBase.GetParameters().Select(p => (p.ParameterType.IsByRef || p.ParameterType.IsPointer) ? p.ParameterType.GetElementType() : p.ParameterType).Where(t => IsBigValueType(t));
-            if (paramTypes.Count() > 0)
+            foreach(var pinfo in methodBase.GetParameters())
             {
-                //UnityEngine.Debug.Log("filter1:" + methodInfo);
-                return BindingMode.DontBinding;
+                var ptype = pinfo.ParameterType;
+                ptype = (ptype.IsByRef || ptype.IsPointer) ? ptype.GetElementType() : ptype;
+                if (IsBigValueType(ptype))
+                {
+                    return BindingMode.DontBinding;
+                }
+                if (ptype.IsByRef || ptype.IsPointer)
+                {
+                    return BindingMode.DontBinding;
+                }
             }
         }
 
         MethodInfo methodInfo = memberInfo as MethodInfo;
         if (methodInfo != null)
         {
-            if (IsBigValueType(methodInfo.ReturnType))
+            if (IsBigValueType(methodInfo.ReturnType) || IsPointerOfPointer(methodInfo.ReturnType))
             {
-                //UnityEngine.Debug.Log("filter2:" + methodInfo);
                 return BindingMode.DontBinding;
             }
         }
@@ -99,9 +112,8 @@ public class InstructionsFilter
         FieldInfo fieldInfo = memberInfo as FieldInfo;
         if (fieldInfo != null)
         {
-            if (IsBigValueType(fieldInfo.FieldType))
+            if (IsBigValueType(fieldInfo.FieldType) || IsPointerOfPointer(fieldInfo.FieldType))
             {
-                //UnityEngine.Debug.Log("filter3:" + fieldInfo);
                 return BindingMode.DontBinding;
             }
         }
