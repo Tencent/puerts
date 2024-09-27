@@ -32,7 +32,7 @@ function genGetField(fieldWrapperInfo) {
 function genFieldWrapper(fieldWrapperInfo) {
     return t`
 static void ifg_${fieldWrapperInfo.Signature}(pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIret) {
-    PLog("Running ifg_${fieldWrapperInfo.Signature}");
+    // PLog("Running ifg_${fieldWrapperInfo.Signature}");
 
     pesapi_env env = pesapi_get_env(info);
     ${IF(il2cpp_snippets.needThis(fieldWrapperInfo))}
@@ -44,7 +44,7 @@ static void ifg_${fieldWrapperInfo.Signature}(pesapi_callback_info info, FieldIn
 }
 
 static void ifs_${fieldWrapperInfo.Signature}(pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIp) {
-    PLog("Running ifs_${fieldWrapperInfo.Signature}");
+    // PLog("Running ifs_${fieldWrapperInfo.Signature}");
     
     pesapi_env env = pesapi_get_env(info);
     ${IF(il2cpp_snippets.needThis(fieldWrapperInfo))}

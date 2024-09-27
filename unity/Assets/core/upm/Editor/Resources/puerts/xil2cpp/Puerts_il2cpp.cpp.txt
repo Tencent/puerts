@@ -451,7 +451,6 @@ static RuntimeObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsC
         PObjectRefInfo* delegateInfo;
         ret = (RuntimeObject *)DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
         SetPObjectRefInfoValue(env, delegateInfo, jsval);
-        PLog("FunctionToDelegate (Puerts_il2cpp.cpp):%p, %p, %p, %p", ret, delegateInfo, delegateInfo->EnvRef, delegateInfo->ValueRef);
         g_unityExports.SetRuntimeObjectToPersistentObject(env, jsval, ret);
     }
     return ret;
@@ -459,7 +458,6 @@ static RuntimeObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsC
 
 static void* DelegateCtorCallback(pesapi_callback_info info)
 {
-    PLog("DelegateCtorCallback in Puerts_il2cpp.cpp");
     pesapi_env env = pesapi_get_env(info);
     pesapi_value jsval = pesapi_get_arg(info, 0);
     if (!pesapi_is_function(env, jsval))
@@ -476,7 +474,7 @@ void ReleaseScriptObject(RuntimeObject* obj)
 {
     //TODO: 优化性能 ///
     PObjectRefInfo* objectInfo = GetPObjectRefInfo(obj);
-    PLog(">>>>>> ReleaseScriptObject: %p, %p, %p, %p", obj, objectInfo, objectInfo->EnvRef, objectInfo->ValueRef);
+    // PLog(">>>>>> ReleaseScriptObject: %p, %p, %p, %p", obj, objectInfo, objectInfo->EnvRef, objectInfo->ValueRef);
     g_unityExports.UnrefJsObject(objectInfo);
 }
 
@@ -819,7 +817,6 @@ handle_underlying:
                         
                         PObjectRefInfo* objectInfo = GetPObjectRefInfo(ret);
                         SetPObjectRefInfoValue(env, objectInfo, jsval);
-                        PLog("JsValueToCSRef: %p, %p, %p, %p", ret, objectInfo, objectInfo->EnvRef, objectInfo->ValueRef);
                         g_unityExports.SetRuntimeObjectToPersistentObject(env, jsval, ret);
                     }
                     return ret;

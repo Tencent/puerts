@@ -14,7 +14,7 @@ function genFuncWrapper(wrapperInfo) {
     return t`
 // ${wrapperInfo.CsName}
 bool w_${wrapperInfo.Signature}(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, WrapData* wrapData) {
-    PLog("Running w_${wrapperInfo.Signature}");
+    // PLog("Running w_${wrapperInfo.Signature}");
     
     ${il2cpp_snippets.declareTypeInfo(wrapperInfo)}
 

@@ -40,7 +40,7 @@ function genBridge(bridgeInfo) {
     let hasVarArgs = parameterSignatures.length > 0 && parameterSignatures[parameterSignatures.length -1][0] == 'V'
     return t`
 static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}MethodInfo* method) {
-    PLog("Running b_${bridgeInfo.Signature}");
+    // PLog("Running b_${bridgeInfo.Signature}");
 
     ${IF(bridgeInfo.ReturnSignature && !(il2cpp_snippets.getSignatureWithoutRefAndPrefix(bridgeInfo.ReturnSignature) in il2cpp_snippets.PrimitiveSignatureCppTypeMap))}
     auto TIret = GetReturnType(method);
