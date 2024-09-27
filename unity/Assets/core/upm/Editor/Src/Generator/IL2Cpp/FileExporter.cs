@@ -153,7 +153,7 @@ namespace PuertsIl2cpp.Editor
                                 // where assembly.FullName.Contains("puerts") || assembly.FullName.Contains("Assembly-CSharp") || assembly.FullName.Contains("Unity")
                             where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                             from type in assembly.GetTypes()
-                            where type.IsPublic
+                            where type.IsPublic && !InstructionsFilter.IsBigValueType(type)
                             select type;
 
                 const BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
@@ -381,14 +381,6 @@ namespace PuertsIl2cpp.Editor
                         textWriter.Flush();
                     }
 
-                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppWrapperDef0.cpp"), false, Encoding.UTF8))
-                    {
-                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapperdef.tpl.mjs", "default");
-                        string fileContext = render(cppWrapInfo);
-                        textWriter.Write(fileContext);
-                        textWriter.Flush();
-                    }
-
                     using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsValueType.h"), false, Encoding.UTF8))
                     {
                         var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppvaluetype.tpl.mjs", "default");
@@ -412,6 +404,47 @@ namespace PuertsIl2cpp.Editor
                         textWriter.Write(fileContext);
                         textWriter.Flush();
                     }
+
+                    // clear prev gen
+                    if (Directory.Exists(saveTo))
+                    {
+                        string[] files = Directory.GetFiles(saveTo);
+
+                        string pattern = @"^PuertsIl2cppWrapperDef\d+\.cpp(.meta)?$";
+
+                        foreach (string file in files)
+                        {
+                            string fileName = Path.GetFileName(file);
+
+                            if (System.Text.RegularExpressions.Regex.IsMatch(fileName, pattern))
+                            {
+                                try
+                                {
+                                    File.Delete(file);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error deleting file {fileName}: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+
+                    const int MAX_WRAPPER_PER_FILE = 1000;
+                    for (int i = 0; i < wrapperInfos.Count; i += MAX_WRAPPER_PER_FILE)
+                    {
+                        var saveFileName = "PuertsIl2cppWrapperDef" + (i / MAX_WRAPPER_PER_FILE) + ".cpp";
+                        using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, saveFileName), false, Encoding.UTF8))
+                        {
+                            cppWrapInfo.WrapperInfos = wrapperInfos.GetRange(i, Math.Min(MAX_WRAPPER_PER_FILE, wrapperInfos.Count - i));
+                            Debug.Log("PuertsIl2cppWrapperDef" + saveFileName + " with " + cppWrapInfo.WrapperInfos.Count + " wrappers!");
+                            var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapperdef.tpl.mjs", "default");
+                            string fileContext = render(cppWrapInfo);
+                            textWriter.Write(fileContext);
+                            textWriter.Flush();
+                        }
+                    }
+
                 }
             }
 
