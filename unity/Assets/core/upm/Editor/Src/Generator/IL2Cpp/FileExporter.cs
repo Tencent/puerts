@@ -153,7 +153,7 @@ namespace PuertsIl2cpp.Editor
                                 // where assembly.FullName.Contains("puerts") || assembly.FullName.Contains("Assembly-CSharp") || assembly.FullName.Contains("Unity")
                             where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                             from type in assembly.GetTypes()
-                            where type.IsPublic && !InstructionsFilter.IsBigValueType(type)
+                            where type.IsPublic && !InstructionsFilter.IsBigValueType(type) && !type.IsGenericTypeDefinition
                             select type;
 
                 const BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
