@@ -89,12 +89,6 @@ public class InstructionsFilter
         MethodInfo methodInfo = memberInfo as MethodInfo;
         if (methodInfo != null)
         {
-            var paramTypes = methodInfo.GetParameters().Select(p => (p.ParameterType.IsByRef || p.ParameterType.IsPointer) ? p.ParameterType.GetElementType() : p.ParameterType).Where(t => IsBigValueType(t));
-            if (paramTypes.Count() > 0)
-            {
-                //UnityEngine.Debug.Log("filter1:" + methodInfo);
-                return BindingMode.DontBinding;
-            }
             if (IsBigValueType(methodInfo.ReturnType))
             {
                 //UnityEngine.Debug.Log("filter2:" + methodInfo);
