@@ -186,7 +186,9 @@ elseif ( ANDROID )
     #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.so" -o
     #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.stripped.so~"
     #         COMMENT "Strip debug symbols done on final binary.")
-    if (JS_ENGINE STREQUAL "v8_9.4" OR JS_ENGINE STREQUAL "v8")
+    
+    STRING(FIND "${JS_ENGINE}" "v8" IS_ENGINE_V8)
+    IF(IS_ENGINE_V8 GREATER -1)
         add_custom_command(TARGET puerts_il2cpp POST_BUILD
             COMMAND cp ARGS ${BACKEND_LIB_NAMES} ./
             COMMAND cp ARGS ${CMAKE_BINARY_DIR}/libpuerts_il2cpp.a ./libpuerts_il2cpp_tmp.a
