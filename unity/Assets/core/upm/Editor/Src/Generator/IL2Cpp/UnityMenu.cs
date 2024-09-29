@@ -34,7 +34,8 @@ namespace PuertsIl2cpp.Editor
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp c file", false, 6)]
             public static void GenerateCppPlugin()
-            {   
+            {
+                var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
                 var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
 #elif PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
@@ -45,6 +46,7 @@ namespace PuertsIl2cpp.Editor
                 Directory.CreateDirectory(saveTo);
                 FileExporter.CopyXIl2cppCPlugin(saveTo);
                 FileExporter.GenMarcoHeader(saveTo);
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp wrapper bridge", false, 6)]
