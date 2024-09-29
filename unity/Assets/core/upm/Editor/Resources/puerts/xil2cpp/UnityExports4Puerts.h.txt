@@ -20,9 +20,7 @@ struct PObjectRefInfo
 #if defined(USE_OUTSIZE_UNITY)
 
 typedef void (*MethodPointer)();
-typedef void* (*ObjectAllocateFunc)(const void* type);
 typedef void (*ValueTypeDeallocateFunc)(void* ptr);
-typedef void* (*DelegateAllocateFunc)(const void* type, MethodPointer methodPointer, struct PObjectRefInfo** outDelegateInfo);
 typedef void MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, struct WrapData* wrapData);
 typedef v8::FunctionCallback FunctionCallbackFunc;
@@ -43,9 +41,7 @@ typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
 
 #define MethodPointer Il2CppMethodPointer
 
-typedef void* (*ObjectAllocateFunc)(Il2CppClass *klass);
 typedef void (*ValueTypeDeallocateFunc)(void* ptr);
-typedef void* (*DelegateAllocateFunc)(Il2CppClass* klass, MethodPointer methodPointer, struct PObjectRefInfo** outDelegateInfo);
 typedef MethodInfo MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, struct WrapData* wrapData);
 typedef pesapi_callback FunctionCallbackFunc;
@@ -64,7 +60,7 @@ typedef pesapi_value (*GetModuleExecutorFunc)(pesapi_env env);
 
 #endif
 
-typedef void* (*FunctionToDelegateFunc)(pesapi_env env, pesapi_value pvalue, const void* TypeId, bool throwIfFail);
+typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId);
 
 typedef void* (*GetRuntimeObjectFromPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue);
 
@@ -105,8 +101,6 @@ struct JsClassInfoHeader
 struct UnityExports
 {
     //.cpp api
-    ObjectAllocateFunc ObjectAllocate = nullptr;
-    DelegateAllocateFunc DelegateAllocate = nullptr;
     ValueTypeDeallocateFunc ValueTypeDeallocate = nullptr;
     FunctionCallbackFunc MethodCallback = nullptr;
     InitializeFunc ConstructorCallback = nullptr;
@@ -124,7 +118,7 @@ struct UnityExports
     
     SetNativePtrFunc SetNativePtr = nullptr;
     UnrefJsObjectFunc UnrefJsObject = nullptr;
-    FunctionToDelegateFunc FunctionToDelegate = nullptr;
+    GetJsClassInfoFunc GetJsClassInfo = nullptr;
 
     GetModuleExecutorFunc GetModuleExecutor = nullptr;
 

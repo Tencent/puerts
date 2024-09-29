@@ -172,53 +172,20 @@ static void SetRuntimeObjectToPersistentObject(pesapi_env env, pesapi_value pval
 }
 
 
-static void* FunctionToDelegate_pesapi(pesapi_env env, pesapi_value jsval, const void* TypeId, bool throwIfFail)
+static JsClassInfoHeader* GetJsClassInfo(const void* TypeId)
 {
-    //TODO: pesapi 数据到v8的转换应该交给pesapi实现来提供
-    v8::Local<v8::Context> Context;
-    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-    v8::Local<v8::Object> Func;
-    memcpy(static_cast<void*>(&Func), &jsval, sizeof(jsval));
-    
-    if (!Func->IsFunction()) 
+    auto ClassDefinition = FindClassByID(TypeId, true);
+    if (!ClassDefinition)
     {
-        if (throwIfFail)
-        {
-            DataTransfer::ThrowException(Context->GetIsolate(), "not a function, can not use as Delegate");
-        }
         return nullptr;
     }
-    void* Ptr = _GetRuntimeObjectFromPersistentObject(Context, Func);
-    if (Ptr == nullptr)
-    {
-        auto ClassDefinition = FindClassByID(TypeId, true);
-        if (!ClassDefinition)
-        {
-            if (throwIfFail)
-            {
-                DataTransfer::ThrowException(Context->GetIsolate(), "call not load type of delegate");
-            }
-            return nullptr;
-        }
-        
-        JsClassInfo* classInfo = static_cast<JsClassInfo*>(ClassDefinition->Data);
-
-        PObjectRefInfo* delegateInfo = nullptr;
-        Ptr = GUnityExports.DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
-        memset(delegateInfo, 0, sizeof(PObjectRefInfo));
-        
-        delegateInfo->EnvRef = pesapi_create_env_ref(env);
-        delegateInfo->ValueRef = pesapi_create_value_ref(env, jsval);
-        //puerts::PLog(puerts::LogLevel::Log, "FunctionToDelegate (Plugin):%p, %p, %p, %p", Ptr, delegateInfo, delegateInfo->EnvRef, delegateInfo->ValueRef);
-        
-        _SetRuntimeObjectToPersistentObject(Context, Func, Ptr);
-    }
     
-    return Ptr;
+    return static_cast<JsClassInfo*>(ClassDefinition->Data);
 }
 
 static v8::Value* GetModuleExecutor(v8::Context* env)
 {
+    //TODO: pesapi 数据到v8的转换应该交给pesapi实现来提供
     v8::Local<v8::Context> Context;
     memcpy(static_cast<void*>(&Context), &env, sizeof(env));
 
@@ -717,7 +684,7 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
     exports->SetNativePtr = &puerts::SetNativePtr;
     exports->SetExtraData = &puerts::SetExtraData;
     exports->UnrefJsObject = &puerts::UnrefJsObject;
-    exports->FunctionToDelegate = &puerts::FunctionToDelegate_pesapi;
+    exports->GetJsClassInfo = &puerts::GetJsClassInfo;
     exports->SetRuntimeObjectToPersistentObject = &puerts::SetRuntimeObjectToPersistentObject;
     exports->GetRuntimeObjectFromPersistentObject = &puerts::GetRuntimeObjectFromPersistentObject;
     exports->GetModuleExecutor = &puerts::GetModuleExecutor;
@@ -754,7 +721,7 @@ V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *ob
         v8::Local<v8::Context> Context = jsEnv->MainContext.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
         
-        void* klass = *static_cast<void**>(obj);
+        void* klass = *static_cast<void**>(obj); //TODO: 这是Il2cpp内部实现
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, key).ToLocalChecked(), puerts::DataTransfer::FindOrAddCData(Isolate, Context, klass, obj, true)).Check();
     }
 }

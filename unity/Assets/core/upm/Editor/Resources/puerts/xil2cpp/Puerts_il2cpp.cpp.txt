@@ -781,7 +781,12 @@ handle_underlying:
             {
                 if (IsDelegate(klass))
                 {
-                    return (Il2CppObject*)g_unityExports.FunctionToDelegate(env, jsval, klass, true);
+                    JsClassInfoHeader* jsClassInfo = g_unityExports.GetJsClassInfo(klass);
+                    if (!jsClassInfo)
+                    {
+                        Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
+                    }
+                    return FunctionToDelegate(env, jsval, jsClassInfo);
                 }
                 return nullptr;
             }
@@ -1694,8 +1699,6 @@ MethodPointer FindBridgeFunc(const char* signature);
 
 puerts::UnityExports* GetUnityExports()
 {
-    g_unityExports.ObjectAllocate = &ObjectAllocate;
-    g_unityExports.DelegateAllocate = &DelegateAllocate; 
     g_unityExports.ValueTypeDeallocate = &ValueTypeFree;
     g_unityExports.MethodCallback = &MethodCallback;
     g_unityExports.ConstructorCallback = &CtorCallback;
