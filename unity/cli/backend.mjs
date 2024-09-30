@@ -11,7 +11,15 @@ import { promisify } from 'util';
 const pipelineAsync = promisify(pipeline);
 const require = createRequire(import.meta.url);
 const tar = require('tar');
-const axios = require('axios');
+
+const rawAxios = require('axios');
+const https = require('https');
+const axios = rawAxios.create({
+  httpsAgent: new https.Agent({
+    rejectUnauthorized: false,
+  }),
+});
+
 const ProgressBar = require('progress');
 
 async function downloadAndExtractTarGz(url, outputDir) {
