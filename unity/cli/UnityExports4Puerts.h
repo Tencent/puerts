@@ -20,9 +20,7 @@ struct PObjectRefInfo
 #if defined(USE_OUTSIZE_UNITY)
 
 typedef void (*MethodPointer)();
-typedef void* (*ObjectAllocateFunc)(const void* type);
 typedef void (*ValueTypeDeallocateFunc)(void* ptr);
-typedef void* (*DelegateAllocateFunc)(const void* type, MethodPointer methodPointer, struct PObjectRefInfo** outDelegateInfo);
 typedef void MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, struct WrapData* wrapData);
 typedef v8::FunctionCallback FunctionCallbackFunc;
@@ -32,8 +30,6 @@ typedef void (*FieldWrapFuncPtr)(const v8::FunctionCallbackInfo<v8::Value>& info
 typedef void TypeIdType;
 
 typedef void (*SetNativePtrFunc)(v8::Object* obj, void* ptr, void* type_id);
-
-typedef v8::Value* (*CreateJSArrayBufferFunc)(v8::Context* env, void* buffer, size_t length);
 
 typedef void (*UnrefJsObjectFunc)(struct PObjectRefInfo* objectInfo);
 
@@ -45,9 +41,7 @@ typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
 
 #define MethodPointer Il2CppMethodPointer
 
-typedef void* (*ObjectAllocateFunc)(Il2CppClass *klass);
 typedef void (*ValueTypeDeallocateFunc)(void* ptr);
-typedef void* (*DelegateAllocateFunc)(Il2CppClass* klass, MethodPointer methodPointer, struct PObjectRefInfo** outDelegateInfo);
 typedef MethodInfo MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, struct WrapData* wrapData);
 typedef pesapi_callback FunctionCallbackFunc;
@@ -58,8 +52,6 @@ typedef Il2CppClass TypeIdType;
 
 typedef void (*SetNativePtrFunc)(pesapi_value obj, void* ptr, const void* type_id);
 
-typedef pesapi_value (*CreateJSArrayBufferFunc)(pesapi_env env, void* buffer, size_t length);
-
 typedef void (*UnrefJsObjectFunc)(struct PObjectRefInfo* delegateInfo);
 
 typedef const void* (*CSharpTypeToTypeIdFunc)(Il2CppObject *type);
@@ -68,7 +60,7 @@ typedef pesapi_value (*GetModuleExecutorFunc)(pesapi_env env);
 
 #endif
 
-typedef void* (*FunctionToDelegateFunc)(pesapi_env env, pesapi_value pvalue, const void* TypeId, bool throwIfFail);
+typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId);
 
 typedef void* (*GetRuntimeObjectFromPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue);
 
@@ -109,27 +101,18 @@ struct JsClassInfoHeader
 struct UnityExports
 {
     //.cpp api
-    ObjectAllocateFunc ObjectAllocate = nullptr;
-    DelegateAllocateFunc DelegateAllocate = nullptr;
     ValueTypeDeallocateFunc ValueTypeDeallocate = nullptr;
     FunctionCallbackFunc MethodCallback = nullptr;
     InitializeFunc ConstructorCallback = nullptr;
     InitializeFunc DelegateConstructorCallback = nullptr;
     CSharpTypeToTypeIdFunc CSharpTypeToTypeId = nullptr;
-    WrapFuncPtr ReflectionWrapper = nullptr;
-    FieldWrapFuncPtr ReflectionGetFieldWrapper = nullptr;
-    FieldWrapFuncPtr ReflectionSetFieldWrapper = nullptr;
-
-    FindWrapFuncFunc FindWrapFunc = nullptr;
-    FindFieldWrapFuncInfoFunc FindFieldWrapFuncInfo = nullptr;
     FindBridgeFuncFunc FindBridgeFunc = nullptr;
 
     //plugin api
     
     SetNativePtrFunc SetNativePtr = nullptr;
-    CreateJSArrayBufferFunc CreateJSArrayBuffer = nullptr;
     UnrefJsObjectFunc UnrefJsObject = nullptr;
-    FunctionToDelegateFunc FunctionToDelegate = nullptr;
+    GetJsClassInfoFunc GetJsClassInfo = nullptr;
 
     GetModuleExecutorFunc GetModuleExecutor = nullptr;
 
