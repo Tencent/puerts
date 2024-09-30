@@ -19,13 +19,7 @@ struct PObjectRefInfo
 
 #if defined(USE_OUTSIZE_UNITY)
 
-typedef void (*MethodPointer)();
-typedef void MethodType;
-typedef bool (*WrapFuncPtr)(MethodType* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, struct WrapData* wrapData);
-
-typedef void (*FieldWrapFuncPtr)(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo);
-
-typedef void TypeIdType;
+typedef void* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
 
 typedef void (*SetNativePtrFunc)(v8::Object* obj, void* ptr, void* type_id);
 
@@ -36,14 +30,8 @@ typedef const void* (*CSharpTypeToTypeIdFunc)(const void *type);
 typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
 
 #else
-
-#define MethodPointer Il2CppMethodPointer
-
-typedef MethodInfo MethodType;
-typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, struct WrapData* wrapData);
-typedef void (*FieldWrapFuncPtr)(pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType);
-
-typedef Il2CppClass TypeIdType;
+    
+typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
 
 typedef void (*SetNativePtrFunc)(pesapi_value obj, void* ptr, const void* type_id);
 
@@ -55,7 +43,6 @@ typedef pesapi_value (*GetModuleExecutorFunc)(pesapi_env env);
 
 #endif
 
-typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
 
 typedef void* (*GetRuntimeObjectFromPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue);
 
@@ -64,28 +51,6 @@ typedef void (*SetRuntimeObjectToPersistentObjectFunc)(pesapi_env env, pesapi_va
 typedef void(*LogCallbackFunc)(const char* value);
 
 typedef void (*SetExtraDataFunc)(pesapi_env env, struct PObjectRefInfo* objectInfo);
-
-struct WrapData 
-{
-    WrapFuncPtr Wrap;
-    MethodType* Method;
-    MethodPointer MethodPointer;
-    bool IsStatic;
-    bool IsExtensionMethod;
-    bool HasParamArray;
-    int OptionalNum;
-    TypeIdType* TypeInfos[0];
-};
-
-struct JsClassInfoHeader
-{
-    const void* TypeId;
-    const void* SuperTypeId;
-    TypeIdType* Class;
-    bool IsValueType;
-    MethodPointer DelegateBridge;
-    WrapData** CtorWrapDatas;
-};
 
 struct UnityExports
 {

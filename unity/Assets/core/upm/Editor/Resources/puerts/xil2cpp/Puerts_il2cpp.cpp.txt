@@ -43,7 +43,6 @@ using namespace il2cpp::vm;
 
 namespace puerts
 {
-    
 struct CSharpMethodInfo
 {
     std::string Name;
@@ -53,20 +52,21 @@ struct CSharpMethodInfo
     std::vector<WrapData*> OverloadDatas;
 };
 
-struct FieldWrapData
-{
-    FieldWrapFuncPtr Getter;
-    FieldWrapFuncPtr Setter;
-    FieldInfo *FieldInfo;
-    size_t Offset;
-    Il2CppClass* TypeInfo;
-};
-
 struct CSharpFieldInfo
 {
     std::string Name;
     bool IsStatic;
     FieldWrapData *Data;
+};
+
+struct JsClassInfoHeader
+{
+    const void* TypeId;
+    const void* SuperTypeId;
+    Il2CppClass* Class;
+    bool IsValueType;
+    Il2CppMethodPointer DelegateBridge;
+    WrapData** CtorWrapDatas;
 };
 
 struct JsClassInfo : public JsClassInfoHeader
@@ -1741,7 +1741,7 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2Cpp
 
 WrapFuncPtr FindWrapFunc(const char* signature);
 struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
-MethodPointer FindBridgeFunc(const char* signature);
+Il2CppMethodPointer FindBridgeFunc(const char* signature);
 
 puerts::UnityExports* GetUnityExports()
 {

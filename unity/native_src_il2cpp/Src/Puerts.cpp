@@ -127,7 +127,7 @@ static void SetRuntimeObjectToPersistentObject(pesapi_env env, pesapi_value pval
 }
 
 
-static JsClassInfoHeader* GetJsClassInfo(const void* TypeId, bool TryLazyLoad)
+static void* GetJsClassInfo(const void* TypeId, bool TryLazyLoad)
 {
     auto ClassDefinition = FindClassByID(TypeId, TryLazyLoad);
     if (!ClassDefinition)
@@ -135,7 +135,7 @@ static JsClassInfoHeader* GetJsClassInfo(const void* TypeId, bool TryLazyLoad)
         return nullptr;
     }
     
-    return static_cast<JsClassInfoHeader*>(ClassDefinition->Data);
+    return ClassDefinition->Data;
 }
 
 static v8::Value* GetModuleExecutor(v8::Context* env)

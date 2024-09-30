@@ -115,13 +115,13 @@ ${bridgeInfos.map(genBridge).join('\n')}
 
 static BridgeFuncInfo g_bridgeFuncInfos[] = {
     ${FOR(bridgeInfos, info => t`
-    {"${info.Signature}", (MethodPointer)b_${info.Signature}},
+    {"${info.Signature}", (Il2CppMethodPointer)b_${info.Signature}},
     `)}
     {nullptr, nullptr}
 };
 
 
-MethodPointer FindBridgeFunc(const char* signature)
+Il2CppMethodPointer FindBridgeFunc(const char* signature)
 {
     auto begin = &g_bridgeFuncInfos[0];
     auto end = &g_bridgeFuncInfos[sizeof(g_bridgeFuncInfos) / sizeof(BridgeFuncInfo) - 1];
