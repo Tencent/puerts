@@ -72,51 +72,6 @@ void PLog(LogLevel Level, const std::string Fmt, ...)
     }
 }
 
-struct CSharpMethodInfo
-{
-    std::string Name;
-    bool IsStatic;
-    bool IsGetter;
-    bool IsSetter;
-    std::vector<WrapData*> OverloadDatas;
-};
-
-struct FieldWrapData
-{
-    FieldWrapFuncPtr Getter;
-    FieldWrapFuncPtr Setter;
-    void *FieldInfo;
-    size_t Offset;
-    void* TypeInfo;
-};
-
-struct CSharpFieldInfo
-{
-    std::string Name;
-    bool IsStatic;
-    FieldWrapData *Data;
-};
-
-struct JsClassInfo : public JsClassInfoHeader
-{
-    std::string Name;
-    std::vector<WrapData*> Ctors;
-    std::vector<CSharpMethodInfo> Methods;
-    std::vector<CSharpFieldInfo> Fields;
-};
-
-static void GetterCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    FieldWrapData* wrapData = static_cast<FieldWrapData*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    wrapData->Getter(Info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
-}
-
-static void SetterCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    FieldWrapData* wrapData = static_cast<FieldWrapData*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    wrapData->Setter(Info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
-}
-
 static void SetNativePtr(v8::Object* obj, void* ptr, void* type_id)
 {
     DataTransfer::SetPointer(obj, ptr, 0);
@@ -180,7 +135,7 @@ static JsClassInfoHeader* GetJsClassInfo(const void* TypeId, bool TryLazyLoad)
         return nullptr;
     }
     
-    return static_cast<JsClassInfo*>(ClassDefinition->Data);
+    return static_cast<JsClassInfoHeader*>(ClassDefinition->Data);
 }
 
 static v8::Value* GetModuleExecutor(v8::Context* env)
