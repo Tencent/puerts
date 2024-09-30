@@ -1704,12 +1704,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.ConstructorCallback = &CtorCallback;
     g_unityExports.DelegateConstructorCallback = &DelegateCtorCallback;
     g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;
-    g_unityExports.ReflectionWrapper = ReflectionWrapper;
-    g_unityExports.ReflectionGetFieldWrapper = ReflectionGetFieldWrapper;
-    g_unityExports.ReflectionSetFieldWrapper = ReflectionSetFieldWrapper;
-    g_unityExports.FindWrapFunc = FindWrapFunc;
     g_unityExports.FindBridgeFunc = FindBridgeFunc;
-    g_unityExports.FindFieldWrapFuncInfo = FindFieldWrapFuncInfo;
     return &g_unityExports;
 }
 
@@ -1808,6 +1803,41 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("Puerts.JSObject::releaseScriptObject()", (Il2CppMethodPointer)puerts::ReleaseScriptObject);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     pesapi_init(func_array);
+}
+
+puerts::WrapFuncPtr FindWrapFunc(const char* signature)
+{
+    if (signature == nullptr)
+    {
+        return &puerts::ReflectionWrapper;
+    }
+    else 
+    {
+        return puerts::FindWrapFunc(signature);
+    }
+}
+    
+void FindFieldWrap(const char* signature, puerts::FieldWrapFuncPtr *getter, puerts::FieldWrapFuncPtr *setter)
+{
+    if (signature == nullptr)
+    {
+        *getter = &puerts::ReflectionGetFieldWrapper;
+        *setter = &puerts::ReflectionSetFieldWrapper;
+    }
+    else 
+    {
+         auto fieldWrapInfo = puerts::FindFieldWrapFuncInfo(signature);
+         if (fieldWrapInfo)
+         {
+             *getter = fieldWrapInfo->Getter;
+             *setter = fieldWrapInfo->Setter;
+         }
+         else
+         {
+             *getter = nullptr;
+             *setter = nullptr;
+         }
+    }
 }
 
 #ifdef __cplusplus

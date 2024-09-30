@@ -62,11 +62,11 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleaseCSharpTypeInfo(IntPtr classInfo);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr FindWrapFunc(string signature);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr FindFieldWrap(string signature);
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void FindFieldWrap(string signature, out IntPtr getter, out IntPtr setter);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr AddConstructor(IntPtr classInfo, string signature, IntPtr WrapFunc, IntPtr method, IntPtr methodPointer, int typeInfoNum);
@@ -75,7 +75,7 @@ namespace PuertsIl2cpp
         public static extern IntPtr AddMethod(IntPtr classInfo, string signature, IntPtr WrapFunc, string name, bool isStatic, bool isExtensionethod, bool isGetter, bool isSetter, IntPtr method, IntPtr methodPointer, int typeInfoNum);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool AddField(IntPtr classInfo, IntPtr FieldWrap, string name, bool isStatic, IntPtr fieldInfo, int offset, IntPtr fieldTypeInfo);
+        public static extern bool AddField(IntPtr classInfo, IntPtr getter, IntPtr setter, string name, bool isStatic, IntPtr fieldInfo, int offset, IntPtr fieldTypeInfo);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetTypeInfo(IntPtr wrapData, int index, IntPtr typeId);

@@ -106,12 +106,6 @@ struct UnityExports
     InitializeFunc ConstructorCallback = nullptr;
     InitializeFunc DelegateConstructorCallback = nullptr;
     CSharpTypeToTypeIdFunc CSharpTypeToTypeId = nullptr;
-    WrapFuncPtr ReflectionWrapper = nullptr;
-    FieldWrapFuncPtr ReflectionGetFieldWrapper = nullptr;
-    FieldWrapFuncPtr ReflectionSetFieldWrapper = nullptr;
-
-    FindWrapFuncFunc FindWrapFunc = nullptr;
-    FindFieldWrapFuncInfoFunc FindFieldWrapFuncInfo = nullptr;
     FindBridgeFuncFunc FindBridgeFunc = nullptr;
 
     //plugin api

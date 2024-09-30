@@ -232,13 +232,6 @@ static void UnrefJsObject(PObjectRefInfo* objectInfo)
     pesapi_release_env_ref(objectInfo->EnvRef);
 }
 
-struct FieldWrapFuncInfo
-{
-    const char* Signature;
-    FieldWrapFuncPtr Getter;
-    FieldWrapFuncPtr Setter;
-};
-
 struct JSEnv
 {
     JSEnv()
@@ -439,18 +432,6 @@ static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* 
     }
 }
 
-V8_EXPORT puerts::WrapFuncPtr FindWrapFunc(const char* signature)
-{
-    if (signature == nullptr)
-    {
-        return puerts::GUnityExports.ReflectionWrapper;
-    }
-    else 
-    {
-        return puerts::GUnityExports.FindWrapFunc(signature);
-    }
-}
-
 V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
     // puerts::PLog(puerts::LogLevel::Log, "ctor %s -> %s", classInfo->Name.c_str(), signature);
@@ -504,42 +485,15 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
     return data;
 }
 
-static puerts::FieldWrapFuncInfo *ReflectionFuncWrap = nullptr;
-V8_EXPORT puerts::FieldWrapFuncInfo* FindFieldWrap(const char* signature)
+V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, puerts::FieldWrapFuncPtr getter, puerts::FieldWrapFuncPtr setter, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
 {
-    if (signature == nullptr)
-    {
-        if (ReflectionFuncWrap == nullptr)
-        {
-            ReflectionFuncWrap = new puerts::FieldWrapFuncInfo();
-            ReflectionFuncWrap->Getter = puerts::GUnityExports.ReflectionGetFieldWrapper;
-            ReflectionFuncWrap->Setter = puerts::GUnityExports.ReflectionSetFieldWrapper;
-        }
-        
-        return ReflectionFuncWrap;
-    }
-    else 
-    {
-        return puerts::GUnityExports.FindFieldWrapFuncInfo(signature);
-    }
-}
-
-V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, puerts::FieldWrapFuncInfo* wrapFuncInfo, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
-{
-    puerts::FieldWrapFuncPtr Getter = nullptr;
-    puerts::FieldWrapFuncPtr Setter = nullptr;
-    if (wrapFuncInfo) 
-    {
-        Getter = wrapFuncInfo->Getter;
-        Setter = wrapFuncInfo->Setter;
-    }
-    else
+    if (!getter && !setter) 
     {
         return false;
     }
     puerts::FieldWrapData* data = new puerts::FieldWrapData();
-    data->Getter = Getter;
-    data->Setter = Setter;
+    data->Getter = getter;
+    data->Setter = setter;
     data->FieldInfo = fieldInfo;
     data->Offset = offset;
     data->TypeInfo = fieldTypeInfo;
