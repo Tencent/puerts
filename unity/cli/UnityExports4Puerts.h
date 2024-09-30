@@ -20,10 +20,8 @@ struct PObjectRefInfo
 #if defined(USE_OUTSIZE_UNITY)
 
 typedef void (*MethodPointer)();
-typedef void (*ValueTypeDeallocateFunc)(void* ptr);
 typedef void MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, struct WrapData* wrapData);
-typedef v8::FunctionCallback FunctionCallbackFunc;
 
 typedef void (*FieldWrapFuncPtr)(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo);
 
@@ -41,11 +39,8 @@ typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
 
 #define MethodPointer Il2CppMethodPointer
 
-typedef void (*ValueTypeDeallocateFunc)(void* ptr);
 typedef MethodInfo MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, struct WrapData* wrapData);
-typedef pesapi_callback FunctionCallbackFunc;
-typedef pesapi_constructor InitializeFunc;
 typedef void (*FieldWrapFuncPtr)(pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType);
 
 typedef Il2CppClass TypeIdType;
@@ -60,17 +55,11 @@ typedef pesapi_value (*GetModuleExecutorFunc)(pesapi_env env);
 
 #endif
 
-typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId);
+typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
 
 typedef void* (*GetRuntimeObjectFromPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue);
 
 typedef void (*SetRuntimeObjectToPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, void* runtimeObject);
-
-typedef WrapFuncPtr (*FindWrapFuncFunc)(const char* signature);
-
-typedef struct FieldWrapFuncInfo * (*FindFieldWrapFuncInfoFunc)(const char* signature);
-
-typedef MethodPointer (*FindBridgeFuncFunc)(const char* signature);
 
 typedef void(*LogCallbackFunc)(const char* value);
 
@@ -101,12 +90,7 @@ struct JsClassInfoHeader
 struct UnityExports
 {
     //.cpp api
-    ValueTypeDeallocateFunc ValueTypeDeallocate = nullptr;
-    FunctionCallbackFunc MethodCallback = nullptr;
-    InitializeFunc ConstructorCallback = nullptr;
-    InitializeFunc DelegateConstructorCallback = nullptr;
     CSharpTypeToTypeIdFunc CSharpTypeToTypeId = nullptr;
-    FindBridgeFuncFunc FindBridgeFunc = nullptr;
 
     //plugin api
     

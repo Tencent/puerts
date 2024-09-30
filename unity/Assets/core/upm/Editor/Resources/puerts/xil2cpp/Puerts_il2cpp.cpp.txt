@@ -34,6 +34,7 @@
 #include <vector>
 #include <mutex>
 #include <map>
+#include <string>
 
 // Because we need to hold the C# object pointer, we must ensure that GC does not do memory reorganization.
 static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
@@ -42,6 +43,39 @@ using namespace il2cpp::vm;
 
 namespace puerts
 {
+    
+struct CSharpMethodInfo
+{
+    std::string Name;
+    bool IsStatic;
+    bool IsGetter;
+    bool IsSetter;
+    std::vector<WrapData*> OverloadDatas;
+};
+
+struct FieldWrapData
+{
+    FieldWrapFuncPtr Getter;
+    FieldWrapFuncPtr Setter;
+    FieldInfo *FieldInfo;
+    size_t Offset;
+    Il2CppClass* TypeInfo;
+};
+
+struct CSharpFieldInfo
+{
+    std::string Name;
+    bool IsStatic;
+    FieldWrapData *Data;
+};
+
+struct JsClassInfo : public JsClassInfoHeader
+{
+    std::string Name;
+    std::vector<WrapData*> Ctors;
+    std::vector<CSharpMethodInfo> Methods;
+    std::vector<CSharpFieldInfo> Fields;
+};
 
 intptr_t GetMethodPointer(Il2CppReflectionMethod* method)
 {
@@ -264,6 +298,18 @@ static void MethodCallback(pesapi_callback_info info)
             pesapi_throw_by_string(info, str.c_str());
         }
     }
+}
+
+static void GetterCallback(pesapi_callback_info info)
+{
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>(pesapi_get_userdata(info));
+    wrapData->Getter(info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
+}
+
+static void SetterCallback(pesapi_callback_info info)
+{
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>(pesapi_get_userdata(info));
+    wrapData->Setter(info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
 void GetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
@@ -781,7 +827,7 @@ handle_underlying:
             {
                 if (IsDelegate(klass))
                 {
-                    JsClassInfoHeader* jsClassInfo = g_unityExports.GetJsClassInfo(klass);
+                    JsClassInfoHeader* jsClassInfo = g_unityExports.GetJsClassInfo(klass, true);
                     if (!jsClassInfo)
                     {
                         Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
@@ -1699,12 +1745,7 @@ MethodPointer FindBridgeFunc(const char* signature);
 
 puerts::UnityExports* GetUnityExports()
 {
-    g_unityExports.ValueTypeDeallocate = &ValueTypeFree;
-    g_unityExports.MethodCallback = &MethodCallback;
-    g_unityExports.ConstructorCallback = &CtorCallback;
-    g_unityExports.DelegateConstructorCallback = &DelegateCtorCallback;
     g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;
-    g_unityExports.FindBridgeFunc = FindBridgeFunc;
     return &g_unityExports;
 }
 
@@ -1838,6 +1879,203 @@ void FindFieldWrap(const char* signature, puerts::FieldWrapFuncPtr *getter, puer
              *setter = nullptr;
          }
     }
+}
+
+puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, const void* type_id, const void* super_type_id, Il2CppClass* klass, bool isValueType, bool isDelegate, const char* delegateSignature)
+{
+    Il2CppMethodPointer delegateBridge = nullptr;
+    if (isDelegate)
+    {
+        delegateBridge = puerts::FindBridgeFunc(delegateSignature);
+        if (!delegateBridge) return nullptr;
+    }
+    puerts::JsClassInfo* ret = new puerts::JsClassInfo();
+    ret->Name = name;
+    ret->TypeId = type_id;
+    ret->SuperTypeId = super_type_id;
+    ret->Class = klass;
+    ret->IsValueType = isValueType;
+    ret->DelegateBridge = delegateBridge;
+    
+    return ret;
+}
+
+void ReleaseCSharpTypeInfo(puerts::JsClassInfo* classInfo)
+{
+    //TODO: 有内存泄漏，需要释放里面的内容
+    delete classInfo;
+}
+
+static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* signature)
+{
+    data->HasParamArray = false;
+    data->OptionalNum = 0;
+    
+    const char* p = signature;
+    while(*p)
+    {
+        if (*p == 'V')
+        {
+            data->HasParamArray = true;
+        }
+        if (*p == 'D')
+        {
+            ++data->OptionalNum;
+        }
+        ++p;
+    }
+}
+
+puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, MethodInfo* method, Il2CppMethodPointer methodPointer, int typeInfoNum)
+{
+    // puerts::PLog(puerts::LogLevel::Log, "ctor %s -> %s", classInfo->Name.c_str(), signature);
+    if (!WrapFunc) return nullptr;
+    int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
+    puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
+    memset(data, 0, allocSize);
+    data->Method = method;
+    data->MethodPointer = methodPointer;
+    data->Wrap = WrapFunc;
+    data->IsStatic = false;
+    data->IsExtensionMethod = false;
+    SetParamArrayFlagAndOptionalNum(data, signature);
+    
+    classInfo->Ctors.push_back(data);
+    return data;
+}
+
+puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, const char* name, bool isStatic, bool isExtensionMethod, bool isGetter, bool isSetter, MethodInfo* method, Il2CppMethodPointer methodPointer, int typeInfoNum)
+{
+    if (!WrapFunc) return nullptr;
+    int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
+    puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
+    memset(data, 0, allocSize);
+    data->Method = method;
+    data->MethodPointer = methodPointer;
+    data->Wrap = WrapFunc;
+    data->IsStatic = isStatic;
+    data->IsExtensionMethod = isExtensionMethod;
+    SetParamArrayFlagAndOptionalNum(data, signature);
+    
+    for(int i = 0; i < classInfo->Methods.size(); ++i)
+    {
+        if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].Name == name)
+        {
+            if (isGetter || isSetter) // no overload for getter or setter
+            {
+                free(data);
+                return nullptr;
+            }
+            //puerts::PLog("add overload for %s, %s", name, signature);
+            classInfo->Methods[i].OverloadDatas.push_back(data);
+            return data;
+        }
+    }
+    
+    //puerts::PLog("%s %d %d %d %p", name, typeInfoNum, allocSize, sizeof(puerts::WrapData), data);
+    std::vector<puerts::WrapData*> OverloadDatas;
+    OverloadDatas.push_back(data);
+    classInfo->Methods.push_back({std::string(name), isStatic, isGetter, isSetter, std::move(OverloadDatas)});
+    return data;
+}
+
+bool AddField(puerts::JsClassInfo* classInfo, puerts::FieldWrapFuncPtr getter, puerts::FieldWrapFuncPtr setter, const char* name, bool is_static, FieldInfo* fieldInfo, int offset, Il2CppClass* fieldTypeInfo)
+{
+    if (!getter && !setter) 
+    {
+        return false;
+    }
+    puerts::FieldWrapData* data = new puerts::FieldWrapData();
+    data->Getter = getter;
+    data->Setter = setter;
+    data->FieldInfo = fieldInfo;
+    data->Offset = offset;
+    data->TypeInfo = fieldTypeInfo;
+    
+    classInfo->Fields.push_back({std::string(name), is_static, data});
+    return true;
+}
+
+void SetTypeInfo(puerts::WrapData* data, int index, Il2CppClass* typeInfo)
+{
+    data->TypeInfos[index] = typeInfo;
+}
+
+bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
+{
+    if (puerts::g_unityExports.GetJsClassInfo(classInfo->TypeId, false))
+    {
+        ReleaseCSharpTypeInfo(classInfo);
+        return true;
+    }
+    
+    classInfo->Ctors.push_back(nullptr);
+    classInfo->CtorWrapDatas = classInfo->Ctors.data();
+    
+    std::map<std::string, std::pair<puerts::CSharpMethodInfo*, puerts::CSharpMethodInfo*>> gseters;
+    std::vector<puerts::CSharpMethodInfo*> methods;
+    
+    for (auto & method : classInfo->Methods)
+    {
+        method.OverloadDatas.push_back(nullptr);
+        
+        if (method.IsGetter || method.IsSetter)
+        {
+            auto iter = gseters.find(method.Name);
+            if (iter == gseters.end())
+            {
+                gseters[method.Name] = std::make_pair<puerts::CSharpMethodInfo*, puerts::CSharpMethodInfo*>(method.IsGetter ? &method : nullptr, method.IsSetter ? &method : nullptr);
+            }
+            else
+            {
+                if (method.IsGetter)
+                {
+                    iter->second.first = &method;
+                }
+                else
+                {
+                    iter->second.second = &method;
+                }
+            }
+        }
+        else
+        {
+            methods.push_back(&method);
+        }
+        //puerts::WrapData** wrapDatas = reinterpret_cast<puerts::WrapData**>(method.OverloadDatas.data());
+    }
+    
+    size_t propertiesCount = gseters.size() + methods.size() + classInfo->Fields.size();
+    auto properties = pesapi_alloc_property_descriptors(propertiesCount);
+    size_t pos = 0;
+    
+    for (auto const& method: methods)
+    {
+        pesapi_set_method_info(
+                properties, pos++, method->Name.c_str(), method->IsStatic, &puerts::MethodCallback, method->OverloadDatas.data(), nullptr);
+    }
+    
+    for (auto const& kv: gseters)
+    {
+        auto geter_or_setter = kv.second.first ? kv.second.first : kv.second.second;
+        pesapi_set_property_info(properties, pos++, geter_or_setter->Name.c_str(), geter_or_setter->IsStatic, 
+            kv.second.first ? &puerts::MethodCallback : nullptr,
+            kv.second.second ? &puerts::MethodCallback : nullptr, 
+            kv.second.first ? kv.second.first->OverloadDatas.data() : nullptr,
+            kv.second.second ? kv.second.second->OverloadDatas.data() : nullptr, 
+            nullptr);
+    }
+    
+    for (auto & field : classInfo->Fields)
+    {
+        pesapi_set_property_info(properties, pos++, field.Name.c_str(), field.IsStatic, 
+            puerts::GetterCallback, puerts::SetterCallback, field.Data, field.Data, nullptr);
+    }
+    
+    pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->Name.c_str(),
+            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? &puerts::ValueTypeFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
+    
+    return true;
 }
 
 #ifdef __cplusplus

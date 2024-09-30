@@ -56,10 +56,10 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetIsolate(IntPtr jsEnv);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, IntPtr klass, bool isValueType, bool isDelegate, string delegateSignature);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleaseCSharpTypeInfo(IntPtr classInfo);
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
@@ -68,23 +68,23 @@ namespace PuertsIl2cpp
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void FindFieldWrap(string signature, out IntPtr getter, out IntPtr setter);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr AddConstructor(IntPtr classInfo, string signature, IntPtr WrapFunc, IntPtr method, IntPtr methodPointer, int typeInfoNum);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr AddMethod(IntPtr classInfo, string signature, IntPtr WrapFunc, string name, bool isStatic, bool isExtensionethod, bool isGetter, bool isSetter, IntPtr method, IntPtr methodPointer, int typeInfoNum);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool AddField(IntPtr classInfo, IntPtr getter, IntPtr setter, string name, bool isStatic, IntPtr fieldInfo, int offset, IntPtr fieldTypeInfo);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetTypeInfo(IntPtr wrapData, int index, IntPtr typeId);
 
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RegisterCSharpType(IntPtr classInfo);
+        
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ExchangeAPI(IntPtr exports);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RegisterCSharpType(IntPtr classInfo);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetObjectPool(IntPtr jsEnv, IntPtr objectPoolAddMethodInfo, IntPtr objectPoolAdd, IntPtr objectPoolRemoveMethodInfo, IntPtr objectPoolRemove, IntPtr objectPoolInstance);
