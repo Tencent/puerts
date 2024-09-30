@@ -13,12 +13,11 @@ function genFuncWrapper(wrapperInfo) {
 
     return t`
 // ${wrapperInfo.CsName}
-bool w_${wrapperInfo.Signature}(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, WrapData* wrapData) {
+bool w_${wrapperInfo.Signature}(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {
     // PLog("Running w_${wrapperInfo.Signature}");
     
     ${il2cpp_snippets.declareTypeInfo(wrapperInfo)}
 
-    pesapi_env env = pesapi_get_env(info);
     int js_args_len = pesapi_get_args_len(info);
     
 ${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = pesapi_get_arg(info, ${i});`).join('\n')}
@@ -29,7 +28,6 @@ ${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = pesapi_get_arg(i
         ${il2cpp_snippets.checkJSArg(x, i)}
         `)}
     }
-    ${il2cpp_snippets.getThis(wrapperInfo.ThisSignature)}
     
 ${parameterSignatures.map((x, i) => il2cpp_snippets.JSValToCSVal(x, `_sv${i}`, `p${i}`)).join('\n')}
 

@@ -72,12 +72,6 @@ void PLog(LogLevel Level, const std::string Fmt, ...)
     }
 }
 
-static void SetNativePtr(v8::Object* obj, void* ptr, void* type_id)
-{
-    DataTransfer::SetPointer(obj, ptr, 0);
-    DataTransfer::SetPointer(obj, type_id, 1);
-}
-
 static void* _GetRuntimeObjectFromPersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
 {
     auto Isolate = Context->GetIsolate();
@@ -344,7 +338,6 @@ V8_EXPORT pesapi_env_ref GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
 
 V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
 {
-    exports->SetNativePtr = &puerts::SetNativePtr;
     exports->SetExtraData = &puerts::SetExtraData;
     exports->UnrefJsObject = &puerts::UnrefJsObject;
     exports->GetJsClassInfo = &puerts::GetJsClassInfo;

@@ -269,10 +269,25 @@ static void MethodCallback(pesapi_callback_info info)
     try 
     {
         WrapData** wrapDatas = (WrapData**)pesapi_get_userdata(info);
+        void* self = nullptr;
+        pesapi_env env = pesapi_get_env(info);
+        if (!((*wrapDatas)->IsStatic))
+        {
+            pesapi_value jsThis = pesapi_get_holder(info);
+            self = pesapi_get_native_object_ptr(env, jsThis);
+            if ((*wrapDatas)->NeedBoxing)
+            {
+                auto ptrType = (Il2CppClass*) pesapi_get_native_object_typeid(env, jsThis);
+                if (Class::IsValuetype(ptrType))
+                {
+                    self = Object::Box(ptrType, self);
+                }
+            }
+        }
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, checkArgument, *wrapDatas))
+            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, env, self, checkArgument, *wrapDatas))
             {
                 return;
             }
@@ -417,9 +432,7 @@ static void* CtorCallback(pesapi_callback_info info)
         return nullptr;
     }
     
-    void* Ptr = ObjectAllocate(classInfo->Class);
-    
-    g_unityExports.SetNativePtr(pesapi_get_this(info), Ptr, classInfo->TypeId);
+    void* self = ObjectAllocate(classInfo->Class);
 
     auto isValueType = Class::IsValuetype(classInfo->Class);
     
@@ -427,18 +440,19 @@ static void* CtorCallback(pesapi_callback_info info)
     {
         WrapData** wrapDatas = classInfo->CtorWrapDatas;
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
+        pesapi_env env = pesapi_get_env(info);
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, checkArgument, *wrapDatas))
+            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, env, self, checkArgument, *wrapDatas))
             {
-                return Ptr;
+                return self;
             }
             ++wrapDatas;
         }
         
 
         if (isValueType && pesapi_get_args_len(info) == 0)
-            return Ptr;
+            return self;
         else
             pesapi_throw_by_string(info, "invalid arguments");
         
@@ -464,7 +478,7 @@ static void* CtorCallback(pesapi_callback_info info)
     
     if (isValueType)
     {
-        ValueTypeFree(Ptr);
+        ValueTypeFree(self);
     }
     
     return nullptr;
@@ -1188,9 +1202,8 @@ static void JsObjectSetRef(pesapi_env env, pesapi_value outer, pesapi_value val)
     }
 }
 
-static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, WrapData* wrapData)
+static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData)
 {
-    pesapi_env env = pesapi_get_env(info);
     int js_args_len = pesapi_get_args_len(info);
     bool hasParamArray = wrapData->HasParamArray;
     bool isExtensionMethod = wrapData->IsExtensionMethod;
@@ -1373,26 +1386,17 @@ handle_underlying:
     }
     void** args = method->parameters_count > 0 ? (void**)alloca(sizeof(void*) * method->parameters_count) : nullptr;
     pesapi_value jsThis = pesapi_get_holder(info);
-    void* csThis = nullptr;
-    if (Method::IsInstance(method))
-    {
-        csThis = pesapi_get_native_object_ptr(env, jsThis);
-        Il2CppClass* thisType = method->klass;
 #ifndef UNITY_2021_1_OR_NEWER
+    if (self)
+    {
+        Il2CppClass* thisType = method->klass;
+
         if (Class::IsValuetype(thisType))
         {
-            csThis = ((uint8_t*)csThis) - sizeof(Il2CppObject);
-        }
-#endif
-        if (thisType == il2cpp_defaults.object_class)
-        {
-            auto ptrType = (Il2CppClass*) pesapi_get_native_object_typeid(env, jsThis);
-            if (Class::IsValuetype(ptrType))
-            {
-                csThis = Object::Box(ptrType, csThis);
-            }
+            self = ((uint8_t*)self) - sizeof(Il2CppObject);
         }
     }
+#endif
     if (isExtensionMethod)
     {
         args[0] = pesapi_get_native_object_ptr(env, jsThis);
@@ -1520,7 +1524,7 @@ handle_underlying:
         }
     }
     
-    Il2CppObject* ret = Runtime::InvokeWithThrow(method, csThis, args); //返回ValueType有boxing
+    Il2CppObject* ret = Runtime::InvokeWithThrow(method, self, args); //返回ValueType有boxing
     
     for (int i = csArgStart; i < method->parameters_count; ++i)
     {
@@ -1910,6 +1914,7 @@ static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* 
 {
     data->HasParamArray = false;
     data->OptionalNum = 0;
+    data->NeedBoxing = false;
     
     const char* p = signature;
     while(*p)
@@ -1917,6 +1922,10 @@ static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* 
         if (*p == 'V')
         {
             data->HasParamArray = true;
+        }
+        if (*p == 'T')
+        {
+            data->NeedBoxing = true;
         }
         if (*p == 'D')
         {

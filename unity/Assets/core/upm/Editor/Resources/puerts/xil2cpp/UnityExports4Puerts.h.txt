@@ -21,8 +21,6 @@ struct PObjectRefInfo
 
 typedef void* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
 
-typedef void (*SetNativePtrFunc)(v8::Object* obj, void* ptr, void* type_id);
-
 typedef void (*UnrefJsObjectFunc)(struct PObjectRefInfo* objectInfo);
 
 typedef const void* (*CSharpTypeToTypeIdFunc)(const void *type);
@@ -32,8 +30,6 @@ typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
 #else
     
 typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
-
-typedef void (*SetNativePtrFunc)(pesapi_value obj, void* ptr, const void* type_id);
 
 typedef void (*UnrefJsObjectFunc)(struct PObjectRefInfo* delegateInfo);
 
@@ -58,8 +54,6 @@ struct UnityExports
     CSharpTypeToTypeIdFunc CSharpTypeToTypeId = nullptr;
 
     //plugin api
-    
-    SetNativePtrFunc SetNativePtr = nullptr;
     UnrefJsObjectFunc UnrefJsObject = nullptr;
     GetJsClassInfoFunc GetJsClassInfo = nullptr;
 

@@ -25,7 +25,7 @@ export default function Gen(genInfos) {
 namespace puerts
 {
 
-${wrapperInfos.map((wrapperInfo) => `bool w_${wrapperInfo.Signature}(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, WrapData* wrapData);`).join('\n')}
+${wrapperInfos.map((wrapperInfo) => `bool w_${wrapperInfo.Signature}(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData);`).join('\n')}
 
 static WrapFuncInfo g_wrapFuncInfos[] = {
     ${FOR(wrapperInfos, info => t`
