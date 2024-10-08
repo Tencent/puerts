@@ -29,6 +29,8 @@ jobs:
           os: 'win'
           version: '2021.3.16f1'
           cachekey: '2021'
+          install_path: C:/UNITY
+          unity_modules: windows-il2cpp
           UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
