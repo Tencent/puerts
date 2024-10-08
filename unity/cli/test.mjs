@@ -159,6 +159,8 @@ export async function unityTest(cwd, unityPath) {
         rm("-rf", `${cwd}/Assets/Gen`);
         rm("-rf", `${cwd}/build`);
         rm("-rf", `${cwd}/Assets/Gen.meta`);
+        rm("-rf", join(cwd, 'Assets/csc.rsp'));
+        rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
         console.log("[Puer] Building puerts v1");
         await runPuertsMake(join(cwd, '../../native_src'), {
             backend: 'nodejs_16',
@@ -178,6 +180,7 @@ export async function unityTest(cwd, unityPath) {
 
         console.log("[Puer] Running test in v1");
         const v1code = exec(`${cwd}/build/v1/Tester.exe -batchmode -nographics -logFile ${cwd}/log1.txt`).code;
+        assert.equal(0, v1code);
 
         console.log("[Puer] Generating FunctionBridge");
         writeFileSync(`${cwd}/Assets/csc.rsp`, `
@@ -201,6 +204,6 @@ export async function unityTest(cwd, unityPath) {
         console.log("[Puer] Running test in v2");
         const v2code = exec(`${cwd}/build/v2/Tester.exe -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
 
-        assert.equal(0, v1code + v2code);
+        assert.equal(0, v2code);
     }
 }
