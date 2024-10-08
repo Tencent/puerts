@@ -147,7 +147,7 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
 
 export async function unityTest(cwd, unityPath) {
     function execUnityEditor(args) {
-        const unityBatchModeBase = `${unityPath} -batchMode -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`;
+        const unityBatchModeBase = `"${unityPath}" -batchMode -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`;
         const code = exec(`${unityBatchModeBase} ${args}`).code;
         if (code != 0) {
             throw new Error(`ExecUnity failed: ${readFileSync(cwd + "/log.txt", 'utf-8')}`);
