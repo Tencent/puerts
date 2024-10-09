@@ -11,6 +11,8 @@ inputs:
     required:
   unity_modules:
     required:
+  architecture:
+    required: false
   UNITY_USERNAME:
     required:
   UNITY_PASSWORD:
@@ -32,11 +34,12 @@ runs:
       run: mkdir ${{ inputs.install_path }}
     - name: Setup Unity
       if: steps.cache-unity.outputs.cache-hit != 'true'
-      uses: kuler90/setup-unity@v1
+      uses: chexiongsheng/setup-unity@v1
       with:
         unity-modules: ${{ inputs.unity_modules }}
         unity-version: ${{ inputs.version }}
         install-path: ${{ inputs.install_path }}
+        architecture: ${{ inputs.architecture }}
     - uses: actions/cache/save@v3
       if: steps.cache-unity.outputs.cache-hit != 'true'
       with:

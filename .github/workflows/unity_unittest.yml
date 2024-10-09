@@ -62,6 +62,7 @@ jobs:
           cachekey: '2021'
           install_path: /Applications/UNITY
           unity_modules: mac-il2cpp
+          architecture: x86_64
           UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
@@ -71,8 +72,8 @@ jobs:
           npm i
           cd test/unity
           ls /Applications/UNITY
-          ls /Applications/UNITY/2021.3.19f1
-          node ../../cli unity-test --unity /Applications/UNITY/2021.3.19f1/Unity.app/Contents/MacOS/Unity
+          ls /Applications/UNITY/2021.3.16f1
+          node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
       - name: TestResult
         if: always()
         shell: bash
