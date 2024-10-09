@@ -47,6 +47,7 @@ runs:
         path: ${{ inputs.install_path }}
         key: ${{ inputs.os }}-${{ inputs.cachekey }}-unity 
     - name: Display unity-path
+      shell: bash
       run: echo ${{ steps.setup_unity.outputs.unity-path }}
     - name: Activate Unity
       uses: kuler90/activate-unity@v1.1.3
