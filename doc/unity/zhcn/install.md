@@ -31,4 +31,4 @@ PuerTS 现已上传 OpenUPM: https://openupm.com/packages/com.tencent.puerts.cor
 
 > mac下如果遇到移入废纸篓问题，请使用sudo xattr -r -d com.apple.quarantine puerts.bundle。但用了后提交git容易出问题
 
-#### 当然还有一种最傻瓜的办法：从官方Demo中拷贝出来用。
+#### 当然还有一种最简单的办法：从官方Demo中拷贝出来用。
