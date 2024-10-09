@@ -34,7 +34,7 @@ runs:
       run: mkdir ${{ inputs.install_path }}
     - name: Setup Unity
       if: steps.cache-unity.outputs.cache-hit != 'true'
-      uses: chexiongsheng/setup-unity@v1
+      uses: chexiongsheng/setup-unity@master
       with:
         unity-modules: ${{ inputs.unity_modules }}
         unity-version: ${{ inputs.version }}
