@@ -33,7 +33,7 @@ runs:
       shell: bash
       run: mkdir ${{ inputs.install_path }}
     - name: Setup Unity
-#      if: steps.cache-unity.outputs.cache-hit != 'true'
+      if: steps.cache-unity.outputs.cache-hit != 'true'
       uses: chexiongsheng/setup-unity@master
       with:
         unity-modules: ${{ inputs.unity_modules }}
@@ -45,6 +45,13 @@ runs:
       with:
         path: ${{ inputs.install_path }}
         key: ${{ inputs.os }}-${{ inputs.cachekey }}-unity 
+    - name: Get Unity Path if cache-hit
+      if: steps.cache-unity.outputs.cache-hit == 'true'
+      uses: chexiongsheng/setup-unity@master
+      with:
+        unity-version: ${{ inputs.version }}
+        install-path: ${{ inputs.install_path }}
+        architecture: ${{ inputs.architecture }}
     - name: Activate Unity
       uses: kuler90/activate-unity@v1.1.3
       with:
