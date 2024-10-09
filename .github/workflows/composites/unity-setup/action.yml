@@ -41,14 +41,14 @@ runs:
         unity-version: ${{ inputs.version }}
         install-path: ${{ inputs.install_path }}
         architecture: ${{ inputs.architecture }}
+    - name: Display unity-path
+      shell: bash
+      run: echo ${{ steps.setup_unity.outputs.unity-path }}
     - uses: actions/cache/save@v3
       if: steps.cache-unity.outputs.cache-hit != 'true'
       with:
         path: ${{ inputs.install_path }}
         key: ${{ inputs.os }}-${{ inputs.cachekey }}-unity 
-    - name: Display unity-path
-      shell: bash
-      run: echo ${{ steps.setup_unity.outputs.unity-path }}
     - name: Activate Unity
       uses: kuler90/activate-unity@v1.1.3
       with:
