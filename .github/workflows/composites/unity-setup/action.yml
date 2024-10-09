@@ -40,9 +40,6 @@ runs:
         unity-version: ${{ inputs.version }}
         install-path: ${{ inputs.install_path }}
         architecture: ${{ inputs.architecture }}
-    - name: Display unity-path
-      shell: bash
-      run: echo ${{ steps.setup-unity.outputs.unity-path }}
     - uses: actions/cache/save@v3
       if: steps.cache-unity.outputs.cache-hit != 'true'
       with:
