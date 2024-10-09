@@ -185,7 +185,7 @@ export async function unityTest(cwd, unityPath) {
     rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
     console.log("[Puer] Building puerts v1");
     await runPuertsMake(join(cwd, '../../native_src'), {
-        backend: 'nodejs_16',
+        backend: 'v8_9.4.146.24',
         platform: platform,
         config: 'Debug',
         arch: 'x64',
@@ -213,7 +213,7 @@ export async function unityTest(cwd, unityPath) {
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
     
     await runPuertsMake(join(cwd, '../../native_src_il2cpp'), {
-        backend: 'nodejs_16',
+        backend: 'v8_9.4.146.24',
         platform: platform,
         config: 'Debug',
         arch: 'x64',
