@@ -34,8 +34,25 @@ public class TestBuilder
 
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity"};
-        buildPlayerOptions.locationPathName = "build/" + (withV2 ? "v2" : "v1") + "/Tester.exe";
-        buildPlayerOptions.target = BuildTarget.StandaloneWindows64;
+        
+        string extension = "";
+        if (Application.platform == RuntimePlatform.WindowsPlayer ||
+            Application.platform == RuntimePlatform.WindowsEditor)
+        {
+            buildPlayerOptions.target = BuildTarget.StandaloneWindows64;
+            extension = ".exe";
+        }
+        else if (Application.platform == RuntimePlatform.OSXPlayer ||
+                 Application.platform == RuntimePlatform.OSXEditor)
+        {
+            buildPlayerOptions.target = BuildTarget.StandaloneOSX;
+        }
+        else if (Application.platform == RuntimePlatform.LinuxPlayer ||
+                 Application.platform == RuntimePlatform.LinuxEditor)
+        {
+            buildPlayerOptions.target = BuildTarget.StandaloneLinux64;
+        }
+        buildPlayerOptions.locationPathName = "build/" + (withV2 ? "v2" : "v1") + "/Tester" + extension;
         buildPlayerOptions.options = BuildOptions.None;
         
         BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);

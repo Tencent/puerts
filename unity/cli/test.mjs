@@ -130,10 +130,30 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     assert.equal(0, exec(`dotnet test ${testProjectName}.csproj --blame-hang-timeout 10000ms ${filter ? `--filter ${filter}` : ''}`, { cwd: workdir }).code);
 }
 
+function getPlatform() {
+    if (process.platform == 'win32') {
+        return 'win';
+    }
+    if (process.platform == 'darwin') {
+        return 'osx';
+    }
+    return process.platform;
+}
+
+function getExeSuffix() {
+    if (process.platform == 'win32') {
+        return '.exe';
+    }
+    if (process.platform == 'darwin') {
+        return '.app/Contents/MacOS/unity';
+    }
+    return "";
+}
+
 export async function dotnetTest(cwd, backend, filter = '', thread_safe = false) {
     // 编译binary
     const copyConfig = await runPuertsMake(join(cwd, '../../native_src'), {
-        platform: process.platform == 'win32' ? 'win' : (process.platform == 'linux' ? 'linux' : 'osx'),
+        platform: getPlatform(),
         config: "Debug",
         backend: backend || 'v8_9.4',
         arch: process.arch,
@@ -155,55 +175,56 @@ export async function unityTest(cwd, unityPath) {
         return;
     }
     
-    if (process.platform == 'win32') {
-        rm("-rf", `${cwd}/Assets/Gen`);
-        rm("-rf", `${cwd}/build`);
-        rm("-rf", `${cwd}/Assets/Gen.meta`);
-        rm("-rf", join(cwd, 'Assets/csc.rsp'));
-        rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
-        console.log("[Puer] Building puerts v1");
-        await runPuertsMake(join(cwd, '../../native_src'), {
-            backend: 'nodejs_16',
-            platform: 'win',
-            config: 'Debug',
-            arch: 'x64',
-            websocket: 1
-        });
+    const platform = getPlatform();
+    const exeSuffix = getExeSuffix();
 
-        console.log("[Puer] Generating wrapper");
-        execUnityEditor(`-executeMethod TestBuilder.GenV1`);
-        rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-        
-        console.log("[Puer] Building testplayer for v1");
-        mkdir("-p", `${cwd}/build/v1`);
-        execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV1`);
+    rm("-rf", `${cwd}/Assets/Gen`);
+    rm("-rf", `${cwd}/build`);
+    rm("-rf", `${cwd}/Assets/Gen.meta`);
+    rm("-rf", join(cwd, 'Assets/csc.rsp'));
+    rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
+    console.log("[Puer] Building puerts v1");
+    await runPuertsMake(join(cwd, '../../native_src'), {
+        backend: 'nodejs_16',
+        platform: platform,
+        config: 'Debug',
+        arch: 'x64',
+        websocket: 1
+    });
 
-        console.log("[Puer] Running test in v1");
-        const v1code = exec(`${cwd}/build/v1/Tester.exe -batchmode -nographics -logFile ${cwd}/log1.txt`).code;
-        assert.equal(0, v1code);
-
-        console.log("[Puer] Generating FunctionBridge");
-        writeFileSync(`${cwd}/Assets/csc.rsp`, `
-            -define:PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
-            -define:EXPERIMENTAL_IL2CPP_PUERTS
-        `);
-        execUnityEditor(`-executeMethod TestBuilder.GenV2`);
-        rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+    console.log("[Puer] Generating wrapper");
+    execUnityEditor(`-executeMethod TestBuilder.GenV1`);
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
     
-        await runPuertsMake(join(cwd, '../../native_src_il2cpp'), {
-            backend: 'nodejs_16',
-            platform: 'win',
-            config: 'Debug',
-            arch: 'x64',
-            websocket: 1
-        });
+    console.log("[Puer] Building testplayer for v1");
+    mkdir("-p", `${cwd}/build/v1`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV1`);
 
-        console.log("[Puer] Building testplayer for v2");
-        mkdir("-p", `${cwd}/build/v2`);
-        execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-        console.log("[Puer] Running test in v2");
-        const v2code = exec(`${cwd}/build/v2/Tester.exe -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
+    console.log("[Puer] Running test in v1");
+    const v1code = exec(`${cwd}/build/v1/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log1.txt`).code;
+    assert.equal(0, v1code);
 
-        assert.equal(0, v2code);
-    }
+    console.log("[Puer] Generating FunctionBridge");
+    writeFileSync(`${cwd}/Assets/csc.rsp`, `
+        -define:PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
+        -define:EXPERIMENTAL_IL2CPP_PUERTS
+    `);
+    execUnityEditor(`-executeMethod TestBuilder.GenV2`);
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+    
+    await runPuertsMake(join(cwd, '../../native_src_il2cpp'), {
+        backend: 'nodejs_16',
+        platform: platform,
+        config: 'Debug',
+        arch: 'x64',
+        websocket: 1
+    });
+
+    console.log("[Puer] Building testplayer for v2");
+    mkdir("-p", `${cwd}/build/v2`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+    console.log("[Puer] Running test in v2");
+    const v2code = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
+
+    assert.equal(0, v2code);
 }
