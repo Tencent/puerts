@@ -45,16 +45,17 @@ runs:
       with:
         path: ${{ inputs.install_path }}
         key: ${{ inputs.os }}-${{ inputs.cachekey }}-unity 
-    - name: Get Unity Path if cache-hit
-      if: steps.cache-unity.outputs.cache-hit == 'true'
-      uses: chexiongsheng/setup-unity@master
-      with:
-        unity-version: ${{ inputs.version }}
-        install-path: ${{ inputs.install_path }}
-        architecture: ${{ inputs.architecture }}
+#    - name: Get Unity Path if cache-hit
+#      if: steps.cache-unity.outputs.cache-hit == 'true'
+#      uses: chexiongsheng/setup-unity@master
+#      with:
+#        unity-version: ${{ inputs.version }}
+#        install-path: ${{ inputs.install_path }}
+#        architecture: ${{ inputs.architecture }}
     - name: Activate Unity
       uses: kuler90/activate-unity@v1.1.3
       with:
+        unity-path: ${{ inputs.install_path }}/${{ inputs.version }}/Editor/Unity.exe
         unity-username: ${{ inputs.UNITY_USERNAME }}
         unity-password: ${{ inputs.UNITY_PASSWORD }}
         unity-serial: ${{ inputs.UNITY_SERIAL }}
