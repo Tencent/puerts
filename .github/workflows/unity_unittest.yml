@@ -71,7 +71,6 @@ jobs:
           cd unity
           npm i
           cd test/unity
-          open /Applications/UNITY/2021.3.16f1/Unity.app
           node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
       - name: TestResult
         if: always()
