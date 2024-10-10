@@ -16,14 +16,14 @@ namespace Puerts
     [UnityEngine.Scripting.Preserve]
     public class JSObject
     {
-        long placeHold0;
-        long placeHold1;
-        long placeHold2;
-        long placeHold3;
-        long placeHold4;
-        long placeHold5;
-        long placeHold6;
-        long placeHold7;
+        IntPtr placeHold0; // PObjectRefInfo first ptr
+        IntPtr placeHold1;
+        IntPtr placeHold2;
+        IntPtr placeHold3;
+        IntPtr placeHold4;
+        IntPtr placeHold5;
+        IntPtr placeHold6;
+        IntPtr placeHold7;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         void releaseScriptObject()
