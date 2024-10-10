@@ -244,16 +244,6 @@ struct JSEnv
             
         }, v8::External::New(Isolate, &CppObjectMapper))->GetFunction(Context).ToLocalChecked()).Check();
         
-        Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "log").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            std::string str = *(v8::String::Utf8Value(info.GetIsolate(), info[0]));
-            
-            if (GLogCallback)
-            {
-                GLogCallback(str.c_str());
-            }
-        })->GetFunction(Context).ToLocalChecked()).Check();
-        
         BackendEnv.StartPolling();
     }
     
