@@ -53,12 +53,6 @@ namespace Puerts
             return loader;
         }
 
-        public IntPtr Isolate {
-            get {
-                return PuertsIl2cpp.NativeAPI.GetIsolate(nativeJsEnv);
-            }
-        }
-
         public JsEnv(): this(new DefaultLoader(), -1) {}
 
         public JsEnv(ILoader loader, int debugPort = -1)

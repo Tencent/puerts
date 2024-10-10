@@ -316,11 +316,6 @@ V8_EXPORT void SetLogCallback(puerts::LogCallback Log)
     puerts::GLogCallback = Log;
 }
 
-V8_EXPORT v8::Isolate* GetIsolate(puerts::JSEnv* jsEnv)
-{
-    return jsEnv->MainIsolate;
-}
-
 V8_EXPORT pesapi_env_ref GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
 {
     v8::Isolate* Isolate = jsEnv->MainIsolate;
@@ -332,7 +327,7 @@ V8_EXPORT pesapi_env_ref GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
     v8::Local<v8::Context> Context = jsEnv->MainContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
     
-    auto env = reinterpret_cast<pesapi_env>(*Context);
+    auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
     return pesapi_create_env_ref(env);
 }
 
