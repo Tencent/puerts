@@ -69,6 +69,10 @@ struct JsClassInfoHeader
     WrapData** CtorWrapDatas;
 };
 
+WrapFuncPtr FindWrapFunc(const char* signature);
+struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
+Il2CppMethodPointer FindBridgeFunc(const char* signature);
+
 struct JsClassInfo : public JsClassInfoHeader
 {
     std::string Name;
@@ -402,10 +406,6 @@ void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
     return (defaultValue && Class::IsValuetype(Class::FromIl2CppType(Method::GetParam(method, index), false))) ? Object::Unbox(defaultValue) : defaultValue;
 }
 
-static void* CtorCallback(pesapi_callback_info info);
-
-static void* DelegateCtorCallback(pesapi_callback_info Info);
-
 static puerts::UnityExports g_unityExports;
 
 void PLog(const char* Fmt, ...)
@@ -538,25 +538,9 @@ void ReleaseScriptObject(RuntimeObject* obj)
     g_unityExports.UnrefJsObject(objectInfo);
 }
 
-
-bool IsValueType(Il2CppClass *klass)
-{
-    return Class::IsValuetype(klass);
-}
-
 bool IsDelegate(Il2CppClass *klass)
 {
     return Class::IsAssignableFrom(il2cpp_defaults.delegate_class, klass) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
-}
-
-int GetTID(Il2CppObject* obj)
-{
-    if (obj)
-    {
-        const Il2CppType *type = Class::GetType(Object::GetClass(obj));
-        return type->type;
-    }
-    return -1;
 }
 
 static FieldInfo* ArrayBufferCountField = nullptr;
@@ -703,7 +687,6 @@ pesapi_value TryTranslateValueType(pesapi_env env, Il2CppObject* obj)
     }
     return nullptr;
 }
-
 
 union PrimitiveValueType
 {
@@ -1707,22 +1690,6 @@ static void ReflectionSetFieldWrapper(pesapi_callback_info info, FieldInfo* fiel
     }
 }
 
-
-static void ThrowInvalidOperationException(const char* msg)
-{
-    Exception::Raise(Exception::GetInvalidOperationException(msg));
-}
-
-Il2CppArray* NewArray(Il2CppClass *typeId, uint32_t length)
-{
-    return Array::NewSpecific(typeId, length);
-}
-
-void ArraySetRef(Il2CppArray *array, uint32_t index, void* value)
-{
-    il2cpp_array_setref(array, index, value);
-}
-
 Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2CppReflectionType* rtype)
 {
     PObjectRefInfo* objectInfo = GetPObjectRefInfo(jsObject);
@@ -1742,10 +1709,6 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2Cpp
     }
     return JsValueToCSRef(type, env, val);
 }
-
-WrapFuncPtr FindWrapFunc(const char* signature);
-struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
-Il2CppMethodPointer FindBridgeFunc(const char* signature);
 
 puerts::UnityExports* GetUnityExports()
 {
@@ -1785,6 +1748,7 @@ Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __p
     }
     return nullptr;
 }
+
 Il2CppObject* GetModuleExecutor(intptr_t ptr, Il2CppReflectionType* rtype)
 {
     pesapi_env_ref env_holder = reinterpret_cast<pesapi_env_ref>(ptr);
