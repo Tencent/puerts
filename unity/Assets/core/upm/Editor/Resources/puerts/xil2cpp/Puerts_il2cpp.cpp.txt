@@ -1753,30 +1753,11 @@ puerts::UnityExports* GetUnityExports()
     return &g_unityExports;
 }
 
-namespace internal
-{
-class AutoValueScope
-{
-public:
-    AutoValueScope(pesapi_env_ref env_holder)
-    {
-        scope = pesapi_open_scope(env_holder);
-    }
-
-    ~AutoValueScope()
-    {
-        pesapi_close_scope(scope);
-    }
-
-    pesapi_scope scope;
-};
-}    // namespace internal
-
 Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __path, Il2CppReflectionType *__type)
 {
     pesapi_env_ref env_holder = reinterpret_cast<pesapi_env_ref>(ptr);
     
-    internal::AutoValueScope ValueScope(env_holder);
+    AutoValueScope ValueScope(env_holder);
     auto env = pesapi_get_env_from_ref(env_holder);
     
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(__path);
@@ -1808,7 +1789,7 @@ Il2CppObject* GetModuleExecutor(intptr_t ptr, Il2CppReflectionType* rtype)
 {
     pesapi_env_ref env_holder = reinterpret_cast<pesapi_env_ref>(ptr);
 
-    internal::AutoValueScope ValueScope(env_holder);
+    AutoValueScope ValueScope(env_holder);
     auto env = pesapi_get_env_from_ref(env_holder);
     
     pesapi_value func = g_unityExports.GetModuleExecutor(env);
