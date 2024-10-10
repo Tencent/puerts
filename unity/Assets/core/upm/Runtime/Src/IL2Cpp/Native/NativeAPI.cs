@@ -108,7 +108,7 @@ namespace PuertsIl2cpp
         public static extern bool LogicTick(IntPtr jsEnv);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static Func<string, Puerts.JSObject> GetModuleExecutor(IntPtr NativeJsEnvPtr, Type type)
+        public static object GetModuleExecutor(IntPtr NativeJsEnvPtr, Type type)
         {
             throw new NotImplementedException();
         }

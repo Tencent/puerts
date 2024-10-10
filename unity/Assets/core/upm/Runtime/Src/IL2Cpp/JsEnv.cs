@@ -161,21 +161,28 @@ namespace Puerts
         {
             return (T)PuertsIl2cpp.NativeAPI.EvalInternal(nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, typeof(T));
         }
+        
+        Func<string, Puerts.JSObject> GetModuleExecutor()
+        {
+            if (moduleExecutor == null) 
+            {
+                moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
+            }
+            return moduleExecutor;
+        }
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
-            if (moduleExecutor == null) moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>));
-            JSObject jso = moduleExecutor(specifier);
+            JSObject jso = GetModuleExecutor()(specifier);
             
             return jso.Get<T>(exportee);
         }
         public JSObject ExecuteModule(string specifier)
         {
-            if (moduleExecutor == null) moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>));
-            return moduleExecutor(specifier);
+            return GetModuleExecutor()(specifier);
         }
 
         public Action TickHandler;
