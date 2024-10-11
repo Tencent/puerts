@@ -60,6 +60,7 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
     LocalTemplate->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1, CDataName
     PointerConstructor = v8::UniquePersistent<v8::Function>(InIsolate, LocalTemplate->GetFunction(InContext).ToLocalChecked());
+    PrivateKey.Reset(InIsolate, v8::Symbol::New(InIsolate));
 }
 
 v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
@@ -318,6 +319,28 @@ void FCppObjectMapper::BindCppObject(
     }
 }
 
+void* FCppObjectMapper::GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject)
+{
+    v8::MaybeLocal<v8::Value> maybeValue = JSObject->Get(Context, PrivateKey.Get(Context->GetIsolate()));
+    if (maybeValue.IsEmpty())
+    {
+        return nullptr;
+    }
+
+    v8::Local<v8::Value> maybeExternal = maybeValue.ToLocalChecked();
+    if (!maybeExternal->IsExternal())
+    {
+        return nullptr;
+    }
+
+    return v8::Local<v8::External>::Cast(maybeExternal)->Value();
+}
+
+void FCppObjectMapper::SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr)
+{
+    JSObject->Set(Context, PrivateKey.Get(Context->GetIsolate()), v8::External::New(Context->GetIsolate(), Ptr));
+}
+
 void FCppObjectMapper::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
 {
     CDataFinalizeMap.erase(Ptr);
@@ -342,6 +365,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     CDataCache.clear();
     CDataFinalizeMap.clear();
     CDataNameToTemplateMap.clear();
+    PrivateKey.Reset();
     PointerConstructor.Reset();
 }
 

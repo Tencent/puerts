@@ -40,6 +40,10 @@ public:
 
     virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
 
+    virtual void* GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject) = 0;
+
+    virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) = 0;
+
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
     virtual ~ICppObjectMapper()
