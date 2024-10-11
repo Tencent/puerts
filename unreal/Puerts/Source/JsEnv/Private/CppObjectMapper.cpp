@@ -352,7 +352,7 @@ void FCppObjectMapper::SetPrivateData(v8::Local<v8::Context> Context, v8::Local<
 #else
     auto Key = FV8Utils::InternalString(Context->GetIsolate(), QJS_PRIVATE_KEY_STR);
 #endif
-    JSObject->Set(Context, Key, v8::External::New(Context->GetIsolate(), Ptr));
+    (void) (JSObject->Set(Context, Key, v8::External::New(Context->GetIsolate(), Ptr)));
 }
 
 void FCppObjectMapper::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
