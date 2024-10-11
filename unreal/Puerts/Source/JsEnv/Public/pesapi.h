@@ -211,8 +211,8 @@ PESAPI_EXTERN void** pesapi_get_ref_internal_fields(pesapi_value_ref value_ref, 
 
 PESAPI_EXTERN pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key);
 PESAPI_EXTERN void pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
-PESAPI_EXTERN const void* pesapi_get_private(pesapi_env env, pesapi_value object);
-PESAPI_EXTERN void pesapi_set_private(pesapi_env env, pesapi_value object, const void* ptr);
+PESAPI_EXTERN bool pesapi_get_private(pesapi_env env, pesapi_value object, void** out_ptr);
+PESAPI_EXTERN bool pesapi_set_private(pesapi_env env, pesapi_value object, void* ptr);
 
 PESAPI_EXTERN pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uint32_t key);
 PESAPI_EXTERN void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
