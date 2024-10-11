@@ -379,7 +379,9 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     CDataCache.clear();
     CDataFinalizeMap.clear();
     CDataNameToTemplateMap.clear();
+#ifndef WITH_QUICKJS
     PrivateKey.Reset();
+#endif
     PointerConstructor.Reset();
 }
 
