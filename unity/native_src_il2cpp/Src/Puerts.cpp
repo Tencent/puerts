@@ -72,55 +72,6 @@ void PLog(LogLevel Level, const std::string Fmt, ...)
     }
 }
 
-static void* _GetRuntimeObjectFromPersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
-{
-    auto Isolate = Context->GetIsolate();
-    auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
-
-    puerts::FCppObjectMapper* mapper = static_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
-    mapper->ClearPendingPersistentObject(Isolate, Context);
-
-    v8::MaybeLocal<v8::Value> maybeValue = Obj->Get(Context, POEnv->SymbolCSPtr.Get(Isolate));
-    if (maybeValue.IsEmpty())
-    {
-        return nullptr;
-    }
-    v8::Local<v8::Value> maybeExternal = maybeValue.ToLocalChecked();
-    if (!maybeExternal->IsExternal())
-    {
-        return nullptr;
-    }
-
-    return v8::Local<v8::External>::Cast(maybeExternal)->Value();
-}
-static void* GetRuntimeObjectFromPersistentObject(pesapi_env env, pesapi_value pvalue)
-{
-    v8::Local<v8::Context> Context;
-    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-    v8::Local<v8::Object> Obj;
-    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
-
-    return _GetRuntimeObjectFromPersistentObject(Context, Obj);
-}
-
-static void _SetRuntimeObjectToPersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj, void* runtimeObject)
-{
-    auto Isolate = Context->GetIsolate();
-    auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
-
-    Obj->Set(Context, POEnv->SymbolCSPtr.Get(Isolate), v8::External::New(Context->GetIsolate(), runtimeObject));
-}
-static void SetRuntimeObjectToPersistentObject(pesapi_env env, pesapi_value pvalue, void* runtimeObject)
-{
-    v8::Local<v8::Context> Context;
-    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-    v8::Local<v8::Object> Obj;
-    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
-
-    _SetRuntimeObjectToPersistentObject(Context, Obj, runtimeObject);
-}
-
-
 static void* GetJsClassInfo(const void* TypeId, bool TryLazyLoad)
 {
     auto ClassDefinition = FindClassByID(TypeId, TryLazyLoad);
@@ -150,44 +101,6 @@ static v8::Value* GetModuleExecutor(v8::Context* env)
     }
 
     return nullptr;
-}
-
-static void SetExtraData(pesapi_env env, struct PObjectRefInfo* objectInfo)
-{
-    v8::Local<v8::Context> Context;
-    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-    
-    v8::Isolate* Isolate = Context->GetIsolate();
-    
-    objectInfo->ExtraData = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
-    //objectInfo->ExtraData = static_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
-    objectInfo->EnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
-}
-
-// 临时兼容新papi
-struct pesapi_value_ref_def
-{
-    v8::Persistent<v8::Context> context_persistent;
-    v8::Isolate* const isolate;
-    int ref_count;
-    std::weak_ptr<int> env_life_cycle_tracker;
-    v8::Global<v8::Object> value_persistent;
-};
-
-static void UnrefJsObject(PObjectRefInfo* objectInfo)
-{
-    // gc线程不能访问v8虚拟机，访问就会崩溃 ///
-    if (!objectInfo->EnvLifeCycleTracker.expired())
-    {
-        auto envInfo = static_cast<puerts::FPersistentObjectEnvInfo*>(objectInfo->ExtraData);
-        std::lock_guard<std::mutex> guard(envInfo->Mutex);
-        pesapi_value_ref_def* vr = (pesapi_value_ref_def*)objectInfo->ValueRef;
-        envInfo->PendingReleaseObjects.push_back(std::move(vr->value_persistent));
-    }
-    objectInfo->ExtraData = nullptr;
-    // 两个delete，可以通过直接用PObjectRefInfo placement new的方式优化，但需要p-api新增api
-    pesapi_release_value_ref(objectInfo->ValueRef);
-    pesapi_release_env_ref(objectInfo->EnvRef);
 }
 
 struct JSEnv
@@ -225,6 +138,11 @@ struct JSEnv
 
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
+        //TODO: 在FBackendEnv写死了，先不修改native_src，后续需要优化
+        //V8_INLINE static FBackendEnv* Get(v8::Isolate* Isolate)
+        //{
+        //    return (FBackendEnv*)Isolate->GetData(1);
+        //}
         Isolate->SetData(BACKENDENV_DATA_POS, &BackendEnv);
         
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -254,6 +172,9 @@ struct JSEnv
         }, v8::External::New(Isolate, &CppObjectMapper))->GetFunction(Context).ToLocalChecked()).Check();
         
         BackendEnv.StartPolling();
+
+        auto env = reinterpret_cast<pesapi_env>(*Context);
+        pesapi_set_env_private(env, this);
     }
     
     ~JSEnv()
@@ -275,11 +196,68 @@ struct JSEnv
         BackendEnv.UnInitialize();
     }
     
+    
+    
+    void AddPendingJsObjects(pesapi_value_ref valueRef)
+    {
+        uint32_t field_count;
+        auto atomic_store = (std::atomic<void*>*)pesapi_get_ref_internal_fields(valueRef, &field_count);
+        if(atomic_store && (field_count * sizeof(void*) >= sizeof(std::atomic<void*>)))
+        {
+            atomic_store->store(nullptr, std::memory_order_release);
+            std::lock_guard<std::mutex> guard(PendingReleaseObjectsMutex);
+            PendingReleaseObjects.insert(valueRef);
+        }
+        else
+        {
+            pesapi_release_value_ref(valueRef);
+        }
+    }
+    
+    void ClearPendingJsObjects()
+    {
+        v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = MainContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        auto env = reinterpret_cast<pesapi_env>(*Context);
+        
+        std::lock_guard<std::mutex> guard(PendingReleaseObjectsMutex);
+        auto size = PendingReleaseObjects.size();
+        if (size == 0)
+        {
+            return;
+        }
+        
+        for (const auto& valueRef : PendingReleaseObjects)
+        {
+            // insert前已经对有效性进行判断
+            uint32_t field_count;
+            auto atomic_store = (std::atomic<void*>*)pesapi_get_ref_internal_fields(valueRef, &field_count);
+            if (nullptr == atomic_store->load(std::memory_order_acquire)) //假如不为空代表已经重新被绑定了
+            {
+                pesapi_value val = pesapi_get_value_from_ref(env, valueRef);
+                pesapi_set_private(env, val, nullptr);
+                pesapi_release_value_ref(valueRef);
+            }
+        }
+
+        PendingReleaseObjects.clear();
+    }
+    
     v8::Isolate* MainIsolate;
     v8::Global<v8::Context> MainContext;
     
     puerts::FCppObjectMapper CppObjectMapper;
     puerts::FBackendEnv BackendEnv;
+    
+    // 去重
+    std::unordered_set<pesapi_value_ref> PendingReleaseObjects;
+    std::mutex PendingReleaseObjectsMutex;
 };
 
 }
@@ -332,11 +310,7 @@ V8_EXPORT pesapi_env_ref GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
 
 V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
 {
-    exports->SetExtraData = &puerts::SetExtraData;
-    exports->UnrefJsObject = &puerts::UnrefJsObject;
     exports->GetJsClassInfo = &puerts::GetJsClassInfo;
-    exports->SetRuntimeObjectToPersistentObject = &puerts::SetRuntimeObjectToPersistentObject;
-    exports->GetRuntimeObjectFromPersistentObject = &puerts::GetRuntimeObjectFromPersistentObject;
     exports->GetModuleExecutor = &puerts::GetModuleExecutor;
     exports->LogCallback = puerts::GLogCallback;
     puerts::GUnityExports = *exports;
@@ -376,16 +350,22 @@ V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *ob
     }
 }
 
-V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
+// C# JsObject对象析构函数调用
+V8_EXPORT void AddPendingKillScriptObjects(puerts::JSEnv* jsEnv, pesapi_value_ref valueRef)
 {
-    v8::Isolate* Isolate = jsEnv->MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    
-    jsEnv->CppObjectMapper.ClearPendingPersistentObject(Isolate, jsEnv->MainContext.Get(Isolate));
+    pesapi_env_ref envRef = pesapi_get_ref_associated_env(valueRef);
+    if (!pesapi_env_ref_is_valid(envRef)) // jsEnv已经释放
+    {
+        pesapi_release_value_ref(valueRef);
+        return;
+    }
+    jsEnv->AddPendingJsObjects(valueRef);
+}
+
+// 由C#的jsEnv调用，所以jsEnv有效
+V8_EXPORT void CleanupPendingKillScriptObjects(puerts::JSEnv* jsEnv)
+{
+    jsEnv->ClearPendingJsObjects();
 }
 
 V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)

@@ -16,20 +16,8 @@ namespace Puerts
     [UnityEngine.Scripting.Preserve]
     public class JSObject
     {
-        IntPtr placeHold0; // PObjectRefInfo first ptr
-        IntPtr placeHold1;
-        IntPtr placeHold2;
-        IntPtr placeHold3;
-        IntPtr placeHold4;
-        IntPtr placeHold5;
-        IntPtr placeHold6;
-        IntPtr placeHold7;
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        void releaseScriptObject()
-        {
-            throw new NotImplementedException();
-        }
+        IntPtr valueRef; // PObjectRefInfo first ptr
+        IntPtr nativeJsEnv;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         object GetJSObjectValue(string key, Type resultType)
@@ -44,7 +32,7 @@ namespace Puerts
 
         ~JSObject()
         {
-            releaseScriptObject();
+            PuertsIl2cpp.NativeAPI.AddPendingKillScriptObjects(nativeJsEnv, valueRef);
         }
     }
 }

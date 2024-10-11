@@ -93,7 +93,10 @@ namespace PuertsIl2cpp
         public static extern void SetObjectToGlobal(IntPtr jsEnv, string key, IntPtr objPtr);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ReleasePendingJsObjects(IntPtr jsEnv);
+        public static extern void AddPendingKillScriptObjects(IntPtr jsEnv, IntPtr valueRef);
+        
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void CleanupPendingKillScriptObjects(IntPtr jsEnv);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void CreateInspector(IntPtr jsEnv, int port);

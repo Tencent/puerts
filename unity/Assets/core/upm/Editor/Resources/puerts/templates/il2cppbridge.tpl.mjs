@@ -53,8 +53,9 @@ static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.
 
     PObjectRefInfo* delegateInfo = GetPObjectRefInfo(target);
     
-    AutoValueScope valueScope(delegateInfo->EnvRef);
-    auto env = pesapi_get_env_from_ref(delegateInfo->EnvRef);
+    pesapi_env_ref envRef = pesapi_get_ref_associated_env(delegateInfo->ValueRef);
+    AutoValueScope valueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
     if (!env)
     {
         il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException("JsEnv had been destroy"));

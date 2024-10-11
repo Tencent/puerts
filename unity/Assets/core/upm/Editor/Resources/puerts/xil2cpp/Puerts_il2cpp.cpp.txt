@@ -484,11 +484,10 @@ static void* CtorCallback(pesapi_callback_info info)
     return nullptr;
 }
 
-static void SetPObjectRefInfoValue(pesapi_env env, PObjectRefInfo* objectInfo, pesapi_value jsval)
+static void SetPObjectRefInfoValue(pesapi_env env, PObjectRefInfo* objectInfo, pesapi_value_ref value_ref)
 {
-    objectInfo->EnvRef = pesapi_create_env_ref(env);
-    objectInfo->ValueRef = pesapi_create_value_ref(env, jsval, 0);
-    g_unityExports.SetExtraData(env, objectInfo);
+    objectInfo->ValueRef = value_ref;
+    objectInfo->EnvPrivate = (void*)pesapi_get_env_private(env);
 }
 
 
@@ -497,21 +496,57 @@ static pesapi_value GetPObjectRefInfoValue(pesapi_env env, const PObjectRefInfo*
     return pesapi_get_value_from_ref(env, objectInfo->ValueRef);
 }
 
-static pesapi_value GetPObjectRefInfoValue(const PObjectRefInfo* objectInfo)
-{    
-    auto env = pesapi_get_env_from_ref(objectInfo->EnvRef);
-    return GetPObjectRefInfoValue(env, objectInfo);
+static std::atomic<RuntimeObject*>* FindOrCreateAtomicOfValue(pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref)
+{
+    void* out_ptr;
+    if(!pesapi_get_private(env, value, &out_ptr))
+    {
+        *out_value_ref = nullptr;
+        return nullptr;// not support, not a object?
+    }
+    
+    pesapi_value_ref value_ref = static_cast<pesapi_value_ref>(out_ptr);
+    std::atomic<RuntimeObject*>* atomic_store = nullptr;
+    uint32_t field_count;
+    if (value_ref)
+    {
+        atomic_store = (std::atomic<RuntimeObject*>*)pesapi_get_ref_internal_fields(value_ref, &field_count);
+        if(field_count * sizeof(void*) < sizeof(std::atomic<RuntimeObject*>))
+        {
+            PLog("size of internal_fields not enough : %u", field_count);
+            pesapi_release_value_ref(value_ref);
+            atomic_store = nullptr;
+            value_ref = nullptr;
+        }
+    }
+    
+    if (!atomic_store)
+    {
+        value_ref = pesapi_create_value_ref(env, value, (sizeof(std::atomic<RuntimeObject*>) + sizeof(void*) - 1) / sizeof(void*));
+        
+        atomic_store = new (pesapi_get_ref_internal_fields(value_ref, &field_count)) std::atomic<RuntimeObject*>();
+        pesapi_set_private(env, value, value_ref);
+    }
+    
+    //atomic_store->load(std::memory_order_acquire);
+    //atomic_store->store(obj, std::memory_order_release);
+    *out_value_ref = value_ref;
+    return atomic_store;
 }
 
 static RuntimeObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
 {
-    RuntimeObject* ret = (RuntimeObject*)g_unityExports.GetRuntimeObjectFromPersistentObject(env, jsval);
+    pesapi_value_ref value_ref;
+    auto atomic_store = FindOrCreateAtomicOfValue(env, jsval, &value_ref);
+    if (!atomic_store) return nullptr;
+    
+    RuntimeObject* ret = atomic_store->load(std::memory_order_acquire);
     if (ret == nullptr)
     {
         PObjectRefInfo* delegateInfo;
         ret = (RuntimeObject *)DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
-        SetPObjectRefInfoValue(env, delegateInfo, jsval);
-        g_unityExports.SetRuntimeObjectToPersistentObject(env, jsval, ret);
+        atomic_store->store(ret, std::memory_order_release);
+        SetPObjectRefInfoValue(env, delegateInfo, value_ref);
     }
     return ret;
 }
@@ -528,14 +563,6 @@ static void* DelegateCtorCallback(pesapi_callback_info info)
     JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_constructor_userdata(info));
     
     return FunctionToDelegate(env, jsval, classInfo);
-}
-
-void ReleaseScriptObject(RuntimeObject* obj)
-{
-    //TODO: 优化性能 ///
-    PObjectRefInfo* objectInfo = GetPObjectRefInfo(obj);
-    // PLog(">>>>>> ReleaseScriptObject: %p, %p, %p, %p", obj, objectInfo, objectInfo->EnvRef, objectInfo->ValueRef);
-    g_unityExports.UnrefJsObject(objectInfo);
 }
 
 bool IsDelegate(Il2CppClass *klass)
@@ -853,7 +880,11 @@ handle_underlying:
                 {
                     Il2CppClass* persistentObjectInfoClass = g_typeofPersistentObjectInfo;
                     
-                    RuntimeObject* ret = (RuntimeObject*)g_unityExports.GetRuntimeObjectFromPersistentObject(env, jsval);
+                    pesapi_value_ref value_ref;
+                    auto atomic_store = FindOrCreateAtomicOfValue(env, jsval, &value_ref);
+                    if (!atomic_store) return nullptr;
+    
+                    RuntimeObject* ret = atomic_store->load(std::memory_order_acquire);
                     if (ret == nullptr) 
                     {
                         ret = il2cpp::vm::Object::New(persistentObjectInfoClass);
@@ -864,8 +895,8 @@ handle_underlying:
                         ((NativeCtorPtr)ctor->methodPointer)(ret, ctor);
                         
                         PObjectRefInfo* objectInfo = GetPObjectRefInfo(ret);
-                        SetPObjectRefInfoValue(env, objectInfo, jsval);
-                        g_unityExports.SetRuntimeObjectToPersistentObject(env, jsval, ret);
+                        atomic_store->store(ret, std::memory_order_release);
+                        SetPObjectRefInfoValue(env, objectInfo, value_ref);
                     }
                     return ret;
                 }
@@ -1699,8 +1730,9 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2Cpp
 
     auto type = il2cpp_codegen_class_from_type(rtype->type);
     
-    AutoValueScope ValueScope(objectInfo->EnvRef);
-    auto env = pesapi_get_env_from_ref(objectInfo->EnvRef);
+    pesapi_env_ref envRef = pesapi_get_ref_associated_env(objectInfo->ValueRef);
+    AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
     auto obj = pesapi_get_value_from_ref(env, objectInfo->ValueRef);
     auto val = pesapi_get_property(env, obj, key_std.c_str());
     if (!val)
@@ -1790,7 +1822,6 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetModuleExecutor(System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
-    InternalCalls::Add("Puerts.JSObject::releaseScriptObject()", (Il2CppMethodPointer)puerts::ReleaseScriptObject);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     pesapi_init(func_array);
 }
