@@ -589,6 +589,7 @@ void pesapi_release_value_ref(pesapi_value_ref value_ref)
         {
 #if V8_MAJOR_VERSION < 11
             value_ref->value_persistent.Empty();
+            value_ref->context_persistent.Empty();
             value_ref->~pesapi_value_ref__();
 #endif
         }
@@ -671,20 +672,31 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
     }
 }
 
-const void* pesapi_get_private(pesapi_env env, pesapi_value pobject)
+bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
-    return puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
-        ->GetPrivateData(context, object.As<v8::Object>());
+    if (object.IsEmpty() || !object->IsObject())
+    {
+        *out_ptr = nullptr;
+        return false;
+    }
+    *out_ptr = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
+                   ->GetPrivateData(context, object.As<v8::Object>());
+    return true;
 }
 
-void pesapi_set_private(pesapi_env env, pesapi_value pobject, const void* ptr)
+bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
+    if (object.IsEmpty() || !object->IsObject())
+    {
+        return false;
+    }
     puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
-        ->SetPrivateData(context, object.As<v8::Object>(), const_cast<void*>(ptr));
+        ->SetPrivateData(context, object.As<v8::Object>(), ptr);
+    return true;
 }
 
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key)

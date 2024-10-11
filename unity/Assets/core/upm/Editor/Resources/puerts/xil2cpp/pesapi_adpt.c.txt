@@ -436,16 +436,16 @@ void pesapi_set_property (pesapi_env env, pesapi_value object, const char* key, 
     pesapi_set_property_ptr(env, object, key, value);
 }
 
-typedef const void* (*pesapi_get_privateType)(pesapi_env env, pesapi_value object);
+typedef bool (*pesapi_get_privateType)(pesapi_env env, pesapi_value object, void** out_ptr);
 static pesapi_get_privateType pesapi_get_private_ptr;
-const void* pesapi_get_private (pesapi_env env, pesapi_value object) {
-    return pesapi_get_private_ptr(env, object);
+bool pesapi_get_private (pesapi_env env, pesapi_value object, void** out_ptr) {
+    return pesapi_get_private_ptr(env, object, out_ptr);
 }
 
-typedef void (*pesapi_set_privateType)(pesapi_env env, pesapi_value object, const void* ptr);
+typedef bool (*pesapi_set_privateType)(pesapi_env env, pesapi_value object, void* ptr);
 static pesapi_set_privateType pesapi_set_private_ptr;
-void pesapi_set_private (pesapi_env env, pesapi_value object, const void* ptr) {
-    pesapi_set_private_ptr(env, object, ptr);
+bool pesapi_set_private (pesapi_env env, pesapi_value object, void* ptr) {
+    return pesapi_set_private_ptr(env, object, ptr);
 }
 
 typedef pesapi_value (*pesapi_get_property_uint32Type)(pesapi_env env, pesapi_value object, uint32_t key);
