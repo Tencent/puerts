@@ -59,6 +59,10 @@ public:
 
     virtual void BindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject,
         bool PassByPointer) override;
+        
+    virtual void* GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject) override;
+
+    virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) override;
 
     void UnInitialize(v8::Isolate* InIsolate);
 
@@ -86,6 +90,8 @@ private:
     std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> TypeIdToTemplateMap;
 
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
+    
+    v8::Global<v8::Symbol> PrivateKey;
 
     std::unordered_map<void*, FinalizeFunc> CDataFinalizeMap;
 

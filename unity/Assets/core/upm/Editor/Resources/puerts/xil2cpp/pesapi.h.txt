@@ -188,6 +188,7 @@ PESAPI_EXTERN void pesapi_add_return(pesapi_callback_info info, pesapi_value val
 PESAPI_EXTERN void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg);
 
 PESAPI_EXTERN pesapi_env_ref pesapi_create_env_ref(pesapi_env env);
+PESAPI_EXTERN bool pesapi_env_ref_is_valid(pesapi_env_ref env);
 PESAPI_EXTERN pesapi_env pesapi_get_env_from_ref(pesapi_env_ref env_ref);
 PESAPI_EXTERN pesapi_env_ref pesapi_duplicate_env_ref(pesapi_env_ref env_ref);
 PESAPI_EXTERN void pesapi_release_env_ref(pesapi_env_ref env_ref);
@@ -197,16 +198,21 @@ PESAPI_EXTERN bool pesapi_has_caught(pesapi_scope scope);
 PESAPI_EXTERN const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack);
 PESAPI_EXTERN void pesapi_close_scope(pesapi_scope scope);
 
-PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value, uint32_t internal_field_count);
 PESAPI_EXTERN pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref value_ref);
 PESAPI_EXTERN void pesapi_release_value_ref(pesapi_value_ref value_ref);
 PESAPI_EXTERN pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref value_ref);
 PESAPI_EXTERN void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref value_ref);
 // Optional api: return false if can not fulfill
 PESAPI_EXTERN bool pesapi_set_owner(pesapi_env env, pesapi_value value, pesapi_value owner);
+// suggestion: struct pesapi_value_ref : pesapi_env_ref {...};
+PESAPI_EXTERN pesapi_env_ref pesapi_get_ref_associated_env(pesapi_value_ref value_ref);
+PESAPI_EXTERN void** pesapi_get_ref_internal_fields(pesapi_value_ref value_ref, uint32_t* pinternal_field_count);
 
 PESAPI_EXTERN pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key);
 PESAPI_EXTERN void pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
+PESAPI_EXTERN const void* pesapi_get_private(pesapi_env env, pesapi_value object);
+PESAPI_EXTERN void pesapi_set_private(pesapi_env env, pesapi_value object, const void* ptr);
 
 PESAPI_EXTERN pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uint32_t key);
 PESAPI_EXTERN void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
@@ -215,6 +221,10 @@ PESAPI_EXTERN pesapi_value pesapi_call_function(
     pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
 
 PESAPI_EXTERN pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path);
+
+PESAPI_EXTERN pesapi_value pesapi_global(pesapi_env env);
+PESAPI_EXTERN const void* pesapi_get_env_private(pesapi_env env);
+PESAPI_EXTERN void pesapi_set_env_private(pesapi_env env, const void* ptr);
 
 PESAPI_EXTERN pesapi_type_info pesapi_alloc_type_infos(size_t count);
 

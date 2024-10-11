@@ -164,6 +164,16 @@ static void SetExtraData(pesapi_env env, struct PObjectRefInfo* objectInfo)
     objectInfo->EnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
 }
 
+// 临时兼容新papi
+struct pesapi_value_ref_def
+{
+    v8::Persistent<v8::Context> context_persistent;
+    v8::Isolate* const isolate;
+    int ref_count;
+    std::weak_ptr<int> env_life_cycle_tracker;
+    v8::Global<v8::Object> value_persistent;
+};
+
 static void UnrefJsObject(PObjectRefInfo* objectInfo)
 {
     // gc线程不能访问v8虚拟机，访问就会崩溃 ///
@@ -171,9 +181,8 @@ static void UnrefJsObject(PObjectRefInfo* objectInfo)
     {
         auto envInfo = static_cast<puerts::FPersistentObjectEnvInfo*>(objectInfo->ExtraData);
         std::lock_guard<std::mutex> guard(envInfo->Mutex);
-        
-        v8::Global<v8::Object> *obj = reinterpret_cast<v8::Global<v8::Object> *>(objectInfo->ValueRef); // TODO: 和实现绑定了，需优化
-        envInfo->PendingReleaseObjects.push_back(std::move(*obj));
+        pesapi_value_ref_def* vr = (pesapi_value_ref_def*)objectInfo->ValueRef;
+        envInfo->PendingReleaseObjects.push_back(std::move(vr->value_persistent));
     }
     objectInfo->ExtraData = nullptr;
     // 两个delete，可以通过直接用PObjectRefInfo placement new的方式优化，但需要p-api新增api

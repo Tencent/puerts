@@ -11,6 +11,7 @@
 #include "pesapi.h"
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
+#include "ObjectMapper.h"
 
 #include <string>
 #include <sstream>
@@ -33,20 +34,16 @@ struct pesapi_env_ref__
     std::weak_ptr<int> env_life_cycle_tracker;
 };
 
-struct pesapi_value_ref__
+struct pesapi_value_ref__ : pesapi_env_ref__
 {
-    explicit pesapi_value_ref__(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
-        : value_persistent(context->GetIsolate(), value)
-        , isolate(context->GetIsolate())
-        , ref_count(1)
-        , env_life_cycle_tracker(puerts::DataTransfer::GetJsEnvLifeCycleTracker(context->GetIsolate()))
+    explicit pesapi_value_ref__(v8::Local<v8::Context> context, v8::Local<v8::Value> value, uint32_t field_count)
+        : pesapi_env_ref__(context), value_persistent(context->GetIsolate(), value), internal_field_count(field_count)
     {
     }
 
     v8::Persistent<v8::Value> value_persistent;
-    v8::Isolate* const isolate;
-    int ref_count;
-    std::weak_ptr<int> env_life_cycle_tracker;
+    uint32_t internal_field_count;
+    void* internal_fields[0];
 };
 
 struct pesapi_scope__
@@ -471,6 +468,11 @@ pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
     return new pesapi_env_ref__(context);
 }
 
+bool pesapi_env_ref_is_valid(pesapi_env_ref env_ref)
+{
+    return !env_ref->env_life_cycle_tracker.expired();
+}
+
 pesapi_env pesapi_get_env_from_ref(pesapi_env_ref env_ref)
 {
     if (env_ref->env_life_cycle_tracker.expired())
@@ -564,11 +566,13 @@ void pesapi_close_scope(pesapi_scope scope)
     isolate->Exit();
 }
 
-pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue)
+pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, uint32_t internal_field_count)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return new pesapi_value_ref__(context, value);
+    size_t totalSize = sizeof(pesapi_value_ref__) + sizeof(void*) * internal_field_count;
+    void* buffer = ::operator new(totalSize);
+    return new (buffer) pesapi_value_ref__(context, value, internal_field_count);
 }
 
 pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref value_ref)
@@ -585,15 +589,14 @@ void pesapi_release_value_ref(pesapi_value_ref value_ref)
         {
 #if V8_MAJOR_VERSION < 11
             value_ref->value_persistent.Empty();
-            delete value_ref;
-#else
-            ::operator delete(static_cast<void*>(value_ref));
+            value_ref->~pesapi_value_ref__();
 #endif
         }
         else
         {
-            delete value_ref;
+            value_ref->~pesapi_value_ref__();
         }
+        ::operator delete(static_cast<void*>(value_ref));
     }
 }
 
@@ -627,6 +630,17 @@ bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
     return false;
 }
 
+pesapi_env_ref pesapi_get_ref_associated_env(pesapi_value_ref value_ref)
+{
+    return value_ref;
+}
+
+void** pesapi_get_ref_internal_fields(pesapi_value_ref value_ref, uint32_t* pinternal_field_count)
+{
+    *pinternal_field_count = value_ref->internal_field_count;
+    return &value_ref->internal_fields[0];
+}
+
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const char* key)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -655,6 +669,22 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
         auto _un_used = object.As<v8::Object>()->Set(
             context, v8::String::NewFromUtf8(context->GetIsolate(), key, v8::NewStringType::kNormal).ToLocalChecked(), value);
     }
+}
+
+const void* pesapi_get_private(pesapi_env env, pesapi_value pobject)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
+    return puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
+        ->GetPrivateData(context, object.As<v8::Object>());
+}
+
+void pesapi_set_private(pesapi_env env, pesapi_value pobject, const void* ptr)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
+    puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
+        ->SetPrivateData(context, object.As<v8::Object>(), const_cast<void*>(ptr));
 }
 
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key)
@@ -731,6 +761,25 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         return nullptr;
     }
     return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
+}
+
+pesapi_value pesapi_global(pesapi_env env)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto global = context->Global();
+    return v8impl::PesapiValueFromV8LocalValue(global);
+}
+
+const void* pesapi_get_env_private(pesapi_env env)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    return context->GetIsolate()->GetData(MAPPER_ISOLATE_DATA_POS + 1);
+}
+
+void pesapi_set_env_private(pesapi_env env, const void* ptr)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    context->GetIsolate()->SetData(MAPPER_ISOLATE_DATA_POS + 1, const_cast<void*>(ptr));
 }
 
 struct pesapi_type_info__

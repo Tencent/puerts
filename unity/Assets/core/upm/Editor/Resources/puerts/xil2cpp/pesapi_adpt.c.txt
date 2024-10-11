@@ -328,6 +328,12 @@ pesapi_env_ref pesapi_create_env_ref (pesapi_env env) {
     return pesapi_create_env_ref_ptr(env);
 }
 
+typedef bool (*pesapi_env_ref_is_validType)(pesapi_env_ref env);
+static pesapi_env_ref_is_validType pesapi_env_ref_is_valid_ptr;
+bool pesapi_env_ref_is_valid (pesapi_env_ref env) {
+    return pesapi_env_ref_is_valid_ptr(env);
+}
+
 typedef pesapi_env (*pesapi_get_env_from_refType)(pesapi_env_ref env_ref);
 static pesapi_get_env_from_refType pesapi_get_env_from_ref_ptr;
 pesapi_env pesapi_get_env_from_ref (pesapi_env_ref env_ref) {
@@ -370,10 +376,10 @@ void pesapi_close_scope (pesapi_scope scope) {
     pesapi_close_scope_ptr(scope);
 }
 
-typedef pesapi_value_ref (*pesapi_create_value_refType)(pesapi_env env, pesapi_value value);
+typedef pesapi_value_ref (*pesapi_create_value_refType)(pesapi_env env, pesapi_value value, uint32_t internal_field_count);
 static pesapi_create_value_refType pesapi_create_value_ref_ptr;
-pesapi_value_ref pesapi_create_value_ref (pesapi_env env, pesapi_value value) {
-    return pesapi_create_value_ref_ptr(env, value);
+pesapi_value_ref pesapi_create_value_ref (pesapi_env env, pesapi_value value, uint32_t internal_field_count) {
+    return pesapi_create_value_ref_ptr(env, value, internal_field_count);
 }
 
 typedef pesapi_value_ref (*pesapi_duplicate_value_refType)(pesapi_value_ref value_ref);
@@ -406,6 +412,18 @@ bool pesapi_set_owner (pesapi_env env, pesapi_value value, pesapi_value owner) {
     return pesapi_set_owner_ptr(env, value, owner);
 }
 
+typedef pesapi_env_ref (*pesapi_get_ref_associated_envType)(pesapi_value_ref value_ref);
+static pesapi_get_ref_associated_envType pesapi_get_ref_associated_env_ptr;
+pesapi_env_ref pesapi_get_ref_associated_env (pesapi_value_ref value_ref) {
+    return pesapi_get_ref_associated_env_ptr(value_ref);
+}
+
+typedef void** (*pesapi_get_ref_internal_fieldsType)(pesapi_value_ref value_ref, uint32_t* pinternal_field_count);
+static pesapi_get_ref_internal_fieldsType pesapi_get_ref_internal_fields_ptr;
+void** pesapi_get_ref_internal_fields (pesapi_value_ref value_ref, uint32_t* pinternal_field_count) {
+    return pesapi_get_ref_internal_fields_ptr(value_ref, pinternal_field_count);
+}
+
 typedef pesapi_value (*pesapi_get_propertyType)(pesapi_env env, pesapi_value object, const char* key);
 static pesapi_get_propertyType pesapi_get_property_ptr;
 pesapi_value pesapi_get_property (pesapi_env env, pesapi_value object, const char* key) {
@@ -416,6 +434,18 @@ typedef void (*pesapi_set_propertyType)(pesapi_env env, pesapi_value object, con
 static pesapi_set_propertyType pesapi_set_property_ptr;
 void pesapi_set_property (pesapi_env env, pesapi_value object, const char* key, pesapi_value value) {
     pesapi_set_property_ptr(env, object, key, value);
+}
+
+typedef const void* (*pesapi_get_privateType)(pesapi_env env, pesapi_value object);
+static pesapi_get_privateType pesapi_get_private_ptr;
+const void* pesapi_get_private (pesapi_env env, pesapi_value object) {
+    return pesapi_get_private_ptr(env, object);
+}
+
+typedef void (*pesapi_set_privateType)(pesapi_env env, pesapi_value object, const void* ptr);
+static pesapi_set_privateType pesapi_set_private_ptr;
+void pesapi_set_private (pesapi_env env, pesapi_value object, const void* ptr) {
+    pesapi_set_private_ptr(env, object, ptr);
 }
 
 typedef pesapi_value (*pesapi_get_property_uint32Type)(pesapi_env env, pesapi_value object, uint32_t key);
@@ -440,6 +470,24 @@ typedef pesapi_value (*pesapi_evalType)(pesapi_env env, const uint8_t* code, siz
 static pesapi_evalType pesapi_eval_ptr;
 pesapi_value pesapi_eval (pesapi_env env, const uint8_t* code, size_t code_size, const char* path) {
     return pesapi_eval_ptr(env, code, code_size, path);
+}
+
+typedef pesapi_value (*pesapi_globalType)(pesapi_env env);
+static pesapi_globalType pesapi_global_ptr;
+pesapi_value pesapi_global (pesapi_env env) {
+    return pesapi_global_ptr(env);
+}
+
+typedef const void* (*pesapi_get_env_privateType)(pesapi_env env);
+static pesapi_get_env_privateType pesapi_get_env_private_ptr;
+const void* pesapi_get_env_private (pesapi_env env) {
+    return pesapi_get_env_private_ptr(env);
+}
+
+typedef void (*pesapi_set_env_privateType)(pesapi_env env, const void* ptr);
+static pesapi_set_env_privateType pesapi_set_env_private_ptr;
+void pesapi_set_env_private (pesapi_env env, const void* ptr) {
+    pesapi_set_env_private_ptr(env, ptr);
 }
 
 typedef pesapi_type_info (*pesapi_alloc_type_infosType)(size_t count);
@@ -553,34 +601,42 @@ void pesapi_init(pesapi_func_ptr* func_array){
     pesapi_add_return_ptr = (pesapi_add_returnType)func_array[49];
     pesapi_throw_by_string_ptr = (pesapi_throw_by_stringType)func_array[50];
     pesapi_create_env_ref_ptr = (pesapi_create_env_refType)func_array[51];
-    pesapi_get_env_from_ref_ptr = (pesapi_get_env_from_refType)func_array[52];
-    pesapi_duplicate_env_ref_ptr = (pesapi_duplicate_env_refType)func_array[53];
-    pesapi_release_env_ref_ptr = (pesapi_release_env_refType)func_array[54];
-    pesapi_open_scope_ptr = (pesapi_open_scopeType)func_array[55];
-    pesapi_has_caught_ptr = (pesapi_has_caughtType)func_array[56];
-    pesapi_get_exception_as_string_ptr = (pesapi_get_exception_as_stringType)func_array[57];
-    pesapi_close_scope_ptr = (pesapi_close_scopeType)func_array[58];
-    pesapi_create_value_ref_ptr = (pesapi_create_value_refType)func_array[59];
-    pesapi_duplicate_value_ref_ptr = (pesapi_duplicate_value_refType)func_array[60];
-    pesapi_release_value_ref_ptr = (pesapi_release_value_refType)func_array[61];
-    pesapi_get_value_from_ref_ptr = (pesapi_get_value_from_refType)func_array[62];
-    pesapi_set_ref_weak_ptr = (pesapi_set_ref_weakType)func_array[63];
-    pesapi_set_owner_ptr = (pesapi_set_ownerType)func_array[64];
-    pesapi_get_property_ptr = (pesapi_get_propertyType)func_array[65];
-    pesapi_set_property_ptr = (pesapi_set_propertyType)func_array[66];
-    pesapi_get_property_uint32_ptr = (pesapi_get_property_uint32Type)func_array[67];
-    pesapi_set_property_uint32_ptr = (pesapi_set_property_uint32Type)func_array[68];
-    pesapi_call_function_ptr = (pesapi_call_functionType)func_array[69];
-    pesapi_eval_ptr = (pesapi_evalType)func_array[70];
-    pesapi_alloc_type_infos_ptr = (pesapi_alloc_type_infosType)func_array[71];
-    pesapi_set_type_info_ptr = (pesapi_set_type_infoType)func_array[72];
-    pesapi_create_signature_info_ptr = (pesapi_create_signature_infoType)func_array[73];
-    pesapi_alloc_property_descriptors_ptr = (pesapi_alloc_property_descriptorsType)func_array[74];
-    pesapi_set_method_info_ptr = (pesapi_set_method_infoType)func_array[75];
-    pesapi_set_property_info_ptr = (pesapi_set_property_infoType)func_array[76];
-    pesapi_define_class_ptr = (pesapi_define_classType)func_array[77];
-    pesapi_class_type_info_ptr = (pesapi_class_type_infoType)func_array[78];
-    pesapi_find_type_id_ptr = (pesapi_find_type_idType)func_array[79];
+    pesapi_env_ref_is_valid_ptr = (pesapi_env_ref_is_validType)func_array[52];
+    pesapi_get_env_from_ref_ptr = (pesapi_get_env_from_refType)func_array[53];
+    pesapi_duplicate_env_ref_ptr = (pesapi_duplicate_env_refType)func_array[54];
+    pesapi_release_env_ref_ptr = (pesapi_release_env_refType)func_array[55];
+    pesapi_open_scope_ptr = (pesapi_open_scopeType)func_array[56];
+    pesapi_has_caught_ptr = (pesapi_has_caughtType)func_array[57];
+    pesapi_get_exception_as_string_ptr = (pesapi_get_exception_as_stringType)func_array[58];
+    pesapi_close_scope_ptr = (pesapi_close_scopeType)func_array[59];
+    pesapi_create_value_ref_ptr = (pesapi_create_value_refType)func_array[60];
+    pesapi_duplicate_value_ref_ptr = (pesapi_duplicate_value_refType)func_array[61];
+    pesapi_release_value_ref_ptr = (pesapi_release_value_refType)func_array[62];
+    pesapi_get_value_from_ref_ptr = (pesapi_get_value_from_refType)func_array[63];
+    pesapi_set_ref_weak_ptr = (pesapi_set_ref_weakType)func_array[64];
+    pesapi_set_owner_ptr = (pesapi_set_ownerType)func_array[65];
+    pesapi_get_ref_associated_env_ptr = (pesapi_get_ref_associated_envType)func_array[66];
+    pesapi_get_ref_internal_fields_ptr = (pesapi_get_ref_internal_fieldsType)func_array[67];
+    pesapi_get_property_ptr = (pesapi_get_propertyType)func_array[68];
+    pesapi_set_property_ptr = (pesapi_set_propertyType)func_array[69];
+    pesapi_get_private_ptr = (pesapi_get_privateType)func_array[70];
+    pesapi_set_private_ptr = (pesapi_set_privateType)func_array[71];
+    pesapi_get_property_uint32_ptr = (pesapi_get_property_uint32Type)func_array[72];
+    pesapi_set_property_uint32_ptr = (pesapi_set_property_uint32Type)func_array[73];
+    pesapi_call_function_ptr = (pesapi_call_functionType)func_array[74];
+    pesapi_eval_ptr = (pesapi_evalType)func_array[75];
+    pesapi_global_ptr = (pesapi_globalType)func_array[76];
+    pesapi_get_env_private_ptr = (pesapi_get_env_privateType)func_array[77];
+    pesapi_set_env_private_ptr = (pesapi_set_env_privateType)func_array[78];
+    pesapi_alloc_type_infos_ptr = (pesapi_alloc_type_infosType)func_array[79];
+    pesapi_set_type_info_ptr = (pesapi_set_type_infoType)func_array[80];
+    pesapi_create_signature_info_ptr = (pesapi_create_signature_infoType)func_array[81];
+    pesapi_alloc_property_descriptors_ptr = (pesapi_alloc_property_descriptorsType)func_array[82];
+    pesapi_set_method_info_ptr = (pesapi_set_method_infoType)func_array[83];
+    pesapi_set_property_info_ptr = (pesapi_set_property_infoType)func_array[84];
+    pesapi_define_class_ptr = (pesapi_define_classType)func_array[85];
+    pesapi_class_type_info_ptr = (pesapi_class_type_infoType)func_array[86];
+    pesapi_find_type_id_ptr = (pesapi_find_type_idType)func_array[87];
 
 #endif
 }

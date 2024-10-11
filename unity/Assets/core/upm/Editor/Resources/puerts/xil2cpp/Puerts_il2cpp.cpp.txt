@@ -487,7 +487,7 @@ static void* CtorCallback(pesapi_callback_info info)
 static void SetPObjectRefInfoValue(pesapi_env env, PObjectRefInfo* objectInfo, pesapi_value jsval)
 {
     objectInfo->EnvRef = pesapi_create_env_ref(env);
-    objectInfo->ValueRef = pesapi_create_value_ref(env, jsval);
+    objectInfo->ValueRef = pesapi_create_value_ref(env, jsval, 0);
     g_unityExports.SetExtraData(env, objectInfo);
 }
 
