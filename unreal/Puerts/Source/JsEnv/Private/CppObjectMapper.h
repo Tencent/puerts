@@ -57,7 +57,9 @@ private:
 
     v8::UniquePersistent<v8::Function> PointerConstructor;
 
+#ifndef WITH_QUICKJS
     v8::Global<v8::Symbol> PrivateKey;
+#endif
 
     std::map<void*, FinalizeFunc> CDataFinalizeMap;
 
