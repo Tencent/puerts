@@ -182,6 +182,7 @@ struct JSEnv
         BackendEnv.LogicTick();
         BackendEnv.StopPolling();
 
+        ClearPendingJsObjects();
         CppObjectMapper.UnInitialize(MainIsolate);
         BackendEnv.PathToModuleMap.clear();
         BackendEnv.ScriptIdToPathMap.clear();
