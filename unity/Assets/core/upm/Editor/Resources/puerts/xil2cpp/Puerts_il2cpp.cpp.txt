@@ -1750,10 +1750,10 @@ puerts::UnityExports* GetUnityExports()
 
 Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __path, Il2CppReflectionType *__type)
 {
-    pesapi_env_ref env_holder = reinterpret_cast<pesapi_env_ref>(ptr);
+    pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
     
-    AutoValueScope ValueScope(env_holder);
-    auto env = pesapi_get_env_from_ref(env_holder);
+    AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
     
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(__path);
     std::string path = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
@@ -1783,10 +1783,10 @@ Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __p
 
 Il2CppObject* GetModuleExecutor(intptr_t ptr, Il2CppReflectionType* rtype)
 {
-    pesapi_env_ref env_holder = reinterpret_cast<pesapi_env_ref>(ptr);
+    pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
 
-    AutoValueScope ValueScope(env_holder);
-    auto env = pesapi_get_env_from_ref(env_holder);
+    AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
     
     pesapi_value func = g_unityExports.GetModuleExecutor(env);
     if (pesapi_has_caught(ValueScope.scope))
