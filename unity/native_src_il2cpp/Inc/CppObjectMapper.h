@@ -23,15 +23,6 @@ namespace puerts
 typedef int32_t (*ObjectPoolAddFunc) (void * objectPool, void * obj, void* method);
 typedef void* (*ObjectPoolRemoveFunc) (void * objectPool, int32_t index, void* method);
 
-struct FPersistentObjectEnvInfo
-{
-    v8::Isolate* Isolate;
-    v8::Global<v8::Context> Context;
-    std::vector<v8::Global<v8::Object>> PendingReleaseObjects;
-    v8::Global<v8::Symbol> SymbolCSPtr;
-    std::mutex Mutex;
-};
-
 class FCppObjectMapper final : public ICppObjectMapper
 {
 public:
@@ -46,11 +37,6 @@ public:
     virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) override;
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() override;
-
-    virtual struct FPersistentObjectEnvInfo* GetPersistentObjectEnvInfo() override
-    {
-        return &PersistentObjectEnvInfo;
-    }
 
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
@@ -77,12 +63,6 @@ public:
     ObjectPoolRemoveFunc ObjectPoolRemove = nullptr;
     
     void* ObjectPoolInstance = nullptr;
-
-    FPersistentObjectEnvInfo PersistentObjectEnvInfo;
-    
-    void AddPendingReleasePersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj);
-
-    void ClearPendingPersistentObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context);
 
 private:
     std::unordered_map<void*, FObjectCacheNode> CDataCache;

@@ -42,8 +42,6 @@ public:
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
-    virtual struct FPersistentObjectEnvInfo* GetPersistentObjectEnvInfo() = 0;
-
     virtual ~ICppObjectMapper()
     {
     }

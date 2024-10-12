@@ -88,9 +88,6 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
     LocalTemplate->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1, CDataName
     PointerTemplate = v8::UniquePersistent<v8::FunctionTemplate>(InIsolate, LocalTemplate);
-    PersistentObjectEnvInfo.Isolate = InIsolate;
-    PersistentObjectEnvInfo.Context.Reset(InIsolate, InContext);
-    PersistentObjectEnvInfo.SymbolCSPtr.Reset(InIsolate, v8::Symbol::New(InIsolate));
     PrivateKey.Reset(InIsolate, v8::Symbol::New(InIsolate));
 }
 
@@ -184,32 +181,6 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         ThrowException(Isolate, "only call as Construct is supported!");
     }
-}
-
-void FCppObjectMapper::AddPendingReleasePersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
-{
-    std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
-    PersistentObjectEnvInfo.PendingReleaseObjects.push_back(v8::Global<v8::Object>(Context->GetIsolate(), Obj));
-}
-
-void FCppObjectMapper::ClearPendingPersistentObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context) 
-{
-    std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
-    //puerts::PLog("ReleasePendingJsObjects size: %d",  jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size());
-    auto size = PersistentObjectEnvInfo.PendingReleaseObjects.size();
-    if (size == 0) {
-        return;
-    }
-
-    auto csptrKey = PersistentObjectEnvInfo.SymbolCSPtr.Get(Isolate);
-    for (int i = 0; i < size; i++) {
-        PersistentObjectEnvInfo.PendingReleaseObjects[i].Get(Isolate)->Delete(
-            Context, 
-            csptrKey
-        );
-    }
-
-    PersistentObjectEnvInfo.PendingReleaseObjects.clear();
 }
 
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const void* TypeId)
@@ -424,10 +395,6 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     TypeIdToTemplateMap.clear();
     PrivateKey.Reset();
     PointerTemplate.Reset();
-    PersistentObjectEnvInfo.Context.Reset();
-    PersistentObjectEnvInfo.SymbolCSPtr.Reset();
-    std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
-    PersistentObjectEnvInfo.PendingReleaseObjects.clear();
 }
 
 }    // namespace puerts
