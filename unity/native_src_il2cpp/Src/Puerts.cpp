@@ -56,7 +56,7 @@ static void LazyLoad(const void* typeId)
     GTryLazyLoadType(typeId, false, GTryLoadTypeMethodInfo);
 }
 
-static_assert(sizeof(PObjectRefInfo) <= sizeof(void*) * 8, "PersistentObjectInfo Size invalid");
+static_assert(sizeof(PObjectRefInfo) <= sizeof(void*) * 2, "PersistentObjectInfo Size invalid");
 
 void PLog(LogLevel Level, const std::string Fmt, ...)
 {
