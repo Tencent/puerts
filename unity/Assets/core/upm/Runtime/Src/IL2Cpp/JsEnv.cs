@@ -116,6 +116,9 @@ namespace Puerts
             if (debugPort != -1) {
                 PuertsIl2cpp.NativeAPI.CreateInspector(nativeJsEnv, debugPort);    
             }
+            string debugpath;
+            string context = loader.ReadFile("puerts/esm_resolve.mjs", out debugpath);
+            Eval(context, debugpath);
             ExecuteModule("puerts/init_il2cpp.mjs");
             ExecuteModule("puerts/log.mjs");
             ExecuteModule("puerts/csharp.mjs");

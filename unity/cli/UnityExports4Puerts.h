@@ -21,15 +21,11 @@ typedef void* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
 
 typedef const void* (*CSharpTypeToTypeIdFunc)(const void *type);
 
-typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
-
 #else
     
 typedef struct JsClassInfoHeader* (*GetJsClassInfoFunc)(const void* TypeId, bool TryLazyLoad);
 
 typedef const void* (*CSharpTypeToTypeIdFunc)(Il2CppObject *type);
-
-typedef pesapi_value (*GetModuleExecutorFunc)(pesapi_env env);
 
 #endif
 
@@ -42,8 +38,6 @@ struct UnityExports
 
     //plugin api
     GetJsClassInfoFunc GetJsClassInfo = nullptr;
-
-    GetModuleExecutorFunc GetModuleExecutor = nullptr;
     
     LogCallbackFunc LogCallback = nullptr;
 };

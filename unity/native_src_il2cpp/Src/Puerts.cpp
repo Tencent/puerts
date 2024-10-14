@@ -83,26 +83,6 @@ static void* GetJsClassInfo(const void* TypeId, bool TryLazyLoad)
     return ClassDefinition->Data;
 }
 
-static v8::Value* GetModuleExecutor(v8::Context* env)
-{
-    //TODO: pesapi 数据到v8的转换应该交给pesapi实现来提供
-    v8::Local<v8::Context> Context;
-    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
-
-    auto ret = pesapi_eval((pesapi_env) env, (const uint8_t*) ExecuteModuleJSCode, strlen(ExecuteModuleJSCode), "__puer_execute__.mjs");
-
-    auto Isolate = Context->GetIsolate();
-    v8::Local<v8::Object> Global = Context->Global();
-    auto Ret = Global->Get(Context, v8::String::NewFromUtf8(Isolate, EXECUTEMODULEGLOBANAME).ToLocalChecked());
-    v8::Local<v8::Value> Func;
-    if (Ret.ToLocal(&Func) && Func->IsFunction())
-    {
-        return *Func;
-    }
-
-    return nullptr;
-}
-
 struct JSEnv
 {
     JSEnv()
@@ -251,7 +231,6 @@ V8_EXPORT pesapi_env_ref GetPapiEnvRef(puerts::JSEnv* jsEnv)
 V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
 {
     exports->GetJsClassInfo = &puerts::GetJsClassInfo;
-    exports->GetModuleExecutor = &puerts::GetModuleExecutor;
     exports->LogCallback = puerts::GLogCallback;
     puerts::GUnityExports = *exports;
 }
