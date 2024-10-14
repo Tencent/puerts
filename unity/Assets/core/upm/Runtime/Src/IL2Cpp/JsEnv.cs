@@ -23,6 +23,7 @@ namespace Puerts
     {
         IntPtr nativeJsEnv;
         IntPtr nativePesapiEnv;
+        IntPtr nativeScriptObjectsRefsMgr;
 
         // TypeRegister TypeRegister;
 
@@ -72,7 +73,8 @@ namespace Puerts
             PuertsIl2cpp.NativeAPI.SetGlobalType_JSObject(typeof(JSObject));
 
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
-            nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPesapiEnvHolder(nativeJsEnv);
+            nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPapiEnvRef(nativeJsEnv);
+            nativeScriptObjectsRefsMgr = PuertsIl2cpp.NativeAPI.CreateScriptObjectsRefsManager(nativePesapiEnv);
 
             //PuertsIl2cpp.NativeAPI.SetObjectPool(objectPool, typeof(PuertsIl2cpp.ObjectPool).GetMethod("Add")); //TODO: remove....
             objectPoolAddMethodInfo = typeof(PuertsIl2cpp.ObjectPool).GetMethod("Add");
@@ -188,7 +190,7 @@ namespace Puerts
         public Action TickHandler;
         public void Tick()
         {
-            PuertsIl2cpp.NativeAPI.CleanupPendingKillScriptObjects(nativeJsEnv);
+            PuertsIl2cpp.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
             PuertsIl2cpp.NativeAPI.InspectorTick(nativeJsEnv);
             PuertsIl2cpp.NativeAPI.LogicTick(nativeJsEnv);
             if (TickHandler != null) TickHandler();
@@ -233,7 +235,7 @@ namespace Puerts
             lock (this)
             {
                 if (disposed) return;
-                // TODO: nativePesapiEnv release
+                PuertsIl2cpp.NativeAPI.DestroyPapiEnvRefAndScriptObjectsRefsManager(nativePesapiEnv);
                 PuertsIl2cpp.NativeAPI.DestroyNativeJSEnv(nativeJsEnv);
                 disposed = true;
             }

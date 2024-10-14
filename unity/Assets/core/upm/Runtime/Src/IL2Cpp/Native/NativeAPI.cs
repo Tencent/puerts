@@ -51,7 +51,13 @@ namespace PuertsIl2cpp
         public static extern IntPtr GetPesapiImpl();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetPesapiEnvHolder(IntPtr jsEnv);
+        public static extern IntPtr GetPapiEnvRef(IntPtr jsEnv);
+        
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr CreateScriptObjectsRefsManager(IntPtr envRef);
+        
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void DestroyPapiEnvRefAndScriptObjectsRefsManager(IntPtr envRef);
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, IntPtr klass, bool isValueType, bool isDelegate, string delegateSignature);
@@ -92,10 +98,10 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetObjectToGlobal(IntPtr jsEnv, string key, IntPtr objPtr);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void AddPendingKillScriptObjects(IntPtr jsEnv, IntPtr valueRef);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void CleanupPendingKillScriptObjects(IntPtr jsEnv);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

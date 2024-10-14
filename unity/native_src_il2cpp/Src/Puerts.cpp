@@ -172,9 +172,6 @@ struct JSEnv
         }, v8::External::New(Isolate, &CppObjectMapper))->GetFunction(Context).ToLocalChecked()).Check();
         
         BackendEnv.StartPolling();
-
-        auto env = reinterpret_cast<pesapi_env>(*Context);
-        pesapi_set_env_private(env, this);
     }
     
     ~JSEnv()
@@ -182,7 +179,6 @@ struct JSEnv
         BackendEnv.LogicTick();
         BackendEnv.StopPolling();
 
-        ClearPendingJsObjects();
         CppObjectMapper.UnInitialize(MainIsolate);
         BackendEnv.PathToModuleMap.clear();
         BackendEnv.ScriptIdToPathMap.clear();
@@ -197,68 +193,11 @@ struct JSEnv
         BackendEnv.UnInitialize();
     }
     
-    
-    
-    void AddPendingJsObjects(pesapi_value_ref valueRef)
-    {
-        uint32_t field_count;
-        auto atomic_store = (std::atomic<void*>*)pesapi_get_ref_internal_fields(valueRef, &field_count);
-        if(atomic_store && (field_count * sizeof(void*) >= sizeof(std::atomic<void*>)))
-        {
-            atomic_store->store(nullptr, std::memory_order_release);
-            std::lock_guard<std::mutex> guard(PendingReleaseObjectsMutex);
-            PendingReleaseObjects.insert(valueRef);
-        }
-        else
-        {
-            pesapi_release_value_ref(valueRef);
-        }
-    }
-    
-    void ClearPendingJsObjects()
-    {
-        v8::Isolate* Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = MainContext.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-        auto env = reinterpret_cast<pesapi_env>(*Context);
-        
-        std::lock_guard<std::mutex> guard(PendingReleaseObjectsMutex);
-        auto size = PendingReleaseObjects.size();
-        if (size == 0)
-        {
-            return;
-        }
-        
-        for (const auto& valueRef : PendingReleaseObjects)
-        {
-            // insert前已经对有效性进行判断
-            uint32_t field_count;
-            auto atomic_store = (std::atomic<void*>*)pesapi_get_ref_internal_fields(valueRef, &field_count);
-            if (nullptr == atomic_store->load(std::memory_order_acquire)) //假如不为空代表已经重新被绑定了
-            {
-                pesapi_value val = pesapi_get_value_from_ref(env, valueRef);
-                pesapi_set_private(env, val, nullptr);
-                pesapi_release_value_ref(valueRef);
-            }
-        }
-
-        PendingReleaseObjects.clear();
-    }
-    
     v8::Isolate* MainIsolate;
     v8::Global<v8::Context> MainContext;
     
     puerts::FCppObjectMapper CppObjectMapper;
     puerts::FBackendEnv BackendEnv;
-    
-    // 去重
-    std::unordered_set<pesapi_value_ref> PendingReleaseObjects;
-    std::mutex PendingReleaseObjectsMutex;
 };
 
 }
@@ -294,7 +233,7 @@ V8_EXPORT void SetLogCallback(puerts::LogCallback Log)
     puerts::GLogCallback = Log;
 }
 
-V8_EXPORT pesapi_env_ref GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
+V8_EXPORT pesapi_env_ref GetPapiEnvRef(puerts::JSEnv* jsEnv)
 {
     v8::Isolate* Isolate = jsEnv->MainIsolate;
 #ifdef THREAD_SAFE
@@ -349,24 +288,6 @@ V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *ob
         void* klass = *static_cast<void**>(obj); //TODO: 这是Il2cpp内部实现
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, key).ToLocalChecked(), puerts::DataTransfer::FindOrAddCData(Isolate, Context, klass, obj, true)).Check();
     }
-}
-
-// C# JsObject对象析构函数调用
-V8_EXPORT void AddPendingKillScriptObjects(puerts::JSEnv* jsEnv, pesapi_value_ref valueRef)
-{
-    pesapi_env_ref envRef = pesapi_get_ref_associated_env(valueRef);
-    if (!pesapi_env_ref_is_valid(envRef)) // jsEnv已经释放
-    {
-        pesapi_release_value_ref(valueRef);
-        return;
-    }
-    jsEnv->AddPendingJsObjects(valueRef);
-}
-
-// 由C#的jsEnv调用，所以jsEnv有效
-V8_EXPORT void CleanupPendingKillScriptObjects(puerts::JSEnv* jsEnv)
-{
-    jsEnv->ClearPendingJsObjects();
 }
 
 V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)

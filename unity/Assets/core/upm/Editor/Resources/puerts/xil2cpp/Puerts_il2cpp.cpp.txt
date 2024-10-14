@@ -27,6 +27,7 @@
 #include "vm/Image.h"
 #include "utils/StringUtils.h"
 #include "gc/WriteBarrier.h"
+#include "gc/GCHandle.h"
 #include "pesapi.h"
 #include "UnityExports4Puerts.h"
 #include "TDataTrans.h"
@@ -35,6 +36,7 @@
 #include <mutex>
 #include <map>
 #include <string>
+#include <unordered_set>
 
 // Because we need to hold the C# object pointer, we must ensure that GC does not do memory reorganization.
 static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
@@ -496,7 +498,7 @@ static pesapi_value GetPObjectRefInfoValue(pesapi_env env, const PObjectRefInfo*
     return pesapi_get_value_from_ref(env, objectInfo->ValueRef);
 }
 
-static std::atomic<RuntimeObject*>* FindOrCreateAtomicOfValue(pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref)
+static int32_t* FindOrCreateHandleStoreOfValue(pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, RuntimeObject** out_object)
 {
     void* out_ptr;
     if(!pesapi_get_private(env, value, &out_ptr))
@@ -506,46 +508,52 @@ static std::atomic<RuntimeObject*>* FindOrCreateAtomicOfValue(pesapi_env env, pe
     }
     
     pesapi_value_ref value_ref = static_cast<pesapi_value_ref>(out_ptr);
-    std::atomic<RuntimeObject*>* atomic_store = nullptr;
+    int32_t* res = nullptr;
     uint32_t field_count;
     if (value_ref)
     {
-        atomic_store = (std::atomic<RuntimeObject*>*)pesapi_get_ref_internal_fields(value_ref, &field_count);
-        if(field_count * sizeof(void*) < sizeof(std::atomic<RuntimeObject*>))
+        res = reinterpret_cast<int32_t*>(pesapi_get_ref_internal_fields(value_ref, &field_count));
+        if(field_count != 1 || !res)
         {
-            PLog("size of internal_fields not enough : %u", field_count);
+            PLog("invalid internal_fields size: %u, ptr:%p", field_count, res);
             pesapi_release_value_ref(value_ref);
-            atomic_store = nullptr;
+            res = nullptr;
             value_ref = nullptr;
         }
     }
     
-    if (!atomic_store)
+    if (!res)
     {
         value_ref = pesapi_create_value_ref(env, value, (sizeof(std::atomic<RuntimeObject*>) + sizeof(void*) - 1) / sizeof(void*));
         
-        atomic_store = new (pesapi_get_ref_internal_fields(value_ref, &field_count)) std::atomic<RuntimeObject*>();
+        res = reinterpret_cast<int32_t*>(pesapi_get_ref_internal_fields(value_ref, &field_count));
         pesapi_set_private(env, value, value_ref);
+        *out_object = nullptr;
+    }
+    else
+    {
+        *out_object = il2cpp::gc::GCHandle::GetTarget(*res);
+        //PLog("found existed jsobject:%p", *out_object);
     }
     
-    //atomic_store->load(std::memory_order_acquire);
-    //atomic_store->store(obj, std::memory_order_release);
     *out_value_ref = value_ref;
-    return atomic_store;
+    return res;
 }
 
 static RuntimeObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
 {
     pesapi_value_ref value_ref;
-    auto atomic_store = FindOrCreateAtomicOfValue(env, jsval, &value_ref);
-    if (!atomic_store) return nullptr;
-    
-    RuntimeObject* ret = atomic_store->load(std::memory_order_acquire);
+    RuntimeObject* ret = nullptr;
+    int32_t* handle_store = FindOrCreateHandleStoreOfValue(env, jsval, &value_ref, &ret);
+    if (!handle_store) return nullptr;
+
     if (ret == nullptr)
     {
         PObjectRefInfo* delegateInfo;
         ret = (RuntimeObject *)DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
-        atomic_store->store(ret, std::memory_order_release);
+        auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
+        il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
+        *handle_store = targetHandle.Get();
         SetPObjectRefInfoValue(env, delegateInfo, value_ref);
     }
     return ret;
@@ -881,10 +889,10 @@ handle_underlying:
                     Il2CppClass* persistentObjectInfoClass = g_typeofPersistentObjectInfo;
                     
                     pesapi_value_ref value_ref;
-                    auto atomic_store = FindOrCreateAtomicOfValue(env, jsval, &value_ref);
-                    if (!atomic_store) return nullptr;
-    
-                    RuntimeObject* ret = atomic_store->load(std::memory_order_acquire);
+                    RuntimeObject* ret = nullptr;
+                    int32_t* handle_store = FindOrCreateHandleStoreOfValue(env, jsval, &value_ref, &ret);
+                    if (!handle_store) return nullptr;
+                    
                     if (ret == nullptr) 
                     {
                         ret = il2cpp::vm::Object::New(persistentObjectInfoClass);
@@ -895,7 +903,9 @@ handle_underlying:
                         ((NativeCtorPtr)ctor->methodPointer)(ret, ctor);
                         
                         PObjectRefInfo* objectInfo = GetPObjectRefInfo(ret);
-                        atomic_store->store(ret, std::memory_order_release);
+                        auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
+                        il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
+                        *handle_store = targetHandle.Get();
                         SetPObjectRefInfoValue(env, objectInfo, value_ref);
                     }
                     return ret;
@@ -1799,6 +1809,65 @@ Il2CppObject* GetModuleExecutor(intptr_t ptr, Il2CppReflectionType* rtype)
     return JsValueToCSRef(type, env, func);
 }
 
+struct ScriptObjectsRefsMgr
+{
+    pesapi_env_ref envRef;
+    std::mutex pendingKillRefsMutex;
+    std::unordered_set<pesapi_value_ref> pendingKillRefs;
+    
+    ScriptObjectsRefsMgr(pesapi_env_ref inEnvRef)
+    {
+        envRef = inEnvRef;
+    }
+    
+    void AddPendingKillScriptObjects(pesapi_value_ref valueRef)
+    {
+        uint32_t fieldCount;
+        void** store = pesapi_get_ref_internal_fields(valueRef, &fieldCount);
+        if(fieldCount == 1 && store)
+        {
+            std::lock_guard<std::mutex> guard(pendingKillRefsMutex);
+            //PLog("AddPendingKillScriptObjects: %p", valueRef);
+            pendingKillRefs.insert(valueRef);
+        }
+        else
+        {
+            pesapi_release_value_ref(valueRef);
+        }
+    }
+    
+    void CleanupPendingKillScriptObjects()
+    {
+        AutoValueScope ValueScope(envRef);
+        auto env = pesapi_get_env_from_ref(envRef);
+        
+        std::lock_guard<std::mutex> guard(pendingKillRefsMutex);
+        auto size = pendingKillRefs.size();
+        if (size == 0)
+        {
+            return;
+        }
+        
+        for (const auto& valueRef : pendingKillRefs)
+        {
+            // insert前已经对有效性进行判断
+            uint32_t fieldCount;
+            //PLog("CleanupPendingKillScriptObjects: %p", valueRef);
+            int32_t* store = reinterpret_cast<int32_t*>(pesapi_get_ref_internal_fields(valueRef, &fieldCount));
+            int32_t handle = *store;
+            if (nullptr == il2cpp::gc::GCHandle::GetTarget(handle)) //假如不为空代表已经重新被绑定了
+            {
+                il2cpp::gc::GCHandle::Free(handle);
+                pesapi_value val = pesapi_get_value_from_ref(env, valueRef);
+                pesapi_set_private(env, val, nullptr);
+                pesapi_release_value_ref(valueRef);
+            }
+        }
+
+        pendingKillRefs.clear();
+    }
+};
+
 }
 
 #ifdef __cplusplus
@@ -1824,6 +1893,41 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetModuleExecutor(System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     pesapi_init(func_array);
+}
+
+puerts::ScriptObjectsRefsMgr* CreateScriptObjectsRefsManager(pesapi_env_ref envRef)
+{
+    puerts::AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
+    auto mgr = new puerts::ScriptObjectsRefsMgr(envRef);
+    pesapi_set_env_private(env, mgr);
+    return mgr;
+}
+
+void DestroyPapiEnvRefAndScriptObjectsRefsManager(pesapi_env_ref envRef)
+{
+    puerts::AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
+    auto scriptObjectsRefsMgr = (puerts::ScriptObjectsRefsMgr*)pesapi_get_env_private(env);
+    scriptObjectsRefsMgr->CleanupPendingKillScriptObjects();
+    delete scriptObjectsRefsMgr;
+    pesapi_release_env_ref(envRef);
+}
+
+void AddPendingKillScriptObjects(puerts::ScriptObjectsRefsMgr* mgr, pesapi_value_ref valueRef)
+{
+    pesapi_env_ref envRef = pesapi_get_ref_associated_env(valueRef);
+    if (!pesapi_env_ref_is_valid(envRef)) // jsEnv已经释放
+    {
+        pesapi_release_value_ref(valueRef);
+        return;
+    }
+    mgr->AddPendingKillScriptObjects(valueRef);
+}
+
+void CleanupPendingKillScriptObjects(puerts::ScriptObjectsRefsMgr* mgr)
+{
+    mgr->CleanupPendingKillScriptObjects();
 }
 
 puerts::WrapFuncPtr FindWrapFunc(const char* signature)
