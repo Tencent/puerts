@@ -9,11 +9,6 @@
 #pragma once
 namespace puerts
 {
-struct PObjectRefInfo
-{
-    pesapi_value_ref ValueRef;
-    void* EnvPrivate;
-};
 
 #if defined(USE_OUTSIZE_UNITY)
 
