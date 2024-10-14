@@ -163,6 +163,21 @@ pesapi_value pesapi_create_object(pesapi_env env)
     return v8impl::PesapiValueFromV8LocalValue(v8::Object::New(context->GetIsolate()));
 }
 
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
+pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto v8_data =
+        data ? static_cast<v8::Local<v8::Value>>(v8::External::New(context->GetIsolate(), data)) : v8::Local<v8::Value>();
+    auto func = v8::FunctionTemplate::New(context->GetIsolate(), reinterpret_cast<v8::FunctionCallback>(native_impl), v8_data)
+                    ->GetFunction(context);
+    if (func.IsEmpty())
+        return nullptr;
+    return v8impl::PesapiValueFromV8LocalValue(func.ToLocalChecked());
+}
+MSVC_PRAGMA(warning(pop))
+
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -439,7 +454,7 @@ void* pesapi_get_userdata(pesapi_callback_info pinfo)
     return v8::Local<v8::External>::Cast((*info).Data())->Value();
 }
 
-void* pesapi_get_constructor_userdata(pesapi_callback_info pinfo)
+void* pesapi_get_class_data_in_constructor(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
     if (!(*info).IsConstructCall())
@@ -864,14 +879,14 @@ void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index,
 }
 
 void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback getter, pesapi_callback setter, void* getter_userdata, void* setter_userdata, pesapi_type_info type_info)
+    pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, pesapi_type_info type_info)
 {
     properties[index].name = name;
     properties[index].is_static = is_static;
     properties[index].getter = getter;
     properties[index].setter = setter;
-    properties[index].data0 = getter_userdata;
-    properties[index].data1 = setter_userdata;
+    properties[index].data0 = getter_data;
+    properties[index].data1 = setter_data;
     properties[index].info.type_info = type_info;
 }
 
@@ -919,7 +934,7 @@ const char* GPesapiModuleName = nullptr;
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* userdata)
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* data)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
@@ -935,7 +950,7 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     {
         classDef.ScriptName = type_name;
     }
-    classDef.Data = userdata;
+    classDef.Data = data;
 
     classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
     classDef.Finalize = finalize;
@@ -990,6 +1005,12 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     puerts::RegisterJSClass(classDef);
 }
 MSVC_PRAGMA(warning(pop))
+
+void* pesapi_find_class_data(const void* type_id)
+{
+    auto clsDef = puerts::FindClassByID(type_id);
+    return clsDef ? clsDef->Data : nullptr;
+}
 
 void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
     const void* functions_info, const void* properties_info, const void* variables_info)
