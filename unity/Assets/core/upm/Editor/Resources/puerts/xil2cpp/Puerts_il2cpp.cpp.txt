@@ -1791,6 +1791,21 @@ Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __p
     return nullptr;
 }
 
+void SetObjectToGlobal(pesapi_env_ref envRef, Il2CppString* __key, RuntimeObject *obj)
+{
+    AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
+    
+    const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(__key);
+    std::string key = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
+    
+    pesapi_value global = pesapi_global(env);
+    if (global)
+    {
+        pesapi_set_property(env, global, key.c_str(), CSRefToJsValue(env, obj->klass, obj));
+    }
+}
+
 Il2CppObject* GetModuleExecutor(intptr_t ptr, Il2CppReflectionType* rtype)
 {
     pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
@@ -1889,6 +1904,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetObjectToGlobal(System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetModuleExecutor(System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);

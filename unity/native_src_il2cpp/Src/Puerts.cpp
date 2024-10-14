@@ -272,24 +272,6 @@ V8_EXPORT void SetTryLoadCallback(void* tryLoadMethodInfo, puerts::LazyLoadTypeF
     puerts::SetLazyLoadCallback(puerts::LazyLoad);
 }
 
-V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *obj)
-{
-    if (obj)
-    {
-        v8::Isolate* Isolate = jsEnv->MainIsolate;
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = jsEnv->MainContext.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-        
-        void* klass = *static_cast<void**>(obj); //TODO: 这是Il2cpp内部实现
-        Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, key).ToLocalChecked(), puerts::DataTransfer::FindOrAddCData(Isolate, Context, klass, obj, true)).Check();
-    }
-}
-
 V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)
 {
     jsEnv->BackendEnv.CreateInspector(jsEnv->MainIsolate, &jsEnv->MainContext, Port);

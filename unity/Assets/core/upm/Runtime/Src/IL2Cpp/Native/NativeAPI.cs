@@ -95,8 +95,11 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetTryLoadCallback(IntPtr tryLoadMethodInfo, IntPtr tryLoad);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetObjectToGlobal(IntPtr jsEnv, string key, IntPtr objPtr);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void SetObjectToGlobal(IntPtr envRef, string key, Object obj)
+        {
+            throw new NotImplementedException();
+        }
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void AddPendingKillScriptObjects(IntPtr jsEnv, IntPtr valueRef);
