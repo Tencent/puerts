@@ -116,7 +116,7 @@ static void* _FLinearColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FLinearColorDelete_(void* Ptr)
+static void _FLinearColorDelete_(void* ClassData, void* EnvData, void* Ptr)
 {
     FLinearColor* Self = static_cast<FLinearColor*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FLinearColorDelete_:%p"), Self);

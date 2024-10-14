@@ -278,7 +278,7 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->Finalize)
-        ClassDefinition->Finalize(Ptr);
+        ClassDefinition->Finalize(ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()), Ptr);
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(ClassDefinition, Ptr);
 }
 
@@ -310,7 +310,7 @@ void FCppObjectMapper::BindCppObject(
 
     if (!PassByPointer)
     {
-        CDataFinalizeMap[Ptr] = ClassDefinition->Finalize;
+        CDataFinalizeMap[Ptr] = {ClassDefinition->Data, ClassDefinition->Finalize};
         CacheNodePtr->Value.SetWeak<JSClassDefinition>(
             ClassDefinition, CDataGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
@@ -371,10 +371,11 @@ void FCppObjectMapper::UnBindCppObject(JSClassDefinition* ClassDefinition, void*
 
 void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
 {
+    auto PData = DataTransfer::GetIsolatePrivateData(InIsolate);
     for (auto Iter = CDataFinalizeMap.begin(); Iter != CDataFinalizeMap.end(); Iter++)
     {
-        if (Iter->second)
-            Iter->second(Iter->first);
+        if (Iter->second.Finalize)
+            Iter->second.Finalize(Iter->second.ClassData, PData, Iter->first);
     }
     CDataCache.clear();
     CDataFinalizeMap.clear();

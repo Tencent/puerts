@@ -61,7 +61,12 @@ private:
     v8::Global<v8::Symbol> PrivateKey;
 #endif
 
-    std::map<void*, FinalizeFunc> CDataFinalizeMap;
+    struct FinalizeInfo
+    {
+        void* ClassData;
+        FinalizeFunc Finalize;
+    };
+    std::map<void*, FinalizeInfo> CDataFinalizeMap;
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
 };

@@ -156,7 +156,7 @@ static void* _FVectorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FVectorDelete_(void* Ptr)
+static void _FVectorDelete_(void* ClassData, void* EnvData, void* Ptr)
 {
     FVector* Self = static_cast<FVector*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FVectorDelete_:%p"), Self);

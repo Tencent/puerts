@@ -1607,7 +1607,7 @@ public:
         return *this;
     }
 
-    typedef void (*FinalizeFuncType)(void* Ptr);
+    typedef void (*FinalizeFuncType)(void* ClassData, void* EnvData, void* Ptr);
 
     template <class FC, typename Enable = void>
     struct FinalizeBuilder
@@ -1623,7 +1623,7 @@ public:
     {
         static FinalizeFuncType Build()
         {
-            return [](void* Ptr) { delete static_cast<FC*>(Ptr); };
+            return [](void* ClassData, void* EnvData, void* Ptr) { delete static_cast<FC*>(Ptr); };
         }
     };
 

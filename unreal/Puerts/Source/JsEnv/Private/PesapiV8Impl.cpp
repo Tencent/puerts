@@ -782,20 +782,16 @@ pesapi_value pesapi_global(pesapi_env env)
     return v8impl::PesapiValueFromV8LocalValue(global);
 }
 
-#ifndef PESAPI_PRIVATE_DATA_POS_IN_ISOLATE
-#define PESAPI_PRIVATE_DATA_POS_IN_ISOLATE (MAPPER_ISOLATE_DATA_POS + 1)
-#endif
-
 const void* pesapi_get_env_private(pesapi_env env)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    return context->GetIsolate()->GetData(PESAPI_PRIVATE_DATA_POS_IN_ISOLATE);
+    return puerts::DataTransfer::GetIsolatePrivateData(context->GetIsolate());
 }
 
 void pesapi_set_env_private(pesapi_env env, const void* ptr)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    context->GetIsolate()->SetData(PESAPI_PRIVATE_DATA_POS_IN_ISOLATE, const_cast<void*>(ptr));
+    puerts::DataTransfer::SetIsolatePrivateData(context->GetIsolate(), const_cast<void*>(ptr));
 }
 
 struct pesapi_type_info__
