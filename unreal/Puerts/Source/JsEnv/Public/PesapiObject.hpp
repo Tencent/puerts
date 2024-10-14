@@ -52,7 +52,7 @@ public:
         else
         {
             env_holder = pesapi_create_env_ref(env);
-            value_holder = pesapi_create_value_ref(env, value);
+            value_holder = pesapi_create_value_ref(env, value, 0);
         }
     }
 
