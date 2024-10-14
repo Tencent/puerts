@@ -121,6 +121,7 @@ typedef struct pesapi_property_descriptor__* pesapi_property_descriptor;
 typedef void (*pesapi_callback)(pesapi_callback_info info);
 typedef void* (*pesapi_constructor)(pesapi_callback_info info);
 typedef void (*pesapi_finalize)(void* class_data, void* env_private, void* ptr);
+typedef bool (*pesapi_class_not_found_callback)(const void* type_id);
 typedef void (*pesapi_func_ptr)(void);
 
 #ifdef BUILDING_PES_EXTENSION
@@ -249,6 +250,8 @@ PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_ty
     void* data);
 
 PESAPI_EXTERN void* pesapi_find_class_data(const void* type_id);
+
+PESAPI_EXTERN void pesapi_on_class_not_found(pesapi_class_not_found_callback callback);
 
 PESAPI_EXTERN void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info,
     const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info);

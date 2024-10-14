@@ -1012,6 +1012,11 @@ void* pesapi_find_class_data(const void* type_id)
     return clsDef ? clsDef->Data : nullptr;
 }
 
+void pesapi_on_class_not_found(pesapi_class_not_found_callback callback)
+{
+    puerts::OnClassNotFound(callback);
+}
+
 void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
     const void* functions_info, const void* properties_info, const void* variables_info)
 {

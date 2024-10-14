@@ -77,6 +77,25 @@ public:
 
     const JSClassDefinition* FindClassByID(const void* TypeId);
 
+    void OnClassNotFound(ClassNotFoundCallback InCallback)
+    {
+        ClassNotFoundCallback = InCallback;
+    }
+
+    const JSClassDefinition* LoadClassByID(const void* TypeId)
+    {
+        auto clsDef = FindClassByID(TypeId);
+        if (!clsDef && ClassNotFoundCallback)
+        {
+            if (!ClassNotFoundCallback(TypeId))
+            {
+                return nullptr;
+            }
+            clsDef = FindClassByID(TypeId);
+        }
+        return clsDef;
+    }
+
     const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
 #if USING_IN_UNREAL_ENGINE
@@ -90,6 +109,7 @@ public:
 private:
     std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
+    ClassNotFoundCallback ClassNotFoundCallback = nullptr;
 #if USING_IN_UNREAL_ENGINE
     std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
@@ -289,6 +309,16 @@ void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefin
 const JSClassDefinition* FindClassByID(const void* TypeId)
 {
     return GetJSClassRegister()->FindClassByID(TypeId);
+}
+
+void OnClassNotFound(ClassNotFoundCallback Callback)
+{
+    GetJSClassRegister()->OnClassNotFound(Callback);
+}
+
+const JSClassDefinition* LoadClassByID(const void* TypeId)
+{
+    return GetJSClassRegister()->LoadClassByID(TypeId);
 }
 
 const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
