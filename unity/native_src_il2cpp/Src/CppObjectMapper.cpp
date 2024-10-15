@@ -279,7 +279,7 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->Finalize)
-        ClassDefinition->Finalize(ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()), Ptr);
+        ClassDefinition->Finalize(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(ClassDefinition, Ptr);
 }
 
@@ -382,7 +382,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     for (auto Iter = CDataFinalizeMap.begin(); Iter != CDataFinalizeMap.end(); Iter++)
     {
         if (Iter->second.Finalize)
-            Iter->second.Finalize(Iter->second.ClassData, PData, Iter->first);
+            Iter->second.Finalize(Iter->first, Iter->second.ClassData, PData);
     }
     CDataCache.clear();
     CDataFinalizeMap.clear();
