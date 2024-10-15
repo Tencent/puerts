@@ -18,6 +18,14 @@
 #include <vector>
 #include <cstring>
 
+#ifndef MSVC_PRAGMA
+#if !defined(__clang__) && defined(_MSC_VER)
+#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
+#else
+#define MSVC_PRAGMA(...)
+#endif
+#endif
+
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(v8::Local<v8::Context> context)
@@ -919,14 +927,6 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
         }
     }
 }
-
-#ifndef MSVC_PRAGMA
-#if !defined(__clang__) && defined(_MSC_VER)
-#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
-#else
-#define MSVC_PRAGMA(...)
-#endif
-#endif
 
 // set module name here during loading, set nullptr after module loaded
 const char* GPesapiModuleName = nullptr;
