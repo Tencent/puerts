@@ -100,10 +100,7 @@ void JSENV_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* Con
 
 void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
-JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId, bool TryLazyLoad = false);
-
-typedef void (*LoadTypeFunc) (const void* typeId);
-JSENV_API void SetLazyLoadCallback(LoadTypeFunc Callback);
+JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId);
 
 JSENV_API void OnClassNotFound(ClassNotFoundCallback Callback);
 

@@ -118,7 +118,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     if (!Template.IsEmpty())
     {
         auto Result = Template->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-        BindCppObject(Isolate, const_cast<JSClassDefinition*>(FindClassByID(TypeId, true)), Ptr, Result, PassByPointer);
+        BindCppObject(Isolate, const_cast<JSClassDefinition*>(LoadClassByID(TypeId)), Ptr, Result, PassByPointer);
         return Result;
     }
     else
@@ -181,7 +181,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
     auto Iter = TypeIdToTemplateMap.find(TypeId);
     if (Iter == TypeIdToTemplateMap.end())
     {
-        auto ClassDefinition = FindClassByID(TypeId, true);
+        auto ClassDefinition = LoadClassByID(TypeId);
         if (!ClassDefinition)
         {
             return v8::Local<v8::FunctionTemplate>();

@@ -42,15 +42,6 @@ static LogCallback GLogCallback = nullptr;
 
 typedef void (*LazyLoadTypeFunc) (const void* typeId, bool includeNonPublic, void* method);
 
-void* GTryLoadTypeMethodInfo = nullptr;
-    
-LazyLoadTypeFunc GTryLazyLoadType = nullptr;
-
-static void LazyLoad(const void* typeId)
-{
-    GTryLazyLoadType(typeId, false, GTryLoadTypeMethodInfo);
-}
-
 void PLog(LogLevel Level, const std::string Fmt, ...)
 {
     static char SLogBuffer[1024];
@@ -63,17 +54,6 @@ void PLog(LogLevel Level, const std::string Fmt, ...)
     {
         GLogCallback(SLogBuffer);
     }
-}
-
-static void* GetJsClassInfo(const void* TypeId, bool TryLazyLoad)
-{
-    auto ClassDefinition = FindClassByID(TypeId, TryLazyLoad);
-    if (!ClassDefinition)
-    {
-        return nullptr;
-    }
-    
-    return ClassDefinition->Data;
 }
 
 struct JSEnv
@@ -202,13 +182,6 @@ V8_EXPORT void SetObjectPool(puerts::JSEnv* jsEnv, void* ObjectPoolAddMethodInfo
     jsEnv->CppObjectMapper.ObjectPoolRemoveMethodInfo = ObjectPoolRemoveMethodInfo;
     jsEnv->CppObjectMapper.ObjectPoolRemove = ObjectPoolRemove;
     jsEnv->CppObjectMapper.ObjectPoolInstance = ObjectPoolInstance;
-}
-
-V8_EXPORT void SetTryLoadCallback(void* tryLoadMethodInfo, puerts::LazyLoadTypeFunc tryLoad)
-{
-    puerts::GTryLoadTypeMethodInfo = tryLoadMethodInfo;
-    puerts::GTryLazyLoadType = tryLoad;
-    puerts::SetLazyLoadCallback(puerts::LazyLoad);
 }
 
 V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)

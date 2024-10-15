@@ -81,7 +81,7 @@ public:
 
     void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
-    const JSClassDefinition* FindClassByID(const void* TypeId, bool TryLazyLoad = false);
+    const JSClassDefinition* FindClassByID(const void* TypeId);
     
     void OnClassNotFound(ClassNotFoundCallback InCallback)
     {
@@ -101,11 +101,6 @@ public:
         }
         return clsDef;
     }
-    
-    void SetLazyLoadCallback(LoadTypeFunc InCallback)
-    {
-        LazyLoad = InCallback;
-    }
 
     const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
@@ -120,7 +115,6 @@ public:
 private:
     std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
-    LoadTypeFunc LazyLoad = nullptr;
     std::recursive_mutex RegInfoMutex;
     ClassNotFoundCallback ClassNotFoundCallback = nullptr;
 #if USING_IN_UNREAL_ENGINE
@@ -226,15 +220,10 @@ void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionIn
     }
 }
 
-const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId, bool TryLazyLoad)
+const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
 {
     std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     auto Iter = CDataIdToClassDefinition.find(TypeId);
-    if (Iter == CDataIdToClassDefinition.end() && TryLazyLoad && LazyLoad)
-    {
-        LazyLoad(TypeId);
-        Iter = CDataIdToClassDefinition.find(TypeId);
-    }
     if (Iter == CDataIdToClassDefinition.end())
     {
         return nullptr;
@@ -334,23 +323,19 @@ void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefin
     GetJSClassRegister()->ForeachRegisterClass(Callback);
 }
 
-const JSClassDefinition* FindClassByID(const void* TypeId, bool TryLazyLoad)
+const JSClassDefinition* FindClassByID(const void* TypeId)
 {
-    return GetJSClassRegister()->FindClassByID(TypeId, TryLazyLoad);
+    return GetJSClassRegister()->FindClassByID(TypeId);
 }
 
 void OnClassNotFound(ClassNotFoundCallback Callback)
 {
     GetJSClassRegister()->OnClassNotFound(Callback);
 }
+
 const JSClassDefinition* LoadClassByID(const void* TypeId)
 {
     return GetJSClassRegister()->LoadClassByID(TypeId);
-}
-
-void SetLazyLoadCallback(LoadTypeFunc Callback)
-{
-    GetJSClassRegister()->SetLazyLoadCallback(Callback);
 }
 
 const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)

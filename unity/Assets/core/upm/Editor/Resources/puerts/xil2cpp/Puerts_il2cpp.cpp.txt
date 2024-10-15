@@ -158,6 +158,23 @@ static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static Il2CppClass *g_typeofTypedValue;
 
+static const MethodInfo *g_methodInfoRegisterNoThrow;
+typedef void (*RegisterNoThrowFunc) (const void* typeId, bool includeNonPublic, const MethodInfo* methodInfo);
+static RegisterNoThrowFunc g_registerNoThrow;
+
+static bool ClassNotFoundCallback(const void* typeId)
+{
+    g_registerNoThrow(typeId, false, g_methodInfoRegisterNoThrow);
+    return true;
+}
+
+static void SetRegisterNoThrow(Il2CppReflectionMethod* method)
+{
+    g_registerNoThrow = (RegisterNoThrowFunc)GetMethodPointer(method);
+    g_methodInfoRegisterNoThrow = (const MethodInfo *)GetMethodInfoPointer(method);
+    pesapi_on_class_not_found(ClassNotFoundCallback);
+}
+
 Il2CppClass* GetReturnType(const MethodInfo* method) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
         Class::Init(method->klass);
@@ -1953,6 +1970,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::InitialPapiEnvRef(System.IntPtr)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::CleanupPapiEnvRef(System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetRegisterNoThrow(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetRegisterNoThrow);
     pesapi_init(func_array);
 }
 

@@ -95,8 +95,10 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetObjectPool(IntPtr jsEnv, IntPtr objectPoolAddMethodInfo, IntPtr objectPoolAdd, IntPtr objectPoolRemoveMethodInfo, IntPtr objectPoolRemove, IntPtr objectPoolInstance);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetTryLoadCallback(IntPtr tryLoadMethodInfo, IntPtr tryLoad);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void SetRegisterNoThrow(MethodBase methodInfo)
+        {
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static void SetObjectToGlobal(IntPtr envRef, string key, Object obj)
