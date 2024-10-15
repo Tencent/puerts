@@ -40,8 +40,6 @@ typedef void(*LogCallback)(const char* value);
 
 static LogCallback GLogCallback = nullptr;
 
-typedef void (*LazyLoadTypeFunc) (const void* typeId, bool includeNonPublic, void* method);
-
 void PLog(LogLevel Level, const std::string Fmt, ...)
 {
     static char SLogBuffer[1024];
