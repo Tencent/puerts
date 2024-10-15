@@ -37,17 +37,10 @@ v8::Local<v8::Function> FCppObjectMapper::LoadTypeByString(v8::Isolate* Isolate,
 }
 
  
-v8::Local<v8::Function> FCppObjectMapper::LoadTypeById(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId)
+v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId)
 {
-    auto Template = GetTemplateOfClass(Isolate, TypeId);
-    if (!Template.IsEmpty())
-    {
-        return Template->GetFunction(Context).ToLocalChecked();
-    }
-    else
-    {
-        return v8::Local<v8::Function>();
-    }
+    auto Template = GetTemplateOfClass(Context->GetIsolate(), TypeId);
+    return Template->GetFunction(Context);
 }
 
 void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info)

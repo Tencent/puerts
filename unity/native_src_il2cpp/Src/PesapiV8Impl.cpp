@@ -186,6 +186,15 @@ pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl,
 }
 MSVC_PRAGMA(warning(pop))
 
+pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto cls = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->LoadTypeById(context, type_id);
+    if (cls.IsEmpty())
+        return nullptr;
+    return v8impl::PesapiValueFromV8LocalValue(cls.ToLocalChecked());
+}
+
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);

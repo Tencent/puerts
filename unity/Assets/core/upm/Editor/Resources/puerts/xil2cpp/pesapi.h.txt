@@ -144,6 +144,7 @@ PESAPI_EXTERN pesapi_value pesapi_create_binary(pesapi_env env, void* str, size_
 PESAPI_EXTERN pesapi_value pesapi_create_array(pesapi_env env);
 PESAPI_EXTERN pesapi_value pesapi_create_object(pesapi_env env);
 PESAPI_EXTERN pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data);
+PESAPI_EXTERN pesapi_value pesapi_create_class(pesapi_env env, const void* type_id);
 
 PESAPI_EXTERN bool pesapi_get_value_bool(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value value);

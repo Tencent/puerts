@@ -140,11 +140,11 @@ struct JSEnv
                 return;
             }
             
-            auto Ret = pom->LoadTypeById(Isolate, Context, type);
+            auto Ret = pom->LoadTypeById(Context, type);
             
             if (!Ret.IsEmpty())
             {
-                Info.GetReturnValue().Set(Ret);
+                Info.GetReturnValue().Set(Ret.ToLocalChecked());
             }
             
         }, v8::External::New(Isolate, &CppObjectMapper))->GetFunction(Context).ToLocalChecked()).Check();

@@ -30,7 +30,7 @@ public:
     
     v8::Local<v8::Function> LoadTypeByString(v8::Isolate* Isolate, v8::Local<v8::Context> Context, std::string TypeName);
     
-    v8::Local<v8::Function> LoadTypeById(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId);
+    virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) override;
     
     void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 

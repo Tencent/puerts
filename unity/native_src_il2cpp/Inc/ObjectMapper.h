@@ -44,6 +44,8 @@ public:
 
     virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) = 0;
 
+    virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) = 0;
+
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
     virtual ~ICppObjectMapper()
