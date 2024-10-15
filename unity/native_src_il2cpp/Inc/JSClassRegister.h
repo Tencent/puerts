@@ -34,8 +34,6 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 static const FAnsiStringView EditorOnlyPropertySuffix = "_EditorOnly";
 #endif
 
-#include <mutex>
-
 namespace PUERTS_NAMESPACE
 {
 class CFunctionInfo;
@@ -92,8 +90,6 @@ struct JSENV_API JSClassDefinition
     }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
-
-std::recursive_mutex& JSENV_API RegisterMutex();
 
 void JSENV_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);

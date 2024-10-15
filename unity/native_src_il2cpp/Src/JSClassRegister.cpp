@@ -69,12 +69,6 @@ public:
     ~JSClassRegister();
 
     void RegisterClass(const JSClassDefinition& ClassDefinition);
-    
-    
-    std::recursive_mutex& RegisterMutex()
-    {
-        return RegInfoMutex;
-    }
 
     void SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
         const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
@@ -82,12 +76,12 @@ public:
     void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
     const JSClassDefinition* FindClassByID(const void* TypeId);
-    
+
     void OnClassNotFound(ClassNotFoundCallback InCallback)
     {
         ClassNotFoundCallback = InCallback;
     }
-    
+
     const JSClassDefinition* LoadClassByID(const void* TypeId)
     {
         auto clsDef = FindClassByID(TypeId);
@@ -115,7 +109,6 @@ public:
 private:
     std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
-    std::recursive_mutex RegInfoMutex;
     ClassNotFoundCallback ClassNotFoundCallback = nullptr;
 #if USING_IN_UNREAL_ENGINE
     std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
@@ -129,7 +122,6 @@ JSClassRegister::JSClassRegister()
 
 JSClassRegister::~JSClassRegister()
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     for (auto& KV : CDataIdToClassDefinition)
     {
         JSClassDefinitionDelete(KV.second);
@@ -146,7 +138,6 @@ JSClassRegister::~JSClassRegister()
 
 void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     if (ClassDefinition.TypeId && ClassDefinition.ScriptName)
     {
         auto cd_iter = CDataIdToClassDefinition.find(ClassDefinition.TypeId);
@@ -222,7 +213,6 @@ void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionIn
 
 const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     auto Iter = CDataIdToClassDefinition.find(TypeId);
     if (Iter == CDataIdToClassDefinition.end())
     {
@@ -236,7 +226,6 @@ const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
 
 const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const std::string& Name)
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     auto Iter = CDataNameToClassDefinition.find(Name);
     if (Iter == CDataNameToClassDefinition.end())
     {
@@ -283,7 +272,6 @@ const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
 
 void JSClassRegister::ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)> Callback)
 {
-    std::lock_guard<std::recursive_mutex> guard(RegInfoMutex);
     for (auto& KV : CDataNameToClassDefinition)
     {
         Callback(KV.second);
@@ -311,11 +299,6 @@ void SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorIn
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos)
 {
     GetJSClassRegister()->SetClassTypeInfo(TypeId, ConstructorInfos, MethodInfos, FunctionInfos, PropertyInfos, VariableInfos);
-}
-
-std::recursive_mutex& RegisterMutex()
-{
-    return GetJSClassRegister()->RegisterMutex();
 }
 
 void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)> Callback)
