@@ -186,7 +186,7 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FTransformDelete_(void* ClassData, void* EnvData, void* Ptr)
+static void _FTransformDelete_(void* Ptr, void* ClassData, void* EnvData)
 {
     FTransform* Self = static_cast<FTransform*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FTransformDelete_:%p"), Self);

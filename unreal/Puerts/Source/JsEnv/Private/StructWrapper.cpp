@@ -632,7 +632,7 @@ void FScriptStructWrapper::Free(TWeakObjectPtr<UStruct> InStruct, FinalizeFunc I
 {
     if (InExternalFinalize)
     {
-        InExternalFinalize(nullptr, nullptr, Ptr);
+        InExternalFinalize(Ptr, nullptr, nullptr);
     }
     else
     {

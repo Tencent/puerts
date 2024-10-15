@@ -70,7 +70,7 @@ static void* _FColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FColorDelete_(void* ClassData, void* EnvData, void* Ptr)
+static void _FColorDelete_(void* Ptr, void* ClassData, void* EnvData)
 {
     FColor* Self = static_cast<FColor*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FColorDelete_:%p"), Self);
