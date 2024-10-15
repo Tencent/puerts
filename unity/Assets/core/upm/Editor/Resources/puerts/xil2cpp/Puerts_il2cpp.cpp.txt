@@ -1897,6 +1897,25 @@ struct ScriptObjectsRefsMgr
     }
 };
 
+puerts::ScriptObjectsRefsMgr* InitialPapiEnvRef(pesapi_env_ref envRef)
+{
+    puerts::AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
+    auto mgr = new puerts::ScriptObjectsRefsMgr(envRef);
+    pesapi_set_env_private(env, mgr);
+    return mgr;
+}
+
+void CleanupPapiEnvRef(pesapi_env_ref envRef)
+{
+    puerts::AutoValueScope ValueScope(envRef);
+    auto env = pesapi_get_env_from_ref(envRef);
+    auto scriptObjectsRefsMgr = (puerts::ScriptObjectsRefsMgr*)pesapi_get_env_private(env);
+    scriptObjectsRefsMgr->CleanupPendingKillScriptObjects();
+    delete scriptObjectsRefsMgr;
+    pesapi_release_env_ref(envRef);
+}
+
 }
 
 #ifdef __cplusplus
@@ -1921,27 +1940,10 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetObjectToGlobal(System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetModuleExecutor(System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::InitialPapiEnvRef(System.IntPtr)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::CleanupPapiEnvRef(System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     pesapi_init(func_array);
-}
-
-puerts::ScriptObjectsRefsMgr* CreateScriptObjectsRefsManager(pesapi_env_ref envRef)
-{
-    puerts::AutoValueScope ValueScope(envRef);
-    auto env = pesapi_get_env_from_ref(envRef);
-    auto mgr = new puerts::ScriptObjectsRefsMgr(envRef);
-    pesapi_set_env_private(env, mgr);
-    return mgr;
-}
-
-void DestroyPapiEnvRefAndScriptObjectsRefsManager(pesapi_env_ref envRef)
-{
-    puerts::AutoValueScope ValueScope(envRef);
-    auto env = pesapi_get_env_from_ref(envRef);
-    auto scriptObjectsRefsMgr = (puerts::ScriptObjectsRefsMgr*)pesapi_get_env_private(env);
-    scriptObjectsRefsMgr->CleanupPendingKillScriptObjects();
-    delete scriptObjectsRefsMgr;
-    pesapi_release_env_ref(envRef);
 }
 
 void AddPendingKillScriptObjects(puerts::ScriptObjectsRefsMgr* mgr, pesapi_value_ref valueRef)

@@ -53,11 +53,17 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetPapiEnvRef(IntPtr jsEnv);
         
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateScriptObjectsRefsManager(IntPtr envRef);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static IntPtr InitialPapiEnvRef(IntPtr envRef)
+        {
+            throw new NotImplementedException();
+        }
         
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyPapiEnvRefAndScriptObjectsRefsManager(IntPtr envRef);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void CleanupPapiEnvRef(IntPtr envRef)
+        {
+            throw new NotImplementedException();
+        }
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, IntPtr klass, bool isValueType, bool isDelegate, string delegateSignature);

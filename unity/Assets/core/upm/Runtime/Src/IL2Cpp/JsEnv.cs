@@ -74,7 +74,7 @@ namespace Puerts
 
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
             nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPapiEnvRef(nativeJsEnv);
-            nativeScriptObjectsRefsMgr = PuertsIl2cpp.NativeAPI.CreateScriptObjectsRefsManager(nativePesapiEnv);
+            nativeScriptObjectsRefsMgr = PuertsIl2cpp.NativeAPI.InitialPapiEnvRef(nativePesapiEnv);
 
             //PuertsIl2cpp.NativeAPI.SetObjectPool(objectPool, typeof(PuertsIl2cpp.ObjectPool).GetMethod("Add")); //TODO: remove....
             objectPoolAddMethodInfo = typeof(PuertsIl2cpp.ObjectPool).GetMethod("Add");
@@ -238,7 +238,7 @@ namespace Puerts
             lock (this)
             {
                 if (disposed) return;
-                PuertsIl2cpp.NativeAPI.DestroyPapiEnvRefAndScriptObjectsRefsManager(nativePesapiEnv);
+                PuertsIl2cpp.NativeAPI.CleanupPapiEnvRef(nativePesapiEnv);
                 PuertsIl2cpp.NativeAPI.DestroyNativeJSEnv(nativeJsEnv);
                 disposed = true;
             }
