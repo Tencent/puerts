@@ -150,6 +150,11 @@ static void ValueTypeFree(void* ptr)
     delete [] (uint8_t*)ptr;
 }
 
+static void PApiFree(void* class_data, void* env_private, void* ptr)
+{
+    ValueTypeFree(ptr); //TODO: class_data->IsValueType
+}
+
 static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static Il2CppClass *g_typeofTypedValue;
@@ -426,7 +431,7 @@ void PLog(const char* Fmt, ...)
 
 static void* CtorCallback(pesapi_callback_info info)
 {
-    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_constructor_userdata(info));
+    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_class_data_in_constructor(info));
     // or will crash in macos.
     if (*(classInfo->CtorWrapDatas) == nullptr)
     {
@@ -568,7 +573,7 @@ static void* DelegateCtorCallback(pesapi_callback_info info)
         pesapi_throw_by_string(info, "expect a function");
         return nullptr;
     }
-    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_constructor_userdata(info));
+    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_class_data_in_constructor(info));
     
     return FunctionToDelegate(env, jsval, classInfo);
 }
@@ -2187,7 +2192,7 @@ bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
     }
     
     pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->Name.c_str(),
-            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? &puerts::ValueTypeFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
+            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? &puerts::PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
     
     return true;
 }

@@ -120,7 +120,8 @@ typedef struct pesapi_property_descriptor__* pesapi_property_descriptor;
 
 typedef void (*pesapi_callback)(pesapi_callback_info info);
 typedef void* (*pesapi_constructor)(pesapi_callback_info info);
-typedef void (*pesapi_finalize)(void* Ptr);
+typedef void (*pesapi_finalize)(void* class_data, void* env_private, void* ptr);
+typedef bool (*pesapi_class_not_found_callback)(const void* type_id);
 typedef void (*pesapi_func_ptr)(void);
 
 #ifdef BUILDING_PES_EXTENSION
@@ -142,6 +143,7 @@ PESAPI_EXTERN pesapi_value pesapi_create_string_utf8(pesapi_env env, const char*
 PESAPI_EXTERN pesapi_value pesapi_create_binary(pesapi_env env, void* str, size_t length);
 PESAPI_EXTERN pesapi_value pesapi_create_array(pesapi_env env);
 PESAPI_EXTERN pesapi_value pesapi_create_object(pesapi_env env);
+PESAPI_EXTERN pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data);
 
 PESAPI_EXTERN bool pesapi_get_value_bool(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value value);
@@ -183,7 +185,7 @@ PESAPI_EXTERN pesapi_env pesapi_get_env(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_this(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_holder(pesapi_callback_info info);
 PESAPI_EXTERN void* pesapi_get_userdata(pesapi_callback_info info);
-PESAPI_EXTERN void* pesapi_get_constructor_userdata(pesapi_callback_info info);
+PESAPI_EXTERN void* pesapi_get_class_data_in_constructor(pesapi_callback_info info);
 PESAPI_EXTERN void pesapi_add_return(pesapi_callback_info info, pesapi_value value);
 PESAPI_EXTERN void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg);
 
@@ -238,14 +240,18 @@ PESAPI_EXTERN pesapi_property_descriptor pesapi_alloc_property_descriptors(size_
 
 // using pesapi_get_userdata obtain userdata in callback
 PESAPI_EXTERN void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback method, void* userdata, pesapi_signature_info signature_info);
+    pesapi_callback method, void* data, pesapi_signature_info signature_info);
 
 PESAPI_EXTERN void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback getter, pesapi_callback setter, void* getter_userdata, void* setter_userdata, pesapi_type_info type_info);
+    pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, pesapi_type_info type_info);
 
 PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name,
     pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties,
-    void* userdata);
+    void* data);
+
+PESAPI_EXTERN void* pesapi_find_class_data(const void* type_id);
+
+PESAPI_EXTERN void pesapi_on_class_not_found(pesapi_class_not_found_callback callback);
 
 PESAPI_EXTERN void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info,
     const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info);

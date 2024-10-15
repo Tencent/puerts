@@ -34,7 +34,7 @@ public:
     
     void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) override;
+    virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) override;
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() override;
 
@@ -73,7 +73,12 @@ private:
     
     v8::Global<v8::Symbol> PrivateKey;
 
-    std::unordered_map<void*, FinalizeFunc> CDataFinalizeMap;
+    struct FinalizeInfo
+    {
+        void* ClassData;
+        FinalizeFunc Finalize;
+    };
+    std::unordered_map<void*, FinalizeInfo> CDataFinalizeMap;
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
 };

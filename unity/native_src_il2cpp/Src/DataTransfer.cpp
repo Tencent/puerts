@@ -23,7 +23,7 @@ v8::Local<v8::Value> DataTransfer::FindOrAddCData(
 
 bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
 {
-    return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(TypeId, JsObject);
+    return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(Isolate, TypeId, JsObject);
 }
 
 v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value)

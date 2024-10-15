@@ -15,13 +15,17 @@
 #endif
 #include "JSClassRegister.h"
 
+#include "NamespaceDef.h"
+
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include <memory>
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class ICppObjectMapper
 {
@@ -34,8 +38,8 @@ public:
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
 
-    virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
-    
+    virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
+
     virtual void* GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject) = 0;
 
     virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) = 0;
@@ -51,7 +55,7 @@ public:
 class IObjectMapper : public ICppObjectMapper
 {
 public:
-    virtual void Bind(UClass* Class, UObject* UEObject, v8::Local<v8::Object> JSObject) = 0;
+    virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) = 0;
 
     virtual void UnBind(UClass* Class, UObject* UEObject) = 0;
 
@@ -70,9 +74,6 @@ public:
 
     virtual void Merge(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) = 0;
-
-    virtual void BindContainer(
-        void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data)) = 0;
 
     virtual void UnBindContainer(void* Ptr) = 0;
 
@@ -93,7 +94,7 @@ public:
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) = 0;
 
-    virtual FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+    virtual FScriptDelegate NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
         v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) = 0;
 
     virtual bool RemoveFromDelegate(
@@ -114,4 +115,4 @@ public:
 };
 #endif
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

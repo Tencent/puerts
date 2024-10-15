@@ -56,9 +56,11 @@ struct JSENV_API JSPropertyInfo
     void* SetterData = nullptr;
 };
 
-typedef void (*FinalizeFunc)(void* Ptr);
+typedef void (*FinalizeFunc)(void* ClassData, void* EnvData, void* Ptr);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+typedef bool (*ClassNotFoundCallback)(const void* type_id);
 
 struct NamedFunctionInfo;
 struct NamedPropertyInfo;
@@ -102,6 +104,10 @@ JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId, bool TryLaz
 
 typedef void (*LoadTypeFunc) (const void* typeId);
 JSENV_API void SetLazyLoadCallback(LoadTypeFunc Callback);
+
+JSENV_API void OnClassNotFound(ClassNotFoundCallback Callback);
+
+JSENV_API const JSClassDefinition* LoadClassByID(const void* TypeId);
 
 JSENV_API const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 

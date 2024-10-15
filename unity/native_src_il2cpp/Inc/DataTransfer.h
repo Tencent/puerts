@@ -306,6 +306,16 @@ public:
         return static_cast<T*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
     }
 
+    FORCEINLINE static void* GetIsolatePrivateData(v8::Isolate* Isolate)
+    {
+        return Isolate->GetData(PESAPI_PRIVATE_DATA_POS_IN_ISOLATE);
+    }
+
+    FORCEINLINE static void SetIsolatePrivateData(v8::Isolate* Isolate, void* PrivateData)
+    {
+        Isolate->SetData(PESAPI_PRIVATE_DATA_POS_IN_ISOLATE, PrivateData);
+    }
+
     static v8::Local<v8::Value> FindOrAddCData(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer);
 
