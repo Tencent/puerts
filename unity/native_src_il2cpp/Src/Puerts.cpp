@@ -123,32 +123,6 @@ struct JSEnv
         //}
         Isolate->SetData(BACKENDENV_DATA_POS, &BackendEnv);
         
-        Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-        {
-            v8::Isolate* Isolate = Info.GetIsolate();
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-            v8::Context::Scope ContextScope(Context);
-    
-            auto pom = static_cast<puerts::FCppObjectMapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-            
-            auto type = GUnityExports.CSharpTypeToTypeId(DataTransfer::GetPointer<void>(Context, Info[0]));
-            if (!type)
-            {
-                DataTransfer::ThrowException(Isolate, "expect a c# type");
-                return;
-            }
-            
-            auto Ret = pom->LoadTypeById(Context, type);
-            
-            if (!Ret.IsEmpty())
-            {
-                Info.GetReturnValue().Set(Ret.ToLocalChecked());
-            }
-            
-        }, v8::External::New(Isolate, &CppObjectMapper))->GetFunction(Context).ToLocalChecked()).Check();
-        
         BackendEnv.StartPolling();
     }
     

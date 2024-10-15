@@ -119,7 +119,7 @@ intptr_t GetTypeId(Il2CppReflectionType *type)
     return (intptr_t)il2cpp_codegen_class_from_type(type->type);
 }
 
-const void* CSharpTypeToTypeId(Il2CppObject *type)
+const Il2CppClass* CSharpTypeToTypeId(Il2CppObject *type)
 {
     return (type && Class::IsAssignableFrom(il2cpp_defaults.systemtype_class, type->klass)) ? il2cpp_codegen_class_from_type(((Il2CppReflectionType *)type)->type) : nullptr;
 }
@@ -1759,7 +1759,7 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2Cpp
 
 puerts::UnityExports* GetUnityExports()
 {
-    g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;
+    //g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;
     return &g_unityExports;
 }
 
@@ -1897,13 +1897,33 @@ struct ScriptObjectsRefsMgr
     }
 };
 
+static void LoadTypeWrapper(pesapi_callback_info info)
+{
+    pesapi_env env = pesapi_get_env(info);
+    Il2CppObject* type = (Il2CppObject*)pesapi_get_native_object_ptr(env, pesapi_get_arg(info, 0));
+    auto type_id = CSharpTypeToTypeId(type);
+    auto ret = pesapi_create_class(env, type_id);
+    pesapi_add_return(info, ret);
+}
+
 puerts::ScriptObjectsRefsMgr* InitialPapiEnvRef(pesapi_env_ref envRef)
 {
     puerts::AutoValueScope ValueScope(envRef);
     auto env = pesapi_get_env_from_ref(envRef);
     auto mgr = new puerts::ScriptObjectsRefsMgr(envRef);
     pesapi_set_env_private(env, mgr);
-    return mgr;
+    auto func = pesapi_create_function(env, LoadTypeWrapper, nullptr);
+    if (func)
+    {
+        pesapi_value global = pesapi_global(env);
+        if (global)
+        {
+            pesapi_set_property(env, global, "loadType", func);
+            return mgr;
+        }
+    }
+    Exception::Raise(Exception::GetInvalidOperationException("can not init global.loadType"));
+    return nullptr;
 }
 
 void CleanupPapiEnvRef(pesapi_env_ref envRef)
@@ -2124,7 +2144,7 @@ void SetTypeInfo(puerts::WrapData* data, int index, Il2CppClass* typeInfo)
 
 bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
 {
-    if (puerts::g_unityExports.GetJsClassInfo(classInfo->TypeId, false))
+    if (pesapi_find_class_data(classInfo->TypeId))
     {
         ReleaseCSharpTypeInfo(classInfo);
         return true;
