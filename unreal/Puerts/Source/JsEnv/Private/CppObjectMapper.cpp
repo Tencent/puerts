@@ -50,6 +50,17 @@ void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& In
     }
 }
 
+v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId)
+{
+    auto ClassDef = puerts::LoadClassByID(TypeId);
+    if (!ClassDef)
+    {
+        return v8::MaybeLocal<v8::Function>();
+    }
+    auto Template = GetTemplateOfClass(Context->GetIsolate(), ClassDef);
+    return Template->GetFunction(Context);
+}
+
 static void PointerNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     // do nothing
@@ -87,7 +98,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     }
 
     // create and link
-    auto ClassDefinition = FindClassByID(TypeId);
+    auto ClassDefinition = LoadClassByID(TypeId);
     if (ClassDefinition)
     {
         auto Result = GetTemplateOfClass(Isolate, ClassDefinition)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
@@ -257,7 +268,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
 
         if (ClassDefinition->SuperTypeId)
         {
-            if (auto SuperDefinition = FindClassByID(ClassDefinition->SuperTypeId))
+            if (auto SuperDefinition = LoadClassByID(ClassDefinition->SuperTypeId))
             {
                 Template->Inherit(GetTemplateOfClass(Isolate, SuperDefinition));
             }

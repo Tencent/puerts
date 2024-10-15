@@ -18,14 +18,6 @@
 #include <vector>
 #include <cstring>
 
-#ifndef MSVC_PRAGMA
-#if !defined(__clang__) && defined(_MSC_VER)
-#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
-#else
-#define MSVC_PRAGMA(...)
-#endif
-#endif
-
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(v8::Local<v8::Context> context)
@@ -185,6 +177,15 @@ pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl,
     return v8impl::PesapiValueFromV8LocalValue(func.ToLocalChecked());
 }
 MSVC_PRAGMA(warning(pop))
+
+pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto cls = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->LoadTypeById(context, type_id);
+    if (cls.IsEmpty())
+        return nullptr;
+    return v8impl::PesapiValueFromV8LocalValue(cls.ToLocalChecked());
+}
 
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
@@ -927,6 +928,14 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
         }
     }
 }
+
+#ifndef MSVC_PRAGMA
+#if !defined(__clang__) && defined(_MSC_VER)
+#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
+#else
+#define MSVC_PRAGMA(...)
+#endif
+#endif
 
 // set module name here during loading, set nullptr after module loaded
 const char* GPesapiModuleName = nullptr;
