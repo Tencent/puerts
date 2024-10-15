@@ -516,7 +516,6 @@ namespace PuertsIl2cpp.Editor
                     { "pesapi_adpt.c", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_adpt.c").text },
                     { "pesapi.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi.h").text },
                     { "Puerts_il2cpp.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text },
-                    { "UnityExports4Puerts.h", Resources.Load<TextAsset>("puerts/xil2cpp/UnityExports4Puerts.h").text },
                     { "TDataTrans.h", Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text }
                 };
 

@@ -19,7 +19,6 @@ export default function Gen(genInfos) {
 #include "il2cpp-object-internals.h"
 #include "vm/Object.h"
 #include "pesapi.h"
-#include "UnityExports4Puerts.h"
 #include "TDataTrans.h"
 
 namespace puerts

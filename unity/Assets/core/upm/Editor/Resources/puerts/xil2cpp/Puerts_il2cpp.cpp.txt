@@ -29,7 +29,6 @@
 #include "gc/WriteBarrier.h"
 #include "gc/GCHandle.h"
 #include "pesapi.h"
-#include "UnityExports4Puerts.h"
 #include "TDataTrans.h"
 
 #include <vector>
@@ -413,8 +412,6 @@ void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
     return (defaultValue && Class::IsValuetype(Class::FromIl2CppType(Method::GetParam(method, index), false))) ? Object::Unbox(defaultValue) : defaultValue;
 }
 
-static puerts::UnityExports g_unityExports;
-
 void PLog(const char* Fmt, ...)
 {
     static char SLogBuffer[1024];
@@ -423,10 +420,10 @@ void PLog(const char* Fmt, ...)
     vsnprintf(SLogBuffer, sizeof(SLogBuffer), Fmt, list);
     va_end(list);
 
-    if (g_unityExports.LogCallback)
-    {
-        g_unityExports.LogCallback(SLogBuffer);
-    }
+    //if (g_unityExports.LogCallback)
+    //{
+    //    g_unityExports.LogCallback(SLogBuffer);
+    //}
 }
 
 static void* CtorCallback(pesapi_callback_info info)
@@ -864,7 +861,7 @@ handle_underlying:
             {
                 if (IsDelegate(klass))
                 {
-                    JsClassInfoHeader* jsClassInfo = g_unityExports.GetJsClassInfo(klass, true);
+                    JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)pesapi_load_class_data(klass, true);
                     if (!jsClassInfo)
                     {
                         Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
@@ -1757,12 +1754,6 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2Cpp
     return JsValueToCSRef(type, env, val);
 }
 
-puerts::UnityExports* GetUnityExports()
-{
-    //g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;
-    return &g_unityExports;
-}
-
 Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __path, Il2CppReflectionType *__type)
 {
     pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
@@ -1955,7 +1946,6 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
-    InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetObjectToGlobal(System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
@@ -2144,7 +2134,7 @@ void SetTypeInfo(puerts::WrapData* data, int index, Il2CppClass* typeInfo)
 
 bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
 {
-    if (pesapi_find_class_data(classInfo->TypeId))
+    if (pesapi_load_class_data(classInfo->TypeId, false))
     {
         ReleaseCSharpTypeInfo(classInfo);
         return true;

@@ -67,7 +67,6 @@ export default function Gen(genInfos) {
 #include "utils/StringUtils.h"
 #include "gc/WriteBarrier.h"
 #include "pesapi.h"
-#include "UnityExports4Puerts.h"
 #include "TDataTrans.h"
 #include "PuertsValueType.h"
 

@@ -91,9 +91,6 @@ namespace PuertsIl2cpp
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RegisterCSharpType(IntPtr classInfo);
-        
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ExchangeAPI(IntPtr exports);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetObjectPool(IntPtr jsEnv, IntPtr objectPoolAddMethodInfo, IntPtr objectPoolAdd, IntPtr objectPoolRemoveMethodInfo, IntPtr objectPoolRemove, IntPtr objectPoolInstance);
@@ -169,12 +166,6 @@ namespace PuertsIl2cpp
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static Type TypeIdToType(IntPtr typeId)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetUnityExports()
         {
             throw new NotImplementedException();
         }

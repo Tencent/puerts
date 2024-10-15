@@ -19,11 +19,8 @@
 #include "JSClassRegister.h"
 #include <stdarg.h>
 #include "BackendEnv.h"
-#include "ExecuteModuleJSCode.h"
 
 #define USE_OUTSIZE_UNITY 1
-
-#include "UnityExports4Puerts.h"
 
 namespace puerts
 {
@@ -42,8 +39,6 @@ static std::vector<std::string>* Errors;
 typedef void(*LogCallback)(const char* value);
 
 static LogCallback GLogCallback = nullptr;
-
-static UnityExports GUnityExports;
 
 typedef void (*LazyLoadTypeFunc) (const void* typeId, bool includeNonPublic, void* method);
 
@@ -198,13 +193,6 @@ V8_EXPORT pesapi_env_ref GetPapiEnvRef(puerts::JSEnv* jsEnv)
     
     auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
     return pesapi_create_env_ref(env);
-}
-
-V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
-{
-    exports->GetJsClassInfo = &puerts::GetJsClassInfo;
-    exports->LogCallback = puerts::GLogCallback;
-    puerts::GUnityExports = *exports;
 }
 
 V8_EXPORT void SetObjectPool(puerts::JSEnv* jsEnv, void* ObjectPoolAddMethodInfo, puerts::ObjectPoolAddFunc ObjectPoolAdd, void* ObjectPoolRemoveMethodInfo, puerts::ObjectPoolRemoveFunc ObjectPoolRemove, void* ObjectPoolInstance)
