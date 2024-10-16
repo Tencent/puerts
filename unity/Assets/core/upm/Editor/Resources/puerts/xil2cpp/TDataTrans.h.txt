@@ -536,34 +536,55 @@ intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method);
 template <class _Ret, class... _Args>
 struct MethodInfoHelper<_Ret (_Args...)>
 {
-    typedef _Ret (*MethodPtrDef) (_Args... args, const MethodInfo* methodInfo);
-    MethodPtrDef func;
-    const MethodInfo* methodInfo;
-    
-    MethodInfoHelper(Il2CppReflectionMethod* method)
+    intptr_t func;
+    intptr_t methodInfo;
+    Il2CppObject* instance;
+
+    MethodInfoHelper(Il2CppReflectionMethod* method, Il2CppObject* instance = nullptr)
+        : instance(instance)
     {
-        func = (MethodPtrDef)GetMethodPointer(method);
-        methodInfo = (const MethodInfo *)GetMethodInfoPointer(method);
+        func = GetMethodPointer(method);
+        methodInfo = GetMethodInfoPointer(method);
     }
 
     MethodInfoHelper()
+        : func(0), methodInfo(0), instance(nullptr)
     {
-        func = nullptr;
-        methodInfo = nullptr;
     }
-    
+
+    typedef _Ret(*FuncType)(_Args..., intptr_t);
+    typedef _Ret(*FuncTypeWithInstance)(Il2CppObject*, _Args..., intptr_t);
+
     template <typename T = _Ret>
     typename std::enable_if<std::is_same<T, void>::value>::type
         Call(_Args... args)
     {
-        func(args..., methodInfo);
+        FuncType funcPtr = (FuncType)func;
+        funcPtr(args..., methodInfo);
     }
 
     template <typename T = _Ret>
     typename std::enable_if<!std::is_same<T, void>::value, T>::type
         Call(_Args... args)
     {
-        return func(args..., methodInfo);
+        FuncType funcPtr = (FuncType)func;
+        return funcPtr(args..., methodInfo);
+    }
+
+    template <typename T = _Ret>
+    typename std::enable_if<std::is_same<T, void>::value>::type
+        CallWithInstance(_Args... args)
+    {
+        FuncTypeWithInstance funcPtr = (FuncTypeWithInstance)func;
+        funcPtr(instance, args..., methodInfo);
+    }
+
+    template <typename T = _Ret>
+    typename std::enable_if<!std::is_same<T, void>::value, T>::type
+        CallWithInstance(_Args... args)
+    {
+        FuncTypeWithInstance funcPtr = (FuncTypeWithInstance)func;
+        return funcPtr(instance, args..., methodInfo);
     }
 };
 
