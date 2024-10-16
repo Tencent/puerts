@@ -76,37 +76,6 @@ MSVC_PRAGMA(warning(pop))
 
 static int LoadAddon(const char* path, const char* module_name)
 {
-    /*if (GHandlers.find(path) != GHandlers.end())
-    {
-        // UE_LOG(LogTemp, Warning, TEXT("Try load addon already loaded: %s"), UTF8_TO_TCHAR(path));
-        return 0;
-    }
-    
-    HINSTANCE hinstLib; 
-
-    hinstLib = LoadLibrary(path); 
-
-    if (hinstLib != NULL) 
-    {
-        std::string EntryName = STRINGIFY(PESAPI_MODULE_INITIALIZER(___magic_module_name_xx___));
-        EntryName = std::regex_replace(EntryName, std::regex("___magic_module_name_xx___"), module_name);
-        
-        auto Init = (void (*)(pesapi_func_ptr*))(uintptr_t)GetProcAddress(hinstLib, EntryName.c_str()); 
- 
-        if (Init) 
-        {
-            Init(funcs);
-            GHandlers[path] = hinstLib;
-            return 0;
-        }
-        std::cout << "can find symbol " << EntryName << " in " << path << "!" << std::endl;
-        FreeLibrary(hinstLib); 
-    } 
-    else
-    {
-        std::cout << "load " << path << " fail!" << std::endl;
-    }
-    */
     return -1;
 }
 
