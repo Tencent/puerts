@@ -250,7 +250,7 @@ PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_ty
     pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties,
     void* data);
 
-PESAPI_EXTERN void* pesapi_load_class_data(const void* type_id, bool callback_if_not_found);
+PESAPI_EXTERN void* pesapi_get_class_data(const void* type_id, bool force_load);
 
 PESAPI_EXTERN void pesapi_on_class_not_found(pesapi_class_not_found_callback callback);
 

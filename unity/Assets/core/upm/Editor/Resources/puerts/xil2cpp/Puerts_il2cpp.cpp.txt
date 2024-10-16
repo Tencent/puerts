@@ -877,7 +877,7 @@ handle_underlying:
             {
                 if (IsDelegate(klass))
                 {
-                    JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)pesapi_load_class_data(klass, true);
+                    JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)pesapi_get_class_data(klass, true);
                     if (!jsClassInfo)
                     {
                         Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
@@ -2151,7 +2151,7 @@ void SetTypeInfo(puerts::WrapData* data, int index, Il2CppClass* typeInfo)
 
 bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
 {
-    if (pesapi_load_class_data(classInfo->TypeId, false))
+    if (pesapi_get_class_data(classInfo->TypeId, false))
     {
         ReleaseCSharpTypeInfo(classInfo);
         return true;

@@ -544,10 +544,10 @@ void pesapi_define_class (const void* type_id, const void* super_type_id, const 
     pesapi_define_class_ptr(type_id, super_type_id, type_name, constructor, finalize, property_count, properties, data);
 }
 
-typedef void* (*pesapi_load_class_dataType)(const void* type_id, bool callback_if_not_found);
-static pesapi_load_class_dataType pesapi_load_class_data_ptr;
-void* pesapi_load_class_data (const void* type_id, bool callback_if_not_found) {
-    return pesapi_load_class_data_ptr(type_id, callback_if_not_found);
+typedef void* (*pesapi_get_class_dataType)(const void* type_id, bool force_load);
+static pesapi_get_class_dataType pesapi_get_class_data_ptr;
+void* pesapi_get_class_data (const void* type_id, bool force_load) {
+    return pesapi_get_class_data_ptr(type_id, force_load);
 }
 
 typedef void (*pesapi_on_class_not_foundType)(pesapi_class_not_found_callback callback);
@@ -661,7 +661,7 @@ void pesapi_init(pesapi_func_ptr* func_array){
     pesapi_set_method_info_ptr = (pesapi_set_method_infoType)func_array[85];
     pesapi_set_property_info_ptr = (pesapi_set_property_infoType)func_array[86];
     pesapi_define_class_ptr = (pesapi_define_classType)func_array[87];
-    pesapi_load_class_data_ptr = (pesapi_load_class_dataType)func_array[88];
+    pesapi_get_class_data_ptr = (pesapi_get_class_dataType)func_array[88];
     pesapi_on_class_not_found_ptr = (pesapi_on_class_not_foundType)func_array[89];
     pesapi_class_type_info_ptr = (pesapi_class_type_infoType)func_array[90];
     pesapi_find_type_id_ptr = (pesapi_find_type_idType)func_array[91];
