@@ -1015,9 +1015,9 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 }
 MSVC_PRAGMA(warning(pop))
 
-void* pesapi_load_class_data(const void* type_id, bool callback_if_not_found)
+void* pesapi_get_class_data(const void* type_id, bool force_load)
 {
-    auto clsDef = callback_if_not_found ? puerts::LoadClassByID(type_id) : puerts::FindClassByID(type_id);
+    auto clsDef = force_load ? puerts::LoadClassByID(type_id) : puerts::FindClassByID(type_id);
     return clsDef ? clsDef->Data : nullptr;
 }
 
