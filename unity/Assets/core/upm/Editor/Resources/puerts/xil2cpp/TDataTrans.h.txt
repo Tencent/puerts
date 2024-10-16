@@ -525,4 +525,46 @@ struct Params
     
 };
 
+template <class T>
+struct MethodInfoHelper
+{
+};
+
+intptr_t GetMethodPointer(Il2CppReflectionMethod* method);
+intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method);
+
+template <class _Ret, class... _Args>
+struct MethodInfoHelper<_Ret (_Args...)>
+{
+    typedef _Ret (*MethodPtrDef) (_Args... args, const MethodInfo* methodInfo);
+    MethodPtrDef func;
+    const MethodInfo* methodInfo;
+    
+    MethodInfoHelper(Il2CppReflectionMethod* method)
+    {
+        func = (MethodPtrDef)GetMethodPointer(method);
+        methodInfo = (const MethodInfo *)GetMethodInfoPointer(method);
+    }
+
+    MethodInfoHelper()
+    {
+        func = nullptr;
+        methodInfo = nullptr;
+    }
+    
+    template <typename T = _Ret>
+    typename std::enable_if<std::is_same<T, void>::value>::type
+        Call(_Args... args)
+    {
+        func(args..., methodInfo);
+    }
+
+    template <typename T = _Ret>
+    typename std::enable_if<!std::is_same<T, void>::value, T>::type
+        Call(_Args... args)
+    {
+        return func(args..., methodInfo);
+    }
+};
+
 }

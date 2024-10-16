@@ -157,20 +157,17 @@ static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static Il2CppClass *g_typeofTypedValue;
 
-static const MethodInfo *g_methodInfoRegisterNoThrow;
-typedef void (*RegisterNoThrowFunc) (const void* typeId, bool includeNonPublic, const MethodInfo* methodInfo);
-static RegisterNoThrowFunc g_registerNoThrow;
+static MethodInfoHelper<void(const void* typeId, bool includeNonPublic)> g_RegisterNoThrowHelper;
 
 static bool ClassNotFoundCallback(const void* typeId)
 {
-    g_registerNoThrow(typeId, false, g_methodInfoRegisterNoThrow);
+    g_RegisterNoThrowHelper.Call(typeId, false);
     return true;
 }
 
 static void SetRegisterNoThrow(Il2CppReflectionMethod* method)
 {
-    g_registerNoThrow = (RegisterNoThrowFunc)GetMethodPointer(method);
-    g_methodInfoRegisterNoThrow = (const MethodInfo *)GetMethodInfoPointer(method);
+    g_RegisterNoThrowHelper = MethodInfoHelper<void(const void* typeId, bool includeNonPublic)>(method);
     pesapi_on_class_not_found(ClassNotFoundCallback);
 }
 
