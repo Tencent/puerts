@@ -1782,17 +1782,17 @@ Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __p
     
     auto ret = pesapi_eval(env, code, codeSize, path.c_str());
     
-    if (pesapi_has_caught(ValueScope.scope))
+    if (pesapi_has_caught(ValueScope.scope()))
     {
-        Exception::Raise(Exception::GetInvalidOperationException(pesapi_get_exception_as_string(ValueScope.scope, true)));
+        Exception::Raise(Exception::GetInvalidOperationException(pesapi_get_exception_as_string(ValueScope.scope(), true)));
         return nullptr;
     }
     if (__type)
     {
         auto csRet = JsValueToCSRef(il2cpp_codegen_class_from_type(__type->type), env, ret);
-        if (pesapi_has_caught(ValueScope.scope))
+        if (pesapi_has_caught(ValueScope.scope()))
         {
-            Exception::Raise(Exception::GetInvalidOperationException(pesapi_get_exception_as_string(ValueScope.scope, true)));
+            Exception::Raise(Exception::GetInvalidOperationException(pesapi_get_exception_as_string(ValueScope.scope(), true)));
             return nullptr;
         }
         return csRet;

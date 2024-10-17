@@ -68,9 +68,9 @@ static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.
     ${genBridgeArgs(parameterSignatures)}
     auto jsret = pesapi_call_function(env, func, nullptr, ${parameterSignatures.length}${hasVarArgs ? ' + arrayLength - 1' : ''}, argv);
     
-    if (pesapi_has_caught(valueScope.scope))
+    if (pesapi_has_caught(valueScope.scope()))
     {
-        auto msg = pesapi_get_exception_as_string(valueScope.scope, true);
+        auto msg = pesapi_get_exception_as_string(valueScope.scope(), true);
         il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException(msg));
     ${IF(bridgeInfo.ReturnSignature == 'v')}
     }

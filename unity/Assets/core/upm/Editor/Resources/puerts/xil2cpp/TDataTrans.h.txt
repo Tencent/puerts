@@ -71,17 +71,22 @@ void PLog(const char* Fmt, ...);
 class AutoValueScope
 {
 public:
-    AutoValueScope(pesapi_env_ref env_holder)
+    AutoValueScope(pesapi_env_ref envRef)
     {
-        scope = pesapi_open_scope(env_holder);
+        pesapi_open_scope_placement(envRef, &_mem);
     }
 
     ~AutoValueScope()
     {
-        pesapi_close_scope(scope);
+        pesapi_close_scope_placement(scope());
+    }
+    
+    inline pesapi_scope scope()
+    {
+        return (pesapi_scope)&_mem;
     }
 
-    pesapi_scope scope;
+    pesapi_scope_memory _mem;
 };
 
 struct DataTransfer
