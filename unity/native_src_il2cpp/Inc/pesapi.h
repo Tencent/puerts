@@ -108,6 +108,12 @@
 
 EXTERN_C_START
 
+// alloc on stack
+struct pesapi_scope_memory
+{
+    int padding__[32];
+};
+
 typedef struct pesapi_env__* pesapi_env;
 typedef struct pesapi_env_ref__* pesapi_env_ref;
 typedef struct pesapi_value__* pesapi_value;
@@ -197,9 +203,11 @@ PESAPI_EXTERN pesapi_env_ref pesapi_duplicate_env_ref(pesapi_env_ref env_ref);
 PESAPI_EXTERN void pesapi_release_env_ref(pesapi_env_ref env_ref);
 
 PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env_ref env_ref);
+PESAPI_EXTERN pesapi_scope pesapi_open_scope_placement(pesapi_env_ref env_ref, struct pesapi_scope_memory* memory);
 PESAPI_EXTERN bool pesapi_has_caught(pesapi_scope scope);
 PESAPI_EXTERN const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack);
 PESAPI_EXTERN void pesapi_close_scope(pesapi_scope scope);
+PESAPI_EXTERN void pesapi_close_scope_placement(pesapi_scope scope);
 
 PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value, uint32_t internal_field_count);
 PESAPI_EXTERN pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref value_ref);

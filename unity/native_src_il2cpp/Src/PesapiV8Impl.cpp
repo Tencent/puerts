@@ -64,6 +64,8 @@ struct pesapi_scope__
     std::string errinfo;
 };
 
+static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
+
 namespace v8impl
 {
 static_assert(sizeof(v8::Local<v8::Value>) == sizeof(pesapi_value), "Cannot convert between v8::Local<v8::Value> and pesapi_value");
@@ -552,6 +554,18 @@ pesapi_scope pesapi_open_scope(pesapi_env_ref env_ref)
     return scope;
 }
 
+pesapi_scope pesapi_open_scope_placement(pesapi_env_ref env_ref, struct pesapi_scope_memory* memory)
+{
+    if (env_ref->env_life_cycle_tracker.expired())
+    {
+        return nullptr;
+    }
+    env_ref->isolate->Enter();
+    auto scope = new (memory) pesapi_scope__(env_ref->isolate);
+    env_ref->context_persistent.Get(env_ref->isolate)->Enter();
+    return scope;
+}
+
 bool pesapi_has_caught(pesapi_scope scope)
 {
     return scope && scope->trycatch.HasCaught();
@@ -595,6 +609,16 @@ void pesapi_close_scope(pesapi_scope scope)
     auto isolate = scope->scope.GetIsolate();
     isolate->GetCurrentContext()->Exit();
     delete (scope);
+    isolate->Exit();
+}
+
+void pesapi_close_scope_placement(pesapi_scope scope)
+{
+    if (!scope)
+        return;
+    auto isolate = scope->scope.GetIsolate();
+    isolate->GetCurrentContext()->Exit();
+    scope->~pesapi_scope__();
     isolate->Exit();
 }
 
