@@ -78,7 +78,7 @@ inline pesapi_value PesapiValueFromV8LocalValue(v8::Local<v8::Value> local)
 inline v8::Local<v8::Value> V8LocalValueFromPesapiValue(pesapi_value v)
 {
     v8::Local<v8::Value> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    *reinterpret_cast<pesapi_value*>(&local) = v;
     return local;
 }
 
@@ -90,7 +90,7 @@ inline pesapi_env PesapiEnvFromV8LocalContext(v8::Local<v8::Context> local)
 inline v8::Local<v8::Context> V8LocalContextFromPesapiEnv(pesapi_env v)
 {
     v8::Local<v8::Context> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    *reinterpret_cast<pesapi_env*>(&local) = v;
     return local;
 }
 }    // namespace v8impl
