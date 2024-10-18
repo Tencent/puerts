@@ -36,6 +36,9 @@
         ::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::info()
 #define MakeVariable(M) MakeProperty(M)
 #define MakeReadonlyVariable(M) MakeReadonlyProperty(M)
+#define MakeConstVariable(M)                                                                                          \
+    &(::PUERTS_NAMESPACE::ConstVariableWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::getter), nullptr, \
+        ::PUERTS_NAMESPACE::ConstVariableWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::info()
 #define MakeFunction(M, ...)                                                                                                    \
     [](::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                                                     \
     {                                                                                                                           \
