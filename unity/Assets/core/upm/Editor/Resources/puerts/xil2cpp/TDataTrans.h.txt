@@ -8,6 +8,8 @@
 #include "pesapi.h"
 #include <stdarg.h>
 #include "vm/Class.h"
+#include "vm/String.h"
+#include "vm/Array.h"
 
 namespace puerts
 {
@@ -66,7 +68,7 @@ void PLog(const char* Fmt, ...);
 
 // end function in Puerts_il2cpp.cpp
 
-#define GetPObjectRefInfo(Value) ((PObjectRefInfo*)(((uint8_t*)Value) + sizeof(RuntimeObject)))
+#define GetPObjectRefInfo(Value) ((PObjectRefInfo*)(((uint8_t*)Value) + sizeof(Il2CppObject)))
 
 class AutoValueScope
 {

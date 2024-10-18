@@ -100,7 +100,7 @@ intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method)
 
 int32_t GetFieldOffset(Il2CppReflectionField* field, bool isInValueType)
 {
-    return (int32_t)Field::GetOffset(field->field) - (Class::IsValuetype(Field::GetParent(field->field)) ? sizeof(RuntimeObject) : 0);
+    return (int32_t)Field::GetOffset(field->field) - (Class::IsValuetype(Field::GetParent(field->field)) ? sizeof(Il2CppObject) : 0);
 }
 
 intptr_t GetFieldInfoPointer(Il2CppReflectionField* field)
@@ -108,7 +108,7 @@ intptr_t GetFieldInfoPointer(Il2CppReflectionField* field)
     return (intptr_t)field->field;
 }
 
-intptr_t GetObjectPointer(RuntimeObject *obj)
+intptr_t GetObjectPointer(Il2CppObject *obj)
 {
     return (intptr_t)obj;
 }
@@ -513,7 +513,7 @@ static pesapi_value GetPObjectRefInfoValue(pesapi_env env, const PObjectRefInfo*
     return pesapi_get_value_from_ref(env, objectInfo->ValueRef);
 }
 
-static int32_t* FindOrCreateHandleStoreOfValue(pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, RuntimeObject** out_object)
+static int32_t* FindOrCreateHandleStoreOfValue(pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
 {
     void* out_ptr;
     if(!pesapi_get_private(env, value, &out_ptr))
@@ -539,7 +539,7 @@ static int32_t* FindOrCreateHandleStoreOfValue(pesapi_env env, pesapi_value valu
     
     if (!res)
     {
-        value_ref = pesapi_create_value_ref(env, value, (sizeof(std::atomic<RuntimeObject*>) + sizeof(void*) - 1) / sizeof(void*));
+        value_ref = pesapi_create_value_ref(env, value, (sizeof(std::atomic<Il2CppObject*>) + sizeof(void*) - 1) / sizeof(void*));
         
         res = reinterpret_cast<int32_t*>(pesapi_get_ref_internal_fields(value_ref, &field_count));
         pesapi_set_private(env, value, value_ref);
@@ -555,17 +555,17 @@ static int32_t* FindOrCreateHandleStoreOfValue(pesapi_env env, pesapi_value valu
     return res;
 }
 
-static RuntimeObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
+static Il2CppObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
 {
     pesapi_value_ref value_ref;
-    RuntimeObject* ret = nullptr;
+    Il2CppObject* ret = nullptr;
     int32_t* handle_store = FindOrCreateHandleStoreOfValue(env, jsval, &value_ref, &ret);
     if (!handle_store) return nullptr;
 
     if (ret == nullptr)
     {
         PObjectRefInfo* delegateInfo;
-        ret = (RuntimeObject *)DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
+        ret = (Il2CppObject *)DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
         auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
         il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
         *handle_store = targetHandle.Get();
@@ -888,7 +888,7 @@ handle_underlying:
             {
                 if ((klass == g_typeofArrayBuffer || klass == il2cpp_defaults.object_class) && pesapi_is_binary(env, jsval)) 
                 {
-                    RuntimeObject* ret = il2cpp::vm::Object::New(g_typeofArrayBuffer);
+                    Il2CppObject* ret = il2cpp::vm::Object::New(g_typeofArrayBuffer);
 
                     const MethodInfo* ctor = il2cpp_class_get_method_from_name(g_typeofArrayBuffer, ".ctor", 3);
                     typedef void (*NativeCtorPtr)(Il2CppObject* ___this, void*, int, int, const MethodInfo* method);
@@ -904,7 +904,7 @@ handle_underlying:
                     Il2CppClass* persistentObjectInfoClass = g_typeofPersistentObjectInfo;
                     
                     pesapi_value_ref value_ref;
-                    RuntimeObject* ret = nullptr;
+                    Il2CppObject* ret = nullptr;
                     int32_t* handle_store = FindOrCreateHandleStoreOfValue(env, jsval, &value_ref, &ret);
                     if (!handle_store) return nullptr;
                     
@@ -1800,7 +1800,7 @@ Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __p
     return nullptr;
 }
 
-void SetObjectToGlobal(pesapi_env_ref envRef, Il2CppString* __key, RuntimeObject *obj)
+void SetObjectToGlobal(pesapi_env_ref envRef, Il2CppString* __key, Il2CppObject *obj)
 {
     AutoValueScope ValueScope(envRef);
     auto env = pesapi_get_env_from_ref(envRef);

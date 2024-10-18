@@ -543,7 +543,7 @@ namespace PuertsIl2cpp.Editor
 #else
                         true,
 #endif
-#if UNITY_ANDROID || UNITY_IPHONE
+#if UNITY_IPHONE
                         false
 #else
                         true
