@@ -1457,6 +1457,25 @@ struct PropertyWrapper<API, Ret*, Variable>
         return CTypeInfoImpl<Ret, false>::get();
     }
 };
+template <typename API, typename Ret, Ret Variable>
+struct ConstVariableWrapper
+{
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
+    static void getter(typename API::CallbackInfoType info)
+    {
+        auto context = API::GetContext(info);
+        API::SetReturn(info, DecayTypeConverter<Ret>::toScript(context, Variable));
+    }
+
+    static void setter(typename API::CallbackInfoType info) { }
+
+    static const CTypeInfo* info()
+    {
+        return CTypeInfoImpl<Ret, false>::get();
+    }
+};
 
 template <typename T, typename API, typename RegisterAPI>
 class ClassDefineBuilder
