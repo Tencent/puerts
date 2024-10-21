@@ -321,7 +321,7 @@ void FCppObjectMapper::BindCppObject(
 
     if (!PassByPointer)
     {
-        CDataFinalizeMap[Ptr] = {ClassDefinition->Data, ClassDefinition->Finalize};
+        CacheNodePtr->UserData = ClassDefinition;
         CacheNodePtr->Value.SetWeak<JSClassDefinition>(
             ClassDefinition, CDataGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
@@ -368,7 +368,6 @@ void FCppObjectMapper::SetPrivateData(v8::Local<v8::Context> Context, v8::Local<
 
 void FCppObjectMapper::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
 {
-    CDataFinalizeMap.erase(Ptr);
     auto Iter = CDataCache.find(Ptr);
     if (Iter != CDataCache.end())
     {
@@ -383,13 +382,24 @@ void FCppObjectMapper::UnBindCppObject(JSClassDefinition* ClassDefinition, void*
 void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
 {
     auto PData = DataTransfer::GetIsolatePrivateData(InIsolate);
-    for (auto Iter = CDataFinalizeMap.begin(); Iter != CDataFinalizeMap.end(); Iter++)
+    for (auto& KV : CDataCache)
     {
-        if (Iter->second.Finalize)
-            Iter->second.Finalize(Iter->first, Iter->second.ClassData, PData);
+        FObjectCacheNode* PNode = &KV.second;
+        while (PNode)
+        {
+            if (PNode->UserData)
+            {
+                JSClassDefinition* ClassDefinition = (JSClassDefinition*) (PNode->UserData);
+                if (ClassDefinition && ClassDefinition->Finalize)
+                {
+                    ClassDefinition->Finalize(KV.first, ClassDefinition->Data, PData);
+                }
+                PNode->UserData = nullptr;
+            }
+            PNode = PNode->Next;
+        }
     }
     CDataCache.clear();
-    CDataFinalizeMap.clear();
     CDataNameToTemplateMap.clear();
 #ifndef WITH_QUICKJS
     PrivateKey.Reset();
