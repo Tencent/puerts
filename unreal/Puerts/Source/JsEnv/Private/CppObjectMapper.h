@@ -16,13 +16,28 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(pop)
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
-#include <map>
+#include <unordered_map>
 #include "JSClassRegister.h"
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
 
 namespace PUERTS_NAMESPACE
 {
+struct PointerHash
+{
+    std::size_t operator()(const void* ptr) const
+    {
+        return reinterpret_cast<std::size_t>(ptr);
+    }
+};
+
+struct PointerEqual
+{
+    bool operator()(const void* lhs, const void* rhs) const
+    {
+        return lhs == rhs;
+    }
+};
 class FCppObjectMapper final : public ICppObjectMapper
 {
 public:
@@ -56,9 +71,9 @@ private:
     // TODO: pass by UnBindCppObject parameter
     v8::Isolate* Isolate;
 
-    std::map<void*, FObjectCacheNode> CDataCache;
+    std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
 
-    std::map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> CDataNameToTemplateMap;
+    std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>, PointerHash, PointerEqual> CDataNameToTemplateMap;
 
     v8::UniquePersistent<v8::Function> PointerConstructor;
 
