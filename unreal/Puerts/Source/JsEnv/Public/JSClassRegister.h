@@ -54,7 +54,7 @@ struct JSENV_API JSPropertyInfo
     void* SetterData = nullptr;
 };
 
-typedef void (*FinalizeFunc)(void* Ptr, void* ClassData, void* EnvData);
+typedef void (*FinalizeFunc)(void* Ptr, const void* TypeId, void* EnvData);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 

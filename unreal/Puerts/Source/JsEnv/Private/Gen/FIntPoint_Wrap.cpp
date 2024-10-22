@@ -78,7 +78,7 @@ static void* _FIntPointNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FIntPointDelete_(void* Ptr, void* ClassData, void* EnvData)
+static void _FIntPointDelete_(void* Ptr, const void* TypeId, void* EnvData)
 {
     FIntPoint* Self = static_cast<FIntPoint*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FIntPointDelete_:%p"), Self);

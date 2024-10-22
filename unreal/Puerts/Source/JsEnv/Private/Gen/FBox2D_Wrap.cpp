@@ -83,7 +83,7 @@ static void* _FBox2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FBox2DDelete_(void* Ptr, void* ClassData, void* EnvData)
+static void _FBox2DDelete_(void* Ptr, const void* TypeId, void* EnvData)
 {
     FBox2D* Self = static_cast<FBox2D*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FBox2DDelete_:%p"), Self);

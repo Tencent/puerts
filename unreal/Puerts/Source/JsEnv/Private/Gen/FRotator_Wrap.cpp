@@ -88,7 +88,7 @@ static void* _FRotatorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FRotatorDelete_(void* Ptr, void* ClassData, void* EnvData)
+static void _FRotatorDelete_(void* Ptr, const void* TypeId, void* EnvData)
 {
     FRotator* Self = static_cast<FRotator*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FRotatorDelete_:%p"), Self);

@@ -126,7 +126,7 @@ typedef struct pesapi_property_descriptor__* pesapi_property_descriptor;
 
 typedef void (*pesapi_callback)(pesapi_callback_info info);
 typedef void* (*pesapi_constructor)(pesapi_callback_info info);
-typedef void (*pesapi_finalize)(void* ptr, void* class_data, void* env_private);
+typedef void (*pesapi_finalize)(void* ptr, const void* type_id, void* env_private);
 typedef bool (*pesapi_class_not_found_callback)(const void* type_id);
 typedef void (*pesapi_func_ptr)(void);
 
