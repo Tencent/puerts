@@ -321,7 +321,7 @@ void FCppObjectMapper::BindCppObject(
 
     if (!PassByPointer)
     {
-        CacheNodePtr->UserData = ClassDefinition;
+        CacheNodePtr->MustCallFinalize = true;
         CacheNodePtr->Value.SetWeak<JSClassDefinition>(
             ClassDefinition, CDataGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
@@ -387,14 +387,14 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         FObjectCacheNode* PNode = &KV.second;
         while (PNode)
         {
-            if (PNode->UserData)
+            if (PNode->MustCallFinalize)
             {
-                JSClassDefinition* ClassDefinition = (JSClassDefinition*) (PNode->UserData);
+                const JSClassDefinition* ClassDefinition = FindClassByID(PNode->TypeId);
                 if (ClassDefinition && ClassDefinition->Finalize)
                 {
                     ClassDefinition->Finalize(KV.first, ClassDefinition->Data, PData);
                 }
-                PNode->UserData = nullptr;
+                PNode->MustCallFinalize = false;
             }
             PNode = PNode->Next;
         }
