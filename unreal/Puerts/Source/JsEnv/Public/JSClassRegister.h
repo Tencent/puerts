@@ -58,7 +58,11 @@ typedef void (*FinalizeFunc)(void* Ptr, const void* TypeId, void* EnvData);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-typedef bool (*ClassNotFoundCallback)(const void* type_id);
+typedef bool (*ClassNotFoundCallback)(const void* TypeId);
+
+typedef void* (*OnObjectEnter)(void* Ptr, const void* TypeId, void* EnvData);
+// UserData: return of OnObjectEnter
+typedef void (*OnObjectExit)(void* Ptr, const void* TypeId, void* EnvData, void* UserData);
 
 struct NamedFunctionInfo;
 struct NamedPropertyInfo;
@@ -82,11 +86,13 @@ struct JSENV_API JSClassDefinition
     NamedPropertyInfo* PropertyInfos;
     NamedPropertyInfo* VariableInfos;
     void* Data = nullptr;
+    OnObjectEnter OnEnter = nullptr;
+    OnObjectExit OnExit = nullptr;
 };
 
-#define JSClassEmptyDefinition                      \
-    {                                               \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
+#define JSClassEmptyDefinition                               \
+    {                                                        \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
     }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
@@ -103,6 +109,8 @@ JSENV_API void OnClassNotFound(ClassNotFoundCallback Callback);
 JSENV_API const JSClassDefinition* LoadClassByID(const void* TypeId);
 
 JSENV_API const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
+
+JSENV_API bool TraceObjectLifecycle(const void* TypeId, OnObjectEnter OnEnter, OnObjectExit OnExit);
 
 #if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);

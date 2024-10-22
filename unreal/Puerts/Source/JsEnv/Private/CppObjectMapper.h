@@ -53,6 +53,9 @@ public:
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition);
 
 private:
+    // TODO: pass by UnBindCppObject parameter
+    v8::Isolate* Isolate;
+
     std::map<void*, FObjectCacheNode> CDataCache;
 
     std::map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> CDataNameToTemplateMap;

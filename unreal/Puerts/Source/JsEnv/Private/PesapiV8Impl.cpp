@@ -1045,6 +1045,12 @@ void* pesapi_get_class_data(const void* type_id, bool force_load)
     return clsDef ? clsDef->Data : nullptr;
 }
 
+bool pesapi_trace_native_object_lifecycle(
+    const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
+{
+    return puerts::TraceObjectLifecycle(type_id, on_enter, on_exit);
+}
+
 void pesapi_on_class_not_found(pesapi_class_not_found_callback callback)
 {
     puerts::OnClassNotFound(callback);

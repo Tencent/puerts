@@ -326,6 +326,17 @@ const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
 
+bool TraceObjectLifecycle(const void* TypeId, OnObjectEnter OnEnter, OnObjectExit OnExit)
+{
+    if (auto clsDef = const_cast<JSClassDefinition*>(GetJSClassRegister()->FindClassByID(TypeId)))
+    {
+        clsDef->OnEnter = OnEnter;
+        clsDef->OnExit = OnExit;
+        return true;
+    }
+    return false;
+}
+
 #if USING_IN_UNREAL_ENGINE
 
 bool IsEditorOnlyUFunction(const UFunction* Func)

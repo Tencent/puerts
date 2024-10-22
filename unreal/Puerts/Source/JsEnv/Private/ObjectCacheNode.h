@@ -119,7 +119,7 @@ public:
 
     const void* TypeId;
 
-    const void* UserData;
+    void* UserData;
 
     FObjectCacheNode* Next;
 
