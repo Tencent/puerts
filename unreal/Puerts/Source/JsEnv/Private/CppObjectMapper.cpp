@@ -238,8 +238,12 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                     v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                     v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
                         FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
-                                           : v8::Local<v8::Value>(),
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow));
+                                           : v8::Local<v8::Value>()
+#ifndef WITH_QUICKJS
+                            ,
+                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+#endif
+                );
             }
             ++FunctionInfo;
         }
@@ -263,8 +267,12 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                 Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                     v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
                         FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
-                                           : v8::Local<v8::Value>(),
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow));
+                                           : v8::Local<v8::Value>()
+#ifndef WITH_QUICKJS
+                            ,
+                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+#endif
+                );
             }
             ++FunctionInfo;
         }
