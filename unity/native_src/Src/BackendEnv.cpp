@@ -469,6 +469,12 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
     if (key.size() == 0) 
     {
         PathToModuleMap.clear();
+#if !WITH_QUICKJS
+        for (auto it = ScriptIdToModuleInfo.begin(); it != ScriptIdToModuleInfo.end(); it++) {
+            delete it->second;
+        }
+        ScriptIdToModuleInfo.clear();
+#endif
         return true;
     } 
     else 
@@ -476,6 +482,14 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
         auto finder = PathToModuleMap.find(key);
         if (finder != PathToModuleMap.end()) 
         {
+#if !WITH_QUICKJS
+            auto iter = FindModuleInfo(finder->second.Get(Isolate));
+            if (iter != ScriptIdToModuleInfo.end())
+            {
+                delete iter->second;
+                ScriptIdToModuleInfo.erase(iter);
+            }
+#endif
             PathToModuleMap.erase(key);
 #if !WITH_QUICKJS
             return true;
