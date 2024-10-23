@@ -157,7 +157,7 @@ public:
 
     virtual void UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr) override;
 
-    virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr) override;
+    virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
 
     virtual v8::Local<v8::Value> FindOrAddStruct(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;

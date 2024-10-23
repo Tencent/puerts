@@ -2977,9 +2977,9 @@ void FJsEnvImpl::UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* P
     }
 }
 
-void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
+void FJsEnvImpl::UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr)
 {
-    CppObjectMapper.UnBindCppObject(ClassDefinition, Ptr);
+    CppObjectMapper.UnBindCppObject(Isolate, ClassDefinition, Ptr);
 }
 
 void FJsEnvImpl::BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data),

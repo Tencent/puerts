@@ -52,7 +52,7 @@ public:
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
 
-    virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr) override;
+    virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
 
     virtual void BindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject,
         bool PassByPointer) override;
@@ -68,9 +68,6 @@ public:
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition);
 
 private:
-    // TODO: pass by UnBindCppObject parameter
-    v8::Isolate* Isolate;
-
     std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
 
     std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>, PointerHash, PointerEqual> CDataNameToTemplateMap;
