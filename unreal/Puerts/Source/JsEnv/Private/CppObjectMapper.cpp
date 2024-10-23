@@ -241,9 +241,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                                            : v8::Local<v8::Value>()
 #ifndef WITH_QUICKJS
                             ,
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
 #endif
-                );
+                        ));
             }
             ++FunctionInfo;
         }
@@ -270,9 +270,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                                            : v8::Local<v8::Value>()
 #ifndef WITH_QUICKJS
                             ,
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
 #endif
-                );
+                        ));
             }
             ++FunctionInfo;
         }
