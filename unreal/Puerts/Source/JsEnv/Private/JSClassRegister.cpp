@@ -84,6 +84,10 @@ public:
 
     const JSClassDefinition* LoadClassByID(const void* TypeId)
     {
+        if (!TypeId)
+        {
+            return nullptr;
+        }
         auto clsDef = FindClassByID(TypeId);
         if (!clsDef && ClassNotFoundCallback)
         {
@@ -213,6 +217,10 @@ void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionIn
 
 const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
 {
+    if (!TypeId)
+    {
+        return nullptr;
+    }
     auto Iter = CDataIdToClassDefinition.find(TypeId);
     if (Iter == CDataIdToClassDefinition.end())
     {

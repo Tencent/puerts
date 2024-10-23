@@ -70,9 +70,9 @@ public:
 private:
     std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
 
-    std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>, PointerHash, PointerEqual> CDataNameToTemplateMap;
+    std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>, PointerHash, PointerEqual> TypeIdToTemplateMap;
 
-    v8::UniquePersistent<v8::Function> PointerConstructor;
+    v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
 #ifndef WITH_QUICKJS
     v8::Global<v8::Symbol> PrivateKey;

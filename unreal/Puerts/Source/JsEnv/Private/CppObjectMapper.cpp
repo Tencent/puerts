@@ -70,7 +70,7 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
 {
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
     LocalTemplate->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1, CDataName
-    PointerConstructor = v8::UniquePersistent<v8::Function>(InIsolate, LocalTemplate->GetFunction(InContext).ToLocalChecked());
+    PointerTemplate = v8::UniquePersistent<v8::FunctionTemplate>(InIsolate, LocalTemplate);
 #ifndef WITH_QUICKJS
     PrivateKey.Reset(InIsolate, v8::Symbol::New(InIsolate));
 #endif
@@ -107,7 +107,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     }
     else
     {
-        auto Result = PointerConstructor.Get(Isolate)->NewInstance(Context, 0, nullptr).ToLocalChecked();
+        auto Result = PointerTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
         DataTransfer::SetPointer(Isolate, Result, Ptr, 0);
         DataTransfer::SetPointer(Isolate, Result, TypeId, 1);
         return Result;
@@ -164,8 +164,8 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition)
 {
-    auto Iter = CDataNameToTemplateMap.find(ClassDefinition->TypeId);
-    if (Iter == CDataNameToTemplateMap.end())
+    auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
+    if (Iter == TypeIdToTemplateMap.end())
     {
         auto Template = v8::FunctionTemplate::New(
             Isolate, CDataNew, v8::External::New(Isolate, const_cast<void*>(reinterpret_cast<const void*>(ClassDefinition))));
@@ -284,7 +284,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
         }
 
-        CDataNameToTemplateMap[ClassDefinition->TypeId] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
+        TypeIdToTemplateMap[ClassDefinition->TypeId] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
 
         return Template;
     }
@@ -425,11 +425,11 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         }
     }
     CDataCache.clear();
-    CDataNameToTemplateMap.clear();
+    TypeIdToTemplateMap.clear();
 #ifndef WITH_QUICKJS
     PrivateKey.Reset();
 #endif
-    PointerConstructor.Reset();
+    PointerTemplate.Reset();
 }
 
 }    // namespace PUERTS_NAMESPACE
