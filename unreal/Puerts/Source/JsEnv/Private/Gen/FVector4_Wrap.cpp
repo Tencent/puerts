@@ -110,7 +110,7 @@ static void* _FVector4New_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FVector4Delete_(void* Ptr, const void* TypeId, void* EnvData)
+static void _FVector4Delete_(void* Ptr, void* ClassData, void* EnvData)
 {
     FVector4* Self = static_cast<FVector4*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FVector4Delete_:%p"), Self);

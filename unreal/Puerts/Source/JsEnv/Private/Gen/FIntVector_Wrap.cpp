@@ -109,7 +109,7 @@ static void* _FIntVectorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
-static void _FIntVectorDelete_(void* Ptr, const void* TypeId, void* EnvData)
+static void _FIntVectorDelete_(void* Ptr, void* ClassData, void* EnvData)
 {
     FIntVector* Self = static_cast<FIntVector*>(Ptr);
     // UE_LOG(LogTemp, Warning, TEXT("_FIntVectorDelete_:%p"), Self);

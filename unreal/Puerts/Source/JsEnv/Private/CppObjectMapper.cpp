@@ -299,7 +299,7 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->Finalize)
-        ClassDefinition->Finalize(Ptr, ClassDefinition->TypeId, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+        ClassDefinition->Finalize(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);
 }
 
@@ -343,8 +343,7 @@ void FCppObjectMapper::BindCppObject(
 
     if (ClassDefinition->OnEnter)
     {
-        CacheNodePtr->UserData =
-            ClassDefinition->OnEnter(Ptr, ClassDefinition->TypeId, DataTransfer::GetIsolatePrivateData(Isolate));
+        CacheNodePtr->UserData = ClassDefinition->OnEnter(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
     }
 }
 
@@ -389,7 +388,8 @@ void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* 
     {
         if (ClassDefinition->OnExit)
         {
-            ClassDefinition->OnExit(Ptr, Iter->second.TypeId, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
+            ClassDefinition->OnExit(
+                Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
         }
         auto Removed = Iter->second.Remove(ClassDefinition->TypeId, true);
         if (!Iter->second.TypeId)    // last one
@@ -412,13 +412,14 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             {
                 if (ClassDefinition && ClassDefinition->Finalize)
                 {
-                    ClassDefinition->Finalize(KV.first, PNode->TypeId, PData);
+                    ClassDefinition->Finalize(KV.first, ClassDefinition->Data, PData);
                 }
                 PNode->MustCallFinalize = false;
             }
             if (ClassDefinition->OnExit)
             {
-                ClassDefinition->OnExit(KV.first, PNode->TypeId, DataTransfer::GetIsolatePrivateData(InIsolate), PNode->UserData);
+                ClassDefinition->OnExit(
+                    KV.first, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(InIsolate), PNode->UserData);
             }
             PNode = PNode->Next;
         }
