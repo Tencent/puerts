@@ -54,15 +54,15 @@ struct JSENV_API JSPropertyInfo
     void* SetterData = nullptr;
 };
 
-typedef void (*FinalizeFunc)(void* Ptr, const void* TypeId, void* EnvData);
+typedef void (*FinalizeFunc)(void* Ptr, void* ClassData, void* EnvData);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
 typedef bool (*ClassNotFoundCallback)(const void* TypeId);
 
-typedef void* (*OnObjectEnter)(void* Ptr, const void* TypeId, void* EnvData);
+typedef void* (*OnObjectEnter)(void* Ptr, void* ClassData, void* EnvData);
 // UserData: return of OnObjectEnter
-typedef void (*OnObjectExit)(void* Ptr, const void* TypeId, void* EnvData, void* UserData);
+typedef void (*OnObjectExit)(void* Ptr, void* ClassData, void* EnvData, void* UserData);
 
 struct NamedFunctionInfo;
 struct NamedPropertyInfo;

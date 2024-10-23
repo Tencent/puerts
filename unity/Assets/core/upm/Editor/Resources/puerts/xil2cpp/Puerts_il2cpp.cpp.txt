@@ -1918,12 +1918,12 @@ struct JsEnvPrivate
     }
 };
 
-static void* OnCsObjectEnter(Il2CppObject* obj, const void* type_id, JsEnvPrivate* jsEnvPrivate)
+static void* OnCsObjectEnter(Il2CppObject* obj, void* class_data, JsEnvPrivate* jsEnvPrivate)
 {
     return reinterpret_cast<void*>(jsEnvPrivate->RefCSObject(obj));
 }
 
-static void OnCsObjectExit(void* ptr, const void* type_id, JsEnvPrivate* jsEnvPrivate, void* userdata)
+static void OnCsObjectExit(void* ptr, void* class_data, JsEnvPrivate* jsEnvPrivate, void* userdata)
 {
     intptr_t idx = reinterpret_cast<intptr_t>(userdata);
     jsEnvPrivate->UnRefCSObject(idx);
