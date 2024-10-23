@@ -54,7 +54,7 @@ namespace PuertsIl2cpp
         public static extern IntPtr GetPapiEnvRef(IntPtr jsEnv);
         
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr InitialPapiEnvRef(IntPtr envRef)
+        public static IntPtr InitialPapiEnvRef(IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
         {
             throw new NotImplementedException();
         }
@@ -92,8 +92,8 @@ namespace PuertsIl2cpp
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RegisterCSharpType(IntPtr classInfo);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetObjectPool(IntPtr jsEnv, IntPtr objectPoolAddMethodInfo, IntPtr objectPoolAdd, IntPtr objectPoolRemoveMethodInfo, IntPtr objectPoolRemove, IntPtr objectPoolInstance);
+        //[DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        //public static extern void SetObjectPool(IntPtr jsEnv, IntPtr objectPoolAddMethodInfo, IntPtr objectPoolAdd, IntPtr objectPoolRemoveMethodInfo, IntPtr objectPoolRemove, IntPtr objectPoolInstance);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static void SetRegisterNoThrow(MethodBase methodInfo)
@@ -217,6 +217,9 @@ namespace PuertsIl2cpp
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(IntPtr log);
+        
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SetLogCallbackInternal(IntPtr log);
 
         //[UnityEngine.Scripting.RequiredByNativeCodeAttribute()]
         public static void SetLogCallback(LogCallback log)
@@ -228,7 +231,8 @@ namespace PuertsIl2cpp
 
             try 
             {
-                SetLogCallback(fn1);                
+                SetLogCallback(fn1);
+                SetLogCallbackInternal(fn1);
             }
             catch(DllNotFoundException)
             {

@@ -8,30 +8,41 @@
 
 #pragma once
 
+#include "NamespaceDef.h"
+
+PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
+PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
-#include <map>
 #include <unordered_map>
 #include "JSClassRegister.h"
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
-typedef int32_t (*ObjectPoolAddFunc) (void * objectPool, void * obj, void* method);
-typedef void* (*ObjectPoolRemoveFunc) (void * objectPool, int32_t index, void* method);
+struct PointerHash
+{
+    std::size_t operator()(const void* ptr) const
+    {
+        return reinterpret_cast<std::size_t>(ptr);
+    }
+};
 
+struct PointerEqual
+{
+    bool operator()(const void* lhs, const void* rhs) const
+    {
+        return lhs == rhs;
+    }
+};
 class FCppObjectMapper final : public ICppObjectMapper
 {
 public:
     void Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext);
-    
-    v8::Local<v8::Function> LoadTypeByString(v8::Isolate* Isolate, v8::Local<v8::Context> Context, std::string TypeName);
-    
-    virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) override;
-    
+
     void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) override;
@@ -45,42 +56,32 @@ public:
 
     virtual void BindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject,
         bool PassByPointer) override;
-        
+
     virtual void* GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject) override;
 
     virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) override;
 
+    virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) override;
+
     void UnInitialize(v8::Isolate* InIsolate);
 
-    v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const void* TypeId);
-    
-    void* ObjectPoolAddMethodInfo = nullptr;
-    
-    ObjectPoolAddFunc ObjectPoolAdd = nullptr;
-    
-    void* ObjectPoolRemoveMethodInfo = nullptr;
-   
-    ObjectPoolRemoveFunc ObjectPoolRemove = nullptr;
-    
-    void* ObjectPoolInstance = nullptr;
+    v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition);
 
 private:
-    std::unordered_map<void*, FObjectCacheNode> CDataCache;
+    // TODO: pass by UnBindCppObject parameter
+    v8::Isolate* Isolate;
 
-    std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> TypeIdToTemplateMap;
+    std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
 
-    v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
-    
+    std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>, PointerHash, PointerEqual> CDataNameToTemplateMap;
+
+    v8::UniquePersistent<v8::Function> PointerConstructor;
+
+#ifndef WITH_QUICKJS
     v8::Global<v8::Symbol> PrivateKey;
-
-    struct FinalizeInfo
-    {
-        void* ClassData;
-        FinalizeFunc Finalize;
-    };
-    std::unordered_map<void*, FinalizeInfo> CDataFinalizeMap;
+#endif
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

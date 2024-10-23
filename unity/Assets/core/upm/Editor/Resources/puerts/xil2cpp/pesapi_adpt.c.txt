@@ -562,6 +562,12 @@ void* pesapi_get_class_data (const void* type_id, bool force_load) {
     return pesapi_get_class_data_ptr(type_id, force_load);
 }
 
+typedef bool (*pesapi_trace_native_object_lifecycleType)(const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
+static pesapi_trace_native_object_lifecycleType pesapi_trace_native_object_lifecycle_ptr;
+bool pesapi_trace_native_object_lifecycle (const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit) {
+    return pesapi_trace_native_object_lifecycle_ptr(type_id, on_enter, on_exit);
+}
+
 typedef void (*pesapi_on_class_not_foundType)(pesapi_class_not_found_callback callback);
 static pesapi_on_class_not_foundType pesapi_on_class_not_found_ptr;
 void pesapi_on_class_not_found (pesapi_class_not_found_callback callback) {
@@ -676,9 +682,10 @@ void pesapi_init(pesapi_func_ptr* func_array){
     pesapi_set_property_info_ptr = (pesapi_set_property_infoType)func_array[88];
     pesapi_define_class_ptr = (pesapi_define_classType)func_array[89];
     pesapi_get_class_data_ptr = (pesapi_get_class_dataType)func_array[90];
-    pesapi_on_class_not_found_ptr = (pesapi_on_class_not_foundType)func_array[91];
-    pesapi_class_type_info_ptr = (pesapi_class_type_infoType)func_array[92];
-    pesapi_find_type_id_ptr = (pesapi_find_type_idType)func_array[93];
+    pesapi_trace_native_object_lifecycle_ptr = (pesapi_trace_native_object_lifecycleType)func_array[91];
+    pesapi_on_class_not_found_ptr = (pesapi_on_class_not_foundType)func_array[92];
+    pesapi_class_type_info_ptr = (pesapi_class_type_infoType)func_array[93];
+    pesapi_find_type_id_ptr = (pesapi_find_type_idType)func_array[94];
 
 #endif
 }

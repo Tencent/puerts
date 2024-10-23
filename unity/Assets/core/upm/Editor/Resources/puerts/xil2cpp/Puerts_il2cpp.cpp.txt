@@ -425,6 +425,10 @@ void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
     return (defaultValue && Class::IsValuetype(Class::FromIl2CppType(Method::GetParam(method, index), false))) ? Object::Unbox(defaultValue) : defaultValue;
 }
 
+typedef void(*LogCallbackFunc)(const char* value);
+
+static LogCallbackFunc GLogCallback = nullptr;
+
 void PLog(const char* Fmt, ...)
 {
     static char SLogBuffer[1024];
@@ -433,10 +437,10 @@ void PLog(const char* Fmt, ...)
     vsnprintf(SLogBuffer, sizeof(SLogBuffer), Fmt, list);
     va_end(list);
 
-    //if (g_unityExports.LogCallback)
-    //{
-    //    g_unityExports.LogCallback(SLogBuffer);
-    //}
+    if (GLogCallback)
+    {
+        GLogCallback(SLogBuffer);
+    }
 }
 
 static void* CtorCallback(pesapi_callback_info info)
@@ -1842,15 +1846,18 @@ Il2CppObject* GetModuleExecutor(intptr_t ptr, Il2CppReflectionType* rtype)
     return JsValueToCSRef(type, env, func);
 }
 
-struct ScriptObjectsRefsMgr
+struct JsEnvPrivate
 {
     pesapi_env_ref envRef;
     std::mutex pendingKillRefsMutex;
     std::unordered_set<pesapi_value_ref> pendingKillRefs;
+    MethodInfoHelper<int32_t(Il2CppObject* obj)> objPoolAdd;
+    MethodInfoHelper<Il2CppObject*(int32_t index)> objPoolRemove;
     
-    ScriptObjectsRefsMgr(pesapi_env_ref inEnvRef)
+    JsEnvPrivate(pesapi_env_ref inEnvRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
+        : envRef(inEnvRef), objPoolAdd(objPoolAddMethodInfo, objPool), objPoolRemove(objPoolRemoveMethodInfo, objPool)
+          
     {
-        envRef = inEnvRef;
     }
     
     void AddPendingKillScriptObjects(pesapi_value_ref valueRef)
@@ -1899,7 +1906,28 @@ struct ScriptObjectsRefsMgr
 
         pendingKillRefs.clear();
     }
+    
+    int32_t RefCSObject(Il2CppObject* obj)
+    {
+        return objPoolAdd.CallWithInstance(obj);
+    }
+    
+    void UnRefCSObject(int32_t idx)
+    {
+        objPoolRemove.CallWithInstance(idx);
+    }
 };
+
+static void* OnCsObjectEnter(Il2CppObject* obj, const void* type_id, JsEnvPrivate* jsEnvPrivate)
+{
+    return reinterpret_cast<void*>(jsEnvPrivate->RefCSObject(obj));
+}
+
+static void OnCsObjectExit(void* ptr, const void* type_id, JsEnvPrivate* jsEnvPrivate, void* userdata)
+{
+    intptr_t idx = reinterpret_cast<intptr_t>(userdata);
+    jsEnvPrivate->UnRefCSObject(idx);
+}
 
 static void LoadTypeWrapper(pesapi_callback_info info)
 {
@@ -1910,12 +1938,12 @@ static void LoadTypeWrapper(pesapi_callback_info info)
     pesapi_add_return(info, ret);
 }
 
-puerts::ScriptObjectsRefsMgr* InitialPapiEnvRef(pesapi_env_ref envRef)
+puerts::JsEnvPrivate* InitialPapiEnvRef(pesapi_env_ref envRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
 {
     puerts::AutoValueScope ValueScope(envRef);
     auto env = pesapi_get_env_from_ref(envRef);
-    auto mgr = new puerts::ScriptObjectsRefsMgr(envRef);
-    pesapi_set_env_private(env, mgr);
+    auto jsEnvPrivate = new puerts::JsEnvPrivate(envRef, objPool, objPoolAddMethodInfo, objPoolRemoveMethodInfo);
+    pesapi_set_env_private(env, jsEnvPrivate);
     auto func = pesapi_create_function(env, LoadTypeWrapper, nullptr);
     if (func)
     {
@@ -1923,7 +1951,7 @@ puerts::ScriptObjectsRefsMgr* InitialPapiEnvRef(pesapi_env_ref envRef)
         if (global)
         {
             pesapi_set_property(env, global, "loadType", func);
-            return mgr;
+            return jsEnvPrivate;
         }
     }
     Exception::Raise(Exception::GetInvalidOperationException("can not init global.loadType"));
@@ -1934,9 +1962,9 @@ void CleanupPapiEnvRef(pesapi_env_ref envRef)
 {
     puerts::AutoValueScope ValueScope(envRef);
     auto env = pesapi_get_env_from_ref(envRef);
-    auto scriptObjectsRefsMgr = (puerts::ScriptObjectsRefsMgr*)pesapi_get_env_private(env);
-    scriptObjectsRefsMgr->CleanupPendingKillScriptObjects();
-    delete scriptObjectsRefsMgr;
+    auto jsEnvPrivate = (puerts::JsEnvPrivate*)pesapi_get_env_private(env);
+    jsEnvPrivate->CleanupPendingKillScriptObjects();
+    delete jsEnvPrivate;
     pesapi_release_env_ref(envRef);
 }
 
@@ -1963,14 +1991,14 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetObjectToGlobal(System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetModuleExecutor(System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
-    InternalCalls::Add("PuertsIl2cpp.NativeAPI::InitialPapiEnvRef(System.IntPtr)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.Object,System.Reflection.MethodBase,System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::CleanupPapiEnvRef(System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetRegisterNoThrow(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetRegisterNoThrow);
     pesapi_init(func_array);
 }
 
-void AddPendingKillScriptObjects(puerts::ScriptObjectsRefsMgr* mgr, pesapi_value_ref valueRef)
+void AddPendingKillScriptObjects(puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
 {
     pesapi_env_ref envRef = pesapi_get_ref_associated_env(valueRef);
     if (!pesapi_env_ref_is_valid(envRef)) // jsEnv已经释放
@@ -1978,12 +2006,12 @@ void AddPendingKillScriptObjects(puerts::ScriptObjectsRefsMgr* mgr, pesapi_value
         pesapi_release_value_ref(valueRef);
         return;
     }
-    mgr->AddPendingKillScriptObjects(valueRef);
+    jsEnvPrivate->AddPendingKillScriptObjects(valueRef);
 }
 
-void CleanupPendingKillScriptObjects(puerts::ScriptObjectsRefsMgr* mgr)
+void CleanupPendingKillScriptObjects(puerts::JsEnvPrivate* jsEnvPrivate)
 {
-    mgr->CleanupPendingKillScriptObjects();
+    jsEnvPrivate->CleanupPendingKillScriptObjects();
 }
 
 puerts::WrapFuncPtr FindWrapFunc(const char* signature)
@@ -2218,9 +2246,19 @@ bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
     }
     
     pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->Name.c_str(),
-            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? &puerts::PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
+            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? (pesapi_finalize)&puerts::PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
+            
+    if (!classInfo->IsValueType)
+    {
+        pesapi_trace_native_object_lifecycle(classInfo->TypeId, (pesapi_on_native_object_enter)&puerts::OnCsObjectEnter, (pesapi_on_native_object_exit)&puerts::OnCsObjectExit);
+    }
     
     return true;
+}
+
+void SetLogCallbackInternal(puerts::LogCallbackFunc Log)
+{
+    puerts::GLogCallback = Log;
 }
 
 #ifdef __cplusplus

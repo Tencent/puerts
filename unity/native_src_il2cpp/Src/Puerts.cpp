@@ -173,14 +173,14 @@ V8_EXPORT pesapi_env_ref GetPapiEnvRef(puerts::JSEnv* jsEnv)
     return pesapi_create_env_ref(env);
 }
 
-V8_EXPORT void SetObjectPool(puerts::JSEnv* jsEnv, void* ObjectPoolAddMethodInfo, puerts::ObjectPoolAddFunc ObjectPoolAdd, void* ObjectPoolRemoveMethodInfo, puerts::ObjectPoolRemoveFunc ObjectPoolRemove, void* ObjectPoolInstance)
+/*V8_EXPORT void SetObjectPool(puerts::JSEnv* jsEnv, void* ObjectPoolAddMethodInfo, puerts::ObjectPoolAddFunc ObjectPoolAdd, void* ObjectPoolRemoveMethodInfo, puerts::ObjectPoolRemoveFunc ObjectPoolRemove, void* ObjectPoolInstance)
 {
     jsEnv->CppObjectMapper.ObjectPoolAddMethodInfo = ObjectPoolAddMethodInfo;
     jsEnv->CppObjectMapper.ObjectPoolAdd = ObjectPoolAdd;
     jsEnv->CppObjectMapper.ObjectPoolRemoveMethodInfo = ObjectPoolRemoveMethodInfo;
     jsEnv->CppObjectMapper.ObjectPoolRemove = ObjectPoolRemove;
     jsEnv->CppObjectMapper.ObjectPoolInstance = ObjectPoolInstance;
-}
+}*/
 
 V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)
 {
