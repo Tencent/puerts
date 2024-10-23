@@ -62,9 +62,8 @@ struct CSharpFieldInfo
 
 struct JsClassInfoHeader
 {
-    const void* TypeId;
-    const void* SuperTypeId;
-    Il2CppClass* Class;
+    Il2CppClass* TypeId;
+    Il2CppClass* SuperTypeId;
     bool IsValueType;
     Il2CppMethodPointer DelegateBridge;
     WrapData** CtorWrapDatas;
@@ -448,9 +447,9 @@ static void* CtorCallback(pesapi_callback_info info)
         return nullptr;
     }
     
-    void* self = ObjectAllocate(classInfo->Class);
+    void* self = ObjectAllocate(classInfo->TypeId);
 
-    auto isValueType = Class::IsValuetype(classInfo->Class);
+    auto isValueType = classInfo->IsValueType;
     
     try
     {
@@ -564,7 +563,7 @@ static Il2CppObject* FunctionToDelegate(pesapi_env env, pesapi_value jsval, JsCl
     if (ret == nullptr)
     {
         PObjectRefInfo* delegateInfo;
-        ret = (Il2CppObject *)DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
+        ret = (Il2CppObject *)DelegateAllocate(classInfo->TypeId, classInfo->DelegateBridge, &delegateInfo);
         auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
         il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
         *handle_store = targetHandle.Get();
@@ -2043,7 +2042,7 @@ void FindFieldWrap(const char* signature, puerts::FieldWrapFuncPtr *getter, puer
     }
 }
 
-puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, const void* type_id, const void* super_type_id, Il2CppClass* klass, bool isValueType, bool isDelegate, const char* delegateSignature)
+puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, Il2CppClass* type_id, Il2CppClass* super_type_id, bool isValueType, bool isDelegate, const char* delegateSignature)
 {
     Il2CppMethodPointer delegateBridge = nullptr;
     if (isDelegate)
@@ -2055,7 +2054,6 @@ puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, const void* type_id,
     ret->Name = name;
     ret->TypeId = type_id;
     ret->SuperTypeId = super_type_id;
-    ret->Class = klass;
     ret->IsValueType = isValueType;
     ret->DelegateBridge = delegateBridge;
     

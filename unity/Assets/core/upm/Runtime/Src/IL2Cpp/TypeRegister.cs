@@ -143,7 +143,7 @@ namespace Puerts.TypeMapping
                 RegisterInfo registerInfo = null;
                 if (hasRegisterInfo) registerInfo = getRegisterInfoFunc();
 
-                typeInfo = NativeAPI.CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
+                typeInfo = NativeAPI.CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
                 if (typeInfo == IntPtr.Zero)
                 {
                     if (isDelegate) throw new Exception(string.Format("create TypeInfo for {0} fail. maybe the Bridge of delegate is not found!", type));

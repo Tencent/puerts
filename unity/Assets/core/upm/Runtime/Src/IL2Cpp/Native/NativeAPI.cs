@@ -66,7 +66,7 @@ namespace PuertsIl2cpp
         }
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, IntPtr klass, bool isValueType, bool isDelegate, string delegateSignature);
+        public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, bool isValueType, bool isDelegate, string delegateSignature);
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleaseCSharpTypeInfo(IntPtr classInfo);
