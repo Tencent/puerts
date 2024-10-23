@@ -155,12 +155,6 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetObjectPointer(Object obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static IntPtr GetTypeId(Type type)
         {
             throw new NotImplementedException();

@@ -108,11 +108,6 @@ intptr_t GetFieldInfoPointer(Il2CppReflectionField* field)
     return (intptr_t)field->field;
 }
 
-intptr_t GetObjectPointer(Il2CppObject *obj)
-{
-    return (intptr_t)obj;
-}
-
 intptr_t GetTypeId(Il2CppReflectionType *type)
 {
     return (intptr_t)il2cpp_codegen_class_from_type(type->type);
@@ -1980,7 +1975,6 @@ void InitialPuerts(pesapi_func_ptr* func_array)
 {
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetMethodPointer(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::GetMethodPointer);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetMethodInfoPointer(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::GetMethodInfoPointer);
-    InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetObjectPointer(System.Object)", (Il2CppMethodPointer)puerts::GetObjectPointer);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetTypeId(System.Type)", (Il2CppMethodPointer)puerts::GetTypeId);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetFieldOffset(System.Reflection.FieldInfo,System.Boolean)", (Il2CppMethodPointer)puerts::GetFieldOffset);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetFieldInfoPointer(System.Reflection.FieldInfo)", (Il2CppMethodPointer)puerts::GetFieldInfoPointer);
