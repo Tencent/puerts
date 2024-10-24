@@ -69,8 +69,7 @@ struct JSENV_API JSPropertyInfo
     {
     }
 
-    JSPropertyInfo()
-        : Name(nullptr), Getter(reinterpret_cast<pesapi_callback>(nullptr)), Setter(reinterpret_cast<pesapi_callback>(nullptr))
+    JSPropertyInfo() : Name(nullptr), Getter(nullptr), Setter(nullptr)
     {
     }
     const char* Name;
