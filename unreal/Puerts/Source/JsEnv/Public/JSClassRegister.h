@@ -40,16 +40,22 @@ namespace PUERTS_NAMESPACE
 class CFunctionInfo;
 struct JSENV_API JSFunctionInfo
 {
-    template <class CallbackType>
-    JSFunctionInfo(
-        const char* InName, CallbackType InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr)
+    JSFunctionInfo()
+    : Name(nullptr), Callback(nullptr)
+    {
+    }
+    
+    JSFunctionInfo(const char* InName, pesapi_callback InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr )
+        : Name(InName), Callback(InCallback), Data(InData), ReflectionInfo(InReflectionInfo)
+    {
+    }
+    
+    template<class CallbackType>
+    JSFunctionInfo(const char* InName, CallbackType InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr )
         : Name(InName), Callback(reinterpret_cast<pesapi_callback>(InCallback)), Data(InData), ReflectionInfo(InReflectionInfo)
     {
     }
-
-    JSFunctionInfo() : Name(nullptr), Callback(nullptr)
-    {
-    }
+    
     const char* Name;
     pesapi_callback Callback;
     void* Data = nullptr;
@@ -58,20 +64,22 @@ struct JSENV_API JSFunctionInfo
 
 struct JSENV_API JSPropertyInfo
 {
-    template <class CallbackType>
-    JSPropertyInfo(const char* InName, CallbackType InGetter, CallbackType InSetter, void* InGetterData = nullptr,
-        void* InSetterData = nullptr)
-        : Name(InName)
-        , Getter(reinterpret_cast<pesapi_callback>(InGetter))
-        , Setter(reinterpret_cast<pesapi_callback>(InSetter))
-        , GetterData(InGetterData)
-        , SetterData(InSetterData)
+    JSPropertyInfo()
+    : Name(nullptr), Getter(nullptr), Setter(nullptr)
     {
     }
-
-    JSPropertyInfo() : Name(nullptr), Getter(nullptr), Setter(nullptr)
+    
+    JSPropertyInfo(const char* InName, pesapi_callback InGetter, pesapi_callback InSetter, void* InGetterData = nullptr, void* InSetterData = nullptr)
+    : Name(InName), Getter(InGetter), Setter(InSetter), GetterData(InGetterData), SetterData(InSetterData)
     {
     }
+    
+    template<class CallbackType>
+    JSPropertyInfo(const char* InName, CallbackType InGetter, CallbackType InSetter, void* InGetterData = nullptr, void* InSetterData = nullptr)
+    : Name(InName), Getter(reinterpret_cast<pesapi_callback>(InGetter)), Setter(reinterpret_cast<pesapi_callback>(InSetter)), GetterData(InGetterData), SetterData(InSetterData)
+    {
+    }
+    
     const char* Name;
     pesapi_callback Getter;
     pesapi_callback Setter;
