@@ -1023,10 +1023,10 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 
     free_property_descriptor(properties, property_count);
 
-    p_methods.push_back({nullptr, nullptr, nullptr});
-    p_functions.push_back({nullptr, nullptr, nullptr});
-    p_properties.push_back({nullptr, nullptr, nullptr, nullptr});
-    p_variables.push_back({nullptr, nullptr, nullptr, nullptr});
+    p_methods.push_back(puerts::JSFunctionInfo());
+    p_functions.push_back(puerts::JSFunctionInfo());
+    p_properties.push_back(puerts::JSPropertyInfo());
+    p_variables.push_back(puerts::JSPropertyInfo());
 
     classDef.Methods = p_methods.data();
     classDef.Functions = p_functions.data();

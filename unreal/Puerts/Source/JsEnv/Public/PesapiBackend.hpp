@@ -168,26 +168,22 @@ struct API
         size_t pos = 0;
         for (const auto& func : Cdb.functions_)
         {
-            pesapi_set_method_info(
-                properties, pos++, func.Name, true, reinterpret_cast<FunctionCallbackType>(func.Callback), nullptr, nullptr);
+            pesapi_set_method_info(properties, pos++, func.Name, true, func.Callback, nullptr, nullptr);
         }
 
         for (const auto& method : Cdb.methods_)
         {
-            pesapi_set_method_info(
-                properties, pos++, method.Name, false, reinterpret_cast<FunctionCallbackType>(method.Callback), nullptr, nullptr);
+            pesapi_set_method_info(properties, pos++, method.Name, false, method.Callback, nullptr, nullptr);
         }
 
         for (const auto& prop : Cdb.properties_)
         {
-            pesapi_set_property_info(properties, pos++, prop.Name, false, reinterpret_cast<FunctionCallbackType>(prop.Getter),
-                reinterpret_cast<FunctionCallbackType>(prop.Setter), nullptr, nullptr, nullptr);
+            pesapi_set_property_info(properties, pos++, prop.Name, false, prop.Getter, prop.Setter, nullptr, nullptr, nullptr);
         }
 
         for (const auto& prop : Cdb.variables_)
         {
-            pesapi_set_property_info(properties, pos++, prop.Name, true, reinterpret_cast<FunctionCallbackType>(prop.Getter),
-                reinterpret_cast<FunctionCallbackType>(prop.Setter), nullptr, nullptr, nullptr);
+            pesapi_set_property_info(properties, pos++, prop.Name, true, prop.Getter, prop.Setter, nullptr, nullptr, nullptr);
         }
 
         pesapi_finalize finalize = Finalize;
