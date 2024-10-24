@@ -1173,7 +1173,7 @@ struct AutoRegisterForFVector4
 
         Def.UETypeName = "Vector4";
 
-        Def.Initialize = (pesapi_constructor) _FVector4New_;
+        Def.SetInitialize(_FVector4New_);
         Def.Finalize = _FVector4Delete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

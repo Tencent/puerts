@@ -1840,7 +1840,7 @@ struct AutoRegisterForFQuat
 
         Def.UETypeName = "Quat";
 
-        Def.Initialize = (pesapi_constructor) _FQuatNew_;
+        Def.SetInitialize(_FQuatNew_);
         Def.Finalize = _FQuatDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

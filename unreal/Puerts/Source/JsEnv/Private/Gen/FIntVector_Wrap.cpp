@@ -634,7 +634,7 @@ struct AutoRegisterForFIntVector
 
         Def.UETypeName = "IntVector";
 
-        Def.Initialize = (pesapi_constructor) _FIntVectorNew_;
+        Def.SetInitialize(_FIntVectorNew_);
         Def.Finalize = _FIntVectorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

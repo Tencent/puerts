@@ -95,7 +95,6 @@ struct JSENV_API JSPropertyInfo
     void* GetterData = nullptr;
     void* SetterData = nullptr;
 };
-MSVC_PRAGMA(warning(pop))
 
 struct NamedFunctionInfo;
 struct NamedPropertyInfo;
@@ -107,6 +106,11 @@ struct JSENV_API JSClassDefinition
     const char* ScriptName;
     const char* UETypeName;
     pesapi_constructor Initialize;
+    template <class InitializeType>
+    void SetInitialize(InitializeType InInitialize)
+    {
+        Initialize = reinterpret_cast<pesapi_constructor>(InInitialize);
+    }
     JSFunctionInfo* Methods;       //成员方法
     JSFunctionInfo* Functions;     //静态方法
     JSPropertyInfo* Properties;    //成员属性
@@ -122,6 +126,7 @@ struct JSENV_API JSClassDefinition
     pesapi_on_native_object_enter OnEnter = nullptr;
     pesapi_on_native_object_exit OnExit = nullptr;
 };
+MSVC_PRAGMA(warning(pop))
 
 #define JSClassEmptyDefinition                               \
     {                                                        \

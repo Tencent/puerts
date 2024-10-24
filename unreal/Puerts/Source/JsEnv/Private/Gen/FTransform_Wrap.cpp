@@ -2461,7 +2461,7 @@ struct AutoRegisterForFTransform
 
         Def.UETypeName = "Transform";
 
-        Def.Initialize = (pesapi_constructor) _FTransformNew_;
+        Def.SetInitialize(_FTransformNew_);
         Def.Finalize = _FTransformDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

@@ -1212,7 +1212,7 @@ struct AutoRegisterForFLinearColor
 
         Def.UETypeName = "LinearColor";
 
-        Def.Initialize = (pesapi_constructor) _FLinearColorNew_;
+        Def.SetInitialize(_FLinearColorNew_);
         Def.Finalize = _FLinearColorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
