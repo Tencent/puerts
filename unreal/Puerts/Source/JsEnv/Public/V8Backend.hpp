@@ -176,7 +176,10 @@ struct API
             ClassDef.SuperTypeId = Cdb.superTypeId_;
         }
 
+        MSVC_PRAGMA(warning(push))
+        MSVC_PRAGMA(warning(disable : 4191))
         ClassDef.Initialize = reinterpret_cast<pesapi_constructor>(Cdb.constructor_);
+        MSVC_PRAGMA(warning(pop))
         ClassDef.Finalize = Finalize;
 
         s_functions_ = std::move(Cdb.functions_);
