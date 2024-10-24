@@ -439,7 +439,7 @@ void PLog(const char* Fmt, ...)
 
 static void* CtorCallback(pesapi_callback_info info)
 {
-    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_class_data_in_constructor(info));
+    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_userdata(info));
     // or will crash in macos.
     if (*(classInfo->CtorWrapDatas) == nullptr)
     {
@@ -581,7 +581,7 @@ static void* DelegateCtorCallback(pesapi_callback_info info)
         pesapi_throw_by_string(info, "expect a function");
         return nullptr;
     }
-    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_class_data_in_constructor(info));
+    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_userdata(info));
     
     return FunctionToDelegate(env, jsval, classInfo);
 }

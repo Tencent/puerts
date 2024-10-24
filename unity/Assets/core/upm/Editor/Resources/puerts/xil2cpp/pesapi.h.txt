@@ -195,7 +195,6 @@ PESAPI_EXTERN pesapi_env pesapi_get_env(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_this(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_holder(pesapi_callback_info info);
 PESAPI_EXTERN void* pesapi_get_userdata(pesapi_callback_info info);
-PESAPI_EXTERN void* pesapi_get_class_data_in_constructor(pesapi_callback_info info);
 PESAPI_EXTERN void pesapi_add_return(pesapi_callback_info info, pesapi_value value);
 PESAPI_EXTERN void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg);
 
