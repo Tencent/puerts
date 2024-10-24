@@ -77,7 +77,7 @@ public:
 
     const JSClassDefinition* FindClassByID(const void* TypeId);
 
-    void OnClassNotFound(ClassNotFoundCallback InCallback)
+    void OnClassNotFound(pesapi_class_not_found_callback InCallback)
     {
         ClassNotFoundCallback = InCallback;
     }
@@ -113,7 +113,7 @@ public:
 private:
     std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
-    ClassNotFoundCallback ClassNotFoundCallback = nullptr;
+    pesapi_class_not_found_callback ClassNotFoundCallback = nullptr;
 #if USING_IN_UNREAL_ENGINE
     std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
@@ -319,7 +319,7 @@ const JSClassDefinition* FindClassByID(const void* TypeId)
     return GetJSClassRegister()->FindClassByID(TypeId);
 }
 
-void OnClassNotFound(ClassNotFoundCallback Callback)
+void OnClassNotFound(pesapi_class_not_found_callback Callback)
 {
     GetJSClassRegister()->OnClassNotFound(Callback);
 }
@@ -334,7 +334,7 @@ const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
 
-bool TraceObjectLifecycle(const void* TypeId, OnObjectEnter OnEnter, OnObjectExit OnExit)
+bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit)
 {
     if (auto clsDef = const_cast<JSClassDefinition*>(GetJSClassRegister()->FindClassByID(TypeId)))
     {
