@@ -3103,7 +3103,7 @@ struct AutoRegisterForFVector
 
         Def.UETypeName = "Vector";
 
-        Def.Initialize = _FVectorNew_;
+        Def.Initialize = (pesapi_constructor) _FVectorNew_;
         Def.Finalize = _FVectorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

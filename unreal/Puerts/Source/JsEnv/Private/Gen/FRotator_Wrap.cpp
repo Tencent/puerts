@@ -1235,7 +1235,7 @@ struct AutoRegisterForFRotator
 
         Def.UETypeName = "Rotator";
 
-        Def.Initialize = _FRotatorNew_;
+        Def.Initialize = (pesapi_constructor) _FRotatorNew_;
         Def.Finalize = _FRotatorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

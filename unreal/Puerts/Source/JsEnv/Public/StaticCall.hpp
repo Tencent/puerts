@@ -1524,7 +1524,7 @@ public:
         {
             functionInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, info});
         }
-        functions_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, info});
+        functions_.push_back(API::GeneralFunctionInfo(name, func, nullptr, info));
         return *this;
     }
 
@@ -1535,7 +1535,7 @@ public:
         {
             functionInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, infos[i]});
         }
-        functions_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, nullptr});
+        functions_.push_back(API::GeneralFunctionInfo(name, func, nullptr, nullptr));
         return *this;
     }
 
@@ -1546,7 +1546,7 @@ public:
         {
             methodInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, info});
         }
-        methods_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, info});
+        methods_.push_back(API::GeneralFunctionInfo(name, func, nullptr, info));
         return *this;
     }
 
@@ -1557,23 +1557,22 @@ public:
         {
             methodInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, infos[i]});
         }
-        methods_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, nullptr});
+        methods_.push_back(API::GeneralFunctionInfo(name, func, nullptr, nullptr));
         return *this;
     }
 
     template <typename Func, Func func>
     ClassDefineBuilder<T, API, RegisterAPI>& MethodProxy(const char* name)
     {
-        methods_.push_back(typename API::GeneralFunctionInfo{name,
-            [](typename API::CallbackInfoType info) -> void
-            {
-                using Helper = internal::FuncCallHelper<API,
-                    std::pair<typename internal::traits::FunctionTrait<Func>::ReturnType,
-                        typename internal::traits::FunctionTrait<Func>::Arguments>,
-                    false, false, true, false>;
-                Helper::template callMethod<T>(func, info);
-            },
-            nullptr, nullptr});
+        typename API::FunctionCallbackType proxyed = [](typename API::CallbackInfoType info) -> void
+        {
+            using Helper = internal::FuncCallHelper<API,
+                std::pair<typename internal::traits::FunctionTrait<Func>::ReturnType,
+                    typename internal::traits::FunctionTrait<Func>::Arguments>,
+                false, false, true, false>;
+            Helper::template callMethod<T>(func, info);
+        };
+        methods_.push_back(API::GeneralFunctionInfo(name, proxyed, nullptr, nullptr));
         return *this;
     }
 
@@ -1584,15 +1583,15 @@ public:
         {
             propertyInfos_.push_back(typename API::GeneralPropertyReflectionInfo{name, type});
         }
-        properties_.push_back(typename API::GeneralPropertyInfo{name, getter, setter, nullptr});
+        properties_.push_back(API::GeneralPropertyInfo(name, getter, setter, nullptr, nullptr));
         return *this;
     }
 
     template <typename Prop, Prop prop>
     ClassDefineBuilder<T, API, RegisterAPI>& PropertyProxy(const char* name)
     {
-        properties_.push_back(typename API::GeneralPropertyInfo{
-            name, &PropertyWrapper<API, Prop, prop, T>::getter, &PropertyWrapper<API, Prop, prop, T>::setter, nullptr});
+        properties_.push_back(API::GeneralPropertyInfo(
+            name, &PropertyWrapper<API, Prop, prop, T>::getter, &PropertyWrapper<API, Prop, prop, T>::setter, nullptr, nullptr));
         return *this;
     }
 
@@ -1603,7 +1602,7 @@ public:
         {
             variableInfos_.push_back(typename API::GeneralPropertyReflectionInfo{name, type});
         }
-        variables_.push_back(typename API::GeneralPropertyInfo{name, getter, setter, nullptr});
+        variables_.push_back(API::GeneralPropertyInfo(name, getter, setter, nullptr, nullptr));
         return *this;
     }
 

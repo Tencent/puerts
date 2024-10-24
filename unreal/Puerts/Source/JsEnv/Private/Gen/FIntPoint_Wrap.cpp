@@ -711,7 +711,7 @@ struct AutoRegisterForFIntPoint
 
         Def.UETypeName = "IntPoint";
 
-        Def.Initialize = _FIntPointNew_;
+        Def.Initialize = (pesapi_constructor) _FIntPointNew_;
         Def.Finalize = _FIntPointDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

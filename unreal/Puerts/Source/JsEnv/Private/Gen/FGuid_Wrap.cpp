@@ -411,7 +411,7 @@ struct AutoRegisterForFGuid
 
         Def.UETypeName = "Guid";
 
-        Def.Initialize = _FGuidNew_;
+        Def.Initialize = (pesapi_constructor) _FGuidNew_;
         Def.Finalize = _FGuidDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

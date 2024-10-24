@@ -985,7 +985,7 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     }
     classDef.Data = data;
 
-    classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
+    classDef.Initialize = constructor;
     classDef.Finalize = finalize;
 
     std::vector<puerts::JSFunctionInfo> p_methods;
@@ -1000,18 +1000,16 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
         {
             if (p->is_static)
             {
-                p_variables.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
+                p_variables.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
             }
             else
             {
-                p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
+                p_properties.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
             }
         }
         else if (p->method != nullptr)
         {
-            puerts::JSFunctionInfo finfo{p->name, reinterpret_cast<v8::FunctionCallback>(p->method), p->data0};
+            puerts::JSFunctionInfo finfo{p->name, p->method, p->data0};
             if (p->is_static)
             {
                 p_functions.push_back(finfo);

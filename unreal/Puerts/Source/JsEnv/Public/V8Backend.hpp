@@ -68,7 +68,8 @@ struct API
     typedef v8::Local<v8::Context> ContextType;
     typedef v8::Local<v8::Value> ValueType;
     typedef v8::FunctionCallback FunctionCallbackType;
-    typedef InitializeFunc InitializeFuncType;
+    typedef void* (*InitializeFuncType)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    typedef void (*FinalizeFuncType)(void* Ptr, void* ClassData, void* EnvData);
     typedef JSFunctionInfo GeneralFunctionInfo;
     typedef JSPropertyInfo GeneralPropertyInfo;
     typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
@@ -148,7 +149,7 @@ struct API
     }
 
     template <typename T, typename CDB>
-    static void Register(FinalizeFunc Finalize, const CDB& Cdb)
+    static void Register(FinalizeFuncType Finalize, const CDB& Cdb)
     {
         const bool isUEType = is_uetype<T>::value;
         static std::vector<JSFunctionInfo> s_functions_{};
@@ -175,7 +176,7 @@ struct API
             ClassDef.SuperTypeId = Cdb.superTypeId_;
         }
 
-        ClassDef.Initialize = Cdb.constructor_;
+        ClassDef.Initialize = reinterpret_cast<pesapi_constructor>(Cdb.constructor_);
         ClassDef.Finalize = Finalize;
 
         s_functions_ = std::move(Cdb.functions_);

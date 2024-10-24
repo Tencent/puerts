@@ -1417,7 +1417,7 @@ struct AutoRegisterForFVector2D
 
         Def.UETypeName = "Vector2D";
 
-        Def.Initialize = _FVector2DNew_;
+        Def.Initialize = (pesapi_constructor) _FVector2DNew_;
         Def.Finalize = _FVector2DDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
