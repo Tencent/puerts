@@ -162,6 +162,8 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition)
 {
     auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
@@ -293,6 +295,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         return v8::Local<v8::FunctionTemplate>::New(Isolate, Iter->second);
     }
 }
+MSVC_PRAGMA(warning(pop))
 
 static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefinition>& Data)
 {

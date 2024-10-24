@@ -38,6 +38,9 @@ static const FAnsiStringView EditorOnlyPropertySuffix = "_EditorOnly";
 namespace PUERTS_NAMESPACE
 {
 class CFunctionInfo;
+
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
 struct JSENV_API JSFunctionInfo
 {
     JSFunctionInfo() : Name(nullptr), Callback(nullptr)
@@ -92,6 +95,7 @@ struct JSENV_API JSPropertyInfo
     void* GetterData = nullptr;
     void* SetterData = nullptr;
 };
+MSVC_PRAGMA(warning(pop))
 
 struct NamedFunctionInfo;
 struct NamedPropertyInfo;

@@ -77,6 +77,8 @@ void FStructWrapper::RefreshMethod(UFunction* InFunction)
     }
 }
 
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
 void FStructWrapper::InitTemplateProperties(
     v8::Isolate* Isolate, UStruct* InStruct, v8::Local<v8::FunctionTemplate> Template, bool IsReuseTemplate)
 {
@@ -456,6 +458,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
 
     return Result;
 }
+MSVC_PRAGMA(warning(pop))
 
 void FStructWrapper::StaticClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
