@@ -460,18 +460,7 @@ pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
 void* pesapi_get_userdata(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
-    if ((*info).IsConstructCall())
-        return nullptr;
-    return v8::Local<v8::External>::Cast((*info).Data())->Value();
-}
-
-void* pesapi_get_class_data_in_constructor(pesapi_callback_info pinfo)
-{
-    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
-    if (!(*info).IsConstructCall())
-        return nullptr;
-    auto ClassDefinition = reinterpret_cast<puerts::JSClassDefinition*>((v8::Local<v8::External>::Cast((*info).Data()))->Value());
-    return ClassDefinition->Data;
+    return *(static_cast<void**>(v8::Local<v8::External>::Cast((*info).Data())->Value()));
 }
 
 void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
