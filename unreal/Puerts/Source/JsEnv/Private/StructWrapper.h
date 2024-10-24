@@ -75,9 +75,11 @@ protected:
 
     std::vector<UFunction*> ExtensionMethods;
 
-    InitializeFunc ExternalInitialize;
+    typedef void* (*V8InitializeFuncType)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    FinalizeFunc ExternalFinalize;
+    V8InitializeFuncType ExternalInitialize;
+
+    pesapi_finalize ExternalFinalize;
 
     TWeakObjectPtr<UStruct> Struct;
 
@@ -111,7 +113,7 @@ public:
 
     static void* Alloc(UScriptStruct* InScriptStruct);
 
-    static void Free(TWeakObjectPtr<UStruct> InStruct, FinalizeFunc InExternalFinalize, void* Ptr);
+    static void Free(TWeakObjectPtr<UStruct> InStruct, pesapi_finalize InExternalFinalize, void* Ptr);
 
     void Free(void* Ptr)
     {

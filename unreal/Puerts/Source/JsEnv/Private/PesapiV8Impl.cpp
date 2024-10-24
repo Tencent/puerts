@@ -18,14 +18,6 @@
 #include <vector>
 #include <cstring>
 
-#ifndef MSVC_PRAGMA
-#if !defined(__clang__) && defined(_MSC_VER)
-#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
-#else
-#define MSVC_PRAGMA(...)
-#endif
-#endif
-
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(v8::Local<v8::Context> context)
@@ -964,8 +956,6 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
 // set module name here during loading, set nullptr after module loaded
 const char* GPesapiModuleName = nullptr;
 
-MSVC_PRAGMA(warning(push))
-MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
     pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* data)
 {
@@ -985,7 +975,7 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     }
     classDef.Data = data;
 
-    classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
+    classDef.Initialize = constructor;
     classDef.Finalize = finalize;
 
     std::vector<puerts::JSFunctionInfo> p_methods;
@@ -1000,18 +990,16 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
         {
             if (p->is_static)
             {
-                p_variables.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
+                p_variables.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
             }
             else
             {
-                p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
+                p_properties.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
             }
         }
         else if (p->method != nullptr)
         {
-            puerts::JSFunctionInfo finfo{p->name, reinterpret_cast<v8::FunctionCallback>(p->method), p->data0};
+            puerts::JSFunctionInfo finfo{p->name, p->method, p->data0};
             if (p->is_static)
             {
                 p_functions.push_back(finfo);
@@ -1025,10 +1013,10 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 
     free_property_descriptor(properties, property_count);
 
-    p_methods.push_back({nullptr, nullptr, nullptr});
-    p_functions.push_back({nullptr, nullptr, nullptr});
-    p_properties.push_back({nullptr, nullptr, nullptr, nullptr});
-    p_variables.push_back({nullptr, nullptr, nullptr, nullptr});
+    p_methods.push_back(puerts::JSFunctionInfo());
+    p_functions.push_back(puerts::JSFunctionInfo());
+    p_properties.push_back(puerts::JSPropertyInfo());
+    p_variables.push_back(puerts::JSPropertyInfo());
 
     classDef.Methods = p_methods.data();
     classDef.Functions = p_functions.data();
@@ -1037,7 +1025,6 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 
     puerts::RegisterJSClass(classDef);
 }
-MSVC_PRAGMA(warning(pop))
 
 void* pesapi_get_class_data(const void* type_id, bool force_load)
 {

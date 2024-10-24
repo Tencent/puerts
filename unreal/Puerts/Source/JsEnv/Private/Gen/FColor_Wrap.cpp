@@ -547,7 +547,7 @@ struct AutoRegisterForFColor
 
         Def.UETypeName = "Color";
 
-        Def.Initialize = _FColorNew_;
+        Def.SetInitialize(_FColorNew_);
         Def.Finalize = _FColorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;

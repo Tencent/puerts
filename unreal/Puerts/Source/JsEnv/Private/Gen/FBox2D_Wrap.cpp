@@ -741,7 +741,7 @@ struct AutoRegisterForFBox2D
 
         Def.UETypeName = "Box2D";
 
-        Def.Initialize = _FBox2DNew_;
+        Def.SetInitialize(_FBox2DNew_);
         Def.Finalize = _FBox2DDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
