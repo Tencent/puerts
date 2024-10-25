@@ -25,7 +25,7 @@ const platformCompileConfig = {
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
                 else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`];
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
             }
         },
         'arm64': {
@@ -42,7 +42,7 @@ const platformCompileConfig = {
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
                 else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`];
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
             }
         },
         'x64': {
@@ -59,7 +59,7 @@ const platformCompileConfig = {
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
                 else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`];
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
             }
         }
     },
