@@ -6,8 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [2.1.0] - 2024-06-25
+## [2.1.1] - 2024-10-25
+1. Disable JIT on the HarmonyOS platform.
+2. Compatibility with higher versions of V8.
+3. Upgrade QuickJS to the latest version.
+4. V8 backend, add WebSocket support to QuickJS.
+5. Add support for lazy loading and automatic unloading in the CJS implementation.
+6. Resolve the issue of incomplete locking in V8 when defining the THREAD_SAFE macro in the plugin.
+7. Add compilation support for NS (Nintendo Switch).
+8. Fix memory leak in clearModuleCache.
+9. Use the trimmed version by default on Android.
 
+## [2.1.0] - 2024-06-25
 1. Feature: Support for specifying whether the Backend is V8 or quickjs through JsEnv parameters.
 2. Fix: Unity crashes when there are syntax errors in the loaded module during the execution of ExecuteModule in C#.
 3. Feature: Allow puer.getLastException to retrieve errors from ExecuteModule (#1686).
