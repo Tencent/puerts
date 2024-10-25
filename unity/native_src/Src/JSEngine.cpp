@@ -541,7 +541,7 @@ namespace PUERTS_NAMESPACE
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
 
-        if (ClassID >= Templates.size()) return false;
+        if (ClassID >= Templates.size() || !Callback) return false;
 
         if (IsStatic)
         {
