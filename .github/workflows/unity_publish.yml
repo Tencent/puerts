@@ -345,27 +345,27 @@ jobs:
           echo "API_LEVEL=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=API_LEVEL\s)(\d+)')" >> $GITHUB_ENV
           node -e "const pjson = JSON.parse(fs.readFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', 'utf-8')); pjson.version = '${{ github.event.inputs.tag_name }}' ; fs.writeFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', JSON.stringify(pjson))"
             
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v3
         with:
           name: Unity_Plugins (v8_9.4_Release)
           path: V8/upm/Plugins/
 
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v3
         with:
           name: Unity_Plugins (v8_10.6.194_Release)
           path: V8_10/upm/Plugins/
 
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v3
         with:
           name: Unity_Plugins (quickjs_Release)
           path: Quickjs/upm/Plugins/
 
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v3
         with:
           name: Unity_Plugins (nodejs_16_Release)
           path: Nodejs/upm/Plugins/
           
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v3
         with:
           name: Unity_Plugins (mult_Release)
           path: Mult/upm/Plugins/
