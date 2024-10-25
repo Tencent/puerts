@@ -12,6 +12,22 @@ namespace Puerts.UnitTest
         {
             value = val;
         }
+        
+        static int tmp;
+        
+        public int WriteOnly
+        {
+            set {
+                tmp = value;
+            }
+        }
+        
+        public static int StaticWriteOnly
+        {
+            set {
+                tmp = value;
+            }
+        }
     }
     public struct TestStruct
     {
@@ -584,6 +600,21 @@ namespace Puerts.UnitTest
             ");
             jsEnv.Tick();
         }
+        
+        [Test]
+        public void WriteOnlyTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    let o = new CS.Puerts.UnitTest.TestObject(1);
+                    let v = o.WriteOnly;
+                    let sv = CS.Puerts.UnitTest.TestObject.StaticWriteOnly
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        
         [Test]
         public void NoNewOnStaticFunction()
         {
