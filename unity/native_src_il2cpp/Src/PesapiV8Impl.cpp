@@ -11,6 +11,7 @@
 #include "pesapi.h"
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
+#include "ObjectMapper.h"
 
 #include <string>
 #include <sstream>
@@ -20,23 +21,29 @@
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(v8::Local<v8::Context> context)
-        : isolate(context->GetIsolate()), context_persistent(isolate, context), ref_count(1)
+        : context_persistent(context->GetIsolate(), context)
+        , isolate(context->GetIsolate())
+        , ref_count(1)
+        , env_life_cycle_tracker(puerts::DataTransfer::GetJsEnvLifeCycleTracker(context->GetIsolate()))
     {
     }
-    v8::Isolate* const isolate;
+
     v8::Persistent<v8::Context> context_persistent;
+    v8::Isolate* const isolate;
     int ref_count;
+    std::weak_ptr<int> env_life_cycle_tracker;
 };
 
-struct pesapi_value_ref__
+struct pesapi_value_ref__ : pesapi_env_ref__
 {
-    explicit pesapi_value_ref__(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
-        : isolate(context->GetIsolate()), value_persistent(isolate, value), ref_count(1)
+    explicit pesapi_value_ref__(v8::Local<v8::Context> context, v8::Local<v8::Value> value, uint32_t field_count)
+        : pesapi_env_ref__(context), value_persistent(context->GetIsolate(), value), internal_field_count(field_count)
     {
     }
-    v8::Isolate* const isolate;
+
     v8::Persistent<v8::Value> value_persistent;
-    int ref_count;
+    uint32_t internal_field_count;
+    void* internal_fields[0];
 };
 
 struct pesapi_scope__
@@ -48,6 +55,8 @@ struct pesapi_scope__
     v8::TryCatch trycatch;
     std::string errinfo;
 };
+
+static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
 
 namespace v8impl
 {
@@ -63,7 +72,7 @@ inline pesapi_value PesapiValueFromV8LocalValue(v8::Local<v8::Value> local)
 inline v8::Local<v8::Value> V8LocalValueFromPesapiValue(pesapi_value v)
 {
     v8::Local<v8::Value> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    *reinterpret_cast<pesapi_value*>(&local) = v;
     return local;
 }
 
@@ -75,7 +84,7 @@ inline pesapi_env PesapiEnvFromV8LocalContext(v8::Local<v8::Context> local)
 inline v8::Local<v8::Context> V8LocalContextFromPesapiEnv(pesapi_env v)
 {
     v8::Local<v8::Context> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    *reinterpret_cast<pesapi_env*>(&local) = v;
     return local;
 }
 }    // namespace v8impl
@@ -154,6 +163,30 @@ pesapi_value pesapi_create_object(pesapi_env env)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     return v8impl::PesapiValueFromV8LocalValue(v8::Object::New(context->GetIsolate()));
+}
+
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
+pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto v8_data =
+        data ? static_cast<v8::Local<v8::Value>>(v8::External::New(context->GetIsolate(), data)) : v8::Local<v8::Value>();
+    auto func = v8::FunctionTemplate::New(context->GetIsolate(), reinterpret_cast<v8::FunctionCallback>(native_impl), v8_data)
+                    ->GetFunction(context);
+    if (func.IsEmpty())
+        return nullptr;
+    return v8impl::PesapiValueFromV8LocalValue(func.ToLocalChecked());
+}
+MSVC_PRAGMA(warning(pop))
+
+pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto cls = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->LoadTypeById(context, type_id);
+    if (cls.IsEmpty())
+        return nullptr;
+    return v8impl::PesapiValueFromV8LocalValue(cls.ToLocalChecked());
 }
 
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
@@ -427,18 +460,7 @@ pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
 void* pesapi_get_userdata(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
-    if ((*info).IsConstructCall())
-        return nullptr;
-    return v8::Local<v8::External>::Cast((*info).Data())->Value();
-}
-
-void* pesapi_get_constructor_userdata(pesapi_callback_info pinfo)
-{
-    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
-    if (!(*info).IsConstructCall())
-        return nullptr;
-    auto ClassDefinition = reinterpret_cast<puerts::JSClassDefinition*>((v8::Local<v8::External>::Cast((*info).Data()))->Value());
-    return ClassDefinition->Data;
+    return *(static_cast<void**>(v8::Local<v8::External>::Cast((*info).Data())->Value()));
 }
 
 void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
@@ -461,8 +483,17 @@ pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
     return new pesapi_env_ref__(context);
 }
 
+bool pesapi_env_ref_is_valid(pesapi_env_ref env_ref)
+{
+    return !env_ref->env_life_cycle_tracker.expired();
+}
+
 pesapi_env pesapi_get_env_from_ref(pesapi_env_ref env_ref)
 {
+    if (env_ref->env_life_cycle_tracker.expired())
+    {
+        return nullptr;
+    }
     return v8impl::PesapiEnvFromV8LocalContext(env_ref->context_persistent.Get(env_ref->isolate));
 }
 
@@ -476,25 +507,55 @@ void pesapi_release_env_ref(pesapi_env_ref env_ref)
 {
     if (--env_ref->ref_count == 0)
     {
-        delete env_ref;
+        if (env_ref->env_life_cycle_tracker.expired())
+        {
+#if V8_MAJOR_VERSION < 11
+            env_ref->context_persistent.Empty();
+            delete env_ref;
+#else
+            ::operator delete(static_cast<void*>(env_ref));
+#endif
+        }
+        else
+        {
+            delete env_ref;
+        }
     }
 }
 
 pesapi_scope pesapi_open_scope(pesapi_env_ref env_ref)
 {
+    if (env_ref->env_life_cycle_tracker.expired())
+    {
+        return nullptr;
+    }
     env_ref->isolate->Enter();
     auto scope = new pesapi_scope__(env_ref->isolate);
     env_ref->context_persistent.Get(env_ref->isolate)->Enter();
     return scope;
 }
 
+pesapi_scope pesapi_open_scope_placement(pesapi_env_ref env_ref, struct pesapi_scope_memory* memory)
+{
+    if (env_ref->env_life_cycle_tracker.expired())
+    {
+        return nullptr;
+    }
+    env_ref->isolate->Enter();
+    auto scope = new (memory) pesapi_scope__(env_ref->isolate);
+    env_ref->context_persistent.Get(env_ref->isolate)->Enter();
+    return scope;
+}
+
 bool pesapi_has_caught(pesapi_scope scope)
 {
-    return scope->trycatch.HasCaught();
+    return scope && scope->trycatch.HasCaught();
 }
 
 const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack)
 {
+    if (!scope)
+        return nullptr;
     scope->errinfo = *v8::String::Utf8Value(scope->scope.GetIsolate(), scope->trycatch.Exception());
     if (with_stack)
     {
@@ -524,17 +585,31 @@ const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack)
 
 void pesapi_close_scope(pesapi_scope scope)
 {
+    if (!scope)
+        return;
     auto isolate = scope->scope.GetIsolate();
     isolate->GetCurrentContext()->Exit();
     delete (scope);
     isolate->Exit();
 }
 
-pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue)
+void pesapi_close_scope_placement(pesapi_scope scope)
+{
+    if (!scope)
+        return;
+    auto isolate = scope->scope.GetIsolate();
+    isolate->GetCurrentContext()->Exit();
+    scope->~pesapi_scope__();
+    isolate->Exit();
+}
+
+pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, uint32_t internal_field_count)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return new pesapi_value_ref__(context, value);
+    size_t totalSize = sizeof(pesapi_value_ref__) + sizeof(void*) * internal_field_count;
+    void* buffer = ::operator new(totalSize);
+    return new (buffer) pesapi_value_ref__(context, value, internal_field_count);
 }
 
 pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref value_ref)
@@ -547,7 +622,19 @@ void pesapi_release_value_ref(pesapi_value_ref value_ref)
 {
     if (--value_ref->ref_count == 0)
     {
-        delete value_ref;
+        if (value_ref->env_life_cycle_tracker.expired())
+        {
+#if V8_MAJOR_VERSION < 11
+            value_ref->value_persistent.Empty();
+            value_ref->context_persistent.Empty();
+            value_ref->~pesapi_value_ref__();
+#endif
+        }
+        else
+        {
+            value_ref->~pesapi_value_ref__();
+        }
+        ::operator delete(static_cast<void*>(value_ref));
     }
 }
 
@@ -581,6 +668,17 @@ bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
     return false;
 }
 
+pesapi_env_ref pesapi_get_ref_associated_env(pesapi_value_ref value_ref)
+{
+    return value_ref;
+}
+
+void** pesapi_get_ref_internal_fields(pesapi_value_ref value_ref, uint32_t* pinternal_field_count)
+{
+    *pinternal_field_count = value_ref->internal_field_count;
+    return &value_ref->internal_fields[0];
+}
+
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const char* key)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -609,6 +707,33 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
         auto _un_used = object.As<v8::Object>()->Set(
             context, v8::String::NewFromUtf8(context->GetIsolate(), key, v8::NewStringType::kNormal).ToLocalChecked(), value);
     }
+}
+
+bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
+    if (object.IsEmpty() || !object->IsObject())
+    {
+        *out_ptr = nullptr;
+        return false;
+    }
+    *out_ptr = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
+                   ->GetPrivateData(context, object.As<v8::Object>());
+    return true;
+}
+
+bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
+    if (object.IsEmpty() || !object->IsObject())
+    {
+        return false;
+    }
+    puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
+        ->SetPrivateData(context, object.As<v8::Object>(), ptr);
+    return true;
 }
 
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key)
@@ -687,6 +812,25 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
 }
 
+pesapi_value pesapi_global(pesapi_env env)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto global = context->Global();
+    return v8impl::PesapiValueFromV8LocalValue(global);
+}
+
+const void* pesapi_get_env_private(pesapi_env env)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    return puerts::DataTransfer::GetIsolatePrivateData(context->GetIsolate());
+}
+
+void pesapi_set_env_private(pesapi_env env, const void* ptr)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    puerts::DataTransfer::SetIsolatePrivateData(context->GetIsolate(), const_cast<void*>(ptr));
+}
+
 struct pesapi_type_info__
 {
     const char* name;
@@ -757,14 +901,14 @@ void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index,
 }
 
 void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback getter, pesapi_callback setter, void* getter_userdata, void* setter_userdata, pesapi_type_info type_info)
+    pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, pesapi_type_info type_info)
 {
     properties[index].name = name;
     properties[index].is_static = is_static;
     properties[index].getter = getter;
     properties[index].setter = setter;
-    properties[index].data0 = getter_userdata;
-    properties[index].data1 = setter_userdata;
+    properties[index].data0 = getter_data;
+    properties[index].data1 = setter_data;
     properties[index].info.type_info = type_info;
 }
 
@@ -798,21 +942,11 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
     }
 }
 
-#ifndef MSVC_PRAGMA
-#if !defined(__clang__) && defined(_MSC_VER)
-#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
-#else
-#define MSVC_PRAGMA(...)
-#endif
-#endif
-
 // set module name here during loading, set nullptr after module loaded
 const char* GPesapiModuleName = nullptr;
 
-MSVC_PRAGMA(warning(push))
-MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* userdata)
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* data)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
@@ -828,9 +962,9 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     {
         classDef.ScriptName = type_name;
     }
-    classDef.Data = userdata;
+    classDef.Data = data;
 
-    classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
+    classDef.Initialize = constructor;
     classDef.Finalize = finalize;
 
     std::vector<puerts::JSFunctionInfo> p_methods;
@@ -845,18 +979,16 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
         {
             if (p->is_static)
             {
-                p_variables.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
+                p_variables.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
             }
             else
             {
-                p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data0, p->data1});
+                p_properties.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
             }
         }
         else if (p->method != nullptr)
         {
-            puerts::JSFunctionInfo finfo{p->name, reinterpret_cast<v8::FunctionCallback>(p->method), p->data0};
+            puerts::JSFunctionInfo finfo{p->name, p->method, p->data0};
             if (p->is_static)
             {
                 p_functions.push_back(finfo);
@@ -870,10 +1002,10 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 
     free_property_descriptor(properties, property_count);
 
-    p_methods.push_back({nullptr, nullptr, nullptr});
-    p_functions.push_back({nullptr, nullptr, nullptr});
-    p_properties.push_back({nullptr, nullptr, nullptr, nullptr});
-    p_variables.push_back({nullptr, nullptr, nullptr, nullptr});
+    p_methods.push_back(puerts::JSFunctionInfo());
+    p_functions.push_back(puerts::JSFunctionInfo());
+    p_properties.push_back(puerts::JSPropertyInfo());
+    p_variables.push_back(puerts::JSPropertyInfo());
 
     classDef.Methods = p_methods.data();
     classDef.Functions = p_functions.data();
@@ -882,7 +1014,23 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 
     puerts::RegisterJSClass(classDef);
 }
-MSVC_PRAGMA(warning(pop))
+
+void* pesapi_get_class_data(const void* type_id, bool force_load)
+{
+    auto clsDef = force_load ? puerts::LoadClassByID(type_id) : puerts::FindClassByID(type_id);
+    return clsDef ? clsDef->Data : nullptr;
+}
+
+bool pesapi_trace_native_object_lifecycle(
+    const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
+{
+    return puerts::TraceObjectLifecycle(type_id, on_enter, on_exit);
+}
+
+void pesapi_on_class_not_found(pesapi_class_not_found_callback callback)
+{
+    puerts::OnClassNotFound(callback);
+}
 
 void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
     const void* functions_info, const void* properties_info, const void* variables_info)

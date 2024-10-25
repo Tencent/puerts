@@ -153,7 +153,7 @@ namespace PuertsIl2cpp.Editor
                                 // where assembly.FullName.Contains("puerts") || assembly.FullName.Contains("Assembly-CSharp") || assembly.FullName.Contains("Unity")
                             where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                             from type in assembly.GetTypes()
-                            where type.IsPublic
+                            where type.IsPublic && !InstructionsFilter.IsBigValueType(type) && !type.IsGenericTypeDefinition
                             select type;
 
                 const BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
@@ -247,7 +247,7 @@ namespace PuertsIl2cpp.Editor
                     .Select(m => new SignatureInfo
                     {
                         Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, true),
-                        CsName = m.ToString(),
+                        CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = null,
                         ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
@@ -321,7 +321,7 @@ namespace PuertsIl2cpp.Editor
                         return new SignatureInfo
                         {
                             Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
-                            CsName = m.ToString(),
+                            CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
                             ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                             ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m, isExtensionMethod),
                             ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
@@ -335,7 +335,7 @@ namespace PuertsIl2cpp.Editor
                                 return new SignatureInfo
                                 {
                                     Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
-                                    CsName = m.ToString(),
+                                    CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
                                     ReturnSignature = "v",
                                     ThisSignature = "t",
                                     ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
@@ -351,7 +351,7 @@ namespace PuertsIl2cpp.Editor
                     .Select(f => new SignatureInfo
                     {
                         Signature = (f.IsStatic ? "" : "t") + PuertsIl2cpp.TypeUtils.GetTypeSignature(f.FieldType),
-                        CsName = f.ToString(),
+                        CsName = f.ToString() + " declare in " + (f.DeclaringType != null ? f.DeclaringType : "unknow class"),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(f.FieldType),
                         ThisSignature = (f.IsStatic ? "" : "t"),
                         ParameterSignatures = null
@@ -364,19 +364,87 @@ namespace PuertsIl2cpp.Editor
                 using (var jsEnv = new Puerts.JsEnv())
                 {
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
-                    var cppWrapRender = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/cppwrapper.tpl.mjs", "default");
-                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "FunctionBridge.Gen.h"), false, Encoding.UTF8))
+                    
+                    var cppWrapInfo = new CppWrappersInfo
                     {
-                        string fileContext = cppWrapRender(new CppWrappersInfo
-                        {
-                            ValueTypeInfos = valueTypeInfos,
-                            WrapperInfos = wrapperInfos,
-                            BridgeInfos = bridgeInfos,
-                            FieldWrapperInfos = fieldWrapperInfos
-                        });
+                        ValueTypeInfos = valueTypeInfos,
+                        WrapperInfos = wrapperInfos,
+                        BridgeInfos = bridgeInfos,
+                        FieldWrapperInfos = fieldWrapperInfos
+                    };
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppWrapper.cpp"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapper.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
                         textWriter.Write(fileContext);
                         textWriter.Flush();
                     }
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsValueType.h"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppvaluetype.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppFieldWrapper.cpp"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppfieldwrapper.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppBridge.cpp"), false, Encoding.UTF8))
+                    {
+                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppbridge.tpl.mjs", "default");
+                        string fileContext = render(cppWrapInfo);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+
+                    // clear prev gen
+                    if (Directory.Exists(saveTo))
+                    {
+                        string[] files = Directory.GetFiles(saveTo);
+
+                        string pattern = @"^PuertsIl2cppWrapperDef\d+\.cpp(.meta)?$";
+
+                        foreach (string file in files)
+                        {
+                            string fileName = Path.GetFileName(file);
+
+                            if (System.Text.RegularExpressions.Regex.IsMatch(fileName, pattern))
+                            {
+                                try
+                                {
+                                    File.Delete(file);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error deleting file {fileName}: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+
+                    const int MAX_WRAPPER_PER_FILE = 1000;
+                    for (int i = 0; i < wrapperInfos.Count; i += MAX_WRAPPER_PER_FILE)
+                    {
+                        var saveFileName = "PuertsIl2cppWrapperDef" + (i / MAX_WRAPPER_PER_FILE) + ".cpp";
+                        using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, saveFileName), false, Encoding.UTF8))
+                        {
+                            cppWrapInfo.WrapperInfos = wrapperInfos.GetRange(i, Math.Min(MAX_WRAPPER_PER_FILE, wrapperInfos.Count - i));
+                            Debug.Log("PuertsIl2cppWrapperDef" + saveFileName + " with " + cppWrapInfo.WrapperInfos.Count + " wrappers!");
+                            var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapperdef.tpl.mjs", "default");
+                            string fileContext = render(cppWrapInfo);
+                            textWriter.Write(fileContext);
+                            textWriter.Flush();
+                        }
+                    }
+
                 }
             }
 
@@ -448,7 +516,7 @@ namespace PuertsIl2cpp.Editor
                     { "pesapi_adpt.c", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_adpt.c").text },
                     { "pesapi.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi.h").text },
                     { "Puerts_il2cpp.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text },
-                    { "UnityExports4Puerts.h", Resources.Load<TextAsset>("puerts/xil2cpp/UnityExports4Puerts.h").text }
+                    { "TDataTrans.h", Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text }
                 };
 
                 foreach (var cPlugin in cPluginCode)
@@ -475,7 +543,7 @@ namespace PuertsIl2cpp.Editor
 #else
                         true,
 #endif
-#if UNITY_ANDROID || UNITY_IPHONE
+#if UNITY_IPHONE
                         false
 #else
                         true

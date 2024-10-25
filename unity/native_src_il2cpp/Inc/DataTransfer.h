@@ -30,6 +30,9 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if !defined(BACKENDENV_DATA_POS)
 #define BACKENDENV_DATA_POS 1
 #endif
+#if !defined(PESAPI_PRIVATE_DATA_POS_IN_ISOLATE)
+#define PESAPI_PRIVATE_DATA_POS_IN_ISOLATE 2
+#endif
 
 #define RELEASED_UOBJECT ((UObject*) 12)
 #define RELEASED_UOBJECT_MEMBER ((void*) 12)
@@ -303,6 +306,16 @@ public:
         return static_cast<T*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
     }
 
+    FORCEINLINE static void* GetIsolatePrivateData(v8::Isolate* Isolate)
+    {
+        return Isolate->GetData(PESAPI_PRIVATE_DATA_POS_IN_ISOLATE);
+    }
+
+    FORCEINLINE static void SetIsolatePrivateData(v8::Isolate* Isolate, void* PrivateData)
+    {
+        Isolate->SetData(PESAPI_PRIVATE_DATA_POS_IN_ISOLATE, PrivateData);
+    }
+
     static v8::Local<v8::Value> FindOrAddCData(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer);
 
@@ -313,8 +326,6 @@ public:
     static void UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value);
 
     static std::weak_ptr<int> GetJsEnvLifeCycleTracker(v8::Isolate* Isolate);
-
-    static struct FPersistentObjectEnvInfo* GetPersistentObjectEnvInfo(v8::Isolate* Isolate);
 
 #if USING_IN_UNREAL_ENGINE
     template <typename T>

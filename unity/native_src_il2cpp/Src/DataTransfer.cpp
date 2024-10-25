@@ -23,7 +23,7 @@ v8::Local<v8::Value> DataTransfer::FindOrAddCData(
 
 bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
 {
-    return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(TypeId, JsObject);
+    return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(Isolate, TypeId, JsObject);
 }
 
 v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value)
@@ -44,11 +44,6 @@ void DataTransfer::UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, c
 std::weak_ptr<int> DataTransfer::GetJsEnvLifeCycleTracker(v8::Isolate* Isolate)
 {
     return IsolateData<ICppObjectMapper>(Isolate)->GetJsEnvLifeCycleTracker();
-}
-
-struct FPersistentObjectEnvInfo* DataTransfer::GetPersistentObjectEnvInfo(v8::Isolate* Isolate)
-{
-    return IsolateData<ICppObjectMapper>(Isolate)->GetPersistentObjectEnvInfo();
 }
 
 #if USING_IN_UNREAL_ENGINE

@@ -27,7 +27,8 @@ namespace Puerts.TypeMapping
         }
 
         private static IntPtr ReflectionWrapperFunc = IntPtr.Zero;
-        private static IntPtr ReflectionFieldWrappers = IntPtr.Zero;
+        private static IntPtr ReflectionGetFieldWrapper = IntPtr.Zero;
+        private static IntPtr ReflectionSetFieldWrapper = IntPtr.Zero;
         private static BindingMode GetBindingMode(RegisterInfo info, string name, bool isStatic)
         {
             var _name = name + (isStatic ? "_static": "");
@@ -51,7 +52,14 @@ namespace Puerts.TypeMapping
             if (bindingMode == BindingMode.FastBinding) 
             {
                 wrapper = NativeAPI.FindWrapFunc(signature);
-            } 
+            }
+            
+#if NOT_GEN_WARNING
+            if (member is MethodBase && wrapper == IntPtr.Zero)
+            {
+                UnityEngine.Debug.LogWarning(string.Format("can't get static method wrapper for {0} declare in {1}, signature:{2}", member, member.DeclaringType, signature));
+            }
+#endif
 
             if (wrapper == IntPtr.Zero && bindingMode != BindingMode.DontBinding)
             {
@@ -60,28 +68,39 @@ namespace Puerts.TypeMapping
             
             return wrapper;
         }
-        private static IntPtr GetFieldWrapper(RegisterInfo registerInfo, string name, bool isStatic, string signature)
+        
+        private static void GetFieldWrapper(RegisterInfo registerInfo, string name, bool isStatic, string signature, out IntPtr getter, out IntPtr setter)
         {
             BindingMode bindingMode = GetBindingMode(registerInfo, name, isStatic);
-            IntPtr wrapper = IntPtr.Zero;
+            getter = IntPtr.Zero;
+            setter = IntPtr.Zero;
             if (bindingMode == BindingMode.FastBinding) 
             {
-                wrapper = NativeAPI.FindFieldWrap(signature);
-            } 
-
-            if (wrapper == IntPtr.Zero && bindingMode != BindingMode.DontBinding)
-            {
-                wrapper = ReflectionFieldWrappers;
+                NativeAPI.FindFieldWrap(signature, out getter, out setter);
             }
             
-            return wrapper;
+#if NOT_GEN_WARNING
+            if (getter == IntPtr.Zero && setter == IntPtr.Zero)
+            {
+                UnityEngine.Debug.LogWarning(string.Format("can't get static field wrapper for {0}, signature:{1}", name, signature));
+            }
+#endif
+
+            if (getter == IntPtr.Zero && setter == IntPtr.Zero && bindingMode != BindingMode.DontBinding)
+            {
+                getter = ReflectionGetFieldWrapper;
+                setter = ReflectionSetFieldWrapper;
+            }
         }
 
         //call by native, do not throw!!
         public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
         {
             if (ReflectionWrapperFunc == IntPtr.Zero) ReflectionWrapperFunc = NativeAPI.FindWrapFunc(null);
-            if (ReflectionFieldWrappers == IntPtr.Zero) ReflectionFieldWrappers = NativeAPI.FindFieldWrap(null);
+            if (ReflectionGetFieldWrapper == IntPtr.Zero) 
+            {
+                NativeAPI.FindFieldWrap(null, out ReflectionGetFieldWrapper, out ReflectionSetFieldWrapper);
+            }
             if (RegisterInfoManager == null) RegisterInfoManager = new RegisterInfoManager();
                 
             try
@@ -124,10 +143,10 @@ namespace Puerts.TypeMapping
                 RegisterInfo registerInfo = null;
                 if (hasRegisterInfo) registerInfo = getRegisterInfoFunc();
 
-                typeInfo = NativeAPI.CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
+                typeInfo = NativeAPI.CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
                 if (typeInfo == IntPtr.Zero)
                 {
-                    if (isDelegate) throw new Exception(string.Format("create TypeInfo for {0} fail. maybe the BridgeInfo is not found, try to regenerate the FunctionBridge.Gen.h", type));
+                    if (isDelegate) throw new Exception(string.Format("create TypeInfo for {0} fail. maybe the Bridge of delegate is not found!", type));
                     throw new Exception(string.Format("create TypeInfo for {0} fail", type));
                 }
                 if (!isDelegate)
@@ -315,8 +334,10 @@ namespace Puerts.TypeMapping
                             string signature = (field.IsStatic ? "" : "t") + TypeUtils.GetTypeSignature(field.FieldType);
                             var name = field.Name;
                             
-                            var wrapper = GetFieldWrapper(registerInfo, name, field.IsStatic, signature);
-                            if (wrapper == IntPtr.Zero)
+                            IntPtr getter;
+                            IntPtr setter;
+                            GetFieldWrapper(registerInfo, name, field.IsStatic, signature, out getter, out setter);
+                            if (getter == IntPtr.Zero && setter == IntPtr.Zero)
                             {
                                 UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}:{1}, signature:{2}", type, name, signature));
                                 continue;
@@ -324,7 +345,8 @@ namespace Puerts.TypeMapping
 
                             if (!NativeAPI.AddField(
                                 typeInfo, 
-                                wrapper, 
+                                getter,
+                                setter,
                                 name, 
                                 field.IsStatic, 
                                 NativeAPI.GetFieldInfoPointer(field), 

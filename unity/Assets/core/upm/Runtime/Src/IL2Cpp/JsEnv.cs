@@ -23,6 +23,7 @@ namespace Puerts
     {
         IntPtr nativeJsEnv;
         IntPtr nativePesapiEnv;
+        IntPtr nativeScriptObjectsRefsMgr;
 
         // TypeRegister TypeRegister;
 
@@ -53,12 +54,6 @@ namespace Puerts
             return loader;
         }
 
-        public IntPtr Isolate {
-            get {
-                return PuertsIl2cpp.NativeAPI.GetIsolate(nativeJsEnv);
-            }
-        }
-
         public JsEnv(): this(new DefaultLoader(), -1) {}
 
         public JsEnv(ILoader loader, int debugPort = -1)
@@ -68,9 +63,8 @@ namespace Puerts
             //only once is enough
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
             PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetPesapiImpl());
-            PuertsIl2cpp.NativeAPI.ExchangeAPI(PuertsIl2cpp.NativeAPI.GetUnityExports());
             tryLoadTypeMethodInfo = typeof(TypeRegister).GetMethod("RegisterNoThrow");
-            PuertsIl2cpp.NativeAPI.SetTryLoadCallback(PuertsIl2cpp.NativeAPI.GetMethodInfoPointer(tryLoadTypeMethodInfo), PuertsIl2cpp.NativeAPI.GetMethodPointer(tryLoadTypeMethodInfo));
+            PuertsIl2cpp.NativeAPI.SetRegisterNoThrow(tryLoadTypeMethodInfo);
 
             persistentObjectInfoType = typeof(Puerts.JSObject);
             PuertsIl2cpp.NativeAPI.SetGlobalType_TypedValue(typeof(TypedValue));
@@ -78,16 +72,11 @@ namespace Puerts
             PuertsIl2cpp.NativeAPI.SetGlobalType_JSObject(typeof(JSObject));
 
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
-            nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPesapiEnvHolder(nativeJsEnv);
+            nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPapiEnvRef(nativeJsEnv);
+            var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
+            nativeScriptObjectsRefsMgr = PuertsIl2cpp.NativeAPI.InitialPapiEnvRef(nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
-            //PuertsIl2cpp.NativeAPI.SetObjectPool(objectPool, typeof(PuertsIl2cpp.ObjectPool).GetMethod("Add")); //TODO: remove....
-            objectPoolAddMethodInfo = typeof(PuertsIl2cpp.ObjectPool).GetMethod("Add");
-            objectPoolRemoveMethodInfo = typeof(PuertsIl2cpp.ObjectPool).GetMethod("Remove");
-            PuertsIl2cpp.NativeAPI.SetObjectPool(nativeJsEnv, PuertsIl2cpp.NativeAPI.GetMethodInfoPointer(objectPoolAddMethodInfo), PuertsIl2cpp.NativeAPI.GetMethodPointer(objectPoolAddMethodInfo),
-                PuertsIl2cpp.NativeAPI.GetMethodInfoPointer(objectPoolRemoveMethodInfo), PuertsIl2cpp.NativeAPI.GetMethodPointer(objectPoolRemoveMethodInfo),
-                PuertsIl2cpp.NativeAPI.GetObjectPointer(objectPool));
-
-            PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "jsEnv", PuertsIl2cpp.NativeAPI.GetObjectPointer(this));
+            PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativePesapiEnv, "jsEnv", this);
 
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
@@ -120,6 +109,9 @@ namespace Puerts
             if (debugPort != -1) {
                 PuertsIl2cpp.NativeAPI.CreateInspector(nativeJsEnv, debugPort);    
             }
+            string debugpath;
+            string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
+            Eval(context, debugpath);
             ExecuteModule("puerts/init_il2cpp.mjs");
             ExecuteModule("puerts/log.mjs");
             ExecuteModule("puerts/csharp.mjs");
@@ -167,27 +159,34 @@ namespace Puerts
         {
             return (T)PuertsIl2cpp.NativeAPI.EvalInternal(nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, typeof(T));
         }
+        
+        Func<string, Puerts.JSObject> GetModuleExecutor()
+        {
+            if (moduleExecutor == null) 
+            {
+                moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
+            }
+            return moduleExecutor;
+        }
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
-            if (moduleExecutor == null) moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>));
-            JSObject jso = moduleExecutor(specifier);
+            JSObject jso = GetModuleExecutor()(specifier);
             
             return jso.Get<T>(exportee);
         }
         public JSObject ExecuteModule(string specifier)
         {
-            if (moduleExecutor == null) moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>));
-            return moduleExecutor(specifier);
+            return GetModuleExecutor()(specifier);
         }
 
         public Action TickHandler;
         public void Tick()
         {
-            PuertsIl2cpp.NativeAPI.ReleasePendingJsObjects(nativeJsEnv);
+            PuertsIl2cpp.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
             PuertsIl2cpp.NativeAPI.InspectorTick(nativeJsEnv);
             PuertsIl2cpp.NativeAPI.LogicTick(nativeJsEnv);
             if (TickHandler != null) TickHandler();
@@ -232,7 +231,7 @@ namespace Puerts
             lock (this)
             {
                 if (disposed) return;
-                // TODO: nativePesapiEnv release
+                PuertsIl2cpp.NativeAPI.CleanupPapiEnvRef(nativePesapiEnv);
                 PuertsIl2cpp.NativeAPI.DestroyNativeJSEnv(nativeJsEnv);
                 disposed = true;
             }
