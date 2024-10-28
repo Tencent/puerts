@@ -21,8 +21,12 @@ puer.loadType = function(nameOrCSType, ...genericArgs) {
             genericArgs = genericArgs.map(g => puer.$typeof(g));
             csType = csType.MakeGenericType(...genericArgs);
         }
-        let cls = loadType(csType)
-        cls.__p_innerType = csType
+        let cls = loadType(csType);
+        if (!cls) {
+            console.warn(`load ${csType.Name || csType} fail!`);
+            return;
+        }
+        cls.__p_innerType = csType;
         // todo
         cls.__puertsMetadata = cls.__puertsMetadata || new Map();
         return cls

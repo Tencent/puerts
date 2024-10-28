@@ -67,7 +67,11 @@ function csTypeToClass(csType) {
                     let genericTypeInfo = cls[name] = new Map();
                     genericTypeInfo.set('$name', fullName.replace('$', '`'));
                 } else {
-                    cls[ntype.Name] = csTypeToClass(ntype);
+                    try {
+                        cls[ntype.Name] = csTypeToClass(ntype);
+                    } catch (e) {
+                        console.warn(`load nestedtype [${ntype.Name || ntype}] of ${csType.Name || csType} fail: ${e}`);
+                    }
                 }
             }
         }
