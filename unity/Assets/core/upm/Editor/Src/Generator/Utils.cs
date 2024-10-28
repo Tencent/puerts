@@ -336,6 +336,7 @@ namespace Puerts.Editor
                     MethodBase mb = mbi as MethodBase;
                     if (
                         mb.GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer
+                        || (pInfo.ParameterType.IsByRef && pInfo.ParameterType.GetElementType().IsPointer)
 #if UNITY_2021_2_OR_NEWER || PUERTS_GENERAL || PUERTS_GENERAL_OSX
                         || pInfo.ParameterType.IsByRefLike
 #endif
