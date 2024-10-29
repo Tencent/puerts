@@ -272,21 +272,6 @@ async function runPuertsMake(cwd, options) {
     const definitionD = (BackendConfig.definition || []).join(';');
     const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';');
     const incD = (BackendConfig.include || []).join(';');
-    
-    if ('native_src_il2cpp' == basename(cwd)) {
-         if (!existsSync(join(cwd, 'Src/FunctionBridge.Gen.h'))) {
-             console.warn(`${cwd}/Src/FunctionBridge.Gen.h not existed! using default one`);
-             cp(join(cwd, '../cli/FunctionBridge.Gen.h'), join(cwd, 'Src/FunctionBridge.Gen.h'));
-         }
-         if (!existsSync(join(cwd, '../Assets/core/upm/Plugins/puerts_il2cpp/unityenv_for_puerts.h'))) {
-             console.warn(`${join(cwd, '../Assets/core/upm/Plugins/puerts_il2cpp/unityenv_for_puerts.h')} not existed! using default one`);
-             cp(join(cwd, '../cli/unityenv_for_puerts.h'), join(cwd, 'Inc/unityenv_for_puerts.h'));
-         }
-         if (!existsSync(join(cwd, '../Assets/core/upm/Plugins/puerts_il2cpp/UnityExports4Puerts.h'))) {
-             console.warn(`${join(cwd, '../Assets/core/upm/Plugins/puerts_il2cpp/UnityExports4Puerts.h')} not existed! using default one`);
-             cp(join(cwd, '../cli/UnityExports4Puerts.h'), join(cwd, 'Inc/UnityExports4Puerts.h'));
-         }
-    }
 
     mkdir('-p', CMAKE_BUILD_PATH);
     mkdir('-p', OUTPUT_PATH);
