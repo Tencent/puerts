@@ -106,6 +106,24 @@ CombineOverloads(
     )
 ```
 
+### Static Variables
+
+~~~c++
+class TestClass
+{
+public:
+    static int StaticInt;
+};
+~~~
+
+Statement
+
+~~~c++
+puerts::DefineClass<TestClass>()
+    .Variable("StaticInt", MakeVariable(&TestClass::StaticInt))
+    .Register();
+~~~
+
 ### Member variables
 
 ``` c++
@@ -125,6 +143,38 @@ puerts::DefineClass<TestClass>()
     .Property("Y", MakeProperty(&TestClass::Y))
     .Register();
 ```
+
+### Getter and Setter
+
+~~~c++
+class TestClass
+{
+private:
+    int32_t _x;
+    
+    static int _si;
+
+public:
+    int32_t GetX()
+	{
+		return _x;
+	}
+    
+    static int32_t GetStaticInt()
+	{
+		return _si;
+	}
+};
+~~~
+
+Statement
+
+~~~c++
+puerts::DefineClass<TestClass>()
+    .Property("X", MakePropertyByGetterSetter(&TestClass::GetX, nullptr))
+    .Variable("StaticInt", MakeVariableByGetterSetter(&TestClass::GetStaticInt, nullptr))
+    .Register();
+~~~
 
 ### Constructor
 

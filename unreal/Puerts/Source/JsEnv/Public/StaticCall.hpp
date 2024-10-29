@@ -1458,6 +1458,164 @@ struct PropertyWrapper<API, Ret*, Variable>
     }
 };
 
+template <typename API, typename TG, TG, typename Enable = void>
+struct PropertyGetterWrapper;
+
+template <typename API, typename Ret, Ret (*fgetter)()>
+struct PropertyGetterWrapper<API, Ret (*)(), fgetter>
+{
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
+    static void getter(typename API::CallbackInfoType info)
+    {
+        auto context = API::GetContext(info);
+        API::SetReturn(info, DecayTypeConverter<Ret>::toScript(context, fgetter()));
+    }
+};
+
+template <typename API, typename Ret, typename Ins, Ret (Ins::*func)()>
+struct PropertyGetterWrapper<API, Ret (Ins::*)(), func>
+{
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
+    static void getter(typename API::CallbackInfoType info)
+    {
+        auto context = API::GetContext(info);
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        if (!self)
+        {
+            API::ThrowException(info, "access a null object");
+            return;
+        }
+
+        API::SetReturn(info, API::template Converter<Ret>::toScript(context, (self->*func)()));
+    }
+};
+
+template <typename API, typename Ret, typename Ins, Ret (Ins::*func)() const>
+struct PropertyGetterWrapper<API, Ret (Ins::*)() const, func>
+{
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
+    static void getter(typename API::CallbackInfoType info)
+    {
+        auto context = API::GetContext(info);
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        if (!self)
+        {
+            API::ThrowException(info, "access a null object");
+            return;
+        }
+
+        API::SetReturn(info, API::template Converter<Ret>::toScript(context, (self->*func)()));
+    }
+};
+
+template <typename API>
+struct PropertyGetterWrapper<API, decltype(nullptr), nullptr>
+{
+    static void getter(typename API::CallbackInfoType info)
+    {
+        API::ThrowException(info, "not getter for this property!");
+    }
+};
+
+template <typename API, typename TS, TS, typename Enable = void>
+struct PropertySetterWrapper;
+
+template <typename API, typename TS, void (*fsetter)(TS)>
+struct PropertySetterWrapper<API, void (*)(TS), fsetter>
+{
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
+    static void setter(typename API::CallbackInfoType info)
+    {
+        auto context = API::GetContext(info);
+        fsetter(DecayTypeConverter<TS>::toCpp(context, API::GetArg(info, 0)));
+    }
+};
+
+template <typename API, typename TS, typename Ins, void (Ins::*func)(TS)>
+struct PropertySetterWrapper<API, void (Ins::*)(TS), func>
+{
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
+    static void setter(typename API::CallbackInfoType info)
+    {
+        auto context = API::GetContext(info);
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        if (!self)
+        {
+            API::ThrowException(info, "access a null object");
+            return;
+        }
+
+        (self->*func)(DecayTypeConverter<TS>::toCpp(context, API::GetArg(info, 0)));
+    }
+};
+
+template <typename API>
+struct PropertySetterWrapper<API, decltype(nullptr), nullptr>
+{
+    static void setter(typename API::CallbackInfoType info)
+    {
+        API::ThrowException(info, "not setter for this property!");
+    }
+};
+
+template <typename API, typename TG, typename TS>
+struct PropertyGetterSetterInfo;
+
+template <typename API, typename Ret, typename TS>
+struct PropertyGetterSetterInfo<API, Ret (*)(), TS>
+{
+    static const CTypeInfo* info()
+    {
+        return CTypeInfoImpl<Ret, false>::get();
+    }
+};
+
+template <typename API, typename Ins, typename Ret, typename TS>
+struct PropertyGetterSetterInfo<API, Ret (Ins::*)(), TS>
+{
+    static const CTypeInfo* info()
+    {
+        return CTypeInfoImpl<Ret, false>::get();
+    }
+};
+
+template <typename API, typename Ins, typename Ret, typename TS>
+struct PropertyGetterSetterInfo<API, Ret (Ins::*)() const, TS>
+{
+    static const CTypeInfo* info()
+    {
+        return CTypeInfoImpl<Ret, false>::get();
+    }
+};
+
+template <typename API, typename Ret, typename TG>
+struct PropertyGetterSetterInfo<API, TG, void (*)(Ret)>
+{
+    static const CTypeInfo* info()
+    {
+        return CTypeInfoImpl<Ret, false>::get();
+    }
+};
+
+template <typename API, typename Ins, typename Ret, typename TG>
+struct PropertyGetterSetterInfo<API, TG, void (Ins::*)(Ret)>
+{
+    static const CTypeInfo* info()
+    {
+        return CTypeInfoImpl<Ret, false>::get();
+    }
+};
+
 template <typename T, typename API, typename RegisterAPI>
 class ClassDefineBuilder
 {
