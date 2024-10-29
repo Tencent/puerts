@@ -82,42 +82,49 @@ public class InstructionsFilter
     [Filter]
     static BindingMode FilterBigStructAndPointerOfPointer(MemberInfo memberInfo)
     {
-        MethodBase methodBase = memberInfo as MethodBase;
-        if (methodBase != null)
+        try
         {
-            foreach(var pinfo in methodBase.GetParameters())
+            MethodBase methodBase = memberInfo as MethodBase;
+            if (methodBase != null)
             {
-                var ptype = pinfo.ParameterType;
-                ptype = (ptype.IsByRef || ptype.IsPointer) ? ptype.GetElementType() : ptype;
-                if (IsBigValueType(ptype))
+                foreach (var pinfo in methodBase.GetParameters())
+                {
+                    var ptype = pinfo.ParameterType;
+                    ptype = (ptype.IsByRef || ptype.IsPointer) ? ptype.GetElementType() : ptype;
+                    if (IsBigValueType(ptype))
+                    {
+                        return BindingMode.DontBinding;
+                    }
+                    if (ptype.IsByRef || ptype.IsPointer || ptype == typeof(System.IntPtr) || ptype == typeof(System.UIntPtr))
+                    {
+                        return BindingMode.DontBinding;
+                    }
+                }
+            }
+
+            MethodInfo methodInfo = memberInfo as MethodInfo;
+            if (methodInfo != null)
+            {
+                if (IsBigValueType(methodInfo.ReturnType) || IsPointerOfPointer(methodInfo.ReturnType))
                 {
                     return BindingMode.DontBinding;
                 }
-                if (ptype.IsByRef || ptype.IsPointer || ptype == typeof(System.IntPtr) || ptype == typeof(System.UIntPtr))
+            }
+
+            FieldInfo fieldInfo = memberInfo as FieldInfo;
+            if (fieldInfo != null)
+            {
+                if (IsBigValueType(fieldInfo.FieldType) || IsPointerOfPointer(fieldInfo.FieldType))
                 {
                     return BindingMode.DontBinding;
                 }
             }
+            return BindingMode.FastBinding;
         }
-
-        MethodInfo methodInfo = memberInfo as MethodInfo;
-        if (methodInfo != null)
+        catch
         {
-            if (IsBigValueType(methodInfo.ReturnType) || IsPointerOfPointer(methodInfo.ReturnType))
-            {
-                return BindingMode.DontBinding;
-            }
+            return BindingMode.DontBinding;
         }
-
-        FieldInfo fieldInfo = memberInfo as FieldInfo;
-        if (fieldInfo != null)
-        {
-            if (IsBigValueType(fieldInfo.FieldType) || IsPointerOfPointer(fieldInfo.FieldType))
-            {
-                return BindingMode.DontBinding;
-            }
-        }
-        return BindingMode.FastBinding;
     }
 }
 #endif
