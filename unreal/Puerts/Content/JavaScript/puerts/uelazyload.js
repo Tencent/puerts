@@ -13,20 +13,25 @@ var global = global || (function () { return this; }());
     
     let loadCPPType = global.puerts.loadCPPType;
     
-    let cache = Object.create(null);
-
-    let UE = new Proxy(cache, {
-        get : function(classWrapers, name)
+    function rawSet(obj, key, val) {
+        Object.defineProperty(obj, key, {
+            value: val,
+            writable: true,
+            configurable: true,
+            enumerable: false,
+        });
+    }
+    
+    let UE = Object.create(null);
+    let UE_proxy = new Proxy(UE, {
+        get : function(UE, name)
         {
-            let value = classWrapers[name];
-            if (value === undefined)
-            {
-                value = loadUEType(name);
-                classWrapers[name] = value;
-            }
-            return value;
+            let cls = loadUEType(name);
+            rawSet(UE, name, cls);
+            return cls;
         }
     });
+    Object.setPrototypeOf(UE, UE_proxy);
 
     const TNAMESPACE = 0;
     const TENUM = 1
@@ -34,61 +39,62 @@ var global = global || (function () { return this; }());
     const TSTRUCT = 3
     
     function createNamespaceOrClass(path, parentDir, nodeType) {
-        return new Proxy({__path: path, __parent:parentDir, __type:nodeType}, {
+        let result = {__path: path, __parent:parentDir, __type:nodeType};
+        let result_proxy = new Proxy(result, {
             get: function(node, name) {
-                if (!(name in node)) {
-                    if (name === '__parent' || name === '__path') return undefined;
+                if (name === '__parent' || name === '__path') return undefined;
+                
+                if (node.__type == TENUM) { // auto load
+                    const res = createNamespaceOrClass(name, node, TNAMESPACE);
+                    rawSet(node, name, res);
+                    blueprint_load(res);
+                    return node[name];
+                } else {
+                    let newNodeType = node.__type;
                     
-                    if (node.__type == TENUM) { // auto load
-                        node[name] = createNamespaceOrClass(name, node, TNAMESPACE);
-                        blueprint_load(node[name]);
-                    } else {
-                        let newNodeType = node.__type;
-                        
-                        if (newNodeType === TNAMESPACE) {
-                            let path = `/${name}.${name}`
-                            let c = node;
-                            while (c && c.__path) {
-                                path = `/${c.__path}${path}`
-                                c = c.__parent;
-                            }
-                            const obj = UE.Object.Load(path, true);
-                            if (obj) {
-                                const typeName = obj.GetClass().GetName();
-                                if (typeName === 'UserDefinedEnum') {
-                                    newNodeType = TENUM;
-                                } else if (typeName === 'UserDefinedStruct') {
-                                    newNodeType = TSTRUCT;
-                                } else {
-                                    newNodeType = TBLUEPRINT;
-                                }
+                    if (newNodeType === TNAMESPACE) {
+                        let path = `/${name}.${name}`
+                        let c = node;
+                        while (c && c.__path) {
+                            path = `/${c.__path}${path}`
+                            c = c.__parent;
+                        }
+                        const obj = UE.Object.Load(path, true);
+                        if (obj) {
+                            const typeName = obj.GetClass().GetName();
+                            if (typeName === 'UserDefinedEnum') {
+                                newNodeType = TENUM;
+                            } else if (typeName === 'UserDefinedStruct') {
+                                newNodeType = TSTRUCT;
+                            } else {
+                                newNodeType = TBLUEPRINT;
                             }
                         }
-                        
-                        node[name] = createNamespaceOrClass(name, node, newNodeType);
                     }
+                    const res = createNamespaceOrClass(name, node, newNodeType);
+                    rawSet(node, name, res);
+                    return res;
                 }
-                return node[name];
             }
         });
+        Object.setPrototypeOf(result, result_proxy);
+        return result;
     }
     
-    cache["Game"] = createNamespaceOrClass("Game", undefined, TNAMESPACE);
+    rawSet(UE, "Game", createNamespaceOrClass("Game", undefined, TNAMESPACE));
     
     puerts.registerBuildinModule('ue', UE);
     global.UE = UE;
     
-    let CPP = new Proxy(cache, {
-        get: function(classWrapers, name) {
-            let value = classWrapers[name];
-            if (value === undefined)
-            {
-                value = loadCPPType(name);
-                classWrapers[name] = value;
-            }
-            return value;
+    let CPP = Object.create(null);
+    let CPP_proxy = new Proxy(CPP, {
+        get: function(CPP, name) {
+            let cls = loadCPPType(name);
+            rawSet(CPP, name, cls);
+            return cls;
         }
     });
+    Object.setPrototypeOf(CPP, CPP_proxy);
     
     puerts.registerBuildinModule('cpp', CPP);
     global.CPP = CPP;
@@ -105,10 +111,10 @@ var global = global || (function () { return this; }());
         x[0] = val;
     }
     
-    cache.NewObject = global.__tgjsNewObject;
+    rawSet(UE, 'NewObject', global.__tgjsNewObject);
     global.__tgjsNewObject = undefined;
     
-    cache.NewStruct = global.__tgjsNewStruct;
+    rawSet(UE, 'NewStruct', global.__tgjsNewStruct);
     global.__tgjsNewStruct = undefined;
     
     puerts.$ref = ref;
@@ -117,7 +123,7 @@ var global = global || (function () { return this; }());
     puerts.merge = global.__tgjsMergeObject;
     global.__tgjsMergeObject = undefined;
     
-    cache.FNameLiteral = global.__tgjsFNameToArrayBuffer;
+    rawSet(UE, 'FNameLiteral', global.__tgjsFNameToArrayBuffer);
     global.__tgjsFNameToArrayBuffer = undefined;
     
     let rawmakeclass = global.__tgjsMakeUClass
@@ -249,7 +255,7 @@ var global = global || (function () { return this; }());
     
     function blueprint_unload(cls) {
         if (cls.__puerts_ufield) {
-            cls.__puerts_ufield = undefined;
+            delete cls.__puerts_ufield;
             if (cls.__parent) {
                 cls.__parent[cls.__name] = createNamespaceOrClass(cls.__name, cls.__parent);
             }
@@ -333,24 +339,24 @@ var global = global || (function () { return this; }());
         return ret;
     }
     
-    cache.BuiltinBool = 0;
-    cache.BuiltinByte = 1;
-    cache.BuiltinInt = 2;
-    cache.BuiltinFloat = 3;
-    cache.BuiltinDouble = 4;
-    cache.BuiltinInt64 = 5;
-    cache.BuiltinString = 6;
-    cache.BuiltinText = 7;
-    cache.BuiltinName = 8;
+    rawSet(UE, 'BuiltinBool', 0);
+    rawSet(UE, 'BuiltinByte', 1);
+    rawSet(UE, 'BuiltinInt', 2);
+    rawSet(UE, 'BuiltinFloat', 3);
+    rawSet(UE, 'BuiltinDouble', 4);
+    rawSet(UE, 'BuiltinInt64', 5);
+    rawSet(UE, 'BuiltinString', 6);
+    rawSet(UE, 'BuiltinText', 7);
+    rawSet(UE, 'BuiltinName', 8);
     
     // call once to inject iterators to constructor
-    NewArray(cache.BuiltinInt);
-    NewSet(cache.BuiltinInt);
-    NewMap(cache.BuiltinInt, cache.BuiltinInt);
+    NewArray(UE.BuiltinInt);
+    NewSet(UE.BuiltinInt);
+    NewMap(UE.BuiltinInt, UE.BuiltinInt);
     
-    cache.NewArray = NewArray;
-    cache.NewSet = NewSet;
-    cache.NewMap = NewMap;
+    rawSet(UE, 'NewArray', NewArray);
+    rawSet(UE, 'NewSet', NewSet);
+    rawSet(UE, 'NewMap', NewMap);
     
     const FunctionFlags = {
         FUNC_None                : 0x00000000,
@@ -567,17 +573,17 @@ var global = global || (function () { return this; }());
         return () => {};
     }
     
-    cache.rpc = {
+    rawSet(UE, 'rpc', {
         "FunctionFlags" : FunctionFlags,
         "PropertyFlags" : PropertyFlags,
         "ELifetimeCondition" : ELifetimeCondition,
         "flags" : dummyDecorator,
         "condition" : dummyDecorator
-    }
+    });
     
     const MetaDataInst = '';
     
-    cache.uclass = {
+    rawSet(UE, 'uclass', {
         //  the class specifier
         "ClassGroup": MetaDataInst,
         "Within": MetaDataInst,
@@ -645,9 +651,9 @@ var global = global || (function () { return this; }());
         "UsesHierarchy": MetaDataInst,
         //  decorator to add class metadata
         "umeta": dummyDecorator
-    }
+    });
 
-    cache.ufunction = {
+    rawSet(UE, 'ufunction', {
         //  the function specifier
         "BlueprintImplementableEvent": MetaDataInst,
         "BlueprintNativeEvent": MetaDataInst,
@@ -725,9 +731,9 @@ var global = global || (function () { return this; }());
         "ArrayParam": MetaDataInst,
         //  decorator to add function metadata
         "umeta": dummyDecorator
-    }
+    });
 
-    cache.uproperty = {
+    rawSet(UE, 'uproperty', {
         //  the specifiers
         "Const": MetaDataInst,
         "Config": MetaDataInst,
@@ -839,10 +845,9 @@ var global = global || (function () { return this; }());
         //  decorator
         "umeta": dummyDecorator,
         "attach": dummyDecorator
-    }
+    });
 
-    cache.uparam =
-    {
+    rawSet(UE, 'uparam', {
         //  the specifiers
         "Const": MetaDataInst,
         "Ref": MetaDataInst,
@@ -918,23 +923,23 @@ var global = global || (function () { return this; }());
         "BitmaskEnum": MetaDataInst,
         //  decorator
         "umeta": dummyDecorator,
-    }
+    });
 
-    cache.edit_on_instance = dummyDecorator;
-    
-    cache.no_blueprint = dummyDecorator;
-    
-    cache.set_flags = dummyDecorator;
-    
-    cache.clear_flags = dummyDecorator;
-    
-    cache.FunctionFlags = FunctionFlags;
+    rawSet(UE, 'edit_on_instance', dummyDecorator);
 
-    cache.ClassFlags = ClassFlags;
+    rawSet(UE, 'no_blueprint', dummyDecorator);
 
-    cache.PropertyFlags = PropertyFlags;
+    rawSet(UE, 'set_flags', dummyDecorator);
 
-    cache.FunctionExportFlags = FunctionExportFlags;
+    rawSet(UE, 'clear_flags', dummyDecorator);
+
+    rawSet(UE, 'FunctionFlags', FunctionFlags);
+
+    rawSet(UE, 'ClassFlags', ClassFlags);
+
+    rawSet(UE, 'PropertyFlags', PropertyFlags);
+
+    rawSet(UE, 'FunctionExportFlags', FunctionExportFlags);
 
     puerts.toManualReleaseDelegate = (x) => x;
     puerts.toDelegate = (o,k) => [o, k];
