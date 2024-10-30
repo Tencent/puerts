@@ -77,7 +77,7 @@ namespace Puerts.UnitTest
         [Test]
         public async Task SmokeTest()
         {
-            WebSocketServer wss = new WebSocketServer("http://localhost:5000/");
+            WebSocketServer wss = new WebSocketServer("http://localhost:5123/");
 #if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
@@ -96,7 +96,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 (function() {
-                    let con = new WebSocket('ws://localhost:5000');
+                    let con = new WebSocket('ws://localhost:5123');
                     con.addEventListener('open', (ev) => {
                         console.log(`on open`);
                         con.send('puerts websocket');
