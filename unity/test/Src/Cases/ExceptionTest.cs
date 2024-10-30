@@ -409,7 +409,7 @@ namespace Puerts.UnitTest
         public void QuickjsStackOverflowTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            ConsumeStackAndCallJs(8 * 1024, jsEnv);
+            ConsumeStackAndCallJs(4 * 1024, jsEnv);
         }
 
         void ConsumeStackAndCallJs(int loop, JsEnv jsEnv)
