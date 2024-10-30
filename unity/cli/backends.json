@@ -1,6 +1,6 @@
 {
     "quickjs": {
-        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_240625/qjs_v8_bin.tgz",
+        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_241030/qjs_v8_bin.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER",
@@ -453,7 +453,7 @@
         }
     },
     "mult": {
-        "url": "https://github.com/puerts/backend-mult/releases/download/MULT_241009/mult_backends.tgz",
+        "url": "https://github.com/puerts/backend-mult/releases/download/MULT_241030/mult_backends.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
