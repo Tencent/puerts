@@ -404,5 +404,27 @@ namespace Puerts.UnitTest
             });
             jsEnv.Tick();
         }
+
+        [Test]
+        public void QuickjsStackOverflowTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            ConsumeStackAndCallJs(4 * 1024, jsEnv);
+        }
+
+        void ConsumeStackAndCallJs(int loop, JsEnv jsEnv)
+        {
+            if (loop > 0)
+            {
+                ConsumeStackAndCallJs(loop - 1, jsEnv);
+            }
+            else
+            {
+                jsEnv.Eval(@"
+                function foo(p) { return p;}
+                foo(1);
+                ");
+            }
+        }
     }
 }
