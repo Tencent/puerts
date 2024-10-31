@@ -101,7 +101,7 @@ UsingUStruct(FHitResult)
             .Method("GetName", SelectFunction(FString(UObjectBaseUtility::*)() const, &UObjectBaseUtility::GetName))
             .Method("GetOuter", MakeFunction(&UObject::GetOuter))
             .Method("GetClass", MakeFunction(&UObject::GetClass))
-            .Method("IsA", SelectFunction(bool(UObjectBaseUtility::*)(UClass*) const, &UObjectBaseUtility::IsA))
+            .Method("IsA", SelectFunction(bool (UObjectBaseUtility::*)(UClass*) const, &UObjectBaseUtility::IsA))
             .Method("IsNative", MakeFunction(&UObjectBaseUtility::IsNative))
 #if !defined(ENGINE_INDEPENDENT_JSENV)
             .Method("GetWorld", MakeFunction(&UObject::GetWorld))
@@ -109,7 +109,7 @@ UsingUStruct(FHitResult)
             .Register();
 
         PUERTS_NAMESPACE::DefineClass<UStruct>()
-            .Method("IsChildOf", SelectFunction(bool(UStruct::*)(const UStruct*) const, &UStruct::IsChildOf))
+            .Method("IsChildOf", SelectFunction(bool (UStruct::*)(const UStruct*) const, &UStruct::IsChildOf))
             .Register();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
