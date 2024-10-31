@@ -999,7 +999,7 @@ void UPEBlueprintAsset::SetupAttachment(FName InComponentName, FName InParentCom
         {
             NeedSave = true;
             Blueprint->SimpleConstructionScript->RemoveNode(SCS_Node);
-            USceneComponent* SceneComponentTemplate = Cast<USceneComponent>(SCS_Node->ComponentClass);
+            USceneComponent* SceneComponentTemplate = Cast<USceneComponent>(SCS_Node->ComponentClass->GetDefaultObject());
             if (SceneComponentTemplate)
             {
                 // Save current state
