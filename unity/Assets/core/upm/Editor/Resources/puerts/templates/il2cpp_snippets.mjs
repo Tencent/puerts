@@ -334,8 +334,8 @@ export function CSValToJSVal(signature, CSName) {
         const elemSignature = signature.substring(1);
         if (elemSignature in PrimitiveSignatureCppTypeMap) {
             return `converter::Converter<std::reference_wrapper<${PrimitiveSignatureCppTypeMap[elemSignature]}>>::toScript(env, *${CSName})`;
-        } else if (isStruct(elemSignature)) {
-            return `pesapi_native_object_to_value(env, ${TIName}, ${CSName}, false)`;
+        } else if (isStruct(elemSignature) || signature == 'Po' || signature == 'PO' || signature == 'Pa') {
+            return `pesapi_boxing(env, pesapi_native_object_to_value(env, ${TIName}, ${CSName}, false))`;
         }
     }
     //TODO: 能处理的就处理, DateTime是否要处理呢？
