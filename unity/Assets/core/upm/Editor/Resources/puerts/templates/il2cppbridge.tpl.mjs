@@ -12,7 +12,7 @@ function genBridgeArgs(parameterSignatures) {
     if (parameterSignatures.length != 0) {
         if (parameterSignatures[parameterSignatures.length -1][0] != 'V') {
             return `pesapi_value argv[${parameterSignatures.length}]{
-        ${parameterSignatures.map((ps, i)=> il2cpp_snippets.CSValToJSVal(ps, `p${i}`) || 'pesapi_create_undefined(env)').join(`,
+        ${parameterSignatures.map((ps, i)=> il2cpp_snippets.CSValToJSVal(ps[0] == 'D' ? ps.substring(1) : ps, `p${i}`) || 'pesapi_create_undefined(env)').join(`,
         `)}
     };`
         } else {
