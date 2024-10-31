@@ -474,5 +474,19 @@ export default DModule;");
             StringAssert.Contains("hello", jsEnv.Eval<string>("result_ESDynamicModuleImportRelative.toString()"));
         }
 #endif
+        
+        [Test]
+        public void ThreadCheckInJSCall()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                const CS = global.CS;
+                CS.System.Net.Dns.BeginGetHostAddresses('www.qq.com', (ar)=>
+                {
+                    Console.log('hello');
+                }, null); 
+            ");
+            jsEnv.Tick();
+        }
     }
 }

@@ -11,6 +11,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using UnityEngine;
 
 namespace Puerts
 {
@@ -340,6 +342,9 @@ namespace Puerts
 #if UNITY_EDITOR || DEBUG
         private string stacktrace;
 #endif
+#if !THREAD_SAFE
+        static Thread s_MainThread = Thread.CurrentThread;
+#endif
 
         internal IntPtr getJsFuncPtr() 
         {
@@ -378,6 +383,18 @@ namespace Puerts
             {
                 jsEnv.CheckLiveness();
             }
+        }
+        
+        private void CheckThread()
+        {
+#if !THREAD_SAFE
+            if (Thread.CurrentThread != s_MainThread)
+            {
+                string message = "GenericDelegate should only be used in main thread, stacktrace:" + (string.IsNullOrEmpty(this.stacktrace) ? "unknown" : this.stacktrace);
+                Debug.LogError(message);
+                throw new Exception(message);
+            }
+#endif
         }
 
         ~GenericDelegate() 
@@ -438,6 +455,7 @@ namespace Puerts
 
         public void Action()
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -455,6 +473,7 @@ namespace Puerts
 
         public void Action<T1>(T1 p1)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -473,6 +492,7 @@ namespace Puerts
 
         public void Action<T1, T2>(T1 p1, T2 p2) 
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -492,6 +512,7 @@ namespace Puerts
 
         public void Action<T1, T2, T3>(T1 p1, T2 p2, T3 p3)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -512,6 +533,7 @@ namespace Puerts
 
         public void Action<T1, T2, T3, T4>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -533,6 +555,7 @@ namespace Puerts
 
         public TResult Func<TResult>()
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -553,6 +576,7 @@ namespace Puerts
 
         public TResult Func<T1, TResult>(T1 p1)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -574,6 +598,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, TResult>(T1 p1, T2 p2)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -596,6 +621,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, T3, TResult>(T1 p1, T2 p2, T3 p3)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -619,6 +645,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, T3, T4, TResult>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
