@@ -96,7 +96,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 (function() {
-                    let con = new WebSocket('ws://localhost:5123');
+                    global.con = new WebSocket('ws://localhost:5123');
                     con.addEventListener('open', (ev) => {
                         console.log(`on open`);
                         con.send('puerts websocket');
@@ -104,7 +104,13 @@ namespace Puerts.UnitTest
                     con.addEventListener('message', (ev) => {
                         console.log(`on message: ${ev.data}`);
                         global.webSocketMessage = ev.data;
-                        con.close();
+                        //con.close();
+                    });
+                    con.addEventListener('close', (ev) => {
+                        global.onclose_called = true;
+                    });
+                    con.addEventListener('error', (ev) => {
+                        global.onerror_called = true;
                     });
                 })();
             ");
@@ -118,9 +124,25 @@ namespace Puerts.UnitTest
             await wss.SendAsync(msg);
 
             waitJsEnv();
-            wss.Stop();
+            
             var res = jsEnv.Eval<string>("global.webSocketMessage");
             Assert.AreEqual(res, "puerts websocket");
+
+            waitJsEnv();
+
+            jsEnv.Eval(@"
+                con._raw.send = () => {throw new Error()};
+                con.send('some message');
+            ");
+
+            waitJsEnv();
+
+            var flag = jsEnv.Eval<bool>("global.onclose_called");
+            Assert.AreEqual(flag, true);
+            flag = jsEnv.Eval<bool>("global.onerror_called");
+            Assert.AreEqual(flag, true);
+
+            wss.Stop();
         }
     }
 }
