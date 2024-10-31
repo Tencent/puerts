@@ -81,7 +81,12 @@ static void FText_Format(const v8::FunctionCallbackInfo<v8::Value>& Info)
 }
 #endif
 
-struct AutoRegisterForUE
+#if ENGINE_MAJOR_VERSION > 4
+UsingUClass(AActor);
+UsingUStruct(FHitResult)
+#endif
+
+    struct AutoRegisterForUE
 {
     AutoRegisterForUE()
     {
@@ -96,7 +101,7 @@ struct AutoRegisterForUE
             .Method("GetName", SelectFunction(FString(UObjectBaseUtility::*)() const, &UObjectBaseUtility::GetName))
             .Method("GetOuter", MakeFunction(&UObject::GetOuter))
             .Method("GetClass", MakeFunction(&UObject::GetClass))
-            .Method("IsA", SelectFunction(bool (UObjectBaseUtility::*)(UClass*) const, &UObjectBaseUtility::IsA))
+            .Method("IsA", SelectFunction(bool(UObjectBaseUtility::*)(UClass*) const, &UObjectBaseUtility::IsA))
             .Method("IsNative", MakeFunction(&UObjectBaseUtility::IsNative))
 #if !defined(ENGINE_INDEPENDENT_JSENV)
             .Method("GetWorld", MakeFunction(&UObject::GetWorld))
@@ -104,7 +109,7 @@ struct AutoRegisterForUE
             .Register();
 
         PUERTS_NAMESPACE::DefineClass<UStruct>()
-            .Method("IsChildOf", SelectFunction(bool (UStruct::*)(const UStruct*) const, &UStruct::IsChildOf))
+            .Method("IsChildOf", SelectFunction(bool(UStruct::*)(const UStruct*) const, &UStruct::IsChildOf))
             .Register();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -129,6 +134,10 @@ struct AutoRegisterForUE
             .Function("FromString", SelectFunction(FText(*)(const FString&), &FText::FromString))
             .Function("Format", FText_Format, &FormatSignature)
             .Register();
+#endif
+
+#if ENGINE_MAJOR_VERSION > 4
+        PUERTS_NAMESPACE::DefineClass<FHitResult>().Method("GetActor", MakeFunction(&FHitResult::GetActor)).Register();
 #endif
     }
 };
