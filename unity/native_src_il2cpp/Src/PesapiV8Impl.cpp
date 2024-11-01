@@ -87,9 +87,6 @@ inline v8::Local<v8::Context> V8LocalContextFromPesapiEnv(pesapi_env v)
     *reinterpret_cast<pesapi_env*>(&local) = v;
     return local;
 }
-}    // namespace v8impl
-
-EXTERN_C_START
 
 // value process
 pesapi_value pesapi_create_null(pesapi_env env)
@@ -831,6 +828,95 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
     puerts::DataTransfer::SetIsolatePrivateData(context->GetIsolate(), const_cast<void*>(ptr));
 }
 
+pesapi_apis g_pesapi_apis {
+    &pesapi_create_null,
+    &pesapi_create_undefined,
+    &pesapi_create_boolean,
+    &pesapi_create_int32,
+    &pesapi_create_uint32,
+    &pesapi_create_int64,
+    &pesapi_create_uint64,
+    &pesapi_create_double,
+    &pesapi_create_string_utf8,
+    &pesapi_create_binary,
+    &pesapi_create_array,
+    &pesapi_create_object,
+    &pesapi_create_function,
+    &pesapi_create_class,
+    &pesapi_get_value_bool,
+    &pesapi_get_value_int32,
+    &pesapi_get_value_uint32,
+    &pesapi_get_value_int64,
+    &pesapi_get_value_uint64,
+    &pesapi_get_value_double,
+    &pesapi_get_value_string_utf8,
+    &pesapi_get_value_binary,
+    &pesapi_get_array_length,
+    &pesapi_is_null,
+    &pesapi_is_undefined,
+    &pesapi_is_boolean,
+    &pesapi_is_int32,
+    &pesapi_is_uint32,
+    &pesapi_is_int64,
+    &pesapi_is_uint64,
+    &pesapi_is_double,
+    &pesapi_is_string,
+    &pesapi_is_object,
+    &pesapi_is_function,
+    &pesapi_is_binary,
+    &pesapi_is_array,
+    &pesapi_native_object_to_value,
+    &pesapi_get_native_object_ptr,
+    &pesapi_get_native_object_typeid,
+    &pesapi_is_instance_of,
+    &pesapi_boxing,
+    &pesapi_unboxing,
+    &pesapi_update_boxed_value,
+    &pesapi_is_boxed_value,
+    &pesapi_get_args_len,
+    &pesapi_get_arg,
+    &pesapi_get_env,
+    &pesapi_get_this,
+    &pesapi_get_holder,
+    &pesapi_get_userdata,
+    &pesapi_add_return,
+    &pesapi_throw_by_string,
+    &pesapi_create_env_ref,
+    &pesapi_env_ref_is_valid,
+    &pesapi_get_env_from_ref,
+    &pesapi_duplicate_env_ref,
+    &pesapi_release_env_ref,
+    &pesapi_open_scope,
+    &pesapi_open_scope_placement,
+    &pesapi_has_caught,
+    &pesapi_get_exception_as_string,
+    &pesapi_close_scope,
+    &pesapi_close_scope_placement,
+    &pesapi_create_value_ref,
+    &pesapi_duplicate_value_ref,
+    &pesapi_release_value_ref,
+    &pesapi_get_value_from_ref,
+    &pesapi_set_ref_weak,
+    &pesapi_set_owner,
+    &pesapi_get_ref_associated_env,
+    &pesapi_get_ref_internal_fields,
+    &pesapi_get_property,
+    &pesapi_set_property,
+    &pesapi_get_private,
+    &pesapi_set_private,
+    &pesapi_get_property_uint32,
+    &pesapi_set_property_uint32,
+    &pesapi_call_function,
+    &pesapi_eval,
+    &pesapi_global,
+    &pesapi_get_env_private,
+    &pesapi_set_env_private
+};
+
+}    // namespace v8impl
+
+EXTERN_C_START
+
 struct pesapi_type_info__
 {
     const char* name;
@@ -1056,5 +1142,15 @@ const void* pesapi_find_type_id(const char* module_name, const char* type_name)
 }
 
 EXTERN_C_END
+
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
+pesapi_func_ptr reg_apis[] = {(pesapi_func_ptr) &pesapi_alloc_type_infos, (pesapi_func_ptr) &pesapi_set_type_info,
+    (pesapi_func_ptr) &pesapi_create_signature_info, (pesapi_func_ptr) &pesapi_alloc_property_descriptors,
+    (pesapi_func_ptr) &pesapi_set_method_info, (pesapi_func_ptr) &pesapi_set_property_info, (pesapi_func_ptr) &pesapi_define_class,
+    (pesapi_func_ptr) &pesapi_get_class_data, (pesapi_func_ptr) &pesapi_trace_native_object_lifecycle,
+    (pesapi_func_ptr) &pesapi_on_class_not_found, (pesapi_func_ptr) &pesapi_class_type_info,
+    (pesapi_func_ptr) &pesapi_find_type_id};
+MSVC_PRAGMA(warning(pop))
 
 #endif

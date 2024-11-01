@@ -21,6 +21,11 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
 
+namespace v8impl
+{
+extern pesapi_apis g_pesapi_apis;
+}
+
 namespace PUERTS_NAMESPACE
 {
 struct PointerHash

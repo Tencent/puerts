@@ -8,6 +8,7 @@
 
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
+#include "pesapi.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -150,7 +151,7 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
         void* Ptr = nullptr;
 
         if (ClassDefinition->Initialize)
-            Ptr = ClassDefinition->Initialize((pesapi_callback_info) &Info);
+            Ptr = ClassDefinition->Initialize(&v8impl::g_pesapi_apis, (pesapi_callback_info) &Info);
         if (Ptr == nullptr)
             return;
 
@@ -162,8 +163,27 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
-MSVC_PRAGMA(warning(push))
-MSVC_PRAGMA(warning(disable : 4191))
+static void PesapiCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    JSFunctionInfo* FunctionInfo = reinterpret_cast<JSFunctionInfo*>(
+        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSFunctionInfo, Data));
+    FunctionInfo->Callback(&v8impl::g_pesapi_apis, (pesapi_callback_info)(&Info));
+}
+
+static void PesapiGetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    JSPropertyInfo* PropertyInfo = reinterpret_cast<JSPropertyInfo*>(
+        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSPropertyInfo, GetterData));
+    PropertyInfo->Getter(&v8impl::g_pesapi_apis, (pesapi_callback_info)(&Info));
+}
+
+static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    JSPropertyInfo* PropertyInfo = reinterpret_cast<JSPropertyInfo*>(
+        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSPropertyInfo, SetterData));
+    PropertyInfo->Setter(&v8impl::g_pesapi_apis, (pesapi_callback_info)(&Info));
+}
+
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition)
 {
     auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
@@ -183,9 +203,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
             Template->PrototypeTemplate()->SetAccessorProperty(
                 v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Getter, GetterData)
+                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
                                      : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Setter, SetterData)
+                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
                                      : v8::Local<v8::FunctionTemplate>(),
                 PropertyAttribute);
             ++PropertyInfo;
@@ -201,9 +221,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
             Template->SetAccessorProperty(
                 v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Getter, GetterData)
+                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
                                      : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Setter, SetterData)
+                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
                                      : v8::Local<v8::FunctionTemplate>(),
                 PropertyAttribute);
             ++PropertyInfo;
@@ -218,7 +238,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             {
                 Template->PrototypeTemplate()->Set(
                     v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) FunctionInfo->Callback,
+                    v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
                         v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
                         v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
             }
@@ -228,7 +248,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                 Template->PrototypeTemplate()->Set(
                     v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                     v8::FunctionTemplate::New(
-                        Isolate, (v8::FunctionCallback) FunctionInfo->Callback, v8::External::New(Isolate, &FunctionInfo->Data)
+                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
 #ifndef WITH_QUICKJS
                                                                                     ,
                         v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
@@ -245,7 +265,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             if (FastCallInfo)
             {
                 Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) FunctionInfo->Callback,
+                    v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
                         v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
                         v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
             }
@@ -254,7 +274,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             {
                 Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                     v8::FunctionTemplate::New(
-                        Isolate, (v8::FunctionCallback) FunctionInfo->Callback, v8::External::New(Isolate, &FunctionInfo->Data)
+                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
 #ifndef WITH_QUICKJS
                                                                                     ,
                         v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
@@ -281,14 +301,13 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         return v8::Local<v8::FunctionTemplate>::New(Isolate, Iter->second);
     }
 }
-MSVC_PRAGMA(warning(pop))
 
 static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefinition>& Data)
 {
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->Finalize)
-        ClassDefinition->Finalize(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+        ClassDefinition->Finalize(&v8impl::g_pesapi_apis, Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);
 }
 
@@ -401,7 +420,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             {
                 if (ClassDefinition && ClassDefinition->Finalize)
                 {
-                    ClassDefinition->Finalize(KV.first, ClassDefinition->Data, PData);
+                    ClassDefinition->Finalize(&v8impl::g_pesapi_apis, KV.first, ClassDefinition->Data, PData);
                 }
                 PNode->MustCallFinalize = false;
             }
