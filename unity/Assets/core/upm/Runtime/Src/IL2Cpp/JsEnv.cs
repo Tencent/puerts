@@ -21,6 +21,8 @@ namespace Puerts
     [UnityEngine.Scripting.Preserve]
     public class JsEnv : IDisposable
     {
+        private static List<JsEnv> jsEnvs = new List<JsEnv>();
+        private readonly int Idx;
         IntPtr nativeJsEnv;
         IntPtr nativePesapiEnv;
         IntPtr nativeScriptObjectsRefsMgr;
@@ -124,6 +126,25 @@ namespace Puerts
 #endif
 
             this.debugPort = debugPort;
+            // prevent c# gc, manual call Dispose if you release this
+            lock (jsEnvs)
+            {
+                Idx = -1;
+                for (int i = 0; i < jsEnvs.Count; i++)
+                {
+                    if (jsEnvs[i] == null)
+                    {
+                        Idx = i;
+                        jsEnvs[Idx] = this;
+                        break;
+                    }
+                }
+                if (Idx == -1)
+                {
+                    Idx = jsEnvs.Count;
+                    jsEnvs.Add(this);
+                }
+            }
             if (loader is IBuiltinLoadedListener)
                 (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
         }
@@ -234,6 +255,10 @@ namespace Puerts
                 PuertsIl2cpp.NativeAPI.CleanupPapiEnvRef(nativePesapiEnv);
                 PuertsIl2cpp.NativeAPI.DestroyNativeJSEnv(nativeJsEnv);
                 disposed = true;
+            }
+            lock (jsEnvs)
+            {
+                jsEnvs[Idx] = null;
             }
         }
         
