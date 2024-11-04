@@ -50,37 +50,37 @@ jobs:
           echo "testresult in v2"
           cat log2.txt | grep "Failed\|Passed" 
       
-#  unittest-osx-unity:
-#    runs-on: macos-latest
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Setup Unity
-#        uses: ./.github/workflows/composites/unity-setup/
-#        with:
-#          os: 'osx'
-#          version: '2021.3.16f1'
-#          cachekey: '2021'
-#          install_path: /Applications/UNITY
-#          unity_modules: mac-il2cpp
-#          architecture: x86_64
-#          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
-#          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-#          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-#      - name: UnitTest
-#        run: |
-#          cd unity
-#          npm i
-#          cd test/unity
-#          node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
-#      - name: TestResult
-#        if: always()
-#        shell: bash
-#        run: |
-#          cd unity/test/unity
-#          echo "testresult in v1"
-#          cat log1.txt | grep "Failed\|Passed" 
-#          echo "testresult in v2"
-#          cat log2.txt | grep "Failed\|Passed" 
+  unittest-osx-unity:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Unity
+        uses: ./.github/workflows/composites/unity-setup/
+        with:
+          os: 'osx'
+          version: '2021.3.16f1'
+          cachekey: '2021'
+          install_path: /Applications/UNITY
+          unity_modules: mac-il2cpp
+          architecture: x86_64
+          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          cd test/unity
+          node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
+      - name: TestResult
+        if: always()
+        shell: bash
+        run: |
+          cd unity/test/unity
+          echo "testresult in v1"
+          cat log1.txt | grep "Failed\|Passed" 
+          echo "testresult in v2"
+          cat log2.txt | grep "Failed\|Passed" 
 
   unittest-win-dotnet:
     runs-on: windows-2019
