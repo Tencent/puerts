@@ -2124,7 +2124,7 @@ puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signatur
     
     for(int i = 0; i < classInfo->Methods.size(); ++i)
     {
-        if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].Name == name)
+        if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && classInfo->Methods[i].Name == name)
         {
             if (isGetter || isSetter) // no overload for getter or setter
             {
