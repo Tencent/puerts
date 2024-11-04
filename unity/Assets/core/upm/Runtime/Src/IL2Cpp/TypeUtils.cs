@@ -20,15 +20,28 @@ namespace PuertsIl2cpp
 	{
         private static Type GetExtendedType(MethodInfo method)
         {
+            var paramInfo = method.GetParameters();
+            if (paramInfo.Length == 0)
+            {
+                return null;
+            }
+            if (method.GetCustomAttribute<ExtensionAttribute>() == null)
+            {
+                return null;
+            }
             var type = method.GetParameters()[0].ParameterType;
             if (!type.IsGenericParameter)
                 return type;
             var parameterConstraints = type.GetGenericParameterConstraints();
             if (parameterConstraints.Length == 0)
-                throw new InvalidOperationException();
+            {
+                return null;
+            }
             var firstParameterConstraint = parameterConstraints[0];
             if (!firstParameterConstraint.IsClass)
-                throw new InvalidOperationException();
+            {
+                return null;
+            }
             return firstParameterConstraint;
         }
         
