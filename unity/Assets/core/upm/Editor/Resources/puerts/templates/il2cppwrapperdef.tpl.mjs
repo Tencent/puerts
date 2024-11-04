@@ -13,14 +13,14 @@ function genFuncWrapper(wrapperInfo) {
 
     return t`
 // ${wrapperInfo.CsName}
-bool w_${wrapperInfo.Signature}(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {
+bool w_${wrapperInfo.Signature}(struct pesapi_apis* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {
     // PLog("Running w_${wrapperInfo.Signature}");
     
     ${il2cpp_snippets.declareTypeInfo(wrapperInfo)}
 
-    int js_args_len = pesapi_get_args_len(info);
+    int js_args_len = apis->pesapi_get_args_len(info);
     
-${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = pesapi_get_arg(info, ${i});`).join('\n')}
+${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = apis->pesapi_get_arg(info, ${i});`).join('\n')}
 
     if (${parameterSignatures.filter(s => s[0] == 'D').length ? 'true' : 'checkJSArgument'}) {
         if (${il2cpp_snippets.genArgsLenCheck(parameterSignatures)}) return false;

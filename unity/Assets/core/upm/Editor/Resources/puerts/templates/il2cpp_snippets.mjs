@@ -76,14 +76,14 @@ export function SToCPPType(signature) {
 }
     
 export function getThis(signature) {
-    let getJsThis = 'pesapi_value jsThis = pesapi_get_holder(info);'
+    let getJsThis = 'pesapi_value jsThis = apis->pesapi_get_holder(info);'
     if (signature == 't') {
         return `${getJsThis}
-    auto self = pesapi_get_native_object_ptr(env, jsThis);`
+    auto self = apis->pesapi_get_native_object_ptr(env, jsThis);`
     } else if (signature == 'T') {
         return `${getJsThis}
-    auto self = pesapi_get_native_object_ptr(env, jsThis);
-    auto ptrType = (Il2CppClass*) pesapi_get_native_object_typeid(env, jsThis);
+    auto self = apis->pesapi_get_native_object_ptr(env, jsThis);
+    auto ptrType = (Il2CppClass*) apis->pesapi_get_native_object_typeid(env, jsThis);
     if (il2cpp::vm::Class::IsValuetype(ptrType))
     {
         self = il2cpp::vm::Object::Box(ptrType, self);
@@ -96,11 +96,11 @@ export function getThis(signature) {
     
 export function getArgValue(signature, JSName, isRef) {
     if (signature in PrimitiveSignatureCppTypeMap) {
-        return isRef ? `converter::Converter<std::reference_wrapper<${PrimitiveSignatureCppTypeMap[signature]}>>::toCpp(env, ${JSName})`
-            : `converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::toCpp(env, ${JSName})`;
+        return isRef ? `converter::Converter<std::reference_wrapper<${PrimitiveSignatureCppTypeMap[signature]}>>::toCpp(apis, env, ${JSName})`
+            : `converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::toCpp(apis, env, ${JSName})`;
 
     } else if ((signature == 'Pv' || signature == 'p') && !isRef) {
-        return `DataTransfer::GetPointer<void>(env, ${JSName})`;
+        return `DataTransfer::GetPointer<void>(apis, env, ${JSName})`;
 
     } else { // default value
         // TODO: object
@@ -151,19 +151,19 @@ export function checkJSArg(signature, index) {
     }
 
     if (signature in PrimitiveSignatureCppTypeMap) {
-        ret += `!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(env, _sv${index})) return false;`
+        ret += `!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'p' || signature == 'Pv' || signature == 'a') { // IntPtr, void*, ArrayBuffer
-        ret += `!pesapi_is_binary(env, _sv${index}) && !pesapi_is_null(env, _sv${index}) && !pesapi_is_undefined(env, _sv${index})) return false;`
+        ret += `!apis->pesapi_is_binary(env, _sv${index}) && !apis->pesapi_is_null(env, _sv${index}) && !apis->pesapi_is_undefined(env, _sv${index})) return false;`
     } else if (signature[0] == 'P') {
-        ret += `!pesapi_is_object(env, _sv${index})) return false;`
+        ret += `!apis->pesapi_is_object(env, _sv${index})) return false;`
     } else if (signature == 's') {
-        ret += `!converter::Converter<Il2CppString*>::accept(env, _sv${index})) return false;`
+        ret += `!converter::Converter<Il2CppString*>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'o' || signature == 'a') {
-        ret += `!DataTransfer::IsAssignable(env, _sv${index}, ${typeInfoVar}, false)) return false;`
+        ret += `!DataTransfer::IsAssignable(apis, env, _sv${index}, ${typeInfoVar}, false)) return false;`
     } else if (signature == 'O') {//System.Object
         return '';
     } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
-        ret += `!DataTransfer::IsAssignable(env, _sv${index}, ${typeInfoVar}, true)) return false;`
+        ret += `!DataTransfer::IsAssignable(apis, env, _sv${index}, ${typeInfoVar}, true)) return false;`
     } else { // TODO: 适配所有类型，根据!!true去查找没处理的
         ret += '!!true) return false;';
     }
@@ -181,19 +181,19 @@ export function refSetback(signature, index) {
                 // this '==' is because if a pointer is passed in from external, the content of the pointer is changed and dont need to setback.
                 return `if (p${index} == &up${index})
     {
-        pesapi_update_boxed_value(env, _sv${index}, ${val});
+        apis->pesapi_update_boxed_value(env, _sv${index}, ${val});
     }
             `;    
             } else if (elementSignature.startsWith(sigs.NullableStructPrefix) && elementSignature.endsWith('_')) {
                 return `if (p${index} == &up${index})
     {
-        if (!p${index}->hasValue) pesapi_update_boxed_value(env, _sv${index}, pesapi_create_null(env));
-        if (p${index} == &up${index}) pesapi_update_boxed_value(env, _sv${index}, ${val});
+        if (!p${index}->hasValue) apis->pesapi_update_boxed_value(env, _sv${index}, apis->pesapi_create_null(env));
+        if (p${index} == &up${index}) apis->pesapi_update_boxed_value(env, _sv${index}, ${val});
     }
             `;    
 
             } else {
-                return `pesapi_update_boxed_value(env, _sv${index}, ${val});`;
+                return `apis->pesapi_update_boxed_value(env, _sv${index}, ${val});`;
             }
         }
     }
@@ -202,7 +202,7 @@ export function refSetback(signature, index) {
 }
     
 export function returnToJS(signature) {
-    return `pesapi_add_return(info, ${CSValToJSVal(signature, 'ret')});`;
+    return `apis->pesapi_add_return(info, ${CSValToJSVal(signature, 'ret')});`;
 }
     
 export function returnToCS(signature) {
@@ -215,31 +215,31 @@ ${JSValToCSVal(signature, 'jsret', 'ret')}
 export function JSValToCSVal(signature, JSName, CSName) {
     if (signature == 's') { // string
         return `    // JSValToCSVal s
-    Il2CppString* ${CSName} = converter::Converter<Il2CppString*>::toCpp(env, ${JSName});`;
+    Il2CppString* ${CSName} = converter::Converter<Il2CppString*>::toCpp(apis, env, ${JSName});`;
 
     } else if (signature == 'Ps') { // string ref
         return `    // JSValToCSVal Ps
-    Il2CppString* u${CSName} = converter::Converter<std::reference_wrapper<Il2CppString*>>::toCpp(env, ${JSName}); // string ref
+    Il2CppString* u${CSName} = converter::Converter<std::reference_wrapper<Il2CppString*>>::toCpp(apis, env, ${JSName}); // string ref
     Il2CppString** ${CSName} = &u${CSName};
         `
     } else if (signature == 'o' || signature == 'O' || signature == 'a') { // object
         return `    // JSValToCSVal o/O
-    Il2CppObject* ${CSName} = JsValueToCSRef(TI${CSName}, env, ${JSName});`;
+    Il2CppObject* ${CSName} = JsValueToCSRef(apis, TI${CSName}, env, ${JSName});`;
 
     } else if (signature == 'Po' || signature == 'PO' || signature == 'Pa') {
         return `    // JSValToCSVal Po/PO
-    Il2CppObject* u${CSName} = DataTransfer::GetPointer<Il2CppObject>(env, pesapi_unboxing(env, ${JSName})); // object ref
+    Il2CppObject* u${CSName} = DataTransfer::GetPointer<Il2CppObject>(apis, env, apis->pesapi_unboxing(env, ${JSName})); // object ref
     Il2CppObject** ${CSName} = &u${CSName};
         `
     } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype
         return `    // JSValToCSVal struct
-    ${signature}* p${CSName} = DataTransfer::GetPointer<${signature}>(env, ${JSName});
+    ${signature}* p${CSName} = DataTransfer::GetPointer<${signature}>(apis, env, ${JSName});
     ${signature} ${CSName} = p${CSName} ? *p${CSName} : ${signature} {};`
 
     } else if ((signature.startsWith('P' + sigs.StructPrefix) || signature.startsWith('P' + sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype ref
         const S = signature.substring(1);
         return `    // JSValToCSVal Pstruct
-    ${S}* ${CSName} = DataTransfer::GetPointer<${S}>(env, pesapi_unboxing(env, ${JSName})); // valuetype ref
+    ${S}* ${CSName} = DataTransfer::GetPointer<${S}>(apis, env, apis->pesapi_unboxing(env, ${JSName})); // valuetype ref
     ${S} u${CSName};
     if (!${CSName}) {
         memset(&u${CSName}, 0, sizeof(${S}));
@@ -261,19 +261,19 @@ export function JSValToCSVal(signature, JSName, CSName) {
         const start = parseInt(JSName.match(/_sv(\d+)/)[1]);
         if (si in PrimitiveSignatureCppTypeMap) { 
             return `    // JSValToCSVal primitive params
-    Il2CppArray* ${CSName} = Params<${PrimitiveSignatureCppTypeMap[si]}>::PackPrimitive(env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<${PrimitiveSignatureCppTypeMap[si]}>::PackPrimitive(apis, env, info, TI${CSName}, js_args_len, ${start});
                 `
         } else if (si == 's') {
             return `    // JSValToCSVal string params
-    Il2CppArray* ${CSName} = Params<void*>::PackString(env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<void*>::PackString(apis, env, info, TI${CSName}, js_args_len, ${start});
                 `
         } else if (si == 'o' || si == 'O' || si == 'a') {
             return `    // JSValToCSVal ref params
-    Il2CppArray* ${CSName} = Params<void*>::PackRef(env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<void*>::PackRef(apis, env, info, TI${CSName}, js_args_len, ${start});
                 `
         } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
             return `    // JSValToCSVal valuetype params
-    Il2CppArray* ${CSName} = Params<${si}>::PackValueType(env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<${si}>::PackValueType(apis, env, info, TI${CSName}, js_args_len, ${start});
                 `
         } else {
             return `    // JSValToCSVal unknow params type
@@ -285,19 +285,19 @@ export function JSValToCSVal(signature, JSName, CSName) {
         const start = parseInt(JSName.match(/_sv(\d+)/)[1]);
         if (si in PrimitiveSignatureCppTypeMap) { 
             return `    // JSValToCSVal primitive with default
-    ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(env, info, method, wrapData, js_args_len, ${start});
+    ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(apis, env, info, method, wrapData, js_args_len, ${start});
                 `
         } else if (si == 's') {
             return `    // JSValToCSVal string  with default
-    Il2CppString* ${CSName} = OptionalParameter<Il2CppString*>::GetString(env, info, method, wrapData, js_args_len, ${start});
+    Il2CppString* ${CSName} = OptionalParameter<Il2CppString*>::GetString(apis, env, info, method, wrapData, js_args_len, ${start});
                 `
         } else if (si == 'o' || si == 'O' || si == 'a') {
             return `    // JSValToCSVal ref  with default
-    Il2CppObject* ${CSName} = OptionalParameter<Il2CppObject*>::GetRefType(env, info, method, wrapData, js_args_len, ${start}, TI${CSName});
+    Il2CppObject* ${CSName} = OptionalParameter<Il2CppObject*>::GetRefType(apis, env, info, method, wrapData, js_args_len, ${start}, TI${CSName});
                 `
         } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
             return `    // JSValToCSVal valuetype  with default
-    ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(env, info, method, wrapData, js_args_len, ${start});
+    ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(apis, env, info, method, wrapData, js_args_len, ${start});
                 `
         } else {
             return `    // JSValToCSVal unknow type with default
@@ -313,29 +313,29 @@ export function JSValToCSVal(signature, JSName, CSName) {
 export function CSValToJSVal(signature, CSName) {
     const TIName = `TI${CSName[0] == '*' ? CSName.substring(1) : CSName}`;
     if (signature in PrimitiveSignatureCppTypeMap) {
-        return `converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::toScript(env, ${CSName})`;
+        return `converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::toScript(apis, env, ${CSName})`;
     } else if (signature == 'O') { // System.Object
-        return `CSRefToJsValue(env, ${TIName}, ${CSName})`;
+        return `CSRefToJsValue(apis, env, ${TIName}, ${CSName})`;
     } else if (signature == 'o') { // classes except System.Object
-        return `CSRefToJsValue(env, ${TIName}, ${CSName})`;
+        return `CSRefToJsValue(apis, env, ${TIName}, ${CSName})`;
     } else if (signature == 'a') { // ArrayBuffer
-        return `CSRefToJsValue(env, ${TIName}, ${CSName})`;
+        return `CSRefToJsValue(apis, env, ${TIName}, ${CSName})`;
     } else if (signature.startsWith(sigs.NullableStructPrefix) && signature.endsWith('_')) {
-        return `DataTransfer::CopyNullableValueType(env, ${CSName}, ${TIName})`
+        return `DataTransfer::CopyNullableValueType(apis, env, ${CSName}, ${TIName})`
     } else if (signature == 's') { // string
-        return `converter::Converter<Il2CppString*>::toScript(env, ${CSName})`;
+        return `converter::Converter<Il2CppString*>::toScript(apis, env, ${CSName})`;
     } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
-        return `pesapi_create_binary(env, ${CSName}, 0)`;
+        return `apis->pesapi_create_binary(env, ${CSName}, 0)`;
     } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
-        return `DataTransfer::CopyValueType(env, ${CSName}, ${TIName})`;
+        return `DataTransfer::CopyValueType(apis, env, ${CSName}, ${TIName})`;
     } else if (signature == 'Ps') { // string ref
-        return `converter::Converter<std::reference_wrapper<Il2CppString*>>::toScript(env, *${CSName})`;
+        return `converter::Converter<std::reference_wrapper<Il2CppString*>>::toScript(apis, env, *${CSName})`;
     } else if (signature[0] == 'P' && signature != 'Pv') {
         const elemSignature = signature.substring(1);
         if (elemSignature in PrimitiveSignatureCppTypeMap) {
-            return `converter::Converter<std::reference_wrapper<${PrimitiveSignatureCppTypeMap[elemSignature]}>>::toScript(env, *${CSName})`;
+            return `converter::Converter<std::reference_wrapper<${PrimitiveSignatureCppTypeMap[elemSignature]}>>::toScript(apis, env, *${CSName})`;
         } else if (isStruct(elemSignature) || signature == 'Po' || signature == 'PO' || signature == 'Pa') {
-            return `pesapi_boxing(env, pesapi_native_object_to_value(env, ${TIName}, ${CSName}, false))`;
+            return `apis->pesapi_boxing(env, apis->pesapi_native_object_to_value(env, ${TIName}, ${CSName}, false))`;
         }
     }
     //TODO: 能处理的就处理, DateTime是否要处理呢？

@@ -202,6 +202,11 @@ V8_EXPORT void LogicTick(puerts::JSEnv* jsEnv)
     jsEnv->BackendEnv.LogicTick();
 }
 
+V8_EXPORT pesapi_apis* GetPesApi()
+{
+    return &v8impl::g_pesapi_apis;
+}
+
 #ifdef __cplusplus
 }
 #endif

@@ -16,18 +16,19 @@ namespace Puerts
     [UnityEngine.Scripting.Preserve]
     public class JSObject
     {
-        IntPtr valueRef; // PObjectRefInfo first ptr
+        IntPtr apis; // PObjectRefInfo first ptr
+        IntPtr valueRef;
         IntPtr nativeJsEnv;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        object GetJSObjectValue(string key, Type resultType)
+        object GetJSObjectValue(IntPtr apis, string key, Type resultType)
         {
             throw new NotImplementedException();
         }
 
         public T Get<T>(string key) 
         {
-            return (T)GetJSObjectValue(key, typeof(T));
+            return (T)GetJSObjectValue(apis, key, typeof(T));
         }
 
         ~JSObject()

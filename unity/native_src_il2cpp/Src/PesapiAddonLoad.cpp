@@ -55,7 +55,7 @@ int pesapi_load_addon(const char* path, const char* module_name)
     return LoadAddon(path, module_name);
 }
 
-V8_EXPORT pesapi_func_ptr* GetPesapiImpl()
+V8_EXPORT pesapi_func_ptr* GetRegsterApi()
 {
     return funcs;
 }
