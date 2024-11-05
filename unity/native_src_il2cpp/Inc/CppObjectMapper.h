@@ -49,7 +49,7 @@ struct PesapiCallbackData
     pesapi_callback Callback;
     void* Data;
 };
-    
+
 class FCppObjectMapper final : public ICppObjectMapper
 {
 public:

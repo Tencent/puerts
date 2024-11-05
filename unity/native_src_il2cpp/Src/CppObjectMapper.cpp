@@ -17,6 +17,8 @@ inline void __USE(T&&)
 {
 }
 
+#define container_of(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
+
 static void ThrowException(v8::Isolate* Isolate, const char* Message)
 {
     auto ExceptionStr = v8::String::NewFromUtf8(Isolate, Message, v8::NewStringType::kNormal).ToLocalChecked();
@@ -117,8 +119,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
 
 static void PesapiFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
-    PesapiCallbackData* FunctionInfo = reinterpret_cast<PesapiCallbackData*>(
-        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(info.Data())->Value()) - offsetof(PesapiCallbackData, Data));
+    PesapiCallbackData* FunctionInfo = container_of(v8::Local<v8::External>::Cast(info.Data())->Value(), struct PesapiCallbackData, Data);
     FunctionInfo->Callback(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&info));
 }
 
@@ -161,8 +162,7 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     if (Info.IsConstructCall())
     {
         auto Self = Info.This();
-        JSClassDefinition* ClassDefinition = reinterpret_cast<JSClassDefinition*>(
-            reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSClassDefinition, Data));
+        JSClassDefinition* ClassDefinition = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSClassDefinition, Data);
         void* Ptr = nullptr;
 
         if (ClassDefinition->Initialize)
@@ -180,22 +180,19 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 static void PesapiCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    JSFunctionInfo* FunctionInfo = reinterpret_cast<JSFunctionInfo*>(
-        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSFunctionInfo, Data));
+    JSFunctionInfo* FunctionInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSFunctionInfo, Data);
     FunctionInfo->Callback(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
 static void PesapiGetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    JSPropertyInfo* PropertyInfo = reinterpret_cast<JSPropertyInfo*>(
-        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSPropertyInfo, GetterData));
+    JSPropertyInfo* PropertyInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSPropertyInfo, GetterData);
     PropertyInfo->Getter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
 static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    JSPropertyInfo* PropertyInfo = reinterpret_cast<JSPropertyInfo*>(
-        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSPropertyInfo, SetterData));
+    JSPropertyInfo* PropertyInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSPropertyInfo, SetterData);
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
