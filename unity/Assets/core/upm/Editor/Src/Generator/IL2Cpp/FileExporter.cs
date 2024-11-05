@@ -145,6 +145,34 @@ namespace PuertsIl2cpp.Editor
                 return true;
             }
 
+            private static void IterateAllType(Type type, HashSet<Type> allTypes)
+            {
+                if (!allTypes.Contains(type))
+                {
+                    allTypes.Add(type);
+                    var fields = type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    foreach (var field in fields)
+                    {
+                        IterateAllType(field.FieldType, allTypes);
+                    }
+                    var methods = type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    foreach(var method in methods)
+                    {
+                        IterateAllType(method.ReturnType, allTypes);
+                    }
+                    
+                    var methodBases = methods.Cast<MethodBase>()
+                        .Concat(type.GetConstructors(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
+                    foreach(var methodBase in methodBases)
+                    {
+                        foreach(var pi in methodBase.GetParameters())
+                        {
+                            IterateAllType(pi.ParameterType, allTypes);
+                        }
+                    }
+                }
+            }
+
             public static void GenCPPWrap(string saveTo, bool onlyConfigure = false)
             {
                 Utils.SetFilters(Puerts.Configure.GetFilters());
@@ -220,9 +248,14 @@ namespace PuertsIl2cpp.Editor
                 }
 #endif
 
-                var delegateToBridge = wrapperUsedTypes
-                    .Concat(PuerDelegates)
-                    .Concat(typeInGenericArgument)
+                HashSet<Type> allTypes = new HashSet<Type>();
+                foreach(var type in wrapperUsedTypes.Concat(PuerDelegates).Concat(typeInGenericArgument))
+                {
+                    IterateAllType(type, allTypes);
+                }
+
+                var delegateToBridge = allTypes
+                    .Distinct()
                     .Where(t => typeof(MulticastDelegate).IsAssignableFrom(t));
 
                 var delegateInvokes = delegateToBridge
