@@ -124,9 +124,9 @@ typedef struct pesapi_type_info__* pesapi_type_info;
 typedef struct pesapi_signature_info__* pesapi_signature_info;
 typedef struct pesapi_property_descriptor__* pesapi_property_descriptor;
 
-typedef void (*pesapi_callback)(struct pesapi_apis* apis, pesapi_callback_info info);
-typedef void* (*pesapi_constructor)(struct pesapi_apis* apis, pesapi_callback_info info);
-typedef void (*pesapi_finalize)(struct pesapi_apis* apis, void* ptr, void* class_data, void* env_private);
+typedef void (*pesapi_callback)(struct pesapi_ffi* apis, pesapi_callback_info info);
+typedef void* (*pesapi_constructor)(struct pesapi_ffi* apis, pesapi_callback_info info);
+typedef void (*pesapi_finalize)(struct pesapi_ffi* apis, void* ptr, void* class_data, void* env_private);
 typedef void* (*pesapi_on_native_object_enter)(void* ptr, void* class_data, void* env_private);
 // userdata: return of pesapi_on_native_object_enter
 typedef void (*pesapi_on_native_object_exit)(void* ptr, void* class_data, void* env_private, void* userdata);
@@ -234,7 +234,7 @@ typedef pesapi_value (*pesapi_global_func)(pesapi_env env);
 typedef const void* (*pesapi_get_env_private_func)(pesapi_env env);
 typedef void (*pesapi_set_env_private_func)(pesapi_env env, const void* ptr);
 
-struct pesapi_apis
+struct pesapi_ffi
 {
     pesapi_create_null_func pesapi_create_null;
     pesapi_create_undefined_func pesapi_create_undefined;

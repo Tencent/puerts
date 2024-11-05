@@ -168,13 +168,13 @@ struct PesapiCallbackData
     void* data;
 };
 
-extern pesapi_apis g_pesapi_apis;
+extern pesapi_ffi g_pesapi_ffi;
 
 static void PesapiFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
     PesapiCallbackData* FunctionInfo = reinterpret_cast<PesapiCallbackData*>(
         reinterpret_cast<char*>(v8::Local<v8::External>::Cast(info.Data())->Value()) - offsetof(PesapiCallbackData, data));
-    FunctionInfo->callback(&g_pesapi_apis, (pesapi_callback_info)(&info));
+    FunctionInfo->callback(&g_pesapi_ffi, (pesapi_callback_info)(&info));
 }
 
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data)
@@ -839,7 +839,7 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
     puerts::DataTransfer::SetIsolatePrivateData(context->GetIsolate(), const_cast<void*>(ptr));
 }
 
-pesapi_apis g_pesapi_apis {
+pesapi_ffi g_pesapi_ffi {
     &pesapi_create_null,
     &pesapi_create_undefined,
     &pesapi_create_boolean,

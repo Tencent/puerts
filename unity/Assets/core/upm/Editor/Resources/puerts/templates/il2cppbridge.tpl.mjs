@@ -52,7 +52,7 @@ static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.
     `)}
 
     PObjectRefInfo* delegateInfo = GetPObjectRefInfo(target);
-    struct pesapi_apis* apis = delegateInfo->Apis;
+    struct pesapi_ffi* apis = delegateInfo->Apis;
     
     pesapi_env_ref envRef = apis->pesapi_get_ref_associated_env(delegateInfo->ValueRef);
     AutoValueScope valueScope(apis, envRef);

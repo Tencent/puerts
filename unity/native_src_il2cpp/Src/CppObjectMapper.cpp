@@ -151,7 +151,7 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
         void* Ptr = nullptr;
 
         if (ClassDefinition->Initialize)
-            Ptr = ClassDefinition->Initialize(&v8impl::g_pesapi_apis, (pesapi_callback_info) &Info);
+            Ptr = ClassDefinition->Initialize(&v8impl::g_pesapi_ffi, (pesapi_callback_info) &Info);
         if (Ptr == nullptr)
             return;
 
@@ -167,21 +167,21 @@ static void PesapiCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     JSFunctionInfo* FunctionInfo = reinterpret_cast<JSFunctionInfo*>(
         reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSFunctionInfo, Data));
-    FunctionInfo->Callback(&v8impl::g_pesapi_apis, (pesapi_callback_info)(&Info));
+    FunctionInfo->Callback(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
 static void PesapiGetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     JSPropertyInfo* PropertyInfo = reinterpret_cast<JSPropertyInfo*>(
         reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSPropertyInfo, GetterData));
-    PropertyInfo->Getter(&v8impl::g_pesapi_apis, (pesapi_callback_info)(&Info));
+    PropertyInfo->Getter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
 static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     JSPropertyInfo* PropertyInfo = reinterpret_cast<JSPropertyInfo*>(
         reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSPropertyInfo, SetterData));
-    PropertyInfo->Setter(&v8impl::g_pesapi_apis, (pesapi_callback_info)(&Info));
+    PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition)
@@ -307,7 +307,7 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->Finalize)
-        ClassDefinition->Finalize(&v8impl::g_pesapi_apis, Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+        ClassDefinition->Finalize(&v8impl::g_pesapi_ffi, Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);
 }
 
@@ -420,7 +420,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             {
                 if (ClassDefinition && ClassDefinition->Finalize)
                 {
-                    ClassDefinition->Finalize(&v8impl::g_pesapi_apis, KV.first, ClassDefinition->Data, PData);
+                    ClassDefinition->Finalize(&v8impl::g_pesapi_ffi, KV.first, ClassDefinition->Data, PData);
                 }
                 PNode->MustCallFinalize = false;
             }

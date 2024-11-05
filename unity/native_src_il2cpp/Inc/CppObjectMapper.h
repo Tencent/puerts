@@ -23,7 +23,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 namespace v8impl
 {
-extern pesapi_apis g_pesapi_apis;
+extern pesapi_ffi g_pesapi_ffi;
 }
 
 namespace PUERTS_NAMESPACE

@@ -13,7 +13,7 @@ function genFuncWrapper(wrapperInfo) {
 
     return t`
 // ${wrapperInfo.CsName}
-bool w_${wrapperInfo.Signature}(struct pesapi_apis* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {
+bool w_${wrapperInfo.Signature}(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {
     // PLog("Running w_${wrapperInfo.Signature}");
     
     ${il2cpp_snippets.declareTypeInfo(wrapperInfo)}

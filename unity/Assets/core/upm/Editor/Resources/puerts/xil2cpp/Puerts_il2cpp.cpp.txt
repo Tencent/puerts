@@ -142,7 +142,7 @@ static void ValueTypeFree(void* ptr)
     delete [] (uint8_t*)ptr;
 }
 
-static void PApiFree(struct pesapi_apis* api, void* ptr, void* class_data, void* env_private)
+static void PApiFree(struct pesapi_ffi* api, void* ptr, void* class_data, void* env_private)
 {
     ValueTypeFree(ptr); //TODO: class_data->IsValueType
 }
@@ -281,7 +281,7 @@ void SetGlobalType_TypedValue(Il2CppReflectionType *type)
     g_typeofTypedValue = il2cpp_codegen_class_from_type(type->type);
 }
 
-static void MethodCallback(struct pesapi_apis* apis, pesapi_callback_info info)
+static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     try 
     {
@@ -332,13 +332,13 @@ static void MethodCallback(struct pesapi_apis* apis, pesapi_callback_info info)
     }
 }
 
-static void GetterCallback(struct pesapi_apis* apis, pesapi_callback_info info)
+static void GetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     FieldWrapData* wrapData = static_cast<FieldWrapData*>(apis->pesapi_get_userdata(info));
     wrapData->Getter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
-static void SetterCallback(struct pesapi_apis* apis, pesapi_callback_info info)
+static void SetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     FieldWrapData* wrapData = static_cast<FieldWrapData*>(apis->pesapi_get_userdata(info));
     wrapData->Setter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
@@ -437,7 +437,7 @@ void PLog(const char* Fmt, ...)
     }
 }
 
-static void* CtorCallback(struct pesapi_apis* apis, pesapi_callback_info info)
+static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(apis->pesapi_get_userdata(info));
     // or will crash in macos.
@@ -499,7 +499,7 @@ static void* CtorCallback(struct pesapi_apis* apis, pesapi_callback_info info)
     return nullptr;
 }
 
-static void SetPObjectRefInfoValue(struct pesapi_apis* apis, pesapi_env env, PObjectRefInfo* objectInfo, pesapi_value_ref value_ref)
+static void SetPObjectRefInfoValue(struct pesapi_ffi* apis, pesapi_env env, PObjectRefInfo* objectInfo, pesapi_value_ref value_ref)
 {
     objectInfo->Apis = apis;
     objectInfo->ValueRef = value_ref;
@@ -507,12 +507,12 @@ static void SetPObjectRefInfoValue(struct pesapi_apis* apis, pesapi_env env, POb
 }
 
 
-static pesapi_value GetPObjectRefInfoValue(struct pesapi_apis* apis, pesapi_env env, const PObjectRefInfo* objectInfo)
+static pesapi_value GetPObjectRefInfoValue(struct pesapi_ffi* apis, pesapi_env env, const PObjectRefInfo* objectInfo)
 {    
     return apis->pesapi_get_value_from_ref(env, objectInfo->ValueRef);
 }
 
-static int32_t* FindOrCreateHandleStoreOfValue(struct pesapi_apis* apis, pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
+static int32_t* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
 {
     void* out_ptr;
     if(!apis->pesapi_get_private(env, value, &out_ptr))
@@ -554,7 +554,7 @@ static int32_t* FindOrCreateHandleStoreOfValue(struct pesapi_apis* apis, pesapi_
     return res;
 }
 
-static Il2CppObject* FunctionToDelegate(struct pesapi_apis* apis, pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
+static Il2CppObject* FunctionToDelegate(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
 {
     pesapi_value_ref value_ref;
     Il2CppObject* ret = nullptr;
@@ -573,7 +573,7 @@ static Il2CppObject* FunctionToDelegate(struct pesapi_apis* apis, pesapi_env env
     return ret;
 }
 
-static void* DelegateCtorCallback(struct pesapi_apis* apis, pesapi_callback_info info)
+static void* DelegateCtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     pesapi_env env = apis->pesapi_get_env(info);
     pesapi_value jsval = apis->pesapi_get_arg(info, 0);
@@ -594,7 +594,7 @@ bool IsDelegate(Il2CppClass *klass)
 
 static FieldInfo* ArrayBufferCountField = nullptr;
 static FieldInfo* ArrayBufferBytesField = nullptr;
-pesapi_value TryTranslateBuiltin(struct pesapi_apis* apis, pesapi_env env, Il2CppObject* obj)
+pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj)
 {
     if (obj)
     {
@@ -622,7 +622,7 @@ pesapi_value TryTranslateBuiltin(struct pesapi_apis* apis, pesapi_env env, Il2Cp
     return nullptr;
 }
 
-static pesapi_value TryTranslatePrimitiveWithClass(struct pesapi_apis* apis, pesapi_env env, Il2CppObject* obj, Il2CppClass *klass = nullptr)
+static pesapi_value TryTranslatePrimitiveWithClass(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj, Il2CppClass *klass = nullptr)
 {
     if (obj)
     {
@@ -706,7 +706,7 @@ static pesapi_value TryTranslatePrimitiveWithClass(struct pesapi_apis* apis, pes
     return nullptr;
 }
 
-pesapi_value TranslateValueType(struct pesapi_apis* apis, pesapi_env env, Il2CppClass* targetClass, Il2CppObject* obj)
+pesapi_value TranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass* targetClass, Il2CppObject* obj)
 {
     auto len = targetClass->native_size;
     if (len < 0)
@@ -719,7 +719,7 @@ pesapi_value TranslateValueType(struct pesapi_apis* apis, pesapi_env env, Il2Cpp
     return apis->pesapi_native_object_to_value(env, targetClass, buff, true);
 }
 
-pesapi_value TryTranslateValueType(struct pesapi_apis* apis, pesapi_env env, Il2CppObject* obj)
+pesapi_value TryTranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj)
 {
     if (obj && obj->klass)
     {
@@ -747,7 +747,7 @@ union PrimitiveValueType
     double r8;
 };
 
-Il2CppObject* JsValueToCSRef(struct pesapi_apis* apis, Il2CppClass *klass, pesapi_env env, pesapi_value jsval)
+Il2CppObject* JsValueToCSRef(struct pesapi_ffi* apis, Il2CppClass *klass, pesapi_env env, pesapi_value jsval)
 {
     if (klass == il2cpp_defaults.void_class) return nullptr;
     
@@ -1015,7 +1015,7 @@ handle_underlying:
     return Object::Box(klass, toBox);
 }
 
-pesapi_value CSRefToJsValue(struct pesapi_apis* apis, pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj)
+pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj)
 {
     if (targetClass == il2cpp_defaults.void_class ) return apis->pesapi_create_undefined(env);
     if (!obj) return apis->pesapi_create_null(env);
@@ -1063,7 +1063,7 @@ pesapi_value CSRefToJsValue(struct pesapi_apis* apis, pesapi_env env, Il2CppClas
     return apis->pesapi_native_object_to_value(env, objClass, obj, false);
 }
 
-static bool GetValueTypeFromJs(struct pesapi_apis* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+static bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
 {
     bool hasValue = false;
     uint32_t valueSize = klass->instance_size - sizeof(Il2CppObject);
@@ -1222,12 +1222,12 @@ handle_underlying:
     return hasValue;
 }
 
-static pesapi_value JsObjectUnRef(struct pesapi_apis* apis, pesapi_env env, pesapi_value jsValue)
+static pesapi_value JsObjectUnRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue)
 {
     return (apis->pesapi_is_object(env, jsValue)) ?  apis->pesapi_get_property_uint32(env, jsValue, 0) : nullptr;
 }
 
-static void JsObjectSetRef(struct pesapi_apis* apis, pesapi_env env, pesapi_value outer, pesapi_value val)
+static void JsObjectSetRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value outer, pesapi_value val)
 {
     if (outer && val && apis->pesapi_is_object(env, outer))
     {
@@ -1235,7 +1235,7 @@ static void JsObjectSetRef(struct pesapi_apis* apis, pesapi_env env, pesapi_valu
     }
 }
 
-static bool ReflectionWrapper(struct pesapi_apis* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData)
+static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData)
 {
     int js_args_len = apis->pesapi_get_args_len(info);
     bool hasParamArray = wrapData->HasParamArray;
@@ -1607,7 +1607,7 @@ handle_underlying:
     return true;
 }
 
-static void ReflectionGetFieldWrapper(struct pesapi_apis* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
+static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
 {
     pesapi_env env = apis->pesapi_get_env(info);
     pesapi_value jsThis = apis->pesapi_get_holder(info);
@@ -1688,7 +1688,7 @@ static void ReflectionGetFieldWrapper(struct pesapi_apis* apis, pesapi_callback_
     }
 }
 
-static void ReflectionSetFieldWrapper(struct pesapi_apis* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
+static void ReflectionSetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
 {
     pesapi_env env = apis->pesapi_get_env(info);
     pesapi_value jsThis = apis->pesapi_get_holder(info);
@@ -1740,7 +1740,7 @@ static void ReflectionSetFieldWrapper(struct pesapi_apis* apis, pesapi_callback_
     }
 }
 
-Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, struct pesapi_apis* apis, Il2CppString* key, Il2CppReflectionType* rtype)
+Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, struct pesapi_ffi* apis, Il2CppString* key, Il2CppReflectionType* rtype)
 {
     PObjectRefInfo* objectInfo = GetPObjectRefInfo(jsObject);
 
@@ -1761,7 +1761,7 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, struct pesapi_apis* apis,
     return JsValueToCSRef(apis, type, env, val);
 }
 
-Il2CppObject* EvalInternal(struct pesapi_apis* apis, intptr_t ptr, Il2CppArray * __code, Il2CppString* __path, Il2CppReflectionType *__type)
+Il2CppObject* EvalInternal(struct pesapi_ffi* apis, intptr_t ptr, Il2CppArray * __code, Il2CppString* __path, Il2CppReflectionType *__type)
 {
     pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
     
@@ -1794,7 +1794,7 @@ Il2CppObject* EvalInternal(struct pesapi_apis* apis, intptr_t ptr, Il2CppArray *
     return nullptr;
 }
 
-void SetObjectToGlobal(struct pesapi_apis* apis, pesapi_env_ref envRef, Il2CppString* __key, Il2CppObject *obj)
+void SetObjectToGlobal(struct pesapi_ffi* apis, pesapi_env_ref envRef, Il2CppString* __key, Il2CppObject *obj)
 {
     AutoValueScope ValueScope(apis, envRef);
     auto env = apis->pesapi_get_env_from_ref(envRef);
@@ -1811,7 +1811,7 @@ void SetObjectToGlobal(struct pesapi_apis* apis, pesapi_env_ref envRef, Il2CppSt
 
 #define EXECUTEMODULEGLOBANAME "__puertsExecuteModule"
 
-Il2CppObject* GetModuleExecutor(struct pesapi_apis* apis, intptr_t ptr, Il2CppReflectionType* rtype)
+Il2CppObject* GetModuleExecutor(struct pesapi_ffi* apis, intptr_t ptr, Il2CppReflectionType* rtype)
 {
     pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
 
@@ -1838,14 +1838,14 @@ Il2CppObject* GetModuleExecutor(struct pesapi_apis* apis, intptr_t ptr, Il2CppRe
 
 struct JsEnvPrivate
 {
-    struct pesapi_apis* apis;
+    struct pesapi_ffi* apis;
     pesapi_env_ref envRef;
     std::mutex pendingKillRefsMutex;
     std::unordered_set<pesapi_value_ref> pendingKillRefs;
     MethodInfoHelper<int32_t(Il2CppObject* obj)> objPoolAdd;
     MethodInfoHelper<Il2CppObject*(int32_t index)> objPoolRemove;
     
-    JsEnvPrivate(struct pesapi_apis* inApis, pesapi_env_ref inEnvRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
+    JsEnvPrivate(struct pesapi_ffi* inApis, pesapi_env_ref inEnvRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
         : apis(inApis), envRef(inEnvRef), objPoolAdd(objPoolAddMethodInfo, objPool), objPoolRemove(objPoolRemoveMethodInfo, objPool)
           
     {
@@ -1920,7 +1920,7 @@ static void OnCsObjectExit(void* ptr, void* class_data, JsEnvPrivate* jsEnvPriva
     jsEnvPrivate->UnRefCSObject(idx);
 }
 
-static void LoadTypeWrapper(struct pesapi_apis* apis, pesapi_callback_info info)
+static void LoadTypeWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     pesapi_env env = apis->pesapi_get_env(info);
     Il2CppObject* type = (Il2CppObject*)apis->pesapi_get_native_object_ptr(env,  apis->pesapi_get_arg(info, 0));
@@ -1929,7 +1929,7 @@ static void LoadTypeWrapper(struct pesapi_apis* apis, pesapi_callback_info info)
     apis->pesapi_add_return(info, ret);
 }
 
-puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_apis* apis, pesapi_env_ref envRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
+puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
     auto env = apis->pesapi_get_env_from_ref(envRef);
@@ -1949,7 +1949,7 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_apis* apis, pesapi_env_ref
     return nullptr;
 }
 
-void CleanupPapiEnvRef(struct pesapi_apis* apis, pesapi_env_ref envRef)
+void CleanupPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef)
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
     auto env = apis->pesapi_get_env_from_ref(envRef);
@@ -1990,7 +1990,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
 
 void AddPendingKillScriptObjects(puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
 {
-    struct pesapi_apis* apis = jsEnvPrivate->apis;
+    struct pesapi_ffi* apis = jsEnvPrivate->apis;
     pesapi_env_ref envRef = apis->pesapi_get_ref_associated_env(valueRef);
     if (!apis->pesapi_env_ref_is_valid(envRef)) // jsEnv已经释放
     {
