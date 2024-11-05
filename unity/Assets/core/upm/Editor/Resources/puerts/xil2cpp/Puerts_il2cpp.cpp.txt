@@ -441,7 +441,7 @@ static void* CtorCallback(pesapi_callback_info info)
 {
     JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_userdata(info));
     // or will crash in macos.
-    if (*(classInfo->CtorWrapDatas) == nullptr)
+    if (!classInfo->IsValueType && *(classInfo->CtorWrapDatas) == nullptr)
     {
         pesapi_throw_by_string(info, "no valid constructor is found");
         return nullptr;
