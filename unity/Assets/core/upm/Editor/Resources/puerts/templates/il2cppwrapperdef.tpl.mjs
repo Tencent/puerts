@@ -18,9 +18,9 @@ bool w_${wrapperInfo.Signature}(struct pesapi_ffi* apis, MethodInfo* method, Il2
     
     ${il2cpp_snippets.declareTypeInfo(wrapperInfo)}
 
-    int js_args_len = apis->pesapi_get_args_len(info);
+    int js_args_len = apis->get_args_len(info);
     
-${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = apis->pesapi_get_arg(info, ${i});`).join('\n')}
+${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = apis->get_arg(info, ${i});`).join('\n')}
 
     if (${parameterSignatures.filter(s => s[0] == 'D').length ? 'true' : 'checkJSArgument'}) {
         if (${il2cpp_snippets.genArgsLenCheck(parameterSignatures)}) return false;

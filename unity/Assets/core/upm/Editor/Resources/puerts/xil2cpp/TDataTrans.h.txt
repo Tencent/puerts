@@ -77,12 +77,12 @@ public:
     AutoValueScope(struct pesapi_ffi* apis, pesapi_env_ref envRef)
     {
         _apis = apis;
-        apis->pesapi_open_scope_placement(envRef, &_mem);
+        apis->open_scope_placement(envRef, &_mem);
     }
 
     ~AutoValueScope()
     {
-        _apis->pesapi_close_scope_placement(scope());
+        _apis->close_scope_placement(scope());
     }
     
     inline pesapi_scope scope()
@@ -103,26 +103,26 @@ struct DataTransfer
     
     static bool IsAssignable(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, Il2CppClass *klass, bool isvaluetype)
     {
-        if (!isvaluetype && (apis->pesapi_is_null(env, value) || apis->pesapi_is_undefined(env, value)))
+        if (!isvaluetype && (apis->is_null(env, value) || apis->is_undefined(env, value)))
         {
             return true;
         }
-        if (IsDelegate(klass) && apis->pesapi_is_function(env, value))
+        if (IsDelegate(klass) && apis->is_function(env, value))
         {
             return true;
         }
-        auto objClass = (Il2CppClass*) apis->pesapi_get_native_object_typeid(env, value);
+        auto objClass = (Il2CppClass*) apis->get_native_object_typeid(env, value);
         return objClass && il2cpp::vm::Class::IsAssignableFrom(klass, objClass);
     }
     
     template <typename T>
     static T* GetPointer(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        if (apis->pesapi_is_null(env, value) || apis->pesapi_is_undefined(env, value))
+        if (apis->is_null(env, value) || apis->is_undefined(env, value))
         {
             return nullptr;
         }
-        return static_cast<T*>(apis->pesapi_get_native_object_ptr(env, value));
+        return static_cast<T*>(apis->get_native_object_ptr(env, value));
     }
     
     template <typename T>
@@ -130,7 +130,7 @@ struct DataTransfer
     {
         T* ret = new T;
         memcpy(ret, &v, sizeof(T));
-        return apis->pesapi_native_object_to_value(env, type_id, ret, true);
+        return apis->native_object_to_value(env, type_id, ret, true);
     }
     
     template <typename T>
@@ -138,7 +138,7 @@ struct DataTransfer
     {
         if (!v.hasValue) 
         {
-            return apis->pesapi_create_null(env);
+            return apis->create_null(env);
         }
         return CopyValueType(apis, env, v.p1, type_id);
     }
@@ -175,17 +175,17 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
-        return apis->pesapi_create_int64(env, value);
+        return apis->create_int64(env, value);
     }
 
     static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return static_cast<T>(apis->pesapi_get_value_int64(env, value));
+        return static_cast<T>(apis->get_value_int64(env, value));
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_int64(env, value);
+        return apis->is_int64(env, value);
     }
 };
 
@@ -194,17 +194,17 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
-        return apis->pesapi_create_uint64(env, value);
+        return apis->create_uint64(env, value);
     }
 
     static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return static_cast<T>(apis->pesapi_get_value_uint64(env, value));
+        return static_cast<T>(apis->get_value_uint64(env, value));
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_uint64(env, value);
+        return apis->is_uint64(env, value);
     }
 };
 
@@ -213,17 +213,17 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
-        return apis->pesapi_create_int32(env, value);
+        return apis->create_int32(env, value);
     }
 
     static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return static_cast<T>(apis->pesapi_get_value_int32(env, value));
+        return static_cast<T>(apis->get_value_int32(env, value));
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_int32(env, value);
+        return apis->is_int32(env, value);
     }
 };
 
@@ -232,17 +232,17 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
-        return apis->pesapi_create_uint32(env, value);
+        return apis->create_uint32(env, value);
     }
 
     static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return static_cast<T>(apis->pesapi_get_value_uint32(env, value));
+        return static_cast<T>(apis->get_value_uint32(env, value));
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_uint32(env, value);
+        return apis->is_uint32(env, value);
     }
 };
 
@@ -251,17 +251,17 @@ struct Converter<T, typename std::enable_if<std::is_enum<T>::value>::type>
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
-        return apis->pesapi_create_int32(env, static_cast<int>(value));
+        return apis->create_int32(env, static_cast<int>(value));
     }
 
     static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return static_cast<T>(apis->pesapi_get_value_int32(env, value));
+        return static_cast<T>(apis->get_value_int32(env, value));
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_int32(env, value);
+        return apis->is_int32(env, value);
     }
 };
 
@@ -270,17 +270,17 @@ struct Converter<T, typename std::enable_if<std::is_floating_point<T>::value>::t
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
-        return apis->pesapi_create_double(env, value);
+        return apis->create_double(env, value);
     }
 
     static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return static_cast<T>(apis->pesapi_get_value_double(env, value));
+        return static_cast<T>(apis->get_value_double(env, value));
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_double(env, value);
+        return apis->is_double(env, value);
     }
 };
 
@@ -289,18 +289,18 @@ struct Converter<void*>
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, void* value)
     {
-        return apis->pesapi_create_binary(env, value, 0);
+        return apis->create_binary(env, value, 0);
     }
 
     static void* toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
         size_t bufsize;
-        return apis->pesapi_get_value_binary(env, value, &bufsize);
+        return apis->get_value_binary(env, value, &bufsize);
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_binary(env, value);
+        return apis->is_binary(env, value);
     }
 };
 
@@ -309,17 +309,17 @@ struct Converter<bool>
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, bool value)
     {
-        return apis->pesapi_create_boolean(env, value);
+        return apis->create_boolean(env, value);
     }
 
     static bool toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_get_value_bool(env, value);
+        return apis->get_value_bool(env, value);
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_boolean(env, value);
+        return apis->is_boolean(env, value);
     }
 };
 
@@ -330,28 +330,28 @@ struct Converter<Il2CppString*>
     {
         if (value == nullptr)
         {
-            return apis->pesapi_create_null(env);
+            return apis->create_null(env);
         }
         const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(value);
         std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
-        return apis->pesapi_create_string_utf8(env, str.c_str(), str.size());
+        return apis->create_string_utf8(env, str.c_str(), str.size());
     }
 
     static Il2CppString* toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        if (apis->pesapi_is_null(env, value) || apis->pesapi_is_undefined(env, value))
+        if (apis->is_null(env, value) || apis->is_undefined(env, value))
         {
             return nullptr;
         }
         size_t bufsize = 0;
-        auto str = apis->pesapi_get_value_string_utf8(env, value, nullptr, &bufsize);
+        auto str = apis->get_value_string_utf8(env, value, nullptr, &bufsize);
         if (str)
         {
             return il2cpp::vm::String::NewWrapper(str);
         }
         std::vector<char> buff;
         buff.resize(bufsize + 1);
-        str = apis->pesapi_get_value_string_utf8(env, value, buff.data(), &bufsize);
+        str = apis->get_value_string_utf8(env, value, buff.data(), &bufsize);
         if (str)
         {
             buff[bufsize] = '\0';
@@ -362,7 +362,7 @@ struct Converter<Il2CppString*>
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_string(env, value) || apis->pesapi_is_null(env, value) || apis->pesapi_is_undefined(env, value);
+        return apis->is_string(env, value) || apis->is_null(env, value) || apis->is_undefined(env, value);
     }
 };
 
@@ -371,17 +371,17 @@ struct Converter<std::reference_wrapper<T>>
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, const T& value)
     {
-        return apis->pesapi_boxing(env, Converter<T>::toScript(apis, env, value));
+        return apis->boxing(env, Converter<T>::toScript(apis, env, value));
     }
 
     static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return Converter<T>::toCpp(apis, env, apis->pesapi_unboxing(env, value));
+        return Converter<T>::toCpp(apis, env, apis->unboxing(env, value));
     }
 
     static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
     {
-        return apis->pesapi_is_boxed_value(env, value);    // do not checked inner
+        return apis->is_boxed_value(env, value);    // do not checked inner
     }
 };
 
@@ -394,7 +394,7 @@ struct OptionalParameter
     {
         if (index < length)
         {
-            return converter::Converter<T>::toCpp(apis, env, apis->pesapi_get_arg(info, index));
+            return converter::Converter<T>::toCpp(apis, env, apis->get_arg(info, index));
         }
         else
         {
@@ -412,7 +412,7 @@ struct OptionalParameter
     {
         if (index < length)
         {
-            return (*DataTransfer::GetPointer<T>(apis, env, apis->pesapi_get_arg(info, index)));
+            return (*DataTransfer::GetPointer<T>(apis, env, apis->get_arg(info, index)));
         }
         else
         {
@@ -432,7 +432,7 @@ struct OptionalParameter
     {
         if (index < length)
         {
-            return converter::Converter<Il2CppString*>::toCpp(apis, env,  apis->pesapi_get_arg(info, index));
+            return converter::Converter<Il2CppString*>::toCpp(apis, env,  apis->get_arg(info, index));
         }
         else
         {
@@ -445,7 +445,7 @@ struct OptionalParameter
     {
         if (index < length)
         {
-            return JsValueToCSRef(apis, typeId, env, apis->pesapi_get_arg(info, index));
+            return JsValueToCSRef(apis, typeId, env, apis->get_arg(info, index));
         }
         else
         {
@@ -465,7 +465,7 @@ struct Params
         T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(ret));
         for(int i = start; i < length;++i)
         {
-            arr[i - start] = converter::Converter<T>::toCpp(apis, env, apis->pesapi_get_arg(info, i));
+            arr[i - start] = converter::Converter<T>::toCpp(apis, env, apis->get_arg(info, i));
         }
         return ret;
     }
@@ -475,7 +475,7 @@ struct Params
         Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
         for(int i = start; i < length;++i)
         {
-            il2cpp_array_setref(ret, i - start, converter::Converter<Il2CppString*>::toCpp(apis, env, apis->pesapi_get_arg(info, i)));
+            il2cpp_array_setref(ret, i - start, converter::Converter<Il2CppString*>::toCpp(apis, env, apis->get_arg(info, i)));
         }
         return ret;
     }
@@ -486,7 +486,7 @@ struct Params
         auto elemTypeId = il2cpp::vm::Class::GetElementClass(typeId);
         for(int i = start; i < length;++i)
         {
-            il2cpp_array_setref(ret, i - start, JsValueToCSRef(apis, elemTypeId, env, apis->pesapi_get_arg(info, i)));
+            il2cpp_array_setref(ret, i - start, JsValueToCSRef(apis, elemTypeId, env, apis->get_arg(info, i)));
         }
         return ret;
     }
@@ -497,7 +497,7 @@ struct Params
         T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(ret));
         for(int i = start; i < length;++i)
         {
-            T* e = DataTransfer::GetPointer<T>(apis, env, apis->pesapi_get_arg(info, i));
+            T* e = DataTransfer::GetPointer<T>(apis, env, apis->get_arg(info, i));
             if (!e) continue;
             arr[i - start] = *e;
         }
