@@ -162,27 +162,10 @@ pesapi_value pesapi_create_object(pesapi_env env)
     return v8impl::PesapiValueFromV8LocalValue(v8::Object::New(context->GetIsolate()));
 }
 
-struct PesapiCallbackData
-{
-    pesapi_callback callback;
-    void* data;
-};
-
-extern pesapi_ffi g_pesapi_ffi;
-
-static void PesapiFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    PesapiCallbackData* FunctionInfo = reinterpret_cast<PesapiCallbackData*>(
-        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(info.Data())->Value()) - offsetof(PesapiCallbackData, data));
-    FunctionInfo->callback(&g_pesapi_ffi, (pesapi_callback_info)(&info));
-}
-
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    auto callback_data = new PesapiCallbackData {native_impl, data}; // TODO: 没法回收
-    auto v8_data = v8::External::New(context->GetIsolate(), &callback_data->data);
-    auto func = v8::FunctionTemplate::New(context->GetIsolate(), PesapiFunctionCallback, v8_data)->GetFunction(context);
+    auto func = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->CreateFunction(context, native_impl, data);
     if (func.IsEmpty())
         return nullptr;
     return v8impl::PesapiValueFromV8LocalValue(func.ToLocalChecked());

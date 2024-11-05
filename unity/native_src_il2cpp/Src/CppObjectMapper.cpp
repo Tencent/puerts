@@ -115,6 +115,21 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     }
 }
 
+static void PesapiFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& info)
+{
+    PesapiCallbackData* FunctionInfo = reinterpret_cast<PesapiCallbackData*>(
+        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(info.Data())->Value()) - offsetof(PesapiCallbackData, Data));
+    FunctionInfo->Callback(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&info));
+}
+
+v8::MaybeLocal<v8::Function> FCppObjectMapper::CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data)
+{
+    auto CallbackData = new PesapiCallbackData {Callback, Data};
+    FunctionDatas.push_back(CallbackData);
+    auto V8Data = v8::External::New(Context->GetIsolate(), &CallbackData->Data);
+    return v8::FunctionTemplate::New(Context->GetIsolate(), PesapiFunctionCallback, V8Data)->GetFunction(Context);
+}
+
 bool FCppObjectMapper::IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
 {
     if (DataTransfer::GetPointerFast<const void>(JsObject, 1) == TypeId)
@@ -432,6 +447,11 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             PNode = PNode->Next;
         }
     }
+    for(int i = 0;i < FunctionDatas.size(); ++i)
+    {
+        delete FunctionDatas[i];
+    }
+    FunctionDatas.clear();
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
 #ifndef WITH_QUICKJS
