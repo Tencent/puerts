@@ -150,26 +150,40 @@ namespace PuertsIl2cpp.Editor
                 if (!allTypes.Contains(type))
                 {
                     allTypes.Add(type);
-                    var fields = type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    foreach (var field in fields)
+                    try
                     {
-                        IterateAllType(field.FieldType, allTypes);
-                    }
-                    var methods = type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    foreach(var method in methods)
-                    {
-                        IterateAllType(method.ReturnType, allTypes);
-                    }
-                    
-                    var methodBases = methods.Cast<MethodBase>()
-                        .Concat(type.GetConstructors(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
-                    foreach(var methodBase in methodBases)
-                    {
-                        foreach(var pi in methodBase.GetParameters())
+                        var fields = type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        foreach (var field in fields)
                         {
-                            IterateAllType(pi.ParameterType, allTypes);
+                            IterateAllType(field.FieldType, allTypes);
+                        }
+                    } 
+                    catch { }
+
+                    MethodInfo[] methods = new MethodInfo[] { };
+                    try
+                    {
+                        methods = type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        foreach (var method in methods)
+                        {
+                            IterateAllType(method.ReturnType, allTypes);
                         }
                     }
+                    catch { }
+
+                    try
+                    {
+                        var methodBases = methods.Cast<MethodBase>()
+                            .Concat(type.GetConstructors(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
+                        foreach (var methodBase in methodBases)
+                        {
+                            foreach (var pi in methodBase.GetParameters())
+                            {
+                                IterateAllType(pi.ParameterType, allTypes);
+                            }
+                        }
+                    }
+                    catch { }
                 }
             }
 
