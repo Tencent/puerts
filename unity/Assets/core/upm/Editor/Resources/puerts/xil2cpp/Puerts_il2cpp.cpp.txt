@@ -2236,7 +2236,7 @@ bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
     }
     
     pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->Name.c_str(),
-            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? (pesapi_finalize)&puerts::PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
+            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? &puerts::PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
             
     if (!classInfo->IsValueType)
     {
