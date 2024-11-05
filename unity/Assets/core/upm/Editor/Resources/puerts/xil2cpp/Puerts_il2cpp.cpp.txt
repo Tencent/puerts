@@ -142,7 +142,7 @@ static void ValueTypeFree(void* ptr)
     delete [] (uint8_t*)ptr;
 }
 
-static void PApiFree(void* ptr, void* class_data, void* env_private)
+static void PApiFree(struct pesapi_apis* api, void* ptr, void* class_data, void* env_private)
 {
     ValueTypeFree(ptr); //TODO: class_data->IsValueType
 }
