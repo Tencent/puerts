@@ -77,12 +77,18 @@ public:
     AutoValueScope(struct pesapi_ffi* apis, pesapi_env_ref envRef)
     {
         _apis = apis;
-        apis->open_scope_placement(envRef, &_mem);
+        if (!apis->open_scope_placement(envRef, &_mem))
+        {
+            _apis = nullptr;
+        }
     }
 
     ~AutoValueScope()
     {
-        _apis->close_scope_placement(scope());
+        if (_apis)
+        {
+            _apis->close_scope_placement(scope());
+        }
     }
     
     inline pesapi_scope scope()

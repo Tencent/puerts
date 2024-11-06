@@ -977,5 +977,22 @@ namespace Puerts.UnitTest
             Assert.AreEqual(FooVE.Instance().foo.width, ret);
             jsEnv.Tick();
         }
+
+        [Test]
+        public void CallDelegateAfterJsEnvDisposed()
+        {
+#if PUERTS_GENERAL
+            var jsEnv = new JsEnv(new TxtLoader());
+#else
+            var jsEnv = new JsEnv(new DefaultLoader());
+#endif
+            var callback = jsEnv.Eval<Action>("() => console.log('hello')");
+            callback();
+            jsEnv.Dispose();
+            Assert.Catch(() =>
+            {
+                callback();
+            });
+        }
     }
 }
