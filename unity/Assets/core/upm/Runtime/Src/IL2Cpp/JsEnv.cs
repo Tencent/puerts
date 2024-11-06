@@ -23,6 +23,7 @@ namespace Puerts
     {
         private static List<JsEnv> jsEnvs = new List<JsEnv>();
         private readonly int Idx;
+        IntPtr apis;
         IntPtr nativeJsEnv;
         IntPtr nativePesapiEnv;
         IntPtr nativeScriptObjectsRefsMgr;
@@ -64,7 +65,8 @@ namespace Puerts
 
             //only once is enough
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
-            PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetPesapiImpl());
+            PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetRegsterApi());
+            apis = PuertsIl2cpp.NativeAPI.GetPesApi();
             tryLoadTypeMethodInfo = typeof(TypeRegister).GetMethod("RegisterNoThrow");
             PuertsIl2cpp.NativeAPI.SetRegisterNoThrow(tryLoadTypeMethodInfo);
 
@@ -76,9 +78,9 @@ namespace Puerts
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
             nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPapiEnvRef(nativeJsEnv);
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
-            nativeScriptObjectsRefsMgr = PuertsIl2cpp.NativeAPI.InitialPapiEnvRef(nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
+            nativeScriptObjectsRefsMgr = PuertsIl2cpp.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
-            PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativePesapiEnv, "jsEnv", this);
+            PuertsIl2cpp.NativeAPI.SetObjectToGlobal(apis, nativePesapiEnv, "jsEnv", this);
 
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
@@ -173,19 +175,19 @@ namespace Puerts
 
         public void Eval(string chunk, string chunkName = "chunk")
         {
-            PuertsIl2cpp.NativeAPI.EvalInternal(nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, null);
+            PuertsIl2cpp.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, null);
         }
 
         public T Eval<T>(string chunk, string chunkName = "chunk")
         {
-            return (T)PuertsIl2cpp.NativeAPI.EvalInternal(nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, typeof(T));
+            return (T)PuertsIl2cpp.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, typeof(T));
         }
         
         Func<string, Puerts.JSObject> GetModuleExecutor()
         {
             if (moduleExecutor == null) 
             {
-                moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
+                moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(apis, nativePesapiEnv, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
             }
             return moduleExecutor;
         }
@@ -252,7 +254,7 @@ namespace Puerts
             lock (this)
             {
                 if (disposed) return;
-                PuertsIl2cpp.NativeAPI.CleanupPapiEnvRef(nativePesapiEnv);
+                PuertsIl2cpp.NativeAPI.CleanupPapiEnvRef(apis, nativePesapiEnv);
                 PuertsIl2cpp.NativeAPI.DestroyNativeJSEnv(nativeJsEnv);
                 disposed = true;
             }

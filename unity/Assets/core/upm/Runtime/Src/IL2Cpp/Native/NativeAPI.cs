@@ -48,19 +48,22 @@ namespace PuertsIl2cpp
         public static extern void DestroyNativeJSEnv(IntPtr jsEnv);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetPesapiImpl();
+        public static extern IntPtr GetRegsterApi();
+        
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetPesApi();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetPapiEnvRef(IntPtr jsEnv);
         
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr InitialPapiEnvRef(IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
+        public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
         {
             throw new NotImplementedException();
         }
         
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void CleanupPapiEnvRef(IntPtr envRef)
+        public static void CleanupPapiEnvRef(IntPtr api, IntPtr envRef)
         {
             throw new NotImplementedException();
         }
@@ -101,7 +104,7 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetObjectToGlobal(IntPtr envRef, string key, Object obj)
+        public static void SetObjectToGlobal(IntPtr apis, IntPtr envRef, string key, Object obj)
         {
             throw new NotImplementedException();
         }
@@ -125,7 +128,7 @@ namespace PuertsIl2cpp
         public static extern bool LogicTick(IntPtr jsEnv);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static object GetModuleExecutor(IntPtr NativeJsEnvPtr, Type type)
+        public static object GetModuleExecutor(IntPtr apis, IntPtr NativeJsEnvPtr, Type type)
         {
             throw new NotImplementedException();
         }
@@ -191,7 +194,7 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static object EvalInternal(IntPtr envHolder, byte[] code, string path, Type type)
+        public static object EvalInternal(IntPtr apis, IntPtr envHolder, byte[] code, string path, Type type)
         {
             throw new NotImplementedException();
         }

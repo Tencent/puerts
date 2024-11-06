@@ -21,6 +21,11 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
 
+namespace v8impl
+{
+extern pesapi_ffi g_pesapi_ffi;
+}
+
 namespace PUERTS_NAMESPACE
 {
 struct PointerHash
@@ -38,6 +43,13 @@ struct PointerEqual
         return lhs == rhs;
     }
 };
+    
+struct PesapiCallbackData
+{
+    pesapi_callback Callback;
+    void* Data;
+};
+
 class FCppObjectMapper final : public ICppObjectMapper
 {
 public:
@@ -51,6 +63,8 @@ public:
 
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
+        
+    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data) override;
 
     virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
 
@@ -74,6 +88,7 @@ private:
 
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
+    std::vector<PesapiCallbackData*> FunctionDatas;
 #ifndef WITH_QUICKJS
     v8::Global<v8::Symbol> PrivateKey;
 #endif

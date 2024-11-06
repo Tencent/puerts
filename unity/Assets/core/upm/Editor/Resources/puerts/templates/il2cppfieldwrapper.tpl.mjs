@@ -14,11 +14,11 @@ function genGetField(fieldWrapperInfo) {
         if (il2cpp_snippets.needThis(fieldWrapperInfo)) {
             return `auto ret = (char*)self + offset;
 
-    pesapi_add_return(info, pesapi_native_object_to_value(env, TIret, ret, false));`
+    apis->add_return(info, apis->native_object_to_value(env, TIret, ret, false));`
         } else {
             return `auto ret = GetValueTypeFieldPtr(nullptr, fieldInfo, offset);
 
-    pesapi_add_return(info, pesapi_native_object_to_value(env, TIret, ret, false));`
+    apis->add_return(info, apis->native_object_to_value(env, TIret, ret, false));`
         }
     } else {
         return `${il2cpp_snippets.SToCPPType(fieldWrapperInfo.ReturnSignature)} ret;
@@ -31,10 +31,10 @@ function genGetField(fieldWrapperInfo) {
 
 function genFieldWrapper(fieldWrapperInfo) {
     return t`
-static void ifg_${fieldWrapperInfo.Signature}(pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIret) {
+static void ifg_${fieldWrapperInfo.Signature}(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIret) {
     // PLog("Running ifg_${fieldWrapperInfo.Signature}");
 
-    pesapi_env env = pesapi_get_env(info);
+    pesapi_env env = apis->get_env(info);
     ${IF(il2cpp_snippets.needThis(fieldWrapperInfo))}
 
     ${il2cpp_snippets.getThis(fieldWrapperInfo.ThisSignature)}
@@ -43,16 +43,16 @@ static void ifg_${fieldWrapperInfo.Signature}(pesapi_callback_info info, FieldIn
     ${genGetField(fieldWrapperInfo)}
 }
 
-static void ifs_${fieldWrapperInfo.Signature}(pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIp) {
+static void ifs_${fieldWrapperInfo.Signature}(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIp) {
     // PLog("Running ifs_${fieldWrapperInfo.Signature}");
     
-    pesapi_env env = pesapi_get_env(info);
+    pesapi_env env = apis->get_env(info);
     ${IF(il2cpp_snippets.needThis(fieldWrapperInfo))}
 
     ${il2cpp_snippets.getThis(fieldWrapperInfo.ThisSignature)}
 
     ${ENDIF()}    
-    ${il2cpp_snippets.JSValToCSVal(fieldWrapperInfo.ReturnSignature, "pesapi_get_arg(info, 0)", "p")}
+    ${il2cpp_snippets.JSValToCSVal(fieldWrapperInfo.ReturnSignature, "apis->get_arg(info, 0)", "p")}
     SetFieldValue(${il2cpp_snippets.needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${['o', 's', 'p', 'a'].indexOf(fieldWrapperInfo.Signature) != -1 ? 'p' : '&p'});
 }`;
 }
