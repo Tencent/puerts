@@ -1953,12 +1953,19 @@ void CleanupPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef)
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
     auto env = apis->get_env_from_ref(envRef);
-    auto jsEnvPrivate = (puerts::JsEnvPrivate*)apis->get_env_private(env);
-    jsEnvPrivate->CleanupPendingKillScriptObjects();
-    delete jsEnvPrivate;
-    apis->release_env_ref(envRef);
+    if (env)
+    {
+        auto jsEnvPrivate = (puerts::JsEnvPrivate*) apis->get_env_private(env);
+        jsEnvPrivate->CleanupPendingKillScriptObjects();
+        // delete jsEnvPrivate;
+        apis->release_env_ref(envRef);
+    }
 }
 
+void DestroyJSEnvPrivate(JsEnvPrivate* jsEnvPrivate)
+{
+    delete jsEnvPrivate;
+}
 }
 
 #ifdef __cplusplus
@@ -1983,6 +1990,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetModuleExecutor(System.IntPtr,System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr,System.Object,System.Reflection.MethodBase,System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetRegisterNoThrow(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetRegisterNoThrow);
     pesapi_init(func_array);

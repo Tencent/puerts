@@ -256,6 +256,8 @@ namespace Puerts
                 if (disposed) return;
                 PuertsIl2cpp.NativeAPI.CleanupPapiEnvRef(apis, nativePesapiEnv);
                 PuertsIl2cpp.NativeAPI.DestroyNativeJSEnv(nativeJsEnv);
+                PuertsIl2cpp.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
+                nativeScriptObjectsRefsMgr = IntPtr.Zero;
                 disposed = true;
             }
             lock (jsEnvs)

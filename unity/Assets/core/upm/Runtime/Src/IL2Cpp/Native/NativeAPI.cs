@@ -68,6 +68,12 @@ namespace PuertsIl2cpp
             throw new NotImplementedException();
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void DestroyJSEnvPrivate(IntPtr jsEnvPrivate)
+        {
+            throw new NotImplementedException();
+        }
+
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, bool isValueType, bool isDelegate, string delegateSignature);
 
