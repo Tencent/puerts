@@ -51,7 +51,7 @@ namespace PuertsIl2cpp
         public static extern IntPtr GetRegsterApi();
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetPesApi();
+        public static extern IntPtr GetFFIApi();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetPapiEnvRef(IntPtr jsEnv);

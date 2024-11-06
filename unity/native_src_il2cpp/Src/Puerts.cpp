@@ -127,6 +127,7 @@ struct JSEnv
 
 }
 
+extern pesapi_func_ptr reg_apis[];
 
 #ifdef __cplusplus
 extern "C" {
@@ -202,9 +203,14 @@ V8_EXPORT void LogicTick(puerts::JSEnv* jsEnv)
     jsEnv->BackendEnv.LogicTick();
 }
 
-V8_EXPORT pesapi_ffi* GetPesApi()
+V8_EXPORT pesapi_ffi* GetFFIApi()
 {
     return &v8impl::g_pesapi_ffi;
+}
+
+V8_EXPORT pesapi_func_ptr* GetRegsterApi()
+{
+    return reg_apis;
 }
 
 #ifdef __cplusplus

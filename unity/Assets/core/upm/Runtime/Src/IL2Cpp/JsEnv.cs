@@ -66,7 +66,7 @@ namespace Puerts
             //only once is enough
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
             PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetRegsterApi());
-            apis = PuertsIl2cpp.NativeAPI.GetPesApi();
+            apis = PuertsIl2cpp.NativeAPI.GetFFIApi();
             tryLoadTypeMethodInfo = typeof(TypeRegister).GetMethod("RegisterNoThrow");
             PuertsIl2cpp.NativeAPI.SetRegisterNoThrow(tryLoadTypeMethodInfo);
 
