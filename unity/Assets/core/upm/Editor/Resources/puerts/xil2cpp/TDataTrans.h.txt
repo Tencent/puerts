@@ -34,7 +34,6 @@ struct WrapData
     bool IsExtensionMethod;
     bool HasParamArray;
     int OptionalNum;
-    bool NeedBoxing;
     Il2CppClass* TypeInfos[0];
 };
 
