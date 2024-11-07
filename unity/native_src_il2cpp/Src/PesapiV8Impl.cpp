@@ -418,6 +418,39 @@ bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
     return pesapi_is_object(env, value);
 }
 
+pesapi_code pesapi_extract_callback_info(pesapi_callback_info pinfo, pesapi_env* env, size_t* argc, pesapi_value* argv, pesapi_value* this_object, void** data)
+{
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+    if (env)
+    {
+        *env = v8impl::PesapiEnvFromV8LocalContext((*info).GetIsolate()->GetCurrentContext());
+    }
+    
+    if (argc && argv)
+    {
+        for(int i = 0; i < *argc; ++i)
+        {
+            argv[i] = v8impl::PesapiValueFromV8LocalValue((*info)[i]);
+        }
+    }
+    
+    if (argc)
+    {
+        *argc = (*info).Length();
+    }
+    
+    if (this_object)
+    {
+        *this_object = v8impl::PesapiValueFromV8LocalValue((*info).This());
+    }
+    
+    if (data)
+    {
+        *data = *(static_cast<void**>(v8::Local<v8::External>::Cast((*info).Data())->Value()));
+    }
+    return pesapi_ok;
+}
+
 int pesapi_get_args_len(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
@@ -859,6 +892,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_unboxing,
     &pesapi_update_boxed_value,
     &pesapi_is_boxed_value,
+    &pesapi_extract_callback_info,
     &pesapi_get_args_len,
     &pesapi_get_arg,
     &pesapi_get_env,

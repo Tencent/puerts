@@ -50,6 +50,8 @@ struct CSharpMethodInfo
     bool IsStatic;
     bool IsGetter;
     bool IsSetter;
+    int MaxParamCount;
+    bool NeedBoxing;
     std::vector<WrapData*> OverloadDatas;
 };
 
@@ -65,6 +67,7 @@ struct JsClassInfoHeader
     Il2CppClass* TypeId;
     Il2CppClass* SuperTypeId;
     bool IsValueType;
+    int MaxCtorParamCount;
     Il2CppMethodPointer DelegateBridge;
     WrapData** CtorWrapDatas;
 };
@@ -285,14 +288,17 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     try 
     {
-        WrapData** wrapDatas = (WrapData**)apis->get_userdata(info);
+        CSharpMethodInfo* csharpMethodInfo = (CSharpMethodInfo*)apis->get_userdata(info);
+        pesapi_value jsThis = nullptr;
+        pesapi_env env = nullptr;
         void* self = nullptr;
-        pesapi_env env = apis->get_env(info);
-        if (!((*wrapDatas)->IsStatic))
+        size_t argc = csharpMethodInfo->MaxParamCount < 0 ? apis->get_args_len(info) : csharpMethodInfo->MaxParamCount;
+        pesapi_value *argv = (pesapi_value *)alloca(sizeof(pesapi_value) * argc);
+        apis->extract_callback_info(info, &env, &argc, argv, &jsThis, nullptr);
+        if (!(csharpMethodInfo->IsStatic))
         {
-            pesapi_value jsThis = apis->get_holder(info);
             self = apis->get_native_object_ptr(env, jsThis);
-            if ((*wrapDatas)->NeedBoxing)
+            if (csharpMethodInfo->NeedBoxing)
             {
                 auto ptrType = (Il2CppClass*) apis->get_native_object_typeid(env, jsThis);
                 if (Class::IsValuetype(ptrType))
@@ -301,16 +307,18 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
                 }
             }
         }
-        bool checkArgument = *wrapDatas && *(wrapDatas + 1);
+        bool checkArgument = csharpMethodInfo->OverloadDatas.size() > 2; // including null terminator
+        WrapData** wrapDatas = csharpMethodInfo->OverloadDatas.data();
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap(apis, (*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, env, self, checkArgument, *wrapDatas))
+            if ((*wrapDatas)->Wrap(apis, info, env, argc, argv, self, checkArgument, *wrapDatas))
             {
                 return;
             }
             ++wrapDatas;
         }
-        apis->throw_by_string(info, "invalid arguments"); 
+        std::string err_info = "invalid arguments for " + csharpMethodInfo->Name;
+        apis->throw_by_string(info, err_info.c_str()); 
     } 
     catch (Il2CppExceptionWrapper& exception)
     {
@@ -453,12 +461,16 @@ static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
     
     try
     {
+        pesapi_env env = nullptr;
+        size_t argc = classInfo->MaxCtorParamCount < 0 ? apis->get_args_len(info) : classInfo->MaxCtorParamCount;
+        pesapi_value *argv = (pesapi_value *)alloca(sizeof(pesapi_value) * argc);
+        apis->extract_callback_info(info, &env, &argc, argv, nullptr, nullptr);
+        
         WrapData** wrapDatas = classInfo->CtorWrapDatas;
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
-        pesapi_env env = apis->get_env(info);
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap(apis, (*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, env, self, checkArgument, *wrapDatas))
+            if ((*wrapDatas)->Wrap(apis, info, env, argc, argv, self, checkArgument, *wrapDatas))
             {
                 return self;
             }
@@ -1235,18 +1247,18 @@ static void JsObjectSetRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value
     }
 }
 
-static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData)
+static bool ReflectionWrapper(struct pesapi_ffi* apis, pesapi_callback_info info, pesapi_env env, size_t argc, pesapi_value* argv, void* self, bool checkJSArgument, WrapData* wrapData)
 {
-    int js_args_len = apis->get_args_len(info);
     bool hasParamArray = wrapData->HasParamArray;
     bool isExtensionMethod = wrapData->IsExtensionMethod;
     auto csArgStart = isExtensionMethod ? 1 : 0;
+    MethodInfo* method = wrapData->Method;
     
     if (checkJSArgument || wrapData->OptionalNum > 0)
     {
         if (!hasParamArray && wrapData->OptionalNum == 0)
         {
-            if (js_args_len != method->parameters_count - csArgStart)
+            if (argc != method->parameters_count - csArgStart)
             {
                 return false;
             }
@@ -1254,7 +1266,7 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
         else
         {
             auto requireNum = method->parameters_count - csArgStart - wrapData->OptionalNum - (hasParamArray ? 1 : 0);
-            if (js_args_len < requireNum)
+            if (argc < requireNum)
             {
                 return false;
             }
@@ -1267,7 +1279,7 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
             bool isLastArgument = i == (method->parameters_count - 1);
             Il2CppClass* parameterKlass = Class::FromIl2CppType(parameterType);
             Class::Init(parameterKlass);
-            pesapi_value jsValue = apis->get_arg(info, i - csArgStart);
+            pesapi_value jsValue = argv[i - csArgStart];
             
             if ((hasDefault || (isLastArgument && hasParamArray)) && apis->is_undefined(env, jsValue))
             {
@@ -1418,7 +1430,7 @@ handle_underlying:
         }
     }
     void** args = method->parameters_count > 0 ? (void**)alloca(sizeof(void*) * method->parameters_count) : nullptr;
-    pesapi_value jsThis = apis->get_holder(info);
+    
 #ifndef UNITY_2021_1_OR_NEWER
     if (self)
     {
@@ -1432,6 +1444,7 @@ handle_underlying:
 #endif
     if (isExtensionMethod)
     {
+        pesapi_value jsThis = apis->get_holder(info);
         args[0] = apis->get_native_object_ptr(env, jsThis);
     }
     
@@ -1448,29 +1461,29 @@ handle_underlying:
         {
             int jsParamStart = i - csArgStart;
             auto elementType = Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
-            auto arrayLen = js_args_len - jsParamStart > 0 ? js_args_len - jsParamStart : 0;
+            auto arrayLen = argc - jsParamStart > 0 ? argc - jsParamStart : 0;
             auto array = Array::NewSpecific(parameterKlass, arrayLen);
             if (Class::IsValuetype(elementType))
             {
                 auto valueSize = elementType->instance_size - sizeof(Il2CppObject);
                 char* addr = Array::GetFirstElementAddress(array);
-                for(int j = jsParamStart; j < js_args_len; ++j)
+                for(int j = jsParamStart; j < argc; ++j)
                 {
-                    GetValueTypeFromJs(apis, env, apis->get_arg(info, j), elementType, addr + valueSize * (j - i + csArgStart));
+                    GetValueTypeFromJs(apis, env, argv[j], elementType, addr + valueSize * (j - i + csArgStart));
                 }
             }
             else
             {
-                for(int j = jsParamStart; j < js_args_len; ++j)
+                for(int j = jsParamStart; j < argc; ++j)
                 {
-                    il2cpp_array_setref(array, j - i + csArgStart, JsValueToCSRef(apis, elementType, env, apis->get_arg(info, j)));
+                    il2cpp_array_setref(array, j - i + csArgStart, JsValueToCSRef(apis, elementType, env, argv[j]));
                 }
             }
             args[i] = array;
             continue;
         }
         
-        pesapi_value jsValue = apis->get_arg(info, i - csArgStart);
+        pesapi_value jsValue = argv[i - csArgStart];
         
         if (Class::IsValuetype(parameterKlass))
         {
@@ -1565,7 +1578,7 @@ handle_underlying:
         bool passedByReference = parameterType->byref;
         Il2CppClass* parameterKlass = Class::FromIl2CppType(parameterType);
         
-        pesapi_value jsValue = apis->get_arg(info, i - csArgStart);
+        pesapi_value jsValue = argv[i - csArgStart];
         
         if (Class::IsValuetype(parameterKlass) && passedByReference)
         {
@@ -2061,6 +2074,7 @@ puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, Il2CppClass* type_id
     ret->SuperTypeId = super_type_id;
     ret->IsValueType = isValueType;
     ret->DelegateBridge = delegateBridge;
+    ret->MaxCtorParamCount = 0;
     
     return ret;
 }
@@ -2071,11 +2085,11 @@ void ReleaseCSharpTypeInfo(puerts::JsClassInfo* classInfo)
     delete classInfo;
 }
 
-static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* signature)
+static bool SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* signature)
 {
     data->HasParamArray = false;
     data->OptionalNum = 0;
-    data->NeedBoxing = false;
+    bool NeedBoxing = false;
     
     const char* p = signature;
     while(*p)
@@ -2086,7 +2100,7 @@ static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* 
         }
         if (*p == 'T')
         {
-            data->NeedBoxing = true;
+            NeedBoxing = true;
         }
         if (*p == 'D')
         {
@@ -2094,6 +2108,7 @@ static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* 
         }
         ++p;
     }
+    return NeedBoxing;
 }
 
 puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, MethodInfo* method, Il2CppMethodPointer methodPointer, int typeInfoNum)
@@ -2110,6 +2125,11 @@ puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* sig
     data->IsExtensionMethod = false;
     SetParamArrayFlagAndOptionalNum(data, signature);
     
+    if (classInfo->MaxCtorParamCount >= 0)
+    {
+        classInfo->MaxCtorParamCount = data->HasParamArray ? -1 : std::max(classInfo->MaxCtorParamCount, (int)il2cpp::vm::Method::GetParamCount(method));
+    }
+    
     classInfo->Ctors.push_back(data);
     return data;
 }
@@ -2125,7 +2145,7 @@ puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signatur
     data->Wrap = WrapFunc;
     data->IsStatic = isStatic;
     data->IsExtensionMethod = isExtensionMethod;
-    SetParamArrayFlagAndOptionalNum(data, signature);
+    bool NeedBoxing = SetParamArrayFlagAndOptionalNum(data, signature);
     
     for(int i = 0; i < classInfo->Methods.size(); ++i)
     {
@@ -2137,6 +2157,11 @@ puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signatur
                 return nullptr;
             }
             //puerts::PLog("add overload for %s, %s", name, signature);
+            if (classInfo->Methods[i].MaxParamCount >= 0)
+            {
+                classInfo->Methods[i].MaxParamCount = data->HasParamArray ? -1 : std::max(classInfo->Methods[i].MaxParamCount, (int)il2cpp::vm::Method::GetParamCount(method));
+            }
+            //puerts::PLog("overload [%s] :%d, method: %d", name, data->HasParamArray ? -1 : (int)il2cpp::vm::Method::GetParamCount(method), classInfo->Methods[i].MaxParamCount);
             classInfo->Methods[i].OverloadDatas.push_back(data);
             return data;
         }
@@ -2145,7 +2170,8 @@ puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signatur
     //puerts::PLog("%s %d %d %d %p", name, typeInfoNum, allocSize, sizeof(puerts::WrapData), data);
     std::vector<puerts::WrapData*> OverloadDatas;
     OverloadDatas.push_back(data);
-    classInfo->Methods.push_back({std::string(name), isStatic, isGetter, isSetter, std::move(OverloadDatas)});
+    //puerts::PLog("new mathod [%s] MaxParamCount:%d", name, data->HasParamArray ? -1 : (int)il2cpp::vm::Method::GetParamCount(method));
+    classInfo->Methods.push_back({std::string(name), isStatic, isGetter, isSetter, data->HasParamArray ? -1 : (int)il2cpp::vm::Method::GetParamCount(method), NeedBoxing, std::move(OverloadDatas)});
     return data;
 }
 
@@ -2222,7 +2248,7 @@ bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
     for (auto const& method: methods)
     {
         pesapi_set_method_info(
-                properties, pos++, method->Name.c_str(), method->IsStatic, &puerts::MethodCallback, method->OverloadDatas.data(), nullptr);
+                properties, pos++, method->Name.c_str(), method->IsStatic, &puerts::MethodCallback, method, nullptr);
     }
     
     for (auto const& kv: gseters)
@@ -2231,8 +2257,8 @@ bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
         pesapi_set_property_info(properties, pos++, geter_or_setter->Name.c_str(), geter_or_setter->IsStatic, 
             kv.second.first ? &puerts::MethodCallback : nullptr,
             kv.second.second ? &puerts::MethodCallback : nullptr, 
-            kv.second.first ? kv.second.first->OverloadDatas.data() : nullptr,
-            kv.second.second ? kv.second.second->OverloadDatas.data() : nullptr, 
+            kv.second.first,
+            kv.second.second,
             nullptr);
     }
     

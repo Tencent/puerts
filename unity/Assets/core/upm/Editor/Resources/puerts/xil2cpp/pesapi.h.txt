@@ -108,6 +108,12 @@
 
 EXTERN_C_START
 
+typedef enum
+{
+    pesapi_ok,
+    pesapi_fail
+} pesapi_code;
+
 // alloc on stack
 struct pesapi_scope_memory
 {
@@ -189,11 +195,12 @@ typedef pesapi_value (*pesapi_unboxing_func)(pesapi_env env, pesapi_value value)
 typedef void (*pesapi_update_boxed_value_func)(pesapi_env env, pesapi_value boxed_value, pesapi_value value);
 typedef bool (*pesapi_is_boxed_value_func)(pesapi_env env, pesapi_value value);
 
-typedef int (*pesapi_get_args_len_func)(pesapi_callback_info info);
+typedef pesapi_code (*pesapi_extract_callback_info_func)(pesapi_callback_info info, pesapi_env* env, size_t* argc, pesapi_value* argv, pesapi_value* this_object, void** data);
+typedef int (*pesapi_get_args_len_func)(pesapi_callback_info info);// TODO: rename get_args_count
 typedef pesapi_value (*pesapi_get_arg_func)(pesapi_callback_info info, int index);
 typedef pesapi_env (*pesapi_get_env_func)(pesapi_callback_info info);
 typedef pesapi_value (*pesapi_get_this_func)(pesapi_callback_info info);
-typedef pesapi_value (*pesapi_get_holder_func)(pesapi_callback_info info);
+typedef pesapi_value (*pesapi_get_holder_func)(pesapi_callback_info info); // TODO: to be remove 
 typedef void* (*pesapi_get_userdata_func)(pesapi_callback_info info);
 typedef void (*pesapi_add_return_func)(pesapi_callback_info info, pesapi_value value);
 typedef void (*pesapi_throw_by_string_func)(pesapi_callback_info pinfo, const char* msg);
@@ -280,6 +287,7 @@ struct pesapi_ffi
     pesapi_unboxing_func unboxing;
     pesapi_update_boxed_value_func update_boxed_value;
     pesapi_is_boxed_value_func is_boxed_value;
+    pesapi_extract_callback_info_func extract_callback_info;
     pesapi_get_args_len_func get_args_len;
     pesapi_get_arg_func get_arg;
     pesapi_get_env_func get_env;

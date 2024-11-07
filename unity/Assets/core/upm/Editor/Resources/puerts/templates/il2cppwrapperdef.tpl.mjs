@@ -13,14 +13,12 @@ function genFuncWrapper(wrapperInfo) {
 
     return t`
 // ${wrapperInfo.CsName}
-bool w_${wrapperInfo.Signature}(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {
+bool w_${wrapperInfo.Signature}(struct pesapi_ffi* apis, pesapi_callback_info info, pesapi_env env, size_t argc, pesapi_value* argv, void* self, bool checkJSArgument, WrapData* wrapData) {
     // PLog("Running w_${wrapperInfo.Signature}");
     
     ${il2cpp_snippets.declareTypeInfo(wrapperInfo)}
-
-    int js_args_len = apis->get_args_len(info);
     
-${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = apis->get_arg(info, ${i});`).join('\n')}
+${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = argv[${i}];`).join('\n')}
 
     if (${parameterSignatures.filter(s => s[0] == 'D').length ? 'true' : 'checkJSArgument'}) {
         if (${il2cpp_snippets.genArgsLenCheck(parameterSignatures)}) return false;
@@ -31,8 +29,8 @@ ${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = apis->get_arg(in
     
 ${parameterSignatures.map((x, i) => il2cpp_snippets.JSValToCSVal(x, `_sv${i}`, `p${i}`)).join('\n')}
 
-    typedef ${il2cpp_snippets.SToCPPType(wrapperInfo.ReturnSignature)} (*FuncToCall)(${il2cpp_snippets.needThis(wrapperInfo) ? 'void*,' : ''}${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}const void* method);
-    ${IF(wrapperInfo.ReturnSignature != 'v')}${il2cpp_snippets.SToCPPType(wrapperInfo.ReturnSignature)} ret = ${ENDIF()}((FuncToCall)methodPointer)(${il2cpp_snippets.needThis(wrapperInfo) ? 'self,' : ''} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} method);
+    typedef ${il2cpp_snippets.SToCPPType(wrapperInfo.ReturnSignature)} (*FuncToCall)(${il2cpp_snippets.needThis(wrapperInfo) ? 'void*,' : ''}${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}const MethodInfo* method);
+    ${IF(wrapperInfo.ReturnSignature != 'v')}${il2cpp_snippets.SToCPPType(wrapperInfo.ReturnSignature)} ret = ${ENDIF()}((FuncToCall)wrapData->MethodPointer)(${il2cpp_snippets.needThis(wrapperInfo) ? 'self,' : ''} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} wrapData->Method);
 
     ${FOR(parameterSignatures, (x, i) => t`
     ${il2cpp_snippets.refSetback(x, i, wrapperInfo)}

@@ -136,14 +136,14 @@ export function checkJSArg(signature, index) {
     let ret = ''
     let typeInfoVar = `TIp${index}`;
     if (signature[0] == "D") {
-        ret += `if (js_args_len > ${index} && `
+        ret += `if (argc > ${index} && `
         signature = signature.substring(1);
     } else if (signature[0] == 'V') {
         const elmSignature = signature.substring(1);
         const elmClassDecl = (elmSignature == 'o' || elmSignature == 'O' || elmSignature == 'a' || 
             ((elmSignature.startsWith(sigs.StructPrefix) || elmSignature.startsWith(sigs.NullableStructPrefix)) && elmSignature.endsWith('_'))
             ) ? `auto ${typeInfoVar}_V = il2cpp::vm::Class::GetElementClass(${typeInfoVar});` : '';
-        ret += `${elmClassDecl}if (js_args_len > ${index} && `
+        ret += `${elmClassDecl}if (argc > ${index} && `
         signature = elmSignature;
         typeInfoVar += '_V';
     } else {
@@ -261,19 +261,19 @@ export function JSValToCSVal(signature, JSName, CSName) {
         const start = parseInt(JSName.match(/_sv(\d+)/)[1]);
         if (si in PrimitiveSignatureCppTypeMap) { 
             return `    // JSValToCSVal primitive params
-    Il2CppArray* ${CSName} = Params<${PrimitiveSignatureCppTypeMap[si]}>::PackPrimitive(apis, env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<${PrimitiveSignatureCppTypeMap[si]}>::PackPrimitive(apis, env, info, TI${CSName}, argc, ${start});
                 `
         } else if (si == 's') {
             return `    // JSValToCSVal string params
-    Il2CppArray* ${CSName} = Params<void*>::PackString(apis, env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<void*>::PackString(apis, env, info, TI${CSName}, argc, ${start});
                 `
         } else if (si == 'o' || si == 'O' || si == 'a') {
             return `    // JSValToCSVal ref params
-    Il2CppArray* ${CSName} = Params<void*>::PackRef(apis, env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<void*>::PackRef(apis, env, info, TI${CSName}, argc, ${start});
                 `
         } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
             return `    // JSValToCSVal valuetype params
-    Il2CppArray* ${CSName} = Params<${si}>::PackValueType(apis, env, info, TI${CSName}, js_args_len, ${start});
+    Il2CppArray* ${CSName} = Params<${si}>::PackValueType(apis, env, info, TI${CSName}, argc, ${start});
                 `
         } else {
             return `    // JSValToCSVal unknow params type
@@ -285,19 +285,19 @@ export function JSValToCSVal(signature, JSName, CSName) {
         const start = parseInt(JSName.match(/_sv(\d+)/)[1]);
         if (si in PrimitiveSignatureCppTypeMap) { 
             return `    // JSValToCSVal primitive with default
-    ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(apis, env, info, method, wrapData, js_args_len, ${start});
+    ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(apis, env, info, wrapData->Method, wrapData, argc, ${start});
                 `
         } else if (si == 's') {
             return `    // JSValToCSVal string  with default
-    Il2CppString* ${CSName} = OptionalParameter<Il2CppString*>::GetString(apis, env, info, method, wrapData, js_args_len, ${start});
+    Il2CppString* ${CSName} = OptionalParameter<Il2CppString*>::GetString(apis, env, info, wrapData->Method, wrapData, argc, ${start});
                 `
         } else if (si == 'o' || si == 'O' || si == 'a') {
             return `    // JSValToCSVal ref  with default
-    Il2CppObject* ${CSName} = OptionalParameter<Il2CppObject*>::GetRefType(apis, env, info, method, wrapData, js_args_len, ${start}, TI${CSName});
+    Il2CppObject* ${CSName} = OptionalParameter<Il2CppObject*>::GetRefType(apis, env, info, wrapData->Method, wrapData, argc, ${start}, TI${CSName});
                 `
         } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
             return `    // JSValToCSVal valuetype  with default
-    ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(apis, env, info, method, wrapData, js_args_len, ${start});
+    ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(apis, env, info, wrapData->Method, wrapData, argc, ${start});
                 `
         } else {
             return `    // JSValToCSVal unknow type with default
@@ -346,6 +346,6 @@ export function CSValToJSVal(signature, CSName) {
 export function genArgsLenCheck(parameterSignatures) {
     var requireNum = 0;
     for (; requireNum < parameterSignatures.length && parameterSignatures[requireNum][0] != 'V' && parameterSignatures[requireNum][0] != 'D'; ++requireNum) { }
-    return requireNum != parameterSignatures.length ? `js_args_len < ${requireNum}` : `js_args_len != ${parameterSignatures.length}`;
+    return requireNum != parameterSignatures.length ? `argc < ${requireNum}` : `argc != ${parameterSignatures.length}`;
 }
 

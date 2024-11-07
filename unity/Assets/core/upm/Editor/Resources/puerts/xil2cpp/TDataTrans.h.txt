@@ -14,7 +14,7 @@
 namespace puerts
 {
 typedef void (*FieldWrapFuncPtr)(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType);
-typedef bool (*WrapFuncPtr)(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkArgument, struct WrapData* wrapData);
+typedef bool (*WrapFuncPtr)(struct pesapi_ffi* apis, pesapi_callback_info info, pesapi_env env, size_t argc, pesapi_value* argv, void* self, bool checkArgument, struct WrapData* wrapData);
 
 struct FieldWrapData
 {
@@ -34,7 +34,6 @@ struct WrapData
     bool IsExtensionMethod;
     bool HasParamArray;
     int OptionalNum;
-    bool NeedBoxing;
     Il2CppClass* TypeInfos[0];
 };
 
