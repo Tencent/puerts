@@ -613,15 +613,7 @@ void pesapi_release_value_ref(pesapi_value_ref value_ref)
 {
     if (--value_ref->ref_count == 0)
     {
-        if (value_ref->env_life_cycle_tracker.expired())
-        {
-#if V8_MAJOR_VERSION < 11
-            value_ref->value_persistent.Empty();
-            value_ref->context_persistent.Empty();
-            value_ref->~pesapi_value_ref__();
-#endif
-        }
-        else
+        if (!value_ref->env_life_cycle_tracker.expired())
         {
             value_ref->~pesapi_value_ref__();
         }

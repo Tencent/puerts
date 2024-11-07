@@ -1996,9 +1996,8 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     pesapi_init(func_array);
 }
 
-void AddPendingKillScriptObjects(puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
+void AddPendingKillScriptObjects(struct pesapi_ffi* apis, puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
 {
-    struct pesapi_ffi* apis = jsEnvPrivate->apis;
     pesapi_env_ref envRef = apis->get_ref_associated_env(valueRef);
     if (!apis->env_ref_is_valid(envRef)) // jsEnv已经释放
     {

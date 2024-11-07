@@ -116,7 +116,7 @@ namespace PuertsIl2cpp
         }
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void AddPendingKillScriptObjects(IntPtr jsEnv, IntPtr valueRef);
+        public static extern void AddPendingKillScriptObjects(IntPtr ffiApi, IntPtr jsEnv, IntPtr valueRef);
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void CleanupPendingKillScriptObjects(IntPtr jsEnv);
