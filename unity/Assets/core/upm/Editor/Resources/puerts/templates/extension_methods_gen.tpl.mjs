@@ -8,7 +8,7 @@ import { FOR } from './tte.mjs'
 
 export default function TypingTemplate(rawInfo) {
     return `
-#if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
+#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
 using System;
 using System.Collections.Generic;
 using System.Reflection;

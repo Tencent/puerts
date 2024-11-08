@@ -6,7 +6,7 @@
 */
 
 #if UNITY_2020_1_OR_NEWER
-#if EXPERIMENTAL_IL2CPP_PUERTS
+#if PUERTS_IL2CPP_OPTIMIZATION
 using System;
 
 namespace PuertsIl2cpp

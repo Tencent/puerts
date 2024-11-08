@@ -5,7 +5,7 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+#if !PUERTS_IL2CPP_OPTIMIZATION || !ENABLE_IL2CPP
 
 using System;
 using System.Collections.Generic;
@@ -205,7 +205,7 @@ namespace Puerts
 
                 if (genericDelegateCreator == null)
                 {
-#if UNITY_EDITOR && !EXPERIMENTAL_IL2CPP_PUERTS
+#if UNITY_EDITOR && !PUERTS_IL2CPP_OPTIMIZATION
                     if ((delegateMethod.ReturnType.IsValueType && delegateMethod.ReturnType != typeof(void))
                         || parameters.Length > 4
                         || typeArgs.Any(paramType => paramType.IsValueType || paramType.IsByRef)

@@ -206,8 +206,8 @@ export async function unityTest(cwd, unityPath) {
 
     console.log("[Puer] Generating FunctionBridge");
     writeFileSync(`${cwd}/Assets/csc.rsp`, `
-        -define:PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
-        -define:EXPERIMENTAL_IL2CPP_PUERTS
+        -define:PUERTS_CPP_OUTPUT_TO_UPM
+        -define:PUERTS_IL2CPP_OPTIMIZATION
     `);
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);

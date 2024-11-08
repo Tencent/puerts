@@ -5,7 +5,7 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+#if !PUERTS_IL2CPP_OPTIMIZATION || !ENABLE_IL2CPP
 using System;
 using System.Linq;
 using System.Reflection;
@@ -548,7 +548,7 @@ namespace Puerts
                 // extensionMethods
                 // 因为内存问题与crash问题移入宏中
 #if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
-// #if UNITY_EDITOR && !PUERTS_REFLECT_ALL_EXTENSION && !EXPERIMENTAL_IL2CPP_PUERTS
+// #if UNITY_EDITOR && !PUERTS_REFLECT_ALL_EXTENSION && !PUERTS_IL2CPP_OPTIMIZATION
 //                 if (!UnityEditor.EditorApplication.isPlaying) 
 // #endif
                 {

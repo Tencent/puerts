@@ -141,7 +141,7 @@ namespace Puerts.UnitTest
                         return func('hello');
                     })();
                 ");
-#if EXPERIMENTAL_IL2CPP_PUERTS && !UNITY_EDITOR
+#if PUERTS_IL2CPP_OPTIMIZATION && !UNITY_EDITOR
             }, "'System.String' cannot be converted to type 'System.Int32'");
 #else 
             }, "invalid arguments to StaticGenericMethod");

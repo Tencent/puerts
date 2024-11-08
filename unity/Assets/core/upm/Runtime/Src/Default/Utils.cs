@@ -10,7 +10,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-#if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
+#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
 
 namespace Puerts
 {

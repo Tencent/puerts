@@ -14,7 +14,7 @@ using UnityEditor;
 using UnityEngine;
 #endif
 
-#if !PUERTS_GENERAL && !UNITY_WEBGL && EXPERIMENTAL_IL2CPP_PUERTS
+#if !PUERTS_GENERAL && !UNITY_WEBGL && PUERTS_IL2CPP_OPTIMIZATION
 namespace PuertsIl2cpp.Editor
 {
     namespace Generator {
@@ -27,18 +27,18 @@ namespace PuertsIl2cpp.Editor
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
                 Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
-#if !PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
-                UnityEngine.Debug.LogWarning("[Puer W001] You are not using upm to install PuerTS or did not add 'PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM' definition. Please copy Gen/FunctionBridge.h and Gen/Plugins to the directory of PuerTS to compile native plugin");
+#if !PUERTS_CPP_OUTPUT_TO_UPM
+                UnityEngine.Debug.LogWarning("[Puer W001] You are not using upm to install PuerTS or did not add 'PUERTS_CPP_OUTPUT_TO_UPM' definition. Please copy Gen/FunctionBridge.h and Gen/Plugins to the directory of PuerTS to compile native plugin");
 #endif
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp c file", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp c file", false, 6)]
             public static void GenerateCppPlugin()
             {
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
                 var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
+#elif PUERTS_CPP_OUTPUT_TO_UPM
                 var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
 #else
                 var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
@@ -49,13 +49,13 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp wrapper bridge", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp wrapper bridge", false, 6)]
             public static void GenerateCppWrappers()
             {   
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
                 var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
+#elif PUERTS_CPP_OUTPUT_TO_UPM
                 var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
 #else
                 var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
@@ -66,13 +66,13 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
             
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp wrapper bridge(Configure)", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp wrapper bridge(Configure)", false, 6)]
             public static void GenerateCppWrappersInConfigure()
             {
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
                 var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
+#elif PUERTS_CPP_OUTPUT_TO_UPM
                 var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
 #else
                 var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
@@ -83,7 +83,7 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/xIl2cpp ExtensionMethodInfos_Gen.cs", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp ExtensionMethodInfos_Gen.cs", false, 6)]
             public static void GenerateExtensionMethodInfos()
             {
                 var start = DateTime.Now;

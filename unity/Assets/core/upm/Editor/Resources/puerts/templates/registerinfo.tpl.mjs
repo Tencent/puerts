@@ -25,7 +25,7 @@ namespace PuertsStaticWrap
         {
             return new RegisterInfo 
             {
-#if !EXPERIMENTAL_IL2CPP_PUERTS
+#if !PUERTS_IL2CPP_OPTIMIZATION
                 BlittableCopy = ${item.BlittableCopy},
 #endif
 
@@ -33,7 +33,7 @@ namespace PuertsStaticWrap
                 {
                     ${FOR(listToJsArray(item.Members), member=> `
                     {"${member.Name}${member.IsStatic ? '_static' : ''}", new MemberRegisterInfo { Name = "${member.Name}", IsStatic = ${member.IsStatic}, MemberType = MemberType.${member.MemberType}, UseBindingMode = BindingMode.${member.UseBindingMode}
-#if !EXPERIMENTAL_IL2CPP_PUERTS
+#if !PUERTS_IL2CPP_OPTIMIZATION
                     ${member.UseBindingMode == 'FastBinding' ? referWrapperMember(item.WrapperName, member.Constructor, member.Method, member.PropertyGetter, member.PropertySetter) : ''}
 #endif
                     }},
@@ -50,7 +50,7 @@ namespace PuertsStaticWrap
                 jsEnv.AddRegisterInfoGetter(typeof(${CS.Puerts.TypeExtensions.GetFriendlyName(item.Type)}), GetRegisterInfo_${item.WrapperName});`
                 if (item.BlittableCopy) {
                     ret += `
-#if !EXPERIMENTAL_IL2CPP_PUERTS
+#if !PUERTS_IL2CPP_OPTIMIZATION
                 ${item.BlittableCopy ? item.WrapperName + ".InitBlittableCopy(jsEnv);": ""}                    
 #endif`
                 }

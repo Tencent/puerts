@@ -142,7 +142,7 @@ namespace Puerts.UnitTest
 
         public TestHelper()
         {
-#if UNITY_EDITOR || !EXPERIMENTAL_IL2CPP_PUERTS
+#if UNITY_EDITOR || !PUERTS_IL2CPP_OPTIMIZATION
             var env = UnitTestEnv.GetEnv();
             env.UsingFunc<int>();
             env.UsingFunc<int, int>();

@@ -15,7 +15,7 @@ public class TestBuilder
     [MenuItem("PuerTS/Tester/BuildV1")]
     public static void BuildWindowsV1() { BuildWindows(false); }
 
-#if EXPERIMENTAL_IL2CPP_PUERTS
+#if PUERTS_IL2CPP_OPTIMIZATION
     public static void GenV2() 
     {
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
