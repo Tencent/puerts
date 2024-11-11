@@ -11,7 +11,6 @@
 
 namespace PUERTS_NAMESPACE
 {
-
 static void ThrowException(v8::Isolate* Isolate, const char* Message)
 {
     auto ExceptionStr = v8::String::NewFromUtf8(Isolate, Message, v8::NewStringType::kNormal).ToLocalChecked();
