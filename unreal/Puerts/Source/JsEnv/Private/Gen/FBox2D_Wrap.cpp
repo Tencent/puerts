@@ -43,8 +43,8 @@ struct AutoRegisterForFBox2D
             .Method("GetSize", MakeFunction(&FBox2D::GetSize))
             .Method("Init", MakeFunction(&FBox2D::Init))
             .Method("Intersect", MakeFunction(&FBox2D::Intersect))
-            .Method("IsInside", CombineOverloads(MakeOverload(bool(FBox2D::*)(const FVector2D&) const, &FBox2D::IsInside),
-                                    MakeOverload(bool(FBox2D::*)(const FBox2D&) const, &FBox2D::IsInside)))
+            .Method("IsInside", CombineOverloads(MakeOverload(bool (FBox2D::*)(const FVector2D&) const, &FBox2D::IsInside),
+                                    MakeOverload(bool (FBox2D::*)(const FBox2D&) const, &FBox2D::IsInside)))
             .Method("ShiftBy", MakeFunction(&FBox2D::ShiftBy))
             .Method("ToString", MakeFunction(&FBox2D::ToString))
             .Register();

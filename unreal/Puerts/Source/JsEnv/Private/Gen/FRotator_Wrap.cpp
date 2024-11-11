@@ -24,8 +24,8 @@ struct AutoRegisterForFRotator
             .Property("Pitch", MakeProperty(&FRotator::Pitch))
             .Property("Yaw", MakeProperty(&FRotator::Yaw))
             .Property("Roll", MakeProperty(&FRotator::Roll))
-            .Method("DiagnosticCheckNaN", CombineOverloads(MakeOverload(void(FRotator::*)() const, &FRotator::DiagnosticCheckNaN),
-                                              MakeOverload(void(FRotator::*)(const TCHAR*) const, &FRotator::DiagnosticCheckNaN)))
+            .Method("DiagnosticCheckNaN", CombineOverloads(MakeOverload(void (FRotator::*)() const, &FRotator::DiagnosticCheckNaN),
+                                              MakeOverload(void (FRotator::*)(const TCHAR*) const, &FRotator::DiagnosticCheckNaN)))
             .Method("op_Addition", MakeFunction(&FRotator::operator+))
             .Method("op_Subtraction", MakeFunction(&FRotator::operator-))
             .Method("op_Multiply", SelectFunction(FRotator(FRotator::*)(float Scale) const, &FRotator::operator*))

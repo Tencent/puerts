@@ -40,12 +40,12 @@ struct AutoRegisterForFVector4
             .Method("op_ExclusiveOr", MakeFunction(&FVector4::operator^))
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
             .Method("set_Item", SelectFunction(double& (FVector4::*) (int32), &FVector4::operator[]))
-            .Method("get_Item", SelectFunction(double(FVector4::*)(int32) const, &FVector4::operator[]))
+            .Method("get_Item", SelectFunction(double (FVector4::*)(int32) const, &FVector4::operator[]))
             .Method("Component", CombineOverloads(MakeOverload(double& (FVector4::*) (int32), &FVector4::Component),
                                      MakeOverload(const double& (FVector4::*) (int32) const, &FVector4::Component)))
 #else
             .Method("set_Item", SelectFunction(float& (FVector4::*) (int32), &FVector4::operator[]))
-            .Method("get_Item", SelectFunction(float(FVector4::*)(int32) const, &FVector4::operator[]))
+            .Method("get_Item", SelectFunction(float (FVector4::*)(int32) const, &FVector4::operator[]))
             .Method("Component", CombineOverloads(MakeOverload(float& (FVector4::*) (int32), &FVector4::Component),
                                      MakeOverload(const float& (FVector4::*) (int32) const, &FVector4::Component)))
 #endif

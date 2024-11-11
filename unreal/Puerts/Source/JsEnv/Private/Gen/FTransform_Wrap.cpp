@@ -62,16 +62,16 @@ struct AutoRegisterForFTransform
             .Method("InverseTransformRotation", MakeFunction(&FTransform::InverseTransformRotation))
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
             .Method("ScaleTranslation",
-                CombineOverloads(MakeOverload(void(FTransform::*)(const FVector&), &FTransform::ScaleTranslation),
-                    MakeOverload(void(FTransform::*)(const double&), &FTransform::ScaleTranslation)))
+                CombineOverloads(MakeOverload(void (FTransform::*)(const FVector&), &FTransform::ScaleTranslation),
+                    MakeOverload(void (FTransform::*)(const double&), &FTransform::ScaleTranslation)))
             .Method("GetScaled", CombineOverloads(MakeOverload(FTransform(FTransform::*)(double) const, &FTransform::GetScaled),
                                      MakeOverload(FTransform(FTransform::*)(FVector) const, &FTransform::GetScaled)))
             .Function(
                 "GetSafeScaleReciprocal", SelectFunction(FVector(*)(const FVector&, double), &FTransform::GetSafeScaleReciprocal))
 #else
             .Method("ScaleTranslation",
-                CombineOverloads(MakeOverload(void(FTransform::*)(const FVector&), &FTransform::ScaleTranslation),
-                    MakeOverload(void(FTransform::*)(const float&), &FTransform::ScaleTranslation)))
+                CombineOverloads(MakeOverload(void (FTransform::*)(const FVector&), &FTransform::ScaleTranslation),
+                    MakeOverload(void (FTransform::*)(const float&), &FTransform::ScaleTranslation)))
             .Method("GetScaled", CombineOverloads(MakeOverload(FTransform(FTransform::*)(float) const, &FTransform::GetScaled),
                                      MakeOverload(FTransform(FTransform::*)(FVector) const, &FTransform::GetScaled)))
             .Function(
@@ -110,8 +110,8 @@ struct AutoRegisterForFTransform
             .Method("CopyScale3D", MakeFunction(&FTransform::CopyScale3D))
             .Method("SetTranslationAndScale3D", MakeFunction(&FTransform::SetTranslationAndScale3D))
             .Method("Accumulate",
-                CombineOverloads(MakeOverload(void(FTransform::*)(const FTransform&), &FTransform::Accumulate),
-                    MakeOverload(void(FTransform::*)(const FTransform&, const ScalarRegister&), &FTransform::Accumulate)))
+                CombineOverloads(MakeOverload(void (FTransform::*)(const FTransform&), &FTransform::Accumulate),
+                    MakeOverload(void (FTransform::*)(const FTransform&, const ScalarRegister&), &FTransform::Accumulate)))
             .Method("NormalizeRotation", MakeFunction(&FTransform::NormalizeRotation))
             .Method("IsRotationNormalized", MakeFunction(&FTransform::IsRotationNormalized))
             .Method("GetRotation", MakeFunction(&FTransform::GetRotation))

@@ -14,9 +14,9 @@
 
 UsingUStruct(FColor);
 UsingUStruct(FVector);
-UsingUStruct(FLinearColor)
+UsingUStruct(FLinearColor);
 
-    struct AutoRegisterForFColor
+struct AutoRegisterForFColor
 {
     AutoRegisterForFColor()
     {
