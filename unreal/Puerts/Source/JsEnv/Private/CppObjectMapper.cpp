@@ -11,10 +11,6 @@
 
 namespace PUERTS_NAMESPACE
 {
-template <typename T>
-inline void __USE(T&&)
-{
-}
 
 static void ThrowException(v8::Isolate* Isolate, const char* Message)
 {

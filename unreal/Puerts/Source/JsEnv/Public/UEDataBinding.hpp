@@ -510,6 +510,13 @@ struct Converter<T*,
 };
 
 template <typename T>
+struct Converter<const T*,
+    typename std::enable_if<!std::is_convertible<T*, const UObject*>::value && internal::IsUStructHelper<T>::value>::type>
+    : Converter<T*>
+{
+};
+
+template <typename T>
 struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
