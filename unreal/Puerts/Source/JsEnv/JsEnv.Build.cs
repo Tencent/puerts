@@ -184,7 +184,7 @@ public class JsEnv : ModuleRules
         destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Typing"));
         if(Directory.Exists(destDirName))
         {
-            foreach (var Source in Sources)
+            foreach (var Source in SourceFiles)
             {
                 string src = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing", Source));
                 string dest = Path.GetFullPath(Path.Combine(destDirName, Source));
