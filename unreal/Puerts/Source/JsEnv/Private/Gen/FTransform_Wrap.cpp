@@ -37,9 +37,7 @@ struct AutoRegisterForFTransform
             .Method("BlendWith", MakeFunction(&FTransform::BlendWith))
             .Method("op_Addition", MakeFunction(&FTransform::operator+))
             .Method("op_Multiply",
-                CombineOverloads(    // MakeOverload(FTransform(FTransform::*)(const ScalarRegister&) const,
-                                     // &FTransform::operator*),
-                    MakeOverload(FTransform(FTransform::*)(const FTransform&) const, &FTransform::operator*),
+                CombineOverloads(MakeOverload(FTransform(FTransform::*)(const FTransform&) const, &FTransform::operator*),
                     MakeOverload(FTransform(FTransform::*)(const FQuat&) const, &FTransform::operator*)))
             .Function("AnyHasNegativeScale", MakeFunction(&FTransform::AnyHasNegativeScale))
             .Method("RemoveScaling", MakeFunction(&FTransform::RemoveScaling))
@@ -109,9 +107,7 @@ struct AutoRegisterForFTransform
             .Method("SetScale3D", MakeFunction(&FTransform::SetScale3D))
             .Method("CopyScale3D", MakeFunction(&FTransform::CopyScale3D))
             .Method("SetTranslationAndScale3D", MakeFunction(&FTransform::SetTranslationAndScale3D))
-            .Method("Accumulate",
-                CombineOverloads(MakeOverload(void (FTransform::*)(const FTransform&), &FTransform::Accumulate),
-                    MakeOverload(void (FTransform::*)(const FTransform&, const ScalarRegister&), &FTransform::Accumulate)))
+            .Method("Accumulate", SelectFunction(void (FTransform::*)(const FTransform&), &FTransform::Accumulate))
             .Method("NormalizeRotation", MakeFunction(&FTransform::NormalizeRotation))
             .Method("IsRotationNormalized", MakeFunction(&FTransform::IsRotationNormalized))
             .Method("GetRotation", MakeFunction(&FTransform::GetRotation))

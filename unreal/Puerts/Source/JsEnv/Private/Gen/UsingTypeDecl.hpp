@@ -24,7 +24,6 @@ UsingUStruct(FQuat);
 UsingUStruct(FRotator);
 UsingUStruct(FTransform);
 UsingUStruct(FVector4);
-UsingCppType(ScalarRegister);
 UsingUStruct(FPlane);
 UsingUStruct(FFloat16Color);
 UsingUStruct(FMatrix);
