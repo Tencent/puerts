@@ -31,9 +31,8 @@ struct AutoRegisterForFVector
             .Function("DotProduct", MakeFunction(&FVector::DotProduct))
             .Method("op_Addition", CombineOverloads(MakeOverload(FVector(FVector::*)(const FVector&) const, &FVector::operator+),
                                        MakeOverload(FVector(FVector::*)(float) const, &FVector::operator+)))
-            .Method(
-                "op_Subtraction", CombineOverloads(MakeOverload(FVector(FVector::*)(const FVector&) const, &(FVector::operator-)),
-                                      MakeOverload(FVector(FVector::*)(float) const, &(FVector::operator-))))
+            .Method("op_Subtraction", CombineOverloads(MakeOverload(FVector(FVector::*)(const FVector&) const, &FVector::operator-),
+                                          MakeOverload(FVector(FVector::*)(float) const, &FVector::operator-)))
             .Method("op_Multiply", CombineOverloads(MakeOverload(FVector(FVector::*)(float) const, &FVector::operator*),
                                        MakeOverload(FVector(FVector::*)(const FVector&) const, &FVector::operator*)))
             .Method("op_Division", CombineOverloads(MakeOverload(FVector(FVector::*)(float) const, &FVector::operator/),
@@ -42,7 +41,7 @@ struct AutoRegisterForFVector
             .Method("op_Inequality", MakeFunction(&FVector::operator!=))
             .Method("Equals", MakeFunction(&FVector::Equals))
             .Method("AllComponentsEqual", MakeFunction(&FVector::AllComponentsEqual))
-            .Method("op_UnaryNegation", SelectFunction(FVector(FVector::*)() const, &(FVector::operator-)))
+            .Method("op_UnaryNegation", SelectFunction(FVector(FVector::*)() const, &FVector::operator-))
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
             .Method("set_Item", SelectFunction(double& (FVector::*) (int32), &FVector::operator[]))
             .Method("get_Item", SelectFunction(double (FVector::*)(int32) const, &FVector::operator[]))

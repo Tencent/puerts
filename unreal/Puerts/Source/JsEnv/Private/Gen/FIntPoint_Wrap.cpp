@@ -26,7 +26,7 @@ struct AutoRegisterForFIntPoint
             .Method("op_Division", CombineOverloads(MakeOverload(FIntPoint(FIntPoint::*)(int32) const, &FIntPoint::operator/),
                                        MakeOverload(FIntPoint(FIntPoint::*)(const FIntPoint&) const, &FIntPoint::operator/)))
             .Method("op_Addition", MakeFunction(&FIntPoint::operator+))
-            .Method("op_Subtraction", MakeFunction(&(FIntPoint::operator-)))
+            .Method("op_Subtraction", MakeFunction(&FIntPoint::operator-))
             .Method("set_Item", SelectFunction(int32 & (FIntPoint::*) (int32), &FIntPoint::operator[]))
             .Method("get_Item", SelectFunction(int32(FIntPoint::*)(int32) const, &FIntPoint::operator[]))
             .Method("ComponentMin", MakeFunction(&FIntPoint::ComponentMin))

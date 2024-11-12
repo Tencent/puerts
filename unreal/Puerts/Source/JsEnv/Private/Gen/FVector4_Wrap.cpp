@@ -24,9 +24,9 @@ struct AutoRegisterForFVector4
             .Property("Y", MakeProperty(&FVector4::Y))
             .Property("Z", MakeProperty(&FVector4::Z))
             .Property("W", MakeProperty(&FVector4::W))
-            .Method("op_UnaryNegation", SelectFunction(FVector4(FVector4::*)() const, &(FVector4::operator-)))
+            .Method("op_UnaryNegation", SelectFunction(FVector4(FVector4::*)() const, &FVector4::operator-))
             .Method("op_Addition", MakeFunction(&FVector4::operator+))
-            .Method("op_Subtraction", SelectFunction(FVector4(FVector4::*)(const FVector4&) const, &(FVector4::operator-)))
+            .Method("op_Subtraction", SelectFunction(FVector4(FVector4::*)(const FVector4&) const, &FVector4::operator-))
             .Method("op_Multiply", CombineOverloads(MakeOverload(FVector4(FVector4::*)(float) const, &FVector4::operator*),
                                        MakeOverload(FVector4(FVector4::*)(const FVector4&) const, &FVector4::operator*)))
             .Method("op_Division", CombineOverloads(MakeOverload(FVector4(FVector4::*)(float) const, &FVector4::operator/),
