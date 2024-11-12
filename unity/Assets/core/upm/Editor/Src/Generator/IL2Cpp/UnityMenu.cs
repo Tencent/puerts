@@ -27,9 +27,6 @@ namespace PuertsIl2cpp.Editor
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
                 Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
-#if !PUERTS_CPP_OUTPUT_TO_UPM
-                UnityEngine.Debug.LogWarning("[Puer W001] You are not using upm to install PuerTS or did not add 'PUERTS_CPP_OUTPUT_TO_UPM' definition. Please copy Gen/FunctionBridge.h and Gen/Plugins to the directory of PuerTS to compile native plugin");
-#endif
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp c file", false, 6)]
