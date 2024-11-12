@@ -170,6 +170,25 @@ public class JsEnv : ModuleRules
         string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content"));
         string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Content"));
         DirectoryCopy(coreJSPath, destDirName, true);
+
+        // 每次build时拷贝一些手写的.d.ts到Typing目录以同步更新
+        var SourceFiles = new string[]
+        {
+            "ue/ue_s.d.ts", 
+            "ue/puerts.d.ts", 
+            "ue/puerts_decorators.d.ts",
+            "ue/index.d.ts",
+            "puerts/index.d.ts",
+            "ffi/index.d.ts"
+        };
+        foreach (var Source in SourceFiles)
+        {
+            string src = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing", Source));
+            string dest =
+                Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Typing", Source));
+            Logger.LogDebug("Copy " + Source + " from " + src + " to " + dest);
+            File.Copy(src, dest, true);
+        }
     }
 
     void OldThirdParty(ReadOnlyTargetRules Target)
