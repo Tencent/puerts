@@ -172,26 +172,10 @@ public class JsEnv : ModuleRules
         DirectoryCopy(coreJSPath, destDirName, true);
 
         // 每次build时拷贝一些手写的.d.ts到Typing目录以同步更新
-        var SourceFiles = new string[]
-        {
-            // "ue/ue_s.d.ts", 
-            "ue/puerts.d.ts", 
-            "ue/puerts_decorators.d.ts",
-            "ue/index.d.ts",
-            "puerts/index.d.ts",
-            "ffi/index.d.ts"
-        };
-        destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Typing"));
-        Directory.CreateDirectory(destDirName); // create when not exists, otherwise skip it
-        Directory.CreateDirectory(Path.Combine(destDirName, "ue")); 
-        Directory.CreateDirectory(Path.Combine(destDirName, "puerts")); 
-        Directory.CreateDirectory(Path.Combine(destDirName, "ffi")); 
-        foreach (var Source in SourceFiles)
-        {
-            string src = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing", Source));
-            string dest = Path.GetFullPath(Path.Combine(destDirName, Source));
-            File.Copy(src, dest, true);
-        }
+        string srcDtsDirName  = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing"));
+        string dstDtsDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Typing"));
+        DirectoryCopy(srcDtsDirName, dstDtsDirName, true);
+
     }
 
     void OldThirdParty(ReadOnlyTargetRules Target)
