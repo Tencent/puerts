@@ -174,7 +174,7 @@ public class JsEnv : ModuleRules
         // 每次build时拷贝一些手写的.d.ts到Typing目录以同步更新
         var SourceFiles = new string[]
         {
-            "ue/ue_s.d.ts", 
+            // "ue/ue_s.d.ts", 
             "ue/puerts.d.ts", 
             "ue/puerts_decorators.d.ts",
             "ue/index.d.ts",
