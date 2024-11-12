@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnrealBuildTool;
 using System.IO;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 
 public class JsEnv : ModuleRules
 {    
