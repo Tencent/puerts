@@ -183,11 +183,13 @@ public class JsEnv : ModuleRules
         };
         destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Typing"));
         Directory.CreateDirectory(destDirName); // create when not exists, otherwise skip it
+        Directory.CreateDirectory(Path.Combine(destDirName, "ue")); 
+        Directory.CreateDirectory(Path.Combine(destDirName, "puerts")); 
+        Directory.CreateDirectory(Path.Combine(destDirName, "ffi")); 
         foreach (var Source in SourceFiles)
         {
             string src = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing", Source));
             string dest = Path.GetFullPath(Path.Combine(destDirName, Source));
-            // Logger.LogDebug("Copy " + Source + " from " + src + " to " + dest);
             File.Copy(src, dest, true);
         }
     }
