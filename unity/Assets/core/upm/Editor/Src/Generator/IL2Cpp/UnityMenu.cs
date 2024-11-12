@@ -22,10 +22,10 @@ namespace PuertsIl2cpp.Editor
         public class UnityMenu {
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For xIl2cpp mode (all in one)", false, 2)]
             public static void GenV2() {
-                PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
-                PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
-                PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
-                PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
+                GenerateCppWrappers();
+                GenerateExtensionMethodInfos();
+                GenerateLinkXML();
+                GenerateCppPlugin();
                 Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
             }
 
