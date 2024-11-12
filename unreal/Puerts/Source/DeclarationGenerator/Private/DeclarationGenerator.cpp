@@ -1089,7 +1089,10 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
         while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Type)
         {
             if (Struct->FindPropertyByName(UTF8_TO_TCHAR(PropertyInfo->Name)))
+            {
+                ++PropertyInfo;
                 continue;
+            }
             Buff << "    " << PropertyInfo->Name << ": " << GetNamePrefix(PropertyInfo->Type) << PropertyInfo->Type->Name()
                  << ";\n";
             ++PropertyInfo;
@@ -1366,7 +1369,6 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
 
 void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 {
-#include "ExcludeStructs.h"
     FStringBuffer StringBuffer{"", ""};
     const FString SafeStructName =
         Struct->IsNative() ? SafeName(Struct->GetName()) : PUERTS_NAMESPACE::FilenameToTypeScriptVariableName(Struct->GetName());
