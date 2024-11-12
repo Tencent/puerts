@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using UnrealBuildTool;
 using System.IO;
 using System.Reflection;
-using Microsoft.Extensions.Logging;
 
 public class JsEnv : ModuleRules
 {    
@@ -187,7 +186,7 @@ public class JsEnv : ModuleRules
             string src = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing", Source));
             string dest =
                 Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Typing", Source));
-            Logger.LogDebug("Copy " + Source + " from " + src + " to " + dest);
+            // Logger.LogDebug("Copy " + Source + " from " + src + " to " + dest);
             File.Copy(src, dest, true);
         }
     }
