@@ -19,7 +19,6 @@ struct AutoRegisterForFTransform
             .Constructor(CombineConstructors(MakeConstructor(FTransform), MakeConstructor(FTransform, const FVector&),
                 MakeConstructor(FTransform, const FQuat&), MakeConstructor(FTransform, const FRotator&),
                 MakeConstructor(FTransform, const FQuat&, const FVector&, const FVector&),
-                MakeConstructor(FTransform, const VectorRegister&, const VectorRegister&, const VectorRegister&),
                 MakeConstructor(FTransform, const FRotator&, const FVector&, const FVector&), MakeConstructor(FTransform, ENoInit),
                 MakeConstructor(FTransform, const FMatrix&),
                 MakeConstructor(FTransform, const FVector&, const FVector&, const FVector&, const FVector&)))

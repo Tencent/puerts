@@ -29,4 +29,3 @@ UsingUStruct(FFloat16Color);
 UsingUStruct(FMatrix);
 UsingCppType(TArray<FVector2D>);
 UsingUStruct(FIntVector4);
-UsingCppType(VectorRegister);
