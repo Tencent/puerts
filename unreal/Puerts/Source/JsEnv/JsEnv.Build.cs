@@ -182,15 +182,13 @@ public class JsEnv : ModuleRules
             "ffi/index.d.ts"
         };
         destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Typing"));
-        if(Directory.Exists(destDirName))
+        Directory.CreateDirectory(destDirName); // create when not exists, otherwise skip it
+        foreach (var Source in SourceFiles)
         {
-            foreach (var Source in SourceFiles)
-            {
-                string src = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing", Source));
-                string dest = Path.GetFullPath(Path.Combine(destDirName, Source));
-                // Logger.LogDebug("Copy " + Source + " from " + src + " to " + dest);
-                File.Copy(src, dest, true);
-            }
+            string src = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Typing", Source));
+            string dest = Path.GetFullPath(Path.Combine(destDirName, Source));
+            // Logger.LogDebug("Copy " + Source + " from " + src + " to " + dest);
+            File.Copy(src, dest, true);
         }
     }
 
