@@ -26,3 +26,8 @@ UsingUStruct(FTransform);
 UsingUStruct(FVector4);
 UsingCppType(ScalarRegister);
 UsingUStruct(FPlane);
+UsingUStruct(FFloat16Color);
+UsingUStruct(FMatrix);
+UsingCppType(TArray<FVector2D>);
+UsingUStruct(FIntVector4);
+UsingCppType(VectorRegister);

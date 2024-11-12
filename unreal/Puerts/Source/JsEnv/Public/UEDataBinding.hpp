@@ -536,6 +536,16 @@ struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>
     }
 };
 
+template <typename T>
+struct Converter<const T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : Converter<T>
+{
+};
+
 }    // namespace v8_impl
+
+template <typename T>
+struct ScriptTypeName<const T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : ScriptTypeName<T>
+{
+};
 
 }    // namespace PUERTS_NAMESPACE
