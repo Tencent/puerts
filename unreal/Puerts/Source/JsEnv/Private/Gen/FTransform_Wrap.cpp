@@ -37,7 +37,8 @@ struct AutoRegisterForFTransform
             .Method("BlendWith", MakeFunction(&FTransform::BlendWith))
             .Method("op_Addition", MakeFunction(&FTransform::operator+))
             .Method("op_Multiply",
-                CombineOverloads(MakeOverload(FTransform(FTransform::*)(const ScalarRegister&) const, &FTransform::operator*),
+                CombineOverloads(    // MakeOverload(FTransform(FTransform::*)(const ScalarRegister&) const,
+                                     // &FTransform::operator*),
                     MakeOverload(FTransform(FTransform::*)(const FTransform&) const, &FTransform::operator*),
                     MakeOverload(FTransform(FTransform::*)(const FQuat&) const, &FTransform::operator*)))
             .Function("AnyHasNegativeScale", MakeFunction(&FTransform::AnyHasNegativeScale))
