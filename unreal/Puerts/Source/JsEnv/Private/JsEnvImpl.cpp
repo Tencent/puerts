@@ -3179,8 +3179,7 @@ std::weak_ptr<int> FJsEnvImpl::GetJsEnvLifeCycleTracker()
 v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(
     v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass)
 {
-    const auto Constructor = SoftObjectPtrTemplate.Get(Isolate)->GetFunction(Context).ToLocalChecked();
-    const auto JSObject = Constructor->NewInstance(Context).ToLocalChecked();
+    const auto JSObject = SoftObjectPtrTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
     DataTransfer::SetPointer(Isolate, JSObject, SoftObjectPtr, 0);
     DataTransfer::SetPointer(Isolate, JSObject, Class, IsSoftClass ? 2 : 1);
     DataTransfer::SetPointer(Isolate, JSObject, nullptr, IsSoftClass ? 1 : 2);
