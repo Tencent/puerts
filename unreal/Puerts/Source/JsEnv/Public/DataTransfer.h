@@ -181,6 +181,33 @@ struct TScriptStructTraits<FPlane>
     }
 };
 
+template <>
+struct TScriptStructTraits<FMatrix>
+{
+    static UScriptStruct* Get()
+    {
+        return GetScriptStructInCoreUObject(TEXT("Matrix"));
+    }
+};
+
+template <>
+struct TScriptStructTraits<FFloat16Color>
+{
+    static UScriptStruct* Get()
+    {
+        return GetScriptStructInCoreUObject(TEXT("Float16Color"));
+    }
+};
+
+template <>
+struct TScriptStructTraits<FIntVector4>
+{
+    static UScriptStruct* Get()
+    {
+        return GetScriptStructInCoreUObject(TEXT("IntVector4"));
+    }
+};
+
 template <class...>
 using ToVoid = void;
 
