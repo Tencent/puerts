@@ -11,10 +11,14 @@
 #include "CoreMinimal.h"
 #include "UsingTypeDecl.hpp"
 
+__DefCDataConverter(FFloat16Color);
+
 struct AutoRegisterForFLinearColor
 {
     AutoRegisterForFLinearColor()
     {
+        puerts::DefineClass<FFloat16Color>().Register();
+
         puerts::DefineClass<FLinearColor>()
             .Constructor(CombineConstructors(MakeConstructor(FLinearColor), MakeConstructor(FLinearColor, EForceInit),
                 MakeConstructor(FLinearColor, float, float, float, float), MakeConstructor(FLinearColor, const FColor&),

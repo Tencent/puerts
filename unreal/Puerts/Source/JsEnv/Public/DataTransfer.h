@@ -191,15 +191,6 @@ struct TScriptStructTraits<FMatrix>
 };
 
 template <>
-struct TScriptStructTraits<FFloat16Color>
-{
-    static UScriptStruct* Get()
-    {
-        return GetScriptStructInCoreUObject(TEXT("Float16Color"));
-    }
-};
-
-template <>
 struct TScriptStructTraits<FIntVector4>
 {
     static UScriptStruct* Get()

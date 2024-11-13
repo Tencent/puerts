@@ -49,6 +49,32 @@
     }                                                                                             \
     }
 
+#define __DefCDataConverter_v8_impl(CLS)                                                                 \
+    namespace PUERTS_NAMESPACE                                                                           \
+    {                                                                                                    \
+    namespace v8_impl                                                                                    \
+    {                                                                                                    \
+    template <>                                                                                          \
+    struct Converter<CLS>                                                                                \
+    {                                                                                                    \
+        static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS value)                  \
+        {                                                                                                \
+            return ::PUERTS_NAMESPACE::DataTransfer::FindOrAddCData(                                     \
+                context->GetIsolate(), context, DynamicTypeId<CLS>::get(&value), new CLS(value), false); \
+        }                                                                                                \
+        static CLS toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)              \
+        {                                                                                                \
+            return *::PUERTS_NAMESPACE::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>());       \
+        }                                                                                                \
+        static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)            \
+        {                                                                                                \
+            return ::PUERTS_NAMESPACE::DataTransfer::IsInstanceOf(                                       \
+                context->GetIsolate(), StaticTypeId<CLS>::get(), value.As<v8::Object>());                \
+        }                                                                                                \
+    };                                                                                                   \
+    }                                                                                                    \
+    }
+
 namespace PUERTS_NAMESPACE
 {
 namespace v8_impl

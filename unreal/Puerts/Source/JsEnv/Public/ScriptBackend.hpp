@@ -119,6 +119,9 @@
 #define __DefCDataPointerConverter_HELPER2(CLS, Suffix) __DefCDataPointerConverter_HELPER1(CLS, Suffix)
 #define __DefObjectType(CLS) __DefObjectType_HELPER2(CLS, PUERTS_BINDING_IMPL)
 #define __DefCDataPointerConverter(CLS) __DefCDataPointerConverter_HELPER2(CLS, PUERTS_BINDING_IMPL)
+#define __DefCDataConverter_HELPER1(CLS, Suffix) __DefCDataConverter_##Suffix(CLS)
+#define __DefCDataConverter_HELPER2(CLS, Suffix) __DefCDataConverter_HELPER1(CLS, Suffix)
+#define __DefCDataConverter(CLS) __DefCDataConverter_HELPER2(CLS, PUERTS_BINDING_IMPL)
 #define UsingNamedCppType(CLS, NAME) __DefScriptTTypeName(NAME, CLS) __DefObjectType(CLS) __DefCDataPointerConverter(CLS)
 
 #define UsingCppType(CLS) UsingNamedCppType(CLS, CLS)

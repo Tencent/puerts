@@ -49,6 +49,30 @@
     }                                                                                                \
     }
 
+#define __DefCDataConverter_pesapi_impl(CLS)                                                                  \
+    namespace PUERTS_NAMESPACE                                                                                \
+    {                                                                                                         \
+    namespace pesapi_impl                                                                                     \
+    {                                                                                                         \
+    template <>                                                                                               \
+    struct Converter<CLS>                                                                                     \
+    {                                                                                                         \
+        static pesapi_value toScript(pesapi_env env, CLS value)                                               \
+        {                                                                                                     \
+            return pesapi_native_object_to_value(env, DynamicTypeId<CLS>::get(&value), new CLS(value), true); \
+        }                                                                                                     \
+        static CLS toCpp(pesapi_env env, pesapi_value value)                                                  \
+        {                                                                                                     \
+            return *static_cast<CLS*>(pesapi_get_native_object_ptr(env, value));                              \
+        }                                                                                                     \
+        static bool accept(pesapi_env env, pesapi_value value)                                                \
+        {                                                                                                     \
+            return pesapi_is_instance_of(env, StaticTypeId<CLS>::get(), value);                               \
+        }                                                                                                     \
+    };                                                                                                        \
+    }                                                                                                         \
+    }
+
 namespace PUERTS_NAMESPACE
 {
 namespace pesapi_impl

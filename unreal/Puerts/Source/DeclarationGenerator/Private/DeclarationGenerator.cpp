@@ -33,6 +33,7 @@
 #include "Engine/Blueprint.h"
 #include "CodeGenerator.h"
 #include "JSClassRegister.h"
+#include "UECompatible.h"
 #include "Engine/CollisionProfile.h"
 #if (ENGINE_MAJOR_VERSION >= 5)
 #include "ToolMenus.h"
@@ -1398,6 +1399,31 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 
     auto GenConstrutor = [&]()
     {
+        auto ClassDefinition = PUERTS_NAMESPACE::FindClassByType(Struct);
+        if (ClassDefinition && ClassDefinition->ConstructorInfos)
+        {
+            PUERTS_NAMESPACE::NamedFunctionInfo* ConstructorInfo = ClassDefinition->ConstructorInfos;
+            while (ConstructorInfo && ConstructorInfo->Name && ConstructorInfo->Type)
+            {
+                FStringBuffer Tmp;
+                Tmp << "constructor(";
+                GenArgumentsForFunctionInfo(ConstructorInfo->Type, Tmp);
+                Tmp << ")";
+                StringBuffer << "    " << Tmp.Buffer << ";\n";
+                for (unsigned int i = 0; i < ConstructorInfo->Type->ArgumentCount(); i++)
+                {
+                    auto argInfo = ConstructorInfo->Type->Argument(i);
+                    if (argInfo->IsUEType())
+                    {
+                        UScriptStruct* UsedStruct = PUERTS_NAMESPACE::FindAnyType<UScriptStruct>(UTF8_TO_TCHAR(argInfo->Name()));
+                        if (UsedStruct)
+                            Gen(UsedStruct);
+                    }
+                }
+                ++ConstructorInfo;
+            }
+            return;
+        }
         FStringBuffer TmpBuff;
         TmpBuff << "constructor(";
         bool First = true;
