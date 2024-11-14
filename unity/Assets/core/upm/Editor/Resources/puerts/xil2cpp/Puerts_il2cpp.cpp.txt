@@ -520,7 +520,11 @@ static pesapi_value GetPObjectRefInfoValue(struct pesapi_ffi* apis, pesapi_env e
     return apis->get_value_from_ref(env, objectInfo->ValueRef);
 }
 
-static int32_t* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
+#ifndef UNITY_6000_0_OR_NEWER
+typedef int32_t Il2CppGCHandle;
+#endif
+
+static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
 {
     void* out_ptr;
     if(!apis->get_private(env, value, &out_ptr))
@@ -530,11 +534,11 @@ static int32_t* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_e
     }
     
     pesapi_value_ref value_ref = static_cast<pesapi_value_ref>(out_ptr);
-    int32_t* res = nullptr;
+    Il2CppGCHandle* res = nullptr;
     uint32_t field_count;
     if (value_ref)
     {
-        res = reinterpret_cast<int32_t*>(apis->get_ref_internal_fields(value_ref, &field_count));
+        res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
         if(field_count != 1 || !res)
         {
             PLog("invalid internal_fields size: %u, ptr:%p", field_count, res);
@@ -548,7 +552,7 @@ static int32_t* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_e
     {
         value_ref = apis->create_value_ref(env, value, (sizeof(std::atomic<Il2CppObject*>) + sizeof(void*) - 1) / sizeof(void*));
         
-        res = reinterpret_cast<int32_t*>(apis->get_ref_internal_fields(value_ref, &field_count));
+        res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
         apis->set_private(env, value, value_ref);
         *out_object = nullptr;
     }
@@ -566,7 +570,7 @@ static Il2CppObject* FunctionToDelegate(struct pesapi_ffi* apis, pesapi_env env,
 {
     pesapi_value_ref value_ref;
     Il2CppObject* ret = nullptr;
-    int32_t* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
+    Il2CppGCHandle* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
     if (!handle_store) return nullptr;
 
     if (ret == nullptr)
@@ -907,7 +911,7 @@ handle_underlying:
                     
                     pesapi_value_ref value_ref;
                     Il2CppObject* ret = nullptr;
-                    int32_t* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
+                    Il2CppGCHandle* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
                     if (!handle_store) return nullptr;
                     
                     if (ret == nullptr) 
@@ -1892,8 +1896,8 @@ struct JsEnvPrivate
             // insert前已经对有效性进行判断
             uint32_t fieldCount;
             //PLog("CleanupPendingKillScriptObjects: %p", valueRef);
-            int32_t* store = reinterpret_cast<int32_t*>(apis->get_ref_internal_fields(valueRef, &fieldCount));
-            int32_t handle = *store;
+            Il2CppGCHandle* store = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(valueRef, &fieldCount));
+            Il2CppGCHandle handle = *store;
             if (nullptr == il2cpp::gc::GCHandle::GetTarget(handle)) //假如不为空代表已经重新被绑定了
             {
                 il2cpp::gc::GCHandle::Free(handle);
