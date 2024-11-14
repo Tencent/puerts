@@ -339,7 +339,7 @@ export function CSValToJSVal(signature, CSName) {
         }
     }
     //TODO: 能处理的就处理, DateTime是否要处理呢？
-    return `// unknow ret signature: ${signature}`
+    return '';
 }
 
 

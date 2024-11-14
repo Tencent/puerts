@@ -26,7 +26,7 @@ function genBridgeArgs(parameterSignatures) {
             return `auto arrayLength = il2cpp::vm::Array::GetLength(p${parameterSignatures.length - 1});
     pesapi_value *argv = (pesapi_value *)alloca(sizeof(pesapi_value) * (${parameterSignatures.length  - 1} + arrayLength));
     memset(argv, 0, sizeof(pesapi_value) * (${parameterSignatures.length  - 1} + arrayLength));
-    ${parameterSignatures.slice(0, -1).map((ps, i)=> `argv[${i}] = ${(il2cpp_snippets.CSValToJSVal(ps, `p${i}`) || 'apis->create_undefined(env)')};`).join(`
+    ${parameterSignatures.slice(0, -1).map((ps, i)=> `argv[${i}] = ${(il2cpp_snippets.CSValToJSVal(ps, `p${i}`) || `apis->create_undefined(env);// unknow ret signature: ${ps}`)};`).join(`
     `)}
     ${unpackMethod}(apis, env, p${parameterSignatures.length-1}, arrayLength, TIp${parameterSignatures.length-1}, argv + ${parameterSignatures.length  - 1});`;
         }
