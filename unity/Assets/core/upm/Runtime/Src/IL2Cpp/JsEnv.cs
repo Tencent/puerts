@@ -29,6 +29,13 @@ namespace Puerts
         IntPtr nativePesapiEnv;
         IntPtr nativeScriptObjectsRefsMgr;
 
+
+        public IntPtr Isolate {
+            get {
+                return PuertsIl2cpp.NativeAPI.GetIsolate(nativeJsEnv);
+            }
+        }
+
         // TypeRegister TypeRegister;
 
         Type persistentObjectInfoType;

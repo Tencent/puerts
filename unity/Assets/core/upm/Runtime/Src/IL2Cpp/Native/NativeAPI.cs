@@ -42,6 +42,9 @@ namespace PuertsIl2cpp
         public static extern int GetLibBackend();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetIsolate(IntPtr jsEnv);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateNativeJSEnv();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

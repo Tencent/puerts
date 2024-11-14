@@ -149,6 +149,11 @@ V8_EXPORT puerts::JSEnv* CreateNativeJSEnv()
     return new puerts::JSEnv();
 }
 
+V8_EXPORT v8::Isolate* GetIsolate(puerts::JSEnv* jsEnv)
+{
+    return jsEnv->MainIsolate;
+}
+
 V8_EXPORT void DestroyNativeJSEnv(puerts::JSEnv* jsEnv)
 {
     delete jsEnv;
