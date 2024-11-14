@@ -38,6 +38,8 @@ struct AutoRegisterForFIntVector
                 "DivideAndRoundUp", CombineOverloads(MakeOverload(FIntVector(*)(FIntVector, int32), &FIntVector::DivideAndRoundUp),
                                         MakeOverload(FIntVector(*)(FIntVector, FIntVector), &FIntVector::DivideAndRoundUp)))
             .Function("Num", MakeFunction(&FIntVector::Num))
+            .Variable("ZeroValue", MakeReadonlyVariable(&FIntVector::ZeroValue))
+            .Variable("NoneValue", MakeReadonlyVariable(&FIntVector::NoneValue))
             .Register();
     }
 };

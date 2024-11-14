@@ -134,6 +134,14 @@ struct AutoRegisterForFVector
             .Function("Triple", MakeFunction(&FVector::Triple))
             .Function("RadiansToDegrees", MakeFunction(&FVector::RadiansToDegrees))
             .Function("DegreesToRadians", MakeFunction(&FVector::DegreesToRadians))
+            .Variable("ZeroVector", MakeReadonlyVariable(&FVector::ZeroVector))
+            .Variable("OneVector", MakeReadonlyVariable(&FVector::OneVector))
+            .Variable("UpVector", MakeReadonlyVariable(&FVector::UpVector))
+            .Variable("DownVector", MakeReadonlyVariable(&FVector::DownVector))
+            .Variable("ForwardVector", MakeReadonlyVariable(&FVector::ForwardVector))
+            .Variable("BackwardVector", MakeReadonlyVariable(&FVector::BackwardVector))
+            .Variable("RightVector", MakeReadonlyVariable(&FVector::RightVector))
+            .Variable("LeftVector", MakeReadonlyVariable(&FVector::LeftVector))
             .Register();
     }
 };

@@ -36,6 +36,20 @@ struct AutoRegisterForFColor
             .Method("ToPackedABGR", MakeFunction(&FColor::ToPackedABGR))
             .Method("ToPackedRGBA", MakeFunction(&FColor::ToPackedRGBA))
             .Method("ToPackedBGRA", MakeFunction(&FColor::ToPackedBGRA))
+            .Variable("White", MakeReadonlyVariable(&FColor::White))
+            .Variable("Black", MakeReadonlyVariable(&FColor::Black))
+            .Variable("Transparent", MakeReadonlyVariable(&FColor::Transparent))
+            .Variable("Red", MakeReadonlyVariable(&FColor::Red))
+            .Variable("Green", MakeReadonlyVariable(&FColor::Green))
+            .Variable("Blue", MakeReadonlyVariable(&FColor::Blue))
+            .Variable("Yellow", MakeReadonlyVariable(&FColor::Yellow))
+            .Variable("Cyan", MakeReadonlyVariable(&FColor::Cyan))
+            .Variable("Magenta", MakeReadonlyVariable(&FColor::Magenta))
+            .Variable("Orange", MakeReadonlyVariable(&FColor::Orange))
+            .Variable("Purple", MakeReadonlyVariable(&FColor::Purple))
+            .Variable("Turquoise", MakeReadonlyVariable(&FColor::Turquoise))
+            .Variable("Silver", MakeReadonlyVariable(&FColor::Silver))
+            .Variable("Emerald", MakeReadonlyVariable(&FColor::Emerald))
             .Register();
     }
 };

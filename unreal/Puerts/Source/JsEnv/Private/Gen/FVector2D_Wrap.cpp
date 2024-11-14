@@ -86,6 +86,9 @@ struct AutoRegisterForFVector2D
             .Method("DiagnosticCheckNaN", MakeFunction(&FVector2D::DiagnosticCheckNaN))
             .Method("ContainsNaN", MakeFunction(&FVector2D::ContainsNaN))
             .Method("SphericalToUnitCartesian", MakeFunction(&FVector2D::SphericalToUnitCartesian))
+            .Variable("ZeroVector", MakeReadonlyVariable(&FVector2D::ZeroVector))
+            .Variable("UnitVector", MakeReadonlyVariable(&FVector2D::UnitVector))
+            .Variable("Unit45Deg", MakeReadonlyVariable(&FVector2D::Unit45Deg))
             .Register();
     }
 };

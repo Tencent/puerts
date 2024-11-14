@@ -61,6 +61,7 @@ struct AutoRegisterForFRotator
             .Function("CompressAxisToShort", MakeFunction(&FRotator::CompressAxisToShort))
             .Function("DecompressAxisFromShort", MakeFunction(&FRotator::DecompressAxisFromShort))
             .Function("MakeFromEuler", MakeFunction(&FRotator::MakeFromEuler))
+            .Variable("ZeroRotator", MakeReadonlyVariable(&FRotator::ZeroRotator))
             .Register();
     }
 };

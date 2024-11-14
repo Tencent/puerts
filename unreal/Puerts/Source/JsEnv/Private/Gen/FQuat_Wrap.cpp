@@ -79,6 +79,7 @@ struct AutoRegisterForFQuat
             .Function("Squad", MakeFunction(&FQuat::Squad))
             .Function("SquadFullPath", MakeFunction(&FQuat::SquadFullPath))
             .Function("CalcTangents", MakeFunction(&FQuat::CalcTangents))
+            .Variable("Identity", MakeReadonlyVariable(&FQuat::Identity))
             .Register();
     }
 };

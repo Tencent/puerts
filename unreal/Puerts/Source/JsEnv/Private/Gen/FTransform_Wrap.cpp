@@ -114,6 +114,7 @@ struct AutoRegisterForFTransform
             .Method("GetScale3D", MakeFunction(&FTransform::GetScale3D))
             .Method("CopyRotationPart", MakeFunction(&FTransform::CopyRotationPart))
             .Method("CopyTranslationAndScale3D", MakeFunction(&FTransform::CopyTranslationAndScale3D))
+            .Variable("Identity", MakeReadonlyVariable(&FTransform::Identity))
             .Register();
     }
 };

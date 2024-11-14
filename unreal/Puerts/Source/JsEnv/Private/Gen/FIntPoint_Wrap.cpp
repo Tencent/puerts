@@ -42,6 +42,8 @@ struct AutoRegisterForFIntPoint
             .Function(
                 "DivideAndRoundDown", SelectFunction(FIntPoint(*)(FIntPoint lhs, int32 Divisor), &FIntPoint::DivideAndRoundDown))
             .Function("Num", MakeFunction(&FIntPoint::Num))
+            .Variable("ZeroValue", MakeReadonlyVariable(&FIntPoint::ZeroValue))
+            .Variable("NoneValue", MakeReadonlyVariable(&FIntPoint::NoneValue))
             .Register();
     }
 };
