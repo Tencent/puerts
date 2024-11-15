@@ -80,8 +80,6 @@ struct AutoRegisterForFVector
             .Method("GetSafeNormal", MakeFunction(&FVector::GetSafeNormal, SMALL_NUMBER))
             .Method("GetSafeNormal2D", MakeFunction(&FVector::GetSafeNormal2D, SMALL_NUMBER))
 #endif
-            .Method("GetSafeNormal", MakeFunction(&FVector::GetSafeNormal, SMALL_NUMBER, FVector::ZeroVector))
-            .Method("GetSafeNormal2D", MakeFunction(&FVector::GetSafeNormal2D, SMALL_NUMBER, FVector::ZeroVector))
             .Method(
                 "ToDirectionAndLength", SelectFunction(void (FVector::*)(FVector&, float&) const, &FVector::ToDirectionAndLength))
             .Method("GetSignVector", MakeFunction(&FVector::GetSignVector))
