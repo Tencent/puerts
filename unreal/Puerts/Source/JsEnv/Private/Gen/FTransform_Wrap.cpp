@@ -39,7 +39,7 @@ struct AutoRegisterForFTransform
                 CombineOverloads(MakeOverload(FTransform(FTransform::*)(const FTransform&) const, &FTransform::operator*),
                     MakeOverload(FTransform(FTransform::*)(const FQuat&) const, &FTransform::operator*)))
             .Function("AnyHasNegativeScale", MakeFunction(&FTransform::AnyHasNegativeScale))
-            .Method("RemoveScaling", MakeFunction(&FTransform::RemoveScaling))
+            .Method("RemoveScaling", MakeFunction(&FTransform::RemoveScaling, UE_SMALL_NUMBER))
             .Method("GetMaximumAxisScale", MakeFunction(&FTransform::GetMaximumAxisScale))
             .Method("GetMinimumAxisScale", MakeFunction(&FTransform::GetMinimumAxisScale))
             .Method("GetRelativeTransform", MakeFunction(&FTransform::GetRelativeTransform))
@@ -63,16 +63,16 @@ struct AutoRegisterForFTransform
                     MakeOverload(void (FTransform::*)(const double&), &FTransform::ScaleTranslation)))
             .Method("GetScaled", CombineOverloads(MakeOverload(FTransform(FTransform::*)(double) const, &FTransform::GetScaled),
                                      MakeOverload(FTransform(FTransform::*)(FVector) const, &FTransform::GetScaled)))
-            .Function(
-                "GetSafeScaleReciprocal", SelectFunction(FVector(*)(const FVector&, double), &FTransform::GetSafeScaleReciprocal))
+            .Function("GetSafeScaleReciprocal",
+                SelectFunction(FVector(*)(const FVector&, double), &FTransform::GetSafeScaleReciprocal, UE_SMALL_NUMBER))
 #else
             .Method("ScaleTranslation",
                 CombineOverloads(MakeOverload(void (FTransform::*)(const FVector&), &FTransform::ScaleTranslation),
                     MakeOverload(void (FTransform::*)(const float&), &FTransform::ScaleTranslation)))
             .Method("GetScaled", CombineOverloads(MakeOverload(FTransform(FTransform::*)(float) const, &FTransform::GetScaled),
                                      MakeOverload(FTransform(FTransform::*)(FVector) const, &FTransform::GetScaled)))
-            .Function(
-                "GetSafeScaleReciprocal", SelectFunction(FVector(*)(const FVector&, float), &FTransform::GetSafeScaleReciprocal))
+            .Function("GetSafeScaleReciprocal",
+                SelectFunction(FVector(*)(const FVector&, float), &FTransform::GetSafeScaleReciprocal, UE_SMALL_NUMBER))
 #endif
             .Method("GetScaledAxis", MakeFunction(&FTransform::GetScaledAxis))
             .Method("GetUnitAxis", MakeFunction(&FTransform::GetUnitAxis))
@@ -83,14 +83,14 @@ struct AutoRegisterForFTransform
             .Method("SetLocation", MakeFunction(&FTransform::SetLocation))
             .Method("ContainsNaN", MakeFunction(&FTransform::ContainsNaN))
             .Method("IsValid", MakeFunction(&FTransform::IsValid))
-            .Function("AreRotationsEqual", MakeFunction(&FTransform::AreRotationsEqual))
-            .Function("AreTranslationsEqual", MakeFunction(&FTransform::AreTranslationsEqual))
-            .Function("AreScale3DsEqual", MakeFunction(&FTransform::AreScale3DsEqual))
-            .Method("RotationEquals", MakeFunction(&FTransform::RotationEquals))
-            .Method("TranslationEquals", MakeFunction(&FTransform::TranslationEquals))
-            .Method("Scale3DEquals", MakeFunction(&FTransform::Scale3DEquals))
-            .Method("Equals", MakeFunction(&FTransform::Equals))
-            .Method("EqualsNoScale", MakeFunction(&FTransform::EqualsNoScale))
+            .Function("AreRotationsEqual", MakeFunction(&FTransform::AreRotationsEqual, UE_KINDA_SMALL_NUMBER))
+            .Function("AreTranslationsEqual", MakeFunction(&FTransform::AreTranslationsEqual, UE_KINDA_SMALL_NUMBER))
+            .Function("AreScale3DsEqual", MakeFunction(&FTransform::AreScale3DsEqual, UE_KINDA_SMALL_NUMBER))
+            .Method("RotationEquals", MakeFunction(&FTransform::RotationEquals, UE_KINDA_SMALL_NUMBER))
+            .Method("TranslationEquals", MakeFunction(&FTransform::TranslationEquals, UE_KINDA_SMALL_NUMBER))
+            .Method("Scale3DEquals", MakeFunction(&FTransform::Scale3DEquals, UE_KINDA_SMALL_NUMBER))
+            .Method("Equals", MakeFunction(&FTransform::Equals, UE_KINDA_SMALL_NUMBER))
+            .Method("EqualsNoScale", MakeFunction(&FTransform::EqualsNoScale, UE_KINDA_SMALL_NUMBER))
             .Function("Multiply", MakeFunction(&FTransform::Multiply))
             .Method("SetComponents", MakeFunction(&FTransform::SetComponents))
             .Method("SetIdentity", MakeFunction(&FTransform::SetIdentity))

@@ -45,11 +45,11 @@ struct AutoRegisterForFVector4
             .Method("Component", CombineOverloads(MakeOverload(float& (FVector4::*) (int32), &FVector4::Component),
                                      MakeOverload(const float& (FVector4::*) (int32) const, &FVector4::Component)))
 #endif
-            .Method("Equals", MakeFunction(&FVector4::Equals))
-            .Method("IsUnit3", MakeFunction(&FVector4::IsUnit3))
+            .Method("Equals", MakeFunction(&FVector4::Equals, UE_KINDA_SMALL_NUMBER))
+            .Method("IsUnit3", MakeFunction(&FVector4::IsUnit3, UE_KINDA_SMALL_NUMBER))
             .Method("ToString", MakeFunction(&FVector4::ToString))
             .Method("InitFromString", MakeFunction(&FVector4::InitFromString))
-            .Method("GetSafeNormal", MakeFunction(&FVector4::GetSafeNormal))
+            .Method("GetSafeNormal", MakeFunction(&FVector4::GetSafeNormal, UE_SMALL_NUMBER))
             .Method("GetUnsafeNormal3", MakeFunction(&FVector4::GetUnsafeNormal3))
             .Method("ToOrientationRotator", MakeFunction(&FVector4::ToOrientationRotator))
             .Method("ToOrientationQuat", MakeFunction(&FVector4::ToOrientationQuat))
@@ -60,7 +60,7 @@ struct AutoRegisterForFVector4
             .Method("Size", MakeFunction(&FVector4::Size))
             .Method("SizeSquared", MakeFunction(&FVector4::SizeSquared))
             .Method("ContainsNaN", MakeFunction(&FVector4::ContainsNaN))
-            .Method("IsNearlyZero3", MakeFunction(&FVector4::IsNearlyZero3))
+            .Method("IsNearlyZero3", MakeFunction(&FVector4::IsNearlyZero3, UE_KINDA_SMALL_NUMBER))
             .Method("Reflect3", MakeFunction(&FVector4::Reflect3))
             .Method("FindBestAxisVectors3", MakeFunction(&FVector4::FindBestAxisVectors3))
             .Method("DiagnosticCheckNaN", MakeFunction(&FVector4::DiagnosticCheckNaN))

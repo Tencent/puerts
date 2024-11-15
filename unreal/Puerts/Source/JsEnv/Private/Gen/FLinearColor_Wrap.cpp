@@ -44,7 +44,7 @@ struct AutoRegisterForFLinearColor
             .Method("GetClamped", MakeFunction(&FLinearColor::GetClamped))
             .Method("op_Equality", MakeFunction(&FLinearColor::operator==))
             .Method("op_Inequality", MakeFunction(&FLinearColor::operator!=))
-            .Method("Equals", MakeFunction(&FLinearColor::Equals))
+            .Method("Equals", MakeFunction(&FLinearColor::Equals, UE_SMALL_NUMBER))
             .Method("CopyWithNewOpacity", MakeFunction(&FLinearColor::CopyWithNewOpacity))
             .Function("MakeRandomColor", MakeFunction(&FLinearColor::MakeRandomColor))
             .Function("MakeFromColorTemperature", MakeFunction(&FLinearColor::MakeFromColorTemperature))
