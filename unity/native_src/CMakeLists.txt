@@ -37,6 +37,11 @@ if("${JS_ENGINE}" MATCHES "^mult")
     set(USING_MULT_BACKEND ON)
 endif()
 
+set(USING_QUICKJS OFF)
+if("${JS_ENGINE}" MATCHES "^quickjs")
+    set(USING_QUICKJS ON)
+endif()
+
 set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/../native_src/.backends/${JS_ENGINE})
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
@@ -106,6 +111,17 @@ endif()
 
 set(PUERTS_COMPILE_DEFINITIONS)
 set(PUERTS_BACKEND_SRC)
+
+if (NOT USING_MULT_BACKEND AND NOT USING_QUICKJS AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
+    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
+    list(APPEND PUERTS_SRC
+       Src/CppObjectMapper.cpp
+       Src/DataTransfer.cpp
+       Src/JSClassRegister.cpp
+       Src/PesapiAddonLoad.cpp
+       Src/PesapiV8Impl.cpp
+    )
+endif()
 
 if ( WITH_WEBSOCKET )
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET)

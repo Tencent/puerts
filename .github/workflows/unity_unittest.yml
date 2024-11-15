@@ -7,7 +7,6 @@ on:
       - unity/Assets/**
       - unity/test/**
       - unity/native_src/**
-      - unity/native_src_il2cpp/**
       - unity/cli/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h

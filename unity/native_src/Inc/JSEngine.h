@@ -21,6 +21,11 @@
 #ifdef MULT_BACKENDS
 #include "IPuertsPlugin.h"
 #endif
+#ifdef WITH_IL2CPP_OPTIMIZATION
+#include "pesapi.h"
+#include "CppObjectMapper.h"
+#include "DataTransfer.h"
+#endif
 
 #if WITH_NODEJS
 #pragma warning(push, 0)
@@ -183,6 +188,10 @@ private:
     std::mutex JSObjectsMutex;
 
     JSFunction* ModuleExecutor = nullptr;
+    
+#ifdef WITH_IL2CPP_OPTIMIZATION
+    FCppObjectMapper CppObjectMapper;
+#endif
     
 public:
     JSFunction* JSObjectValueGetter = nullptr;

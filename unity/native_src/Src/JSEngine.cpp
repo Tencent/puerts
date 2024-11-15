@@ -133,6 +133,11 @@ namespace PUERTS_NAMESPACE
             Isolate, Context, 
             v8::FunctionTemplate::New(Isolate, &JSObjectValueGetterFunction)->GetFunction(Context).ToLocalChecked()
         );
+        
+#ifdef WITH_IL2CPP_OPTIMIZATION
+        CppObjectMapper.Initialize(Isolate, Context);
+        Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
+#endif
 
         BackendEnv.StartPolling();
     }
@@ -202,6 +207,9 @@ namespace PUERTS_NAMESPACE
         ResultInfo.Context.Reset();
         ResultInfo.Result.Reset();
 
+#ifdef WITH_IL2CPP_OPTIMIZATION
+        CppObjectMapper.UnInitialize(MainIsolate);
+#endif
         BackendEnv.UnInitialize();
 
         for (int i = 0; i < CallbackInfos.size(); ++i)

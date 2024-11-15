@@ -76,7 +76,7 @@ namespace Puerts
             PuertsIl2cpp.NativeAPI.SetGlobalType_ArrayBuffer(typeof(ArrayBuffer));
             PuertsIl2cpp.NativeAPI.SetGlobalType_JSObject(typeof(JSObject));
 
-            nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
+            nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateJSEngine(0);
             nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPapiEnvRef(nativeJsEnv);
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
             nativeScriptObjectsRefsMgr = PuertsIl2cpp.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
@@ -102,11 +102,11 @@ namespace Puerts
             }
 #endif
 
-            if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 0) 
+            if (PuertsIl2cpp.NativeAPI.GetLibBackend(nativeJsEnv) == 0) 
                 Backend = new BackendV8(this);
-            else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 1)
+            else if (PuertsIl2cpp.NativeAPI.GetLibBackend(nativeJsEnv) == 1)
                 Backend = new BackendNodeJS(this);
-            else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 2)
+            else if (PuertsIl2cpp.NativeAPI.GetLibBackend(nativeJsEnv) == 2)
                 Backend = new BackendQuickJS(this);
 
             PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
@@ -298,7 +298,7 @@ namespace Puerts
             {
                 if (disposed) return;
                 PuertsIl2cpp.NativeAPI.CleanupPapiEnvRef(apis, nativePesapiEnv);
-                PuertsIl2cpp.NativeAPI.DestroyNativeJSEnv(nativeJsEnv);
+                PuertsIl2cpp.NativeAPI.DestroyJSEngine(nativeJsEnv);
                 PuertsIl2cpp.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
                 nativeScriptObjectsRefsMgr = IntPtr.Zero;
                 disposed = true;

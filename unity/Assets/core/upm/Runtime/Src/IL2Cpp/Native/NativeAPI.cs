@@ -32,20 +32,20 @@ namespace PuertsIl2cpp
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
         const string DLLNAME = "__Internal";
 #else
-        const string DLLNAME = "puerts_il2cpp";
+        const string DLLNAME = "puerts";
 #endif
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void InitialPuerts(IntPtr PesapiImpl);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int GetLibBackend();
+        public static extern int GetLibBackend(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateNativeJSEnv();
+        public static extern IntPtr CreateJSEngine(int backendType);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyNativeJSEnv(IntPtr jsEnv);
+        public static extern void DestroyJSEngine(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetRegsterApi();
@@ -54,7 +54,7 @@ namespace PuertsIl2cpp
         public static extern IntPtr GetFFIApi();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetPapiEnvRef(IntPtr jsEnv);
+        public static extern IntPtr GetPapiEnvRef(IntPtr isolate);
         
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
@@ -218,8 +218,8 @@ namespace PuertsIl2cpp
 
         public static LogCallback Log = LogImpl;
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetLogCallback(IntPtr log);
+        //[DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        //public static extern void SetLogCallback(IntPtr log);
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallbackInternal(IntPtr log);
@@ -234,7 +234,7 @@ namespace PuertsIl2cpp
 
             try 
             {
-                SetLogCallback(fn1);
+                //SetLogCallback(fn1);
                 SetLogCallbackInternal(fn1);
             }
             catch(DllNotFoundException)

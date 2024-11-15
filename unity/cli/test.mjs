@@ -211,14 +211,6 @@ export async function unityTest(cwd, unityPath) {
     `);
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-    
-    await runPuertsMake(join(cwd, '../../native_src_il2cpp'), {
-        backend: 'v8_9.4.146.24',
-        platform: platform,
-        config: 'Debug',
-        arch: 'x64',
-        websocket: 1
-    });
 
     console.log("[Puer] Building testplayer for v2");
     mkdir("-p", `${cwd}/build/v2`);
