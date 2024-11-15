@@ -8,6 +8,10 @@
 #include <cstring>
 #include "V8Utils.h"
 #include "Log.h"
+#ifdef WITH_IL2CPP_OPTIMIZATION
+#include "pesapi.h"
+#include "CppObjectMapper.h"
+#endif
 
 #define API_LEVEL 34
 
@@ -22,6 +26,9 @@ using puerts::JsValueType;
 LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
 LogCallback GLogErrorCallback = nullptr;
+#ifdef WITH_IL2CPP_OPTIMIZATION
+extern pesapi_func_ptr reg_apis[];
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,6 +76,33 @@ V8_EXPORT void DestroyJSEngine(v8::Isolate *Isolate)
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     delete JsEngine;
 }
+
+#ifdef WITH_IL2CPP_OPTIMIZATION
+V8_EXPORT pesapi_env_ref GetPapiEnvRef(v8::Isolate *Isolate)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    auto jsEnv = FV8Utils::IsolateData<JSEngine>(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    
+    auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
+    return v8impl::g_pesapi_ffi.create_env_ref(env);
+}
+
+V8_EXPORT pesapi_ffi* GetFFIApi()
+{
+    return &v8impl::g_pesapi_ffi;
+}
+
+V8_EXPORT pesapi_func_ptr* GetRegsterApi()
+{
+    return reg_apis;
+}
+#endif
 
 V8_EXPORT void SetGlobalFunction(v8::Isolate *Isolate, const char *Name, puerts::CSharpFunctionCallback Callback, int64_t Data)
 {
