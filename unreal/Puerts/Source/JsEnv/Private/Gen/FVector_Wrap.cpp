@@ -73,6 +73,13 @@ struct AutoRegisterForFVector
             .Method("IsNormalized", MakeFunction(&FVector::IsNormalized))
             .Method("Normalize", MakeFunction(&FVector::Normalize, SMALL_NUMBER))
             .Method("GetUnsafeNormal", MakeFunction(&FVector::GetUnsafeNormal))
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
+            .Method("GetSafeNormal", MakeFunction(&FVector::GetSafeNormal, SMALL_NUMBER, FVector::ZeroVector))
+            .Method("GetSafeNormal2D", MakeFunction(&FVector::GetSafeNormal2D, SMALL_NUMBER, FVector::ZeroVector))
+#else
+            .Method("GetSafeNormal", MakeFunction(&FVector::GetSafeNormal, SMALL_NUMBER))
+            .Method("GetSafeNormal2D", MakeFunction(&FVector::GetSafeNormal2D, SMALL_NUMBER))
+#endif
             .Method("GetSafeNormal", MakeFunction(&FVector::GetSafeNormal, SMALL_NUMBER, FVector::ZeroVector))
             .Method("GetSafeNormal2D", MakeFunction(&FVector::GetSafeNormal2D, SMALL_NUMBER, FVector::ZeroVector))
             .Method(
