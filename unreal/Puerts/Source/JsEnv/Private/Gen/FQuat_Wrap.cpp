@@ -25,8 +25,8 @@ struct AutoRegisterForFQuat
             .Property("W", MakeProperty(&FQuat::W))
             .Method("op_Addition", MakeFunction(&FQuat::operator+))
             .Method("op_Subtraction", SelectFunction(FQuat(FQuat::*)(const FQuat& Q) const, &FQuat::operator-))
-            .Method("Equals", MakeFunction(&FQuat::Equals, UE_KINDA_SMALL_NUMBER))
-            .Method("IsIdentity", MakeFunction(&FQuat::IsIdentity, UE_SMALL_NUMBER))
+            .Method("Equals", MakeFunction(&FQuat::Equals, KINDA_SMALL_NUMBER))
+            .Method("IsIdentity", MakeFunction(&FQuat::IsIdentity, SMALL_NUMBER))
             .Method("op_Multiply", CombineOverloads(MakeOverload(FQuat(FQuat::*)(const FQuat&) const, &FQuat::operator*),
                                        MakeOverload(FVector(FQuat::*)(const FVector&) const, &FQuat::operator*),
                                        MakeOverload(FQuat(FQuat::*)(const float) const, &FQuat::operator*)))
@@ -36,8 +36,8 @@ struct AutoRegisterForFQuat
             .Method("op_BitwiseOr", MakeFunction(&FQuat::operator|))
             .Function("MakeFromEuler", MakeFunction(&FQuat::MakeFromEuler))
             .Method("Euler", MakeFunction(&FQuat::Euler))
-            .Method("Normalize", MakeFunction(&FQuat::Normalize, UE_SMALL_NUMBER))
-            .Method("GetNormalized", MakeFunction(&FQuat::GetNormalized, UE_SMALL_NUMBER))
+            .Method("Normalize", MakeFunction(&FQuat::Normalize, SMALL_NUMBER))
+            .Method("GetNormalized", MakeFunction(&FQuat::GetNormalized, SMALL_NUMBER))
             .Method("IsNormalized", MakeFunction(&FQuat::IsNormalized))
             .Method("Size", MakeFunction(&FQuat::Size))
             .Method("SizeSquared", MakeFunction(&FQuat::SizeSquared))

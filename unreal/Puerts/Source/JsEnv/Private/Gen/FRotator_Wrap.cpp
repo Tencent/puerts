@@ -31,7 +31,7 @@ struct AutoRegisterForFRotator
             .Method("op_Inequality", MakeFunction(&FRotator::operator!=))
             .Method("IsNearlyZero", MakeFunction(&FRotator::IsNearlyZero))
             .Method("IsZero", MakeFunction(&FRotator::IsZero))
-            .Method("Equals", MakeFunction(&FRotator::Equals, UE_KINDA_SMALL_NUMBER))
+            .Method("Equals", MakeFunction(&FRotator::Equals, KINDA_SMALL_NUMBER))
             .Method("Add", MakeFunction(&FRotator::Add))
             .Method("GetInverse", MakeFunction(&FRotator::GetInverse))
             .Method("GridSnap", MakeFunction(&FRotator::GridSnap))
