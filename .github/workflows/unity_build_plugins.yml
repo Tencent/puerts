@@ -14,7 +14,6 @@ on:
   push:
     paths: 
       - unity/native_src/**
-      - unity/native_src_il2cpp/**
       - unity/cli/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
@@ -65,12 +64,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
-      - name: BuildAndroidIl2cpp
-        uses: ./.github/workflows/composites/unity-build-plugins/android/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4.146.24
-          build_proj_dir: native_src_il2cpp
           
   ohos:
     runs-on: ubuntu-latest
@@ -106,12 +99,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
-      - name: BuildOHOSIl2cpp
-        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4.146.24
-          build_proj_dir: native_src_il2cpp
 
   ios:
     runs-on: macos-13
@@ -144,12 +131,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
-      - name: BuildiOSIl2cpp
-        uses: ./.github/workflows/composites/unity-build-plugins/ios/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4.146.24
-          build_proj_dir: native_src_il2cpp
 
   osx:
     runs-on: macos-13
@@ -182,12 +163,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
-      - name: BuildOSXIl2cpp
-        uses: ./.github/workflows/composites/unity-build-plugins/osx/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4.146.24
-          build_proj_dir: native_src_il2cpp
 
   windows:
     runs-on: windows-2019
@@ -220,13 +195,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
-      - name: BuildWindowsIl2cpp
-        uses: ./.github/workflows/composites/unity-build-plugins/windows/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4.146.24
-          build_proj_dir: native_src_il2cpp
-          arch: x64
 
   linux64:
     runs-on: ubuntu-latest
@@ -259,12 +227,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: mult
-      - name: BuildLinuxIl2cpp
-        uses: ./.github/workflows/composites/unity-build-plugins/linux/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4.146.24
-          build_proj_dir: native_src_il2cpp
           
   wasm:
     runs-on: ubuntu-latest
