@@ -63,7 +63,7 @@ public:
             delete Next;
     }
 
-    V8_INLINE FObjectCacheNode* Find(const void* TypeId_)
+    FObjectCacheNode* Find(const void* TypeId_)
     {
         if (TypeId_ == TypeId)
         {
