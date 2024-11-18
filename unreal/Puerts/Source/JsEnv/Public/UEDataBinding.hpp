@@ -490,8 +490,8 @@ struct IsUStructHelper<T, Void_t<decltype(&TScriptStructTraits<T>::Get)>> : std:
 namespace v8_impl
 {
 template <typename T>
-struct Converter<T*,
-    typename std::enable_if<!std::is_convertible<T*, const UObject*>::value && internal::IsUStructHelper<T>::value>::type>
+struct Converter<T*, typename std::enable_if<!std::is_const<T>::value && !std::is_convertible<T*, const UObject*>::value &&
+                                             internal::IsUStructHelper<T>::value>::type>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
     {
