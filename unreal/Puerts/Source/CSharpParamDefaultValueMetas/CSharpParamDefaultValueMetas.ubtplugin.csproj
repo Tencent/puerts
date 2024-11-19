@@ -3,7 +3,12 @@
   <Import Project="$(EngineDir)\Source\Programs\Shared\UnrealEngine.csproj.props" />
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    
+         
+    <EngineVersion >$([System.Text.RegularExpressions.Regex]::Match($(EngineDir), "\d+.\d+"))</EngineVersion >
+    <TargetFramework Condition="$([MSBuild]::VersionGreaterThanOrEquals($(EngineVersion), '5.5'))">net8.0</TargetFramework>
+    <TargetFramework Condition="$([MSBuild]::VersionLessThan($(EngineVersion), '5.5'))">net6.0</TargetFramework>
+    
     <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
     <OutputType>Library</OutputType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
