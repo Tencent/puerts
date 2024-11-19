@@ -94,7 +94,7 @@ class WebSocket extends EventTarget {
         }
         try {
             this._raw.send(data);
-        } catch {
+        } catch (e) {
             this._fail(e.message);
         }
     }
