@@ -72,14 +72,6 @@ public:
 #endif
 #endif
     }
-
-    static v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Local<v8::Context> Context, void* Data, size_t DataLength)
-    {
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Context->GetIsolate(), DataLength);
-        void* Buff = Ab->GetBackingStore()->Data();
-        ::memcpy(Buff, Data, DataLength);
-        return Ab;
-    }
 };
 #endif
 
@@ -352,8 +344,10 @@ void V8WebSocketClientImpl::OnMessage(wspp_connection_hdl InHandle, wspp_message
         }
         else if (InMessage->get_opcode() == websocketpp::frame::opcode::BINARY)
         {
-            args[0] = DataTransfer::NewArrayBuffer(
-                GContext.Get(Isolate), (void*) InMessage->get_payload().data(), InMessage->get_payload().size());
+            v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, InMessage->get_payload().size());
+            void* Buff = Ab->GetBackingStore()->Data();
+            ::memcpy(Buff, InMessage->get_payload().data(), InMessage->get_payload().size());
+            args[0] = Ab;
         }
         else
         {
