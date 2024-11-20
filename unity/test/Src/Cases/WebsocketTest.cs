@@ -57,6 +57,17 @@ namespace Puerts.UnitTest
             await _webSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
             Console.WriteLine($"Sent message to client: {message}");
         }
+        
+        public async Task SendAsync(byte[] buffer)
+        {
+            if (buffer == null || buffer.Length == 0)
+            {
+                throw new ArgumentException("Buffer cannot be null or empty.", nameof(buffer));
+            }
+
+            await _webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Binary, true, CancellationToken.None);
+            Console.WriteLine($"Sent binary data to client: {BitConverter.ToString(buffer)}");
+        }
 
         public async Task CloseAsync()
         {
@@ -104,6 +115,9 @@ namespace Puerts.UnitTest
                     con.addEventListener('message', (ev) => {
                         console.log(`on message: ${ev.data}`);
                         global.webSocketMessage = ev.data;
+                        if (ev.data instanceof ArrayBuffer) {
+                            global.webSocketMessage = Array.from(new Uint8Array(ev.data)).map(byte => byte.toString(10)).join(',');
+                        }
                         //con.close();
                     });
                     con.addEventListener('close', (ev) => {
@@ -129,6 +143,15 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, "puerts websocket");
 
             waitJsEnv();
+            
+            byte[] buffer = new byte[] {0,0,0,46,14,0,34,8,128,32,16,1,24,2,34,15,87,90,82,89,45,49,56,57,57,54,57,50,56,56,48,40,6,48,0,56,0,72,0,88,0,0,2,8,0,15};
+            await wss.SendAsync(buffer);
+            
+            waitJsEnv();
+            
+            res = jsEnv.Eval<string>("global.webSocketMessage"); 
+            
+            Assert.AreEqual(res, "0,0,0,46,14,0,34,8,128,32,16,1,24,2,34,15,87,90,82,89,45,49,56,57,57,54,57,50,56,56,48,40,6,48,0,56,0,72,0,88,0,0,2,8,0,15");
 
             jsEnv.Eval(@"
                 con._raw.send = () => {throw new Error()};
