@@ -116,7 +116,7 @@ namespace Puerts.UnitTest
                         console.log(`on message: ${ev.data}`);
                         global.webSocketMessage = ev.data;
                         if (ev.data instanceof ArrayBuffer) {
-                            global.webSocketMessage = Array.from(new Uint8Array(ev.data)).map(byte => byte.toString(10)).join(',');
+                            global.webSocketMessage = Array.from(new Uint8Array(ev.data)).map(byte => byte.toString()).join(',');
                         }
                         //con.close();
                     });
@@ -151,7 +151,7 @@ namespace Puerts.UnitTest
             
             res = jsEnv.Eval<string>("global.webSocketMessage"); 
             
-            Assert.AreEqual(res, "0,0,0,46,14,0,34,8,128,32,16,1,24,2,34,15,87,90,82,89,45,49,56,57,57,54,57,50,56,56,48,40,6,48,0,56,0,72,0,88,0,0,2,8,0,15");
+            Assert.AreEqual("0,0,0,46,14,0,34,8,128,32,16,1,24,2,34,15,87,90,82,89,45,49,56,57,57,54,57,50,56,56,48,40,6,48,0,56,0,72,0,88,0,0,2,8,0,15", res);
 
             jsEnv.Eval(@"
                 con._raw.send = () => {throw new Error()};
