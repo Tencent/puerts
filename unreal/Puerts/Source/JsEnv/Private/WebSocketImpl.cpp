@@ -75,16 +75,10 @@ public:
 
     static v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Local<v8::Context> Context, void* Data, size_t DataLength)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(Context->GetIsolate(), Data, DataLength);
-#else
-#if USING_IN_UNREAL_ENGINE
-        return v8::ArrayBuffer::New(Context->GetIsolate(), Data, DataLength);
-#else
-        auto Backing = v8::ArrayBuffer::NewBackingStore(Data, DataLength, v8::BackingStore::EmptyDeleter, nullptr);
-        return v8::ArrayBuffer::New(Context->GetIsolate(), std::move(Backing));
-#endif
-#endif
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Context->GetIsolate(), DataLength);
+        void* Buff = Ab->GetBackingStore()->Data();
+        ::memcpy(Buff, Data, DataLength);
+        return Ab;
     }
 };
 #endif
@@ -359,7 +353,7 @@ void V8WebSocketClientImpl::OnMessage(wspp_connection_hdl InHandle, wspp_message
         else if (InMessage->get_opcode() == websocketpp::frame::opcode::BINARY)
         {
             args[0] = DataTransfer::NewArrayBuffer(
-                GContext.Get(Isolate), (void*) InMessage->get_payload().c_str(), InMessage->get_payload().size());
+                GContext.Get(Isolate), (void*) InMessage->get_payload().data(), InMessage->get_payload().size());
         }
         else
         {
