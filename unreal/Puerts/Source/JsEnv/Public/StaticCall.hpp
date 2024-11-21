@@ -379,6 +379,11 @@ private:
             return Arg;
         }
 
+        void SetArgument(typename ArgumentType<T>::type InArg)
+        {
+            Arg = InArg;
+        }
+
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
@@ -418,6 +423,11 @@ private:
             return Arg;
         }
 
+        void SetArgument(typename ArgumentType<T>::type InArg)
+        {
+            Arg = InArg;
+        }
+
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
             if (&Buf != &(Arg.get()))
@@ -452,6 +462,11 @@ private:
             return Arg;
         }
 
+        void SetArgument(typename ArgumentType<T>::type InArg)
+        {
+            Arg = InArg;
+        }
+
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
@@ -474,6 +489,15 @@ private:
         typename ArgumentType<T>::type& GetArgument()
         {
             return Arg;
+        }
+
+        using BuffType = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+        BuffType Buf;
+
+        void SetArgument(BuffType InArg)
+        {
+            Buf = InArg;
+            Arg = Buf;
         }
 
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
@@ -499,6 +523,11 @@ private:
         typename ArgumentType<T>::type& GetArgument()
         {
             return Arg;
+        }
+
+        void SetArgument(typename ArgumentType<T>::type InArg)
+        {
+            Arg = InArg;
         }
 
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
@@ -527,6 +556,11 @@ private:
             return Arg ? Arg : &Buf;
         }
 
+        void SetArgument(BuffType InArg)
+        {
+            Buf = InArg;
+        }
+
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
             API::UpdateRefValue(context, holder, API::template Converter<BuffType>::toScript(context, Buf));
@@ -551,6 +585,11 @@ private:
             return Arg;
         }
 
+        void SetArgument(T InArg)
+        {
+            Arg = InArg;
+        }
+
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
@@ -572,6 +611,11 @@ private:
         typename ArgumentType<T>::type GetArgument()
         {
             return Arg;
+        }
+
+        void SetArgument(typename ArgumentType<T>::type InArg)
+        {
+            Arg = InArg;
         }
 
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
@@ -615,7 +659,7 @@ private:
         {
             if (argCount <= Pos)
             {
-                std::get<Pos>(cppArgHolders).Arg = defaultValue;
+                std::get<Pos>(cppArgHolders).SetArgument(defaultValue);
             }
             DefaultValueSetter<0, Pos + 1, FullArgs...>::Set(cppArgHolders, argCount, rest...);
         }
