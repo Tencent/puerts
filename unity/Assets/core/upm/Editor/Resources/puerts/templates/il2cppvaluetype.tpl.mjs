@@ -9,18 +9,29 @@ import { FOR, default as t, IF, ENDIF, ELSE } from "./tte.mjs"
 import * as il2cpp_snippets from "./il2cpp_snippets.mjs"
 
 function defineValueType(valueTypeInfo) {
-        // TODO 会存在一个 IsEnum 且 IsGenericParameter 的类型，signature为空，先过滤处理，晚点彻查。
+    // TODO 会存在一个 IsEnum 且 IsGenericParameter 的类型，signature为空，先过滤处理，晚点彻查。
     if (!valueTypeInfo.Signature) return ''
+    var fieldSignatures = il2cpp_snippets.listToJsArray(valueTypeInfo.FieldSignatures);
     return t`// ${valueTypeInfo.CsName}
 struct ${valueTypeInfo.Signature}
 {
-    ${FOR(il2cpp_snippets.listToJsArray(valueTypeInfo.FieldSignatures), (s, i) => t`
+    ${IF(fieldSignatures.length == 0)}
+    union
+    {
+        struct
+        {
+        };
+        uint8_t __padding[1];
+    };
+    ${ELSE()}
+    ${FOR(fieldSignatures, (s, i) => t`
     ${IF(il2cpp_snippets.isNullableStruct(valueTypeInfo.Signature) && i == valueTypeInfo.NullableHasValuePosition)}
     ${il2cpp_snippets.SToCPPType(s)} hasValue;
     ${ELSE()}
     ${il2cpp_snippets.SToCPPType(s)} p${i};
     ${ENDIF()}
     `)}
+    ${ENDIF()}
 };
     `;
 }
