@@ -95,9 +95,13 @@ public class InstructionsFilter
                     {
                         return BindingMode.DontBinding;
                     }
-                    if (ptype.IsByRef || ptype.IsPointer || ptype == typeof(System.IntPtr) || ptype == typeof(System.UIntPtr))
+                    if (ptype.IsByRef || ptype.IsPointer)
                     {
                         return BindingMode.DontBinding;
+                    }
+                    if (ptype == typeof(System.IntPtr) || ptype == typeof(System.UIntPtr))
+                    {
+                        return BindingMode.SlowBinding;
                     }
                 }
             }
