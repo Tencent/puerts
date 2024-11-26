@@ -130,7 +130,9 @@ class WebSocket extends EventTarget {
     close(code, data) {
         try {
             this._raw.close(code, data);
-        } catch(e) {}
+        } catch(e) {
+            this.dispatchEvent({type:'error', data: e.message}); //dispatchEvent immediately
+        }
         this._cleanup();
     }
     

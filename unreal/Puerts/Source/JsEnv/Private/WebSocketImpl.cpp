@@ -109,7 +109,7 @@ public:
 
     void Close(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void Close(websocketpp::close::status::value const code, std::string const& reason);
+    void CloseImmediately(websocketpp::close::status::value const code, std::string const& reason);
 
     void PollOne();
 
@@ -143,7 +143,7 @@ private:
 static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<V8WebSocketClientImpl>& Data)
 {
     // UE_LOG(LogTemp, Warning, TEXT(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> auto gc %p"), Data.GetParameter());
-    Data.GetParameter()->Close(websocketpp::close::status::normal, "");
+    Data.GetParameter()->CloseImmediately(websocketpp::close::status::normal, "");
     delete Data.GetParameter();
 }
 
@@ -158,7 +158,9 @@ V8WebSocketClientImpl::V8WebSocketClientImpl(v8::Isolate* InIsolate, v8::Local<v
 websocketpp::lib::shared_ptr<puerts_asio::ssl::context> on_tls_init(websocketpp::connection_hdl)
 {
     auto ctx = websocketpp::lib::make_shared<puerts_asio::ssl::context>(websocketpp::lib::puerts_asio::ssl::context::sslv23);
-    ctx->set_verify_mode(puerts_asio::ssl::verify_none);
+
+    websocketpp::lib::error_code ec;
+    ctx->set_verify_mode(puerts_asio::ssl::verify_none, ec);
     return ctx;
 }
 #endif
@@ -293,14 +295,24 @@ void V8WebSocketClientImpl::Close(const v8::FunctionCallbackInfo<v8::Value>& Inf
         reason = *v8::String::Utf8Value(InIsolate, Info[1]);
     }
 
-    Close(code, reason);
+    if (!Handle.expired())
+    {
+        websocketpp::lib::error_code ec;
+        Client.close(Handle, code, reason, ec);
+        if (ec)
+        {
+            FV8Utils::ThrowException(Isolate, ec.message().c_str());
+        }
+    }
+    Cleanup();
 }
 
-void V8WebSocketClientImpl::Close(websocketpp::close::status::value const code, std::string const& reason)
+void V8WebSocketClientImpl::CloseImmediately(websocketpp::close::status::value const code, std::string const& reason)
 {
     if (!Handle.expired())
     {
-        Client.close(Handle, code, reason);
+        websocketpp::lib::error_code ec;
+        Client.close(Handle, code, reason, ec);
     }
     Cleanup();
 }
@@ -390,7 +402,7 @@ void V8WebSocketClientImpl::OnFail(wspp_connection_hdl InHandle)
         // must not raise exception in js, recommend just push a pending msg and process later.
         Handles[ON_FAIL].Get(Isolate)->Call(GContext.Get(Isolate), v8::Undefined(Isolate), 1, args);
     }
-    Close(websocketpp::close::status::abnormal_close, "");
+    CloseImmediately(websocketpp::close::status::abnormal_close, "");
 }
 
 }    // namespace PUERTS_NAMESPACE
