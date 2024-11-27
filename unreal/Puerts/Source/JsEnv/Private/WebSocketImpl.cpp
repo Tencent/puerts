@@ -187,7 +187,7 @@ void V8WebSocketClientImpl::Connect(const v8::FunctionCallbackInfo<v8::Value>& I
     if (ec)
     {
         std::stringstream ss;
-        ss << "could not create connection because: " << ec.message() << std::endl;
+        ss << "could not create connection because: " << ec.message() << "[" << ec.value() << "]" << std::endl;
         FV8Utils::ThrowException(Isolate, ss.str().c_str());
         return;
     }
@@ -244,7 +244,7 @@ void V8WebSocketClientImpl::Send(const v8::FunctionCallbackInfo<v8::Value>& Info
     if (ec)
     {
         std::stringstream ss;
-        ss << "could not create connection because: " << ec.message() << std::endl;
+        ss << "could send because: " << ec.message() << "[" << ec.value() << "]" << std::endl;
         FV8Utils::ThrowException(Isolate, ss.str().c_str());
     }
 }
@@ -301,7 +301,9 @@ void V8WebSocketClientImpl::Close(const v8::FunctionCallbackInfo<v8::Value>& Inf
         Client.close(Handle, code, reason, ec);
         if (ec)
         {
-            FV8Utils::ThrowException(Isolate, ec.message().c_str());
+            std::stringstream ss;
+            ss << "close fail: " << ec.message() << "[" << ec.value() << "]" << std::endl;
+            FV8Utils::ThrowException(Isolate, ss.str().c_str());
         }
     }
     Cleanup();
