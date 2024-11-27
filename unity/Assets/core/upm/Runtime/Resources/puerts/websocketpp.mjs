@@ -83,6 +83,12 @@ class WebSocket extends EventTarget {
     }
     
     get readyState() {
+        if (this._readyState === WebSocket.OPEN) {
+            const [statue, message] = this._raw.statue();
+            if (statue != 0) {
+                this._fail(`${message}[${statue}]`);
+            }
+        }
         return this._readyState;
     }
     

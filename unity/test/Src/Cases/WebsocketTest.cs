@@ -111,6 +111,9 @@ namespace Puerts.UnitTest
                     con.addEventListener('open', (ev) => {
                         console.log(`on open`);
                         con.send('puerts websocket');
+                        if (con.readyState != WebSocket.OPEN) {
+                            throw new Error('invalid readyState');
+                        }
                     });
                     con.addEventListener('message', (ev) => {
                         console.log(`on message: ${ev.data}`);

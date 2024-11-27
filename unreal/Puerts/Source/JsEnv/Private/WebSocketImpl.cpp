@@ -109,6 +109,8 @@ public:
 
     void Close(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    void Statue(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     void CloseImmediately(websocketpp::close::status::value const code, std::string const& reason);
 
     void PollOne();
@@ -309,6 +311,20 @@ void V8WebSocketClientImpl::Close(const v8::FunctionCallbackInfo<v8::Value>& Inf
     Cleanup();
 }
 
+void V8WebSocketClientImpl::Statue(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    websocketpp::lib::error_code ec;
+    Client.ping(Handle, "", ec);
+    auto isolate = Info.GetIsolate();
+    auto context = isolate->GetCurrentContext();
+    auto res = v8::Array::New(isolate);
+
+    res->Set(context, 0, v8::Int32::New(isolate, ec.value())).Check();
+    res->Set(context, 1,
+        v8::String::NewFromUtf8(isolate, ec.message().c_str(), v8::NewStringType::kNormal, ec.message().size()).ToLocalChecked());
+    Info.GetReturnValue().Set(res);
+}
+
 void V8WebSocketClientImpl::CloseImmediately(websocketpp::close::status::value const code, std::string const& reason)
 {
     if (!Handle.expired())
@@ -442,6 +458,13 @@ void InitWebsocketPPWrap(v8::Local<v8::Context> Context)
             [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
                 static_cast<PUERTS_NAMESPACE::V8WebSocketClientImpl*>(Info.Holder()->GetAlignedPointerFromInternalField(0))
                     ->Close(Info);
+            }));
+
+    WSTemplate->PrototypeTemplate()->Set(v8::String::NewFromUtf8(Isolate, "statue").ToLocalChecked(),
+        v8::FunctionTemplate::New(Isolate,
+            [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+                static_cast<PUERTS_NAMESPACE::V8WebSocketClientImpl*>(Info.Holder()->GetAlignedPointerFromInternalField(0))
+                    ->Statue(Info);
             }));
 
     WSTemplate->PrototypeTemplate()->Set(v8::String::NewFromUtf8(Isolate, "poll").ToLocalChecked(),
