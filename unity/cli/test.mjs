@@ -127,6 +127,7 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
 
     // 运行测试
     assert.equal(0, exec(`dotnet build ${testProjectName}.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code);
+    assert.equal(0, exec(`dotnet add package NUnit --version 3.14.0`, { cwd: workdir }).code);
     assert.equal(0, exec(`dotnet test ${testProjectName}.csproj --blame-hang-timeout 10000ms ${filter ? `--filter ${filter}` : ''}`, { cwd: workdir }).code);
 }
 
