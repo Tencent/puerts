@@ -77,6 +77,11 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     
     mkdir("-p", workdir);
     exec(`dotnet new nunit`, { cwd: workdir });
+    assert.equal(0, exec(`dotnet remove package NUnit`, { cwd: workdir }).code);
+    assert.equal(0, exec(`dotnet remove package NUnit3TestAdapter`, { cwd: workdir }).code);
+    assert.equal(0, exec(`dotnet add package NUnit --version 3.14.0`, { cwd: workdir }).code);
+    assert.equal(0, exec(`dotnet add package NUnit3TestAdapter --version 4.5.0`, { cwd: workdir }).code);
+    assert.equal(0, exec(`dotnet restore`, { cwd: workdir }).code);
     rm('-rf', join(workdir, 'UnitTest1.cs'));
     rm('-rf', join(workdir, 'Usings.cs'));
     
@@ -127,7 +132,6 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
 
     // 运行测试
     assert.equal(0, exec(`dotnet build ${testProjectName}.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code);
-    assert.equal(0, exec(`dotnet add package NUnit --version 3.14.0`, { cwd: workdir }).code);
     assert.equal(0, exec(`dotnet test ${testProjectName}.csproj --blame-hang-timeout 10000ms ${filter ? `--filter ${filter}` : ''}`, { cwd: workdir }).code);
 }
 
