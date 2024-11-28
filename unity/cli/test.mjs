@@ -134,11 +134,10 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     rm("-rf", join(cwd, 'Src/StaticWrapper'));
     
     mkdir("-p", workdir);
+    selectSdk(workdir);
     exec(`dotnet new nunit`, { cwd: workdir });
     rm('-rf', join(workdir, 'UnitTest1.cs'));
     rm('-rf', join(workdir, 'Usings.cs'));
-    
-    selectSdk(workdir);
     
     const originProjectConfig = readFileSync(
         join(workdir, `${testProjectName}.csproj`), 'utf-8'
