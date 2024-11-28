@@ -64,6 +64,64 @@ function collectCSFilesAndMakeCompileConfig(dir, workdir, excludeGenerator) {
     return [definitions, linkPuerTS, linkPuerTSCommonJS, linkUnitTests, linkGenerators].join('\n');
 }
 
+function compareVersions(version1, version2) {
+    const v1Parts = version1.split('.').map(Number);
+    const v2Parts = version2.split('.').map(Number);
+
+    for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+        const v1 = v1Parts[i] || 0;
+        const v2 = v2Parts[i] || 0;
+
+        if (v1 < v2) {
+            return -1;
+        }
+        if (v1 > v2) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+function selectSdk(workdir) {
+    const sdk_list = exec('dotnet --list-sdks');
+    if (sdk_list.code == 0) {
+        const sdkVersions = sdk_list.stdout
+        .split('\n') // 按行分割
+        .filter(line => line.trim() !== '' && /^\d+\.\d+\.\d+/.test(line))
+        .map(line => line.split(' ')[0]) 
+        .filter((value, index, self) => self.indexOf(value) === index);
+        //console.log(sdkVersions);
+        
+        let selectedVersion
+        
+        for (var i = 0; i < sdkVersions.length; ++i) {
+            if(compareVersions(sdkVersions[i], '9.0.0') < 0) {
+                if(!selectedVersion || compareVersions(selectedVersion, sdkVersions[i]) < 0) {
+                    selectedVersion = sdkVersions[i];
+                }
+            }
+        }
+        
+        if (selectedVersion) {
+            console.log(`selected sdk ${selectedVersion}`)
+            
+            const global_cfg = 
+            
+            writeFileSync(
+                join(workdir, 'global.json'),
+                JSON.stringify({
+                  "sdk": {
+                    "version": selectedVersion
+                  }
+                })
+            );
+            return;
+        }
+    }
+    throw new Error('can not find sdk less than 9.0.0');
+}
+
 async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     if (!existsSync(`${cwd}/Src/Helloworld.cs`)) {
         console.error("[Puer] Cannot find UnitTest Src");
@@ -77,13 +135,10 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     
     mkdir("-p", workdir);
     exec(`dotnet new nunit`, { cwd: workdir });
-    assert.equal(0, exec(`dotnet remove package NUnit`, { cwd: workdir }).code);
-    assert.equal(0, exec(`dotnet remove package NUnit3TestAdapter`, { cwd: workdir }).code);
-    assert.equal(0, exec(`dotnet add package NUnit --version 3.14.0`, { cwd: workdir }).code);
-    assert.equal(0, exec(`dotnet add package NUnit3TestAdapter --version 4.5.0`, { cwd: workdir }).code);
-    assert.equal(0, exec(`dotnet restore`, { cwd: workdir }).code);
     rm('-rf', join(workdir, 'UnitTest1.cs'));
     rm('-rf', join(workdir, 'Usings.cs'));
+    
+    selectSdk(workdir);
     
     const originProjectConfig = readFileSync(
         join(workdir, `${testProjectName}.csproj`), 'utf-8'
