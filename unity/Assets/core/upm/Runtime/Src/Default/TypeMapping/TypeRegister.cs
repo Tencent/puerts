@@ -547,7 +547,7 @@ namespace Puerts
 
                 // extensionMethods
                 // 因为内存问题与crash问题移入宏中
-#if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
+#if (PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR) && !PUERTS_DISABLE_REFLECT_EXTENSION
 // #if UNITY_EDITOR && !PUERTS_REFLECT_ALL_EXTENSION && !PUERTS_IL2CPP_OPTIMIZATION
 //                 if (!UnityEditor.EditorApplication.isPlaying) 
 // #endif
