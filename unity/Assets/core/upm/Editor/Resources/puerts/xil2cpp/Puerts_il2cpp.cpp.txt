@@ -360,6 +360,7 @@ void GetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
     }
     else
     {
+        il2cpp::vm::Runtime::ClassInit(field->parent);
         Field::StaticGetValue(field, value);
     }
 }
