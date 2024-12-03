@@ -2913,11 +2913,7 @@ void FJsEnvImpl::BindStruct(
         }
 #endif
         auto CacheNodePtr = StructCache.Find(Ptr);
-        if (CacheNodePtr)
-        {
-            CacheNodePtr = CacheNodePtr->Add(ScriptStructWrapper->Struct.Get());
-        }
-        else
+        if (!CacheNodePtr)
         {
             CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
         }
