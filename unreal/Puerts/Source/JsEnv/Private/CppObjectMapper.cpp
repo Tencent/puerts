@@ -169,7 +169,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
         JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
-        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
+        while (PropertyInfo && PropertyInfo->Name)
         {
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
             if (!PropertyInfo->Setter)
@@ -187,7 +187,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         }
 
         PropertyInfo = ClassDefinition->Variables;
-        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
+        while (PropertyInfo && PropertyInfo->Name)
         {
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
             if (!PropertyInfo->Setter)
