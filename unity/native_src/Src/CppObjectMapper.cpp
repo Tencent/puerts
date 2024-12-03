@@ -206,38 +206,46 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
         JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
-        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
+        while (PropertyInfo && PropertyInfo->Name)
         {
-            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
-            if (!PropertyInfo->Setter)
-                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-            Template->PrototypeTemplate()->SetAccessorProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyAttribute);
+            if (PropertyInfo->Getter)
+            {
+                v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+                if (!PropertyInfo->Setter)
+                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+                auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
+                Template->PrototypeTemplate()->SetAccessorProperty(
+                    v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                    PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyAttribute);
+            }
+
             ++PropertyInfo;
         }
 
         PropertyInfo = ClassDefinition->Variables;
-        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
+        while (PropertyInfo && PropertyInfo->Name)
         {
-            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
-            if (!PropertyInfo->Setter)
-                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-            Template->SetAccessorProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyAttribute);
+            if (PropertyInfo->Getter)
+            {
+                v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+                if (!PropertyInfo->Setter)
+                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+                auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
+                Template->SetAccessorProperty(
+                    v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                    PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                                         : v8::Local<v8::FunctionTemplate>(),
+                    PropertyAttribute);
+            }
+            
             ++PropertyInfo;
         }
 
