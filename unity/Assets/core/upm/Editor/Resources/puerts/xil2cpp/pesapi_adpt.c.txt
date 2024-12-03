@@ -12,9 +12,9 @@
 
 #include "pesapi.h"
 
-#ifdef PUERTS_SHARED
-
 EXTERN_C_START
+
+#ifdef PUERTS_SHARED
 
 typedef pesapi_type_info (*pesapi_alloc_type_infosType)(size_t count);
 static pesapi_alloc_type_infosType pesapi_alloc_type_infos_ptr;
