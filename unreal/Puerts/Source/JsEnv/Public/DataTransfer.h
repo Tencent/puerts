@@ -303,7 +303,7 @@ public:
     static v8::Local<v8::Value> FindOrAddCData(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer);
 
-    static bool IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject);
+    static bool IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Value> JsObject);
 
     static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
 
@@ -331,12 +331,12 @@ public:
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer);
 
     template <typename T>
-    static bool IsInstanceOf(v8::Isolate* Isolate, v8::Local<v8::Object> JsObject)
+    static bool IsInstanceOf(v8::Isolate* Isolate, v8::Local<v8::Value> JsObject)
     {
         return IsInstanceOf(Isolate, TScriptStructTraits<T>::Get(), JsObject);
     }
 
-    static bool IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local<v8::Object> JsObject);
+    static bool IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local<v8::Value> JsObject);
 
     static FString ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value);
 

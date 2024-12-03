@@ -21,9 +21,10 @@ v8::Local<v8::Value> DataTransfer::FindOrAddCData(
         Isolate, Context, TypeId, const_cast<void*>(Ptr), PassByPointer);
 }
 
-bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
+bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Value> JsObject)
 {
-    return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(Isolate, TypeId, JsObject);
+    return JsObject->IsObject() &&
+           IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(Isolate, TypeId, JsObject.As<v8::Object>());
 }
 
 v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value)
@@ -64,9 +65,9 @@ v8::Local<v8::Value> DataTransfer::FindOrAddStruct(
     return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer);
 }
 
-bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local<v8::Object> JsObject)
+bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local<v8::Value> JsObject)
 {
-    return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(Struct, JsObject);
+    return JsObject->IsObject() && FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(Struct, JsObject.As<v8::Object>());
 }
 
 void DataTransfer::ThrowException(v8::Isolate* Isolate, const char* Message)
