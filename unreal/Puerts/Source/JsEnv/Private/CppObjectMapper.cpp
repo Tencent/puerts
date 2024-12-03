@@ -304,7 +304,8 @@ void FCppObjectMapper::BindCppObject(
     FObjectCacheNode* CacheNodePtr;
     if (Iter != CDataCache.end())
     {
-        CacheNodePtr = &Iter->second;
+        auto Temp = Iter->second.Find(ClassDefinition->TypeId);
+        CacheNodePtr = Temp ? Temp : Iter->second.Add(ClassDefinition->TypeId);
     }
     else
     {
