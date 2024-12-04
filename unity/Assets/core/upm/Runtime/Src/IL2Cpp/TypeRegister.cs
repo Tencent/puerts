@@ -208,76 +208,76 @@ namespace Puerts.TypeMapping
                     }
                 }
 
-                    Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGetter, bool isSetter, bool isExtensionMethod) =>
-                    {
-                        method = TypeUtils.HandleMaybeGenericMethod(method);
-                        if (method == null) return;
-                        List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
-                        var signature = TypeUtils.GetMethodSignature(method, false, isExtensionMethod);
-                        // UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
+                Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGetter, bool isSetter, bool isExtensionMethod) =>
+                {
+                    method = TypeUtils.HandleMaybeGenericMethod(method);
+                    if (method == null) return;
+                    List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
+                    var signature = TypeUtils.GetMethodSignature(method, false, isExtensionMethod);
+                    // UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
 
-                        var wrapper = GetWrapperFunc(registerInfo, method, signature);
-                        if (wrapper == IntPtr.Zero)
-                        {
-                            UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
-                            return;
-                        }
-                         
-                        var methodInfoPointer = NativeAPI.GetMethodInfoPointer(method);
-                        var methodPointer = NativeAPI.GetMethodPointer(method);
-                        if (methodInfoPointer == IntPtr.Zero)
-                        {
-                            UnityEngine.Debug.LogWarning(string.Format("cannot get method info for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
-                            return;
-                        }
-                        if (methodPointer == IntPtr.Zero)
-                        {
-                            UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
-                            return;
-                        }
-                        var wrapData = NativeAPI.AddMethod(
-                            typeInfo, 
-                            signature,
-                            wrapper,
-                            name, 
-                            !isExtensionMethod && method.IsStatic, 
-                            isExtensionMethod, 
-                            isGetter, 
-                            isSetter, 
-                            methodInfoPointer, 
-                            methodPointer, 
-                            usedTypes.Count
-                        );
-                        if (wrapData == IntPtr.Zero)
-                        {
-                            if (throwIfMemberFail)
-                            {
-                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
-                            }
-                            else
-                            {
-    #if WARNING_IF_MEMBERFAIL
-                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
-    #endif
-                                return;
-                            }
-                        }
-                        for (int i = 0; i < usedTypes.Count; ++i)
-                        {
-                            var usedTypeId = NativeAPI.GetTypeId(usedTypes[i]);
-                            //UnityEngine.Debug.Log(string.Format("set used type for method {0}: {1}={2}, typeId:{3}", method, i, usedTypes[i], usedTypeId));
-                            NativeAPI.SetTypeInfo(wrapData, i, usedTypeId);
-                        }
-                    };
-
-                    if (methods != null && (!type.IsArray || type == typeof(System.Array)))
+                    var wrapper = GetWrapperFunc(registerInfo, method, signature);
+                    if (wrapper == IntPtr.Zero)
                     {
-                        foreach (var method in methods)
+                        UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                        return;
+                    }
+                     
+                    var methodInfoPointer = NativeAPI.GetMethodInfoPointer(method);
+                    var methodPointer = NativeAPI.GetMethodPointer(method);
+                    if (methodInfoPointer == IntPtr.Zero)
+                    {
+                        UnityEngine.Debug.LogWarning(string.Format("cannot get method info for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                        return;
+                    }
+                    if (methodPointer == IntPtr.Zero)
+                    {
+                        UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                        return;
+                    }
+                    var wrapData = NativeAPI.AddMethod(
+                        typeInfo, 
+                        signature,
+                        wrapper,
+                        name, 
+                        !isExtensionMethod && method.IsStatic, 
+                        isExtensionMethod, 
+                        isGetter, 
+                        isSetter, 
+                        methodInfoPointer, 
+                        methodPointer, 
+                        usedTypes.Count
+                    );
+                    if (wrapData == IntPtr.Zero)
+                    {
+                        if (throwIfMemberFail)
                         {
-                            if (method.IsAbstract) continue;
-                            AddMethodToType(method.Name, method as MethodInfo, false, false, false);
+                            throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                        }
+                        else
+                        {
+#if WARNING_IF_MEMBERFAIL
+                            UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+#endif
+                            return;
                         }
                     }
+                    for (int i = 0; i < usedTypes.Count; ++i)
+                    {
+                        var usedTypeId = NativeAPI.GetTypeId(usedTypes[i]);
+                        //UnityEngine.Debug.Log(string.Format("set used type for method {0}: {1}={2}, typeId:{3}", method, i, usedTypes[i], usedTypeId));
+                        NativeAPI.SetTypeInfo(wrapData, i, usedTypeId);
+                    }
+                };
+
+                if (methods != null && (!type.IsArray || type == typeof(System.Array)))
+                {
+                    foreach (var method in methods)
+                    {
+                        if (method.IsAbstract) continue;
+                        AddMethodToType(method.Name, method as MethodInfo, false, false, false);
+                    }
+                }
                     
                 if (!isDelegate)
                 {
