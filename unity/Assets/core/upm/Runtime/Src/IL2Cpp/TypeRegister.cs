@@ -206,6 +206,7 @@ namespace Puerts.TypeMapping
                             }
                         }
                     }
+                }
 
                     Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGetter, bool isSetter, bool isExtensionMethod) =>
                     {
@@ -277,7 +278,9 @@ namespace Puerts.TypeMapping
                             AddMethodToType(method.Name, method as MethodInfo, false, false, false);
                         }
                     }
-					
+                    
+                if (!isDelegate)
+                {
 					var extensionMethods = ExtensionMethodInfo.Get(type);
 					if (extensionMethods != null)
                     {
