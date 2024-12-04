@@ -5,9 +5,13 @@
   <PropertyGroup>
     
          
-    <EngineVersion >$([System.Text.RegularExpressions.Regex]::Match($(EngineDir), "\d+.\d+"))</EngineVersion >
-    <TargetFramework Condition="$([MSBuild]::VersionGreaterThanOrEquals($(EngineVersion), '5.5'))">net8.0</TargetFramework>
-    <TargetFramework Condition="$([MSBuild]::VersionLessThan($(EngineVersion), '5.5'))">net6.0</TargetFramework>
+    <EngineVersionText >$([System.IO.File]::ReadAllText("$(EngineDir)\Build\Build.version"))</EngineVersionText >
+    <EngineVersionMajorText >$([System.Text.RegularExpressions.Regex]::Match($(EngineVersionText), "MajorVersion.*\d+"))</EngineVersionMajorText >
+    <EngineVersionMajor >$([System.Text.RegularExpressions.Regex]::Match($(EngineVersionMajorText), "\d+"))</EngineVersionMajor >
+    <EngineVersionMinorText >$([System.Text.RegularExpressions.Regex]::Match($(EngineVersionText), "MinorVersion.*\d+"))</EngineVersionMinorText >
+    <EngineVersionMinor >$([System.Text.RegularExpressions.Regex]::Match($(EngineVersionMinorText), "\d+"))</EngineVersionMinor >
+    <TargetFramework Condition="$([MSBuild]::VersionGreaterThanOrEquals($(EngineVersionMajor).$(EngineVersionMinor), '5.5'))">net8.0</TargetFramework>
+    <TargetFramework Condition="$([MSBuild]::VersionLessThan($(EngineVersionMajor).$(EngineVersionMinor), '5.5'))">net6.0</TargetFramework>
     
     <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
     <OutputType>Library</OutputType>
