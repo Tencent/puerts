@@ -1874,11 +1874,11 @@ struct JsEnvPrivate
             //PLog("AddPendingKillScriptObjects: %p", valueRef);
             pendingKillRefs.insert(valueRef);
         }
-        else
-        {
+        //else
+        //{
             // pesapi_value_ref not alloc by puerts?
-            apis->release_value_ref(valueRef);
-        }
+            //apis->release_value_ref(valueRef);
+        //}
     }
     
     void CleanupPendingKillScriptObjects()
