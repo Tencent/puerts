@@ -525,6 +525,8 @@ static pesapi_value GetPObjectRefInfoValue(struct pesapi_ffi* apis, pesapi_env e
 typedef int32_t Il2CppGCHandle;
 #endif
 
+constexpr size_t internal_field_count_for_gc_handle = (sizeof(Il2CppGCHandle) + sizeof(void*) - 1) / sizeof(void*);
+
 static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
 {
     void* out_ptr;
@@ -540,7 +542,7 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
     if (value_ref)
     {
         res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
-        if(field_count != 1 || !res)
+        if(field_count != internal_field_count_for_gc_handle || !res)
         {
             PLog("invalid internal_fields size: %u, ptr:%p", field_count, res);
             apis->release_value_ref(value_ref);
@@ -551,7 +553,7 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
     
     if (!res)
     {
-        value_ref = apis->create_value_ref(env, value, (sizeof(Il2CppGCHandle) + sizeof(void*) - 1) / sizeof(void*));
+        value_ref = apis->create_value_ref(env, value, internal_field_count_for_gc_handle);
         
         res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
         apis->set_private(env, value, value_ref);
@@ -1868,7 +1870,7 @@ struct JsEnvPrivate
     {
         uint32_t fieldCount;
         void** store = apis->get_ref_internal_fields(valueRef, &fieldCount);
-        if(fieldCount == ((sizeof(Il2CppGCHandle) + sizeof(void*) - 1) / sizeof(void*)) && store)
+        if(fieldCount == internal_field_count_for_gc_handle && store)
         {
             std::lock_guard<std::mutex> guard(pendingKillRefsMutex);
             //PLog("AddPendingKillScriptObjects: %p", valueRef);
