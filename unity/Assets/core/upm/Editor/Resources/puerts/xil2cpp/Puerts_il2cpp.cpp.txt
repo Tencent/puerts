@@ -551,7 +551,7 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
     
     if (!res)
     {
-        value_ref = apis->create_value_ref(env, value, (sizeof(std::atomic<Il2CppObject*>) + sizeof(void*) - 1) / sizeof(void*));
+        value_ref = apis->create_value_ref(env, value, (sizeof(Il2CppGCHandle) + sizeof(void*) - 1) / sizeof(void*));
         
         res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
         apis->set_private(env, value, value_ref);
@@ -1868,7 +1868,7 @@ struct JsEnvPrivate
     {
         uint32_t fieldCount;
         void** store = apis->get_ref_internal_fields(valueRef, &fieldCount);
-        if(fieldCount == 1 && store)
+        if(fieldCount == ((sizeof(Il2CppGCHandle) + sizeof(void*) - 1) / sizeof(void*)) && store)
         {
             std::lock_guard<std::mutex> guard(pendingKillRefsMutex);
             //PLog("AddPendingKillScriptObjects: %p", valueRef);
@@ -1876,6 +1876,7 @@ struct JsEnvPrivate
         }
         else
         {
+            // pesapi_value_ref not alloc by puerts?
             apis->release_value_ref(valueRef);
         }
     }
