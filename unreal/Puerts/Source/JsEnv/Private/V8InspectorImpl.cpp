@@ -423,7 +423,7 @@ bool V8InspectorClientImpl::Tick(float /* DeltaTime */)
                 v8::Context::Scope ContextScope(LocalContext);
                 v8::TryCatch TryCatch(Isolate);
 
-                MicroTasksRunner.Get(Isolate)->Call(LocalContext, LocalContext->Global(), 0, nullptr);
+                (void) (MicroTasksRunner.Get(Isolate)->Call(LocalContext, LocalContext->Global(), 0, nullptr));
             }
         }
     }
