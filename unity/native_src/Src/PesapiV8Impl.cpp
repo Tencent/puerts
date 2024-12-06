@@ -17,6 +17,7 @@
 #include <sstream>
 #include <vector>
 #include <cstring>
+#include "PString.h"
 
 struct pesapi_env_ref__
 {
@@ -53,7 +54,7 @@ struct pesapi_scope__
     }
     v8::HandleScope scope;
     v8::TryCatch trycatch;
-    std::string errinfo;
+    puerts::PString errinfo;
 };
 
 static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
@@ -558,7 +559,7 @@ const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack)
         std::ostringstream stm;
         v8::String::Utf8Value fileName(isolate, message->GetScriptResourceName());
         int lineNum = message->GetLineNumber(context).FromJust();
-        stm << *fileName << ":" << lineNum << ": " << scope->errinfo;
+        stm << *fileName << ":" << lineNum << ": " << scope->errinfo.c_str();
 
         stm << std::endl;
 
@@ -569,7 +570,7 @@ const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack)
             v8::String::Utf8Value stackTraceVal(isolate, stackTrace);
             stm << std::endl << *stackTraceVal;
         }
-        scope->errinfo = stm.str();
+        scope->errinfo = stm.str().c_str();
     }
     return scope->errinfo.c_str();
 }
@@ -1023,7 +1024,7 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
     classDef.SuperTypeId = super_type_id;
-    std::string ScriptNameWithModuleName = GPesapiModuleName == nullptr ? std::string() : GPesapiModuleName;
+    puerts::PString ScriptNameWithModuleName = GPesapiModuleName == nullptr ? puerts::PString() : GPesapiModuleName;
     if (GPesapiModuleName)
     {
         ScriptNameWithModuleName += ".";
@@ -1120,7 +1121,7 @@ void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, con
 
 const void* pesapi_find_type_id(const char* module_name, const char* type_name)
 {
-    std::string fullname = module_name;
+    puerts::PString fullname = module_name;
     fullname += ".";
     fullname += type_name;
     const auto class_def = puerts::FindCppTypeClassByName(fullname);
