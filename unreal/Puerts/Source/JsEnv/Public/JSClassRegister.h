@@ -30,6 +30,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include "pesapi.h"
 #include "TypeInfo.hpp"
+#include "PString.h"
 
 #if USING_IN_UNREAL_ENGINE
 static const FAnsiStringView EditorOnlyPropertySuffix = "_EditorOnly";
@@ -146,14 +147,14 @@ JSENV_API void OnClassNotFound(pesapi_class_not_found_callback Callback);
 
 JSENV_API const JSClassDefinition* LoadClassByID(const void* TypeId);
 
-JSENV_API const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
+JSENV_API const JSClassDefinition* FindCppTypeClassByName(const String& Name);
 
 JSENV_API bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
 
 #if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
-AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
+AddonRegisterFunc FindAddonRegisterFunc(const String& Name);
 
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 

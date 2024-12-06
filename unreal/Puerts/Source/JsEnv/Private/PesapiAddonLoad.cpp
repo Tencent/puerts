@@ -11,6 +11,7 @@
 #include "pesapi.h"
 #include "CoreMinimal.h"
 #include "V8Utils.h"
+#include "PString.h"
 
 #include <map>
 #include <string>
@@ -19,10 +20,10 @@
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
-static std::map<std::string, std::string> LoadedModules;
+static std::map<puerts::String, puerts::String> LoadedModules;
 
 #if PLATFORM_IOS
-int PesapiLoadFramework(std::string frameworkName, std::string entryClassName, pesapi_func_ptr* funcPtrArray);
+int PesapiLoadFramework(puerts::String frameworkName, puerts::String entryClassName, pesapi_func_ptr* funcPtrArray);
 #endif
 
 MSVC_PRAGMA(warning(push))

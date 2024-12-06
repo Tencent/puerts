@@ -81,7 +81,7 @@ void FJsEnv::ReloadModule(FName ModuleName, const FString& JsSource)
     GameScript->ReloadModule(ModuleName, JsSource);
 }
 
-void FJsEnv::ReloadSource(const FString& Path, const std::string& JsSource)
+void FJsEnv::ReloadSource(const FString& Path, const String& JsSource)
 {
     GameScript->ReloadSource(Path, JsSource);
 }

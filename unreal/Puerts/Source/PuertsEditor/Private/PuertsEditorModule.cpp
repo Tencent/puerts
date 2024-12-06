@@ -19,6 +19,7 @@
 #include "Binding.hpp"
 #include "UEDataBinding.hpp"
 #include "Object.hpp"
+#include "PString.h"
 
 class FPuertsEditorModule : public IPuertsEditorModule
 {
@@ -126,7 +127,7 @@ void FPuertsEditorModule::OnPostEngineInit()
                     TArray<uint8> Source;
                     if (FFileHelper::LoadFileToArray(Source, *InPath))
                     {
-                        JsEnv->ReloadSource(InPath, std::string((const char*) Source.GetData(), Source.Num()));
+                        JsEnv->ReloadSource(InPath, puerts::String((const char*) Source.GetData(), Source.Num()));
                     }
                     else
                     {

@@ -8,6 +8,7 @@
 
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
+#include "PString.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -31,7 +32,7 @@ void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& In
         return;
     }
 
-    std::string TypeName = *(v8::String::Utf8Value(Isolate, Info[0]));
+    String TypeName = *(v8::String::Utf8Value(Isolate, Info[0]));
 
     auto ClassDef = FindCppTypeClassByName(TypeName);
     if (ClassDef)
@@ -40,7 +41,7 @@ void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& In
     }
     else
     {
-        const std::string ErrMsg = "can not find type: " + TypeName;
+        String ErrMsg = "can not find type: " + TypeName;
         ThrowException(Isolate, ErrMsg.c_str());
     }
 }

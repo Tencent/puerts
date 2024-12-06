@@ -15,6 +15,7 @@
 #include "CoreMinimal.h"
 #include "JSLogger.h"
 #include "JSModuleLoader.h"
+#include "PString.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "ExtensionMethods.h"
 #endif
@@ -44,7 +45,7 @@ public:
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
 
-    virtual void ReloadSource(const FString& Path, const std::string& JsSource) = 0;
+    virtual void ReloadSource(const FString& Path, const String& JsSource) = 0;
 
     virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) = 0;
 
@@ -85,7 +86,7 @@ public:
 
     void ReloadModule(FName ModuleName, const FString& JsSource);
 
-    void ReloadSource(const FString& Path, const std::string& JsSource);
+    void ReloadSource(const FString& Path, const String& JsSource);
 
     void OnSourceLoaded(std::function<void(const FString&)> Callback);
 
