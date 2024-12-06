@@ -10,6 +10,7 @@
 
 #include <cstring>
 #include <functional>
+#include "NamespaceDef.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -209,9 +210,9 @@ private:
 namespace std
 {
 template <>
-struct hash<puerts::PString>
+struct hash<PUERTS_NAMESPACE::PString>
 {
-    size_t operator()(const puerts::PString& str) const
+    size_t operator()(const PUERTS_NAMESPACE::PString& str) const
     {
         size_t hash = 5381;    // DJB2
         for (size_t i = 0; i < str.size(); ++i)
