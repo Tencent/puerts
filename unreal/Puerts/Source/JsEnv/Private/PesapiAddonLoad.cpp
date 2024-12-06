@@ -23,7 +23,7 @@
 static std::map<puerts::PString, puerts::PString> LoadedModules;
 
 #if PLATFORM_IOS
-int PesapiLoadFramework(puerts::String frameworkName, puerts::String entryClassName, pesapi_func_ptr* funcPtrArray);
+int PesapiLoadFramework(puerts::PString frameworkName, puerts::PString entryClassName, pesapi_func_ptr* funcPtrArray);
 #endif
 
 MSVC_PRAGMA(warning(push))
