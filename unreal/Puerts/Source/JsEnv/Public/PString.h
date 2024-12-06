@@ -16,9 +16,6 @@ namespace PUERTS_NAMESPACE
 class String
 {
 public:
-    char* data_;
-    size_t size_;
-
     // Constructors
     String() : data_(nullptr), size_(0)
     {
@@ -202,6 +199,10 @@ public:
     {
         return std::strcmp(data_, other.data_) == 0;
     }
+
+private:
+    char* data_;
+    size_t size_;
 };
 }    // namespace PUERTS_NAMESPACE
 
@@ -212,7 +213,12 @@ struct hash<puerts::String>
 {
     size_t operator()(const puerts::String& str) const
     {
-        return std::hash<std::string>()(str.c_str());
+        size_t hash = 5381;    // DJB2 哈希算法的初始值
+        for (size_t i = 0; i < str.size(); ++i)
+        {
+            hash = ((hash << 5) + hash) + str.c_str()[i];    // hash * 33 + c
+        }
+        return hash;
     }
 };
 }    // namespace std
