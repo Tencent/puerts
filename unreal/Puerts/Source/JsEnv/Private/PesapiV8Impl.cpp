@@ -54,7 +54,7 @@ struct pesapi_scope__
     }
     v8::HandleScope scope;
     v8::TryCatch trycatch;
-    puerts::String errinfo;
+    puerts::PString errinfo;
 };
 
 static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
@@ -944,7 +944,7 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
     classDef.SuperTypeId = super_type_id;
-    puerts::String ScriptNameWithModuleName = GPesapiModuleName == nullptr ? puerts::String() : GPesapiModuleName;
+    puerts::PString ScriptNameWithModuleName = GPesapiModuleName == nullptr ? puerts::PString() : GPesapiModuleName;
     if (GPesapiModuleName)
     {
         ScriptNameWithModuleName += ".";
@@ -1041,7 +1041,7 @@ void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, con
 
 const void* pesapi_find_type_id(const char* module_name, const char* type_name)
 {
-    puerts::String fullname = module_name;
+    puerts::PString fullname = module_name;
     fullname += ".";
     fullname += type_name;
     const auto class_def = puerts::FindCppTypeClassByName(fullname);

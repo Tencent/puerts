@@ -20,7 +20,7 @@
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
-static std::map<puerts::String, puerts::String> LoadedModules;
+static std::map<puerts::PString, puerts::PString> LoadedModules;
 
 #if PLATFORM_IOS
 int PesapiLoadFramework(puerts::String frameworkName, puerts::String entryClassName, pesapi_func_ptr* funcPtrArray);

@@ -127,7 +127,7 @@ void FPuertsEditorModule::OnPostEngineInit()
                     TArray<uint8> Source;
                     if (FFileHelper::LoadFileToArray(Source, *InPath))
                     {
-                        JsEnv->ReloadSource(InPath, puerts::String((const char*) Source.GetData(), Source.Num()));
+                        JsEnv->ReloadSource(InPath, puerts::PString((const char*) Source.GetData(), Source.Num()));
                     }
                     else
                     {

@@ -129,7 +129,7 @@ public:
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
 
-    virtual void ReloadSource(const FString& Path, const String& JsSource) override;
+    virtual void ReloadSource(const FString& Path, const PString& JsSource) override;
 
     std::function<void(const FString&)> OnSourceLoadedCallback;
 
@@ -372,7 +372,7 @@ private:
 
     struct ObjectMerger
     {
-        std::map<String, std::unique_ptr<FPropertyTranslator>> Fields;
+        std::map<PString, std::unique_ptr<FPropertyTranslator>> Fields;
         UStruct* Struct;
         FJsEnvImpl* Parent;
 

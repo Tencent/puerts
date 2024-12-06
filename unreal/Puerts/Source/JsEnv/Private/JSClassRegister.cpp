@@ -100,22 +100,22 @@ public:
         return clsDef;
     }
 
-    const JSClassDefinition* FindCppTypeClassByName(const String& Name);
+    const JSClassDefinition* FindCppTypeClassByName(const PString& Name);
 
 #if USING_IN_UNREAL_ENGINE
-    void RegisterAddon(const String& Name, AddonRegisterFunc RegisterFunc);
+    void RegisterAddon(const PString& Name, AddonRegisterFunc RegisterFunc);
 
-    AddonRegisterFunc FindAddonRegisterFunc(const String& Name);
+    AddonRegisterFunc FindAddonRegisterFunc(const PString& Name);
 
     const JSClassDefinition* FindClassByType(UStruct* Type);
 #endif
 
 private:
     std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
-    std::map<String, JSClassDefinition*> CDataNameToClassDefinition;
+    std::map<PString, JSClassDefinition*> CDataNameToClassDefinition;
     pesapi_class_not_found_callback ClassNotFoundCallback = nullptr;
 #if USING_IN_UNREAL_ENGINE
-    std::map<String, AddonRegisterFunc> AddonRegisterInfos;
+    std::map<PString, AddonRegisterFunc> AddonRegisterInfos;
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
 #endif
 };
@@ -150,7 +150,7 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
             JSClassDefinitionDelete(cd_iter->second);
         }
         CDataIdToClassDefinition[ClassDefinition.TypeId] = JSClassDefinitionDuplicate(&ClassDefinition);
-        String SN = ClassDefinition.ScriptName;
+        PString SN = ClassDefinition.ScriptName;
         CDataNameToClassDefinition[SN] = CDataIdToClassDefinition[ClassDefinition.TypeId];
         CDataIdToClassDefinition[ClassDefinition.TypeId]->ScriptName = CDataNameToClassDefinition.find(SN)->first.c_str();
     }
@@ -170,7 +170,7 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
 
 void SetReflectoinInfo(JSFunctionInfo* Methods, const NamedFunctionInfo* MethodInfos)
 {
-    std::map<String, std::tuple<int, const NamedFunctionInfo*>> InfoMap;
+    std::map<PString, std::tuple<int, const NamedFunctionInfo*>> InfoMap;
     const NamedFunctionInfo* MethodInfo = MethodInfos;
     while (MethodInfo->Name)
     {
@@ -232,7 +232,7 @@ const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
     }
 }
 
-const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const String& Name)
+const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const PString& Name)
 {
     auto Iter = CDataNameToClassDefinition.find(Name);
     if (Iter == CDataNameToClassDefinition.end())
@@ -246,12 +246,12 @@ const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const String& N
 }
 
 #if USING_IN_UNREAL_ENGINE
-void JSClassRegister::RegisterAddon(const String& Name, AddonRegisterFunc RegisterFunc)
+void JSClassRegister::RegisterAddon(const PString& Name, AddonRegisterFunc RegisterFunc)
 {
     AddonRegisterInfos[Name] = RegisterFunc;
 }
 
-AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const String& Name)
+AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const PString& Name)
 {
     auto Iter = AddonRegisterInfos.find(Name);
     if (Iter == AddonRegisterInfos.end())
@@ -329,7 +329,7 @@ const JSClassDefinition* LoadClassByID(const void* TypeId)
     return GetJSClassRegister()->LoadClassByID(TypeId);
 }
 
-const JSClassDefinition* FindCppTypeClassByName(const String& Name)
+const JSClassDefinition* FindCppTypeClassByName(const PString& Name)
 {
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
@@ -378,7 +378,7 @@ void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
     GetJSClassRegister()->RegisterAddon(Name, RegisterFunc);
 }
 
-AddonRegisterFunc FindAddonRegisterFunc(const String& Name)
+AddonRegisterFunc FindAddonRegisterFunc(const PString& Name)
 {
     return GetJSClassRegister()->FindAddonRegisterFunc(Name);
 }

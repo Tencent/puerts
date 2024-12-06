@@ -45,7 +45,7 @@ public:
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
 
-    virtual void ReloadSource(const FString& Path, const String& JsSource) = 0;
+    virtual void ReloadSource(const FString& Path, const PString& JsSource) = 0;
 
     virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) = 0;
 
@@ -86,7 +86,7 @@ public:
 
     void ReloadModule(FName ModuleName, const FString& JsSource);
 
-    void ReloadSource(const FString& Path, const String& JsSource);
+    void ReloadSource(const FString& Path, const PString& JsSource);
 
     void OnSourceLoaded(std::function<void(const FString&)> Callback);
 

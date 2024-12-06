@@ -13,17 +13,17 @@
 
 namespace PUERTS_NAMESPACE
 {
-class String
+class PString
 {
 public:
     // Constructors
-    String() : data_(nullptr), size_(0)
+    PString() : data_(nullptr), size_(0)
     {
         data_ = new char[1];
         data_[0] = '\0';
     }
 
-    String(const char* str)
+    PString(const char* str)
     {
         if (str)
         {
@@ -44,7 +44,7 @@ public:
         }
     }
 
-    String(const char* str, size_t length)
+    PString(const char* str, size_t length)
     {
         if (str)
         {
@@ -65,7 +65,7 @@ public:
         }
     }
 
-    String(const String& other)
+    PString(const PString& other)
     {
         size_ = other.size_;
         data_ = new char[size_ + 1];
@@ -77,7 +77,7 @@ public:
         data_[size_] = '\0';
     }
 
-    String& operator=(const String& other)
+    PString& operator=(const PString& other)
     {
         if (this != &other)
         {
@@ -94,14 +94,14 @@ public:
         return *this;
     }
 
-    ~String()
+    ~PString()
     {
         delete[] data_;
     }
 
-    String operator+(const String& other) const
+    PString operator+(const PString& other) const
     {
-        String result;
+        PString result;
         result.size_ = size_ + other.size_;
         result.data_ = new char[result.size_ + 1];
 #ifdef _MSC_VER
@@ -115,9 +115,9 @@ public:
         return result;
     }
 
-    friend String operator+(const char* lhs, const String& rhs)
+    friend PString operator+(const char* lhs, const PString& rhs)
     {
-        String result;
+        PString result;
         size_t lhs_size = std::strlen(lhs);
         result.size_ = lhs_size + rhs.size_;
         result.data_ = new char[result.size_ + 1];
@@ -132,7 +132,7 @@ public:
         return result;
     }
 
-    String& operator+=(const String& other)
+    PString& operator+=(const PString& other)
     {
         size_t new_size = size_ + other.size_;
         char* new_data = new char[new_size + 1];
@@ -152,7 +152,7 @@ public:
         return *this;
     }
 
-    String& operator+=(const char* str)
+    PString& operator+=(const char* str)
     {
         if (str)
         {
@@ -190,12 +190,12 @@ public:
         return size_ == 0;
     }
 
-    bool operator<(const String& other) const
+    bool operator<(const PString& other) const
     {
         return std::strcmp(data_, other.data_) < 0;
     }
 
-    bool operator==(const String& other) const
+    bool operator==(const PString& other) const
     {
         return std::strcmp(data_, other.data_) == 0;
     }
@@ -209,11 +209,11 @@ private:
 namespace std
 {
 template <>
-struct hash<puerts::String>
+struct hash<puerts::PString>
 {
-    size_t operator()(const puerts::String& str) const
+    size_t operator()(const puerts::PString& str) const
     {
-        size_t hash = 5381;    // DJB2 哈希算法的初始值
+        size_t hash = 5381;    // DJB2
         for (size_t i = 0; i < str.size(); ++i)
         {
             hash = ((hash << 5) + hash) + str.c_str()[i];    // hash * 33 + c
