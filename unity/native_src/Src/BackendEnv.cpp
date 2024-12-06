@@ -1163,7 +1163,7 @@ std::string FBackendEnv::GetJSStackTrace()
     JS_FreeValue(ctx, stack);
     return ret;
 #else
-    return StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
+    return StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed)).c_str();
 #endif
 }
 

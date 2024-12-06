@@ -1,5 +1,6 @@
 #pragma once
 #include <sstream>
+#include "PString.h"
 #if !defined(PUERTS_NAMESPACE)
 #if defined(WITH_QJS_NAMESPACE_SUFFIX)
 #define PUERTS_NAMESPACE puerts_qjs
@@ -71,7 +72,7 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
 
 // TODO: rename this file
 #ifndef WITH_QUICKJS
-std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
+PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
     std::ostringstream stm;
     for (int i = 0; i < InStack->GetFrameCount(); i++)
@@ -106,7 +107,7 @@ std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace>
                 << ")" << std::endl;
         }
     }
-    return stm.str();
+    return stm.str().c_str();
 }
 #endif
 
