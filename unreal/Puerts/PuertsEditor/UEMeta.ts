@@ -1467,7 +1467,7 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
             PropertyFlags = PropertyFlags | (BigInt(UE.PropertyFlags.CPF_Edit) | BigInt(UE.PropertyFlags.CPF_DisableEditOnTemplate));
             bSeenEditSpecifier = true;
             break;
-        case 'EditDefaultOnly'.toLowerCase():
+        case 'EditDefaultsOnly'.toLowerCase():
             if (!value.IsMetaKey())
             {
                 return markInvalidSince(`${value.Specifier} should be a meta key`);
@@ -1503,7 +1503,7 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
             PropertyFlags = PropertyFlags | (BigInt(UE.PropertyFlags.CPF_Edit) | BigInt(UE.PropertyFlags.CPF_EditConst ) | BigInt(UE.PropertyFlags.CPF_DisableEditOnTemplate));
             bSeenEditSpecifier = true;
             break;
-        case 'VisibleDefaultOnly'.toLowerCase():
+        case 'VisibleDefaultsOnly'.toLowerCase():
             if (!value.IsMetaKey())
             {
                 return markInvalidSince(`${value.Specifier} should be a meta key`);

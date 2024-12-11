@@ -9,7 +9,7 @@ function some<T>(array: ReadonlyArray<T> | undefined, predicate?: (value: T) => 
     if (!predicate) return array.length > 0;
 
     for (const value of array) {
-        if (predicate(value) return true;
+        if (predicate(value)) return true;
     }
 
     return false;
