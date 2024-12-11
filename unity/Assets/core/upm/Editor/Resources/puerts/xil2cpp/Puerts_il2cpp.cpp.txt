@@ -563,6 +563,10 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
     {
         *out_object = il2cpp::gc::GCHandle::GetTarget(*res);
         //PLog("found existed jsobject:%p", *out_object);
+        if (out_object == nullptr)
+        {
+            value_ref = apis->duplicate_value_ref(value_ref);
+        }
     }
     
     *out_value_ref = value_ref;
