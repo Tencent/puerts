@@ -236,6 +236,9 @@ global.PuertsWebGL = {
                 LogicTick: function (isolate: IntPtr) { },
                 SetLogCallback: function (log: IntPtr, logWarning: IntPtr, logError: IntPtr) {
 
+                },
+                GetJSStackTrace: function (isolate: IntPtr) {
+                    return new Error().stack;
                 }
             }
         )
