@@ -127,8 +127,17 @@ void FCppObjectMapper::CallbackDataGarbageCollected(const v8::WeakCallbackInfo<P
     {
         CallbackData->Finalize(&v8impl::g_pesapi_ffi, CallbackData->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     }
-    CallbackData->CppObjectMapper->FunctionDatas.erase(std::remove(CallbackData->CppObjectMapper->FunctionDatas.begin(), CallbackData->CppObjectMapper->FunctionDatas.end(),
-        CallbackData), CallbackData->CppObjectMapper->FunctionDatas.end());
+    for (auto it = CallbackData->CppObjectMapper->FunctionDatas.begin(); it != CallbackData->CppObjectMapper->FunctionDatas.end(); )
+    {
+        if (*it == CallbackData)
+        {
+            it = CallbackData->CppObjectMapper->FunctionDatas.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
     delete CallbackData;
 }
 
