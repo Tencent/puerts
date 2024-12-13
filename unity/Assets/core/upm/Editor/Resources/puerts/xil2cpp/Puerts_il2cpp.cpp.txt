@@ -1955,7 +1955,7 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
     auto env = apis->get_env_from_ref(envRef);
     auto jsEnvPrivate = new puerts::JsEnvPrivate(apis, envRef, objPool, objPoolAddMethodInfo, objPoolRemoveMethodInfo);
     apis->set_env_private(env, jsEnvPrivate);
-    auto func = apis->create_function(env, LoadTypeWrapper, nullptr);
+    auto func = apis->create_function(env, LoadTypeWrapper, nullptr, nullptr);
     if (func)
     {
         pesapi_value global = apis->global(env);

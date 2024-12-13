@@ -120,12 +120,36 @@ static void PesapiFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& in
     FunctionInfo->Callback(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&info));
 }
 
-v8::MaybeLocal<v8::Function> FCppObjectMapper::CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data)
+void FCppObjectMapper::CallbackDataGarbageCollected(const v8::WeakCallbackInfo<PesapiCallbackData>& Data)
 {
-    auto CallbackData = new PesapiCallbackData {Callback, Data};
-    FunctionDatas.push_back(CallbackData);
+    PesapiCallbackData* CallbackData = Data.GetParameter();
+    if (CallbackData->Finalize)
+    {
+        CallbackData->Finalize(&v8impl::g_pesapi_ffi, CallbackData->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+    }
+    CallbackData->CppObjectMapper->FunctionDatas.erase(std::remove(CallbackData->CppObjectMapper->FunctionDatas.begin(), CallbackData->CppObjectMapper->FunctionDatas.end(),
+        CallbackData), CallbackData->CppObjectMapper->FunctionDatas.end());
+    delete CallbackData;
+}
+
+v8::MaybeLocal<v8::Function> FCppObjectMapper::CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize)
+{
+    auto CallbackData = new PesapiCallbackData {Callback, Data, this};
+    CallbackData->Finalize = Finalize;
     auto V8Data = v8::External::New(Context->GetIsolate(), &CallbackData->Data);
-    return v8::FunctionTemplate::New(Context->GetIsolate(), PesapiFunctionCallback, V8Data)->GetFunction(Context);
+    auto Ret = v8::FunctionTemplate::New(Context->GetIsolate(), PesapiFunctionCallback, V8Data)->GetFunction(Context);
+    if (!Ret.IsEmpty())
+    {
+        CallbackData->JsFunction.Reset(Context->GetIsolate(), Ret.ToLocalChecked());
+        CallbackData->JsFunction.SetWeak<PesapiCallbackData>(
+            CallbackData, CallbackDataGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        FunctionDatas.push_back(CallbackData);
+    }
+    else
+    {
+        delete CallbackData;
+    }
+    return Ret;
 }
 
 bool FCppObjectMapper::IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
@@ -444,7 +468,12 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     }
     for(int i = 0;i < FunctionDatas.size(); ++i)
     {
-        delete FunctionDatas[i];
+        auto CallbackData = FunctionDatas[i];
+        if (CallbackData->Finalize)
+        {
+            CallbackData->Finalize(&v8impl::g_pesapi_ffi, CallbackData->Data, PData);
+        }
+        delete CallbackData;
     }
     FunctionDatas.clear();
     CDataCache.clear();

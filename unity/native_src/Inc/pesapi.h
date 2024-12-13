@@ -127,6 +127,7 @@ typedef struct pesapi_property_descriptor__* pesapi_property_descriptor;
 typedef void (*pesapi_callback)(struct pesapi_ffi* apis, pesapi_callback_info info);
 typedef void* (*pesapi_constructor)(struct pesapi_ffi* apis, pesapi_callback_info info);
 typedef void (*pesapi_finalize)(struct pesapi_ffi* apis, void* ptr, void* class_data, void* env_private);
+typedef void (*pesapi_function_finalize)(struct pesapi_ffi* apis, void* data, void* env_private);
 typedef void* (*pesapi_on_native_object_enter)(void* ptr, void* class_data, void* env_private);
 // userdata: return of pesapi_on_native_object_enter
 typedef void (*pesapi_on_native_object_exit)(void* ptr, void* class_data, void* env_private, void* userdata);
@@ -152,7 +153,7 @@ typedef pesapi_value (*pesapi_create_string_utf8_func)(pesapi_env env, const cha
 typedef pesapi_value (*pesapi_create_binary_func)(pesapi_env env, void* str, size_t length);
 typedef pesapi_value (*pesapi_create_array_func)(pesapi_env env);
 typedef pesapi_value (*pesapi_create_object_func)(pesapi_env env);
-typedef pesapi_value (*pesapi_create_function_func)(pesapi_env env, pesapi_callback native_impl, void* data);
+typedef pesapi_value (*pesapi_create_function_func)(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize);
 typedef pesapi_value (*pesapi_create_class_func)(pesapi_env env, const void* type_id);
 
 typedef bool (*pesapi_get_value_bool_func)(pesapi_env env, pesapi_value value);

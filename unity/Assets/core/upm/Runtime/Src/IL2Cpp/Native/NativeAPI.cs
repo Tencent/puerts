@@ -259,7 +259,7 @@ namespace PuertsIl2cpp
     public delegate IntPtr pesapi_create_binary_func(IntPtr env, IntPtr str, UIntPtr length);
     public delegate IntPtr pesapi_create_array_func(IntPtr env);
     public delegate IntPtr pesapi_create_object_func(IntPtr env);
-    public delegate IntPtr pesapi_create_function_func(IntPtr env, pesapi_callback native_impl, IntPtr data);
+    public delegate IntPtr pesapi_create_function_func(IntPtr env, pesapi_callback native_impl, IntPtr data, IntPtr finalize);
     public delegate IntPtr pesapi_create_class_func(IntPtr env, IntPtr type_id);
 
     public delegate bool pesapi_get_value_bool_func(IntPtr env, IntPtr value);

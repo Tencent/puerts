@@ -154,7 +154,7 @@ namespace Puerts
             PuertsIl2cpp.pesapi_ffi ffi = Marshal.PtrToStructure<PuertsIl2cpp.pesapi_ffi>(apis);
             var scope = ffi.open_scope(nativePesapiEnv);
             var env = ffi.get_env_from_ref(nativePesapiEnv);
-            var func = ffi.create_function(env, FooImpl, IntPtr.Zero);
+            var func = ffi.create_function(env, FooImpl, IntPtr.Zero, IntPtr.Zero);
             var global = ffi.global(env);
             ffi.set_property(env, global, "CSharpFoo", func);
             ffi.close_scope(scope);

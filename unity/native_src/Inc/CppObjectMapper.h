@@ -48,6 +48,9 @@ struct PesapiCallbackData
 {
     pesapi_callback Callback;
     void* Data;
+    class FCppObjectMapper* CppObjectMapper;
+    v8::Global<v8::Function> JsFunction;
+    pesapi_function_finalize Finalize = nullptr;
 };
 
 class FCppObjectMapper final : public ICppObjectMapper
@@ -64,7 +67,7 @@ public:
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
         
-    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data) override;
+    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) override;
 
     virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
 
@@ -94,6 +97,8 @@ private:
 #endif
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
+    
+    static void CallbackDataGarbageCollected(const v8::WeakCallbackInfo<PesapiCallbackData>& Data);
 };
 
 }    // namespace PUERTS_NAMESPACE

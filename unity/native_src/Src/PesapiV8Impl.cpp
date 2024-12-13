@@ -163,10 +163,10 @@ pesapi_value pesapi_create_object(pesapi_env env)
     return v8impl::PesapiValueFromV8LocalValue(v8::Object::New(context->GetIsolate()));
 }
 
-pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data)
+pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    auto func = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->CreateFunction(context, native_impl, data);
+    auto func = puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->CreateFunction(context, native_impl, data, finalize);
     if (func.IsEmpty())
         return nullptr;
     return v8impl::PesapiValueFromV8LocalValue(func.ToLocalChecked());

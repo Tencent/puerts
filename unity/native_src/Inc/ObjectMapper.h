@@ -39,7 +39,7 @@ public:
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
         
         
-    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data) = 0;
+    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) = 0;
 
     virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
 
