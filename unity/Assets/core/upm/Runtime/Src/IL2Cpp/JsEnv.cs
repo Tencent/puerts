@@ -65,7 +65,7 @@ namespace Puerts
             this.loader = loader;
 
             //only once is enough
-            PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
+            PuertsIl2cpp.NativeAPI.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetRegsterApi());
             apis = PuertsIl2cpp.NativeAPI.GetFFIApi();
             tryLoadTypeMethodInfo = typeof(TypeRegister).GetMethod("RegisterNoThrow");
@@ -158,6 +158,33 @@ namespace Puerts
             var global = ffi.global(env);
             ffi.set_property(env, global, "CSharpFoo", func);
             ffi.close_scope(scope);
+        }
+        
+        [PuertsIl2cpp.MonoPInvokeCallback(typeof(PuertsIl2cpp.NativeAPI.LogCallback))]
+        private static void LogCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
+
+        [PuertsIl2cpp.MonoPInvokeCallback(typeof(PuertsIl2cpp.NativeAPI.LogCallback))]
+        private static void LogWarningCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
+
+        [PuertsIl2cpp.MonoPInvokeCallback(typeof(PuertsIl2cpp.NativeAPI.LogCallback))]
+        private static void LogErrorCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
         }
         
         static IntPtr storeCallback = IntPtr.Zero;

@@ -218,24 +218,29 @@ namespace PuertsIl2cpp
 
         public static LogCallback Log = LogImpl;
 
-        //[DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        //public static extern void SetLogCallback(IntPtr log);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SetLogCallback(IntPtr log, IntPtr logWarning, IntPtr logError);
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallbackInternal(IntPtr log);
 
         //[UnityEngine.Scripting.RequiredByNativeCodeAttribute()]
-        public static void SetLogCallback(LogCallback log)
+        public static void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR) || UNITY_STANDALONE_WIN
             GCHandle.Alloc(log);
+            GCHandle.Alloc(logWarning);
+            GCHandle.Alloc(logError);
 #endif
             IntPtr fn1 = log == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(log);
+            IntPtr fn2 = logWarning == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(logWarning);
+            IntPtr fn3 = logError == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(logError);
 
             try 
             {
                 //SetLogCallback(fn1);
                 SetLogCallbackInternal(fn1);
+                SetLogCallback(fn1, fn2, fn3);
             }
             catch(DllNotFoundException)
             {
