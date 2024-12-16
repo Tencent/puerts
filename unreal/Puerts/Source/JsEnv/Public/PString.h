@@ -104,6 +104,7 @@ public:
     {
         PString result;
         result.size_ = size_ + other.size_;
+        delete[] result.data_;
         result.data_ = new char[result.size_ + 1];
 #ifdef _MSC_VER
         strncpy_s(result.data_, result.size_ + 1, data_, size_);
@@ -121,6 +122,7 @@ public:
         PString result;
         size_t lhs_size = std::strlen(lhs);
         result.size_ = lhs_size + rhs.size_;
+        delete[] result.data_;
         result.data_ = new char[result.size_ + 1];
 #ifdef _MSC_VER
         strncpy_s(result.data_, result.size_ + 1, lhs, lhs_size);
