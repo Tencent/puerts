@@ -5,8 +5,6 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if UNITY_2020_1_OR_NEWER
-#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
 
 using System;
 using System.Runtime.InteropServices;
@@ -14,19 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Collections.Generic;
 
-namespace PuertsIl2cpp
+namespace Puerts
 {
-#pragma warning disable 414
-    public class MonoPInvokeCallbackAttribute : System.Attribute
-    {
-        private Type type;
-        public MonoPInvokeCallbackAttribute(Type t)
-        {
-            type = t;
-        }
-    }
-#pragma warning restore 414
-
     public class NativeAPI
     {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
@@ -55,24 +42,6 @@ namespace PuertsIl2cpp
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetPapiEnvRef(IntPtr isolate);
-        
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
-        {
-            throw new NotImplementedException();
-        }
-        
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void CleanupPapiEnvRef(IntPtr api, IntPtr envRef)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void DestroyJSEnvPrivate(IntPtr jsEnvPrivate)
-        {
-            throw new NotImplementedException();
-        }
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, bool isValueType, bool isDelegate, string delegateSignature);
@@ -104,17 +73,6 @@ namespace PuertsIl2cpp
         //[DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         //public static extern void SetObjectPool(IntPtr jsEnv, IntPtr objectPoolAddMethodInfo, IntPtr objectPoolAdd, IntPtr objectPoolRemoveMethodInfo, IntPtr objectPoolRemove, IntPtr objectPoolInstance);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetRegisterNoThrow(MethodBase methodInfo)
-        {
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetObjectToGlobal(IntPtr apis, IntPtr envRef, string key, Object obj)
-        {
-            throw new NotImplementedException();
-        }
-
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void AddPendingKillScriptObjects(IntPtr ffiApi, IntPtr jsEnv, IntPtr valueRef);
         
@@ -132,6 +90,36 @@ namespace PuertsIl2cpp
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool LogicTick(IntPtr jsEnv);
+
+#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
+        {
+            throw new NotImplementedException();
+        }
+        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void CleanupPapiEnvRef(IntPtr api, IntPtr envRef)
+        {
+            throw new NotImplementedException();
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void DestroyJSEnvPrivate(IntPtr jsEnvPrivate)
+        {
+            throw new NotImplementedException();
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void SetRegisterNoThrow(MethodBase methodInfo)
+        {
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void SetObjectToGlobal(IntPtr apis, IntPtr envRef, string key, Object obj)
+        {
+            throw new NotImplementedException();
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static object GetModuleExecutor(IntPtr apis, IntPtr NativeJsEnvPtr, Type type)
@@ -204,6 +192,7 @@ namespace PuertsIl2cpp
         {
             throw new NotImplementedException();
         }
+#endif
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -213,7 +202,11 @@ namespace PuertsIl2cpp
         [MonoPInvokeCallback(typeof(LogCallback))]
         public static void LogImpl(string msg)
         {
+#if PUERTS_GENERAL
+            System.Console.WriteLine("debug msg: " + msg);
+#else
             UnityEngine.Debug.Log("debug msg: " + msg);
+#endif
         }
 
         public static LogCallback Log = LogImpl;
@@ -244,7 +237,11 @@ namespace PuertsIl2cpp
             }
             catch(DllNotFoundException)
             {
+#if PUERTS_GENERAL
+                System.Console.WriteLine("[Puer001] PuerTS's Native Plugin(s) is missing. You can solve this problem following the FAQ.");
+#else
                 UnityEngine.Debug.LogError("[Puer001] PuerTS's Native Plugin(s) is missing. You can solve this problem following the FAQ.");
+#endif
                 throw;
             }
         }
@@ -431,6 +428,3 @@ namespace PuertsIl2cpp
         public pesapi_set_env_private_func set_env_private;
     }
 }
-
-#endif
-#endif

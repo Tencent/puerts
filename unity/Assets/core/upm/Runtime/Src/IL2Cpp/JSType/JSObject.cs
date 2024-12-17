@@ -33,7 +33,7 @@ namespace Puerts
 
         ~JSObject()
         {
-            PuertsIl2cpp.NativeAPI.AddPendingKillScriptObjects(apis, nativeJsEnv, valueRef);
+            Puerts.NativeAPI.AddPendingKillScriptObjects(apis, nativeJsEnv, valueRef);
         }
     }
 }
