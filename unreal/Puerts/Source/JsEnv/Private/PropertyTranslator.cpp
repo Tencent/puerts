@@ -11,7 +11,7 @@
 #include "ObjectMapper.h"
 #include "StructWrapper.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "Engine/UserDefinedStruct.h"
+#include "StructUtils/UserDefinedStruct.h"
 #endif
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
