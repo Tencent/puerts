@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -545,13 +545,13 @@ struct MethodInfoHelper
 {
 };
 
-intptr_t GetMethodPointer(Il2CppReflectionMethod* method);
+Il2CppMethodPointer GetMethodPointer(Il2CppReflectionMethod* method);
 intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method);
 
 template <class _Ret, class... _Args>
 struct MethodInfoHelper<_Ret (_Args...)>
 {
-    intptr_t func;
+    Il2CppMethodPointer func;
     intptr_t methodInfo;
     Il2CppObject* instance;
 

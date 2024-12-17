@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -82,7 +82,7 @@ struct JsClassInfo : public JsClassInfoHeader
     std::vector<CSharpFieldInfo> Fields;
 };
 
-intptr_t GetMethodPointer(Il2CppReflectionMethod* method)
+Il2CppMethodPointer GetMethodPointer(Il2CppReflectionMethod* method)
 {
     auto methodInfo = method->method;
     auto ret = MetadataCache::GetMethodPointer(methodInfo->klass->image, methodInfo->token);
@@ -90,7 +90,7 @@ intptr_t GetMethodPointer(Il2CppReflectionMethod* method)
     {
         ret = methodInfo->methodPointer;
     }
-    return (intptr_t)ret;
+    return ret;
 }
 
 intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method)
@@ -312,7 +312,7 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
             }
             ++wrapDatas;
         }
-        std::string err_info = "invalid arguments for " + csharpMethodInfo->Name;
+        std::string err_info = "invalid arguments to " + csharpMethodInfo->Name;
         apis->throw_by_string(info, err_info.c_str()); 
     } 
     catch (Il2CppExceptionWrapper& exception)
@@ -1940,11 +1940,101 @@ static void OnCsObjectExit(void* ptr, void* class_data, JsEnvPrivate* jsEnvPriva
     jsEnvPrivate->UnRefCSObject(idx);
 }
 
+static void FreeCSharpMethodInfo(CSharpMethodInfo* csharpMethodInfo)
+{
+    if (csharpMethodInfo)
+    {
+        for(int i = 0; i < csharpMethodInfo->OverloadDatas.size(); ++i)
+        {
+            free(csharpMethodInfo->OverloadDatas[i]);
+        }
+        delete csharpMethodInfo;
+    }
+}
+
+static void FunctioFinalize(struct pesapi_ffi* apis, void* data, void* env_private)
+{
+    FreeCSharpMethodInfo((CSharpMethodInfo*) data);
+}
+
+static bool IsPrimitive(Il2CppTypeEnum type)
+{
+    return (type >= IL2CPP_TYPE_BOOLEAN && type <= IL2CPP_TYPE_R8) || type == IL2CPP_TYPE_I || type == IL2CPP_TYPE_U;
+}
+
+static bool TypeInfoPassToJsFilter(const Il2CppType* type, const Il2CppClass* klass)
+{
+    return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type;
+}
+
+static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
+{
+    pesapi_env env = apis->get_env(info);
+    int argc = apis->get_args_len(info);
+    CSharpMethodInfo* csharpMethodInfo = nullptr;
+    for (int i = 0; i < argc; ++i)
+    {
+        Il2CppReflectionMethod* reflectionMethod = (Il2CppReflectionMethod*) apis->get_native_object_ptr(env, apis->get_arg(info, i));
+        if (!reflectionMethod || !Class::IsAssignableFrom(il2cpp_defaults.method_info_class, reflectionMethod->object.klass))
+        {
+            apis->throw_by_string(info, "expect a MethodInfo");
+            FreeCSharpMethodInfo(csharpMethodInfo);
+            return;
+        }
+        else
+        {
+            bool isStatic = !il2cpp::vm::Method::IsInstance(reflectionMethod->method);
+            bool needBoxing = reflectionMethod->method->klass == il2cpp_defaults.object_class;
+            if (csharpMethodInfo == nullptr)
+            {
+                csharpMethodInfo = new CSharpMethodInfo { std::string(reflectionMethod->method->name), isStatic, false, false, needBoxing};
+            }
+            std::vector<Il2CppClass*> usedTypes;
+            const Il2CppType* type = Method::GetReturnType(reflectionMethod->method);
+            Il2CppClass* klass = il2cpp_codegen_class_from_type(type);
+            if (TypeInfoPassToJsFilter(type, klass))
+            {
+                usedTypes.push_back(klass);
+            }
+            size_t paramCount = Method::GetParamCount(reflectionMethod->method);
+            for (size_t index = 0; index < paramCount; ++index)
+            {
+                type = Method::GetParam(reflectionMethod->method, index);
+                klass = il2cpp_codegen_class_from_type(type);
+                if (TypeInfoPassToJsFilter(type, klass))
+                {
+                    usedTypes.push_back(klass);
+                }
+            }
+            int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * usedTypes.size();
+            puerts::WrapData* overloadData = (puerts::WrapData*)malloc(allocSize);
+            memset(overloadData, 0, allocSize);
+            overloadData->Method = const_cast<MethodInfo *>(reflectionMethod->method);
+            overloadData->MethodPointer = GetMethodPointer(reflectionMethod);
+            overloadData->Wrap = &ReflectionWrapper; // TODO: find wrapper by signature
+            overloadData->IsStatic = isStatic;
+            overloadData->IsExtensionMethod = false;
+            csharpMethodInfo->OverloadDatas.push_back(overloadData);
+        }
+    }
+    if (csharpMethodInfo)
+    {
+        csharpMethodInfo->OverloadDatas.push_back(nullptr);
+        auto func = apis->create_function(env, MethodCallback, csharpMethodInfo, FunctioFinalize);
+        apis->add_return(info, func);
+    }
+}
+
 static void LoadTypeWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     pesapi_env env = apis->get_env(info);
     Il2CppObject* type = (Il2CppObject*)apis->get_native_object_ptr(env,  apis->get_arg(info, 0));
     auto type_id = CSharpTypeToTypeId(type);
+    if (!type_id)
+    {
+        apis->throw_by_string(info, "expect a Type");
+        return;
+    }
     auto ret = apis->create_class(env, type_id);
     apis->add_return(info, ret);
 }
@@ -1955,17 +2045,19 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
     auto env = apis->get_env_from_ref(envRef);
     auto jsEnvPrivate = new puerts::JsEnvPrivate(apis, envRef, objPool, objPoolAddMethodInfo, objPoolRemoveMethodInfo);
     apis->set_env_private(env, jsEnvPrivate);
-    auto func = apis->create_function(env, LoadTypeWrapper, nullptr, nullptr);
-    if (func)
+    auto loadType = apis->create_function(env, LoadTypeWrapper, nullptr, nullptr);
+    auto createFunction = apis->create_function(env, createFunctionWrapper, nullptr, nullptr);
+    if (loadType && createFunction)
     {
         pesapi_value global = apis->global(env);
         if (global)
         {
-            apis->set_property(env, global, "loadType", func);
+            apis->set_property(env, global, "loadType", loadType);
+            apis->set_property(env, global, "createFunction", createFunction);
             return jsEnvPrivate;
         }
     }
-    Exception::Raise(Exception::GetInvalidOperationException("can not init global.loadType"));
+    Exception::Raise(Exception::GetInvalidOperationException("can not init global.loadType or global.createFunction"));
     return nullptr;
 }
 
