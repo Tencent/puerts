@@ -13,6 +13,7 @@ namespace Puerts.UnitTest
 
         }
 
+        [UnityEngine.Scripting.Preserve]
         public bool IsESM(string filepath)
         {
             return !filepath.EndsWith(".cjs");
