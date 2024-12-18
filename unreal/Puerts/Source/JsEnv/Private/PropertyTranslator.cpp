@@ -11,7 +11,11 @@
 #include "ObjectMapper.h"
 #include "StructWrapper.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
+#include "StructUtils/UserDefinedStruct.h"
+#else
 #include "Engine/UserDefinedStruct.h"
+#endif
 #endif
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
