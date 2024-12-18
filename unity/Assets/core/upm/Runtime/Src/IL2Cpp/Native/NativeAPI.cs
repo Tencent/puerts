@@ -221,6 +221,7 @@ namespace Puerts
     }
     
     public delegate void pesapi_callback(IntPtr apis, IntPtr info);
+    public delegate void pesapi_function_finalize(IntPtr apis, IntPtr data, IntPtr env_private);
 
     public delegate IntPtr pesapi_create_null_func(IntPtr env);
     public delegate IntPtr pesapi_create_undefined_func(IntPtr env);
@@ -234,7 +235,7 @@ namespace Puerts
     public delegate IntPtr pesapi_create_binary_func(IntPtr env, IntPtr str, UIntPtr length);
     public delegate IntPtr pesapi_create_array_func(IntPtr env);
     public delegate IntPtr pesapi_create_object_func(IntPtr env);
-    public delegate IntPtr pesapi_create_function_func(IntPtr env, pesapi_callback native_impl, IntPtr data, IntPtr finalize);
+    public delegate IntPtr pesapi_create_function_func(IntPtr env, pesapi_callback native_impl, IntPtr data, pesapi_function_finalize finalize);
     public delegate IntPtr pesapi_create_class_func(IntPtr env, IntPtr type_id);
 
     public delegate bool pesapi_get_value_bool_func(IntPtr env, IntPtr value);
