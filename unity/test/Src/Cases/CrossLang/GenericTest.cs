@@ -218,7 +218,10 @@ namespace Puerts.UnitTest
             ");
             Assert.AreEqual(ret, "Int321024");
 
-            jsEnv.Eval("gc()");
+            if (jsEnv.Backend is BackendV8)
+            {
+                jsEnv.Eval("gc()");
+            }
 
             jsEnv.Tick();
         }
