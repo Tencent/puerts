@@ -63,6 +63,11 @@ if (UnityEngine_Debug || !global.console) {
         if (console_org) console_org.error.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.LogError(toString(arguments));
     }
+
+    console.debug = function() {
+        if (console_org) console_org.debug.apply(null, Array.prototype.slice.call(arguments));
+        UnityEngine_Debug.Log(toString(arguments));
+    }
     
     console.trace = function() {
         if (console_org) console_org.trace.apply(null, Array.prototype.slice.call(arguments));
@@ -82,6 +87,14 @@ if (UnityEngine_Debug || !global.console) {
     const timeRecorder = new Map();
     console.time = function(name){
         timeRecorder.set(name,+new Date);
+    }
+    console.timeLog = function(name, ...args){
+        const startTime = timeRecorder.get(name);
+        if(startTime){
+            console.log(String(name)+": "+(+new Date - startTime)+" ms", ...args);
+        }else{
+            console.warn("Timer '" + String(name)+ "' does not exist");
+        };
     }
     console.timeEnd = function(name){
         const startTime = timeRecorder.get(name);
