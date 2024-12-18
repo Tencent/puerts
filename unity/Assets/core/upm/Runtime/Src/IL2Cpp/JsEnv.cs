@@ -76,7 +76,7 @@ namespace Puerts
             Puerts.NativeAPI.SetGlobalType_ArrayBuffer(typeof(ArrayBuffer));
             Puerts.NativeAPI.SetGlobalType_JSObject(typeof(JSObject));
 
-            nativeJsEnv = Puerts.NativeAPI.CreateJSEngine(0);
+            nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine(0);
             nativePesapiEnv = Puerts.NativeAPI.GetPapiEnvRef(nativeJsEnv);
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
             nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
@@ -102,17 +102,17 @@ namespace Puerts
             }
 #endif
 
-            if (Puerts.NativeAPI.GetLibBackend(nativeJsEnv) == 0) 
+            if (Puerts.PuertsDLL.GetLibBackend(nativeJsEnv) == 0) 
                 Backend = new BackendV8(this);
-            else if (Puerts.NativeAPI.GetLibBackend(nativeJsEnv) == 1)
+            else if (Puerts.PuertsDLL.GetLibBackend(nativeJsEnv) == 1)
                 Backend = new BackendNodeJS(this);
-            else if (Puerts.NativeAPI.GetLibBackend(nativeJsEnv) == 2)
+            else if (Puerts.PuertsDLL.GetLibBackend(nativeJsEnv) == 2)
                 Backend = new BackendQuickJS(this);
 
             PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
 
             if (debugPort != -1) {
-                Puerts.NativeAPI.CreateInspector(nativeJsEnv, debugPort);    
+                Puerts.PuertsDLL.CreateInspector(nativeJsEnv, debugPort);    
             }
             string debugpath;
             string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
@@ -280,8 +280,8 @@ namespace Puerts
         public void Tick()
         {
             Puerts.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
-            Puerts.NativeAPI.InspectorTick(nativeJsEnv);
-            Puerts.NativeAPI.LogicTick(nativeJsEnv);
+            Puerts.PuertsDLL.InspectorTick(nativeJsEnv);
+            Puerts.PuertsDLL.LogicTick(nativeJsEnv);
             if (TickHandler != null) TickHandler();
         }
 
@@ -291,7 +291,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            while (!Puerts.NativeAPI.InspectorTick(nativeJsEnv)) { }
+            while (!Puerts.PuertsDLL.InspectorTick(nativeJsEnv)) { }
 #if THREAD_SAFE
             }
 #endif
@@ -325,7 +325,7 @@ namespace Puerts
             {
                 if (disposed) return;
                 Puerts.NativeAPI.CleanupPapiEnvRef(apis, nativePesapiEnv);
-                Puerts.NativeAPI.DestroyJSEngine(nativeJsEnv);
+                Puerts.PuertsDLL.DestroyJSEngine(nativeJsEnv);
                 Puerts.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
                 nativeScriptObjectsRefsMgr = IntPtr.Zero;
                 disposed = true;

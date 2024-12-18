@@ -5,9 +5,6 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if UNITY_2020_1_OR_NEWER
-#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
-
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -16,17 +13,6 @@ using System.Collections.Generic;
 
 namespace Puerts
 {
-#pragma warning disable 414
-    public class MonoPInvokeCallbackAttribute : System.Attribute
-    {
-        private Type type;
-        public MonoPInvokeCallbackAttribute(Type t)
-        {
-            type = t;
-        }
-    }
-#pragma warning restore 414
-
     public class NativeAPI
     {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
@@ -37,15 +23,6 @@ namespace Puerts
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void InitialPuerts(IntPtr PesapiImpl);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int GetLibBackend(IntPtr isolate);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateJSEngine(int backendType);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyJSEngine(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetRegsterApi();
@@ -92,19 +69,8 @@ namespace Puerts
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void CleanupPendingKillScriptObjects(IntPtr jsEnv);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void CreateInspector(IntPtr jsEnv, int port);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyInspector(IntPtr jsEnv);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool InspectorTick(IntPtr jsEnv);
-        
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool LogicTick(IntPtr jsEnv);
-
 #if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
         {
@@ -223,9 +189,6 @@ namespace Puerts
         }
 
         public static LogCallback Log = LogImpl;
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetLogCallback(IntPtr log, IntPtr logWarning, IntPtr logError);
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallbackInternal(IntPtr log);
@@ -246,7 +209,7 @@ namespace Puerts
             {
                 //SetLogCallback(fn1);
                 SetLogCallbackInternal(fn1);
-                SetLogCallback(fn1, fn2, fn3);
+                PuertsDLL.SetLogCallback(fn1, fn2, fn3);
             }
             catch(DllNotFoundException)
             {
@@ -441,6 +404,3 @@ namespace Puerts
         public pesapi_set_env_private_func set_env_private;
     }
 }
-
-#endif
-#endif

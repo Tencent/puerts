@@ -9,8 +9,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-#if !PUERTS_IL2CPP_OPTIMIZATION || !ENABLE_IL2CPP
-
 namespace Puerts
 {
 #pragma warning disable 414
@@ -647,5 +645,3 @@ namespace Puerts
         }
     }
 }
-
-#endif
