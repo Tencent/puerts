@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace Puerts.UnitTest 
 {
     public delegate void TestCallback(string msg);
-    class DelegateTestClass
+    public class DelegateTestClass
     {
         public TestCallback Callback;
         
