@@ -216,6 +216,11 @@ namespace PUERTS_NAMESPACE
         {
             delete CallbackInfos[i];
         }
+        
+        for (int i = 0; i < CallbackWithFinalizeInfos.size(); ++i)
+        {
+            delete CallbackWithFinalizeInfos[i];
+        }
 
         for (int i = 0; i < LifeCycleInfos.size(); ++i)
         {
@@ -436,6 +441,60 @@ namespace PUERTS_NAMESPACE
 #else
         return v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackInfos[Pos]),  v8::Local<v8::Signature>(), 0,  v8::ConstructorBehavior::kThrow);
 #endif
+    }
+    
+    void JSEngine::CallbackDataGarbageCollected(const v8::WeakCallbackInfo<FCallbackInfoWithFinalize>& Data)
+    {
+        FCallbackInfoWithFinalize* CallbackData = Data.GetParameter();
+        auto Isolate = Data.GetIsolate();
+        if (CallbackData->Finalize)
+        {
+#ifdef MULT_BACKENDS
+            auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+            CallbackData->Finalize(JsEngine->ResultInfo.PuertsPlugin, CallbackData->Data);
+#else
+            CallbackData->Finalize(Isolate, CallbackData->Data);
+#endif
+        }
+        for (auto it = CallbackData->JSE->CallbackWithFinalizeInfos.begin(); it != CallbackData->JSE->CallbackWithFinalizeInfos.end(); )
+        {
+            if (*it == CallbackData)
+            {
+                it = CallbackData->JSE->CallbackWithFinalizeInfos.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        delete CallbackData;
+    }
+    
+    v8::MaybeLocal<v8::Function> JSEngine::CreateFunction(CSharpFunctionCallback Callback, JsFunctionFinalizeCallback Finalize, int64_t Data)
+    {
+        v8::Isolate* Isolate = BackendEnv.MainIsolate;
+        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+        auto CallbackData = new FCallbackInfoWithFinalize(false, Callback, Data, Finalize, this);
+
+#if defined(WITH_QUICKJS)
+        auto Template = v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackData));
+#else
+        auto Template = v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackData),  v8::Local<v8::Signature>(), 0,  v8::ConstructorBehavior::kThrow);
+        Template->Set(Isolate, "__do_not_cache", v8::ObjectTemplate::New(Isolate));
+#endif
+        auto Ret = Template->GetFunction(Context);
+        if (!Ret.IsEmpty())
+        {
+            CallbackData->JsFunction.Reset(Isolate, Ret.ToLocalChecked());
+            CallbackData->JsFunction.SetWeak<FCallbackInfoWithFinalize>(
+                CallbackData, CallbackDataGarbageCollected, v8::WeakCallbackType::kInternalFields);
+            CallbackWithFinalizeInfos.push_back(CallbackData);
+        }
+        else
+        {
+            delete CallbackData;
+        }
+        return Ret;
     }
 
     void JSEngine::SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data)

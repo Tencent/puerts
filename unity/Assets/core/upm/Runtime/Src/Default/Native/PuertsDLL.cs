@@ -30,6 +30,11 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
+    public delegate void JsFunctionFinalizeCallback(IntPtr isolate, long data);
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate IntPtr V8ConstructorCallback(IntPtr isolate, IntPtr info, int paramLen, long data);
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
@@ -343,6 +348,20 @@ namespace Puerts
 #endif
             IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
             ReturnCSharpFunctionCallback(isolate, info, fn, data);
+        }
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void ReturnCSharpFunctionCallback2(IntPtr isolate, IntPtr info, IntPtr v8FunctionCallback, IntPtr JsFunctionFinalize, long data);
+
+        public static void ReturnCSharpFunctionCallback2(IntPtr isolate, IntPtr info, V8FunctionCallback v8FunctionCallback, JsFunctionFinalizeCallback JsFunctionFinalize, long data)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(v8FunctionCallback);
+            GCHandle.Alloc(JsFunctionFinalize);
+#endif
+            IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
+            IntPtr fn2 = JsFunctionFinalize == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(JsFunctionFinalize);
+            ReturnCSharpFunctionCallback2(isolate, info, fn, fn2, data);
         }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

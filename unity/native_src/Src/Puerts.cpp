@@ -642,6 +642,24 @@ V8_EXPORT void ReturnCSharpFunctionCallback(v8::Isolate* Isolate, const v8::Func
     Info.GetReturnValue().Set(JsEngine->ToTemplate(Isolate, false, Callback, Data)->GetFunction(Context).ToLocalChecked());
 }
 
+V8_EXPORT void ReturnCSharpFunctionCallback2(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, puerts::CSharpFunctionCallback Callback, puerts::JsFunctionFinalizeCallback Finalize, int64_t Data)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = JsEngine->ResultInfo.Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    auto Func = JsEngine->CreateFunction(Callback, Finalize, Data);
+    if (!Func.IsEmpty())
+    {
+        Info.GetReturnValue().Set(Func.ToLocalChecked());
+    }
+}
+
 V8_EXPORT void ReturnJSObject(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, puerts::JSObject *Object)
 {
    Info.GetReturnValue().Set(Object->GObject.Get(Isolate));

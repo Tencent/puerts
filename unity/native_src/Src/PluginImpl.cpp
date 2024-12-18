@@ -132,6 +132,8 @@ public:
     virtual void ReturnFunction(const void* Info, void* Function) override;
 
     virtual void ReturnCSharpFunctionCallback(const void* Info, puerts::FuncPtr Callback, int64_t Data) override;
+    
+    virtual void ReturnCSharpFunctionCallback(const void* Info, puerts::FuncPtr Callback, puerts::FuncPtr Finalize, int64_t Data) override;
 
     virtual void ReturnJSObject(const void* Info, void* Object) override;
     //-------------------------- end js call cs --------------------------
@@ -803,6 +805,25 @@ void V8Plugin::ReturnCSharpFunctionCallback(const void* pInfo, puerts::FuncPtr C
     v8::Context::Scope ContextScope(Context);
 
     Info.GetReturnValue().Set(jsEngine.ToTemplate(Isolate, false, (PUERTS_NAMESPACE::CSharpFunctionCallback)Callback, Data)->GetFunction(Context).ToLocalChecked());
+}
+
+void V8Plugin::ReturnCSharpFunctionCallback(const void* pInfo, puerts::FuncPtr Callback, puerts::FuncPtr Finalize, int64_t Data)
+{
+    v8::Isolate* Isolate = jsEngine.MainIsolate;
+    const v8::FunctionCallbackInfo<v8::Value>& Info =  *(const v8::FunctionCallbackInfo<v8::Value>*)pInfo;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = jsEngine.ResultInfo.Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    auto Func = jsEngine.CreateFunction((PUERTS_NAMESPACE::CSharpFunctionCallback)Callback, (PUERTS_NAMESPACE::JsFunctionFinalizeCallback)Finalize, Data);
+    if (!Func.IsEmpty())
+    {
+        Info.GetReturnValue().Set(Func.ToLocalChecked());
+    }
 }
 
 void V8Plugin::ReturnJSObject(const void* pInfo, void* pObject)

@@ -28,6 +28,21 @@ namespace Puerts
             }
         }
 
+        [MonoPInvokeCallback(typeof(JsFunctionFinalizeCallback))]
+        internal static void FunctionFinalizeCallback(IntPtr isolate, long data)
+        {
+            try
+            {
+                int jsEnvIdx, callbackIdx;
+                Utils.LongToTwoInt(data, out jsEnvIdx, out callbackIdx);
+                JsEnv.jsEnvs[jsEnvIdx].ReleaseCallback(callbackIdx);
+            }
+            catch (Exception e)
+            {
+                PuertsDLL.ThrowException(isolate, "JsEnvCallbackWrap c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
+        }
+
         [MonoPInvokeCallback(typeof(V8DestructorCallback))]
         internal static void GeneralDestructor(IntPtr self, long data)
         {

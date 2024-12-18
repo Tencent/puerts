@@ -424,6 +424,24 @@ namespace Puerts
             return Utils.TwoIntToLong(Idx, callbackIdx);
         }
 
+        internal long AddCallbackSlow(JSFunctionCallback callback)
+        {
+            for(int i = 0; i < callbacks.Count; ++i)
+            {
+                if (callbacks[i] == null)
+                {
+                    callbacks[i] = callback;
+                    return Utils.TwoIntToLong(Idx, i);
+                }
+            }
+            return AddCallback(callback);
+        }
+
+        internal void ReleaseCallback(int callbackIdx)
+        {
+            callbacks[callbackIdx] = null;
+        }
+
         private readonly List<JSConstructorCallback> constructorCallbacks = new List<JSConstructorCallback>();
 
         internal IntPtr InvokeConstructor(IntPtr isolate, int callbackIdx, IntPtr info, int paramLen)
@@ -606,10 +624,10 @@ namespace Puerts
                     return;
                 }
 
-                var callbackID = AddCallback(new MethodReflectionWrap(methodInfos[0].Name,
+                var callbackID = AddCallbackSlow(new MethodReflectionWrap(methodInfos[0].Name,
                         methodInfos.Select(m => new OverloadReflectionWrap(m, this, false)).ToList()
                     ).Invoke);
-                PuertsDLL.ReturnCSharpFunctionCallback(isolate, info, StaticCallbacks.JsEnvCallbackWrap, callbackID);
+                PuertsDLL.ReturnCSharpFunctionCallback2(isolate, info, StaticCallbacks.JsEnvCallbackWrap, StaticCallbacks.FunctionFinalizeCallback, callbackID);
             }
             catch (Exception e)
             {

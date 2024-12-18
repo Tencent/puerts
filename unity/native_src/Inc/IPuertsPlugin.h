@@ -123,6 +123,8 @@ public:
     virtual void ReturnFunction(const void* Info, void* Function) = 0;
 
     virtual void ReturnCSharpFunctionCallback(const void* Info, FuncPtr Callback, int64_t Data) = 0;
+    
+    virtual void ReturnCSharpFunctionCallback(const void* Info, FuncPtr Callback, FuncPtr Finalize, int64_t Data) = 0;
 
     virtual void ReturnJSObject(const void* Info, void* Object) = 0;
     //-------------------------- end js call cs --------------------------
