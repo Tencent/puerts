@@ -21,9 +21,6 @@ namespace Puerts
         const string DLLNAME = "puerts";
 #endif
 
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void InitialPuerts(IntPtr PesapiImpl);
-
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetRegsterApi();
         
@@ -32,6 +29,11 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetPapiEnvRef(IntPtr isolate);
+        
+#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
+        
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void InitialPuerts(IntPtr PesapiImpl);
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, bool isValueType, bool isDelegate, string delegateSignature);
@@ -60,16 +62,11 @@ namespace Puerts
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RegisterCSharpType(IntPtr classInfo);
 
-        //[DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        //public static extern void SetObjectPool(IntPtr jsEnv, IntPtr objectPoolAddMethodInfo, IntPtr objectPoolAdd, IntPtr objectPoolRemoveMethodInfo, IntPtr objectPoolRemove, IntPtr objectPoolInstance);
-
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void AddPendingKillScriptObjects(IntPtr ffiApi, IntPtr jsEnv, IntPtr valueRef);
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void CleanupPendingKillScriptObjects(IntPtr jsEnv);
-
-#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
@@ -171,7 +168,6 @@ namespace Puerts
         {
             throw new NotImplementedException();
         }
-#endif
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -221,6 +217,7 @@ namespace Puerts
                 throw;
             }
         }
+#endif
     }
     
     public delegate void pesapi_callback(IntPtr apis, IntPtr info);
