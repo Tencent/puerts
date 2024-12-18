@@ -55,7 +55,7 @@ PUERTS_EXPORT int GetApiLevel()
 
 PUERTS_EXPORT int GetLibBackend(puerts::IPuertsPlugin* plugin)
 {
-    return 0;
+    return plugin->GetType();
 }
 
 PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngine(int backend)
