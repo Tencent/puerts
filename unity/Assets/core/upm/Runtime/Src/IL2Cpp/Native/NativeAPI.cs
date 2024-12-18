@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if UNITY_2020_1_OR_NEWER
+#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
 
 using System;
 using System.Runtime.InteropServices;
@@ -14,6 +16,17 @@ using System.Collections.Generic;
 
 namespace Puerts
 {
+#pragma warning disable 414
+    public class MonoPInvokeCallbackAttribute : System.Attribute
+    {
+        private Type type;
+        public MonoPInvokeCallbackAttribute(Type t)
+        {
+            type = t;
+        }
+    }
+#pragma warning restore 414
+
     public class NativeAPI
     {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
@@ -428,3 +441,6 @@ namespace Puerts
         public pesapi_set_env_private_func set_env_private;
     }
 }
+
+#endif
+#endif
