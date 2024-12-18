@@ -197,5 +197,28 @@ namespace Puerts.UnitTest
             
             jsEnv.Tick();
         }
+
+        [Test]
+        public void CreateFunctionByMethodInfoTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+
+            string ret = jsEnv.Eval<string>(@"
+                (function() {
+                    const cls = puer.$typeof(CS.Puerts.UnitTest.GenericTestClass);
+                    const methods = CS.Puerts.Utils.GetMethodAndOverrideMethodByName(cls, 'StaticGenericMethod');
+                    let overloads = [];
+                    for (let i = 0; i < methods.Length; i++) {
+                        let method = methods.GetValue(i)
+                        overloads.push(method.MakeGenericMethod(puer.$typeof(CS.System.Int32)));
+                    }
+                    const func = createFunction(...overloads);
+                    return func() + func(1024);
+                })();
+            ");
+            Assert.AreEqual(ret, "Int321024");
+
+            jsEnv.Tick();
+        }
     }
 }
