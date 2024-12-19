@@ -30,7 +30,7 @@ namespace Puerts
 
     public class JsEnv : IDisposable
     {
-        internal static List<JsEnv> jsEnvs = new List<JsEnv>();
+        public static List<JsEnv> jsEnvs = new List<JsEnv>();
 
         internal readonly int Idx;
 
