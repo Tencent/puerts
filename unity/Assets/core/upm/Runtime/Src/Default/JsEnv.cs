@@ -30,7 +30,7 @@ namespace Puerts
 
     public class JsEnv : IDisposable
     {
-        public static List<JsEnv> jsEnvs = new List<JsEnv>();
+        internal static List<JsEnv> jsEnvs = new List<JsEnv>();
 
         internal readonly int Idx;
 
@@ -296,6 +296,9 @@ namespace Puerts
         */
         public T ExecuteModule<T>(string specifier, string exportee)
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
@@ -314,9 +317,15 @@ namespace Puerts
             if (exportee == "") return (T)(object)jso;
 
             return jso.Get<T>(exportee);
+#if THREAD_SAFE
+            }
+#endif
         }
         public JSObject ExecuteModule(string specifier)
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             if (ModuleExecutor == null)
             {
                 var ptr = PuertsDLL.GetModuleExecutor(isolate);
@@ -328,6 +337,9 @@ namespace Puerts
                 ModuleExecutor = new GenericDelegate(ptr, this, "ModuleExecutor");
             }
             return ModuleExecutor.Func<string, JSObject>(specifier);
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void Eval(string chunk, string chunkName = "chunk")
@@ -368,12 +380,24 @@ namespace Puerts
 
         public bool ClearModuleCache(string path)
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             return PuertsDLL.ClearModuleCache(isolate, path);
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void ClearModuleCache()
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             PuertsDLL.ClearModuleCache(isolate, "");
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public static void ClearAllModuleCaches () 
@@ -472,14 +496,26 @@ namespace Puerts
 
         public void RegisterGeneralGetSet(Type type, GeneralGetter getter, GeneralSetter setter)
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             if (getter != null) GeneralGetterManager.RegisterGetter(type, getter);
             if (setter != null) GeneralSetterManager.RegisterSetter(type, setter);
+#if THREAD_SAFE
+            }
+#endif
         }
-        
+
         //use by BlittableCopy
         public int GetTypeId(Type type)
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             return TypeManager.GetTypeId(isolate, type);
+#if THREAD_SAFE
+            }
+#endif
         }
 
         internal GenericDelegate ToGenericDelegate(IntPtr ptr)
@@ -818,38 +854,44 @@ namespace Puerts
         TaskCompletionSource<bool> waitDebugerTaskSource;
         public Task WaitDebuggerAsync()
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             if (debugPort == -1) return null;
             waitDebugerTaskSource = new TaskCompletionSource<bool>();
             return waitDebugerTaskSource.Task;
+#if THREAD_SAFE
+            }
+#endif
         }
 #endif
 
-//         [MonoPInvokeCallback(typeof(LogCallback))]
-//         private static void LogCallback(string msg)
-//         {
-// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-// #else
-//             UnityEngine.Debug.Log(msg);
-// #endif
-//         }
+        //         [MonoPInvokeCallback(typeof(LogCallback))]
+        //         private static void LogCallback(string msg)
+        //         {
+        // #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+        // #else
+        //             UnityEngine.Debug.Log(msg);
+        // #endif
+        //         }
 
-//         [MonoPInvokeCallback(typeof(LogCallback))]
-//         private static void LogWarningCallback(string msg)
-//         {
-// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-// #else
-//             UnityEngine.Debug.Log(msg);
-// #endif
-//         }
+        //         [MonoPInvokeCallback(typeof(LogCallback))]
+        //         private static void LogWarningCallback(string msg)
+        //         {
+        // #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+        // #else
+        //             UnityEngine.Debug.Log(msg);
+        // #endif
+        //         }
 
-//         [MonoPInvokeCallback(typeof(LogCallback))]
-//         private static void LogErrorCallback(string msg)
-//         {
-// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-// #else
-//             UnityEngine.Debug.Log(msg);
-// #endif
-//         }
+        //         [MonoPInvokeCallback(typeof(LogCallback))]
+        //         private static void LogErrorCallback(string msg)
+        //         {
+        // #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+        // #else
+        //             UnityEngine.Debug.Log(msg);
+        // #endif
+        //         }
 
         ~JsEnv()
         {
