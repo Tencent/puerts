@@ -75,10 +75,13 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
     return puer.createFunction(...overloadFunctions);
 }
 
-puer.getLastException = function() {
-    // todo
+puer.getLastException = global.__puertsGetLastException
+global.__puertsGetLastException = undefined;
+
+puer.evalScript = global.__tgjsEvalScript || function (script, debugPath) {
+    return eval(script);
 }
-puer.evalScript = eval
+global.__tgjsEvalScript = undefined;
 
 let loader = jsEnv.GetLoader();
 // function loadFile(path) {
