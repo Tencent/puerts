@@ -15,8 +15,37 @@ puer.loadType = global.__tgjsLoadType;
 global.__tgjsLoadType = undefined;
 puer.getNestedTypes = global.__tgjsGetNestedTypes;
 global.__tgjsGetNestedTypes = undefined;
-puer.getGenericMethod = global.__tgjsGetGenericMethod;
+//puer.getGenericMethod = global.__tgjsGetGenericMethod;
 global.__tgjsGetGenericMethod = undefined;
+puer.createFunction = global.createFunction;
+global.createFunction = undefined;
+
+puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
+    if (!csType || (typeof csType.GetMember != 'function')) {
+        throw new Error('the class must be a constructor');
+    }
+    let members = CS.Puerts.Utils.GetMethodAndOverrideMethodByName(csType, methodName);
+    let overloadFunctions = [];
+    for (let i = 0; i < members.Length; i++) {
+        let method = members.GetValue(i)
+        if (method.IsGenericMethodDefinition && method.GetGenericArguments().Length == genericArgs.length) {
+            let methodImpl = method.MakeGenericMethod(...genericArgs.map((x, index) => {
+                const ret = puer.$typeof(x);
+                if (!ret) {
+                    throw new Error("invalid Type for generic arguments " + index);
+                }
+                return ret;
+            }))
+            overloadFunctions.push(methodImpl)
+        }
+    }
+    let overloadCount = overloadFunctions.length
+    if (overloadCount == 0) {
+        console.error("puer.getGenericMethod not found", csType.Name, methodName, genericArgs.map(x => puer.$typeof(x).Name).join(","))
+        return null
+    }
+    return puer.createFunction(...overloadFunctions);
+}
 
 puer.evalScript = global.__tgjsEvalScript || function (script, debugPath) {
     return eval(script);

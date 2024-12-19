@@ -45,20 +45,9 @@ puer.getNestedTypes = function(nameOrCSType) {
     }
 }
 
-function jsArrToCsArr(jsarr, type) {
-    type = type || puer.$typeof(CS.System.Object)
-    let arr = CS.System.Array.CreateInstance(type, jsarr.length)
-    for (let i = 0; i < arr.Length; i++) {
-        arr.SetValue(jsarr[i], i)
-    }
-    return arr
-}
+puer.createFunction = global.createFunction;
+global.createFunction = undefined;
 
-let MemberTypes = puer.loadType("System.Reflection.MemberTypes")
-let MemberTypes_Method = MemberTypes.Method
-let GENERIC_INVOKE_ERR_ARG_CHECK_FAILED = {}
-let ARG_FLAG_OUT = 0x01
-let ARG_FLAG_REF = 0x02
 puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
     if (!csType || (typeof csType.GetMember != 'function')) {
         throw new Error('the class must be a constructor');
@@ -83,7 +72,7 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
         console.error("puer.getGenericMethod not found", csType.Name, methodName, genericArgs.map(x => puer.$typeof(x).Name).join(","))
         return null
     }
-    return globalThis.createFunction(...overloadFunctions);
+    return puer.createFunction(...overloadFunctions);
 }
 
 puer.getLastException = function() {
@@ -118,19 +107,3 @@ global.__tgjsRegisterTickHandler = function(fn) {
     jsEnv.TickHandler = CS.System.Delegate.Combine(jsEnv.TickHandler, fn)
 }
 
-function createTypedValueByTypeCode(value, typecode) {
-    switch (typecode) {
-        case CS.System.TypeCode.Char: return new CS.Puerts.CharValue(value);
-        case CS.System.TypeCode.SByte: return new CS.Puerts.SByteValue(value);
-        case CS.System.TypeCode.Byte: return new CS.Puerts.ByteValue(value);
-        case CS.System.TypeCode.Int16: return new CS.Puerts.Int16Value(value);
-        case CS.System.TypeCode.UInt16: return new CS.Puerts.UInt16Value(value);
-        case CS.System.TypeCode.Int32: return new CS.Puerts.Int32Value(value);
-        case CS.System.TypeCode.UInt32: return new CS.Puerts.UInt32Value(value);
-        case CS.System.TypeCode.Int64: return new CS.Puerts.Int64Value(value);
-        case CS.System.TypeCode.UInt64: return new CS.Puerts.UInt64Value(value);
-        case CS.System.TypeCode.Single: return new CS.Puerts.FloatValue(value);
-        case CS.System.TypeCode.Double: return new CS.Puerts.DoubleValue(value);
-        default: return value;
-    }
-}

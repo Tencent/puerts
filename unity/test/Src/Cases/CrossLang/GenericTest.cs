@@ -212,7 +212,7 @@ namespace Puerts.UnitTest
                         let method = methods.GetValue(i)
                         overloads.push(method.MakeGenericMethod(puer.$typeof(CS.System.Int32)));
                     }
-                    const func = createFunction(...overloads);
+                    const func = puer.createFunction(...overloads);
                     return func() + func(1024);
                 })();
             ");
