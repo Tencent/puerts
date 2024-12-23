@@ -20,6 +20,7 @@ namespace Puerts
 #else
         const string DLLNAME = "puerts";
 #endif
+#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetRegsterApi();
@@ -29,8 +30,6 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetPapiEnvRef(IntPtr isolate);
-        
-#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void InitialPuerts(IntPtr PesapiImpl);
