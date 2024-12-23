@@ -1404,7 +1404,8 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
     auto GenConstrutor = [&]()
     {
         auto ClassDefinition = PUERTS_NAMESPACE::FindClassByType(Struct);
-        if (ClassDefinition && ClassDefinition->ConstructorInfos)
+        if (ClassDefinition && ClassDefinition->ConstructorInfos && ClassDefinition->ConstructorInfos->Name &&
+            ClassDefinition->ConstructorInfos->Type)
         {
             PUERTS_NAMESPACE::NamedFunctionInfo* ConstructorInfo = ClassDefinition->ConstructorInfos;
             while (ConstructorInfo && ConstructorInfo->Name && ConstructorInfo->Type)
