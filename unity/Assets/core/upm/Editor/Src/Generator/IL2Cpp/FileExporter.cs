@@ -187,7 +187,7 @@ namespace PuertsIl2cpp.Editor
                 }
             }
 
-            public static void GenCPPWrap(string saveTo, bool onlyConfigure = false)
+            public static void GenCPPWrap(string saveTo, bool onlyConfigure = false, bool noWrapper = false)
             {
                 Utils.SetFilters(Puerts.Configure.GetFilters());
                 
@@ -308,7 +308,24 @@ namespace PuertsIl2cpp.Editor
                 var genWrapperMethod = methodToWrap;
                 var genWrapperField = fieldToWrapper;
 
-                if (onlyConfigure)
+                if (noWrapper)
+                {
+                    genWrapperCtor = new ConstructorInfo[] { };
+                    genWrapperMethod = new MethodInfo[] { };
+                    genWrapperField = new FieldInfo[] { };
+
+                    valueTypeInfos = new List<ValueTypeInfo>();
+                    foreach (var type in delegateUsedTypes)
+                    {
+                        IterateAllValueType(type, valueTypeInfos);
+                    }
+
+                    valueTypeInfos = valueTypeInfos
+                        .GroupBy(s => s.Signature)
+                        .Select(s => s.FirstOrDefault())
+                        .ToList();
+                }
+                else if (onlyConfigure)
                 {
                     var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
                         "Puerts.BindingAttribute",

@@ -268,6 +268,20 @@ export async function unityTest(cwd, unityPath) {
         -define:PUERTS_CPP_OUTPUT_TO_UPM
         -define:PUERTS_IL2CPP_OPTIMIZATION
     `);
+    
+    console.log('-------------------------Without Wrapper test-------------------------');
+    execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+
+    console.log("[Puer] Building testplayer for v2");
+    mkdir("-p", `${cwd}/build/v2`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+    console.log("[Puer] Running test in v2");
+    const v2code_reflection = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
+
+    assert.equal(0, v2code_reflection);
+    
+    console.log('-------------------------With Full Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
@@ -275,7 +289,7 @@ export async function unityTest(cwd, unityPath) {
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test in v2");
-    const v2code = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
+    const v2code = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log3.txt`).code;
 
     assert.equal(0, v2code);
 }
