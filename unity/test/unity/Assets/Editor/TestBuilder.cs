@@ -16,6 +16,14 @@ public class TestBuilder
     public static void BuildWindowsV1() { BuildWindows(false); }
 
 #if PUERTS_IL2CPP_OPTIMIZATION
+    public static void GenV2WithoutWrapper() 
+    {
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateEmptyCppWrappers();
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
+        Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
+    }
     public static void GenV2() 
     {
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
