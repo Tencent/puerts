@@ -41,6 +41,34 @@ namespace Puerts.UnitTest
             value3 = 0;
         }
     }
+    [UnityEngine.Scripting.Preserve]
+    public struct TestStruct2
+    {
+        public int v1;
+        public int v2;
+        public string v3;
+
+        [UnityEngine.Scripting.Preserve]
+        public TestStruct2(int p1, int p2, string p3)
+        {
+            v1 = p1;
+            v2 = p2;
+            v3 = p3;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public override string ToString()
+        {
+            return v1 + ":" + v2 + ":" + v3;
+        }
+
+
+        [UnityEngine.Scripting.Preserve]
+        public string GetString()
+        {
+            return v1 + ":" + v2 + ":" + v3;
+        }
+    }
     [StructLayout(LayoutKind.Sequential)]
     [UnityEngine.Scripting.Preserve]
     public unsafe struct TestUnsafeStruct
@@ -840,6 +868,24 @@ namespace Puerts.UnitTest
                 })()
             ");
             jsEnv.Tick();
+        }
+        [Test]
+        public void TestStructAccess()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            // preload
+            jsEnv.Eval(@"
+                 (function() {
+                     return CS.Puerts.UnitTest.TestStruct2
+                 })()
+            ");
+            var res = jsEnv.Eval<string>(@"
+                 (function() {
+                     const s1 = new CS.Puerts.UnitTest.TestStruct2(5345, 3214, 'fqpziq');
+                     return s1.ToString();
+                 })()
+            ");
+            Assert.AreEqual("5345:3214:fqpziq", res);
         }
         [Test]
         public void NullableNativeStructInstanceTest()
