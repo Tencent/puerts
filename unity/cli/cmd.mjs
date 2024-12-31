@@ -36,6 +36,7 @@ program
     .option('-G, --generator <generator-name>', 'cmake generator name')
     .option('-ts, --thread_safe', 'thread safe')
     .option('-wi, --with_inspector', 'with inspector')
+    .option('-jl, --jitless', 'jitless')
     .action(function (quickcommand, options) {
         let backend = options.backend;
         let config = options.config;

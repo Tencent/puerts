@@ -269,6 +269,10 @@ async function runPuertsMake(cwd, options) {
         console.log('################################## thread_safe ##################################');
         BackendConfig.definition.push("THREAD_SAFE");
     }
+    if (options.jitless)) {
+        console.log('################################## jitless ##################################');
+        BackendConfig.definition.push("JITLESS");
+    }
     const definitionD = (BackendConfig.definition || []).join(';');
     const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';');
     const incD = (BackendConfig.include || []).join(';');
