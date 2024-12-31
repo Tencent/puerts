@@ -269,7 +269,7 @@ async function runPuertsMake(cwd, options) {
         console.log('################################## thread_safe ##################################');
         BackendConfig.definition.push("THREAD_SAFE");
     }
-    if (options.jitless)) {
+    if (options.jitless) {
         console.log('################################## jitless ##################################');
         BackendConfig.definition.push("JITLESS");
     }
