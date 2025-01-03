@@ -36,8 +36,6 @@ namespace Puerts
         MethodInfo objectPoolRemoveMethodInfo;
         MethodInfo tryLoadTypeMethodInfo;
 
-        PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
-
         private Func<string, JSObject> moduleExecutor;
 
         ILoader loader;
@@ -78,8 +76,7 @@ namespace Puerts
 
             nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine(0);
             nativePesapiEnv = Puerts.NativeAPI.GetPapiEnvRef(nativeJsEnv);
-            var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
-            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
+            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv);
 
             Puerts.NativeAPI.SetObjectToGlobal(apis, nativePesapiEnv, "jsEnv", this);
 

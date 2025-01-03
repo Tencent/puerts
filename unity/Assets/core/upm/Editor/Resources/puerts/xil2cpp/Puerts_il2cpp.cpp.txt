@@ -1957,11 +1957,10 @@ struct JsEnvPrivate
     pesapi_env_ref envRef;
     std::mutex pendingKillRefsMutex;
     std::unordered_set<pesapi_value_ref> pendingKillRefs;
-    MethodInfoHelper<int32_t(Il2CppObject* obj)> objPoolAdd;
-    MethodInfoHelper<Il2CppObject*(int32_t index)> objPoolRemove;
+    std::unordered_set<Il2CppObject*, std::hash<void*>, std::equal_to<void>, il2cpp::gc::Allocator<Il2CppObject*>> objectPool;
     
-    JsEnvPrivate(struct pesapi_ffi* inApis, pesapi_env_ref inEnvRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
-        : apis(inApis), envRef(inEnvRef), objPoolAdd(objPoolAddMethodInfo, objPool), objPoolRemove(objPoolRemoveMethodInfo, objPool)
+    JsEnvPrivate(struct pesapi_ffi* inApis, pesapi_env_ref inEnvRef)
+        : apis(inApis), envRef(inEnvRef)
           
     {
     }
@@ -2014,26 +2013,26 @@ struct JsEnvPrivate
         pendingKillRefs.clear();
     }
     
-    int32_t RefCSObject(Il2CppObject* obj)
+    Il2CppObject* RefCSObject(Il2CppObject* obj)
     {
-        return objPoolAdd.CallWithInstance(obj);
+        objectPool.insert(obj);
+        return obj;
     }
     
-    void UnRefCSObject(int32_t idx)
+    void UnRefCSObject(Il2CppObject* obj)
     {
-        objPoolRemove.CallWithInstance(idx);
+        objectPool.erase(obj);
     }
 };
 
 static void* OnCsObjectEnter(Il2CppObject* obj, void* class_data, JsEnvPrivate* jsEnvPrivate)
 {
-    return reinterpret_cast<void*>(jsEnvPrivate->RefCSObject(obj));
+    return jsEnvPrivate->RefCSObject(obj);
 }
 
 static void OnCsObjectExit(void* ptr, void* class_data, JsEnvPrivate* jsEnvPrivate, void* userdata)
 {
-    intptr_t idx = reinterpret_cast<intptr_t>(userdata);
-    jsEnvPrivate->UnRefCSObject(idx);
+    jsEnvPrivate->UnRefCSObject(static_cast<Il2CppObject*>(userdata));
 }
 
 static void FreeCSharpMethodInfo(CSharpMethodInfo* csharpMethodInfo)
@@ -2135,11 +2134,11 @@ static void LoadTypeWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
     apis->add_return(info, ret);
 }
 
-puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
+puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef)
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
     auto env = apis->get_env_from_ref(envRef);
-    auto jsEnvPrivate = new puerts::JsEnvPrivate(apis, envRef, objPool, objPoolAddMethodInfo, objPoolRemoveMethodInfo);
+    auto jsEnvPrivate = new puerts::JsEnvPrivate(apis, envRef);
     apis->set_env_private(env, jsEnvPrivate);
     auto loadType = apis->create_function(env, LoadTypeWrapper, nullptr, nullptr);
     auto createFunction = apis->create_function(env, createFunctionWrapper, nullptr, nullptr);
@@ -2196,7 +2195,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("Puerts.NativeAPI::SetObjectToGlobal(System.IntPtr,System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
     InternalCalls::Add("Puerts.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
     InternalCalls::Add("Puerts.NativeAPI::GetModuleExecutor(System.IntPtr,System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
-    InternalCalls::Add("Puerts.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr,System.Object,System.Reflection.MethodBase,System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
+    InternalCalls::Add("Puerts.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
