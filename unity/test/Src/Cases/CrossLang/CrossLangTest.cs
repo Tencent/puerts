@@ -4,6 +4,24 @@ using System.Runtime.InteropServices;
 
 namespace Puerts.UnitTest
 {
+    [UnityEngine.Scripting.Preserve]
+    public class TestGC
+    {
+        public static int ObjCount = 0;
+
+        [UnityEngine.Scripting.Preserve]
+        public TestGC()
+        {
+            ++ObjCount;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+
+        ~TestGC()
+        {
+            --ObjCount;
+        }
+    }
 
     public class TestObject
     {
@@ -1039,6 +1057,52 @@ namespace Puerts.UnitTest
             {
                 callback();
             });
+        }
+
+        [Test]
+        public void TestJsGC()
+        {
+#if PUERTS_GENERAL
+            var jsEnv = new JsEnv(new TxtLoader());
+#else
+            var jsEnv = new JsEnv(new DefaultLoader());
+#endif
+            var objCount = jsEnv.Eval<int>(@"
+            const randomCount = Math.floor(Math.random() * 50) + 1;
+
+            var objs = []
+            for (let i = 0; i < randomCount; i++) {
+                objs.push(new CS.Puerts.UnitTest.TestGC())
+            }
+            randomCount;
+            ");
+
+            if (jsEnv.Backend is BackendV8)
+            {
+                jsEnv.Eval("gc()");
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(objCount, TestGC.ObjCount);
+            Assert.True(objCount > 0);
+
+            jsEnv.Eval("objs = undefined");
+
+            if (jsEnv.Backend is BackendV8)
+            {
+                jsEnv.Eval("gc()");
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(0, TestGC.ObjCount);
+
+            jsEnv.Dispose();
         }
     }
 }
