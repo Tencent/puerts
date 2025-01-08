@@ -58,6 +58,7 @@ declare module "puerts" {
         function unmixin<T extends typeof Object>(to:T): void
         function load(cls: any): void
         function unload(cls: any): void
+        function namespace(name: string);
     }
     
     function on(eventType: string, listener: Function, prepend?: boolean) : void;

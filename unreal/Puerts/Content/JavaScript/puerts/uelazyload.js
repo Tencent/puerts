@@ -226,21 +226,23 @@ var global = global || (function () { return this; }());
     
     const bpns = new Set(['Game']);
     
+    function blueprint_createNamespace(ns) {
+        if (!bpns.has(ns)) {
+            rawSet(UE, ns, createNamespaceOrClass(ns, undefined, TNAMESPACE));
+            bpns.add(ns);
+        }
+    }
+    
     function blueprint_load(cls) {
         if (cls.__path) {
             let c = cls
             let path = `.${c.__path}`;
-            let last_c = c;
             c = c.__parent;
             while (c && c.__path) {
                 path = `/${c.__path}${path}`
-                last_c = c;
                 c = c.__parent;
             }
-            if (!bpns.has(last_c.__path)) {
-                rawSet(UE, last_c.__path, createNamespaceOrClass(last_c.__path, undefined, TNAMESPACE));
-                bpns.add(last_c.__path);
-            }
+            
             let ufield = UE.Field.Load(path, true);
             if (!ufield) {
                 throw new Error(`load ${path} fail!`);
@@ -260,6 +262,7 @@ var global = global || (function () { return this; }());
     }
     
     blueprint.load = blueprint_load;
+    blueprint.namespace = blueprint_createNamespace;
     
     function blueprint_unload(cls) {
         if (cls.__puerts_ufield) {
