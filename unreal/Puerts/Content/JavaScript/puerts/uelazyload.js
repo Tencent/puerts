@@ -224,14 +224,22 @@ var global = global || (function () { return this; }());
     
     blueprint.unmixin = unmixin;
     
+    const bpns = new Set(['Game']);
+    
     function blueprint_load(cls) {
         if (cls.__path) {
             let c = cls
-            let path = `.${c.__path}`
+            let path = `.${c.__path}`;
+            let last_c = c;
             c = c.__parent;
             while (c && c.__path) {
                 path = `/${c.__path}${path}`
+                last_c = c;
                 c = c.__parent;
+            }
+            if (!bpns.has(last_c.__path)) {
+                rawSet(UE, last_c.__path, createNamespaceOrClass(last_c.__path, undefined, TNAMESPACE));
+                bpns.add(last_c.__path);
             }
             let ufield = UE.Field.Load(path, true);
             if (!ufield) {
