@@ -167,6 +167,12 @@ namespace Puerts
         {
             throw new NotImplementedException();
         }
+        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static string CppGetMethodSignature(MethodBase methodInfo, bool isExtensionMethod)
+        {
+            throw new NotImplementedException();
+        }
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -218,7 +224,7 @@ namespace Puerts
         }
 #endif
     }
-    
+
     public delegate void pesapi_callback(IntPtr apis, IntPtr info);
     public delegate void pesapi_function_finalize(IntPtr apis, IntPtr data, IntPtr env_private);
 
