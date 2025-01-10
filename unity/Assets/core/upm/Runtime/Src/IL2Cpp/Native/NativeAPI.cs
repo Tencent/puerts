@@ -169,7 +169,7 @@ namespace Puerts
         }
         
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static string CppGetMethodSignature(MethodBase methodInfo, bool isExtensionMethod)
+        public static string CppGetMethodSignature(MethodBase methodInfo, bool isBridge, bool isExtensionMethod)
         {
             throw new NotImplementedException();
         }
