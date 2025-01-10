@@ -32,9 +32,7 @@ namespace Puerts
         // TypeRegister TypeRegister;
 
         Type persistentObjectInfoType;
-        MethodInfo objectPoolAddMethodInfo;
-        MethodInfo objectPoolRemoveMethodInfo;
-        MethodInfo tryLoadTypeMethodInfo;
+        MethodInfo extensionMethodGetMethodInfo;
 
         private Func<string, JSObject> moduleExecutor;
 
@@ -66,8 +64,8 @@ namespace Puerts
             Puerts.NativeAPI.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             Puerts.NativeAPI.InitialPuerts(Puerts.NativeAPI.GetRegsterApi());
             apis = Puerts.NativeAPI.GetFFIApi();
-            tryLoadTypeMethodInfo = typeof(TypeRegister).GetMethod("RegisterNoThrow");
-            Puerts.NativeAPI.SetRegisterNoThrow(tryLoadTypeMethodInfo);
+            extensionMethodGetMethodInfo = typeof(PuertsIl2cpp.ExtensionMethodInfo).GetMethod("Get");
+            Puerts.NativeAPI.SetExtensionMethodGet(extensionMethodGetMethodInfo);
 
             persistentObjectInfoType = typeof(Puerts.JSObject);
             Puerts.NativeAPI.SetGlobalType_TypedValue(typeof(TypedValue));

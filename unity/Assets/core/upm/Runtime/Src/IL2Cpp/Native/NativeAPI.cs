@@ -86,7 +86,7 @@ namespace Puerts
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetRegisterNoThrow(MethodBase methodInfo)
+        public static void SetExtensionMethodGet(MethodBase methodInfo)
         {
         }
 

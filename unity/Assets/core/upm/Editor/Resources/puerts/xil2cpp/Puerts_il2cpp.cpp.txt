@@ -153,7 +153,7 @@ static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static Il2CppClass *g_typeofTypedValue;
 
-static MethodInfoHelper<void(const void* typeId, bool includeNonPublic)> g_RegisterNoThrowHelper;
+static MethodInfoHelper<Il2CppArray*(Il2CppString*)> g_ExtensionMethodGetHelper;
 
 static void RegisterType(Il2CppClass* klass);
 static bool ClassNotFoundCallback(const void* typeId)
@@ -163,10 +163,9 @@ static bool ClassNotFoundCallback(const void* typeId)
     return true;
 }
 
-static void SetRegisterNoThrow(Il2CppReflectionMethod* method)
+static void SetExtensionMethodGet(Il2CppReflectionMethod* method)
 {
-    g_RegisterNoThrowHelper = MethodInfoHelper<void(const void* typeId, bool includeNonPublic)>(method);
-    pesapi_on_class_not_found(ClassNotFoundCallback);
+    g_ExtensionMethodGetHelper = MethodInfoHelper<Il2CppArray*(Il2CppString*)>(method);
 }
 
 static std::string GetTypeSignature(const Il2CppType* type);
@@ -519,7 +518,8 @@ static void RegisterType(Il2CppClass* klass)
             return true;
         };
 
-    try {
+    try
+    {
         if (isDelegate)
         {
             MethodInfo* invoke = (MethodInfo*)il2cpp::vm::Class::GetMethodFromName(klass, "Invoke", -1);
@@ -577,6 +577,26 @@ static void RegisterType(Il2CppClass* klass)
                 fieldData->TypeInfo = Class::FromIl2CppType(field->type, false);;
 
                 classInfo->Fields.push_back({ std::string(field->name), isStatic, fieldData });
+            }
+            
+            std::string assemblyQualifiedName(Type::GetName(&klass->byval_arg, IL2CPP_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED));
+            if (!assemblyQualifiedName.empty())
+            {
+                Il2CppArray* extensionMethods = g_ExtensionMethodGetHelper.Call(il2cpp::vm::String::NewWrapper(assemblyQualifiedName.c_str()));
+                if (extensionMethods)
+                {
+                    uint32_t len = Array::GetLength(extensionMethods);
+                    PLog("%s extensionMethods count: %d", klass->name, len);
+                    if (len == 2)  //TODO: for test only
+                    {
+                        Il2CppReflectionMethod** arr = reinterpret_cast<Il2CppReflectionMethod**>(il2cpp::vm::Array::GetFirstElementAddress(extensionMethods));
+                        for (uint32_t i = 0; i < len; ++i)
+                        {
+                            PLog("add extension %d %s", i, arr[i]->method->name);
+                            AddMethod(arr[i]->method, false, false, arr[i]->method->name);
+                        }
+                    }
+                }
             }
         }
     } 
@@ -2599,8 +2619,12 @@ static WrapData* CreateOverloadData(const MethodInfo* method)
     std::string signature = GetMethodSignature(method, false);
     auto wrap = FindWrapFunc(signature.c_str());
     overloadData->Wrap = wrap ? wrap: &ReflectionWrapper;
-    overloadData->IsStatic = isStatic;
-    overloadData->IsExtensionMethod = false;
+    overloadData->IsExtensionMethod = IsExtensionMethod(method);
+    overloadData->IsStatic = isStatic && !overloadData->IsExtensionMethod;
+    if (overloadData->IsExtensionMethod)
+    {
+        PLog("CreateOverloadData IsExtensionMethod %s , static:%d", method->name, overloadData->IsStatic);
+    }
     memcpy(overloadData->TypeInfos, usedTypes.data(), sizeof(void*) * usedTypes.size());
     return overloadData;
 }
@@ -2667,6 +2691,7 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
         {
             apis->set_property(env, global, "loadType", loadType);
             apis->set_property(env, global, "createFunction", createFunction);
+            pesapi_on_class_not_found(ClassNotFoundCallback);
             return jsEnvPrivate;
         }
     }
@@ -2723,7 +2748,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("Puerts.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
-    InternalCalls::Add("Puerts.NativeAPI::SetRegisterNoThrow(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetRegisterNoThrow);
+    InternalCalls::Add("Puerts.NativeAPI::SetExtensionMethodGet(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetExtensionMethodGet);
     InternalCalls::Add("Puerts.NativeAPI::CppGetMethodSignature(System.Reflection.MethodBase,System.Boolean,System.Boolean)", (Il2CppMethodPointer)puerts::CppGetMethodSignature);
     pesapi_init(func_array);
 }
