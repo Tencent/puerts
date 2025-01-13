@@ -84,46 +84,9 @@ struct JsClassInfo : public JsClassInfoHeader
     std::vector<CSharpFieldInfo> Fields;
 };
 
-Il2CppMethodPointer GetMethodPointer(Il2CppReflectionMethod* method)
-{
-    auto methodInfo = method->method;
-    auto ret = MetadataCache::GetMethodPointer(methodInfo->klass->image, methodInfo->token);
-    if (!ret)
-    {
-        ret = methodInfo->methodPointer;
-    }
-    return ret;
-}
-
-intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method)
-{
-    return (intptr_t)method->method;
-}
-
-int32_t GetFieldOffset(Il2CppReflectionField* field, bool isInValueType)
-{
-    return (int32_t)Field::GetOffset(field->field) - (Class::IsValuetype(Field::GetParent(field->field)) ? sizeof(Il2CppObject) : 0);
-}
-
-intptr_t GetFieldInfoPointer(Il2CppReflectionField* field)
-{
-    return (intptr_t)field->field;
-}
-
-intptr_t GetTypeId(Il2CppReflectionType *type)
-{
-    return (intptr_t)il2cpp_codegen_class_from_type(type->type);
-}
-
 const Il2CppClass* CSharpTypeToTypeId(Il2CppObject *type)
 {
     return (type && Class::IsAssignableFrom(il2cpp_defaults.systemtype_class, type->klass)) ? il2cpp_codegen_class_from_type(((Il2CppReflectionType *)type)->type) : nullptr;
-}
-
-const Il2CppReflectionType* TypeIdToType(Il2CppClass *klass)
-{
-    if (!klass) return nullptr;
-    return Reflection::GetTypeObject(Class::GetType(klass));
 }
 
 static void* ObjectAllocate(Il2CppClass *klass)
@@ -166,7 +129,7 @@ static bool ClassNotFoundCallback(const void* typeId)
 
 static void SetExtensionMethodGet(Il2CppReflectionMethod* method)
 {
-    g_ExtensionMethodGetHelper = MethodInfoHelper<Il2CppArray*(Il2CppString*)>(method);
+    g_ExtensionMethodGetHelper = MethodInfoHelper<Il2CppArray*(Il2CppString*)>(method->method);
 }
 
 static std::string GetTypeSignature(const Il2CppType* type);
@@ -463,7 +426,7 @@ static std::string GetMethodSignature(const MethodInfo* method, bool isBridge)
     return signature;
 }
 
-static Il2CppMethodPointer GetMethodPointer2(const MethodInfo* method)
+static Il2CppMethodPointer GetMethodPointer(const MethodInfo* method)
 {
     auto ret = MetadataCache::GetMethodPointer(method->klass->image, method->token);
     if (!ret)
@@ -2414,7 +2377,7 @@ static WrapData* CreateOverloadData(const MethodInfo* method)
     puerts::WrapData* overloadData = (puerts::WrapData*)malloc(allocSize);
     memset(overloadData, 0, allocSize);
     overloadData->Method = const_cast<MethodInfo*>(method);
-    overloadData->MethodPointer = GetMethodPointer2(method);
+    overloadData->MethodPointer = GetMethodPointer(method);
     std::string signature = GetMethodSignature(method, false);
     auto wrap = FindWrapFunc(signature.c_str());
     overloadData->Wrap = wrap ? wrap: &ReflectionWrapper;
@@ -2767,17 +2730,11 @@ void pesapi_init(pesapi_func_ptr* func_array);
 
 void InitialPuerts(pesapi_func_ptr* func_array)
 {
-    InternalCalls::Add("Puerts.NativeAPI::GetMethodPointer(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::GetMethodPointer);
-    InternalCalls::Add("Puerts.NativeAPI::GetMethodInfoPointer(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::GetMethodInfoPointer);
-    InternalCalls::Add("Puerts.NativeAPI::GetTypeId(System.Type)", (Il2CppMethodPointer)puerts::GetTypeId);
-    InternalCalls::Add("Puerts.NativeAPI::GetFieldOffset(System.Reflection.FieldInfo,System.Boolean)", (Il2CppMethodPointer)puerts::GetFieldOffset);
-    InternalCalls::Add("Puerts.NativeAPI::GetFieldInfoPointer(System.Reflection.FieldInfo)", (Il2CppMethodPointer)puerts::GetFieldInfoPointer);
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
     InternalCalls::Add("Puerts.NativeAPI::EvalInternal(System.IntPtr,System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("Puerts.NativeAPI::SetObjectToGlobal(System.IntPtr,System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
-    InternalCalls::Add("Puerts.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
     InternalCalls::Add("Puerts.NativeAPI::GetModuleExecutor(System.IntPtr,System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
     InternalCalls::Add("Puerts.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);

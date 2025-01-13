@@ -545,21 +545,20 @@ struct MethodInfoHelper
 {
 };
 
-Il2CppMethodPointer GetMethodPointer(Il2CppReflectionMethod* method);
-intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method);
+Il2CppMethodPointer GetMethodPointer(const MethodInfo* method);
 
 template <class _Ret, class... _Args>
 struct MethodInfoHelper<_Ret (_Args...)>
 {
     Il2CppMethodPointer func;
-    intptr_t methodInfo;
+    const MethodInfo* methodInfo;
     Il2CppObject* instance;
 
-    MethodInfoHelper(Il2CppReflectionMethod* method, Il2CppObject* instance = nullptr)
+    MethodInfoHelper(const MethodInfo* method, Il2CppObject* instance = nullptr)
         : instance(instance)
     {
         func = GetMethodPointer(method);
-        methodInfo = GetMethodInfoPointer(method);
+        methodInfo = method;
     }
 
     MethodInfoHelper()
@@ -567,8 +566,8 @@ struct MethodInfoHelper<_Ret (_Args...)>
     {
     }
 
-    typedef _Ret(*FuncType)(_Args..., intptr_t);
-    typedef _Ret(*FuncTypeWithInstance)(Il2CppObject*, _Args..., intptr_t);
+    typedef _Ret(*FuncType)(_Args..., const MethodInfo*);
+    typedef _Ret(*FuncTypeWithInstance)(Il2CppObject*, _Args..., const MethodInfo*);
 
     template <typename T = _Ret>
     typename std::enable_if<std::is_same<T, void>::value>::type

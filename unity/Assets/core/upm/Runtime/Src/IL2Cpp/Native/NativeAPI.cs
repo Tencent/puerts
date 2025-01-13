@@ -76,42 +76,6 @@ namespace Puerts
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetMethodPointer(MethodBase methodInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetMethodInfoPointer(MethodBase methodInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static int GetFieldOffset(FieldInfo fieldInfo, bool isInValueType)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetFieldInfoPointer(FieldInfo fieldInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetTypeId(Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static Type TypeIdToType(IntPtr typeId)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static void SetGlobalType_JSObject(Type type)
         {
             throw new NotImplementedException();
