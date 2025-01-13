@@ -119,12 +119,10 @@ static Il2CppClass *g_typeofTypedValue;
 
 static MethodInfoHelper<Il2CppArray*(Il2CppString*)> g_ExtensionMethodGetHelper;
 
-static void RegisterType(Il2CppClass* klass);
+static bool RegisterType(Il2CppClass* klass);
 static bool ClassNotFoundCallback(const void* typeId)
 {
-    //g_RegisterNoThrowHelper.Call(typeId, false);
-    RegisterType((Il2CppClass*)typeId);
-    return true;
+    return RegisterType((Il2CppClass*)typeId);
 }
 
 static void SetExtensionMethodGet(Il2CppReflectionMethod* method)
@@ -317,24 +315,12 @@ static std::string GetTypeSignature(const Il2CppType* type)
     //case IL2CPP_TYPE_MVAR:
     //case IL2CPP_TYPE_VAR:
     default:
-        // TODO: return empty string later!!
-        if (type->byref)
-        {
-            return "P" + GetTypeSignature(type->data.type);
-        }
-        std::ostringstream stm;
-        stm << "no support type : ";
-        Il2CppClass* klass = Class::FromIl2CppType(type, false);
-        stm << klass->name;
-        stm << " type->type=" << type->type;
-        Exception::Raise(Exception::GetInvalidOperationException(stm.str().c_str()));
+        Exception::Raise(Exception::GetInvalidOperationException("not support type"));
     }
     
     return type->byref ? "P" + ret :  ret;
 }
 
-//PARAM_ATTRIBUTE_OPTIONAL
-//bool Reflection::HasAttribute(Il2CppReflectionParameter *parameter, Il2CppClass* attributeClass)
 static std::string GetParameterSignature(const MethodInfo* method, int index)
 {
     if (kInvalidIl2CppMethodSlot != method->slot) {
@@ -375,7 +361,10 @@ static std::string GetParameterSignature(const MethodInfo* method, int index)
     }
 }
 
-static bool IsDelegate(Il2CppClass* klass);
+static bool IsDelegate(Il2CppClass *klass)
+{
+    return Class::HasParent(klass, il2cpp_defaults.delegate_class) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
+}
 
 static bool IsCtor(const MethodInfo* method)
 {
@@ -874,11 +863,6 @@ static void* DelegateCtorCallback(struct pesapi_ffi* apis, pesapi_callback_info 
     JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(apis->get_userdata(info));
     
     return FunctionToDelegate(apis, env, jsval, classInfo);
-}
-
-static bool IsDelegate(Il2CppClass *klass)
-{
-    return Class::HasParent(klass, il2cpp_defaults.delegate_class) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
 }
 
 static FieldInfo* ArrayBufferCountField = nullptr;
@@ -2378,13 +2362,22 @@ static WrapData* CreateOverloadData(const MethodInfo* method)
     memset(overloadData, 0, allocSize);
     overloadData->Method = const_cast<MethodInfo*>(method);
     overloadData->MethodPointer = GetMethodPointer(method);
-    std::string signature = GetMethodSignature(method, false);
-    auto wrap = FindWrapFunc(signature.c_str());
-    overloadData->Wrap = wrap ? wrap: &ReflectionWrapper;
+    
+    try
+    {
+        std::string signature = GetMethodSignature(method, false);
+        SetParamArrayFlagAndOptionalNum(overloadData, signature.c_str());
+        overloadData->Wrap = FindWrapFunc(signature.c_str());
+    }
+    catch (Il2CppExceptionWrapper& exception) { }
+    if (!overloadData->Wrap)
+    {
+        overloadData->Wrap = &ReflectionWrapper;
+    }
     overloadData->IsExtensionMethod = isExtensionMethod;
     overloadData->IsStatic = isStatic;
     memcpy(overloadData->TypeInfos, usedTypes.data(), sizeof(void*) * usedTypes.size());
-    SetParamArrayFlagAndOptionalNum(overloadData, signature.c_str());
+    
     return overloadData;
 }
 
@@ -2503,13 +2496,13 @@ static const MethodInfo* MakeGenericMethodByConstraintedArguments(const MethodIn
     return MetadataCache::GetGenericInstanceMethod(method, genericArguments, count);
 }
 
-static void RegisterType(Il2CppClass* klass)
+static bool RegisterType(Il2CppClass* klass)
 {
     Class::Init(klass);
 
     if (pesapi_get_class_data(klass, false))
     {
-        return;
+        return true;
     }
 
     bool isDelegate = IsDelegate(klass);
@@ -2521,130 +2514,122 @@ static void RegisterType(Il2CppClass* klass)
     classInfo->IsValueType = Class::IsValuetype(klass);
 
     auto AddMethod = [&](const MethodInfo* method, bool isGetter, bool isSetter, const char* name) -> bool
-        {
-            //const char* methodName = (isGetter || isSetter) ? name + 4 : name;
-            bool isExtensionMethod = IsExtensionMethod(method); // TODO: CreateOverloadData里有重复计算
-            bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
-            for (int i = 0; i < classInfo->Methods.size(); ++i)
-            {
-                if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && classInfo->Methods[i].Name == name)
-                {
-                    if (isGetter || isSetter) // no overload for getter or setter
-                    {
-                        return false;
-                    }
-                    classInfo->Methods[i].OverloadDatas.push_back(CreateOverloadData(method));
-                    return true;
-                }
-            }
-            std::vector<puerts::WrapData*> OverloadDatas;
-            OverloadDatas.push_back(CreateOverloadData(method));
-            bool needBoxing = method->klass == il2cpp_defaults.object_class; // TODO: 处理扩展函数
-            classInfo->Methods.push_back({ std::string(name), isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
-            return true;
-        };
-
-    try
     {
-        if (isDelegate)
+        //const char* methodName = (isGetter || isSetter) ? name + 4 : name;
+        bool isExtensionMethod = IsExtensionMethod(method); // TODO: CreateOverloadData里有重复计算
+        bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
+        for (int i = 0; i < classInfo->Methods.size(); ++i)
         {
-            MethodInfo* invoke = (MethodInfo*)il2cpp::vm::Class::GetMethodFromName(klass, "Invoke", -1);
+            if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && classInfo->Methods[i].Name == name)
+            {
+                if (isGetter || isSetter) // no overload for getter or setter
+                {
+                    return false;
+                }
+                classInfo->Methods[i].OverloadDatas.push_back(CreateOverloadData(method));
+                return true;
+            }
+        }
+        std::vector<puerts::WrapData*> OverloadDatas;
+        OverloadDatas.push_back(CreateOverloadData(method));
+        bool needBoxing = method->klass == il2cpp_defaults.object_class; // TODO: 处理扩展函数
+        classInfo->Methods.push_back({ std::string(name), isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
+        return true;
+    };
+
+    if (isDelegate)
+    {
+        MethodInfo* invoke = (MethodInfo*)il2cpp::vm::Class::GetMethodFromName(klass, "Invoke", -1);
+        try
+        {
             std::string signature = GetMethodSignature(invoke, true);
             classInfo->DelegateBridge = FindBridgeFunc(signature.c_str());
-            AddMethod(invoke, false, false, "Invoke");
         }
-        else
+        catch (Il2CppExceptionWrapper& exception)
         {
-            classInfo->DelegateBridge = nullptr;
-            auto etype = klass->byval_arg.type;
-            if (etype != IL2CPP_TYPE_SZARRAY && etype != IL2CPP_TYPE_ARRAY)
-            {
-                for (uint16_t i = 0; i < klass->method_count; ++i)
-                {
-                    const MethodInfo* method = klass->methods[i];
-                    if (!IsCCtor(method) && !Method::IsGeneric(method))
-                    {
-                        const char* name = method->name;
-                        if (!(method->flags & METHOD_ATTRIBUTE_PUBLIC))
-                        {
-                            name = strrchr(name, '.'); // if Explicit Interface Implementation
-                            if (!name) continue;
-                            ++name;
-                        }
-                        bool isGetter = (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && strncmp("get_", name, 4) == 0 && method->parameters_count == 0;
-                        bool isSetter = (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && strncmp("set_", name, 4) == 0 && method->parameters_count == 1;
-                        name = (isGetter || isSetter) ? name + 4 : name;
-                        if (IsCtor(method))
-                        {
-                            classInfo->Ctors.push_back(CreateOverloadData(method));
-                        }
-                        else
-                        {
-                            AddMethod(method, isGetter, isSetter, name);
-                        }
-                    }
-                }
-                for (uint16_t i = 0; i < klass->field_count; i++)
-                {
-                    FieldInfo* field = &klass->fields[i];
-                    FieldWrapData* fieldData = new FieldWrapData();
-                    bool isStatic = (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
-                    std::string signature = (isStatic ? "" : "t") + GetTypeSignature(field->type);
-
-                    FieldWrapFuncPtr getter = &ReflectionGetFieldWrapper;
-                    FieldWrapFuncPtr setter = &ReflectionSetFieldWrapper;
-                    auto fieldWrapInfo = FindFieldWrapFuncInfo(signature.c_str());
-                    if (fieldWrapInfo)
-                    {
-                        getter = fieldWrapInfo->Getter;
-                        setter = fieldWrapInfo->Setter;
-                    }
-                    fieldData->Getter = getter;
-                    fieldData->Setter = setter;
-                    fieldData->FieldInfo = field;
-                    fieldData->Offset = (int32_t)Field::GetOffset(field) - (Class::IsValuetype(Field::GetParent(field)) ? sizeof(Il2CppObject) : 0);;
-                    fieldData->TypeInfo = Class::FromIl2CppType(field->type, false);;
-
-                    classInfo->Fields.push_back({ std::string(field->name), isStatic, fieldData });
-                }
-            }
-            
-            std::string assemblyQualifiedName(Type::GetName(&klass->byval_arg, IL2CPP_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED));
-            if (!assemblyQualifiedName.empty())
-            {
-                Il2CppArray* extensionMethods = g_ExtensionMethodGetHelper.Call(il2cpp::vm::String::NewWrapper(assemblyQualifiedName.c_str()));
-                if (extensionMethods)
-                {
-                    uint32_t len = Array::GetLength(extensionMethods);
-                    Il2CppReflectionMethod** arr = reinterpret_cast<Il2CppReflectionMethod**>(il2cpp::vm::Array::GetFirstElementAddress(extensionMethods));
-                    for (uint32_t i = 0; i < len; ++i)
-                    {
-                        AddMethod(MakeGenericMethodByConstraintedArguments(arr[i]->method), false, false, arr[i]->method->name);
-                    }
-                }
-            }
+            return false;
         }
-    } 
-    catch (Il2CppExceptionWrapper& exception)
+        AddMethod(invoke, false, false, "Invoke");
+    }
+    else
     {
-        Il2CppClass* exKlass = il2cpp::vm::Object::GetClass(exception.ex);
-        const MethodInfo* toStringMethod = il2cpp::vm::Class::GetMethodFromName(exKlass, "ToString", 0);
+        classInfo->DelegateBridge = nullptr;
+        auto etype = klass->byval_arg.type;
+        if (etype != IL2CPP_TYPE_SZARRAY && etype != IL2CPP_TYPE_ARRAY)
+        {
+            for (uint16_t i = 0; i < klass->method_count; ++i)
+            {
+                const MethodInfo* method = klass->methods[i];
+                if (!IsCCtor(method) && !Method::IsGeneric(method))
+                {
+                    const char* name = method->name;
+                    if (!(method->flags & METHOD_ATTRIBUTE_PUBLIC))
+                    {
+                        name = strrchr(name, '.'); // if Explicit Interface Implementation
+                        if (!name) continue;
+                        ++name;
+                    }
+                    bool isGetter = (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && strncmp("get_", name, 4) == 0 && method->parameters_count == 0;
+                    bool isSetter = (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && strncmp("set_", name, 4) == 0 && method->parameters_count == 1;
+                    name = (isGetter || isSetter) ? name + 4 : name;
+                    if (IsCtor(method))
+                    {
+                        classInfo->Ctors.push_back(CreateOverloadData(method));
+                    }
+                    else
+                    {
+                        AddMethod(method, isGetter, isSetter, name);
+                    }
+                }
+            }
+            for (uint16_t i = 0; i < klass->field_count; i++)
+            {
+                FieldInfo* field = &klass->fields[i];
+                bool isStatic = (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+                std::string signature = (isStatic ? "" : "t");
+                try
+                {
+                    signature += GetTypeSignature(field->type);
+                }
+                catch (Il2CppExceptionWrapper& exception)
+                {
+                    continue;
+                }
+                
+                FieldWrapData* fieldData = new FieldWrapData();
 
-        Il2CppException* outException = NULL;
-        Il2CppString* result = (Il2CppString*)il2cpp::vm::Runtime::Invoke(toStringMethod, exception.ex, NULL, &outException);
-        if (outException != NULL)
-        {
-            std::string err_info = "unknow c# execption for register ";
-            err_info  += klass->name;
-            PLog("unknow c# execption for register %s", klass->name);
+                FieldWrapFuncPtr getter = &ReflectionGetFieldWrapper;
+                FieldWrapFuncPtr setter = &ReflectionSetFieldWrapper;
+                auto fieldWrapInfo = FindFieldWrapFuncInfo(signature.c_str());
+                if (fieldWrapInfo)
+                {
+                    getter = fieldWrapInfo->Getter;
+                    setter = fieldWrapInfo->Setter;
+                }
+                fieldData->Getter = getter;
+                fieldData->Setter = setter;
+                fieldData->FieldInfo = field;
+                fieldData->Offset = (int32_t)Field::GetOffset(field) - (Class::IsValuetype(Field::GetParent(field)) ? sizeof(Il2CppObject) : 0);;
+                fieldData->TypeInfo = Class::FromIl2CppType(field->type, false);;
+
+                classInfo->Fields.push_back({ std::string(field->name), isStatic, fieldData });
+            }
         }
-        else
+        
+        std::string assemblyQualifiedName(Type::GetName(&klass->byval_arg, IL2CPP_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED));
+        if (!assemblyQualifiedName.empty())
         {
-            const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(result);
-            std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
-            PLog("register %s throw %s", klass->name, str.c_str());
+            Il2CppArray* extensionMethods = g_ExtensionMethodGetHelper.Call(il2cpp::vm::String::NewWrapper(assemblyQualifiedName.c_str()));
+            if (extensionMethods)
+            {
+                uint32_t len = Array::GetLength(extensionMethods);
+                Il2CppReflectionMethod** arr = reinterpret_cast<Il2CppReflectionMethod**>(il2cpp::vm::Array::GetFirstElementAddress(extensionMethods));
+                for (uint32_t i = 0; i < len; ++i)
+                {
+                    AddMethod(MakeGenericMethodByConstraintedArguments(arr[i]->method), false, false, arr[i]->method->name);
+                }
+            }
         }
-        return;
     }
 
     classInfo->Ctors.push_back(nullptr);
@@ -2717,6 +2702,7 @@ static void RegisterType(Il2CppClass* klass)
     {
         pesapi_trace_native_object_lifecycle(classInfo->TypeId, (pesapi_on_native_object_enter)&OnCsObjectEnter, (pesapi_on_native_object_exit)&OnCsObjectExit);
     }
+    return true;
 }
 
 
