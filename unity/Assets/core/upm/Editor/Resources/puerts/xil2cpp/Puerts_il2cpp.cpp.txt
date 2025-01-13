@@ -2572,7 +2572,8 @@ static void RegisterType(Il2CppClass* klass)
         else
         {
             classInfo->DelegateBridge = nullptr;
-            if (!Type::IsArray(&klass->byval_arg))
+            auto etype = klass->byval_arg.type;
+            if (etype != IL2CPP_TYPE_SZARRAY && etype != IL2CPP_TYPE_ARRAY)
             {
                 for (uint16_t i = 0; i < klass->method_count; ++i)
                 {
