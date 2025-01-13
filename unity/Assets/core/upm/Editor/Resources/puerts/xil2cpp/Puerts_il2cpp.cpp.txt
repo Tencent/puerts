@@ -25,6 +25,7 @@
 #include "vm/Method.h"
 #include "vm/Parameter.h"
 #include "vm/Image.h"
+#include "vm/GenericContainer.h"
 #include "utils/StringUtils.h"
 #include "gc/WriteBarrier.h"
 #include "gc/GCHandle.h"
@@ -479,6 +480,27 @@ struct JsEnvPrivate;
 static void* OnCsObjectEnter(Il2CppObject* obj, void* class_data, JsEnvPrivate* jsEnvPrivate);
 static void OnCsObjectExit(void* ptr, void* class_data, JsEnvPrivate* jsEnvPrivate, void* userdata);
 
+static const MethodInfo* MakeGenericMethodByConstraintedArguments(const MethodInfo* method)
+{
+    if (!Method::IsGeneric(method) || Method::IsInflated(method))
+    {
+        return method;
+    }
+
+    Il2CppMetadataGenericContainerHandle containerHandle = MetadataCache::GetGenericContainerFromMethod(method->methodMetadataHandle);
+
+    uint32_t count = MetadataCache::GetGenericContainerCount(containerHandle);
+    const Il2CppType** genericArguments = (const Il2CppType**)alloca(count * sizeof(Il2CppType*));
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        Il2CppMetadataGenericParameterHandle param = GenericContainer::GetGenericParameter(containerHandle, i);
+        Il2CppClass* pklass = Class::FromGenericParameter(param);
+        genericArguments[i] = &(Class::GenericParamGetBaseType(pklass)->byval_arg);
+    }
+    return MetadataCache::GetGenericInstanceMethod(method, genericArguments, count);
+}
+
 static void RegisterType(Il2CppClass* klass)
 {
     Class::Init(klass);
@@ -591,15 +613,10 @@ static void RegisterType(Il2CppClass* klass)
                 if (extensionMethods)
                 {
                     uint32_t len = Array::GetLength(extensionMethods);
-                    PLog("%s extensionMethods count: %d", klass->name, len);
-                    if (len == 2)  //TODO: for test only
+                    Il2CppReflectionMethod** arr = reinterpret_cast<Il2CppReflectionMethod**>(il2cpp::vm::Array::GetFirstElementAddress(extensionMethods));
+                    for (uint32_t i = 0; i < len; ++i)
                     {
-                        Il2CppReflectionMethod** arr = reinterpret_cast<Il2CppReflectionMethod**>(il2cpp::vm::Array::GetFirstElementAddress(extensionMethods));
-                        for (uint32_t i = 0; i < len; ++i)
-                        {
-                            PLog("add extension %d %s", i, arr[i]->method->name);
-                            AddMethod(arr[i]->method, false, false, arr[i]->method->name);
-                        }
+                        AddMethod(MakeGenericMethodByConstraintedArguments(arr[i]->method), false, false, arr[i]->method->name);
                     }
                 }
             }
@@ -2626,10 +2643,6 @@ static WrapData* CreateOverloadData(const MethodInfo* method)
     overloadData->Wrap = wrap ? wrap: &ReflectionWrapper;
     overloadData->IsExtensionMethod = isExtensionMethod;
     overloadData->IsStatic = isStatic;
-    if (overloadData->IsExtensionMethod)
-    {
-        PLog("CreateOverloadData IsExtensionMethod %s %s , static:%d", method->klass->name, method->name, overloadData->IsStatic);
-    }
     memcpy(overloadData->TypeInfos, usedTypes.data(), sizeof(void*) * usedTypes.size());
     return overloadData;
 }
