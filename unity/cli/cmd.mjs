@@ -155,7 +155,7 @@ program
     .command('unity-test')
     .requiredOption("--unity <pathToUnity>")
     .action((options) => {
-        unityTest(cwd, options.unity);
+        unityTest(cwd, options.unity).catch(e => {throw e;});
     });
 
 program.parse(process.argv);

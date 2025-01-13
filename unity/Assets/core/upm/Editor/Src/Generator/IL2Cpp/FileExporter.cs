@@ -600,9 +600,14 @@ namespace PuertsIl2cpp.Editor
 
                 using (var jsEnv = new Puerts.JsEnv())
                 {
-                    var macroHeaderRender = jsEnv.ExecuteModule<Func<bool, bool, bool, string>>("puerts/xil2cpp/unityenv_for_puerts.h.tpl.mjs", "default");
+                    var macroHeaderRender = jsEnv.ExecuteModule<Func<bool, bool, bool, bool, string>>("puerts/xil2cpp/unityenv_for_puerts.h.tpl.mjs", "default");
                     string macroHeaderContent = macroHeaderRender(              
 #if !UNITY_2021_1_OR_NEWER
+                        false,
+#else
+                        true,
+#endif
+#if !UNITY_2022_1_OR_NEWER
                         false,
 #else
                         true,

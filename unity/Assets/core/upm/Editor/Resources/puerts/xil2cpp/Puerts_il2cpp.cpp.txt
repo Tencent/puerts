@@ -388,13 +388,18 @@ static std::string GetParameterSignature(const MethodInfo* method, int index)
         if (method->is_inflated)
             methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
 
+        static Il2CppClass* s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
+#if defined(UNITY_2022_1_OR_NEWER)
         auto reader = il2cpp::vm::MetadataCache::GetCustomAttributeDataReader(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, index));
+
         auto ctorIter = reader.GetCtorIterator([](const MethodInfo* ctor) {
-            Il2CppClass* klass = ctor->klass;
-            return strcmp(klass->name, "ParamArrayAttribute") == 0 && strcmp(klass->namespaze, "System") == 0;
+            return ctor->klass == s_ParamArrayAttribute;
         });
         const MethodInfo* ctor;
         if (reader.IterateAttributeCtors(&ctor, &ctorIter)) {
+#else
+        if (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, index), s_ParamArrayAttribute)) {
+#endif
             Il2CppClass* parameterKlass = Class::FromIl2CppType(type, false);
             return "V" + GetTypeSignature(&parameterKlass->element_class->byval_arg);
         }
