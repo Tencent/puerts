@@ -2369,6 +2369,26 @@ static bool TypeInfoPassToJsFilter(const Il2CppType* type, const Il2CppClass* kl
     return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type;
 }
 
+static void SetParamArrayFlagAndOptionalNum(WrapData* data, const char* signature)
+{
+    data->HasParamArray = false;
+    data->OptionalNum = 0;
+    
+    const char* p = signature;
+    while(*p)
+    {
+        if (*p == 'V')
+        {
+            data->HasParamArray = true;
+        }
+        if (*p == 'D')
+        {
+            ++data->OptionalNum;
+        }
+        ++p;
+    }
+}
+
 static WrapData* CreateOverloadData(const MethodInfo* method)
 {
     bool isExtensionMethod = IsExtensionMethod(method);
@@ -2401,6 +2421,7 @@ static WrapData* CreateOverloadData(const MethodInfo* method)
     overloadData->IsExtensionMethod = isExtensionMethod;
     overloadData->IsStatic = isStatic;
     memcpy(overloadData->TypeInfos, usedTypes.data(), sizeof(void*) * usedTypes.size());
+    SetParamArrayFlagAndOptionalNum(overloadData, signature.c_str());
     return overloadData;
 }
 
