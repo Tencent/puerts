@@ -382,9 +382,8 @@ static bool IsExtensionMethod(const MethodInfo* method)
     return Method::HasAttribute(method, s_ExtensionAttribute);
 }
 
-static std::string GetMethodSignature(const MethodInfo* method, bool isBridge)
+static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, bool isExtensionMethod)
 {
-    bool isExtensionMethod = IsExtensionMethod(method);
     std::string signature = "";
     if (IsCtor(method))
     {
@@ -2336,9 +2335,8 @@ static void SetParamArrayFlagAndOptionalNum(WrapData* data, const char* signatur
     }
 }
 
-static WrapData* CreateOverloadData(const MethodInfo* method)
+static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMethod)
 {
-    bool isExtensionMethod = IsExtensionMethod(method);
     bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
     std::vector<Il2CppClass*> usedTypes;
     const Il2CppType* type = Method::GetReturnType(method);
@@ -2365,7 +2363,7 @@ static WrapData* CreateOverloadData(const MethodInfo* method)
     
     try
     {
-        std::string signature = GetMethodSignature(method, false);
+        std::string signature = GetMethodSignature(method, false, isExtensionMethod);
         SetParamArrayFlagAndOptionalNum(overloadData, signature.c_str());
         overloadData->Wrap = FindWrapFunc(signature.c_str());
     }
@@ -2403,7 +2401,7 @@ static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info 
             {
                 csharpMethodInfo = new CSharpMethodInfo { std::string(reflectionMethod->method->name), isStatic, false, false, needBoxing};
             }
-            csharpMethodInfo->OverloadDatas.push_back(CreateOverloadData(reflectionMethod->method));
+            csharpMethodInfo->OverloadDatas.push_back(CreateOverloadData(reflectionMethod->method, IsExtensionMethod(reflectionMethod->method)));
         }
     }
     if (csharpMethodInfo)
@@ -2469,12 +2467,6 @@ void DestroyJSEnvPrivate(JsEnvPrivate* jsEnvPrivate)
     delete jsEnvPrivate;
 }
 
-Il2CppString* CppGetMethodSignature(Il2CppReflectionMethod* method, bool isBridge, bool isExtensionMethod)
-{
-    std::string sig = GetMethodSignature(method->method, isBridge);
-    return il2cpp::vm::String::NewWrapper(sig.c_str());
-}
-
 static const MethodInfo* MakeGenericMethodByConstraintedArguments(const MethodInfo* method)
 {
     if (!Method::IsGeneric(method) || Method::IsInflated(method))
@@ -2516,7 +2508,7 @@ static bool RegisterType(Il2CppClass* klass)
     auto AddMethod = [&](const MethodInfo* method, bool isGetter, bool isSetter, const char* name) -> bool
     {
         //const char* methodName = (isGetter || isSetter) ? name + 4 : name;
-        bool isExtensionMethod = IsExtensionMethod(method); // TODO: CreateOverloadData里有重复计算
+        bool isExtensionMethod = IsExtensionMethod(method);
         bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
         for (int i = 0; i < classInfo->Methods.size(); ++i)
         {
@@ -2526,12 +2518,12 @@ static bool RegisterType(Il2CppClass* klass)
                 {
                     return false;
                 }
-                classInfo->Methods[i].OverloadDatas.push_back(CreateOverloadData(method));
+                classInfo->Methods[i].OverloadDatas.push_back(CreateOverloadData(method, isExtensionMethod));
                 return true;
             }
         }
         std::vector<puerts::WrapData*> OverloadDatas;
-        OverloadDatas.push_back(CreateOverloadData(method));
+        OverloadDatas.push_back(CreateOverloadData(method, isExtensionMethod));
         bool needBoxing = method->klass == il2cpp_defaults.object_class; // TODO: 处理扩展函数
         classInfo->Methods.push_back({ std::string(name), isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
         return true;
@@ -2542,7 +2534,7 @@ static bool RegisterType(Il2CppClass* klass)
         MethodInfo* invoke = (MethodInfo*)il2cpp::vm::Class::GetMethodFromName(klass, "Invoke", -1);
         try
         {
-            std::string signature = GetMethodSignature(invoke, true);
+            std::string signature = GetMethodSignature(invoke, true, false);
             classInfo->DelegateBridge = FindBridgeFunc(signature.c_str());
         }
         catch (Il2CppExceptionWrapper& exception)
@@ -2574,7 +2566,7 @@ static bool RegisterType(Il2CppClass* klass)
                     name = (isGetter || isSetter) ? name + 4 : name;
                     if (IsCtor(method))
                     {
-                        classInfo->Ctors.push_back(CreateOverloadData(method));
+                        classInfo->Ctors.push_back(CreateOverloadData(method, false));
                     }
                     else
                     {
@@ -2727,7 +2719,6 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     InternalCalls::Add("Puerts.NativeAPI::SetExtensionMethodGet(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetExtensionMethodGet);
-    InternalCalls::Add("Puerts.NativeAPI::CppGetMethodSignature(System.Reflection.MethodBase,System.Boolean,System.Boolean)", (Il2CppMethodPointer)puerts::CppGetMethodSignature);
     pesapi_init(func_array);
 }
 

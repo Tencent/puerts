@@ -104,12 +104,6 @@ namespace Puerts
         {
             throw new NotImplementedException();
         }
-        
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static string CppGetMethodSignature(MethodBase methodInfo, bool isBridge, bool isExtensionMethod)
-        {
-            throw new NotImplementedException();
-        }
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
