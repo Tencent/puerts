@@ -46,20 +46,21 @@ namespace PuertsIl2cpp
         }
         
         // Call By Gen Code
-        public static IEnumerable<MethodInfo> GetExtensionMethods(Type type, params Type[] extensions)
+        public static MethodInfo[] GetExtensionMethods(Type type, params Type[] extensions)
         {
-            return from e in extensions from m in e.GetMethods(BindingFlags.Static | BindingFlags.Public) 
-                where !m.IsSpecialName && GetExtendedType(m) == type select m;
+            return (from e in extensions from m in e.GetMethods(BindingFlags.Static | BindingFlags.Public) 
+                where !m.IsSpecialName && GetExtendedType(m) == type select m).ToArray();
         }
 
-        public static IEnumerable<MethodInfo> Get(Type type)
+        [UnityEngine.Scripting.Preserve]
+        public static MethodInfo[] Get(string assemblyQualifiedName)
         {
             if (LoadExtensionMethod != null)
-                return LoadExtensionMethod(type);
+                return LoadExtensionMethod(assemblyQualifiedName);
             return null;
         }
 
-        public static Func<Type, IEnumerable<MethodInfo>> LoadExtensionMethod;
+        public static Func<string, MethodInfo[]> LoadExtensionMethod;
 
         public static bool LoadExtensionMethodInfo() {
             var ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
@@ -69,8 +70,8 @@ namespace PuertsIl2cpp
                 select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen_Internal")).FirstOrDefault(x => x != null);
             var TryLoadExtensionMethod = ExtensionMethodInfos_Gen.GetMethod("TryLoadExtensionMethod");
             if (TryLoadExtensionMethod == null) return false;
-            LoadExtensionMethod = (Func<Type, IEnumerable<MethodInfo>>)Delegate.CreateDelegate(
-                typeof(Func<Type, IEnumerable<MethodInfo>>), null, TryLoadExtensionMethod);
+            LoadExtensionMethod = (Func<string, MethodInfo[]>)Delegate.CreateDelegate(
+                typeof(Func<string, MethodInfo[]>), null, TryLoadExtensionMethod);
             return true;
         }
 	}
@@ -305,7 +306,7 @@ namespace PuertsIl2cpp
             }
             return "";
         }
-        public static string GetMethodSignature(MethodBase methodBase, bool isDelegateInvoke = false, bool isExtensionMethod = false)
+        public static string GetMethodSignature(MethodBase methodBase, bool isBridge = false, bool isExtensionMethod = false)
         {
             string signature = "";
             if (methodBase is ConstructorInfo)
@@ -321,7 +322,7 @@ namespace PuertsIl2cpp
             {
                 var methodInfo = methodBase as MethodInfo;
                 signature += GetTypeSignature(methodInfo.ReturnType);
-                if (!methodInfo.IsStatic && !isDelegateInvoke) signature += methodBase.DeclaringType == typeof(object) ? "T" : "t";
+                if (!methodInfo.IsStatic && !isBridge) signature += methodBase.DeclaringType == typeof(object) ? "T" : "t";
                 var parameterInfos = methodInfo.GetParameters();
                 for (int i = 0; i < parameterInfos.Length; ++i)
                 {

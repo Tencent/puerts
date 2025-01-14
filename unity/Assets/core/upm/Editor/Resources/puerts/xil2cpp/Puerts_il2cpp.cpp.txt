@@ -25,6 +25,7 @@
 #include "vm/Method.h"
 #include "vm/Parameter.h"
 #include "vm/Image.h"
+#include "vm/GenericContainer.h"
 #include "utils/StringUtils.h"
 #include "gc/WriteBarrier.h"
 #include "gc/GCHandle.h"
@@ -36,6 +37,7 @@
 #include <map>
 #include <string>
 #include <unordered_set>
+#include <sstream>
 
 // Because we need to hold the C# object pointer, we must ensure that GC does not do memory reorganization.
 static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
@@ -82,46 +84,9 @@ struct JsClassInfo : public JsClassInfoHeader
     std::vector<CSharpFieldInfo> Fields;
 };
 
-Il2CppMethodPointer GetMethodPointer(Il2CppReflectionMethod* method)
-{
-    auto methodInfo = method->method;
-    auto ret = MetadataCache::GetMethodPointer(methodInfo->klass->image, methodInfo->token);
-    if (!ret)
-    {
-        ret = methodInfo->methodPointer;
-    }
-    return ret;
-}
-
-intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method)
-{
-    return (intptr_t)method->method;
-}
-
-int32_t GetFieldOffset(Il2CppReflectionField* field, bool isInValueType)
-{
-    return (int32_t)Field::GetOffset(field->field) - (Class::IsValuetype(Field::GetParent(field->field)) ? sizeof(Il2CppObject) : 0);
-}
-
-intptr_t GetFieldInfoPointer(Il2CppReflectionField* field)
-{
-    return (intptr_t)field->field;
-}
-
-intptr_t GetTypeId(Il2CppReflectionType *type)
-{
-    return (intptr_t)il2cpp_codegen_class_from_type(type->type);
-}
-
 const Il2CppClass* CSharpTypeToTypeId(Il2CppObject *type)
 {
     return (type && Class::IsAssignableFrom(il2cpp_defaults.systemtype_class, type->klass)) ? il2cpp_codegen_class_from_type(((Il2CppReflectionType *)type)->type) : nullptr;
-}
-
-const Il2CppReflectionType* TypeIdToType(Il2CppClass *klass)
-{
-    if (!klass) return nullptr;
-    return Reflection::GetTypeObject(Class::GetType(klass));
 }
 
 static void* ObjectAllocate(Il2CppClass *klass)
@@ -150,20 +115,330 @@ static void PApiFree(struct pesapi_ffi* api, void* ptr, void* class_data, void* 
 
 static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
+static FieldInfo* g_arrayBufferCountField = nullptr;
+static FieldInfo* g_arrayBufferBytesField = nullptr;
 static Il2CppClass *g_typeofTypedValue;
 
-static MethodInfoHelper<void(const void* typeId, bool includeNonPublic)> g_RegisterNoThrowHelper;
+static MethodInfoHelper<Il2CppArray*(Il2CppString*)> g_ExtensionMethodGetHelper;
 
+static Il2CppClass* s_ParamArrayAttribute;
+
+static bool RegisterType(Il2CppClass* klass);
 static bool ClassNotFoundCallback(const void* typeId)
 {
-    g_RegisterNoThrowHelper.Call(typeId, false);
-    return true;
+    return RegisterType((Il2CppClass*)typeId);
 }
 
-static void SetRegisterNoThrow(Il2CppReflectionMethod* method)
+static void SetExtensionMethodGet(Il2CppReflectionMethod* method)
 {
-    g_RegisterNoThrowHelper = MethodInfoHelper<void(const void* typeId, bool includeNonPublic)>(method);
-    pesapi_on_class_not_found(ClassNotFoundCallback);
+    g_ExtensionMethodGetHelper = MethodInfoHelper<Il2CppArray*(Il2CppString*)>(method->method);
+}
+
+static std::string GetTypeSignature(const Il2CppType* type);
+
+static bool IsPtrToSelf(const Il2CppType* type, const Il2CppClass* selfClass)
+{
+    if (type->byref && (type->type == IL2CPP_TYPE_VALUETYPE || type->type == IL2CPP_TYPE_TYPEDBYREF))
+    {
+        Il2CppClass* klass = Class::FromIl2CppType(type, false);
+        Class::Init(klass);
+        return Class::FromIl2CppType(&(klass->byval_arg)) == selfClass;
+    }
+    if (type->type == IL2CPP_TYPE_PTR)
+    {
+        Il2CppClass* klass = Class::FromIl2CppType(type, false);
+        Class::Init(klass);
+        return klass->element_class == selfClass;
+    }
+    return false;
+}
+
+static std::string GetValueTypeFieldsSignature(const Il2CppType* type)
+{
+    Il2CppClass* klass = Class::FromIl2CppType(type, false);
+    Class::Init(klass);
+    std::string ret = "";
+    for (uint16_t index = 0; index < klass->field_count; index++)
+    {
+        FieldInfo* field = klass->fields + index;
+        if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) continue;
+        if (IsPtrToSelf(field->type, klass))
+        {
+            ret += "Pv";
+        }
+        else
+        {
+            ret += GetTypeSignature(field->type);
+        }
+    }
+    return ret;
+}
+
+static std::string GetTypeSignature(const Il2CppType* type)
+{
+    std::string ret;
+    switch (type->type)
+    {
+    case IL2CPP_TYPE_VOID:
+    {
+        ret = "v";
+        break;
+    }
+    case IL2CPP_TYPE_BOOLEAN:
+    {
+        ret = "b";
+        break;
+    }
+    case IL2CPP_TYPE_U1:
+    {
+        ret = "u1";
+        break;
+    }
+    case IL2CPP_TYPE_I1:
+    {
+        ret = "i1";
+        break;
+    }
+    case IL2CPP_TYPE_I2:
+    {
+        ret = "i2";
+        break;
+    }
+    case IL2CPP_TYPE_U2:
+    {
+        ret = "u2";
+        break;
+    }
+    case IL2CPP_TYPE_I4:
+    {
+        ret = "i4";
+        break;
+    }
+    case IL2CPP_TYPE_U4:
+    {
+        ret = "u4";
+        break;
+    }
+    case IL2CPP_TYPE_I8:
+    {
+        ret = "i8";
+        break;
+    }
+    case IL2CPP_TYPE_U8:
+    {
+        ret = "u8";
+        break;
+    }
+    case IL2CPP_TYPE_CHAR:
+    {
+        ret = "c";
+        break;
+    }
+    case IL2CPP_TYPE_R8:
+    {
+        ret = "r8";
+        break;
+    }
+    case IL2CPP_TYPE_R4:
+    {
+        ret = "r4";
+        break;
+    }
+    case IL2CPP_TYPE_I:
+    case IL2CPP_TYPE_U:
+    {
+        ret = "p";
+        break;
+    }
+    case IL2CPP_TYPE_STRING:
+    {
+        ret = "s";
+        break;
+    }
+    case IL2CPP_TYPE_OBJECT: //object特殊处理，比如check可以不用判断，比如return可以优化
+    {
+        ret = "O";
+        break;
+    }
+    //case IL2CPP_TYPE_BYREF:
+    case IL2CPP_TYPE_PTR:
+    {
+        ret = "P" + GetTypeSignature(type->data.type);
+        break;
+    }
+    //case IL2CPP_TYPE_ENUM:
+    //{
+    //    ret = GetTypeSignature(Type::GetUnderlyingType(type));
+    //    break;
+    //}
+    case IL2CPP_TYPE_ARRAY:
+    case IL2CPP_TYPE_SZARRAY:
+    case IL2CPP_TYPE_CLASS:
+    {
+        Il2CppClass* klass = Class::FromIl2CppType(type, false);
+        Class::Init(klass);
+        ret = (klass == g_typeofArrayBuffer) ? "a" : "o";
+        break;
+    }
+    case IL2CPP_TYPE_GENERICINST:
+    {
+        Il2CppClass* klass = Class::FromIl2CppType(type, false);
+        Class::Init(klass);
+        if (!klass->byval_arg.valuetype)
+        {
+            ret = "o";
+            break;
+        }
+        // continue with valuetype
+    }
+    case IL2CPP_TYPE_VALUETYPE:
+    case IL2CPP_TYPE_TYPEDBYREF://public ref struct TypedReference {}
+    {
+        Il2CppClass* klass = Class::FromIl2CppType(type, false);
+        Class::Init(klass);
+
+        if (Type::IsEnum(type) || Class::GetParent(klass) == il2cpp_defaults.enum_class)
+        {
+            auto baseType = Type::GetUnderlyingType(type);
+            if (baseType == type)
+            {
+                Il2CppClass* klass = Class::FromIl2CppType(type, false);
+                ret = GetTypeSignature(klass->fields[0].type);
+                break;
+            }
+            ret = GetTypeSignature(baseType);
+            break;
+        }
+
+        if (il2cpp::vm::Class::IsNullable(klass))
+            ret = "N_" + GetValueTypeFieldsSignature(type) + "_";
+        else
+            ret = "S_" + GetValueTypeFieldsSignature(type) + "_";
+        break;
+    }
+    //case IL2CPP_TYPE_MVAR:
+    //case IL2CPP_TYPE_VAR:
+    default:
+        Exception::Raise(Exception::GetInvalidOperationException("not support type"));
+    }
+    
+    return type->byref ? "P" + ret :  ret;
+}
+
+static bool HasParamArray(const MethodInfo* method)
+{
+    if (method->parameters_count == 0)
+    {
+        return false;
+    }
+    
+    const MethodInfo* methodWithParameterAttributeInformation = method;
+    if (method->is_inflated)
+        methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
+
+#if defined(UNITY_2022_1_OR_NEWER)
+    auto reader = il2cpp::vm::MetadataCache::GetCustomAttributeDataReader(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1));
+
+    auto ctorIter = reader.GetCtorIterator([](const MethodInfo* ctor) {
+        return ctor->klass == s_ParamArrayAttribute;
+    });
+    const MethodInfo* ctor;
+    return (reader.IterateAttributeCtors(&ctor, &ctorIter));
+#else
+    return (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1), s_ParamArrayAttribute));
+#endif
+}
+
+static std::string GetParameterSignature(const MethodInfo* method, int index)
+{
+    if (kInvalidIl2CppMethodSlot != method->slot) {
+        Class::Init(method->klass);
+    }
+    const Il2CppType* type = Method::GetParam(method, index);
+    
+    if (type)
+    {
+        if (type->attrs & PARAM_ATTRIBUTE_OPTIONAL) {
+            return "D" + GetTypeSignature(type);
+        }
+
+        if ((index == method->parameters_count - 1) && HasParamArray(method))
+        {
+            Il2CppClass* parameterKlass = Class::FromIl2CppType(type, false);
+            return "V" + GetTypeSignature(&parameterKlass->element_class->byval_arg);
+        }
+        else
+        {
+            return GetTypeSignature(type);
+        }
+    }
+    else
+    {
+        Exception::Raise(Exception::GetInvalidOperationException("invalid paramerter index"));
+    }
+}
+
+static bool IsDelegate(Il2CppClass *klass)
+{
+    return Class::HasParent(klass, il2cpp_defaults.delegate_class) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
+}
+
+static bool IsCtor(const MethodInfo* method)
+{
+    return *method->name == '.' && strcmp(method->name, ".ctor") == 0;
+}
+
+static bool IsCCtor(const MethodInfo* method)
+{
+    return *method->name == '.' && strcmp(method->name, ".cctor") == 0;
+}
+
+static bool IsExtensionMethod(const MethodInfo* method)
+{
+    static Il2CppClass* s_ExtensionAttribute = Class::FromName(il2cpp_defaults.corlib, "System.Runtime.CompilerServices", "ExtensionAttribute");
+    return Method::HasAttribute(method, s_ExtensionAttribute);
+}
+
+static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, bool isExtensionMethod)
+{
+    std::string signature = "";
+    if (IsCtor(method))
+    {
+        signature += "vt";
+        for(uint32_t i = 0; i < method->parameters_count; ++i)
+        {
+            signature += GetParameterSignature(method, i);
+        }
+    }
+    else
+    {
+        signature += GetTypeSignature(method->return_type);
+        if (!isBridge && Method::IsInstance(method)) signature += (il2cpp_defaults.object_class == method->klass) ? "T" : "t";
+        for (uint32_t i = 0; i < method->parameters_count; ++i)
+        {
+            if (i == 0 && isExtensionMethod)
+            {
+                signature += method->parameters[i]->type == IL2CPP_TYPE_OBJECT ? "T" : "t";
+            }
+            else
+            {
+                signature += GetParameterSignature(method, i);
+            }
+        }
+
+    }
+
+    return signature;
+}
+
+static Il2CppMethodPointer GetMethodPointer(const MethodInfo* method)
+{
+    auto ret = MetadataCache::GetMethodPointer(method->klass->image, method->token);
+    if (!ret)
+    {
+        ret = method->methodPointer;
+    }
+    return ret;
 }
 
 Il2CppClass* GetReturnType(const MethodInfo* method) {
@@ -262,6 +537,8 @@ void SetGlobalType_ArrayBuffer(Il2CppReflectionType *type)
         Exception::Raise(Exception::GetInvalidOperationException("type of ArrayBuffer is null"));
     }
     g_typeofArrayBuffer =  il2cpp_codegen_class_from_type(type->type);
+    g_arrayBufferCountField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Count");
+    g_arrayBufferBytesField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Bytes");
 }
 
 void SetGlobalType_JSObject(Il2CppReflectionType *type)
@@ -606,13 +883,6 @@ static void* DelegateCtorCallback(struct pesapi_ffi* apis, pesapi_callback_info 
     return FunctionToDelegate(apis, env, jsval, classInfo);
 }
 
-bool IsDelegate(Il2CppClass *klass)
-{
-    return Class::IsAssignableFrom(il2cpp_defaults.delegate_class, klass) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
-}
-
-static FieldInfo* ArrayBufferCountField = nullptr;
-static FieldInfo* ArrayBufferBytesField = nullptr;
 pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj)
 {
     if (obj)
@@ -624,16 +894,11 @@ pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2Cpp
         }
         if (obj->klass == g_typeofArrayBuffer)
         {
-            if (ArrayBufferBytesField == nullptr || ArrayBufferCountField == nullptr) {
-                ArrayBufferCountField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Count");
-                ArrayBufferBytesField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Bytes");
-            }
-
             int32_t length = 0;
-            il2cpp_field_get_value(obj, ArrayBufferCountField, &length);
+            il2cpp_field_get_value(obj, g_arrayBufferCountField, &length);
 
             Il2CppArray* buffer;
-            il2cpp_field_get_value(obj, ArrayBufferBytesField, &buffer);
+            il2cpp_field_get_value(obj, g_arrayBufferBytesField, &buffer);
 
             return apis->create_binary(env, Array::GetFirstElementAddress(buffer), (size_t)length);
         }
@@ -2062,6 +2327,64 @@ static bool TypeInfoPassToJsFilter(const Il2CppType* type, const Il2CppClass* kl
     return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type;
 }
 
+static void SetParamArrayFlagAndOptionalNum(WrapData* data, const MethodInfo* method)
+{
+    data->HasParamArray = HasParamArray(method);
+    data->OptionalNum = 0;
+    
+    for (uint32_t i = 0; i < method->parameters_count; ++i)
+    {
+        if (method->parameters[i]->attrs & PARAM_ATTRIBUTE_OPTIONAL)
+        {
+            ++data->OptionalNum;
+        }
+    }
+}
+
+static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMethod)
+{
+    bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
+    std::vector<Il2CppClass*> usedTypes;
+    const Il2CppType* type = Method::GetReturnType(method);
+    Il2CppClass* klass = il2cpp_codegen_class_from_type(type);
+    if (TypeInfoPassToJsFilter(type, klass))
+    {
+        usedTypes.push_back(klass);
+    }
+    size_t paramCount = Method::GetParamCount(method);
+    for (size_t index = 0; index < paramCount; ++index)
+    {
+        type = Method::GetParam(method, index);
+        klass = il2cpp_codegen_class_from_type(type);
+        if (TypeInfoPassToJsFilter(type, klass))
+        {
+            usedTypes.push_back(klass);
+        }
+    }
+    int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * usedTypes.size();
+    puerts::WrapData* overloadData = (puerts::WrapData*)malloc(allocSize);
+    memset(overloadData, 0, allocSize);
+    overloadData->Method = const_cast<MethodInfo*>(method);
+    overloadData->MethodPointer = GetMethodPointer(method);
+    
+    try
+    {
+        std::string signature = GetMethodSignature(method, false, isExtensionMethod);
+        overloadData->Wrap = FindWrapFunc(signature.c_str());
+    }
+    catch (Il2CppExceptionWrapper& exception) { }
+    if (!overloadData->Wrap)
+    {
+        overloadData->Wrap = &ReflectionWrapper;
+    }
+    SetParamArrayFlagAndOptionalNum(overloadData, method);
+    overloadData->IsExtensionMethod = isExtensionMethod;
+    overloadData->IsStatic = isStatic;
+    memcpy(overloadData->TypeInfos, usedTypes.data(), sizeof(void*) * usedTypes.size());
+    
+    return overloadData;
+}
+
 static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     pesapi_env env = apis->get_env(info);
@@ -2084,32 +2407,7 @@ static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info 
             {
                 csharpMethodInfo = new CSharpMethodInfo { std::string(reflectionMethod->method->name), isStatic, false, false, needBoxing};
             }
-            std::vector<Il2CppClass*> usedTypes;
-            const Il2CppType* type = Method::GetReturnType(reflectionMethod->method);
-            Il2CppClass* klass = il2cpp_codegen_class_from_type(type);
-            if (TypeInfoPassToJsFilter(type, klass))
-            {
-                usedTypes.push_back(klass);
-            }
-            size_t paramCount = Method::GetParamCount(reflectionMethod->method);
-            for (size_t index = 0; index < paramCount; ++index)
-            {
-                type = Method::GetParam(reflectionMethod->method, index);
-                klass = il2cpp_codegen_class_from_type(type);
-                if (TypeInfoPassToJsFilter(type, klass))
-                {
-                    usedTypes.push_back(klass);
-                }
-            }
-            int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * usedTypes.size();
-            puerts::WrapData* overloadData = (puerts::WrapData*)malloc(allocSize);
-            memset(overloadData, 0, allocSize);
-            overloadData->Method = const_cast<MethodInfo *>(reflectionMethod->method);
-            overloadData->MethodPointer = GetMethodPointer(reflectionMethod);
-            overloadData->Wrap = &ReflectionWrapper; // TODO: find wrapper by signature
-            overloadData->IsStatic = isStatic;
-            overloadData->IsExtensionMethod = false;
-            csharpMethodInfo->OverloadDatas.push_back(overloadData);
+            csharpMethodInfo->OverloadDatas.push_back(CreateOverloadData(reflectionMethod->method, IsExtensionMethod(reflectionMethod->method)));
         }
     }
     if (csharpMethodInfo)
@@ -2149,6 +2447,7 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
         {
             apis->set_property(env, global, "loadType", loadType);
             apis->set_property(env, global, "createFunction", createFunction);
+            pesapi_on_class_not_found(ClassNotFoundCallback);
             return jsEnvPrivate;
         }
     }
@@ -2173,230 +2472,174 @@ void DestroyJSEnvPrivate(JsEnvPrivate* jsEnvPrivate)
 {
     delete jsEnvPrivate;
 }
-}
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void pesapi_init(pesapi_func_ptr* func_array);
-
-void InitialPuerts(pesapi_func_ptr* func_array)
+static const MethodInfo* MakeGenericMethodByConstraintedArguments(const MethodInfo* method)
 {
-    InternalCalls::Add("Puerts.NativeAPI::GetMethodPointer(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::GetMethodPointer);
-    InternalCalls::Add("Puerts.NativeAPI::GetMethodInfoPointer(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::GetMethodInfoPointer);
-    InternalCalls::Add("Puerts.NativeAPI::GetTypeId(System.Type)", (Il2CppMethodPointer)puerts::GetTypeId);
-    InternalCalls::Add("Puerts.NativeAPI::GetFieldOffset(System.Reflection.FieldInfo,System.Boolean)", (Il2CppMethodPointer)puerts::GetFieldOffset);
-    InternalCalls::Add("Puerts.NativeAPI::GetFieldInfoPointer(System.Reflection.FieldInfo)", (Il2CppMethodPointer)puerts::GetFieldInfoPointer);
-    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
-    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
-    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
-    InternalCalls::Add("Puerts.NativeAPI::EvalInternal(System.IntPtr,System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
-    InternalCalls::Add("Puerts.NativeAPI::SetObjectToGlobal(System.IntPtr,System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
-    InternalCalls::Add("Puerts.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
-    InternalCalls::Add("Puerts.NativeAPI::GetModuleExecutor(System.IntPtr,System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
-    InternalCalls::Add("Puerts.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
-    InternalCalls::Add("Puerts.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
-    InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
-    InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
-    InternalCalls::Add("Puerts.NativeAPI::SetRegisterNoThrow(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetRegisterNoThrow);
-    pesapi_init(func_array);
-}
-
-void AddPendingKillScriptObjects(struct pesapi_ffi* apis, puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
-{
-    pesapi_env_ref envRef = apis->get_ref_associated_env(valueRef);
-    if (!apis->env_ref_is_valid(envRef)) // jsEnv已经释放
+    if (!Method::IsGeneric(method) || Method::IsInflated(method))
     {
-        apis->release_value_ref(valueRef);
-        return;
+        return method;
     }
-    jsEnvPrivate->AddPendingKillScriptObjects(valueRef);
-}
 
-void CleanupPendingKillScriptObjects(puerts::JsEnvPrivate* jsEnvPrivate)
-{
-    jsEnvPrivate->CleanupPendingKillScriptObjects();
-}
+    Il2CppMetadataGenericContainerHandle containerHandle = MetadataCache::GetGenericContainerFromMethod(method->methodMetadataHandle);
 
-puerts::WrapFuncPtr FindWrapFunc(const char* signature)
-{
-    if (signature == nullptr)
+    uint32_t count = MetadataCache::GetGenericContainerCount(containerHandle);
+    const Il2CppType** genericArguments = (const Il2CppType**)alloca(count * sizeof(Il2CppType*));
+
+    for (uint32_t i = 0; i < count; i++)
     {
-        return &puerts::ReflectionWrapper;
+        Il2CppMetadataGenericParameterHandle param = GenericContainer::GetGenericParameter(containerHandle, i);
+        Il2CppClass* pklass = Class::FromGenericParameter(param);
+        genericArguments[i] = &(Class::GenericParamGetBaseType(pklass)->byval_arg);
     }
-    else 
-    {
-        return puerts::FindWrapFunc(signature);
-    }
-}
-    
-void FindFieldWrap(const char* signature, puerts::FieldWrapFuncPtr *getter, puerts::FieldWrapFuncPtr *setter)
-{
-    if (signature == nullptr)
-    {
-        *getter = &puerts::ReflectionGetFieldWrapper;
-        *setter = &puerts::ReflectionSetFieldWrapper;
-    }
-    else 
-    {
-         auto fieldWrapInfo = puerts::FindFieldWrapFuncInfo(signature);
-         if (fieldWrapInfo)
-         {
-             *getter = fieldWrapInfo->Getter;
-             *setter = fieldWrapInfo->Setter;
-         }
-         else
-         {
-             *getter = nullptr;
-             *setter = nullptr;
-         }
-    }
+    return MetadataCache::GetGenericInstanceMethod(method, genericArguments, count);
 }
 
-puerts::JsClassInfo* CreateCSharpTypeInfo(const char* name, Il2CppClass* type_id, Il2CppClass* super_type_id, bool isValueType, bool isDelegate, const char* delegateSignature)
+static bool RegisterType(Il2CppClass* klass)
 {
-    Il2CppMethodPointer delegateBridge = nullptr;
-    if (isDelegate)
+    Class::Init(klass);
+
+    if (pesapi_get_class_data(klass, false))
     {
-        delegateBridge = puerts::FindBridgeFunc(delegateSignature);
-        if (!delegateBridge) return nullptr;
-    }
-    puerts::JsClassInfo* ret = new puerts::JsClassInfo();
-    ret->Name = name;
-    ret->TypeId = type_id;
-    ret->SuperTypeId = super_type_id;
-    ret->IsValueType = isValueType;
-    ret->DelegateBridge = delegateBridge;
-    
-    return ret;
-}
-
-void ReleaseCSharpTypeInfo(puerts::JsClassInfo* classInfo)
-{
-    //TODO: 有内存泄漏，需要释放里面的内容
-    delete classInfo;
-}
-
-static bool SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* signature)
-{
-    data->HasParamArray = false;
-    data->OptionalNum = 0;
-    bool NeedBoxing = false;
-    
-    const char* p = signature;
-    while(*p)
-    {
-        if (*p == 'V')
-        {
-            data->HasParamArray = true;
-        }
-        if (*p == 'T')
-        {
-            NeedBoxing = true;
-        }
-        if (*p == 'D')
-        {
-            ++data->OptionalNum;
-        }
-        ++p;
-    }
-    return NeedBoxing;
-}
-
-puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, MethodInfo* method, Il2CppMethodPointer methodPointer, int typeInfoNum)
-{
-    // puerts::PLog(puerts::LogLevel::Log, "ctor %s -> %s", classInfo->Name.c_str(), signature);
-    if (!WrapFunc) return nullptr;
-    int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
-    puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
-    memset(data, 0, allocSize);
-    data->Method = method;
-    data->MethodPointer = methodPointer;
-    data->Wrap = WrapFunc;
-    data->IsStatic = false;
-    data->IsExtensionMethod = false;
-    SetParamArrayFlagAndOptionalNum(data, signature);
-    
-    classInfo->Ctors.push_back(data);
-    return data;
-}
-
-puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, const char* name, bool isStatic, bool isExtensionMethod, bool isGetter, bool isSetter, MethodInfo* method, Il2CppMethodPointer methodPointer, int typeInfoNum)
-{
-    if (!WrapFunc) return nullptr;
-    int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
-    puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
-    memset(data, 0, allocSize);
-    data->Method = method;
-    data->MethodPointer = methodPointer;
-    data->Wrap = WrapFunc;
-    data->IsStatic = isStatic;
-    data->IsExtensionMethod = isExtensionMethod;
-    bool NeedBoxing = SetParamArrayFlagAndOptionalNum(data, signature);
-    
-    for(int i = 0; i < classInfo->Methods.size(); ++i)
-    {
-        if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && classInfo->Methods[i].Name == name)
-        {
-            if (isGetter || isSetter) // no overload for getter or setter
-            {
-                free(data);
-                return nullptr;
-            }
-            //puerts::PLog("add overload for %s, %s", name, signature);
-            classInfo->Methods[i].OverloadDatas.push_back(data);
-            return data;
-        }
-    }
-    
-    //puerts::PLog("%s %d %d %d %p", name, typeInfoNum, allocSize, sizeof(puerts::WrapData), data);
-    std::vector<puerts::WrapData*> OverloadDatas;
-    OverloadDatas.push_back(data);
-    classInfo->Methods.push_back({std::string(name), isStatic, isGetter, isSetter, NeedBoxing, std::move(OverloadDatas)});
-    return data;
-}
-
-bool AddField(puerts::JsClassInfo* classInfo, puerts::FieldWrapFuncPtr getter, puerts::FieldWrapFuncPtr setter, const char* name, bool is_static, FieldInfo* fieldInfo, int offset, Il2CppClass* fieldTypeInfo)
-{
-    if (!getter && !setter) 
-    {
-        return false;
-    }
-    puerts::FieldWrapData* data = new puerts::FieldWrapData();
-    data->Getter = getter;
-    data->Setter = setter;
-    data->FieldInfo = fieldInfo;
-    data->Offset = offset;
-    data->TypeInfo = fieldTypeInfo;
-    
-    classInfo->Fields.push_back({std::string(name), is_static, data});
-    return true;
-}
-
-void SetTypeInfo(puerts::WrapData* data, int index, Il2CppClass* typeInfo)
-{
-    data->TypeInfos[index] = typeInfo;
-}
-
-bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
-{
-    if (pesapi_get_class_data(classInfo->TypeId, false))
-    {
-        ReleaseCSharpTypeInfo(classInfo);
         return true;
     }
-    
+
+    bool isDelegate = IsDelegate(klass);
+
+    JsClassInfo* classInfo = new JsClassInfo();
+    classInfo->Name = klass->name;
+    classInfo->TypeId = klass;
+    classInfo->SuperTypeId = Class::GetParent(klass);
+    classInfo->IsValueType = Class::IsValuetype(klass);
+
+    auto AddMethod = [&](const MethodInfo* method, bool isGetter, bool isSetter, const char* name) -> bool
+    {
+        //const char* methodName = (isGetter || isSetter) ? name + 4 : name;
+        bool isExtensionMethod = IsExtensionMethod(method);
+        bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
+        for (int i = 0; i < classInfo->Methods.size(); ++i)
+        {
+            if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && classInfo->Methods[i].Name == name)
+            {
+                if (isGetter || isSetter) // no overload for getter or setter
+                {
+                    return false;
+                }
+                classInfo->Methods[i].OverloadDatas.push_back(CreateOverloadData(method, isExtensionMethod));
+                return true;
+            }
+        }
+        std::vector<puerts::WrapData*> OverloadDatas;
+        OverloadDatas.push_back(CreateOverloadData(method, isExtensionMethod));
+        bool needBoxing = (isExtensionMethod ? GetParameterType(method, 0) : method->klass) == il2cpp_defaults.object_class;
+        classInfo->Methods.push_back({ std::string(name), isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
+        return true;
+    };
+
+    if (isDelegate)
+    {
+        MethodInfo* invoke = (MethodInfo*)il2cpp::vm::Class::GetMethodFromName(klass, "Invoke", -1);
+        try
+        {
+            std::string signature = GetMethodSignature(invoke, true, false);
+            classInfo->DelegateBridge = FindBridgeFunc(signature.c_str());
+        }
+        catch (Il2CppExceptionWrapper& exception)
+        {
+            return false;
+        }
+        AddMethod(invoke, false, false, "Invoke");
+    }
+    else
+    {
+        classInfo->DelegateBridge = nullptr;
+        auto etype = klass->byval_arg.type;
+        if (etype != IL2CPP_TYPE_SZARRAY && etype != IL2CPP_TYPE_ARRAY)
+        {
+            for (uint16_t i = 0; i < klass->method_count; ++i)
+            {
+                const MethodInfo* method = klass->methods[i];
+                if (!IsCCtor(method) && !Method::IsGeneric(method))
+                {
+                    const char* name = method->name;
+                    if (!(method->flags & METHOD_ATTRIBUTE_PUBLIC))
+                    {
+                        name = strrchr(name, '.'); // if Explicit Interface Implementation
+                        if (!name) continue;
+                        ++name;
+                    }
+                    bool isGetter = (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && strncmp("get_", name, 4) == 0 && method->parameters_count == 0;
+                    bool isSetter = (method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && strncmp("set_", name, 4) == 0 && method->parameters_count == 1;
+                    name = (isGetter || isSetter) ? name + 4 : name;
+                    if (IsCtor(method))
+                    {
+                        classInfo->Ctors.push_back(CreateOverloadData(method, false));
+                    }
+                    else
+                    {
+                        AddMethod(method, isGetter, isSetter, name);
+                    }
+                }
+            }
+            for (uint16_t i = 0; i < klass->field_count; i++)
+            {
+                FieldInfo* field = &klass->fields[i];
+                bool isStatic = (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+                std::string signature = (isStatic ? "" : "t");
+                try
+                {
+                    signature += GetTypeSignature(field->type);
+                }
+                catch (Il2CppExceptionWrapper& exception)
+                {
+                    continue;
+                }
+                
+                FieldWrapData* fieldData = new FieldWrapData();
+
+                FieldWrapFuncPtr getter = &ReflectionGetFieldWrapper;
+                FieldWrapFuncPtr setter = &ReflectionSetFieldWrapper;
+                auto fieldWrapInfo = FindFieldWrapFuncInfo(signature.c_str());
+                if (fieldWrapInfo)
+                {
+                    getter = fieldWrapInfo->Getter;
+                    setter = fieldWrapInfo->Setter;
+                }
+                fieldData->Getter = getter;
+                fieldData->Setter = setter;
+                fieldData->FieldInfo = field;
+                fieldData->Offset = (int32_t)Field::GetOffset(field) - (Class::IsValuetype(Field::GetParent(field)) ? sizeof(Il2CppObject) : 0);;
+                fieldData->TypeInfo = Class::FromIl2CppType(field->type, false);;
+
+                classInfo->Fields.push_back({ std::string(field->name), isStatic, fieldData });
+            }
+        }
+        
+        std::string assemblyQualifiedName(Type::GetName(&klass->byval_arg, IL2CPP_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED));
+        if (!assemblyQualifiedName.empty())
+        {
+            Il2CppArray* extensionMethods = g_ExtensionMethodGetHelper.Call(il2cpp::vm::String::NewWrapper(assemblyQualifiedName.c_str()));
+            if (extensionMethods)
+            {
+                uint32_t len = Array::GetLength(extensionMethods);
+                Il2CppReflectionMethod** arr = reinterpret_cast<Il2CppReflectionMethod**>(il2cpp::vm::Array::GetFirstElementAddress(extensionMethods));
+                for (uint32_t i = 0; i < len; ++i)
+                {
+                    AddMethod(MakeGenericMethodByConstraintedArguments(arr[i]->method), false, false, arr[i]->method->name);
+                }
+            }
+        }
+    }
+
     classInfo->Ctors.push_back(nullptr);
     classInfo->CtorWrapDatas = classInfo->Ctors.data();
-    
+
     std::map<std::string, std::pair<puerts::CSharpMethodInfo*, puerts::CSharpMethodInfo*>> gseters;
     std::vector<puerts::CSharpMethodInfo*> methods;
-    
-    for (auto & method : classInfo->Methods)
+
+    for (auto& method : classInfo->Methods)
     {
         method.OverloadDatas.push_back(nullptr);
-        
+
         if (method.IsGetter || method.IsSetter)
         {
             auto iter = gseters.find(method.Name);
@@ -2422,43 +2665,85 @@ bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
         }
         //puerts::WrapData** wrapDatas = reinterpret_cast<puerts::WrapData**>(method.OverloadDatas.data());
     }
-    
+
     size_t propertiesCount = gseters.size() + methods.size() + classInfo->Fields.size();
     auto properties = pesapi_alloc_property_descriptors(propertiesCount);
     size_t pos = 0;
-    
-    for (auto const& method: methods)
+
+    for (auto const& method : methods)
     {
         pesapi_set_method_info(
-                properties, pos++, method->Name.c_str(), method->IsStatic, &puerts::MethodCallback, method, nullptr);
+            properties, pos++, method->Name.c_str(), method->IsStatic, &MethodCallback, method, nullptr);
     }
-    
-    for (auto const& kv: gseters)
+
+    for (auto const& kv : gseters)
     {
         auto geter_or_setter = kv.second.first ? kv.second.first : kv.second.second;
-        pesapi_set_property_info(properties, pos++, geter_or_setter->Name.c_str(), geter_or_setter->IsStatic, 
-            kv.second.first ? &puerts::MethodCallback : nullptr,
-            kv.second.second ? &puerts::MethodCallback : nullptr, 
+        pesapi_set_property_info(properties, pos++, geter_or_setter->Name.c_str(), geter_or_setter->IsStatic,
+            kv.second.first ? &MethodCallback : nullptr,
+            kv.second.second ? &MethodCallback : nullptr,
             kv.second.first,
             kv.second.second,
             nullptr);
     }
-    
-    for (auto & field : classInfo->Fields)
+
+    for (auto& field : classInfo->Fields)
     {
-        pesapi_set_property_info(properties, pos++, field.Name.c_str(), field.IsStatic, 
-            puerts::GetterCallback, puerts::SetterCallback, field.Data, field.Data, nullptr);
+        pesapi_set_property_info(properties, pos++, field.Name.c_str(), field.IsStatic,
+            GetterCallback, SetterCallback, field.Data, field.Data, nullptr);
     }
-    
+
     pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->Name.c_str(),
-            classInfo->DelegateBridge ? &puerts::DelegateCtorCallback : &puerts::CtorCallback, classInfo->IsValueType ? &puerts::PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
-            
+        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
+
     if (!classInfo->IsValueType)
     {
-        pesapi_trace_native_object_lifecycle(classInfo->TypeId, (pesapi_on_native_object_enter)&puerts::OnCsObjectEnter, (pesapi_on_native_object_exit)&puerts::OnCsObjectExit);
+        pesapi_trace_native_object_lifecycle(classInfo->TypeId, (pesapi_on_native_object_enter)&OnCsObjectEnter, (pesapi_on_native_object_exit)&OnCsObjectExit);
     }
-    
     return true;
+}
+
+
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void pesapi_init(pesapi_func_ptr* func_array);
+
+void InitialPuerts(pesapi_func_ptr* func_array)
+{
+    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
+    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
+    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
+    InternalCalls::Add("Puerts.NativeAPI::EvalInternal(System.IntPtr,System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
+    InternalCalls::Add("Puerts.NativeAPI::SetObjectToGlobal(System.IntPtr,System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
+    InternalCalls::Add("Puerts.NativeAPI::GetModuleExecutor(System.IntPtr,System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
+    InternalCalls::Add("Puerts.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
+    InternalCalls::Add("Puerts.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
+    InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
+    InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
+    InternalCalls::Add("Puerts.NativeAPI::SetExtensionMethodGet(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetExtensionMethodGet);
+    pesapi_init(func_array);
+    
+    puerts::s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
+}
+
+void AddPendingKillScriptObjects(struct pesapi_ffi* apis, puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
+{
+    pesapi_env_ref envRef = apis->get_ref_associated_env(valueRef);
+    if (!apis->env_ref_is_valid(envRef)) // jsEnv已经释放
+    {
+        apis->release_value_ref(valueRef);
+        return;
+    }
+    jsEnvPrivate->AddPendingKillScriptObjects(valueRef);
+}
+
+void CleanupPendingKillScriptObjects(puerts::JsEnvPrivate* jsEnvPrivate)
+{
+    jsEnvPrivate->CleanupPendingKillScriptObjects();
 }
 
 void SetLogCallbackInternal(puerts::LogCallbackFunc Log)

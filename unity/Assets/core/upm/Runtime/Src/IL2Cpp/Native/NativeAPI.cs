@@ -35,33 +35,6 @@ namespace Puerts
         public static extern void InitialPuerts(IntPtr PesapiImpl);
 
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, bool isValueType, bool isDelegate, string delegateSignature);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ReleaseCSharpTypeInfo(IntPtr classInfo);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr FindWrapFunc(string signature);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void FindFieldWrap(string signature, out IntPtr getter, out IntPtr setter);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr AddConstructor(IntPtr classInfo, string signature, IntPtr WrapFunc, IntPtr method, IntPtr methodPointer, int typeInfoNum);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr AddMethod(IntPtr classInfo, string signature, IntPtr WrapFunc, string name, bool isStatic, bool isExtensionethod, bool isGetter, bool isSetter, IntPtr method, IntPtr methodPointer, int typeInfoNum);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool AddField(IntPtr classInfo, IntPtr getter, IntPtr setter, string name, bool isStatic, IntPtr fieldInfo, int offset, IntPtr fieldTypeInfo);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetTypeInfo(IntPtr wrapData, int index, IntPtr typeId);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RegisterCSharpType(IntPtr classInfo);
-
-        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void AddPendingKillScriptObjects(IntPtr ffiApi, IntPtr jsEnv, IntPtr valueRef);
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
@@ -86,7 +59,7 @@ namespace Puerts
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetRegisterNoThrow(MethodBase methodInfo)
+        public static void SetExtensionMethodGet(MethodBase methodInfo)
         {
         }
 
@@ -98,42 +71,6 @@ namespace Puerts
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static object GetModuleExecutor(IntPtr apis, IntPtr NativeJsEnvPtr, Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetMethodPointer(MethodBase methodInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetMethodInfoPointer(MethodBase methodInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static int GetFieldOffset(FieldInfo fieldInfo, bool isInValueType)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetFieldInfoPointer(FieldInfo fieldInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr GetTypeId(Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static Type TypeIdToType(IntPtr typeId)
         {
             throw new NotImplementedException();
         }
@@ -218,7 +155,7 @@ namespace Puerts
         }
 #endif
     }
-    
+
     public delegate void pesapi_callback(IntPtr apis, IntPtr info);
     public delegate void pesapi_function_finalize(IntPtr apis, IntPtr data, IntPtr env_private);
 
