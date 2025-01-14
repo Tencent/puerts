@@ -1,29 +1,9 @@
-import { default as $, IF, ELSE, ELSEIF, ENDIF, FOR } from '../templates/tte.mjs'
+import * as il2cpp_snippets from "../templates/il2cpp_snippets.mjs"
 
-export default function unityenv_for_puerts(newerthan2021, newerthan2022, newerthan6000, shared) {
-    return $`
-${IF(newerthan2021)}
-#ifndef UNITY_2021_1_OR_NEWER
-    #define UNITY_2021_1_OR_NEWER
-#endif
-${ENDIF()}
+export default function unityenv_for_puerts(definesList) {
+    var defines = il2cpp_snippets.listToJsArray(definesList);
+    return defines.map(d => `#ifndef ${d}
+    #define ${d}
+#endif`).join('\n');
 
-${IF(newerthan2022)}
-#ifndef UNITY_2022_1_OR_NEWER
-    #define UNITY_2022_1_OR_NEWER
-#endif
-${ENDIF()}
-
-${IF(newerthan6000)}
-#ifndef UNITY_6000_0_OR_NEWER
-    #define UNITY_6000_0_OR_NEWER
-#endif
-${ENDIF()}
-
-${IF(shared)}
-#ifndef PUERTS_SHARED
-    #define PUERTS_SHARED
-#endif
-${ENDIF()}
-    `
 }
