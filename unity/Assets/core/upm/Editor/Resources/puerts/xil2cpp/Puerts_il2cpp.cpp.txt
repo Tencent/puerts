@@ -119,6 +119,8 @@ static Il2CppClass *g_typeofTypedValue;
 
 static MethodInfoHelper<Il2CppArray*(Il2CppString*)> g_ExtensionMethodGetHelper;
 
+static Il2CppClass* s_ParamArrayAttribute;
+
 static bool RegisterType(Il2CppClass* klass);
 static bool ClassNotFoundCallback(const void* typeId)
 {
@@ -331,8 +333,7 @@ static bool HasParamArray(const MethodInfo* method)
     const MethodInfo* methodWithParameterAttributeInformation = method;
     if (method->is_inflated)
         methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
-        
-    static Il2CppClass* s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
+
 #if defined(UNITY_2022_1_OR_NEWER)
     auto reader = il2cpp::vm::MetadataCache::GetCustomAttributeDataReader(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1));
 
@@ -2728,6 +2729,8 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     InternalCalls::Add("Puerts.NativeAPI::SetExtensionMethodGet(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetExtensionMethodGet);
     pesapi_init(func_array);
+    
+    puerts::s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
 }
 
 void AddPendingKillScriptObjects(struct pesapi_ffi* apis, puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
