@@ -321,6 +321,31 @@ static std::string GetTypeSignature(const Il2CppType* type)
     return type->byref ? "P" + ret :  ret;
 }
 
+static bool HasParamArray(const MethodInfo* method)
+{
+    if (method->parameters_count == 0)
+    {
+        return false;
+    }
+    
+    const MethodInfo* methodWithParameterAttributeInformation = method;
+    if (method->is_inflated)
+        methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
+        
+    static Il2CppClass* s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
+#if defined(UNITY_2022_1_OR_NEWER)
+    auto reader = il2cpp::vm::MetadataCache::GetCustomAttributeDataReader(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1));
+
+    auto ctorIter = reader.GetCtorIterator([](const MethodInfo* ctor) {
+        return ctor->klass == s_ParamArrayAttribute;
+    });
+    const MethodInfo* ctor;
+    return (reader.IterateAttributeCtors(&ctor, &ctorIter));
+#else
+    return (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1), s_ParamArrayAttribute));
+#endif
+}
+
 static std::string GetParameterSignature(const MethodInfo* method, int index)
 {
     if (kInvalidIl2CppMethodSlot != method->slot) {
@@ -328,35 +353,24 @@ static std::string GetParameterSignature(const MethodInfo* method, int index)
     }
     const Il2CppType* type = Method::GetParam(method, index);
     
-    if (type) {
+    if (type)
+    {
         if (type->attrs & PARAM_ATTRIBUTE_OPTIONAL) {
             return "D" + GetTypeSignature(type);
         }
 
-        const MethodInfo* methodWithParameterAttributeInformation = method;
-        if (method->is_inflated)
-            methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
-
-        static Il2CppClass* s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
-#if defined(UNITY_2022_1_OR_NEWER)
-        auto reader = il2cpp::vm::MetadataCache::GetCustomAttributeDataReader(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, index));
-
-        auto ctorIter = reader.GetCtorIterator([](const MethodInfo* ctor) {
-            return ctor->klass == s_ParamArrayAttribute;
-        });
-        const MethodInfo* ctor;
-        if (reader.IterateAttributeCtors(&ctor, &ctorIter)) {
-#else
-        if (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, index), s_ParamArrayAttribute)) {
-#endif
+        if ((index == method->parameters_count - 1) && HasParamArray(method))
+        {
             Il2CppClass* parameterKlass = Class::FromIl2CppType(type, false);
             return "V" + GetTypeSignature(&parameterKlass->element_class->byval_arg);
         }
-        else {
+        else
+        {
             return GetTypeSignature(type);
         }
     }
-    else {
+    else
+    {
         Exception::Raise(Exception::GetInvalidOperationException("invalid paramerter index"));
     }
 }
@@ -2315,23 +2329,17 @@ static bool TypeInfoPassToJsFilter(const Il2CppType* type, const Il2CppClass* kl
     return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type;
 }
 
-static void SetParamArrayFlagAndOptionalNum(WrapData* data, const char* signature)
+static void SetParamArrayFlagAndOptionalNum(WrapData* data, const MethodInfo* method)
 {
-    data->HasParamArray = false;
+    data->HasParamArray = HasParamArray(method);
     data->OptionalNum = 0;
     
-    const char* p = signature;
-    while(*p)
+    for (uint32_t i = 0; i < method->parameters_count; ++i)
     {
-        if (*p == 'V')
-        {
-            data->HasParamArray = true;
-        }
-        if (*p == 'D')
+        if (method->parameters[i]->attrs & PARAM_ATTRIBUTE_OPTIONAL)
         {
             ++data->OptionalNum;
         }
-        ++p;
     }
 }
 
@@ -2364,7 +2372,6 @@ static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMe
     try
     {
         std::string signature = GetMethodSignature(method, false, isExtensionMethod);
-        SetParamArrayFlagAndOptionalNum(overloadData, signature.c_str());
         overloadData->Wrap = FindWrapFunc(signature.c_str());
     }
     catch (Il2CppExceptionWrapper& exception) { }
@@ -2372,6 +2379,7 @@ static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMe
     {
         overloadData->Wrap = &ReflectionWrapper;
     }
+    SetParamArrayFlagAndOptionalNum(overloadData, method);
     overloadData->IsExtensionMethod = isExtensionMethod;
     overloadData->IsStatic = isStatic;
     memcpy(overloadData->TypeInfos, usedTypes.data(), sizeof(void*) * usedTypes.size());
