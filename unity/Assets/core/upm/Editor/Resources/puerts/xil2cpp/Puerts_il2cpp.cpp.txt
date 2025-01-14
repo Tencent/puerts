@@ -115,6 +115,8 @@ static void PApiFree(struct pesapi_ffi* api, void* ptr, void* class_data, void* 
 
 static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
+static FieldInfo* g_arrayBufferCountField = nullptr;
+static FieldInfo* g_arrayBufferBytesField = nullptr;
 static Il2CppClass *g_typeofTypedValue;
 
 static MethodInfoHelper<Il2CppArray*(Il2CppString*)> g_ExtensionMethodGetHelper;
@@ -535,6 +537,8 @@ void SetGlobalType_ArrayBuffer(Il2CppReflectionType *type)
         Exception::Raise(Exception::GetInvalidOperationException("type of ArrayBuffer is null"));
     }
     g_typeofArrayBuffer =  il2cpp_codegen_class_from_type(type->type);
+    g_arrayBufferCountField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Count");
+    g_arrayBufferBytesField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Bytes");
 }
 
 void SetGlobalType_JSObject(Il2CppReflectionType *type)
@@ -879,8 +883,6 @@ static void* DelegateCtorCallback(struct pesapi_ffi* apis, pesapi_callback_info 
     return FunctionToDelegate(apis, env, jsval, classInfo);
 }
 
-static FieldInfo* ArrayBufferCountField = nullptr;
-static FieldInfo* ArrayBufferBytesField = nullptr;
 pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj)
 {
     if (obj)
@@ -892,16 +894,11 @@ pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2Cpp
         }
         if (obj->klass == g_typeofArrayBuffer)
         {
-            if (ArrayBufferBytesField == nullptr || ArrayBufferCountField == nullptr) {
-                ArrayBufferCountField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Count");
-                ArrayBufferBytesField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Bytes");
-            }
-
             int32_t length = 0;
-            il2cpp_field_get_value(obj, ArrayBufferCountField, &length);
+            il2cpp_field_get_value(obj, g_arrayBufferCountField, &length);
 
             Il2CppArray* buffer;
-            il2cpp_field_get_value(obj, ArrayBufferBytesField, &buffer);
+            il2cpp_field_get_value(obj, g_arrayBufferBytesField, &buffer);
 
             return apis->create_binary(env, Array::GetFirstElementAddress(buffer), (size_t)length);
         }
