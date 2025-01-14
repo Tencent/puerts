@@ -2524,7 +2524,7 @@ static bool RegisterType(Il2CppClass* klass)
         }
         std::vector<puerts::WrapData*> OverloadDatas;
         OverloadDatas.push_back(CreateOverloadData(method, isExtensionMethod));
-        bool needBoxing = method->klass == il2cpp_defaults.object_class; // TODO: 处理扩展函数
+        bool needBoxing = (isExtensionMethod ? GetParameterType(method, 0) : method->klass) == il2cpp_defaults.object_class;
         classInfo->Methods.push_back({ std::string(name), isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
         return true;
     };
