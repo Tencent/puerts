@@ -83,7 +83,17 @@ struct FGenImp
     {
         if (HasUENamespace(ClassDefinition->ScriptName))
             return;
-        Output << "    class " << ClassDefinition->ScriptName;
+
+        Output << "    ";
+
+        PUERTS_NAMESPACE::NamedFunctionInfo* ConstructorInfo = ClassDefinition->ConstructorInfos;
+        const bool IsNoConstructorInfos = !ConstructorInfo || !(ConstructorInfo->Name && ConstructorInfo->Type);
+        if (IsNoConstructorInfos)
+        {
+            Output << "abstract ";
+        }
+
+        Output << "class " << ClassDefinition->ScriptName;
         if (ClassDefinition->SuperTypeId)
         {
             Output << " extends " << PUERTS_NAMESPACE::FindClassByID(ClassDefinition->SuperTypeId)->ScriptName;
@@ -92,7 +102,6 @@ struct FGenImp
 
         TSet<FString> AddedFunctions;
 
-        PUERTS_NAMESPACE::NamedFunctionInfo* ConstructorInfo = ClassDefinition->ConstructorInfos;
         while (ConstructorInfo && ConstructorInfo->Name && ConstructorInfo->Type)
         {
             FStringBuffer Tmp;
