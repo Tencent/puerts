@@ -74,6 +74,8 @@ namespace Puerts
                         Puerts.NativeAPI.SetGlobalType_TypedValue(typeof(TypedValue));
                         Puerts.NativeAPI.SetGlobalType_ArrayBuffer(typeof(ArrayBuffer));
                         Puerts.NativeAPI.SetGlobalType_JSObject(typeof(JSObject));
+
+                        PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
                         isInitialized = true;
                     }
                 }
@@ -111,8 +113,6 @@ namespace Puerts
                 Backend = new BackendNodeJS(this);
             else if (Puerts.PuertsDLL.GetLibBackend(nativeJsEnv) == 2)
                 Backend = new BackendQuickJS(this);
-
-            PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
 
             if (debugPort != -1) {
                 Puerts.PuertsDLL.CreateInspector(nativeJsEnv, debugPort);    
