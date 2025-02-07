@@ -49,8 +49,8 @@ public:
 #ifdef THREAD_SAFE
         v8::Locker Locker(Isolate);
 #endif
-        GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
-        GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
+        GContext.Reset(Isolate, InOther.GContext);
+        GObject.Reset(Isolate, InOther.GObject);
         JsEnvLifeCycleTracker = PUERTS_NAMESPACE::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
@@ -96,8 +96,8 @@ public:
             return *this;
         }
         Isolate = InOther.Isolate;
-        GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
-        GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
+        GContext.Reset(Isolate, InOther.GContext);
+        GObject.Reset(Isolate, InOther.GObject);
         JsEnvLifeCycleTracker = PUERTS_NAMESPACE::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
         return *this;
     }
