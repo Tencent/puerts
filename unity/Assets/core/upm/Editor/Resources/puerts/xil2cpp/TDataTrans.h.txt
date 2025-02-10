@@ -545,7 +545,7 @@ struct MethodInfoHelper
 {
 };
 
-Il2CppMethodPointer GetMethodPointer(const MethodInfo* method);
+static Il2CppMethodPointer GetMethodPointer(const MethodInfo* method);
 
 template <class _Ret, class... _Args>
 struct MethodInfoHelper<_Ret (_Args...)>

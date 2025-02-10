@@ -2223,7 +2223,7 @@ struct JsEnvPrivate
     pesapi_env_ref envRef;
     std::mutex pendingKillRefsMutex;
     std::unordered_set<pesapi_value_ref> pendingKillRefs;
-    std::unordered_set<Il2CppObject*, std::hash<void*>, std::equal_to<void>, il2cpp::gc::Allocator<Il2CppObject*>> objectPool;
+    std::unordered_set<Il2CppObject*, std::hash<void*>, std::equal_to<void*>, il2cpp::gc::Allocator<Il2CppObject*>> objectPool;
     
     JsEnvPrivate(struct pesapi_ffi* inApis, pesapi_env_ref inEnvRef)
         : apis(inApis), envRef(inEnvRef)
