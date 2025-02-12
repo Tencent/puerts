@@ -2542,18 +2542,37 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
     if (Owner)
     {
         TArray<TWeakObjectPtr<UDynamicDelegateProxy>>& Callbacks = AutoReleaseCallbacksMap.FindOrAdd(Owner);
-
-        DelegateProxy = NewObject<UDynamicDelegateProxy>();
+        uint64_t NewHashKey = ((uint64_t) Owner->GetUniqueID() << 32 | (uint64_t) JsFunction->GetIdentityHash());
+        for (auto Callback : Callbacks)
+        {
+            if (!Callback.IsValid() || Callback->JsFunction.IsEmpty() || Callback->SignatureFunction != SignatureFunction ||
+                Callback->DelegateHash != NewHashKey)
+            {
+                continue;
+            }
+            v8::Local<v8::Function> LocalCallbackFunc = Callback->JsFunction.Get(Isolate);
+            // GetIdentityHash不可靠，允许碰撞，所以还需要额外比较一次
+            if (LocalCallbackFunc->Equals(Context, JsFunction).ToChecked())
+            {
+                DelegateProxy = Callback.Get();
+                break;
+            }
+        }
+        if (DelegateProxy == nullptr)
+        {
+            DelegateProxy = NewObject<UDynamicDelegateProxy>();
 #ifdef THREAD_SAFE
-        DelegateProxy->Isolate = Isolate;
+            DelegateProxy->Isolate = Isolate;
 #endif
-        DelegateProxy->Owner = Owner;
-        DelegateProxy->SignatureFunction = SignatureFunction;
-        DelegateProxy->DynamicInvoker = DynamicInvoker;
-        DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
+            DelegateProxy->Owner = Owner;
+            DelegateProxy->SignatureFunction = SignatureFunction;
+            DelegateProxy->DynamicInvoker = DynamicInvoker;
+            DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
+            DelegateProxy->DelegateHash = NewHashKey;
 
-        SysObjectRetainer.Retain(DelegateProxy);
-        Callbacks.Add(DelegateProxy);
+            SysObjectRetainer.Retain(DelegateProxy);
+            Callbacks.Add(DelegateProxy);
+        }
     }
     else
     {
