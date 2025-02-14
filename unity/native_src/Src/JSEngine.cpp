@@ -210,6 +210,12 @@ namespace PUERTS_NAMESPACE
 #ifdef WITH_IL2CPP_OPTIMIZATION
         CppObjectMapper.UnInitialize(MainIsolate);
 #endif
+
+        for (int i = 0; i < CallbackWithFinalizeInfos.size(); ++i)
+        {
+            CallbackWithFinalizeInfos[i]->JsFunction.Reset();
+        }
+        
         BackendEnv.UnInitialize();
 
         for (int i = 0; i < CallbackInfos.size(); ++i)
