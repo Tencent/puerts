@@ -35,7 +35,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         path: ./unity/Assets/core/upm/Plugins/**/*
-        name: Unity_Plugins_(${{ inputs.backend }}_${{ inputs.config }})_osx
+        name: Unity_Plugins_${{ inputs.backend }}_${{ inputs.config }}_osx
     - name: Clean
       shell: bash
       run: rm -rf ./unity/Assets/core/upm/Plugins/**/*

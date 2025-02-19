@@ -345,30 +345,35 @@ jobs:
           echo "API_LEVEL=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=API_LEVEL\s)(\d+)')" >> $GITHUB_ENV
           node -e "const pjson = JSON.parse(fs.readFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', 'utf-8')); pjson.version = '${{ github.event.inputs.tag_name }}' ; fs.writeFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', JSON.stringify(pjson))"
             
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: Unity_Plugins (v8_9.4_Release)
+          pattern: Unity_Plugins_v8_9.4_Release_*
           path: V8/upm/Plugins/
+          merge-multiple: true
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: Unity_Plugins (v8_10.6.194_Release)
+          pattern: Unity_Plugins_v8_10.6.194_Release_*
           path: V8_10/upm/Plugins/
+          merge-multiple: true
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: Unity_Plugins (quickjs_Release)
+          pattern: Unity_Plugins_quickjs_Release_*
           path: Quickjs/upm/Plugins/
+          merge-multiple: true
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: Unity_Plugins (nodejs_16_Release)
+          pattern: Unity_Plugins_nodejs_16_Release_*
           path: Nodejs/upm/Plugins/
+          merge-multiple: true
           
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: Unity_Plugins (mult_Release)
+          pattern: Unity_Plugins_mult_Release_*
           path: Mult/upm/Plugins/
+          merge-multiple: true
           
       - name: Create Release Asset
         run: |
