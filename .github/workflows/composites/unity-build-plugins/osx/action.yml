@@ -32,7 +32,7 @@ runs:
         cd ${{ inputs.build_proj_dir }}
         node ../cli make --platform osx --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: ./unity/Assets/core/upm/Plugins/**/*
         name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})
