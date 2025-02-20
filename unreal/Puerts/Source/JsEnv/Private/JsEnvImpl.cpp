@@ -4405,7 +4405,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         New->Bind();
         New->StaticLink(true);
 
-        (void) (New->GetDefaultObject());
+        auto CDO = New->GetDefaultObject();
         if (auto AnimClass = Cast<UAnimBlueprintGeneratedClass>(New))
         {
             AnimClass->UpdateCustomPropertyListForPostConstruction();
@@ -4417,6 +4417,14 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         else if (auto BPClass = Cast<UBlueprintGeneratedClass>(New))
         {
             BPClass->UpdateCustomPropertyListForPostConstruction();
+        }
+
+        if (CDO->IsA<AActor>())
+        {
+            if (UBlueprintGeneratedClass* BPGClass = Cast<UBlueprintGeneratedClass>(New))
+            {
+                BPGClass->bCooked = true;
+            }
         }
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 12
