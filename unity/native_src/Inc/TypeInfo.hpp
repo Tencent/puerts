@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <functional>
 #include <string>
 #ifdef WITH_V8_FAST_CALL
 #include "V8FastCall.hpp"

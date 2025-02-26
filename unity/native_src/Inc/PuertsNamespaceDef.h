@@ -44,3 +44,36 @@
 #define MSVC_PRAGMA(...)
 #endif
 #endif
+
+#if defined(__clang__)
+# define PUERTS_HAS_ATTRIBUTE_VISIBILITY (__has_attribute(visibility))
+#elif defined(__GNUC__)
+# define PUERTS_HAS_ATTRIBUTE_VISIBILITY 1
+#else
+# define PUERTS_HAS_ATTRIBUTE_VISIBILITY 0
+#endif
+
+#ifndef REGISTER_API
+#ifdef _MSC_VER
+#ifdef BUILDING_REGISTER_API_SHARED
+# define REGISTER_API __declspec(dllexport)
+#elif USING_REGISTER_API_SHARED
+# define REGISTER_API __declspec(dllimport)
+#else
+# define REGISTER_API
+#endif  // BUILDING_V8_SHARED
+
+#else  // _MSC_VER
+
+#if PUERTS_HAS_ATTRIBUTE_VISIBILITY
+# ifdef BUILDING_REGISTER_API_SHARED
+#  define REGISTER_API __attribute__ ((visibility("default")))
+# else
+#  define REGISTER_API
+# endif
+#else
+# define REGISTER_API
+#endif
+
+#endif  // _MSC_VER
+#endif

@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include <cstring>
-#include <functional>
+#include <string.h>
 #include "NamespaceDef.h"
 
 namespace PUERTS_NAMESPACE
@@ -18,9 +17,9 @@ class PString
 {
 public:
     // Constructors
-    PString() : data_(nullptr), size_(0)
+    PString() noexcept: data_(nullptr), size_(0)
     {
-        data_ = new char[1];
+        data_ = (char*)malloc(1);
         data_[0] = '\0';
     }
 
@@ -28,8 +27,8 @@ public:
     {
         if (str)
         {
-            size_ = std::strlen(str);
-            data_ = new char[size_ + 1];
+            size_ = strlen(str);
+            data_ = (char*)malloc(size_ + 1);
 #ifdef _MSC_VER
             strncpy_s(data_, size_ + 1, str, size_);
 #else
@@ -40,7 +39,7 @@ public:
         else
         {
             size_ = 0;
-            data_ = new char[1];
+            data_ = (char*)malloc(1);
             data_[0] = '\0';
         }
     }
@@ -50,7 +49,7 @@ public:
         if (str)
         {
             size_ = length;
-            data_ = new char[size_ + 1];
+        data_ = (char*)malloc(size_ + 1);
 #ifdef _MSC_VER
             strncpy_s(data_, size_ + 1, str, length);
 #else
@@ -61,15 +60,15 @@ public:
         else
         {
             size_ = 0;
-            data_ = new char[1];
+            data_ = (char*)malloc(1);
             data_[0] = '\0';
         }
     }
 
-    PString(const PString& other)
+    PString(const PString& other) noexcept
     {
         size_ = other.size_;
-        data_ = new char[size_ + 1];
+        data_ = (char*)malloc(size_ + 1);
 #ifdef _MSC_VER
         strncpy_s(data_, size_ + 1, other.data_, size_);
 #else
@@ -78,13 +77,13 @@ public:
         data_[size_] = '\0';
     }
 
-    PString& operator=(const PString& other)
+    PString& operator=(const PString& other) noexcept
     {
         if (this != &other)
         {
-            delete[] data_;
+            free(data_);
             size_ = other.size_;
-            data_ = new char[size_ + 1];
+            data_ = (char*)malloc(size_ + 1);
 #ifdef _MSC_VER
             strncpy_s(data_, size_ + 1, other.data_, size_);
 #else
@@ -95,17 +94,17 @@ public:
         return *this;
     }
 
-    ~PString()
+    ~PString() noexcept
     {
-        delete[] data_;
+        free(data_);
     }
 
     PString operator+(const PString& other) const
     {
         PString result;
         result.size_ = size_ + other.size_;
-        delete[] result.data_;
-        result.data_ = new char[result.size_ + 1];
+        free(result.data_);
+        result.data_ = (char*)malloc(result.size_ + 1);
 #ifdef _MSC_VER
         strncpy_s(result.data_, result.size_ + 1, data_, size_);
         strncpy_s(result.data_ + size_, result.size_ - size_ + 1, other.data_, other.size_);
@@ -120,10 +119,10 @@ public:
     friend PString operator+(const char* lhs, const PString& rhs)
     {
         PString result;
-        size_t lhs_size = std::strlen(lhs);
+        size_t lhs_size = strlen(lhs);
         result.size_ = lhs_size + rhs.size_;
-        delete[] result.data_;
-        result.data_ = new char[result.size_ + 1];
+        free(result.data_);
+        result.data_ = (char*)malloc(result.size_ + 1);
 #ifdef _MSC_VER
         strncpy_s(result.data_, result.size_ + 1, lhs, lhs_size);
         strncpy_s(result.data_ + lhs_size, result.size_ - lhs_size + 1, rhs.data_, rhs.size_);
@@ -138,7 +137,7 @@ public:
     PString& operator+=(const PString& other)
     {
         size_t new_size = size_ + other.size_;
-        char* new_data = new char[new_size + 1];
+        char* new_data = (char*)malloc(new_size + 1);
 #ifdef _MSC_VER
         strncpy_s(new_data, new_size + 1, data_, size_);
         strncpy_s(new_data + size_, new_size - size_ + 1, other.data_, other.size_);
@@ -148,7 +147,7 @@ public:
 #endif
         new_data[new_size] = '\0';
 
-        delete[] data_;
+        free(data_);
         data_ = new_data;
         size_ = new_size;
 
@@ -159,9 +158,9 @@ public:
     {
         if (str)
         {
-            size_t str_size = std::strlen(str);
+            size_t str_size = strlen(str);
             size_t new_size = size_ + str_size;
-            char* new_data = new char[new_size + 1];
+            char* new_data = (char*)malloc(new_size + 1);
 #ifdef _MSC_VER
             strncpy_s(new_data, new_size + 1, data_, size_);
             strncpy_s(new_data + size_, new_size - size_ + 1, str, str_size);
@@ -171,7 +170,7 @@ public:
 #endif
             new_data[new_size] = '\0';
 
-            delete[] data_;
+            free(data_);
             data_ = new_data;
             size_ = new_size;
         }
@@ -195,12 +194,12 @@ public:
 
     bool operator<(const PString& other) const
     {
-        return std::strcmp(data_, other.data_) < 0;
+        return strcmp(data_, other.data_) < 0;
     }
 
     bool operator==(const PString& other) const
     {
-        return std::strcmp(data_, other.data_) == 0;
+        return strcmp(data_, other.data_) == 0;
     }
 
 private:
