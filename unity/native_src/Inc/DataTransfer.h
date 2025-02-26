@@ -235,7 +235,7 @@ struct TOuterLinker<T, FT, ToVoid<decltype(&TScriptStructTraits<FT>::Get)>>
 };
 #endif
 
-class JSENV_API DataTransfer
+class REGISTER_API DataTransfer
 {
 public:
     FORCEINLINE static void* MakeAddressWithHighPartOfTwo(void* Address1, void* Address2)
