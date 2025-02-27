@@ -474,6 +474,11 @@ struct ScriptTypeName<TMap<TKey, TValue>>
     }
 };
 
+template <>
+struct is_char<TCHAR> : std::true_type
+{
+};
+
 namespace internal
 {
 template <typename T, typename = void>
