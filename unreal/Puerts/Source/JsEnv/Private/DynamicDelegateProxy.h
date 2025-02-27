@@ -45,6 +45,8 @@ public:
 
     v8::UniquePersistent<v8::Function> JsFunction;
 
+    uint64_t DelegateHash = -1;    // for toDelegate deduplication
+
 #ifdef THREAD_SAFE
     v8::Isolate* Isolate;
 #endif
