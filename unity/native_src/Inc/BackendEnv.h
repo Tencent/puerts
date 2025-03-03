@@ -13,9 +13,6 @@
 #include "Common.h"
 #include "Log.h"
 #include "V8InspectorImpl.h"
-#if WITH_QUICKJS
-#include "quickjs-msvc.h"
-#endif
 
 #if defined(WITH_NODEJS)
 
