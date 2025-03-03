@@ -111,6 +111,9 @@ else ()
     )
 endif()
 
+set(PUERTS_COMPILE_DEFINITIONS)
+set(PUERTS_BACKEND_SRC)
+
 if("${JS_ENGINE}" STREQUAL "quickjs")
     set(CMAKE_C_STANDARD_REQUIRED ON)
     set(CMAKE_C_EXTENSIONS ON)
@@ -194,6 +197,10 @@ if("${JS_ENGINE}" STREQUAL "quickjs")
         xcheck_add_c_compiler_flag(-ggdb)
         xcheck_add_c_compiler_flag(-fno-omit-frame-pointer)
     endif()
+    
+    if(WIN32)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0602)
+    endif()
 
     include_directories(${PROJECT_SOURCE_DIR}/backend-quickjs/include
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs
@@ -208,9 +215,6 @@ if("${JS_ENGINE}" STREQUAL "quickjs")
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/quickjs.c
     )
 endif()
-
-set(PUERTS_COMPILE_DEFINITIONS)
-set(PUERTS_BACKEND_SRC)
 
 if (NOT USING_MULT_BACKEND AND NOT USING_QUICKJS AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
