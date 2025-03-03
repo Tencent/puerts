@@ -4,7 +4,7 @@
 #include "quickjs.h"
 #include <memory>
 #include <string>
-#include <vector.>
+#include <vector>
 #include "CppObjectMapperQuickjs.h"
 
 enum
