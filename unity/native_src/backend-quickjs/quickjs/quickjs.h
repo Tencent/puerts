@@ -1089,6 +1089,13 @@ JSValue JS_GET_MODULE_NS(JSContext *ctx, JSModuleDef* v);
 int JS_ReleaseLoadedModule(JSContext *ctx, const char* path);
 
 int JS_ValueRefCount(JSContext *ctx, JSValue v);
+
+// avoid conflict
+void *JS_GetContextOpaque1(JSContext *ctx);
+void JS_SetContextOpaque1(JSContext *ctx, void *opaque);
+void *JS_GetRuntimeOpaque1(JSRuntime *rt);
+void JS_SetRuntimeOpaque1(JSRuntime *rt, void *opaque);
+
 /*-------end fuctions for v8 api---------*/
 
 #ifdef __cplusplus

@@ -216,6 +216,18 @@ if("${JS_ENGINE}" STREQUAL "quickjs")
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libunicode.c
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/quickjs.c
     )
+    
+    if (NOT USING_MULT_BACKEND AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
+        include_directories(${PROJECT_SOURCE_DIR}/papi-quickjs/include)
+        list(APPEND PUERTS_SRC
+           papi-quickjs/source/CppObjectMapperQuickjs.cpp
+           Src/JSClassRegister.cpp
+           Src/PesapiAddonLoad.cpp
+           Src/PesapiV8Impl.cpp # for reg_apis
+           papi-quickjs/source/PapiQuickjsImpl.cpp
+        )
+    endif()
 endif()
 
 if (NOT USING_MULT_BACKEND AND NOT USING_QUICKJS AND NOT WITHOUT_IL2CPP_OPTIMIZATION)

@@ -302,6 +302,7 @@ struct JSRuntime {
     JSShape **shape_hash;
     bf_context_t bf_ctx;
     void *user_opaque;
+    void *user_opaque1;
     void *libc_opaque;
     JSRuntimeFinalizerState *finalizers;
 };
@@ -442,6 +443,7 @@ struct JSContext {
                              const char *input, size_t input_len,
                              const char *filename, int flags, int scope_idx);
     void *user_opaque;
+    void *user_opaque1;
 };
 
 typedef union JSFloat64Union {
@@ -56207,6 +56209,26 @@ int JS_ReleaseLoadedModule(JSContext *ctx, const char* path)
     }
     JS_FreeAtom(ctx, name);
     return 0;
+}
+
+void *JS_GetContextOpaque1(JSContext *ctx)
+{
+    return ctx->user_opaque1;
+}
+
+void JS_SetContextOpaque1(JSContext *ctx, void *opaque)
+{
+    ctx->user_opaque1 = opaque;
+}
+
+void *JS_GetRuntimeOpaque1(JSRuntime *rt)
+{
+    return rt->user_opaque1;
+}
+
+void JS_SetRuntimeOpaque1(JSRuntime *rt, void *opaque)
+{
+    rt->user_opaque1 = opaque;
 }
 
 /*-------end additional function---------*/
