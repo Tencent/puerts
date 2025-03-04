@@ -756,9 +756,19 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     for (int i = 0; i < argc; ++i) {
         js_argv[i] = *qjsValueFromPesapiValue(argv[i]);
     }
-    JSValue* ret = allocValueInCurrentScope(ctx);
-    *ret = JS_Call(ctx, *func, *thisObj, argc, js_argv);
-    return pesapiValueFromQjsValue(ret);
+    auto rt = JS_GetRuntime(ctx);
+    JS_UpdateStackTop(rt);
+    JSValue retOrEx = JS_Call(ctx, *func, *thisObj, argc, js_argv);
+    if (JS_IsException(retOrEx)) {
+        auto scope = getCurrentScope(ctx);
+        scope->setCaughtException(JS_GetException(ctx));
+
+        return pesapi_create_undefined(env);
+    } else {
+        auto ret = allocValueInCurrentScope(ctx);
+        *ret = retOrEx;
+        return pesapiValueFromQjsValue(ret);
+    }
 }
 
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
