@@ -808,11 +808,7 @@ constexpr size_t internal_field_count_for_gc_handle = (sizeof(Il2CppGCHandle) + 
 static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
 {
     void* out_ptr;
-    if(!apis->get_private(env, value, &out_ptr))
-    {
-        *out_value_ref = nullptr;
-        return nullptr;// not support, not a object?
-    }
+    apis->get_private(env, value, &out_ptr);
     
     pesapi_value_ref value_ref = static_cast<pesapi_value_ref>(out_ptr);
     Il2CppGCHandle* res = nullptr;
@@ -833,9 +829,11 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
     {
         value_ref = apis->create_value_ref(env, value, internal_field_count_for_gc_handle);
         
-        res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
-        apis->set_private(env, value, value_ref);
         *out_object = nullptr;
+        if (apis->set_private(env, value, value_ref))
+        {
+            res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
+        } // else etc. S_CLASS_MODULE_NS
     }
     else
     {
@@ -1189,7 +1187,6 @@ handle_underlying:
                     pesapi_value_ref value_ref;
                     Il2CppObject* ret = nullptr;
                     Il2CppGCHandle* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
-                    if (!handle_store) return nullptr;
                     
                     if (ret == nullptr) 
                     {
@@ -1201,9 +1198,12 @@ handle_underlying:
                         ((NativeCtorPtr)ctor->methodPointer)(ret, ctor);
                         
                         PObjectRefInfo* objectInfo = GetPObjectRefInfo(ret);
-                        auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
-                        il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
-                        *handle_store = targetHandle.Get();
+                        if (handle_store)
+                        {
+                            auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
+                            il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
+                            *handle_store = targetHandle.Get();
+                        }
                         SetPObjectRefInfoValue(apis, env, objectInfo, value_ref);
                     }
                     return ret;
