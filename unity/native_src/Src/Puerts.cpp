@@ -93,10 +93,11 @@ V8_EXPORT pesapi_env_ref GetPapiEnvRef(v8::Isolate *Isolate)
     v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
     
-    auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
 #if WITH_QUICKJS
-    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(env);
+    auto ctx = Context->context_;
+    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(ctx));
 #else
+    auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
     return v8impl::g_pesapi_ffi.create_env_ref(env);
 #endif
 }
