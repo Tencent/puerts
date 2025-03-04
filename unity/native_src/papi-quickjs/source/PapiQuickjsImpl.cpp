@@ -592,10 +592,13 @@ const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack)
             //JSValue fileNameVal = JS_GetProperty(ctx, scope->caught->exception, JS_ATOM_fileName);
             //JSValue lineNumVal = JS_GetProperty(ctx, scope->caught->exception, JS_ATOM_lineNumber);
             JSValue stackVal = JS_GetProperty(ctx, scope->caught->exception, JS_ATOM_stack);
-            auto stack = JS_ToCString(ctx, stackVal);
-            scope->caught->message += "\n";
-            scope->caught->message += stack;
-            JS_FreeCString(ctx, stack);
+            if (JS_IsString(stackVal))
+            {
+                auto stack = JS_ToCString(ctx, stackVal);
+                scope->caught->message += "\n";
+                scope->caught->message += stack;
+                JS_FreeCString(ctx, stack);
+            }
             JS_FreeValue(ctx, stackVal);
         }
         return scope->caught->message.c_str();
@@ -775,8 +778,12 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     auto rt = JS_GetRuntime(ctx);
+    std::vector<char> buff;
+    buff.reserve(code_size + 1);
+    memcpy(buff.data(), code, code_size);
+    buff.data()[code_size] = '\0'; // 尽管JS_Eval传了长度，但如果代码没有以\0结尾，JS_Eval会出现随机错误
     JS_UpdateStackTop(rt);
-    JSValue retOrEx = JS_Eval(ctx, (const char *)code, code_size, path, JS_EVAL_TYPE_GLOBAL);
+    JSValue retOrEx = JS_Eval(ctx, (const char *)buff.data(), code_size, path, JS_EVAL_TYPE_GLOBAL);
     if (JS_IsException(retOrEx)) {
         auto scope = getCurrentScope(ctx);
         scope->setCaughtException(JS_GetException(ctx));

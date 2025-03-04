@@ -92,8 +92,9 @@ struct CppObjectMapper
 
     inline bool GetPrivate(JSValue val, void** outPrr) const
     {
-        if (!JS_IsObject(val))
+        if (!JS_IsObject(val) || !JS_IsExtensible(ctx, val))
         {
+            *outPrr = nullptr;
             return false;
         }
    
@@ -112,7 +113,7 @@ struct CppObjectMapper
 
     inline bool SetPrivate(JSValue val, void* ptr)
     {
-        if (!JS_IsObject(val))
+        if (!JS_IsObject(val) || !JS_IsExtensible(ctx, val))
         {
             return false;
         }

@@ -145,7 +145,7 @@ JSValue CppObjectMapper::PushNativeObject(const void* TypeId, void* ObjectPtr, b
         }
     }
 
-    auto ClassDefinition = puerts::FindClassByID(TypeId);
+    auto ClassDefinition = puerts::LoadClassByID(TypeId);
     if (!ClassDefinition)
     {
         ClassDefinition = &PtrClassDef;
@@ -308,7 +308,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
 
         if (ClassDefinition->SuperTypeId)
         {
-            if (auto SuperDefinition = puerts::FindClassByID(ClassDefinition->SuperTypeId))
+            if (auto SuperDefinition = puerts::LoadClassByID(ClassDefinition->SuperTypeId))
             {
                 JSValue super_func = FindOrCreateClass(SuperDefinition);
                 JSValue parent_proto = JS_GetProperty(ctx, super_func, JS_ATOM_prototype);
@@ -395,6 +395,10 @@ void CppObjectMapper::Cleanup()
                 PNode->MustCallFinalize = false;
             }
             */
+            if (!ClassDefinition)
+            {
+                ClassDefinition = &PtrClassDef;
+            }
             if (ClassDefinition->OnExit)
             {
                 ClassDefinition->OnExit((void*)KV.first, ClassDefinition->Data, (void*)PData, PNode->UserData);
