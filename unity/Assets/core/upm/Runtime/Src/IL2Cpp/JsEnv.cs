@@ -248,12 +248,12 @@ namespace Puerts
 
         public void Eval(string chunk, string chunkName = "chunk")
         {
-            Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, null);
+            Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, null);
         }
 
         public T Eval<T>(string chunk, string chunkName = "chunk")
         {
-            return (T)Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, typeof(T));
+            return (T)Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, typeof(T));
         }
         
         Func<string, Puerts.JSObject> GetModuleExecutor()
