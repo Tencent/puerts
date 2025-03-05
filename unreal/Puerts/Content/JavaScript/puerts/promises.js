@@ -46,6 +46,7 @@ var global = global || (function () { return this; }());
         if (promiseInfo === undefined) {
             return;
         }
+        maybeUnhandledRejection.delete(promise);
         if (!puerts.emit('unhandledRejection', promiseInfo.reason, promise)) {
             unhandledRejectionWarning(reason);
         }
