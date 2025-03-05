@@ -960,6 +960,7 @@ public:
 
     class Scope {
     public:
+        bool micro_jobs_flush = true;
         explicit V8_INLINE Scope(Local<Context> context) {
             isolate_ = context->GetIsolate();
             if (*(context) != *(isolate_->current_context_)) {
@@ -971,15 +972,13 @@ public:
             }
         }
         V8_INLINE ~Scope() {
-#ifndef NO_PEADINGJOB_FLUSH_IN_BACKEND_QUICKJS
-            if (enter_new_) {
+            if (enter_new_ && micro_jobs_flush) {
                 while (JS_IsJobPending(isolate_->runtime_)) {
                     JSContext *ctx = nullptr;
                     JS_ExecutePendingJob(isolate_->runtime_, &ctx);
                 }
                 isolate_->current_context_ = prev_context_;
             }
-#endif
         }
 
     private:

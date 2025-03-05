@@ -221,6 +221,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback cb) {
         Local<Context> context;
         context.val_ = sptr;
         Context::Scope contextScope(context);
+        contextScope.micro_jobs_flush = false;
         
         callback(PromiseRejectMessage(promise, is_handled ? kPromiseHandlerAddedAfterReject : kPromiseRejectWithNoHandler, reason));
     }, (void*)cb);
