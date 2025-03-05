@@ -39,6 +39,8 @@ namespace Puerts
         protected int debugPort;
 
         public Backend Backend;
+        
+        PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 
         [UnityEngine.Scripting.Preserve]
         private void Preserver() 
@@ -84,7 +86,8 @@ namespace Puerts
             apis = Puerts.NativeAPI.GetFFIApi();
             nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine(0);
             nativePesapiEnv = Puerts.NativeAPI.GetPapiEnvRef(nativeJsEnv);
-            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv);
+            var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
+            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
             Puerts.NativeAPI.SetObjectToGlobal(apis, nativePesapiEnv, "jsEnv", this);
 
