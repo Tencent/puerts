@@ -7,7 +7,9 @@
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW)
 
-project(PuertsPlugin)
+project(PuertsPlugin LANGUAGES C CXX)
+
+include(CheckCCompilerFlag)
 
 if("${JS_ENGINE}" MATCHES "^v8_10.6.194")
     set(CMAKE_CXX_STANDARD 17)
@@ -46,8 +48,10 @@ set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/../native_src/.backends/${JS_ENGINE})
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 
-string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_INC_NAMES "${BACKEND_ROOT}${BACKEND_INC_NAMES}")
-string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_LIB_NAMES "${BACKEND_ROOT}${BACKEND_LIB_NAMES}")
+if(NOT ("${JS_ENGINE}" STREQUAL "quickjs"))
+    string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_INC_NAMES "${BACKEND_ROOT}${BACKEND_INC_NAMES}")
+    string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_LIB_NAMES "${BACKEND_ROOT}${BACKEND_LIB_NAMES}")
+endif()
 string (REPLACE ";" "$<SEMICOLON>" BACKEND_DEFINITIONS "${BACKEND_DEFINITIONS}")
 
 include_directories(
@@ -111,6 +115,120 @@ endif()
 
 set(PUERTS_COMPILE_DEFINITIONS)
 set(PUERTS_BACKEND_SRC)
+
+if("${JS_ENGINE}" STREQUAL "quickjs")
+    set(CMAKE_C_STANDARD_REQUIRED ON)
+    set(CMAKE_C_EXTENSIONS ON)
+    set(CMAKE_C_STANDARD 11)
+    
+    macro(xcheck_add_c_compiler_flag FLAG)
+        string(REPLACE "-" "" FLAG_NO_HYPHEN ${FLAG})
+        check_c_compiler_flag(${FLAG} COMPILER_SUPPORTS_${FLAG_NO_HYPHEN})
+        if(COMPILER_SUPPORTS_${FLAG_NO_HYPHEN})
+            add_compile_options(${FLAG})
+        endif()
+    endmacro()
+    
+    xcheck_add_c_compiler_flag(-Wno-implicit-fallthrough)
+    xcheck_add_c_compiler_flag(-Wno-sign-compare)
+    xcheck_add_c_compiler_flag(-Wno-missing-field-initializers)
+    xcheck_add_c_compiler_flag(-Wno-unused-parameter)
+    xcheck_add_c_compiler_flag(-Wno-unused-but-set-variable)
+    xcheck_add_c_compiler_flag(-Wno-array-bounds)
+    xcheck_add_c_compiler_flag(-Wno-format-truncation)
+    xcheck_add_c_compiler_flag(-funsigned-char)
+
+    # ClangCL is command line compatible with MSVC, so 'MSVC' is set.
+    if(MSVC)
+        xcheck_add_c_compiler_flag(-Wno-unsafe-buffer-usage)
+        xcheck_add_c_compiler_flag(-Wno-sign-conversion)
+        xcheck_add_c_compiler_flag(-Wno-nonportable-system-include-path)
+        xcheck_add_c_compiler_flag(-Wno-implicit-int-conversion)
+        xcheck_add_c_compiler_flag(-Wno-shorten-64-to-32)
+        xcheck_add_c_compiler_flag(-Wno-reserved-macro-identifier)
+        xcheck_add_c_compiler_flag(-Wno-reserved-identifier)
+        xcheck_add_c_compiler_flag(-Wdeprecated-declarations)
+        xcheck_add_c_compiler_flag(/experimental:c11atomics)
+        xcheck_add_c_compiler_flag(/wd4018) # -Wno-sign-conversion
+        xcheck_add_c_compiler_flag(/wd4061) # -Wno-implicit-fallthrough
+        xcheck_add_c_compiler_flag(/wd4100) # -Wno-unused-parameter
+        xcheck_add_c_compiler_flag(/wd4200) # -Wno-zero-length-array
+        xcheck_add_c_compiler_flag(/wd4242) # -Wno-shorten-64-to-32
+        xcheck_add_c_compiler_flag(/wd4244) # -Wno-shorten-64-to-32
+        xcheck_add_c_compiler_flag(/wd4245) # -Wno-sign-compare
+        xcheck_add_c_compiler_flag(/wd4267) # -Wno-shorten-64-to-32
+        xcheck_add_c_compiler_flag(/wd4388) # -Wno-sign-compare
+        xcheck_add_c_compiler_flag(/wd4389) # -Wno-sign-compare
+        xcheck_add_c_compiler_flag(/wd4710) # Function not inlined
+        xcheck_add_c_compiler_flag(/wd4711) # Function was inlined
+        xcheck_add_c_compiler_flag(/wd4820) # Padding added after construct
+        xcheck_add_c_compiler_flag(/wd4996) # -Wdeprecated-declarations
+        xcheck_add_c_compiler_flag(/wd5045) # Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+        xcheck_add_c_compiler_flag(/wd4514)
+        xcheck_add_c_compiler_flag(/wd4146)
+        xcheck_add_c_compiler_flag(/wd4334)
+        xcheck_add_c_compiler_flag(-fchar8_t)
+        xcheck_add_c_compiler_flag(/Zc:char8_t)
+    endif()
+
+    xcheck_add_c_compiler_flag(-fno-strict-aliasing)
+
+    if ( APPLE )
+        xcheck_add_c_compiler_flag(-Wno-shorten-64-to-32)
+    endif()
+
+    xcheck_add_c_compiler_flag(-Wno-unused-variable)
+
+    if(APPLE AND CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 11)
+        xcheck_add_c_compiler_flag(-Wno-maybe-uninitialized)
+    endif()
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+        add_compile_definitions(
+            _WASI_EMULATED_PROCESS_CLOCKS
+            _WASI_EMULATED_SIGNAL
+        )
+        add_link_options(
+            -lwasi-emulated-process-clocks
+            -lwasi-emulated-signal
+        )
+    endif()
+
+    if(CMAKE_BUILD_TYPE MATCHES "Debug")
+        add_compile_options(-O0)
+        xcheck_add_c_compiler_flag(-ggdb)
+        xcheck_add_c_compiler_flag(-fno-omit-frame-pointer)
+    endif()
+    
+    if(WIN32)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0602)
+    endif()
+
+    include_directories(${PROJECT_SOURCE_DIR}/backend-quickjs/include
+                        ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs
+    )
+    
+    list(APPEND PUERTS_SRC
+                        ${PROJECT_SOURCE_DIR}/backend-quickjs/src/v8-impl.cc
+                        ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/cutils.c
+                        ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libbf.c
+                        ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libregexp.c
+                        ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libunicode.c
+                        ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/quickjs.c
+    )
+    
+    if (NOT USING_MULT_BACKEND AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
+        include_directories(${PROJECT_SOURCE_DIR}/papi-quickjs/include)
+        list(APPEND PUERTS_SRC
+           papi-quickjs/source/CppObjectMapperQuickjs.cpp
+           Src/JSClassRegister.cpp
+           Src/PesapiAddonLoad.cpp
+           Src/PesapiV8Impl.cpp # for reg_apis
+           papi-quickjs/source/PapiQuickjsImpl.cpp
+        )
+    endif()
+endif()
 
 if (NOT USING_MULT_BACKEND AND NOT USING_QUICKJS AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)

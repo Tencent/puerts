@@ -10,7 +10,11 @@
 #include "Log.h"
 #ifdef WITH_IL2CPP_OPTIMIZATION
 #include "pesapi.h"
+#ifdef WITH_QUICKJS
+#include "CppObjectMapperQuickjs.h"
+#else
 #include "CppObjectMapper.h"
+#endif
 #endif
 
 #define API_LEVEL 34
@@ -89,13 +93,22 @@ V8_EXPORT pesapi_env_ref GetPapiEnvRef(v8::Isolate *Isolate)
     v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
     
+#if WITH_QUICKJS
+    auto ctx = Context->context_;
+    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(ctx));
+#else
     auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
     return v8impl::g_pesapi_ffi.create_env_ref(env);
+#endif
 }
 
 V8_EXPORT pesapi_ffi* GetFFIApi()
 {
+#if WITH_QUICKJS
+    return &pesapi::qjsimpl::g_pesapi_ffi;
+#else
     return &v8impl::g_pesapi_ffi;
+#endif
 }
 
 V8_EXPORT pesapi_func_ptr* GetRegsterApi()

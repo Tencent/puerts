@@ -292,4 +292,23 @@ export async function unityTest(cwd, unityPath) {
     const v2code = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log3.txt`).code;
 
     assert.equal(0, v2code);
+    
+    console.log('-------------------------With Full Wrapper test(quickjs)-------------------------');
+    await runPuertsMake(join(cwd, '../../native_src'), {
+        backend: 'quickjs',
+        platform: platform,
+        config: 'Debug',
+        arch: 'x64',
+        websocket: 1
+    });
+
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+
+    console.log("[Puer] Building testplayer for v2");
+    mkdir("-p", `${cwd}/build/v2`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+    console.log("[Puer] Running test in v2");
+    const v2code_qjs = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code;
+
+    assert.equal(0, v2code_qjs);
 }

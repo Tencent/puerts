@@ -23,8 +23,12 @@
 #endif
 #ifdef WITH_IL2CPP_OPTIMIZATION
 #include "pesapi.h"
+#ifdef WITH_QUICKJS
+#include "CppObjectMapperQuickjs.h"
+#else
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
+#endif
 #endif
 
 #if WITH_NODEJS
@@ -208,7 +212,11 @@ private:
     JSFunction* ModuleExecutor = nullptr;
     
 #ifdef WITH_IL2CPP_OPTIMIZATION
+#ifdef WITH_QUICKJS
+    pesapi::qjsimpl::CppObjectMapper CppObjectMapperQjs;
+#else
     FCppObjectMapper CppObjectMapper;
+#endif
 #endif
     
 public:

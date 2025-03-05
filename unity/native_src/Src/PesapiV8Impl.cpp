@@ -5,19 +5,21 @@
  * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
  * which is part of this source code package.
  */
-
-#ifndef WITH_QUICKJS
-
+ 
 #include "pesapi.h"
-#include "DataTransfer.h"
 #include "JSClassRegister.h"
-#include "ObjectMapper.h"
 
 #include <string>
 #include <sstream>
 #include <vector>
 #include <cstring>
 #include "PString.h"
+
+#ifndef WITH_QUICKJS
+
+#include "DataTransfer.h"
+#include "ObjectMapper.h"
+
 
 struct pesapi_env_ref__
 {
@@ -902,6 +904,8 @@ pesapi_ffi g_pesapi_ffi {
 
 }    // namespace v8impl
 
+#endif
+
 EXTERN_C_START
 
 struct pesapi_type_info__
@@ -1139,5 +1143,3 @@ pesapi_func_ptr reg_apis[] = {(pesapi_func_ptr) &pesapi_alloc_type_infos, (pesap
     (pesapi_func_ptr) &pesapi_on_class_not_found, (pesapi_func_ptr) &pesapi_class_type_info,
     (pesapi_func_ptr) &pesapi_find_type_id};
 MSVC_PRAGMA(warning(pop))
-
-#endif

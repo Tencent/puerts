@@ -51,6 +51,8 @@ jobs:
           cat log2.txt | grep "Failed\|Passed" 
           echo "testresult in v2"
           cat log3.txt | grep "Failed\|Passed" 
+          echo "testresult in v2(quickjs)"
+          cat log4.txt | grep "Failed\|Passed" 
       
 #  unittest-osx-unity:
 #    runs-on: macos-latest

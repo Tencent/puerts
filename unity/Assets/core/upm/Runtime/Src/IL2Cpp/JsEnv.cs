@@ -39,6 +39,8 @@ namespace Puerts
         protected int debugPort;
 
         public Backend Backend;
+        
+        PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 
         [UnityEngine.Scripting.Preserve]
         private void Preserver() 
@@ -84,7 +86,8 @@ namespace Puerts
             apis = Puerts.NativeAPI.GetFFIApi();
             nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine(0);
             nativePesapiEnv = Puerts.NativeAPI.GetPapiEnvRef(nativeJsEnv);
-            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv);
+            var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
+            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
             Puerts.NativeAPI.SetObjectToGlobal(apis, nativePesapiEnv, "jsEnv", this);
 
@@ -248,12 +251,12 @@ namespace Puerts
 
         public void Eval(string chunk, string chunkName = "chunk")
         {
-            Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, null);
+            Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, null);
         }
 
         public T Eval<T>(string chunk, string chunkName = "chunk")
         {
-            return (T)Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk + '\0'), chunkName, typeof(T));
+            return (T)Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, typeof(T));
         }
         
         Func<string, Puerts.JSObject> GetModuleExecutor()
