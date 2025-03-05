@@ -2641,6 +2641,18 @@ bool FJsEnvImpl::RemoveFromDelegate(
         return false;
     }
 
+    if (!Iter->second.Owner.IsValid())
+    {
+        Logger->Warn("try to unbind a delegate with invalid owner!");
+        ClearDelegate(Isolate, Context, DelegatePtr);
+        if (!Iter->second.PassByPointer)
+        {
+            delete ((FScriptDelegate*) Iter->first);
+        }
+        DelegateMap.erase(Iter);
+        return false;
+    }
+    
     FScriptDelegate Delegate;
 
     if (Iter->second.DelegateProperty)
