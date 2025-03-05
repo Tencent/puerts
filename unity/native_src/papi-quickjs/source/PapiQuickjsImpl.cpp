@@ -612,6 +612,16 @@ void pesapi_close_scope(pesapi_scope scope)
     {
         return;
     }
+    if (scope->prev_scope == nullptr)
+    {
+        auto ctx = scope->ctx;
+        auto rt = JS_GetRuntime(ctx);
+        while (JS_IsJobPending(rt))
+        {
+            JSContext *ctx_ = nullptr;
+            JS_ExecutePendingJob(rt, &ctx_);
+        } 
+    }
     scope->~pesapi_scope__();
     free(scope);
 }
@@ -621,6 +631,16 @@ void pesapi_close_scope_placement(pesapi_scope scope)
     if (!scope)
     {
         return;
+    }
+    if (scope->prev_scope == nullptr)
+    {
+        auto ctx = scope->ctx;
+        auto rt = JS_GetRuntime(ctx);
+        while (JS_IsJobPending(rt))
+        {
+            JSContext *ctx_ = nullptr;
+            JS_ExecutePendingJob(rt, &ctx_);
+        } 
     }
     scope->~pesapi_scope__();
 }
@@ -762,11 +782,6 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     auto rt = JS_GetRuntime(ctx);
     JS_UpdateStackTop(rt);
     JSValue retOrEx = JS_Call(ctx, *func, *thisObj, argc, js_argv);
-    while (JS_IsJobPending(rt)) //在backend_quickjs里放在最外层的v8::Context::Scope::~Scope里做，和现在略有不一样
-    {
-        JSContext *ctx_ = nullptr;
-        JS_ExecutePendingJob(rt, &ctx_);
-    }
     if (JS_IsException(retOrEx)) {
         auto scope = getCurrentScope(ctx);
         scope->setCaughtException(JS_GetException(ctx));
@@ -789,11 +804,6 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     buff.data()[code_size] = '\0'; // 尽管JS_Eval传了长度，但如果代码没有以\0结尾，JS_Eval会出现随机错误
     JS_UpdateStackTop(rt);
     JSValue retOrEx = JS_Eval(ctx, (const char *)buff.data(), code_size, path, JS_EVAL_TYPE_GLOBAL);
-    while (JS_IsJobPending(rt)) //在backend_quickjs里放在最外层的v8::Context::Scope::~Scope里做，和现在略有不一样
-    {
-        JSContext *ctx_ = nullptr;
-        JS_ExecutePendingJob(rt, &ctx_);
-    }
     if (JS_IsException(retOrEx)) {
         auto scope = getCurrentScope(ctx);
         scope->setCaughtException(JS_GetException(ctx));

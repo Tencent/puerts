@@ -971,6 +971,7 @@ public:
             }
         }
         V8_INLINE ~Scope() {
+#ifndef NO_PEADINGJOB_FLUSH_IN_BACKEND_QUICKJS
             if (enter_new_) {
                 while (JS_IsJobPending(isolate_->runtime_)) {
                     JSContext *ctx = nullptr;
@@ -978,6 +979,7 @@ public:
                 }
                 isolate_->current_context_ = prev_context_;
             }
+#endif
         }
 
     private:

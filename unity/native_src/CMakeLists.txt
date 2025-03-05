@@ -228,6 +228,8 @@ if("${JS_ENGINE}" STREQUAL "quickjs")
            papi-quickjs/source/PapiQuickjsImpl.cpp
         )
     endif()
+    
+    list(APPEND PUERTS_COMPILE_DEFINITIONS NO_PEADINGJOB_FLUSH_IN_BACKEND_QUICKJS)
 endif()
 
 if (NOT USING_MULT_BACKEND AND NOT USING_QUICKJS AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
