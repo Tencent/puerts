@@ -2652,7 +2652,7 @@ bool FJsEnvImpl::RemoveFromDelegate(
         DelegateMap.erase(Iter);
         return false;
     }
-    
+
     FScriptDelegate Delegate;
 
     if (Iter->second.DelegateProperty)
