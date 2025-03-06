@@ -65,12 +65,7 @@ public:
 
             // 输出 (filename):(line number): (message).
             std::ostringstream stm;
-            v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
-            int LineNum = Message->GetLineNumber(Context).FromJust();
-            const char * StrFileName = *FileName;
-            stm << (StrFileName == nullptr ? "unknow file" : StrFileName) << ":" << LineNum << ": " << ExceptionStr;
-
-            stm << std::endl;
+            stm << ExceptionStr;
 
             // 输出调用栈信息
             v8::MaybeLocal<v8::Value> MaybeStackTrace = v8::TryCatch::StackTrace(Context, ExceptionValue);
@@ -79,6 +74,15 @@ public:
                 v8::String::Utf8Value StackTraceVal(Isolate, MaybeStackTrace.ToLocalChecked());
                 stm << std::endl << *StackTraceVal;
             }
+            else
+            {
+                v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
+                int LineNum = Message->GetLineNumber(Context).FromJust();
+                int StartColumn = Message->GetStartColumn();
+                const char * StrFileName = *FileName;
+                stm << " at (" << (StrFileName == nullptr ? "unknow file" : StrFileName) << " : " << LineNum << " : " << StartColumn << ")";
+            }
+            stm << std::endl;
             return stm.str();
         }
     }

@@ -199,27 +199,28 @@ public:
         else
         {
             v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
-
-            // 输出 (filename):(line number): (message).
-            v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
-            int LineNum = Message->GetLineNumber(Context).FromJust();
-            FString FileNameStr(*FileName);
-            FString LineNumStr = FString::FromInt(LineNum);
-            FString FileInfoStr;
-            FileInfoStr.Append(FileNameStr).Append(":").Append(LineNumStr).Append(": ").Append(ExceptionStr);
-
-            FString FinalReport;
-            FinalReport.Append(FileInfoStr).Append("\n");
-
+            
             // 输出调用栈信息
             v8::Local<v8::Value> StackTrace;
             if (TryCatch->StackTrace(Context).ToLocal(&StackTrace))
             {
                 v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
                 FString StackTraceStr(*StackTraceVal);
-                FinalReport.Append("\n").Append(StackTraceStr);
+                ExceptionStr.Append("\n").Append(StackTraceStr);
             }
-            return FinalReport;
+            else
+            {
+                // (filename:line:number).
+                v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
+                FString FileInfoStr = TEXT("(");
+                FileInfoStr.Append(*FileName);
+                int LineNum = Message->GetLineNumber(Context).FromJust();
+                int StartColumn = Message->GetStartColumn();
+                FileInfoStr.Append(":").Append(FString::FromInt(LineNum)).Append(": ").Append(FString::FromInt(StartColumn)).Append(")");
+
+                ExceptionStr.Append(TEXT(" at ")).Append(FileInfoStr).Append("\n");
+            }
+            return ExceptionStr;
         }
     }
 
