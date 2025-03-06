@@ -199,7 +199,7 @@ public:
         else
         {
             v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
-            
+
             // 输出调用栈信息
             v8::Local<v8::Value> StackTrace;
             if (TryCatch->StackTrace(Context).ToLocal(&StackTrace))
@@ -216,7 +216,11 @@ public:
                 FileInfoStr.Append(*FileName);
                 int LineNum = Message->GetLineNumber(Context).FromJust();
                 int StartColumn = Message->GetStartColumn();
-                FileInfoStr.Append(":").Append(FString::FromInt(LineNum)).Append(": ").Append(FString::FromInt(StartColumn)).Append(")");
+                FileInfoStr.Append(":")
+                    .Append(FString::FromInt(LineNum))
+                    .Append(": ")
+                    .Append(FString::FromInt(StartColumn))
+                    .Append(")");
 
                 ExceptionStr.Append(TEXT(" at ")).Append(FileInfoStr).Append("\n");
             }
