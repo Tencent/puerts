@@ -262,6 +262,16 @@ struct is_script_type<std::string> : std::true_type
 {
 };
 
+template <typename T, typename Enable = void>
+struct is_char : std::false_type
+{
+};
+
+template <>
+struct is_char<char> : std::true_type
+{
+};
+
 template <typename T, size_t Size>
 struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
 {
@@ -329,8 +339,8 @@ public:
         return (std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value) ||
                (std::is_pointer<T>::value &&
                    !std::is_same<void, typename std::decay<typename std::remove_pointer<T>::type>::type>::value &&
-                   !std::is_same<char, typename std::decay<typename std::remove_pointer<T>::type>::type>::value &&
-                   ScriptTypePtrAsRef && !IsUEType() && !IsObjectType());
+                   !is_char<typename std::decay<typename std::remove_pointer<T>::type>::type>::value && ScriptTypePtrAsRef &&
+                   !IsUEType() && !IsObjectType());
     };
     virtual bool IsConst() const override
     {
