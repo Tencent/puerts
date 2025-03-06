@@ -192,6 +192,11 @@ public:
 
     V8InspectorChannel* CreateV8InspectorChannel() override;
 
+    v8::Local<v8::Context> ensureDefaultContextInGroup(int group_id) override
+    {
+        return Context.Get(Isolate);
+    }
+
 private:
     void OnHTTP(wspp_connection_hdl Handle);
 
