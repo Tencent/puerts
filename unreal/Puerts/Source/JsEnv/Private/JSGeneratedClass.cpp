@@ -182,6 +182,11 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
         Class->Children = Function;
     }
     Class->AddFunctionToFunctionMap(Function, Function->GetFName());
+
+    if (Class->HasAnyInternalFlags(EInternalObjectFlags::RootSet) || GUObjectArray.IsDisregardForGC(Class))
+    {
+        Function->AddToRoot();
+    }
 }
 
 UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
@@ -249,7 +254,7 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
     Function->StaticLink(true);
     Function->ClearInternalFlags(EInternalObjectFlags::Native);
 
-    if (Class->HasAnyInternalFlags(EInternalObjectFlags::RootSet))
+    if (Class->HasAnyInternalFlags(EInternalObjectFlags::RootSet) || GUObjectArray.IsDisregardForGC(Class))
     {
         Function->AddToRoot();
     }
