@@ -157,6 +157,12 @@ static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Info.GetReturnValue().Set(Ret);
 }
 
+static void GetFNameString(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    FName RequiredFName(*FV8Utils::ToFString(Info.GetIsolate(), Info[0]));
+    Info.GetReturnValue().Set(FV8Utils::ToV8String(Info.GetIsolate(), RequiredFName));
+}
+
 #if defined(WITH_NODEJS)
 void FJsEnvImpl::StartPolling()
 {
@@ -492,6 +498,11 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     MethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Isolate, Context, PuertsObj, "loadUEType", This);
 
     MethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Isolate, Context, PuertsObj, "loadCPPType", This);
+
+    PuertsObj
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "getFNameString"),
+            v8::FunctionTemplate::New(Isolate, GetFNameString)->GetFunction(Context).ToLocalChecked())
+        .Check();
 
     MethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Isolate, Context, Global, "__tgjsUEClassToJSClass", This);
 

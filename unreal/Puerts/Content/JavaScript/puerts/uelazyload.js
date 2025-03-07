@@ -13,6 +13,8 @@ var global = global || (function () { return this; }());
     
     let loadCPPType = global.puerts.loadCPPType;
     
+    let getFNameString = global.puerts.getFNameString;
+    
     function rawSet(obj, key, val) {
         Object.defineProperty(obj, key, {
             value: val,
@@ -22,12 +24,28 @@ var global = global || (function () { return this; }());
         });
     }
     
+    function interceptClass(cls) {
+        let cls_proxy = new Proxy(cls, {
+        get : function(cls, name) {
+                const fname = getFNameString(name);
+                const p = Object.getOwnPropertyDescriptor(cls, fname);
+                if (p) {
+                    Object.defineProperty(cls, name, p);
+                    return cls[fname];
+                }
+            }
+        });
+        Object.setPrototypeOf(cls_proxy, Object.getPrototypeOf(cls));
+        Object.setPrototypeOf(cls, cls_proxy);
+    }
+    
     let UE = Object.create(null);
     let UE_proxy = new Proxy(UE, {
         get : function(UE, name)
         {
             let cls = loadUEType(name);
             rawSet(UE, name, cls);
+            interceptClass(cls);
             return cls;
         }
     });
@@ -255,7 +273,7 @@ var global = global || (function () { return this; }());
                 jsclass.__name = cls.__path;
                 cls.__parent[cls.__path] = jsclass;
             }
-            
+            interceptClass(jsclass);
         } else {
             throw new Error("argument #0 is not a unload type");
         }
