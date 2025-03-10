@@ -83,9 +83,18 @@ namespace Puerts
                 }
             }
 
-            apis = Puerts.NativeAPI.GetFFIApi();
             nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine(0);
-            nativePesapiEnv = Puerts.NativeAPI.GetPapiEnvRef(nativeJsEnv);
+            int libBackend = Puerts.PuertsDLL.GetLibBackend(nativeJsEnv);
+            if (libBackend == 2)
+            {
+                apis = Puerts.NativeAPI.GetQjsFFIApi();
+                nativePesapiEnv = Puerts.NativeAPI.GetQjsPapiEnvRef(nativeJsEnv);
+            }
+            else
+            {
+                apis = Puerts.NativeAPI.GetV8FFIApi();
+                nativePesapiEnv = Puerts.NativeAPI.GetV8PapiEnvRef(nativeJsEnv);
+            }
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
             nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
@@ -110,11 +119,11 @@ namespace Puerts
             }
 #endif
 
-            if (Puerts.PuertsDLL.GetLibBackend(nativeJsEnv) == 0) 
+            if (libBackend == 0) 
                 Backend = new BackendV8(this);
-            else if (Puerts.PuertsDLL.GetLibBackend(nativeJsEnv) == 1)
+            else if (libBackend == 1)
                 Backend = new BackendNodeJS(this);
-            else if (Puerts.PuertsDLL.GetLibBackend(nativeJsEnv) == 2)
+            else if (libBackend == 2)
                 Backend = new BackendQuickJS(this);
 
             if (debugPort != -1) {

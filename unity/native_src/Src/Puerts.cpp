@@ -12,7 +12,8 @@
 #include "pesapi.h"
 #ifdef WITH_QUICKJS
 #include "CppObjectMapperQuickjs.h"
-#else
+#endif
+#ifdef WITH_V8
 #include "CppObjectMapper.h"
 #endif
 #endif
@@ -82,7 +83,9 @@ V8_EXPORT void DestroyJSEngine(v8::Isolate *Isolate)
 }
 
 #ifdef WITH_IL2CPP_OPTIMIZATION
-V8_EXPORT pesapi_env_ref GetPapiEnvRef(v8::Isolate *Isolate)
+
+#if WITH_V8
+V8_EXPORT pesapi_env_ref GetV8PapiEnvRef(v8::Isolate *Isolate)
 {
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
@@ -93,23 +96,57 @@ V8_EXPORT pesapi_env_ref GetPapiEnvRef(v8::Isolate *Isolate)
     v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
     
-#if WITH_QUICKJS
-    auto ctx = Context->context_;
-    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(ctx));
-#else
     auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
     return v8impl::g_pesapi_ffi.create_env_ref(env);
-#endif
 }
 
-V8_EXPORT pesapi_ffi* GetFFIApi()
+V8_EXPORT pesapi_ffi* GetV8FFIApi()
 {
-#if WITH_QUICKJS
-    return &pesapi::qjsimpl::g_pesapi_ffi;
-#else
     return &v8impl::g_pesapi_ffi;
-#endif
 }
+
+V8_EXPORT pesapi_env_ref GetQjsPapiEnvRef(v8::Isolate *Isolate)
+{
+    return nullptr;
+}
+
+V8_EXPORT pesapi_ffi* GetQjsFFIApi()
+{
+    return nullptr;
+}
+#endif
+
+#if WITH_QUICKJS
+V8_EXPORT pesapi_env_ref GetV8PapiEnvRef(v8::Isolate *Isolate)
+{
+    return nullptr;
+}
+
+V8_EXPORT pesapi_ffi* GetV8FFIApi()
+{
+    return nullptr;
+}
+
+V8_EXPORT pesapi_env_ref GetQjsPapiEnvRef(v8::Isolate *Isolate)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    auto jsEnv = FV8Utils::IsolateData<JSEngine>(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    
+    auto ctx = Context->context_;
+    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(ctx));
+}
+
+V8_EXPORT pesapi_ffi* GetQjsFFIApi()
+{
+    return &pesapi::qjsimpl::g_pesapi_ffi;
+}
+#endif
 
 V8_EXPORT pesapi_func_ptr* GetRegsterApi()
 {

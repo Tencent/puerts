@@ -138,7 +138,8 @@ namespace PUERTS_NAMESPACE
 #ifdef WITH_QUICKJS
         auto ctx = Context->context_;
         CppObjectMapperQjs.Initialize(ctx);
-#else
+#endif
+#ifdef WITH_V8
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
 #endif
@@ -215,7 +216,8 @@ namespace PUERTS_NAMESPACE
 #ifdef WITH_IL2CPP_OPTIMIZATION
 #ifdef WITH_QUICKJS
         CppObjectMapperQjs.Cleanup();
-#else
+#endif
+#ifdef WITH_V8
         CppObjectMapper.UnInitialize(MainIsolate);
 #endif
 #endif

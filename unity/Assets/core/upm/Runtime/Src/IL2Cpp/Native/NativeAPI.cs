@@ -26,10 +26,16 @@ namespace Puerts
         public static extern IntPtr GetRegsterApi();
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetFFIApi();
+        public static extern IntPtr GetV8FFIApi();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetPapiEnvRef(IntPtr isolate);
+        public static extern IntPtr GetV8PapiEnvRef(IntPtr isolate);
+        
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetQjsFFIApi();
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetQjsPapiEnvRef(IntPtr isolate);
         
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void InitialPuerts(IntPtr PesapiImpl);
