@@ -236,7 +236,6 @@ if (NOT WITHOUT_IL2CPP_OPTIMIZATION AND NOT USING_MULT_BACKEND)
         list(APPEND PUERTS_SRC
            Src/CppObjectMapper.cpp
            Src/DataTransfer.cpp
-           Src/JSClassRegister.cpp
            Src/PesapiAddonLoad.cpp
            Src/PesapiV8Impl.cpp
         )
@@ -246,11 +245,18 @@ if (NOT WITHOUT_IL2CPP_OPTIMIZATION AND NOT USING_MULT_BACKEND)
         list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
         list(APPEND PUERTS_SRC
            papi-quickjs/source/CppObjectMapperQuickjs.cpp
-           Src/JSClassRegister.cpp
-           Src/PesapiAddonLoad.cpp
-           Src/PesapiV8Impl.cpp # for reg_apis
            papi-quickjs/source/PapiQuickjsImpl.cpp
+           Src/PesapiV8Impl.cpp
         )
+    endif()
+endif()
+
+if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+    list(APPEND PUERTS_SRC
+       Src/JSClassRegister.cpp
+    )
+    if (NOT USING_QUICKJS)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_V8)
     endif()
 endif()
 
@@ -420,7 +426,7 @@ endif ()
 if ( USING_MULT_BACKEND )
     # -------------------begin v8 backend-------------------------
     if ( USING_V8)
-        add_library(v8backend STATIC
+        set(v8backend_src 
             Src/BackendEnv.cpp
             Src/JSEngine.cpp
             Src/JSFunction.cpp
@@ -428,8 +434,17 @@ if ( USING_MULT_BACKEND )
             Src/PluginImpl.cpp
             ${PUERTS_BACKEND_SRC}
         )
+        #if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+        #    list(APPEND v8backend_src
+        #       Src/CppObjectMapper.cpp
+        #       Src/DataTransfer.cpp
+        #       Src/PesapiAddonLoad.cpp
+        #       Src/PesapiV8Impl.cpp
+        #    )
+        #endif()
+        add_library(v8backend STATIC ${v8backend_src})
         target_include_directories (v8backend PRIVATE "${BACKEND_ROOT}/Inc/v8")
-        target_compile_definitions (v8backend PRIVATE PUERTS_NAMESPACE=puerts_v8)
+        target_compile_definitions (v8backend PRIVATE PUERTS_NAMESPACE=puerts)
         target_compile_definitions (v8backend PRIVATE MULT_BACKENDS)
         target_compile_definitions (v8backend PRIVATE V8_BACKEND)
         set_target_properties(v8backend PROPERTIES POSITION_INDEPENDENT_CODE ON)

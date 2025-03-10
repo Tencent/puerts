@@ -62,6 +62,11 @@ V8_EXPORT int GetLibBackend(v8::Isolate *Isolate)
 
 V8_EXPORT v8::Isolate *CreateJSEngine(int backend)
 {
+#if WITH_QUICKJS
+    if (backend != puerts::JSEngineBackend::QuickJS && backend != puerts::JSEngineBackend::Auto) return nullptr;
+#else
+    if (backend == puerts::JSEngineBackend::QuickJS && backend != puerts::JSEngineBackend::Auto) return nullptr;
+#endif
     auto JsEngine = new JSEngine(nullptr, nullptr);
     return JsEngine->MainIsolate;
 }

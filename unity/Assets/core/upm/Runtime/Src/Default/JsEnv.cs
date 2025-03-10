@@ -25,7 +25,8 @@ namespace Puerts
     {
         V8 = 0,
         Node = 1,
-        QuickJS = 2
+        QuickJS = 2,
+        Auto = 3
     }
 
     public class JsEnv : IDisposable
@@ -87,17 +88,17 @@ namespace Puerts
         internal Action OnDispose;
 
         public JsEnv() 
-            : this(new DefaultLoader(), -1, BackendType.V8, IntPtr.Zero, IntPtr.Zero)
+            : this(new DefaultLoader(), -1, BackendType.Auto, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
         public JsEnv(ILoader loader, int debugPort = -1)
-             : this(loader, debugPort, BackendType.V8, IntPtr.Zero, IntPtr.Zero)
+             : this(loader, debugPort, BackendType.Auto, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
         public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
-            : this(loader, -1, BackendType.V8, externalRuntime, externalContext)
+            : this(loader, -1, BackendType.Auto, externalRuntime, externalContext)
         {
         }
 
@@ -124,7 +125,8 @@ namespace Puerts
             
             if (isolate == IntPtr.Zero)
             {
-                throw new InvalidProgramException("create jsengine fail");
+                disposed = true;
+                throw new InvalidProgramException("create jsengine fail for " + backend);
             }
             lock (jsEnvs)
             {

@@ -95,6 +95,7 @@ enum JSEngineBackend
     V8          = 0,
     Node        = 1,
     QuickJS     = 2,
+    Auto = 3
 };
 
 class JSEngine
