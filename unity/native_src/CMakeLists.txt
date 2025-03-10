@@ -116,7 +116,7 @@ endif()
 set(PUERTS_COMPILE_DEFINITIONS)
 set(PUERTS_BACKEND_SRC)
 
-if("${JS_ENGINE}" STREQUAL "quickjs")
+if(USING_QUICKJS)
     set(CMAKE_C_STANDARD_REQUIRED ON)
     set(CMAKE_C_EXTENSIONS ON)
     set(CMAKE_C_STANDARD 11)
@@ -217,8 +217,7 @@ if("${JS_ENGINE}" STREQUAL "quickjs")
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/quickjs.c
     )
     
-    if (NOT USING_MULT_BACKEND AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
-        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
+    if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
         include_directories(${PROJECT_SOURCE_DIR}/papi-quickjs/include)
         list(APPEND PUERTS_SRC
            papi-quickjs/source/CppObjectMapperQuickjs.cpp
@@ -228,21 +227,28 @@ if("${JS_ENGINE}" STREQUAL "quickjs")
            papi-quickjs/source/PapiQuickjsImpl.cpp
         )
     endif()
-    
-    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_QUICKJS)
-elseif (NOT USING_MULT_BACKEND)
-    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_V8)
 endif()
 
-if (NOT USING_MULT_BACKEND AND NOT USING_QUICKJS AND NOT WITHOUT_IL2CPP_OPTIMIZATION)
-    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
-    list(APPEND PUERTS_SRC
-       Src/CppObjectMapper.cpp
-       Src/DataTransfer.cpp
-       Src/JSClassRegister.cpp
-       Src/PesapiAddonLoad.cpp
-       Src/PesapiV8Impl.cpp
-    )
+if (NOT USING_MULT_BACKEND)
+    if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
+        
+        if (NOT USING_QUICKJS)
+            list(APPEND PUERTS_SRC
+               Src/CppObjectMapper.cpp
+               Src/DataTransfer.cpp
+               Src/JSClassRegister.cpp
+               Src/PesapiAddonLoad.cpp
+               Src/PesapiV8Impl.cpp
+            )
+        endif()
+    endif()
+    
+    if(USING_QUICKJS)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_QUICKJS)
+    elseif (NOT USING_MULT_BACKEND)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_V8)
+    endif()
 endif()
 
 if ( WITH_WEBSOCKET )

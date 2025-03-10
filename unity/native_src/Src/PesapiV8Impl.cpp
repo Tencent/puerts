@@ -15,7 +15,7 @@
 #include <cstring>
 #include "PString.h"
 
-#ifndef WITH_QUICKJS
+#ifdef WITH_V8
 
 #include "DataTransfer.h"
 #include "ObjectMapper.h"
