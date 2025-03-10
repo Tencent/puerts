@@ -115,6 +115,9 @@ endif()
 
 set(PUERTS_COMPILE_DEFINITIONS)
 set(PUERTS_BACKEND_SRC)
+set(BEACKEND_QUICKJS_INC)
+set(BEACKEND_QUICKJS_SRC)
+
 
 if(USING_QUICKJS)
     set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -204,11 +207,11 @@ if(USING_QUICKJS)
         list(APPEND PUERTS_COMPILE_DEFINITIONS WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0602)
     endif()
 
-    include_directories(${PROJECT_SOURCE_DIR}/backend-quickjs/include
+    list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/backend-quickjs/include
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs
     )
     
-    list(APPEND PUERTS_SRC
+    list(APPEND BEACKEND_QUICKJS_SRC
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/src/v8-impl.cc
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/cutils.c
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libbf.c
@@ -216,17 +219,6 @@ if(USING_QUICKJS)
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libunicode.c
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/quickjs.c
     )
-    
-    if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
-        include_directories(${PROJECT_SOURCE_DIR}/papi-quickjs/include)
-        list(APPEND PUERTS_SRC
-           papi-quickjs/source/CppObjectMapperQuickjs.cpp
-           Src/JSClassRegister.cpp
-           Src/PesapiAddonLoad.cpp
-           Src/PesapiV8Impl.cpp # for reg_apis
-           papi-quickjs/source/PapiQuickjsImpl.cpp
-        )
-    endif()
 endif()
 
 if (NOT USING_MULT_BACKEND)
@@ -240,6 +232,15 @@ if (NOT USING_MULT_BACKEND)
                Src/JSClassRegister.cpp
                Src/PesapiAddonLoad.cpp
                Src/PesapiV8Impl.cpp
+            )
+        else ()
+            list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
+            list(APPEND PUERTS_SRC
+               papi-quickjs/source/CppObjectMapperQuickjs.cpp
+               Src/JSClassRegister.cpp
+               Src/PesapiAddonLoad.cpp
+               Src/PesapiV8Impl.cpp # for reg_apis
+               papi-quickjs/source/PapiQuickjsImpl.cpp
             )
         endif()
     endif()
@@ -272,7 +273,7 @@ if ( APPLE )
     if ( IOS )
         set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
         add_library(puerts STATIC
-           ${PUERTS_SRC} ${PUERTS_INC}
+           ${PUERTS_SRC} ${PUERTS_INC} ${BEACKEND_QUICKJS_SRC}
         )
 		set_xcode_property (puerts IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
@@ -283,7 +284,7 @@ if ( APPLE )
         endif ()
         
         add_library(puerts SHARED
-            ${PUERTS_SRC} ${PUERTS_INC}
+            ${PUERTS_SRC} ${PUERTS_INC} ${BEACKEND_QUICKJS_SRC}
         )
         target_link_options(
             puerts 
@@ -293,19 +294,21 @@ if ( APPLE )
     endif ()
 elseif ( SWITCH_PLATFORM )
     add_library(puerts STATIC
-        ${PUERTS_SRC} ${PUERTS_INC}
+        ${PUERTS_SRC} ${PUERTS_INC} ${BEACKEND_QUICKJS_SRC}
     )
 else ()
     if (CMAKE_SYSTEM_NAME MATCHES "Emscripten") 
         add_library(puerts STATIC
-            ${PUERTS_SRC} ${PUERTS_INC}
+            ${PUERTS_SRC} ${PUERTS_INC} ${BEACKEND_QUICKJS_SRC}
         )
     else ()
         add_library(puerts SHARED
-            ${PUERTS_SRC} ${PUERTS_INC}
+            ${PUERTS_SRC} ${PUERTS_INC} ${BEACKEND_QUICKJS_SRC}
         )
    endif ()
 endif ()
+
+target_include_directories(puerts PRIVATE ${BEACKEND_QUICKJS_INC})
 
 if ( WITH_WEBSOCKET EQUAL 3 )
     set(OPENSSL_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl-src) # default path by CMake
