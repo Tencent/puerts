@@ -8,6 +8,14 @@
 
 namespace Puerts
 {
+    public enum BackendType : int
+    {
+        V8 = 0,
+        Node = 1,
+        QuickJS = 2,
+        Auto = 3
+    }
+
     public abstract class Backend
     {
         protected JsEnv env;

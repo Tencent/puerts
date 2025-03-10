@@ -56,7 +56,7 @@ namespace Puerts
 
         public JsEnv(): this(new DefaultLoader(), -1) {}
 
-        public JsEnv(ILoader loader, int debugPort = -1)
+        public JsEnv(ILoader loader, int debugPort = -1, BackendType backend = BackendType.Auto, IntPtr externalRuntime = default(IntPtr), IntPtr externalContext = default(IntPtr))
         {
             this.loader = loader;
             
@@ -83,7 +83,12 @@ namespace Puerts
                 }
             }
 
-            nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine(0);
+            nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine((int)backend);
+            if (nativeJsEnv == IntPtr.Zero)
+            {
+                disposed = true;
+                throw new InvalidProgramException("create jsengine fail for " + backend);
+            }
             int libBackend = Puerts.PuertsDLL.GetLibBackend(nativeJsEnv);
             if (libBackend == 2)
             {
