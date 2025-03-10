@@ -11,6 +11,10 @@ project(PuertsPlugin LANGUAGES C CXX)
 
 include(CheckCCompilerFlag)
 
+option ( USING_V8 "using v8" ON )
+option ( USING_QJS "using quickjs" ON )
+option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
+
 if("${JS_ENGINE}" MATCHES "^v8_10.6.194")
     set(CMAKE_CXX_STANDARD 17)
 else ()
@@ -119,7 +123,7 @@ set(BEACKEND_QUICKJS_INC)
 set(BEACKEND_QUICKJS_SRC)
 
 
-if(USING_QUICKJS)
+if(USING_QUICKJS OR USING_MULT_BACKEND)
     set(CMAKE_C_STANDARD_REQUIRED ON)
     set(CMAKE_C_EXTENSIONS ON)
     set(CMAKE_C_STANDARD 11)
@@ -219,37 +223,41 @@ if(USING_QUICKJS)
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libunicode.c
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/quickjs.c
     )
+    
+    if (USING_MULT_BACKEND)
+        list(APPEND PUERTS_COMPILE_DEFINITIONS CUSTOMV8NAMESPACE=v8_qjs)
+    endif()
 endif()
 
-if (NOT USING_MULT_BACKEND)
-    if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
-        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
-        
-        if (NOT USING_QUICKJS)
-            list(APPEND PUERTS_SRC
-               Src/CppObjectMapper.cpp
-               Src/DataTransfer.cpp
-               Src/JSClassRegister.cpp
-               Src/PesapiAddonLoad.cpp
-               Src/PesapiV8Impl.cpp
-            )
-        else ()
-            list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
-            list(APPEND PUERTS_SRC
-               papi-quickjs/source/CppObjectMapperQuickjs.cpp
-               Src/JSClassRegister.cpp
-               Src/PesapiAddonLoad.cpp
-               Src/PesapiV8Impl.cpp # for reg_apis
-               papi-quickjs/source/PapiQuickjsImpl.cpp
-            )
-        endif()
+if (NOT WITHOUT_IL2CPP_OPTIMIZATION AND NOT USING_MULT_BACKEND)
+    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
+    
+    if (NOT USING_QUICKJS)
+        list(APPEND PUERTS_SRC
+           Src/CppObjectMapper.cpp
+           Src/DataTransfer.cpp
+           Src/JSClassRegister.cpp
+           Src/PesapiAddonLoad.cpp
+           Src/PesapiV8Impl.cpp
+        )
     endif()
     
-    if(USING_QUICKJS)
-        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_QUICKJS)
-    elseif (NOT USING_MULT_BACKEND)
-        list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_V8)
+    if (USING_QUICKJS)
+        list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
+        list(APPEND PUERTS_SRC
+           papi-quickjs/source/CppObjectMapperQuickjs.cpp
+           Src/JSClassRegister.cpp
+           Src/PesapiAddonLoad.cpp
+           Src/PesapiV8Impl.cpp # for reg_apis
+           papi-quickjs/source/PapiQuickjsImpl.cpp
+        )
     endif()
+endif()
+
+if(USING_QUICKJS)
+    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_QUICKJS)
+elseif (NOT USING_MULT_BACKEND)
+    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_V8)
 endif()
 
 if ( WITH_WEBSOCKET )
@@ -409,10 +417,6 @@ if ( WITH_WEBSOCKET EQUAL 2 )
     endif ()
 endif ()
 
-option ( USING_V8 "using v8" ON )
-option ( USING_QJS "using quickjs" ON )
-option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
-
 if ( USING_MULT_BACKEND )
     # -------------------begin v8 backend-------------------------
     if ( USING_V8)
@@ -444,7 +448,7 @@ if ( USING_MULT_BACKEND )
             Src/PluginImpl.cpp
             ${PUERTS_BACKEND_SRC}
         )
-        target_include_directories (qjsbackend PRIVATE "${BACKEND_ROOT}/Inc/quickjs")
+        target_include_directories (qjsbackend PRIVATE ${BEACKEND_QUICKJS_INC})
         target_compile_definitions (qjsbackend PRIVATE PUERTS_NAMESPACE=puerts_qjs)
         target_compile_definitions (qjsbackend PRIVATE MULT_BACKENDS)
         target_compile_definitions (qjsbackend PRIVATE QJS_BACKEND)
