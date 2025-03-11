@@ -455,7 +455,7 @@ if ( USING_MULT_BACKEND )
         target_compile_definitions (v8backend PRIVATE V8_BACKEND)
         set_target_properties(v8backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(puerts v8backend )
-        target_compile_definitions (puerts PRIVATE V8_BACKEND)
+        target_compile_definitions (puerts PRIVATE MULT_BACKEND_V8)
         if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
             target_compile_definitions (v8backend PUBLIC WITH_IL2CPP_OPTIMIZATION)
         endif()
@@ -472,13 +472,13 @@ if ( USING_MULT_BACKEND )
             Src/PluginImpl.cpp
             ${PUERTS_BACKEND_SRC}
         )
-        #if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
-        #    list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
-        #    list(APPEND qjsbackend_src
-        #       papi-quickjs/source/CppObjectMapperQuickjs.cpp
-        #       papi-quickjs/source/PapiQuickjsImpl.cpp
-        #    )
-        #endif()
+        if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+            list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
+            #list(APPEND qjsbackend_src
+            #   papi-quickjs/source/CppObjectMapperQuickjs.cpp
+            #   papi-quickjs/source/PapiQuickjsImpl.cpp
+            #)
+        endif()
         
         add_library(qjsbackend STATIC ${qjsbackend_src})
         target_include_directories (qjsbackend PRIVATE ${BEACKEND_QUICKJS_INC})
@@ -493,10 +493,10 @@ if ( USING_MULT_BACKEND )
         endif ()
         set_target_properties(qjsbackend PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(puerts qjsbackend )
-        target_compile_definitions (puerts PRIVATE QJS_BACKEND)
-        #if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+        target_compile_definitions (puerts PRIVATE MULT_BACKEND_QJS)
+        if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
         #    target_compile_definitions (qjsbackend PUBLIC WITH_IL2CPP_OPTIMIZATION)
-        #endif()
+        endif()
     endif ()
     # -------------------end qjs backend-------------------------
 endif ()

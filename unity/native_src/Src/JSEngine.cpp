@@ -140,8 +140,8 @@ namespace PUERTS_NAMESPACE
         CppObjectMapperQjs.Initialize(ctx);
 #endif
 #ifdef WITH_V8
-        CppObjectMapper.Initialize(Isolate, Context);
-        Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
+        CppObjectMapperV8.Initialize(Isolate, Context);
+        Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapperV8));
 #endif
 #endif
 
@@ -218,7 +218,7 @@ namespace PUERTS_NAMESPACE
         CppObjectMapperQjs.Cleanup();
 #endif
 #ifdef WITH_V8
-        CppObjectMapper.UnInitialize(MainIsolate);
+        CppObjectMapperV8.UnInitialize(MainIsolate);
 #endif
 #endif
 

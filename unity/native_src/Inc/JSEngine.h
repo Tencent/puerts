@@ -25,7 +25,8 @@
 #include "pesapi.h"
 #ifdef WITH_QUICKJS
 #include "CppObjectMapperQuickjs.h"
-#else
+#endif
+#ifdef WITH_V8
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
 #endif
@@ -215,8 +216,9 @@ private:
 #ifdef WITH_IL2CPP_OPTIMIZATION
 #ifdef WITH_QUICKJS
     pesapi::qjsimpl::CppObjectMapper CppObjectMapperQjs;
-#else
-    FCppObjectMapper CppObjectMapper;
+#endif
+#ifdef WITH_V8
+    FCppObjectMapper CppObjectMapperV8;
 #endif
 #endif
     
