@@ -204,7 +204,6 @@ public:
 
     //-------------------------- end debug --------------------------
     
-private:
     PUERTS_NAMESPACE::JSEngine jsEngine;
 };
 
@@ -1247,8 +1246,9 @@ extern "C" {
 #ifdef WITH_IL2CPP_OPTIMIZATION
 
 #if WITH_V8
-V8_EXPORT pesapi_env_ref GetV8PapiEnvRef(v8::Isolate *Isolate)
+V8_EXPORT pesapi_env_ref GetV8PapiEnvRef(puerts::IPuertsPlugin* plugin)
 {
+    v8::Isolate* Isolate = static_cast<PUERTS_NAMESPACE::V8Plugin*>(plugin)->jsEngine.MainIsolate;
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
 #endif
@@ -1269,8 +1269,9 @@ V8_EXPORT pesapi_ffi* GetV8FFIApi()
 #endif
 
 #if WITH_QUICKJS
-V8_EXPORT pesapi_env_ref GetQjsPapiEnvRef(v8::Isolate *Isolate)
+V8_EXPORT pesapi_env_ref GetQjsPapiEnvRef(puerts::IPuertsPlugin* plugin)
 {
+    v8::Isolate* Isolate = static_cast<PUERTS_NAMESPACE::V8Plugin*>(plugin)->jsEngine.MainIsolate;
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
 #endif
