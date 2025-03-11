@@ -83,10 +83,10 @@ namespace Puerts
                 }
             }
 
+            disposed = true;
             nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine((int)backend);
             if (nativeJsEnv == IntPtr.Zero)
             {
-                disposed = true;
                 throw new InvalidProgramException("create jsengine fail for " + backend);
             }
             int libBackend = Puerts.PuertsDLL.GetLibBackend(nativeJsEnv);
@@ -100,6 +100,11 @@ namespace Puerts
                 apis = Puerts.NativeAPI.GetV8FFIApi();
                 nativePesapiEnv = Puerts.NativeAPI.GetV8PapiEnvRef(nativeJsEnv);
             }
+            if (nativePesapiEnv == IntPtr.Zero)
+            {
+                throw new InvalidProgramException("create jsengine fail for " + backend);
+            }
+            disposed = false;
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
             nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
