@@ -8,6 +8,9 @@
 #include <cstring>
 #include "IPuertsPlugin.h"
 #include "Log.h"
+#ifdef WITH_IL2CPP_OPTIMIZATION
+#include "pesapi.h"
+#endif
 
 #ifdef _WIN32
 
@@ -38,6 +41,10 @@
 LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
 LogCallback GLogErrorCallback = nullptr;
+
+#ifdef WITH_IL2CPP_OPTIMIZATION
+extern pesapi_func_ptr reg_apis[];
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,6 +98,13 @@ PUERTS_EXPORT void DestroyJSEngine(puerts::IPuertsPlugin* plugin)
 {
     delete plugin;
 }
+
+#ifdef WITH_IL2CPP_OPTIMIZATION
+PUERTS_EXPORT pesapi_func_ptr* GetRegsterApi()
+{
+    return reg_apis;
+}
+#endif
 
 PUERTS_EXPORT void SetGlobalFunction(puerts::IPuertsPlugin* plugin, const char *Name, puerts::FuncPtr Callback, int64_t Data)
 {

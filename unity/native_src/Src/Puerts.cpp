@@ -138,7 +138,7 @@ V8_EXPORT pesapi_env_ref GetQjsPapiEnvRef(v8::Isolate *Isolate)
     v8::Locker Locker(Isolate);
 #endif
     v8::Isolate::Scope IsolateScope(Isolate);
-    auto jsEnv = FV8Utils::IsolateData<JSEngine>(Isolate);
+    auto jsEnv = puerts::FV8Utils::IsolateData<puerts::JSEngine>(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);

@@ -223,38 +223,44 @@ if(USING_QUICKJS OR USING_MULT_BACKEND)
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/libunicode.c
                         ${PROJECT_SOURCE_DIR}/backend-quickjs/quickjs/quickjs.c
     )
-    
-    if (USING_MULT_BACKEND)
-        list(APPEND PUERTS_COMPILE_DEFINITIONS CUSTOMV8NAMESPACE=v8_qjs)
-    endif()
 endif()
 
-if (NOT WITHOUT_IL2CPP_OPTIMIZATION AND NOT USING_MULT_BACKEND)
-    list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_IL2CPP_OPTIMIZATION)
-    
-    if (NOT USING_QUICKJS)
-        list(APPEND PUERTS_SRC
-           Src/CppObjectMapper.cpp
-           Src/DataTransfer.cpp
-           Src/PesapiAddonLoad.cpp
-           Src/PesapiV8Impl.cpp
-        )
-    endif()
-    
-    if (USING_QUICKJS)
-        list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
-        list(APPEND PUERTS_SRC
-           papi-quickjs/source/CppObjectMapperQuickjs.cpp
-           papi-quickjs/source/PapiQuickjsImpl.cpp
-           Src/PesapiV8Impl.cpp
-        )
-    endif()
+if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+    if (USING_MULT_BACKEND)
+        #if (USING_V8) #放这里会受到CUSTOMV8NAMESPACE=v8_qjs的影响
+        #    list(APPEND PUERTS_SRC
+        #       Src/CppObjectMapper.cpp
+        #       Src/DataTransfer.cpp
+        #       Src/PesapiAddonLoad.cpp
+        #       Src/PesapiV8Impl.cpp
+        #    )
+        #endif()
+    else ()
+        if (NOT USING_QUICKJS)
+            list(APPEND PUERTS_SRC
+               Src/CppObjectMapper.cpp
+               Src/DataTransfer.cpp
+               Src/PesapiAddonLoad.cpp
+               Src/PesapiV8Impl.cpp
+            )
+        endif()
+        
+        if (USING_QUICKJS)
+            list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
+            list(APPEND PUERTS_SRC
+               papi-quickjs/source/CppObjectMapperQuickjs.cpp
+               papi-quickjs/source/PapiQuickjsImpl.cpp
+               Src/PesapiV8Impl.cpp
+            )
+        endif()
+   endif()
 endif()
 
 if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
     list(APPEND PUERTS_SRC
        Src/JSClassRegister.cpp
     )
+    list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
     if (NOT USING_QUICKJS)
         list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_V8)
     endif()
@@ -434,14 +440,14 @@ if ( USING_MULT_BACKEND )
             Src/PluginImpl.cpp
             ${PUERTS_BACKEND_SRC}
         )
-        #if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
-        #    list(APPEND v8backend_src
-        #       Src/CppObjectMapper.cpp
-        #       Src/DataTransfer.cpp
-        #       Src/PesapiAddonLoad.cpp
-        #       Src/PesapiV8Impl.cpp
-        #    )
-        #endif()
+        if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+            list(APPEND v8backend_src
+               Src/CppObjectMapper.cpp
+               Src/DataTransfer.cpp
+               Src/PesapiAddonLoad.cpp
+               Src/PesapiV8Impl.cpp
+            )
+        endif()
         add_library(v8backend STATIC ${v8backend_src})
         target_include_directories (v8backend PRIVATE "${BACKEND_ROOT}/Inc/v8")
         target_compile_definitions (v8backend PRIVATE PUERTS_NAMESPACE=puerts)
@@ -450,12 +456,15 @@ if ( USING_MULT_BACKEND )
         set_target_properties(v8backend PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(puerts v8backend )
         target_compile_definitions (puerts PRIVATE V8_BACKEND)
+        if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+            target_compile_definitions (v8backend PUBLIC WITH_IL2CPP_OPTIMIZATION)
+        endif()
     endif ()
     # -------------------end v8 backend-------------------------
     
     # -------------------begin qjs backend-------------------------
     if ( USING_QJS)
-        add_library(qjsbackend STATIC
+        set(qjsbackend_src 
             Src/BackendEnv.cpp
             Src/JSEngine.cpp
             Src/JSFunction.cpp
@@ -463,6 +472,15 @@ if ( USING_MULT_BACKEND )
             Src/PluginImpl.cpp
             ${PUERTS_BACKEND_SRC}
         )
+        #if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+        #    list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
+        #    list(APPEND qjsbackend_src
+        #       papi-quickjs/source/CppObjectMapperQuickjs.cpp
+        #       papi-quickjs/source/PapiQuickjsImpl.cpp
+        #    )
+        #endif()
+        
+        add_library(qjsbackend STATIC ${qjsbackend_src})
         target_include_directories (qjsbackend PRIVATE ${BEACKEND_QUICKJS_INC})
         target_compile_definitions (qjsbackend PRIVATE PUERTS_NAMESPACE=puerts_qjs)
         target_compile_definitions (qjsbackend PRIVATE MULT_BACKENDS)
@@ -476,6 +494,9 @@ if ( USING_MULT_BACKEND )
         set_target_properties(qjsbackend PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(puerts qjsbackend )
         target_compile_definitions (puerts PRIVATE QJS_BACKEND)
+        #if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+        #    target_compile_definitions (qjsbackend PUBLIC WITH_IL2CPP_OPTIMIZATION)
+        #endif()
     endif ()
     # -------------------end qjs backend-------------------------
 endif ()
@@ -622,6 +643,14 @@ target_link_libraries(puerts
 list(APPEND PUERTS_COMPILE_DEFINITIONS ${BACKEND_DEFINITIONS})
 
 target_compile_definitions (puerts PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
+
+if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
+    target_compile_definitions (puerts PUBLIC WITH_IL2CPP_OPTIMIZATION)
+endif()
+if (USING_MULT_BACKEND)
+    target_compile_definitions (puerts PUBLIC CUSTOMV8NAMESPACE=v8_qjs)
+endif()
+
 if( USING_MULT_BACKEND )
     if ( USING_V8)
         target_compile_definitions (v8backend PUBLIC ${PUERTS_COMPILE_DEFINITIONS})

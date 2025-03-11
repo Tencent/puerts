@@ -1238,3 +1238,62 @@ namespace puerts
     }
 #endif
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#ifdef WITH_IL2CPP_OPTIMIZATION
+
+#if WITH_V8
+V8_EXPORT pesapi_env_ref GetV8PapiEnvRef(v8::Isolate *Isolate)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    auto jsEnv = puerts::FV8Utils::IsolateData<puerts::JSEngine>(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    
+    auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
+    return v8impl::g_pesapi_ffi.create_env_ref(env);
+}
+
+V8_EXPORT pesapi_ffi* GetV8FFIApi()
+{
+    return &v8impl::g_pesapi_ffi;
+}
+#endif
+
+#if WITH_QUICKJS
+V8_EXPORT pesapi_env_ref GetQjsPapiEnvRef(v8::Isolate *Isolate)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    auto jsEnv = FV8Utils::IsolateData<JSEngine>(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    
+    auto ctx = Context->context_;
+    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(ctx));
+}
+
+V8_EXPORT pesapi_ffi* GetQjsFFIApi()
+{
+    return &pesapi::qjsimpl::g_pesapi_ffi;
+}
+#endif
+
+
+#endif
+
+
+#ifdef __cplusplus
+}
+#endif
