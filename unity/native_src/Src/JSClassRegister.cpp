@@ -12,6 +12,8 @@
 #endif
 #include <map>
 #include <cstring>
+#include "TypeInfo.hpp"
+#include "PString.h"
 
 namespace PUERTS_NAMESPACE
 {

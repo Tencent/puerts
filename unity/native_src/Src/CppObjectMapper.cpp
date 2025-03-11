@@ -10,6 +10,7 @@
 #include "DataTransfer.h"
 #include "pesapi.h"
 #include "PString.h"
+#include "TypeInfo.hpp"
 
 namespace PUERTS_NAMESPACE
 {

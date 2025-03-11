@@ -14,6 +14,7 @@
 #include <vector>
 #include <cstring>
 #include "PString.h"
+#include "TypeInfo.hpp"
 
 #ifdef WITH_V8
 
