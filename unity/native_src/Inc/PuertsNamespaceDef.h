@@ -16,6 +16,14 @@
 #endif
 #endif
 
+#if !defined(PUERTS_REG_NAMESPACE)
+#if defined(WITH_QJS_NAMESPACE_SUFFIX)
+#define PUERTS_REG_NAMESPACE puerts_qjs
+#else
+#define PUERTS_REG_NAMESPACE puerts
+#endif
+#endif
+
 #ifndef PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if defined(_MSC_VER)
 #define PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS __pragma(warning(push)) __pragma(warning(disable : 4668))

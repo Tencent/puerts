@@ -430,6 +430,7 @@ if ( WITH_WEBSOCKET EQUAL 2 )
 endif ()
 
 if ( USING_MULT_BACKEND )
+    list(APPEND PUERTS_COMPILE_DEFINITIONS PUERTS_REG_NAMESPACE=puerts)
     # -------------------begin v8 backend-------------------------
     if ( USING_V8)
         set(v8backend_src 
@@ -474,10 +475,10 @@ if ( USING_MULT_BACKEND )
         )
         if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
             list(APPEND BEACKEND_QUICKJS_INC ${PROJECT_SOURCE_DIR}/papi-quickjs/include)
-            #list(APPEND qjsbackend_src
-            #   papi-quickjs/source/CppObjectMapperQuickjs.cpp
-            #   papi-quickjs/source/PapiQuickjsImpl.cpp
-            #)
+            list(APPEND qjsbackend_src
+               papi-quickjs/source/CppObjectMapperQuickjs.cpp
+               papi-quickjs/source/PapiQuickjsImpl.cpp
+            )
         endif()
         
         add_library(qjsbackend STATIC ${qjsbackend_src})

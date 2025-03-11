@@ -29,7 +29,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 static const FAnsiStringView EditorOnlyPropertySuffix = "_EditorOnly";
 #endif
 
-namespace PUERTS_NAMESPACE
+namespace PUERTS_REG_NAMESPACE
 {
 class CFunctionInfo;
 class PString;
