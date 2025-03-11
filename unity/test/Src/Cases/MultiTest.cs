@@ -203,6 +203,14 @@ namespace Puerts.UnitTest
             string backendStr = null;
             string errMsg = null;
             bool createEnvSucess = false;
+            Action<string> Log = (string msg) =>
+            {
+#if PUERTS_GENERAL
+                Console.WriteLine(msg);
+#else
+                UnityEngine.Debug.Log(msg);
+#endif
+            };
             JsEnv jsEnv = null;
             try
             {
@@ -217,13 +225,13 @@ namespace Puerts.UnitTest
             }
             if (createEnvSucess)
             {
-                Console.WriteLine("create v8 backend success");
+                Log("create v8 backend success");
                 Assert.AreEqual("v8", backendStr);
                 Assert.True(jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS);
             }
             else
             {
-                Console.WriteLine("create v8 backend fail");
+                Log("create v8 backend fail: " + errMsg);
                 Assert.True(errMsg.Contains("create jsengine fail for V8"));
             }
 
@@ -244,13 +252,13 @@ namespace Puerts.UnitTest
             }
             if (createEnvSucess)
             {
-                Console.WriteLine("create quickjs backend success");
+                Log("create quickjs backend success");
                 Assert.AreEqual("quickjs", backendStr);
                 Assert.True(jsEnv.Backend is BackendQuickJS);
             }
             else
             {
-                Console.WriteLine("create quickjs backend fail");
+                Log("create quickjs backend fail: " + errMsg);
                 Assert.True(errMsg.Contains("create jsengine fail for QuickJS"));
             }
         }
