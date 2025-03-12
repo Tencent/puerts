@@ -43,7 +43,7 @@ JSValue CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, pe
         pesapi_callback callback = (pesapi_callback)(JS_VALUE_GET_PTR(func_data[0]));
         pesapi_callback_info__ callbackInfo  { ctx, this_val, argc, argv, JS_VALUE_GET_PTR(func_data[1]), JS_UNDEFINED, JS_UNDEFINED };
 
-        callback(&g_pesapi_ffi, &callbackInfo);
+        callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
         if (JS_IsException(callbackInfo.res))
         {
             return JS_Throw(ctx, callbackInfo.ex);
@@ -172,7 +172,7 @@ JSValue CppObjectMapper::MakeMethod(pesapi_callback Callback, void* Data)
         CppObjectMapper* mapper = (CppObjectMapper*)(JS_VALUE_GET_PTR(method_data[1]));
         
         pesapi_callback_info__ callbackInfo  { ctx, this_val, argc, argv, JS_VALUE_GET_PTR(method_data[2]), JS_UNDEFINED, JS_UNDEFINED };
-        callback(&g_pesapi_ffi, &callbackInfo);
+        callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
         if (JS_IsException(callbackInfo.res))
         {
             JS_FreeValue(ctx, callbackInfo.res);
@@ -243,7 +243,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
                 JSValue proto = JS_GetProperty(ctx, this_val, JS_ATOM_prototype);
                 callbackInfo.this_val = JS_NewObjectProtoClass(ctx, proto, mapper->classId);
                 JS_FreeValue(ctx, proto);
-                void* ptr = clsDef->Initialize(&g_pesapi_ffi, &callbackInfo);
+                void* ptr = clsDef->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
                 mapper->BindAndAddToCache(clsDef, ptr, callbackInfo.this_val, true);
                 if (JS_IsException(callbackInfo.res))
                 {
