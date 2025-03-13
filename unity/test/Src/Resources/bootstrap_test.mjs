@@ -1,6 +1,6 @@
 import { createRequire } from 'puerts/module.mjs';
 
-const require = createRequire(import.meta.url);
+const require = createRequire('');
 
 const lm = require('./lazymodule.cjs');
 
