@@ -23,6 +23,24 @@ namespace Puerts.UnitTest
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
+    public class OverloadTestObject
+    {
+        public static int LastCall = 999;
+
+        [UnityEngine.Scripting.Preserve]
+        public void WithObjectParam(string str)
+        {
+            LastCall = 1;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public void WithObjectParam(object str)
+        {
+            LastCall = 2;
+        }
+    }
+
     public class TestObject
     {
         public int value;
@@ -1059,6 +1077,8 @@ namespace Puerts.UnitTest
             });
         }
 
+        //看上去GC.Collect()对webgl无效，先去掉
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void TestJsGC()
         {
@@ -1101,6 +1121,39 @@ namespace Puerts.UnitTest
             GC.Collect();
 
             Assert.AreEqual(0, TestGC.ObjCount);
+
+            jsEnv.Dispose();
+        }
+#endif
+
+        [Test]
+        public void OverloadTest()
+        {
+            //
+#if PUERTS_GENERAL
+            var jsEnv = new JsEnv(new TxtLoader());
+#else
+            var jsEnv = new JsEnv(new DefaultLoader());
+#endif
+            jsEnv.Eval(@"
+            (function() {
+            const o = new CS.Puerts.UnitTest.OverloadTestObject();
+            o.WithObjectParam('tt');
+            console.log('call with string ');
+            }) ();
+            ");
+
+            Assert.AreEqual(1, OverloadTestObject.LastCall);
+
+            jsEnv.Eval(@"
+            (function() {
+            const o = new CS.Puerts.UnitTest.OverloadTestObject();
+            o.WithObjectParam(888);
+             console.log('call with int ');
+            }) ();
+            ");
+
+            Assert.AreEqual(2, OverloadTestObject.LastCall);
 
             jsEnv.Dispose();
         }
