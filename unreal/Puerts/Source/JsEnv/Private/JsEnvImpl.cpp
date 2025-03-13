@@ -689,6 +689,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     InitWebsocketPPWrap(Context);
     ExecuteModule("puerts/websocketpp.js");
 #endif
+#ifdef WITH_QUICKJS
+    auto rt = Isolate->runtime_;
+    JS_SetMaxStackSize(rt, 1024 * 1024);
+#endif
 }
 
 // #lizard forgives
