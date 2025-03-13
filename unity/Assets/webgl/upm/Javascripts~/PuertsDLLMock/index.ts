@@ -60,7 +60,8 @@ global.PuertsWebGL = {
                 },
                 CreateJSEngine: function () {
                     if (jsEngineReturned) {
-                        throw new Error("only one available jsEnv is allowed in WebGL mode");
+                        //throw new Error("only one available jsEnv is allowed in WebGL mode");
+                        return 0;
                     }
                     jsEngineReturned = true;
                     return 1024;
@@ -68,6 +69,8 @@ global.PuertsWebGL = {
                 CreateJSEngineWithExternalEnv: function () { },
                 DestroyJSEngine: function () { },
                 GetLastExceptionInfo: function (isolate: IntPtr,/* out int */strlen: any) {
+                    if (engine.lastException === null) return 'null';
+                    if (typeof engine.lastException == 'undefined') return 'undefined';
                     return engine.JSStringToCSString(engine.lastException.stack, strlen);
                 },
                 LowMemoryNotification: function (isolate: IntPtr) { },
@@ -211,6 +214,8 @@ global.PuertsWebGL = {
                 GetFunctionLastExceptionInfo: function (_function: JSFunctionPtr, /*out int */length: number) {
                     const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
                     if (func instanceof JSFunction) {
+                        if (func.lastException === null) return 'null';
+                        if (typeof func.lastException == 'undefined') return 'undefined';
                         return engine.JSStringToCSString(func.lastException.stack || func.lastException.message || '', length);
                         
                     } else {
