@@ -7,9 +7,8 @@
 
 #pragma once
 
+#ifdef __cplusplus
 #include <string>
-
-typedef void(*LogCallback)(const char* value);
 
 namespace puerts
 {
@@ -20,6 +19,11 @@ enum LogLevel
     Error = 2
 };
 
-void PLog(LogLevel Level, const std::string Fmt, ...);
+void PLog(LogLevel Level, const char* Fmt, ...);
 
 }
+#else
+void puerts_log(const char* fmt, ...);
+#endif
+
+typedef void(*LogCallback)(const char* value);

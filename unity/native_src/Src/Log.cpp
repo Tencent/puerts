@@ -15,12 +15,12 @@ extern LogCallback GLogErrorCallback;
 namespace puerts
 {
 
-void PLog(LogLevel Level, const std::string Fmt, ...)
+void PLog(LogLevel Level, const char* Fmt, ...)
 {
     static char SLogBuffer[1024];
     va_list list;
     va_start(list, Fmt);
-    vsnprintf(SLogBuffer, sizeof(SLogBuffer), Fmt.c_str(), list);
+    vsnprintf(SLogBuffer, sizeof(SLogBuffer), Fmt, list);
     va_end(list);
 
     if (Level == Log && GLogCallback)
@@ -37,4 +37,21 @@ void PLog(LogLevel Level, const std::string Fmt, ...)
     }
 }
 
+}
+
+extern "C"         
+{
+    void puerts_log(const char* fmt, ...)
+    {
+        static char SLogBuffer[1024];
+        va_list list;
+        va_start(list, fmt);
+        vsnprintf(SLogBuffer, sizeof(SLogBuffer), fmt, list);
+        va_end(list);
+
+        if (GLogCallback)
+        {
+            GLogCallback(SLogBuffer);
+        }
+    }
 }
