@@ -62,6 +62,17 @@ export default function WebGLBackendSetToJSInvokeReturnApi(engine: PuertsJSEngin
             var callbackInfo = engine.functionCallbackInfoPtrManager.GetByMockPointer(info);
             callbackInfo.returnValue = engine.makeCSharpFunctionCallbackFunction(false, v8FunctionCallback, pointerHigh);
         },
+        ReturnCSharpFunctionCallback2: function(
+            isolate: IntPtr, 
+            info: MockIntPtr, 
+            v8FunctionCallback: IntPtr,
+            JsFunctionFinalize: IntPtr,
+            /*long */pointerLow: number,
+            /*long */pointerHigh: number
+        ) {
+            var callbackInfo = engine.functionCallbackInfoPtrManager.GetByMockPointer(info);
+            callbackInfo.returnValue = engine.makeCSharpFunctionCallbackFunction(false, v8FunctionCallback, pointerHigh);
+        },
         ReturnArrayBuffer: function (isolate: IntPtr, info: MockIntPtr, /*byte[] */index: number, length: int) {
             var callbackInfo = engine.functionCallbackInfoPtrManager.GetByMockPointer(info);
             callbackInfo.returnValue = engine.unityApi.HEAP8.buffer.slice(index, index + length);
