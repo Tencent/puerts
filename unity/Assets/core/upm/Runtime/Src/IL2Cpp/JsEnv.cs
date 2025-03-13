@@ -349,6 +349,13 @@ namespace Puerts
             lock (this)
             {
                 if (disposed) return;
+                
+                // void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)" failed in android
+                TickHandler = null;
+                moduleExecutor = null;
+                System.GC.Collect();
+                System.GC.WaitForPendingFinalizers();
+                
                 Puerts.NativeAPI.CleanupPapiEnvRef(apis, nativePesapiEnv);
                 Puerts.PuertsDLL.DestroyJSEngine(nativeJsEnv);
                 Puerts.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
