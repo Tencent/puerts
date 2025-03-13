@@ -29,6 +29,10 @@ namespace Puerts.UnitTest
                 CommonJS.InjectSupportForCJS(env);
 #else 
                 env = Puerts.WebGL.MainEnv.Get(loader2);
+                if (env.Backend is BackendQuickJS)
+                {
+                    CommonJS.InjectSupportForCJS(env);
+                }
 #endif
             }
         }
