@@ -458,6 +458,8 @@ export default DModule;");
             jsEnv.Tick();
             StringAssert.Contains("not a function", jsEnv.Eval<string>("error_ESDynamicModuleEvaluateError.toString()"));
         }
+
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void ESDynamicModuleImportRelative()
         {
@@ -471,5 +473,6 @@ export default DModule;");
             jsEnv.Tick();
             StringAssert.Contains("hello", jsEnv.Eval<string>("result_ESDynamicModuleImportRelative.toString()"));
         }
+#endif
     }
 }
