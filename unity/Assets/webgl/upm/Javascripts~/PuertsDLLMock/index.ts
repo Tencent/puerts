@@ -60,8 +60,8 @@ global.PuertsWebGL = {
                 },
                 CreateJSEngine: function () {
                     if (jsEngineReturned) {
-                        //throw new Error("only one available jsEnv is allowed in WebGL mode");
-                        return 0;
+                        console.warn("only one available jsEnv is allowed in WebGL mode");
+                        return 1024;
                     }
                     jsEngineReturned = true;
                     return 1024;

@@ -197,6 +197,7 @@ namespace Puerts.UnitTest
         }
 #endif
 
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void MultiDiffBackend()
         {
@@ -262,5 +263,6 @@ namespace Puerts.UnitTest
                 Assert.True(errMsg.Contains("create jsengine fail for QuickJS"));
             }
         }
+#endif
     }
 }
