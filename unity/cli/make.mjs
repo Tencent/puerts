@@ -152,7 +152,11 @@ const platformCompileConfig = {
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
-                return `${CMAKE_BUILD_PATH}/${options.config}-iphoneos/lib${cmakeAddedLibraryName}.a`;
+                if (options.backend == 'mult') {
+                    return [`${CMAKE_BUILD_PATH}/${options.config}-iphoneos/lib${cmakeAddedLibraryName}.a`, `${CMAKE_BUILD_PATH}/${options.config}-iphoneos/libqjsbackend.a`, `${CMAKE_BUILD_PATH}/${options.config}-iphoneos/libv8backend.a`];
+                } else {
+                    return `${CMAKE_BUILD_PATH}/${options.config}-iphoneos/lib${cmakeAddedLibraryName}.a`;
+                }
             }
         }
     },
