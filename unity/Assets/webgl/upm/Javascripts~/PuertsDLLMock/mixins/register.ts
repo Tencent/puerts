@@ -115,7 +115,10 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 configurable: !dontDelete,
                 enumerable: false
             };
-            attr.get = engine.makeCSharpFunctionCallbackFunction(isStatic, getter, gettercallbackidx);
+            if (getter)
+            {
+                attr.get = engine.makeCSharpFunctionCallbackFunction(isStatic, getter, gettercallbackidx);
+            }
             if (setter) {
                 attr.set = engine.makeCSharpFunctionCallbackFunction(isStatic, setter, settercallbackidx);
             }
