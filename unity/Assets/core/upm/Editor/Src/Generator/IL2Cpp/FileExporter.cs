@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 using Puerts.Editor.Generator;
 using Puerts.TypeMapping;
 
-#if !PUERTS_GENERAL && !UNITY_WEBGL
+#if !PUERTS_GENERAL
 using Mono.Reflection;
 using UnityEngine;
 
@@ -612,7 +612,7 @@ namespace PuertsIl2cpp.Editor
 #if UNITY_6000_0_OR_NEWER
                         "UNITY_6000_0_OR_NEWER",
 #endif
-#if !UNITY_IPHONE
+#if !UNITY_IPHONE && !UNITY_WEBGL
                         "PUERTS_SHARED",
 #endif
                     };
