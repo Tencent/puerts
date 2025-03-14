@@ -663,6 +663,9 @@ export class PuertsJSEngine {
         // 不能用箭头函数！此处返回的函数会赋值到具体的class上，其this指针有含义。
         const engine = this;
         return function (...args: any[]) {
+            if (new.target) {
+                throw new Error('"not a constructor');
+            }
             let callbackInfoPtr = engine.functionCallbackInfoPtrManager.GetMockPointer(args);
             try {
                 engine.callCSharpFunctionCallback(
