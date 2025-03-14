@@ -12,6 +12,8 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class LazyWeakCJSTest
     {
+        //LazyLoadTest用到cjs，ModuleAutoReleaseTest和HalfRefAutoReleaseTest用到gc api，webgl版本先不测试
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void LazyLoadTest()
         {
@@ -42,7 +44,7 @@ namespace Puerts.UnitTest
         [Test]
         public void ModuleAutoReleaseTest()
         {
-            #if PUERTS_GENERAL
+#if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
@@ -77,7 +79,7 @@ namespace Puerts.UnitTest
         [Test]
         public void HalfRefAutoReleaseTest()
         {
-            #if PUERTS_GENERAL
+#if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
@@ -114,7 +116,8 @@ namespace Puerts.UnitTest
             Assert.AreEqual("key\tweak?\tvalid?\nlazymodule1.cjs\ttrue\tfalse\nlazymodule2.cjs\ttrue\ttrue\n", res);
             
         }
-        
+#endif
+
         [Test]
         public void ManualReleaseTest()
         {

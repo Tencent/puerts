@@ -198,6 +198,8 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
 
+        // web环境没有gc这个api
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void CreateFunctionByMethodInfoTest()
         {
@@ -225,5 +227,6 @@ namespace Puerts.UnitTest
 
             jsEnv.Tick();
         }
+#endif
     }
 }
