@@ -5,8 +5,8 @@
 
 ## 开启
 
-* 2.1.1及以下版本默认关闭，需要进入Unity的`Player Settings`，添加Scripting Define Symbols: `PUERTS_IL2CPP_OPTIMIZATION`开启该特性。
-* 2.2.0及以上版本默认开启，如果需要关闭，需要进入Unity的`Player Settings`，添加Scripting Define Symbols: `PUERTS_DISABLE_IL2CPP_OPTIMIZATION`关闭该特性。
+* 2.1.1及以下版本默认全平台关闭，要开启该特性需要进入Unity的`Player Settings`，添加Scripting Define Symbols: `PUERTS_IL2CPP_OPTIMIZATION`。
+* 2.2.0及以上版本在window、mac、linux、android默认开启，如果需要关闭该特性，需要进入Unity的`Player Settings`，添加Scripting Define Symbols: `PUERTS_DISABLE_IL2CPP_OPTIMIZATION`，在ios和webgl下默认关闭，添加Scripting Define Symbols: `PUERTS_IL2CPP_OPTIMIZATION`。
 
 ## 使用步骤
 
