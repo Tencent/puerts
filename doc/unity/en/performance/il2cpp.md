@@ -1,22 +1,36 @@
-# Optimization for Unity il2cpp
-
+# il2cpp Optimization Features
 > Available Version: >2.0.0
 
-In simple terms, the idea behind il2cpp optimization is to bypass PInvoke and directly access C# through il2cpp interfaces, reducing the overhead of cross-language calls. This ultimately leads to a significant performance improvement. For more details, see the[xil2cpp mode performance data](./index.md).
+In simple terms, the optimization principle of il2cpp is to bypass PInvoke and directly access C# through il2cpp interfaces, reducing cross-language overhead. This ultimately leads to a significant performance improvement. For details, see[ il2cpp Optimization Feature Performance Data.](./index.md)
 
-## Installation
-To use Il2cpp Optimization, you need to download the Plugin_il2cpp package separately and extract it to your project directory.
+## Enabling
 
-Alternatively, you can compile it yourself according to the [compilation guide](../other/building). 
+* Versions 2.1.1 and below disable this feature by default. To enable it, go to Unity's`Player Settings`，, add the Scripting Define Symbol: Scripting Define Symbols: `PUERTS_IL2CPP_OPTIMIZATION`
+* Versions 2.2.0 and above enable this feature by default. To disable it, go to Unity's`Player Settings`, add the Scripting Define Symbol: `PUERTS_DISABLE_IL2CPP_OPTIMIZATION`。
 
-## Steps to Use
+## Usage Steps
 
-1. Install the PuerTS UPM package as described above.
-2. Go to Unity's `Player Settings` and add two Scripting Define Symbols: `PUERTS_CPP_OUTPUT_TO_UPM;PUERTS_IL2CPP_OPTIMIZATION`. You may also switch the script backend to il2cpp. Wait for the script compilation to complete.
-3. Generate the code required for compilation: Click on Unity's Menu: `Tools/PuerTS/Generate for Il2cpp optimization(All in One)`.
+* For higher performance (full wrapper glue code generation):
+  Click Unity's`Tools/PuerTS/Generate For xIl2cpp mode (all in one with full wrapper)`。
+
+* For smaller code size (reflection-based glue code only):
+  Click Unity's `Tools/PuerTS/Generate For xIl2cpp mode (all in one without wrapper)`。
 
 ### FAQ
-1. The header file hash_map cannot be found when building iOS.
-    When Unity is built, some header files will not be automatically packaged into the xcode project. You can find the missing content in `your Unity.app/Contents/il2cpp/external/` and copy it to `iosbuild directory/Libraries/external/`.
-2. `ReentrantLock is ambigious` in iOS build
-    Common found in Unity2022+. See https://github.com/Tencent/puerts/issues/1428
+1. "hash_map header not found" error during iOS build.
+    During Unity builds, some header files (common in 2021 and earlier versions) are not automatically included in the Xcode project output. You can find the missing headers under `YourUnity.app/Contents/il2cpp/external/` and copy them to `iosbuild/Libraries/external/`.
+
+2. `ReentrantLock is ambigious`error during iOS build.
+    Common in 2022 versions. Solution:
+    Modify the file (adjust the path according to your Unity installation):
+    `/Applications/Unity/Hub/Editor/2022.3.47f1c1/PlaybackEngines/iOSSupport/il2cpp/libil2cpp/il2cpp-config.h `
+
+Add the macro definition after #pragma once:
+```
+#pragma once
+
+#define BASELIB_INLINE_NAMESPACE il2cpp_baselib //this line fix 'ReentrantLock is ambigious'
+
+#include <string.h>
+```
+Analysis reference: https://github.com/Tencent/puerts/issues/1428
