@@ -8,14 +8,16 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 public class TestBuilder 
 {
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION
     public static void GenV1() 
     {
         Puerts.Editor.Generator.UnityMenu.GenerateCode();
     }
     [MenuItem("PuerTS/Tester/BuildV1")]
     public static void BuildWindowsV1() { BuildWindows(false); }
+#endif
 
-#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_WEBGL)
+#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION
     public static void GenV2WithoutWrapper() 
     {
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateEmptyCppWrappers();
