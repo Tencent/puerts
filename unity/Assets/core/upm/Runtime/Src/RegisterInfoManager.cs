@@ -37,7 +37,7 @@ namespace Puerts
 
             public BindingMode UseBindingMode;
             
-    #if !PUERTS_IL2CPP_OPTIMIZATION || !ENABLE_IL2CPP
+    #if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_WEBGL) || !ENABLE_IL2CPP
             public V8ConstructorCallback Constructor;
 
             public V8FunctionCallback Method;

@@ -14,7 +14,7 @@ using UnityEditor;
 using UnityEngine;
 #endif
 
-#if !PUERTS_GENERAL && PUERTS_IL2CPP_OPTIMIZATION
+#if !PUERTS_GENERAL && !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_WEBGL)
 namespace PuertsIl2cpp.Editor
 {
     namespace Generator {

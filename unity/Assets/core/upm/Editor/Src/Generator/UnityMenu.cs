@@ -20,7 +20,7 @@ namespace Puerts.Editor
         public class UnityMenu {
             public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
 
-#if !PUERTS_GENERAL
+#if !PUERTS_GENERAL && PUERTS_DISABLE_IL2CPP_OPTIMIZATION
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate (all in one)", false, 1)]
             public static void GenV1() 
             {
@@ -68,6 +68,8 @@ namespace Puerts.Editor
 
                 Utils.SetFilters(null);
             }
+#endif
+#if !PUERTS_GENERAL
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 9)]
             public static void ClearAll()

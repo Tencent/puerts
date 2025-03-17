@@ -10,7 +10,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-#if PUERTS_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
+#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_WEBGL) && ENABLE_IL2CPP
 
 namespace Puerts
 {

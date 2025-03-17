@@ -15,7 +15,7 @@ public class TestBuilder
     [MenuItem("PuerTS/Tester/BuildV1")]
     public static void BuildWindowsV1() { BuildWindows(false); }
 
-#if PUERTS_IL2CPP_OPTIMIZATION
+#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_WEBGL)
     public static void GenV2WithoutWrapper() 
     {
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateEmptyCppWrappers();
