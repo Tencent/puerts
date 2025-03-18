@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.2.0] - 2025-3-18
+1. native_src_il2cpp merged into native_src
+2. il2cpp optimization feature no longer requires static library linking on Android (unsupported by some Unity versions)
+3. il2cpp-generated wrapper code no longer needs to be separately compiled into plugins
+4. il2cpp supports zero-GC reflection
+5. QuickJS backend and Mult backend now support il2cpp optimization
+6. Simplified compilation for QuickJS backend and Mult backend by directly integrating quick-ng source code compilation
+7. Fixed compound type ref passing from C# to JS in il2cpp optimization, resolving #1886
+8. Enabled il2cpp optimization by default for all platforms except iOS and WebGL during il2cpp packaging
+
 ## [2.1.1] - 2024-10-25
 1. Disable JIT on the HarmonyOS platform.
 2. Compatibility with higher versions of V8.
