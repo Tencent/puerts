@@ -516,6 +516,8 @@ export namespace PuertsJSEngine {
         stackAlloc: (size: number) => number,
         stackSave: () => number,
         stackRestore: (stack: number) => void,
+        addFunction: (func: Function, sig: string) => number,
+        removeFunction: (index: number) => void,
         _CallCSharpFunctionCallback: (functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) => void;
         _CallCSharpConstructorCallback: (functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) => number;
         _CallCSharpDestructorCallback: (functionPtr: IntPtr, selfPtr: CSIdentifier, callbackIdx: number) => void;
@@ -556,6 +558,8 @@ export class PuertsJSEngine {
             stackSave,
             stackRestore,
             stackAlloc,
+            addFunction,
+            removeFunction,
             _CallCSharpFunctionCallback,
             _CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback,
@@ -578,6 +582,8 @@ export class PuertsJSEngine {
             stackSave,
             stackRestore,
             stackAlloc,
+            addFunction,
+            removeFunction,
             _CallCSharpFunctionCallback,
             _CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback,

@@ -25,6 +25,8 @@ var exportDLL = {
             stackAlloc,
             stackSave,
             stackRestore,
+            addFunction,
+            removeFunction,
             _CallCSharpFunctionCallback: Module._CallCSharpFunctionCallback,
             _CallCSharpConstructorCallback: Module._CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback: Module._CallCSharpDestructorCallback,
@@ -133,6 +135,7 @@ var exportDLL = {
     "InspectorTick",
     "LogicTick",
     "SetLogCallback",
+    "GetWebGLFFIApi"
 ].forEach(function (methodName) {
 
     exportDLL[methodName] = new Function(
