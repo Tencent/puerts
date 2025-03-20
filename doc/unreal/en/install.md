@@ -4,7 +4,7 @@
     ```sh
     git clone https://github.com/Tencent/puerts.git
     ```
-2. Copy the `Puerts` directory from `puerts/unreal` to your project's `Plugins` directory. You can refer to the Unreal demo for guidance.
+2. Copy the `Puerts` directory from `puerts/unreal` to your project's `Plugins` directory.
 
 3. Install an appropriate script backend following the guide below.
 
