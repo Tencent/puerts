@@ -15,7 +15,7 @@ import WebGLBackendRegisterAPI from "./mixins/register";
 import WebGLBackendSetToInvokeJSArgumentApi from "./mixins/setToInvokeJSArgument";
 import WebGLBackendSetToJSInvokeReturnApi from "./mixins/setToJSInvokeReturn";
 import WebGLBackendSetToJSOutArgumentAPI from "./mixins/setToJSOutArgument";
-import GetWebGLFFIApiImpl from "./pesapiImpl"
+import {GetWebGLFFIApi} from "./pesapiImpl"
 
 declare const PUERTS_JS_RESOURCES: any;
 declare const wxRequire: any;
@@ -247,7 +247,10 @@ global.PuertsWebGL = {
                     return new Error().stack;
                 },
                 GetWebGLFFIApi: function() {
-                    return GetWebGLFFIApiImpl(engine);
+                    return GetWebGLFFIApi(engine);
+                },
+                GetWebGLPapiEnvRef: function() {
+                    return 1024;
                 }
             }
         )
