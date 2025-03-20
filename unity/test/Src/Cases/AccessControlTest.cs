@@ -98,7 +98,7 @@ namespace Puerts.UnitTest
                     {
                         
                         { "StaticMethod_static", new MemberRegisterInfo { Name = "StaticMethod", IsStatic = true, MemberType = MemberType.Method, UseBindingMode = BindingMode.FastBinding
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && (UNITY_WEBGL || UNITY_IPHONE))
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && (UNITY_WEBGL || UNITY_IPHONE)) || !ENABLE_IL2CPP
                         , Method = EmptyCallbackWrap
 #endif
                         } },
