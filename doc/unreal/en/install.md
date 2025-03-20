@@ -13,10 +13,10 @@
 Now that you have the Puerts files, its time to select an appropriate script backend.
 
 - **V8**: Provides a clean ECMAScript implementation.
-- **Quickjs**: Suitable for scenarios with strict package size requirements.
 - **Nodejs**: Supports more npm modules than the V8 version but results in a larger package size.
+- **Quickjs**: Suitable for scenarios with strict package size requirements.
 
-### V8 Backend (Provides a clean ECMAScript implementation)
+### V8 Backend
 1. Download V8:
     - For UE4.25 and above (e.g UE5.5), choose one: [8.4.371.19](https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz), [9.4.146.24](https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz), [10.6.194](https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240612/v8_bin_10.6.194.tgz), [11.8.172](https://github.com/puerts/backend-v8/releases/download/V8_11.8.172_with_new_wrap_241205/v8_bin_11.8.172.tgz)
     - For UE4.24 and below: [V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz)
@@ -25,7 +25,12 @@ Now that you have the Puerts files, its time to select an appropriate script bac
 
 3. Change the `UseV8Version` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` according to version you downloaded.
 
-<img src="../../pic/Install_UE/Set_V8_Version.png" width="600"/>
+### NodeJS Backend (Recommended)
+1. Download NodeJS backend from the latest Unreal Engine release. [Nodejs Download](https://github.com/Tencent/puerts/releases)
+
+2. Copy the "nodejs" folder from the downloaded release `puerts_nodejs/Puerts/ThirdParty/nodejs_xx` into the puerts inside of your project `YourProject/Plugins/Puerts/ThirdParty`. 
+
+3. Change the boolean `UseNodeJs` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` to `true`.
 
 ### QuickJS Backend
 1. Download QuickJS backend from the latest Unreal Engine release. [QuickJS Download](https://github.com/Tencent/puerts/releases)
@@ -34,19 +39,7 @@ Now that you have the Puerts files, its time to select an appropriate script bac
 
 3. Change the boolean `UseQuickJs` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` to `true`.
 
-<img src="../../pic/Install_UE/Set_UseQuickJs.png" width="600"/>
-
-### NodeJS Backend
-1. Download NodeJS backend from the latest Unreal Engine release. [Nodejs Download](https://github.com/Tencent/puerts/releases)
-
-2. Copy the "nodejs" folder from the downloaded release `puerts_nodejs/Puerts/ThirdParty/nodejs_xx` into the puerts inside of your project `YourProject/Plugins/Puerts/ThirdParty`. 
-
-3. Change the boolean `UseNodeJs` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` to `true`.
-
-<img src="../../pic/Install_UE/Set_UseNodeJs.png" width="600"/>
-
 ## Release Package Installation Method
-
 1. Navigate to the [releases page](https://github.com/Tencent/puerts/releases) and download the version that matches your UE version. 
 
 2. Extract the downloaded `puerts` folder into your project `YourProject/Plugins/`.
