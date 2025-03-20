@@ -6,11 +6,11 @@
     ```
 2. Copy the `Puerts` directory from `puerts/unreal` to your project's `Plugins` directory. You can refer to the Unreal demo for guidance.
 
-3. Install an appropriate script backend following the guide bellow.
+3. Install an appropriate script backend following the guide below.
 
 4. Enjoy the functionality of Puerts!
 
-Now that you have the Puerts files, its time to select an appropriate script backend.
+Now that you have the Puerts files, it's time to select an appropriate script backend.
 
 - **V8**: Provides a clean ECMAScript implementation.
 - **Nodejs**: Supports more npm modules than the V8 version but results in a larger package size.
@@ -19,11 +19,11 @@ Now that you have the Puerts files, its time to select an appropriate script bac
 ### V8 Backend
 1. Download V8:
     - For UE4.25 and above (e.g UE5.5), choose one: [8.4.371.19](https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz), [9.4.146.24](https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz), [10.6.194](https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240612/v8_bin_10.6.194.tgz), [11.8.172](https://github.com/puerts/backend-v8/releases/download/V8_11.8.172_with_new_wrap_241205/v8_bin_11.8.172.tgz)
-    - For UE4.24 and below: [V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz)
+    - For UE4.24 and below: [V8 for UE 4.24 or below](https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz)
 
 2. Extract the downloaded V8 backend folder into `YourProject/Plugins/Puerts/ThirdParty`.
 
-3. Change the `UseV8Version` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` according to version you downloaded.
+3. Change the `UseV8Version` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` according to the version you downloaded.
 
 ### NodeJS Backend (Recommended)
 1. Download NodeJS backend from the latest Unreal Engine release. [Nodejs Download](https://github.com/Tencent/puerts/releases)
@@ -58,4 +58,4 @@ Now that you have the Puerts files, its time to select an appropriate script bac
     ```
 
 2. **Blueprint-Only Projects:**
-    If you see the error "Plugin 'Puerts' failed to load because module 'JsEnv' could not be found,” it’s because pure Blueprint projects do not automatically compile Plugins. Since Puerts includes C++ source code, you need to convert your Blueprint project to a C++ project by adding a C++ class. Alternatively, you can compile the UE engine with Puerts included during the compilation.
+    If you see the error "Plugin 'Puerts' failed to load because module 'JsEnv' could not be found,” it’s because pure Blueprint projects do not automatically compile plugins. Since Puerts includes C++ source code, you need to convert your Blueprint project to a C++ project by adding a C++ class. Alternatively, you can compile the UE engine with Puerts included during the compilation.
