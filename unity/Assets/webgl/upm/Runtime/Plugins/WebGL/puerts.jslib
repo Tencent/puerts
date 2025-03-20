@@ -135,7 +135,10 @@ var exportDLL = {
     "InspectorTick",
     "LogicTick",
     "SetLogCallback",
-    "GetWebGLFFIApi"
+    "GetWebGLFFIApi",
+    "GetWebGLPapiEnvRef",
+    "GetQjsFFIApi", // declare for compile
+    "GetQjsPapiEnvRef" // declare for compile
 ].forEach(function (methodName) {
 
     exportDLL[methodName] = new Function(
