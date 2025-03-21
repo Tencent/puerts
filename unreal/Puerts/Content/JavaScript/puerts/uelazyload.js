@@ -50,6 +50,7 @@ var global = global || (function () { return this; }());
         }
     });
     Object.setPrototypeOf(UE, UE_proxy);
+    Object.defineProperty(UE, "__esModule", {value: false});
 
     const TNAMESPACE = 0;
     const TENUM = 1
@@ -113,6 +114,7 @@ var global = global || (function () { return this; }());
         }
     });
     Object.setPrototypeOf(CPP, CPP_proxy);
+    Object.defineProperty(CPP, "__esModule", {value: false});
     
     puerts.registerBuildinModule('cpp', CPP);
     global.CPP = CPP;
