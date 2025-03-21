@@ -138,7 +138,15 @@ var exportDLL = {
     "GetWebGLFFIApi",
     "GetWebGLPapiEnvRef",
     "GetQjsFFIApi", // declare for compile
-    "GetQjsPapiEnvRef" // declare for compile
+    "GetQjsPapiEnvRef", // declare for compile
+    "GetRegsterApi",
+    "pesapi_alloc_property_descriptors",
+    "pesapi_define_class",
+    "pesapi_get_class_data",
+    "pesapi_on_class_not_found",
+    "pesapi_set_method_info",
+    "pesapi_set_property_info",
+    "pesapi_trace_native_object_lifecycle"
 ].forEach(function (methodName) {
 
     exportDLL[methodName] = new Function(

@@ -445,8 +445,31 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     return ptr;
 }
 
-export function PApiRegsterApi(engine: PuertsJSEngine) {
+export function WebGLRegsterApi(engine: PuertsJSEngine) {
     return {
-
+        GetRegsterApi: function() {
+            return 0;
+        },
+        pesapi_alloc_property_descriptors: function() {
+            throw new Error("pesapi_alloc_property_descriptors not implemented yet!");
+        },
+        pesapi_define_class: function() {
+            throw new Error("pesapi_define_class not implemented yet!");
+        },
+        pesapi_get_class_data: function() {
+            throw new Error("pesapi_get_class_data not implemented yet!");
+        },
+        pesapi_on_class_not_found: function() {
+            throw new Error("pesapi_on_class_not_found not implemented yet!");
+        },
+        pesapi_set_method_info: function() {
+            throw new Error("pesapi_set_method_info not implemented yet!");
+        },
+        pesapi_set_property_info: function() {
+            throw new Error("pesapi_set_property_info not implemented yet!");
+        },
+        pesapi_trace_native_object_lifecycle: function() {
+            throw new Error("pesapi_trace_native_object_lifecycle not implemented yet!");
+        }
     }
 }
