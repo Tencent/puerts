@@ -1,13 +1,76 @@
-# Puerts - Unreal User Manual
+# Puerts - Unreal Engine User Manual
 
-Below is a translated version of the original docs by Incanta Games. The translation is mainly done with Google Translate, but then modified by hand to try to make sense of what Google Translate is missing.
+## Setup
+Puerts has two main execution modes, both of which can coexist in isolation.
 
-## Get started using with one of two methods
+[1. Automatic binding mode](#method-2-automatic-binding-mode)
 
-- [Method 1: Start the virtual machine yourself](#method-1-start-the-virtual-machine-yourself)
-- [Method 2: Automatic binding mode](#method-2-automatic-binding-mode)
+[2. Manually starting a JavasScript virtual machine](#method-1-start-the-virtual-machine-yourself)
 
-### Method 1: Start the virtual machine yourself
+### Automatic binding mode
+Puerts allows users to define and extend Unreal Engine classes inside of TypeScript.
+
+#### Setup
+To get started, execute the following NodeJS command inside of the puerts plugin directory. (`YourProject/Plugins/Puerts`)
+
+This will install all relevant dependencies and update any configuration files required for automatic binding to function.
+
+``` shell
+node enable_puerts_module.js
+```
+
+#### Usage
+
+Define a new class that extends your desired class (e.g ACharacter, AActor, e.t.c)
+
+Supported features are as follows:
+- Constructor definition
+- Overriding blueprint events and functions
+- Input axis mapping
+- Action events (e.g BeginPlay, Tick)
+- RPC functions (Requires `experimentalDecorators`)
+
+##### TypeScript
+``` typescript
+import * as UE from 'ue'
+
+class TS_Player extends UE.Character {
+    FpsCamera: UE.CameraComponent;
+    //...
+
+    Constructor() {
+        let FpsCamera = this.CreateDefaultSubobjectGeneric<UE.CameraComponent>("FpsCamera", UE.CameraComponent.StaticClass());
+        FpsCamera.SetupAttachment(this.CapsuleComponent, "FpsCamera");
+        //...
+    }
+
+    MoveForward(axisValue: number): void {
+        this.AddMovementInput(this.GetActorForwardVector(), axisValue, false);
+    }
+
+    MoveRight(axisValue: number): void {
+        this.AddMovementInput(this.GetActorRightVector(), axisValue, false);
+    }
+
+    ReceiveBeginPlay(): void {
+        //...
+    }
+    ReceiveTick(InDeltaSeconds: number): void {
+        //...
+    }
+    //...
+}
+
+export default TS_Player;
+```
+
+Now it should be available inside of Unreal Engine!
+
+![select_character.png](../..//pic/select_character.png)
+
+**Note: The name of the file, class and default export all need to be the same for it to be registered with Unreal Engine.**
+
+### Starting a new JavasScript virtual machine
 
 - Start one or more virtual machines as needed (such as `GameInstance`)
     - If multiple virtual machines are started, these virtual machines are isolated from each other.
@@ -33,59 +96,6 @@ public:
         JsEnv.Reset();
     }
 };
-```
-
-### Method 2: Automatic binding mode
-
-The advantage of this mode is that the class can be identified by the UE editor.
-
-- Command line to enter `Plugins/Puerts` Directory, execute the following command to complete the opening and dependence installation of this mode
-
-``` shell
-node enable_puerts_module.js
-```
-
-For example, such a class:
-
-``` typescript
-import * as UE from 'ue'
-
-class TS_Player extends UE.Character {
-}
-
-export default TS_Player;
-```
-
-Then you can choose it in the UE editor.
-
-![select_character.png](../..//pic/select_character.png)
-
-- Can be identified by the UE, support constructor, support Override Blueprint Override method, support axial map Axis, Action event, support RPC
-
-``` typescript
-class TS_Player extends UE.Character {
-    FpsCamera: UE.CameraComponent;
-    //...
-
-    Constructor() {
-        let FpsCamera = this.CreateDefaultSubobjectGeneric<UE.CameraComponent>("FpsCamera", UE.CameraComponent.StaticClass());
-        FpsCamera.SetupAttachment(this.CapsuleComponent, "FpsCamera");
-        //...
-    }
-
-    MoveForward(axisValue: number): void {
-        this.AddMovementInput(this.GetActorForwardVector(), axisValue, false);
-    }
-
-    MoveRight(axisValue: number): void {
-        this.AddMovementInput(this.GetActorRightVector(), axisValue, false);
-    }
-
-    ReceiveBeginPlay(): void {
-        //...
-    }
-    //...
-}
 ```
 
 ### The relationship between two modes
