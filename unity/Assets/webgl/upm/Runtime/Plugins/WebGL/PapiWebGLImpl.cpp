@@ -28,7 +28,8 @@ enum {
     JS_TAG_CATCH_OFFSET = 5,
     JS_TAG_EXCEPTION   = 6,
     JS_TAG_FLOAT64     = 7,
-    /* any larger tag is FLOAT64 if JS_NAN_BOXING */
+    JS_TAG_INT64       = 8,
+    JS_TAG_UINT64      = 9,
 };
 
 #define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag }
@@ -44,6 +45,8 @@ enum {
 typedef union JSValueUnion {
     int32_t int32;
     double float64;
+    int64_t int64;
+    uint64_t uint64;
     void *ptr;
 } JSValueUnion;
 
@@ -138,6 +141,134 @@ struct pesapi_scope__
 		setCurrentScope(prev_scope);
 	}
 };
+
+inline pesapi_value pesapiValueFromQjsValue(JSValue* v)
+{
+    return reinterpret_cast<pesapi_value>(v);
+}
+
+inline JSValue* qjsValueFromPesapiValue(pesapi_value v)
+{
+    return reinterpret_cast<JSValue*>(v);
+}
+
+inline JSValue *allocValueInCurrentScope()
+{
+	auto scope = getCurrentScope();
+	return scope->allocValue();
+}
+
+JSValue literal_values_undefined = JS_UNDEFINED;
+JSValue literal_values_null = JS_NULL;
+JSValue literal_values_true = JS_TRUE;
+JSValue literal_values_false = JS_FALSE;
+
+template<typename Func>
+pesapi_value pesapi_create_generic0(pesapi_env env, Func createFunc)
+{
+    (void)env;
+    auto ret = allocValueInCurrentScope();
+    if (ret)
+    {
+        *ret = createFunc();
+        return pesapiValueFromQjsValue(ret);
+    }
+    return nullptr;
+}
+
+template<typename T, typename Func>
+pesapi_value pesapi_create_generic1(pesapi_env env, T value, Func createFunc)
+{
+    (void)env;
+    auto ret = allocValueInCurrentScope();
+    if (ret)
+    {
+        *ret = createFunc(value);
+        return pesapiValueFromQjsValue(ret);
+    }
+    return nullptr;
+}
+
+// value process
+pesapi_value pesapi_create_null(pesapi_env env)
+{
+    return pesapiValueFromQjsValue(&literal_values_null); //避免在Scope上分配
+}
+
+pesapi_value pesapi_create_undefined(pesapi_env env)
+{
+    return pesapiValueFromQjsValue(&literal_values_undefined);
+}
+
+pesapi_value pesapi_create_boolean(pesapi_env env, bool value)
+{
+    return pesapiValueFromQjsValue(value ? &literal_values_true : &literal_values_false);
+}
+
+static inline JSValue JS_NewInt32(int32_t val)
+{
+    return JS_MKVAL(JS_TAG_INT, val);
+}
+
+static inline JSValue JS_NewFloat64(double d)
+{
+    JSValue v;
+    v.tag = JS_TAG_FLOAT64;
+    v.u.float64 = d;
+    return v;
+}
+
+static inline JSValue JS_NewInt64(int64_t val)
+{
+    JSValue v;
+    v.tag = JS_TAG_INT64;
+    v.u.int64 = val;
+    return v;
+}
+
+static inline JSValue JS_NewUInt64(uint64_t val)
+{
+    JSValue v;
+    v.tag = JS_TAG_UINT64;
+    v.u.uint64 = val;
+    return v;
+}
+
+static inline JSValue JS_NewUInt32(uint32_t val)
+{
+    JSValue v;
+    if (val <= INT32_MAX) {
+        v = JS_NewInt32((int32_t)val);
+    } else {
+        v = JS_NewFloat64((double)val);
+    }
+    return v;
+}
+
+pesapi_value pesapi_create_int32(pesapi_env env, int32_t value)
+{
+    return pesapi_create_generic1(env, value, JS_NewInt32);
+}
+
+pesapi_value pesapi_create_uint32(pesapi_env env, uint32_t value)
+{
+    return pesapi_create_generic1(env, value, JS_NewUInt32);
+}
+
+pesapi_value pesapi_create_int64(pesapi_env env, int64_t value)
+{
+    return pesapi_create_generic1(env, value, JS_NewInt64);
+}
+
+pesapi_value pesapi_create_uint64(pesapi_env env, uint64_t value)
+{
+    return pesapi_create_generic1(env, value, JS_NewUInt64);
+}
+
+pesapi_value pesapi_create_double(pesapi_env env, double value)
+{
+    return pesapi_create_generic1(env, value, JS_NewFloat64);
+}
 
 pesapi_open_scope_func g_js_open_scope = nullptr;
 
