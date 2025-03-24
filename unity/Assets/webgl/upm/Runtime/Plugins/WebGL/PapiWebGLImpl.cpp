@@ -142,6 +142,8 @@ struct pesapi_scope__
 	}
 };
 
+static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
+
 inline pesapi_value pesapiValueFromQjsValue(JSValue* v)
 {
     return reinterpret_cast<pesapi_value>(v);
