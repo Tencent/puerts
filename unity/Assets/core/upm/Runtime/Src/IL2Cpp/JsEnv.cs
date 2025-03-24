@@ -100,6 +100,7 @@ namespace Puerts
 #if UNITY_WEBGL
                 apis = Puerts.NativeAPI.GetWebGLFFIApi();
                 nativePesapiEnv = Puerts.NativeAPI.GetWebGLPapiEnvRef(nativeJsEnv);
+                Puerts.NativeAPI.PreservePuertsCPP();
 #else
                 apis = Puerts.NativeAPI.GetV8FFIApi();
                 nativePesapiEnv = Puerts.NativeAPI.GetV8PapiEnvRef(nativeJsEnv);

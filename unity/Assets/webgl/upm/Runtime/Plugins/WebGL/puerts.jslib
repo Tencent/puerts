@@ -30,6 +30,7 @@ var exportDLL = {
             _CallCSharpFunctionCallback: Module._CallCSharpFunctionCallback,
             _CallCSharpConstructorCallback: Module._CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback: Module._CallCSharpDestructorCallback,
+            InjectPapiGLNativeImpl: Module._InjectPapiGLNativeImpl,
             
             HEAP8,
             HEAPU8,

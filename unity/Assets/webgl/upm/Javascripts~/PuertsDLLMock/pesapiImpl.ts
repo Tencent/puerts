@@ -443,6 +443,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
 
     webglFFI = ptr;
+    engine.unityApi.InjectPapiGLNativeImpl(webglFFI);
     return ptr;
 }
 

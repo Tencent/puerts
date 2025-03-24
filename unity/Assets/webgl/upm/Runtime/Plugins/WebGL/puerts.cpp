@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <emscripten.h>
+#include "pesapi.h"
 
 struct MockV8Value
 {
@@ -158,6 +159,18 @@ extern "C"
     void EMSCRIPTEN_KEEPALIVE CallCSharpDestructorCallback(V8DestructorCallback functionPtr, void *selfPtr, int callbackIdx)
     {
         functionPtr(selfPtr, (int64_t)callbackIdx << 32);
+    }
+    
+    //为了避免没有引用而被剪裁
+    void PreservePuertsCPP()
+    {
+    }
+    
+    void DoInjectPapi(struct pesapi_ffi* api);
+    
+    void EMSCRIPTEN_KEEPALIVE InjectPapiGLNativeImpl(struct pesapi_ffi* api)
+    {
+        DoInjectPapi(api);
     }
 }
 
