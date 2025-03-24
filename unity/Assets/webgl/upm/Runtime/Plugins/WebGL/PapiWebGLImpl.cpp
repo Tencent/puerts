@@ -139,15 +139,55 @@ struct pesapi_scope__
 	}
 };
 
+pesapi_open_scope_func g_js_open_scope = nullptr;
+
+pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
+{
+    auto ret = new pesapi::webglimpl::pesapi_scope__();
+    if (g_js_open_scope)
+    {
+        g_js_open_scope(penv_ref);
+    }
+    return reinterpret_cast<pesapi_scope>(ret);
+}
+
+pesapi_open_scope_placement_func g_js_open_scope_placement = nullptr;
+
 pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_scope_memory* memory)
 {
     memset(memory, 0, sizeof(struct pesapi_scope_memory));
     new (memory) pesapi::webglimpl::pesapi_scope__();
+    if (g_js_open_scope_placement)
+    {
+        g_js_open_scope_placement(penv_ref, memory);
+    }
     return reinterpret_cast<pesapi_scope>(memory);
 }
 
+pesapi_close_scope_func g_js_close_scope;
+
+void pesapi_close_scope(pesapi_scope pscope)
+{
+    if (g_js_close_scope)
+    {
+        g_js_close_scope(pscope);
+    }
+    auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
+    if (!scope)
+    {
+        return;
+    }
+    delete scope;
+}
+
+pesapi_close_scope_placement_func g_js_close_scope_placement = nullptr;
+
 void pesapi_close_scope_placement(pesapi_scope pscope)
 {
+    if (g_js_close_scope_placement)
+    {
+        g_js_close_scope_placement(pscope);
+    }
     auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
     if (!scope)
     {
@@ -163,7 +203,16 @@ extern "C"
 {
     void DoInjectPapi(struct pesapi_ffi* api)
     {
+        pesapi::webglimpl::g_js_open_scope = api->open_scope;
+        api->open_scope = &pesapi::webglimpl::pesapi_open_scope;
+        
+        pesapi::webglimpl::g_js_open_scope_placement= api->open_scope_placement;
         api->open_scope_placement = &pesapi::webglimpl::pesapi_open_scope_placement;
+        
+        pesapi::webglimpl::g_js_close_scope = api->close_scope;
+        api->close_scope = &pesapi::webglimpl::pesapi_close_scope;
+        
+        pesapi::webglimpl::g_js_close_scope_placement = api->close_scope_placement;
         api->close_scope_placement = &pesapi::webglimpl::pesapi_close_scope_placement;
     }
 }

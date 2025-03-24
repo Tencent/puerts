@@ -9,6 +9,33 @@ type pesapi_callback_info = number;
 type pesapi_env_ref = number;
 type pesapi_value_ref = number;
 
+class Scope {
+    private static current: Scope = undefined;
+
+    public static getCurrent(): Scope {
+        return Scope.current;
+    }
+
+    public static enter(): Scope {
+        return new Scope();
+    }
+
+    public static exit(): void {
+        Scope.current.close();
+    }
+
+    constructor() {
+        this.prevScope = Scope.current;
+        Scope.current = this;
+    }
+
+    close(): void {
+        Scope.current = this.prevScope;
+    }
+
+    private prevScope: Scope = undefined;
+}
+
 
 let webglFFI:number = undefined;
 
@@ -243,10 +270,12 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // --------------- 作用域管理 ---------------
     function pesapi_open_scope(penv_ref: pesapi_env_ref): pesapi_scope { 
-        throw new Error("pesapi_open_scope not implemented yet!");
+        Scope.enter();
+        return null;
     }
     function pesapi_open_scope_placement(penv_ref: pesapi_env_ref, memory: number): pesapi_scope { 
-        throw new Error("pesapi_open_scope_placement not implemented yet!");
+        Scope.enter();
+        return null;
     }
     function pesapi_has_caught(pscope: pesapi_scope): boolean { 
         throw new Error("pesapi_has_caught not implemented yet!");
@@ -255,10 +284,10 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_get_exception_as_string not implemented yet!");
     }
     function pesapi_close_scope(pscope: pesapi_scope): void {
-        throw new Error("pesapi_close_scope not implemented yet!");
+        Scope.exit();
     }
     function pesapi_close_scope_placement(pscope: pesapi_scope): void {
-        throw new Error("pesapi_close_scope_placement not implemented yet!");
+        Scope.exit();
     }
 
     // --------------- 值引用 ---------------
