@@ -191,22 +191,6 @@ pesapi_value pesapi_create_generic1(pesapi_env env, T value, Func createFunc)
     return nullptr;
 }
 
-// value process
-pesapi_value pesapi_create_null(pesapi_env env)
-{
-    return pesapiValueFromQjsValue(&literal_values_null); //避免在Scope上分配
-}
-
-pesapi_value pesapi_create_undefined(pesapi_env env)
-{
-    return pesapiValueFromQjsValue(&literal_values_undefined);
-}
-
-pesapi_value pesapi_create_boolean(pesapi_env env, bool value)
-{
-    return pesapiValueFromQjsValue(value ? &literal_values_true : &literal_values_false);
-}
-
 static inline JSValue JS_NewInt32(int32_t val)
 {
     return JS_MKVAL(JS_TAG_INT, val);
@@ -245,6 +229,22 @@ static inline JSValue JS_NewUInt32(uint32_t val)
         v = JS_NewFloat64((double)val);
     }
     return v;
+}
+
+// value process
+pesapi_value pesapi_create_null(pesapi_env env)
+{
+    return pesapiValueFromQjsValue(&literal_values_null); //避免在Scope上分配
+}
+
+pesapi_value pesapi_create_undefined(pesapi_env env)
+{
+    return pesapiValueFromQjsValue(&literal_values_undefined);
+}
+
+pesapi_value pesapi_create_boolean(pesapi_env env, bool value)
+{
+    return pesapiValueFromQjsValue(value ? &literal_values_true : &literal_values_false);
 }
 
 pesapi_value pesapi_create_int32(pesapi_env env, int32_t value)
