@@ -1,4 +1,4 @@
-# Starting a new JavaScript virtual machine
+# Starting A New JavaScript Virtual Machine
 
 Starting your own virtual machine is essential for executing traditional JavaScript code within puerts.
 
@@ -7,48 +7,8 @@ Example use cases include:
 - Starting an entry point for a complex event loop (Similar to a `main` function)
 
 ## Table Of Contents
-- [Setup](#setup-optional)
 - [Usage](#usage)
 - [API Reference](#api-reference)
-
-## Setup (Optional)
-Puerts is designed to be used with TypeScript however the virtual environment still executes traditional JavaScript files. As such, setting up a working TypeScript environment and then compiling any scripts into JavaScript is highly recommended.
-
-1. Install Node.JS
-
-[![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/en/download)
-
-2. Install TypeScript inside of your project using npm
-
-`npm install typescript`
-
-3. Create a tsconfig.json in your project directory
-
-``` javascript
-// Myproject/tsconfig.json
-
-{
-  "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
-    "experimentalDecorators": true,
-    "jsx": "react",
-    "sourceMap": true,
-    "typeRoots": [
-      "Typing",
-      "./node_modules/@types"
-    ],
-    "outDir": "Content/JavaScript"
-  },
-  "include": [
-    "TypeScript/**/*",
-  ]
-}
-```
-
-4. Create a `TypeScript` folder inside of your project directory to store script files (`MyProject/TypeScript`)
-
-**Note: Compile TypeScript files into usable JavaScript by executing `npx tsc`**
 
 ## Usage
 To start a new JavaScript virtual environment, a suitable entry point should be identified.
@@ -71,7 +31,7 @@ public:
 ```
 ##### TypeScript
 ``` typescript
-// MyProject/TypeScript/PrintHelloWorld.ts
+// YourProject/TypeScript/PrintHelloWorld.ts
 
 console.warn("Hello World!");
 ```
@@ -104,7 +64,7 @@ protected:
 ```
 ##### TypeScript
 ``` typescript
-// MyProject/TypeScript/Entry.ts
+// YourProject/TypeScript/Entry.ts
 
 import * as UE from 'ue'
 import { argv } from "puerts";
@@ -153,7 +113,7 @@ JsEnv->Start("ArgvExample.js",
 ```
 ##### TypeScript
 ``` typescript
-// MyProject/TypeScript/ArgvExample.ts
+// YourProject/TypeScript/ArgvExample.ts
 
 import * as UE from 'ue'
 import { argv } from "puerts";
