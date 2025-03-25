@@ -48,6 +48,8 @@ enum {
 
 #define JS_TAG_IS_FLOAT64(tag) ((unsigned)(tag) == JS_TAG_FLOAT64)
 
+#define SINGLE_ENV (reinterpret_cast<pesapi_env>(2048));
+
 typedef union JSValueUnion {
     int32_t int32;
     double float64;
@@ -164,6 +166,16 @@ struct pesapi_scope__
 		dynamic_alloc_values.clear();
 		setCurrentScope(prev_scope);
 	}
+};
+
+// 在js构造
+struct CallbackInfo {
+	JSValue thisVal;
+	int argc;
+    void* data;
+	JSValue res;
+	JSValue ex;
+    JSValue argv[0];
 };
 
 static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
@@ -706,6 +718,54 @@ void pesapi_update_boxed_value(pesapi_env env, pesapi_value p_boxed_value, pesap
 bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
     return pesapi_is_object(env, value);
+}
+
+int pesapi_get_args_len(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    return info->argc;
+}
+
+pesapi_value pesapi_get_arg(pesapi_callback_info pinfo, int index)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    if (index >= 0 && index < info->argc)
+    {
+        return pesapiValueFromQjsValue(&(info->argv[index]));
+    }
+    else
+    {
+        return pesapiValueFromQjsValue(&literal_values_undefined);
+    }
+}
+
+pesapi_env pesapi_get_env(pesapi_callback_info pinfo)
+{
+    return SINGLE_ENV;
+}
+
+pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    return pesapiValueFromQjsValue(&(info->thisVal));
+}
+
+pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    return pesapiValueFromQjsValue(&(info->thisVal));
+}
+
+void* pesapi_get_userdata(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    return info->data;
+}
+
+void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    info->res = *qjsValueFromPesapiValue(value);
 }
 
 pesapi_open_scope_func g_js_open_scope = nullptr;
