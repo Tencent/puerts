@@ -949,7 +949,71 @@ void** pesapi_get_ref_internal_fields(pesapi_value_ref pvalue_ref, uint32_t* pin
     return &value_ref->internal_fields[0];
 }
 
+// TODO
+pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const char* key)
+{
+    return {};
+}
+
+// TODO
+void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
+{
+}
+
+// TODO
+bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
+{
+    return {};
+}
+
+// TODO
+bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
+{
+    return false;
+}
+
+// TODO
+pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key)
+{
+    return {};
+}
+
+// TODO
+void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+{
     
+}
+
+// TODO
+pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])
+{
+    return {};
+}
+
+// TODO
+pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
+{
+    return {};
+}
+
+// TODO
+pesapi_value pesapi_global(pesapi_env env)
+{
+    return {};
+}
+
+const void* g_env_private = nullptr;
+
+const void* pesapi_get_env_private(pesapi_env env)
+{
+    return g_env_private;
+}
+
+void pesapi_set_env_private(pesapi_env env, const void* ptr)
+{
+    g_env_private = ptr;
+}
+
 } // webglimpl
 } // pesapi
 
@@ -968,6 +1032,9 @@ extern "C"
         api->close_scope_placement = &pesapi::webglimpl::pesapi_close_scope_placement;
         
         api->get_env_from_ref = &pesapi::webglimpl::pesapi_get_env_from_ref;
+        
+        api->get_env_private = &pesapi::webglimpl::pesapi_get_env_private;
+        api->set_env_private = &pesapi::webglimpl::pesapi_set_env_private;
     }
 }
 
