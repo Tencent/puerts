@@ -13,10 +13,11 @@ namespace webglimpl
 enum {
     /* all tags with a reference count are negative */
     JS_TAG_FIRST       = -9, /* first negative tag */
-    JS_TAG_BIG_INT     = -9,
+    JS_TAG_ARRAY       = -9,
     JS_TAG_SYMBOL      = -8,
     JS_TAG_STRING      = -7,
     JS_TAG_BUFFER      = -6,
+    JS_TAG_FUNCTION    = -5,
     JS_TAG_OBJECT      = -1,
 
     JS_TAG_INT         = 0,
@@ -24,11 +25,9 @@ enum {
     JS_TAG_NULL        = 2,
     JS_TAG_UNDEFINED   = 3,
     JS_TAG_UNINITIALIZED = 4,
-    JS_TAG_CATCH_OFFSET = 5,
-    JS_TAG_EXCEPTION   = 6,
-    JS_TAG_FLOAT64     = 7,
-    JS_TAG_INT64       = 8,
-    JS_TAG_UINT64      = 9,
+    JS_TAG_FLOAT64     = 5,
+    JS_TAG_INT64       = 6,
+    JS_TAG_UINT64      = 7,
 };
 
 #define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag, 0 }
@@ -420,15 +419,11 @@ static inline int JS_ToUint64(uint64_t *pres, JSValue val)
 
 static inline int JS_ToFloat64(double *pres, JSValue val)
 {
-    uint32_t tag;
-
-    tag = JS_VALUE_GET_TAG(val);
+    uint32_t tag = JS_VALUE_GET_TAG(val);
     if (tag <= JS_TAG_NULL) {
         *pres = JS_VALUE_GET_INT(val);
-        return 0;
     } else if (JS_TAG_IS_FLOAT64(tag)) {
         *pres = JS_VALUE_GET_FLOAT64(val);
-        return 0;
     } else if (tag == JS_TAG_INT64) {
         *pres = val.u.int64;
     } else if (tag == JS_TAG_UINT64) {
@@ -436,6 +431,13 @@ static inline int JS_ToFloat64(double *pres, JSValue val)
     } else {
         return -1;
     }
+    return 0;
+}
+
+static inline bool JS_IsNumber(JSValue val)
+{
+    uint32_t tag = JS_VALUE_GET_TAG(val);
+    return tag == JS_TAG_INT || JS_TAG_IS_FLOAT64(tag);
 }
 
 // value process
@@ -573,6 +575,91 @@ void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsi
 uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
 {
 	return 0;
+}
+
+bool pesapi_is_null(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_NULL;
+    });
+}
+
+bool pesapi_is_undefined(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_UNDEFINED;
+    });
+}
+
+bool pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_BOOL;
+    });
+}
+
+bool pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, JS_IsNumber);
+}
+
+bool pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, JS_IsNumber);
+}
+
+bool pesapi_is_int64(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_INT64;
+    });
+}
+
+bool pesapi_is_uint64(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_UINT64;
+    });
+}
+
+bool pesapi_is_double(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, JS_IsNumber);
+}
+
+bool pesapi_is_string(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_STRING;
+    });
+}
+
+bool pesapi_is_object(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT;
+    });
+}
+
+bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_FUNCTION;
+    });
+}
+
+bool pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_BUFFER;
+    });
+}
+
+bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
+{
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_ARRAY;
+    });
 }
 
 pesapi_open_scope_func g_js_open_scope = nullptr;
