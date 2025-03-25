@@ -495,16 +495,19 @@ pesapi_value pesapi_create_array(pesapi_env env)
 }
 
 // js那处理，返回index，然后存在JSValue返回
+// TODO
 pesapi_value pesapi_create_object(pesapi_env env)
 {
     return {};
 }
 
+// TODO
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
     return {};
 }
 
+// TODO
 pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 {
     return {};
@@ -538,6 +541,38 @@ uint64_t pesapi_get_value_uint64(pesapi_env env, pesapi_value pvalue)
 double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_get_value_generic<double>(env, pvalue, JS_ToFloat64);
+}
+
+
+const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, char* buf, size_t* bufsize)
+{
+    auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
+    if (JS_TAG_STRING == JS_VALUE_GET_TAG(jsvalue) && bufsize)
+    {
+        *bufsize = jsvalue.len;
+        if (buf != nullptr)
+        {
+            strncpy(buf, jsvalue.u.str, *bufsize);
+        }
+    }
+	return buf;
+}
+
+void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsize)
+{
+    auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
+    if (JS_TAG_BUFFER == JS_VALUE_GET_TAG(jsvalue) && bufsize)
+    {
+        *bufsize = jsvalue.len;
+        return jsvalue.u.ptr;
+    }
+	return nullptr;
+}
+
+// TODO
+uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
+{
+	return 0;
 }
 
 pesapi_open_scope_func g_js_open_scope = nullptr;
