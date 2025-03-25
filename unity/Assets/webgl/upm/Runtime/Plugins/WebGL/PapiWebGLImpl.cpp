@@ -68,16 +68,16 @@ typedef struct JSValue {
     uint32_t len;
 } JSValue;
    
-struct pesapi_scope__;
+struct WebGlScope;
 
-pesapi_scope__* g_scope = nullptr;
+WebGlScope* g_scope = nullptr;
 
-static pesapi_scope__ *getCurrentScope()
+static WebGlScope *getCurrentScope()
 {
 	return g_scope;
 }
 
-static void setCurrentScope(pesapi_scope__ *scope)
+static void setCurrentScope(WebGlScope *scope)
 {
 	g_scope = scope;
 }
@@ -101,11 +101,11 @@ void JS_FreeValue(JSValue v)
     v.u.ptr = nullptr;
 }
 
-struct pesapi_scope__
+struct WebGlScope
 {
     const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 4;
     
-    explicit pesapi_scope__()
+    explicit WebGlScope()
 	{
 		prev_scope = getCurrentScope();
 		setCurrentScope(this);
@@ -113,7 +113,7 @@ struct pesapi_scope__
 		caught = nullptr;
 	}
 
-	pesapi_scope__ *prev_scope;
+	WebGlScope *prev_scope;
 
 	JSValue values[SCOPE_FIX_SIZE_VALUES_SIZE];
 
@@ -149,7 +149,7 @@ struct pesapi_scope__
     }
 
 
-	~pesapi_scope__()
+	~WebGlScope()
 	{
         if (caught)
         {
@@ -197,7 +197,7 @@ struct ValueRef
     void* internal_fields[0];
 };
 
-static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
+static_assert(sizeof(pesapi_scope_memory) >= sizeof(WebGlScope), "sizeof(WebGlScope) > sizeof(pesapi_scope_memory__)");
 
 inline pesapi_value pesapiValueFromQjsValue(JSValue* v)
 {
@@ -823,7 +823,7 @@ pesapi_open_scope_placement_func g_js_open_scope_placement = nullptr;
 
 pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 {
-    auto ret = new pesapi::webglimpl::pesapi_scope__();
+    auto ret = new WebGlScope();
     if (g_js_open_scope_placement)
     {
         g_js_open_scope_placement(penv_ref, (struct pesapi_scope_memory *)ret);
@@ -834,7 +834,7 @@ pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_scope_memory* memory)
 {
     memset(memory, 0, sizeof(struct pesapi_scope_memory));
-    new (memory) pesapi::webglimpl::pesapi_scope__();
+    new (memory) WebGlScope();
     if (g_js_open_scope_placement)
     {
         g_js_open_scope_placement(penv_ref, memory);
@@ -844,14 +844,14 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_
 
 bool pesapi_has_caught(pesapi_scope pscope)
 {
-    auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
+    auto scope = reinterpret_cast<WebGlScope*>(pscope);
     return scope->caught != nullptr;
 }
 
 //TODO
 const char* pesapi_get_exception_as_string(pesapi_scope pscope, bool with_stack)
 {
-    auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
+    auto scope = reinterpret_cast<WebGlScope*>(pscope);
     if (scope->caught != nullptr)
     {
     }
@@ -867,7 +867,7 @@ void pesapi_close_scope(pesapi_scope pscope)
     {
         g_js_close_scope_placement(pscope);
     }
-    auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
+    auto scope = reinterpret_cast<WebGlScope*>(pscope);
     if (!scope)
     {
         return;
@@ -881,12 +881,12 @@ void pesapi_close_scope_placement(pesapi_scope pscope)
     {
         g_js_close_scope_placement(pscope);
     }
-    auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
+    auto scope = reinterpret_cast<WebGlScope*>(pscope);
     if (!scope)
     {
         return;
     }
-    scope->pesapi::webglimpl::pesapi_scope__::~pesapi_scope__();
+    scope->~WebGlScope();
 }
 
 pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, uint32_t internal_field_count)
