@@ -12,33 +12,35 @@ namespace webglimpl
     
 enum {
     /* all tags with a reference count are negative */
-    JS_TAG_FIRST       = -9, /* first negative tag */
-    JS_TAG_ARRAY       = -9,
-    JS_TAG_SYMBOL      = -8,
-    JS_TAG_STRING      = -7,
-    JS_TAG_BUFFER      = -6,
-    JS_TAG_FUNCTION    = -5,
-    JS_TAG_OBJECT      = -1,
-
-    JS_TAG_INT         = 0,
-    JS_TAG_BOOL        = 1,
-    JS_TAG_NULL        = 2,
-    JS_TAG_UNDEFINED   = 3,
+    JS_TAG_FIRST         = -9, /* first negative tag */
+    JS_TAG_STRING        = -9,
+    JS_TAG_BUFFER        = -8,
+    JS_TAG_EXCEPTION     = -7,
+    JS_TAG_ARRAY         = -3,
+    JS_TAG_FUNCTION      = -2,
+    JS_TAG_OBJECT        = -1,
+                         
+    JS_TAG_INT           = 0,
+    JS_TAG_BOOL          = 1,
+    JS_TAG_NULL          = 2,
+    JS_TAG_UNDEFINED     = 3,
     JS_TAG_UNINITIALIZED = 4,
-    JS_TAG_FLOAT64     = 5,
-    JS_TAG_INT64       = 6,
-    JS_TAG_UINT64      = 7,
+    JS_TAG_FLOAT64       = 5,
+    JS_TAG_INT64         = 6,
+    JS_TAG_UINT64        = 7,
 };
 
 #define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag, 0 }
+#define JS_MKPTR(tag, p)   (JSValue){ (JSValueUnion){ .ptr = p }, tag }
 
 /* special values */
 #define JS_NULL      JS_MKVAL(JS_TAG_NULL, 0)
 #define JS_UNDEFINED JS_MKVAL(JS_TAG_UNDEFINED, 0)
 #define JS_FALSE     JS_MKVAL(JS_TAG_BOOL, 0)
 #define JS_TRUE      JS_MKVAL(JS_TAG_BOOL, 1)
-#define JS_EXCEPTION JS_MKVAL(JS_TAG_EXCEPTION, 0)
 #define JS_UNINITIALIZED JS_MKVAL(JS_TAG_UNINITIALIZED, 0)
+
+#define JS_EXCEPTION(str) JS_MKPTR(JS_TAG_EXCEPTION, (void*)str)
 
 #define JS_VALUE_GET_TAG(v) ((int32_t)(v).tag)
 #define JS_VALUE_GET_INT(v) ((v).u.int32)
@@ -87,9 +89,9 @@ struct caught_exception_info
 
 void JS_FreeValue(JSValue v)
 {
-    if (v.tag == JS_TAG_STRING)
+    if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION)
     {
-        delete (const char *)v.u.ptr;
+        delete v.u.str;
     }
     if (v.tag == JS_TAG_BUFFER)
     {
@@ -174,7 +176,6 @@ struct CallbackInfo {
 	int argc;
     void* data;
 	JSValue res;
-	JSValue ex;
     JSValue argv[0];
 };
 
@@ -766,6 +767,13 @@ void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
 {
     auto info = reinterpret_cast<CallbackInfo*>(pinfo);
     info->res = *qjsValueFromPesapiValue(value);
+}
+
+// TODO: msg 扔给js scope更合适
+void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    info->res = JS_EXCEPTION(nullptr);
 }
 
 pesapi_open_scope_func g_js_open_scope = nullptr;
