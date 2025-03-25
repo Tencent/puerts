@@ -180,6 +180,23 @@ struct CallbackInfo {
     JSValue argv[0];
 };
 
+struct ValueRef 
+{
+    explicit ValueRef(JSValue v, uint32_t field_count)
+        : ref_count(1), value_persistent(v), internal_field_count(field_count)
+    {
+    }
+    
+    ~ValueRef()
+    {
+    }
+
+    int ref_count;
+    JSValue value_persistent;
+    uint32_t internal_field_count;
+    void* internal_fields[0];
+};
+
 static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
 
 inline pesapi_value pesapiValueFromQjsValue(JSValue* v)
@@ -770,12 +787,12 @@ void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
     info->res = *qjsValueFromPesapiValue(value);
 }
 
-// TODO: msg 扔给js scope更合适
-void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
-{
-    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
-    info->res = JS_EXCEPTION(nullptr);
-}
+// 由js处理
+//void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
+//{
+//    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+//    info->res = JS_EXCEPTION(nullptr);
+//}
 
 pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
 {
@@ -871,6 +888,67 @@ void pesapi_close_scope_placement(pesapi_scope pscope)
     }
     scope->pesapi::webglimpl::pesapi_scope__::~pesapi_scope__();
 }
+
+pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, uint32_t internal_field_count)
+{
+    size_t totalSize = sizeof(ValueRef) + sizeof(void*) * internal_field_count;
+    auto ret = (pesapi_value_ref)malloc(totalSize);
+    memset(ret, 0, totalSize);
+    // TODO: call unref of js
+    JSValue* v = qjsValueFromPesapiValue(pvalue);
+    new (ret) ValueRef(*v, internal_field_count);
+    return ret;
+}
+
+pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref pvalue_ref)
+{
+    auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
+    ++value_ref->ref_count;
+    return pvalue_ref;
+}
+
+void pesapi_release_value_ref(pesapi_value_ref pvalue_ref)
+{
+    auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
+    if (--value_ref->ref_count == 0)
+    {
+        // TODO: call unref of js
+        value_ref->~ValueRef();
+        free(value_ref);
+    }
+}
+
+pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref pvalue_ref)
+{
+    auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
+    JSValue* v = allocValueInCurrentScope();
+    *v = value_ref->value_persistent;
+    return pesapiValueFromQjsValue(v);
+}
+
+void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref pvalue_ref)
+{
+    auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
+    // TODO: call unref of js
+}
+
+bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
+{
+    return false;
+}
+
+pesapi_env_ref pesapi_get_ref_associated_env(pesapi_value_ref value_ref)
+{
+    return SINGLE_ENV_REF;
+}
+
+void** pesapi_get_ref_internal_fields(pesapi_value_ref pvalue_ref, uint32_t* pinternal_field_count)
+{
+    auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
+    *pinternal_field_count = value_ref->internal_field_count;
+    return &value_ref->internal_fields[0];
+}
+
     
 } // webglimpl
 } // pesapi
@@ -888,6 +966,8 @@ extern "C"
         
         pesapi::webglimpl::g_js_close_scope_placement = api->close_scope_placement;
         api->close_scope_placement = &pesapi::webglimpl::pesapi_close_scope_placement;
+        
+        api->get_env_from_ref = &pesapi::webglimpl::pesapi_get_env_from_ref;
     }
 }
 
