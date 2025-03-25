@@ -50,7 +50,8 @@ enum {
 
 #define JS_TAG_IS_FLOAT64(tag) ((unsigned)(tag) == JS_TAG_FLOAT64)
 
-#define SINGLE_ENV (reinterpret_cast<pesapi_env>(2048));
+#define SINGLE_ENV (reinterpret_cast<pesapi_env>(1024));
+#define SINGLE_ENV_REF (reinterpret_cast<pesapi_env_ref>(2048));
 
 typedef union JSValueUnion {
     int32_t int32;
@@ -774,6 +775,30 @@ void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 {
     auto info = reinterpret_cast<CallbackInfo*>(pinfo);
     info->res = JS_EXCEPTION(nullptr);
+}
+
+pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
+{
+    return SINGLE_ENV_REF;
+}
+
+bool pesapi_env_ref_is_valid(pesapi_env_ref penv_ref)
+{
+    return true; // valid forever
+}
+
+pesapi_env pesapi_get_env_from_ref(pesapi_env_ref penv_ref)
+{
+    return SINGLE_ENV;
+}
+
+pesapi_env_ref pesapi_duplicate_env_ref(pesapi_env_ref penv_ref)
+{
+    return penv_ref;
+}
+
+void pesapi_release_env_ref(pesapi_env_ref penv_ref)
+{
 }
 
 pesapi_open_scope_func g_js_open_scope = nullptr;
