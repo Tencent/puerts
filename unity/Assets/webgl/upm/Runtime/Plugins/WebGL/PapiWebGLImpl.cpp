@@ -801,19 +801,18 @@ void pesapi_release_env_ref(pesapi_env_ref penv_ref)
 {
 }
 
-pesapi_open_scope_func g_js_open_scope = nullptr;
+//pesapi_open_scope_func g_js_open_scope = nullptr;
+pesapi_open_scope_placement_func g_js_open_scope_placement = nullptr;
 
 pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 {
     auto ret = new pesapi::webglimpl::pesapi_scope__();
-    if (g_js_open_scope)
+    if (g_js_open_scope_placement)
     {
-        g_js_open_scope(penv_ref);
+        g_js_open_scope_placement(penv_ref, (struct pesapi_scope_memory *)ret);
     }
     return reinterpret_cast<pesapi_scope>(ret);
 }
-
-pesapi_open_scope_placement_func g_js_open_scope_placement = nullptr;
 
 pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_scope_memory* memory)
 {
@@ -826,13 +825,30 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_
     return reinterpret_cast<pesapi_scope>(memory);
 }
 
-pesapi_close_scope_func g_js_close_scope;
+bool pesapi_has_caught(pesapi_scope pscope)
+{
+    auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
+    return scope->caught != nullptr;
+}
+
+//TODO
+const char* pesapi_get_exception_as_string(pesapi_scope pscope, bool with_stack)
+{
+    auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
+    if (scope->caught != nullptr)
+    {
+    }
+    return nullptr;
+}
+
+//pesapi_close_scope_func g_js_close_scope;
+pesapi_close_scope_placement_func g_js_close_scope_placement = nullptr;
 
 void pesapi_close_scope(pesapi_scope pscope)
 {
-    if (g_js_close_scope)
+    if (g_js_close_scope_placement)
     {
-        g_js_close_scope(pscope);
+        g_js_close_scope_placement(pscope);
     }
     auto scope = reinterpret_cast<pesapi::webglimpl::pesapi_scope__*>(pscope);
     if (!scope)
@@ -841,8 +857,6 @@ void pesapi_close_scope(pesapi_scope pscope)
     }
     delete scope;
 }
-
-pesapi_close_scope_placement_func g_js_close_scope_placement = nullptr;
 
 void pesapi_close_scope_placement(pesapi_scope pscope)
 {
@@ -865,13 +879,11 @@ extern "C"
 {
     void DoInjectPapi(struct pesapi_ffi* api)
     {
-        pesapi::webglimpl::g_js_open_scope = api->open_scope;
         api->open_scope = &pesapi::webglimpl::pesapi_open_scope;
         
         pesapi::webglimpl::g_js_open_scope_placement= api->open_scope_placement;
         api->open_scope_placement = &pesapi::webglimpl::pesapi_open_scope_placement;
         
-        pesapi::webglimpl::g_js_close_scope = api->close_scope;
         api->close_scope = &pesapi::webglimpl::pesapi_close_scope;
         
         pesapi::webglimpl::g_js_close_scope_placement = api->close_scope_placement;
