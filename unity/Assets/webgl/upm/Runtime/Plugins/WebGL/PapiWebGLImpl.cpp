@@ -16,8 +16,7 @@ enum {
     JS_TAG_BIG_INT     = -9,
     JS_TAG_SYMBOL      = -8,
     JS_TAG_STRING      = -7,
-    JS_TAG_MODULE      = -3, /* used internally */
-    JS_TAG_FUNCTION_BYTECODE = -2, /* used internally */
+    JS_TAG_BUFFER      = -6,
     JS_TAG_OBJECT      = -1,
 
     JS_TAG_INT         = 0,
@@ -32,7 +31,7 @@ enum {
     JS_TAG_UINT64      = 9,
 };
 
-#define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag }
+#define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag, 0 }
 
 /* special values */
 #define JS_NULL      JS_MKVAL(JS_TAG_NULL, 0)
@@ -48,11 +47,13 @@ typedef union JSValueUnion {
     int64_t int64;
     uint64_t uint64;
     void *ptr;
+    const char *str;
 } JSValueUnion;
 
 typedef struct JSValue {
     JSValueUnion u;
-    int64_t tag;
+    int32_t tag;
+    uint32_t len;
 } JSValue;
    
 struct pesapi_scope__;
@@ -74,6 +75,19 @@ struct caught_exception_info
     JSValue exception = JS_UNDEFINED;
     std::string message;
 };
+
+void JS_FreeValue(JSValue v)
+{
+    if (v.tag == JS_TAG_STRING)
+    {
+        delete (const char *)v.u.ptr;
+    }
+    if (v.tag == JS_TAG_BUFFER)
+    {
+        delete (uint8_t *)v.u.ptr;
+    }
+    v.u.ptr = nullptr;
+}
 
 struct pesapi_scope__
 {
@@ -127,14 +141,17 @@ struct pesapi_scope__
 	{
         if (caught)
         {
+            JS_FreeValue(caught->exception);
             delete caught;
         }
 		for (size_t i = 0; i < values_used; i++)
 		{
+            JS_FreeValue(values[i]);
 		}
 
 		for (size_t i = 0; i < dynamic_alloc_values.size(); i++)
 		{
+            JS_FreeValue(*dynamic_alloc_values[i]);
 			free(dynamic_alloc_values[i]);
 		}
 		dynamic_alloc_values.clear();
@@ -191,6 +208,19 @@ pesapi_value pesapi_create_generic1(pesapi_env env, T value, Func createFunc)
     return nullptr;
 }
 
+template<typename T1, typename T2, typename Func>
+pesapi_value pesapi_create_generic2(pesapi_env env, T1 v1, T2 v2, Func createFunc)
+{
+    (void)env;
+    auto ret = allocValueInCurrentScope();
+    if (ret)
+    {
+        *ret = createFunc(v1, v2);
+        return pesapiValueFromQjsValue(ret);
+    }
+    return nullptr;
+}
+
 static inline JSValue JS_NewInt32(int32_t val)
 {
     return JS_MKVAL(JS_TAG_INT, val);
@@ -228,6 +258,25 @@ static inline JSValue JS_NewUInt32(uint32_t val)
     } else {
         v = JS_NewFloat64((double)val);
     }
+    return v;
+}
+
+
+JSValue JS_NewStringLen(const char *str, uint32_t str_len)
+{
+    JSValue v;
+    v.tag = JS_TAG_STRING;
+    v.len = str_len;
+    v.u.str = str;
+    return v;
+}
+
+JSValue JS_NewBufferLen(void *buf, uint32_t buf_len)
+{
+    JSValue v;
+    v.tag = JS_TAG_BUFFER;
+    v.len = buf_len;
+    v.u.ptr = buf;
     return v;
 }
 
@@ -270,6 +319,16 @@ pesapi_value pesapi_create_uint64(pesapi_env env, uint64_t value)
 pesapi_value pesapi_create_double(pesapi_env env, double value)
 {
     return pesapi_create_generic1(env, value, JS_NewFloat64);
+}
+
+pesapi_value pesapi_create_string_utf8(pesapi_env env, const char *str, size_t length)
+{
+    return pesapi_create_generic2(env, str, length, JS_NewStringLen);
+}
+
+pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
+{
+    return pesapi_create_generic2(env, bin, length, JS_NewBufferLen);
 }
 
 pesapi_open_scope_func g_js_open_scope = nullptr;
