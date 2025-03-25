@@ -11,6 +11,7 @@ Through a self-starting virtual machine, launched by `PuertsModule`, automatic b
 - [Setup](#setup)
 - [Usage](#usage)
 - [API Reference](#api-reference)
+- [Starting A New Virtual Machine](#starting-a-new-virtual-machine)
 
 ## Setup
 To get started, execute the following NodeJS command inside of the puerts plugin directory. (`YourProject/Plugins/Puerts`)
@@ -70,7 +71,7 @@ Now it should be available inside of Unreal Engine!
 - [Decorators](#decorators)
 
 ### Format
-For a TypeScript class to be recognised by Unreal Engine it must meet the following requirements:
+For a TypeScript class to be recognized by Unreal Engine it must meet the following requirements:
 
 - The class extends a U.E class (e.g UE.Character, UE.Actor, e.t.c)
 - The file name, class name and default export must all match (e.g TS_Player)
@@ -103,11 +104,11 @@ export default MyTestActor;
 #### Notes
 - Some inherited U.E functions, such as `CreateDefaultSubObject` must be called in the constructor.
 - If a TypeScript class overrides the Constructor, initialization of any U.E supported member variables will be taken over by TypeScript. Changing them inside of the editor will not take effect.
-- Initialization of variables not recognised by U.E is not supported within the overrided Constructor. This includes variables annotated with `@no-blueprint`. ([Supported Types](#data-types))
+- Initialization of variables not recognized by U.E is not supported within the overrided Constructor. This includes variables annotated with `@no-blueprint`. ([Supported Types](#data-types))
 - You cannot reserve new JS resources, such as creating a lambda closure, within the Constructor. It will overload the virtual machine and cause unexpected resource issues.
 
 ### Data Types
-The list of data types recognised by Unreal Engine are as follows:
+The list of data types recognized by Unreal Engine are as follows:
 
 | Type |
 | :---: |
@@ -129,9 +130,9 @@ The list of data types recognised by Unreal Engine are as follows:
 **Note: All functions must return one of the above types. If a function does not declare a return type, it is equivalent to returning `any` which is not supported.**
 
 ### Annotations
-Data annotations help to fine tune the translation between TypeScript and C++. 
+Data annotations help to fine-tune the translation between TypeScript and C++. 
 
-Since Unreal Engine has more descriptive types compared to TypeScript (i.e. `number` represent's the same logical ideas as `byte`, `int`, `float`, and `double`), is it nessesary that Puerts can appropriately translate the correct types into C++.
+Since Unreal Engine has more descriptive types compared to TypeScript (i.e. `number` represents the same logical ideas as `byte`, `int`, `float`, and `double`), is it necessary that Puerts can appropriately translate the correct types into C++.
 
 ``` typescript
 import * as UE from 'ue'
@@ -308,3 +309,6 @@ export default MyTestActor;
 | `COND_SimulatedOrPhysicsNoReplay` | This property will send to simulated Or bRepPhysics actors, but not to replay connections |
 | `COND_SkipReplay` | This property will not send to the replay connection |
 | `COND_Never` | This property will never be replicated |
+
+## Starting A New Virtual Machine
+Now that automatic binding mode has been set up, it's important to know how to [start your own JavaScript virtual machine](./start_a_virtual_machine.md).
