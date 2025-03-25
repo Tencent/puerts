@@ -662,6 +662,52 @@ bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
     });
 }
 
+// TODO
+pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize)
+{
+    return {};
+}
+
+// TODO
+void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
+{
+    return {};
+}
+
+// TODO
+const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
+{
+    return {};
+}
+
+// TODO
+bool pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
+{
+    return false;
+}
+
+// TODO
+pesapi_value pesapi_boxing(pesapi_env env, pesapi_value pvalue)
+{
+    return {};
+}
+
+// TODO
+pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value p_boxed_value)
+{
+    return {};
+}
+
+// TODO
+void pesapi_update_boxed_value(pesapi_env env, pesapi_value p_boxed_value, pesapi_value pvalue)
+{
+}
+
+bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
+{
+    return pesapi_is_object(env, value);
+}
+
 pesapi_open_scope_func g_js_open_scope = nullptr;
 
 pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
