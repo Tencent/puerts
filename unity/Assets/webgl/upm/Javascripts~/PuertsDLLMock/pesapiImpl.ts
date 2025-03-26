@@ -9,6 +9,7 @@ type pesapi_function_finalize = number;
 type pesapi_callback_info = number;
 type pesapi_env_ref = number;
 type pesapi_value_ref = number;
+type pesapi_class_not_found_callback = number;
 
 enum JSTag {
     /* all tags with a reference count are negative */
@@ -29,6 +30,8 @@ enum JSTag {
     JS_TAG_INT64         = 6,
     JS_TAG_UINT64        = 7,
 }
+
+let class_not_found_callback: pesapi_class_not_found_callback = undefined;
 
 class Scope {
     private static current: Scope = undefined;
@@ -570,8 +573,8 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
         pesapi_get_class_data: function() {
             throw new Error("pesapi_get_class_data not implemented yet!");
         },
-        pesapi_on_class_not_found: function() {
-            throw new Error("pesapi_on_class_not_found not implemented yet!");
+        pesapi_on_class_not_found: function(callback: pesapi_class_not_found_callback) {
+            class_not_found_callback = callback;
         },
         pesapi_set_method_info: function() {
             throw new Error("pesapi_set_method_info not implemented yet!");
