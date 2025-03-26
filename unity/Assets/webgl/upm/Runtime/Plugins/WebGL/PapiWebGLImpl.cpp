@@ -969,11 +969,11 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, ui
     return {};
 }
 
-// TODO
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
-{
-    
-}
+// implement by js
+//void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+//{
+//    
+//}
 
 // TODO
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])

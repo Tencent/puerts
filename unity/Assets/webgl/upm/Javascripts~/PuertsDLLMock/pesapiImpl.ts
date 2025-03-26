@@ -408,7 +408,12 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_get_property_uint32 not implemented yet!");
     }
     function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
-        throw new Error("pesapi_set_property_uint32 not implemented yet!");
+        const obj = Scope.getCurrent().toJs(engine, pobject);
+        if (typeof obj != 'object') {
+            throw new Error("pesapi_set_property: target is not an object");
+        }
+        const value = Scope.getCurrent().toJs(engine, pvalue);
+        obj[key] = value;
     }
 
     // --------------- 函数调用/执行 ---------------
