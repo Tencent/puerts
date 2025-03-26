@@ -1,4 +1,5 @@
 import { PuertsJSEngine } from "./library";
+import *  as Buffer from "./buffer"
 
 type pesapi_env = number;
 type pesapi_value = number;
@@ -8,6 +9,104 @@ type pesapi_function_finalize = number;
 type pesapi_callback_info = number;
 type pesapi_env_ref = number;
 type pesapi_value_ref = number;
+type pesapi_class_not_found_callback = number;
+
+enum JSTag {
+    /* all tags with a reference count are negative */
+    JS_TAG_FIRST         = -9, /* first negative tag */
+    JS_TAG_STRING        = -9,
+    JS_TAG_BUFFER        = -8,
+    JS_TAG_EXCEPTION     = -7,
+    JS_TAG_ARRAY         = -3,
+    JS_TAG_FUNCTION      = -2,
+    JS_TAG_OBJECT        = -1,
+                         
+    JS_TAG_INT           = 0,
+    JS_TAG_BOOL          = 1,
+    JS_TAG_NULL          = 2,
+    JS_TAG_UNDEFINED     = 3,
+    JS_TAG_UNINITIALIZED = 4,
+    JS_TAG_FLOAT64       = 5,
+    JS_TAG_INT64         = 6,
+    JS_TAG_UINT64        = 7,
+}
+
+let class_not_found_callback: pesapi_class_not_found_callback = undefined;
+
+class Scope {
+    private static current: Scope = undefined;
+
+    public static getCurrent(): Scope {
+        return Scope.current;
+    }
+
+    public static enter(): Scope {
+        return new Scope();
+    }
+
+    public static exit(): void {
+        Scope.current.close();
+    }
+
+    constructor() {
+        this.prevScope = Scope.current;
+        Scope.current = this;
+    }
+
+    close(): void {
+        Scope.current = this.prevScope;
+    }
+
+    addToScope(obj: object): number {
+        this.objectsInScope.push(obj);
+        return this.objectsInScope.length - 1;
+    }
+
+    getFromScope(index: number): object {
+        return this.objectsInScope[index];
+    }
+
+    toJs(engine: PuertsJSEngine, pvalue: pesapi_value) : any {
+        const valType = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 8);
+        if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
+            const objIdx = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+            return this.objectsInScope[objIdx];
+        }
+        switch(valType) {
+            case JSTag.JS_TAG_BOOL:
+                return Buffer.readInt32(engine.unityApi.HEAPU8, pvalue) != 0;
+            case JSTag.JS_TAG_INT:
+                return Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_NULL:
+                return null;
+            case JSTag.JS_TAG_FLOAT64:
+                return Buffer.readDouble(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_INT64:
+                return Buffer.readInt64(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_UINT64:
+                return Buffer.readUInt64(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_STRING:
+                return engine.unityApi.UTF8ToString(pvalue as any);
+            case JSTag.JS_TAG_BUFFER:
+                const buffStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+                const buffLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 12);
+                return engine.unityApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
+        }
+    }
+
+    private prevScope: Scope = undefined;
+
+    private objectsInScope: object[] = [];
+}
+
+function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: bool, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
+    return function (...args: any[]) {
+        if (new.target) {
+            throw new Error('"not a constructor');
+        }
+        throw new Error("NativeFunctionWrap not implemented yet!");
+    }
+}
 
 
 let webglFFI:number = undefined;
@@ -68,7 +167,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         data: number, 
         finalize: pesapi_function_finalize
     ): pesapi_value {
-        throw new Error("pesapi_create_function not implemented yet!");
+        return Scope.getCurrent().addToScope(makeNativeFunctionWrap(engine, false, native_impl, data, finalize));
     }
 
     function pesapi_create_class(env: pesapi_env, type_id: number): pesapi_value {
@@ -243,10 +342,12 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // --------------- 作用域管理 ---------------
     function pesapi_open_scope(penv_ref: pesapi_env_ref): pesapi_scope { 
-        throw new Error("pesapi_open_scope not implemented yet!");
+        Scope.enter();
+        return null;
     }
     function pesapi_open_scope_placement(penv_ref: pesapi_env_ref, memory: number): pesapi_scope { 
-        throw new Error("pesapi_open_scope_placement not implemented yet!");
+        Scope.enter();
+        return null;
     }
     function pesapi_has_caught(pscope: pesapi_scope): boolean { 
         throw new Error("pesapi_has_caught not implemented yet!");
@@ -255,10 +356,10 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_get_exception_as_string not implemented yet!");
     }
     function pesapi_close_scope(pscope: pesapi_scope): void {
-        throw new Error("pesapi_close_scope not implemented yet!");
+        Scope.exit();
     }
     function pesapi_close_scope_placement(pscope: pesapi_scope): void {
-        throw new Error("pesapi_close_scope_placement not implemented yet!");
+        Scope.exit();
     }
 
     // --------------- 值引用 ---------------
@@ -288,11 +389,17 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
 
     // --------------- 属性操作 ---------------
-    function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, key: string): pesapi_value { 
+    function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, key: CSString): pesapi_value { 
         throw new Error("pesapi_get_property not implemented yet!");
     }
-    function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, key: string, pvalue: pesapi_value): void {
-        throw new Error("pesapi_set_property not implemented yet!");
+    function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void {
+        const obj = Scope.getCurrent().toJs(engine, pobject);
+        if (typeof obj != 'object') {
+            throw new Error("pesapi_set_property: target is not an object");
+        }
+        const key = engine.unityApi.UTF8ToString(pkey);
+        const value = Scope.getCurrent().toJs(engine, pvalue);
+        obj[key] = value;
     }
     function pesapi_get_private(env: pesapi_env, pobject: pesapi_value, out_ptr: number): boolean { 
         throw new Error("pesapi_get_private not implemented yet!");
@@ -304,7 +411,12 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_get_property_uint32 not implemented yet!");
     }
     function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
-        throw new Error("pesapi_set_property_uint32 not implemented yet!");
+        const obj = Scope.getCurrent().toJs(engine, pobject);
+        if (typeof obj != 'object') {
+            throw new Error("pesapi_set_property: target is not an object");
+        }
+        const value = Scope.getCurrent().toJs(engine, pvalue);
+        obj[key] = value;
     }
 
     // --------------- 函数调用/执行 ---------------
@@ -324,7 +436,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // --------------- 全局对象 ---------------
     function pesapi_global(env: pesapi_env): pesapi_value { 
-        throw new Error("pesapi_global not implemented yet!");
+        return Scope.getCurrent().addToScope(globalThis);
     }
 
     // --------------- 环境私有数据 ---------------
@@ -461,8 +573,8 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
         pesapi_get_class_data: function() {
             throw new Error("pesapi_get_class_data not implemented yet!");
         },
-        pesapi_on_class_not_found: function() {
-            throw new Error("pesapi_on_class_not_found not implemented yet!");
+        pesapi_on_class_not_found: function(callback: pesapi_class_not_found_callback) {
+            class_not_found_callback = callback;
         },
         pesapi_set_method_info: function() {
             throw new Error("pesapi_set_method_info not implemented yet!");
