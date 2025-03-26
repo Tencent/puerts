@@ -1,4 +1,5 @@
 import { PuertsJSEngine } from "./library";
+import *  as Buffer from "./buffer"
 
 type pesapi_env = number;
 type pesapi_value = number;
@@ -8,6 +9,26 @@ type pesapi_function_finalize = number;
 type pesapi_callback_info = number;
 type pesapi_env_ref = number;
 type pesapi_value_ref = number;
+
+enum JSTag {
+    /* all tags with a reference count are negative */
+    JS_TAG_FIRST         = -9, /* first negative tag */
+    JS_TAG_STRING        = -9,
+    JS_TAG_BUFFER        = -8,
+    JS_TAG_EXCEPTION     = -7,
+    JS_TAG_ARRAY         = -3,
+    JS_TAG_FUNCTION      = -2,
+    JS_TAG_OBJECT        = -1,
+                         
+    JS_TAG_INT           = 0,
+    JS_TAG_BOOL          = 1,
+    JS_TAG_NULL          = 2,
+    JS_TAG_UNDEFINED     = 3,
+    JS_TAG_UNINITIALIZED = 4,
+    JS_TAG_FLOAT64       = 5,
+    JS_TAG_INT64         = 6,
+    JS_TAG_UINT64        = 7,
+}
 
 class Scope {
     private static current: Scope = undefined;
@@ -40,6 +61,34 @@ class Scope {
 
     getFromScope(index: number): object {
         return this.objectsInScope[index];
+    }
+
+    toJs(engine: PuertsJSEngine, pvalue: pesapi_value) : any {
+        const valType = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 8);
+        if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
+            const objIdx = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+            return this.objectsInScope[objIdx];
+        }
+        switch(valType) {
+            case JSTag.JS_TAG_BOOL:
+                return Buffer.readInt32(engine.unityApi.HEAPU8, pvalue) != 0;
+            case JSTag.JS_TAG_INT:
+                return Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_NULL:
+                return null;
+            case JSTag.JS_TAG_FLOAT64:
+                return Buffer.readDouble(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_INT64:
+                return Buffer.readInt64(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_UINT64:
+                return Buffer.readUInt64(engine.unityApi.HEAPU8, pvalue);
+            case JSTag.JS_TAG_STRING:
+                return engine.unityApi.UTF8ToString(pvalue as any);
+            case JSTag.JS_TAG_BUFFER:
+                const buffStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+                const buffLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 12);
+                return engine.unityApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
+        }
     }
 
     private prevScope: Scope = undefined;
@@ -337,11 +386,17 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
 
     // --------------- 属性操作 ---------------
-    function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, key: string): pesapi_value { 
+    function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, key: CSString): pesapi_value { 
         throw new Error("pesapi_get_property not implemented yet!");
     }
-    function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, key: string, pvalue: pesapi_value): void {
-        throw new Error("pesapi_set_property not implemented yet!");
+    function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void {
+        const obj = Scope.getCurrent().toJs(engine, pobject);
+        if (typeof obj != 'object') {
+            throw new Error("pesapi_set_property: target is not an object");
+        }
+        const key = engine.unityApi.UTF8ToString(pkey);
+        const value = Scope.getCurrent().toJs(engine, pvalue);
+        obj[key] = value;
     }
     function pesapi_get_private(env: pesapi_env, pobject: pesapi_value, out_ptr: number): boolean { 
         throw new Error("pesapi_get_private not implemented yet!");

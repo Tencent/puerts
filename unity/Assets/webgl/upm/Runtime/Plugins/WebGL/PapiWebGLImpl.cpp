@@ -946,10 +946,10 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const cha
     return {};
 }
 
-// TODO
-void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
-{
-}
+// implement by js
+//void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
+//{
+//}
 
 // TODO
 bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
