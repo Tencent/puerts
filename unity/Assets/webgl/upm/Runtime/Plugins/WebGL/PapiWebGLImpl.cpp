@@ -173,7 +173,8 @@ struct WebGlScope
 
 // 在js构造
 struct CallbackInfo {
-	JSValue thisVal;
+    //JSValue thisVal;
+	void* thisPtr;
 	int argc;
     void* data;
 	JSValue res;
@@ -754,17 +755,18 @@ pesapi_env pesapi_get_env(pesapi_callback_info pinfo)
     return SINGLE_ENV;
 }
 
-pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
+void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<CallbackInfo*>(pinfo);
-    return pesapiValueFromQjsValue(&(info->thisVal));
+    return info->thisPtr;
 }
 
-pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
-{
-    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
-    return pesapiValueFromQjsValue(&(info->thisVal));
-}
+// webgl不用这个api
+//pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
+//{
+//    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+//    return pesapiValueFromQjsValue(&(info->thisVal));
+//}
 
 void* pesapi_get_userdata(pesapi_callback_info pinfo)
 {

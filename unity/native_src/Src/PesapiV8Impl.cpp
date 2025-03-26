@@ -440,10 +440,10 @@ PESAPI_EXTERN pesapi_env pesapi_get_env(pesapi_callback_info pinfo)
     return v8impl::PesapiEnvFromV8LocalContext((*info).GetIsolate()->GetCurrentContext());
 }
 
-pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
+void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
-    return v8impl::PesapiValueFromV8LocalValue((*info).This());
+    return puerts::DataTransfer::GetPointerFast<void>((*info).Holder());
 }
 
 pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
@@ -866,7 +866,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_get_args_len,
     &pesapi_get_arg,
     &pesapi_get_env,
-    &pesapi_get_this,
+    &pesapi_get_native_holder_ptr,
     &pesapi_get_holder,
     &pesapi_get_userdata,
     &pesapi_add_return,

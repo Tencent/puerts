@@ -307,8 +307,8 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_get_env(pinfo: pesapi_callback_info): pesapi_env { 
         throw new Error("pesapi_get_env not implemented yet!");
     }
-    function pesapi_get_this(pinfo: pesapi_callback_info): pesapi_value { 
-        throw new Error("pesapi_get_this not implemented yet!");
+    function pesapi_get_native_holder_ptr(pinfo: pesapi_callback_info): pesapi_value { 
+        throw new Error("pesapi_get_native_holder_ptr not implemented yet!");
     }
     function pesapi_get_holder(pinfo: pesapi_callback_info): pesapi_value { 
         throw new Error("pesapi_get_holder not implemented yet!");
@@ -505,7 +505,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_get_args_len, sig: "ii"},
         {func: pesapi_get_arg, sig: "iii"},
         {func: pesapi_get_env, sig: "ii"},
-        {func: pesapi_get_this, sig: "ii"},
+        {func: pesapi_get_native_holder_ptr, sig: "ii"},
         {func: pesapi_get_holder, sig: "ii"},
         {func: pesapi_get_userdata, sig: "ii"},
         {func: pesapi_add_return, sig: "vii"},
