@@ -373,7 +373,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // --------------- 全局对象 ---------------
     function pesapi_global(env: pesapi_env): pesapi_value { 
-        throw new Error("pesapi_global not implemented yet!");
+        return Scope.getCurrent().addToScope(globalThis);
     }
 
     // --------------- 环境私有数据 ---------------

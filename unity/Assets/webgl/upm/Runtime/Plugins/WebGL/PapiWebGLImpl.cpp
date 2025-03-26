@@ -987,10 +987,13 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     return {};
 }
 
-// TODO
+pesapi_global_func g_js_global = nullptr;
+
 pesapi_value pesapi_global(pesapi_env env)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    *ret = JS_MKPTR(JS_TAG_OBJECT, g_js_global(env));
+    return pesapiValueFromQjsValue(ret);
 }
 
 const void* g_env_private = nullptr;
@@ -1029,6 +1032,9 @@ extern "C"
         
         pesapi::webglimpl::g_js_create_function = api->create_function;
         api->create_function = &pesapi::webglimpl::pesapi_create_function;
+        
+        pesapi::webglimpl::g_js_global = api->global;
+        api->global = &pesapi::webglimpl::pesapi_global;
     }
 }
 
