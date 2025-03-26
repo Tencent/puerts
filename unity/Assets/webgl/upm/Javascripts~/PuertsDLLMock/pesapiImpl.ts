@@ -33,7 +33,27 @@ class Scope {
         Scope.current = this.prevScope;
     }
 
+    addToScope(obj: object): number {
+        this.objectsInScope.push(obj);
+        return this.objectsInScope.length - 1;
+    }
+
+    getFromScope(index: number): object {
+        return this.objectsInScope[index];
+    }
+
     private prevScope: Scope = undefined;
+
+    private objectsInScope: object[] = [];
+}
+
+function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: bool, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
+    return function (...args: any[]) {
+        if (new.target) {
+            throw new Error('"not a constructor');
+        }
+        throw new Error("NativeFunctionWrap not implemented yet!");
+    }
 }
 
 
@@ -95,7 +115,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         data: number, 
         finalize: pesapi_function_finalize
     ): pesapi_value {
-        throw new Error("pesapi_create_function not implemented yet!");
+        return Scope.getCurrent().addToScope(makeNativeFunctionWrap(engine, false, native_impl, data, finalize));
     }
 
     function pesapi_create_class(env: pesapi_env, type_id: number): pesapi_value {

@@ -225,12 +225,8 @@ pesapi_value pesapi_create_generic0(pesapi_env env, Func createFunc)
 {
     (void)env;
     auto ret = allocValueInCurrentScope();
-    if (ret)
-    {
-        *ret = createFunc();
-        return pesapiValueFromQjsValue(ret);
-    }
-    return nullptr;
+    *ret = createFunc();
+    return pesapiValueFromQjsValue(ret);
 }
 
 template<typename T, typename Func>
@@ -238,12 +234,8 @@ pesapi_value pesapi_create_generic1(pesapi_env env, T value, Func createFunc)
 {
     (void)env;
     auto ret = allocValueInCurrentScope();
-    if (ret)
-    {
-        *ret = createFunc(value);
-        return pesapiValueFromQjsValue(ret);
-    }
-    return nullptr;
+    *ret = createFunc(value);
+    return pesapiValueFromQjsValue(ret);
 }
 
 template<typename T1, typename T2, typename Func>
@@ -251,12 +243,8 @@ pesapi_value pesapi_create_generic2(pesapi_env env, T1 v1, T2 v2, Func createFun
 {
     (void)env;
     auto ret = allocValueInCurrentScope();
-    if (ret)
-    {
-        *ret = createFunc(v1, v2);
-        return pesapiValueFromQjsValue(ret);
-    }
-    return nullptr;
+    *ret = createFunc(v1, v2);
+    return pesapiValueFromQjsValue(ret);
 }
 
 template<typename T, typename Func>
@@ -534,10 +522,13 @@ pesapi_value pesapi_create_object(pesapi_env env)
     return {};
 }
 
-// TODO
+pesapi_create_function_func g_js_create_function = nullptr;
+
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    *ret = JS_MKPTR(JS_TAG_FUNCTION, g_js_create_function(env, native_impl, data, finalize));
+    return pesapiValueFromQjsValue(ret);
 }
 
 // TODO
@@ -1035,6 +1026,9 @@ extern "C"
         
         api->get_env_private = &pesapi::webglimpl::pesapi_get_env_private;
         api->set_env_private = &pesapi::webglimpl::pesapi_set_env_private;
+        
+        pesapi::webglimpl::g_js_create_function = api->create_function;
+        api->create_function = &pesapi::webglimpl::pesapi_create_function;
     }
 }
 
