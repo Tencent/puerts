@@ -99,7 +99,7 @@ class Scope {
 
     private prevScope: Scope = undefined;
 
-    private objectsInScope: object[] = [];
+    private objectsInScope: object[] = [null]; // 加null为了index从1开始，因为在原生种存放在指针字段防止误判为nullptr
 }
 
 class ObjectPool {
@@ -224,8 +224,21 @@ class ClassRegister {
         }
     }
 
-    public registerClass(typeId: number, cls: Function): void {
+    public registerClass(typeId: number, cls: Function, clsData: number): void {
+        // Store class data in non-enumerable property
+        Object.defineProperty(cls, '$ClassData', {
+            value: clsData,
+            writable: false,
+            enumerable: false,
+            configurable: false
+        });
+        
         this.typeIdToClass.set(typeId, cls);
+    }
+
+    public getClassDataById(typeId: number, forceLoad: boolean): number | undefined {
+        const cls = forceLoad ? this.loadClassById(typeId) : this.findClassById(typeId);
+        return cls ? (cls as any).$ClassData : 0;
     }
 
     public findClassById(typeId: number): Function | undefined {
@@ -738,8 +751,8 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
         pesapi_define_class: function() {
             throw new Error("pesapi_define_class not implemented yet!");
         },
-        pesapi_get_class_data: function() {
-            throw new Error("pesapi_get_class_data not implemented yet!");
+        pesapi_get_class_data: function(typeId: number, forceLoad: boolean) : number {
+            return ClassRegister.getInstance().getClassDataById(typeId, forceLoad);
         },
         pesapi_on_class_not_found: function(callbackPtr: pesapi_class_not_found_callback) {
             ClassRegister.getInstance().setClassNotFoundCallback((typeId: number) : boolean => {
