@@ -101,6 +101,13 @@ class Scope {
 
 class ObjectPool {
     private storage = new Map<number, [WeakRef<object>, number, boolean]>();
+    private gcIterator: IterableIterator<number>;
+    private gcTimeout: number | null = null;
+    private isGcRunning = false;
+
+    // GC configuration defaults
+    private gcBatchSize = 100;
+    private gcIntervalMs = 50;
 
     private cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void = undefined;
 
@@ -137,9 +144,54 @@ class ObjectPool {
         for (const [objId] of this.storage) {
             this.get(objId);
         }
+        // Only reset iterator if GC is running to maintain iteration state
+        if (this.isGcRunning) {
+            this.gcIterator = this.storage.keys();
+        }
     }
 
+    // Start incremental garbage collection with configurable parameters
+    startIncrementalGc(batchSize: number = 100, intervalMs: number = 50): void {
+        if (this.isGcRunning) return;
+        
+        this.isGcRunning = true;
+        this.gcBatchSize = Math.max(1, batchSize);
+        this.gcIntervalMs = Math.max(0, intervalMs);
+        this.gcIterator = this.storage.keys();
+        this.processGcBatch();
+    }
 
+    // Stop incremental garbage collection
+    stopIncrementalGc(): void {
+        this.isGcRunning = false;
+        if (this.gcTimeout) {
+            clearTimeout(this.gcTimeout);
+            this.gcTimeout = null;
+        }
+    }
+
+    private processGcBatch(): void {
+        if (!this.isGcRunning) return;
+
+        let processed = 0;
+        let next = this.gcIterator.next();
+        
+        while (!next.done && processed < this.gcBatchSize) {
+            this.get(next.value);
+            processed++;
+            next = this.gcIterator.next();
+        }
+
+        if (next.done) {
+            // Restart iterator for next round
+            this.gcIterator = this.storage.keys();
+        }
+        
+        this.gcTimeout = setTimeout(
+            () => this.processGcBatch(), 
+            this.gcIntervalMs
+        ) as unknown as number;
+    }
 }
 
 function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: bool, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
