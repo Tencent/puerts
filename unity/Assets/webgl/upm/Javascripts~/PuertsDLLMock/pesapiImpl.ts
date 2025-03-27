@@ -99,6 +99,49 @@ class Scope {
     private objectsInScope: object[] = [];
 }
 
+class ObjectPool {
+    private storage = new Map<number, [WeakRef<object>, number, boolean]>();
+
+    private cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void = undefined;
+
+    constructor(cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void) {
+        this.cleanupCallback = cleanupCallback;
+    }
+
+    add(objId: number, value: object, typeId:number, callFinalize: boolean): this {
+        const ref = new WeakRef(value);
+        this.storage.set(objId, [ref, typeId, callFinalize]);
+        return this;
+    }
+
+    get(objId: number): object | undefined {
+        const entry = this.storage.get(objId);
+        if (!entry) return;
+
+        const [ref, typeId, callFinalize] = entry;
+        const value = ref.deref();
+        
+        if (!value) {
+            this.storage.delete(objId);
+            this.cleanupCallback(objId, typeId, callFinalize);
+        }
+        
+        return value;
+    }
+
+    has(objId: number): boolean {
+        return this.storage.has(objId);
+    }
+
+    fullGc(): void {
+        for (const [objId] of this.storage) {
+            this.get(objId);
+        }
+    }
+
+
+}
+
 function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: bool, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
     return function (...args: any[]) {
         if (new.target) {
