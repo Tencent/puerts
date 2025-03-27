@@ -516,6 +516,7 @@ export namespace PuertsJSEngine {
         stackAlloc: (size: number) => number,
         stackSave: () => number,
         stackRestore: (stack: number) => void,
+        getWasmTableEntry: (index: number) => Function,
         addFunction: (func: Function, sig: string) => number,
         removeFunction: (index: number) => void,
         _CallCSharpFunctionCallback: (functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) => void;
@@ -559,6 +560,7 @@ export class PuertsJSEngine {
             stackSave,
             stackRestore,
             stackAlloc,
+            getWasmTableEntry,
             addFunction,
             removeFunction,
             _CallCSharpFunctionCallback,
@@ -584,6 +586,7 @@ export class PuertsJSEngine {
             stackSave,
             stackRestore,
             stackAlloc,
+            getWasmTableEntry,
             addFunction,
             removeFunction,
             _CallCSharpFunctionCallback,

@@ -25,6 +25,7 @@ var exportDLL = {
             stackAlloc,
             stackSave,
             stackRestore,
+            getWasmTableEntry,
             addFunction,
             removeFunction,
             _CallCSharpFunctionCallback: Module._CallCSharpFunctionCallback,
