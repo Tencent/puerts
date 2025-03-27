@@ -31,8 +31,6 @@ enum JSTag {
     JS_TAG_UINT64        = 7,
 }
 
-let class_not_found_callback: pesapi_class_not_found_callback = undefined;
-
 class Scope {
     private static current: Scope = undefined;
 
@@ -194,12 +192,64 @@ class ObjectPool {
     }
 }
 
-function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: bool, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
+class ClassRegister {
+    private static instance: ClassRegister;
+
+    private constructor() {}
+
+    private classNotFound: (typeId: number) => bool = undefined
+
+    private typeIdToClass: Map<number, Function> = new Map();
+
+    public static getInstance(): ClassRegister {
+        if (!ClassRegister.instance) {
+            ClassRegister.instance = new ClassRegister();
+        }
+        return ClassRegister.instance;
+    }
+
+    public loadClassById(typeId: number): Function {
+        const cls = this.typeIdToClass.get(typeId);
+        if (cls) {
+            return cls;
+        } else {
+            if (this.classNotFound && this.classNotFound(typeId)) {
+                return this.typeIdToClass.get(typeId);
+            }
+        }
+    }
+
+    public registerClass(typeId: number, cls: Function): void {
+        this.typeIdToClass.set(typeId, cls);
+    }
+
+    public findClassById(typeId: number): Function | undefined {
+        return this.typeIdToClass.get(typeId);
+    }
+
+    public setClassNotFoundCallback(callback: (typeId: number) => boolean) {
+        this.classNotFound = callback;
+    }
+}
+
+function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: boolean, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
     return function (...args: any[]) {
         if (new.target) {
             throw new Error('"not a constructor');
         }
         throw new Error("NativeFunctionWrap not implemented yet!");
+    }
+}
+
+class ObjectMapper {
+    private objectPool: ObjectPool;
+
+    constructor(cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void) {
+        this.objectPool = new ObjectPool(cleanupCallback);
+    }
+
+    public pushNativeObject(objId: number, value: object, typeId:number, callFinalize: boolean): object {
+        throw new Error("ObjectMapper.pushNativeObject not implemented yet!");
     }
 }
 
@@ -669,7 +719,12 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             throw new Error("pesapi_get_class_data not implemented yet!");
         },
         pesapi_on_class_not_found: function(callback: pesapi_class_not_found_callback) {
-            class_not_found_callback = callback;
+            //class_not_found_callback = callback;
+            ClassRegister.getInstance().setClassNotFoundCallback((typeId: number) : boolean => {
+                throw new Error("pesapi_on_class_not_found not implemented yet!");
+                //callback(typeId);
+                return true;
+            });
         },
         pesapi_set_method_info: function() {
             throw new Error("pesapi_set_method_info not implemented yet!");
