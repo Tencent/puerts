@@ -42,7 +42,7 @@
 
 #### 变更
 
-* 移除FJsEnv::Start执行文件的能力
+* 移除FJsEnv::Start直接Eval脚本的能力
 
 * UStruct指针nullptr时，返回js null，另外UObject，纯c++对象都修改为返回null（之前是undefined），fix #1834
 

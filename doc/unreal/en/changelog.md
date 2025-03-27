@@ -42,7 +42,7 @@
 
 #### Changes
 
-* Removed file execution capability from FJsEnv::Start
+* Removed the ability to directly Eval scripts from FJsEnv::Start
 
 * Return JS null for UStruct pointers when nullptr; modified UObject and pure C++ objects to return null instead of undefined, fix #1834
 
