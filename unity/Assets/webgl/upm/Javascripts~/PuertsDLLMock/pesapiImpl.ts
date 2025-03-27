@@ -65,11 +65,15 @@ class Scope {
         return this.objectsInScope[index];
     }
 
-    toJs(engine: PuertsJSEngine, pvalue: pesapi_value) : any {
+    toJs(engine: PuertsJSEngine, objMapper: ObjectMapper, pvalue: pesapi_value) : any {
         const valType = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 8);
-        if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_NATIVE_OBJECT) {
+        if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
             const objIdx = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
             return this.objectsInScope[objIdx];
+        }
+        if (valType == JSTag.JS_TAG_NATIVE_OBJECT) {
+            const objId = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+            return objMapper.findNativeObject(objId);
         }
         switch(valType) {
             case JSTag.JS_TAG_BOOL:
@@ -260,6 +264,10 @@ class ObjectMapper {
         } 
         return jsObj;
     }
+
+    public findNativeObject(objId: number): object | undefined {
+        return this.objectPool.get(objId);
+    }
 }
 
 
@@ -427,9 +435,8 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         object_ptr: number, 
         call_finalize: boolean
     ): pesapi_value {
-        //const jsObj = objMapper.pushNativeObject(object_ptr, typeId, call_finalize);
-        //return Scope.getCurrent().addToScope(jsObj);
-        throw new Error("pesapi_native_object_to_value not implemented yet!");
+        const jsObj = objMapper.pushNativeObject(object_ptr, typeId, call_finalize);
+        return object_ptr;
     }
 
     function pesapi_get_native_object_ptr(env: pesapi_env, pvalue: pesapi_value): number {
@@ -554,12 +561,12 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_get_property not implemented yet!");
     }
     function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void {
-        const obj = Scope.getCurrent().toJs(engine, pobject);
+        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_set_property: target is not an object");
         }
         const key = engine.unityApi.UTF8ToString(pkey);
-        const value = Scope.getCurrent().toJs(engine, pvalue);
+        const value = Scope.getCurrent().toJs(engine, objMapper, pvalue);
         obj[key] = value;
     }
     function pesapi_get_private(env: pesapi_env, pobject: pesapi_value, out_ptr: number): boolean { 
@@ -572,11 +579,11 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_get_property_uint32 not implemented yet!");
     }
     function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
-        const obj = Scope.getCurrent().toJs(engine, pobject);
+        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_set_property: target is not an object");
         }
-        const value = Scope.getCurrent().toJs(engine, pvalue);
+        const value = Scope.getCurrent().toJs(engine, objMapper, pvalue);
         obj[key] = value;
     }
 
@@ -734,12 +741,13 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
         pesapi_get_class_data: function() {
             throw new Error("pesapi_get_class_data not implemented yet!");
         },
-        pesapi_on_class_not_found: function(callback: pesapi_class_not_found_callback) {
-            //class_not_found_callback = callback;
+        pesapi_on_class_not_found: function(callbackPtr: pesapi_class_not_found_callback) {
             ClassRegister.getInstance().setClassNotFoundCallback((typeId: number) : boolean => {
-                throw new Error("pesapi_on_class_not_found not implemented yet!");
+                const jsCallback =engine.unityApi.getWasmTableEntry(callbackPtr);
+                const ret = jsCallback(typeId);
+                console.log(`pesapi_on_class_not_found ${typeof ret} ${ret}`);
                 //callback(typeId);
-                return true;
+                return !!ret;
             });
         },
         pesapi_set_method_info: function() {

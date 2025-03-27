@@ -65,8 +65,8 @@ typedef struct Buffer {
 } Buffer;
 
 typedef struct NativeObject {
-    void *js;
-    void *native;
+    void *objId;
+    const void *typeId;
 } NativeObject;
 
 typedef union JSValueUnion {
@@ -704,10 +704,14 @@ bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
     });
 }
 
-// TODO
+pesapi_native_object_to_value_func g_js_native_object_to_value;
+
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    *ret = JS_MKPTR(JS_TAG_OBJECT, g_js_native_object_to_value(env, type_id, object_ptr, call_finalize));
+    ret->u.nto.typeId = type_id;
+    return pesapiValueFromQjsValue(ret);
 }
 
 // TODO
@@ -1056,6 +1060,9 @@ extern "C"
         
         pesapi::webglimpl::g_js_global = api->global;
         api->global = &pesapi::webglimpl::pesapi_global;
+        
+        pesapi::webglimpl::g_js_native_object_to_value = api->native_object_to_value;
+        api->native_object_to_value = &pesapi::webglimpl::pesapi_native_object_to_value;
     }
 }
 
