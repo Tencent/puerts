@@ -17,6 +17,7 @@ enum JSTag {
     JS_TAG_STRING        = -9,
     JS_TAG_BUFFER        = -8,
     JS_TAG_EXCEPTION     = -7,
+    JS_TAG_NATIVE_OBJECT = -4,
     JS_TAG_ARRAY         = -3,
     JS_TAG_FUNCTION      = -2,
     JS_TAG_OBJECT        = -1,
@@ -66,7 +67,7 @@ class Scope {
 
     toJs(engine: PuertsJSEngine, pvalue: pesapi_value) : any {
         const valType = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 8);
-        if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
+        if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_NATIVE_OBJECT) {
             const objIdx = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
             return this.objectsInScope[objIdx];
         }
@@ -248,8 +249,16 @@ class ObjectMapper {
         this.objectPool = new ObjectPool(cleanupCallback);
     }
 
-    public pushNativeObject(objId: number, value: object, typeId:number, callFinalize: boolean): object {
-        throw new Error("ObjectMapper.pushNativeObject not implemented yet!");
+    public pushNativeObject(objId: number, typeId:number, callFinalize: boolean): object {
+        let jsObj = this.objectPool.get(objId);
+        if (!jsObj) {
+            const cls = ClassRegister.getInstance().loadClassById(typeId);
+            if (cls) {
+                jsObj = Object.create(cls.prototype);
+                this.objectPool.add(objId, jsObj, typeId, callFinalize);
+            }
+        } 
+        return jsObj;
     }
 }
 
@@ -259,6 +268,11 @@ let webglFFI:number = undefined;
 // 需要在Unity里调用PlayerSettings.WebGL.emscriptenArgs = " -s ALLOW_TABLE_GROWTH=1";
 export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     if (webglFFI) return webglFFI;
+
+    const objMapper = new ObjectMapper((objId: number, typeId:number, callFinalize: boolean) => {
+        // todo: callFinalize
+        throw new Error("object finalize not implemented yet!");
+    });
 
     // --------------- 值创建系列 ---------------
     function pesapi_create_null(env: pesapi_env): pesapi_value {
@@ -409,10 +423,12 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     // --------------- 对象操作系列 ---------------
     function pesapi_native_object_to_value(
         env: pesapi_env, 
-        type_id: number, 
+        typeId: number, 
         object_ptr: number, 
         call_finalize: boolean
     ): pesapi_value {
+        //const jsObj = objMapper.pushNativeObject(object_ptr, typeId, call_finalize);
+        //return Scope.getCurrent().addToScope(jsObj);
         throw new Error("pesapi_native_object_to_value not implemented yet!");
     }
 

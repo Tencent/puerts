@@ -16,6 +16,7 @@ enum {
     JS_TAG_STRING        = -9,
     JS_TAG_BUFFER        = -8,
     JS_TAG_EXCEPTION     = -7,
+    JS_TAG_NATIVE_OBJECT = -4,
     JS_TAG_ARRAY         = -3,
     JS_TAG_FUNCTION      = -2,
     JS_TAG_OBJECT        = -1,
@@ -30,7 +31,7 @@ enum {
     JS_TAG_UINT64        = 7,
 };
 
-#define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag, 0 }
+#define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag }
 #define JS_MKPTR(tag, p)   (JSValue){ (JSValueUnion){ .ptr = p }, tag }
 
 /* special values */
@@ -53,20 +54,38 @@ enum {
 #define SINGLE_ENV (reinterpret_cast<pesapi_env>(1024));
 #define SINGLE_ENV_REF (reinterpret_cast<pesapi_env_ref>(2048));
 
+typedef struct String {
+    const char *ptr;
+    uint32_t len;
+} String;
+
+typedef struct Buffer {
+    void *ptr;
+    uint32_t len;
+} Buffer;
+
+typedef struct NativeObject {
+    void *js;
+    void *native;
+} NativeObject;
+
 typedef union JSValueUnion {
     int32_t int32;
     double float64;
     int64_t int64;
     uint64_t uint64;
     void *ptr;
-    const char *str;
+    String str;
+    Buffer buf;
+    NativeObject nto;
 } JSValueUnion;
 
 typedef struct JSValue {
     JSValueUnion u;
     int32_t tag;
-    uint32_t len;
 } JSValue;
+
+static_assert(sizeof(void*) == 4, "just support wasm32");
    
 struct WebGlScope;
 
@@ -92,11 +111,11 @@ void JS_FreeValue(JSValue v)
 {
     if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION)
     {
-        delete v.u.str;
+        delete v.u.str.ptr;
     }
     if (v.tag == JS_TAG_BUFFER)
     {
-        delete (uint8_t *)v.u.ptr;
+        delete (uint8_t *)v.u.buf.ptr;
     }
     v.u.ptr = nullptr;
 }
@@ -309,8 +328,8 @@ JSValue JS_NewStringLen(const char *str, uint32_t str_len)
 {
     JSValue v;
     v.tag = JS_TAG_STRING;
-    v.len = str_len;
-    v.u.str = str;
+    v.u.str.len = str_len;
+    v.u.str.ptr = str;
     return v;
 }
 
@@ -318,8 +337,8 @@ JSValue JS_NewBufferLen(void *buf, uint32_t buf_len)
 {
     JSValue v;
     v.tag = JS_TAG_BUFFER;
-    v.len = buf_len;
-    v.u.ptr = buf;
+    v.u.buf.len = buf_len;
+    v.u.buf.ptr = buf;
     return v;
 }
 
@@ -338,7 +357,7 @@ int JS_ToBool(bool *pres, JSValue val)
         break;
     case JS_TAG_STRING:
         {
-            ret = val.len != 0;
+            ret = val.u.str.len != 0;
         }
         break;
     case JS_TAG_INT64:
@@ -574,10 +593,10 @@ const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, ch
     auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
     if (JS_TAG_STRING == JS_VALUE_GET_TAG(jsvalue) && bufsize)
     {
-        *bufsize = jsvalue.len;
+        *bufsize = jsvalue.u.str.len;
         if (buf != nullptr)
         {
-            strncpy(buf, jsvalue.u.str, *bufsize);
+            strncpy(buf, jsvalue.u.str.ptr, *bufsize);
         }
     }
 	return buf;
@@ -588,8 +607,8 @@ void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsi
     auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
     if (JS_TAG_BUFFER == JS_VALUE_GET_TAG(jsvalue) && bufsize)
     {
-        *bufsize = jsvalue.len;
-        return jsvalue.u.ptr;
+        *bufsize = jsvalue.u.buf.len;
+        return jsvalue.u.buf.ptr;
     }
 	return nullptr;
 }
