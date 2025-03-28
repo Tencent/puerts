@@ -569,10 +569,10 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         pesapi_env env = apis->get_env(info);
         if (!(csharpMethodInfo->IsStatic))
         {
-            pesapi_value jsThis = apis->get_holder(info);
-            self = apis->get_native_object_ptr(env, jsThis);
+            self = apis->get_native_holder_ptr(info);
             if (csharpMethodInfo->NeedBoxing)
             {
+                pesapi_value jsThis = apis->get_holder(info);
                 auto ptrType = (Il2CppClass*) apis->get_native_object_typeid(env, jsThis);
                 if (Class::IsValuetype(ptrType))
                 {
@@ -1761,7 +1761,6 @@ handle_underlying:
         }
     }
     void** args = method->parameters_count > 0 ? (void**)alloca(sizeof(void*) * method->parameters_count) : nullptr;
-    pesapi_value jsThis = apis->get_holder(info);
 #ifndef UNITY_2021_1_OR_NEWER
     if (self)
     {
@@ -1775,7 +1774,7 @@ handle_underlying:
 #endif
     if (isExtensionMethod)
     {
-        args[0] = apis->get_native_object_ptr(env, jsThis);
+        args[0] = apis->get_native_holder_ptr(info);
     }
     
     for (int i = csArgStart; i < method->parameters_count; ++i) 
@@ -1991,11 +1990,10 @@ handle_underlying:
 static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
 {
     pesapi_env env = apis->get_env(info);
-    pesapi_value jsThis = apis->get_holder(info);
     void* csThis = nullptr;
     if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
     {
-        csThis = apis->get_native_object_ptr(env, jsThis);
+        csThis = apis->get_native_holder_ptr(info);
     }
     
     if (Class::IsValuetype(fieldType))
@@ -2072,11 +2070,10 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
 static void ReflectionSetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
 {
     pesapi_env env = apis->get_env(info);
-    pesapi_value jsThis = apis->get_holder(info);
     void* csThis = nullptr;
     if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
     {
-        csThis = apis->get_native_object_ptr(env, jsThis);
+        csThis = apis->get_native_holder_ptr(info);
     }
     pesapi_value jsValue = apis->get_arg(info, 0);
     if (Class::IsValuetype(fieldType))

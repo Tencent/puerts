@@ -78,8 +78,7 @@ export function SToCPPType(signature) {
 export function getThis(signature) {
     let getJsThis = 'pesapi_value jsThis = apis->get_holder(info);'
     if (signature == 't') {
-        return `${getJsThis}
-    auto self = apis->get_native_object_ptr(env, jsThis);`
+        return `auto self = apis->get_native_holder_ptr(info);`
     } else if (signature == 'T') {
         return `${getJsThis}
     auto self = apis->get_native_object_ptr(env, jsThis);
