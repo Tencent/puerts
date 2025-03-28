@@ -120,9 +120,11 @@ class ObjectPool {
         this.cleanupCallback = cleanupCallback;
     }
 
-    add(objId: number, value: object, typeId:number, callFinalize: boolean): this {
-        const ref = new WeakRef(value);
+    add(objId: number, obj: object, typeId:number, callFinalize: boolean): this {
+        const ref = new WeakRef(obj);
         this.storage.set(objId, [ref, typeId, callFinalize]);
+        (obj as any).$ObjId__ = objId;
+        (obj as any).$TypeId__ = typeId;
         return this;
     }
 
@@ -131,14 +133,21 @@ class ObjectPool {
         if (!entry) return;
 
         const [ref, typeId, callFinalize] = entry;
-        const value = ref.deref();
+        const obj = ref.deref();
         
-        if (!value) {
+        if (!obj) {
             this.storage.delete(objId);
             this.cleanupCallback(objId, typeId, callFinalize);
         }
         
-        return value;
+        return obj;
+    }
+
+    static GetNativeInfoOfObject(obj: object): [number, number] | undefined {
+        const objId = (obj as any).$ObjId__;
+        if (typeof objId === 'number') {
+            return [objId, (obj as any).$ObjId__]
+        }
     }
 
     has(objId: number): boolean {
@@ -208,6 +217,8 @@ class ClassRegister {
 
     private typeIdToClass: Map<number, Function> = new Map();
 
+    private nameToTypeId: Map<string, number> = new Map();
+
     public static getInstance(): ClassRegister {
         if (!ClassRegister.instance) {
             ClassRegister.instance = new ClassRegister();
@@ -226,7 +237,7 @@ class ClassRegister {
         }
     }
 
-    public registerClass(typeId: number, cls: Function, clsData: number): void {
+    public registerClass(typeId: number, name:string, cls: Function, clsData: number): void {
         // Store class data in non-enumerable property
         Object.defineProperty(cls, '$ClassData', {
             value: clsData,
@@ -236,6 +247,7 @@ class ClassRegister {
         });
         
         this.typeIdToClass.set(typeId, cls);
+        this.nameToTypeId.set(name, typeId);
     }
 
     public getClassDataById(typeId: number, forceLoad: boolean): number | undefined {
@@ -283,16 +295,21 @@ class ObjectMapper {
     public findNativeObject(objId: number): object | undefined {
         return this.objectPool.get(objId);
     }
+
+    public bindNativeObject(objId: number, jsObj: object, typeId:number, callFinalize: boolean): void {
+        this.objectPool.add(objId, jsObj, typeId, callFinalize);
+    }
 }
 
 
 let webglFFI:number = undefined;
+let objMapper: ObjectMapper = undefined;
 
 // 需要在Unity里调用PlayerSettings.WebGL.emscriptenArgs = " -s ALLOW_TABLE_GROWTH=1";
 export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     if (webglFFI) return webglFFI;
 
-    const objMapper = new ObjectMapper((objId: number, typeId:number, callFinalize: boolean) => {
+    objMapper = new ObjectMapper((objId: number, typeId:number, callFinalize: boolean) => {
         // todo: callFinalize
         throw new Error("object finalize not implemented yet!");
     });
@@ -756,6 +773,37 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             setter_data: number 
           };
 
+    // typedef struct String {
+    //     const char *ptr;
+    //     uint32_t len;
+    // } String;
+    // 
+    // typedef struct Buffer {
+    //     void *ptr;
+    //     uint32_t len;
+    // } Buffer;
+    // 
+    // typedef struct NativeObject {
+    //     void *objId;
+    //     const void *typeId;
+    // } NativeObject;
+    // 
+    // typedef union JSValueUnion {
+    //     int32_t int32;
+    //     double float64;
+    //     int64_t int64;
+    //     uint64_t uint64;
+    //     void *ptr;
+    //     String str;
+    //     Buffer buf;
+    //     NativeObject nto;
+    // } JSValueUnion;
+    // 
+    // typedef struct JSValue {
+    //     JSValueUnion u;
+    //     int32_t tag;
+    // } JSValue;
+    //
     // struct CallbackInfo {
     //     void* thisPtr;
     //     int argc;
@@ -763,10 +811,93 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
     //     JSValue res;
     //     JSValue argv[0];
     // };
+    // sizeof(JSValue) == 12
 
-    function getCallbackInfoMemory(argc: number): number {
-        // 4 + 4 + 4 + 4 + (argc * 4)
-        return 16 + (argc * 12);
+    const callbackInfosCache : number[] = [];
+
+    function getNativeCallbackInfo(argc: number): number {
+        if (!callbackInfosCache[argc])
+        {
+            // 4 + 4 + 4 + 12 + (argc * 12)
+            const size = 24 + (argc * 12);
+            callbackInfosCache[argc] = engine.unityApi._malloc(size);
+            Buffer.writeInt32(engine.unityApi.HEAPU8, argc, callbackInfosCache[argc] + 4);
+        }
+        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, callbackInfosCache[argc] + 20); // set res to undefined
+        return callbackInfosCache[argc];
+    }
+
+    function fillArguments(args: any[]): number {
+        const argc = args.length;
+        const callbackInfo = getNativeCallbackInfo(argc);
+
+        for(let i = 0; i < argc; ++i) {
+            const arg = args[i];
+            const dataPtr = callbackInfo + 24 + (i * 12);
+            const tagPtr = dataPtr + 8;
+            if (arg === undefined) {
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, tagPtr);
+            } else if (arg === null) {
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_NULL, tagPtr);
+            } else if (typeof arg === 'bigint') {
+                Buffer.writeInt64(engine.unityApi.HEAPU8, arg, dataPtr);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_INT64, tagPtr);
+            } else if (typeof arg === 'number') {
+                if (Number.isInteger(arg)) {
+                    if (arg >= -2147483648 && arg <= 2147483647) {
+                        Buffer.writeInt32(engine.unityApi.HEAPU8, arg, dataPtr);
+                        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_INT, tagPtr);
+                    } else {
+                        Buffer.writeInt64(engine.unityApi.HEAPU8, arg, dataPtr);
+                        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_INT64, tagPtr);
+                    }
+                } else {
+                    Buffer.writeDouble(engine.unityApi.HEAPU8, arg, dataPtr);
+                    Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_FLOAT64, tagPtr);
+                }
+            } else if (typeof arg === 'string') {
+                throw new Error("string parameter not implemented yet!");
+            } else if (typeof arg === 'boolean') {
+                Buffer.writeInt32(engine.unityApi.HEAPU8, arg ? 1 : 0, dataPtr);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_BOOL, tagPtr);
+            } else if (typeof arg === 'function') {
+                Buffer.writeInt32(engine.unityApi.HEAPU8, Scope.getCurrent().addToScope(arg), dataPtr);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_FUNCTION, tagPtr);
+            } else if (arg instanceof Array) {
+                Buffer.writeInt32(engine.unityApi.HEAPU8, Scope.getCurrent().addToScope(arg), dataPtr);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_ARRAY, tagPtr);
+            } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
+                throw new Error("arraybuffer parameter not implemented yet!");
+            } else if (typeof arg === 'object') {
+                const ntoInfo = ObjectPool.GetNativeInfoOfObject(arg);
+                if (ntoInfo) {
+                    const [objId, typeId] = ntoInfo;
+                    Buffer.writeInt32(engine.unityApi.HEAPU8, objId, dataPtr);
+                    Buffer.writeInt32(engine.unityApi.HEAPU8, typeId, dataPtr + 4);
+                    Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_NATIVE_OBJECT, tagPtr);
+                } else {
+                    Buffer.writeInt32(engine.unityApi.HEAPU8, Scope.getCurrent().addToScope(arg), dataPtr);
+                    Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_OBJECT, tagPtr);
+                }
+            } else {
+                throw new Error(`Unexpected argument type: ${typeof arg}`);
+            }
+        }
+
+        return callbackInfo;
+    }
+
+    function genJsCallback(callback: Function, data: number, isStatic: boolean) {
+        return function(...args: any[]) {
+            const callbackInfo = fillArguments(args);
+            Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 12); // data
+            let objId = 0;
+            if (!isStatic) {
+                [objId] = ObjectPool.GetNativeInfoOfObject(this);
+            } 
+            Buffer.writeInt32(engine.unityApi.HEAPU8, objId, callbackInfo); // thisPtr
+            callback(callbackInfo);
+        }
     }
 
     // Initialize with proper type assertion
@@ -779,8 +910,51 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             descriptorsArray.push([]);
             return descriptorsArray.length - 1;
         },
-        pesapi_define_class: function(typeId: number, superTypeId: number, name: CSString, constructor: number, finalize: number, propertyCount: number, properties: number, data: number) : void {
-            throw new Error("pesapi_define_class not implemented yet!");
+        pesapi_define_class: function(typeId: number, superTypeId: number, pname: CSString, constructor: number, finalize: number, propertyCount: number, properties: number, data: number) : void {
+            const descriptors = descriptorsArray[properties];
+            descriptorsArray[properties] = undefined;
+            const name = engine.unityApi.UTF8ToString(pname);
+            const nativeConstructor = engine.unityApi.getWasmTableEntry(constructor);
+
+            function PApiNativeObject(...args: any[]) {
+                const callbackInfo = fillArguments(args);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 12); // data
+                //Buffer.writeInt32(engine.unityApi.HEAPU8, objId, callbackInfo); // thisPtr
+                const objId = nativeConstructor(callbackInfo);
+                objMapper.bindNativeObject(objId, this, typeId, true);
+            }
+
+            if (superTypeId != 0) {
+                const superType = ClassRegister.getInstance().loadClassById(superTypeId);
+                if (superType) {
+                    Object.setPrototypeOf(PApiNativeObject.prototype, superType.prototype);
+                }
+            }
+
+            descriptors.forEach(descriptor => {
+                if ('callback' in descriptor) {
+                    const jsCallback = genJsCallback(descriptor.callback, descriptor.data, descriptor.isStatic);
+                    if (descriptor.isStatic) {
+                        (PApiNativeObject as any)[descriptor.name] = jsCallback;
+                    } else {
+                        PApiNativeObject.prototype[descriptor.name] = jsCallback;
+                    }
+                } else {
+                    var propertyDescriptor: PropertyDescriptor = {
+                        get: genJsCallback(descriptor.getter, descriptor.getter_data, descriptor.isStatic),
+                        set: genJsCallback(descriptor.setter, descriptor.setter_data, descriptor.isStatic),
+                        configurable: true,
+                        enumerable: true
+                    }
+                    if (descriptor.isStatic) {
+                        Object.defineProperty(PApiNativeObject, descriptor.name, propertyDescriptor);
+                    } else {
+                        Object.defineProperty(PApiNativeObject.prototype, descriptor.name, propertyDescriptor);
+                    }
+                }
+            });
+
+            ClassRegister.getInstance().registerClass(typeId, name, PApiNativeObject, data);
         },
         pesapi_get_class_data: function(typeId: number, forceLoad: boolean) : number {
             return ClassRegister.getInstance().getClassDataById(typeId, forceLoad);
