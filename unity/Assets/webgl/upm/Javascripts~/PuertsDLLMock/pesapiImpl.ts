@@ -741,33 +741,65 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 }
 
 export function WebGLRegsterApi(engine: PuertsJSEngine) {
+    // Explicitly define array type to avoid 'never' type inference
+    // Define union type for method/property descriptors
+    type Descriptor = 
+        | { name: string; isStatic: boolean; callback: Function; data: number }
+        | { 
+            name: string; 
+            isStatic: boolean; 
+            getter: Function; 
+            setter: Function; 
+            getter_data: number; 
+            setter_data: number 
+          };
+
+    // Initialize with proper type assertion
+    const descriptorsArray: Array<Array<Descriptor>> = [[]] as Array<Array<Descriptor>>;
     return {
         GetRegsterApi: function() {
             return 0;
         },
-        pesapi_alloc_property_descriptors: function() {
-            throw new Error("pesapi_alloc_property_descriptors not implemented yet!");
+        pesapi_alloc_property_descriptors: function(count:number): number {
+            descriptorsArray.push([]);
+            return descriptorsArray.length - 1;
         },
-        pesapi_define_class: function() {
+        pesapi_define_class: function(typeId: number, superTypeId: number, name: CSString, constructor: number, finalize: number, propertyCount: number, properties: number, data: number) : void {
             throw new Error("pesapi_define_class not implemented yet!");
         },
         pesapi_get_class_data: function(typeId: number, forceLoad: boolean) : number {
             return ClassRegister.getInstance().getClassDataById(typeId, forceLoad);
         },
         pesapi_on_class_not_found: function(callbackPtr: pesapi_class_not_found_callback) {
+            const jsCallback =engine.unityApi.getWasmTableEntry(callbackPtr);
             ClassRegister.getInstance().setClassNotFoundCallback((typeId: number) : boolean => {
-                const jsCallback =engine.unityApi.getWasmTableEntry(callbackPtr);
                 const ret = jsCallback(typeId);
                 console.log(`pesapi_on_class_not_found ${typeof ret} ${ret}`);
-                //callback(typeId);
                 return !!ret;
             });
         },
-        pesapi_set_method_info: function() {
-            throw new Error("pesapi_set_method_info not implemented yet!");
+        pesapi_set_method_info: function(properties: number, index: number, pname: CSString, is_static: boolean, method: number, data: number, signature_info: number): void {
+            const name = engine.unityApi.UTF8ToString(pname);
+            const jsCallback = engine.unityApi.getWasmTableEntry(method);
+            descriptorsArray[properties][index] = {
+                name: name,
+                isStatic: is_static,
+                callback: jsCallback,
+                data: data
+            };
         },
-        pesapi_set_property_info: function() {
-            throw new Error("pesapi_set_property_info not implemented yet!");
+        pesapi_set_property_info: function(properties: number, index: number, pname: CSString, is_static: boolean, getter: number, setter: number, getter_data: number, setter_data: number, type_info: number): void {
+            const name = engine.unityApi.UTF8ToString(pname);
+            const jsGetter = engine.unityApi.getWasmTableEntry(getter);
+            const jsSetter = engine.unityApi.getWasmTableEntry(setter);
+            descriptorsArray[properties][index] = {
+                name: name,
+                isStatic: is_static,
+                getter: jsGetter,
+                setter: jsSetter,
+                getter_data: getter_data,
+                setter_data: setter_data
+            };
         },
         pesapi_trace_native_object_lifecycle: function() {
             throw new Error("pesapi_trace_native_object_lifecycle not implemented yet!");
