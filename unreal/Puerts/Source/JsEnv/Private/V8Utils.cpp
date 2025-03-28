@@ -17,7 +17,6 @@ FString puerts::FV8Utils::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> V
     // Implementation is referenced from v8::String::Value(), directly copy v8::String's content to FString
     if (!Value.IsEmpty())
     {
-        v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::TryCatch TryCatch(Isolate);
         v8::Local<v8::String> Str;
