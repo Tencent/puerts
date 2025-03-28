@@ -89,10 +89,12 @@ class Scope {
             case JSTag.JS_TAG_UINT64:
                 return Buffer.readUInt64(engine.unityApi.HEAPU8, pvalue);
             case JSTag.JS_TAG_STRING:
-                return engine.unityApi.UTF8ToString(pvalue as any);
+                const strStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+                const strLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
+                return engine.unityApi.UTF8ToString(strStart as any);
             case JSTag.JS_TAG_BUFFER:
                 const buffStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
-                const buffLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 12);
+                const buffLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
                 return engine.unityApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
         }
     }
@@ -753,6 +755,19 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             getter_data: number; 
             setter_data: number 
           };
+
+    // struct CallbackInfo {
+    //     void* thisPtr;
+    //     int argc;
+    //     void* data;
+    //     JSValue res;
+    //     JSValue argv[0];
+    // };
+
+    function getCallbackInfoMemory(argc: number): number {
+        // 4 + 4 + 4 + 4 + (argc * 4)
+        return 16 + (argc * 12);
+    }
 
     // Initialize with proper type assertion
     const descriptorsArray: Array<Array<Descriptor>> = [[]] as Array<Array<Descriptor>>;
