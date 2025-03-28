@@ -83,6 +83,7 @@ typedef union JSValueUnion {
 typedef struct JSValue {
     JSValueUnion u;
     int32_t tag;
+    int pedding;
 } JSValue;
 
 static_assert(sizeof(void*) == 4, "just support wasm32");
@@ -196,6 +197,7 @@ struct CallbackInfo {
 	void* thisPtr;
 	int argc;
     void* data;
+    int pedding;
 	JSValue res;
     JSValue argv[0];
 };
@@ -709,7 +711,7 @@ pesapi_native_object_to_value_func g_js_native_object_to_value;
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize)
 {
     auto ret = allocValueInCurrentScope();
-    *ret = JS_MKPTR(JS_TAG_OBJECT, g_js_native_object_to_value(env, type_id, object_ptr, call_finalize));
+    *ret = JS_MKPTR(JS_TAG_NATIVE_OBJECT, g_js_native_object_to_value(env, type_id, object_ptr, call_finalize));
     ret->u.nto.typeId = type_id;
     return pesapiValueFromQjsValue(ret);
 }
@@ -1063,6 +1065,15 @@ extern "C"
         
         pesapi::webglimpl::g_js_native_object_to_value = api->native_object_to_value;
         api->native_object_to_value = &pesapi::webglimpl::pesapi_native_object_to_value;
+        
+        //api->get_args_len = &pesapi::webglimpl:::pesapi_get_args_len;
+        api->get_args_len = &pesapi::webglimpl::pesapi_get_args_len;
+        api->get_arg = &pesapi::webglimpl::pesapi_get_arg;
+        api->get_env = &pesapi::webglimpl::pesapi_get_env;
+        api->get_native_holder_ptr = &pesapi::webglimpl::pesapi_get_native_holder_ptr;
+        api->get_userdata = &pesapi::webglimpl::pesapi_get_userdata;
+        api->add_return = &pesapi::webglimpl::pesapi_add_return;
+        
     }
 }
 

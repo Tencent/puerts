@@ -67,13 +67,15 @@ class Scope {
 
     toJs(engine: PuertsJSEngine, objMapper: ObjectMapper, pvalue: pesapi_value) : any {
         const valType = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 8);
+        //console.log(`valType: ${valType}`);
         if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
             const objIdx = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
             return this.objectsInScope[objIdx];
         }
         if (valType == JSTag.JS_TAG_NATIVE_OBJECT) {
             const objId = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
-            return objMapper.findNativeObject(objId);
+            const typeId = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
+            return objMapper.pushNativeObject(objId, typeId, true);
         }
         switch(valType) {
             case JSTag.JS_TAG_BOOL:
@@ -82,6 +84,8 @@ class Scope {
                 return Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
             case JSTag.JS_TAG_NULL:
                 return null;
+            case JSTag.JS_TAG_UNDEFINED:
+                return undefined;
             case JSTag.JS_TAG_FLOAT64:
                 return Buffer.readDouble(engine.unityApi.HEAPU8, pvalue);
             case JSTag.JS_TAG_INT64:
@@ -97,6 +101,7 @@ class Scope {
                 const buffLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
                 return engine.unityApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
         }
+        throw new Error(`unsupported type: ${valType}`);
     }
 
     private prevScope: Scope = undefined;
@@ -217,8 +222,6 @@ class ClassRegister {
 
     private typeIdToClass: Map<number, Function> = new Map();
 
-    private nameToTypeId: Map<string, number> = new Map();
-
     public static getInstance(): ClassRegister {
         if (!ClassRegister.instance) {
             ClassRegister.instance = new ClassRegister();
@@ -237,7 +240,7 @@ class ClassRegister {
         }
     }
 
-    public registerClass(typeId: number, name:string, cls: Function, clsData: number): void {
+    public registerClass(typeId: number, cls: Function, clsData: number): void {
         // Store class data in non-enumerable property
         Object.defineProperty(cls, '$ClassData', {
             value: clsData,
@@ -247,7 +250,6 @@ class ClassRegister {
         });
         
         this.typeIdToClass.set(typeId, cls);
-        this.nameToTypeId.set(name, typeId);
     }
 
     public getClassDataById(typeId: number, forceLoad: boolean): number | undefined {
@@ -468,6 +470,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         call_finalize: boolean
     ): pesapi_value {
         const jsObj = objMapper.pushNativeObject(object_ptr, typeId, call_finalize);
+
         return object_ptr;
     }
 
@@ -802,28 +805,30 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
     // typedef struct JSValue {
     //     JSValueUnion u;
     //     int32_t tag;
+    //     int padding;
     // } JSValue;
     //
     // struct CallbackInfo {
     //     void* thisPtr;
     //     int argc;
     //     void* data;
+    //     int padding;
     //     JSValue res;
     //     JSValue argv[0];
     // };
-    // sizeof(JSValue) == 12
+    // sizeof(JSValue) == 16
 
     const callbackInfosCache : number[] = [];
 
     function getNativeCallbackInfo(argc: number): number {
         if (!callbackInfosCache[argc])
         {
-            // 4 + 4 + 4 + 12 + (argc * 12)
-            const size = 24 + (argc * 12);
+            // 4 + 4 + 4 + 4 + 16 + (argc * 16)
+            const size = 32 + (argc * 16);
             callbackInfosCache[argc] = engine.unityApi._malloc(size);
             Buffer.writeInt32(engine.unityApi.HEAPU8, argc, callbackInfosCache[argc] + 4);
         }
-        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, callbackInfosCache[argc] + 20); // set res to undefined
+        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, callbackInfosCache[argc] + 24); // set res to undefined
         return callbackInfosCache[argc];
     }
 
@@ -833,7 +838,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
 
         for(let i = 0; i < argc; ++i) {
             const arg = args[i];
-            const dataPtr = callbackInfo + 24 + (i * 12);
+            const dataPtr = callbackInfo + 32 + (i * 16);
             const tagPtr = dataPtr + 8;
             if (arg === undefined) {
                 Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, tagPtr);
@@ -887,16 +892,17 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
         return callbackInfo;
     }
 
-    function genJsCallback(callback: Function, data: number, isStatic: boolean) {
+    function genJsCallback(callback: Function, data: number, papi:number, isStatic: boolean) {
         return function(...args: any[]) {
             const callbackInfo = fillArguments(args);
-            Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 12); // data
+            Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
             let objId = 0;
             if (!isStatic) {
                 [objId] = ObjectPool.GetNativeInfoOfObject(this);
             } 
             Buffer.writeInt32(engine.unityApi.HEAPU8, objId, callbackInfo); // thisPtr
-            callback(callbackInfo);
+            callback(papi, callbackInfo);
+            return Scope.getCurrent().toJs(engine, objMapper, callbackInfo + 16);
         }
     }
 
@@ -916,13 +922,13 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             const name = engine.unityApi.UTF8ToString(pname);
             const nativeConstructor = engine.unityApi.getWasmTableEntry(constructor);
 
-            function PApiNativeObject(...args: any[]) {
+            const PApiNativeObject = function (...args: any[]) {
                 const callbackInfo = fillArguments(args);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 12); // data
-                //Buffer.writeInt32(engine.unityApi.HEAPU8, objId, callbackInfo); // thisPtr
-                const objId = nativeConstructor(callbackInfo);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
+                const objId = nativeConstructor(webglFFI, callbackInfo);
                 objMapper.bindNativeObject(objId, this, typeId, true);
             }
+            Object.defineProperty(PApiNativeObject, "name", { value: name });
 
             if (superTypeId != 0) {
                 const superType = ClassRegister.getInstance().loadClassById(superTypeId);
@@ -933,16 +939,17 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
 
             descriptors.forEach(descriptor => {
                 if ('callback' in descriptor) {
-                    const jsCallback = genJsCallback(descriptor.callback, descriptor.data, descriptor.isStatic);
+                    const jsCallback = genJsCallback(descriptor.callback, descriptor.data, webglFFI, descriptor.isStatic);
                     if (descriptor.isStatic) {
                         (PApiNativeObject as any)[descriptor.name] = jsCallback;
                     } else {
                         PApiNativeObject.prototype[descriptor.name] = jsCallback;
                     }
                 } else {
+                    //console.log(`genJsCallback ${descriptor.name} ${descriptor.getter_data} ${webglFFI}`);
                     var propertyDescriptor: PropertyDescriptor = {
-                        get: genJsCallback(descriptor.getter, descriptor.getter_data, descriptor.isStatic),
-                        set: genJsCallback(descriptor.setter, descriptor.setter_data, descriptor.isStatic),
+                        get: genJsCallback(descriptor.getter, descriptor.getter_data, webglFFI, descriptor.isStatic),
+                        set: genJsCallback(descriptor.setter, descriptor.setter_data, webglFFI, descriptor.isStatic),
                         configurable: true,
                         enumerable: true
                     }
@@ -954,7 +961,9 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 }
             });
 
-            ClassRegister.getInstance().registerClass(typeId, name, PApiNativeObject, data);
+            console.log(`pesapi_define_class: ${name}`)
+
+            ClassRegister.getInstance().registerClass(typeId, PApiNativeObject, data);
         },
         pesapi_get_class_data: function(typeId: number, forceLoad: boolean) : number {
             return ClassRegister.getInstance().getClassDataById(typeId, forceLoad);
@@ -963,7 +972,6 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             const jsCallback =engine.unityApi.getWasmTableEntry(callbackPtr);
             ClassRegister.getInstance().setClassNotFoundCallback((typeId: number) : boolean => {
                 const ret = jsCallback(typeId);
-                console.log(`pesapi_on_class_not_found ${typeof ret} ${ret}`);
                 return !!ret;
             });
         },
