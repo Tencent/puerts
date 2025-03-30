@@ -1,3 +1,94 @@
+### v1.0.8 2025年3月26日
+
+####  新增特性
+
+* 容器新增UE.BuiltinDouble，fix #1775
+
+* v8后端支持字节码
+
+* 支持Editor Only Properties 增加_EditorOnly后缀 (#1802)
+
+* 支持UE 5.5
+
+* v8后端添加websocket的支持、
+
+* 模板绑定添加对getter、setter的支持
+
+* ue 5.x 添加对FHitResult::GetActor的模板绑定
+
+* FVector等几个系统USTUCT改为用模板绑定，以解决ue5下的精度丢失问题，fix #1904
+
+* 支持仅setter的属性
+
+* 支持不在Context目录的蓝图加载 #1962
+
+#### 优化
+
+* esm module两次读文件的问题，fix #1779
+
+* 反射new，Class.Load, Class.Find, Class.StaticClass加上关联的UStruct是否无效的检查
+
+* weakfieldl有效的时候,proeprty可能无效 (#1803)
+
+* 模板绑定利用FObjectCacheNode的UserData减少一次原生c++里的map插入和删除
+
+* 自动拷贝Plugin目录下的.d.ts到 Typing目录，以避免维护两份.d.ts (#1908)
+
+* 尽可能减少std::string的使用，减少此类问题（https://github.com/Tencent/puerts/issues/1936）发生的概率
+
+* 对于原生cpp绑定，若未绑定构造函数，则在ts声明中加入abstract标记，可以在ts中尝试构造时提示报错 (#1971)
+
+* UE和CPP模块加上__esModule=false
+
+#### 变更
+
+* 移除FJsEnv::Start直接Eval脚本的能力
+
+* UStruct指针nullptr时，返回js null，另外UObject，纯c++对象都修改为返回null（之前是undefined），fix #1834
+
+
+#### bug修复
+
+* 修正UE.BuiltinBool访问失败的问题
+
+* 解决模板绑定const script_type *参数崩溃的问题，(除了const char*外)映射到$Ref<T>，相关issue： #1793
+
+* 解决模板绑定返回std::string&会调用移动构造的问题，见issue： #1793
+
+* 恢复生成蓝图变量的默认Flags，与过去版本保持一致 (#1814)
+
+* 自动生命周期管理的puerts.toDelegate接口产生的UDynamicDelegateProxy在GC时可能崩溃 (#1819)
+
+* SoftObjectPtr改为通过InstanceTemplate创建对象，规避backend-quickjs的这个bug： puerts/backend-quickjs#20 ，fix #1907
+
+* 解决模板绑定const ustruct *匹配多个特化的问题（C2752） fix #1917
+
+* 解决模板绑定对于const SomeClass &参数的默认值会读取到已经释放栈变量的问题，fix #1924
+
+* 静态绑定IsInstanceOf得先判断是不是Object，fix #1929
+
+* 处理内存重用导致的Check failed: Handle not reset in first callback. See comments on |v8::WeakCallbackInfo| fix #1930
+
+* 修复静态绑定: 若结构体没有绑定构造函数则不会生成构造函数定义 (#1951)
+
+* JSObject拷贝构造和赋值重载由于没有声明HandleScope导致崩溃的问题
+
+* 修复 TCHAR 类型生成的声明错误 (#1977)
+
+* 解决mixin的inherit = true时，不继承蓝图组件层级的问题 fix #1985
+
+* 发生unhandledRejection时，应清理WeakMap fix #1991 避免内存释放过慢
+
+* 修复绑定当帧销毁的对象身上的 Delegate，有概率触发崩溃的问题
+
+* 修复disregardgc情况下的crash (#1997) fix #1415
+
+* 类静态成员规避FName导致的大小写问题 fix #1882
+
+* quickjs默认256k的栈，有些场景会stackoverflow（比如跑tsc），提升到1M
+
+* NewArray报t.hasOwnProperty is not a function fix #2001
+
 ### v1.0.7 2024年6月25日
 
 #### 新增特性

@@ -17,7 +17,11 @@
 
 #define PESAPI_VERSION 11
 
+#if BUILDING_REGISTER_API_SHARED
+#define PESAPI_EXTERN PESAPI_MODULE_EXPORT
+#else
 #define PESAPI_EXTERN
+#endif
 
 #if defined(__APPLE__) && defined(BUILDING_PES_EXTENSION) && !defined(PESAPI_ADPT_C)
 #include "TargetConditionals.h"
