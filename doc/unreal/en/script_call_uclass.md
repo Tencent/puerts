@@ -1,4 +1,4 @@
-# TypeScript and engine interaction
+# TypeScript And Engine Interaction
 
 Below is a translated version of the original docs by Incanta Games. The translation is mainly done with Google Translate, but then modified by hand to try to make sense of what Google Translate is missing.
 

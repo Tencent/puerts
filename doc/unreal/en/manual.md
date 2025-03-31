@@ -1,149 +1,27 @@
 # Puerts - Unreal Engine User Manual
 
-Now that puerts is installed and your TypeScript development environment has been setup, its time to get started!
+The essence of puerts is:
+- The (UE) engine provides a JavaScript virtual machine environment
+- Allow TypeScript/JavaScript to interact with the engine, or call C++ or Blueprint APIs, and be called by C++ or Blueprints 
 
-Puerts has two main execution modes, both of which can coexist in isolation.
+The js virtual machine implements the js language, but the js language itself can basically do nothing. What it can do depends on the APIs added to it by the host environment. For example, the browser adds a dom operation API to the js environment, so the js in the browser can write the logic of dynamic pages. For example, nodejs adds an asynchronous network (io) API, so the js in nodejs can be used to write web servers.
 
-[Automatic binding mode](#automatic-binding-mode-more-info)
+The host environment of js in puerts is the game engine. What APIs have been added?
 
-[Manually starting a JavasScript virtual machine](#starting-a-new-javascript-virtual-machine-more-info)
+First of all, Puerts imports all reflection APIs by default. In other words, the engine APIs that can be called in the UE blueprint can be called in the Typescript/JavaScript environment. If you use Typescript and correctly introduce the declaration file into the project, these APIs will be prompted.
 
-## Automatic Binding Mode ([More Info](./automatic_binding_mode.md))
+Secondly, for non-reflective APIs, the blueprint can also be accessed after manual encapsulation into reflection. This is also applicable in TypeScript, and Puerts also supports "template-based static binding" . You can call it in TypeScript by declaring it according to the document.
 
-Puerts allows users to define and extend Unreal Engine classes inside of TypeScript.
+In Puerts, to implement a game programming task, first think about how to implement this task in C++ or blueprint, and then call the same API in Typescript to implement it.
 
-Through a self-starting virtual machine, launched by `PuertsModule`, automatic binding mode supports features such as:
-- Automatic blueprint class generation
-- Incremental code compilation
-- Hot-reload
+Puerts did not redefine the engine, but only defined the rules for TS and the engine to call each other. Puerts' demo also tends to demonstrate these rules rather than making a game. 
 
-### Setup
-To get started, execute the following NodeJS command inside of the puerts plugin directory. (`YourProject/Plugins/Puerts`)
-
-This will install all relevant dependencies and update any configuration files required for automatic binding to function.
-
-``` shell
-node enable_puerts_module.js
-```
-
-**Note: NodeJS must be installed to execute the above command**
-
-### Usage
-Create a new TypeScript file and define a new class that extends your desired object (e.g ACharacter, AActor, e.t.c)
-
-Supported features are as follows:
-- Constructor definition
-- Overriding blueprint events and functions
-- Input axis mapping
-- Action events (e.g BeginPlay, Tick)
-- RPC functions (Requires `experimentalDecorators`)
-
-##### TypeScript
-``` typescript
-// YourProject/TypeScript/TS_Player
-
-import * as UE from 'ue'
-
-class TS_Player extends UE.Character {
-    Constructor() {
-        //...
-    }
-
-    ReceiveBeginPlay(): void {
-        //...
-    }
-    ReceiveTick(InDeltaSeconds: number): void {
-        //...
-    }
-    //...
-}
-
-export default TS_Player;
-```
-
-Now it should be available inside of Unreal Engine!
-
-![select_character.png](../..//pic/select_character.png)
-
-**Note: The file name, class name and default export all need to match for it to be registered with Unreal Engine. (See [Format](./automatic_binding_mode.md/#format))**
-
-## Starting A New JavaScript Virtual Machine ([More Info](./start_a_virtual_machine.md))
-
-Starting your own virtual machine is essential for executing traditional JavaScript code within puerts.
-
-Example use cases include:
-- Executing a one-time script (e.g Printing 'Hello World!')
-- Starting an entry point for a complex event loop (Similar to a `main` function)
-
-### Usage
-To start a new JavaScript virtual environment, a suitable entry point should be identified.
-
-#### Example 1 - One-Time Script
-##### C++
-``` c++
-#include "JsEnv.h"
-
-UCLASS()
-class PUERTS_UNREAL_DEMO_API APlayerCharacter : public ACharacter
-{
-public:
-    virtual void BeginPlay() override {
-        auto JsEnv = MakeShared<puerts::FJsEnv>();
-
-        JsEnv->Start("PrintHelloWorld.js");
-    }
-};
-```
-##### TypeScript
-``` typescript
-// YourProject/TypeScript/PrintHelloWorld.ts
-
-console.warn("Hello World!");
-```
-
-#### Example 2 - Example Event Loop Entry Point
-##### C++
-``` c++
-#include "JsEnv.h"
-
-UCLASS()
-class PUERTS_UNREAL_DEMO_API UDemoGameInstance : public UGameInstance
-{
-public:
-    virtual void OnStart() override {
-        JsEnv = MakeShared<puerts::FJsEnv>();
-
-        JsEnv->Start("Entry.js", 
-        {
-            TPair<FString, UObject*>("GameInstance", this)
-        });
-    }
-
-    virtual void Shutdown() override {
-        JsEnv.Reset();
-    }
-
-protected:
-    TSharedPtr<puerts::FJsEnv> JsEnv;
-};
-```
-##### TypeScript
-``` typescript
-// YourProject/TypeScript/Entry.ts
-
-import * as UE from 'ue'
-import { argv } from "puerts";
-
-const GameInstance = argv.getByName("GameInstance") as UE.GameInstance;
-const World = GameInstance?.GetWorld();
-const LocalPlayerController = UE.GameplayStatics.GetPlayerController(World, 0);
-
-LocalPlayerController?.OnEndPlay.Add(() => {
-    console.warn("Called at the end of play loop...")
-});
-
-console.warn("JavaScript Entry Point Started!");
-//...
-```
-
-**Note: If multiple virtual machines are started, these virtual machines are isolated from each other and do not share the same memory scope.**
+## Table Of Contents
+- [Install](./install.md)
+- [Setup](./dev_environment.md)
+- [Getting Started](./getting_started.md)
+- [Interacting With TypeScript From C++](./engine_call_script.md)
+- [Interacting With C++ From TypeScript](./typescript_interacts_cpp.md)
+- [Debugging](./vscode_debug.md)
+- [Demo Projects](./demos.md)
+- [FAQ](./faq.md)

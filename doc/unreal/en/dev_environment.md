@@ -60,4 +60,4 @@ Type safety is the biggest advantage of TypeScript over JavaScript. In order for
 **Note: Regenerating the deceleration file should be done proceeding any C++ related changes**
 
 ## Getting Started With Puerts
-Now that puerts is installed and your TypeScript development environment has been set up, it's time to [get started!](./manual.md)
+Now that puerts is installed and your TypeScript development environment has been set up, it's time to [get started!](./getting_started.md)
