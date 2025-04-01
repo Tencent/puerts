@@ -114,10 +114,10 @@ void JS_FreeValue(JSValue v)
     {
         delete v.u.str.ptr;
     }
-    if (v.tag == JS_TAG_BUFFER)
-    {
-        delete (uint8_t *)v.u.buf.ptr;
-    }
+    //if (v.tag == JS_TAG_BUFFER)
+    //{
+    //    delete (uint8_t *)v.u.buf.ptr;
+    //}
     v.u.ptr = nullptr;
 }
 
