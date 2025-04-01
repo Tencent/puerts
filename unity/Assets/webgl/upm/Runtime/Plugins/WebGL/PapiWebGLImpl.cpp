@@ -55,7 +55,7 @@ enum {
 #define SINGLE_ENV_REF (reinterpret_cast<pesapi_env_ref>(2048));
 
 typedef struct String {
-    const char *ptr;
+    char *ptr;
     uint32_t len;
 } String;
 
@@ -331,7 +331,8 @@ JSValue JS_NewStringLen(const char *str, uint32_t str_len)
     JSValue v;
     v.tag = JS_TAG_STRING;
     v.u.str.len = str_len;
-    v.u.str.ptr = str;
+    v.u.str.ptr = (char*)malloc(str_len);
+    strncpy((char*)v.u.str.ptr, str, str_len);
     return v;
 }
 
@@ -1107,7 +1108,19 @@ extern "C"
         api->get_value_string_utf8 = &pesapi::webglimpl::pesapi_get_value_string_utf8;
         api->get_value_binary = &pesapi::webglimpl::pesapi_get_value_binary;
         
+        api->create_null = &pesapi::webglimpl::pesapi_create_null;
+        api->create_undefined = &pesapi::webglimpl::pesapi_create_undefined;
         api->create_boolean = &pesapi::webglimpl::pesapi_create_boolean;
+        api->create_int32 = &pesapi::webglimpl::pesapi_create_int32;
+        api->create_uint32 = &pesapi::webglimpl::pesapi_create_uint32;
+        api->create_int64 = &pesapi::webglimpl::pesapi_create_int64;
+        api->create_uint64 = &pesapi::webglimpl::pesapi_create_uint64;
+        api->create_double = &pesapi::webglimpl::pesapi_create_double;
+        api->create_string_utf8 = &pesapi::webglimpl::pesapi_create_string_utf8;
+        api->create_binary = &pesapi::webglimpl::pesapi_create_binary;
+        //api->create_array = &pesapi::webglimpl::pesapi_create_array;
+        //api->create_object = &pesapi::webglimpl::pesapi_create_object;
+        api->create_function = &pesapi::webglimpl::pesapi_create_function;
         
         pesapi::webglimpl::g_js_eval = (pesapi::webglimpl::pesapi_js_eval_func)api->eval;
         api->eval = &pesapi::webglimpl::pesapi_eval;
