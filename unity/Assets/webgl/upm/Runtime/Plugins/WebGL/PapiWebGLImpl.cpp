@@ -1074,6 +1074,12 @@ extern "C"
         api->get_userdata = &pesapi::webglimpl::pesapi_get_userdata;
         api->add_return = &pesapi::webglimpl::pesapi_add_return;
         
+        api->is_null = &pesapi::webglimpl::pesapi_is_null;
+        api->is_undefined = &pesapi::webglimpl::pesapi_is_undefined;
+        api->get_value_string_utf8 = &pesapi::webglimpl::pesapi_get_value_string_utf8;
+        api->get_value_binary = &pesapi::webglimpl::pesapi_get_value_binary;
+        api->create_boolean = &pesapi::webglimpl::pesapi_create_boolean;
+        
     }
 }
 

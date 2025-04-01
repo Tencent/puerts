@@ -471,6 +471,13 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     ): pesapi_value {
         const jsObj = objMapper.pushNativeObject(object_ptr, typeId, call_finalize);
 
+        // TODO: just for test
+        //const cls = ClassRegister.getInstance().findClassById(typeId);
+        //if (cls.name == "JsEnv") {
+        //    console.log(`call FileExists(aabb.txt): ${(jsObj as any).loader.FileExists("aabb.txt")}`);
+        //    console.log(`call FileExists(puerts/esm_bootstrap.cjs): ${(jsObj as any).loader.FileExists("puerts/esm_bootstrap.cjs")}`);
+        //}
+        // 
         return object_ptr;
     }
 
@@ -832,6 +839,20 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
         return callbackInfosCache[argc];
     }
 
+    let buffer:number = undefined;
+    let buffer_size: number = 0;
+    function getBuffer(size: number): number {
+        if (buffer_size < size) {
+            buffer_size = size;
+            if (buffer) {
+                engine.unityApi._free(buffer);
+            }
+            buffer = engine.unityApi._malloc(buffer_size);
+        }
+        return buffer;
+    }
+
+
     function fillArguments(args: any[]): number {
         const argc = args.length;
         const callbackInfo = getNativeCallbackInfo(argc);
@@ -861,7 +882,12 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                     Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_FLOAT64, tagPtr);
                 }
             } else if (typeof arg === 'string') {
-                throw new Error("string parameter not implemented yet!");
+                const len = engine.unityApi.lengthBytesUTF8(arg);
+                const ptr = getBuffer(len + 1);
+                engine.unityApi.stringToUTF8(arg, ptr, buffer_size);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, ptr, dataPtr);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, len, dataPtr + 4);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_STRING, tagPtr);
             } else if (typeof arg === 'boolean') {
                 Buffer.writeInt32(engine.unityApi.HEAPU8, arg ? 1 : 0, dataPtr);
                 Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_BOOL, tagPtr);
@@ -872,7 +898,11 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 Buffer.writeInt32(engine.unityApi.HEAPU8, Scope.getCurrent().addToScope(arg), dataPtr);
                 Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_ARRAY, tagPtr);
             } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
-                throw new Error("arraybuffer parameter not implemented yet!");
+                const len = arg.byteLength;
+                const ptr = getBuffer(len);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, ptr, dataPtr);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, len, dataPtr + 4);
+                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_BUFFER, tagPtr);
             } else if (typeof arg === 'object') {
                 const ntoInfo = ObjectPool.GetNativeInfoOfObject(arg);
                 if (ntoInfo) {
