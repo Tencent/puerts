@@ -711,7 +711,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         const jsObj = objMapper.pushNativeObject(object_ptr, typeId, call_finalize);
 
         // TODO: just for test
-        const cls = ClassRegister.getInstance().findClassById(typeId);
+        //const cls = ClassRegister.getInstance().findClassById(typeId);
         //if (cls.name == "JsEnv") {
         //    console.log(`call FileExists(aabb.txt): ${(jsObj as any).loader.FileExists("aabb.txt")}`);
         //    console.log(`call FileExists(puerts/esm_bootstrap.cjs): ${(jsObj as any).loader.FileExists("puerts/esm_bootstrap.cjs")}`);
@@ -841,7 +841,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void { 
         const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
         if (typeof obj != 'object') {
-            throw new Error("pesapi_set_property: target is not an object");
+            throw new Error("pesapi_get_property: target is not an object");
         }
         const key = engine.unityApi.UTF8ToString(pkey);
         const value = obj[key];
@@ -857,15 +857,26 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         obj[key] = value;
     }
     function pesapi_get_private(env: pesapi_env, pobject: pesapi_value, out_ptr: number): boolean { 
-        throw new Error("pesapi_get_private not implemented yet!");
+        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        if (typeof obj != 'object') {
+            Buffer.writeInt32(engine.unityApi.HEAPU8, 0, out_ptr);
+            return false;
+        }
+        Buffer.writeInt32(engine.unityApi.HEAPU8, obj['__p_private_data'], out_ptr);
+        return true;
     }
     function pesapi_set_private(env: pesapi_env, pobject: pesapi_value, ptr: number): boolean { 
-        throw new Error("pesapi_set_private not implemented yet!");
+        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        if (typeof obj != 'object') {
+            return false;
+        }
+        obj['__p_private_data'] = ptr;
+        return true;
     }
     function pesapi_get_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
         const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
         if (typeof obj != 'object') {
-            throw new Error("pesapi_set_property: target is not an object");
+            throw new Error("pesapi_get_property_uint32: target is not an object");
         }
         const value = obj[key];
         jsValueToPapiValue(engine.unityApi, value, pvalue);
@@ -873,7 +884,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
         const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
         if (typeof obj != 'object') {
-            throw new Error("pesapi_set_property: target is not an object");
+            throw new Error("pesapi_set_property_uint32: target is not an object");
         }
         const value = Scope.getCurrent().toJs(engine, objMapper, pvalue);
         obj[key] = value;
