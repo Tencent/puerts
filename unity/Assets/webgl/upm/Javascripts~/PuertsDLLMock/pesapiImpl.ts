@@ -691,10 +691,10 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
 
     function pesapi_create_array(env: pesapi_env): pesapi_value { 
-        throw new Error("pesapi_create_array not implemented yet!");
+        return Scope.getCurrent().addToScope([]);
     }
     function pesapi_create_object(env: pesapi_env): pesapi_value { 
-        throw new Error("pesapi_create_object not implemented yet!");
+        return Scope.getCurrent().addToScope(Object.create(null));
     }
 
     function pesapi_create_function(

@@ -533,16 +533,21 @@ pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
     return pesapi_create_generic2(env, bin, length, JS_NewBufferLen);
 }
 
+
+pesapi_create_array_func g_js_create_array;
 pesapi_value pesapi_create_array(pesapi_env env)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    *ret = JS_MKPTR(JS_TAG_ARRAY, g_js_create_array(env));
+    return pesapiValueFromQjsValue(ret);
 }
 
-// js那处理，返回index，然后存在JSValue返回
-// TODO
+pesapi_create_object_func g_js_create_object;
 pesapi_value pesapi_create_object(pesapi_env env)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    *ret = JS_MKPTR(JS_TAG_OBJECT, g_js_create_object(env));
+    return pesapiValueFromQjsValue(ret);
 }
 
 pesapi_create_function_func g_js_create_function = nullptr;
@@ -1072,9 +1077,6 @@ extern "C"
         api->get_env_private = &pesapi::webglimpl::pesapi_get_env_private;
         api->set_env_private = &pesapi::webglimpl::pesapi_set_env_private;
         
-        pesapi::webglimpl::g_js_create_function = api->create_function;
-        api->create_function = &pesapi::webglimpl::pesapi_create_function;
-        
         pesapi::webglimpl::g_js_global = api->global;
         api->global = &pesapi::webglimpl::pesapi_global;
         
@@ -1118,8 +1120,12 @@ extern "C"
         api->create_double = &pesapi::webglimpl::pesapi_create_double;
         api->create_string_utf8 = &pesapi::webglimpl::pesapi_create_string_utf8;
         api->create_binary = &pesapi::webglimpl::pesapi_create_binary;
-        //api->create_array = &pesapi::webglimpl::pesapi_create_array;
-        //api->create_object = &pesapi::webglimpl::pesapi_create_object;
+        
+        pesapi::webglimpl::g_js_create_array = api->create_array;
+        api->create_array = &pesapi::webglimpl::pesapi_create_array;
+        pesapi::webglimpl::g_js_create_object = api->create_object;
+        api->create_object = &pesapi::webglimpl::pesapi_create_object;
+        pesapi::webglimpl::g_js_create_function = api->create_function;
         api->create_function = &pesapi::webglimpl::pesapi_create_function;
         
         pesapi::webglimpl::g_js_eval = (pesapi::webglimpl::pesapi_js_eval_func)api->eval;
