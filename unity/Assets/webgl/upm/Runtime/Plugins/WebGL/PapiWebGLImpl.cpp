@@ -204,8 +204,8 @@ struct CallbackInfo {
 
 struct ValueRef 
 {
-    explicit ValueRef(JSValue v, uint32_t field_count)
-        : ref_count(1), value_persistent(v), internal_field_count(field_count)
+    explicit ValueRef(void* p, uint32_t field_count)
+        : ref_count(1), ptr(p), internal_field_count(field_count)
     {
     }
     
@@ -214,7 +214,7 @@ struct ValueRef
     }
 
     int ref_count;
-    JSValue value_persistent;
+    void* ptr;
     uint32_t internal_field_count;
     void* internal_fields[0];
 };
@@ -908,14 +908,14 @@ void pesapi_close_scope_placement(pesapi_scope pscope)
     scope->~WebGlScope();
 }
 
+pesapi_create_value_ref_func g_js_create_value_ref;
+
 pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, uint32_t internal_field_count)
 {
     size_t totalSize = sizeof(ValueRef) + sizeof(void*) * internal_field_count;
     auto ret = (pesapi_value_ref)malloc(totalSize);
     memset(ret, 0, totalSize);
-    // TODO: call unref of js
-    JSValue* v = qjsValueFromPesapiValue(pvalue);
-    new (ret) ValueRef(*v, internal_field_count);
+    new (ret) ValueRef(g_js_create_value_ref(env, pvalue, internal_field_count), internal_field_count);
     return ret;
 }
 
@@ -926,22 +926,25 @@ pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref pvalue_ref)
     return pvalue_ref;
 }
 
+pesapi_release_value_ref_func g_js_release_value_ref;
 void pesapi_release_value_ref(pesapi_value_ref pvalue_ref)
 {
     auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
     if (--value_ref->ref_count == 0)
     {
-        // TODO: call unref of js
+        g_js_release_value_ref(pvalue_ref);
         value_ref->~ValueRef();
         free(value_ref);
     }
 }
 
+typedef void (*pesapi_js_get_value_from_ref_func)(pesapi_env env, pesapi_value_ref value_ref, JSValue* pvalue);
+pesapi_js_get_value_from_ref_func g_js_get_value_from_ref_func;
+
 pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref pvalue_ref)
 {
-    auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
     JSValue* v = allocValueInCurrentScope();
-    *v = value_ref->value_persistent;
+    g_js_get_value_from_ref_func(env, pvalue_ref, v);
     return pesapiValueFromQjsValue(v);
 }
 
@@ -1115,6 +1118,21 @@ extern "C"
         pesapi::webglimpl::g_js_get_property_uint32 = (pesapi::webglimpl::pesapi_js_get_property_uint32_func)api->get_property_uint32;
         api->get_property_uint32 = &pesapi::webglimpl::pesapi_get_property_uint32;
         
+        
+        pesapi::webglimpl::g_js_create_value_ref = api->create_value_ref;
+        api->create_value_ref = &pesapi::webglimpl::pesapi_create_value_ref;
+        
+        api->duplicate_value_ref = &pesapi::webglimpl::pesapi_duplicate_value_ref;
+        
+        pesapi::webglimpl::g_js_release_value_ref = api->release_value_ref;
+        api->release_value_ref = &pesapi::webglimpl::pesapi_release_value_ref;
+        
+        pesapi::webglimpl::g_js_get_value_from_ref_func = (pesapi::webglimpl::pesapi_js_get_value_from_ref_func)api->get_value_from_ref;
+        api->get_value_from_ref = &pesapi::webglimpl::pesapi_get_value_from_ref;
+        
+        api->get_ref_internal_fields = &pesapi::webglimpl::pesapi_get_ref_internal_fields;
+        
+        api->get_ref_associated_env = &pesapi::webglimpl::pesapi_get_ref_associated_env;
     }
 }
 

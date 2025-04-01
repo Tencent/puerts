@@ -9,6 +9,102 @@ declare const wxRequire: any;
 const executeModuleCache: { [filename: string]: any } = {};
 declare const PUERTS_JS_RESOURCES: any;
 
+/**
+ * Sparse Array implementation with efficient add/remove operations
+ * - Maintains contiguous storage
+ * - Reuses empty slots from deletions
+ * - O(1) add/remove in most cases
+ */
+class SparseArray<T> {
+    private _data: (T | undefined)[];
+    private _freeIndices: number[];
+    private _length: number;
+
+    constructor(capacity: number = 0) {
+        this._data = new Array(capacity);
+        this._freeIndices = [];
+        this._length = 0;
+    }
+
+    /**
+     * Add an element to the array
+     * @returns The index where the element was inserted
+     */
+    add(element: T): number {
+        if (this._freeIndices.length > 0) {
+            const index = this._freeIndices.pop()!;
+            this._data[index] = element;
+            this._length++;
+            return index;
+        }
+        
+        const index = this._data.length;
+        this._data.push(element);
+        this._length++;
+        return index;
+    }
+
+    /**
+     * Remove an element by index
+     * @returns true if removal was successful
+     */
+    remove(index: number): boolean {
+        if (index < 0 || index >= this._data.length || this._data[index] === undefined) {
+            return false;
+        }
+
+        this._data[index] = undefined;
+        this._freeIndices.push(index);
+        this._length--;
+        
+        // Compact the array if last element is removed
+        if (index === this._data.length - 1) {
+            this._compact();
+        }
+        
+        return true;
+    }
+
+    /**
+     * Get element by index
+     */
+    get(index: number): T | undefined {
+        return this._data[index];
+    }
+
+    /**
+     * Current number of active elements
+     */
+    get length(): number {
+        return this._length;
+    }
+
+    /**
+     * Total capacity (including empty slots)
+     */
+    get capacity(): number {
+        return this._data.length;
+    }
+
+    /**
+     * Compact the array by removing trailing undefined elements
+     */
+    private _compact(): void {
+        let lastIndex = this._data.length - 1;
+        while (lastIndex >= 0 && this._data[lastIndex] === undefined) {
+            this._data.pop();
+            
+            // Remove any free indices in the compacted area
+            const compactedIndex = this._freeIndices.indexOf(lastIndex);
+            if (compactedIndex !== -1) {
+                this._freeIndices.splice(compactedIndex, 1);
+            }
+            
+            lastIndex--;
+        }
+    }
+}
+
 function ExecuteModule(fileName: string) {
     if (['puerts/log.mjs', 'puerts/timer.mjs'].indexOf(fileName) != -1) {
         return {};
@@ -811,18 +907,22 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         Scope.exit();
     }
 
+    const referencedValues = new SparseArray<any>();
+
     // --------------- 值引用 ---------------
     function pesapi_create_value_ref(env: pesapi_env, pvalue: pesapi_value, internal_field_count: number): pesapi_value_ref { 
-        throw new Error("pesapi_create_value_ref not implemented yet!");
+        const value = Scope.getCurrent().toJs(engine, objMapper, pvalue);
+        return referencedValues.add(value);
     }
     function pesapi_duplicate_value_ref(pvalue_ref: pesapi_value_ref): pesapi_value_ref { 
         throw new Error("pesapi_duplicate_value_ref not implemented yet!");
     }
     function pesapi_release_value_ref(pvalue_ref: pesapi_value_ref): void {
-        throw new Error("pesapi_release_value_ref not implemented yet!");
+        referencedValues.remove(pvalue_ref);
     }
-    function pesapi_get_value_from_ref(env: pesapi_env, pvalue_ref: pesapi_value_ref): pesapi_value { 
-        throw new Error("pesapi_get_value_from_ref not implemented yet!");
+    function pesapi_get_value_from_ref(env: pesapi_env, pvalue_ref: pesapi_value_ref, pvalue: pesapi_value): void { 
+        const value = referencedValues.get(pvalue_ref);
+        jsValueToPapiValue(engine.unityApi, value, pvalue);
     }
     function pesapi_set_ref_weak(env: pesapi_env, pvalue_ref: pesapi_value_ref): void {
         throw new Error("pesapi_set_ref_weak not implemented yet!");
@@ -858,7 +958,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
     function pesapi_get_private(env: pesapi_env, pobject: pesapi_value, out_ptr: number): boolean { 
         const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
-        if (typeof obj != 'object') {
+        if (typeof obj != 'object' && typeof obj != 'function') {
             Buffer.writeInt32(engine.unityApi.HEAPU8, 0, out_ptr);
             return false;
         }
@@ -867,7 +967,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
     function pesapi_set_private(env: pesapi_env, pobject: pesapi_value, ptr: number): boolean { 
         const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
-        if (typeof obj != 'object') {
+        if (typeof obj != 'object' && typeof obj != 'function') {
             return false;
         }
         obj['__p_private_data'] = ptr;
@@ -1008,7 +1108,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_create_value_ref, sig: "iiii"},
         {func: pesapi_duplicate_value_ref, sig: "ii"},
         {func: pesapi_release_value_ref, sig: "vi"},
-        {func: pesapi_get_value_from_ref, sig: "iii"},
+        {func: pesapi_get_value_from_ref, sig: "viii"},
         {func: pesapi_set_ref_weak, sig: "vii"},
         {func: pesapi_set_owner, sig: "iiii"},
         {func: pesapi_get_ref_associated_env, sig: "ii"},
