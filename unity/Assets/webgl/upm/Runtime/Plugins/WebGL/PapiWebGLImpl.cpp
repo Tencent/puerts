@@ -716,18 +716,19 @@ pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, 
     return pesapiValueFromQjsValue(ret);
 }
 
-// TODO
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
 {
-    return {};
+    auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
+    return (jsvalue.tag == JS_TAG_NATIVE_OBJECT) ? jsvalue.u.nto.objId : nullptr;
 }
 
-// TODO
 const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
 {
-    return {};
+    auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
+    return (jsvalue.tag == JS_TAG_NATIVE_OBJECT) ? jsvalue.u.nto.typeId : nullptr;
 }
 
+// 看上去得走js判断继承关系
 // TODO
 bool pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
 {
@@ -1075,6 +1076,8 @@ extern "C"
         
         pesapi::webglimpl::g_js_native_object_to_value = api->native_object_to_value;
         api->native_object_to_value = &pesapi::webglimpl::pesapi_native_object_to_value;
+        api->get_native_object_ptr = &pesapi::webglimpl::pesapi_get_native_object_ptr;
+        api->get_native_object_typeid = &pesapi::webglimpl::pesapi_get_native_object_typeid;
         
         //api->get_args_len = &pesapi::webglimpl:::pesapi_get_args_len;
         api->get_args_len = &pesapi::webglimpl::pesapi_get_args_len;
