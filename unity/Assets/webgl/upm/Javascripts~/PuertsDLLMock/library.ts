@@ -507,7 +507,7 @@ export namespace PuertsJSEngine {
     export type EngineConstructorParam = UnityAPI;
     
     export interface UnityAPI {
-        UTF8ToString: (strPtr: CSString) => string,
+        UTF8ToString: (strPtr: CSString, maxRead?: number) => string,
         _malloc: (size: number) => number,
         _free: (ptr: number) => void,
         _setTempRet0: (value: number) => void,

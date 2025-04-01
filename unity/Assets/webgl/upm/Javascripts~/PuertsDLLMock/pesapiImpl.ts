@@ -192,6 +192,7 @@ function ExecuteModule(fileName: string) {
 
 type pesapi_env = number;
 type pesapi_value = number;
+type pesapi_value_ptr = number;
 type pesapi_scope = number;
 type pesapi_callback = number;
 type pesapi_function_finalize = number;
@@ -284,7 +285,7 @@ class Scope {
             case JSTag.JS_TAG_STRING:
                 const strStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
                 const strLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
-                return engine.unityApi.UTF8ToString(strStart as any);
+                return engine.unityApi.UTF8ToString(strStart as any, strLen);
             case JSTag.JS_TAG_BUFFER:
                 const buffStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
                 const buffLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
@@ -996,8 +997,15 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         pfunc: pesapi_value, 
         this_object: pesapi_value, 
         argc: number, 
-        argv: pesapi_value[]
+        argv: pesapi_value_ptr
     ): pesapi_value {
+        console.log(`pesapi_call_function argc: ${argc}`);
+        const heap = engine.unityApi.HEAPU8;
+        for(let i = 0; i < argc; ++i) {
+            const argPtr:pesapi_value = Buffer.readInt32(heap, argv + i * 4);
+            const arg = Scope.getCurrent().toJs(engine, objMapper, argPtr);
+            console.log(`arg ${i}: ${arg} ${typeof arg}`); 
+        }
         throw new Error("pesapi_call_function not implemented yet!");
     }
 
