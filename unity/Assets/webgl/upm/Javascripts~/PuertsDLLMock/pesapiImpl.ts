@@ -307,6 +307,147 @@ class ObjectMapper {
 let webglFFI:number = undefined;
 let objMapper: ObjectMapper = undefined;
 
+// typedef struct String {
+//     const char *ptr;
+//     uint32_t len;
+// } String;
+// 
+// typedef struct Buffer {
+//     void *ptr;
+//     uint32_t len;
+// } Buffer;
+// 
+// typedef struct NativeObject {
+//     void *objId;
+//     const void *typeId;
+// } NativeObject;
+// 
+// typedef union JSValueUnion {
+//     int32_t int32;
+//     double float64;
+//     int64_t int64;
+//     uint64_t uint64;
+//     void *ptr;
+//     String str;
+//     Buffer buf;
+//     NativeObject nto;
+// } JSValueUnion;
+// 
+// typedef struct JSValue {
+//     JSValueUnion u;
+//     int32_t tag;
+//     int padding;
+// } JSValue;
+//
+// struct CallbackInfo {
+//     void* thisPtr;
+//     int argc;
+//     void* data;
+//     int padding;
+//     JSValue res;
+//     JSValue argv[0];
+// };
+// sizeof(JSValue) == 16
+
+const callbackInfosCache : number[] = [];
+
+function getNativeCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc: number): number {
+    if (!callbackInfosCache[argc])
+    {
+        // 4 + 4 + 4 + 4 + 16 + (argc * 16)
+        const size = 32 + (argc * 16);
+        callbackInfosCache[argc] = wasmApi._malloc(size);
+        Buffer.writeInt32(wasmApi.HEAPU8, argc, callbackInfosCache[argc] + 4);
+    }
+    Buffer.writeInt32(wasmApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, callbackInfosCache[argc] + 24); // set res to undefined
+    return callbackInfosCache[argc];
+}
+
+let buffer:number = undefined;
+let buffer_size: number = 0;
+function getBuffer(wasmApi: PuertsJSEngine.UnityAPI, size: number): number {
+    if (buffer_size < size) {
+        buffer_size = size;
+        if (buffer) {
+            wasmApi._free(buffer);
+        }
+        buffer = wasmApi._malloc(buffer_size);
+    }
+    return buffer;
+}
+
+
+function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): number {
+    const argc = args.length;
+    const callbackInfo = getNativeCallbackInfo(wasmApi, argc);
+
+    const heap = wasmApi.HEAPU8;
+
+    for(let i = 0; i < argc; ++i) {
+        const arg = args[i];
+        const dataPtr = callbackInfo + 32 + (i * 16);
+        const tagPtr = dataPtr + 8;
+        if (arg === undefined) {
+            Buffer.writeInt32(heap, JSTag.JS_TAG_UNDEFINED, tagPtr);
+        } else if (arg === null) {
+            Buffer.writeInt32(heap, JSTag.JS_TAG_NULL, tagPtr);
+        } else if (typeof arg === 'bigint') {
+            Buffer.writeInt64(heap, arg, dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_INT64, tagPtr);
+        } else if (typeof arg === 'number') {
+            if (Number.isInteger(arg)) {
+                if (arg >= -2147483648 && arg <= 2147483647) {
+                    Buffer.writeInt32(heap, arg, dataPtr);
+                    Buffer.writeInt32(heap, JSTag.JS_TAG_INT, tagPtr);
+                } else {
+                    Buffer.writeInt64(heap, arg, dataPtr);
+                    Buffer.writeInt32(heap, JSTag.JS_TAG_INT64, tagPtr);
+                }
+            } else {
+                Buffer.writeDouble(heap, arg, dataPtr);
+                Buffer.writeInt32(heap, JSTag.JS_TAG_FLOAT64, tagPtr);
+            }
+        } else if (typeof arg === 'string') {
+            const len = wasmApi.lengthBytesUTF8(arg);
+            const ptr = getBuffer(wasmApi, len + 1);
+            wasmApi.stringToUTF8(arg, ptr, buffer_size);
+            Buffer.writeInt32(heap, ptr, dataPtr);
+            Buffer.writeInt32(heap, len, dataPtr + 4);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_STRING, tagPtr);
+        } else if (typeof arg === 'boolean') {
+            Buffer.writeInt32(heap, arg ? 1 : 0, dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_BOOL, tagPtr);
+        } else if (typeof arg === 'function') {
+            Buffer.writeInt32(heap, Scope.getCurrent().addToScope(arg), dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_FUNCTION, tagPtr);
+        } else if (arg instanceof Array) {
+            Buffer.writeInt32(heap, Scope.getCurrent().addToScope(arg), dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_ARRAY, tagPtr);
+        } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
+            const len = arg.byteLength;
+            const ptr = getBuffer(wasmApi, len);
+            Buffer.writeInt32(heap, ptr, dataPtr);
+            Buffer.writeInt32(heap, len, dataPtr + 4);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_BUFFER, tagPtr);
+        } else if (typeof arg === 'object') {
+            const ntoInfo = ObjectPool.GetNativeInfoOfObject(arg);
+            if (ntoInfo) {
+                const [objId, typeId] = ntoInfo;
+                Buffer.writeInt32(heap, objId, dataPtr);
+                Buffer.writeInt32(heap, typeId, dataPtr + 4);
+                Buffer.writeInt32(heap, JSTag.JS_TAG_NATIVE_OBJECT, tagPtr);
+            } else {
+                Buffer.writeInt32(heap, Scope.getCurrent().addToScope(arg), dataPtr);
+                Buffer.writeInt32(heap, JSTag.JS_TAG_OBJECT, tagPtr);
+            }
+        } else {
+            throw new Error(`Unexpected argument type: ${typeof arg}`);
+        }
+    }
+
+    return callbackInfo;
+}
+
 // 需要在Unity里调用PlayerSettings.WebGL.emscriptenArgs = " -s ALLOW_TABLE_GROWTH=1";
 export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     if (webglFFI) return webglFFI;
@@ -477,7 +618,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         //    console.log(`call FileExists(aabb.txt): ${(jsObj as any).loader.FileExists("aabb.txt")}`);
         //    console.log(`call FileExists(puerts/esm_bootstrap.cjs): ${(jsObj as any).loader.FileExists("puerts/esm_bootstrap.cjs")}`);
         //}
-        // 
+         
         return object_ptr;
     }
 
@@ -640,8 +781,17 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_call_function not implemented yet!");
     }
 
-    function pesapi_eval(env: pesapi_env, code: number, code_size: number, path: string): pesapi_value {
-        throw new Error("pesapi_eval not implemented yet!");
+    function pesapi_eval(env: pesapi_env, pcode: CSString, code_size: number, path: string, result: pesapi_value): void {
+        if (!globalThis.eval) {
+            throw new Error("eval is not supported");
+        }
+        try {
+            const code = engine.unityApi.UTF8ToString(pcode);
+            const result = globalThis.eval(code);
+            throw new Error("pesapi_eval not implemented yet!");
+        } catch (e) {
+            engine.lastException = e;
+        }
     }
 
     // --------------- 全局对象 ---------------
@@ -751,7 +901,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_set_property_uint32, sig: "viiii"},
         
         {func: pesapi_call_function, sig: "iiiiii"},
-        {func: pesapi_eval, sig: "iiiii"},
+        {func: pesapi_eval, sig: "viiiii"},
         {func: pesapi_global, sig: "ii"},
         {func: pesapi_get_env_private, sig: "ii"},
         {func: pesapi_set_env_private, sig: "vii"}
@@ -783,148 +933,11 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             setter_data: number 
           };
 
-    // typedef struct String {
-    //     const char *ptr;
-    //     uint32_t len;
-    // } String;
-    // 
-    // typedef struct Buffer {
-    //     void *ptr;
-    //     uint32_t len;
-    // } Buffer;
-    // 
-    // typedef struct NativeObject {
-    //     void *objId;
-    //     const void *typeId;
-    // } NativeObject;
-    // 
-    // typedef union JSValueUnion {
-    //     int32_t int32;
-    //     double float64;
-    //     int64_t int64;
-    //     uint64_t uint64;
-    //     void *ptr;
-    //     String str;
-    //     Buffer buf;
-    //     NativeObject nto;
-    // } JSValueUnion;
-    // 
-    // typedef struct JSValue {
-    //     JSValueUnion u;
-    //     int32_t tag;
-    //     int padding;
-    // } JSValue;
-    //
-    // struct CallbackInfo {
-    //     void* thisPtr;
-    //     int argc;
-    //     void* data;
-    //     int padding;
-    //     JSValue res;
-    //     JSValue argv[0];
-    // };
-    // sizeof(JSValue) == 16
-
-    const callbackInfosCache : number[] = [];
-
-    function getNativeCallbackInfo(argc: number): number {
-        if (!callbackInfosCache[argc])
-        {
-            // 4 + 4 + 4 + 4 + 16 + (argc * 16)
-            const size = 32 + (argc * 16);
-            callbackInfosCache[argc] = engine.unityApi._malloc(size);
-            Buffer.writeInt32(engine.unityApi.HEAPU8, argc, callbackInfosCache[argc] + 4);
-        }
-        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, callbackInfosCache[argc] + 24); // set res to undefined
-        return callbackInfosCache[argc];
-    }
-
-    let buffer:number = undefined;
-    let buffer_size: number = 0;
-    function getBuffer(size: number): number {
-        if (buffer_size < size) {
-            buffer_size = size;
-            if (buffer) {
-                engine.unityApi._free(buffer);
-            }
-            buffer = engine.unityApi._malloc(buffer_size);
-        }
-        return buffer;
-    }
-
-
-    function fillArguments(args: any[]): number {
-        const argc = args.length;
-        const callbackInfo = getNativeCallbackInfo(argc);
-
-        for(let i = 0; i < argc; ++i) {
-            const arg = args[i];
-            const dataPtr = callbackInfo + 32 + (i * 16);
-            const tagPtr = dataPtr + 8;
-            if (arg === undefined) {
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, tagPtr);
-            } else if (arg === null) {
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_NULL, tagPtr);
-            } else if (typeof arg === 'bigint') {
-                Buffer.writeInt64(engine.unityApi.HEAPU8, arg, dataPtr);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_INT64, tagPtr);
-            } else if (typeof arg === 'number') {
-                if (Number.isInteger(arg)) {
-                    if (arg >= -2147483648 && arg <= 2147483647) {
-                        Buffer.writeInt32(engine.unityApi.HEAPU8, arg, dataPtr);
-                        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_INT, tagPtr);
-                    } else {
-                        Buffer.writeInt64(engine.unityApi.HEAPU8, arg, dataPtr);
-                        Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_INT64, tagPtr);
-                    }
-                } else {
-                    Buffer.writeDouble(engine.unityApi.HEAPU8, arg, dataPtr);
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_FLOAT64, tagPtr);
-                }
-            } else if (typeof arg === 'string') {
-                const len = engine.unityApi.lengthBytesUTF8(arg);
-                const ptr = getBuffer(len + 1);
-                engine.unityApi.stringToUTF8(arg, ptr, buffer_size);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, ptr, dataPtr);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, len, dataPtr + 4);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_STRING, tagPtr);
-            } else if (typeof arg === 'boolean') {
-                Buffer.writeInt32(engine.unityApi.HEAPU8, arg ? 1 : 0, dataPtr);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_BOOL, tagPtr);
-            } else if (typeof arg === 'function') {
-                Buffer.writeInt32(engine.unityApi.HEAPU8, Scope.getCurrent().addToScope(arg), dataPtr);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_FUNCTION, tagPtr);
-            } else if (arg instanceof Array) {
-                Buffer.writeInt32(engine.unityApi.HEAPU8, Scope.getCurrent().addToScope(arg), dataPtr);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_ARRAY, tagPtr);
-            } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
-                const len = arg.byteLength;
-                const ptr = getBuffer(len);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, ptr, dataPtr);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, len, dataPtr + 4);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_BUFFER, tagPtr);
-            } else if (typeof arg === 'object') {
-                const ntoInfo = ObjectPool.GetNativeInfoOfObject(arg);
-                if (ntoInfo) {
-                    const [objId, typeId] = ntoInfo;
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, objId, dataPtr);
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, typeId, dataPtr + 4);
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_NATIVE_OBJECT, tagPtr);
-                } else {
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, Scope.getCurrent().addToScope(arg), dataPtr);
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, JSTag.JS_TAG_OBJECT, tagPtr);
-                }
-            } else {
-                throw new Error(`Unexpected argument type: ${typeof arg}`);
-            }
-        }
-
-        return callbackInfo;
-    }
+    
 
     function genJsCallback(callback: Function, data: number, papi:number, isStatic: boolean) {
         return function(...args: any[]) {
-            const callbackInfo = fillArguments(args);
+            const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
             Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
             let objId = 0;
             if (!isStatic) {
@@ -953,7 +966,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             const nativeConstructor = engine.unityApi.getWasmTableEntry(constructor);
 
             const PApiNativeObject = function (...args: any[]) {
-                const callbackInfo = fillArguments(args);
+                const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
                 Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
                 const objId = nativeConstructor(webglFFI, callbackInfo);
                 objMapper.bindNativeObject(objId, this, typeId, true);
