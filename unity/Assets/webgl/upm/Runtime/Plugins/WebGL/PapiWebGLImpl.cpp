@@ -1008,10 +1008,14 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     return {};
 }
 
-// TODO
+// js和pesapi.h声明不一样，js改为返回值指针由调用者（原生）传入
+typedef void (*pesapi_js_eval_func)(pesapi_env env, const uint8_t* code, size_t code_size, const char* path, JSValue* result);
+pesapi_js_eval_func g_js_eval = nullptr;
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    g_js_eval(env, code, code_size, path, ret);
+    return pesapiValueFromQjsValue(ret);
 }
 
 pesapi_global_func g_js_global = nullptr;
@@ -1079,6 +1083,9 @@ extern "C"
         api->get_value_string_utf8 = &pesapi::webglimpl::pesapi_get_value_string_utf8;
         api->get_value_binary = &pesapi::webglimpl::pesapi_get_value_binary;
         api->create_boolean = &pesapi::webglimpl::pesapi_create_boolean;
+        
+        pesapi::webglimpl::g_js_eval = (pesapi::webglimpl::pesapi_js_eval_func)api->eval;
+        api->eval = &pesapi::webglimpl::pesapi_eval;
         
     }
 }

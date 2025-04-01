@@ -107,6 +107,8 @@ class Scope {
     private prevScope: Scope = undefined;
 
     private objectsInScope: object[] = [null]; // 加null为了index从1开始，因为在原生种存放在指针字段防止误判为nullptr
+
+    public lastException: Error = null;
 }
 
 class ObjectPool {
@@ -376,7 +378,7 @@ function getBuffer(wasmApi: PuertsJSEngine.UnityAPI, size: number): number {
     return buffer;
 }
 
-function jsArgWriteToPapValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: pesapi_value) {
+function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: pesapi_value) {
     const heap = wasmApi.HEAPU8;
 
     const dataPtr = value;
@@ -445,7 +447,7 @@ function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): nu
 
     for(let i = 0; i < argc; ++i) {
         const arg = args[i];
-        jsArgWriteToPapValue(wasmApi, arg, callbackInfo + 32 + (i * 16));
+        jsValueToPapiValue(wasmApi, arg, callbackInfo + 32 + (i * 16));
     }
 
     return callbackInfo;
@@ -704,7 +706,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         return null;
     }
     function pesapi_has_caught(pscope: pesapi_scope): boolean { 
-        throw new Error("pesapi_has_caught not implemented yet!");
+        return Scope.getCurrent().lastException != null;
     }
     function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): string { 
         throw new Error("pesapi_get_exception_as_string not implemented yet!");
@@ -784,16 +786,17 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_call_function not implemented yet!");
     }
 
-    function pesapi_eval(env: pesapi_env, pcode: CSString, code_size: number, path: string, result: pesapi_value): void {
+    // 和pesapi.h声明不一样，这改为返回值指针由调用者（原生）传入
+    function pesapi_eval(env: pesapi_env, pcode: CSString, code_size: number, path: string, presult: pesapi_value): void {
         if (!globalThis.eval) {
             throw new Error("eval is not supported");
         }
         try {
             const code = engine.unityApi.UTF8ToString(pcode);
             const result = globalThis.eval(code);
-            throw new Error("pesapi_eval not implemented yet!");
+            jsValueToPapiValue(engine.unityApi, result, presult);
         } catch (e) {
-            engine.lastException = e;
+            Scope.getCurrent().lastException = e;
         }
     }
 
