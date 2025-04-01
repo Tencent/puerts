@@ -967,10 +967,13 @@ void** pesapi_get_ref_internal_fields(pesapi_value_ref pvalue_ref, uint32_t* pin
     return &value_ref->internal_fields[0];
 }
 
-// TODO
+typedef void (*pesapi_js_get_property_func)(pesapi_env env, pesapi_value object, const char* key, JSValue* pvalue);
+pesapi_js_get_property_func g_js_get_property;
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const char* key)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    g_js_get_property(env, pobject, key, ret);
+    return pesapiValueFromQjsValue(ret);
 }
 
 // implement by js
@@ -990,10 +993,13 @@ bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
     return false;
 }
 
-// TODO
+typedef void (*pesapi_js_get_property_uint32_func)(pesapi_env env, pesapi_value object, uint32_t key, JSValue* pvalue);
+pesapi_js_get_property_uint32_func g_js_get_property_uint32;
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    g_js_get_property_uint32(env, pobject, key, ret);
+    return pesapiValueFromQjsValue(ret);
 }
 
 // implement by js
@@ -1080,12 +1086,31 @@ extern "C"
         
         api->is_null = &pesapi::webglimpl::pesapi_is_null;
         api->is_undefined = &pesapi::webglimpl::pesapi_is_undefined;
+        api->is_boolean = &pesapi::webglimpl::pesapi_is_boolean;
+        api->is_int32 = &pesapi::webglimpl::pesapi_is_int32;
+        api->is_uint32 = &pesapi::webglimpl::pesapi_is_uint32;
+        api->is_int64 = &pesapi::webglimpl::pesapi_is_int64;
+        api->is_uint64 = &pesapi::webglimpl::pesapi_is_uint64;
+        api->is_double = &pesapi::webglimpl::pesapi_is_double;
+        api->is_string = &pesapi::webglimpl::pesapi_is_string;
+        api->is_object = &pesapi::webglimpl::pesapi_is_object;
+        api->is_function = &pesapi::webglimpl::pesapi_is_function;
+        api->is_binary = &pesapi::webglimpl::pesapi_is_binary;
+        api->is_array = &pesapi::webglimpl::pesapi_is_array;
+        
         api->get_value_string_utf8 = &pesapi::webglimpl::pesapi_get_value_string_utf8;
         api->get_value_binary = &pesapi::webglimpl::pesapi_get_value_binary;
+        
         api->create_boolean = &pesapi::webglimpl::pesapi_create_boolean;
         
         pesapi::webglimpl::g_js_eval = (pesapi::webglimpl::pesapi_js_eval_func)api->eval;
         api->eval = &pesapi::webglimpl::pesapi_eval;
+        
+        pesapi::webglimpl::g_js_get_property = (pesapi::webglimpl::pesapi_js_get_property_func)api->get_property;
+        api->get_property = &pesapi::webglimpl::pesapi_get_property;
+        
+        pesapi::webglimpl::g_js_get_property_uint32 = (pesapi::webglimpl::pesapi_js_get_property_uint32_func)api->get_property_uint32;
+        api->get_property_uint32 = &pesapi::webglimpl::pesapi_get_property_uint32;
         
     }
 }

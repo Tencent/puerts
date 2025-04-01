@@ -745,8 +745,14 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
 
     // --------------- 属性操作 ---------------
-    function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, key: CSString): pesapi_value { 
-        throw new Error("pesapi_get_property not implemented yet!");
+    function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void { 
+        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        if (typeof obj != 'object') {
+            throw new Error("pesapi_set_property: target is not an object");
+        }
+        const key = engine.unityApi.UTF8ToString(pkey);
+        const value = obj[key];
+        jsValueToPapiValue(engine.unityApi, value, pvalue);
     }
     function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void {
         const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
@@ -763,8 +769,13 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_set_private(env: pesapi_env, pobject: pesapi_value, ptr: number): boolean { 
         throw new Error("pesapi_set_private not implemented yet!");
     }
-    function pesapi_get_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number): pesapi_value { 
-        throw new Error("pesapi_get_property_uint32 not implemented yet!");
+    function pesapi_get_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
+        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        if (typeof obj != 'object') {
+            throw new Error("pesapi_set_property: target is not an object");
+        }
+        const value = obj[key];
+        jsValueToPapiValue(engine.unityApi, value, pvalue);
     }
     function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
         const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
@@ -899,11 +910,11 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_get_ref_associated_env, sig: "ii"},
         {func: pesapi_get_ref_internal_fields, sig: "iii"},
         
-        {func: pesapi_get_property, sig: "iiii"},
+        {func: pesapi_get_property, sig: "viiii"},
         {func: pesapi_set_property, sig: "viiii"},
         {func: pesapi_get_private, sig: "iiii"},
         {func: pesapi_set_private, sig: "iiii"},
-        {func: pesapi_get_property_uint32, sig: "iiii"},
+        {func: pesapi_get_property_uint32, sig: "viiii"},
         {func: pesapi_set_property_uint32, sig: "viiii"},
         
         {func: pesapi_call_function, sig: "iiiiii"},
@@ -1048,7 +1059,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             };
         },
         pesapi_trace_native_object_lifecycle: function() {
-            throw new Error("pesapi_trace_native_object_lifecycle not implemented yet!");
+            //throw new Error("pesapi_trace_native_object_lifecycle not implemented yet!");
         }
     }
 }
