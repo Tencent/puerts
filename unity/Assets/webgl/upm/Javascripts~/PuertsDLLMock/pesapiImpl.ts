@@ -487,11 +487,30 @@ class ClassRegister {
     public setClassNotFoundCallback(callback: (typeId: number) => boolean) {
         this.classNotFound = callback;
     }
+
+    public traceNativeObjectLifecycle(typeId: number, onEnter:Function, onExit:Function) {
+        const cls = this.loadClassById(typeId);
+        Object.defineProperty(cls, '$OnEnter', {
+            value: onEnter,
+            writable: false,
+            enumerable: false,
+            configurable: false
+        });
+
+        Object.defineProperty(cls, '$OnExit', {
+            value: onExit,
+            writable: false,
+            enumerable: false,
+            configurable: false
+        });
+    }
 }
 
 class ObjectMapper {
     private objectPool: ObjectPool;
     private privateData: number = undefined;
+    private onNativeObjectEnter: Function;
+    private onNativeObjectExit: Function;
 
     constructor(cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void) {
         this.objectPool = new ObjectPool(cleanupCallback);
@@ -503,7 +522,7 @@ class ObjectMapper {
             const cls = ClassRegister.getInstance().loadClassById(typeId);
             if (cls) {
                 jsObj = Object.create(cls.prototype);
-                this.bindNativeObject(objId, jsObj, typeId, callFinalize);
+                this.bindNativeObject(objId, jsObj, typeId, cls, callFinalize);
             }
         } 
         return jsObj;
@@ -513,8 +532,9 @@ class ObjectMapper {
         return this.objectPool.get(objId);
     }
 
-    public bindNativeObject(objId: number, jsObj: object, typeId:number, callFinalize: boolean): void {
+    public bindNativeObject(objId: number, jsObj: object, typeId:number, cls: Function, callFinalize: boolean): void {
         this.objectPool.add(objId, jsObj, typeId, callFinalize);
+        (cls as any).$OnEnter?.(objId, (cls as any).$ClassData, this.privateData);
     }
 
     public setEnvPrivate(privateData: number): void {
@@ -1270,7 +1290,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
                 Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
                 const objId = nativeConstructor(webglFFI, callbackInfo);
-                objMapper.bindNativeObject(objId, this, typeId, true);
+                objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
             }
             Object.defineProperty(PApiNativeObject, "name", { value: name });
 
@@ -1342,8 +1362,10 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 setter_data: setter_data
             };
         },
-        pesapi_trace_native_object_lifecycle: function() {
-            //throw new Error("pesapi_trace_native_object_lifecycle not implemented yet!");
+        pesapi_trace_native_object_lifecycle: function(typeId: number, onEnter:number, onExit:number) {
+            const enterCallback = engine.unityApi.getWasmTableEntry(onEnter);
+            const exitCallback = engine.unityApi.getWasmTableEntry(onExit);
+            ClassRegister.getInstance().traceNativeObjectLifecycle(typeId, enterCallback, exitCallback);
         }
     }
 }
