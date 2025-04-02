@@ -108,6 +108,7 @@ struct caught_exception_info
     std::string message;
 };
 
+// TODO: 要考虑由谁释放的问题，字符串如果是js那分配的，应该由js释放
 void JS_FreeValue(JSValue v)
 {
     if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION)

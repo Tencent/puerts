@@ -557,6 +557,7 @@ function getNativeCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc: number): 
     return callbackInfosCache[argc];
 }
 
+//只需要用到一个buffer的场景下用预分配的，如果超过一个buffer，就malloc
 let buffer:number = undefined;
 let buffer_size: number = 0;
 let usingBuffers: number[] = [];
@@ -572,6 +573,7 @@ function getBuffer(wasmApi: PuertsJSEngine.UnityAPI, size: number): number {
             }
             buffer = wasmApi._malloc(buffer_size);
         }
+        ret = buffer;
     }
     usingBuffers.push(ret)
     return ret;
@@ -653,8 +655,8 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
 
 function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): number {
     const argc = args.length;
-    const callbackInfo = getNativeCallbackInfo(wasmApi, argc);
     clearUsingBuffers(wasmApi);
+    const callbackInfo = getNativeCallbackInfo(wasmApi, argc);
 
     for(let i = 0; i < argc; ++i) {
         const arg = args[i];
