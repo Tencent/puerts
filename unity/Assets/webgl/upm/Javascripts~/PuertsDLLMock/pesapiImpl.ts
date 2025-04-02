@@ -256,6 +256,8 @@ class Scope {
     }
 
     toJs(engine: PuertsJSEngine, objMapper: ObjectMapper, pvalue: pesapi_value) : any {
+        if (pvalue == 0) return undefined;
+
         const valType = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 8);
         //console.log(`valType: ${valType}`);
         if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
@@ -997,16 +999,26 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         pfunc: pesapi_value, 
         this_object: pesapi_value, 
         argc: number, 
-        argv: pesapi_value_ptr
-    ): pesapi_value {
-        console.log(`pesapi_call_function argc: ${argc}`);
+        argv: pesapi_value_ptr,
+        presult: pesapi_value
+    ): void {
+        const func: Function = Scope.getCurrent().toJs(engine, objMapper, pfunc);
+        const self = Scope.getCurrent().toJs(engine, objMapper, this_object);
+        if (typeof func != 'function') {
+            throw new Error("pesapi_call_function: target is not a function");
+        }
         const heap = engine.unityApi.HEAPU8;
+        const args = [];
         for(let i = 0; i < argc; ++i) {
             const argPtr:pesapi_value = Buffer.readInt32(heap, argv + i * 4);
-            const arg = Scope.getCurrent().toJs(engine, objMapper, argPtr);
-            console.log(`arg ${i}: ${arg} ${typeof arg}`); 
+            args.push(Scope.getCurrent().toJs(engine, objMapper, argPtr));
         }
-        throw new Error("pesapi_call_function not implemented yet!");
+        try {
+            const result = func.apply(self, args);
+            jsValueToPapiValue(engine.unityApi, result, presult);
+        } catch (e) {
+            Scope.getCurrent().lastException = e;
+        }
     }
 
     // 和pesapi.h声明不一样，这改为返回值指针由调用者（原生）传入
@@ -1129,7 +1141,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_get_property_uint32, sig: "viiii"},
         {func: pesapi_set_property_uint32, sig: "viiii"},
         
-        {func: pesapi_call_function, sig: "iiiiii"},
+        {func: pesapi_call_function, sig: "viiiiii"},
         {func: pesapi_eval, sig: "viiiii"},
         {func: pesapi_global, sig: "ii"},
         {func: pesapi_get_env_private, sig: "ii"},

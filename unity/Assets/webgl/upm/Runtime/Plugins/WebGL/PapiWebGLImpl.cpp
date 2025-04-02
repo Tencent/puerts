@@ -992,13 +992,13 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const cha
 //{
 //}
 
-// TODO
+// implement by js
 bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
 {
     return {};
 }
 
-// TODO
+// implement by js
 bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
 {
     return false;
@@ -1019,10 +1019,15 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, ui
 //    
 //}
 
-// TODO
+typedef void (*pesapi_js_call_function_func)(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[], JSValue* presult);
+
+pesapi_js_call_function_func g_js_call_function;
+
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    g_js_call_function(env, pfunc, this_object, argc, argv, ret);
+    return pesapiValueFromQjsValue(ret);
 }
 
 // js和pesapi.h声明不一样，js改为返回值指针由调用者（原生）传入
@@ -1131,6 +1136,9 @@ extern "C"
         
         pesapi::webglimpl::g_js_eval = (pesapi::webglimpl::pesapi_js_eval_func)api->eval;
         api->eval = &pesapi::webglimpl::pesapi_eval;
+        
+        pesapi::webglimpl::g_js_call_function = (pesapi::webglimpl::pesapi_js_call_function_func)api->call_function;
+        api->call_function = &pesapi::webglimpl::pesapi_call_function;
         
         pesapi::webglimpl::g_js_get_property = (pesapi::webglimpl::pesapi_js_get_property_func)api->get_property;
         api->get_property = &pesapi::webglimpl::pesapi_get_property;
