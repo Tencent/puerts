@@ -818,7 +818,7 @@ void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
     info->res = *qjsValueFromPesapiValue(value);
 }
 
-// 由js处理
+// implement by js
 //void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 //{
 //    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
@@ -1172,6 +1172,12 @@ extern "C"
         api->get_ref_internal_fields = &pesapi::webglimpl::pesapi_get_ref_internal_fields;
         
         api->get_ref_associated_env = &pesapi::webglimpl::pesapi_get_ref_associated_env;
+        
+        api->create_env_ref = &pesapi::webglimpl::pesapi_create_env_ref;
+        api->env_ref_is_valid = &pesapi::webglimpl::pesapi_env_ref_is_valid;
+        api->get_env_from_ref = &pesapi::webglimpl::pesapi_get_env_from_ref;
+        api->duplicate_env_ref = &pesapi::webglimpl::pesapi_duplicate_env_ref;
+        api->release_env_ref = &pesapi::webglimpl::pesapi_release_env_ref;
     }
 }
 

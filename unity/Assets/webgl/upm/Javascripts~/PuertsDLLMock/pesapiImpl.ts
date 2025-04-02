@@ -464,6 +464,13 @@ class ClassRegister {
             enumerable: false,
             configurable: false
         });
+
+        Object.defineProperty(cls, '$TypeId', {
+            value: typeId,
+            writable: false,
+            enumerable: false,
+            configurable: false
+        });
         
         this.typeIdToClass.set(typeId, cls);
     }
@@ -932,8 +939,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
     function pesapi_throw_by_string(pinfo: pesapi_callback_info, pmsg: CSString): void {
         const msg = engine.unityApi.UTF8ToString(pmsg);
-        console.log(`pesapi_throw_by_string: ${msg}`);
-        throw new Error("pesapi_throw_by_string not implemented yet!");
+        Scope.getCurrent().lastException = new Error(msg);
     }
 
     // --------------- 环境引用 ---------------
@@ -1294,7 +1300,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 }
             });
 
-            console.log(`pesapi_define_class: ${name}`)
+            console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
 
             ClassRegister.getInstance().registerClass(typeId, PApiNativeObject, data);
         },
