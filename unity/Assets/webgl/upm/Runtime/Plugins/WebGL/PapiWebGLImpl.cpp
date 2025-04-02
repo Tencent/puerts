@@ -1058,9 +1058,12 @@ const void* pesapi_get_env_private(pesapi_env env)
     return g_env_private;
 }
 
+pesapi_set_env_private_func g_js_set_env_private;
 void pesapi_set_env_private(pesapi_env env, const void* ptr)
 {
     g_env_private = ptr;
+    // notify js
+    g_js_set_env_private(env, ptr);
 }
 
 } // webglimpl
@@ -1083,6 +1086,7 @@ extern "C"
         api->get_env_from_ref = &pesapi::webglimpl::pesapi_get_env_from_ref;
         
         api->get_env_private = &pesapi::webglimpl::pesapi_get_env_private;
+        pesapi::webglimpl::g_js_set_env_private = api->set_env_private;
         api->set_env_private = &pesapi::webglimpl::pesapi_set_env_private;
         
         pesapi::webglimpl::g_js_global = api->global;

@@ -491,6 +491,7 @@ class ClassRegister {
 
 class ObjectMapper {
     private objectPool: ObjectPool;
+    private privateData: number = undefined;
 
     constructor(cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void) {
         this.objectPool = new ObjectPool(cleanupCallback);
@@ -502,7 +503,7 @@ class ObjectMapper {
             const cls = ClassRegister.getInstance().loadClassById(typeId);
             if (cls) {
                 jsObj = Object.create(cls.prototype);
-                this.objectPool.add(objId, jsObj, typeId, callFinalize);
+                this.bindNativeObject(objId, jsObj, typeId, callFinalize);
             }
         } 
         return jsObj;
@@ -514,6 +515,10 @@ class ObjectMapper {
 
     public bindNativeObject(objId: number, jsObj: object, typeId:number, callFinalize: boolean): void {
         this.objectPool.add(objId, jsObj, typeId, callFinalize);
+    }
+
+    public setEnvPrivate(privateData: number): void {
+        this.privateData = privateData;
     }
 }
 
@@ -1116,7 +1121,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_get_env_private not implemented yet!");
     }
     function pesapi_set_env_private(env: pesapi_env, ptr: number): void {
-        throw new Error("pesapi_set_env_private not implemented yet!");
+        objMapper.setEnvPrivate(ptr);
     }
 
     interface APIInfo {
