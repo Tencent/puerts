@@ -302,6 +302,8 @@ class Scope {
     private objectsInScope: object[] = [null]; // 加null为了index从1开始，因为在原生种存放在指针字段防止误判为nullptr
 
     public lastException: Error = null;
+
+    public lastExceptionBuffer: number = undefined;
 }
 
 class ObjectPool {
@@ -944,13 +946,32 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_has_caught(pscope: pesapi_scope): boolean { 
         return Scope.getCurrent().lastException != null;
     }
-    function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): string { 
-        throw new Error("pesapi_get_exception_as_string not implemented yet!");
+    function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): CSString { 
+        const exception = Scope.getCurrent().lastException;
+        if (exception) {
+            const msg = exception.message;
+            const stack = exception.stack;
+            const result = with_stack ? `${msg}\n${stack}` : msg;
+            const byteCount = engine.unityApi.lengthBytesUTF8(result);
+            const lastExceptionBuffer = engine.unityApi._malloc(byteCount + 1);
+            Scope.getCurrent().lastExceptionBuffer = lastExceptionBuffer;
+            return engine.unityApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
+        }
     }
     function pesapi_close_scope(pscope: pesapi_scope): void {
+        const lastExceptionBuffer = Scope.getCurrent().lastExceptionBuffer; // TODO: 合并类似逻辑
+        if (lastExceptionBuffer) {
+            engine.unityApi._free(lastExceptionBuffer);
+            Scope.getCurrent().lastExceptionBuffer = undefined;
+        }
         Scope.exit();
     }
     function pesapi_close_scope_placement(pscope: pesapi_scope): void {
+        const lastExceptionBuffer = Scope.getCurrent().lastExceptionBuffer;
+        if (lastExceptionBuffer) {
+            engine.unityApi._free(lastExceptionBuffer);
+            Scope.getCurrent().lastExceptionBuffer = undefined;
+        }
         Scope.exit();
     }
 
@@ -1057,13 +1078,12 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
             const argPtr:pesapi_value = Buffer.readInt32(heap, argv + i * 4);
             args.push(Scope.getCurrent().toJs(engine.unityApi, objMapper, argPtr));
         }
-        // TODO: 暂时先不处理异常，便于调试
-        //try {
+        try {
             const result = func.apply(self, args);
             jsValueToPapiValue(engine.unityApi, result, presult);
-        //} catch (e) {
-        //    Scope.getCurrent().lastException = e;
-        //}
+        } catch (e) {
+            Scope.getCurrent().lastException = e;
+        }
     }
 
     // 和pesapi.h声明不一样，这改为返回值指针由调用者（原生）传入

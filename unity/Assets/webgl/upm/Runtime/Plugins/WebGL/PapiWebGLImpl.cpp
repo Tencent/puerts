@@ -31,8 +31,8 @@ enum {
     JS_TAG_UINT64        = 7,
 };
 
-#define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag }
-#define JS_MKPTR(tag, p)   (JSValue){ (JSValueUnion){ .ptr = p }, tag }
+#define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag, 0 }
+#define JS_MKPTR(tag, p)   (JSValue){ (JSValueUnion){ .ptr = p }, tag, 0 }
 
 /* special values */
 #define JS_NULL      JS_MKVAL(JS_TAG_NULL, 0)
@@ -83,7 +83,7 @@ typedef union JSValueUnion {
 typedef struct JSValue {
     JSValueUnion u;
     int32_t tag;
-    int pedding;
+    int need_free;
 } JSValue;
 
 static_assert(sizeof(void*) == 4, "just support wasm32");
@@ -108,17 +108,20 @@ struct caught_exception_info
     std::string message;
 };
 
-// TODO: 要考虑由谁释放的问题，字符串如果是js那分配的，应该由js释放
+
 void JS_FreeValue(JSValue v)
 {
-    if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION)
+    if (v.need_free)
     {
-        delete v.u.str.ptr;
+        if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION)
+        {
+            delete v.u.str.ptr;
+        }
+        if (v.tag == JS_TAG_BUFFER)
+        {
+            delete (uint8_t *)v.u.buf.ptr;
+        }
     }
-    //if (v.tag == JS_TAG_BUFFER)
-    //{
-    //    delete (uint8_t *)v.u.buf.ptr;
-    //}
     v.u.ptr = nullptr;
 }
 
@@ -334,6 +337,7 @@ JSValue JS_NewStringLen(const char *str, uint32_t str_len)
     v.u.str.len = str_len;
     v.u.str.ptr = (char*)malloc(str_len);
     strncpy((char*)v.u.str.ptr, str, str_len);
+    v.need_free = true;
     return v;
 }
 
@@ -875,13 +879,9 @@ bool pesapi_has_caught(pesapi_scope pscope)
     return scope->caught != nullptr;
 }
 
-//TODO
+// implement by js
 const char* pesapi_get_exception_as_string(pesapi_scope pscope, bool with_stack)
 {
-    auto scope = reinterpret_cast<WebGlScope*>(pscope);
-    if (scope->caught != nullptr)
-    {
-    }
     return nullptr;
 }
 
