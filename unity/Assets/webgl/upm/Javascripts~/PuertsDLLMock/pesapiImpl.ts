@@ -233,8 +233,8 @@ class Scope {
         return new Scope();
     }
 
-    public static exit(): void {
-        Scope.current.close();
+    public static exit(wasmApi: PuertsJSEngine.UnityAPI): void {
+        Scope.current.close(wasmApi);
     }
 
     constructor() {
@@ -242,7 +242,11 @@ class Scope {
         Scope.current = this;
     }
 
-    close(): void {
+    close(wasmApi: PuertsJSEngine.UnityAPI): void {
+        if (this.lastExceptionBuffer) {
+            wasmApi._free(this.lastExceptionBuffer);
+            this.lastExceptionBuffer = undefined;
+        }
         Scope.current = this.prevScope;
     }
 
@@ -295,6 +299,21 @@ class Scope {
                 return wasmApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
         }
         throw new Error(`unsupported type: ${valType}`);
+    }
+
+    getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack: boolean): CSString {
+        if (this.lastException) {
+            const msg = this.lastException.message;
+            const stack = this.lastException.stack;
+            const result = with_stack ? `${msg}\n${stack}` : msg;
+            const byteCount = wasmApi.lengthBytesUTF8(result);
+            const lastExceptionBuffer = wasmApi._malloc(byteCount + 1);
+            if (this.lastExceptionBuffer) {
+                wasmApi._free(this.lastExceptionBuffer);
+            }
+            this.lastExceptionBuffer = lastExceptionBuffer;
+            return wasmApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
+        }
     }
 
     private prevScope: Scope = undefined;
@@ -947,32 +966,13 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         return Scope.getCurrent().lastException != null;
     }
     function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): CSString { 
-        const exception = Scope.getCurrent().lastException;
-        if (exception) {
-            const msg = exception.message;
-            const stack = exception.stack;
-            const result = with_stack ? `${msg}\n${stack}` : msg;
-            const byteCount = engine.unityApi.lengthBytesUTF8(result);
-            const lastExceptionBuffer = engine.unityApi._malloc(byteCount + 1);
-            Scope.getCurrent().lastExceptionBuffer = lastExceptionBuffer;
-            return engine.unityApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
-        }
+        return Scope.getCurrent().getExceptionAsNativeString(engine.unityApi, with_stack);
     }
     function pesapi_close_scope(pscope: pesapi_scope): void {
-        const lastExceptionBuffer = Scope.getCurrent().lastExceptionBuffer; // TODO: 合并类似逻辑
-        if (lastExceptionBuffer) {
-            engine.unityApi._free(lastExceptionBuffer);
-            Scope.getCurrent().lastExceptionBuffer = undefined;
-        }
-        Scope.exit();
+        Scope.exit(engine.unityApi);
     }
     function pesapi_close_scope_placement(pscope: pesapi_scope): void {
-        const lastExceptionBuffer = Scope.getCurrent().lastExceptionBuffer;
-        if (lastExceptionBuffer) {
-            engine.unityApi._free(lastExceptionBuffer);
-            Scope.getCurrent().lastExceptionBuffer = undefined;
-        }
-        Scope.exit();
+        Scope.exit(engine.unityApi);
     }
 
     const referencedValues = new SparseArray<any>();
