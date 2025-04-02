@@ -940,7 +940,7 @@ void pesapi_release_value_ref(pesapi_value_ref pvalue_ref)
     auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
     if (--value_ref->ref_count == 0)
     {
-        g_js_release_value_ref(pvalue_ref);
+        g_js_release_value_ref((pesapi_value_ref)(value_ref->ptr));
         value_ref->~ValueRef();
         free(value_ref);
     }
