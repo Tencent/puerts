@@ -794,7 +794,11 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_get_array_length(env: pesapi_env, 
         pvalue: pesapi_value,
     ): number {
-        throw new Error("pesapi_get_array_length not implemented yet!");
+        const array = Scope.getCurrent().getFromScope(pvalue);
+        if (!Array.isArray(array)) {
+            throw new Error("pesapi_get_array_length: value is not an array");
+        }
+        return array.length;
     }
 
     // --------------- 类型检查系列 ---------------

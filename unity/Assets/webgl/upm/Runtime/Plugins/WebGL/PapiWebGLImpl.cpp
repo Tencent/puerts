@@ -623,7 +623,7 @@ void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsi
 	return nullptr;
 }
 
-// TODO
+// 由js处理
 uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
 {
 	return 0;
@@ -1115,6 +1115,13 @@ extern "C"
         api->is_binary = &pesapi::webglimpl::pesapi_is_binary;
         api->is_array = &pesapi::webglimpl::pesapi_is_array;
         
+        
+        api->get_value_bool = &pesapi::webglimpl::pesapi_get_value_bool;
+        api->get_value_int32 = &pesapi::webglimpl::pesapi_get_value_int32;
+        api->get_value_uint32 = &pesapi::webglimpl::pesapi_get_value_uint32;
+        api->get_value_int64 = &pesapi::webglimpl::pesapi_get_value_int64;
+        api->get_value_uint64 = &pesapi::webglimpl::pesapi_get_value_uint64;
+        api->get_value_double = &pesapi::webglimpl::pesapi_get_value_double;
         api->get_value_string_utf8 = &pesapi::webglimpl::pesapi_get_value_string_utf8;
         api->get_value_binary = &pesapi::webglimpl::pesapi_get_value_binary;
         
