@@ -255,43 +255,44 @@ class Scope {
         return this.objectsInScope[index];
     }
 
-    toJs(engine: PuertsJSEngine, objMapper: ObjectMapper, pvalue: pesapi_value) : any {
+    toJs(wasmApi: PuertsJSEngine.UnityAPI, objMapper: ObjectMapper, pvalue: pesapi_value) : any {
         if (pvalue == 0) return undefined;
 
-        const valType = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 8);
+        const heap = wasmApi.HEAPU8;
+        const valType = Buffer.readInt32(heap, pvalue + 8);
         //console.log(`valType: ${valType}`);
         if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
-            const objIdx = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+            const objIdx = Buffer.readInt32(heap, pvalue);
             return this.objectsInScope[objIdx];
         }
         if (valType == JSTag.JS_TAG_NATIVE_OBJECT) {
-            const objId = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
-            const typeId = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
+            const objId = Buffer.readInt32(heap, pvalue);
+            const typeId = Buffer.readInt32(heap, pvalue + 4);
             return objMapper.pushNativeObject(objId, typeId, true);
         }
         switch(valType) {
             case JSTag.JS_TAG_BOOL:
-                return Buffer.readInt32(engine.unityApi.HEAPU8, pvalue) != 0;
+                return Buffer.readInt32(heap, pvalue) != 0;
             case JSTag.JS_TAG_INT:
-                return Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
+                return Buffer.readInt32(heap, pvalue);
             case JSTag.JS_TAG_NULL:
                 return null;
             case JSTag.JS_TAG_UNDEFINED:
                 return undefined;
             case JSTag.JS_TAG_FLOAT64:
-                return Buffer.readDouble(engine.unityApi.HEAPU8, pvalue);
+                return Buffer.readDouble(heap, pvalue);
             case JSTag.JS_TAG_INT64:
-                return Buffer.readInt64(engine.unityApi.HEAPU8, pvalue);
+                return Buffer.readInt64(heap, pvalue);
             case JSTag.JS_TAG_UINT64:
-                return Buffer.readUInt64(engine.unityApi.HEAPU8, pvalue);
+                return Buffer.readUInt64(heap, pvalue);
             case JSTag.JS_TAG_STRING:
-                const strStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
-                const strLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
-                return engine.unityApi.UTF8ToString(strStart as any, strLen);
+                const strStart = Buffer.readInt32(heap, pvalue);
+                const strLen = Buffer.readInt32(heap, pvalue + 4);
+                return wasmApi.UTF8ToString(strStart as any, strLen);
             case JSTag.JS_TAG_BUFFER:
-                const buffStart = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue);
-                const buffLen = Buffer.readInt32(engine.unityApi.HEAPU8, pvalue + 4);
-                return engine.unityApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
+                const buffStart = Buffer.readInt32(heap, pvalue);
+                const buffLen = Buffer.readInt32(heap, pvalue + 4);
+                return wasmApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
         }
         throw new Error(`unsupported type: ${valType}`);
     }
@@ -460,6 +461,7 @@ class ClassRegister {
     }
 }
 
+// TODO: gc时调用finalize
 function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: boolean, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
     return function (...args: any[]) {
         if (new.target) {
@@ -664,6 +666,21 @@ function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): nu
     }
 
     return callbackInfo;
+}
+
+function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: Function, data: number, papi:number, isStatic: boolean) {
+    return function(...args: any[]) {
+        const callbackInfo = jsArgsToCallbackInfo(wasmApi, args);
+        const heap = wasmApi.HEAPU8;
+        Buffer.writeInt32(heap, data, callbackInfo + 8); // data
+        let objId = 0;
+        if (!isStatic) {
+            [objId] = ObjectPool.GetNativeInfoOfObject(this);
+        } 
+        Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
+        callback(papi, callbackInfo);
+        return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
+    }
 }
 
 // 需要在Unity里调用PlayerSettings.WebGL.emscriptenArgs = " -s ALLOW_TABLE_GROWTH=1";
@@ -937,7 +954,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // --------------- 值引用 ---------------
     function pesapi_create_value_ref(env: pesapi_env, pvalue: pesapi_value, internal_field_count: number): pesapi_value_ref { 
-        const value = Scope.getCurrent().toJs(engine, objMapper, pvalue);
+        const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
         return referencedValues.add(value);
     }
     function pesapi_duplicate_value_ref(pvalue_ref: pesapi_value_ref): pesapi_value_ref { 
@@ -965,7 +982,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // --------------- 属性操作 ---------------
     function pesapi_get_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void { 
-        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_get_property: target is not an object");
         }
@@ -974,16 +991,16 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         jsValueToPapiValue(engine.unityApi, value, pvalue);
     }
     function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void {
-        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_set_property: target is not an object");
         }
         const key = engine.unityApi.UTF8ToString(pkey);
-        const value = Scope.getCurrent().toJs(engine, objMapper, pvalue);
+        const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
         obj[key] = value;
     }
     function pesapi_get_private(env: pesapi_env, pobject: pesapi_value, out_ptr: number): boolean { 
-        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object' && typeof obj != 'function') {
             Buffer.writeInt32(engine.unityApi.HEAPU8, 0, out_ptr);
             return false;
@@ -992,7 +1009,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         return true;
     }
     function pesapi_set_private(env: pesapi_env, pobject: pesapi_value, ptr: number): boolean { 
-        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object' && typeof obj != 'function') {
             return false;
         }
@@ -1000,7 +1017,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         return true;
     }
     function pesapi_get_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
-        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_get_property_uint32: target is not an object");
         }
@@ -1008,11 +1025,11 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         jsValueToPapiValue(engine.unityApi, value, pvalue);
     }
     function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
-        const obj = Scope.getCurrent().toJs(engine, objMapper, pobject);
+        const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_set_property_uint32: target is not an object");
         }
-        const value = Scope.getCurrent().toJs(engine, objMapper, pvalue);
+        const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
         obj[key] = value;
     }
 
@@ -1025,8 +1042,8 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         argv: pesapi_value_ptr,
         presult: pesapi_value
     ): void {
-        const func: Function = Scope.getCurrent().toJs(engine, objMapper, pfunc);
-        const self = Scope.getCurrent().toJs(engine, objMapper, this_object);
+        const func: Function = Scope.getCurrent().toJs(engine.unityApi, objMapper, pfunc);
+        const self = Scope.getCurrent().toJs(engine.unityApi, objMapper, this_object);
         if (typeof func != 'function') {
             throw new Error("pesapi_call_function: target is not a function");
         }
@@ -1034,7 +1051,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         const args = [];
         for(let i = 0; i < argc; ++i) {
             const argPtr:pesapi_value = Buffer.readInt32(heap, argv + i * 4);
-            args.push(Scope.getCurrent().toJs(engine, objMapper, argPtr));
+            args.push(Scope.getCurrent().toJs(engine.unityApi, objMapper, argPtr));
         }
         // TODO: 暂时先不处理异常，便于调试
         //try {
@@ -1198,22 +1215,6 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             setter_data: number 
           };
 
-    
-
-    function genJsCallback(callback: Function, data: number, papi:number, isStatic: boolean) {
-        return function(...args: any[]) {
-            const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
-            Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
-            let objId = 0;
-            if (!isStatic) {
-                [objId] = ObjectPool.GetNativeInfoOfObject(this);
-            } 
-            Buffer.writeInt32(engine.unityApi.HEAPU8, objId, callbackInfo); // thisPtr
-            callback(papi, callbackInfo);
-            return Scope.getCurrent().toJs(engine, objMapper, callbackInfo + 16);
-        }
-    }
-
     // Initialize with proper type assertion
     const descriptorsArray: Array<Array<Descriptor>> = [[]] as Array<Array<Descriptor>>;
     return {
@@ -1247,7 +1248,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
 
             descriptors.forEach(descriptor => {
                 if ('callback' in descriptor) {
-                    const jsCallback = genJsCallback(descriptor.callback, descriptor.data, webglFFI, descriptor.isStatic);
+                    const jsCallback = genJsCallback(engine.unityApi, descriptor.callback, descriptor.data, webglFFI, descriptor.isStatic);
                     if (descriptor.isStatic) {
                         (PApiNativeObject as any)[descriptor.name] = jsCallback;
                     } else {
@@ -1256,8 +1257,8 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 } else {
                     //console.log(`genJsCallback ${descriptor.name} ${descriptor.getter_data} ${webglFFI}`);
                     var propertyDescriptor: PropertyDescriptor = {
-                        get: genJsCallback(descriptor.getter, descriptor.getter_data, webglFFI, descriptor.isStatic),
-                        set: genJsCallback(descriptor.setter, descriptor.setter_data, webglFFI, descriptor.isStatic),
+                        get: genJsCallback(engine.unityApi, descriptor.getter, descriptor.getter_data, webglFFI, descriptor.isStatic),
+                        set: genJsCallback(engine.unityApi, descriptor.setter, descriptor.setter_data, webglFFI, descriptor.isStatic),
                         configurable: true,
                         enumerable: true
                     }
