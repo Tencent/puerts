@@ -944,13 +944,14 @@ void pesapi_release_value_ref(pesapi_value_ref pvalue_ref)
     }
 }
 
-typedef void (*pesapi_js_get_value_from_ref_func)(pesapi_env env, pesapi_value_ref value_ref, JSValue* pvalue);
+typedef void (*pesapi_js_get_value_from_ref_func)(pesapi_env env, void* ptr, JSValue* pvalue);
 pesapi_js_get_value_from_ref_func g_js_get_value_from_ref_func;
 
 pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref pvalue_ref)
 {
     JSValue* v = allocValueInCurrentScope();
-    g_js_get_value_from_ref_func(env, pvalue_ref, v);
+    auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
+    g_js_get_value_from_ref_func(env, value_ref->ptr, v);
     return pesapiValueFromQjsValue(v);
 }
 
