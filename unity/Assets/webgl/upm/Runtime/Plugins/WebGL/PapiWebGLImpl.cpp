@@ -552,7 +552,6 @@ pesapi_value pesapi_create_object(pesapi_env env)
 }
 
 pesapi_create_function_func g_js_create_function = nullptr;
-
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
     auto ret = allocValueInCurrentScope();
@@ -560,10 +559,12 @@ pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl,
     return pesapiValueFromQjsValue(ret);
 }
 
-// TODO
+pesapi_create_class_func g_js_create_class;
 pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 {
-    return {};
+    auto ret = allocValueInCurrentScope();
+    *ret = JS_MKPTR(JS_TAG_FUNCTION, g_js_create_class(env, type_id));
+    return pesapiValueFromQjsValue(ret);
 }
 
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
@@ -1134,6 +1135,8 @@ extern "C"
         api->create_object = &pesapi::webglimpl::pesapi_create_object;
         pesapi::webglimpl::g_js_create_function = api->create_function;
         api->create_function = &pesapi::webglimpl::pesapi_create_function;
+        pesapi::webglimpl::g_js_create_class = api->create_class;
+        api->create_class = &pesapi::webglimpl::pesapi_create_class;
         
         pesapi::webglimpl::g_js_eval = (pesapi::webglimpl::pesapi_js_eval_func)api->eval;
         api->eval = &pesapi::webglimpl::pesapi_eval;

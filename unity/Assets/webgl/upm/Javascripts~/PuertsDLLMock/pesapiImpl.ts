@@ -742,8 +742,13 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         return Scope.getCurrent().addToScope(jsCallback);
     }
 
-    function pesapi_create_class(env: pesapi_env, type_id: number): pesapi_value {
-        throw new Error("pesapi_create_class not implemented yet!");
+    function pesapi_create_class(env: pesapi_env, typeId: number): pesapi_value {
+        const cls = ClassRegister.getInstance().loadClassById(typeId);
+        if (typeof cls === 'function') {
+            console.log(`create class: ${cls.name}`);
+            return Scope.getCurrent().addToScope(cls);
+        }
+        throw new Error("can't load class by type id: " + typeId);
     }
 
     // --------------- 值获取系列 ---------------
