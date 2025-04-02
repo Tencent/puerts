@@ -461,16 +461,6 @@ class ClassRegister {
     }
 }
 
-// TODO: gc时调用finalize
-function makeNativeFunctionWrap(engine: PuertsJSEngine, isStatic: boolean, native_impl: pesapi_callback, data: number, finalize: pesapi_function_finalize) : Function {
-    return function (...args: any[]) {
-        if (new.target) {
-            throw new Error('"not a constructor');
-        }
-        throw new Error("NativeFunctionWrap not implemented yet!");
-    }
-}
-
 class ObjectMapper {
     private objectPool: ObjectPool;
 
@@ -670,6 +660,9 @@ function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): nu
 
 function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: Function, data: number, papi:number, isStatic: boolean) {
     return function(...args: any[]) {
+        if (new.target) {
+            throw new Error('"not a constructor');
+        }
         const callbackInfo = jsArgsToCallbackInfo(wasmApi, args);
         const heap = wasmApi.HEAPU8;
         Buffer.writeInt32(heap, data, callbackInfo + 8); // data
@@ -742,9 +735,11 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         env: pesapi_env, 
         native_impl: pesapi_callback, 
         data: number, 
-        finalize: pesapi_function_finalize
+        finalize: pesapi_function_finalize // TODO: gc时调用finalize
     ): pesapi_value {
-        return Scope.getCurrent().addToScope(makeNativeFunctionWrap(engine, false, native_impl, data, finalize));
+        const nativeCallback = engine.unityApi.getWasmTableEntry(native_impl);
+        const jsCallback = genJsCallback(engine.unityApi, nativeCallback, data, webglFFI, true);
+        return Scope.getCurrent().addToScope(jsCallback);
     }
 
     function pesapi_create_class(env: pesapi_env, type_id: number): pesapi_value {
