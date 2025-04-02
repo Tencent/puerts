@@ -559,15 +559,33 @@ function getNativeCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc: number): 
 
 let buffer:number = undefined;
 let buffer_size: number = 0;
+let usingBuffers: number[] = [];
 function getBuffer(wasmApi: PuertsJSEngine.UnityAPI, size: number): number {
-    if (buffer_size < size) {
-        buffer_size = size;
-        if (buffer) {
-            wasmApi._free(buffer);
+    let ret = buffer;
+    if (usingBuffers.length > 0) {
+        ret = wasmApi._malloc(buffer_size);
+    } else {
+        if (buffer_size < size) {
+            buffer_size = size;
+            if (buffer) {
+                wasmApi._free(buffer);
+            }
+            buffer = wasmApi._malloc(buffer_size);
         }
-        buffer = wasmApi._malloc(buffer_size);
     }
-    return buffer;
+    usingBuffers.push(ret)
+    return ret;
+}
+function clearUsingBuffers(wasmApi: PuertsJSEngine.UnityAPI) {
+    if (usingBuffers.length == 0) return;
+    if (usingBuffers.length == 1) {
+        usingBuffers.pop();
+        return;
+    }
+    for (let i = 1; i < usingBuffers.length; i++) {
+        wasmApi._free(usingBuffers[i]);
+    }
+    usingBuffers = [];
 }
 
 function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: pesapi_value) {
@@ -636,6 +654,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
 function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): number {
     const argc = args.length;
     const callbackInfo = getNativeCallbackInfo(wasmApi, argc);
+    clearUsingBuffers(wasmApi);
 
     for(let i = 0; i < argc; ++i) {
         const arg = args[i];
@@ -867,7 +886,9 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_add_return(pinfo: pesapi_callback_info, value: pesapi_value): void {
         throw new Error("pesapi_add_return not implemented yet!");
     }
-    function pesapi_throw_by_string(pinfo: pesapi_callback_info, msg: string): void {
+    function pesapi_throw_by_string(pinfo: pesapi_callback_info, pmsg: CSString): void {
+        const msg = engine.unityApi.UTF8ToString(pmsg);
+        console.log(`pesapi_throw_by_string: ${msg}`);
         throw new Error("pesapi_throw_by_string not implemented yet!");
     }
 
@@ -1013,12 +1034,13 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
             const argPtr:pesapi_value = Buffer.readInt32(heap, argv + i * 4);
             args.push(Scope.getCurrent().toJs(engine, objMapper, argPtr));
         }
-        try {
+        // TODO: 暂时先不处理异常，便于调试
+        //try {
             const result = func.apply(self, args);
             jsValueToPapiValue(engine.unityApi, result, presult);
-        } catch (e) {
-            Scope.getCurrent().lastException = e;
-        }
+        //} catch (e) {
+        //    Scope.getCurrent().lastException = e;
+        //}
     }
 
     // 和pesapi.h声明不一样，这改为返回值指针由调用者（原生）传入
