@@ -509,8 +509,6 @@ class ClassRegister {
 class ObjectMapper {
     private objectPool: ObjectPool;
     private privateData: number = undefined;
-    private onNativeObjectEnter: Function;
-    private onNativeObjectExit: Function;
 
     constructor(cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void) {
         this.objectPool = new ObjectPool(cleanupCallback);

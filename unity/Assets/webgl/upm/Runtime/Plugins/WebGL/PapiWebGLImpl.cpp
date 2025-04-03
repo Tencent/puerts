@@ -747,26 +747,29 @@ bool pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pva
     return false;
 }
 
-// TODO
+pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key);
+void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue);
+
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value pvalue)
 {
-    return {};
+    pesapi_value arr = pesapi_create_array(env);
+    pesapi_set_property_uint32(env, arr, 0, pvalue);
+    return arr;
 }
 
-// TODO
 pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value p_boxed_value)
 {
-    return {};
+    return pesapi_get_property_uint32(env, p_boxed_value, 0);
 }
 
-// TODO
 void pesapi_update_boxed_value(pesapi_env env, pesapi_value p_boxed_value, pesapi_value pvalue)
 {
+    pesapi_set_property_uint32(env, p_boxed_value, 0, pvalue);
 }
 
 bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
-    return pesapi_is_object(env, value);
+    return pesapi_is_array(env, value);
 }
 
 int pesapi_get_args_len(pesapi_callback_info pinfo)
@@ -960,7 +963,7 @@ pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref pvalue_r
 void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref pvalue_ref)
 {
     auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
-    // TODO: call unref of js
+    g_js_release_value_ref((pesapi_value_ref)(value_ref->ptr));
 }
 
 bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
@@ -1015,11 +1018,12 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, ui
     return pesapiValueFromQjsValue(ret);
 }
 
-// implement by js
-//void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
-//{
-//    
-//}
+// 由js实现，但其它api需要调用
+pesapi_set_property_uint32_func g_js_set_property_uint32;
+void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+{
+    g_js_set_property_uint32(env, pobject, key, pvalue);
+}
 
 typedef void (*pesapi_js_call_function_func)(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[], JSValue* presult);
 
@@ -1182,6 +1186,8 @@ extern "C"
         api->get_env_from_ref = &pesapi::webglimpl::pesapi_get_env_from_ref;
         api->duplicate_env_ref = &pesapi::webglimpl::pesapi_duplicate_env_ref;
         api->release_env_ref = &pesapi::webglimpl::pesapi_release_env_ref;
+        
+        pesapi::webglimpl::g_js_set_property_uint32 = api->set_property_uint32;
     }
 }
 
