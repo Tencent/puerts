@@ -607,7 +607,7 @@ let usingBuffers: number[] = [];
 function getBuffer(wasmApi: PuertsJSEngine.UnityAPI, size: number): number {
     let ret = buffer;
     if (usingBuffers.length > 0) {
-        ret = wasmApi._malloc(buffer_size);
+        ret = wasmApi._malloc(size);
     } else {
         if (buffer_size < size) {
             buffer_size = size;
