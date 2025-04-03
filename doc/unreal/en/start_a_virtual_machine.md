@@ -20,8 +20,10 @@ To start a new JavaScript virtual environment, a suitable entry point should be 
 #include "JsEnv.h"
 
 UCLASS()
-class PUERTS_UNREAL_DEMO_API APlayerCharacter : public ACharacter
+class APlayerCharacter : public ACharacter
 {
+    GENERATED_BODY()
+    
 public:
     virtual void BeginPlay() override {
         auto JsEnv = MakeShared<puerts::FJsEnv>();
@@ -43,8 +45,10 @@ console.warn("Hello World!");
 #include "JsEnv.h"
 
 UCLASS()
-class PUERTS_UNREAL_DEMO_API UDemoGameInstance : public UGameInstance
+class UDemoGameInstance : public UGameInstance
 {
+    GENERATED_BODY()
+
 public:
     virtual void OnStart() override {
         JsEnv = MakeShared<puerts::FJsEnv>();
