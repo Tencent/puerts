@@ -661,7 +661,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
     } else if (typeof arg === 'string') {
         const len = wasmApi.lengthBytesUTF8(arg);
         const ptr = getBuffer(wasmApi, len + 1);
-        wasmApi.stringToUTF8(arg, ptr, buffer_size);
+        wasmApi.stringToUTF8(arg, ptr, len + 1);
         Buffer.writeInt32(heap, ptr, dataPtr);
         Buffer.writeInt32(heap, len, dataPtr + 4);
         Buffer.writeInt32(heap, JSTag.JS_TAG_STRING, tagPtr);
