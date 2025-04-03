@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 #include "pesapi.h"
+#include "vm/Class.h"
+
+using namespace il2cpp::vm;
 
 namespace pesapi
 {
@@ -740,11 +743,11 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
     return (jsvalue.tag == JS_TAG_NATIVE_OBJECT) ? jsvalue.u.nto.typeId : nullptr;
 }
 
-// 看上去得走js判断继承关系
-// TODO
 bool pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
 {
-    return false;
+    Il2CppClass* klass = (Il2CppClass*)type_id;
+    Il2CppClass* objClass = (Il2CppClass*) pesapi_get_native_object_typeid(env, pvalue);
+    return objClass ? Class::IsAssignableFrom(klass, objClass) : false;
 }
 
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key);
