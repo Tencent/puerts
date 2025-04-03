@@ -710,6 +710,10 @@ function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): nu
 }
 
 function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: Function, data: number, papi:number, isStatic: boolean) {
+    // TODO: 执行wasm回调时可能会有异常，应捕获异常
+    // TODO: 要新建一个scope，包括js还有wasm的，完成后清理
+    // TODO: scope上有异常，应该将其throw出来
+    // TODO: 处理csType.GetNestedTypes(Assert) throw Error: object finalize not implemented yet! 
     return function(...args: any[]) {
         if (new.target) {
             throw new Error('"not a constructor');
