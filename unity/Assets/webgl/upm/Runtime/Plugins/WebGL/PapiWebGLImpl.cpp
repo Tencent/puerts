@@ -1191,6 +1191,8 @@ extern "C"
         api->release_env_ref = &pesapi::webglimpl::pesapi_release_env_ref;
         
         pesapi::webglimpl::g_js_set_property_uint32 = api->set_property_uint32;
+        
+        api->is_instance_of = &pesapi::webglimpl::pesapi_is_instance_of;
     }
 }
 
