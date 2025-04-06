@@ -50,7 +50,7 @@ After creating this file, start your PuerTS code and attach the `Puerts Debugger
 
 ![puerts_debugger](../..//pic/puerts_debugger.png)
 
-**Note: If you do not wait for the debugger, breakpoints will be skipped prior to attachment.**
+**Note: If you do not [wait for the debugger](#waiting-for-debugger-attachment), breakpoints will be skipped prior to attachment.**
 
 ## Notes
 ###  Table Of Contents

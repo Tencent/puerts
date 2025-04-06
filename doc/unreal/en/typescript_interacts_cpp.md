@@ -57,8 +57,10 @@ if (DemoGameInstance)
 // Interact with static UObject members
 if (World)
 {
+    // Access UClass:Load static function to get blueprint generated class
     let BlueprintGeneratedClass = UE.Class.Load('/Game/DemoBlueprint.DemoBlueprint_C');
 
+    // Spawn an actor from the class
     if (BlueprintGeneratedClass)
     {
         const NewActor = UE.GameplayStatics.BeginDeferredActorSpawnFromClass(World, BlueprintGeneratedClass, null);       
@@ -68,6 +70,7 @@ if (World)
 ```
 
 ### Arrays, Maps And Sets
+##### TypeScript
 ``` typescript
 import * as UE from 'ue'
 
