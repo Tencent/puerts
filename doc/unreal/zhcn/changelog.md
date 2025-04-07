@@ -51,7 +51,7 @@
 
 * 修正UE.BuiltinBool访问失败的问题
 
-* 解决模板绑定const script_type *参数崩溃的问题，(除了const char*外)映射到$Ref<T>，相关issue： #1793
+* 解决模板绑定const script_type *参数崩溃的问题，(除了const char*外)映射到`$Ref<T>`，相关issue： #1793
 
 * 解决模板绑定返回std::string&会调用移动构造的问题，见issue： #1793
 
