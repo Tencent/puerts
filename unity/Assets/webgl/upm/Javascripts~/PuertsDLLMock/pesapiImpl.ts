@@ -456,7 +456,7 @@ class ClassRegister {
         }
     }
 
-    public registerClass(typeId: number, cls: Function, clsData: number): void {
+    public registerClass(typeId: number, cls: Function, finalize: Function, clsData: number): void {
         // Store class data in non-enumerable property
         Object.defineProperty(cls, '$ClassData', {
             value: clsData,
@@ -467,6 +467,13 @@ class ClassRegister {
 
         Object.defineProperty(cls, '$TypeId', {
             value: typeId,
+            writable: false,
+            enumerable: false,
+            configurable: false
+        });
+
+        Object.defineProperty(cls, '$Finalize', {
+            value: finalize,
             writable: false,
             enumerable: false,
             configurable: false
@@ -509,9 +516,11 @@ class ClassRegister {
 class ObjectMapper {
     private objectPool: ObjectPool;
     private privateData: number = undefined;
+    private objId2ud = new Map<number, number>();
 
-    constructor(cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void) {
-        this.objectPool = new ObjectPool(cleanupCallback);
+    constructor() {
+        this.objectPool = new ObjectPool(this.OnNativeObjectFinalized.bind(this));
+        this.objectPool.startIncrementalGc(100, 1000);
     }
 
     public pushNativeObject(objId: number, typeId:number, callFinalize: boolean): object {
@@ -532,11 +541,27 @@ class ObjectMapper {
 
     public bindNativeObject(objId: number, jsObj: object, typeId:number, cls: Function, callFinalize: boolean): void {
         this.objectPool.add(objId, jsObj, typeId, callFinalize);
-        (cls as any).$OnEnter?.(objId, (cls as any).$ClassData, this.privateData);
+        //if (callFinalize && (cls as any).$Finalize) console.error(`call Finalize obj: ${objId}`);
+        const ud: number = (cls as any).$OnEnter?.(objId, (cls as any).$ClassData, this.privateData);
+        this.objId2ud.set(objId, ud);
     }
 
     public setEnvPrivate(privateData: number): void {
         this.privateData = privateData;
+    }
+
+    private OnNativeObjectFinalized(objId: number, typeId:number, callFinalize: boolean) {
+        //console.error(`OnNativeObjectFinalized ${objId}`);
+        const cls = ClassRegister.getInstance().findClassById(typeId);
+        const {$Finalize, $OnExit, $ClassData} = cls as any;
+        if (callFinalize && $Finalize) {
+            //console.error(`call $Finalize ${objId}`);
+            $Finalize(webglFFI, objId, $ClassData, this.privateData);
+        }
+        if ($OnExit) {
+            //console.error(`call $OnExit ${objId}`);
+            $OnExit(objId, $ClassData, this.privateData, this.objId2ud.get(objId));
+        }
     }
 }
 
@@ -740,12 +765,7 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
 export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     if (webglFFI) return webglFFI;
 
-    objMapper = new ObjectMapper((objId: number, typeId:number, callFinalize: boolean) => {
-        // todo: callFinalize
-        const e = new Error("object finalize not implemented yet!");
-        console.error(`object finalize not implemented yet! ${e.stack}`);
-        //throw e;
-    });
+    objMapper = new ObjectMapper();
 
     // --------------- 值创建系列 ---------------
     function pesapi_create_null(env: pesapi_env): pesapi_value {
@@ -1340,7 +1360,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
 
             console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
 
-            ClassRegister.getInstance().registerClass(typeId, PApiNativeObject, data);
+            ClassRegister.getInstance().registerClass(typeId, PApiNativeObject, engine.unityApi.getWasmTableEntry(finalize), data);
         },
         pesapi_get_class_data: function(typeId: number, forceLoad: boolean) : number {
             return ClassRegister.getInstance().getClassDataById(typeId, forceLoad);
