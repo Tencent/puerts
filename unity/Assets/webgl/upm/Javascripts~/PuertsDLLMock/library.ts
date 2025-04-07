@@ -522,6 +522,8 @@ export namespace PuertsJSEngine {
         _CallCSharpFunctionCallback: (functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) => void;
         _CallCSharpConstructorCallback: (functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) => number;
         _CallCSharpDestructorCallback: (functionPtr: IntPtr, selfPtr: CSIdentifier, callbackIdx: number) => void;
+        PApiCallbackWithScope: (nativeCallback:number, ffi: number, info: number) => void;
+        PApiConstructorWithScope: (nativeCallback:number, ffi: number, info: number) => number;
         InjectPapiGLNativeImpl: (apiPtr: number) => void;
         HEAP8: Int8Array;
         HEAPU8: Uint8Array;
@@ -567,6 +569,8 @@ export class PuertsJSEngine {
             _CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback,
             InjectPapiGLNativeImpl,
+            PApiCallbackWithScope,
+            PApiConstructorWithScope,
             HEAP8,
             HEAPU8,
             HEAP32,
@@ -593,6 +597,8 @@ export class PuertsJSEngine {
             _CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback,
             InjectPapiGLNativeImpl,
+            PApiCallbackWithScope,
+            PApiConstructorWithScope,
 
             HEAP8,
             HEAPU8,

@@ -367,7 +367,7 @@ class ObjectPool {
     static GetNativeInfoOfObject(obj: object): [number, number] | undefined {
         const objId = (obj as any).$ObjId__;
         if (typeof objId === 'number') {
-            return [objId, (obj as any).$ObjId__]
+            return [objId, (obj as any).$TypeId__]
         }
     }
 
@@ -709,15 +709,14 @@ function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): nu
     return callbackInfo;
 }
 
-function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: Function, data: number, papi:number, isStatic: boolean) {
+function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data: number, papi:number, isStatic: boolean) {
     // TODO: 执行wasm回调时可能会有异常，应捕获异常
-    // TODO: 要新建一个scope，包括js还有wasm的，完成后清理
-    // TODO: scope上有异常，应该将其throw出来
     // TODO: 处理csType.GetNestedTypes(Assert) throw Error: object finalize not implemented yet! 
     return function(...args: any[]) {
         if (new.target) {
             throw new Error('"not a constructor');
         }
+        const scope = Scope.enter();
         const callbackInfo = jsArgsToCallbackInfo(wasmApi, args);
         const heap = wasmApi.HEAPU8;
         Buffer.writeInt32(heap, data, callbackInfo + 8); // data
@@ -726,8 +725,14 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: Function, dat
             [objId] = ObjectPool.GetNativeInfoOfObject(this);
         } 
         Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
-        callback(papi, callbackInfo);
-        return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
+        wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
+        if (scope.lastException) {
+            Scope.exit(wasmApi);
+            throw scope.lastException;
+        }
+        const ret = Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
+        Scope.exit(wasmApi);
+        return ret;
     }
 }
 
@@ -737,7 +742,9 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     objMapper = new ObjectMapper((objId: number, typeId:number, callFinalize: boolean) => {
         // todo: callFinalize
-        throw new Error("object finalize not implemented yet!");
+        const e = new Error("object finalize not implemented yet!");
+        console.error(`object finalize not implemented yet! ${e.stack}`);
+        //throw e;
     });
 
     // --------------- 值创建系列 ---------------
@@ -792,8 +799,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         data: number, 
         finalize: pesapi_function_finalize // TODO: gc时调用finalize
     ): pesapi_value {
-        const nativeCallback = engine.unityApi.getWasmTableEntry(native_impl);
-        const jsCallback = genJsCallback(engine.unityApi, nativeCallback, data, webglFFI, true);
+        const jsCallback = genJsCallback(engine.unityApi, native_impl, data, webglFFI, true);
         return Scope.getCurrent().addToScope(jsCallback);
     }
 
@@ -1122,10 +1128,10 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     // 和pesapi.h声明不一样，这改为返回值指针由调用者（原生）传入
     function pesapi_eval(env: pesapi_env, pcode: CSString, code_size: number, path: string, presult: pesapi_value): void {
         if (!globalThis.eval) {
-            throw new Error("eval is not supported");
+            throw new Error("eval is not supported"); // TODO: 抛给wasm更合适些
         }
         try {
-            const code = engine.unityApi.UTF8ToString(pcode);
+            const code = engine.unityApi.UTF8ToString(pcode, code_size);
             const result = globalThis.eval(code);
             jsValueToPapiValue(engine.unityApi, result, presult);
         } catch (e) {
@@ -1262,12 +1268,12 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
     // Explicitly define array type to avoid 'never' type inference
     // Define union type for method/property descriptors
     type Descriptor = 
-        | { name: string; isStatic: boolean; callback: Function; data: number }
+        | { name: string; isStatic: boolean; callback: number; data: number }
         | { 
             name: string; 
             isStatic: boolean; 
-            getter: Function; 
-            setter: Function; 
+            getter: number; 
+            setter: number; 
             getter_data: number; 
             setter_data: number 
           };
@@ -1286,13 +1292,18 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             const descriptors = descriptorsArray[properties];
             descriptorsArray[properties] = undefined;
             const name = engine.unityApi.UTF8ToString(pname);
-            const nativeConstructor = engine.unityApi.getWasmTableEntry(constructor);
 
             const PApiNativeObject = function (...args: any[]) {
+                const scope = Scope.enter();
                 const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
                 Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
-                const objId = nativeConstructor(webglFFI, callbackInfo);
+                const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
+                if (scope.lastException) {
+                    Scope.exit(engine.unityApi);
+                    throw scope.lastException;
+                }
                 objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
+                Scope.exit(engine.unityApi);
             }
             Object.defineProperty(PApiNativeObject, "name", { value: name });
 
@@ -1343,23 +1354,20 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
         },
         pesapi_set_method_info: function(properties: number, index: number, pname: CSString, is_static: boolean, method: number, data: number, signature_info: number): void {
             const name = engine.unityApi.UTF8ToString(pname);
-            const jsCallback = engine.unityApi.getWasmTableEntry(method);
             descriptorsArray[properties][index] = {
                 name: name,
                 isStatic: is_static,
-                callback: jsCallback,
+                callback: method,
                 data: data
             };
         },
         pesapi_set_property_info: function(properties: number, index: number, pname: CSString, is_static: boolean, getter: number, setter: number, getter_data: number, setter_data: number, type_info: number): void {
             const name = engine.unityApi.UTF8ToString(pname);
-            const jsGetter = engine.unityApi.getWasmTableEntry(getter);
-            const jsSetter = engine.unityApi.getWasmTableEntry(setter);
             descriptorsArray[properties][index] = {
                 name: name,
                 isStatic: is_static,
-                getter: jsGetter,
-                setter: jsSetter,
+                getter: getter,
+                setter: setter,
                 getter_data: getter_data,
                 setter_data: setter_data
             };

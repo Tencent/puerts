@@ -1,5 +1,6 @@
 #if defined(__EMSCRIPTEN__)
 
+#include <emscripten.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -1078,7 +1079,7 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
 
 extern "C"
 {
-    void DoInjectPapi(struct pesapi_ffi* api)
+    void EMSCRIPTEN_KEEPALIVE InjectPapiGLNativeImpl(struct pesapi_ffi* api)
     {
         api->open_scope = &pesapi::webglimpl::pesapi_open_scope;
         
@@ -1193,6 +1194,18 @@ extern "C"
         pesapi::webglimpl::g_js_set_property_uint32 = api->set_property_uint32;
         
         api->is_instance_of = &pesapi::webglimpl::pesapi_is_instance_of;
+    }
+    
+    void EMSCRIPTEN_KEEPALIVE PApiCallbackWithScope(pesapi_callback cb, struct pesapi_ffi* apis, pesapi_callback_info info)
+    {
+        pesapi::webglimpl::WebGlScope();
+        cb(apis, info);
+    }
+    
+    void* EMSCRIPTEN_KEEPALIVE PApiConstructorWithScope(pesapi_constructor cb, struct pesapi_ffi* apis, pesapi_callback_info info)
+    {
+        pesapi::webglimpl::WebGlScope();
+        return cb(apis, info);
     }
 }
 
