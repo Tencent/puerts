@@ -80,13 +80,7 @@ UE里头，支持反射的API（标注了UCLASS，UPPROPERTY，UFUNCTION，USTRU
 
 如果非反射C++ API呢？比如UE部分C++ API，比如第三方C++库。
 
-有两种方式：
-
-* 推荐[基于模板的静态绑定](template_binding.md)
-
-* 目前不太推荐的[扩展函数](extension_methods.md)
-
-上述两种方式，都可以把普通C++ API转成能被TypeScript的api，重启后重新生成声明文件即可。
+请看[基于模板的静态绑定](template_binding.md)
 
 ### 蓝图mixin功能
 
