@@ -225,10 +225,11 @@ enum JSTag {
 let lastException: Error = null;
 let lastExceptionBuffer: number = undefined;
 
-function getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack: boolean): CSString {
+function getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack: boolean): number {
     if (lastException) {
         const msg = lastException.message;
         const stack = lastException.stack;
+        lastException = null;
         const result = with_stack ? `${msg}\n${stack}` : msg;
         const byteCount = wasmApi.lengthBytesUTF8(result);
         //console.error(`getExceptionAsNativeString(${byteCount}): ${result}`);
@@ -236,8 +237,10 @@ function getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack
             wasmApi._free(lastExceptionBuffer);
         }
         lastExceptionBuffer = wasmApi._malloc(byteCount + 1);
-        return wasmApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
+        wasmApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
+        return lastExceptionBuffer;
     }
+    return 0;
 }
 
 class Scope {
@@ -1024,7 +1027,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_has_caught(pscope: pesapi_scope): boolean { 
         return lastException != null;
     }
-    function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): CSString { 
+    function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): number { 
         return getExceptionAsNativeString(engine.unityApi, with_stack);
     }
     function pesapi_close_scope(pscope: pesapi_scope): void {
