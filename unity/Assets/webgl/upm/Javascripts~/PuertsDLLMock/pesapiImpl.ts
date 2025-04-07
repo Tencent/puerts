@@ -222,6 +222,24 @@ enum JSTag {
     JS_TAG_UINT64        = 7,
 }
 
+let lastException: Error = null;
+let lastExceptionBuffer: number = undefined;
+
+function getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack: boolean): CSString {
+    if (lastException) {
+        const msg = lastException.message;
+        const stack = lastException.stack;
+        const result = with_stack ? `${msg}\n${stack}` : msg;
+        const byteCount = wasmApi.lengthBytesUTF8(result);
+        //console.error(`getExceptionAsNativeString(${byteCount}): ${result}`);
+        if (lastExceptionBuffer) {
+            wasmApi._free(lastExceptionBuffer);
+        }
+        lastExceptionBuffer = wasmApi._malloc(byteCount + 1);
+        return wasmApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
+    }
+}
+
 class Scope {
     private static current: Scope = undefined;
 
@@ -234,6 +252,7 @@ class Scope {
     }
 
     public static exit(wasmApi: PuertsJSEngine.UnityAPI): void {
+        lastException = undefined;
         Scope.current.close(wasmApi);
     }
 
@@ -243,10 +262,6 @@ class Scope {
     }
 
     close(wasmApi: PuertsJSEngine.UnityAPI): void {
-        if (this.lastExceptionBuffer) {
-            wasmApi._free(this.lastExceptionBuffer);
-            this.lastExceptionBuffer = undefined;
-        }
         Scope.current = this.prevScope;
     }
 
@@ -301,28 +316,9 @@ class Scope {
         throw new Error(`unsupported type: ${valType}`);
     }
 
-    getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack: boolean): CSString {
-        if (this.lastException) {
-            const msg = this.lastException.message;
-            const stack = this.lastException.stack;
-            const result = with_stack ? `${msg}\n${stack}` : msg;
-            const byteCount = wasmApi.lengthBytesUTF8(result);
-            const lastExceptionBuffer = wasmApi._malloc(byteCount + 1);
-            if (this.lastExceptionBuffer) {
-                wasmApi._free(this.lastExceptionBuffer);
-            }
-            this.lastExceptionBuffer = lastExceptionBuffer;
-            return wasmApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
-        }
-    }
-
     private prevScope: Scope = undefined;
 
     private objectsInScope: object[] = [null]; // 加null为了index从1开始，因为在原生种存放在指针字段防止误判为nullptr
-
-    public lastException: Error = null;
-
-    public lastExceptionBuffer: number = undefined;
 }
 
 class ObjectPool {
@@ -542,8 +538,11 @@ class ObjectMapper {
     public bindNativeObject(objId: number, jsObj: object, typeId:number, cls: Function, callFinalize: boolean): void {
         this.objectPool.add(objId, jsObj, typeId, callFinalize);
         //if (callFinalize && (cls as any).$Finalize) console.error(`call Finalize obj: ${objId}`);
-        const ud: number = (cls as any).$OnEnter?.(objId, (cls as any).$ClassData, this.privateData);
-        this.objId2ud.set(objId, ud);
+        const $OnEnter = (cls as any).$OnEnter;
+        if ($OnEnter) {
+            const ud: number = $OnEnter(objId, (cls as any).$ClassData, this.privateData);
+            this.objId2ud.set(objId, ud);
+        }
     }
 
     public setEnvPrivate(privateData: number): void {
@@ -751,9 +750,10 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
         } 
         Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
         wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-        if (scope.lastException) {
+        if (lastException) {
+            const e = lastException;
             Scope.exit(wasmApi);
-            throw scope.lastException;
+            throw e;
         }
         const ret = Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
         Scope.exit(wasmApi);
@@ -992,7 +992,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
     function pesapi_throw_by_string(pinfo: pesapi_callback_info, pmsg: CSString): void {
         const msg = engine.unityApi.UTF8ToString(pmsg);
-        Scope.getCurrent().lastException = new Error(msg);
+        lastException = new Error(msg);
     }
 
     // --------------- 环境引用 ---------------
@@ -1022,10 +1022,10 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         return null;
     }
     function pesapi_has_caught(pscope: pesapi_scope): boolean { 
-        return Scope.getCurrent().lastException != null;
+        return lastException != null;
     }
     function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): CSString { 
-        return Scope.getCurrent().getExceptionAsNativeString(engine.unityApi, with_stack);
+        return getExceptionAsNativeString(engine.unityApi, with_stack);
     }
     function pesapi_close_scope(pscope: pesapi_scope): void {
         Scope.exit(engine.unityApi);
@@ -1141,7 +1141,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
             const result = func.apply(self, args);
             jsValueToPapiValue(engine.unityApi, result, presult);
         } catch (e) {
-            Scope.getCurrent().lastException = e;
+            lastException = e;
         }
     }
 
@@ -1155,7 +1155,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
             const result = globalThis.eval(code);
             jsValueToPapiValue(engine.unityApi, result, presult);
         } catch (e) {
-            Scope.getCurrent().lastException = e;
+            lastException = e;
         }
     }
 
@@ -1318,9 +1318,10 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
                 Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
                 const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-                if (scope.lastException) {
+                if (lastException) {
+                    const e = lastException;
                     Scope.exit(engine.unityApi);
-                    throw scope.lastException;
+                    throw e;
                 }
                 objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
                 Scope.exit(engine.unityApi);
