@@ -560,9 +560,10 @@ class ObjectMapper {
             //console.error(`call $Finalize ${objId}`);
             $Finalize(webglFFI, objId, $ClassData, this.privateData);
         }
-        if ($OnExit) {
-            //console.error(`call $OnExit ${objId}`);
-            $OnExit(objId, $ClassData, this.privateData, this.objId2ud.get(objId));
+        if ($OnExit && this.objId2ud.has(objId)) {
+            const ud = this.objId2ud.get(objId);
+            this.objId2ud.delete(objId);
+            $OnExit(objId, $ClassData, this.privateData, ud);
         }
     }
 }
