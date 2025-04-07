@@ -428,6 +428,8 @@ class ObjectPool {
     }
 }
 
+type TypeInfos = { typeId: number; finalize: Function; data: number, onEnter?:Function, onExit?:Function }
+
 class ClassRegister {
     private static instance: ClassRegister;
 
@@ -436,6 +438,8 @@ class ClassRegister {
     private classNotFound: (typeId: number) => bool = undefined
 
     private typeIdToClass: Map<number, Function> = new Map();
+
+    private typeIdToInfos: Map<number, TypeInfos> = new Map();
 
     public static getInstance(): ClassRegister {
         if (!ClassRegister.instance) {
@@ -456,38 +460,32 @@ class ClassRegister {
     }
 
     public registerClass(typeId: number, cls: Function, finalize: Function, clsData: number): void {
-        // Store class data in non-enumerable property
-        Object.defineProperty(cls, '$ClassData', {
-            value: clsData,
-            writable: false,
-            enumerable: false,
-            configurable: false
-        });
+        const infos = { typeId, finalize, data: clsData };
 
-        Object.defineProperty(cls, '$TypeId', {
-            value: typeId,
+        Object.defineProperty(cls, '$Infos', {
+            value: infos,
             writable: false,
             enumerable: false,
             configurable: false
         });
-
-        Object.defineProperty(cls, '$Finalize', {
-            value: finalize,
-            writable: false,
-            enumerable: false,
-            configurable: false
-        });
-        
         this.typeIdToClass.set(typeId, cls);
+        this.typeIdToInfos.set(typeId, infos);
     }
 
-    public getClassDataById(typeId: number, forceLoad: boolean): number | undefined {
-        const cls = forceLoad ? this.loadClassById(typeId) : this.findClassById(typeId);
-        return cls ? (cls as any).$ClassData : 0;
+    public getClassDataById(typeId: number, forceLoad: boolean): number {
+        if (forceLoad) {
+            this.loadClassById(typeId);
+        }
+        const infos = this.getTypeInfos(typeId);
+        return infos ? infos.data : 0;
     }
 
     public findClassById(typeId: number): Function | undefined {
         return this.typeIdToClass.get(typeId);
+    }
+
+    public getTypeInfos(typeId: number): TypeInfos | undefined {
+        return this.typeIdToInfos.get(typeId);
     }
 
     public setClassNotFoundCallback(callback: (typeId: number) => boolean) {
@@ -495,20 +493,11 @@ class ClassRegister {
     }
 
     public traceNativeObjectLifecycle(typeId: number, onEnter:Function, onExit:Function) {
-        const cls = this.loadClassById(typeId);
-        Object.defineProperty(cls, '$OnEnter', {
-            value: onEnter,
-            writable: false,
-            enumerable: false,
-            configurable: false
-        });
-
-        Object.defineProperty(cls, '$OnExit', {
-            value: onExit,
-            writable: false,
-            enumerable: false,
-            configurable: false
-        });
+        const infos = this.getTypeInfos(typeId);
+        if (infos) {
+            infos.onEnter = onEnter;
+            infos.onExit = onExit;
+        }
     }
 }
 
@@ -540,10 +529,9 @@ class ObjectMapper {
 
     public bindNativeObject(objId: number, jsObj: object, typeId:number, cls: Function, callFinalize: boolean): void {
         this.objectPool.add(objId, jsObj, typeId, callFinalize);
-        //if (callFinalize && (cls as any).$Finalize) console.error(`call Finalize obj: ${objId}`);
-        const $OnEnter = (cls as any).$OnEnter;
-        if ($OnEnter) {
-            const ud: number = $OnEnter(objId, (cls as any).$ClassData, this.privateData);
+        const {onEnter, data} = (cls as any).$Infos as TypeInfos;
+        if (onEnter) {
+            const ud: number = onEnter(objId, data, this.privateData);
             this.objId2ud.set(objId, ud);
         }
     }
@@ -555,15 +543,14 @@ class ObjectMapper {
     private OnNativeObjectFinalized(objId: number, typeId:number, callFinalize: boolean) {
         //console.error(`OnNativeObjectFinalized ${objId}`);
         const cls = ClassRegister.getInstance().findClassById(typeId);
-        const {$Finalize, $OnExit, $ClassData} = cls as any;
-        if (callFinalize && $Finalize) {
-            //console.error(`call $Finalize ${objId}`);
-            $Finalize(webglFFI, objId, $ClassData, this.privateData);
+        const {finalize, onExit, data} = (cls as any).$Infos as TypeInfos;
+        if (callFinalize && finalize) {
+            finalize(webglFFI, objId, data, this.privateData);
         }
-        if ($OnExit && this.objId2ud.has(objId)) {
+        if (onExit && this.objId2ud.has(objId)) {
             const ud = this.objId2ud.get(objId);
             this.objId2ud.delete(objId);
-            $OnExit(objId, $ClassData, this.privateData, ud);
+            onExit(objId, data, this.privateData, ud);
         }
     }
 }
