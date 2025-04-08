@@ -1194,6 +1194,11 @@ extern "C"
         pesapi::webglimpl::g_js_set_property_uint32 = api->set_property_uint32;
         
         api->is_instance_of = &pesapi::webglimpl::pesapi_is_instance_of;
+        
+        api->boxing = &pesapi::webglimpl::pesapi_boxing;
+        api->unboxing = &pesapi::webglimpl::pesapi_unboxing;
+        api->update_boxed_value = &pesapi::webglimpl::pesapi_update_boxed_value;
+        api->is_boxed_value = &pesapi::webglimpl::pesapi_is_boxed_value;
     }
     
     void EMSCRIPTEN_KEEPALIVE PApiCallbackWithScope(pesapi_callback cb, struct pesapi_ffi* apis, pesapi_callback_info info)
