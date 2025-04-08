@@ -76,13 +76,11 @@ export function SToCPPType(signature) {
 }
     
 export function getThis(signature) {
-    let getJsThis = 'pesapi_value jsThis = apis->get_holder(info);'
     if (signature == 't') {
         return `auto self = apis->get_native_holder_ptr(info);`
     } else if (signature == 'T') {
-        return `${getJsThis}
-    auto self = apis->get_native_object_ptr(env, jsThis);
-    auto ptrType = (Il2CppClass*) apis->get_native_object_typeid(env, jsThis);
+        return `auto self = apis->get_native_holder_ptr(info);
+    auto ptrType = (Il2CppClass*) apis->get_native_holder_typeid(info);
     if (il2cpp::vm::Class::IsValuetype(ptrType))
     {
         self = il2cpp::vm::Object::Box(ptrType, self);

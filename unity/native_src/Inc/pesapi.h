@@ -194,7 +194,7 @@ typedef int (*pesapi_get_args_len_func)(pesapi_callback_info info);
 typedef pesapi_value (*pesapi_get_arg_func)(pesapi_callback_info info, int index);
 typedef pesapi_env (*pesapi_get_env_func)(pesapi_callback_info info);
 typedef void* (*pesapi_get_native_holder_ptr_func)(pesapi_callback_info info);
-typedef pesapi_value (*pesapi_get_holder_func)(pesapi_callback_info info);
+typedef const void* (*pesapi_get_native_holder_typeid_func)(pesapi_callback_info info);
 typedef void* (*pesapi_get_userdata_func)(pesapi_callback_info info);
 typedef void (*pesapi_add_return_func)(pesapi_callback_info info, pesapi_value value);
 typedef void (*pesapi_throw_by_string_func)(pesapi_callback_info pinfo, const char* msg);
@@ -285,7 +285,7 @@ struct pesapi_ffi
     pesapi_get_arg_func get_arg;
     pesapi_get_env_func get_env;
     pesapi_get_native_holder_ptr_func get_native_holder_ptr;
-    pesapi_get_holder_func get_holder;
+    pesapi_get_native_holder_typeid_func get_native_holder_typeid;
     pesapi_get_userdata_func get_userdata;
     pesapi_add_return_func add_return;
     pesapi_throw_by_string_func throw_by_string;

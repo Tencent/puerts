@@ -205,7 +205,7 @@ struct CallbackInfo {
 	void* thisPtr;
 	int argc;
     void* data;
-    int pedding;
+    void* thisTypeId;
 	JSValue res;
     JSValue argv[0];
 };
@@ -806,12 +806,12 @@ void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
     return info->thisPtr;
 }
 
-// webgl不用这个api
-//pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
-//{
-//    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
-//    return pesapiValueFromQjsValue(&(info->thisVal));
-//}
+
+const void* pesapi_get_native_holder_typeid(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<CallbackInfo*>(pinfo);
+    return info->thisTypeId;
+}
 
 void* pesapi_get_userdata(pesapi_callback_info pinfo)
 {
@@ -1110,6 +1110,7 @@ extern "C"
         api->get_arg = &pesapi::webglimpl::pesapi_get_arg;
         api->get_env = &pesapi::webglimpl::pesapi_get_env;
         api->get_native_holder_ptr = &pesapi::webglimpl::pesapi_get_native_holder_ptr;
+        api->get_native_holder_typeid = &pesapi::webglimpl::pesapi_get_native_holder_typeid;
         api->get_userdata = &pesapi::webglimpl::pesapi_get_userdata;
         api->add_return = &pesapi::webglimpl::pesapi_add_return;
         

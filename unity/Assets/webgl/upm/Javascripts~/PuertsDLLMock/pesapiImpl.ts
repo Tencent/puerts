@@ -614,7 +614,7 @@ let objMapper: ObjectMapper = undefined;
 //     void* thisPtr;
 //     int argc;
 //     void* data;
-//     int padding;
+//     void* thisTypeId;
 //     JSValue res;
 //     JSValue argv[0];
 // };
@@ -738,11 +738,13 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
             const heap = wasmApi.HEAPU8;
             Buffer.writeInt32(heap, data, callbackInfo + 8); // data
             let objId = 0;
+            let typeId = 0;
             if (!isStatic && this) {
                 const ntoInfo = ObjectPool.GetNativeInfoOfObject(this);
-                if (ntoInfo) [objId] = ntoInfo;
+                if (ntoInfo) [objId, typeId] = ntoInfo;
             } 
             Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
+            Buffer.writeInt32(heap, typeId, callbackInfo + 12); // thisTypeId
             wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
             if (hasException) {
                 throw getAndClearLastException();
@@ -975,8 +977,8 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_get_native_holder_ptr(pinfo: pesapi_callback_info): pesapi_value { 
         throw new Error("pesapi_get_native_holder_ptr not implemented yet!");
     }
-    function pesapi_get_holder(pinfo: pesapi_callback_info): pesapi_value { 
-        throw new Error("pesapi_get_holder not implemented yet!");
+    function pesapi_get_native_holder_typeid(pinfo: pesapi_callback_info): pesapi_value { 
+        throw new Error("pesapi_get_native_holder_typeid not implemented yet!");
     }
     function pesapi_get_userdata(pinfo: pesapi_callback_info): number { 
         throw new Error("pesapi_get_userdata not implemented yet!");
@@ -1225,7 +1227,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_get_arg, sig: "iii"},
         {func: pesapi_get_env, sig: "ii"},
         {func: pesapi_get_native_holder_ptr, sig: "ii"},
-        {func: pesapi_get_holder, sig: "ii"},
+        {func: pesapi_get_native_holder_typeid, sig: "ii"},
         {func: pesapi_get_userdata, sig: "ii"},
         {func: pesapi_add_return, sig: "vii"},
         {func: pesapi_throw_by_string, sig: "vii"},

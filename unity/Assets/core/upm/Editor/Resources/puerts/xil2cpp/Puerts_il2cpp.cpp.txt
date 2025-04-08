@@ -572,8 +572,7 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
             self = apis->get_native_holder_ptr(info);
             if (csharpMethodInfo->NeedBoxing)
             {
-                pesapi_value jsThis = apis->get_holder(info);
-                auto ptrType = (Il2CppClass*) apis->get_native_object_typeid(env, jsThis);
+                auto ptrType = (Il2CppClass*) apis->get_native_holder_typeid(info);
                 if (Class::IsValuetype(ptrType))
                 {
                     self = Object::Box(ptrType, self);
