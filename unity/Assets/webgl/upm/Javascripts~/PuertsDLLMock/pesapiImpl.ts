@@ -607,7 +607,7 @@ let objMapper: ObjectMapper = undefined;
 // typedef struct JSValue {
 //     JSValueUnion u;
 //     int32_t tag;
-//     int padding;
+//     int need_free;
 // } JSValue;
 //
 // struct CallbackInfo {
@@ -644,37 +644,9 @@ function returnNativeCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc: number
     }
 }
 
-//只需要用到一个buffer的场景下用预分配的，如果超过一个buffer，就malloc
-let buffer:number = undefined;
-let buffer_size: number = 0;
-let usingBuffers: number[] = [];
+// TODO: 先简单分配由wasm那释放，后续再优化
 function getBuffer(wasmApi: PuertsJSEngine.UnityAPI, size: number): number {
-    let ret = buffer;
-    if (usingBuffers.length > 0) {
-        ret = wasmApi._malloc(size);
-    } else {
-        if (buffer_size < size) {
-            buffer_size = size;
-            if (buffer) {
-                wasmApi._free(buffer);
-            }
-            buffer = wasmApi._malloc(buffer_size);
-        }
-        ret = buffer;
-    }
-    usingBuffers.push(ret)
-    return ret;
-}
-function clearUsingBuffers(wasmApi: PuertsJSEngine.UnityAPI) {
-    if (usingBuffers.length == 0) return;
-    if (usingBuffers.length == 1) {
-        usingBuffers.pop();
-        return;
-    }
-    for (let i = 1; i < usingBuffers.length; i++) {
-        wasmApi._free(usingBuffers[i]);
-    }
-    usingBuffers = [];
+    return wasmApi._malloc(size);
 }
 
 function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: pesapi_value) {
@@ -709,6 +681,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
         Buffer.writeInt32(heap, ptr, dataPtr);
         Buffer.writeInt32(heap, len, dataPtr + 4);
         Buffer.writeInt32(heap, JSTag.JS_TAG_STRING, tagPtr);
+        Buffer.writeInt32(heap, 1, tagPtr + 4); // need_free = true
     } else if (typeof arg === 'boolean') {
         Buffer.writeInt32(heap, arg ? 1 : 0, dataPtr);
         Buffer.writeInt32(heap, JSTag.JS_TAG_BOOL, tagPtr);
@@ -725,6 +698,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
         Buffer.writeInt32(heap, ptr, dataPtr);
         Buffer.writeInt32(heap, len, dataPtr + 4);
         Buffer.writeInt32(heap, JSTag.JS_TAG_BUFFER, tagPtr);
+        Buffer.writeInt32(heap, 1, tagPtr + 4); // need_free = true
     } else if (typeof arg === 'object') {
         const ntoInfo = ObjectPool.GetNativeInfoOfObject(arg);
         if (ntoInfo) {
@@ -742,7 +716,6 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
 }
 
 function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc:number, args: any[]): number {
-    clearUsingBuffers(wasmApi);
     const callbackInfo = getNativeCallbackInfo(wasmApi, argc);
 
     for(let i = 0; i < argc; ++i) {
