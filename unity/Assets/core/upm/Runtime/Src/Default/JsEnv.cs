@@ -114,7 +114,15 @@ namespace Puerts
             {
                 isolate = PuertsDLL.CreateJSEngine((int)backend);
             }
-            
+
+#if UNITY_WEBGL
+            if (PuertsDLL.GetLibBackend(isolate) != 2 && jsEnvs.Count > 0)
+            {
+                disposed = true;
+                throw new InvalidOperationException("more than one JsEnv instance is not supported in WebGL");
+            }
+#endif
+
             if (isolate == IntPtr.Zero)
             {
                 disposed = true;
