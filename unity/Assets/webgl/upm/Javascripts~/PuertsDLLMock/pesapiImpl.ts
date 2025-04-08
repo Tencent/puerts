@@ -764,8 +764,9 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
             const heap = wasmApi.HEAPU8;
             Buffer.writeInt32(heap, data, callbackInfo + 8); // data
             let objId = 0;
-            if (!isStatic) {
-                [objId] = ObjectPool.GetNativeInfoOfObject(this);
+            if (!isStatic && this) {
+                const ntoInfo = ObjectPool.GetNativeInfoOfObject(this);
+                if (ntoInfo) [objId] = ntoInfo;
             } 
             Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
             wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
@@ -838,7 +839,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         data: number, 
         finalize: pesapi_function_finalize // TODO: gc时调用finalize
     ): pesapi_value {
-        const jsCallback = genJsCallback(engine.unityApi, native_impl, data, webglFFI, true);
+        const jsCallback = genJsCallback(engine.unityApi, native_impl, data, webglFFI, false);
         return Scope.getCurrent().addToScope(jsCallback);
     }
 
