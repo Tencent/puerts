@@ -820,7 +820,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_create_class(env: pesapi_env, typeId: number): pesapi_value {
         const cls = ClassRegister.getInstance().loadClassById(typeId);
         if (typeof cls === 'function') {
-            console.log(`create class: ${cls.name}`);
+            //console.log(`create class: ${cls.name}`);
             return Scope.getCurrent().addToScope(cls);
         }
         throw new Error("can't load class by type id: " + typeId);
@@ -1355,7 +1355,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                 }
             });
 
-            console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
+            //console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
 
             ClassRegister.getInstance().registerClass(typeId, PApiNativeObject, engine.unityApi.getWasmTableEntry(finalize), data);
         },
