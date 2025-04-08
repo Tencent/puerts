@@ -507,7 +507,7 @@ export namespace PuertsJSEngine {
     export type EngineConstructorParam = UnityAPI;
     
     export interface UnityAPI {
-        UTF8ToString: (strPtr: CSString) => string,
+        UTF8ToString: (strPtr: CSString, maxRead?: number) => string,
         _malloc: (size: number) => number,
         _free: (ptr: number) => void,
         _setTempRet0: (value: number) => void,
@@ -516,11 +516,14 @@ export namespace PuertsJSEngine {
         stackAlloc: (size: number) => number,
         stackSave: () => number,
         stackRestore: (stack: number) => void,
+        getWasmTableEntry: (index: number) => Function,
         addFunction: (func: Function, sig: string) => number,
         removeFunction: (index: number) => void,
         _CallCSharpFunctionCallback: (functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) => void;
         _CallCSharpConstructorCallback: (functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) => number;
         _CallCSharpDestructorCallback: (functionPtr: IntPtr, selfPtr: CSIdentifier, callbackIdx: number) => void;
+        PApiCallbackWithScope: (nativeCallback:number, ffi: number, info: number) => void;
+        PApiConstructorWithScope: (nativeCallback:number, ffi: number, info: number) => number;
         InjectPapiGLNativeImpl: (apiPtr: number) => void;
         HEAP8: Int8Array;
         HEAPU8: Uint8Array;
@@ -559,12 +562,15 @@ export class PuertsJSEngine {
             stackSave,
             stackRestore,
             stackAlloc,
+            getWasmTableEntry,
             addFunction,
             removeFunction,
             _CallCSharpFunctionCallback,
             _CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback,
             InjectPapiGLNativeImpl,
+            PApiCallbackWithScope,
+            PApiConstructorWithScope,
             HEAP8,
             HEAPU8,
             HEAP32,
@@ -584,12 +590,15 @@ export class PuertsJSEngine {
             stackSave,
             stackRestore,
             stackAlloc,
+            getWasmTableEntry,
             addFunction,
             removeFunction,
             _CallCSharpFunctionCallback,
             _CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback,
             InjectPapiGLNativeImpl,
+            PApiCallbackWithScope,
+            PApiConstructorWithScope,
 
             HEAP8,
             HEAPU8,
