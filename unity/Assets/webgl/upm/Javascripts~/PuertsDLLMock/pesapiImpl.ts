@@ -604,15 +604,25 @@ let objMapper: ObjectMapper = undefined;
 const callbackInfosCache : number[] = [];
 
 function getNativeCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc: number): number {
-    if (!callbackInfosCache[argc])
-    {
+    let callbackInfo = callbackInfosCache[argc];
+    if (!callbackInfo)  {
         // 4 + 4 + 4 + 4 + 16 + (argc * 16)
         const size = 32 + (argc * 16);
-        callbackInfosCache[argc] = wasmApi._malloc(size);
-        Buffer.writeInt32(wasmApi.HEAPU8, argc, callbackInfosCache[argc] + 4);
+        callbackInfo = wasmApi._malloc(size);
+        Buffer.writeInt32(wasmApi.HEAPU8, argc, callbackInfo + 4);
+    } else {
+        callbackInfosCache[argc] = undefined;
     }
-    Buffer.writeInt32(wasmApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, callbackInfosCache[argc] + 24); // set res to undefined
-    return callbackInfosCache[argc];
+    Buffer.writeInt32(wasmApi.HEAPU8, JSTag.JS_TAG_UNDEFINED, callbackInfo + 24); // set res to undefined
+    return callbackInfo;
+}
+
+function returnNativeCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc: number, callbackInfo: number): void {
+    if (callbackInfosCache[argc]) {
+        wasmApi._free(callbackInfo);
+    } else {
+        callbackInfosCache[argc] = callbackInfo;
+    }
 }
 
 //只需要用到一个buffer的场景下用预分配的，如果超过一个buffer，就malloc
@@ -711,8 +721,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
     }
 }
 
-function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): number {
-    const argc = args.length;
+function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, argc:number, args: any[]): number {
     clearUsingBuffers(wasmApi);
     const callbackInfo = getNativeCallbackInfo(wasmApi, argc);
 
@@ -725,26 +734,32 @@ function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): nu
 }
 
 function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data: number, papi:number, isStatic: boolean) {
-    // TODO: 执行wasm回调时可能会有异常，应捕获异常?
     return function(...args: any[]) {
         if (new.target) {
             throw new Error('"not a constructor');
         }
-        const callbackInfo = jsArgsToCallbackInfo(wasmApi, args);
-        const heap = wasmApi.HEAPU8;
-        Buffer.writeInt32(heap, data, callbackInfo + 8); // data
-        let objId = 0;
-        if (!isStatic) {
-            [objId] = ObjectPool.GetNativeInfoOfObject(this);
-        } 
-        Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
-        wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-        if (lastException) {
-            const e = lastException;
-            lastException = null;
-            throw e;
+        let callbackInfo: number = undefined;
+        const argc = args.length;
+        try {
+            callbackInfo = jsArgsToCallbackInfo(wasmApi, argc, args);
+            const heap = wasmApi.HEAPU8;
+            Buffer.writeInt32(heap, data, callbackInfo + 8); // data
+            let objId = 0;
+            if (!isStatic) {
+                [objId] = ObjectPool.GetNativeInfoOfObject(this);
+            } 
+            Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
+            wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
+            if (lastException) {
+                const e = lastException;
+                lastException = null;
+                throw e;
+            }
+        
+            return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
+        } finally {
+            returnNativeCallbackInfo(wasmApi, argc, callbackInfo);
         }
-        return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
     }
 }
 
@@ -1301,15 +1316,21 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             const name = engine.unityApi.UTF8ToString(pname);
 
             const PApiNativeObject = function (...args: any[]) {
-                const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
-                Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
-                const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-                if (lastException) {
-                    const e = lastException;
-                    lastException = null;
-                    throw e;
+                let callbackInfo: number = undefined;
+                const argc = arguments.length;
+                try {
+                    callbackInfo = jsArgsToCallbackInfo(engine.unityApi, argc, args);
+                    Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
+                    const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
+                    if (lastException) {
+                        const e = lastException;
+                        lastException = null;
+                        throw e;
+                    }
+                    objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
+                } finally {
+                    returnNativeCallbackInfo(engine.unityApi, argc, callbackInfo);
                 }
-                objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
             }
             Object.defineProperty(PApiNativeObject, "name", { value: name });
 
