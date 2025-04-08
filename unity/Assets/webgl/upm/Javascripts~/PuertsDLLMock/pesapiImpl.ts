@@ -222,15 +222,22 @@ enum JSTag {
     JS_TAG_UINT64        = 7,
 }
 
-let lastException: Error = null;
+let hasException = false;
+let lastException: Error = undefined;
 let lastExceptionBuffer: number = undefined;
 
 function getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack: boolean): number {
-    if (lastException) {
-        const msg = lastException.message;
-        const stack = lastException.stack;
+    if (hasException) {
+        hasException = false;
+        let result:string = undefined;
+        if (typeof lastException === 'object' && lastException !== null) {
+            const msg = lastException.message;
+            const stack = lastException.stack;
+            result = with_stack ? `${msg}\n${stack}` : msg;
+        } else {
+            result = `${lastException}`;
+        }
         lastException = null;
-        const result = with_stack ? `${msg}\n${stack}` : msg;
         const byteCount = wasmApi.lengthBytesUTF8(result);
         //console.error(`getExceptionAsNativeString(${byteCount}): ${result}`);
         if (lastExceptionBuffer) {
@@ -241,6 +248,18 @@ function getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack
         return lastExceptionBuffer;
     }
     return 0;
+}
+
+function getAndClearLastException() : Error {
+    hasException = false;
+    const ret = lastException;
+    lastException = null;
+    return ret;
+}
+
+function setLastException(err: Error) {
+    hasException = true;
+    lastException = err;
 }
 
 class Scope {
@@ -255,7 +274,7 @@ class Scope {
     }
 
     public static exit(wasmApi: PuertsJSEngine.UnityAPI): void {
-        lastException = undefined;
+        getAndClearLastException();
         Scope.current.close(wasmApi);
     }
 
@@ -750,10 +769,8 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
             } 
             Buffer.writeInt32(heap, objId, callbackInfo); // thisPtr
             wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-            if (lastException) {
-                const e = lastException;
-                lastException = null;
-                throw e;
+            if (hasException) {
+                throw getAndClearLastException();
             }
         
             return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
@@ -994,7 +1011,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     }
     function pesapi_throw_by_string(pinfo: pesapi_callback_info, pmsg: CSString): void {
         const msg = engine.unityApi.UTF8ToString(pmsg);
-        lastException = new Error(msg);
+        setLastException(new Error(msg));
     }
 
     // --------------- 环境引用 ---------------
@@ -1024,7 +1041,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         return null;
     }
     function pesapi_has_caught(pscope: pesapi_scope): boolean { 
-        return lastException != null;
+        return hasException;
     }
     function pesapi_get_exception_as_string(pscope: pesapi_scope, with_stack: boolean): number { 
         return getExceptionAsNativeString(engine.unityApi, with_stack);
@@ -1143,7 +1160,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
             const result = func.apply(self, args);
             jsValueToPapiValue(engine.unityApi, result, presult);
         } catch (e) {
-            lastException = e;
+            setLastException(e);
         }
     }
 
@@ -1157,7 +1174,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
             const result = globalThis.eval(code);
             jsValueToPapiValue(engine.unityApi, result, presult);
         } catch (e) {
-            lastException = e;
+            setLastException(e);
         }
     }
 
@@ -1322,10 +1339,8 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                     callbackInfo = jsArgsToCallbackInfo(engine.unityApi, argc, args);
                     Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
                     const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-                    if (lastException) {
-                        const e = lastException;
-                        lastException = null;
-                        throw e;
+                    if (hasException) {
+                        throw getAndClearLastException();
                     }
                     objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
                 } finally {
