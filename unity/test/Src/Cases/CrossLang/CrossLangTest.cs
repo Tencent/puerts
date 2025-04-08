@@ -1060,6 +1060,7 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
 
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void CallDelegateAfterJsEnvDisposed()
         {
@@ -1078,7 +1079,6 @@ namespace Puerts.UnitTest
         }
 
         //看上去GC.Collect()对webgl无效，先去掉
-#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void TestJsGC()
         {
@@ -1129,12 +1129,8 @@ namespace Puerts.UnitTest
         [Test]
         public void OverloadTest()
         {
-            //
-#if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
-#else
-            var jsEnv = new JsEnv(new DefaultLoader());
-#endif
+            var jsEnv = UnitTestEnv.GetEnv();
+
             jsEnv.Eval(@"
             (function() {
             const o = new CS.Puerts.UnitTest.OverloadTestObject();
@@ -1154,8 +1150,6 @@ namespace Puerts.UnitTest
             ");
 
             Assert.AreEqual(2, OverloadTestObject.LastCall);
-
-            jsEnv.Dispose();
         }
     }
 }
