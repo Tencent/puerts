@@ -725,13 +725,11 @@ function jsArgsToCallbackInfo(wasmApi: PuertsJSEngine.UnityAPI, args: any[]): nu
 }
 
 function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data: number, papi:number, isStatic: boolean) {
-    // TODO: 执行wasm回调时可能会有异常，应捕获异常
-    // TODO: 处理csType.GetNestedTypes(Assert) throw Error: object finalize not implemented yet! 
+    // TODO: 执行wasm回调时可能会有异常，应捕获异常?
     return function(...args: any[]) {
         if (new.target) {
             throw new Error('"not a constructor');
         }
-        const scope = Scope.enter();
         const callbackInfo = jsArgsToCallbackInfo(wasmApi, args);
         const heap = wasmApi.HEAPU8;
         Buffer.writeInt32(heap, data, callbackInfo + 8); // data
@@ -743,12 +741,10 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
         wasmApi.PApiCallbackWithScope(callback, papi, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
         if (lastException) {
             const e = lastException;
-            Scope.exit(wasmApi);
+            lastException = null;
             throw e;
         }
-        const ret = Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
-        Scope.exit(wasmApi);
-        return ret;
+        return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
     }
 }
 
@@ -1305,17 +1301,15 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             const name = engine.unityApi.UTF8ToString(pname);
 
             const PApiNativeObject = function (...args: any[]) {
-                const scope = Scope.enter();
                 const callbackInfo = jsArgsToCallbackInfo(engine.unityApi, args);
                 Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
                 const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
                 if (lastException) {
                     const e = lastException;
-                    Scope.exit(engine.unityApi);
+                    lastException = null;
                     throw e;
                 }
                 objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
-                Scope.exit(engine.unityApi);
             }
             Object.defineProperty(PApiNativeObject, "name", { value: name });
 
