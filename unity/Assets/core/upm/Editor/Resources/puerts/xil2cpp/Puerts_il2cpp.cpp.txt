@@ -2280,12 +2280,17 @@ struct JsEnvPrivate
     int32_t RefCSObject(Il2CppObject* obj)
     {
         return objPoolAdd.CallWithInstance(obj);
+        //int32_t idx = objPoolAdd.CallWithInstance(obj);
+        //PLog("RefCSObject(%s:%p) idx(%d)", obj->klass->name, obj, idx);
+        //return idx;
 
     }
 
     void UnRefCSObject(int32_t idx)
     {
         objPoolRemove.CallWithInstance(idx);
+        //auto obj = objPoolRemove.CallWithInstance(idx);
+        //PLog("UnRefCSObject (%s:%p) idx(%d)", obj->klass->name, obj, idx);
     }
 };
 
