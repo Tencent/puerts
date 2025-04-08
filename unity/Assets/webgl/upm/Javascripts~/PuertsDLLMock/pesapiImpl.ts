@@ -721,6 +721,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
     } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
         const len = arg.byteLength;
         const ptr = getBuffer(wasmApi, len);
+        wasmApi.HEAP8.set(new Int8Array(arg), ptr);
         Buffer.writeInt32(heap, ptr, dataPtr);
         Buffer.writeInt32(heap, len, dataPtr + 4);
         Buffer.writeInt32(heap, JSTag.JS_TAG_BUFFER, tagPtr);
