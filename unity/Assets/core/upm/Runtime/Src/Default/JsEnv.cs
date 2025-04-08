@@ -115,7 +115,7 @@ namespace Puerts
                 isolate = PuertsDLL.CreateJSEngine((int)backend);
             }
 
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
             if (PuertsDLL.GetLibBackend(isolate) != 2 && jsEnvs.Count > 0)
             {
                 disposed = true;
