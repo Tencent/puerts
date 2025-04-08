@@ -154,7 +154,7 @@ export function checkJSArg(signature, index) {
     } else if (signature == 'p' || signature == 'Pv' || signature == 'a') { // IntPtr, void*, ArrayBuffer
         ret += `!apis->is_binary(env, _sv${index}) && !apis->is_null(env, _sv${index}) && !apis->is_undefined(env, _sv${index})) return false;`
     } else if (signature[0] == 'P') {
-        ret += `!apis->is_object(env, _sv${index})) return false;`
+        ret += `!apis->is_boxed_value(env, _sv${index})) return false;`
     } else if (signature == 's') {
         ret += `!converter::Converter<Il2CppString*>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'o' || signature == 'a') {
