@@ -697,7 +697,7 @@ bool pesapi_is_string(pesapi_env env, pesapi_value pvalue)
 bool pesapi_is_object(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
-        return JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT;
+        return JS_VALUE_GET_TAG(val) <= JS_TAG_OBJECT && JS_VALUE_GET_TAG(val) >= JS_TAG_ARRAY;
     });
 }
 
