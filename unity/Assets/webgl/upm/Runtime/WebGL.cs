@@ -35,7 +35,7 @@ namespace Puerts
 
 #if !UNITY_EDITOR && UNITY_WEBGL
             [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-            private static extern IntPtr InitPuertsWebGL();
+            public static extern IntPtr InitPuertsWebGL();
 #endif
         }
     }

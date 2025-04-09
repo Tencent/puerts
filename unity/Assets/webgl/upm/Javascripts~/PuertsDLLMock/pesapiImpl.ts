@@ -761,6 +761,32 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
 export function GetWebGLFFIApi(engine: PuertsJSEngine) {
     if (webglFFI) return webglFFI;
 
+    // --------------- pref cmp only start ---------------
+    // 性能优化阶段的对比项，后续连同调用的WasmAdd、IndirectWasmAdd等c++函数及js导出会删除
+    const wasmApi = engine.unityApi;
+    const addFuncPtr = engine.unityApi.GetWasmAddPtr();
+    const addFunc = wasmApi.getWasmTableEntry(addFuncPtr);
+    console.log(`add(2, 4) = ${wasmApi.WasmAdd(2, 4)}, ${addFunc(2, 4)} ${wasmApi.IndirectWasmAdd(addFuncPtr, 2, 4)}`);
+    var start = Date.now();
+    const LOOP = 1000000;
+    for(var i = 0; i < LOOP; i++) {
+        wasmApi.WasmAdd(2, 4);
+    }
+    console.log(`call WasmAdd using: ${((Date.now() - start))}`);
+
+    start = Date.now();
+    for(var i = 0; i < LOOP; i++) {
+        addFunc(2, 4);
+    }
+    console.log(`call WasmAddPtr using: ${((Date.now() - start))}`);
+
+    start = Date.now();
+    for(var i = 0; i < LOOP; i++) {
+        wasmApi.IndirectWasmAdd(addFuncPtr, 2, 4)
+    }
+    console.log(`call IndirectWasmAdd using: ${((Date.now() - start))}`);
+    // --------------- pref cmp only end ---------------
+
     objMapper = new ObjectMapper();
 
     // --------------- 值创建系列 ---------------
