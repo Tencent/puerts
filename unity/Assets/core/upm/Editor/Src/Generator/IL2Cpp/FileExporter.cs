@@ -145,11 +145,43 @@ namespace PuertsIl2cpp.Editor
                 return true;
             }
 
+            private static bool IsSelfRefGenericType(Type type, Type typeDef)
+            {
+                if (type.IsGenericType)
+                {
+                    if (type.GetGenericTypeDefinition() == typeDef)
+                    {
+                        return true;
+                    }
+                    foreach (var ga in type.GetGenericArguments())
+                    {
+                        if (IsSelfRefGenericType(ga, typeDef))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            private static bool IsSelfRefGenericType(Type type)
+            {
+                if (type.IsGenericType)
+                {
+                    return IsSelfRefGenericType(type, type.GetGenericTypeDefinition());
+                }
+                return false;
+            }
+
             private static void IterateAllType(Type type, HashSet<Type> allTypes)
             {
                 if (!allTypes.Contains(type))
                 {
                     allTypes.Add(type);
+                    if (IsSelfRefGenericType(type))
+                    {
+                        return;
+                    }
                     try
                     {
                         var fields = type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
