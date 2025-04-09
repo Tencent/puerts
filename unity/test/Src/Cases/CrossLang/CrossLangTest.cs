@@ -1151,5 +1151,20 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(2, OverloadTestObject.LastCall);
         }
+
+        [Test]
+        public void FuncAsJsObject()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            UnityEngine.Debug.Log("---------------");
+            var jso = jsEnv.Eval<JSObject>(@"
+            (function() {
+                function t(){}
+                return t;
+            }) ();
+            ");
+            UnityEngine.Debug.Log("================");
+            Assert.True(jso != null);
+        }
     }
 }

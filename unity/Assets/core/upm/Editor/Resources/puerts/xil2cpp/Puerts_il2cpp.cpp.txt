@@ -1161,7 +1161,6 @@ handle_underlying:
                     }
                     return FunctionToDelegate(apis, env, jsval, jsClassInfo);
                 }
-                return nullptr;
             }
             auto ptr = apis->get_native_object_ptr(env, jsval);
             if (!ptr)
