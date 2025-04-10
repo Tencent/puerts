@@ -101,12 +101,12 @@ struct WebGlScope;
 
 WebGlScope* g_scope = nullptr;
 
-static WebGlScope *getCurrentScope()
+static inline WebGlScope *getCurrentScope()
 {
 	return g_scope;
 }
 
-static void setCurrentScope(WebGlScope *scope)
+static inline void setCurrentScope(WebGlScope *scope)
 {
 	g_scope = scope;
 }
@@ -118,7 +118,7 @@ struct caught_exception_info
 };
 
 
-void JS_FreeValue(JSValue v)
+inline void JS_FreeValue(JSValue v)
 {
     if (v.need_free)
     {
@@ -138,35 +138,40 @@ struct WebGlScope
 {
     const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 4;
     
-    explicit WebGlScope()
+    explicit inline WebGlScope()
 	{
 		prev_scope = getCurrentScope();
 		setCurrentScope(this);
-		values_used = 0;
-		caught = nullptr;
 	}
 
 	WebGlScope *prev_scope;
 
 	JSValue values[SCOPE_FIX_SIZE_VALUES_SIZE];
 
-	uint32_t values_used;
+	uint32_t values_used = 0;
 
-	std::vector<JSValue*> dynamic_alloc_values;
+	std::vector<JSValue*>* dynamic_alloc_values = nullptr;
 
-	caught_exception_info* caught;
+	caught_exception_info* caught = nullptr;
 
-	JSValue *allocValue()
+	inline JSValue *allocValue()
 	{
 		JSValue *ret;
 		if (values_used < SCOPE_FIX_SIZE_VALUES_SIZE)
 		{
+            //puerts::PLog("fix alloc");
 			ret = &(values[values_used++]);
 		}
 		else
 		{
+            //puerts::PLog("dynamic alloc");
+            if (!dynamic_alloc_values)
+            {
+                //puerts::PLog("new vector");
+                dynamic_alloc_values = new std::vector<JSValue*>();
+            }
 			ret = (JSValue *) malloc(sizeof(JSValue));
-			dynamic_alloc_values.push_back(ret);
+			dynamic_alloc_values->push_back(ret);
 		}
 		*ret = JS_UNDEFINED;
 		return ret;
@@ -182,7 +187,7 @@ struct WebGlScope
     }
 
 
-	~WebGlScope()
+	inline ~WebGlScope()
 	{
         if (caught)
         {
@@ -194,12 +199,18 @@ struct WebGlScope
             JS_FreeValue(values[i]);
 		}
 
-		for (size_t i = 0; i < dynamic_alloc_values.size(); i++)
-		{
-            JS_FreeValue(*dynamic_alloc_values[i]);
-			free(dynamic_alloc_values[i]);
+        if (dynamic_alloc_values)
+        {
+            size_t size = dynamic_alloc_values->size();
+            for (size_t i = 0; i < size; ++i)
+            {
+                auto pv = (*dynamic_alloc_values)[i];
+                JS_FreeValue(*pv);
+                free(pv);
+            }
+            delete dynamic_alloc_values;
+            dynamic_alloc_values = nullptr;
 		}
-		dynamic_alloc_values.clear();
 		setCurrentScope(prev_scope);
 	}
 };
