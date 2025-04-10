@@ -2325,9 +2325,9 @@ static bool IsPrimitive(Il2CppTypeEnum type)
     return (type >= IL2CPP_TYPE_BOOLEAN && type <= IL2CPP_TYPE_R8) || type == IL2CPP_TYPE_I || type == IL2CPP_TYPE_U;
 }
 
-static bool TypeInfoPassToJsFilter(const Il2CppType* type, const Il2CppClass* klass)
+static bool TypeInfoPassToJsFilter(const Il2CppType* type, Il2CppClass* klass)
 {
-    return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type;
+    return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type && !Type::IsEnum(type) && Class::GetParent(klass) != il2cpp_defaults.enum_class;
 }
 
 static void SetParamArrayFlagAndOptionalNum(WrapData* data, const MethodInfo* method)
