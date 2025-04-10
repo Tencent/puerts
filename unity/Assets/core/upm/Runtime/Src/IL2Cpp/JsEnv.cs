@@ -305,6 +305,8 @@ namespace Puerts
             }
             JSObject jso = GetModuleExecutor()(specifier);
             
+            if (exportee == "") return (T)(object)jso;
+            
             return jso.Get<T>(exportee);
         }
         public JSObject ExecuteModule(string specifier)
