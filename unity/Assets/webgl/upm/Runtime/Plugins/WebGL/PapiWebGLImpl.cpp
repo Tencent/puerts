@@ -9,6 +9,11 @@
 
 using namespace il2cpp::vm;
 
+namespace puerts
+{
+void PLog(const char* Fmt, ...);
+};
+
 namespace pesapi
 {
 namespace webglimpl
@@ -1204,13 +1209,13 @@ extern "C"
     
     void EMSCRIPTEN_KEEPALIVE PApiCallbackWithScope(pesapi_callback cb, struct pesapi_ffi* apis, pesapi_callback_info info)
     {
-        pesapi::webglimpl::WebGlScope();
+        pesapi::webglimpl::WebGlScope scope;
         cb(apis, info);
     }
     
     void* EMSCRIPTEN_KEEPALIVE PApiConstructorWithScope(pesapi_constructor cb, struct pesapi_ffi* apis, pesapi_callback_info info)
     {
-        pesapi::webglimpl::WebGlScope();
+        pesapi::webglimpl::WebGlScope scope;
         return cb(apis, info);
     }
 }
