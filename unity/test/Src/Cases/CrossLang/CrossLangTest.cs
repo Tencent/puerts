@@ -151,6 +151,12 @@ namespace Puerts.UnitTest
         {
             return TestEnum.B;
         }
+
+        [UnityEngine.Scripting.Preserve]
+        public static void TestEnumCheck(string a, TestEnum e = TestEnum.A, int b = 10) // 有默认值会促使其检查参数类型
+        {
+
+        }
     }
     public unsafe class TestHelper
     {
@@ -1163,6 +1169,17 @@ namespace Puerts.UnitTest
             }) ();
             ");
             Assert.True(jso != null);
+        }
+
+        [Test]
+        public void EnumParamCheck() // https://github.com/Tencent/puerts/issues/2018
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+            (function() {
+                CS.Puerts.UnitTest.CrossLangTestHelper.TestEnumCheck('a', 1, 2);
+            }) ();
+            ");
         }
     }
 }
