@@ -1714,9 +1714,9 @@ handle_underlying:
                 case IL2CPP_TYPE_FNPTR:
                 case IL2CPP_TYPE_PTR:
                 {
-                    if (apis->is_function(env, jsValue) && (!Class::IsAssignableFrom(il2cpp_defaults.multicastdelegate_class, parameterKlass) || parameterKlass == il2cpp_defaults.multicastdelegate_class))
+                    if (apis->is_function(env, jsValue) && DataTransfer::IsDelegate(parameterKlass))
                     {
-                        return false;
+                        continue;
                     }
                     if (parameterKlass == il2cpp_defaults.object_class)
                     {
