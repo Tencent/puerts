@@ -111,13 +111,6 @@ static inline void setCurrentScope(WebGlScope *scope)
 	g_scope = scope;
 }
 
-struct caught_exception_info
-{
-    JSValue exception = JS_UNDEFINED;
-    std::string message;
-};
-
-
 inline void JS_FreeValue(JSValue v)
 {
     if (v.need_free)
@@ -152,8 +145,6 @@ struct WebGlScope
 
 	std::vector<JSValue*>* dynamic_alloc_values = nullptr;
 
-	caught_exception_info* caught = nullptr;
-
 	inline JSValue *allocValue()
 	{
 		JSValue *ret;
@@ -177,23 +168,9 @@ struct WebGlScope
 		return ret;
 	}
 
-    void setCaughtException(JSValue exception)
-    {
-        if (caught == nullptr)
-        {
-            caught = new caught_exception_info();
-        }
-        caught->exception = exception;
-    }
-
 
 	inline ~WebGlScope()
 	{
-        if (caught)
-        {
-            JS_FreeValue(caught->exception);
-            delete caught;
-        }
 		for (size_t i = 0; i < values_used; i++)
 		{
             JS_FreeValue(values[i]);
@@ -896,10 +873,10 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_
     return reinterpret_cast<pesapi_scope>(memory);
 }
 
+// implement by js
 bool pesapi_has_caught(pesapi_scope pscope)
 {
-    auto scope = reinterpret_cast<WebGlScope*>(pscope);
-    return scope->caught != nullptr;
+    return false;
 }
 
 // implement by js
