@@ -304,6 +304,24 @@ namespace Puerts.UnitTest
             return "abcdefg";
         }
 
+        public string PassStr(string str)
+        {
+            return str;
+        }
+        public void PassStr(string str, int a)
+        {
+
+        }
+
+        public TestHelper PassObj(TestHelper test)
+        {
+            return test;
+        }
+
+        public void PassObj(TestHelper test, int a)
+        {
+        }
+
         public string stringTestField = null;
         protected string _stringTestProp = null;
         public string stringTestProp 
@@ -1180,6 +1198,39 @@ namespace Puerts.UnitTest
                 CS.Puerts.UnitTest.CrossLangTestHelper.TestEnumCheck('a', 1, 2);
             }) ();
             ");
+        }
+
+        [Test]
+        public void PassNullTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+                    testHelper.PassStr(null);
+                    testHelper.PassStr(undefined);
+                    testHelper.PassObj(null);
+                    testHelper.PassObj(undefined);
+                    
+                })()
+            ");
+            Assert.Catch(() =>
+            {
+                jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+                    testHelper.PassObj('aaaaaa');
+                    
+                })()
+            ");
+            }, "invalid arguments to PassObj");
+            jsEnv.Tick();
         }
     }
 }
