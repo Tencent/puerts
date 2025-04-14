@@ -2359,7 +2359,7 @@ static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMe
         usedTypes.push_back(klass);
     }
     size_t paramCount = Method::GetParamCount(method);
-    for (size_t index = 0; index < paramCount; ++index)
+    for (size_t index = isExtensionMethod ? 1 : 0; index < paramCount; ++index)
     {
         type = Method::GetParam(method, index);
         klass = il2cpp_codegen_class_from_type(type);
