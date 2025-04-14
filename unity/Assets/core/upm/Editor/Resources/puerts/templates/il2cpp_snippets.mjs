@@ -76,14 +76,11 @@ export function SToCPPType(signature) {
 }
     
 export function getThis(signature) {
-    let getJsThis = 'pesapi_value jsThis = apis->get_holder(info);'
     if (signature == 't') {
-        return `${getJsThis}
-    auto self = apis->get_native_object_ptr(env, jsThis);`
+        return `auto self = apis->get_native_holder_ptr(info);`
     } else if (signature == 'T') {
-        return `${getJsThis}
-    auto self = apis->get_native_object_ptr(env, jsThis);
-    auto ptrType = (Il2CppClass*) apis->get_native_object_typeid(env, jsThis);
+        return `auto self = apis->get_native_holder_ptr(info);
+    auto ptrType = (Il2CppClass*) apis->get_native_holder_typeid(info);
     if (il2cpp::vm::Class::IsValuetype(ptrType))
     {
         self = il2cpp::vm::Object::Box(ptrType, self);
@@ -155,7 +152,7 @@ export function checkJSArg(signature, index) {
     } else if (signature == 'p' || signature == 'Pv' || signature == 'a') { // IntPtr, void*, ArrayBuffer
         ret += `!apis->is_binary(env, _sv${index}) && !apis->is_null(env, _sv${index}) && !apis->is_undefined(env, _sv${index})) return false;`
     } else if (signature[0] == 'P') {
-        ret += `!apis->is_object(env, _sv${index})) return false;`
+        ret += `!apis->is_boxed_value(env, _sv${index})) return false;`
     } else if (signature == 's') {
         ret += `!converter::Converter<Il2CppString*>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'o' || signature == 'a') {

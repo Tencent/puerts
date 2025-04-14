@@ -59,7 +59,7 @@ namespace Puerts
         public JsEnv(ILoader loader, int debugPort = -1, BackendType backend = BackendType.Auto, IntPtr externalRuntime = default(IntPtr), IntPtr externalContext = default(IntPtr))
         {
             this.loader = loader;
-            
+            disposed = true;
             if (!isInitialized)
             {
                 lock (jsEnvs)
@@ -82,8 +82,13 @@ namespace Puerts
                     }
                 }
             }
+#if UNITY_WEBGL
+            else
+            {
+                throw new InvalidOperationException("more than one JsEnv instance is not supported in WebGL");
+            }
+#endif
 
-            disposed = true;
             nativeJsEnv = Puerts.PuertsDLL.CreateJSEngine((int)backend);
             if (nativeJsEnv == IntPtr.Zero)
             {
@@ -299,6 +304,8 @@ namespace Puerts
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
             JSObject jso = GetModuleExecutor()(specifier);
+            
+            if (exportee == "") return (T)(object)jso;
             
             return jso.Get<T>(exportee);
         }

@@ -489,10 +489,11 @@ void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
     return (void*)mapper->GetNativeObjectPtr(info->this_val);
 }
 
-pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
+const void* pesapi_get_native_holder_typeid(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<pesapi::qjsimpl::pesapi_callback_info__*>(pinfo);
-    return pesapiValueFromQjsValue(&(info->this_val));
+    auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(info->ctx);
+    return mapper->GetNativeObjectTypeId(info->this_val);
 }
 
 void* pesapi_get_userdata(pesapi_callback_info pinfo)
@@ -911,7 +912,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_get_arg,
     &pesapi_get_env,
     &pesapi_get_native_holder_ptr,
-    &pesapi_get_holder,
+    &pesapi_get_native_holder_typeid,
     &pesapi_get_userdata,
     &pesapi_add_return,
     &pesapi_throw_by_string,

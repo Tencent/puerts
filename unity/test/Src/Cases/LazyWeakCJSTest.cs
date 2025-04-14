@@ -116,7 +116,6 @@ namespace Puerts.UnitTest
             Assert.AreEqual("key\tweak?\tvalid?\nlazymodule1.cjs\ttrue\tfalse\nlazymodule2.cjs\ttrue\ttrue\n", res);
             
         }
-#endif
 
         [Test]
         public void ManualReleaseTest()
@@ -160,6 +159,7 @@ namespace Puerts.UnitTest
             
             Assert.AreEqual("hello john", res);
         }
+#endif
     }
 }
 //#endif

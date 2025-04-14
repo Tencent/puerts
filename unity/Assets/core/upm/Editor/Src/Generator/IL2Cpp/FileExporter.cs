@@ -145,6 +145,25 @@ namespace PuertsIl2cpp.Editor
                 return true;
             }
 
+            private static bool IsSelfRefGenericType(Type type, Type typeDef)
+            {
+                if (type.IsGenericType)
+                {
+                    if (type.GetGenericTypeDefinition() == typeDef)
+                    {
+                        return true;
+                    }
+                    foreach (var ga in type.GetGenericArguments())
+                    {
+                        if (IsSelfRefGenericType(ga, typeDef))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
             private static void IterateAllType(Type type, HashSet<Type> allTypes)
             {
                 if (!allTypes.Contains(type))
@@ -166,6 +185,7 @@ namespace PuertsIl2cpp.Editor
                         methods = type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                         foreach (var method in methods)
                         {
+                            if (type.IsGenericType && IsSelfRefGenericType(method.ReturnType, type.GetGenericTypeDefinition())) continue;
                             IterateAllType(method.ReturnType, allTypes);
                         }
                     }
@@ -179,6 +199,7 @@ namespace PuertsIl2cpp.Editor
                         {
                             foreach (var pi in methodBase.GetParameters())
                             {
+                                if (type.IsGenericType && IsSelfRefGenericType(pi.ParameterType, type.GetGenericTypeDefinition())) continue;
                                 IterateAllType(pi.ParameterType, allTypes);
                             }
                         }

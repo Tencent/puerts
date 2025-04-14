@@ -50,7 +50,7 @@
 
 * Fixed UE.BuiltinBool access failure
 
-* Resolved crashes in template binding with const script_type* parameters (mapped to $Ref<T> except const char*), related to #1793
+* Resolved crashes in template binding with const script_type* parameters (mapped to `$Ref<T>` except const char*), related to #1793
 
 * Fixed template binding issue where returning std::string& triggered move construction (see #1793)
 
