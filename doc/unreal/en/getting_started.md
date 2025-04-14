@@ -1,13 +1,12 @@
 # Getting Started
-
-## Table Of Contents
-- [Automatic binding mode](#automatic-binding-mode-more-info)
-- [Manually starting a JavasScript virtual machine](#starting-a-new-javascript-virtual-machine-more-info)
-- [User Manual](#user-manual)
-
 Now that puerts is installed and your TypeScript development environment has been setup, its time to get started!
 
 Puerts has two main execution modes, both of which can coexist in isolation.
+
+## Table Of Contents
+- [Automatic Binding Mode](#automatic-binding-mode-more-info)
+- [Manually Starting A JavaScript Virtual Machine](#starting-a-new-javascript-virtual-machine-more-info)
+- [User Manual](#user-manual)
 
 ## Automatic Binding Mode ([More Info](./automatic_binding_mode.md))
 

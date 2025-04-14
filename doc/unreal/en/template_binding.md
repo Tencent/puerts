@@ -1,13 +1,7 @@
-# Template-based static binding
-
-Below is a translated version of the original docs by Incanta Games. The translation is mainly done with Google Translate, but then modified by hand to try to make sense of what Google Translate is missing.
+# Template-Based Static Binding
+Unreal has a lot of C++ functions and classes without reflection tags. In order to access them within TypeScript, Template-based static binding should be used.
 
 ## Overview
-
-This document describes the ordinary C++ class/struct, Or UCLASS, unchecked the properties of UPPROPERTY, UFUNCTION, and calls.
-
-This document also applies to non-UE environments (such as servers, unity, etc.), C++ class/struct access.
-
 Support features:
 
 - Constructor
@@ -15,14 +9,13 @@ Support features:
 - Member variables
 - Member function
 - Constructor / static function / member function supports overload
-- Support inheritance
-- Generate TypeScript declaration
+- Inheritance
 - The UE type is not marked `UPROPERTY`. After the `UFUNCTION` member declares, it will seamlessly appear in the original category.
 - Support JS object mapping to C++ `JSObject`, `JSObject` can get/set the properties, call the JS function.
 - Support JS function mapping to `std::function`
 - Support custom converter
 
-## Important Notes
+## Setup
 
 If you want to use this feature outside of the `JsEnv` module itself, such as another game module, you'll need to do the following:
 

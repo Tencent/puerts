@@ -1,55 +1,62 @@
-## 示例
+## Examples
 
-### 自行构造虚拟机
+### Manually Creating a Virtual Machine
 
-* [构造虚拟机例子](https://github.com/chexiongsheng/puerts_unreal_demo): 用户可以自己构造（一个或多个）虚拟机。
+You can manually construct one or more virtual machines.
 
-  - [TsGameInstance.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Source/puerts_unreal_demo/TsGameInstance.cpp)：演示在GameInstance（也可以根据需要在别的地方构造）构造虚拟机。
+- [Virtual Machine Example Project](https://github.com/chexiongsheng/puerts_unreal_demo): Demonstrates how users can create their own VM.
 
-### 继承引擎类功能
+  - [TsGameInstance.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Source/puerts_unreal_demo/TsGameInstance.cpp): Shows how to construct a VM inside `GameInstance` (you can also create it in other classes as needed).
 
-* [FPS demo](https://github.com/chexiongsheng/BlockBreakerStarter) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[unreal手册](./manual.md)
+---
 
-继承引擎类功能开启后，系统会启动一个（默认）虚拟机作为继承了引擎类的TypeScript的运行环境，要注意的是如果你还另外启动了虚拟机，这些虚拟机间是相互隔离的。
+### Inheriting Engine Classes
 
-### TypeScript和引擎、C++交互例子
+- [FPS Demo](https://github.com/chexiongsheng/BlockBreakerStarter): A first-person shooter game example demonstrating how to use Puerts' "Inherit Engine Class" feature. More details can be found in the [Unreal Manual](./manual.md).
 
-虽然这些是在[构造虚拟机例子](https://github.com/chexiongsheng/puerts_unreal_demo) 下演示，但实际上这里的例子在所有虚拟机下均能运行。
+When this feature is enabled, the system automatically starts a default VM as the runtime environment for TypeScript classes that inherit from engine classes. Note that if you start additional VMs, they will be isolated from each other.
 
-* [QuickStart.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/QuickStart.ts) ： 演示TypeScript和UE4引擎互相调用
+---
 
-   - 在继承引擎类的TypeScript里头·argv.getByName("GameInstance")·返回为undefined，这是因为默认虚拟机并未传入该参数。
+### TypeScript and Engine/C++ Interaction Examples
 
-* [NewContainer.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/NewContainer.ts) ： 演示容器的创建
+Although the following examples are part of the [Virtual Machine Example Project](https://github.com/chexiongsheng/puerts_unreal_demo), they can be run in any VM environment.
 
-* [AsyncTest.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/AsyncTest.ts) ： 将异步加载蓝图，Delay封装成async/await
+- [QuickStart.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/QuickStart.ts): Demonstrates mutual calls between TypeScript and the Unreal Engine.
 
-* [UsingWidget.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/UsingWidget.ts) ： UI加载，绑定事件，获取数据的演示
+  - In TypeScript classes that inherit engine classes, calling `argv.getByName("GameInstance")` will return `undefined` because this argument isn’t passed into the default VM by default.
 
-* [UsingMixin.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/UsingMixin.ts) ： Mixin功能的演示
+- [NewContainer.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/NewContainer.ts): Demonstrates container creation.
 
-* 调用普通c++类
+- [AsyncTest.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/AsyncTest.ts): Demonstrates how to load a Blueprint asynchronously and wrap a `Delay` into an `async/await` call.
 
-  - [TestClass.h](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Plugins/Puerts/Source/JsEnv/Private/TestBinding/TestClass.h) ： 基础例子C++类定义
-  
-  - [TestClass.h](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Plugins/Puerts/Source/JsEnv/Private/TestBinding/AdvanceTestClass.h) ： 高级例子C++类定义
-  
-  - [TestClassWrap.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Plugins/Puerts/Source/JsEnv/Private/TestBinding/TestClassWrap.cpp) ： 绑定（导出到TypeScript）声明
-  
-  - [CDataTest.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/CDataTest.ts) ： TypeScript调用演示
-  
-  
-运行方式，将[TsGameInstance.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Source/puerts_unreal_demo/TsGameInstance.cpp)的入口修改为对应的TypeScript名字（不含后缀，例子现默认为QuickStart）。
+- [UsingWidget.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/UsingWidget.ts): Demonstrates UI loading, event binding, and data access.
 
-### 编辑器扩展
+- [UsingMixin.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/UsingMixin.ts): Demonstrates the mixin functionality.
 
-puerts还可以用来写编辑器扩展，如果使用puerts的nodejs版本，大量的npm库有助于编辑器的快速开发。
+- **Calling regular C++ classes:**
 
+  - [TestClass.h](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Plugins/Puerts/Source/JsEnv/Private/TestBinding/TestClass.h): Basic example of a C++ class definition.
 
-[实例工程链接](https://github.com/puerts/EasyEditorPluginDemo)
+  - [AdvanceTestClass.h](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Plugins/Puerts/Source/JsEnv/Private/TestBinding/AdvanceTestClass.h): Advanced C++ class example.
 
-* [Main.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/Main.ts) ： 演示了菜单、工具栏、工具链下拉按钮、右键菜单、命令行扩展
+  - [TestClassWrap.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Plugins/Puerts/Source/JsEnv/Private/TestBinding/TestClassWrap.cpp): Binding declarations (to export C++ classes to TypeScript).
 
-* [DemoWindow.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/DemoWindow.ts) ： 演示了IMGUI（可选）的使用
+  - [CDataTest.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TypeScript/CDataTest.ts): Demonstrates calling C++ from TypeScript.
 
-* [NodejsDemo.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/NodejsDemo.ts) ： 演示了Nodejs api的使用
+**How to Run:**  
+To run a specific TypeScript example, change the entry in [TsGameInstance.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Source/puerts_unreal_demo/TsGameInstance.cpp) to the desired script name (without the `.ts` extension). By default, it runs `QuickStart`.
+
+---
+
+### Editor Extensions
+
+Puerts can also be used to write editor extensions. If you use the Node.js version of Puerts, you can leverage a wide variety of npm packages to speed up editor development.
+
+- [Editor Extension Demo Project](https://github.com/puerts/EasyEditorPluginDemo)
+
+  - [Main.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/Main.ts): Demonstrates menus, toolbars, dropdown buttons, right-click context menus, and command-line extension.
+
+  - [DemoWindow.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/DemoWindow.ts): Demonstrates (optional) IMGUI usage.
+
+  - [NodejsDemo.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/NodejsDemo.ts): Demonstrates usage of Node.js APIs.

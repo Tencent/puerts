@@ -1,8 +1,8 @@
 # Debugging
 ## Table Of Contents
-- [Automatic binding mode](#automatic-binding-mode)
-- [Starting a new JavaScript virtual machine](#starting-a-new-javascript-virtual-machine)
-- [Intergrating with VSCode](#intergrating-with-vscode)
+- [Automatic Binding Mode](#automatic-binding-mode)
+- [Starting A New JavaScript Virtual Machine](#starting-a-new-javascript-virtual-machine)
+- [Intergrating With VSCode](#intergrating-with-vscode)
 - [Notes](#notes)
 
 ## Automatic binding mode

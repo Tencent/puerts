@@ -4,9 +4,19 @@ When it comes to interacting with C++ from TypeScript, there is one main questio
 
 Are the C++ members reflected inside of Unreal Engine?
 
+## Table Of Contents
+- [Interacting With Reflected API](#interacting-with-reflected-api)
+- [Interacting With Non-Reflected API](#interacting-with-non-reflected-api)
+
 ## Interacting With Reflected API
 If the API in question is marked for reflection inside of Unreal Engine (i.e. `UCLASS`, `UPROPERTY`, `UFUNCTION`, `USTRUCT`, `UENUM`) then it will auomatically be recognised by puerts.
 
+### Table Of Contents
+- [Arrays, Maps And Sets](#arrays-maps-and-sets)
+- [ArrayBuffers](#arraybuffers)
+- [Combining TypeScript and C++ Classes With Mixin](#combining-typescript-and-c-classes-with-mixin)
+
+### Usage
 ##### C++
 ``` c++
 #include "JsEnv.h"
@@ -106,6 +116,9 @@ void UMyObject::ArrayBufferTest(const FArrayBuffer& InArrayBuffer) const
 const NewArrayBuffer = new Uint8Array([21,31]);
 MyUObj.ArrayBufferTest(NewArrayBuffer);
 ```
+
+### Combining TypeScript and C++ Classes With Mixin
+Puerts has to the ability to combine TypeScript and C++ classes together, allowing users to override reflected API logic. To get started, see [using mixin](./mixin.md).
 
 ## Interacting With Non-Reflected API
 Unreal has a lot of C++ functions and classes without reflection tags. In order to access them within TypeScript, [Template-based static binding should be used](./template_binding.md).
