@@ -797,10 +797,8 @@ void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value pvalue)
 {
     auto info = reinterpret_cast<CallbackInfo*>(pinfo);
     auto jsvalue = qjsValueFromPesapiValue(pvalue);
-    jsvalue->need_free = 0;
-    //TODO: free in js
-    //TODO: 输出参数（ref, out)也要做类似的操作?
     info->res = *jsvalue;
+    jsvalue->need_free = 0;
 }
 
 // implement by js

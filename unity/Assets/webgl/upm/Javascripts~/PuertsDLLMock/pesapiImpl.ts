@@ -296,11 +296,12 @@ class Scope {
         return this.objectsInScope[index];
     }
 
-    toJs(wasmApi: PuertsJSEngine.UnityAPI, objMapper: ObjectMapper, pvalue: pesapi_value) : any {
+    toJs(wasmApi: PuertsJSEngine.UnityAPI, objMapper: ObjectMapper, pvalue: pesapi_value, freeStringAndBuffer: boolean = false) : any {
         if (pvalue == 0) return undefined;
 
         const heap = wasmApi.HEAPU8;
-        const valType = Buffer.readInt32(heap, pvalue + 8);
+        const tagPtr = pvalue + 8;
+        const valType = Buffer.readInt32(heap, tagPtr);
         //console.log(`valType: ${valType}`);
         if (valType <= JSTag.JS_TAG_OBJECT && valType >= JSTag.JS_TAG_ARRAY) {
             const objIdx = Buffer.readInt32(heap, pvalue);
@@ -329,11 +330,25 @@ class Scope {
             case JSTag.JS_TAG_STRING:
                 const strStart = Buffer.readInt32(heap, pvalue);
                 const strLen = Buffer.readInt32(heap, pvalue + 4);
-                return wasmApi.UTF8ToString(strStart as any, strLen);
+                const str = wasmApi.UTF8ToString(strStart as any, strLen);
+                if (freeStringAndBuffer) {
+                    const need_free = Buffer.readInt32(heap, tagPtr + 4); // need_free
+                    if (need_free != 0) {
+                        wasmApi._free(strStart);
+                    }
+                }
+                return str;
             case JSTag.JS_TAG_BUFFER:
                 const buffStart = Buffer.readInt32(heap, pvalue);
                 const buffLen = Buffer.readInt32(heap, pvalue + 4);
-                return wasmApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
+                const buff =  wasmApi.HEAP8.buffer.slice(buffStart, buffStart + buffLen);
+                if (freeStringAndBuffer) {
+                    const need_free = Buffer.readInt32(heap, tagPtr + 4); // need_free
+                    if (need_free != 0) {
+                        wasmApi._free(buffStart);
+                    }
+                }
+                return buff;
         }
         throw new Error(`unsupported type: ${valType}`);
     }
@@ -650,7 +665,7 @@ function getBuffer(wasmApi: PuertsJSEngine.UnityAPI, size: number): number {
 }
 
 function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: pesapi_value) {
-    const heap = wasmApi.HEAPU8;
+    let heap = wasmApi.HEAPU8;
 
     const dataPtr = value;
     const tagPtr = dataPtr + 8;
@@ -678,6 +693,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
         const len = wasmApi.lengthBytesUTF8(arg);
         const ptr = getBuffer(wasmApi, len + 1);
         wasmApi.stringToUTF8(arg, ptr, len + 1);
+        heap = wasmApi.HEAPU8; // getBuffer会申请内存，可能导致HEAPU8改变
         Buffer.writeInt32(heap, ptr, dataPtr);
         Buffer.writeInt32(heap, len, dataPtr + 4);
         Buffer.writeInt32(heap, JSTag.JS_TAG_STRING, tagPtr);
@@ -695,6 +711,7 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
         const len = arg.byteLength;
         const ptr = getBuffer(wasmApi, len);
         wasmApi.HEAP8.set(new Int8Array(arg), ptr);
+        heap = wasmApi.HEAPU8; // getBuffer会申请内存，可能导致HEAPU8改变
         Buffer.writeInt32(heap, ptr, dataPtr);
         Buffer.writeInt32(heap, len, dataPtr + 4);
         Buffer.writeInt32(heap, JSTag.JS_TAG_BUFFER, tagPtr);
@@ -735,7 +752,7 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
         const argc = args.length;
         try {
             callbackInfo = jsArgsToCallbackInfo(wasmApi, argc, args);
-            const heap = wasmApi.HEAPU8;
+            const heap = wasmApi.HEAPU8; //在PApiCallbackWithScope前都不会变化，这样用是安全的
             Buffer.writeInt32(heap, data, callbackInfo + 8); // data
             let objId = 0;
             let typeId = 0;
@@ -750,7 +767,7 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
                 throw getAndClearLastException();
             }
         
-            return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16);
+            return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16, true);
         } finally {
             returnNativeCallbackInfo(wasmApi, argc, callbackInfo);
         }
