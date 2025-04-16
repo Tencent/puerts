@@ -7,12 +7,13 @@
 import { FOR, default as t, IF, ENDIF, ELSE } from "./tte.mjs"
 
 import * as il2cpp_snippets from "./il2cpp_snippets.mjs"
+const {invokePapi} = il2cpp_snippets;
 
 function genBridgeArgs(parameterSignatures) {
     if (parameterSignatures.length != 0) {
         if (parameterSignatures[parameterSignatures.length -1][0] != 'V') {
             return `pesapi_value argv[${parameterSignatures.length}]{
-        ${parameterSignatures.map((ps, i)=> il2cpp_snippets.CSValToJSVal(ps[0] == 'D' ? ps.substring(1) : ps, `p${i}`) || 'apis->create_undefined(env)').join(`,
+        ${parameterSignatures.map((ps, i)=> il2cpp_snippets.CSValToJSVal(ps[0] == 'D' ? ps.substring(1) : ps, `p${i}`) || `${invokePapi('create_undefined')}(env)`).join(`,
         `)}
     };`
         } else {
@@ -26,7 +27,7 @@ function genBridgeArgs(parameterSignatures) {
             return `auto arrayLength = il2cpp::vm::Array::GetLength(p${parameterSignatures.length - 1});
     pesapi_value *argv = (pesapi_value *)alloca(sizeof(pesapi_value) * (${parameterSignatures.length  - 1} + arrayLength));
     memset(argv, 0, sizeof(pesapi_value) * (${parameterSignatures.length  - 1} + arrayLength));
-    ${parameterSignatures.slice(0, -1).map((ps, i)=> `argv[${i}] = ${(il2cpp_snippets.CSValToJSVal(ps, `p${i}`) || 'apis->create_undefined(env)')};`).join(`
+    ${parameterSignatures.slice(0, -1).map((ps, i)=> `argv[${i}] = ${(il2cpp_snippets.CSValToJSVal(ps, `p${i}`) || `${invokePapi('create_undefined')}(env)`)};`).join(`
     `)}
     ${unpackMethod}(apis, env, p${parameterSignatures.length-1}, arrayLength, TIp${parameterSignatures.length-1}, argv + ${parameterSignatures.length  - 1});`;
         }
@@ -54,9 +55,9 @@ static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.
     PObjectRefInfo* delegateInfo = GetPObjectRefInfo(target);
     struct pesapi_ffi* apis = delegateInfo->Apis;
     
-    pesapi_env_ref envRef = apis->get_ref_associated_env(delegateInfo->ValueRef);
+    pesapi_env_ref envRef = ${invokePapi('get_ref_associated_env')}(delegateInfo->ValueRef);
     AutoValueScope valueScope(apis, envRef);
-    auto env = apis->get_env_from_ref(envRef);
+    auto env = ${invokePapi('get_env_from_ref')}(envRef);
     if (!env)
     {
         il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException("JsEnv had been destroy"));
@@ -64,10 +65,10 @@ static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.
         return {};
         ${ENDIF()}
     }
-    auto func = apis->get_value_from_ref(env, delegateInfo->ValueRef);
+    auto func = ${invokePapi('get_value_from_ref')}(env, delegateInfo->ValueRef);
     
     ${genBridgeArgs(parameterSignatures)}
-    auto jsret = apis->call_function(env, func, nullptr, ${parameterSignatures.length}${hasVarArgs ? ' + arrayLength - 1' : ''}, argv);
+    auto jsret = ${invokePapi('call_function')}(env, func, nullptr, ${parameterSignatures.length}${hasVarArgs ? ' + arrayLength - 1' : ''}, argv);
     
     if (apis->has_caught(valueScope.scope()))
     {

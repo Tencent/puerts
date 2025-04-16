@@ -619,13 +619,13 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 
 static void GetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    FieldWrapData* wrapData = static_cast<FieldWrapData*>(apis->get_userdata(info));
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>(${invokePapi('get_userdata')}(info));
     wrapData->Getter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
 static void SetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    FieldWrapData* wrapData = static_cast<FieldWrapData*>(apis->get_userdata(info));
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>(${invokePapi('get_userdata')}(info));
     wrapData->Setter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
@@ -725,7 +725,7 @@ void PLog(const char* Fmt, ...)
 
 static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    JsClassInfo* classInfo = reinterpret_cast<JsClassInfo*>(apis->get_userdata(info));
+    JsClassInfo* classInfo = reinterpret_cast<JsClassInfo*>(${invokePapi('get_userdata')}(info));
     // or will crash in macos.
     if (!classInfo->IsValueType && *(classInfo->CtorWrapDatas) == nullptr)
     {
@@ -880,7 +880,7 @@ static void* DelegateCtorCallback(struct pesapi_ffi* apis, pesapi_callback_info 
         apis->throw_by_string(info, "expect a function");
         return nullptr;
     }
-    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(apis->get_userdata(info));
+    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(${invokePapi('get_userdata')}(info));
     
     return FunctionToDelegate(apis, env, jsval, classInfo);
 }

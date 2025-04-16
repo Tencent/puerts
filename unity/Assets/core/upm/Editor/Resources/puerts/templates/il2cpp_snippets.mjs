@@ -84,7 +84,38 @@ const mayHasStaticFunc = {
     create_array: true,
     create_object: true,
     create_function: true,
-    create_class: true
+    create_class: true,
+    
+    create_env_ref: true,
+    env_ref_is_valid: true,
+    get_env_from_ref: true,
+    duplicate_env_ref: true,
+    release_env_ref: true,
+    
+    open_scope: true,
+    open_scope_placement: true,
+    close_scope: true,
+    scope_placement: true,
+    
+    create_value_ref: true,
+    duplicate_value_ref: true,
+    release_value_ref: true,
+    get_value_from_ref: true,
+    set_ref_weak: true,
+    set_owner: true,
+    get_ref_associated_env: true,
+    get_ref_internal_fields: true,
+    get_property: true,
+    get_property_uint32: true,
+    set_property_uint32: true,
+    call_function: true,
+    eval: true,
+    global: true,
+    
+    boxing: true,
+    unboxing: true,
+    update_boxed_value: true,
+    is_boxed_value: true
 };
 
 export function invokePapi(apiName) {
