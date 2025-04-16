@@ -625,7 +625,7 @@ namespace PuertsIl2cpp.Editor
                     jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
 #endif
 
-                    string dataTransContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text + "`");
+                    string dataTransContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text.Replace("\\", "\\\\") + "`");
 
                     using (StreamWriter textWriter = new StreamWriter(outDir + "TDataTrans.h", false, Encoding.UTF8))
                     {
@@ -633,7 +633,7 @@ namespace PuertsIl2cpp.Editor
                         textWriter.Flush();
                     }
 
-                    string puertsIl2cppContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text + "`");
+                    string puertsIl2cppContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text.Replace("\\", "\\\\") + "`");
 
                     using (StreamWriter textWriter = new StreamWriter(outDir + "Puerts_il2cpp.cpp", false, Encoding.UTF8))
                     {
