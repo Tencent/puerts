@@ -96,99 +96,82 @@ typedef struct JSValue {
 } JSValue;
 
 static_assert(sizeof(void*) == 4, "just support wasm32");
-   
-struct WebGlScope;
 
-WebGlScope* g_scope = nullptr;
+typedef struct {
+    JSValue *data;      // 存储元素的数组
+    int capacity;       // 栈的总容量
+    int top;            // 栈顶指针（指向下一个空闲位置）
+} Stack;
 
-static inline WebGlScope *getCurrentScope()
-{
-	return g_scope;
+static Stack* createStack() {
+    Stack* stack = (Stack*)malloc(sizeof(Stack));
+    if (!stack) return nullptr;
+
+    const int initial_capacity = 4;
+    stack->data = (JSValue*)malloc(sizeof(JSValue) * initial_capacity);
+    if (!stack->data) {
+        free(stack);
+        return nullptr;
+    }
+    stack->capacity = initial_capacity;
+    stack->top = 0;
+    return stack;
 }
 
-static inline void setCurrentScope(WebGlScope *scope)
-{
-	g_scope = scope;
+#if defined(__GNUC__) || defined(__clang__)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#else
+#define unlikely(x) (x)  
+#endif
+
+static JSValue* allocInitialized(Stack* stack) {
+    //puerts::PLog("%p alloc top:%d base:%p capacity:%d", stack, stack->top, stack->data, stack->capacity);
+    if (unlikely(stack->top >= stack->capacity)) {
+        int new_capacity = stack->capacity * 2;
+        JSValue *new_data = (JSValue*)realloc(stack->data, sizeof(JSValue) * new_capacity);
+        //puerts::PLog("glow %d->%d %p", stack->capacity, new_capacity, new_data);
+        stack->data = new_data;
+        stack->capacity = new_capacity;
+    }
+    JSValue* res = &(stack->data[stack->top++]);
+    // 有些场景，比如 pesapi_call_function，在调用js后，异常了，这个JSValue不会修改，如果上一次这个值是字符串之类的需要释放的类型，在scope释放时会出现double free
+    *res = JS_UNDEFINED;
+    return res;
 }
 
-inline void JS_FreeValue(JSValue v)
+static Stack* g_valueStack = nullptr;
+
+inline void JS_FreeValue(JSValue* v)
 {
-    if (v.need_free)
+    if (unlikely(v->need_free))
     {
-        if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION)
+        if (v->tag == JS_TAG_STRING || v->tag == JS_TAG_EXCEPTION)
         {
-            delete v.u.str.ptr;
+            delete v->u.str.ptr;
         }
-        if (v.tag == JS_TAG_BUFFER)
+        if (v->tag == JS_TAG_BUFFER)
         {
-            delete (uint8_t *)v.u.buf.ptr;
+            delete (uint8_t *)v->u.buf.ptr;
         }
     }
-    v.u.ptr = nullptr;
 }
 
 struct WebGlScope
 {
-    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 4;
-    
     explicit inline WebGlScope()
+       : prevTop(g_valueStack->top)
 	{
-		prev_scope = getCurrentScope();
-		setCurrentScope(this);
 	}
 
-	WebGlScope *prev_scope;
-
-	JSValue values[SCOPE_FIX_SIZE_VALUES_SIZE];
-
-	uint32_t values_used = 0;
-
-	std::vector<JSValue*>* dynamic_alloc_values = nullptr;
-
-	inline JSValue *allocValue()
-	{
-		JSValue *ret;
-		if (values_used < SCOPE_FIX_SIZE_VALUES_SIZE)
-		{
-            //puerts::PLog("fix alloc");
-			ret = &(values[values_used++]);
-		}
-		else
-		{
-            //puerts::PLog("dynamic alloc");
-            if (!dynamic_alloc_values)
-            {
-                //puerts::PLog("new vector");
-                dynamic_alloc_values = new std::vector<JSValue*>();
-            }
-			ret = (JSValue *) malloc(sizeof(JSValue));
-			dynamic_alloc_values->push_back(ret);
-		}
-		*ret = JS_UNDEFINED;
-		return ret;
-	}
-
+	int prevTop;
 
 	inline ~WebGlScope()
 	{
-		for (size_t i = 0; i < values_used; i++)
-		{
-            JS_FreeValue(values[i]);
-		}
-
-        if (dynamic_alloc_values)
-        {
-            size_t size = dynamic_alloc_values->size();
-            for (size_t i = 0; i < size; ++i)
-            {
-                auto pv = (*dynamic_alloc_values)[i];
-                JS_FreeValue(*pv);
-                free(pv);
-            }
-            delete dynamic_alloc_values;
-            dynamic_alloc_values = nullptr;
-		}
-		setCurrentScope(prev_scope);
+        int idx = g_valueStack->top - 1;
+        while(idx >= prevTop) {
+            JS_FreeValue(&(g_valueStack->data[idx--]));
+        }
+		g_valueStack->top = prevTop;
 	}
 };
 
@@ -234,8 +217,7 @@ inline JSValue* qjsValueFromPesapiValue(pesapi_value v)
 
 inline JSValue *allocValueInCurrentScope()
 {
-	auto scope = getCurrentScope();
-	return scope->allocValue();
+	return allocInitialized(g_valueStack);
 }
 
 JSValue literal_values_undefined = JS_UNDEFINED;
@@ -1074,7 +1056,7 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
 
 extern "C"
 {
-    void EMSCRIPTEN_KEEPALIVE InjectPapiGLNativeImpl(struct pesapi_ffi* api)
+    void DoInjectPapiGLNative(struct pesapi_ffi* api)
     {
         api->open_scope = &pesapi::webglimpl::pesapi_open_scope;
         
@@ -1195,6 +1177,8 @@ extern "C"
         api->unboxing = &pesapi::webglimpl::pesapi_unboxing;
         api->update_boxed_value = &pesapi::webglimpl::pesapi_update_boxed_value;
         api->is_boxed_value = &pesapi::webglimpl::pesapi_is_boxed_value;
+        
+        pesapi::webglimpl::g_valueStack = pesapi::webglimpl::createStack();
     }
     
     void EMSCRIPTEN_KEEPALIVE PApiCallbackWithScope(pesapi_callback cb, struct pesapi_ffi* apis, pesapi_callback_info info)
