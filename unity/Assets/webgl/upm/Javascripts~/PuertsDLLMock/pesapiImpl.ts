@@ -239,12 +239,15 @@ function getExceptionAsNativeString(wasmApi: PuertsJSEngine.UnityAPI, with_stack
         }
         lastException = null;
         const byteCount = wasmApi.lengthBytesUTF8(result);
-        //console.error(`getExceptionAsNativeString(${byteCount}): ${result}`);
+        // console.log(`getExceptionAsNativeString(${byteCount}): ${result}`);
         if (lastExceptionBuffer) {
             wasmApi._free(lastExceptionBuffer);
         }
         lastExceptionBuffer = wasmApi._malloc(byteCount + 1);
+        // 这不+1会导致少一个字符，看上去stringToUTF8的逻辑是认为该长度是buffer的最大长度，而且确保结尾有\0结束符
         wasmApi.stringToUTF8(result, lastExceptionBuffer, byteCount + 1);
+        // 如果上述推论正确，这行是多余的，不过保险起见还是加下
+        wasmApi.HEAPU8[lastExceptionBuffer + byteCount] = 0;
         return lastExceptionBuffer;
     }
     return 0;
