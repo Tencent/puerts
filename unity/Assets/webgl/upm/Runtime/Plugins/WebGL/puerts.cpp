@@ -180,13 +180,6 @@ extern "C"
     AddFunc EMSCRIPTEN_KEEPALIVE GetWasmAddPtr(){
         return WasmAdd;
     }
-    
-    void DoInjectPapiGLNative(struct pesapi_ffi* api);
-    
-    void EMSCRIPTEN_KEEPALIVE InjectPapiGLNativeImpl(struct pesapi_ffi* api)
-    {
-        DoInjectPapiGLNative(api);
-    }
 }
 
 #endif
