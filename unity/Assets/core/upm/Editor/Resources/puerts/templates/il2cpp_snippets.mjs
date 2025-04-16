@@ -34,6 +34,65 @@ export const PrimitiveSignatureCppTypeMap = {
     r4: 'float'
 };
 
+const mayHasStaticFunc = {
+    get_args_len: true,
+    get_arg: true,
+    get_env: true,
+    get_native_holder_ptr: true,
+    get_native_holder_typeid: true,
+    get_userdata: true,
+    add_return: true,
+    
+    is_null: true,
+    is_undefined: true,
+    is_boolean: true,
+    is_int32: true,
+    is_uint32: true,
+    is_int64: true,
+    is_uint64: true,
+    is_double: true,
+    is_string: true,
+    is_object: true,
+    is_function: true,
+    is_binary: true,
+    is_array: true,
+    
+    get_value_bool: true,
+    get_value_int32: true,
+    get_value_uint32: true,
+    get_value_int64: true,
+    get_value_uint64: true,
+    get_value_double: true,
+    get_value_string_utf8: true,
+    get_value_binary: true,
+    
+    native_object_to_value: true,
+    get_native_object_ptr: true,
+    get_native_object_typeid: true,
+    is_instance_of: true,
+
+    create_null: true,
+    create_undefined: true,
+    create_boolean: true,
+    create_int32: true,
+    create_uint32: true,
+    create_int64: true,
+    create_uint64: true,
+    create_double: true,
+    create_string_utf8: true,
+    create_binary: true,
+    create_array: true,
+    create_object: true,
+    create_function: true,
+    create_class: true
+};
+
+export function invokePapi(apiName) {
+    return (globalThis.USE_STATIC_PAPI && apiName in mayHasStaticFunc) ? `pesapi_${apiName}` : `apis->${apiName}`;
+}
+
+globalThis.invokePapi = invokePapi;
+
 export function needThis(wrapperInfo) {
     return wrapperInfo.ThisSignature == 't' || wrapperInfo.ThisSignature == 'T'
 }
@@ -199,7 +258,7 @@ export function refSetback(signature, index) {
 }
     
 export function returnToJS(signature) {
-    return `apis->add_return(info, ${CSValToJSVal(signature, 'ret')});`;
+    return `${invokePapi('add_return')}(info, ${CSValToJSVal(signature, 'ret')});`;
 }
     
 export function returnToCS(signature) {

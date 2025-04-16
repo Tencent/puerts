@@ -39,6 +39,10 @@
 #include <string>
 #include <unordered_set>
 #include <sstream>
+#if defined(__EMSCRIPTEN__)
+#include "pesapi_webgl.h"
+using namespace pesapi::webglimpl;
+#endif
 
 // Because we need to hold the C# object pointer, we must ensure that GC does not do memory reorganization.
 static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
@@ -562,17 +566,17 @@ void SetGlobalType_TypedValue(Il2CppReflectionType *type)
 
 static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    CSharpMethodInfo* csharpMethodInfo = (CSharpMethodInfo*)apis->get_userdata(info);
+    CSharpMethodInfo* csharpMethodInfo = (CSharpMethodInfo*)${invokePapi('get_userdata')}(info);
     try 
     {
         void* self = nullptr;
-        pesapi_env env = apis->get_env(info);
+        pesapi_env env = ${invokePapi('get_env')}(info);
         if (!(csharpMethodInfo->IsStatic))
         {
-            self = apis->get_native_holder_ptr(info);
+            self = ${invokePapi('get_native_holder_ptr')}(info);
             if (csharpMethodInfo->NeedBoxing)
             {
-                auto ptrType = (Il2CppClass*) apis->get_native_holder_typeid(info);
+                auto ptrType = (Il2CppClass*) ${invokePapi('get_native_holder_typeid')}(info);
                 if (Class::IsValuetype(ptrType))
                 {
                     self = Object::Box(ptrType, self);
