@@ -129,7 +129,7 @@ inline void JS_FreeValue(JSValue v)
 
 struct WebGlScope
 {
-    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 4;
+    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 6;
     
     explicit inline WebGlScope()
 	{
