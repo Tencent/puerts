@@ -124,7 +124,7 @@ static Stack* createStack() {
 #define unlikely(x) (x)  
 #endif
 
-static JSValue* allocUnInitialized(Stack* stack) {
+static JSValue* allocInitialized(Stack* stack) {
     //puerts::PLog("%p alloc top:%d base:%p capacity:%d", stack, stack->top, stack->data, stack->capacity);
     if (unlikely(stack->top >= stack->capacity)) {
         int new_capacity = stack->capacity * 2;
@@ -134,7 +134,8 @@ static JSValue* allocUnInitialized(Stack* stack) {
         stack->capacity = new_capacity;
     }
     JSValue* res = &(stack->data[stack->top++]);
-    //*res = JS_UNDEFINED;
+    // 有些场景，比如 pesapi_call_function，在调用js后，异常了，这个JSValue不会修改，如果上一次这个值是字符串之类的需要释放的类型，在scope释放时会出现double free
+    *res = JS_UNDEFINED;
     return res;
 }
 
@@ -216,7 +217,7 @@ inline JSValue* qjsValueFromPesapiValue(pesapi_value v)
 
 inline JSValue *allocValueInCurrentScope()
 {
-	return allocUnInitialized(g_valueStack);
+	return allocInitialized(g_valueStack);
 }
 
 JSValue literal_values_undefined = JS_UNDEFINED;
