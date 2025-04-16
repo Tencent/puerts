@@ -20,7 +20,6 @@ Puerts does not re-define the engine. It simply defines a set of methods for Typ
 - [Interacting With C++ From TypeScript](./typescript_interacts_cpp.md)
     - [Interacting With Non-Reflected API Using Template-Based Static Binding](./template_binding.md)
     - [Combining TypeScript and C++ Classes With Mixin](./mixin.md)
-    
 - [Debugging](./vscode_debug.md)
 - [Official Demo](./demos.md)
 - [FAQ](./faq.md)

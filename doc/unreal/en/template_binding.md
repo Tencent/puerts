@@ -1,9 +1,7 @@
 # Template-Based Static Binding
 Unreal has a lot of C++ functions and classes without reflection tags. In order to access them within TypeScript, Template-based static binding should be used.
 
-## Overview
-Support features:
-
+Supported features:
 - Constructor
 - Static function
 - Member variables
@@ -15,225 +13,171 @@ Support features:
 - Support JS function mapping to `std::function`
 - Support custom converter
 
+## Table Of Contents
+- [Setup](#setup)
+- [Usage](#usage)
+- [API Reference](#api-reference)
+
 ## Setup
-
-If you want to use this feature outside of the `JsEnv` module itself, such as another game module, you'll need to do the following:
-
-- Use dynamic library version `V8` libraries, switching methods:
+1. Use dynamic library version `V8` libraries, switching methods:
     - To the Puerts official website download and Puerts supporting `V8` library, and unzip it to `Plugins/Puerts/ThirdParty/` (or respective folder)
     - Find the `JsEnv.Build.cs` file and change `UseNewV8` to `true`
-- In the module's `*.Build.cs`
+2. In the module's `*.Build.cs`
     - Add a dependency to the `JsEnv` module
 
-## Examples
+## Usage
+### Unreal Engine UCLASS
+##### C++
+``` c++
+// UObject_Binding.h
+#include "CoreMinimal.h"
+#include "Binding.hpp"
+#include "UEDataBinding.hpp"
 
-### Hello World
+UsingUClass(UObject)
+UsingUClass(UWorld)
+UsingUClass(UClass)
 
-With a simplest common C++ class as an example
+puerts::DefineClass<UObject>()
+    .Method("GetClass", MakeFunction(&UObject::GetClass))
+    .Method("GetWorld", MakeFunction(&UObject::GetWorld))
+    .Register();
+```
 
+### Regular C++ Class
+##### C++
 ``` cpp
-// Calc.h
-class Calc
+// ExampleClass.h
+class ExampleClass
 {
+// Static
 public:
-    static int32_t Add(int32_t a, int32_t b)
+    static int32_t StaticAdd(int32_t a, int32_t b)
     {
         return a + b;
     }
+
+    static int StaticInt;
+
+// Non-Static
+public:
+    int32_t GetRegularInt()
+	{
+		return RegularInt;
+	}
+
+    int32_t RegularInt{1337};
 };
 ```
-
-We declare as follows
-
-``` cpp
-#include "Calc.h"
+``` c++
+// ExampleClass_Binding.h
 #include "Binding.hpp"
 
-// A macro defined in Binding.hpp which
-// creates a converter (either V8 or Pesapi) for your class
-// which helps build the translation layer
-UsingCppType(Calc);
+UsingCppType(ExampleClass);
 
 struct AutoRegisterForCPP
 {
     AutoRegisterForCPP()
     {
-        puerts::DefineClass<Calc>()
-            .Function("Add", MakeFunction(&Calc::Add)) // There's also `.Method(...)` and `.Property(...)`
+        puerts::DefineClass<ExampleClass>()
+            .Function("StaticAdd", MakeFunction(&ExampleClass::StaticAdd))          // Static Function
+            .Variable("StaticInt", MakeVariable(&ExampleClass::StaticInt))          // Static Variable
+            .Method("GetRegularInt", MakeFunction(&ExampleClass::GetRegularInt))    // Member Function
+            .Property("RegularInt", MakeProperty(&ExampleClass::RegularInt))        // Member Variable
             .Register();
     }
 };
 
-// Completes the automatic registration with puerts. When this calls
-// when the module is loaded, it will call the constructor defined above,
-// executing the registration with puerts
 AutoRegisterForCPP _AutoRegisterForCPP__;
 ```
-
-Compile the C++, open the Unreal editor, and generate TypeScript definitions (either with the button or command) to call in TypeScript. Then in TypeScript you can do:
-
+##### TypeScript
 ``` typescript
 import * as cpp from 'cpp'
 
-let Calc = cpp.Calc;
-
-// static function
-console.log(Calc.Add(12, 34));
+const AddedResult = cpp.Calc.Add(12, 34);
+console.log(AddedResult);
 ```
 
-### Static function declaration
+**Note: Compile the C++, open the Unreal editor, and generate TypeScript definitions (either with the button or command) to call in TypeScript.**
 
-The presentation is a static function, `.Function(Name, <function reference>)`. To register a static function, there are several ways to reference:
+## API Reference
+### Constructor
+##### C++
+``` cpp
+class Calc
+{
+public:
+    Calc() { }
+    Calc(int32_t InRegularInt, int32_t InPrivateIntVariable)
+    {
+        RegularInt = InRegularInt;
+        PrivateIntVariable = InPrivateIntVariable;
+    }
+}
+```
+##### TypeScript
+``` cpp
+.Constructor()
+```
+``` cpp
+.Constructor(
+    CombineConstructors(
+        MakeConstructor(Calc),
+        MakeConstructor(Calc, int32_t, int32_t)
+    ))
+```
 
-- The function is not overloaded: `MakeFunction(&Calc::Add)`
-- The function is not overloaded, but you want to verify the parameters: `MakeCheckFunction(&Calc::Add)`
-- The function is overloaded, but you just want to choose one of them: `SelectFunction(float (*)(float, float), &Calc::Add)`
-- The function is overloaded, and you want multiple overloads available:
+### Function Decaleration
+| Function | Description |
+| -------- | ----------- |
+| `.Method(Name, Function Reference)` | Exposes a member function to TypeScript |
+| `.Function(Name, Function Reference)` | Exposes a static function to TypeScript |
 
+### Function Referencing
+| Function | Description |
+| -------- | ----------- |
+| `MakeFunction(Reference To Function)` | Creates a member function reference |
+| `MakeCheckFunction(Reference To Function)` | Creates a member function reference with parameter varification |
+| `SelectFunction(ReturnType... (ClassName::*)(Parameters...), Reference To Function)` | Creates a member function reference based on a single function overload |
+
+If the function has multiple overloads:
+##### C++
 ``` c++
 CombineOverloads(
-    MakeOverload(void(*)(), &TestClass::Overload),
-    MakeOverload(void(*)(int32_t), &TestClass::Overload),
-    MakeOverload(void(*)(int32_t, int32_t), &TestClass::Overload),
-    MakeOverload(void(*)(std::string, int32_t), &TestClass::Overload)
+    MakeOverload(void (ExampleClass::*)(), &ExampleClass::ExampleFunction),
+    // More Overloads...
     )
 ```
 
-### Static Variables
+### Variable Deceleration
+| Function | Description |
+| -------- | ----------- |
+| `.Property(Name, Variable Reference)` | Exposes a member variable to TypeScript |
+| `.Variable(Name, Variable Reference)` | Exposes a static variable to TypeScript |
 
-~~~c++
-class TestClass
-{
-public:
-    static int StaticInt;
-};
-~~~
+### Variable Referencing
+| Function | Description |
+| -------- | ----------- |
+| `MakeProperty(Reference To Variable)` | Creates a member variable reference |
+| `MakeVariable(Reference To Variable)` | Creates a static variable reference |
 
-Statement
-
-~~~c++
-puerts::DefineClass<TestClass>()
-    .Variable("StaticInt", MakeVariable(&TestClass::StaticInt))
-    .Register();
-~~~
-
-### Member variables
-
+### Getters and setters
+##### C++
 ``` c++
-class TestClass
-{
-public:
-    int32_t X;
-    int32_t Y;
-};
+.Property("IntVariable", MakePropertyByGetterSetter(&Calc::GetPrivateIntVariable, nullptr))
 ```
 
-Statement
-
+### Function Overloads
+##### C++
 ``` c++
-puerts::DefineClass<TestClass>()
-    .Property("X", MakeProperty(&TestClass::X))
-    .Property("Y", MakeProperty(&TestClass::Y))
-    .Register();
-```
-
-### Getter and Setter
-
-~~~c++
-class TestClass
-{
-private:
-    int32_t _x;
-    
-    static int _si;
-
-public:
-    int32_t GetX()
-	{
-		return _x;
-	}
-    
-    static int32_t GetStaticInt()
-	{
-		return _si;
-	}
-};
-~~~
-
-Statement
-
-~~~c++
-puerts::DefineClass<TestClass>()
-    .Property("X", MakePropertyByGetterSetter(&TestClass::GetX, nullptr))
-    .Variable("StaticInt", MakeVariableByGetterSetter(&TestClass::GetStaticInt, nullptr))
-    .Register();
-~~~
-
-### Constructor
-
-``` c++
-class TestClass
-{
-public:
-    TestClass();
-
-    TestClass(int32_t InX, int32_t InY);
-};
-```
-
-Statement
-
-``` c++
-puerts::DefineClass<TestClass>()
-    .Constructor(CombineConstructors(
-        MakeConstructor(TestClass, int32_t, int32_t),
-        MakeConstructor(TestClass)
-        ))
-    .Register();
-```
-
-If there is only one constructor, you can simplify to
-
-``` c++
-puerts::DefineClass<AdvanceTestClass>()
-    .Constructor<int>() // if only one Constructor
-    .Register();
-```
-
-### Member function
-
-``` c++
-class TestClass
-{
-public:
-    int32_t OverloadMethod();
-
-    int32_t OverloadMethod(int32_t a);
-
-    uint32_t OverloadMethod(uint32_t a);
-
-    int64_t OverloadMethod(int64_t a);
-
-    TestClass *GetSelf();
-};
-```
-
-Statement
-
-``` c++
-puerts::DefineClass<TestClass>()
-    .Method("OverloadMethod", CombineOverloads(
-        MakeOverload(int32_t(TestClass::*)(), &TestClass::OverloadMethod),
-        MakeOverload(int32_t(TestClass::*)(int32_t), &TestClass::OverloadMethod),
-        MakeOverload(uint32_t(TestClass::*)(uint32_t), &TestClass::OverloadMethod),
-        MakeOverload(int64_t(TestClass::*)(int64_t), &TestClass::OverloadMethod)
-        ))
-    .Method("GetSelf", MakeFunction(&TestClass::GetSelf))
-    .Register();
+.Method("Add", CombineOverloads(
+    MakeOverload(int32_t(Calc::*)(int32_t, int32_t), &Calc::OverloadedAdd),
+    MakeOverload(int64_t(Calc::*)(int64_t, int64_t), &Calc::OverloadedAdd),
+    ))
 ```
 
 ### Inheritance
-
+##### C++
 ``` c++
 class BaseClass
 {
@@ -246,9 +190,6 @@ class TestClass : public BaseClass
 public:
 };
 ```
-
-Statement
-
 ``` c++
 puerts::DefineClass<BaseClass>()
     .Method("Foo", MakeFunction(&BaseClass::Foo))
@@ -260,7 +201,7 @@ puerts::DefineClass<TestClass>()
 ```
 
 ### JS object is mapped to JsObject and get/set the JS object properties
-
+##### C++
 ``` c++
 #include "JsObject.h"
 
@@ -279,9 +220,7 @@ void AdvanceTestClass::JsObjectTest(FJsObject Object)
     Object.Set<std::string>("q", "john");
 }
 ```
-
-Use in TypeScript
-
+##### TypeScript
 ``` typescript
 import * as cpp from 'cpp'
 
@@ -293,7 +232,7 @@ console.log(j.q);
 ```
 
 ### JS function mapping JsObject and callback
-
+##### C++
 ``` c++
 // class decl ...
 void AdvanceTestClass::CallJsObjectTest(FJsObject Object)
@@ -303,9 +242,7 @@ void AdvanceTestClass::CallJsObjectTest(FJsObject Object)
 }
 
 ```
-
-Use in TypeScript
-
+##### TypeScript
 ``` typescript
 let obj  = new cpp.AdvanceTestClass(100);
 obj.CallJsObjectTest((i, str) => {
@@ -315,7 +252,7 @@ obj.CallJsObjectTest((i, str) => {
 ```
 
 ### JS function mapping to `std::function`
-
+##### C++
 ``` c++
 //class decl ...
 void AdvanceTestClass::StdFunctionTest(std::function<int(int, int)> Func)
@@ -324,9 +261,7 @@ void AdvanceTestClass::StdFunctionTest(std::function<int(int, int)> Func)
     UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::StdFunctionTest Callback Ret %d"), Ret);
 }
 ```
-
-Use in TypeScript
-
+##### TypeScript
 ``` typescript
 let obj  = new cpp.AdvanceTestClass(100);
 obj.StdFunctionTest((x:number, y:number) => {
@@ -334,53 +269,3 @@ obj.StdFunctionTest((x:number, y:number) => {
     return x + y;
 })
 ```
-
-### Supplement Engine Classes
-
-This is if you want to supplement existing classes like `UObject` which has method like `CreateDefaultSubobject`, `GetName`, `GetOuter`, `GetClass`, `GetWorld` which don't have the `UFUNCTION` modifier.
-
-To achieve this, add the C++:
-
-``` c++
-#include "CoreMinimal.h"
-#include "Binding.hpp"
-#include "UEDataBinding.hpp"
-
-UsingUClass(UObject)
-UsingUClass(UWorld) // for return type
-UsingUClass(UClass)
-UsingUClass(USceneComponent)
-
-puerts::DefineClass<UObject>()
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 23
-    .Method("CreateDefaultSubobject", SelectFunction(UObject* (UObject::*)(FName, UClass*, UClass*, bool , bool), &UObject::CreateDefaultSubobject))
-#else
-    .Method("CreateDefaultSubobject", SelectFunction(UObject* (UObject::*)(FName, UClass*, UClass*, bool, bool, bool), &UObject::CreateDefaultSubobject))
-#endif
-    .Method("GetName", SelectFunction(FString (UObjectBaseUtility::*)() const, &UObjectBaseUtility::GetName))
-    .Method("GetOuter", MakeFunction(&UObject::GetOuter))
-    .Method("GetClass", MakeFunction(&UObject::GetClass))
-    .Method("GetWorld", MakeFunction(&UObject::GetWorld))
-    .Register();
-```
-
-Note: Ordinary C++ class is different (i.e. not a descendent of `UObject`/`UClass`), like specified earlier in this file. If you're modifying something that is a descendent of `UClass`, you meed to use the `UsingUClass` macro as shown above. Similarly if you're supplementing a `UStruct`, you need to use `UsingUStruct`.
-
-After regenerating `ue.d.ts`, it can be seen that the above methods have been added to `UE.Object`'s type declaration:
-
-``` typescript
-class Object {
-    constructor(Outer?: Object, Name?: string, ObjectFlags?: number);
-    ExecuteUbergraph(EntryPoint: number): void;
-    CreateDefaultSubobject(p0: string, p1: $Nullable<Class>, p2: $Nullable<Class>, p3: boolean, p4: boolean) : Object;
-    GetName() : string;
-    GetOuter() : Object;
-    GetClass() : Class;
-    GetWorld() : World;
-    static StaticClass(): Class;
-    static Find(OrigInName: string, Outer?: Object): Object;
-    static Load(InName: string): Object;
-}
-```
-
-Subsequent use of the above method can be used directly on the `Object` object.

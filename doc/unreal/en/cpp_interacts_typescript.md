@@ -22,7 +22,7 @@ DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(FString, FNotifyWithStringRet, FString,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMulticastNotifyWithInt, int32, InInt);
 
 UCLASS()
-class PUERTS_UNREAL_DEMO_API AMyActor : public AActor
+class AMyActor : public AActor
 {
 	GENERATED_BODY()
 
