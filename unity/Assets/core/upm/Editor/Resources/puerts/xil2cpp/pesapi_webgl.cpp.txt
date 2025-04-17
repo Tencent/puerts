@@ -1,4 +1,4 @@
-#if defined(__EMSCRIPTEN__)
+﻿#if defined(__EMSCRIPTEN__)
 
 #include <emscripten.h>
 #include <memory>
