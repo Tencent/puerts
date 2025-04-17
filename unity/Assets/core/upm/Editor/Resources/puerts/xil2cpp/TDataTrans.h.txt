@@ -90,7 +90,8 @@ public:
     {
         if (_apis)
         {
-            _apis->close_scope_placement(scope());
+            auto apis = _apis;
+            ${invokePapi('close_scope_placement')}(scope());
         }
     }
     

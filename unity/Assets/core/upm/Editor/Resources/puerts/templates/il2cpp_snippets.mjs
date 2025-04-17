@@ -167,10 +167,10 @@ export function SToCPPType(signature) {
     
 export function getThis(signature) {
     if (signature == 't') {
-        return `auto self = apis->get_native_holder_ptr(info);`
+        return `auto self = ${invokePapi('get_native_holder_ptr')}(info);`
     } else if (signature == 'T') {
-        return `auto self = apis->get_native_holder_ptr(info);
-    auto ptrType = (Il2CppClass*) apis->get_native_holder_typeid(info);
+        return `auto self = ${invokePapi('get_native_holder_ptr')}(info);
+    auto ptrType = (Il2CppClass*) ${invokePapi('get_native_holder_typeid')}(info);
     if (il2cpp::vm::Class::IsValuetype(ptrType))
     {
         self = il2cpp::vm::Object::Box(ptrType, self);
@@ -240,9 +240,9 @@ export function checkJSArg(signature, index) {
     if (signature in PrimitiveSignatureCppTypeMap) {
         ret += `!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'p' || signature == 'Pv' || signature == 'a') { // IntPtr, void*, ArrayBuffer
-        ret += `!apis->is_binary(env, _sv${index}) && !apis->is_null(env, _sv${index}) && !apis->is_undefined(env, _sv${index})) return false;`
+        ret += `!${invokePapi('is_binary')}(env, _sv${index}) && !${invokePapi('is_null')}(env, _sv${index}) && !${invokePapi('is_undefined')}(env, _sv${index})) return false;`
     } else if (signature[0] == 'P') {
-        ret += `!apis->is_boxed_value(env, _sv${index})) return false;`
+        ret += `!${invokePapi('is_boxed_value')}(env, _sv${index})) return false;`
     } else if (signature == 's') {
         ret += `!converter::Converter<Il2CppString*>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'o' || signature == 'a') {
@@ -268,19 +268,19 @@ export function refSetback(signature, index) {
                 // this '==' is because if a pointer is passed in from external, the content of the pointer is changed and dont need to setback.
                 return `if (p${index} == &up${index})
     {
-        apis->update_boxed_value(env, _sv${index}, ${val});
+        ${invokePapi('update_boxed_value')}(env, _sv${index}, ${val});
     }
             `;    
             } else if (elementSignature.startsWith(sigs.NullableStructPrefix) && elementSignature.endsWith('_')) {
                 return `if (p${index} == &up${index})
     {
-        if (!p${index}->hasValue) apis->update_boxed_value(env, _sv${index}, apis->create_null(env));
-        if (p${index} == &up${index}) apis->update_boxed_value(env, _sv${index}, ${val});
+        if (!p${index}->hasValue) ${invokePapi('update_boxed_value')}(env, _sv${index}, ${invokePapi('create_null')}(env));
+        if (p${index} == &up${index}) ${invokePapi('update_boxed_value')}(env, _sv${index}, ${val});
     }
             `;    
 
             } else {
-                return `apis->update_boxed_value(env, _sv${index}, ${val});`;
+                return `${invokePapi('update_boxed_value')}(env, _sv${index}, ${val});`;
             }
         }
     }
@@ -315,7 +315,7 @@ export function JSValToCSVal(signature, JSName, CSName) {
 
     } else if (signature == 'Po' || signature == 'PO' || signature == 'Pa') {
         return `    // JSValToCSVal Po/PO
-    Il2CppObject* u${CSName} = DataTransfer::GetPointer<Il2CppObject>(apis, env, apis->unboxing(env, ${JSName})); // object ref
+    Il2CppObject* u${CSName} = DataTransfer::GetPointer<Il2CppObject>(apis, env, ${invokePapi('unboxing')}(env, ${JSName})); // object ref
     Il2CppObject** ${CSName} = &u${CSName};
         `
     } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype
@@ -326,7 +326,7 @@ export function JSValToCSVal(signature, JSName, CSName) {
     } else if ((signature.startsWith('P' + sigs.StructPrefix) || signature.startsWith('P' + sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype ref
         const S = signature.substring(1);
         return `    // JSValToCSVal Pstruct
-    ${S}* ${CSName} = DataTransfer::GetPointer<${S}>(apis, env, apis->unboxing(env, ${JSName})); // valuetype ref
+    ${S}* ${CSName} = DataTransfer::GetPointer<${S}>(apis, env, ${invokePapi('unboxing')}(env, ${JSName})); // valuetype ref
     ${S} u${CSName};
     if (!${CSName}) {
         memset(&u${CSName}, 0, sizeof(${S}));
@@ -412,7 +412,7 @@ export function CSValToJSVal(signature, CSName) {
     } else if (signature == 's') { // string
         return `converter::Converter<Il2CppString*>::toScript(apis, env, ${CSName})`;
     } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
-        return `apis->create_binary(env, ${CSName}, 0)`;
+        return `${invokePapi('create_binary')}(env, ${CSName}, 0)`;
     } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
         return `DataTransfer::CopyValueType(apis, env, ${CSName}, ${TIName})`;
     } else if (signature == 'Ps') { // string ref
@@ -422,7 +422,7 @@ export function CSValToJSVal(signature, CSName) {
         if (elemSignature in PrimitiveSignatureCppTypeMap) {
             return `converter::Converter<std::reference_wrapper<${PrimitiveSignatureCppTypeMap[elemSignature]}>>::toScript(apis, env, *${CSName})`;
         } else if (isStruct(elemSignature) || signature == 'Po' || signature == 'PO' || signature == 'Pa') {
-            return `apis->boxing(env, apis->native_object_to_value(env, ${TIName}, ${CSName}, false))`;
+            return `${invokePapi('boxing')}(env, ${invokePapi('native_object_to_value')}(env, ${TIName}, ${CSName}, false))`;
         }
     }
     //TODO: 能处理的就处理, DateTime是否要处理呢？

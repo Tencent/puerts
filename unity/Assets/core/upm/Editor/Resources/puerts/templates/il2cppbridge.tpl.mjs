@@ -70,9 +70,9 @@ static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.
     ${genBridgeArgs(parameterSignatures)}
     auto jsret = ${invokePapi('call_function')}(env, func, nullptr, ${parameterSignatures.length}${hasVarArgs ? ' + arrayLength - 1' : ''}, argv);
     
-    if (apis->has_caught(valueScope.scope()))
+    if (${invokePapi('has_caught')}(valueScope.scope()))
     {
-        auto msg = apis->get_exception_as_string(valueScope.scope(), true);
+        auto msg = ${invokePapi('get_exception_as_string')}(valueScope.scope(), true);
         il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException(msg));
     ${IF(bridgeInfo.ReturnSignature == 'v')}
     }
