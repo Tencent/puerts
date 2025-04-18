@@ -312,8 +312,7 @@ class Scope {
         }
         if (valType == JSTag.JS_TAG_NATIVE_OBJECT) {
             const objId = Buffer.readInt32(heap, pvalue);
-            const typeId = Buffer.readInt32(heap, pvalue + 4);
-            return objMapper.pushNativeObject(objId, typeId, true);
+            return objMapper.findNativeObject(objId); // 肯定已经push过了，直接find就可以了
         }
         switch(valType) {
             case JSTag.JS_TAG_BOOL:
