@@ -449,7 +449,11 @@ namespace PuertsIl2cpp.Editor
                 using (var jsEnv = new Puerts.JsEnv())
                 {
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
-                    
+
+#if UNITY_WEBGL
+                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
+#endif
+
                     var cppWrapInfo = new CppWrappersInfo
                     {
                         ValueTypeInfos = valueTypeInfos,
@@ -600,8 +604,8 @@ namespace PuertsIl2cpp.Editor
                 {
                     { "pesapi_adpt.c", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_adpt.c").text },
                     { "pesapi.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi.h").text },
-                    { "Puerts_il2cpp.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text },
-                    { "TDataTrans.h", Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text }
+                    { "pesapi_webgl.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_webgl.h").text },
+                    { "pesapi_webgl.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_webgl.cpp").text }
                 };
 
                 foreach (var cPlugin in cPluginCode)
@@ -610,6 +614,31 @@ namespace PuertsIl2cpp.Editor
                     using (StreamWriter textWriter = new StreamWriter(path, false, Encoding.UTF8))
                     {
                         textWriter.Write(cPlugin.Value);
+                        textWriter.Flush();
+                    }
+                }
+
+                using (var jsEnv = new Puerts.JsEnv())
+                {
+                    jsEnv.ExecuteModule("puerts/templates/il2cpp_snippets.mjs");
+
+#if UNITY_WEBGL
+                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
+#endif
+
+                    string dataTransContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text.Replace("\\", "\\\\") + "`");
+
+                    using (StreamWriter textWriter = new StreamWriter(outDir + "TDataTrans.h", false, Encoding.UTF8))
+                    {
+                        textWriter.Write(dataTransContent);
+                        textWriter.Flush();
+                    }
+
+                    string puertsIl2cppContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text.Replace("\\", "\\\\") + "`");
+
+                    using (StreamWriter textWriter = new StreamWriter(outDir + "Puerts_il2cpp.cpp", false, Encoding.UTF8))
+                    {
+                        textWriter.Write(puertsIl2cppContent);
                         textWriter.Flush();
                     }
                 }

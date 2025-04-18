@@ -39,6 +39,10 @@
 #include <string>
 #include <unordered_set>
 #include <sstream>
+#if defined(__EMSCRIPTEN__)
+#include "pesapi_webgl.h"
+using namespace pesapi::webglimpl;
+#endif
 
 // Because we need to hold the C# object pointer, we must ensure that GC does not do memory reorganization.
 static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
@@ -562,17 +566,17 @@ void SetGlobalType_TypedValue(Il2CppReflectionType *type)
 
 static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    CSharpMethodInfo* csharpMethodInfo = (CSharpMethodInfo*)apis->get_userdata(info);
+    CSharpMethodInfo* csharpMethodInfo = (CSharpMethodInfo*)${invokePapi('get_userdata')}(info);
     try 
     {
         void* self = nullptr;
-        pesapi_env env = apis->get_env(info);
+        pesapi_env env = ${invokePapi('get_env')}(info);
         if (!(csharpMethodInfo->IsStatic))
         {
-            self = apis->get_native_holder_ptr(info);
+            self = ${invokePapi('get_native_holder_ptr')}(info);
             if (csharpMethodInfo->NeedBoxing)
             {
-                auto ptrType = (Il2CppClass*) apis->get_native_holder_typeid(info);
+                auto ptrType = (Il2CppClass*) ${invokePapi('get_native_holder_typeid')}(info);
                 if (Class::IsValuetype(ptrType))
                 {
                     self = Object::Box(ptrType, self);
@@ -590,7 +594,7 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
             ++wrapDatas;
         }
         std::string err_info = "invalid arguments to " + csharpMethodInfo->Name;
-        apis->throw_by_string(info, err_info.c_str()); 
+        ${invokePapi('throw_by_string')}(info, err_info.c_str()); 
     } 
     catch (Il2CppExceptionWrapper& exception)
     {
@@ -602,26 +606,26 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         if (outException != NULL)
         {
             std::string err_info = "unknow c# execption for " + csharpMethodInfo->Name;
-            apis->throw_by_string(info, err_info.c_str());
+            ${invokePapi('throw_by_string')}(info, err_info.c_str());
         }
         else
         {
             const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(result);
             std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
-            apis->throw_by_string(info, str.c_str());
+            ${invokePapi('throw_by_string')}(info, str.c_str());
         }
     }
 }
 
 static void GetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    FieldWrapData* wrapData = static_cast<FieldWrapData*>(apis->get_userdata(info));
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>(${invokePapi('get_userdata')}(info));
     wrapData->Getter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
 static void SetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    FieldWrapData* wrapData = static_cast<FieldWrapData*>(apis->get_userdata(info));
+    FieldWrapData* wrapData = static_cast<FieldWrapData*>(${invokePapi('get_userdata')}(info));
     wrapData->Setter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
 }
 
@@ -721,11 +725,11 @@ void PLog(const char* Fmt, ...)
 
 static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    JsClassInfo* classInfo = reinterpret_cast<JsClassInfo*>(apis->get_userdata(info));
+    JsClassInfo* classInfo = reinterpret_cast<JsClassInfo*>(${invokePapi('get_userdata')}(info));
     // or will crash in macos.
     if (!classInfo->IsValueType && *(classInfo->CtorWrapDatas) == nullptr)
     {
-        apis->throw_by_string(info, "no valid constructor is found");
+        ${invokePapi('throw_by_string')}(info, "no valid constructor is found");
         return nullptr;
     }
     
@@ -737,7 +741,7 @@ static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
     {
         WrapData** wrapDatas = classInfo->CtorWrapDatas;
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
-        pesapi_env env = apis->get_env(info);
+        pesapi_env env = ${invokePapi('get_env')}(info);
         while(*wrapDatas)
         {
             if ((*wrapDatas)->Wrap(apis, (*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, env, self, checkArgument, *wrapDatas))
@@ -748,12 +752,12 @@ static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         }
         
 
-        if (isValueType && apis->get_args_len(info) == 0)
+        if (isValueType && ${invokePapi('get_args_len')}(info) == 0)
             return self;
         else
         {
             std::string err_info = "invalid arguments for constructor of " + classInfo->Name;
-            apis->throw_by_string(info, err_info.c_str());
+            ${invokePapi('throw_by_string')}(info, err_info.c_str());
         }
         
     } 
@@ -767,13 +771,13 @@ static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         if (outException != NULL)
         {
             std::string err_info = "unknow c# execption for constructor of " + classInfo->Name;
-            apis->throw_by_string(info, err_info.c_str());
+            ${invokePapi('throw_by_string')}(info, err_info.c_str());
         }
         else
         {
             const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(result);
             std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
-            apis->throw_by_string(info, str.c_str());
+            ${invokePapi('throw_by_string')}(info, str.c_str());
         }
     }
     
@@ -789,13 +793,13 @@ static void SetPObjectRefInfoValue(struct pesapi_ffi* apis, pesapi_env env, PObj
 {
     objectInfo->Apis = apis;
     objectInfo->ValueRef = value_ref;
-    objectInfo->EnvPrivate = (void*)apis->get_env_private(env);
+    objectInfo->EnvPrivate = (void*)${invokePapi('get_env_private')}(env);
 }
 
 
 static pesapi_value GetPObjectRefInfoValue(struct pesapi_ffi* apis, pesapi_env env, const PObjectRefInfo* objectInfo)
 {    
-    return apis->get_value_from_ref(env, objectInfo->ValueRef);
+    return ${invokePapi('get_value_from_ref')}(env, objectInfo->ValueRef);
 }
 
 #ifndef UNITY_6000_0_OR_NEWER
@@ -807,18 +811,18 @@ constexpr size_t internal_field_count_for_gc_handle = (sizeof(Il2CppGCHandle) + 
 static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, pesapi_value_ref* out_value_ref, Il2CppObject** out_object)
 {
     void* out_ptr;
-    apis->get_private(env, value, &out_ptr);
+    ${invokePapi('get_private')}(env, value, &out_ptr);
     
     pesapi_value_ref value_ref = static_cast<pesapi_value_ref>(out_ptr);
     Il2CppGCHandle* res = nullptr;
     uint32_t field_count;
     if (value_ref)
     {
-        res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
+        res = reinterpret_cast<Il2CppGCHandle*>(${invokePapi('get_ref_internal_fields')}(value_ref, &field_count));
         if(field_count != internal_field_count_for_gc_handle || !res)
         {
             PLog("invalid internal_fields size: %u, ptr:%p", field_count, res);
-            apis->release_value_ref(value_ref);
+            ${invokePapi('release_value_ref')}(value_ref);
             res = nullptr;
             value_ref = nullptr;
         }
@@ -826,12 +830,12 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
     
     if (!res)
     {
-        value_ref = apis->create_value_ref(env, value, internal_field_count_for_gc_handle);
+        value_ref = ${invokePapi('create_value_ref')}(env, value, internal_field_count_for_gc_handle);
         
         *out_object = nullptr;
-        if (apis->set_private(env, value, value_ref))
+        if (${invokePapi('set_private')}(env, value, value_ref))
         {
-            res = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(value_ref, &field_count));
+            res = reinterpret_cast<Il2CppGCHandle*>(${invokePapi('get_ref_internal_fields')}(value_ref, &field_count));
         } // else etc. S_CLASS_MODULE_NS
     }
     else
@@ -840,7 +844,7 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
         //PLog("found existed jsobject:%p", *out_object);
         if (out_object == nullptr)
         {
-            value_ref = apis->duplicate_value_ref(value_ref);
+            value_ref = ${invokePapi('duplicate_value_ref')}(value_ref);
         }
     }
     
@@ -869,14 +873,14 @@ static Il2CppObject* FunctionToDelegate(struct pesapi_ffi* apis, pesapi_env env,
 
 static void* DelegateCtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    pesapi_env env = apis->get_env(info);
-    pesapi_value jsval = apis->get_arg(info, 0);
-    if (!apis->is_function(env, jsval))
+    pesapi_env env = ${invokePapi('get_env')}(info);
+    pesapi_value jsval = ${invokePapi('get_arg')}(info, 0);
+    if (!${invokePapi('is_function')}(env, jsval))
     {
-        apis->throw_by_string(info, "expect a function");
+        ${invokePapi('throw_by_string')}(info, "expect a function");
         return nullptr;
     }
-    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(apis->get_userdata(info));
+    JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(${invokePapi('get_userdata')}(info));
     
     return FunctionToDelegate(apis, env, jsval, classInfo);
 }
@@ -898,7 +902,7 @@ pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2Cpp
             Il2CppArray* buffer;
             il2cpp_field_get_value(obj, g_arrayBufferBytesField, &buffer);
 
-            return apis->create_binary(env, Array::GetFirstElementAddress(buffer), (size_t)length);
+            return ${invokePapi('create_binary')}(env, Array::GetFirstElementAddress(buffer), (size_t)length);
         }
     }
     return nullptr;
@@ -910,63 +914,63 @@ static pesapi_value TryTranslatePrimitivePtr(struct pesapi_ffi* apis, pesapi_env
     {
         case IL2CPP_TYPE_I1:
         {
-            return apis->create_int32(env, (int32_t)(*((int8_t*)ptr)));
+            return ${invokePapi('create_int32')}(env, (int32_t)(*((int8_t*)ptr)));
         }
         case IL2CPP_TYPE_BOOLEAN:
         {
-            return apis->create_boolean(env, (bool)(*((uint8_t*)ptr)));
+            return ${invokePapi('create_boolean')}(env, (bool)(*((uint8_t*)ptr)));
         }
         case IL2CPP_TYPE_U1:
         {
-            return apis->create_uint32(env, (uint32_t)(*((uint8_t*)ptr)));
+            return ${invokePapi('create_uint32')}(env, (uint32_t)(*((uint8_t*)ptr)));
         }
         case IL2CPP_TYPE_I2:
         {
-            return apis->create_int32(env, (int32_t)(*((int16_t*)ptr)));
+            return ${invokePapi('create_int32')}(env, (int32_t)(*((int16_t*)ptr)));
         }
         case IL2CPP_TYPE_U2:
         {
-            return apis->create_uint32(env, (uint32_t)(*((uint16_t*)ptr)));
+            return ${invokePapi('create_uint32')}(env, (uint32_t)(*((uint16_t*)ptr)));
         }
         case IL2CPP_TYPE_CHAR:
         {
-            return apis->create_int32(env, (int32_t)(*((Il2CppChar*)ptr)));
+            return ${invokePapi('create_int32')}(env, (int32_t)(*((Il2CppChar*)ptr)));
         }
     #if IL2CPP_SIZEOF_VOID_P == 4
         case IL2CPP_TYPE_I:
     #endif
         case IL2CPP_TYPE_I4:
         {
-            return apis->create_int32(env, (int32_t)(*((int32_t*)ptr)));
+            return ${invokePapi('create_int32')}(env, (int32_t)(*((int32_t*)ptr)));
         }
     #if IL2CPP_SIZEOF_VOID_P == 4
         case IL2CPP_TYPE_U:
     #endif
         case IL2CPP_TYPE_U4:
         {
-            return apis->create_uint32(env, (uint32_t)(*((uint32_t*)ptr)));
+            return ${invokePapi('create_uint32')}(env, (uint32_t)(*((uint32_t*)ptr)));
         }
     #if IL2CPP_SIZEOF_VOID_P == 8
         case IL2CPP_TYPE_I:
     #endif
         case IL2CPP_TYPE_I8:
         {
-            return apis->create_int64(env, *((int64_t*)ptr));
+            return ${invokePapi('create_int64')}(env, *((int64_t*)ptr));
         }
     #if IL2CPP_SIZEOF_VOID_P == 8
         case IL2CPP_TYPE_U:
     #endif
         case IL2CPP_TYPE_U8:
         {
-            return apis->create_uint64(env, *((uint64_t*)ptr));
+            return ${invokePapi('create_uint64')}(env, *((uint64_t*)ptr));
         }
         case IL2CPP_TYPE_R4:
         {
-            return apis->create_double(env, (double)(*((float*)ptr)));
+            return ${invokePapi('create_double')}(env, (double)(*((float*)ptr)));
         }
         case IL2CPP_TYPE_R8:
         {
-            return apis->create_double(env, *((double*)ptr));
+            return ${invokePapi('create_double')}(env, *((double*)ptr));
         }
 
         default:
@@ -983,7 +987,7 @@ static pesapi_value TryTranslatePrimitiveWithClass(struct pesapi_ffi* apis, pesa
         {
             const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars((Il2CppString*)obj);
             std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
-            return apis->create_string_utf8(env, str.c_str(), str.size());
+            return ${invokePapi('create_string_utf8')}(env, str.c_str(), str.size());
         }
         void* ptr = Object::Unbox(obj);
         return TryTranslatePrimitivePtr(apis, env, type->type, ptr);
@@ -1002,7 +1006,7 @@ pesapi_value TranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppC
 
     auto buff = new uint8_t[len];
     memcpy(buff, Object::Unbox(obj), len);
-    return apis->native_object_to_value(env, targetClass, buff, true);
+    return ${invokePapi('native_object_to_value')}(env, targetClass, buff, true);
 }
 
 pesapi_value TryTranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj)
@@ -1056,31 +1060,31 @@ handle_underlying:
     {
         case IL2CPP_TYPE_I1:
         {
-            data.i1 = (int8_t)apis->get_value_int32(env, jsval);
+            data.i1 = (int8_t)${invokePapi('get_value_int32')}(env, jsval);
             break;
         }
         case IL2CPP_TYPE_BOOLEAN:
         {
-            data.u1 = (uint8_t)apis->get_value_bool(env, jsval);
+            data.u1 = (uint8_t)${invokePapi('get_value_bool')}(env, jsval);
         }
         case IL2CPP_TYPE_U1:
         {
-            data.u1 = (uint8_t)apis->get_value_uint32(env, jsval);
+            data.u1 = (uint8_t)${invokePapi('get_value_uint32')}(env, jsval);
             break;
         }
         case IL2CPP_TYPE_I2:
         {
-            data.i2 = (int16_t)apis->get_value_int32(env, jsval);
+            data.i2 = (int16_t)${invokePapi('get_value_int32')}(env, jsval);
             break;
         }
         case IL2CPP_TYPE_U2:
         {
-            data.u2 = (uint16_t)apis->get_value_uint32(env, jsval);
+            data.u2 = (uint16_t)${invokePapi('get_value_uint32')}(env, jsval);
             break;
         }
         case IL2CPP_TYPE_CHAR:
         {
-            data.c = (Il2CppChar)apis->get_value_uint32(env, jsval);
+            data.c = (Il2CppChar)${invokePapi('get_value_uint32')}(env, jsval);
             break;
         }
 #if IL2CPP_SIZEOF_VOID_P == 4
@@ -1088,7 +1092,7 @@ handle_underlying:
 #endif
         case IL2CPP_TYPE_I4:
         {
-            data.i4 = (int32_t)apis->get_value_int32(env, jsval);
+            data.i4 = (int32_t)${invokePapi('get_value_int32')}(env, jsval);
             break;
         }
 #if IL2CPP_SIZEOF_VOID_P == 4
@@ -1096,7 +1100,7 @@ handle_underlying:
 #endif
         case IL2CPP_TYPE_U4:
         {
-            data.u4 = (uint32_t)apis->get_value_uint32(env, jsval);
+            data.u4 = (uint32_t)${invokePapi('get_value_uint32')}(env, jsval);
             break;
         }
 #if IL2CPP_SIZEOF_VOID_P == 8
@@ -1104,7 +1108,7 @@ handle_underlying:
 #endif
         case IL2CPP_TYPE_I8:
         {
-            data.i8 = apis->get_value_int64(env, jsval);
+            data.i8 = ${invokePapi('get_value_int64')}(env, jsval);
             break;
         }
 #if IL2CPP_SIZEOF_VOID_P == 8
@@ -1112,30 +1116,30 @@ handle_underlying:
 #endif
         case IL2CPP_TYPE_U8:
         {
-            data.u8 = apis->get_value_uint64(env, jsval);
+            data.u8 = ${invokePapi('get_value_uint64')}(env, jsval);
             break;
         }
         case IL2CPP_TYPE_R4:
         {
-            data.r4 = (float)apis->get_value_double(env, jsval);
+            data.r4 = (float)${invokePapi('get_value_double')}(env, jsval);
             break;
         }
         case IL2CPP_TYPE_R8:
         {
-            data.r8 = apis->get_value_double(env, jsval);
+            data.r8 = ${invokePapi('get_value_double')}(env, jsval);
             break;
         }
         case IL2CPP_TYPE_STRING:
         {
             size_t bufsize = 0;
-            auto str = apis->get_value_string_utf8(env, jsval, nullptr, &bufsize);
+            auto str = ${invokePapi('get_value_string_utf8')}(env, jsval, nullptr, &bufsize);
             if (str)
             {
                 return (Il2CppObject*)il2cpp::vm::String::NewWrapper(str);
             }
             std::vector<char> buff;
             buff.resize(bufsize + 1);
-            str = apis->get_value_string_utf8(env, jsval, buff.data(), &bufsize);
+            str = ${invokePapi('get_value_string_utf8')}(env, jsval, buff.data(), &bufsize);
             if (str)
             {
                 buff[bufsize] = '\0';
@@ -1150,7 +1154,7 @@ handle_underlying:
         case IL2CPP_TYPE_FNPTR:
         case IL2CPP_TYPE_PTR:
         {
-            if (apis->is_function(env, jsval))
+            if (${invokePapi('is_function')}(env, jsval))
             {
                 if (IsDelegate(klass))
                 {
@@ -1162,10 +1166,10 @@ handle_underlying:
                     return FunctionToDelegate(apis, env, jsval, jsClassInfo);
                 }
             }
-            auto ptr = apis->get_native_object_ptr(env, jsval);
+            auto ptr = ${invokePapi('get_native_object_ptr')}(env, jsval);
             if (!ptr)
             {
-                if ((klass == g_typeofArrayBuffer || klass == il2cpp_defaults.object_class) && apis->is_binary(env, jsval)) 
+                if ((klass == g_typeofArrayBuffer || klass == il2cpp_defaults.object_class) && ${invokePapi('is_binary')}(env, jsval)) 
                 {
                     Il2CppObject* ret = il2cpp::vm::Object::New(g_typeofArrayBuffer);
 
@@ -1174,11 +1178,11 @@ handle_underlying:
                     
                     void* data;
                     size_t length;
-                    data = apis->get_value_binary(env, jsval, &length);
+                    data = ${invokePapi('get_value_binary')}(env, jsval, &length);
                     ((NativeCtorPtr)ctor->methodPointer)(ret, data, (int)length, 0, ctor);   
                     return ret;
                 }
-                if ((klass == g_typeofPersistentObjectInfo || klass == il2cpp_defaults.object_class) && apis->is_object(env, jsval))
+                if ((klass == g_typeofPersistentObjectInfo || klass == il2cpp_defaults.object_class) && ${invokePapi('is_object')}(env, jsval))
                 {
                     Il2CppClass* persistentObjectInfoClass = g_typeofPersistentObjectInfo;
                     
@@ -1208,37 +1212,37 @@ handle_underlying:
                 }
                 if (klass == il2cpp_defaults.object_class)
                 {
-                    if (apis->is_string(env, jsval))
+                    if (${invokePapi('is_string')}(env, jsval))
                     {
                         t = IL2CPP_TYPE_STRING;
                         klass = il2cpp_defaults.string_class;
                     }
-                    else if (apis->is_double(env, jsval))
+                    else if (${invokePapi('is_double')}(env, jsval))
                     {
                         t = IL2CPP_TYPE_R8;
                         klass = il2cpp_defaults.double_class;
                     }
-                    else if (apis->is_int32(env, jsval))
+                    else if (${invokePapi('is_int32')}(env, jsval))
                     {
                         t = IL2CPP_TYPE_I4;
                         klass = il2cpp_defaults.int32_class;
                     }
-                    else if (apis->is_uint32(env, jsval))
+                    else if (${invokePapi('is_uint32')}(env, jsval))
                     {
                         t = IL2CPP_TYPE_U4;
                         klass = il2cpp_defaults.uint32_class;
                     }
-                    else if (apis->is_int64(env, jsval))
+                    else if (${invokePapi('is_int64')}(env, jsval))
                     {
                         t = IL2CPP_TYPE_I8;
                         klass = il2cpp_defaults.int64_class;
                     }
-                    else if (apis->is_uint64(env, jsval))
+                    else if (${invokePapi('is_uint64')}(env, jsval))
                     {
                         t = IL2CPP_TYPE_U8;
                         klass = il2cpp_defaults.uint64_class;
                     }
-                    else if (apis->is_boolean(env, jsval))
+                    else if (${invokePapi('is_boolean')}(env, jsval))
                     {
                         t = IL2CPP_TYPE_BOOLEAN;
                         klass = il2cpp_defaults.boolean_class;
@@ -1252,7 +1256,7 @@ handle_underlying:
             return_nothing:
                 return nullptr;
             }
-            auto objClass = (Il2CppClass *)apis->get_native_object_typeid(env, jsval);
+            auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsval);
             if (klass == il2cpp_defaults.object_class && g_typeofTypedValue && Class::IsAssignableFrom(g_typeofTypedValue, objClass))
             {
                 const MethodInfo* get_Target = il2cpp_class_get_method_from_name(objClass, "get_Target", 0);
@@ -1277,12 +1281,12 @@ handle_underlying:
             }
             else
             {
-                auto objClass = (Il2CppClass *)apis->get_native_object_typeid(env, jsval);
+                auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsval);
                 if (!Class::IsAssignableFrom(klass, objClass))
                 {
                     return nullptr;
                 }
-                toBox = apis->get_native_object_ptr(env, jsval);
+                toBox = ${invokePapi('get_native_object_ptr')}(env, jsval);
                 if (!toBox)
                 {
                     std::string message = "expect ValueType: ";
@@ -1304,8 +1308,8 @@ handle_underlying:
 
 pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj)
 {
-    if (targetClass == il2cpp_defaults.void_class ) return apis->create_undefined(env);
-    if (!obj) return apis->create_null(env);
+    if (targetClass == il2cpp_defaults.void_class ) return ${invokePapi('create_undefined')}(env);
+    if (!obj) return ${invokePapi('create_null')}(env);
 
     if (!targetClass)
     {
@@ -1347,7 +1351,7 @@ pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass
     }
 
     auto objClass = obj && obj->klass ? obj->klass : targetClass;
-    return apis->native_object_to_value(env, objClass, obj, false);
+    return ${invokePapi('native_object_to_value')}(env, objClass, obj, false);
 }
 
 static bool NullableHasValue(Il2CppClass* klass, void* data)
@@ -1358,8 +1362,8 @@ static bool NullableHasValue(Il2CppClass* klass, void* data)
 
 pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass* targetClass, void* ptr)
 {
-    if (targetClass == il2cpp_defaults.void_class) return apis->create_undefined(env);
-    if (!ptr) return apis->create_null(env);
+    if (targetClass == il2cpp_defaults.void_class) return ${invokePapi('create_undefined')}(env);
+    if (!ptr) return ${invokePapi('create_null')}(env);
 
     if (!targetClass)
     {
@@ -1372,7 +1376,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
     {
         if (!NullableHasValue(targetClass, ptr))
         {
-            return apis->create_null(env);
+            return ${invokePapi('create_null')}(env);
         }
         uint8_t* valueStart = static_cast<uint8_t*>(ptr);
         int32_t nullableShift = targetClass->fields[1].offset - sizeof(Il2CppObject);
@@ -1401,7 +1405,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
 
     auto buff = new uint8_t[len];
     memcpy(buff, ptr, len);
-    return apis->native_object_to_value(env, targetClass, buff, true);
+    return ${invokePapi('native_object_to_value')}(env, targetClass, buff, true);
 }
 
 static bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
@@ -1410,9 +1414,9 @@ static bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_v
     uint32_t valueSize = klass->instance_size - sizeof(Il2CppObject);
     if (!jsValue) return false;
     void* ptr;
-    if (apis->is_object(env, jsValue) && (ptr = apis->get_native_object_ptr(env, jsValue)))
+    if (${invokePapi('is_object')}(env, jsValue) && (ptr = ${invokePapi('get_native_object_ptr')}(env, jsValue)))
     {
-        auto objClass = (Il2CppClass*) apis->get_native_object_typeid(env, jsValue);
+        auto objClass = (Il2CppClass*) ${invokePapi('get_native_object_typeid')}(env, jsValue);
         if (Class::IsAssignableFrom(klass, objClass))
         {
             hasValue = true;
@@ -1429,53 +1433,53 @@ handle_underlying:
         {
             case IL2CPP_TYPE_I1:
             {
-                if (apis->is_int32(env, jsValue))
+                if (${invokePapi('is_int32')}(env, jsValue))
                 {
-                    data.i1 = (int8_t)apis->get_value_int32(env, jsValue);
+                    data.i1 = (int8_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
             }
             case IL2CPP_TYPE_BOOLEAN:
             {
-                if (apis->is_boolean(env, jsValue))
+                if (${invokePapi('is_boolean')}(env, jsValue))
                 {
-                    data.u1 = (uint8_t)apis->get_value_bool(env, jsValue);
+                    data.u1 = (uint8_t)${invokePapi('get_value_bool')}(env, jsValue);
                     hasValue = true;
                 }
             }
             case IL2CPP_TYPE_U1:
             {
-                if (apis->is_uint32(env, jsValue))
+                if (${invokePapi('is_uint32')}(env, jsValue))
                 {
-                    data.u1 = (uint8_t)apis->get_value_uint32(env, jsValue);
+                    data.u1 = (uint8_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
             }
             case IL2CPP_TYPE_I2:
             {
-                if (apis->is_int32(env, jsValue))
+                if (${invokePapi('is_int32')}(env, jsValue))
                 {
-                    data.i2 = (int16_t)apis->get_value_int32(env, jsValue);
+                    data.i2 = (int16_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
             }
             case IL2CPP_TYPE_U2:
             {
-                if (apis->is_uint32(env, jsValue))
+                if (${invokePapi('is_uint32')}(env, jsValue))
                 {
-                    data.u2 = (uint16_t)apis->get_value_uint32(env, jsValue);
+                    data.u2 = (uint16_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
             }
             case IL2CPP_TYPE_CHAR:
             {
-                if (apis->is_uint32(env, jsValue))
+                if (${invokePapi('is_uint32')}(env, jsValue))
                 {
-                    data.c = (Il2CppChar)apis->get_value_uint32(env, jsValue);
+                    data.c = (Il2CppChar)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
@@ -1485,9 +1489,9 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_I4:
             {
-                if (apis->is_int32(env, jsValue))
+                if (${invokePapi('is_int32')}(env, jsValue))
                 {
-                    data.i4 = (int32_t)apis->get_value_int32(env, jsValue);
+                    data.i4 = (int32_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
@@ -1497,9 +1501,9 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_U4:
             {
-                if (apis->is_uint32(env, jsValue))
+                if (${invokePapi('is_uint32')}(env, jsValue))
                 {
-                    data.u4 = (uint32_t)apis->get_value_uint32(env, jsValue);
+                    data.u4 = (uint32_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
@@ -1509,9 +1513,9 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_I8:
             {
-                if (apis->is_int64(env, jsValue))
+                if (${invokePapi('is_int64')}(env, jsValue))
                 {
-                    data.i8 = apis->get_value_int64(env, jsValue);
+                    data.i8 = ${invokePapi('get_value_int64')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
@@ -1521,27 +1525,27 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_U8:
             {
-                if (apis->is_uint64(env, jsValue))
+                if (${invokePapi('is_uint64')}(env, jsValue))
                 {
-                    data.u8 = apis->get_value_uint64(env, jsValue);
+                    data.u8 = ${invokePapi('get_value_uint64')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
             }
             case IL2CPP_TYPE_R4:
             {
-                if (apis->is_double(env, jsValue))
+                if (${invokePapi('is_double')}(env, jsValue))
                 {
-                    data.r4 = (float)apis->get_value_double(env, jsValue);
+                    data.r4 = (float)${invokePapi('get_value_double')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
             }
             case IL2CPP_TYPE_R8:
             {
-                if (apis->is_double(env, jsValue))
+                if (${invokePapi('is_double')}(env, jsValue))
                 {
-                    data.r8 = apis->get_value_double(env, jsValue);
+                    data.r8 = ${invokePapi('get_value_double')}(env, jsValue);
                     hasValue = true;
                 }
                 break;
@@ -1565,20 +1569,20 @@ handle_underlying:
 
 static pesapi_value JsObjectUnRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue)
 {
-    return (apis->is_object(env, jsValue)) ?  apis->get_property_uint32(env, jsValue, 0) : nullptr;
+    return (${invokePapi('is_object')}(env, jsValue)) ?  ${invokePapi('get_property_uint32')}(env, jsValue, 0) : nullptr;
 }
 
 static void JsObjectSetRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value outer, pesapi_value val)
 {
-    if (outer && val && apis->is_object(env, outer))
+    if (outer && val && ${invokePapi('is_object')}(env, outer))
     {
-        apis->set_property_uint32(env, outer, 0, val);
+        ${invokePapi('set_property_uint32')}(env, outer, 0, val);
     }
 }
 
 static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData)
 {
-    int js_args_len = apis->get_args_len(info);
+    int js_args_len = ${invokePapi('get_args_len')}(info);
     bool hasParamArray = wrapData->HasParamArray;
     bool isExtensionMethod = wrapData->IsExtensionMethod;
     auto csArgStart = isExtensionMethod ? 1 : 0;
@@ -1608,15 +1612,15 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
             bool isLastArgument = i == (method->parameters_count - 1);
             Il2CppClass* parameterKlass = Class::FromIl2CppType(parameterType);
             Class::Init(parameterKlass);
-            pesapi_value jsValue = apis->get_arg(info, i - csArgStart);
+            pesapi_value jsValue = ${invokePapi('get_arg')}(info, i - csArgStart);
             
-            if ((hasDefault || (isLastArgument && hasParamArray)) && apis->is_undefined(env, jsValue))
+            if ((hasDefault || (isLastArgument && hasParamArray)) && ${invokePapi('is_undefined')}(env, jsValue))
             {
                 continue;
             }
             if (passedByReference)
             {
-                if (apis->is_object(env, jsValue))
+                if (${invokePapi('is_object')}(env, jsValue))
                 {
                     continue;
                 }
@@ -1640,7 +1644,7 @@ handle_underlying:
 #endif
                 case IL2CPP_TYPE_I4:
                 {
-                    if (!apis->is_int32(env, jsValue))
+                    if (!${invokePapi('is_int32')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1648,7 +1652,7 @@ handle_underlying:
                 }
                 case IL2CPP_TYPE_BOOLEAN:
                 {
-                    if (!apis->is_boolean(env, jsValue))
+                    if (!${invokePapi('is_boolean')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1662,7 +1666,7 @@ handle_underlying:
 #endif
                 case IL2CPP_TYPE_U4:
                 {
-                    if (!apis->is_uint32(env, jsValue))
+                    if (!${invokePapi('is_uint32')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1673,7 +1677,7 @@ handle_underlying:
         #endif
                 case IL2CPP_TYPE_I8:
                 {
-                    if (!apis->is_int64(env, jsValue))
+                    if (!${invokePapi('is_int64')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1684,7 +1688,7 @@ handle_underlying:
         #endif
                 case IL2CPP_TYPE_U8:
                 {
-                    if (!apis->is_uint64(env, jsValue))
+                    if (!${invokePapi('is_uint64')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1693,7 +1697,7 @@ handle_underlying:
                 case IL2CPP_TYPE_R4:
                 case IL2CPP_TYPE_R8:
                 {
-                    if (!apis->is_double(env, jsValue))
+                    if (!${invokePapi('is_double')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1701,7 +1705,7 @@ handle_underlying:
                 }
                 case IL2CPP_TYPE_STRING:
                 {
-                    if (!apis->is_string(env, jsValue) && !apis->is_null(env, jsValue) && !apis->is_undefined(env, jsValue))
+                    if (!${invokePapi('is_string')}(env, jsValue) && !${invokePapi('is_null')}(env, jsValue) && !${invokePapi('is_undefined')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1714,7 +1718,7 @@ handle_underlying:
                 case IL2CPP_TYPE_FNPTR:
                 case IL2CPP_TYPE_PTR:
                 {
-                    if (apis->is_function(env, jsValue) && DataTransfer::IsDelegate(parameterKlass))
+                    if (${invokePapi('is_function')}(env, jsValue) && DataTransfer::IsDelegate(parameterKlass))
                     {
                         continue;
                     }
@@ -1722,16 +1726,16 @@ handle_underlying:
                     {
                         continue;
                     }
-                    auto ptr = apis->get_native_object_ptr(env, jsValue);
+                    auto ptr = ${invokePapi('get_native_object_ptr')}(env, jsValue);
                     if (ptr)
                     {
-                        auto objClass = (Il2CppClass *)apis->get_native_object_typeid(env, jsValue);
+                        auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsValue);
                         if (!Class::IsAssignableFrom(parameterKlass, objClass))
                         {
                             return false;
                         }
                     }
-                    else if (!apis->is_null(env, jsValue) && !apis->is_undefined(env, jsValue))
+                    else if (!${invokePapi('is_null')}(env, jsValue) && !${invokePapi('is_undefined')}(env, jsValue))
                     {
                         return false;
                     }
@@ -1747,7 +1751,7 @@ handle_underlying:
                     }
                     else
                     {
-                        auto objClass = (Il2CppClass *)apis->get_native_object_typeid(env, jsValue);
+                        auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsValue);
                         if (!objClass || !Class::IsAssignableFrom(parameterKlass, objClass))
                         {
                             return false;
@@ -1776,7 +1780,7 @@ handle_underlying:
 #endif
     if (isExtensionMethod)
     {
-        args[0] = apis->get_native_holder_ptr(info);
+        args[0] = ${invokePapi('get_native_holder_ptr')}(info);
     }
     
     for (int i = csArgStart; i < method->parameters_count; ++i) 
@@ -1800,21 +1804,21 @@ handle_underlying:
                 char* addr = Array::GetFirstElementAddress(array);
                 for(int j = jsParamStart; j < js_args_len; ++j)
                 {
-                    GetValueTypeFromJs(apis, env, apis->get_arg(info, j), elementType, addr + valueSize * (j - i + csArgStart));
+                    GetValueTypeFromJs(apis, env, ${invokePapi('get_arg')}(info, j), elementType, addr + valueSize * (j - i + csArgStart));
                 }
             }
             else
             {
                 for(int j = jsParamStart; j < js_args_len; ++j)
                 {
-                    il2cpp_array_setref(array, j - i + csArgStart, JsValueToCSRef(apis, elementType, env, apis->get_arg(info, j)));
+                    il2cpp_array_setref(array, j - i + csArgStart, JsValueToCSRef(apis, elementType, env, ${invokePapi('get_arg')}(info, j)));
                 }
             }
             args[i] = array;
             continue;
         }
         
-        pesapi_value jsValue = apis->get_arg(info, i - csArgStart);
+        pesapi_value jsValue = ${invokePapi('get_arg')}(info, i - csArgStart);
         
         if (Class::IsValuetype(parameterKlass))
         {
@@ -1840,7 +1844,7 @@ handle_underlying:
                 GetValueTypeFromJs(apis, env, jsValue, underlyClass, storage);
                 args[i] = storage;
             }
-            else if (hasDefault && apis->is_undefined(env, jsValue))
+            else if (hasDefault && ${invokePapi('is_undefined')}(env, jsValue))
             {
                 void* storage = GetDefaultValuePtr(method, i);
                 if (!storage)
@@ -1872,10 +1876,10 @@ handle_underlying:
             jsValue = JsObjectUnRef(apis, env, jsValue);
             if (jsValue)
             {
-                auto ptr = apis->get_native_object_ptr(env, jsValue);
+                auto ptr = ${invokePapi('get_native_object_ptr')}(env, jsValue);
                 if (ptr)
                 {
-                    auto objClass = (Il2CppClass *)apis->get_native_object_typeid(env, jsValue);
+                    auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsValue);
                     if (Class::IsAssignableFrom(underlyClass, objClass))
                     {
                         *arg = ptr;
@@ -1897,7 +1901,7 @@ handle_underlying:
         }
         else
         {
-            args[i] = (hasDefault && apis->is_undefined(env, jsValue)) ? GetDefaultValuePtr(method, i): JsValueToCSRef(apis, parameterKlass, env, jsValue);
+            args[i] = (hasDefault && ${invokePapi('is_undefined')}(env, jsValue)) ? GetDefaultValuePtr(method, i): JsValueToCSRef(apis, parameterKlass, env, jsValue);
         }
     }
     
@@ -1941,7 +1945,7 @@ handle_underlying:
         bool passedByReference = parameterType->byref;
         Il2CppClass* parameterKlass = Class::FromIl2CppType(parameterType);
         
-        pesapi_value jsValue = apis->get_arg(info, i - csArgStart);
+        pesapi_value jsValue = ${invokePapi('get_arg')}(info, i - csArgStart);
         
         if (Class::IsValuetype(parameterKlass) && passedByReference)
         {
@@ -1954,7 +1958,7 @@ handle_underlying:
 #endif    // ! 
                 if (!hasValue)
                 {
-                    JsObjectSetRef(apis, env, jsValue, apis->create_null(env));
+                    JsObjectSetRef(apis, env, jsValue, ${invokePapi('create_null')}(env));
                     continue;
                 }
             }
@@ -1978,11 +1982,11 @@ handle_underlying:
     {
         if (returnIsValueType)
         {
-            apis->add_return(info, CSValueTypePtrToJsValue(apis, env, returnType, returnValue));
+            ${invokePapi('add_return')}(info, CSValueTypePtrToJsValue(apis, env, returnType, returnValue));
         }
         else
         {
-            apis->add_return(info, CSRefToJsValue(apis, env, returnType, (Il2CppObject*)returnValue));
+            ${invokePapi('add_return')}(info, CSRefToJsValue(apis, env, returnType, (Il2CppObject*)returnValue));
         }
     }
     
@@ -1991,11 +1995,11 @@ handle_underlying:
 
 static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
 {
-    pesapi_env env = apis->get_env(info);
+    pesapi_env env = ${invokePapi('get_env')}(info);
     void* csThis = nullptr;
     if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
     {
-        csThis = apis->get_native_holder_ptr(info);
+        csThis = ${invokePapi('get_native_holder_ptr')}(info);
     }
     
     if (Class::IsValuetype(fieldType))
@@ -2045,39 +2049,39 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
         {
             if (isFieldPtr)
             {
-                jsVal = apis->native_object_to_value(env, expectType, storage, false);
+                jsVal = ${invokePapi('native_object_to_value')}(env, expectType, storage, false);
             }
             else
             {
                 auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
                 auto buff = new uint8_t[valueSize];
                 memcpy(buff, storage, valueSize);
-                jsVal = apis->native_object_to_value(env, expectType, buff, true);
+                jsVal = ${invokePapi('native_object_to_value')}(env, expectType, buff, true);
             }
         }
         
         if (jsVal)
         {
-            apis->add_return(info, jsVal);
+            ${invokePapi('add_return')}(info, jsVal);
         }
     }
     else
     {
         void* storage = nullptr;
         GetFieldValue(csThis, field, offset, &storage);
-        apis->add_return(info, CSRefToJsValue(apis, env, fieldType, (Il2CppObject*)storage));
+        ${invokePapi('add_return')}(info, CSRefToJsValue(apis, env, fieldType, (Il2CppObject*)storage));
     }
 }
 
 static void ReflectionSetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
 {
-    pesapi_env env = apis->get_env(info);
+    pesapi_env env = ${invokePapi('get_env')}(info);
     void* csThis = nullptr;
     if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
     {
-        csThis = apis->get_native_holder_ptr(info);
+        csThis = ${invokePapi('get_native_holder_ptr')}(info);
     }
-    pesapi_value jsValue = apis->get_arg(info, 0);
+    pesapi_value jsValue = ${invokePapi('get_arg')}(info, 0);
     if (Class::IsValuetype(fieldType))
     {
         if (Class::IsNullable(fieldType))
@@ -2129,11 +2133,11 @@ Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, struct pesapi_ffi* apis, 
 
     auto type = il2cpp_codegen_class_from_type(rtype->type);
     
-    pesapi_env_ref envRef = apis->get_ref_associated_env(objectInfo->ValueRef);
+    pesapi_env_ref envRef = ${invokePapi('get_ref_associated_env')}(objectInfo->ValueRef);
     AutoValueScope ValueScope(apis, envRef);
-    auto env = apis->get_env_from_ref(envRef);
-    auto obj = apis->get_value_from_ref(env, objectInfo->ValueRef);
-    auto val = apis->get_property(env, obj, key_std.c_str());
+    auto env = ${invokePapi('get_env_from_ref')}(envRef);
+    auto obj = ${invokePapi('get_value_from_ref')}(env, objectInfo->ValueRef);
+    auto val = ${invokePapi('get_property')}(env, obj, key_std.c_str());
     if (!val)
     {
         return nullptr;
@@ -2146,7 +2150,7 @@ Il2CppObject* EvalInternal(struct pesapi_ffi* apis, intptr_t ptr, Il2CppArray * 
     pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
     
     AutoValueScope ValueScope(apis, envRef);
-    auto env = apis->get_env_from_ref(envRef);
+    auto env = ${invokePapi('get_env_from_ref')}(envRef);
     
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(__path);
     std::string path = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
@@ -2154,19 +2158,19 @@ Il2CppObject* EvalInternal(struct pesapi_ffi* apis, intptr_t ptr, Il2CppArray * 
     auto codeSize = il2cpp_array_length(__code);
     uint8_t* code = (uint8_t*)il2cpp_array_addr_with_size(__code, il2cpp_array_element_size(__code->klass), 0);
     
-    auto ret = apis->eval(env, code, codeSize, path.c_str());
+    auto ret = ${invokePapi('eval')}(env, code, codeSize, path.c_str());
     
-    if (apis->has_caught(ValueScope.scope()))
+    if (${invokePapi('has_caught')}(ValueScope.scope()))
     {
-        Exception::Raise(Exception::GetInvalidOperationException(apis->get_exception_as_string(ValueScope.scope(), true)));
+        Exception::Raise(Exception::GetInvalidOperationException(${invokePapi('get_exception_as_string')}(ValueScope.scope(), true)));
         return nullptr;
     }
     if (__type)
     {
         auto csRet = JsValueToCSRef(apis, il2cpp_codegen_class_from_type(__type->type), env, ret);
-        if (apis->has_caught(ValueScope.scope()))
+        if (${invokePapi('has_caught')}(ValueScope.scope()))
         {
-            Exception::Raise(Exception::GetInvalidOperationException(apis->get_exception_as_string(ValueScope.scope(), true)));
+            Exception::Raise(Exception::GetInvalidOperationException(${invokePapi('get_exception_as_string')}(ValueScope.scope(), true)));
             return nullptr;
         }
         return csRet;
@@ -2177,15 +2181,15 @@ Il2CppObject* EvalInternal(struct pesapi_ffi* apis, intptr_t ptr, Il2CppArray * 
 void SetObjectToGlobal(struct pesapi_ffi* apis, pesapi_env_ref envRef, Il2CppString* __key, Il2CppObject *obj)
 {
     AutoValueScope ValueScope(apis, envRef);
-    auto env = apis->get_env_from_ref(envRef);
+    auto env = ${invokePapi('get_env_from_ref')}(envRef);
     
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(__key);
     std::string key = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
     
-    pesapi_value global = apis->global(env);
+    pesapi_value global = ${invokePapi('global')}(env);
     if (global)
     {
-        apis->set_property(env, global, key.c_str(), CSRefToJsValue(apis, env, obj->klass, obj));
+        ${invokePapi('set_property')}(env, global, key.c_str(), CSRefToJsValue(apis, env, obj->klass, obj));
     }
 }
 
@@ -2196,16 +2200,16 @@ Il2CppObject* GetModuleExecutor(struct pesapi_ffi* apis, intptr_t ptr, Il2CppRef
     pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
 
     AutoValueScope ValueScope(apis, envRef);
-    auto env = apis->get_env_from_ref(envRef);
+    auto env = ${invokePapi('get_env_from_ref')}(envRef);
     
-    pesapi_value global = apis->global(env);
+    pesapi_value global = ${invokePapi('global')}(env);
     if (!global)
     {
         Exception::Raise(Exception::GetInvalidOperationException("can not get global for env"));
         return nullptr;
     }
     
-    pesapi_value func = apis->get_property(env, global, EXECUTEMODULEGLOBANAME);
+    pesapi_value func = ${invokePapi('get_property')}(env, global, EXECUTEMODULEGLOBANAME);
     if (!func)
     {
         Exception::Raise(Exception::GetInvalidOperationException("can not find ExecuteModule for env"));
@@ -2234,7 +2238,7 @@ struct JsEnvPrivate
     void AddPendingKillScriptObjects(pesapi_value_ref valueRef)
     {
         uint32_t fieldCount;
-        void** store = apis->get_ref_internal_fields(valueRef, &fieldCount);
+        void** store = ${invokePapi('get_ref_internal_fields')}(valueRef, &fieldCount);
         if(fieldCount == internal_field_count_for_gc_handle && store)
         {
             std::lock_guard<std::mutex> guard(pendingKillRefsMutex);
@@ -2244,14 +2248,14 @@ struct JsEnvPrivate
         //else
         //{
             // pesapi_value_ref not alloc by puerts?
-            //apis->release_value_ref(valueRef);
+            //${invokePapi('release_value_ref')}(valueRef);
         //}
     }
     
     void CleanupPendingKillScriptObjects()
     {
         AutoValueScope ValueScope(apis, envRef);
-        auto env = apis->get_env_from_ref(envRef);
+        auto env = ${invokePapi('get_env_from_ref')}(envRef);
         
         std::lock_guard<std::mutex> guard(pendingKillRefsMutex);
         auto size = pendingKillRefs.size();
@@ -2265,14 +2269,14 @@ struct JsEnvPrivate
             // insert前已经对有效性进行判断
             uint32_t fieldCount;
             //PLog("CleanupPendingKillScriptObjects: %p", valueRef);
-            Il2CppGCHandle* store = reinterpret_cast<Il2CppGCHandle*>(apis->get_ref_internal_fields(valueRef, &fieldCount));
+            Il2CppGCHandle* store = reinterpret_cast<Il2CppGCHandle*>(${invokePapi('get_ref_internal_fields')}(valueRef, &fieldCount));
             Il2CppGCHandle handle = *store;
             if (nullptr == il2cpp::gc::GCHandle::GetTarget(handle)) //假如不为空代表已经重新被绑定了
             {
                 il2cpp::gc::GCHandle::Free(handle);
-                pesapi_value val = apis->get_value_from_ref(env, valueRef);
-                apis->set_private(env, val, nullptr);
-                apis->release_value_ref(valueRef);
+                pesapi_value val = ${invokePapi('get_value_from_ref')}(env, valueRef);
+                ${invokePapi('set_private')}(env, val, nullptr);
+                ${invokePapi('release_value_ref')}(valueRef);
             }
         }
 
@@ -2394,15 +2398,15 @@ static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMe
 
 static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    pesapi_env env = apis->get_env(info);
-    int argc = apis->get_args_len(info);
+    pesapi_env env = ${invokePapi('get_env')}(info);
+    int argc = ${invokePapi('get_args_len')}(info);
     CSharpMethodInfo* csharpMethodInfo = nullptr;
     for (int i = 0; i < argc; ++i)
     {
-        Il2CppReflectionMethod* reflectionMethod = (Il2CppReflectionMethod*) apis->get_native_object_ptr(env, apis->get_arg(info, i));
+        Il2CppReflectionMethod* reflectionMethod = (Il2CppReflectionMethod*) ${invokePapi('get_native_object_ptr')}(env, ${invokePapi('get_arg')}(info, i));
         if (!reflectionMethod || !Class::IsAssignableFrom(il2cpp_defaults.method_info_class, reflectionMethod->object.klass))
         {
-            apis->throw_by_string(info, "expect a MethodInfo");
+            ${invokePapi('throw_by_string')}(info, "expect a MethodInfo");
             FreeCSharpMethodInfo(csharpMethodInfo);
             return;
         }
@@ -2420,40 +2424,40 @@ static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info 
     if (csharpMethodInfo)
     {
         csharpMethodInfo->OverloadDatas.push_back(nullptr);
-        auto func = apis->create_function(env, MethodCallback, csharpMethodInfo, FunctioFinalize);
-        apis->add_return(info, func);
+        auto func = ${invokePapi('create_function')}(env, MethodCallback, csharpMethodInfo, FunctioFinalize);
+        ${invokePapi('add_return')}(info, func);
     }
 }
 
 static void LoadTypeWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    pesapi_env env = apis->get_env(info);
-    Il2CppObject* type = (Il2CppObject*)apis->get_native_object_ptr(env,  apis->get_arg(info, 0));
+    pesapi_env env = ${invokePapi('get_env')}(info);
+    Il2CppObject* type = (Il2CppObject*)${invokePapi('get_native_object_ptr')}(env,  ${invokePapi('get_arg')}(info, 0));
     auto type_id = CSharpTypeToTypeId(type);
     if (!type_id)
     {
-        apis->throw_by_string(info, "expect a Type");
+        ${invokePapi('throw_by_string')}(info, "expect a Type");
         return;
     }
-    auto ret = apis->create_class(env, type_id);
-    apis->add_return(info, ret);
+    auto ret = ${invokePapi('create_class')}(env, type_id);
+    ${invokePapi('add_return')}(info, ret);
 }
 
 puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
-    auto env = apis->get_env_from_ref(envRef);
+    auto env = ${invokePapi('get_env_from_ref')}(envRef);
     auto jsEnvPrivate = new puerts::JsEnvPrivate(apis, envRef, objPool, objPoolAddMethodInfo, objPoolRemoveMethodInfo);
-    apis->set_env_private(env, jsEnvPrivate);
-    auto loadType = apis->create_function(env, LoadTypeWrapper, nullptr, nullptr);
-    auto createFunction = apis->create_function(env, createFunctionWrapper, nullptr, nullptr);
+    ${invokePapi('set_env_private')}(env, jsEnvPrivate);
+    auto loadType = ${invokePapi('create_function')}(env, LoadTypeWrapper, nullptr, nullptr);
+    auto createFunction = ${invokePapi('create_function')}(env, createFunctionWrapper, nullptr, nullptr);
     if (loadType && createFunction)
     {
-        pesapi_value global = apis->global(env);
+        pesapi_value global = ${invokePapi('global')}(env);
         if (global)
         {
-            apis->set_property(env, global, "loadType", loadType);
-            apis->set_property(env, global, "createFunction", createFunction);
+            ${invokePapi('set_property')}(env, global, "loadType", loadType);
+            ${invokePapi('set_property')}(env, global, "createFunction", createFunction);
             pesapi_on_class_not_found(ClassNotFoundCallback);
             return jsEnvPrivate;
         }
@@ -2465,13 +2469,13 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
 void CleanupPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef)
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
-    auto env = apis->get_env_from_ref(envRef);
+    auto env = ${invokePapi('get_env_from_ref')}(envRef);
     if (env)
     {
-        auto jsEnvPrivate = (puerts::JsEnvPrivate*) apis->get_env_private(env);
+        auto jsEnvPrivate = (puerts::JsEnvPrivate*) ${invokePapi('get_env_private')}(env);
         jsEnvPrivate->CleanupPendingKillScriptObjects();
         // delete jsEnvPrivate;
-        apis->release_env_ref(envRef);
+        ${invokePapi('release_env_ref')}(envRef);
     }
 }
 
@@ -2781,10 +2785,10 @@ void InitialPuerts(pesapi_func_ptr* func_array)
 
 void AddPendingKillScriptObjects(struct pesapi_ffi* apis, puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
 {
-    pesapi_env_ref envRef = apis->get_ref_associated_env(valueRef);
-    if (!apis->env_ref_is_valid(envRef)) // jsEnv已经释放
+    pesapi_env_ref envRef = ${invokePapi('get_ref_associated_env')}(valueRef);
+    if (!${invokePapi('env_ref_is_valid')}(envRef)) // jsEnv已经释放
     {
-        apis->release_value_ref(valueRef);
+        ${invokePapi('release_value_ref')}(valueRef);
         return;
     }
     jsEnvPrivate->AddPendingKillScriptObjects(valueRef);
