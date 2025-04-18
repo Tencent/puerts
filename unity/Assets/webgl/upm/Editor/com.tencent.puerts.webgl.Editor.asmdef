@@ -4,7 +4,9 @@
     "references": [
         "com.tencent.puerts.webgl"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
