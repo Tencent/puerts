@@ -182,8 +182,43 @@ const NewDelegate = toDelegate(MyUObj, "SomeUFunction"); // toDelegate(Owner: UE
 MyUObj.PassJsFunctionAsDelegate(toDelegate(NewDelegate));
 ~~~
 
-### Binding To std::function
+### Using JsObject Types
+Aside from delegates, JsObjects can be used within C++ to execute functions, access variables, e.t.c
+##### C++
+``` c++
+// ExampleClass.h
+#include "JsObject.h"
 
+class ExampleClass
+{
+    //...
+public:
+    static void CalculateAge(FJsObject InPerson)
+    {
+        int BirthYear = InPerson.Get<int>("BirthYear");
+        InPerson.Set<int>("Age", 2025 - BirthYear);
+    }
+
+    static void ExecuteJsFunctionObject(FJsObject InJsFunctionObject)
+    {
+        InJsFunctionObject.Func<void>();
+    }
+};
+```
+##### TypeScript
+``` typescript
+import * as Cpp from 'cpp'
+
+let John = {BirthYear:1999};
+Cpp.ExampleClass.CalculateAge(John);
+console.warn("John is aged " + John.Age);
+
+Cpp.ExampleClass.ExecuteJsFunctionObject(() => {
+    console.warn("JavaScript Function Object Executed!");
+});
+```
+
+### Binding To std::function
 Inside of a standard C++ environment, `std::function` is the preferred method for passing around function pointers. Puerts supports this as well.
 
 ##### C++

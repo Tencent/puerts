@@ -42,7 +42,12 @@ console.warn("Hello World!");
 ### Example 2 - Example Event Loop Entry Point
 ##### C++
 ``` c++
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/GameInstance.h"
 #include "JsEnv.h"
+#include "DemoGameInstance.generated.h"
 
 UCLASS()
 class UDemoGameInstance : public UGameInstance
@@ -51,6 +56,7 @@ class UDemoGameInstance : public UGameInstance
 
 public:
     virtual void OnStart() override {
+        Super::OnStart();
         JsEnv = MakeShared<puerts::FJsEnv>();
 
         JsEnv->Start("Entry.js", 
@@ -60,6 +66,7 @@ public:
     }
 
     virtual void Shutdown() override {
+        Super::Shutdown();
         JsEnv.Reset();
     }
 
@@ -75,12 +82,6 @@ import * as UE from 'ue'
 import { argv } from "puerts";
 
 const GameInstance = argv.getByName("GameInstance") as UE.GameInstance;
-const World = GameInstance?.GetWorld();
-const LocalPlayerController = UE.GameplayStatics.GetPlayerController(World, 0);
-
-LocalPlayerController?.OnEndPlay.Add(() => {
-    console.warn("Called at the end of play loop...")
-});
 
 console.warn("JavaScript Entry Point Started!");
 //...
