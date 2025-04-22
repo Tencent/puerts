@@ -343,8 +343,8 @@ struct Converter<Il2CppString*>
             return ${invokePapi('create_null')}(env);
         }
         const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(value);
-        std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
-        return ${invokePapi('create_string_utf8')}(env, str.c_str(), str.size());
+        int32_t utf16len = il2cpp::utils::StringUtils::GetLength(value);
+        return ${invokePapi('create_string_utf16')}(env, reinterpret_cast<const uint16_t *>(utf16), utf16len);
     }
 
     static Il2CppString* toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
@@ -354,18 +354,18 @@ struct Converter<Il2CppString*>
             return nullptr;
         }
         size_t bufsize = 0;
-        auto str = ${invokePapi('get_value_string_utf8')}(env, value, nullptr, &bufsize);
+        auto str = ${invokePapi('get_value_string_utf16')}(env, value, nullptr, &bufsize);
         if (str)
         {
-            return il2cpp::vm::String::NewWrapper(str);
+            return il2cpp::vm::String::NewUtf16(reinterpret_cast<const Il2CppChar *>(str), bufsize);
         }
-        std::vector<char> buff;
+        std::vector<uint16_t> buff;
         buff.resize(bufsize + 1);
-        str = ${invokePapi('get_value_string_utf8')}(env, value, buff.data(), &bufsize);
+        str = ${invokePapi('get_value_string_utf16')}(env, value, buff.data(), &bufsize);
         if (str)
         {
             buff[bufsize] = '\0';
-            return il2cpp::vm::String::NewWrapper(str);
+            return il2cpp::vm::String::NewUtf16(reinterpret_cast<const Il2CppChar *>(str), bufsize);
         }
         return nullptr;
     }

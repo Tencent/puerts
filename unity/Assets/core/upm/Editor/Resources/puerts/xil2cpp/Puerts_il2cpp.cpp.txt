@@ -986,8 +986,8 @@ static pesapi_value TryTranslatePrimitiveWithClass(struct pesapi_ffi* apis, pesa
         if (type->type == IL2CPP_TYPE_STRING)
         {
             const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars((Il2CppString*)obj);
-            std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
-            return ${invokePapi('create_string_utf8')}(env, str.c_str(), str.size());
+            int32_t utf16len = il2cpp::utils::StringUtils::GetLength((Il2CppString*)obj);
+            return ${invokePapi('create_string_utf16')}(env, reinterpret_cast<const uint16_t *>(utf16), utf16len);
         }
         void* ptr = Object::Unbox(obj);
         return TryTranslatePrimitivePtr(apis, env, type->type, ptr);
@@ -1132,18 +1132,18 @@ handle_underlying:
         case IL2CPP_TYPE_STRING:
         {
             size_t bufsize = 0;
-            auto str = ${invokePapi('get_value_string_utf8')}(env, jsval, nullptr, &bufsize);
+            auto str = ${invokePapi('get_value_string_utf16')}(env, jsval, nullptr, &bufsize);
             if (str)
             {
-                return (Il2CppObject*)il2cpp::vm::String::NewWrapper(str);
+                return (Il2CppObject*)il2cpp::vm::String::NewUtf16(reinterpret_cast<const Il2CppChar *>(str), bufsize);
             }
-            std::vector<char> buff;
+            std::vector<uint16_t> buff;
             buff.resize(bufsize + 1);
-            str = ${invokePapi('get_value_string_utf8')}(env, jsval, buff.data(), &bufsize);
+            str = ${invokePapi('get_value_string_utf16')}(env, jsval, buff.data(), &bufsize);
             if (str)
             {
                 buff[bufsize] = '\0';
-                return (Il2CppObject*)il2cpp::vm::String::NewWrapper(str);
+                return (Il2CppObject*)il2cpp::vm::String::NewUtf16(reinterpret_cast<const Il2CppChar *>(str), bufsize);
             }
             return nullptr;
         }

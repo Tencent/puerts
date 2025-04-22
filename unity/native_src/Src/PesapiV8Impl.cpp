@@ -148,6 +148,13 @@ pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t l
         v8::String::NewFromUtf8(context->GetIsolate(), str, v8::NewStringType::kNormal, static_cast<int>(length)).ToLocalChecked());
 }
 
+pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t* str, size_t length)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    return v8impl::PesapiValueFromV8LocalValue(
+        v8::String::NewFromTwoByte(context->GetIsolate(), str, v8::NewStringType::kNormal, static_cast<int>(length)).ToLocalChecked());
+}
+
 pesapi_value pesapi_create_binary(pesapi_env env, void* bin, size_t length)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -240,6 +247,24 @@ const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, ch
     {
         auto str = value->ToString(context).ToLocalChecked();
         str->WriteUtf8(context->GetIsolate(), buf, *bufsize);
+    }
+    return buf;
+}
+
+const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalue, uint16_t* buf, size_t* bufsize)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+
+    if (buf == nullptr)
+    {
+        auto str = value->ToString(context).ToLocalChecked();
+        *bufsize = str->Length();
+    }
+    else
+    {
+        auto str = value->ToString(context).ToLocalChecked();
+        str->Write(context->GetIsolate(), buf, 0, *bufsize);
     }
     return buf;
 }
@@ -828,6 +853,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_create_uint64,
     &pesapi_create_double,
     &pesapi_create_string_utf8,
+    &pesapi_create_string_utf16,
     &pesapi_create_binary,
     &pesapi_create_array,
     &pesapi_create_object,
@@ -840,6 +866,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_get_value_uint64,
     &pesapi_get_value_double,
     &pesapi_get_value_string_utf8,
+    &pesapi_get_value_string_utf16,
     &pesapi_get_value_binary,
     &pesapi_get_array_length,
     &pesapi_is_null,

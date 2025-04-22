@@ -186,6 +186,7 @@ namespace Puerts
     public delegate IntPtr pesapi_create_uint64_func(IntPtr env, ulong value);
     public delegate IntPtr pesapi_create_double_func(IntPtr env, double value);
     public delegate IntPtr pesapi_create_string_utf8_func(IntPtr env, string str, UIntPtr length);
+    public delegate IntPtr pesapi_create_string_utf16_func(IntPtr env, string str, UIntPtr length);
     public delegate IntPtr pesapi_create_binary_func(IntPtr env, IntPtr str, UIntPtr length);
     public delegate IntPtr pesapi_create_array_func(IntPtr env);
     public delegate IntPtr pesapi_create_object_func(IntPtr env);
@@ -199,6 +200,7 @@ namespace Puerts
     public delegate ulong pesapi_get_value_uint64_func(IntPtr env, IntPtr value);
     public delegate double pesapi_get_value_double_func(IntPtr env, IntPtr value);
     public delegate IntPtr pesapi_get_value_string_utf8_func(IntPtr env, IntPtr value, IntPtr buf, ref UIntPtr bufsize);
+    public delegate IntPtr pesapi_get_value_string_utf16_func(IntPtr env, IntPtr value, IntPtr buf, ref UIntPtr bufsize);
     public delegate IntPtr pesapi_get_value_binary_func(IntPtr env, IntPtr pvalue, ref UIntPtr bufsize);
     public delegate uint pesapi_get_array_length_func(IntPtr env, IntPtr value);
 
@@ -281,6 +283,7 @@ namespace Puerts
         public pesapi_create_uint64_func create_uint64;
         public pesapi_create_double_func create_double;
         public pesapi_create_string_utf8_func create_string_utf8;
+        public pesapi_create_string_utf16_func create_string_utf16;
         public pesapi_create_binary_func create_binary;
         public pesapi_create_array_func create_array;
         public pesapi_create_object_func create_object;
@@ -293,6 +296,7 @@ namespace Puerts
         public pesapi_get_value_uint64_func get_value_uint64;
         public pesapi_get_value_double_func get_value_double;
         public pesapi_get_value_string_utf8_func get_value_string_utf8;
+        public pesapi_get_value_string_utf16_func get_value_string_utf16;
         public pesapi_get_value_binary_func get_value_binary;
         public pesapi_get_array_length_func get_array_length;
         public pesapi_is_null_func is_null;
