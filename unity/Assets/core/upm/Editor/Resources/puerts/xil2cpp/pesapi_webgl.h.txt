@@ -33,6 +33,7 @@ namespace webglimpl
     inline uint64_t pesapi_get_value_uint64(pesapi_env env, pesapi_value pvalue);
     inline double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue);
     inline const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, char* buf, size_t* bufsize);
+    inline const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalue, uint16_t* buf, size_t* bufsize);
     inline void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsize);
 
     inline pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize);
@@ -49,6 +50,7 @@ namespace webglimpl
     inline pesapi_value pesapi_create_uint64(pesapi_env env, uint64_t value);
     inline pesapi_value pesapi_create_double(pesapi_env env, double value);
     inline pesapi_value pesapi_create_string_utf8(pesapi_env env, const char *str, size_t length);
+    inline pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t *str, size_t length);
     inline pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length);
     inline pesapi_value pesapi_create_array(pesapi_env env);
     inline pesapi_value pesapi_create_object(pesapi_env env);
