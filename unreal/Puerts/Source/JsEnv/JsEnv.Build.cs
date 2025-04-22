@@ -572,6 +572,12 @@ public class JsEnv : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
+#if UE_5_2_OR_LATER
+                if (Target.Architecture == UnrealArch.Arm64)
+                {
+                    V8LibraryPath = Path.Combine(LibraryPath, "macOS_arm64");
+                }
+#endif
             if (Node16)
             {
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.93.dylib"));

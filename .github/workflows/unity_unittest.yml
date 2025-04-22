@@ -170,7 +170,7 @@ jobs:
           node ../../cli dotnet-test v8_9.4 -ts
           
   unittest-linux-dotnet:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/setup-dotnet@v3

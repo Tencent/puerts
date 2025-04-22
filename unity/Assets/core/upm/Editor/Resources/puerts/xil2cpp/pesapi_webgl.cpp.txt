@@ -1,4 +1,4 @@
-#if defined(__EMSCRIPTEN__)
+﻿#if defined(__EMSCRIPTEN__)
 
 #include <emscripten.h>
 #include <memory>
@@ -8,6 +8,11 @@
 #include "vm/Class.h"
 
 using namespace il2cpp::vm;
+
+namespace puerts
+{
+void PLog(const char* Fmt, ...);
+};
 
 namespace pesapi
 {
@@ -96,24 +101,17 @@ struct WebGlScope;
 
 WebGlScope* g_scope = nullptr;
 
-static WebGlScope *getCurrentScope()
+static inline WebGlScope *getCurrentScope()
 {
 	return g_scope;
 }
 
-static void setCurrentScope(WebGlScope *scope)
+static inline void setCurrentScope(WebGlScope *scope)
 {
 	g_scope = scope;
 }
 
-struct caught_exception_info
-{
-    JSValue exception = JS_UNDEFINED;
-    std::string message;
-};
-
-
-void JS_FreeValue(JSValue v)
+inline void JS_FreeValue(JSValue v)
 {
     if (v.need_free)
     {
@@ -131,70 +129,65 @@ void JS_FreeValue(JSValue v)
 
 struct WebGlScope
 {
-    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 4;
+    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 6;
     
-    explicit WebGlScope()
+    explicit inline WebGlScope()
 	{
 		prev_scope = getCurrentScope();
 		setCurrentScope(this);
-		values_used = 0;
-		caught = nullptr;
 	}
 
 	WebGlScope *prev_scope;
 
 	JSValue values[SCOPE_FIX_SIZE_VALUES_SIZE];
 
-	uint32_t values_used;
+	uint32_t values_used = 0;
 
-	std::vector<JSValue*> dynamic_alloc_values;
+	std::vector<JSValue*>* dynamic_alloc_values = nullptr;
 
-	caught_exception_info* caught;
-
-	JSValue *allocValue()
+	inline JSValue *allocValue()
 	{
 		JSValue *ret;
 		if (values_used < SCOPE_FIX_SIZE_VALUES_SIZE)
 		{
+            //puerts::PLog("fix alloc");
 			ret = &(values[values_used++]);
 		}
 		else
 		{
+            //puerts::PLog("dynamic alloc");
+            if (!dynamic_alloc_values)
+            {
+                //puerts::PLog("new vector");
+                dynamic_alloc_values = new std::vector<JSValue*>();
+            }
 			ret = (JSValue *) malloc(sizeof(JSValue));
-			dynamic_alloc_values.push_back(ret);
+			dynamic_alloc_values->push_back(ret);
 		}
 		*ret = JS_UNDEFINED;
 		return ret;
 	}
 
-    void setCaughtException(JSValue exception)
-    {
-        if (caught == nullptr)
-        {
-            caught = new caught_exception_info();
-        }
-        caught->exception = exception;
-    }
 
-
-	~WebGlScope()
+	inline ~WebGlScope()
 	{
-        if (caught)
-        {
-            JS_FreeValue(caught->exception);
-            delete caught;
-        }
 		for (size_t i = 0; i < values_used; i++)
 		{
             JS_FreeValue(values[i]);
 		}
 
-		for (size_t i = 0; i < dynamic_alloc_values.size(); i++)
-		{
-            JS_FreeValue(*dynamic_alloc_values[i]);
-			free(dynamic_alloc_values[i]);
+        if (dynamic_alloc_values)
+        {
+            size_t size = dynamic_alloc_values->size();
+            for (size_t i = 0; i < size; ++i)
+            {
+                auto pv = (*dynamic_alloc_values)[i];
+                JS_FreeValue(*pv);
+                free(pv);
+            }
+            delete dynamic_alloc_values;
+            dynamic_alloc_values = nullptr;
 		}
-		dynamic_alloc_values.clear();
 		setCurrentScope(prev_scope);
 	}
 };
@@ -697,7 +690,7 @@ bool pesapi_is_string(pesapi_env env, pesapi_value pvalue)
 bool pesapi_is_object(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
-        return JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT;
+        return JS_VALUE_GET_TAG(val) <= JS_TAG_OBJECT && JS_VALUE_GET_TAG(val) >= JS_TAG_ARRAY;
     });
 }
 
@@ -819,10 +812,12 @@ void* pesapi_get_userdata(pesapi_callback_info pinfo)
     return info->data;
 }
 
-void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
+void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value pvalue)
 {
     auto info = reinterpret_cast<CallbackInfo*>(pinfo);
-    info->res = *qjsValueFromPesapiValue(value);
+    auto jsvalue = qjsValueFromPesapiValue(pvalue);
+    info->res = *jsvalue;
+    jsvalue->need_free = 0;
 }
 
 // implement by js
@@ -880,10 +875,10 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_
     return reinterpret_cast<pesapi_scope>(memory);
 }
 
+// implement by js
 bool pesapi_has_caught(pesapi_scope pscope)
 {
-    auto scope = reinterpret_cast<WebGlScope*>(pscope);
-    return scope->caught != nullptr;
+    return false;
 }
 
 // implement by js
@@ -1204,13 +1199,13 @@ extern "C"
     
     void EMSCRIPTEN_KEEPALIVE PApiCallbackWithScope(pesapi_callback cb, struct pesapi_ffi* apis, pesapi_callback_info info)
     {
-        pesapi::webglimpl::WebGlScope();
+        pesapi::webglimpl::WebGlScope scope;
         cb(apis, info);
     }
     
     void* EMSCRIPTEN_KEEPALIVE PApiConstructorWithScope(pesapi_constructor cb, struct pesapi_ffi* apis, pesapi_callback_info info)
     {
-        pesapi::webglimpl::WebGlScope();
+        pesapi::webglimpl::WebGlScope scope;
         return cb(apis, info);
     }
 }
