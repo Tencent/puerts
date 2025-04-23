@@ -85,7 +85,7 @@ struct caught_exception_info
 
 struct pesapi_scope__
 {
-    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 4;
+    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 5;
     
     explicit pesapi_scope__(JSContext *ctx)
     {
@@ -101,12 +101,12 @@ struct pesapi_scope__
     pesapi_scope__ *prev_scope;
 
     JSValue values[SCOPE_FIX_SIZE_VALUES_SIZE];
-
-    uint32_t values_used;
-
+    
     std::vector<JSValue*>* dynamic_alloc_values = nullptr;
 
     pesapi::qjsimpl::caught_exception_info* caught;
+
+	uint32_t values_used;
 
     JSValue *allocValue()
     {
