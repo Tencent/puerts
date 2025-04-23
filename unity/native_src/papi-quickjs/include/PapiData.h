@@ -9,11 +9,11 @@
 
 enum
 {
-	JS_ATOM_NULL_,
+    JS_ATOM_NULL_,
 #define DEF(name, str) JS_ATOM_##name,
 #include "quickjs-atom.h"
 #undef DEF
-	JS_ATOM_END,
+    JS_ATOM_END,
 };
 
 namespace pesapi
@@ -41,11 +41,11 @@ struct pesapi_env_ref__
 };
 
 struct pesapi_value__ {
-	explicit pesapi_value__(JSValue jsvalue)
-		: v(jsvalue)
-	{
-	}
-	JSValue v;
+    explicit pesapi_value__(JSValue jsvalue)
+        : v(jsvalue)
+    {
+    }
+    JSValue v;
 };
 
 struct pesapi_value_ref__ : pesapi_env_ref__
@@ -69,12 +69,12 @@ struct pesapi_scope__;
 
 static pesapi_scope__ *getCurrentScope(JSContext *ctx)
 {
-	return (pesapi_scope__ *) JS_GetContextOpaque1(ctx);
+    return (pesapi_scope__ *) JS_GetContextOpaque1(ctx);
 }
 
 static void setCurrentScope(JSContext *ctx, pesapi_scope__ *scope)
 {
-	JS_SetContextOpaque1(ctx, scope);
+    JS_SetContextOpaque1(ctx, scope);
 }
 
 struct caught_exception_info
@@ -88,46 +88,46 @@ struct pesapi_scope__
     const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 4;
     
     explicit pesapi_scope__(JSContext *ctx)
-	{
-		this->ctx = ctx;
-		prev_scope = getCurrentScope(ctx);
-		setCurrentScope(ctx, this);
-		values_used = 0;
-		caught = nullptr;
-	}
+    {
+        this->ctx = ctx;
+        prev_scope = getCurrentScope(ctx);
+        setCurrentScope(ctx, this);
+        values_used = 0;
+        caught = nullptr;
+    }
 
-	JSContext *ctx;
+    JSContext *ctx;
 
-	pesapi_scope__ *prev_scope;
+    pesapi_scope__ *prev_scope;
 
-	JSValue values[SCOPE_FIX_SIZE_VALUES_SIZE];
+    JSValue values[SCOPE_FIX_SIZE_VALUES_SIZE];
 
-	uint32_t values_used;
+    uint32_t values_used;
 
-	std::vector<JSValue*>* dynamic_alloc_values = nullptr;
+    std::vector<JSValue*>* dynamic_alloc_values = nullptr;
 
-	pesapi::qjsimpl::caught_exception_info* caught;
+    pesapi::qjsimpl::caught_exception_info* caught;
 
-	JSValue *allocValue()
-	{
-		JSValue *ret;
-		if (values_used < SCOPE_FIX_SIZE_VALUES_SIZE)
-		{
-			ret = &(values[values_used++]);
-		}
-		else
-		{
-			if (!dynamic_alloc_values)
+    JSValue *allocValue()
+    {
+        JSValue *ret;
+        if (values_used < SCOPE_FIX_SIZE_VALUES_SIZE)
+        {
+            ret = &(values[values_used++]);
+        }
+        else
+        {
+            if (!dynamic_alloc_values)
             {
                 //puerts::PLog("new vector");
                 dynamic_alloc_values = new std::vector<JSValue*>();
             }
-			ret = (JSValue *) js_malloc(ctx, sizeof(JSValue));
-			dynamic_alloc_values->push_back(ret);
-		}
-		*ret = JS_UNDEFINED;
-		return ret;
-	}
+            ret = (JSValue *) js_malloc(ctx, sizeof(JSValue));
+            dynamic_alloc_values->push_back(ret);
+        }
+        *ret = JS_UNDEFINED;
+        return ret;
+    }
 
     void setCaughtException(JSValue exception)
     {
@@ -141,45 +141,45 @@ struct pesapi_scope__
     }
 
 
-	~pesapi_scope__()
-	{
+    ~pesapi_scope__()
+    {
         if (caught)
         {
-		    JS_FreeValue(ctx, caught->exception);
+            JS_FreeValue(ctx, caught->exception);
             caught->~caught_exception_info();
             js_free(ctx, caught);
         }
-		for (size_t i = 0; i < values_used; i++)
-		{
-			JS_FreeValue(ctx, values[i]);
-		}
+        for (size_t i = 0; i < values_used; i++)
+        {
+            JS_FreeValue(ctx, values[i]);
+        }
 
         if (dynamic_alloc_values)
         {
             size_t size = dynamic_alloc_values->size();
-			for (size_t i = 0; i < size; i++)
-			{
-				JSValue * dynamicValue = (*dynamic_alloc_values)[i];
-				JS_FreeValue(ctx, *dynamicValue);
-				js_free(ctx, dynamicValue);
-			}
-			delete dynamic_alloc_values;
+            for (size_t i = 0; i < size; i++)
+            {
+                JSValue * dynamicValue = (*dynamic_alloc_values)[i];
+                JS_FreeValue(ctx, *dynamicValue);
+                js_free(ctx, dynamicValue);
+            }
+            delete dynamic_alloc_values;
             dynamic_alloc_values = nullptr;
-		}
-		pesapi::qjsimpl::setCurrentScope(ctx, prev_scope);
-	}
+        }
+        pesapi::qjsimpl::setCurrentScope(ctx, prev_scope);
+    }
 };
 
 static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
 
 struct pesapi_callback_info__ {
-	JSContext *ctx;
-	JSValueConst this_val;
-	int argc;
-	JSValueConst *argv;
+    JSContext *ctx;
+    JSValueConst this_val;
+    int argc;
+    JSValueConst *argv;
     void* data;
-	JSValue res;
-	JSValue ex;
+    JSValue res;
+    JSValue ex;
 };
 
 }
