@@ -4,6 +4,8 @@ Unreal has a lot of C++ functions and classes without reflection tags. In order 
 ## Table Of Contents
 - [Setup](#setup)
 - [Usage](#usage)
+    - [Unreal Engine Classes](#unreal-engine-class)
+    - [Regular C++ Classes](#regular-c-class)
 - [API Reference](#api-reference)
     - [Function Decaleration](#function-decaleration)
     - [Function Referencing](#function-referencing)

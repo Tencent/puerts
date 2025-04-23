@@ -17,58 +17,87 @@ Example use cases include:
 ### Mixin With C++ Class
 ##### C++
 ```cpp
-class UMainObject : public UObject {
-    GENERATED_BODY()
+// ExampleMixinActor.h
+#pragma once
 
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "ExampleMixinActor.generated.h"
+
+UCLASS()
+class AExampleMixinActor : public AActor
+{
+	GENERATED_BODY()
+	
 public:
-    UFUNCTION(BlueprintNativeEvent)
-    int32 Mult(int32 a, int32 b) const;
-
-    UFUNCTION(BlueprintImplementableEvent)
-    int32 Div(int32 a, int32 b) const;
-
-    int32 Mult_Implementation(int32 a, int32 b) const {
-        UE_LOG(LogTemp, Warning, TEXT("wrong implementation div %d %d"), a, b);
-        return a + b;
-    }
+	UFUNCTION(BlueprintNativeEvent)
+	void ExampleFunction();
+	void ExampleFunction_Implementation()
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AExampleMixinActor::ExampleFunction() Executed"));
+	}
 };
 ```
 ##### TypeScript
 ```typescript
-interface Calc extends UE.MainObject {};
-class Calc {
-    Mult(x: number, y: number): number {
-        console.log(`Ts Mult(${x}, ${y})`);
-        return x * y;
-    }
+// MixinExample.ts
+import * as UE from 'ue'
+import * as Puerts from 'puerts'
 
-    Div(x: number, y: number): number {
-        console.log(`Ts Div(${x}, ${y})`);
-        return x / y;
+const GameInstance = Puerts.argv.getByName("GameInstance") as UE.GameInstance;
+const World = GameInstance?.GetWorld();
+
+interface ExtendedMixinActor extends UE.ExampleMixinActor {};
+class ExtendedMixinActor implements ExtendedMixinActor {
+    ExampleFunction(): void 
+    {
+        console.warn("ExtendedMixinActor::ExampleFunction() Executed");
     }
 }
 
-puerts.blueprint.mixin(UE.MainObject, Calc);
+// Generate The Mixin Class
+const GeneratedClass = Puerts.blueprint.mixin(UE.ExampleMixinActor, ExtendedMixinActor, {
+    inherit: true // 'true' generated a new class object instead of applying mixin globally
+}).StaticClass();
+
+// Spawn the actor from mixin class
+const SpawnedActor = UE.GameplayStatics.BeginDeferredActorSpawnFromClass(World, GeneratedClass, UE.Transform.Identity) as ExtendedMixinActor;
+UE.GameplayStatics.FinishSpawningActor(SpawnedActor, UE.Transform.Identity);
+
+SpawnedActor?.ExampleFunction();
 ```
 
 ### Mixin With Blueprint Class
 ##### TypeScript
 ```typescript
-interface Loggable extends UE.Game.StarterContent.MixinTest.MixinTest_C {};
-class Loggable {
-    // Overrides the blueprint method "Log"
-    Log(msg: string): void {
-        console.log(this.GetName(), msg);
-        console.log(`1 + 3 = ${this.TsAdd(1, 3)}`);
+// MixinExample.ts
+import * as UE from 'ue'
+import * as Puerts from 'puerts'
+
+const GameInstance = Puerts.argv.getByName("GameInstance") as UE.GameInstance;
+const World = GameInstance?.GetWorld();
+
+interface ExtendedMixinBlueprint extends UE.Game.ExampleMixinBlueprint.ExampleMixinBlueprint_C {};
+class ExtendedMixinBlueprint implements ExtendedMixinBlueprint {
+    ExampleBlueprintFunction(): void {
+        console.warn("ExtendedMixinBlueprint::ExampleBlueprintFunction() Executed");
     }
 }
 
 // Load In The Class To Extend
-let ucls = UE.Class.Load('/Game/StarterContent/MixinTest.MixinTest_C');
-const MixinTest = puerts.blueprint.tojs<typeof UE.Game.StarterContent.MixinTest.MixinTest_C>(ucls);
+let BlueprintClass = UE.Class.Load('/Game/ExampleMixinBlueprint.ExampleMixinBlueprint_C');
+const InterperatedBlueprintClass = Puerts.blueprint.tojs(BlueprintClass);
 
 // Generate The Mixin Class
-const GeneratedClass = puerts.blueprint.mixin(MixinTest, Loggable).StaticClass();
+const GeneratedClass = Puerts.blueprint.mixin(InterperatedBlueprintClass, ExtendedMixinBlueprint, {
+    inherit: true // 'true' generated a new class object instead of applying mixin globally
+}).StaticClass();
+
+// Spawn the actor from mixin class
+const SpawnedActor = UE.GameplayStatics.BeginDeferredActorSpawnFromClass(World, GeneratedClass, UE.Transform.Identity) as ExtendedMixinBlueprint;
+UE.GameplayStatics.FinishSpawningActor(SpawnedActor, UE.Transform.Identity);
+
+SpawnedActor?.ExampleBlueprintFunction();
 ```
 
 ## API Reference
@@ -80,55 +109,56 @@ You can pass an optional configuration object:
 type MixinConfig = { objectTakeByNative?: boolean, inherit?: boolean, generatedClass?: Class };
 ```
 ```typescript
-const GeneratedClass = puerts.blueprint.mixin(MixinTest, Loggable, {
+// MixinExample.ts
+const GeneratedClass = Puerts.blueprint.mixin(A, B, {
 			objectTakeByNative: true, // `true` = UE object owns the garbage collection
 			inherit: true // 'true' generated a new class object instead of applying mixin globally
 }).StaticClass();
 ```
 
-### Using the `super` keyword
-If you want to override a method on a Blueprint subclass and still call the parent class's method, `super` won’t work directly in a mixin class that doesn’t extend any class. For example:
-##### TypeScript
-```typescript
-class DerivedClassMixin {
-    Foo(): void {
-        console.log("I am a TypeScript mixin");
-        super.Foo();  // This will cause a syntax error
-    }
-}
-```
+| Parameter Name | Description |
+| :------------: | ----------- |
+| `objectTakeByNative` | Should the lifetime of the mixin functions return object be handled by UE or JavaScript garbage collection. (True for UE) |
+| `inherit` | Should the mixin function generate a new class object or apply globally. (True for new class object) |
+| `generatedClass` | An output variable used to gather the generated class object. (Deprecated due to .StaticClass()) |
 
-To resolve this, an intermediary class is required:
+### Using the `super` keyword
+If you wish to use the `super` keyword in your mixin overrides, an intermediary class is required.
 ##### TypeScript
 ```typescript
-interface MixinSuperTestBasePlaceHolder extends UE.Game.StarterContent.MixinSuperTestBase.MixinSuperTestBase_C {};
-class MixinSuperTestBasePlaceHolder {}
-Object.setPrototypeOf(MixinSuperTestBasePlaceHolder.prototype, MixinSuperTestBase.prototype);
-class DerivedClassMixin extends MixinSuperTestBasePlaceHolder {
-    Foo(): void {
-        console.log("I am a TypeScript mixin");
-        super.Foo();  // This now works
+// MixinExample.ts
+import * as UE from 'ue'
+import * as Puerts from 'puerts'
+
+const GameInstance = Puerts.argv.getByName("GameInstance") as UE.GameInstance;
+const World = GameInstance?.GetWorld();
+
+// Define intermediary class
+interface ExampleMixinActor extends UE.ExampleMixinActor {};
+class ExampleMixinActor implements ExampleMixinActor {}
+Object.setPrototypeOf(ExampleMixinActor.prototype, UE.ExampleMixinActor.prototype);
+
+// Define Mixin Override Class
+class ExtendedMixinActor extends ExampleMixinActor {
+    ExampleFunction(): void 
+    {
+        console.warn("ExtendedMixinActor: Attempting to call Super.ExampleFunction()");
+        super.ExampleFunction();
     }
 }
+
+// Generate The Mixin Class
+const GeneratedClass = Puerts.blueprint.mixin(UE.ExampleMixinActor, ExtendedMixinActor, {
+    inherit: true // 'true' generated a new class object instead of applying mixin globally
+}).StaticClass();
+
+// Spawn the actor from mixin class
+const SpawnedActor = UE.GameplayStatics.BeginDeferredActorSpawnFromClass(World, GeneratedClass, UE.Transform.Identity) as ExtendedMixinActor;
+UE.GameplayStatics.FinishSpawningActor(SpawnedActor, UE.Transform.Identity);
+
+SpawnedActor?.ExampleFunction();
 ```
 
 ## Notes
 ### Limited function override support
-Only `BlueprintNativeEvent` and `BlueprintImplementableEvent` functions are supported when overriding with TypeScript.
-
-### Adding New Fields
-New fields are stored in the stub object. Therefore:
-
-- If `objectTakeByNative` is `false`, you must keep a reference to the stub object. Otherwise, the data may be lost when the stub is garbage collected and a new one is created for the UE object.
-- If `objectTakeByNative` is `true`, you don’t need to retain a stub reference. But don’t rely on it to retain the UE object—it must be managed by the engine.
-
-### Background
-When a UE object is passed to TypeScript, a corresponding "stub" object is created in TypeScript. Calls made to this stub are forwarded to the actual native UE object. There are two lifecycle management modes in puerts:
-
-1. **Stub Object Owns UE Object** (`objectTakeByNative = false`):
-   - The stub is managed by JavaScript's GC and holds a strong reference to the UE object.
-   - If the stub has no references, it is garbage collected, and the UE object may also be released.
-
-2. **UE Object Owns Stub Object** (`objectTakeByNative = true`):
-   - The UE object is managed by the UE engine's GC and holds a strong reference to the stub.
-   - If the UE object has no references, it is garbage collected, and the stub may also be released.
+All functions and events defined in blueprint are supported. C++ functions must be tagged as `BlueprintNativeEvent` or `BlueprintImplementableEvent`. 
