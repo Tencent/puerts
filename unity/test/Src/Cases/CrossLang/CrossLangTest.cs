@@ -212,7 +212,7 @@ namespace Puerts.UnitTest
 
         public TestHelper()
         {
-#if UNITY_EDITOR || PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && (UNITY_WEBGL || UNITY_IPHONE))
+#if UNITY_EDITOR || PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE)
             var env = UnitTestEnv.GetEnv();
             env.UsingFunc<int>();
             env.UsingFunc<int, int>();
