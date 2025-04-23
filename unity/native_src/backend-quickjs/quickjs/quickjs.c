@@ -56247,7 +56247,8 @@ const uint16_t *JS_ToCString16Len(JSContext *ctx, JSValue val, uint16_t *buff, s
         *plen = len;
         return NULL;
     }
-    copy_str16(buff, str, 0, len);
+    *plen = len < *plen ? len : *plen;
+    copy_str16(buff, str, 0, *plen);
     return buff;
 }
 
