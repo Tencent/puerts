@@ -17,11 +17,14 @@ var exportDLL = {
         }
         global.PuertsWebGL.Init({
             UTF8ToString,
+            UTF16ToString,
             _malloc,
             _free,
             _setTempRet0,
             stringToUTF8,
             lengthBytesUTF8,
+            stringToUTF16,
+            lengthBytesUTF16,
             stackAlloc,
             stackSave,
             stackRestore,

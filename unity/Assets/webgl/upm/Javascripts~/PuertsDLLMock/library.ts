@@ -508,11 +508,14 @@ export namespace PuertsJSEngine {
     
     export interface UnityAPI {
         UTF8ToString: (strPtr: CSString, maxRead?: number) => string,
+        UTF16ToString: (strPtr: CSString, maxRead?: number) => string,
         _malloc: (size: number) => number,
         _free: (ptr: number) => void,
         _setTempRet0: (value: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
         lengthBytesUTF8: (str: string) => number,
+        stringToUTF16: (str: string, buffer: any, size: number) => any,
+        lengthBytesUTF16: (str: string) => number,
         stackAlloc: (size: number) => number,
         stackSave: () => number,
         stackRestore: (stack: number) => void,
@@ -557,11 +560,14 @@ export class PuertsJSEngine {
         this.functionCallbackInfoPtrManager = new FunctionCallbackInfoPtrManager(this);
         const { 
             UTF8ToString,
+            UTF16ToString,
             _malloc,
             _free,
             _setTempRet0,
             stringToUTF8,
             lengthBytesUTF8,
+            stringToUTF16,
+            lengthBytesUTF16,
             stackSave,
             stackRestore,
             stackAlloc,
@@ -588,11 +594,14 @@ export class PuertsJSEngine {
 
         this.unityApi = {
             UTF8ToString,
+            UTF16ToString,
             _malloc,
             _free,
             _setTempRet0,
             stringToUTF8,
             lengthBytesUTF8,
+            stringToUTF16,
+            lengthBytesUTF16,
             stackSave,
             stackRestore,
             stackAlloc,

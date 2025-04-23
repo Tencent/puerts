@@ -1036,7 +1036,6 @@ JS_EXTERN const char* JS_GetVersion(void);
 /* Integration point for quickjs-libc.c, not for public use. */
 JS_EXTERN uintptr_t js_std_cmd(int cmd, ...);
 
-#undef JS_EXTERN
 #undef js_force_inline
 #undef __js_printf_like
 
@@ -1096,7 +1095,13 @@ void JS_SetContextOpaque1(JSContext *ctx, void *opaque);
 void *JS_GetRuntimeOpaque1(JSRuntime *rt);
 void JS_SetRuntimeOpaque1(JSRuntime *rt, void *opaque);
 
+JS_EXTERN JSValue JS_NewString16Len(JSContext *ctx, const uint16_t *str1, size_t len1);
+
+JS_EXTERN const uint16_t *JS_ToCString16Len(JSContext *ctx, JSValue val1, uint16_t *buff, size_t *plen);
+
 /*-------end fuctions for v8 api---------*/
+
+#undef JS_EXTERN
 
 #ifdef __cplusplus
 } /* extern "C" { */

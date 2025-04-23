@@ -304,6 +304,12 @@ namespace Puerts.UnitTest
             return "abcdefg";
         }
 
+        public string UnicodeStr(string str)
+        {
+            AssertAndPrint("UnicodeStr", str, "你好");
+            return "小马哥";
+        }
+
         public string PassStr(string str)
         {
             return str;
@@ -778,6 +784,8 @@ namespace Puerts.UnitTest
                     TestHelper.stringTestFieldStatic = 'Puer'
                     TestHelper.stringTestPropStatic = 'Puer'
                     testHelper.StringTestCheckMemberValue();
+                    const ustr = testHelper.UnicodeStr('你好');
+                    assertAndPrint('UnicodeStr', ustr, '小马哥');
                 })()
             ");
             jsEnv.Tick();

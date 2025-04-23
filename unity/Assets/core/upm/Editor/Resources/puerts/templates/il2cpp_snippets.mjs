@@ -64,6 +64,7 @@ const mayHasStaticFunc = {
     get_value_uint64: true,
     get_value_double: true,
     get_value_string_utf8: true,
+    get_value_string_utf16: true,
     get_value_binary: true,
     
     native_object_to_value: true,
@@ -80,6 +81,7 @@ const mayHasStaticFunc = {
     create_uint64: true,
     create_double: true,
     create_string_utf8: true,
+    create_string_utf16: true,
     create_binary: true,
     create_array: true,
     create_object: true,

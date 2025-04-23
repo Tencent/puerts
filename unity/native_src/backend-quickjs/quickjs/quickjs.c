@@ -56231,4 +56231,24 @@ void JS_SetRuntimeOpaque1(JSRuntime *rt, void *opaque)
     rt->user_opaque1 = opaque;
 }
 
+JSValue JS_NewString16Len(JSContext *ctx, const uint16_t *str1, size_t len1)
+{
+    return js_new_string16_len(ctx, str1, len1);
+}
+
+const uint16_t *JS_ToCString16Len(JSContext *ctx, JSValue val, uint16_t *buff, size_t *plen)
+{
+    JSString *str;
+    int len;
+    str = JS_VALUE_GET_STRING(val);
+    len = str->len;
+    if (!buff) // get len
+    {
+        *plen = len;
+        return NULL;
+    }
+    copy_str16(buff, str, 0, len);
+    return buff;
+}
+
 /*-------end additional function---------*/

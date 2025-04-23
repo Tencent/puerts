@@ -164,6 +164,11 @@ pesapi_value pesapi_create_string_utf8(pesapi_env env, const char *str, size_t l
     return pesapi_create_generic2(env, str, length, JS_NewStringLen);
 }
 
+pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t *str, size_t length)
+{
+    return pesapi_create_generic2(env, str, length, JS_NewString16Len);
+}
+
 static JSValue JS_NewArrayBufferWrap(JSContext *ctx, void *bin, size_t len)
 {
     return JS_NewArrayBuffer(ctx, (uint8_t *) bin, len, nullptr, nullptr, false);
@@ -268,6 +273,12 @@ const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, ch
 		}
 	}
 	return buf;
+}
+
+const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalue, uint16_t* buf, size_t* bufsize)
+{
+    auto ctx = qjsContextFromPesapiEnv(env);
+	return JS_ToCString16Len(ctx, reinterpret_cast<pesapi::qjsimpl::pesapi_value__*>(pvalue)->v, buf, bufsize);
 }
 
 void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsize)
@@ -873,6 +884,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_create_uint64,
     &pesapi_create_double,
     &pesapi_create_string_utf8,
+    &pesapi_create_string_utf16,
     &pesapi_create_binary,
     &pesapi_create_array,
     &pesapi_create_object,
@@ -885,6 +897,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_get_value_uint64,
     &pesapi_get_value_double,
     &pesapi_get_value_string_utf8,
+    &pesapi_get_value_string_utf16,
     &pesapi_get_value_binary,
     &pesapi_get_array_length,
     &pesapi_is_null,

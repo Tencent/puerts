@@ -205,8 +205,9 @@ enum JSTag {
     /* all tags with a reference count are negative */
     JS_TAG_FIRST         = -9, /* first negative tag */
     JS_TAG_STRING        = -9,
-    JS_TAG_BUFFER        = -8,
-    JS_TAG_EXCEPTION     = -7,
+    JS_TAG_STRING16      = -8,
+    JS_TAG_BUFFER        = -7,
+    JS_TAG_EXCEPTION     = -6,
     JS_TAG_NATIVE_OBJECT = -4,
     JS_TAG_ARRAY         = -3,
     JS_TAG_FUNCTION      = -2,
@@ -340,6 +341,17 @@ class Scope {
                     }
                 }
                 return str;
+            case JSTag.JS_TAG_STRING16:
+                const str16Start = Buffer.readInt32(heap, pvalue);
+                const str16Len = Buffer.readInt32(heap, pvalue + 4);
+                const str16 = wasmApi.UTF16ToString(str16Start as any, str16Len * 2);
+                if (freeStringAndBuffer) {
+                    const need_free = Buffer.readInt32(heap, tagPtr + 4); // need_free
+                    if (need_free != 0) {
+                        wasmApi._free(str16Start);
+                    }
+                }
+                return str16;
             case JSTag.JS_TAG_BUFFER:
                 const buffStart = Buffer.readInt32(heap, pvalue);
                 const buffLen = Buffer.readInt32(heap, pvalue + 4);
@@ -692,13 +704,13 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
             Buffer.writeInt32(heap, JSTag.JS_TAG_FLOAT64, tagPtr);
         }
     } else if (typeof arg === 'string') {
-        const len = wasmApi.lengthBytesUTF8(arg);
-        const ptr = getBuffer(wasmApi, len + 1);
-        wasmApi.stringToUTF8(arg, ptr, len + 1);
+        const len = wasmApi.lengthBytesUTF16(arg);
+        const ptr = getBuffer(wasmApi, len + 2);
+        wasmApi.stringToUTF16(arg, ptr, len + 2);
         heap = wasmApi.HEAPU8; // getBuffer会申请内存，可能导致HEAPU8改变
         Buffer.writeInt32(heap, ptr, dataPtr);
-        Buffer.writeInt32(heap, len, dataPtr + 4);
-        Buffer.writeInt32(heap, JSTag.JS_TAG_STRING, tagPtr);
+        Buffer.writeInt32(heap, arg.length, dataPtr + 4);
+        Buffer.writeInt32(heap, JSTag.JS_TAG_STRING16, tagPtr);
         Buffer.writeInt32(heap, 1, tagPtr + 4); // need_free = true
     } else if (typeof arg === 'boolean') {
         Buffer.writeInt32(heap, arg ? 1 : 0, dataPtr);
@@ -843,6 +855,10 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         throw new Error("pesapi_create_string_utf8 not implemented yet!");
     }
 
+    function pesapi_create_string_utf16(env: pesapi_env, str: number, length: number): pesapi_value {
+        throw new Error("pesapi_create_string_utf16 not implemented yet!");
+    }
+
     function pesapi_create_binary(env: pesapi_env, bin: number, length: number): pesapi_value {
         throw new Error("pesapi_create_binary not implemented yet!");
     }
@@ -903,6 +919,15 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         bufsize: number
     ): number {
         throw new Error("pesapi_get_value_string_utf8 not implemented yet!");
+    }
+
+    function pesapi_get_value_string_utf16(
+        env: pesapi_env, 
+        pvalue: pesapi_value, 
+        buf: number, 
+        bufsize: number
+    ): number {
+        throw new Error("pesapi_get_value_string_utf16 not implemented yet!");
     }
 
     function pesapi_get_value_binary(
@@ -1228,6 +1253,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_create_uint64, sig: "iji"},
         {func: pesapi_create_double, sig: "iid"},
         {func: pesapi_create_string_utf8, sig: "iiii"},
+        {func: pesapi_create_string_utf16, sig: "iiii"},
         {func: pesapi_create_binary, sig: "iiii"},
         {func: pesapi_create_array, sig: "ii"},
         {func: pesapi_create_object, sig: "ii"},
@@ -1241,6 +1267,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_get_value_uint64, sig: "jii"},
         {func: pesapi_get_value_double, sig: "dii"},
         {func: pesapi_get_value_string_utf8, sig: "iiiii"},
+        {func: pesapi_get_value_string_utf16, sig: "iiiii"},
         {func: pesapi_get_value_binary, sig: "iiii"},
         {func: pesapi_get_array_length, sig: "iii"},
         

@@ -23,8 +23,9 @@ enum {
     /* all tags with a reference count are negative */
     JS_TAG_FIRST         = -9, /* first negative tag */
     JS_TAG_STRING        = -9,
-    JS_TAG_BUFFER        = -8,
-    JS_TAG_EXCEPTION     = -7,
+    JS_TAG_STRING16      = -8,
+    JS_TAG_BUFFER        = -7,
+    JS_TAG_EXCEPTION     = -6,
     JS_TAG_NATIVE_OBJECT = -4,
     JS_TAG_ARRAY         = -3,
     JS_TAG_FUNCTION      = -2,
@@ -115,7 +116,7 @@ inline void JS_FreeValue(JSValue v)
 {
     if (v.need_free)
     {
-        if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION)
+        if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION || v.tag == JS_TAG_STRING16)
         {
             delete v.u.str.ptr;
         }
@@ -333,7 +334,18 @@ JSValue JS_NewStringLen(const char *str, uint32_t str_len)
     v.tag = JS_TAG_STRING;
     v.u.str.len = str_len;
     v.u.str.ptr = (char*)malloc(str_len);
-    strncpy((char*)v.u.str.ptr, str, str_len);
+    memcpy(v.u.str.ptr, str, str_len);
+    v.need_free = true;
+    return v;
+}
+
+JSValue JS_NewString16Len(const uint16_t *str, uint32_t str_len)
+{
+    JSValue v;
+    v.tag = JS_TAG_STRING16;
+    v.u.str.len = str_len;
+    v.u.str.ptr = (char*)malloc(str_len * 2);
+    memcpy(v.u.str.ptr, str, str_len * 2);
     v.need_free = true;
     return v;
 }
@@ -361,6 +373,7 @@ int JS_ToBool(bool *pres, JSValue val)
         ret = JS_VALUE_GET_INT(val);
         break;
     case JS_TAG_STRING:
+    case JS_TAG_STRING16:
         {
             ret = val.u.str.len != 0;
         }
@@ -530,6 +543,11 @@ pesapi_value pesapi_create_string_utf8(pesapi_env env, const char *str, size_t l
     return pesapi_create_generic2(env, str, length, JS_NewStringLen);
 }
 
+pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t *str, size_t length)
+{
+    return pesapi_create_generic2(env, str, length, JS_NewString16Len);
+}
+
 pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
 {
     return pesapi_create_generic2(env, bin, length, JS_NewBufferLen);
@@ -604,10 +622,34 @@ const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, ch
     auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
     if (JS_TAG_STRING == JS_VALUE_GET_TAG(jsvalue) && bufsize)
     {
-        *bufsize = jsvalue.u.str.len;
         if (buf != nullptr)
         {
-            strncpy(buf, jsvalue.u.str.ptr, *bufsize);
+            size_t size = jsvalue.u.str.len < *bufsize ? jsvalue.u.str.len : *bufsize; 
+            *bufsize = size;
+            memcpy(buf, jsvalue.u.str.ptr, size);
+        }
+        else
+        {
+            *bufsize = jsvalue.u.str.len;
+        }
+    }
+	return buf;
+}
+
+const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalue, uint16_t* buf, size_t* bufsize)
+{
+    auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
+    if (JS_TAG_STRING16 == JS_VALUE_GET_TAG(jsvalue) && bufsize)
+    {
+        if (buf != nullptr)
+        {
+            size_t size = jsvalue.u.str.len < *bufsize ? jsvalue.u.str.len : *bufsize; 
+            *bufsize = size;
+            memcpy(buf, jsvalue.u.str.ptr, size * 2);
+        }
+        else
+        {
+            *bufsize = jsvalue.u.str.len;
         }
     }
 	return buf;
@@ -683,7 +725,7 @@ bool pesapi_is_double(pesapi_env env, pesapi_value pvalue)
 bool pesapi_is_string(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
-        return JS_VALUE_GET_TAG(val) == JS_TAG_STRING;
+        return JS_VALUE_GET_TAG(val) == JS_TAG_STRING || JS_VALUE_GET_TAG(val) == JS_TAG_STRING16;
     });
 }
 
@@ -1131,6 +1173,7 @@ extern "C"
         api->get_value_uint64 = &pesapi::webglimpl::pesapi_get_value_uint64;
         api->get_value_double = &pesapi::webglimpl::pesapi_get_value_double;
         api->get_value_string_utf8 = &pesapi::webglimpl::pesapi_get_value_string_utf8;
+        api->get_value_string_utf16 = &pesapi::webglimpl::pesapi_get_value_string_utf16;
         api->get_value_binary = &pesapi::webglimpl::pesapi_get_value_binary;
         
         api->create_null = &pesapi::webglimpl::pesapi_create_null;
@@ -1142,6 +1185,7 @@ extern "C"
         api->create_uint64 = &pesapi::webglimpl::pesapi_create_uint64;
         api->create_double = &pesapi::webglimpl::pesapi_create_double;
         api->create_string_utf8 = &pesapi::webglimpl::pesapi_create_string_utf8;
+        api->create_string_utf16 = &pesapi::webglimpl::pesapi_create_string_utf16;
         api->create_binary = &pesapi::webglimpl::pesapi_create_binary;
         
         pesapi::webglimpl::g_js_create_array = api->create_array;
