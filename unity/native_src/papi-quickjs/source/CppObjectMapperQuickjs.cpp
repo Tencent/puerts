@@ -40,6 +40,8 @@ JSValue CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, pe
         };
 
     JSValue func = JS_NewCFunctionData(ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data) -> JSValue {
+        pesapi::qjsimpl::pesapi_scope__ scope(ctx);
+        
         pesapi_callback callback = (pesapi_callback)(JS_VALUE_GET_PTR(func_data[0]));
         pesapi_callback_info__ callbackInfo  { ctx, this_val, argc, argv, JS_VALUE_GET_PTR(func_data[1]), JS_UNDEFINED, JS_UNDEFINED };
 
@@ -171,6 +173,7 @@ JSValue CppObjectMapper::MakeMethod(pesapi_callback Callback, void* Data)
         pesapi_callback callback = (pesapi_callback)(JS_VALUE_GET_PTR(method_data[0]));
         CppObjectMapper* mapper = (CppObjectMapper*)(JS_VALUE_GET_PTR(method_data[1]));
         
+        pesapi::qjsimpl::pesapi_scope__ scope(ctx);
         pesapi_callback_info__ callbackInfo  { ctx, this_val, argc, argv, JS_VALUE_GET_PTR(method_data[2]), JS_UNDEFINED, JS_UNDEFINED };
         callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
         if (JS_IsException(callbackInfo.res))
@@ -237,6 +240,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
             const puerts::JSClassDefinition* clsDef = (const puerts::JSClassDefinition*)(JS_VALUE_GET_PTR(ctor_data[0]));
             CppObjectMapper* mapper = (CppObjectMapper*)(JS_VALUE_GET_PTR(ctor_data[1]));
             
+            pesapi::qjsimpl::pesapi_scope__ scope(ctx);
             if (clsDef->Initialize)
             {
                 pesapi_callback_info__ callbackInfo  { ctx, this_val, argc, argv, JS_VALUE_GET_PTR(ctor_data[2]), JS_UNDEFINED, JS_UNDEFINED };

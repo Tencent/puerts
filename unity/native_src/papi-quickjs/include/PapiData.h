@@ -104,7 +104,7 @@ struct pesapi_scope__
 
 	uint32_t values_used;
 
-	std::vector<JSValue*> dynamic_alloc_values;
+	std::vector<JSValue*>* dynamic_alloc_values = nullptr;
 
 	pesapi::qjsimpl::caught_exception_info* caught;
 
@@ -117,8 +117,13 @@ struct pesapi_scope__
 		}
 		else
 		{
+			if (!dynamic_alloc_values)
+            {
+                //puerts::PLog("new vector");
+                dynamic_alloc_values = new std::vector<JSValue*>();
+            }
 			ret = (JSValue *) js_malloc(ctx, sizeof(JSValue));
-			dynamic_alloc_values.push_back(ret);
+			dynamic_alloc_values->push_back(ret);
 		}
 		*ret = JS_UNDEFINED;
 		return ret;
@@ -149,12 +154,18 @@ struct pesapi_scope__
 			JS_FreeValue(ctx, values[i]);
 		}
 
-		for (size_t i = 0; i < dynamic_alloc_values.size(); i++)
-		{
-			JS_FreeValue(ctx, *dynamic_alloc_values[i]);
-			js_free(ctx, dynamic_alloc_values[i]);
+        if (dynamic_alloc_values)
+        {
+            size_t size = dynamic_alloc_values->size();
+			for (size_t i = 0; i < size; i++)
+			{
+				JSValue * dynamicValue = (*dynamic_alloc_values)[i];
+				JS_FreeValue(ctx, *dynamicValue);
+				js_free(ctx, dynamicValue);
+			}
+			delete dynamic_alloc_values;
+            dynamic_alloc_values = nullptr;
 		}
-		dynamic_alloc_values.clear();
 		pesapi::qjsimpl::setCurrentScope(ctx, prev_scope);
 	}
 };
