@@ -26,7 +26,11 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
     public void OnPostprocessBuild(BuildReport report)
     {
 #if UNITY_WEBGL
+#if UNITY_2022_1_OR_NEWER
         foreach(var file in report.GetFiles())
+#else
+        foreach (var file in report.files)
+#endif
         {
             if (file.path.EndsWith("index.html"))
             {
