@@ -15,6 +15,7 @@ var exportDLL = {
                 HEAPF64
             );
         }
+
         global.PuertsWebGL.Init({
             UTF8ToString,
             UTF16ToString,
@@ -28,7 +29,9 @@ var exportDLL = {
             stackAlloc,
             stackSave,
             stackRestore,
-            getWasmTableEntry,
+            getWasmTableEntry: (typeof getWasmTableEntry != 'undefined') ? getWasmTableEntry : function(funcPtr) {
+                return wasmTable.get(funcPtr);
+            },
             addFunction,
             removeFunction,
             _CallCSharpFunctionCallback: Module._CallCSharpFunctionCallback,
