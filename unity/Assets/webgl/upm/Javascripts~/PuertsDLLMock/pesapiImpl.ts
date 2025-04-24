@@ -794,6 +794,7 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // --------------- pref cmp only start ---------------
     // 性能优化阶段的对比项，后续连同调用的WasmAdd、IndirectWasmAdd等c++函数及js导出会删除
+    /*
     const wasmApi = engine.unityApi;
     const addFuncPtr = engine.unityApi.GetWasmAddPtr();
     const addFunc = wasmApi.getWasmTableEntry(addFuncPtr);
@@ -816,6 +817,8 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
         wasmApi.IndirectWasmAdd(addFuncPtr, 2, 4)
     }
     console.log(`call IndirectWasmAdd using: ${((Date.now() - start))}`);
+    */
+    (globalThis as any).wasmApi = engine.unityApi;
     // --------------- pref cmp only end ---------------
 
     objMapper = new ObjectMapper();
