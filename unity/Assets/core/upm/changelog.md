@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.2.1] - 2025-04-25
+1. Added WebGL support for il2cpp optimization (enabled by default)
+2. WebGL build now automatically packages JS resources via PostBuild and modifies index.html
+3. WebGL Editor removed Node.js backend dependency
+4. Improved string transmission performance using UTF-16 encoding in il2cpp optimizations
+5. Fixed parameter passing inconsistencies with previous il2cpp optimization versions
+6. Resolved infinite loop in generic type self-referential code generation (filtered all generic classes in previous commit), fix #2015
+7. Fixed JS function to JsObject conversion failure under il2cpp optimization, fix #2012
+
 ## [2.2.0] - 2025-3-18
 1. native_src_il2cpp merged into native_src
 2. il2cpp optimization feature no longer requires static library linking on Android (unsupported by some Unity versions)
