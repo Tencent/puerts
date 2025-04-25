@@ -1116,7 +1116,7 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
 
 extern "C"
 {
-    void EMSCRIPTEN_KEEPALIVE InjectPapiGLNativeImpl(struct pesapi_ffi* api)
+    void InitPapiNative(struct pesapi_ffi* api)
     {
         api->open_scope = &pesapi::webglimpl::pesapi_open_scope;
         
