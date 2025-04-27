@@ -25,27 +25,27 @@ jobs:
       - name: Create Release Asset
         run: |
           cp -r README.md LICENSE doc unreal
-          wget -O v8_for_ue425.tgz -q  ${{env.V8_84}} 
-          tar xvfz v8_for_ue425.tgz -C unreal/Puerts/ThirdParty
-          cd unreal
-          tar cvfz puerts_v8_84.tgz Puerts README.md LICENSE doc
-          mv puerts_v8_84.tgz ..
-          cd ..
-          rm -r unreal/Puerts/ThirdParty/v8
           wget -O v8_94.tgz -q  ${{env.V8_94}} 
           tar xvfz v8_94.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          cp Puerts/Source/JsEnv/JsEnv.Build.cs ..
-          sed -i 's/SupportedV8Versions.V8_4_371_19/SupportedV8Versions.V9_4_146_24/g' Puerts/Source/JsEnv/JsEnv.Build.cs
           tar cvfz puerts_v8_94.tgz Puerts README.md LICENSE doc
           mv puerts_v8_94.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8_9.4.146.24
+          wget -O v8_for_ue425.tgz -q  ${{env.V8_84}} 
+          tar xvfz v8_for_ue425.tgz -C unreal/Puerts/ThirdParty
+          cd unreal
+          cp Puerts/Source/JsEnv/JsEnv.Build.cs ..
+          sed -i '/^#if UE_4_25_OR_LATER/ { N; s/\(\s*\)SupportedV8Versions\.V9_4_146_24;/\1SupportedV8Versions.V8_4_371_19;/; }' Puerts/Source/JsEnv/JsEnv.Build.cs
+          tar cvfz puerts_v8_84.tgz Puerts README.md LICENSE doc
+          mv puerts_v8_84.tgz ..
+          cd ..
+          rm -r unreal/Puerts/ThirdParty/v8
           cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
           wget -O V8_106.tgz -q  ${{env.V8_106}} 
           tar xvfz V8_106.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          sed -i 's/SupportedV8Versions.V8_4_371_19/SupportedV8Versions.V10_6_194/g' Puerts/Source/JsEnv/JsEnv.Build.cs
+          sed -i '/^#if UE_4_25_OR_LATER/ { N; s/\(\s*\)SupportedV8Versions\.V9_4_146_24;/\1SupportedV8Versions.V10_6_194;/; }' Puerts/Source/JsEnv/JsEnv.Build.cs
           tar cvfz puerts_v8_106.tgz Puerts README.md LICENSE doc
           mv puerts_v8_106.tgz ..
           cd ..
