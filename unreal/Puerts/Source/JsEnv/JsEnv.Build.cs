@@ -17,7 +17,6 @@ public class JsEnv : ModuleRules
         VDeprecated, // for 4.24 or blow only
         V8_4_371_19,
         V9_4_146_24,
-        V10_6_194,
         V11_8_172
     }
 
@@ -417,10 +416,6 @@ public class JsEnv : ModuleRules
         {
             v8LibSuffix = "_9.4.146.24";
         }
-        else if (UseV8Version == SupportedV8Versions.V10_6_194)
-        {
-            v8LibSuffix = "_10.6.194";
-        }
         else if (UseV8Version == SupportedV8Versions.V11_8_172)
         {
 #if !UE_5_0_OR_LATER
@@ -572,12 +567,6 @@ public class JsEnv : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
-#if UE_5_2_OR_LATER
-                if (Target.Architecture == UnrealArch.Arm64)
-                {
-                    V8LibraryPath = Path.Combine(LibraryPath, "macOS_arm64");
-                }
-#endif
             if (Node16)
             {
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.93.dylib"));

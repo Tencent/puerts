@@ -353,12 +353,6 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          pattern: Unity_Plugins_v8_10.6.194_Release_*
-          path: V8_10/upm/Plugins/
-          merge-multiple: true
-
-      - uses: actions/download-artifact@v4
-        with:
           pattern: Unity_Plugins_quickjs_Release_*
           path: Quickjs/upm/Plugins/
           merge-multiple: true
@@ -380,7 +374,6 @@ jobs:
           cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/core/upm
           ls -l $GITHUB_WORKSPACE/unity/Assets/core/upm
           cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz upm && cd -
-          cd V8_10/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_V8_10_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           cd Mult/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Mult_${{ github.event.inputs.tag_name }}.tgz upm && cd -
@@ -409,17 +402,6 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
           asset_name: PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
-          asset_content_type: application/tgz
-          
-      - name: Upload V8_10 Plugins
-        #id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_V8_10_${{ github.event.inputs.tag_name }}.tgz
-          asset_name: PuerTS_V8_10_${{ github.event.inputs.tag_name }}.tgz
           asset_content_type: application/tgz
           
       - name: Upload Quickjs Plugins

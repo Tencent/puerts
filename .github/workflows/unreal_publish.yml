@@ -42,15 +42,6 @@ jobs:
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8
           cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
-          wget -O V8_106.tgz -q  ${{env.V8_106}} 
-          tar xvfz V8_106.tgz -C unreal/Puerts/ThirdParty
-          cd unreal
-          sed -i '/^#if UE_4_25_OR_LATER/ { N; s/\(\s*\)SupportedV8Versions\.V9_4_146_24;/\1SupportedV8Versions.V10_6_194;/; }' Puerts/Source/JsEnv/JsEnv.Build.cs
-          tar cvfz puerts_v8_106.tgz Puerts README.md LICENSE doc
-          mv puerts_v8_106.tgz ..
-          cd ..
-          rm -r unreal/Puerts/ThirdParty/v8_10.6.194
-          cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
           tar xvfz v8_for_ue424.tgz -C unreal/Puerts/ThirdParty
           cd unreal
