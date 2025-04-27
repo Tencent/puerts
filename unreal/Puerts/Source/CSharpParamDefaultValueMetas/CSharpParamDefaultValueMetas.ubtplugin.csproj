@@ -24,6 +24,9 @@
     <DebugType>pdbonly</DebugType>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup Condition=" $(EngineDir.Contains('UE_5.5')) ">
+    <DefineConstants>$(DefineConstants);UE_5_5_OR_LATER</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Development|AnyCPU' ">
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <Optimize>true</Optimize>
