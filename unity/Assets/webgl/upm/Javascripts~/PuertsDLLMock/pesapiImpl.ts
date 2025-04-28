@@ -489,6 +489,8 @@ class ClassRegister {
 
     private typeIdToInfos: Map<number, TypeInfos> = new Map();
 
+    private nameToClass: Map<string, Function> = new Map();
+
     public static getInstance(): ClassRegister {
         if (!ClassRegister.instance) {
             ClassRegister.instance = new ClassRegister();
@@ -518,6 +520,7 @@ class ClassRegister {
         });
         this.typeIdToClass.set(typeId, cls);
         this.typeIdToInfos.set(typeId, infos);
+        this.nameToClass.set(cls.name, cls);
     }
 
     public getClassDataById(typeId: number, forceLoad: boolean): number {
@@ -530,6 +533,10 @@ class ClassRegister {
 
     public findClassById(typeId: number): Function | undefined {
         return this.typeIdToClass.get(typeId);
+    }
+
+    public findClassByName(name: string): Function | undefined {
+        return this.nameToClass.get(name);
     }
 
     public getTypeInfos(typeId: number): TypeInfos | undefined {
@@ -1352,12 +1359,18 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     webglFFI = ptr;
     engine.unityApi.InjectPapiGLNativeImpl(webglFFI);
+
+
+    (globalThis as any).findClassByName = function(name: string) {
+        return ClassRegister.getInstance().findClassByName(name);
+    }
+
     return ptr;
 }
 
 export function WebGLRegsterApi(engine: PuertsJSEngine) {
-    // Explicitly define array type to avoid 'never' type inference
-    // Define union type for method/property descriptors
+    GetWebGLFFIApi(engine); // 让webglFFI可用，否则注册genJsCallback传入的webglFFI是undefined
+
     type Descriptor = 
         | { name: string; isStatic: boolean; callback: number; data: number }
         | { 

@@ -197,7 +197,7 @@ namespace Puerts
         }
         
         [MonoPInvokeCallback(typeof(Puerts.NativeAPI.LogCallback))]
-        private static void LogCallback(string msg)
+        public static void LogCallback(string msg)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
 #else
@@ -206,7 +206,7 @@ namespace Puerts
         }
 
         [MonoPInvokeCallback(typeof(Puerts.NativeAPI.LogCallback))]
-        private static void LogWarningCallback(string msg)
+        public static void LogWarningCallback(string msg)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
 #else
@@ -215,7 +215,7 @@ namespace Puerts
         }
 
         [MonoPInvokeCallback(typeof(Puerts.NativeAPI.LogCallback))]
-        private static void LogErrorCallback(string msg)
+        public static void LogErrorCallback(string msg)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
 #else

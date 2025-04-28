@@ -145,6 +145,8 @@ REGISTER_API const JSClassDefinition* LoadClassByID(const void* TypeId);
 
 REGISTER_API const JSClassDefinition* FindCppTypeClassByName(const PString& Name);
 
+REGISTER_API const JSClassDefinition* FindCppTypeClassByCName(const char* Name);
+
 REGISTER_API bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
 
 #if USING_IN_UNREAL_ENGINE

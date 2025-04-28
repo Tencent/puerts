@@ -138,6 +138,8 @@ struct CppObjectMapper
     void RemoveFromCache(const puerts::JSClassDefinition* typeInfo, const void* ptr);
 
     JSValue PushNativeObject(const void* TypeId, void* ObjectPtr, bool callFinalize);
+
+    JSValue findClassByName(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
 };
 
 }  // namespace qjsimpl

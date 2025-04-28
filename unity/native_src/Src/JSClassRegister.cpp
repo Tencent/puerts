@@ -149,7 +149,8 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
         auto cd_iter = CDataIdToClassDefinition.find(ClassDefinition.TypeId);
         if (cd_iter != CDataIdToClassDefinition.end())
         {
-            JSClassDefinitionDelete(cd_iter->second);
+            //JSClassDefinitionDelete(cd_iter->second);
+            return;
         }
         CDataIdToClassDefinition[ClassDefinition.TypeId] = JSClassDefinitionDuplicate(&ClassDefinition);
         PString SN = ClassDefinition.ScriptName;
@@ -163,7 +164,8 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
         auto ud_iter = StructNameToClassDefinition.find(SN);
         if (ud_iter != StructNameToClassDefinition.end())
         {
-            JSClassDefinitionDelete(ud_iter->second);
+            //JSClassDefinitionDelete(ud_iter->second);
+            return;
         }
         StructNameToClassDefinition[SN] = JSClassDefinitionDuplicate(&ClassDefinition);
     }
@@ -332,6 +334,11 @@ const JSClassDefinition* LoadClassByID(const void* TypeId)
 }
 
 const JSClassDefinition* FindCppTypeClassByName(const PString& Name)
+{
+    return GetJSClassRegister()->FindCppTypeClassByName(Name);
+}
+
+const JSClassDefinition* FindCppTypeClassByCName(const char* Name)
 {
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }

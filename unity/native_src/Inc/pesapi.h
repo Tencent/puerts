@@ -79,6 +79,8 @@
 
 #else
 
+#ifdef PUERTS_SHARED 
+
 #define PESAPI_MODULE(modname, initfunc)                                                                   \
     EXTERN_C_START                                                                                         \
     PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array);        \
@@ -104,6 +106,19 @@
         return PESAPI_VERSION;                                                                             \
     }
 
+#else
+
+#define PESAPI_MODULE(modname, initfunc)                                                                   \
+    EXTERN_C_START                                                                                         \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array);        \
+    EXTERN_C_END                                                                                           \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array)         \
+    {                                                                                                      \
+        initfunc();                                                                                        \
+    }
+
+#endif
+
 #endif
 
 EXTERN_C_START
@@ -123,6 +138,8 @@ typedef struct pesapi_scope__* pesapi_scope;
 typedef struct pesapi_type_info__* pesapi_type_info;
 typedef struct pesapi_signature_info__* pesapi_signature_info;
 typedef struct pesapi_property_descriptor__* pesapi_property_descriptor;
+
+struct pesapi_ffi;
 
 typedef void (*pesapi_callback)(struct pesapi_ffi* apis, pesapi_callback_info info);
 typedef void* (*pesapi_constructor)(struct pesapi_ffi* apis, pesapi_callback_info info);
