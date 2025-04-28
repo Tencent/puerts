@@ -14,7 +14,7 @@ Through a self-starting virtual machine, launched by `PuertsModule`, automatic b
 - [Starting A New Virtual Machine](#starting-a-new-virtual-machine)
 
 ## Setup
-To get started, execute the following NodeJS command inside of the puerts plugin directory. (`YourProject/Plugins/Puerts`)
+To get started, with the editor closed, execute the following NodeJS command inside of the puerts plugin directory. (`YourProject/Plugins/Puerts`)
 
 This will install all relevant dependencies and update any configuration files required for automatic binding to function.
 
@@ -34,7 +34,7 @@ Supported features are as follows:
 
 ##### TypeScript
 ``` typescript
-// YourProject/TypeScript/TS_Player
+// YourProject/TypeScript/TS_Player.ts
 
 import * as UE from 'ue'
 
@@ -55,7 +55,7 @@ class TS_Player extends UE.Character {
 export default TS_Player;
 ```
 
-Now it should be available inside of Unreal Engine!
+Now regenerate the deceleration files and the class should be available inside of Unreal Engine!
 
 ![select_character.png](../..//pic/select_character.png)
 
@@ -75,7 +75,6 @@ For a TypeScript class to be recognized by Unreal Engine it must meet the follow
 
 - The class extends a U.E class (e.g UE.Character, UE.Actor, e.t.c)
 - The file name, class name and default export must all match (e.g TS_Player)
-- The file name must have no suffix (e.g remove `.ts`)
 
 ### Constructor
 When defining a class inside of TypeScript, it is possible to define the constructor for the new U.E object.
@@ -83,6 +82,8 @@ When defining a class inside of TypeScript, it is possible to define the constru
 Unlike the standard TypeScript `constructor`, automatic binding mode overrides the blueprint Construction event inside of Unreal Engine.
 
 ``` typescript
+// YourProject/TypeScript/MyTestActor.ts
+
 import * as UE from 'ue'
 
 class MyTestActor extends UE.Actor {
@@ -135,6 +136,8 @@ Data annotations help to fine-tune the translation between TypeScript and C++.
 Since Unreal Engine has more descriptive types compared to TypeScript (i.e. `number` represents the same logical ideas as `byte`, `int`, `float`, and `double`), is it necessary that Puerts can appropriately translate the correct types into C++.
 
 ``` typescript
+// YourProject/TypeScript/MyTestActor.ts
+
 import * as UE from 'ue'
 
 class TsTestActor extends UE.Actor {
@@ -214,6 +217,8 @@ To enable TypeScript decorators:
 
 #### Class Flags
 ``` typescript
+// YourProject/TypeScript/MyTestActor.ts
+
 import * as UE from 'ue'
 
 @UE.uclass.umeta(UE.uclass.DisplayName="CustomDisplayName...")
@@ -267,6 +272,8 @@ export default MyTestActor;
 
 
 #### Function Flags
+// YourProject/TypeScript/MyTestActor.ts
+
 ``` typescript
 import * as UE from 'ue'
 
@@ -303,6 +310,8 @@ export default MyTestActor;
 #### Property Flags
 
 ``` typescript
+// YourProject/TypeScript/MyTestActor.ts
+
 import * as UE from 'ue'
 
 class MyTestActor extends UE.Actor { 
@@ -421,6 +430,8 @@ export default MyTestActor;
 
 #### RPC
 ``` typescript
+// YourProject/TypeScript/MyTestActor.ts
+
 import * as UE from 'ue'
 
 class MyTestActor extends UE.Actor {

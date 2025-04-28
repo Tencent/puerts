@@ -23,7 +23,7 @@ Upon creating an instance of FJSEnv, there are a couple of extra parameters we c
 auto JsEnv = MakeShared<puerts::FJsEnv>(
   std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), // Specifies the default script location (Default: "Content/JavaScript")
   std::make_shared<puerts::FDefaultLogger>(), // A logger object to catch console.log
-  8080 // The port to start the debugger on (i.e. Attach to this with VSCode)
+  1337 // The port to start the debugger on (i.e. Attach to this with VSCode)
 );
 
 // Start the JavaScript virtual environment
@@ -31,18 +31,26 @@ JsEnv->Start(/*...*/);
 ```
 
 ## Intergrating with VSCode
-To debug puerts code with VSCode, a `launch.json` file needs to be created inside of your project root directory. (`YourProject/launch.json`)
+To debug puerts code with VSCode, a `launch.json` file needs to be created inside of your project .vscode directory. (`YourProject/.vscode/launch.json`)
 
 ##### Example launch.json
 ```json
 {
-    "configurations": [
+    "configurations": 
+    [
     {
         "type": "node",
-        "name": "Puerts Debugger",
+        "name": "Puerts Manual Mode Debugger",
+        "port": 1337,
+        "request": "attach"
+    },
+    {
+        "type": "node",
+        "name": "Puerts Automatic Binding Mode",
         "port": 8080,
-        "request": "attach",
-    }]
+        "request": "attach"
+    }
+    ]
 }
 ```
 
@@ -75,11 +83,11 @@ If you wish to wait for the debugger to attach on manually started virtual machi
 auto JsEnv = MakeShared<puerts::FJsEnv>(
   std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
   std::make_shared<puerts::FDefaultLogger>(),
-  8080 // The port to start the debugger on (i.e. Attach to this with VSCode)
+  1337 // The port to start the debugger on (i.e. Attach to this with VSCode)
 );
 
 // Call this function to wait for the debugger to attach!
-JsEnv->WaitDebugger(100); // Stop waiting after 100ms (Optional)
+JsEnv->WaitDebugger(1); // Stop waiting after 1 second (Optional)
 
 JsEnv->Start(/*...*/);
 ```

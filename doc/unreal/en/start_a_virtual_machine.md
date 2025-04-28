@@ -138,11 +138,11 @@ Upon creating an instance of FJSEnv, there are a couple of extra parameters we c
 auto JsEnv = MakeShared<puerts::FJsEnv>(
   std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), // Specifies the default script location (Default: "Content/JavaScript")
   std::make_shared<puerts::FDefaultLogger>(), // A logger object to catch console.log
-  8080 // The port to start the debugger on (i.e. Attach to this with VSCode)
+  1337 // The port to start the debugger on (i.e. Attach to this with VSCode)
 );
 
 // Optionally wait for the debugger to attach
-JsEnv->WaitDebugger();
+JsEnv->WaitDebugger(1);
 
 // Start the JavaScript virtual environment
 JsEnv->Start(/*...*/);

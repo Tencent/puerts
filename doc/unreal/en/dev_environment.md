@@ -53,11 +53,11 @@ Create and place this file directly inside of your U.E project directory.
 **Note: "include" specifies the directories your puerts TypeScript files are located. If you wish to store your scripts elsewhere, make sure to update this field accordingly**
 
 ## Type Safety
-Type safety is the biggest advantage of TypeScript over JavaScript. In order for it to work, a deceleration file must be generated. Open up the editor and press the 'Generate' button to produce essential typing files.
+Type safety is the biggest advantage of TypeScript over JavaScript. In order for it to work, deceleration files must be generated. Open up the editor and press the 'Generate' button to produce essential typing files.
 
 ![generate_dts.png](../..//pic/puerts_gen_dts.png)
 
-**Note: Regenerating the deceleration file should be done proceeding any C++ related changes**
+**Note: Regenerating the deceleration files should be done proceeding any C++ related changes**
 
 ## Getting Started With Puerts
 Now that puerts is installed and your TypeScript development environment has been set up, it's time to [get started!](./getting_started.md)
