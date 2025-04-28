@@ -58,7 +58,7 @@ class FCppObjectMapper final : public ICppObjectMapper
 public:
     void Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext);
 
-    void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void findClassByName(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) override;
 

@@ -102,7 +102,7 @@ namespace Puerts
             {
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-            // PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
+            PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
             this.loaderCanCheckESM = loader is IModuleChecker;
             
@@ -868,32 +868,32 @@ namespace Puerts
         }
 #endif
 
-        //         [MonoPInvokeCallback(typeof(LogCallback))]
-        //         private static void LogCallback(string msg)
-        //         {
-        // #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-        // #else
-        //             UnityEngine.Debug.Log(msg);
-        // #endif
-        //         }
+        [MonoPInvokeCallback(typeof(LogCallback))]
+        public static void LogCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
 
-        //         [MonoPInvokeCallback(typeof(LogCallback))]
-        //         private static void LogWarningCallback(string msg)
-        //         {
-        // #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-        // #else
-        //             UnityEngine.Debug.Log(msg);
-        // #endif
-        //         }
+        [MonoPInvokeCallback(typeof(LogCallback))]
+        public static void LogWarningCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
 
-        //         [MonoPInvokeCallback(typeof(LogCallback))]
-        //         private static void LogErrorCallback(string msg)
-        //         {
-        // #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-        // #else
-        //             UnityEngine.Debug.Log(msg);
-        // #endif
-        //         }
+        [MonoPInvokeCallback(typeof(LogCallback))]
+        public static void LogErrorCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
 
         ~JsEnv()
         {

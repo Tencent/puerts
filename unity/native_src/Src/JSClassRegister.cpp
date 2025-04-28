@@ -336,6 +336,11 @@ const JSClassDefinition* FindCppTypeClassByName(const PString& Name)
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
 
+const JSClassDefinition* FindCppTypeClassByCName(const char* Name)
+{
+    return GetJSClassRegister()->FindCppTypeClassByName(Name);
+}
+
 bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit)
 {
     if (auto clsDef = const_cast<JSClassDefinition*>(GetJSClassRegister()->FindClassByID(TypeId)))
