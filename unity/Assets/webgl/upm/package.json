@@ -8,11 +8,11 @@
     ],
     "author": {
         "name": "Tencent Puerts Group",
-        "email": "zombieyang@tencent.com",
+        "email": "johnche@tencent.com",
         "url": "https://github.com/puerts"
     },
     "category": "Libraries",
     "dependencies": {
-        "com.tencent.puerts.core": "2.1.0"
+        "com.tencent.puerts.core": "2.2.1"
     }
 }
