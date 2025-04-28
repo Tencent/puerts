@@ -74,7 +74,6 @@ public:
 	UPROPERTY()
 	FMulticastNotifyWithInt MulticastNotifyWithInt;
 };
-
 ~~~
 
 **Note: `UPROPERTY()` exposes the delegate variable to puerts**
@@ -138,8 +137,8 @@ function PrintHelloWorld() : void {
     console.warn("Hello World!");
 }
 
-const NewDelegate = toDelegate(MyUObj, PrintHelloWorld); // toDelegate(owOwnerner: UE.Object, Func:Function)
-MyUObj.PassJsFunctionAsDelegate(NewDelegate);
+const NewDelegate = toDelegate(DemoActor, PrintHelloWorld); // toDelegate(owOwnerner: UE.Object, Func:Function)
+DemoActor.PassJsFunctionAsDelegate(NewDelegate);
 ~~~
 
 ~~~typescript
@@ -152,7 +151,7 @@ function PrintHelloWorld() : void {
 }
 
 const NewManualReleaseDelegate = toManualReleaseDelegate(PrintHelloWorld); // toManualReleaseDelegate(Func:Function)
-MyUObj.PassJsFunctionAsDelegate(NewManualReleaseDelegate);
+DemoActor.PassJsFunctionAsDelegate(NewManualReleaseDelegate);
 
 releaseManualReleaseDelegate(PrintHelloWorld); // Release to prevent memory leak
 ~~~
@@ -161,35 +160,43 @@ releaseManualReleaseDelegate(PrintHelloWorld); // Release to prevent memory leak
 Aside from delegates, JsObjects can be used within C++ to execute functions, access variables, e.t.c
 ##### C++
 ``` c++
-// ExampleClass.h
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
 #include "JsObject.h"
+#include "DemoActor.generated.h"
 
-class ExampleClass
+UCLASS()
+class ADemoActor : public AActor
 {
-    //...
-public:
-    static void CalculateAge(FJsObject InPerson)
-    {
-        int BirthYear = InPerson.Get<int>("BirthYear");
-        InPerson.Set<int>("Age", 2025 - BirthYear);
-    }
+	GENERATED_BODY()
+	
+public:	
+	UFUNCTION()
+	static void CalculateAge(FJsObject InPerson)
+	{
+		const int BirthYear = InPerson.Get<int>("BirthYear");
+		InPerson.Set<int>("Age", 2025 - BirthYear);
+	}
 
-    static void ExecuteJsFunctionObject(FJsObject InJsFunctionObject)
-    {
-        InJsFunctionObject.Func<void>();
-    }
+	UFUNCTION()
+	static void ExecuteJsFunctionObject(FJsObject InJsFunctionObject)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ADemoActor:ExecuteJsFunctionObject() = %i"), InJsFunctionObject.Func<int>());
+	}
 };
 ```
 ##### TypeScript
 ``` typescript
-import * as Cpp from 'cpp'
+import * as UE from 'ue'
 
-let John = {BirthYear:1999};
-Cpp.ExampleClass.CalculateAge(John);
+let John = {BirthYear:1999, Age: -1};
+UE.DemoActor.CalculateAge(John);
 console.warn("John is aged " + John.Age);
 
-Cpp.ExampleClass.ExecuteJsFunctionObject(() => {
-    console.warn("JavaScript Function Object Executed!");
+UE.DemoActor.ExecuteJsFunctionObject(() => {
+    return 1337;
 });
 ```
 
@@ -198,19 +205,18 @@ Inside of a standard C++ environment, `std::function` is the preferred method fo
 
 ##### C++
 ~~~c++
-void MyClass::PassJsFunctionWithStd(std::function<int(int, int)> InFunction)
+static void PassJsFunctionWithStd(std::function<int(int, int)> InFunction)
 {
-    int ReturnValue = InFunction(88, 99);
-    UE_LOG(LogTemp, Warning, TEXT("%i"), ReturnValue);
+	int ReturnValue = InFunction(88, 99);
+	UE_LOG(LogTemp, Warning, TEXT("ADemoActor:PassJsFunctionWithStd() | 89 + 99 = %i"), ReturnValue);
 }
 ~~~
 
 ##### TypeScript
 ~~~typescript
-MyObj.PassJsFunctionWithStd((A: number, B: number) => {
-    const Sum = A + B;
-    console.warn(A + '+' + B + "= " + Sum);
+import * as UE from 'ue'
 
-    return Sum;
-})
+UE.DemoActor.PassJsFunctionWithStd((InA: number, InB: number) => {
+    return InA + InB;
+});
 ~~~
