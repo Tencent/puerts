@@ -20,7 +20,7 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
         }
         else if (!PlayerSettings.WebGL.emscriptenArgs.Contains("-s ALLOW_TABLE_GROWTH=1"))
         {
-            PlayerSettings.WebGL.emscriptenArgs += "-s ALLOW_TABLE_GROWTH=1";
+            PlayerSettings.WebGL.emscriptenArgs += " -s ALLOW_TABLE_GROWTH=1";
         }
 #endif
     }
