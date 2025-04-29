@@ -207,6 +207,7 @@ namespace Puerts.Editor
                 }
                 if (!result && type.IsValueType && !type.IsPrimitive)
                 {
+                    isDisallowedTypeCache[type] = result;
                     foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                     {
                         var rawFiledType = (field.FieldType.IsPointer || field.FieldType.IsByRef) ? field.FieldType.GetElementType() : field.FieldType;
