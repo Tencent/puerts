@@ -1223,10 +1223,10 @@ export function GetWebGLFFIApi(engine: PuertsJSEngine) {
 
     // 和pesapi.h声明不一样，这改为返回值指针由调用者（原生）传入
     function pesapi_eval(env: pesapi_env, pcode: CSString, code_size: number, path: string, presult: pesapi_value): void {
-        if (!globalThis.eval) {
-            throw new Error("eval is not supported"); // TODO: 抛给wasm更合适些
-        }
         try {
+            if (!globalThis.eval) {
+                throw new Error("eval is not supported"); // TODO: 抛给wasm更合适些
+            }
             const code = engine.unityApi.UTF8ToString(pcode, code_size);
             const result = globalThis.eval(code);
             jsValueToPapiValue(engine.unityApi, result, presult);

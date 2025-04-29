@@ -174,10 +174,10 @@ global.PuertsWebGL = {
                     return jsfunc.id;
                 },
                 Eval: function (isolate: IntPtr, codeString: CSString, path: string) {
-                    if (!global.eval) {
-                        throw new Error("eval is not supported");
-                    }
                     try {
+                        if (!global.eval) {
+                            throw new Error("eval is not supported");
+                        }
                         const code = engine.unityApi.UTF8ToString(codeString);
                         const result = global.eval(code);
                         // return getIntPtrManager().GetPointerForJSValue(result);
