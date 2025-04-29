@@ -86,6 +86,7 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
         UnityEngine.Debug.Log("Pack JavaScript Resources to " + dir);
         var currentTarget = EditorPrefs.GetString("PuerTS.WebGLBuildTarget", "Browser");
         string output = currentTarget == "Browser" ? dir : Path.Join(dir, "../minigame");
+        if (!Directory.Exists(output)) Directory.CreateDirectory(output);
         File.Copy(Path.GetFullPath("Packages/com.tencent.puerts.webgl/Javascripts~/PuertsDLLMock/dist/puerts-runtime.js"), Path.Join(output, "puerts-runtime.js"), true);
 
         List<string> resourcesPattens = new List<string>
