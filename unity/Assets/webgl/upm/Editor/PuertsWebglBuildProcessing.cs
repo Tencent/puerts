@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostprocessBuildWithReport
 {
-    public int callbackOrder => 1;
+    public int callbackOrder => 2;
     public void OnPreprocessBuild(BuildReport report)
     {
         //#if UNITY_EDITOR && UNITY_EDITOR_OSX
@@ -44,7 +44,29 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
                     indexContent = indexContent.Substring(0, pos) + "  <script src=\"./puerts-runtime.js\"></script>\n    <script src=\"./puerts_browser_js_resources.js\"></script>" + indexContent.Substring(pos);
                     File.WriteAllText(file.path, indexContent);
                 }
-                PackJsResources(System.IO.Path.GetDirectoryName(file.path));
+
+                var dir = System.IO.Path.GetDirectoryName(file.path);
+                var currentTarget = EditorPrefs.GetString("PuerTS.WebGLBuildTarget", "Browser");
+                string output = currentTarget == "Browser" ? dir : Path.GetFullPath(Path.Join(dir, "../minigame"));
+                if (!Directory.Exists(output)) Directory.CreateDirectory(output);
+
+                if (currentTarget == "Browser")
+                {
+                    PackJsResources(currentTarget, output);
+                }
+                else
+                {
+                    var watcher = new FileSystemWatcher(Path.GetFullPath(output));
+                    watcher.NotifyFilter = NotifyFilters.LastWrite;
+                    watcher.Filter = "*.js";
+                    //watcher.IncludeSubdirectories = true;
+                    watcher.EnableRaisingEvents = true;
+                    watcher.Changed += (object sender, FileSystemEventArgs e) =>
+                    {
+                        PackJsResources(currentTarget, output);
+                        watcher.Dispose();
+                    };
+                }
             }
         }
 #endif
@@ -81,12 +103,9 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
         return true;
     }
 
-    private void PackJsResources(string dir)
+    private void PackJsResources(string currentTarget, string output)
     {
-        UnityEngine.Debug.Log("Pack JavaScript Resources to " + dir);
-        var currentTarget = EditorPrefs.GetString("PuerTS.WebGLBuildTarget", "Browser");
-        string output = currentTarget == "Browser" ? dir : Path.Join(dir, "../minigame");
-        if (!Directory.Exists(output)) Directory.CreateDirectory(output);
+        UnityEngine.Debug.Log("Pack JavaScript Resources to " + output);
         File.Copy(Path.GetFullPath("Packages/com.tencent.puerts.webgl/Javascripts~/PuertsDLLMock/dist/puerts-runtime.js"), Path.Join(output, "puerts-runtime.js"), true);
 
         List<string> resourcesPattens = new List<string>
@@ -144,6 +163,19 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
             if (process.ExitCode != 0)
             {
                 UnityEngine.Debug.LogError($"Node process exited with code: {process.ExitCode}");
+            }
+        }
+
+        if (currentTarget != "Browser")
+        {
+            string entryPath = Path.Join(output, "game.js");
+            string entryContent = File.ReadAllText(entryPath);
+            if (!entryContent.Contains("puerts-runtime.js"))
+            {
+                UnityEngine.Debug.Log("inject to minigame game.js");
+                int pos = entryContent.IndexOf("import");
+                entryContent = entryContent.Substring(0, pos) + "import 'puerts-runtime.js';\n" + entryContent.Substring(pos);
+                File.WriteAllText(entryPath, entryContent);
             }
         }
     }
