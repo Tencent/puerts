@@ -41,6 +41,17 @@ public class InstructionsFilter
 
     static Dictionary<System.Type, bool> filterValueTypeCache = new Dictionary<System.Type, bool>();
 
+    public static int FieldCount(System.Type type)
+    {
+        int count = 0;
+        foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            var fieldType = field.FieldType;
+            count += (fieldType.IsValueType && !fieldType.IsPrimitive && !fieldType.IsPointer && !fieldType.IsByRef ? FieldCount(fieldType) : 1);
+        }
+        return count;
+    }
+
     public static bool IsBigValueType(System.Type type)
     {
         if (!type.IsValueType || type.IsPrimitive) return false;
@@ -57,15 +68,7 @@ public class InstructionsFilter
         }
         else
         {
-            foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-                var fieldType = field.FieldType;
-                if (IsBigValueType(fieldType))
-                {
-                    res = true;
-                    break;
-                }
-            }
+            res = FieldCount(type) > 1024;
         }
 
         filterValueTypeCache.Add(type, res);
@@ -80,10 +83,11 @@ public class InstructionsFilter
     }
 
     [Filter]
-    static BindingMode FilterBigStructAndPointerOfPointer(MemberInfo memberInfo)
+    static BindingMode FilterBigStructAndPointerOfPointerAndDisallowedType(MemberInfo memberInfo)
     {
         try
         {
+            bool useSlowBinding = false;
             MethodBase methodBase = memberInfo as MethodBase;
             if (methodBase != null)
             {
@@ -99,9 +103,13 @@ public class InstructionsFilter
                     {
                         return BindingMode.DontBinding;
                     }
+                    if (Puerts.Editor.Generator.Utils.isDisallowedType(ptype))
+                    {
+                        return BindingMode.DontBinding;
+                    }
                     if (ptype == typeof(System.IntPtr) || ptype == typeof(System.UIntPtr))
                     {
-                        return BindingMode.SlowBinding;
+                        useSlowBinding = true;
                     }
                 }
             }
@@ -109,7 +117,7 @@ public class InstructionsFilter
             MethodInfo methodInfo = memberInfo as MethodInfo;
             if (methodInfo != null)
             {
-                if (IsBigValueType(methodInfo.ReturnType) || IsPointerOfPointer(methodInfo.ReturnType))
+                if (IsBigValueType(methodInfo.ReturnType) || IsPointerOfPointer(methodInfo.ReturnType) || Puerts.Editor.Generator.Utils.isDisallowedType(methodInfo.ReturnType))
                 {
                     return BindingMode.DontBinding;
                 }
@@ -118,12 +126,12 @@ public class InstructionsFilter
             FieldInfo fieldInfo = memberInfo as FieldInfo;
             if (fieldInfo != null)
             {
-                if (IsBigValueType(fieldInfo.FieldType) || IsPointerOfPointer(fieldInfo.FieldType))
+                if (IsBigValueType(fieldInfo.FieldType) || IsPointerOfPointer(fieldInfo.FieldType) || Puerts.Editor.Generator.Utils.isDisallowedType(fieldInfo.FieldType))
                 {
                     return BindingMode.DontBinding;
                 }
             }
-            return BindingMode.FastBinding;
+            return useSlowBinding ? BindingMode.SlowBinding : BindingMode.FastBinding;
         }
         catch
         {

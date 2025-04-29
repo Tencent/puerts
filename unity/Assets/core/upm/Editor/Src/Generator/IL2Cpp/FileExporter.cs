@@ -101,26 +101,28 @@ namespace PuertsIl2cpp.Editor
                 }
             }
 
-            private static bool IterateAllValueType(Type type, List<ValueTypeInfo> list)
+            private static void IterateAllValueType(Type type, List<ValueTypeInfo> list)
             {
-                if (Utils.isDisallowedType(type)) return false;
+                if (Utils.isDisallowedType(type)) return;
                 if (type.IsPrimitive) {
-                    return true;
+                    return;
                 }
                 Type baseType = type.BaseType;
                 while (baseType != null && baseType != typeof(System.Object))
                 {
-                    if (baseType.IsValueType) {
-                        if (!IterateAllValueType(baseType, list)) return false;
-                    }
+                    IterateAllValueType(baseType, list);
                     baseType = baseType.BaseType;
                 }
                 
                 foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                 {
-                    if (field.FieldType.IsValueType && !field.FieldType.IsPrimitive) 
-                        if (!IterateAllValueType(field.FieldType, list)) return false;
+                    if (field.FieldType.IsValueType && !field.FieldType.IsPrimitive)
+                    {
+                        IterateAllValueType(field.FieldType, list);
+                    }
                 }
+
+                if (!type.IsValueType) return;
 
                 int value = -1;
                 if (Nullable.GetUnderlyingType(type) != null)
@@ -142,7 +144,6 @@ namespace PuertsIl2cpp.Editor
                     FieldSignatures = GetValueTypeFieldSignatures(type),
                     NullableHasValuePosition = value
                 });
-                return true;
             }
 
             private static bool IsSelfRefGenericType(Type type, Type typeDef)

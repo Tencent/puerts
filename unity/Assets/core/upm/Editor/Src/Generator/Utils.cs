@@ -178,13 +178,46 @@ namespace Puerts.Editor
                 return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
             }
 
+
+            static Dictionary<System.Type, bool> isDisallowedTypeCache = new Dictionary<System.Type, bool>();
             internal static bool isDisallowedType(Type type) 
             {
+                if (isDisallowedTypeCache.ContainsKey(type))
+                {
+                    return isDisallowedTypeCache[type];
+                }
                 var result = false;
                 foreach (var filter in DisallowedTypeFilters)
                 {
                     result = result || filter(type);
+                    if (result) break;
                 }
+                if (!result)
+                {
+                    Type baseType = type.BaseType;
+                    while (baseType != null && baseType != typeof(System.Object))
+                    {
+                        if (isDisallowedType(baseType))
+                        {
+                            result = true;
+                            break;
+                        }
+                        baseType = baseType.BaseType;
+                    }
+                }
+                if (!result && type.IsValueType && !type.IsPrimitive)
+                {
+                    foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                    {
+                        var rawFiledType = (field.FieldType.IsPointer || field.FieldType.IsByRef) ? field.FieldType.GetElementType() : field.FieldType;
+                        if (isDisallowedType(rawFiledType))
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
+                }
+                isDisallowedTypeCache[type] = result;
                 return result;
             }
 
