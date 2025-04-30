@@ -58,6 +58,9 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort = -1, BackendType backend = BackendType.Auto, IntPtr externalRuntime = default(IntPtr), IntPtr externalContext = default(IntPtr))
         {
+#if !UNITY_EDITOR && UNITY_WEBGL
+            PuertsDLL.InitPuertsWebGL();
+#endif
             this.loader = loader;
             disposed = true;
             if (!isInitialized)

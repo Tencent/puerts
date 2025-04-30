@@ -662,5 +662,10 @@ namespace Puerts
             IntPtr str = GetJSStackTrace(isolate, out strlen);
             return GetStringFromNative(str, strlen);
         }
+
+#if !UNITY_EDITOR && UNITY_WEBGL
+        [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr InitPuertsWebGL();
+#endif
     }
 }

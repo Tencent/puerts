@@ -26,17 +26,9 @@ namespace Puerts
                     return jsEnvInstance;
                 }
 
-#if !UNITY_EDITOR && UNITY_WEBGL
-                InitPuertsWebGL();
-#endif
                 jsEnvInstance = new JsEnv(loader, debugPort);
                 return jsEnvInstance;
             }
-
-#if !UNITY_EDITOR && UNITY_WEBGL
-            [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr InitPuertsWebGL();
-#endif
         }
     }
 }
