@@ -7,6 +7,43 @@
 #include "pesapi.h"
 #include "vm/Class.h"
 
+namespace pesapi
+{
+namespace webglimpl
+{
+struct JSValue;
+}
+}
+
+EXTERN_C_START
+
+PESAPI_EXTERN pesapi_value pesapi_create_array_js(pesapi_env env);
+PESAPI_EXTERN pesapi_value pesapi_create_object_js(pesapi_env env);
+PESAPI_EXTERN pesapi_value pesapi_create_function_js(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize);
+PESAPI_EXTERN pesapi_value pesapi_create_class_js(pesapi_env env, const void* type_id);
+PESAPI_EXTERN uint32_t pesapi_get_array_length_js(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN pesapi_value pesapi_native_object_to_value_js(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize);
+PESAPI_EXTERN void pesapi_throw_by_string_js(pesapi_callback_info pinfo, const char* msg);
+PESAPI_EXTERN pesapi_scope pesapi_open_scope_placement_js(pesapi_env_ref env_ref, struct pesapi_scope_memory* memory);
+PESAPI_EXTERN bool pesapi_has_caught_js(pesapi_scope scope);
+PESAPI_EXTERN const char* pesapi_get_exception_as_string_js(pesapi_scope scope, bool with_stack);
+PESAPI_EXTERN void pesapi_close_scope_placement_js(pesapi_scope scope);
+PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref_js(pesapi_env env, pesapi_value value, uint32_t internal_field_count);
+PESAPI_EXTERN void pesapi_release_value_ref_js(pesapi_value_ref value_ref);
+PESAPI_EXTERN void pesapi_get_value_from_ref_js(pesapi_env env, void* ptr, pesapi::webglimpl::JSValue* pvalue);
+PESAPI_EXTERN void pesapi_get_property_js(pesapi_env env, pesapi_value object, const char* key, pesapi::webglimpl::JSValue* pvalue);
+PESAPI_EXTERN void pesapi_set_property_js(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
+PESAPI_EXTERN bool pesapi_get_private_js(pesapi_env env, pesapi_value object, void** out_ptr);
+PESAPI_EXTERN bool pesapi_set_private_js(pesapi_env env, pesapi_value object, void* ptr);
+PESAPI_EXTERN void pesapi_get_property_uint32_js(pesapi_env env, pesapi_value object, uint32_t key, pesapi::webglimpl::JSValue* pvalue);
+PESAPI_EXTERN void pesapi_set_property_uint32_js(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
+PESAPI_EXTERN void pesapi_call_function_js(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[], pesapi::webglimpl::JSValue* presult);
+PESAPI_EXTERN void pesapi_eval_js(pesapi_env env, const uint8_t* code, size_t code_size, const char* path, pesapi::webglimpl::JSValue* result);
+PESAPI_EXTERN pesapi_value pesapi_global_js(pesapi_env env);
+PESAPI_EXTERN void pesapi_set_env_private_js(pesapi_env env, const void* ptr);
+
+EXTERN_C_END
+
 using namespace il2cpp::vm;
 
 namespace puerts
@@ -553,36 +590,31 @@ pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
     return pesapi_create_generic2(env, bin, length, JS_NewBufferLen);
 }
 
-
-pesapi_create_array_func g_js_create_array;
 pesapi_value pesapi_create_array(pesapi_env env)
 {
     auto ret = allocValueInCurrentScope();
-    *ret = JS_MKPTR(JS_TAG_ARRAY, g_js_create_array(env));
+    *ret = JS_MKPTR(JS_TAG_ARRAY, pesapi_create_array_js(env));
     return pesapiValueFromQjsValue(ret);
 }
 
-pesapi_create_object_func g_js_create_object;
 pesapi_value pesapi_create_object(pesapi_env env)
 {
     auto ret = allocValueInCurrentScope();
-    *ret = JS_MKPTR(JS_TAG_OBJECT, g_js_create_object(env));
+    *ret = JS_MKPTR(JS_TAG_OBJECT, pesapi_create_object_js(env));
     return pesapiValueFromQjsValue(ret);
 }
 
-pesapi_create_function_func g_js_create_function = nullptr;
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
     auto ret = allocValueInCurrentScope();
-    *ret = JS_MKPTR(JS_TAG_FUNCTION, g_js_create_function(env, native_impl, data, finalize));
+    *ret = JS_MKPTR(JS_TAG_FUNCTION, pesapi_create_function_js(env, native_impl, data, finalize));
     return pesapiValueFromQjsValue(ret);
 }
 
-pesapi_create_class_func g_js_create_class;
 pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 {
     auto ret = allocValueInCurrentScope();
-    *ret = JS_MKPTR(JS_TAG_FUNCTION, g_js_create_class(env, type_id));
+    *ret = JS_MKPTR(JS_TAG_FUNCTION, pesapi_create_class_js(env, type_id));
     return pesapiValueFromQjsValue(ret);
 }
 
@@ -757,12 +789,10 @@ bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
     });
 }
 
-pesapi_native_object_to_value_func g_js_native_object_to_value;
-
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize)
 {
     auto ret = allocValueInCurrentScope();
-    *ret = JS_MKPTR(JS_TAG_NATIVE_OBJECT, g_js_native_object_to_value(env, type_id, object_ptr, call_finalize));
+    *ret = JS_MKPTR(JS_TAG_NATIVE_OBJECT, pesapi_native_object_to_value_js(env, type_id, object_ptr, call_finalize));
     ret->u.nto.typeId = type_id;
     return pesapiValueFromQjsValue(ret);
 }
@@ -893,16 +923,10 @@ void pesapi_release_env_ref(pesapi_env_ref penv_ref)
 {
 }
 
-//pesapi_open_scope_func g_js_open_scope = nullptr;
-pesapi_open_scope_placement_func g_js_open_scope_placement = nullptr;
-
 pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 {
     auto ret = new WebGlScope();
-    if (g_js_open_scope_placement)
-    {
-        g_js_open_scope_placement(penv_ref, (struct pesapi_scope_memory *)ret);
-    }
+    pesapi_open_scope_placement_js(penv_ref, (struct pesapi_scope_memory *)ret);
     return reinterpret_cast<pesapi_scope>(ret);
 }
 
@@ -910,10 +934,7 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_
 {
     memset(memory, 0, sizeof(struct pesapi_scope_memory));
     new (memory) WebGlScope();
-    if (g_js_open_scope_placement)
-    {
-        g_js_open_scope_placement(penv_ref, memory);
-    }
+    pesapi_open_scope_placement_js(penv_ref, memory);
     return reinterpret_cast<pesapi_scope>(memory);
 }
 
@@ -929,15 +950,10 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, bool with_stack)
     return nullptr;
 }
 
-//pesapi_close_scope_func g_js_close_scope;
-pesapi_close_scope_placement_func g_js_close_scope_placement = nullptr;
 
 void pesapi_close_scope(pesapi_scope pscope)
 {
-    if (g_js_close_scope_placement)
-    {
-        g_js_close_scope_placement(pscope);
-    }
+    pesapi_close_scope_placement_js(pscope);
     auto scope = reinterpret_cast<WebGlScope*>(pscope);
     if (!scope)
     {
@@ -948,10 +964,7 @@ void pesapi_close_scope(pesapi_scope pscope)
 
 void pesapi_close_scope_placement(pesapi_scope pscope)
 {
-    if (g_js_close_scope_placement)
-    {
-        g_js_close_scope_placement(pscope);
-    }
+    pesapi_close_scope_placement_js(pscope);
     auto scope = reinterpret_cast<WebGlScope*>(pscope);
     if (!scope)
     {
@@ -960,14 +973,12 @@ void pesapi_close_scope_placement(pesapi_scope pscope)
     scope->~WebGlScope();
 }
 
-pesapi_create_value_ref_func g_js_create_value_ref;
-
 pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, uint32_t internal_field_count)
 {
     size_t totalSize = sizeof(ValueRef) + sizeof(void*) * internal_field_count;
     auto ret = (pesapi_value_ref)malloc(totalSize);
     memset(ret, 0, totalSize);
-    new (ret) ValueRef(g_js_create_value_ref(env, pvalue, internal_field_count), internal_field_count);
+    new (ret) ValueRef(pesapi_create_value_ref_js(env, pvalue, internal_field_count), internal_field_count);
     return ret;
 }
 
@@ -978,33 +989,29 @@ pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref pvalue_ref)
     return pvalue_ref;
 }
 
-pesapi_release_value_ref_func g_js_release_value_ref;
 void pesapi_release_value_ref(pesapi_value_ref pvalue_ref)
 {
     auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
     if (--value_ref->ref_count == 0)
     {
-        g_js_release_value_ref((pesapi_value_ref)(value_ref->ptr));
+        pesapi_release_value_ref_js((pesapi_value_ref)(value_ref->ptr));
         value_ref->~ValueRef();
         free(value_ref);
     }
 }
 
-typedef void (*pesapi_js_get_value_from_ref_func)(pesapi_env env, void* ptr, JSValue* pvalue);
-pesapi_js_get_value_from_ref_func g_js_get_value_from_ref_func;
-
 pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref pvalue_ref)
 {
     JSValue* v = allocValueInCurrentScope();
     auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
-    g_js_get_value_from_ref_func(env, value_ref->ptr, v);
+    pesapi_get_value_from_ref_js(env, value_ref->ptr, v);
     return pesapiValueFromQjsValue(v);
 }
 
 void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref pvalue_ref)
 {
     auto value_ref = reinterpret_cast<ValueRef*>(pvalue_ref);
-    g_js_release_value_ref((pesapi_value_ref)(value_ref->ptr));
+    pesapi_release_value_ref_js((pesapi_value_ref)(value_ref->ptr));
 }
 
 bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
@@ -1024,12 +1031,10 @@ void** pesapi_get_ref_internal_fields(pesapi_value_ref pvalue_ref, uint32_t* pin
     return &value_ref->internal_fields[0];
 }
 
-typedef void (*pesapi_js_get_property_func)(pesapi_env env, pesapi_value object, const char* key, JSValue* pvalue);
-pesapi_js_get_property_func g_js_get_property;
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const char* key)
 {
     auto ret = allocValueInCurrentScope();
-    g_js_get_property(env, pobject, key, ret);
+    pesapi_get_property_js(env, pobject, key, ret);
     return pesapiValueFromQjsValue(ret);
 }
 
@@ -1050,49 +1055,38 @@ bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
     return false;
 }
 
-typedef void (*pesapi_js_get_property_uint32_func)(pesapi_env env, pesapi_value object, uint32_t key, JSValue* pvalue);
-pesapi_js_get_property_uint32_func g_js_get_property_uint32;
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key)
 {
     auto ret = allocValueInCurrentScope();
-    g_js_get_property_uint32(env, pobject, key, ret);
+    pesapi_get_property_uint32_js(env, pobject, key, ret);
     return pesapiValueFromQjsValue(ret);
 }
 
 // 由js实现，但其它api需要调用
-pesapi_set_property_uint32_func g_js_set_property_uint32;
 void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
 {
-    g_js_set_property_uint32(env, pobject, key, pvalue);
+    pesapi_set_property_uint32_js(env, pobject, key, pvalue);
 }
-
-typedef void (*pesapi_js_call_function_func)(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[], JSValue* presult);
-
-pesapi_js_call_function_func g_js_call_function;
 
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])
 {
     auto ret = allocValueInCurrentScope();
-    g_js_call_function(env, pfunc, this_object, argc, argv, ret);
+    pesapi_call_function_js(env, pfunc, this_object, argc, argv, ret);
     return pesapiValueFromQjsValue(ret);
 }
 
-// js和pesapi.h声明不一样，js改为返回值指针由调用者（原生）传入
-typedef void (*pesapi_js_eval_func)(pesapi_env env, const uint8_t* code, size_t code_size, const char* path, JSValue* result);
-pesapi_js_eval_func g_js_eval = nullptr;
+
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
 {
     auto ret = allocValueInCurrentScope();
-    g_js_eval(env, code, code_size, path, ret);
+    pesapi_eval_js(env, code, code_size, path, ret);
     return pesapiValueFromQjsValue(ret);
 }
-
-pesapi_global_func g_js_global = nullptr;
 
 pesapi_value pesapi_global(pesapi_env env)
 {
     auto ret = allocValueInCurrentScope();
-    *ret = JS_MKPTR(JS_TAG_OBJECT, g_js_global(env));
+    *ret = JS_MKPTR(JS_TAG_OBJECT, pesapi_global_js(env));
     return pesapiValueFromQjsValue(ret);
 }
 
@@ -1103,46 +1097,40 @@ const void* pesapi_get_env_private(pesapi_env env)
     return g_env_private;
 }
 
-pesapi_set_env_private_func g_js_set_env_private;
 void pesapi_set_env_private(pesapi_env env, const void* ptr)
 {
     g_env_private = ptr;
     // notify js
-    g_js_set_env_private(env, ptr);
+    pesapi_set_env_private_js(env, ptr);
 }
+
+struct pesapi_ffi g_api;
 
 } // webglimpl
 } // pesapi
 
 extern "C"
 {
-    void InitPapiNative(struct pesapi_ffi* api)
+    struct pesapi_ffi* InitPapiNative()
     {
+        struct pesapi_ffi* api = &pesapi::webglimpl::g_api;
+        
         api->open_scope = &pesapi::webglimpl::pesapi_open_scope;
-        
-        pesapi::webglimpl::g_js_open_scope_placement= api->open_scope_placement;
         api->open_scope_placement = &pesapi::webglimpl::pesapi_open_scope_placement;
-        
         api->close_scope = &pesapi::webglimpl::pesapi_close_scope;
-        
-        pesapi::webglimpl::g_js_close_scope_placement = api->close_scope_placement;
         api->close_scope_placement = &pesapi::webglimpl::pesapi_close_scope_placement;
         
         api->get_env_from_ref = &pesapi::webglimpl::pesapi_get_env_from_ref;
         
         api->get_env_private = &pesapi::webglimpl::pesapi_get_env_private;
-        pesapi::webglimpl::g_js_set_env_private = api->set_env_private;
         api->set_env_private = &pesapi::webglimpl::pesapi_set_env_private;
         
-        pesapi::webglimpl::g_js_global = api->global;
         api->global = &pesapi::webglimpl::pesapi_global;
         
-        pesapi::webglimpl::g_js_native_object_to_value = api->native_object_to_value;
         api->native_object_to_value = &pesapi::webglimpl::pesapi_native_object_to_value;
         api->get_native_object_ptr = &pesapi::webglimpl::pesapi_get_native_object_ptr;
         api->get_native_object_typeid = &pesapi::webglimpl::pesapi_get_native_object_typeid;
         
-        //api->get_args_len = &pesapi::webglimpl:::pesapi_get_args_len;
         api->get_args_len = &pesapi::webglimpl::pesapi_get_args_len;
         api->get_arg = &pesapi::webglimpl::pesapi_get_arg;
         api->get_env = &pesapi::webglimpl::pesapi_get_env;
@@ -1188,37 +1176,24 @@ extern "C"
         api->create_string_utf16 = &pesapi::webglimpl::pesapi_create_string_utf16;
         api->create_binary = &pesapi::webglimpl::pesapi_create_binary;
         
-        pesapi::webglimpl::g_js_create_array = api->create_array;
         api->create_array = &pesapi::webglimpl::pesapi_create_array;
-        pesapi::webglimpl::g_js_create_object = api->create_object;
         api->create_object = &pesapi::webglimpl::pesapi_create_object;
-        pesapi::webglimpl::g_js_create_function = api->create_function;
         api->create_function = &pesapi::webglimpl::pesapi_create_function;
-        pesapi::webglimpl::g_js_create_class = api->create_class;
         api->create_class = &pesapi::webglimpl::pesapi_create_class;
         
-        pesapi::webglimpl::g_js_eval = (pesapi::webglimpl::pesapi_js_eval_func)api->eval;
         api->eval = &pesapi::webglimpl::pesapi_eval;
-        
-        pesapi::webglimpl::g_js_call_function = (pesapi::webglimpl::pesapi_js_call_function_func)api->call_function;
         api->call_function = &pesapi::webglimpl::pesapi_call_function;
         
-        pesapi::webglimpl::g_js_get_property = (pesapi::webglimpl::pesapi_js_get_property_func)api->get_property;
         api->get_property = &pesapi::webglimpl::pesapi_get_property;
-        
-        pesapi::webglimpl::g_js_get_property_uint32 = (pesapi::webglimpl::pesapi_js_get_property_uint32_func)api->get_property_uint32;
         api->get_property_uint32 = &pesapi::webglimpl::pesapi_get_property_uint32;
         
         
-        pesapi::webglimpl::g_js_create_value_ref = api->create_value_ref;
         api->create_value_ref = &pesapi::webglimpl::pesapi_create_value_ref;
         
         api->duplicate_value_ref = &pesapi::webglimpl::pesapi_duplicate_value_ref;
         
-        pesapi::webglimpl::g_js_release_value_ref = api->release_value_ref;
         api->release_value_ref = &pesapi::webglimpl::pesapi_release_value_ref;
         
-        pesapi::webglimpl::g_js_get_value_from_ref_func = (pesapi::webglimpl::pesapi_js_get_value_from_ref_func)api->get_value_from_ref;
         api->get_value_from_ref = &pesapi::webglimpl::pesapi_get_value_from_ref;
         
         api->get_ref_internal_fields = &pesapi::webglimpl::pesapi_get_ref_internal_fields;
@@ -1231,14 +1206,21 @@ extern "C"
         api->duplicate_env_ref = &pesapi::webglimpl::pesapi_duplicate_env_ref;
         api->release_env_ref = &pesapi::webglimpl::pesapi_release_env_ref;
         
-        pesapi::webglimpl::g_js_set_property_uint32 = api->set_property_uint32;
-        
         api->is_instance_of = &pesapi::webglimpl::pesapi_is_instance_of;
         
         api->boxing = &pesapi::webglimpl::pesapi_boxing;
         api->unboxing = &pesapi::webglimpl::pesapi_unboxing;
         api->update_boxed_value = &pesapi::webglimpl::pesapi_update_boxed_value;
         api->is_boxed_value = &pesapi::webglimpl::pesapi_is_boxed_value;
+        
+        api->throw_by_string = &pesapi_throw_by_string_js;
+        api->has_caught = &pesapi_has_caught_js;
+        api->get_exception_as_string = &pesapi_get_exception_as_string_js;
+        api->set_property = &pesapi_set_property_js;
+        api->get_private = &pesapi_get_private_js;
+        api->set_private = &pesapi_set_private_js;
+        
+        return api;
     }
     
     void EMSCRIPTEN_KEEPALIVE PApiCallbackWithScope(pesapi_callback cb, struct pesapi_ffi* apis, pesapi_callback_info info)
