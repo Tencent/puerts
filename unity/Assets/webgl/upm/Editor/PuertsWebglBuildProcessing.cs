@@ -3,6 +3,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using System.IO;
 using System.Collections.Generic;
+using System;
 
 public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostprocessBuildWithReport
 {
@@ -25,6 +26,17 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
 #endif
     }
 
+    static Type GetWXConvertCoreType()
+    {
+        try
+        {
+            var WxEditor = System.Reflection.Assembly.Load("WxEditor");
+            return (WxEditor != null) ? WxEditor.GetType("WeChatWASM.WXConvertCore", false) : null;
+        }
+        catch { }
+        return null;
+    }
+
     public void OnPostprocessBuild(BuildReport report)
     {
 #if UNITY_WEBGL
@@ -36,36 +48,22 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
         {
             if (file.path.EndsWith("index.html"))
             {
-                string indexContent = File.ReadAllText(file.path);
-                if (!indexContent.Contains("puerts-runtime.js") || !indexContent.Contains("puerts_browser_js_resources.js"))
-                {
-                    UnityEngine.Debug.Log("inject to " + file.path);
-                    int pos = indexContent.IndexOf("</head>");
-                    indexContent = indexContent.Substring(0, pos) + "  <script src=\"./puerts-runtime.js\"></script>\n    <script src=\"./puerts_browser_js_resources.js\"></script>" + indexContent.Substring(pos);
-                    File.WriteAllText(file.path, indexContent);
-                }
-
                 var dir = System.IO.Path.GetDirectoryName(file.path);
-                var currentTarget = EditorPrefs.GetString("PuerTS.WebGLBuildTarget", "Browser");
-                string output = currentTarget == "Browser" ? dir : Path.GetFullPath(Path.Join(dir, "../minigame"));
-                if (!Directory.Exists(output)) Directory.CreateDirectory(output);
-
-                if (currentTarget == "Browser")
+                if (GetWXConvertCoreType() == null)
                 {
-                    PackJsResources(currentTarget, output);
+                    PackJsResources("Browser", dir);
                 }
                 else
                 {
-                    var watcher = new FileSystemWatcher(Path.GetFullPath(output));
-                    watcher.NotifyFilter = NotifyFilters.LastWrite;
-                    watcher.Filter = "*.js";
-                    //watcher.IncludeSubdirectories = true;
-                    watcher.EnableRaisingEvents = true;
-                    watcher.Changed += (object sender, FileSystemEventArgs e) =>
+                    if (StartWXMiniGameByPuerts)
                     {
-                        PackJsResources(currentTarget, output);
-                        watcher.Dispose();
-                    };
+                        LastBuildPath = Path.GetFullPath(Path.Join(dir, "../minigame"));
+                        //UnityEngine.Debug.Log("[PuerTs] Set BuildPath for Weixin MiniGame: " + LastBuildPath);
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.LogWarning("[PuerTs] Please use 'Tools/PuerTS/Export WXMiniGame'") ;
+                    }
                 }
             }
         }
@@ -73,39 +71,44 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
     }
 
 #if UNITY_WEBGL
-    [MenuItem("Tools/PuerTS/WebGLBuildTarget/Browser", false, 30)]
-    private static void SetWebglBuildTargetToBrowser()
+    private static string LastBuildPath = "";
+
+    private static bool StartWXMiniGameByPuerts = false;
+
+    [MenuItem("Tools/PuerTS/Export WXMiniGame", false, 0)]
+    static void ExportWXMiniGame()
     {
-        EditorPrefs.SetString("PuerTS.WebGLBuildTarget", "Browser");
-        //EditorApplication.ExecuteMenuItem("File/Save Project");
+        StartWXMiniGameByPuerts = true;
+        try
+        {
+            var typeOfWXConvertCore = GetWXConvertCoreType();
+            var methodDoExport = typeOfWXConvertCore.GetMethod("DoExport");
+            var ret = methodDoExport.Invoke(null, new object[] { true });
+            var code = System.Convert.ChangeType(ret, typeof(int));
+            UnityEngine.Debug.Log("DoExport ret " + ret + " code " + code);
+            if (ret.ToString().Contains("SUCCEED") || (code != null && (int)code == 0))
+            {
+                PackJsResources("MiniGame", LastBuildPath);
+            }
+        }
+        finally
+        {
+            StartWXMiniGameByPuerts = false;
+        }
     }
 
-    [MenuItem("Tools/PuerTS/WebGLBuildTarget/Browser", true)]
-    private static bool ValidateBrowserTarget()
+    [MenuItem("Tools/PuerTS/Export WXMiniGame", true)]
+    static bool WXConvertToolInstalled()
     {
-        var currentTarget = EditorPrefs.GetString("PuerTS.WebGLBuildTarget", "Browser");
-        Menu.SetChecked("Tools/PuerTS/WebGLBuildTarget/Browser", currentTarget == "Browser");
-        return true;
+        return GetWXConvertCoreType() != null;
     }
 
-    [MenuItem("Tools/PuerTS/WebGLBuildTarget/MiniGame", false, 31)]
-    private static void SetWebglBuildTargetToMiniGame()
+    private static void PackJsResources(string currentTarget, string output)
     {
-        EditorPrefs.SetString("PuerTS.WebGLBuildTarget", "MiniGame");
-        //EditorApplication.ExecuteMenuItem("File/Save Project");
-    }
+        UnityEngine.Debug.Log("[PuerTs] >>>> Pack JavaScript Resources to " + output);
 
-    [MenuItem("Tools/PuerTS/WebGLBuildTarget/MiniGame", true)]
-    private static bool ValidateMiniGameTarget()
-    {
-        var currentTarget = EditorPrefs.GetString("PuerTS.WebGLBuildTarget", "Browser");
-        Menu.SetChecked("Tools/PuerTS/WebGLBuildTarget/MiniGame", currentTarget == "MiniGame");
-        return true;
-    }
+        if (!Directory.Exists(output)) Directory.CreateDirectory(output);
 
-    private void PackJsResources(string currentTarget, string output)
-    {
-        UnityEngine.Debug.Log("Pack JavaScript Resources to " + output);
         File.Copy(Path.GetFullPath("Packages/com.tencent.puerts.webgl/Javascripts~/PuertsDLLMock/dist/puerts-runtime.js"), Path.Join(output, "puerts-runtime.js"), true);
 
         List<string> resourcesPattens = new List<string>
@@ -172,10 +175,22 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
             string entryContent = File.ReadAllText(entryPath);
             if (!entryContent.Contains("puerts-runtime.js"))
             {
-                UnityEngine.Debug.Log("inject to minigame game.js");
+                UnityEngine.Debug.Log("[PuerTs] >>>> inject to " + entryPath);
                 int pos = entryContent.IndexOf("import");
                 entryContent = entryContent.Substring(0, pos) + "import 'puerts-runtime.js';\n" + entryContent.Substring(pos);
                 File.WriteAllText(entryPath, entryContent);
+            }
+        }
+        else
+        {
+            string indexPath = Path.Join(output, "index.html");
+            string indexContent = File.ReadAllText(indexPath);
+            if (!indexContent.Contains("puerts-runtime.js") || !indexContent.Contains("puerts_browser_js_resources.js"))
+            {
+                UnityEngine.Debug.Log("[PuerTs] >>>> inject to " + indexPath);
+                int pos = indexContent.IndexOf("</head>");
+                indexContent = indexContent.Substring(0, pos) + "  <script src=\"./puerts-runtime.js\"></script>\n    <script src=\"./puerts_browser_js_resources.js\"></script>" + indexContent.Substring(pos);
+                File.WriteAllText(indexPath, indexContent);
             }
         }
     }
