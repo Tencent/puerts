@@ -181,11 +181,11 @@ extern "C"
         return WasmAdd;
     }
     
-    void InitPapiNative(struct pesapi_ffi* api);
+    struct pesapi_ffi* InitPapiNative();
     
-    void EMSCRIPTEN_KEEPALIVE InjectPapiGLNativeImpl(struct pesapi_ffi* api)
+    struct pesapi_ffi* EMSCRIPTEN_KEEPALIVE InjectPapiGLNativeImpl()
     {
-        InitPapiNative(api);
+        return InitPapiNative();
     }
 }
 

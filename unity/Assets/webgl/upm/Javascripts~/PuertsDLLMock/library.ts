@@ -530,7 +530,7 @@ export namespace PuertsJSEngine {
         WasmAdd: (a: number, b: number) => number;
         IndirectWasmAdd: (func: number, a: number, b: number) => number;
         GetWasmAddPtr:() => number;
-        InjectPapiGLNativeImpl: (apiPtr: number) => void;
+        InjectPapiGLNativeImpl: () => number;
         HEAP8: Int8Array;
         HEAPU8: Uint8Array;
         HEAP32: Int32Array;

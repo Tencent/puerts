@@ -159,7 +159,31 @@ var exportDLL = {
     "pesapi_on_class_not_found",
     "pesapi_set_method_info",
     "pesapi_set_property_info",
-    "pesapi_trace_native_object_lifecycle"
+    "pesapi_trace_native_object_lifecycle",
+    "pesapi_create_array_js",
+    "pesapi_create_object_js",
+    "pesapi_create_function_js",
+    "pesapi_create_class_js",
+    "pesapi_get_array_length_js",
+    "pesapi_native_object_to_value_js",
+    "pesapi_throw_by_string_js",
+    "pesapi_open_scope_placement_js",
+    "pesapi_has_caught_js",
+    "pesapi_get_exception_as_string_js",
+    "pesapi_close_scope_placement_js",
+    "pesapi_create_value_ref_js",
+    "pesapi_release_value_ref_js",
+    "pesapi_get_value_from_ref_js",
+    "pesapi_get_property_js",
+    "pesapi_set_property_js",
+    "pesapi_get_private_js",
+    "pesapi_set_private_js",
+    "pesapi_get_property_uint32_js",
+    "pesapi_set_property_uint32_js",
+    "pesapi_call_function_js",
+    "pesapi_eval_js",
+    "pesapi_global_js",
+    "pesapi_set_env_private_js"
 ].forEach(function (methodName) {
 
     exportDLL[methodName] = new Function(

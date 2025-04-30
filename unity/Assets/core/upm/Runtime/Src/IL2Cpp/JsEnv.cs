@@ -58,13 +58,13 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort = -1, BackendType backend = BackendType.Auto, IntPtr externalRuntime = default(IntPtr), IntPtr externalContext = default(IntPtr))
         {
-#if !UNITY_EDITOR && UNITY_WEBGL
-            PuertsDLL.InitPuertsWebGL();
-#endif
             this.loader = loader;
             disposed = true;
             if (!isInitialized)
             {
+#if !UNITY_EDITOR && UNITY_WEBGL
+                PuertsDLL.InitPuertsWebGL();
+#endif
                 lock (jsEnvs)
                 {
                     if (!isInitialized)
@@ -153,9 +153,11 @@ namespace Puerts
             if (debugPort != -1) {
                 Puerts.PuertsDLL.CreateInspector(nativeJsEnv, debugPort);    
             }
+#if !UNITY_WEBGL
             string debugpath;
             string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
             Eval(context, debugpath);
+#endif
             ExecuteModule("puerts/init_il2cpp.mjs");
             ExecuteModule("puerts/log.mjs");
             ExecuteModule("puerts/csharp.mjs");
