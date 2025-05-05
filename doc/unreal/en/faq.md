@@ -1,5 +1,26 @@
 # FAQ
 
+## Table Of Contents
+- [Warning: `new (std::nothrow) int[0]` Returns `nullptr`, Try Fixing It!](#warning-new-stdnothrow-int0-returns-nullptr-try-fixing-it)
+- [Some Extension Functions Are Unavailable in Auto-Binding Mode](#some-extension-functions-are-unavailable-in-auto-binding-mode)
+- [App Hangs When "Wait for Debugger" Option Is Checked](#app-hangs-when-wait-for-debugger-option-is-checked)
+- [`StaticClass` Returns Unexpected `UClass` in TypeScript-Generated Blueprints](#staticclass-returns-unexpected-uclass-in-typescript-generated-blueprints)
+- [macOS Error: "Cannot open libv8.dylib because the developer cannot be verified"](#macos-error-cannot-open-libv8dylib-because-the-developer-cannot-be-verified)
+- ["XXXProject could not be compiled" Error in Blueprint-Only Projects](#xxxproject-could-not-be-compiled-error-in-blueprint-only-projects)
+- [Runtime Errors About Missing Fields After Packaging](#runtime-errors-about-missing-fields-after-packaging)
+- [Error in UE5: "Construct TypeScript Object TestActor_C_1(...) on illegal thread!"](#error-in-ue5-construct-typescript-object-testactor_c_1-on-illegal-thread)
+- [Avoiding "Access Invalid Object" Exceptions](#avoiding-access-invalid-object-exceptions)
+- [Garbage Collection (GC) Behavior](#garbage-collection-gc-behavior)
+- [UE Object Is Held by `Puerts_UserObjectRetainer`](#ue-object-is-held-by-puerts_userobjectretainer)
+- [Scripts Not Running After Packaging (Mobile/PC)](#scripts-not-running-after-packaging-mobilepc)
+- [TypeScript Version Upgrade](#typescript-version-upgrade)
+- [`ue_bp.d.ts` Errors, Regeneration Doesn’t Help](#ue_bpdts-errors-regeneration-doesnt-help)
+- [TS Class Inheritance Doesn’t Generate Proxy Blueprints](#ts-class-inheritance-doesnt-generate-proxy-blueprints)
+- [Syntax Errors in `ue_bp.d.ts`](#syntax-errors-in-ue_bpdts)
+- [Intermittent "Maximum Call Stack Size Exceeded" Error](#intermittent-maximum-call-stack-size-exceeded-error)
+
+---
+
 ## Warning: `new (std::nothrow) int[0]` Returns `nullptr`, Try Fixing It!
 
 Unreal Engine overrides the `new` operator in a way that doesn't comply with the C++ standard: when using `std::nothrow` to allocate an array of length 0, it returns `nullptr`. According to the standard, it should return a valid pointer and only return `nullptr` on out-of-memory (OOM). This behavior misleads standard-compliant runtimes like V8 into thinking an OOM occurred, which causes an abort.

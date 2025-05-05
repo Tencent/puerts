@@ -11,6 +11,16 @@ Through a self-starting virtual machine, launched by `PuertsModule`, automatic b
 - [Setup](#setup)
 - [Usage](#usage)
 - [API Reference](#api-reference)
+    - [Format](#format)
+    - [Constructor](#constructor)
+    - [Data Types](#data-types)
+    - [Annotations](#annotations)
+    - [Decorators](#decorators)
+        - [Enable Decorators](#enable-decorators)
+        - [Class Flags](#class-flags)
+        - [Function Flags](#function-flags)
+        - [Property Flags](#property-flags)
+        - [RPC Flags](#rpc)
 - [Starting A New Virtual Machine](#starting-a-new-virtual-machine)
 
 ## Setup
