@@ -166,6 +166,17 @@ export function SToCPPType(signature) {
     }
     return t;
 }
+
+export function FromAny(signature) {
+    if (signature[0] == 'D') {
+        signature = signature.substring(1);
+    }
+    if (signature in PrimitiveSignatureCppTypeMap || ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_'))) {
+        return `*(${SToCPPType(signature)} *)`;
+    } else {
+        return `(${SToCPPType(signature)})`;
+    }
+}
     
 export function getThis(signature) {
     if (signature == 't') {
@@ -294,10 +305,10 @@ export function returnToJS(signature) {
     return `${invokePapi('add_return')}(info, ${CSValToJSVal(signature, 'ret')});`;
 }
     
-export function returnToCS(signature, isOptimizeSize) {
+export function returnToCS(signature) {
     return `
 ${JSValToCSVal(signature, 'jsret', 'ret')}
-    ${isOptimizeSize ? '*il2pppRetVal = ret' : 'return ret'};
+    return ret;
         `
 }
 

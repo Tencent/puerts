@@ -40,7 +40,7 @@ function genBridge(bridgeInfo, isOptimizeSize) {
     var parameterSignatures = il2cpp_snippets.listToJsArray(bridgeInfo.ParameterSignatures);
     let hasVarArgs = parameterSignatures.length > 0 && parameterSignatures[parameterSignatures.length -1][0] == 'V'
     return t`
-static ${isOptimizeSize ? 'void' : il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}${isOptimizeSize && bridgeInfo.ReturnSignature != 'v' ? `${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} * il2pppRetVal,` : ''}MethodInfo* method) {
+static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}${isOptimizeSize ? '_inner' : ''}(void* target, ${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}MethodInfo* method) {
     // PLog("Running b_${bridgeInfo.Signature}");
 
     ${IF(bridgeInfo.ReturnSignature && !(il2cpp_snippets.getSignatureWithoutRefAndPrefix(bridgeInfo.ReturnSignature) in il2cpp_snippets.PrimitiveSignatureCppTypeMap))}
@@ -62,7 +62,7 @@ static ${isOptimizeSize ? 'void' : il2cpp_snippets.SToCPPType(bridgeInfo.ReturnS
     {
         il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException("JsEnv had been destroy"));
         ${IF(bridgeInfo.ReturnSignature != 'v')}
-        return ${isOptimizeSize ? '' : '{}'};
+        return {};
         ${ENDIF()}
     }
     auto func = ${invokePapi('get_value_from_ref')}(env, delegateInfo->ValueRef);
@@ -77,11 +77,21 @@ static ${isOptimizeSize ? 'void' : il2cpp_snippets.SToCPPType(bridgeInfo.ReturnS
     ${IF(bridgeInfo.ReturnSignature == 'v')}
     }
     ${ELSE()}
-        return ${isOptimizeSize ? '' : '{}'};
+        return {};
     }
-    ${il2cpp_snippets.returnToCS(bridgeInfo.ReturnSignature, isOptimizeSize)}
+    ${il2cpp_snippets.returnToCS(bridgeInfo.ReturnSignature)}
     ${ENDIF()}
-}`;
+}
+${IF(isOptimizeSize)}
+
+static void b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `Il2CppFullySharedGenericAny p${i}`).map(s => `${s}, `).join('')}${bridgeInfo.ReturnSignature != 'v' ? `Il2CppFullySharedGenericAny * il2ppRetVal,` : ''}MethodInfo* method) {
+    ${IF(bridgeInfo.ReturnSignature != 'v')}
+    *((${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} *)il2ppRetVal) =
+    ${ENDIF()}
+    b_${bridgeInfo.Signature}_inner(target, ${parameterSignatures.map((S, i) => `${il2cpp_snippets.FromAny(S)}p${i}`).map(s => `${s}, `).join('')}method);
+}
+${ENDIF()}
+`;
 }
 
 export default function Gen(genInfos) {
