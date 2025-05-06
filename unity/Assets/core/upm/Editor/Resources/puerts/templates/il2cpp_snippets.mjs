@@ -294,10 +294,10 @@ export function returnToJS(signature) {
     return `${invokePapi('add_return')}(info, ${CSValToJSVal(signature, 'ret')});`;
 }
     
-export function returnToCS(signature) {
+export function returnToCS(signature, isOptimizeSize) {
     return `
 ${JSValToCSVal(signature, 'jsret', 'ret')}
-    return ret;
+    ${isOptimizeSize ? '*il2pppRetVal = ret' : 'return ret'};
         `
 }
 

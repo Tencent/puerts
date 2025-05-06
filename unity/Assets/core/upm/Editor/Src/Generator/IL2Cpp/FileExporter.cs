@@ -14,6 +14,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Puerts.Editor.Generator;
 using Puerts.TypeMapping;
+using UnityEditor;
+using UnityEditor.Build;
 
 #if !PUERTS_GENERAL
 using Mono.Reflection;
@@ -69,6 +71,8 @@ namespace PuertsIl2cpp.Editor
                 public List<SignatureInfo> BridgeInfos;
 
                 public List<SignatureInfo> FieldWrapperInfos;
+
+                public bool IsOptimizeSize = false;
             }
 
             public static Type GetUnrefParameterType(ParameterInfo parameterInfo)
@@ -209,6 +213,20 @@ namespace PuertsIl2cpp.Editor
                 }
             }
 
+            public static bool CurrentBuildIsOptimizeSize
+            {
+                get
+                {
+#if UNITY_SERVER
+                    NamedBuildTarget namedBuildTarget = NamedBuildTarget.Server;
+#else
+                    BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+                    BuildTargetGroup targetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+                    NamedBuildTarget namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+#endif
+                    return PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget) == Il2CppCodeGeneration.OptimizeSize;
+                }
+            }
             public static void GenCPPWrap(string saveTo, bool onlyConfigure = false, bool noWrapper = false)
             {
                 Utils.SetFilters(Puerts.Configure.GetFilters());
@@ -460,7 +478,8 @@ namespace PuertsIl2cpp.Editor
                         ValueTypeInfos = valueTypeInfos,
                         WrapperInfos = wrapperInfos,
                         BridgeInfos = bridgeInfos,
-                        FieldWrapperInfos = fieldWrapperInfos
+                        FieldWrapperInfos = fieldWrapperInfos,
+                        IsOptimizeSize = CurrentBuildIsOptimizeSize
                     };
 
                     using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppWrapper.cpp"), false, Encoding.UTF8))
