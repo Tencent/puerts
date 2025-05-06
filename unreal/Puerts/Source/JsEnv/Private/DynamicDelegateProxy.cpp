@@ -15,12 +15,12 @@ void UDynamicDelegateProxy::Fire()
 
 void UDynamicDelegateProxy::ProcessEvent(UFunction*, void* Params)
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker && Owner.IsValid())
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         if (ensureAlwaysMsgf(!JsFunction.IsEmpty(), TEXT("Invalid JS Function")))
         {
             PinedDynamicInvoker->InvokeDelegateCallback(this, Params);
