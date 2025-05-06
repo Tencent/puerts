@@ -217,6 +217,7 @@ namespace PuertsIl2cpp.Editor
             {
                 get
                 {
+#if UNITY_2022_1_OR_NEWER
 #if UNITY_SERVER
                     NamedBuildTarget namedBuildTarget = NamedBuildTarget.Server;
 #else
@@ -225,6 +226,9 @@ namespace PuertsIl2cpp.Editor
                     NamedBuildTarget namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
 #endif
                     return PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget) == Il2CppCodeGeneration.OptimizeSize;
+#else
+                    return EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize;
+#endif
                 }
             }
             public static void GenCPPWrap(string saveTo, bool onlyConfigure = false, bool noWrapper = false)
