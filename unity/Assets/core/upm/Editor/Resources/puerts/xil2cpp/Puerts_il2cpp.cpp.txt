@@ -1413,8 +1413,8 @@ static bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_v
     bool hasValue = false;
     uint32_t valueSize = klass->instance_size - sizeof(Il2CppObject);
     if (!jsValue) return false;
-    void* ptr;
-    if (${invokePapi('is_object')}(env, jsValue) && (ptr = ${invokePapi('get_native_object_ptr')}(env, jsValue)))
+    void* ptr = ${invokePapi('get_native_object_ptr')}(env, jsValue);
+    if (ptr)
     {
         auto objClass = (Il2CppClass*) ${invokePapi('get_native_object_typeid')}(env, jsValue);
         if (Class::IsAssignableFrom(klass, objClass))
