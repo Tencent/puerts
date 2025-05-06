@@ -2380,8 +2380,11 @@ static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMe
     
     try
     {
-        std::string signature = GetMethodSignature(method, false, isExtensionMethod);
-        overloadData->Wrap = FindWrapFunc(signature.c_str());
+        if (overloadData->MethodPointer)
+        {
+            std::string signature = GetMethodSignature(method, false, isExtensionMethod);
+            overloadData->Wrap = FindWrapFunc(signature.c_str());
+        }
     }
     catch (Il2CppExceptionWrapper& exception) { }
     if (!overloadData->Wrap)
