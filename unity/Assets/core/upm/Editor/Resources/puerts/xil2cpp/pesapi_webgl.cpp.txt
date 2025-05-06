@@ -764,7 +764,7 @@ bool pesapi_is_string(pesapi_env env, pesapi_value pvalue)
 bool pesapi_is_object(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
-        return JS_VALUE_GET_TAG(val) <= JS_TAG_OBJECT && JS_VALUE_GET_TAG(val) >= JS_TAG_ARRAY;
+        return JS_VALUE_GET_TAG(val) <= JS_TAG_OBJECT && JS_VALUE_GET_TAG(val) >= JS_TAG_NATIVE_OBJECT;
     });
 }
 
@@ -1186,6 +1186,7 @@ extern "C"
         
         api->get_property = &pesapi::webglimpl::pesapi_get_property;
         api->get_property_uint32 = &pesapi::webglimpl::pesapi_get_property_uint32;
+        api->set_property_uint32 = &pesapi::webglimpl::pesapi_set_property_uint32;
         
         
         api->create_value_ref = &pesapi::webglimpl::pesapi_create_value_ref;

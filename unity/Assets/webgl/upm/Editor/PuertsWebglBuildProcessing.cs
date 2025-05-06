@@ -63,6 +63,7 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
                     else
                     {
                         UnityEngine.Debug.LogWarning("[PuerTs] Please use 'Tools/PuerTS/Export WXMiniGame'") ;
+                        PackJsResources("Browser", dir);
                     }
                 }
             }
