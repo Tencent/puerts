@@ -2380,7 +2380,7 @@ static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMe
     
     try
     {
-        if (overloadData->MethodPointer)
+        if (overloadData->MethodPointer && (!method->has_full_generic_sharing_signature || !method->is_inflated))
         {
             std::string signature = GetMethodSignature(method, false, isExtensionMethod);
             overloadData->Wrap = FindWrapFunc(signature.c_str());
