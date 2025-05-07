@@ -771,6 +771,7 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
         }
         let callbackInfo: number = undefined;
         const argc = args.length;
+        const scope = Scope.enter();
         try {
             callbackInfo = jsArgsToCallbackInfo(wasmApi, argc, args);
             const heap = wasmApi.HEAPU8; //在PApiCallbackWithScope前都不会变化，这样用是安全的
@@ -791,6 +792,7 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
             return Scope.getCurrent().toJs(wasmApi, objMapper, callbackInfo + 16, true);
         } finally {
             returnNativeCallbackInfo(wasmApi, argc, callbackInfo);
+            scope.close(wasmApi);
         }
     }
 }
@@ -1079,6 +1081,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
             const PApiNativeObject = function (...args: any[]) {
                 let callbackInfo: number = undefined;
                 const argc = arguments.length;
+                const scope = Scope.enter();
                 try {
                     callbackInfo = jsArgsToCallbackInfo(engine.unityApi, argc, args);
                     Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
@@ -1089,6 +1092,7 @@ export function WebGLRegsterApi(engine: PuertsJSEngine) {
                     objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
                 } finally {
                     returnNativeCallbackInfo(engine.unityApi, argc, callbackInfo);
+                    scope.close(engine.unityApi);
                 }
             }
             Object.defineProperty(PApiNativeObject, "name", { value: name });
