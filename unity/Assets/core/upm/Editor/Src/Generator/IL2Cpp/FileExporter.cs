@@ -624,23 +624,7 @@ namespace PuertsIl2cpp.Editor
 
             public static void CopyXIl2cppCPlugin(string outDir)
             {
-                Dictionary<string, string> cPluginCode = new Dictionary<string, string>()
-                {
-                    { "pesapi_adpt.c", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_adpt.c").text },
-                    { "pesapi.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi.h").text },
-                    { "pesapi_webgl.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_webgl.h").text },
-                    { "pesapi_webgl.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_webgl.cpp").text }
-                };
-
-                foreach (var cPlugin in cPluginCode)
-                {
-                    var path = outDir + cPlugin.Key;
-                    using (StreamWriter textWriter = new StreamWriter(path, false, Encoding.UTF8))
-                    {
-                        textWriter.Write(cPlugin.Value);
-                        textWriter.Flush();
-                    }
-                }
+                Puerts.Editor.Generator.FileExporter.GenPapi(outDir);
 
                 using (var jsEnv = new Puerts.JsEnv())
                 {
@@ -663,38 +647,6 @@ namespace PuertsIl2cpp.Editor
                     using (StreamWriter textWriter = new StreamWriter(outDir + "Puerts_il2cpp.cpp", false, Encoding.UTF8))
                     {
                         textWriter.Write(puertsIl2cppContent);
-                        textWriter.Flush();
-                    }
-                }
-            }
-
-            public static void GenMarcoHeader(string outDir)
-            {
-                var filePath = outDir + "unityenv_for_puerts.h";
-
-                using (var jsEnv = new Puerts.JsEnv())
-                {
-                    var macroHeaderRender = jsEnv.ExecuteModule<Func<List<string>, string>>("puerts/xil2cpp/unityenv_for_puerts.h.tpl.mjs", "default");
-                    var defines = new List<string>()
-                    {
-#if UNITY_2021_1_OR_NEWER
-                        "UNITY_2021_1_OR_NEWER",
-#endif
-#if UNITY_2022_1_OR_NEWER
-                        "UNITY_2022_1_OR_NEWER",
-#endif
-#if UNITY_6000_0_OR_NEWER
-                        "UNITY_6000_0_OR_NEWER",
-#endif
-#if !UNITY_IPHONE && !UNITY_WEBGL
-                        "PUERTS_SHARED",
-#endif
-                    };
-                    string macroHeaderContent = macroHeaderRender(defines);
-
-                    using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
-                    {
-                        textWriter.Write(macroHeaderContent);
                         textWriter.Flush();
                     }
                 }
