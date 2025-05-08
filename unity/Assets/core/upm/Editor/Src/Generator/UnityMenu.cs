@@ -43,8 +43,8 @@ namespace Puerts.Editor
 #if UNITY_WEBGL
                 var cxxOutDir = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
                 Directory.CreateDirectory(cxxOutDir);
-                FileExporter.GenMarcoHeader(cxxOutDir);
-                FileExporter.GenPapi(cxxOutDir);
+                PuertsIl2cpp.Editor.Generator.FileExporter.GenMarcoHeader(cxxOutDir);
+                PuertsIl2cpp.Editor.Generator.FileExporter.GenPapi(cxxOutDir);
 #endif
 
                 Utils.SetFilters(null);

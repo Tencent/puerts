@@ -53,7 +53,7 @@ namespace PuertsIl2cpp.Editor
 #endif
                 Directory.CreateDirectory(saveTo);
                 FileExporter.CopyXIl2cppCPlugin(saveTo);
-                Puerts.Editor.Generator.FileExporter.GenMarcoHeader(saveTo);
+                FileExporter.GenMarcoHeader(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
