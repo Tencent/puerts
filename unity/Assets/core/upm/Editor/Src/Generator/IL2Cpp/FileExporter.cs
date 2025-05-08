@@ -225,10 +225,35 @@ namespace PuertsIl2cpp.Editor
                     BuildTargetGroup targetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
                     NamedBuildTarget namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
 #endif
-                    return PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget) == Il2CppCodeGeneration.OptimizeSize;
+                    bool unityIsOptimizeSize = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget) == Il2CppCodeGeneration.OptimizeSize;
 #else
-                    return EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize;
+                    bool unityIsOptimizeSize = EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize;
 #endif
+#if UNITY_WEBGL
+                    var minigameConfig = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>("Assets/WX-WASM-SDK-V2/Editor/MiniGameConfig.asset");
+                    if (minigameConfig != null)
+                    {
+                        var fieldOfCompileOptions = minigameConfig.GetType().GetField("CompileOptions");
+                        if (fieldOfCompileOptions != null)
+                        {
+                            var compileOptions = fieldOfCompileOptions.GetValue(minigameConfig);
+                            if (compileOptions != null)
+                            {
+                                var filedOfIl2CppOptimizeSize = compileOptions.GetType().GetField("Il2CppOptimizeSize");
+                                if (filedOfIl2CppOptimizeSize != null && filedOfIl2CppOptimizeSize.FieldType == typeof(bool))
+                                {
+                                    var minigameIsOptimizeSize = (bool)filedOfIl2CppOptimizeSize.GetValue(compileOptions);
+                                    if (unityIsOptimizeSize != minigameIsOptimizeSize)
+                                    {
+                                        Debug.LogWarning("Il2CppOptimizeSize setting conflict use minigame's setting: " + (minigameIsOptimizeSize ? "ON" : "OFF"));
+                                    }
+                                    return minigameIsOptimizeSize;
+                                }
+                            }
+                        }
+                    }
+#endif
+                    return unityIsOptimizeSize;
                 }
             }
             public static void GenCPPWrap(string saveTo, bool onlyConfigure = false, bool noWrapper = false)
