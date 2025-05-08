@@ -4,6 +4,7 @@ using UnityEditor.Build.Reporting;
 using System.IO;
 using System.Collections.Generic;
 using System;
+using UnityEngine;
 
 public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostprocessBuildWithReport
 {
@@ -106,7 +107,7 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
 
     private static void PackJsResources(string currentTarget, string output)
     {
-        UnityEngine.Debug.Log("[PuerTs] >>>> Pack JavaScript Resources to " + output);
+        Debug.Log("[PuerTs] >>>> Pack JavaScript Resources to " + output);
 
         if (!Directory.Exists(output)) Directory.CreateDirectory(output);
 
@@ -114,8 +115,8 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
 
         List<string> resourcesPattens = new List<string>
         {
-            UnityEngine.Application.dataPath + "/**/Resources/**/*.mjs",
-            UnityEngine.Application.dataPath + "/**/Resources/**/*.cjs",
+            Application.dataPath + "/**/Resources/**/*.mjs",
+            Application.dataPath + "/**/Resources/**/*.cjs",
             Path.GetFullPath("Packages/com.tencent.puerts.core/") + "/**/Resources/**/*.mjs"
         };
 
@@ -134,12 +135,23 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
         var command = currentTarget == "Browser" ? "buildForBrowser" : "buildForMinigame";
         var args = Path.GetFullPath("Packages/com.tencent.puerts.webgl/Cli/Javascripts~/index.js") + " " + command + " -p " + string.Join(" ", resourcesPattens.ConvertAll(p => 
             "\"" + p.Replace("\\", "/") + "\"")) + " -o \"" + output + "\"";
-        UnityEngine.Debug.Log("executing cmd: node " + args);
+        var executeFileName = "node";
+
+#if !UNITY_EDITOR_WIN
+        string userHome = Environment.GetEnvironmentVariable("HOME");
+        string nvmScriptPath = $"{userHome}/.nvm/nvm.sh";
+        if (File.Exists(nvmScriptPath))
+        {
+            args = "-c 'source \"" + nvmScriptPath + "\" && node " + args + "'";
+            executeFileName = "bash";
+        }
+#endif
+        Debug.Log("executing cmd: " + executeFileName + " " + args);
 
         // Start node process
         var startInfo = new System.Diagnostics.ProcessStartInfo()
         {
-            FileName = "node",
+            FileName = executeFileName,
             Arguments = args,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -196,4 +208,4 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
         }
     }
 #endif
-}
+    }
