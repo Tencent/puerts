@@ -34,6 +34,7 @@ declare module "ue" {
     }
     
     interface TArray<T> {
+        [index: number]: never;
         Num(): number;
         Add(...args: T[]): void;
         Get(Index: number): T;
