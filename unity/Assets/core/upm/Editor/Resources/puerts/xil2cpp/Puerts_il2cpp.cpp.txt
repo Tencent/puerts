@@ -53,7 +53,7 @@ namespace puerts
 {
 struct CSharpMethodInfo
 {
-    std::string Name;
+    const char* Name;
     bool IsStatic;
     bool IsGetter;
     bool IsSetter;
@@ -63,7 +63,6 @@ struct CSharpMethodInfo
 
 struct CSharpFieldInfo
 {
-    std::string Name;
     bool IsStatic;
     FieldWrapData *Data;
 };
@@ -83,7 +82,6 @@ Il2CppMethodPointer FindBridgeFunc(const char* signature);
 
 struct JsClassInfo : public JsClassInfoHeader
 {
-    std::string Name;
     std::vector<WrapData*> Ctors;
     std::vector<CSharpMethodInfo> Methods;
     std::vector<CSharpFieldInfo> Fields;
@@ -593,7 +591,8 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
             }
             ++wrapDatas;
         }
-        std::string err_info = "invalid arguments to " + csharpMethodInfo->Name;
+        std::string err_info = "invalid arguments to ";
+        err_info += csharpMethodInfo->Name;
         ${invokePapi('throw_by_string')}(info, err_info.c_str()); 
     } 
     catch (Il2CppExceptionWrapper& exception)
@@ -605,7 +604,8 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         Il2CppString* result = (Il2CppString*)il2cpp::vm::Runtime::Invoke(toStringMethod, exception.ex, NULL, &outException);
         if (outException != NULL)
         {
-            std::string err_info = "unknow c# execption for " + csharpMethodInfo->Name;
+            std::string err_info = "unknow c# execption for ";
+            err_info += csharpMethodInfo->Name;
             ${invokePapi('throw_by_string')}(info, err_info.c_str());
         }
         else
@@ -756,7 +756,8 @@ static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
             return self;
         else
         {
-            std::string err_info = "invalid arguments for constructor of " + classInfo->Name;
+            std::string err_info = "invalid arguments for constructor of ";
+            err_info += classInfo->TypeId->name;
             ${invokePapi('throw_by_string')}(info, err_info.c_str());
         }
         
@@ -770,7 +771,8 @@ static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         Il2CppString* result = (Il2CppString*)il2cpp::vm::Runtime::Invoke(toStringMethod, exception.ex, NULL, &outException);
         if (outException != NULL)
         {
-            std::string err_info = "unknow c# execption for constructor of " + classInfo->Name;
+            std::string err_info = "unknow c# execption for constructor of ";
+            err_info += classInfo->TypeId->name;
             ${invokePapi('throw_by_string')}(info, err_info.c_str());
         }
         else
@@ -2419,7 +2421,7 @@ static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info 
             bool needBoxing = reflectionMethod->method->klass == il2cpp_defaults.object_class;
             if (csharpMethodInfo == nullptr)
             {
-                csharpMethodInfo = new CSharpMethodInfo { std::string(reflectionMethod->method->name), isStatic, false, false, needBoxing};
+                csharpMethodInfo = new CSharpMethodInfo { reflectionMethod->method->name, isStatic, false, false, needBoxing};
             }
             csharpMethodInfo->OverloadDatas.push_back(CreateOverloadData(reflectionMethod->method, IsExtensionMethod(reflectionMethod->method)));
         }
@@ -2561,7 +2563,6 @@ static bool RegisterType(Il2CppClass* klass)
     bool isDelegate = IsDelegate(klass);
 
     JsClassInfo* classInfo = new JsClassInfo();
-    classInfo->Name = klass->name;
     classInfo->TypeId = klass;
     classInfo->SuperTypeId = Class::GetParent(klass);
     classInfo->IsValueType = Class::IsValuetype(klass);
@@ -2573,7 +2574,7 @@ static bool RegisterType(Il2CppClass* klass)
         bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
         for (int i = 0; i < classInfo->Methods.size(); ++i)
         {
-            if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && classInfo->Methods[i].Name == name)
+            if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && strcmp(classInfo->Methods[i].Name, name) == 0)
             {
                 if (isGetter || isSetter) // no overload for getter or setter
                 {
@@ -2586,7 +2587,7 @@ static bool RegisterType(Il2CppClass* klass)
         std::vector<puerts::WrapData*> OverloadDatas;
         OverloadDatas.push_back(CreateOverloadData(method, isExtensionMethod));
         bool needBoxing = (isExtensionMethod ? GetParameterType(method, 0) : method->klass) == il2cpp_defaults.object_class;
-        classInfo->Methods.push_back({ std::string(name), isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
+        classInfo->Methods.push_back({ name, isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
         return true;
     };
 
@@ -2665,7 +2666,7 @@ static bool RegisterType(Il2CppClass* klass)
                 fieldData->Offset = (int32_t)Field::GetOffset(field) - (Class::IsValuetype(Field::GetParent(field)) ? sizeof(Il2CppObject) : 0);;
                 fieldData->TypeInfo = Class::FromIl2CppType(field->type, false);;
 
-                classInfo->Fields.push_back({ std::string(field->name), isStatic, fieldData });
+                classInfo->Fields.push_back({ isStatic, fieldData });
             }
         }
         
@@ -2728,13 +2729,13 @@ static bool RegisterType(Il2CppClass* klass)
     for (auto const& method : methods)
     {
         pesapi_set_method_info(
-            properties, pos++, method->Name.c_str(), method->IsStatic, &MethodCallback, method, nullptr);
+            properties, pos++, method->Name, method->IsStatic, &MethodCallback, method, nullptr);
     }
 
     for (auto const& kv : gseters)
     {
         auto geter_or_setter = kv.second.first ? kv.second.first : kv.second.second;
-        pesapi_set_property_info(properties, pos++, geter_or_setter->Name.c_str(), geter_or_setter->IsStatic,
+        pesapi_set_property_info(properties, pos++, kv.first.c_str(), geter_or_setter->IsStatic,
             kv.second.first ? &MethodCallback : nullptr,
             kv.second.second ? &MethodCallback : nullptr,
             kv.second.first,
@@ -2744,11 +2745,11 @@ static bool RegisterType(Il2CppClass* klass)
 
     for (auto& field : classInfo->Fields)
     {
-        pesapi_set_property_info(properties, pos++, field.Name.c_str(), field.IsStatic,
+        pesapi_set_property_info(properties, pos++, field.Data->FieldInfo->name, field.IsStatic,
             GetterCallback, SetterCallback, field.Data, field.Data, nullptr);
     }
 
-    pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->Name.c_str(),
+    pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->TypeId->name,
         classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
 
     if (!classInfo->IsValueType)
