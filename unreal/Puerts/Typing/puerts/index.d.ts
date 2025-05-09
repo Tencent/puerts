@@ -58,7 +58,7 @@ declare module "puerts" {
         function unmixin<T extends typeof Object>(to:T): void
         function load(cls: any): void
         function unload(cls: any): void
-        function namespace(name: string);
+        function namespace(name: string):void;
     }
     
     function on(eventType: string, listener: Function, prepend?: boolean) : void;
@@ -75,7 +75,7 @@ declare module "puerts" {
     
     function toDelegate<T extends (...args: any) => any>(owner: Object, callback: T): $Delegate<T>;
 
-    function load<T>(dllpath): T;
+    function load<T>(dllpath: string): T;
 
     /*function getProperties(obj: Object, ...propNames:string[]): any;
     function getPropertiesAsync(obj: Object, ...propNames:string[]): Promise<any>;
