@@ -2735,7 +2735,7 @@ static bool RegisterType(Il2CppClass* klass)
     for (auto const& kv : gseters)
     {
         auto geter_or_setter = kv.second.first ? kv.second.first : kv.second.second;
-        pesapi_set_property_info(properties, pos++, kv.first.c_str(), geter_or_setter->IsStatic,
+        pesapi_set_property_info(properties, pos++, geter_or_setter->Name, geter_or_setter->IsStatic,
             kv.second.first ? &MethodCallback : nullptr,
             kv.second.second ? &MethodCallback : nullptr,
             kv.second.first,
