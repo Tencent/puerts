@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.2.2] - 2025-05-13
+1. Fixed the issue where the WebGL build tool would repeatedly execute npm install on Windows.
+2. Added support for One-Click Export for WeChat Mini Games.
+3. Resolved the "token overflowed internal buffer" compilation error, added DisallowedType checks, and fixed cases where wrappers referenced undeclared value types (fixes #2039).
+4. Prevented exceptions caused by missing eval in WebGL environments from being directly thrown in JS, which could halt the program.
+5. Removed the restriction requiring Puerts.WebGL.MainEnv.Get to create JsEnv in WebGL builds.
+6. Added support for Unity's "Faster (smaller) builds" option (equivalent to WeChat export tool's "il2cpp optimize size") (#2046).
+7. Fixed errors when accessing C# in native setTimeout callbacks under WebGL.
+8. Optimized memory usage by removing storage of class/field names and storing method names as const char* pointers instead.
+
 ## [2.2.1] - 2025-04-25
 1. Added WebGL support for il2cpp optimization (enabled by default)
 2. WebGL build now automatically packages JS resources via PostBuild and modifies index.html
