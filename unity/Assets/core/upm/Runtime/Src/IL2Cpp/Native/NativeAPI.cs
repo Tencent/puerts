@@ -179,11 +179,11 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate void pesapi_callback(pesapi_ffi apis, IntPtr info);
+    public delegate void pesapi_callback(IntPtr apis, IntPtr info);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate void pesapi_function_finalize(pesapi_ffi apis, IntPtr data, IntPtr env_private);
+    public delegate void pesapi_function_finalize(IntPtr apis, IntPtr data, IntPtr env_private);
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

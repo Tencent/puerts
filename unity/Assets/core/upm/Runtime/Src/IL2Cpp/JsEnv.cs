@@ -231,8 +231,9 @@ namespace Puerts
         static IntPtr storeCallback = IntPtr.Zero;
         
         [MonoPInvokeCallback(typeof(Puerts.pesapi_callback))]
-        static void FooImpl(pesapi_ffi ffi, IntPtr info)
+        static void FooImpl(IntPtr apis, IntPtr info)
         {
+            pesapi_ffi ffi = Marshal.PtrToStructure<pesapi_ffi>(apis);
             var env = ffi.get_env(info);
             
             IntPtr p0 = ffi.get_arg(info, 0);
