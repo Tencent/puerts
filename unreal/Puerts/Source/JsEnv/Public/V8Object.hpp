@@ -88,9 +88,6 @@ public:
 
     ~Object()
     {
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
         if (JsEnvLifeCycleTracker.expired())
         {
 #if V8_MAJOR_VERSION < 11
@@ -100,6 +97,9 @@ public:
         }
         else
         {
+#ifdef THREAD_SAFE
+            v8::Locker Locker(Isolate);
+#endif
             GObject.Reset();
             GContext.Reset();
         }
