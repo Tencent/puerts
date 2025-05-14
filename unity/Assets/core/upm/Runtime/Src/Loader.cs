@@ -89,8 +89,7 @@ namespace Puerts
         {
 #if UNITY_WEBGL && !UNTIY_EDITOR
             return true;
-#endif
-#if PUERTS_GENERAL
+#elif PUERTS_GENERAL
             return File.Exists(Path.Combine(root, filepath));
 #else 
             string pathToUse = this.PathToUse(filepath);
