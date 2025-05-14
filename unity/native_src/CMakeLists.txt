@@ -114,6 +114,7 @@ else ()
         Src/JSEngine.cpp
         Src/JSFunction.cpp
         ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+        Src/pesapi_wrap.c
     )
 endif()
 
