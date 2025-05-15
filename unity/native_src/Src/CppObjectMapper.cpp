@@ -274,7 +274,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         PropertyInfo = ClassDefinition->Variables;
         while (PropertyInfo && PropertyInfo->Name)
         {
-            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+            v8::PropertyAttribute PropertyAttribute = v8::None;
             if (!PropertyInfo->Setter)
                 PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
             auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
