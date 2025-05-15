@@ -655,11 +655,6 @@ namespace Puerts
                 translateFunc(jsEnv.Idx, isolate1, NativeValueApi.SetValueToResult, info, type);
             }), null, 0, true);
 
-            if (type.IsEnum)
-            {
-                PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, "__p_isEnum", true, returnTrue, 0, null, 0, false);
-            }
-
             return typeId;
         }
 

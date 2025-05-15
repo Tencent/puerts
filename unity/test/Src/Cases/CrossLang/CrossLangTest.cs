@@ -1073,7 +1073,18 @@ namespace Puerts.UnitTest
             Assert.AreEqual("213 1 213", ret);
             jsEnv.Tick();
         }
-        
+
+        [Test]
+        public void EnumNameTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var ret = jsEnv.Eval<string>(@"
+                    CS.Puerts.UnitTest.TestEnum[CS.Puerts.UnitTest.TestEnum.A];
+            ");
+            Assert.AreEqual("A", ret);
+            jsEnv.Tick();
+        }
+
         [Test]
         public void AccessExplicitnterfaceImplementation()
         {

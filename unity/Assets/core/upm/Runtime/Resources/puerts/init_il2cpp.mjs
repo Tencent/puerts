@@ -29,6 +29,18 @@ puer.loadType = function(nameOrCSType, ...genericArgs) {
         cls.__p_innerType = csType;
         // todo
         cls.__puertsMetadata = cls.__puertsMetadata || new Map();
+        let fields = csType.GetFields(26);
+        for (var i = 0; i < fields.Length; ++i ) {
+            let field = fields.get_Item(i);
+            if (field.IsInitOnly || field.IsLiteral) {
+                let readonlyStaticMembers = cls.__puertsMetadata.get('readonlyStaticMembers');
+                if (!readonlyStaticMembers) {
+                    readonlyStaticMembers = new Set();
+                    cls.__puertsMetadata.set('readonlyStaticMembers', readonlyStaticMembers);
+                }
+                readonlyStaticMembers.add(field.Name);
+            }
+        }
         return cls
     }
 }
