@@ -1,393 +1,261 @@
-# Template-based static binding
+# Template-Based Static Binding
+Unreal has a lot of C++ functions and classes without reflection tags. In order to access them within TypeScript, Template-based static binding should be used.
 
-Below is a translated version of the original docs by Incanta Games. The translation is mainly done with Google Translate, but then modified by hand to try to make sense of what Google Translate is missing.
+## Table Of Contents
+- [Setup](#setup)
+- [Usage](#usage)
+    - [Unreal Engine Classes](#unreal-engine-class)
+    - [Regular C++ Classes](#regular-c-class)
+- [API Reference](#api-reference)
+    - [Function Decaleration](#function-decaleration)
+    - [Function Referencing](#function-referencing)
+    - [Variable Decaleration](#variable-deceleration)
+    - [Variable Referencing](#variable-referencing)
+    - [Constructor Decaleration](#constructor-deceleration)
+    - [Inheritence](#inheritance)
 
-## Overview
+## Setup
+In order for C++ to register puerts modules, dependencies must be added to the `*.Build.cs` file. 
 
-This document describes the ordinary C++ class/struct, Or UCLASS, unchecked the properties of UPPROPERTY, UFUNCTION, and calls.
+For template based static binding, `JsEnv` is required.
 
-This document also applies to non-UE environments (such as servers, unity, etc.), C++ class/struct access.
+![puerts_module_dependencies.png](../..//pic/puerts_module_dependencies.png)
 
-Support features:
+## Usage
+### Unreal Engine Class
+##### C++
+``` c++
+// UObject_Bindings.h
+#pragma once
 
-- Constructor
-- Static function
-- Member variables
-- Member function
-- Constructor / static function / member function supports overload
-- Support inheritance
-- Generate TypeScript declaration
-- The UE type is not marked `UPROPERTY`. After the `UFUNCTION` member declares, it will seamlessly appear in the original category.
-- Support JS object mapping to C++ `JSObject`, `JSObject` can get/set the properties, call the JS function.
-- Support JS function mapping to `std::function`
-- Support custom converter
+#include "Binding.hpp"
+#include "UEDataBinding.hpp"
 
-## Important Notes
+// Define all used types
+UsingUClass(UObject)
+UsingUClass(UWorld)
+UsingUClass(UClass)
 
-If you want to use this feature outside of the `JsEnv` module itself, such as another game module, you'll need to do the following:
-
-- Use dynamic library version `V8` libraries, switching methods:
-    - To the Puerts official website download and Puerts supporting `V8` library, and unzip it to `Plugins/Puerts/ThirdParty/` (or respective folder)
-    - Find the `JsEnv.Build.cs` file and change `UseNewV8` to `true`
-- In the module's `*.Build.cs`
-    - Add a dependency to the `JsEnv` module
-
-## Examples
-
-### Hello World
-
-With a simplest common C++ class as an example
-
-``` cpp
-// Calc.h
-class Calc
+class UObject_Bindings
 {
 public:
-    static int32_t Add(int32_t a, int32_t b)
+	UObject_Bindings()
+	{
+		puerts::DefineClass<UObject>()
+			.Method("GetWorld", MakeFunction(&UObject::GetWorld))
+			.Method("GetClass", MakeFunction(&UObject::GetClass))
+			.Method("IsValid", MakeFunction(&UObject::IsValidLowLevel))
+			.Register();
+	}
+};
+
+inline UObject_Bindings UObject_Bindings_Registrar;
+```
+##### TypeScript
+``` typescript
+if (MyUObj?.IsValid())
+{
+    const World = MyUObj?.GetWorld();
+    const ObjectClass = MyUObj?.GetClass();
+}
+```
+
+### Regular C++ Class
+##### C++
+``` cpp
+// ExampleClass.h
+#pragma once
+
+class ExampleClass
+{
+// Static
+public:
+    static int StaticAdd(int a, int b)
     {
         return a + b;
     }
+
+    inline static int StaticInt{30035};
+
+// Non-Static
+public:
+    int GetRegularInt()
+	{
+		return RegularInt;
+	}
+
+    int RegularInt{1337};
 };
 ```
+``` c++
+// ExampleClass_Bindings.h
+#pragma once
 
-We declare as follows
-
-``` cpp
-#include "Calc.h"
 #include "Binding.hpp"
+#include "ExampleClass.h"
 
-// A macro defined in Binding.hpp which
-// creates a converter (either V8 or Pesapi) for your class
-// which helps build the translation layer
-UsingCppType(Calc);
+// Define all used types
+UsingCppType(ExampleClass);
 
-struct AutoRegisterForCPP
+class ExampleClass_Bindings
 {
-    AutoRegisterForCPP()
+public:
+    ExampleClass_Bindings()
     {
-        puerts::DefineClass<Calc>()
-            .Function("Add", MakeFunction(&Calc::Add)) // There's also `.Method(...)` and `.Property(...)`
+        puerts::DefineClass<ExampleClass>()
+            .Function("StaticAdd", MakeFunction(&ExampleClass::StaticAdd))          // Static Function
+            .Variable("StaticInt", MakeVariable(&ExampleClass::StaticInt))          // Static Variable
+            .Method("GetRegularInt", MakeFunction(&ExampleClass::GetRegularInt))    // Member Function
+            .Property("RegularInt", MakeProperty(&ExampleClass::RegularInt))        // Member Variable
             .Register();
     }
 };
 
-// Completes the automatic registration with puerts. When this calls
-// when the module is loaded, it will call the constructor defined above,
-// executing the registration with puerts
-AutoRegisterForCPP _AutoRegisterForCPP__;
+inline ExampleClass_Bindings ExampleClass_Bindings_Registrar;
 ```
-
-Compile the C++, open the Unreal editor, and generate TypeScript definitions (either with the button or command) to call in TypeScript. Then in TypeScript you can do:
-
+##### TypeScript
 ``` typescript
-import * as cpp from 'cpp'
+import * as Cpp from 'cpp'
 
-let Calc = cpp.Calc;
+console.log("Static Int = " + Cpp.ExampleClass.StaticInt);
 
-// static function
-console.log(Calc.Add(12, 34));
+const AddedResult = Cpp.ExampleClass.StaticAdd(12, 34);
+console.log("StaticAdd(12, 34) = " + AddedResult);
+
+const ExampleClass = new Cpp.ExampleClass();
+console.log("GetRegularInt() = " + ExampleClass?.GetRegularInt());
+console.log("RegularInt = " + ExampleClass?.RegularInt);
 ```
 
-### Static function declaration
+**Note: After defining a classes bindings, compile the C++, restart Unreal Engine and regenerate TypeScript definitions**
 
-The presentation is a static function, `.Function(Name, <function reference>)`. To register a static function, there are several ways to reference:
+## API Reference
 
-- The function is not overloaded: `MakeFunction(&Calc::Add)`
-- The function is not overloaded, but you want to verify the parameters: `MakeCheckFunction(&Calc::Add)`
-- The function is overloaded, but you just want to choose one of them: `SelectFunction(float (*)(float, float), &Calc::Add)`
-- The function is overloaded, and you want multiple overloads available:
+### Function Decaleration
+| Function | Description |
+| -------- | ----------- |
+| `.Method(Name, Function Reference)` | Exposes a member function to TypeScript |
+| `.Function(Name, Function Reference)` | Exposes a static function to TypeScript |
 
+### Function Referencing
+| Function | Description |
+| -------- | ----------- |
+| `MakeFunction(Reference To Function)` | Creates a member function reference |
+| `MakeCheckFunction(Reference To Function)` | Creates a member function reference with parameter varification |
+| `SelectFunction(ReturnType... (ClassName::*)(Parameters...), Reference To Function)` | Creates a member function reference based on a single function overload |
+
+If the function has multiple overloads:
+##### C++
 ``` c++
 CombineOverloads(
-    MakeOverload(void(*)(), &TestClass::Overload),
-    MakeOverload(void(*)(int32_t), &TestClass::Overload),
-    MakeOverload(void(*)(int32_t, int32_t), &TestClass::Overload),
-    MakeOverload(void(*)(std::string, int32_t), &TestClass::Overload)
+    MakeOverload(void (ExampleClass::*)(), &ExampleClass::ExampleFunction),
+    // More Overloads...
     )
 ```
 
-### Static Variables
+### Variable Deceleration
+| Function | Description |
+| -------- | ----------- |
+| `.Property(Name, Variable Reference)` | Exposes a member variable to TypeScript |
+| `.Variable(Name, Variable Reference)` | Exposes a static variable to TypeScript |
 
-~~~c++
-class TestClass
-{
-public:
-    static int StaticInt;
-};
-~~~
+### Variable Referencing
+| Function | Description |
+| -------- | ----------- |
+| `MakeProperty(Reference To Variable)` | Creates a member variable reference |
+| `MakePropertyByGetterSetter(&ClassName::GetterFunction, &ClassName::SetterFunction)` | Creates a member variable reference proxied through getter and setter functions |
+| `MakeVariable(Reference To Variable)` | Creates a static variable reference |
 
-Statement
+### Constructor Deceleration
+| Function | Description |
+| -------- | ----------- |
+| `.Constructor()` | Exposes the default constructor to TypeScript |
+| `.Constructor<Arg1Type, Arg2Type, ...>()` | Exposes a specified constructor with arguments to TypeScript |
 
-~~~c++
-puerts::DefineClass<TestClass>()
-    .Variable("StaticInt", MakeVariable(&TestClass::StaticInt))
-    .Register();
-~~~
+If the constructor has multiple overloads:
 
-### Member variables
-
-``` c++
-class TestClass
-{
-public:
-    int32_t X;
-    int32_t Y;
-};
-```
-
-Statement
-
-``` c++
-puerts::DefineClass<TestClass>()
-    .Property("X", MakeProperty(&TestClass::X))
-    .Property("Y", MakeProperty(&TestClass::Y))
-    .Register();
-```
-
-### Getter and Setter
-
-~~~c++
-class TestClass
-{
-private:
-    int32_t _x;
-    
-    static int _si;
-
-public:
-    int32_t GetX()
-	{
-		return _x;
-	}
-    
-    static int32_t GetStaticInt()
-	{
-		return _si;
-	}
-};
-~~~
-
-Statement
-
-~~~c++
-puerts::DefineClass<TestClass>()
-    .Property("X", MakePropertyByGetterSetter(&TestClass::GetX, nullptr))
-    .Variable("StaticInt", MakeVariableByGetterSetter(&TestClass::GetStaticInt, nullptr))
-    .Register();
-~~~
-
-### Constructor
-
-``` c++
-class TestClass
-{
-public:
-    TestClass();
-
-    TestClass(int32_t InX, int32_t InY);
-};
-```
-
-Statement
-
-``` c++
-puerts::DefineClass<TestClass>()
-    .Constructor(CombineConstructors(
-        MakeConstructor(TestClass, int32_t, int32_t),
-        MakeConstructor(TestClass)
-        ))
-    .Register();
-```
-
-If there is only one constructor, you can simplify to
-
-``` c++
-puerts::DefineClass<AdvanceTestClass>()
-    .Constructor<int>() // if only one Constructor
-    .Register();
-```
-
-### Member function
-
-``` c++
-class TestClass
-{
-public:
-    int32_t OverloadMethod();
-
-    int32_t OverloadMethod(int32_t a);
-
-    uint32_t OverloadMethod(uint32_t a);
-
-    int64_t OverloadMethod(int64_t a);
-
-    TestClass *GetSelf();
-};
-```
-
-Statement
-
-``` c++
-puerts::DefineClass<TestClass>()
-    .Method("OverloadMethod", CombineOverloads(
-        MakeOverload(int32_t(TestClass::*)(), &TestClass::OverloadMethod),
-        MakeOverload(int32_t(TestClass::*)(int32_t), &TestClass::OverloadMethod),
-        MakeOverload(uint32_t(TestClass::*)(uint32_t), &TestClass::OverloadMethod),
-        MakeOverload(int64_t(TestClass::*)(int64_t), &TestClass::OverloadMethod)
-        ))
-    .Method("GetSelf", MakeFunction(&TestClass::GetSelf))
-    .Register();
+##### C++
+``` cpp
+.Constructor(
+    CombineConstructors(
+        MakeConstructor(ExampleClass),
+        MakeConstructor(ExampleClass, int),
+        // More overloads...
+    ))
 ```
 
 ### Inheritance
+##### C++
+``` cpp
+// ExampleBaseClass.h
+#pragma once
 
-``` c++
-class BaseClass
+class ExampleBaseClass
 {
 public:
-    void Foo(int p);
-};
-
-class TestClass : public BaseClass
-{
-public:
+    virtual int VirtualMemberFunction()
+    {
+        return -1;
+    }
 };
 ```
-
-Statement
-
 ``` c++
-puerts::DefineClass<BaseClass>()
-    .Method("Foo", MakeFunction(&BaseClass::Foo))
-    .Register();
+// ExampleBaseClass_Bindings.h
+#pragma once
 
-puerts::DefineClass<TestClass>()
-    .Extends<BaseClass>()
-    .Register();
-```
-
-### JS object is mapped to JsObject and get/set the JS object properties
-
-``` c++
-#include "JsObject.h"
-
-class AdvanceTestClass
-{
-public:
-    AdvanceTestClass(int A);
-
-    void JsObjectTest(FJsObject Object);
-};
-
-void AdvanceTestClass::JsObjectTest(FJsObject Object)
-{
-    auto P = Object.Get<int>("p");
-    UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::JsObjectTest({p:%d})"), P);
-    Object.Set<std::string>("q", "john");
-}
-```
-
-Use in TypeScript
-
-``` typescript
-import * as cpp from 'cpp'
-
-// js object
-let obj  = new cpp.AdvanceTestClass(100);
-let j:any = {p:100};
-obj.JsObjectTest(j);
-console.log(j.q);
-```
-
-### JS function mapping JsObject and callback
-
-``` c++
-// class decl ...
-void AdvanceTestClass::CallJsObjectTest(FJsObject Object)
-{
-    auto Ret = Object.Func<float>(1024, "che");
-    UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::CallJsObjectTest Callback Ret %f"), Ret);
-}
-
-```
-
-Use in TypeScript
-
-``` typescript
-let obj  = new cpp.AdvanceTestClass(100);
-obj.CallJsObjectTest((i, str) => {
-    console.log(i, str);
-    return 1.01;
-})
-```
-
-### JS function mapping to `std::function`
-
-``` c++
-//class decl ...
-void AdvanceTestClass::StdFunctionTest(std::function<int(int, int)> Func)
-{
-    int Ret = Func(88, 99);
-    UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::StdFunctionTest Callback Ret %d"), Ret);
-}
-```
-
-Use in TypeScript
-
-``` typescript
-let obj  = new cpp.AdvanceTestClass(100);
-obj.StdFunctionTest((x:number, y:number) => {
-    console.log('x=' + x + ",y=" + y);
-    return x + y;
-})
-```
-
-### Supplement Engine Classes
-
-This is if you want to supplement existing classes like `UObject` which has method like `CreateDefaultSubobject`, `GetName`, `GetOuter`, `GetClass`, `GetWorld` which don't have the `UFUNCTION` modifier.
-
-To achieve this, add the C++:
-
-``` c++
-#include "CoreMinimal.h"
 #include "Binding.hpp"
-#include "UEDataBinding.hpp"
+#include "ExampleBaseClass.h"
 
-UsingUClass(UObject)
-UsingUClass(UWorld) // for return type
-UsingUClass(UClass)
-UsingUClass(USceneComponent)
+UsingCppType(ExampleBaseClass);
 
-puerts::DefineClass<UObject>()
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 23
-    .Method("CreateDefaultSubobject", SelectFunction(UObject* (UObject::*)(FName, UClass*, UClass*, bool , bool), &UObject::CreateDefaultSubobject))
-#else
-    .Method("CreateDefaultSubobject", SelectFunction(UObject* (UObject::*)(FName, UClass*, UClass*, bool, bool, bool), &UObject::CreateDefaultSubobject))
-#endif
-    .Method("GetName", SelectFunction(FString (UObjectBaseUtility::*)() const, &UObjectBaseUtility::GetName))
-    .Method("GetOuter", MakeFunction(&UObject::GetOuter))
-    .Method("GetClass", MakeFunction(&UObject::GetClass))
-    .Method("GetWorld", MakeFunction(&UObject::GetWorld))
-    .Register();
+class ExampleBaseClass_Bindings
+{
+public:
+    ExampleBaseClass_Bindings()
+    {
+        puerts::DefineClass<ExampleBaseClass>()
+            .Method("VirtualMemberFunction", MakeFunction(&ExampleBaseClass::VirtualMemberFunction))
+            .Register();
+    }
+};
+
+inline ExampleBaseClass_Bindings ExampleBaseClass_Bindings_Registrar;
 ```
+``` cpp
+// ExampleChildClass.h
+#pragma once
 
-Note: Ordinary C++ class is different (i.e. not a descendent of `UObject`/`UClass`), like specified earlier in this file. If you're modifying something that is a descendent of `UClass`, you meed to use the `UsingUClass` macro as shown above. Similarly if you're supplementing a `UStruct`, you need to use `UsingUStruct`.
+#include "ExampleBaseClass.h"
 
-After regenerating `ue.d.ts`, it can be seen that the above methods have been added to `UE.Object`'s type declaration:
-
-``` typescript
-class Object {
-    constructor(Outer?: Object, Name?: string, ObjectFlags?: number);
-    ExecuteUbergraph(EntryPoint: number): void;
-    CreateDefaultSubobject(p0: string, p1: $Nullable<Class>, p2: $Nullable<Class>, p3: boolean, p4: boolean) : Object;
-    GetName() : string;
-    GetOuter() : Object;
-    GetClass() : Class;
-    GetWorld() : World;
-    static StaticClass(): Class;
-    static Find(OrigInName: string, Outer?: Object): Object;
-    static Load(InName: string): Object;
-}
+class ExampleChildClass : public ExampleBaseClass
+{
+public:
+    virtual int VirtualMemberFunction() override
+    {
+        // Overrided Implementation
+        return 1337;
+    }
+};
 ```
+``` c++
+// ExampleChildClass_Bindings.h
+#pragma once
 
-Subsequent use of the above method can be used directly on the `Object` object.
+#include "Binding.hpp"
+#include "ExampleChildClass.h"
+
+UsingCppType(ExampleChildClass);
+
+class ExampleChildClass_Bindings
+{
+public:
+    ExampleChildClass_Bindings()
+    {
+        puerts::DefineClass<ExampleChildClass>()
+            .Extends<ExampleBaseClass>()
+            .Register();
+    }
+};
+
+inline ExampleChildClass_Bindings ExampleChildClass_Bindings_Registrar;
+```

@@ -1,97 +1,259 @@
 # FAQ
 
-Below is a translated version of the original docs by Incanta Games. The translation is mainly done with Google Translate, but then modified by hand to try to make sense of what Google Translate is missing.
+## Table Of Contents
+- [Warning: `new (std::nothrow) int[0]` Returns `nullptr`, Try Fixing It!](#warning-new-stdnothrow-int0-returns-nullptr-try-fixing-it)
+- [Some Extension Functions Are Unavailable in Auto-Binding Mode](#some-extension-functions-are-unavailable-in-auto-binding-mode)
+- [App Hangs When "Wait for Debugger" Option Is Checked](#app-hangs-when-wait-for-debugger-option-is-checked)
+- [`StaticClass` Returns Unexpected `UClass` in TypeScript-Generated Blueprints](#staticclass-returns-unexpected-uclass-in-typescript-generated-blueprints)
+- [macOS Error: "Cannot open libv8.dylib because the developer cannot be verified"](#macos-error-cannot-open-libv8dylib-because-the-developer-cannot-be-verified)
+- ["XXXProject could not be compiled" Error in Blueprint-Only Projects](#xxxproject-could-not-be-compiled-error-in-blueprint-only-projects)
+- [Runtime Errors About Missing Fields After Packaging](#runtime-errors-about-missing-fields-after-packaging)
+- [Error in UE5: "Construct TypeScript Object TestActor_C_1(...) on illegal thread!"](#error-in-ue5-construct-typescript-object-testactor_c_1-on-illegal-thread)
+- [Avoiding "Access Invalid Object" Exceptions](#avoiding-access-invalid-object-exceptions)
+- [Garbage Collection (GC) Behavior](#garbage-collection-gc-behavior)
+- [UE Object Is Held by `Puerts_UserObjectRetainer`](#ue-object-is-held-by-puerts_userobjectretainer)
+- [Scripts Not Running After Packaging (Mobile/PC)](#scripts-not-running-after-packaging-mobilepc)
+- [TypeScript Version Upgrade](#typescript-version-upgrade)
+- [`ue_bp.d.ts` Errors, Regeneration Doesn’t Help](#ue_bpdts-errors-regeneration-doesnt-help)
+- [TS Class Inheritance Doesn’t Generate Proxy Blueprints](#ts-class-inheritance-doesnt-generate-proxy-blueprints)
+- [Syntax Errors in `ue_bp.d.ts`](#syntax-errors-in-ue_bpdts)
+- [Intermittent "Maximum Call Stack Size Exceeded" Error](#intermittent-maximum-call-stack-size-exceeded-error)
 
-## `new (std::nothrow) int[0] return nullptr, try fix it!` Warning
+---
 
-Unreal overloads the `new` operator, and processing does not comply with C ++ specification. Initializing an empry array of `nothrow` mode `new`, returns `nullptr`, where it should return a valid value. It should only return `nullptr` if we're OOM (Out of Memory). (Incanta guessing this next sentence; I don't think it's critical here) The modification let's comply with the C++ specification, where V8 is misunderstanding OOM, thereby abort. This issues seems to be prevalent on Windows machines, and this issue is also confirmed by Epic official.
+## Warning: `new (std::nothrow) int[0]` Returns `nullptr`, Try Fixing It!
 
-If the Puerts discovery engine finds this bug, it will repair this problem by overwriting the memory allocation behavior, and prints `new (std::nothrow) int [0] return nullptr, try fix it!` warning to the Output Log. The warning only prompts the user that this exists, and there is no impact.
+Unreal Engine overrides the `new` operator in a way that doesn't comply with the C++ standard: when using `std::nothrow` to allocate an array of length 0, it returns `nullptr`. According to the standard, it should return a valid pointer and only return `nullptr` on out-of-memory (OOM). This behavior misleads standard-compliant runtimes like V8 into thinking an OOM occurred, which causes an abort.
 
-### Notes from Incanta Games translating this
+This issue is confirmed by Epic and currently only observed on Windows.
 
-The warning text is not telling the developer "to fix the issue", but rather it's telling the developer that Puerts is "trying to fix the issue."
+Puerts will detect this issue and patch the memory allocation behavior. When it does, it logs the warning:  
+**“new (std::nothrow) int[0] return nullptr, try fix it!”**  
+This is just an informational warning and does not impact functionality.
 
-In actuality this warning is presented when the `JsEnvModule.cpp` initializes:
+---
 
-``` c++
-int * Dummy = new (std::nothrow) int[0];
-if (!Dummy)
-{
-    UE_LOG(JsEnvModule, Warning, TEXT("new (std::nothrow) int[0] return nullptr, try fix it!"));
-    MallocWrapper = new FMallocWrapper(GMalloc);
-    GMalloc = MallocWrapper;
-}
-delete[] Dummy;
-```
+## Some Extension Functions Are Unavailable in Auto-Binding Mode
 
-Per the documentation at https://www.cplusplus.com/reference/new/nothrow/, `new (std::nothrow) int[0]` shouldn't fail, and Puerts is trying to trying to fix the issue by providing a wrapper around `GMalloc` (which is Unreal's memory allocation overload). The `FMallocWrapper` merely checks to see if the size is `0` when allocating, and if so, it defaults it to `1`. This fix is meant to prevent further uses of `GMalloc` that use an array size of `0` during allocation from failing.
+This happens because the Puerts module initializes early and cannot discover extension functions defined in modules that load afterward.
 
-## Some plugins can not be used in automatic building mode
+**Solution:**  
+After all modules are initialized, call the following API to re-scan for extension methods:
 
-The Puerts module will traverse modules that are loaded before beforehand, so if your plugins or C++ modules are not being used, you can do one of two things:
-
-1. Set the module to load at an earlier phase
-1. After your module is started, you can call Puerts to reinitialize by calling the below function:
-
-``` c++
+```cpp
 IPuertsModule::Get().InitExtensionMethodsMap();
 ```
 
-## Check WaitDebugger Option
+---
 
-(Incanta here) I'm not quite sure what the original author is trying to say here. There is a `WaitDebugger` setting for the plugin that is actually set to `false` with the latest checkout (Nov 4 2021) of the source branch. It appears that what this feature does is tell the V8 engine to "Break Before Start" and not run any JS until a debugger attaches.
+## App Hangs When "Wait for Debugger" Option Is Checked
 
-Below is the raw google translate:
+This option deliberately pauses the process to wait for a debugger to attach. Once a debugger connects, execution continues.
 
-> This option is a snap process to wait for the debugger connection, and even go down.
->
-> If you haven't configured the debugger yet, I accidentally selected this option, and there is no way to go to remove this option. At this time, you can turn off the process and open it. `Config\DefaultPuerts.ini` Bundle WaitDebugger Change to False。
+If you enabled it by accident and haven't configured a debugger, you can terminate the process and set the value to `False` in the following config file:
 
+```
+Config/DefaultPuerts.ini
+```
 
-## ts Blueprint StaticClass transfer, return UClass Use non-conformity
+---
 
-The TS class is not a StaticClass method, so the StaticClass call is actually the first class with the StaticClass method on the inheritance chain, and the returned is also UCLASS where the StaticClass method is located.
+## `StaticClass` Returns Unexpected `UClass` in TypeScript-Generated Blueprints
 
-I don't understand this may cause some misunderstanding: For example, the object I created is a non-sub-class method, I inevitably CreateDefaultSubiTSubject reporting is Abstract, unable to create.
+TypeScript classes do not have a `StaticClass()` method. When called, it returns the first class in the inheritance chain that does have this method, along with its `UClass`.
 
-The correct approach should be loaded by UE.CLASS.LOAD ("path / to / your / blueprint / file").
+This can cause confusion—like missing subclass methods or `CreateDefaultSubobject` errors stating the class is abstract.
 
-## MacOS prompts "libv8.dylib cannot be opened because the developer cannot be verified"
+**Correct Usage:**  
+Use the following to load a blueprint:
 
-(Incanta here) The original author is basically just telling you to tell the Mac firewall/antivirus to trust the library file by navigating to where ever the `dylib` file is (ususally `<YourProjectFolder>/Plugins/Puerts/ThirdParty/V8/Lib/macosdylib`), and execute the below command to authorize the files:
+```ts
+UE.Class.Load("path/to/your/blueprint/file")
+```
 
-``` bash
+---
+
+## macOS Error: "Cannot open libv8.dylib because the developer cannot be verified"
+
+Navigate to the directory containing the `.dylib` file (usually under:  
+`YourProject/Plugins/Puerts/ThirdParty/v8/Lib/macOSdylib`) and run:
+
+```bash
 sudo xattr -r -d com.apple.quarantine *.dylib
 ```
 
-However, it should be noted that Puerts no longer uses shared `.dylib` files in favor of static `.a` libraries, and the original path has changed to `<YouProjectFolder>/Plugins/Puerts/ThirdParty/Library/V8/macOS` and you may have the issue with the FFI dependency too: `<YouProjectFolder>/Plugins/Puerts/ThirdParty/Library/ffi/macOS`. Instead of using `*.dylib` in the above command, you may need to use `*.a`. **HOWEVER**, it's likely you won't run into this issue as static libraries are not executed, but compiled in.
+---
 
-## "Project could not compiled. Try rebuilding from source manually"
+## "XXXProject could not be compiled" Error in Blueprint-Only Projects
 
-(Incanta here). The original author is trying to tell you what to do if you receive this error, however, I am giving you a completely different set of instructions, that are hopefully clearer with more details (I'm also a plugin developer and understand the issue here).
+In Blueprint-only projects, Unreal Engine doesn't compile C++ plugins automatically. You need to manually generate a Visual Studio (or Xcode on macOS) project and compile from the IDE.
 
-This issue is likely happening because you tried to install Puerts in a Blueprint-only project, but since Puerts is built using C++, you'll need to compile the plugin yourself. To do that, you need to do a few steps; I'll give you a link to a guide below:
-1. Download the necessary Visual Studio compiler dependencies.
-1. Convert your project to a C++ project. This doesn't really do anything other than tell the engine that your project has C++ modules. You can still use Blueprints exactly how you did before.
-1. Load the project again and let it compile the plugin for you.
+---
 
-You can follow my instructions on how to install plugins as a project plugin here: https://wiki.incanta.games/en/plugins/install-as-project-plugin
+## Runtime Errors About Missing Fields After Packaging
 
-## After packaging, some fields cannot be found.
+This is usually due to inconsistent handling of `FName` between the editor and runtime—`FName` is case-sensitive in the editor but case-insensitive at runtime.
 
-> Incanta here, below is my modified translation of the Google Translate. I kind of find it difficult to believe that UE would package your variable names with modified casing, so take this with a grain of salt and test on your own (I have not tested this). I know that UE displays variable and function names like `countThis` => `Count This` in the blueprint editor, but I didn't think it *actually changes* the exported symbol name. The author is saying that in some cases your `count` variables may get renamed to `Count` after packaging, causing references to `count` (i.e. through your JS) to be invalid since the variable got changed on you.
+For example, if you defined a field `count` in Blueprints and generated code in the editor, it works fine. But after packaging, if somewhere a `Count` field is initialized first, it gets reused due to how `FName.ToString()` works.
 
-Usually this is caused by how Unreal processes variable names of the type `FName` (or just `Name` in blueprints) while running in the editor vs running in the packaged runtime. In the editor, the default is case sensitive, but at runtime it's case insensitive.
+So your script accessing `count` will fail because the actual field is `Count`.
 
-For example, you create a blueprint class and add a field called `count`. You write some BP code to under the BP to test it all. The field `count` can be referenced in PIE, and is running as normal.
+---
 
-After packaging, if you have access to this blueprint, there is already another place to initialize a `Count` field, then when you visit this blueprint, this field will be called `Count`. This happens because `FName.ToString` returns the first construction `FNameEntered` strings, (Incanta here, I can't decipher the meaning with the rest of Google Translate; what remains is raw) so as long as it is turned to lowercase and the first time FName It is the first time.
+## Error in UE5: "Construct TypeScript Object TestActor_C_1(...) on illegal thread!"
 
-So you don't exist in the `count` field accessed on the script (becoming a `count` field).
+This is caused by UE5 enabling `AsyncLoadingThreadEnabled` by default.
 
-## Generate buttons do not display in UE5 Early Access
+**Solution:** Disable this setting to avoid the issue.
 
-UE5 EA changed the behavior of how the toolbar works, causing a failure. Your options are to either wait for Epic to fix the issue or modify the plugin to change how the button renders in the engine.
+---
 
-You can work around this by using the console command: `Puerts.Gen`
+## Avoiding "Access Invalid Object" Exceptions
+
+This exception is thrown by Puerts when it detects calls on an invalidated object. Any such call (including `UObject::IsValid`) will raise the exception.
+
+Though technically easy to add a check API, doing so would clutter business logic. Instead:
+
+- Design your logic to avoid holding onto invalid objects (e.g., clean up on scene transitions).
+- If unavoidable and non-critical, use try-catch to suppress the exception.
+
+---
+
+## Garbage Collection (GC) Behavior
+
+When a UE object is passed to TypeScript, Puerts creates a stub object that proxies native calls. There are two GC ownership models:
+
+### 1. Stub Owns UE Object (managed by JS GC)
+
+- If JS GC collects the stub, it drops its reference to the UE object.
+- If UE has no other references to the object, UE GC will collect it.
+
+### 2. UE Owns Stub (managed by UE GC)
+
+- If UE GC collects the UE object, it also drops the stub reference.
+- If JS has no remaining references to the stub, JS GC will collect it.
+
+**Scenarios where UE owns stub:**
+
+- TS class inherits a UE class
+- Using `mixin` with `objectTakeByNative`
+- Using deprecated `makeUClass`
+
+In other cases, the stub usually owns the UE object and keeps it alive from the JS side.
+
+**Important:**  
+Even if an object is still referenced, UE can still forcibly destroy it (e.g., during scene transitions). This differs from garbage collectors in C#, Java, Lua, etc.
+
+---
+
+## UE Object Is Held by `Puerts_UserObjectRetainer`
+
+This indicates that the JS-side proxy object hasn't been released yet.
+
+GC requires:
+1. No references to the object.
+2. The object is found during GC and released.
+
+For V8:
+- It uses generational GC, so old generation scans aren't frequent.
+- To speed up collection, use:
+
+```cpp
+FJsEnv::LowMemoryNotification();  // Hint V8 to GC
+FJsEnv::RequestFullGarbageCollectionForTesting();  // Force full GC (slow)
+```
+
+---
+
+## Scripts Not Running After Packaging (Mobile/PC)
+
+Since JavaScript files aren't UE assets (`*.asset`), they must be manually included in packaging.
+
+**Fix:**
+Go to **Project Settings → Packaging → Additional Non-Asset Directories to Package**, and add the `Content/JavaScript` directory.
+
+---
+
+## TypeScript Version Upgrade
+
+If UE class inheritance is enabled, Puerts uses the TypeScript compiler.
+
+Installed under:  
+`YourProject/Plugins/Puerts/Content/JavaScript/PuertsEditor`  
+(and copied to `YourProject/Content/JavaScript/PuertsEditor`)
+
+To upgrade:
+1. Modify `package.json` in both locations.
+2. Run `npm install .` in those directories.
+
+**Version Compatibility:**
+
+- Long-term stable: `3.4.5`, `4.4.4`, `4.7.4`
+- Tested and works: `4.8.2`
+- Not supported: `>4.8.3`
+
+If UE class inheritance is **not** enabled, these version restrictions don't apply.
+
+---
+
+## `ue_bp.d.ts` Errors, Regeneration Doesn’t Help
+
+Blueprint declaration files are generated incrementally. If dependencies change or the file is altered by version control, try full regeneration:
+
+```bash
+Puerts.Gen FULL
+```
+
+---
+
+## TS Class Inheritance Doesn’t Generate Proxy Blueprints
+
+### Troubleshooting:
+
+1. In UE Command Line, run:
+   ```bash
+   puerts ls
+   ```
+   If it returns `Puerts command not initialized`, your setup might be incorrect. Check the installation steps.
+
+2. To find a specific TS class:
+   ```bash
+   puerts ls TsTestActor
+   ```
+   - If it doesn't show, it’s not in the TS project. Check `tsconfig.json`.
+
+3. If found, check `isBP` and `processed` columns:
+   - If `isBP = false` and `processed = true`, format is incorrect. Refer to Puerts’ "Inheriting Engine Classes" documentation.
+
+4. You can manually trigger compilation with:
+   ```bash
+   puerts compile <file-id>
+   ```
+   Replace `<file-id>` with the ID from `puerts ls`.
+
+---
+
+## Syntax Errors in `ue_bp.d.ts`
+
+This usually comes from illegal characters (unsupported by TS) in Blueprint paths, field names, or parameters.
+
+**Solutions:**
+- If only a few Blueprints are affected, blacklist them in **Project Settings → Puerts**.
+- For many invalid Blueprints, place valid ones in a separate directory and generate types for that path:
+  ```bash
+  Puerts.Gen PATH=/Game/StarterContent
+  ```
+
+---
+
+## Intermittent "Maximum Call Stack Size Exceeded" Error
+
+If this happens **occasionally** (not always), it’s likely due to multi-threaded access to `FJsEnv`.
+
+**Solution:**  
+Add `THREAD_SAFE` macro to `JsEnv.Build.cs`.
+
+**Note:**
+- On V8 backend, this resolves multi-threading issues.
+- On QJS backend, multi-threading is **not supported** and may throw obscure `<unknown>:-1` errors.
+- If the error is consistent, you likely have a recursive loop in your JS code.

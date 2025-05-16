@@ -1,59 +1,101 @@
-## Debugging with VSCode
+# Debugging
+## Table Of Contents
+- [Automatic Binding Mode](#automatic-binding-mode)
+- [Starting A New JavaScript Virtual Machine](#starting-a-new-javascript-virtual-machine)
+- [Intergrating With VSCode](#intergrating-with-vscode)
+- [Notes](#notes)
 
-Below is a translated version of the original docs by Incanta Games. The translation is mainly done with Google Translate, but then modified by hand to try to make sense of what Google Translate is missing.
+## Automatic binding mode
+To enable debugging for automatic binding mode, its as simple as turning it on inside of the project settings.
 
-### Automatic binding mode debug configuration
-
-- In the main menu, select `Edit -> Project Settings`, enable the `Debug Enable` setting under the `Plugin -> Puerts Setting` page.
+1. Open the project settings `Edit -> Project Settings`
+2. Navigate to Puerts settings `Plugins -> Puerts Settings`
+3. Enabled `Debug Enable`
+4. Configure the `Debug Port` (Optional)
 
 ![puerts_conf](../..//pic/puerts_conf.png)
 
-- Enable `Wait Debugger` in the settings above if you want to the JS to wait for a debugger to attach before executing any code
-    - Even if you launch VSCode with the debugger to attach ASAP, it may take at least 100ms for the debugger connection handshake to finish.
-    - If you don't have this setting enabled, JS scripts will execute immediately, making it possible for you to not hit a breakpoint because the debugger couldn't attach in time. Enabling this setting will tell Puerts to wait for a debugger to attach before executing any JS code, allowing you to not miss anything.
+## Starting A New JavaScript Virtual Machine
+Upon creating an instance of FJSEnv, there are a couple of extra parameters we can specify to start the virtual machine in debug mode.
 
-### Since create a virtual machine mode, debug configuration
-
-Incanta here. I'm not quite sure what this section is really for. It sounds like there may be some extra work for virtual machines? Most of this code is already embed in `PuertsModule.cpp`, which I believe is the "automatic binding mode" mentioned above. I'm not really sure what this mode is.
-
-- Create a `FJsEnv` incoming debug port
-
-``` cpp
-// 8080 Debug port
-GameScript = MakeShared<puerts::FJsEnv>(
-  std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
-  std::make_shared<puerts::FDefaultLogger>(), 8080
+##### C++
+``` c++
+auto JsEnv = MakeShared<puerts::FJsEnv>(
+  std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), // Specifies the default script location (Default: "Content/JavaScript")
+  std::make_shared<puerts::FDefaultLogger>(), // A logger object to catch console.log
+  1337 // The port to start the debugger on (i.e. Attach to this with VSCode)
 );
+
+// Start the JavaScript virtual environment
+JsEnv->Start(/*...*/);
 ```
 
-- Blocking waiting debugger link
+## Intergrating with VSCode
+To debug puerts code with VSCode, a `launch.json` file needs to be created inside of your project .vscode directory. (`YourProject/.vscode/launch.json`)
 
-``` cpp
-GameScript = MakeShared<puerts::FJsEnv>(
-  std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
-  std::make_shared<puerts::FDefaultLogger>(), 8080
-);
-GameScript->WaitDebugger();
-
-//...
-
-GameScript->Start("QuickStart", Arguments);
+##### Example launch.json
+```json
+{
+    "configurations": 
+    [
+    {
+        "type": "node",
+        "name": "Puerts Manual Mode Debugger",
+        "port": 1337,
+        "request": "attach"
+    },
+    {
+        "type": "node",
+        "name": "Puerts Automatic Binding Mode",
+        "port": 8080,
+        "request": "attach"
+    }
+    ]
+}
 ```
 
-### VSCode and UE editor precautions
+After creating this file, start your PuerTS code and attach the `Puerts Debugger` inside of VSCode. You should now be able to place brakepoints, examine variables, e.t.c.
 
-#### Auto Attaching a Debugger
+![puerts_debugger](../..//pic/puerts_debugger.png)
 
-Like any other JavaScript project, you can configure VSCode to automatically attach a debugger when it detects a process with inspector is running. There's nothing really different here, but here's the translation anyway:
+**Note: If you do not [wait for the debugger](#waiting-for-debugger-attachment), breakpoints will be skipped prior to attachment.**
 
-Open User Settings in VSCode, search for `Auto Attach`, set `Debug` > `Node Auto Attach` to `On`
+## Notes
+###  Table Of Contents
+- [Waiting For Debugger Attachment](#waiting-for-debugger-attachment)
+- [Slow Debugger Performance](#slow-debugger-performance)
 
-In more recent versions of VSCOde, you may have to configure two different settings `Auto Attach Filter` and `Auto Attach Smart Filter` to get it to work. You're also welcome to specify in your `launch.json` to attach a debugger to a specific port.
+### Waiting For Debugger Attachment
+If you wish for your debugger (i.e. VSCode) to hit breakpoints on code that happens upon entering the JavaScript virtual environment, you will need to wait for your debugger to attach.
 
-#### Slow Debugger Performance
+#### Automatic Binding Mode
+If you wish to wait for the debugger to attach during automatic binding mode, simply enable `Wait Debugger` in the project settings.
 
-By default, Unreal comes with `Use Less CPU when in Background` enabled. This slows a lot of functions of the editor down when you're focused on something other than Unreal Engine. The gain here is that you're not running full rendering cycles when you're opening other programs like Blender, Maya, Substance Painter, etc. and slowing your computer for no reason.
+1. Open the project settings `Edit -> Project Settings`
+2. Navigate to Puerts settings `Plugins -> Puerts Settings`
+3. Enabled `Wait Debugger`
+4. Configure the `Wait Debugger Timeout` (Optional)
 
-However, when you're running the debugger in VSCode and focused on VSCode instead of the engine, things will run very slowly (like 4 FPS instead of 30-120 FPS). You can enable this setting while you're debugging to ensure the game is still running at full speed while you're stepping through your JS/TS code.
+#### Starting A New JavaScript Virtual Machine
+If you wish to wait for the debugger to attach on manually started virtual machines, simply call `WaitDebugger` before starting your JavaScirpt environment.
 
-You can find this setting in `Editor Preferences` under `General > Performance`.
+``` c++
+auto JsEnv = MakeShared<puerts::FJsEnv>(
+  std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
+  std::make_shared<puerts::FDefaultLogger>(),
+  1337 // The port to start the debugger on (i.e. Attach to this with VSCode)
+);
+
+// Call this function to wait for the debugger to attach!
+JsEnv->WaitDebugger(1); // Stop waiting after 1 second (Optional)
+
+JsEnv->Start(/*...*/);
+```
+**Note: A timeout in milliseconds may be passed in as an argument to `WaitDebugger` if nothing attaches.**
+
+### Slow Debugger Performance
+By default, Unreal comes with `Use Less CPU when in Background` enabled. This slows down the editor when you're focused on something other than Unreal Engine. The gain here is that you're not running full rendering cycles when you're tabbed out however, when you're running the debugger in VSCode and focused on VSCode instead of the engine, things will run very slowly (i.e. 4 FPS). As such, it is reccomended to disable this function whilst debugging to ensure the game is still running at full speed while you're stepping through the JavaScript code.
+
+1. Open the editor preferences settings `Editor Preferences`
+2. Navigate to the performance settings `General -> Performance`
+3. Disable `Use Less CPU when in Background`

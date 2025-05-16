@@ -1,248 +1,502 @@
-## 继承引擎类功能
+# Automatic Binding Mode
 
-开启该功能后能做到特定写法的类能被UE编辑器识别
+Puerts allows users to define and extend Unreal Engine classes inside of TypeScript.
 
-* 命令行进入Plugins/Puerts目录，执行如下命令即可完成该模式的开启和依赖安装
+Through a self-starting virtual machine, launched by `PuertsModule`, automatic binding mode supports special features such as:
+- Automatic blueprint binding
+- Incremental code compilation
+- Hot-reload
 
-~~~shell
+## Table Of Contents
+- [Setup](#setup)
+- [Usage](#usage)
+- [API Reference](#api-reference)
+    - [Format](#format)
+    - [Constructor](#constructor)
+    - [Data Types](#data-types)
+    - [Annotations](#annotations)
+    - [Decorators](#decorators)
+        - [Enable Decorators](#enable-decorators)
+        - [Class Flags](#class-flags)
+        - [Function Flags](#function-flags)
+        - [Property Flags](#property-flags)
+        - [RPC Flags](#rpc)
+- [Starting A New Virtual Machine](#starting-a-new-virtual-machine)
+
+## Setup
+To get started, with the editor closed, execute the following NodeJS command inside of the puerts plugin directory. (`YourProject/Plugins/Puerts`)
+
+This will install all relevant dependencies and update any configuration files required for automatic binding to function.
+
+``` shell
 node enable_puerts_module.js
-~~~
+```
 
-例如这么一个类：
+## Usage
+Create a new file in `YourProject/TypeScript` and define a new class that extends your desired class (e.g ACharacter, AActor, e.t.c)
 
-~~~typescript
+Supported features are as follows:
+- Constructor definition
+- Overriding blueprint events and functions
+- Input axis mapping
+- Action events (e.g BeginPlay, Tick)
+- RPC functions (Requires `experimentalDecorators`)
+
+##### TypeScript
+``` typescript
+// YourProject/TypeScript/TS_Player.ts
+
 import * as UE from 'ue'
 
 class TS_Player extends UE.Character {
-}
-
-export default TS_Player;
-~~~
-
-然后你在UE编辑器就能选择它
-
-
-![select_character.png](../../pic/select_character.png)
-
-* 能被UE识别的类，支持构造函数，支持override蓝图能override的方法，支持轴映射Axis、Action事件，支持RPC
-
-~~~typescript
-class TS_Player extends UE.Character {
-    FpsCamera: UE.CameraComponent;
-    //...
-
     Constructor() {
-        let FpsCamera = this.CreateDefaultSubobjectGeneric<UE.CameraComponent>("FpsCamera", UE.CameraComponent.StaticClass());
-        FpsCamera.SetupAttachment(this.CapsuleComponent, "FpsCamera");
         //...
-    }
-
-    MoveForward(axisValue: number): void {
-        this.AddMovementInput(this.GetActorForwardVector(), axisValue, false);
-    }
-
-    MoveRight(axisValue: number): void {
-        this.AddMovementInput(this.GetActorRightVector(), axisValue, false);
     }
 
     ReceiveBeginPlay(): void {
         //...
     }
+    ReceiveTick(InDeltaSeconds: number): void {
+        //...
+    }
+    //...
+}
 
-~~~
+export default TS_Player;
+```
 
+Now regenerate the deceleration files and the class should be available inside of Unreal Engine!
 
-### 格式
+![select_character.png](../..//pic/select_character.png)
 
-一个TypeScript满足如下以下三点，一个类才能被UE编辑器识别
+**Note: The file name, class name and default export all need to match for it to be registered with Unreal Engine. (See [Format](#format))**
 
-* 这个类继承自UE的类或者另一继承UE的类；
-* 类名和去掉.ts后缀的文件名相同；
-* 把这个类export default。
+## API Reference
 
-### 限制
+### Table Of Contents
+- [Format](#format)
+- [Constructor](#constructor)
+- [Data Types](#data-types)
+- [Annotations](#annotations)
+- [Decorators](#decorators)
 
-* 不支持继承蓝图，只支持继承原生类
-* 继承UserWidget或其子类并不能编辑
+### Format
+For a TypeScript class to be recognized by Unreal Engine it must meet the following requirements:
 
-### 生命周期
+- The class extends a U.E class (e.g UE.Character, UE.Actor, e.t.c)
+- The file name, class name and default export must all match (e.g TS_Player)
 
-本模式下，继承UE类型的TypeScript类型的对象，生命周期由引擎管理。
+### Constructor
+When defining a class inside of TypeScript, it is possible to define the constructor for the new U.E object.
 
-比如下面这个例子：
+Unlike the standard TypeScript `constructor`, automatic binding mode overrides the blueprint Construction event inside of Unreal Engine.
 
-~~~typescript
-let obj = getsomeobject();
-setTimeout(() => {
-    console.log(obj.XXX);
-}, 1000);
-~~~
+``` typescript
+// YourProject/TypeScript/MyTestActor.ts
 
-obj对象通过闭包被引用了，如果这个obj是个普通UE对象，puerts会对obj加个强引用，如果是继承UE类型的TypeScript类型的对象，则不加引用。
+import * as UE from 'ue'
 
-### 构造函数
+class MyTestActor extends UE.Actor {
+    Mesh: UE.StaticMeshComponent;
+    TickEnabled: boolean = true;
 
-和标准的typescript构造函数不一样，继承引擎类模式被UE初始化调用的构造函数首字母需大写，也就是Constructor
-
-~~~typescript
-class TsTestActor extends UE.Actor {
-    tickCount: number;
-
-    //注意，继承UE类的js类，构造函数必须大写开头
     Constructor() {
-        this.PrimaryActorTick.bCanEverTick = true;
-        tickCount = 0;
+        this.PrimaryActorTick.bCanEverTick = TickEnabled;
+
+        this.Mesh = this.CreateDefaultSubObject<UE.StaticMeshComponent>("Mesh");
+        this.SetRootComponent(this.Mesh);
+        //...
     }
 }
-~~~
 
-* 构造函数中可以调用一些UE限定必须在构造函数调用的API，比如CreateDefaultSubobject
-* 如果一个类定义了构造函数，该类成员变量的初始化会被TypeScript接管，这时你在UE编辑器下设置的值将会无效
-* 如果没定义构造函数，则支持在UE编辑器手动设置成员变量值
-* Constructor是UE调用的构造函数，只用作UE成员的初始化
-  - 不能在该函数中做js的初始化工作，比如no-blueprint标注的变量的初始化
-  - 不能在该函数中申请js的资源，比如创建一个闭包函数，因为重载虚拟机后这些资源将失效，然而构造函数不会重新执行
-* 目前不支持在一个Actor的构造函数修改Component的属性，因为SpawnActor在构造完对象后，有个对Component的重置: [构造函数设置Component属性无效](https://github.com/Tencent/puerts/issues/287)
-* 开启AsyncLoadingThreadEnabled后，Constructor中不能调用CreateDefaultSubobject，否则Constructor延迟调用后，CreateDefaultSubobject会因为不再构造时机调用而报错
+export default MyTestActor;
+```
 
-### 继承引擎类模式支持的数据类型
+#### Notes
+- Some inherited U.E functions, such as `CreateDefaultSubObject` must be called in the constructor.
+- If a TypeScript class overrides the Constructor, initialization of any U.E supported member variables will be taken over by TypeScript. Changing them inside of the editor will not take effect.
+- Initialization of variables not recognized by U.E is not supported within the overrided Constructor. This includes variables annotated with `@no-blueprint`. ([Supported Types](#data-types))
+- You cannot reserve new JS resources, such as creating a lambda closure, within the Constructor. It will overload the virtual machine and cause unexpected resource issues.
 
-只有用继承引擎类模式支持的类型声明的字段、方法，才能被UE识别
+### Data Types
+The list of data types recognized by Unreal Engine are as follows:
 
-**直接映射的类型**
+| Type |
+| :---: |
+| `void` |
+| `number` |
+| `string` |
+| `bigint` |
+| `boolean` |
+| `Enumerations` |
+| `Any UObject within the UE module. (e.g UE.Actor)` |
+| `Any UStruct within the UE module. (e.g UE.Vector)` |
+| `TArray` |
+| `TSet` |
+| `TMap` |
+| `TSubclassOf (Class reference)` |
+| `TSoftObjectPtr (Soft object reference）` |
+| `TSoftClassPtr (Soft class reference）` |
 
-void，number，string，bigint，boolean，UE模块下的UObject派生类、枚举、UStruct，TArray、TSet、TMap、TSubclassOf（类引用）、TSoftObjectPtr（软对象引用）、TSoftClassPtr（软类引用）
+**Note: All functions must return one of the above types. If a function does not declare a return type, it is equivalent to returning `any` which is not supported.**
 
-注意：一个函数返回类型声明为void才是无返回值，如果一个函数不声明返回类型，等同于返回any类型，而自动半丁模式并不支持any类型
+### Annotations
+Data annotations help to fine-tune the translation between TypeScript and C++. 
 
-如下是几个字段和方法的示例：
+Since Unreal Engine has more descriptive types compared to TypeScript (i.e. `number` represents the same logical ideas as `byte`, `int`, `float`, and `double`), is it necessary that Puerts can appropriately translate the correct types into C++.
 
-~~~typescript
-class TsTestActor extends UE.Actor {
-    tickCount: number;
+``` typescript
+// YourProject/TypeScript/MyTestActor.ts
 
-    actor: UE.Actor; 
+import * as UE from 'ue'
 
-    map: UE.TMap<string, number>;
-
-    arr: UE.TArray<UE.Object>;
-
-    set: UE.TSet<string>;
-
-    Add(a: number, b: number): number {
-        return a + b;
-    }
-    
-    e: UE.ETickingGroup;
-    
-    clsOfWidget: UE.TSubclassOf<UE.Widget>;
-
-    softObject: UE.TSoftObjectPtr<UE.Actor>;
-
-    softClass: UE.TSoftClassPtr<UE.Actor>;
-}
-~~~
-
-**类型注解**
-
-TypeScript和UE两者间的数据类型丰富程度不一样，因而两者并不是一一映射的，比如UE里头的byte，int，float都对应TypeScript的number，那么我们如何告诉puerts生成我们所需的类型呢？puerts提供了类型注解，如下是几个例子：
-
-~~~typescript
 class TsTestActor extends UE.Actor {
     //@cpp:text
-    Foo(): string {
+    ReturnFText(): string {
         return "hello";
     }
 
-    Bar(p1:number/*@cpp:int*/): void {
+    IntegerArgument(p1:number/*@cpp:int*/): void {
+        //...
+    }
+
+    //@no-blueprint
+    TsOnlyMethod():void {
+        //...
     }
 
     //@cpp:name
-    Field: string;
-}
-~~~
-
-* Foo的返回值是FText
-* Bar的参数是int
-* Field字段的类型是FName
-* 目前支持的类型注解支持的类型有：text，name，int，byte
-
-### 其它注解
-
-除了类型注解，puerts还支持其它注解
-
-* @no-blueprint
-
-表示不被UE编辑器识别，方法和字段均可用
-
-~~~typescript
-class TsTestActor extends UE.Actor {
-    //@no-blueprint
-    TsOnlyMethod():void {
-
-    }
+    FieldOfTypeFName: string;
 
     //@no-blueprint
-    TsOnlyField: number;
+    TsOnlyVariable: number;
 }
-~~~
-### uproperty ufunction 
 
-~~~typescript
-import * as UE from 'ue'
-import { uproperty,uparam,ufunction } from 'ue';  
-class TsTestActor extends UE.Actor
+export default MyTestActor;
+```
+
+| Annotation | Description |
+| :---: | --- |
+| `@cpp:text` | Equivalent to `FText` |
+| `@cpp:name` | Equivalent to `FName` |
+| `@cpp:int` | Equivalent to `int` |
+| `@cpp:byte` | Equivalent to `byte` |
+| `@no-blueprint` | Indicates that a method or field is not accessible in U.E (TypeScript only) |
+
+### Decorators
+Decorators allow TypeScript to define certain pre-processor definitions much like C++.
+
+Use cases for this include:
+- Specifying UFUNCTION parameters (e.g BlueprintCallable)
+- Defining RPC functions (e.g Server, Client, NetMulticast)
+- Specifying replication conditions for member variables (e.g SimulatedOnly, AutonomousOnly)
+
+## Table Of Contents
+- [Enable Decorators](#enable-decorators)
+- [Class Flags](#class-flags)
+- [Function Flags](#function-flags)
+- [Property Flags](#property-flags)
+- [RPC Flags](#rpc)
+
+#### Enable Decorators
+To enable TypeScript decorators:
+
+1. Locate or create 'tsconfig.json' in your Unreal Engine projects directory. (`YourProject/tsconfig.json`)
+2. Set `experimentalDecorators` to `true`
+
+##### Example tsconfig.json
+``` javascript
 {
-    //Note: Direct invocation from UE is not allowed; instead, import uproperty, ufunction, uparam and then make the call.
-    //@UE.uproperty.umeta(UE.uproperty.Category="TEST Property") //Error
-    
-    @uproperty.umeta(uproperty.ToolTip="Test Value")
-    @uproperty.uproperty(uproperty.BlueprintReadOnly,uproperty.Category="TEST Category")
-    TestValue:number;
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "experimentalDecorators": true, // Update 'false' -> 'true'
+    "jsx": "react",
+    "sourceMap": true,
+    "typeRoots": [
+      "Typing",
+      "./node_modules/@types"
+    ],
+    "outDir": "Content/JavaScript"
+  },
+  "include": [
+    "TypeScript/**/*",
+  ]
+}
+```
 
-    @ufunction.ufunction(ufunction.BlueprintPure)
-    public update(AA:number , BB:number):void 
-    {   
+#### Class Flags
+``` typescript
+// YourProject/TypeScript/MyTestActor.ts
+
+import * as UE from 'ue'
+
+@UE.uclass.umeta(UE.uclass.DisplayName="CustomDisplayName...")
+@UE.uclass.uclass(UE.uclass.Blueprintable)
+class MyTestActor extends UE.Actor {
+    // ...
+}
+
+export default MyTestActor;
+```
+
+| Class Specifiers           | Description                                                                 |
+| :-----------------------: | --------------------------------------------------------------------------- |
+| `BlueprintType`           | Exposes this class as a type that can be used for variables in blueprints.  |
+| `Blueprintable`           | Exposes this class as an acceptable base class for creating blueprints.     |
+| `NotBlueprintable`        | Specifies that this class is *NOT* an acceptable base class for creating blueprints. |
+| `Const`                   | All properties and functions in this class are const and should be exported as const. |
+| `Abstract`                | Class is abstract and can't be instantiated directly.                       |
+| `deprecated`              | This class is deprecated and objects of this class won't be saved when serializing. |
+| `ComponentWrapperClass`   | Indicates that this class is a wrapper class for a component with little intrinsic functionality. |
+| `hideCategories`          | Hides the specified categories in a property viewer.                        |
+| `hideFunctions`           | Hides the specified function in a property viewer.                          |
+| `AdvancedClassDisplay`    | All properties of the class are hidden in the main display and shown only in the advanced details section. |
+| `ConversionRoot`          | A root convert limits a subclass to only be able to convert to child classes of the first root class going up the hierarchy. |
+| `Experimental`            | Marks this class as 'experimental' (an unsupported prototype).             |
+| `EarlyAccessPreview`      | Marks this class as an 'early access' preview, a step beyond 'experimental'. |
+| `SparseClassDataType`     | Some properties are stored once per class in a sidecar structure and not on instances of the class. |
+
+| Class Metadata                 | Description                                                                 |
+| :-----------------------------: | --------------------------------------------------------------------------- |
+| `ToolTip`                       | Overrides the automatically generated tooltip from the class comment.        |
+| `ShortTooltip`                  | A short tooltip that is used in some contexts where the full tooltip might be overwhelming. |
+| `DocumentationPolicy`           | A setting to determine validation of tooltips and comments. Needs to be set to "Strict". |
+| `BlueprintSpawnableComponent`   | Used for Actor Component classes. Indicates it can be spawned by a Blueprint. |
+| `ChildCanTick`                  | Used for Actor and Component classes. Allows Blueprint-generated classes to override bCanEverTick flag. |
+| `ChildCannotTick`               | Used for Actor and Component classes. Prevents Blueprint-generated classes from ticking. |
+| `IgnoreCategoryKeywordsInSubclasses` | Makes the first subclass of a class ignore inherited showCategories and hideCategories commands. |
+| `DeprecatedNode`                | Used to indicate that the class is deprecated and will show a warning when compiled. |
+| `DeprecationMessage`            | Customizes the warning message displayed for deprecated elements.            |
+| `DisplayName`                   | The name to display for this class, property, or function instead of auto-generating it. |
+| `ScriptName`                    | The name to use when exporting this class, property, or function to a scripting language. |
+| `IsBlueprintBase`               | Specifies that this class is an acceptable base class for creating blueprints. |
+| `KismetHideOverrides`           | A comma delimited list of blueprint events that cannot be overridden in classes of this type. |
+| `ProhibitedInterfaces`          | Specifies interfaces that are not compatible with the class.                |
+| `RestrictedToClasses`           | Restricts the graphs the functions in this library can be used in to the classes specified. |
+| `ShowWorldContextPin`           | Indicates that the hidden world context pin should be visible in Blueprint graphs. |
+| `DontUseGenericSpawnObject`     | Prevents spawning an object of the class using the Generic Create Object node in Blueprint. |
+| `ExposedAsyncProxy`             | Exposes a proxy object of this class in Async Task node.                    |
+| `BlueprintThreadSafe`           | Marks functions in a Blueprint Function Library as callable on non-game threads in Animation Blueprint. |
+| `UsesHierarchy`                 | Indicates the class uses hierarchical data, enabling hierarchical editing features in details panels. |
+
+
+#### Function Flags
+// YourProject/TypeScript/MyTestActor.ts
+
+``` typescript
+import * as UE from 'ue'
+
+class MyTestActor extends UE.Actor {   
+    @UE.ufunction.umeta(UE.ufunction.ToolTip="Adds two numbers")
+    @UE.ufunction.ufunction(UE.ufunction.BlueprintCallable, UE.ufunction.Category="Demo Catergory")
+    Add(InA: number, InB: number): number {
+        return InA + InB;
     }
 }
-export default TsTestActor;
 
-~~~
+export default MyTestActor;
+```
 
-### rpc
+| Function Flags                 | Description                                                                 |
+| :-----------------------------: | --------------------------------------------------------------------------- |
+| `BlueprintImplementableEvent`   | This function is designed to be overridden by a blueprint. No body should be provided; autogenerated code will call ProcessEvent. |
+| `BlueprintNativeEvent`          | This function is designed to be overridden by a blueprint, but also has a native implementation. Use [FunctionName]_Implementation for the body. |
+| `SealedEvent`                   | This function is sealed and cannot be overridden in subclasses. Valid only for events. |
+| `Exec`                          | This function is executable from the command line.                         |
+| `BlueprintPure`                 | This function fulfills a contract of producing no side effects and implies BlueprintCallable. |
+| `BlueprintCallable`             | This function can be called from blueprint code and should be exposed to blueprint editing tools. |
+| `BlueprintAuthorityOnly`        | This function will not execute from blueprint code if running on something without network authority. |
+| `BlueprintCosmetic`             | This function is cosmetic and will not run on dedicated servers. |
+| `CallInEditor`                  | This function can be called in the editor on selected instances via a button in the details panel. |
+| `Category`                      | Specifies the category of the function when displayed in blueprint editing tools. |
 
-可以通过decorator来设置方法、字段的RPC属性。
+| Function Metadata                      | Description                                                                 |
+| :----------------------------------: | --------------------------------------------------------------------------- |
+| `ToolTip`                            | Overrides the automatically generated tooltip from the class comment.      |
+| `CompactNodeTitle`                   | For BlueprintCallable functions, indicates that the function should be displayed in compact display mode and the name to use in that mode. |
+| `Keywords`                           | For BlueprintCallable functions, provides additional keywords to be associated with the function for search purposes. |
 
-注意：TypeScript的decorator默认不打开，需要在tsconfig.json上将experimentalDecorators属性设置为true
+#### Property Flags
 
-* rpc.flags
+``` typescript
+// YourProject/TypeScript/MyTestActor.ts
 
-为字段，方法设置flags
+import * as UE from 'ue'
 
-* rpc.condition
+class MyTestActor extends UE.Actor { 
+    @UE.uproperty.umeta(UE.uproperty.ToolTip="Test Value")
+    @UE.uproperty.uproperty(UE.uproperty.BlueprintReadOnly, UE.uproperty.Category="Demo Catergory")
+    SomeVariable: number;
+}
 
-为字段设置replicate condition
+export default MyTestActor;
+```
 
+| Property Flags                     | Description                                                                 |
+| :----------------------------------: | --------------------------------------------------------------------------- |
+| `Const`                             | This property is const and should be exported as const.                    |
+| `Config`                            | Property should be loaded/saved to ini file as permanent profile.          |
+| `GlobalConfig`                      | Same as above but load config from base class, not subclass.               |
+| `Localized`                         | Property should be loaded as localizable text. Implies ReadOnly.           |
+| `Transient`                         | Property is transient: shouldn't be saved, zero-filled at load time.       |
+| `DuplicateTransient`                | Property should always be reset to the default value during any duplication (copy/paste, binary duplication, etc.) |
+| `NonPIEDuplicateTransient`          | Property should always be reset to the default value unless it's being duplicated for a PIE session. |
+| `Export`                            | Object property can be exported with its owner.                            |
+| `NoClear`                           | Hide clear (and browse) button in the editor.                              |
+| `EditFixedSize`                     | Indicates that elements of an array can be modified, but its size cannot be changed. |
+| `Replicated`                        | Property is relevant to network replication.                               |
+| `ReplicatedUsing`                   | Property is relevant to network replication. Notify actors when a property is replicated (usage: ReplicatedUsing=FunctionName). |
+| `NotReplicated`                     | Skip replication (only for struct members and parameters in service request functions). |
+| `Interp`                            | Interpolatable property for use with matinee. Always user-settable in the editor. |
+| `NonTransactional`                  | Property isn't transacted.                                                  |
+| `Instanced`                         | Property is a component reference. Implies EditInline and Export.         |
+| `BlueprintAssignable`               | MC Delegates only. Property should be exposed for assigning in blueprints. |
+| `Category`                          | Specifies the category of the property. Usage: Category=CategoryName.      |
+| `SimpleDisplay`                     | Properties appear visible by default in a details panel.                   |
+| `AdvancedDisplay`                   | Properties are in the advanced dropdown in a details panel.                |
+| `EditAnywhere`                       | Indicates that this property can be edited by property windows in the editor. |
+| `EditInstanceOnly`                  | Indicates that this property can be edited by property windows, but only on instances, not on archetypes. |
+| `EditDefaultsOnly`                  | Indicates that this property can be edited by property windows, but only on archetypes. |
+| `VisibleAnywhere`                   | Indicates that this property is visible in property windows, but cannot be edited at all. |
+| `VisibleInstanceOnly`               | Indicates that this property is only visible in property windows for instances, not for archetypes, and cannot be edited. |
+| `VisibleDefaultsOnly`               | Indicates that this property is only visible in property windows for archetypes, and cannot be edited. |
+| `BlueprintReadOnly`                 | This property can be read by blueprints, but not modified.                 |
+| `BlueprintGetter`                   | This property has an accessor to return the value. Implies BlueprintReadOnly if BlueprintSetter or BlueprintReadWrite is not specified. (usage: BlueprintGetter=FunctionName). |
+| `BlueprintReadWrite`                | This property can be read or written from a blueprint.                     |
+| `BlueprintSetter`                   | This property has an accessor to set the value. Implies BlueprintReadWrite. (usage: BlueprintSetter=FunctionName). |
+| `AssetRegistrySearchable`           | The AssetRegistrySearchable keyword indicates that this property and its value will be automatically added to the asset registry for any asset class instances containing this as a member variable. |
+| `SaveGame`                          | Property should be serialized for save games. This is only checked for game-specific archives with ArIsSaveGame set. |
+| `BlueprintCallable`                 | MC Delegates only. Property should be exposed for calling in blueprint code. |
+| `BlueprintAuthorityOnly`            | MC Delegates only. This delegate accepts (only in blueprint) only events with BlueprintAuthorityOnly. |
+| `TextExportTransient`               | Property shouldn't be exported to text format (e.g., copy/paste).           |
+| `SkipSerialization`                 | Property shouldn't be serialized, can still be exported to text.           |
+| `HideSelfPin`                       | If true, the self pin should not be shown or connectable regardless of purity, const, etc. similar to InternalUseParam. |
 
-~~~typescript
-class TsTestActor extends UE.Actor {
-    @rpc.flags(rpc.PropertyFlags.CPF_Net | rpc.PropertyFlags.CPF_RepNotify)
-    @rpc.condition(rpc.ELifetimeCondition.COND_InitialOrOwner)
-    dint: number;
+| Property Metadata                | Description                                                                                                                                                                       |
+| :----------------------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ToolTip`                   | Overrides the automatically generated tooltip from the class comment                                                                                                                     |
+| `ShortTooltip`              | A short tooltip that is used in some contexts where the full tooltip might be overwhelming (e.g., parent class picker dialog)                                                            |
+| `DocumentationPolicy`       | A setting to determine validation of tooltips and comments. Needs to be set to "Strict"                                                                                                  |
+| `AllowAbstract`             | Used for Subclass and SoftClass properties. Indicates whether abstract class types should be shown in the class picker                                                                  |
+| `AllowAnyActor`             | Used for ComponentReference properties. Indicates whether other actors that are not in the property outer hierarchy should be shown in the component picker                               |
+| `AllowedClasses`            | Used for FSoftObjectPath, ComponentReference, and UClass properties. Comma delimited list indicating the class types of assets to display in asset picker, component picker, or class viewer |
+| `AllowPreserveRatio`       | Used for FVector properties. Causes a ratio lock when displaying the property in details panels                                                                                          |
+| `AllowPrivateAccess`        | Indicates that a private member marked as BlueprintReadOnly or BlueprintReadWrite should be accessible from blueprints                                                                 |
+| `ArrayClamp`                | Used for integer properties. Clamps the valid values in the UI between 0 and the length of the specified array                                                                         |
+| `AssetBundles`              | Used for SoftObjectPtr/SoftObjectPath properties. Comma-separated list of Bundle names used inside PrimaryDataAssets to specify bundles this reference is part of                        |
+| `BlueprintBaseOnly`         | Used for Subclass and SoftClass properties. Indicates whether only blueprint classes should be shown in the class picker                                                                |
+| `BlueprintCompilerGeneratedDefaults` | Property defaults are generated by the Blueprint compiler and will not be copied when CopyPropertiesForUnrelatedObjects is called post-compile                                    |
+| `ClampMin`                  | Used for float and integer properties. Specifies the minimum value for the property                                                                                                      |
+| `ClampMax`                  | Used for float and integer properties. Specifies the maximum value for the property                                                                                                      |
+| `ConfigHierarchyEditable`   | Property is serialized to config and editable anywhere along the config hierarchy                                                                                                        |
+| `ContentDir`                | Used by FDirectoryPath properties. Indicates that the path will be picked using the Slate-style directory picker inside the game Content directory                                       |
+| `DisallowedClasses`         | Used for FSoftObjectPath, ActorComponentReference, and UClass properties. Comma-delimited list indicating classes not displayed in the asset picker or component picker                  |
+| `DisplayAfter`              | Indicates that the property should be displayed immediately after the property named in the metadata                                                                                     |
+| `DisplayPriority`           | Specifies the relative order within its category that the property should be displayed in, with lower values sorted first                                                               |
+| `DisplayThumbnail`          | Indicates that the property is an asset type and should display the thumbnail of the selected asset                                                                                     |
+| `EditCondition`             | Specifies whether editing of this property is disabled                                                                                                                                    |
+| `EditFixedOrder`            | Keeps the elements of an array from being reordered by dragging                                                                                                                           |
+| `ExactClass`                | Used for FSoftObjectPath properties in conjunction with AllowedClasses. Indicates whether only the exact classes in AllowedClasses are valid                                              |
+| `ExposeFunctionCategories`  | Specifies a list of categories whose functions should be exposed when building a function list in the Blueprint Editor                                                                  |
+| `ExposeOnSpawn`             | Specifies whether the property should be exposed on a Spawn Actor for the class type                                                                                                     |
+| `FilePathFilter`            | Used by FFilePath properties. Specifies the path filter to display in the file picker                                                                                                    |
+| `RelativeToGameDir`         | Used by FFilePath properties. Specifies that the FilePicker dialog will output a relative path when setting the property                                                                 |
+| `ForceShowEngineContent`    | Used by asset properties. Indicates that the asset pickers should always show engine content                                                                                             |
+| `ForceShowPluginContent`    | Used by asset properties. Indicates that the asset pickers should always show plugin content                                                                                             |
+| `HideAlphaChannel`          | Used for FColor and FLinearColor properties. Hides the Alpha property when displaying the property widget                                                                               |
+| `HideInDetailPanel`         | Indicates that the property should be hidden in the details panel. Currently only used by events                                                                                        |
+| `HideViewOptions`           | Used for Subclass and SoftClass properties. Hides the ability to change view options in the class picker                                                                                  |
+| `IgnoreForMemberInitializationTest` | Bypasses property initialization tests when the property cannot be safely tested in a deterministic fashion (e.g., random numbers, GUIDs)                                          |
+| `InlineEditConditionToggle` | Signifies that the bool property is only displayed inline as an edit condition toggle and should not be shown on its own row                                                            |
+| `LongPackageName`           | Used by FDirectoryPath properties. Converts the path to a long package name                                                                                                              |
+| `MakeEditWidget`            | Used for Transform/Rotator properties (also works on arrays). Indicates that the property should be exposed in the viewport as a movable widget                                          |
+| `MakeStructureDefaultValue` | For properties in a structure, indicates the default value of the property in a blueprint make structure node                                                                            |
+| `MetaClass`                 | Used for FSoftClassPath properties. Specifies the parent class used in filtering which classes to display in the class picker                                                           |
+| `MustImplement`             | Used for Subclass and SoftClass properties. Indicates the selected class must implement a specific interface                                                                             |
+| `Multiple`                  | Used for numeric properties. Specifies that the value must be a multiple of the metadata value                                                                                            |
+| `MultiLine`                 | Used for FString and FText properties. Specifies that the edit field should be multi-line, allowing entry of newlines                                                                   |
+| `PasswordField`             | Used for FString and FText properties. Specifies that the edit field is a secret field, and entered text will be replaced with dots                                                     |
+| `NoElementDuplicate`        | Used for array properties. Indicates that the duplicate icon should not be shown for entries of this array in the property panel                                                         |
+| `NoResetToDefault`          | Property won't have a 'reset to default' button when displayed in property windows                                                                                                       |
+| `NoSpinbox`                 | Used for integer and float properties. Indicates that the spin box element of the number editing widget should not be displayed                                                           |
+| `OnlyPlaceable`             | Used for Subclass properties. Indicates whether only placeable classes should be shown in the class picker                                                                               |
+| `RelativePath`              | Used by FDirectoryPath properties. Indicates that the directory dialog will output a relative path when setting the property                                                              |
+| `RelativeToGameContentDir`  | Used by FDirectoryPath properties. Indicates that the directory dialog will output a path relative to the game content directory when setting the property                               |
+| `ScriptNoExport`            | Flag set on a property or function to prevent it from being exported to a scripting language                                                                                             |
+| `ShowOnlyInnerProperties`   | Used by struct properties. Indicates that inner properties will not be shown inside an expandable struct, but promoted up a level                                                         |
+| `ShowTreeView`              | Used for Subclass and SoftClass properties. Displays the picker as a tree view instead of a list                                                                                         |
+| `SliderExponent`            | Used by numeric properties. Indicates how rapidly the value will grow when moving an unbounded slider                                                                                     |
+| `TitleProperty`             | Used by arrays of structs. Indicates a single property inside of the struct that should be used as a title summary when the array entry is collapsed                                    |
+| `UIMin`                     | Used for float and integer properties. Specifies the lowest value that the value slider should represent                                                                                 |
+| `UIMax`                     | Used for float and integer properties. Specifies the highest value that the value slider should represent                                                                                |
+| `Untracked`                 | Used for SoftObjectPtr/SoftObjectPath properties. Specifies that a reference should not be tracked. This reference won't be automatically cooked or saved into the asset registry           |
+| `DevelopmentOnly`           | Used for functions that should be compiled in development mode only                                                                                                                     |
+| `NeedsLatentFixup`          | Used for latent action manager to fix up a latent action with the VM                                                                                                                     |
+| `LatentCallbackTarget`      | Used for latent action manager to track where its re-entry should be                                                                                                                     |
+| `GetOptions`                | Causes FString and FName properties to have a limited set of options generated dynamically (e.g., meta=(GetOptions="FuncName"))                                                           |
+| `Bitmask`                   | Metadata that identifies an integral property as a bitmask                                                                                                                               |
+| `BitmaskEnum`               | Metadata that associates a bitmask property with a bitflag enum                                                                                                                           |
 
-    @rpc.flags(rpc.FunctionFlags.FUNC_Net | rpc.FunctionFlags.FUNC_NetClient)
-    Fire(): void {
+#### RPC
+``` typescript
+// YourProject/TypeScript/MyTestActor.ts
 
+import * as UE from 'ue'
+
+class MyTestActor extends UE.Actor {
+    @UE.rpc.flags(UE.rpc.PropertyFlags.CPF_Net | UE.rpc.PropertyFlags.CPF_RepNotify)
+    @UE.rpc.condition(UE.rpc.ELifetimeCondition.COND_AutonomousOnly)
+    ReplicatedInt: number;
+
+    // If the field sets CPF_RepNotify, you need to add `OnRep_fieldname()` method.
+    OnRep_ReplicatedInt(): void {
+        //...
     }
 
-    @rpc.flags(rpc.FunctionFlags.FUNC_Net | rpc.FunctionFlags.FUNC_NetServer | rpc.FunctionFlags.FUNC_NetReliable)
-    FireServer(): void {
-
+    @UE.rpc.flags(UE.rpc.FunctionFlags.FUNC_Net | UE.rpc.FunctionFlags.FUNC_NetClient)
+    Client_Test(): void {
+        //...
     }
 
-    //如果字段设置了CPF_RepNotify，需要增加“OnRep_字段名”为名字的方法
-    OnRep_dint(): void {
-        
+    @UE.rpc.flags(UE.rpc.FunctionFlags.FUNC_Net | UE.rpc.FunctionFlags.FUNC_NetServer | UE.rpc.FunctionFlags.FUNC_NetReliable)
+    Server_Test(): void {
+        //...
     }
 }
-~~~
+
+export default MyTestActor;
+```
+
+| Function Flags | Description |
+| :---: | --- |
+| `FUNC_Net` | Function is network-replicated |
+| `FUNC_NetReliable`  | Function should be sent reliably on the network |
+| `FUNC_NetMulticast` | Function is networked multicasted from the server to all clients (if applicable) |
+| `FUNC_NetServer`	| Function is executed on server (if applicable) |
+| `FUNC_NetClient`	| Function is executed on clients | 
+
+| Property Flags | Description |
+| :---: | --- |
+| `CPF_Net` | Property is relevant to network replication |
+| `CPF_RepNotify` | Notify actors when a property is replicated |
+
+| Replication Conditions | Description |
+| :---: | --- |
+| `COND_InitialOnly` | This property will only attempt to send on the initial bunch |
+| `COND_OwnerOnly` | This property will only send to the actor's owner |
+| `COND_SkipOwner` | This property send to every connection EXCEPT the owner |
+| `COND_SimulatedOnly` | This property will only send to simulated actors |
+| `COND_AutonomousOnly` | This property will only send to autonomous actors |
+| `COND_SimulatedOrPhysics` | This property will send to simulated OR bRepPhysics actors |
+| `COND_InitialOrOwner` | This property will send on the initial packet, or to the actors owner |
+| `COND_Custom` | This property has no particular condition, but wants the ability to toggle on/off via SetCustomIsActiveOverride |
+| `COND_ReplayOrOwner` | This property will only send to the replay connection, or to the actors owner |
+| `COND_ReplayOnly` | This property will only send to the replay connection |
+| `COND_SimulatedOnlyNoReplay` | This property will send to actors only, but not to replay connections |
+| `COND_SimulatedOrPhysicsNoReplay` | This property will send to simulated Or bRepPhysics actors, but not to replay connections |
+| `COND_SkipReplay` | This property will not send to the replay connection |
+| `COND_Never` | This property will never be replicated |
+
+## Starting A New Virtual Machine
+Now that automatic binding mode has been set up, it's important to know how to [start your own JavaScript virtual machine](./start_a_virtual_machine.md).
