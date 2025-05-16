@@ -8,7 +8,7 @@ Puerts has two main execution modes, both of which can coexist in isolation.
 - [Manually Starting A JavaScript Virtual Machine](#starting-a-new-javascript-virtual-machine-more-info)
 - [User Manual](#user-manual)
 
-## Automatic Binding Mode ([More Info](./automatic_binding_mode.md))
+## Automatic Binding Mode ([More Info](./uclass_extends.md))
 
 Puerts allows users to define and extend Unreal Engine classes inside of TypeScript.
 
@@ -65,7 +65,7 @@ Now it should be available inside of Unreal Engine!
 
 ![select_character.png](../..//pic/select_character.png)
 
-**Note: The file name, class name and default export all need to match for it to be registered with Unreal Engine. (See [Format](./automatic_binding_mode.md/#format))**
+**Note: The file name, class name and default export all need to match for it to be registered with Unreal Engine. (See [Format](./uclass_extends.md/#format))**
 
 ## Starting A New JavaScript Virtual Machine ([More Info](./start_a_virtual_machine.md))
 
