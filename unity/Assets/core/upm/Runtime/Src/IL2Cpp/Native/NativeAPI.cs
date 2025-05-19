@@ -238,10 +238,10 @@ namespace Puerts
         public static extern double pesapi_get_value_double(IntPtr apis, IntPtr env, IntPtr value);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr pesapi_get_value_string_utf8(IntPtr apis, IntPtr env, IntPtr value, IntPtr buf, ref UIntPtr bufsize);
+        public static extern IntPtr pesapi_get_value_string_utf8(IntPtr apis, IntPtr env, IntPtr value, byte[] buf, ref UIntPtr bufsize);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr pesapi_get_value_string_utf16(IntPtr apis, IntPtr env, IntPtr value, IntPtr buf, ref UIntPtr bufsize);
+        public static extern IntPtr pesapi_get_value_string_utf16(IntPtr apis, IntPtr env, IntPtr value, byte[] buf, ref UIntPtr bufsize);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_value_binary(IntPtr apis, IntPtr env, IntPtr pvalue, ref UIntPtr bufsize);
@@ -758,7 +758,7 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate IntPtr pesapi_eval_func(IntPtr env, IntPtr code, UIntPtr code_size, string path);
+    public delegate IntPtr pesapi_eval_func(IntPtr env, byte[] code, UIntPtr code_size, string path);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif

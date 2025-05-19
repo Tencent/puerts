@@ -136,6 +136,35 @@ namespace Puerts
                 throw new InvalidProgramException("unexpected backend: " + backend);
             }
             apis = Marshal.PtrToStructure<pesapi_ffi>(papis);
+
+            var scope = apis.open_scope(envRef);
+
+            var env = apis.get_env_from_ref(envRef);
+            var global = apis.global(env);
+
+            var print = apis.create_function(env, Print, IntPtr.Zero, null);
+            apis.set_property(env, global, "print", print);
+
+            apis.close_scope(scope);
+        }
+
+        [MonoPInvokeCallback(typeof(pesapi_callback))]
+        static void Print(IntPtr apis, IntPtr info)
+        {
+            var env = NativeAPI.pesapi_get_env(apis, info);
+            var str = NativeAPI.pesapi_get_arg(apis, info, 0);
+            if (!NativeAPI.pesapi_is_string(apis, env, str))
+            {
+                NativeAPI.pesapi_throw_by_string(apis, info, "expect a string");
+                return;
+            }
+
+            UIntPtr bufsize = UIntPtr.Zero;
+            NativeAPI.pesapi_get_value_string_utf16(apis, env, str, null, ref bufsize);
+            byte[] buf = new byte[bufsize.ToUInt32() * 2];
+            NativeAPI.pesapi_get_value_string_utf16(apis, env, str, buf, ref bufsize);
+            string msg = System.Text.Encoding.Unicode.GetString(buf);
+            UnityEngine.Debug.Log(msg);
         }
 
         public T ExecuteModule<T>(string specifier, string exportee)
@@ -166,7 +195,25 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
+            var scope = apis.open_scope(envRef);
+            try
+            {
+                
+                var env = apis.get_env_from_ref(envRef);
+
+                byte[] codeBuff = System.Text.Encoding.UTF8.GetBytes(chunk);
+                apis.eval(env, codeBuff, new UIntPtr((uint)codeBuff.Length), chunkName);
+
+                if (apis.has_caught(scope))
+                {
+                    string msg = Marshal.PtrToStringUTF8(apis.get_exception_as_string(scope, true));
+                    throw new InvalidOperationException(msg);
+                }
+            }
+            finally 
+            {
+                apis.close_scope(scope);
+            }
 #if THREAD_SAFE
             }
 #endif
