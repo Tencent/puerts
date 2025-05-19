@@ -378,15 +378,6 @@ namespace Puerts.Editor
                     || (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length != 2);
             }
 
-            public static void FillEnumInfo(Wrapper.DataTypeInfo info, Type type)
-            {
-                if (type.IsEnum)
-                {
-                    info.IsEnum = true;
-                    info.UnderlyingTypeName = Enum.GetUnderlyingType(type).GetFriendlyName();
-                }
-            }
-
             public static string GetWrapTypeName(Type type)
             {
                 return type.ToString().Replace("+", "_").Replace(".", "_").Replace("`", "_").Replace("&", "_").Replace("[", "_").Replace("]", "_").Replace(",", "_") + "_Wrap";
@@ -471,7 +462,7 @@ namespace Puerts.Editor
                     return "ArrayBuffer";
                 else if (type == typeof(object))
                     return "any";
-                else if (type == typeof(Delegate) || type == typeof(Puerts.GenericDelegate))
+                else if (type == typeof(Delegate))
                     return "Function";
 #if CSHARP_7_3_OR_NEWER
                 else if (type == typeof(System.Threading.Tasks.Task)) 

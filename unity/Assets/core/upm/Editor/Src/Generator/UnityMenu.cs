@@ -35,7 +35,7 @@ namespace Puerts.Editor
                 var saveTo = Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
 
-                FileExporter.ExportWrapper(saveTo);
+                //FileExporter.ExportWrapper(saveTo);
                 Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
@@ -57,7 +57,7 @@ namespace Puerts.Editor
                 var saveTo = Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
                 Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
-                FileExporter.ExportDTS(saveTo);
+                //FileExporter.ExportDTS(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
@@ -69,7 +69,7 @@ namespace Puerts.Editor
                 var saveTo = Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
                 Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
-                FileExporter.ExportDTS(saveTo, null, true);
+                //FileExporter.ExportDTS(saveTo, null, true);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
@@ -94,7 +94,7 @@ namespace Puerts.Editor
                 var start = DateTime.Now;
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenRegisterInfo(saveTo);
+                //FileExporter.GenRegisterInfo(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
             }
