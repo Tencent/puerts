@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 #if CSHARP_7_3_OR_NEWER
 using System.Threading.Tasks;
 #endif
@@ -32,16 +33,10 @@ namespace Puerts
 
         public Backend Backend;
 
-#if UNITY_EDITOR
-        public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
-        public delegate void JsEnvDisposeCallback(JsEnv env);
-        public static JsEnvCreateCallback OnJsEnvCreate;
-        public static JsEnvDisposeCallback OnJsEnvDispose;
+        pesapi_ffi apis;
+        IntPtr envRef;
 
-        public int debugPort;
-#else 
         protected int debugPort;
-#endif
 
         internal Action OnDispose;
 
@@ -60,7 +55,7 @@ namespace Puerts
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort, BackendType backend, IntPtr externalRuntime, IntPtr externalContext)
+        public JsEnv(ILoader loader, int debugPort, BackendType backendExpect, IntPtr externalRuntime, IntPtr externalContext)
         {
 #if !UNITY_EDITOR && UNITY_WEBGL
             if (jsEnvs.Count == 0) PuertsDLL.InitPuertsWebGL();
@@ -76,11 +71,11 @@ namespace Puerts
             
             if (externalRuntime != IntPtr.Zero)
             {
-                isolate = PuertsDLL.CreateJSEngineWithExternalEnv((int)backend, externalRuntime, externalContext);
+                isolate = PuertsDLL.CreateJSEngineWithExternalEnv((int)backendExpect, externalRuntime, externalContext);
             }
             else
             {
-                isolate = PuertsDLL.CreateJSEngine((int)backend);
+                isolate = PuertsDLL.CreateJSEngine((int)backendExpect);
             }
 
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -94,7 +89,7 @@ namespace Puerts
             if (isolate == IntPtr.Zero)
             {
                 disposed = true;
-                throw new InvalidProgramException("create jsengine fail for " + backend);
+                throw new InvalidProgramException("create jsengine fail for " + backendExpect);
             }
             lock (jsEnvs)
             {
@@ -116,14 +111,31 @@ namespace Puerts
             }
 
             objectPool = new ObjectPool();
-          
-            if (PuertsDLL.GetLibBackend(isolate) == 0) 
+
+            BackendType backend = (BackendType)PuertsDLL.GetLibBackend(isolate);
+            if (backend == BackendType.V8) 
                 Backend = new BackendV8(this);
-            else if (PuertsDLL.GetLibBackend(isolate) == 1)
+            else if (backend == BackendType.Node)
                 Backend = new BackendNodeJS(this);
-            else if (PuertsDLL.GetLibBackend(isolate) == 2)
+            else if (backend == BackendType.QuickJS)
                 Backend = new BackendQuickJS(this);
 
+            IntPtr papis;
+            if (backend == BackendType.V8 || backend == BackendType.Node)
+            {
+                envRef = Puerts.NativeAPI.GetV8PapiEnvRef(isolate);
+                papis = Puerts.NativeAPI.GetV8FFIApi();
+            }
+            else if (backend == BackendType.QuickJS)
+            {
+                envRef = Puerts.NativeAPI.GetQjsPapiEnvRef(isolate);
+                papis = Puerts.NativeAPI.GetQjsFFIApi();
+            }
+            else
+            {
+                throw new InvalidProgramException("unexpected backend: " + backend);
+            }
+            apis = Marshal.PtrToStructure<pesapi_ffi>(papis);
         }
 
         public T ExecuteModule<T>(string specifier, string exportee)
@@ -378,6 +390,7 @@ namespace Puerts
                 if (disposed) return;
                 if (OnDispose != null) OnDispose();
                 jsEnvs[Idx] = null;
+                apis.release_env_ref(envRef);
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
                 disposed = true;
