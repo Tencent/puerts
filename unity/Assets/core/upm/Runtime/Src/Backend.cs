@@ -38,11 +38,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
             return PuertsDLL.IdleNotificationDeadline(env.isolate, DeadlineInSeconds);
-#else
-            return false;
-#endif
 #if THREAD_SAFE
             }
 #endif
@@ -53,9 +49,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
             PuertsDLL.LowMemoryNotification(env.isolate);
-#endif
 #if THREAD_SAFE
             }
 #endif
@@ -66,9 +60,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
             PuertsDLL.RequestMinorGarbageCollectionForTesting(env.isolate);
-#endif
 #if THREAD_SAFE
             }
 #endif
@@ -79,9 +71,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
             PuertsDLL.RequestFullGarbageCollectionForTesting(env.isolate);
-#endif
 #if THREAD_SAFE
             }
 #endif

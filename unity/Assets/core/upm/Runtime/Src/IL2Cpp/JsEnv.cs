@@ -31,6 +31,12 @@ namespace Puerts
         IntPtr nativeJsEnv;
         IntPtr nativePesapiEnv;
         IntPtr nativeScriptObjectsRefsMgr;
+        
+        internal IntPtr isolate {
+            get {
+                return nativeJsEnv;
+            }
+        }
 
         private Func<string, JSObject> moduleExecutor;
 
