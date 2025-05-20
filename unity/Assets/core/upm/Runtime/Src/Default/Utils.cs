@@ -330,6 +330,38 @@ namespace Puerts
                     {
                         type_def_extention_method.Add(type);
                     }
+
+                    if (!type.IsAbstract() || !type.IsSealed()) continue;
+
+                    var fields = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        var field = fields[i];
+                        if ((typeof(IEnumerable<Type>)).IsAssignableFrom(field.FieldType))
+                        {
+                            var types = field.GetValue(null) as IEnumerable<Type>;
+                            if (types != null)
+                            {
+                                type_def_extention_method.AddRange(types.Where(t => t != null && t.IsDefined(typeof(ExtensionAttribute), false)));
+                            }
+                        }
+                    }
+
+                    var props = type.GetProperties(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                    for (int i = 0; i < props.Length; i++)
+                    {
+                        var prop = props[i];
+                        if (!prop.CanRead)
+                            continue;
+                        if ((typeof(IEnumerable<Type>)).IsAssignableFrom(prop.PropertyType))
+                        {
+                            var types = prop.GetValue(null, null) as IEnumerable<Type>;
+                            if (types != null)
+                            {
+                                type_def_extention_method.AddRange(types.Where(t => t != null && t.IsDefined(typeof(ExtensionAttribute), false)));
+                            }
+                        }
+                    }
                 }
                 enumerator.Dispose();
 
