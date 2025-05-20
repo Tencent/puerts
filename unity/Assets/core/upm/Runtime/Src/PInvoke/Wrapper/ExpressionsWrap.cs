@@ -111,7 +111,7 @@ namespace Puerts
                 context.BlockExpressions.Add(Expression.Assign(refBuffSize, Expression.Field(null, typeof(UIntPtr), "Zero")));
 
                 // NativeAPI.pesapi_get_value_string_utf16(apis, env, str, null, ref bufsize);
-                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, Expression.Constant(null, typeof(byte[])), refBuffSize)); // 不添加到BlockExpressions会被优化掉
+                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, Expression.Constant(null, typeof(byte[])), refBuffSize)); // 不添加到BlockExpressions会被优化掉，看上去是Lambda那反向遍历语法树，如果不是最终的表达式所需（依赖）的都会gc掉
 
                 // byte[] buf = new byte[bufsize.ToUInt32() * 2];
                 var bufVar = Expression.Variable(typeof(byte[]), "buf");
