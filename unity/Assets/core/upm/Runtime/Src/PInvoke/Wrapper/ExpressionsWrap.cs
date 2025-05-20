@@ -103,6 +103,41 @@ namespace Puerts
                 //return apis.get_value_int32(env, val);
                 return callPApi(context.Apis, "get_value_int32", context.Env, value);
             }
+            else if (type == typeof(string))
+            {
+                // UIntPtr bufsize = UIntPtr.Zero;
+                var refBuffSize = Expression.Variable(typeof(UIntPtr));
+                context.Variables.Add(refBuffSize);
+                context.BlockExpressions.Add(Expression.Assign(refBuffSize, Expression.Field(null, typeof(UIntPtr), "Zero")));
+
+                // NativeAPI.pesapi_get_value_string_utf16(apis, env, str, null, ref bufsize);
+                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, Expression.Constant(null, typeof(byte[])), refBuffSize)); // 不添加到BlockExpressions会被优化掉
+
+                // byte[] buf = new byte[bufsize.ToUInt32() * 2];
+                var bufVar = Expression.Variable(typeof(byte[]), "buf");
+                context.Variables.Add(bufVar);
+                var toUInt32Method = typeof(UIntPtr).GetMethod("ToUInt32");
+                var multiplyExpr = Expression.Multiply(
+                    Expression.Call(refBuffSize, toUInt32Method),
+                    Expression.Constant((uint)2)
+                );
+                var newArrayExpr = Expression.NewArrayBounds(typeof(byte), multiplyExpr);
+                context.BlockExpressions.Add(Expression.Assign(bufVar, newArrayExpr));
+
+
+                // NativeAPI.pesapi_get_value_string_utf16(apis, env, str, buf, ref bufsize);
+                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, bufVar, refBuffSize));
+
+                // return System.Text.Encoding.Unicode.GetString(buf)
+                var encodingUnicode = Expression.Property(null, typeof(System.Text.Encoding).GetProperty("Unicode"));
+                var getStringMethod = typeof(System.Text.Encoding).GetMethod("GetString", new[] { typeof(byte[]) });
+                var getStringExpr = Expression.Call(
+                    encodingUnicode,
+                    getStringMethod,
+                    bufVar
+                );
+                return getStringExpr;
+            }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {
                 // IntPtr ptr = get_native_object_ptr(env, val);
@@ -131,6 +166,11 @@ namespace Puerts
             return callPApi(context.Apis, "add_return", info, nativeToScript(context, type, value));
         }
 
+        /*private static Expression checkArgument(CompileContext context, Type type, Expression value)
+        {
+
+        }*/
+
         private static Expression getArgument(CompileContext context, ParameterInfo parameterInfo, ParameterExpression info, int index)
         {
             //var temp = apis.get_arg(info, 0);
@@ -138,7 +178,7 @@ namespace Puerts
             return scriptToNative(context, parameterInfo.ParameterType, getArg);
         }
 
-        public static pesapi_callback MethodWrap(MethodInfo methodInfo)
+        public static pesapi_callback MethodWrap(MethodInfo methodInfo, bool check)
         {
             if (!methodInfo.IsStatic)
             {
