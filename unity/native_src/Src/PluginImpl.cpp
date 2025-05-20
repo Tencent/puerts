@@ -204,7 +204,7 @@ public:
 
     //-------------------------- end debug --------------------------
     
-    virtual void V8Plugin::TerminateExecution() override
+    virtual void TerminateExecution() override
     {
         jsEngine.TerminateExecution();
     }
