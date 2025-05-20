@@ -163,6 +163,13 @@ public:
 
     void LogicTick();
     
+    void TerminateExecution()
+    {
+#if !WITH_QUICKJS
+        MainIsolate->TerminateExecution();
+#endif
+    }
+    
     static void CallbackDataGarbageCollected(const v8::WeakCallbackInfo<FCallbackInfoWithFinalize>& Data);
 
     v8::Isolate* MainIsolate;

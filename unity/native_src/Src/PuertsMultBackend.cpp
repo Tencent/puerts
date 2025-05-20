@@ -36,7 +36,7 @@
 #endif
 #endif  // _WIN32
 
-#define API_LEVEL 34
+#define API_LEVEL 35
 
 LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
@@ -97,6 +97,11 @@ PUERTS_EXPORT puerts::IPuertsPlugin* CreateJSEngineWithExternalEnv(int backend, 
 PUERTS_EXPORT void DestroyJSEngine(puerts::IPuertsPlugin* plugin)
 {
     delete plugin;
+}
+
+PUERTS_EXPORT void TerminateExecution(puerts::IPuertsPlugin* plugin)
+{
+    plugin->TerminateExecution();
 }
 
 #ifdef WITH_IL2CPP_OPTIMIZATION

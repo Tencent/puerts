@@ -87,6 +87,11 @@ namespace Puerts
 #endif
         }
 
+        public void TerminateExecution()
+        {
+            PuertsDLL.TerminateExecution(env.isolate);
+        }
+
     }
 
     public class BackendNodeJS : BackendV8

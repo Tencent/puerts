@@ -18,7 +18,7 @@
 #endif
 #endif
 
-#define API_LEVEL 34
+#define API_LEVEL 35
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -85,6 +85,12 @@ V8_EXPORT void DestroyJSEngine(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     delete JsEngine;
+}
+
+V8_EXPORT void TerminateExecution(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->TerminateExecution();
 }
 
 #ifdef WITH_IL2CPP_OPTIMIZATION

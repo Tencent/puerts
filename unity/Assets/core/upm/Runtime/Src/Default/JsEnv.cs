@@ -99,7 +99,7 @@ namespace Puerts
 #if !UNITY_EDITOR && UNITY_WEBGL
             if (jsEnvs.Count == 0) PuertsDLL.InitPuertsWebGL();
 #endif
-            const int libVersionExpect = 34;
+            const int libVersionExpect = 35;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {

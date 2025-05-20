@@ -204,6 +204,11 @@ public:
 
     //-------------------------- end debug --------------------------
     
+    virtual void V8Plugin::TerminateExecution() override
+    {
+        jsEngine.TerminateExecution();
+    }
+    
     PUERTS_NAMESPACE::JSEngine jsEngine;
 };
 
