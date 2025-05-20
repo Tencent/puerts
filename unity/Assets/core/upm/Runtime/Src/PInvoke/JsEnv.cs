@@ -142,12 +142,19 @@ namespace Puerts
             var env = apis.get_env_from_ref(envRef);
             var global = apis.global(env);
 
-            var print = apis.create_function(env, Print, IntPtr.Zero, null);
+            //var print = apis.create_function(env, Print, IntPtr.Zero, null);
+            var print = apis.create_function(env,  ExpressionsWrap.MethodWrap(typeof(JsEnv).GetMethod("Print"), true), IntPtr.Zero, null);
             apis.set_property(env, global, "print", print);
 
             apis.close_scope(scope);
         }
 
+        public static void Print(string msg)
+        {
+            UnityEngine.Debug.Log(msg);
+        }
+
+        /*
         [MonoPInvokeCallback(typeof(pesapi_callback))]
         static void Print(IntPtr apis, IntPtr info)
         {
@@ -155,7 +162,7 @@ namespace Puerts
             var str = NativeAPI.pesapi_get_arg(apis, info, 0);
             if (!NativeAPI.pesapi_is_string(apis, env, str))
             {
-                NativeAPI.pesapi_throw_by_string(apis, info, "expect a string");
+                NativeAPI.pesapi_throw_by_string(apis, info, "invalid arguments to Print");
                 return;
             }
 
@@ -166,6 +173,7 @@ namespace Puerts
             string msg = System.Text.Encoding.Unicode.GetString(buf);
             UnityEngine.Debug.Log(msg);
         }
+        */
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {

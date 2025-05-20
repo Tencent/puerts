@@ -166,19 +166,50 @@ namespace Puerts
             return callPApi(context.Apis, "add_return", info, nativeToScript(context, type, value));
         }
 
-        /*private static Expression checkArgument(CompileContext context, Type type, Expression value)
+        private static Expression checkArgumentLen(CompileContext context, ParameterExpression info, MethodInfo methodInfo)
         {
+            return Expression.NotEqual(callPApi(context.Apis, "get_args_len", info), Expression.Constant(methodInfo.GetParameters().Length));
+        }
 
-        }*/
+        private static Expression checkArgument(CompileContext context, Type type, Expression value)
+        {
+            if (type == typeof(int))
+            {
+                // !apis.is_int32(env, value);
+                return Expression.Not(callPApi(context.Apis, "is_int32", context.Env, value));
+            }
+            else if (type == typeof(string))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_string", context.Env, value));
+            }
+            else
+            {
+                throw new Exception("checkArgument: " + type + " not support yet!");
+            }
+        }
 
         private static Expression getArgument(CompileContext context, ParameterInfo parameterInfo, ParameterExpression info, int index)
         {
-            //var temp = apis.get_arg(info, 0);
-            var getArg = callPApi(context.Apis, "get_arg", info, Expression.Constant(index));
-            return scriptToNative(context, parameterInfo.ParameterType, getArg);
+            //var temp = apis.get_arg(info, index);
+            var temp = Expression.Variable(typeof(IntPtr));
+            context.Variables.Add(temp);
+            context.BlockExpressions.Add(Expression.Assign(temp, callPApi(context.Apis, "get_arg", info, Expression.Constant(index))));
+            return temp;
         }
 
-        public static pesapi_callback MethodWrap(MethodInfo methodInfo, bool check)
+        private static Expression buildOrExpression(IEnumerable<Expression> conditions)
+        {
+            if (!conditions.Any())
+                return Expression.Constant(false);
+
+            if (conditions.Count() == 1)
+                return conditions.First();
+
+            return conditions.Aggregate((left, right) =>
+                Expression.OrElse(left, right));
+        }
+
+        public static pesapi_callback MethodWrap(MethodInfo methodInfo, bool checkArgs)
         {
             if (!methodInfo.IsStatic)
             {
@@ -203,8 +234,22 @@ namespace Puerts
                 Env = env
             };
 
+            var jsArgs = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, pi, info, index)).ToArray();
+
+            LabelTarget voidReturn = Expression.Label();
+
+            if (checkArgs)
+            {
+                var checkExpression = buildOrExpression(methodInfo.GetParameters()
+                    .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, jsArgs[index]))
+                    .Concat(new[] { checkArgumentLen(context, info, methodInfo) }));
+
+                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant("invalid arguments to " + methodInfo.Name));
+                blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, Expression.Return(voidReturn))));
+            }
+
             Expression self = null; // TODO: this for instance method
-            var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, pi, info, index)));
+            var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
             var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
 
             if (addReturn != null)
@@ -216,6 +261,7 @@ namespace Puerts
                 blockExpressions.Add(callMethod);
             }
 
+            blockExpressions.Add(Expression.Label(voidReturn));
             var block = Expression.Block(variables, blockExpressions);
             //var block = Expression.Block();
 
