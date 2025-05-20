@@ -151,6 +151,10 @@ namespace Puerts
 
         public static void Print(string msg)
         {
+            if (msg == "throw")
+            {
+                throw new Exception("js force throw");
+            }
             UnityEngine.Debug.Log(msg);
         }
 

@@ -261,11 +261,32 @@ namespace Puerts
                 blockExpressions.Add(callMethod);
             }
 
-            blockExpressions.Add(Expression.Label(voidReturn));
             var block = Expression.Block(variables, blockExpressions);
-            //var block = Expression.Block();
 
-            return (Expression.Lambda<pesapi_callback>(block, apis, info)).Compile();
+            var exVar = Expression.Variable(typeof(Exception), "ex");
+
+            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
+
+            var formatExpr = Expression.Call(
+                formatMethod,
+                Expression.Constant("C# Exception: {0}, Stack: {1}"),
+                Expression.NewArrayInit(
+                    typeof(object),
+                    Expression.Convert(Expression.Property(exVar, "Message"), typeof(object)),
+                    Expression.Convert(Expression.Property(exVar, "StackTrace"), typeof(object))
+                )
+            );
+
+            var catchBlock = Expression.Block(
+                callPApi(apis, "throw_by_string", info, formatExpr)
+            );
+
+            var tryCatchExpr = Expression.TryCatch(block, Expression.Catch(exVar, catchBlock));
+
+            return (Expression.Lambda<pesapi_callback>(Expression.Block(
+                tryCatchExpr,
+                Expression.Label(voidReturn)
+                ), apis, info)).Compile();
         }
     }
 }
