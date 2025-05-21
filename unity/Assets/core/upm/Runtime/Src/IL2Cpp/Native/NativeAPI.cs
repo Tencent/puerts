@@ -958,18 +958,18 @@ namespace Puerts
     [StructLayout(LayoutKind.Sequential)]
     public struct pesapi_reg_api
     {
-        public pesapi_alloc_type_infos_func pesapi_alloc_type_infos;
-        public pesapi_set_type_info_func pesapi_set_type_info;
-        public pesapi_create_signature_info_func pesapi_create_signature_info;
-        public pesapi_alloc_property_descriptors_func pesapi_alloc_property_descriptors;
-        public pesapi_set_method_info_func pesapi_set_method_info;
-        public pesapi_set_property_info_func pesapi_set_property_info;
-        public pesapi_define_class_func pesapi_define_class;
-        public pesapi_get_class_data_func pesapi_get_class_data;
-        public pesapi_trace_native_object_lifecycle_func pesapi_trace_native_object_lifecycle;
-        public pesapi_on_class_not_found_func pesapi_on_class_not_found;
-        public pesapi_class_type_info_func pesapi_class_type_info;
-        public pesapi_find_type_id_func pesapi_find_type_id;
+        public pesapi_alloc_type_infos_func alloc_type_infos;
+        public pesapi_set_type_info_func set_type_info;
+        public pesapi_create_signature_info_func create_signature_info;
+        public pesapi_alloc_property_descriptors_func alloc_property_descriptors;
+        public pesapi_set_method_info_func set_method_info;
+        public pesapi_set_property_info_func set_property_info;
+        public pesapi_define_class_func define_class;
+        public pesapi_get_class_data_func get_class_data;
+        public pesapi_trace_native_object_lifecycle_func trace_native_object_lifecycle;
+        public pesapi_on_class_not_found_func on_class_not_found;
+        public pesapi_class_type_info_func class_type_info;
+        public pesapi_find_type_id_func find_type_id;
     }
 
 }

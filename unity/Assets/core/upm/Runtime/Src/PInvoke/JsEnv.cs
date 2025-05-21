@@ -35,6 +35,7 @@ namespace Puerts
 
         pesapi_ffi apis;
         IntPtr envRef;
+        pesapi_reg_api reg_api;
 
         protected int debugPort;
 
@@ -135,6 +136,9 @@ namespace Puerts
             {
                 throw new InvalidProgramException("unexpected backend: " + backend);
             }
+            reg_api = Marshal.PtrToStructure<pesapi_reg_api>(NativeAPI.GetRegsterApi());
+            reg_api.on_class_not_found(OnClassNotFound);
+
             apis = Marshal.PtrToStructure<pesapi_ffi>(papis);
 
             var scope = apis.open_scope(envRef);
@@ -156,6 +160,11 @@ namespace Puerts
                 throw new Exception("js force throw");
             }
             UnityEngine.Debug.Log(msg);
+        }
+
+        bool OnClassNotFound(IntPtr type_id)
+        {
+            return true;
         }
 
         /*
