@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Puerts
 {
-    public static class UnmanagedType
+    public static class UnmanagedTypeUtils
     {
         public static bool IsUnmanaged(Type type)
         {
