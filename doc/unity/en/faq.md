@@ -134,4 +134,4 @@ Actually, the C# object is not null. It is the `==` operator overloaded by Unity
 
 #### undefined symbol: InitialPuerts
 
-No code has been generated. Please follow the [il2cpp Optimization Features/Usage Steps](performance/il2cpp.md#Usage Steps) Steps to proceed.
+No code has been generated. Please follow the [il2cpp Optimization Features/Usage Steps](performance/il2cpp.md#usage-steps) Steps to proceed.
