@@ -137,7 +137,7 @@ namespace Puerts
                 throw new InvalidProgramException("unexpected backend: " + backend);
             }
             reg_api = Marshal.PtrToStructure<pesapi_reg_api>(NativeAPI.GetRegsterApi());
-            reg_api.on_class_not_found(OnClassNotFound);
+            reg_api.on_class_not_found(TypeRegister.Instance.OnTypeNotFound);
 
             apis = Marshal.PtrToStructure<pesapi_ffi>(papis);
 
@@ -150,6 +150,8 @@ namespace Puerts
             var print = apis.create_function(env,  ExpressionsWrap.MethodWrap(typeof(JsEnv).GetMethod("Print"), true), IntPtr.Zero, null);
             apis.set_property(env, global, "print", print);
 
+            apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
+
             apis.close_scope(scope);
         }
 
@@ -160,11 +162,6 @@ namespace Puerts
                 throw new Exception("js force throw");
             }
             UnityEngine.Debug.Log(msg);
-        }
-
-        bool OnClassNotFound(IntPtr type_id)
-        {
-            return true;
         }
 
         /*

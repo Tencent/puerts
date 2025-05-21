@@ -7,7 +7,7 @@ public sealed class TypeRegister
     private static readonly object instanceLock = new object();
 
     private readonly object writeLock = new object();
-    private volatile Type[] typeArray = Array.Empty<Type>();
+    private volatile Type[] typeArray = new Type[] { null }; // id not zero
     private readonly ConcurrentDictionary<Type, int> typeToId = new ConcurrentDictionary<Type, int>();
 
     private TypeRegister() { }
@@ -59,5 +59,12 @@ public sealed class TypeRegister
     {
         var current = typeArray; // 获取当前数组快照
         return (uint)id < (uint)current.Length ? current[id] : null;
+    }
+
+    public bool OnTypeNotFound(IntPtr type_id)
+    {
+        Type type = FindTypeById(type_id.ToInt32());
+        UnityEngine.Debug.Log("Loading type: " + type + ", id: "+ type_id.ToInt32());
+        return true;
     }
 }
