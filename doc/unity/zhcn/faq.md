@@ -154,3 +154,7 @@ sm.install({
 ps：以上是v8后端的的现象和解决方案，qjs后端如果多线程访问有可能会抛个没有文件信息的异常`<unknow>:-1`
 
 ps：如果是必报，应该是js代码中有递归死循环了。
+
+#### undefined symbol: InitialPuerts
+
+没有生成代码，请按[il2cpp优化特性/使用步骤](performance/il2cpp.md#%%E4%BD%BF%E7%94%A8%E6%AD%A5%E9%AA%A4)操作。
