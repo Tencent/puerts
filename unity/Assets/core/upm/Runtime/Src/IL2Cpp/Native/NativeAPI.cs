@@ -900,7 +900,7 @@ namespace Puerts
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_set_method_info_func(
         IntPtr properties, UIntPtr index,
-        [MarshalAs(UnmanagedType.LPStr)] string name,
+        IntPtr name,
         [MarshalAs(UnmanagedType.U1)] bool is_static,
         pesapi_callback method,
         IntPtr data,
@@ -909,7 +909,7 @@ namespace Puerts
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_set_property_info_func(
         IntPtr properties, UIntPtr index,
-        [MarshalAs(UnmanagedType.LPStr)] string name,
+        IntPtr name,
         [MarshalAs(UnmanagedType.U1)] bool is_static,
         pesapi_callback getter,
         pesapi_callback setter,

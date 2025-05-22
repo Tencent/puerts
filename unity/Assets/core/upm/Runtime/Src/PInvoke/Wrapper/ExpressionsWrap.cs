@@ -61,6 +61,23 @@ namespace Puerts
 
     public static class ExpressionsWrap
     {
+        internal static class Helpper // 为了简化Express Tree生成复杂度的封装
+        {
+            public static T GetObject<T>(IntPtr api, IntPtr env, IntPtr obj)
+            {
+                var envIdx = NativeAPI.pesapi_get_env_private(api, env).ToInt32();
+                var objIdx = NativeAPI.pesapi_get_native_object_ptr(api, env, obj).ToInt32();
+                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
+            }
+
+            public static T GetSelf<T>(IntPtr api, IntPtr env, IntPtr info)
+            {
+                var envIdx = NativeAPI.pesapi_get_env_private(api, env).ToInt32();
+                var objIdx = NativeAPI.pesapi_get_native_holder_ptr(api, info).ToInt32();
+                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
+            }
+        }
+
         class CompileContext
         {
             public List<ParameterExpression> Variables;
@@ -211,10 +228,6 @@ namespace Puerts
 
         public static pesapi_callback MethodWrap(MethodInfo methodInfo, bool checkArgs)
         {
-            if (!methodInfo.IsStatic)
-            {
-                throw new Exception("instance method not support yet!");
-            }
             var variables = new List<ParameterExpression>(); 
             var blockExpressions = new List<Expression>();
 
@@ -248,7 +261,18 @@ namespace Puerts
                 blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, Expression.Return(voidReturn))));
             }
 
-            Expression self = null; // TODO: this for instance method
+            ParameterExpression self = null;
+
+            if (!methodInfo.IsStatic)
+            {
+                // Class1 self = Helpper.Get<Class1>(apis, env, info);
+                var getSelfMethod = typeof(Helpper).GetMethod("GetSelf").MakeGenericMethod(methodInfo.DeclaringType);
+                self = Expression.Variable(methodInfo.DeclaringType, "self");
+                variables.Add(self);
+                var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
+                blockExpressions.Add(Expression.Assign(self, callGetSelf));
+            }
+
             var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
             var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
 

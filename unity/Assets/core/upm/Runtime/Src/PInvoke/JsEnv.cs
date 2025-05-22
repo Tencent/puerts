@@ -35,7 +35,6 @@ namespace Puerts
 
         pesapi_ffi apis;
         IntPtr envRef;
-        pesapi_reg_api reg_api;
 
         protected int debugPort;
 
@@ -136,21 +135,23 @@ namespace Puerts
             {
                 throw new InvalidProgramException("unexpected backend: " + backend);
             }
-            reg_api = Marshal.PtrToStructure<pesapi_reg_api>(NativeAPI.GetRegsterApi());
-            reg_api.on_class_not_found(TypeRegister.Instance.OnTypeNotFound);
 
             apis = Marshal.PtrToStructure<pesapi_ffi>(papis);
 
             var scope = apis.open_scope(envRef);
 
             var env = apis.get_env_from_ref(envRef);
+
+            apis.set_env_private(env, new IntPtr(Idx));
+
             var global = apis.global(env);
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
             var print = apis.create_function(env,  ExpressionsWrap.MethodWrap(typeof(JsEnv).GetMethod("Print"), true), IntPtr.Zero, null);
             apis.set_property(env, global, "print", print);
 
-            apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
+            var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
+            apis.set_property(env, global, "jsEnv", jsJsEnv);
 
             apis.close_scope(scope);
         }
@@ -162,6 +163,11 @@ namespace Puerts
                 throw new Exception("js force throw");
             }
             UnityEngine.Debug.Log(msg);
+        }
+
+        public void AAA()
+        {
+            UnityEngine.Debug.Log("AAA");
         }
 
         /*
