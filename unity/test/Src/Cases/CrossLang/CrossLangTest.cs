@@ -24,6 +24,18 @@ namespace Puerts.UnitTest
     }
 
     [UnityEngine.Scripting.Preserve]
+    public struct TakeTestGC
+    {
+        [UnityEngine.Scripting.Preserve]
+        public TakeTestGC(int n)
+        {
+            testGC = new TestGC();
+        }
+
+        public TestGC testGC;
+    }
+
+    [UnityEngine.Scripting.Preserve]
     public class OverloadTestObject
     {
         public static int LastCall = 999;
@@ -1130,12 +1142,60 @@ namespace Puerts.UnitTest
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
+            TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
             const randomCount = Math.floor(Math.random() * 50) + 1;
 
             var objs = []
             for (let i = 0; i < randomCount; i++) {
                 objs.push(new CS.Puerts.UnitTest.TestGC())
+            }
+            randomCount;
+            ");
+
+            if (jsEnv.Backend is BackendV8)
+            {
+                jsEnv.Eval("gc()");
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(objCount, TestGC.ObjCount);
+            Assert.True(objCount > 0);
+
+            jsEnv.Eval("objs = undefined");
+
+            if (jsEnv.Backend is BackendV8)
+            {
+                jsEnv.Eval("gc()");
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(0, TestGC.ObjCount);
+
+            jsEnv.Dispose();
+        }
+
+        [Test]
+        public void TestJsStructGC()
+        {
+#if PUERTS_GENERAL
+            var jsEnv = new JsEnv(new TxtLoader());
+#else
+            var jsEnv = new JsEnv(new DefaultLoader());
+#endif
+            TestGC.ObjCount = 0;
+            var objCount = jsEnv.Eval<int>(@"
+            const randomCount = Math.floor(Math.random() * 50) + 1;
+
+            var objs = []
+            for (let i = 0; i < randomCount; i++) {
+                objs.push(new CS.Puerts.UnitTest.TakeTestGC(1))
             }
             randomCount;
             ");
