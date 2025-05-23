@@ -170,6 +170,7 @@ namespace Puerts
         public void AAA(Func<int, int> callback)
         {
             UnityEngine.Debug.Log("AAA callback(100) = " + callback(100));
+            UnityEngine.Debug.Log("AAA callback(100) = " + callback(42));
         }
 
         /*

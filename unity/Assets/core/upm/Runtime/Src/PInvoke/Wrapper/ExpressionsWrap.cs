@@ -131,8 +131,7 @@ namespace Puerts
             
             var checkException = typeof(Helpper).GetMethod("CheckException");
 
-            var variables = new List<ParameterExpression>();
-            var blockExpressions = new List<Expression>();
+
 
             // 生成每个参数的日志表达式
             /*
@@ -163,10 +162,17 @@ namespace Puerts
                 .Cast<Expression>());
             */
 
+            
+            var outerVariables = new List<ParameterExpression>();
+            var outerExpressions = new List<Expression>();
+
             // var scope = apis.open_scope(envRef);
             var scope = Expression.Variable(typeof(IntPtr));
-            variables.Add(scope);
-            blockExpressions.Add(Expression.Assign(scope, callPApi(apis, "open_scope", envRef)));
+            outerVariables.Add(scope);
+            outerExpressions.Add(Expression.Assign(scope, callPApi(apis, "open_scope", envRef)));
+
+            var variables = new List<ParameterExpression>();
+            var blockExpressions = new List<Expression>();
 
             var env = Expression.Variable(typeof(IntPtr));
             variables.Add(env);
@@ -191,20 +197,20 @@ namespace Puerts
 
             var res = Expression.Variable(typeof(IntPtr));
             variables.Add(res);
+
             var callFunc = callPApi(apis, "call_function", env, func, Expression.Default(typeof(IntPtr)), Expression.Constant(scriptValues.Count), argv);
             blockExpressions.Add(Expression.Assign(res, callFunc));
 
             blockExpressions.Add(Expression.Call(checkException, apis, scope));
-
-            // apis.close_scope(scope); TODO: all to finally
-            blockExpressions.Add(callPApi(apis, "close_scope", scope));
 
             if (invokeMethodInfo.ReturnType != typeof(void))
             {
                 blockExpressions.Add(scriptToNative(context, invokeMethodInfo.ReturnType, res));
             }
 
-            return Expression.Lambda(type, Expression.Block(variables, blockExpressions), delegateParams);
+            outerExpressions.Add(Expression.TryFinally(Expression.Block(variables, blockExpressions), callPApi(apis, "close_scope", scope)));
+
+            return Expression.Lambda(type, Expression.Block(outerVariables, outerExpressions), delegateParams);
         }
 
         private static Expression scriptToNative(CompileContext context, Type type, Expression value)
