@@ -843,6 +843,20 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
     puerts::DataTransfer::SetIsolatePrivateData(context->GetIsolate(), const_cast<void*>(ptr));
 }
 
+
+bool pesapi_trace_native_object_lifecycle(pesapi_env env, 
+    pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    return puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->TraceObjectLifecycle(on_enter, on_exit);
+}
+
+void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->SetRegistry(reinterpret_cast<puerts::JSClassRegister*>(registry));
+}
+
 pesapi_ffi g_pesapi_ffi {
     &pesapi_create_null,
     &pesapi_create_undefined,
@@ -927,7 +941,9 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_eval,
     &pesapi_global,
     &pesapi_get_env_private,
-    &pesapi_set_env_private
+    &pesapi_set_env_private,
+    &pesapi_trace_native_object_lifecycle,
+    &pesapi_set_registry
 };
 
 }    // namespace v8impl
@@ -968,6 +984,11 @@ struct pesapi_property_descriptor__
         pesapi_signature_info signature_info;
     } info;
 };
+
+pesapi_registry pesapi_create_registry()
+{
+    return reinterpret_cast<pesapi_registry>(puerts::CreateRegistry());
+}
 
 pesapi_type_info pesapi_alloc_type_infos(size_t count)
 {
@@ -1050,8 +1071,8 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
 // set module name here during loading, set nullptr after module loaded
 const char* GPesapiModuleName = nullptr;
 
-void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* data)
+void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor,
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* data, bool copy_str)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
@@ -1117,27 +1138,22 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     classDef.Properties = p_properties.data();
     classDef.Variables = p_variables.data();
 
-    puerts::RegisterJSClass(classDef);
+    puerts::RegisterJSClass(reinterpret_cast<puerts::JSClassRegister*>(registry), classDef);
 }
 
-void* pesapi_get_class_data(const void* type_id, bool force_load)
+void* pesapi_get_class_data(pesapi_registry _registry, const void* type_id, bool force_load)
 {
-    auto clsDef = force_load ? puerts::LoadClassByID(type_id) : puerts::FindClassByID(type_id);
+    auto registry = reinterpret_cast<puerts::JSClassRegister*>(_registry);
+    auto clsDef = force_load ? puerts::LoadClassByID(registry, type_id) : puerts::FindClassByID(registry, type_id);
     return clsDef ? clsDef->Data : nullptr;
 }
 
-bool pesapi_trace_native_object_lifecycle(
-    const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
+void pesapi_on_class_not_found(pesapi_registry registry, pesapi_class_not_found_callback callback)
 {
-    return puerts::TraceObjectLifecycle(type_id, on_enter, on_exit);
+    puerts::OnClassNotFound(reinterpret_cast<puerts::JSClassRegister*>(registry), callback);
 }
 
-void pesapi_on_class_not_found(pesapi_class_not_found_callback callback)
-{
-    puerts::OnClassNotFound(callback);
-}
-
-void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
+void pesapi_class_type_info(pesapi_registry registry, const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
     const void* functions_info, const void* properties_info, const void* variables_info)
 {
     if (strcmp(proto_magic_id, PUERTS_BINDING_PROTO_ID()) != 0)
@@ -1145,18 +1161,18 @@ void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, con
         return;
     }
 
-    puerts::SetClassTypeInfo(type_id, static_cast<const puerts::NamedFunctionInfo*>(constructor_info),
+    puerts::SetClassTypeInfo(reinterpret_cast<puerts::JSClassRegister*>(registry), type_id, static_cast<const puerts::NamedFunctionInfo*>(constructor_info),
         static_cast<const puerts::NamedFunctionInfo*>(methods_info), static_cast<const puerts::NamedFunctionInfo*>(functions_info),
         static_cast<const puerts::NamedPropertyInfo*>(properties_info),
         static_cast<const puerts::NamedPropertyInfo*>(variables_info));
 }
 
-const void* pesapi_find_type_id(const char* module_name, const char* type_name)
+const void* pesapi_find_type_id(pesapi_registry registry, const char* module_name, const char* type_name)
 {
     puerts::PString fullname = module_name;
     fullname += ".";
     fullname += type_name;
-    const auto class_def = puerts::FindCppTypeClassByName(fullname);
+    const auto class_def = puerts::FindCppTypeClassByName(reinterpret_cast<puerts::JSClassRegister*>(registry), fullname);
     return class_def ? class_def->TypeId : nullptr;
 }
 
@@ -1164,10 +1180,9 @@ EXTERN_C_END
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
-pesapi_func_ptr reg_apis[] = {(pesapi_func_ptr) &pesapi_alloc_type_infos, (pesapi_func_ptr) &pesapi_set_type_info,
-    (pesapi_func_ptr) &pesapi_create_signature_info, (pesapi_func_ptr) &pesapi_alloc_property_descriptors,
+pesapi_func_ptr reg_apis[] = {(pesapi_func_ptr) &pesapi_create_registry, (pesapi_func_ptr) &pesapi_alloc_type_infos,
+    (pesapi_func_ptr) &pesapi_set_type_info, (pesapi_func_ptr) &pesapi_create_signature_info, (pesapi_func_ptr) &pesapi_alloc_property_descriptors,
     (pesapi_func_ptr) &pesapi_set_method_info, (pesapi_func_ptr) &pesapi_set_property_info, (pesapi_func_ptr) &pesapi_define_class,
-    (pesapi_func_ptr) &pesapi_get_class_data, (pesapi_func_ptr) &pesapi_trace_native_object_lifecycle,
-    (pesapi_func_ptr) &pesapi_on_class_not_found, (pesapi_func_ptr) &pesapi_class_type_info,
+    (pesapi_func_ptr) &pesapi_get_class_data, (pesapi_func_ptr) &pesapi_on_class_not_found, (pesapi_func_ptr) &pesapi_class_type_info,
     (pesapi_func_ptr) &pesapi_find_type_id};
 MSVC_PRAGMA(warning(pop))

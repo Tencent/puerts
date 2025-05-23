@@ -51,6 +51,10 @@ public:
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
+    virtual void SetRegistry(JSClassRegister* InRegistry) = 0;
+
+    virtual bool TraceObjectLifecycle(pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit) = 0;
+
     virtual ~ICppObjectMapper()
     {
     }

@@ -142,6 +142,8 @@ namespace Puerts
 
             var env = apis.get_env_from_ref(envRef);
 
+            apis.set_registry(env, TypeRegister.Instance.Registry);
+
             apis.set_env_private(env, new IntPtr(Idx));
 
             var global = apis.global(env);

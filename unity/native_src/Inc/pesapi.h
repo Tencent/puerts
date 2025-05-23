@@ -138,6 +138,7 @@ typedef struct pesapi_scope__* pesapi_scope;
 typedef struct pesapi_type_info__* pesapi_type_info;
 typedef struct pesapi_signature_info__* pesapi_signature_info;
 typedef struct pesapi_property_descriptor__* pesapi_property_descriptor;
+typedef struct pesapi_registry__* pesapi_registry;
 
 struct pesapi_ffi;
 
@@ -254,6 +255,9 @@ typedef pesapi_value (*pesapi_global_func)(pesapi_env env);
 typedef const void* (*pesapi_get_env_private_func)(pesapi_env env);
 typedef void (*pesapi_set_env_private_func)(pesapi_env env, const void* ptr);
 
+typedef bool (*pesapi_trace_native_object_lifecycle_func)(pesapi_env env, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
+typedef void (*pesapi_set_registry_func)(pesapi_env env, pesapi_registry registry);
+
 struct pesapi_ffi
 {
     pesapi_create_null_func create_null;
@@ -340,7 +344,11 @@ struct pesapi_ffi
     pesapi_global_func global;
     pesapi_get_env_private_func get_env_private;
     pesapi_set_env_private_func set_env_private;
+    pesapi_trace_native_object_lifecycle_func trace_native_object_lifecycle;
+    pesapi_set_registry_func set_registry_func;
 };
+
+PESAPI_EXTERN pesapi_registry pesapi_create_registry();
 
 PESAPI_EXTERN pesapi_type_info pesapi_alloc_type_infos(size_t count);
 
@@ -359,21 +367,18 @@ PESAPI_EXTERN void pesapi_set_method_info(pesapi_property_descriptor properties,
 PESAPI_EXTERN void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
     pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, pesapi_type_info type_info);
 
-PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name,
-    pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties,
-    void* data);
+PESAPI_EXTERN void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, 
+    const char* type_name, pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties,
+    void* data, bool copy_str);
 
-PESAPI_EXTERN void* pesapi_get_class_data(const void* type_id, bool force_load);
+PESAPI_EXTERN void* pesapi_get_class_data(pesapi_registry registry, const void* type_id, bool force_load);
 
-PESAPI_EXTERN bool pesapi_trace_native_object_lifecycle(
-    const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
+PESAPI_EXTERN void pesapi_on_class_not_found(pesapi_registry registry, pesapi_class_not_found_callback callback);
 
-PESAPI_EXTERN void pesapi_on_class_not_found(pesapi_class_not_found_callback callback);
-
-PESAPI_EXTERN void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info,
+PESAPI_EXTERN void pesapi_class_type_info(pesapi_registry registry, const char* proto_magic_id, const void* type_id, const void* constructor_info,
     const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info);
 
-PESAPI_EXTERN const void* pesapi_find_type_id(const char* module_name, const char* type_name);
+PESAPI_EXTERN const void* pesapi_find_type_id(pesapi_registry registry, const char* module_name, const char* type_name);
 
 EXTERN_C_END
 

@@ -56,6 +56,24 @@ struct PesapiCallbackData
 class FCppObjectMapper final : public ICppObjectMapper
 {
 public:
+    virtual void SetRegistry(JSClassRegister* InRegistry) override
+    {
+        Registry = InRegistry;
+    }
+
+    virtual bool TraceObjectLifecycle(pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit) override
+    {
+        this->OnEnter = OnEnter;
+        this->OnExit = OnExit;
+        return true;
+    }
+
+private:
+    JSClassRegister* Registry = nullptr;
+    pesapi_on_native_object_enter OnEnter = nullptr;
+    pesapi_on_native_object_exit OnExit = nullptr;
+
+public:
     void Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext);
 
     void findClassByName(const v8::FunctionCallbackInfo<v8::Value>& Info);

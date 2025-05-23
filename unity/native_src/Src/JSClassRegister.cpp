@@ -296,62 +296,50 @@ void JSClassRegister::ForeachRegisterClass(std::function<void(const JSClassDefin
 #endif
 }
 
-JSClassRegister* GetJSClassRegister()
+JSClassRegister* CreateRegistry()
 {
-    static JSClassRegister S_JSClassRegister;
-    return &S_JSClassRegister;
+    return new JSClassRegister();
 }
 
-void RegisterJSClass(const JSClassDefinition& ClassDefinition)
+void RegisterJSClass(JSClassRegister* Registry, const JSClassDefinition& ClassDefinition)
 {
-    GetJSClassRegister()->RegisterClass(ClassDefinition);
+    Registry->RegisterClass(ClassDefinition);
 }
 
-void SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+void SetClassTypeInfo(JSClassRegister* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos)
 {
-    GetJSClassRegister()->SetClassTypeInfo(TypeId, ConstructorInfos, MethodInfos, FunctionInfos, PropertyInfos, VariableInfos);
+    Registry->SetClassTypeInfo(TypeId, ConstructorInfos, MethodInfos, FunctionInfos, PropertyInfos, VariableInfos);
 }
 
-void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)> Callback)
+void ForeachRegisterClass(JSClassRegister* Registry, std::function<void(const JSClassDefinition* ClassDefinition)> Callback)
 {
-    GetJSClassRegister()->ForeachRegisterClass(Callback);
+    Registry->ForeachRegisterClass(Callback);
 }
 
-const JSClassDefinition* FindClassByID(const void* TypeId)
+const JSClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId)
 {
-    return GetJSClassRegister()->FindClassByID(TypeId);
+    return Registry->FindClassByID(TypeId);
 }
 
-void OnClassNotFound(pesapi_class_not_found_callback Callback)
+void OnClassNotFound(JSClassRegister* Registry, pesapi_class_not_found_callback Callback)
 {
-    GetJSClassRegister()->OnClassNotFound(Callback);
+    Registry->OnClassNotFound(Callback);
 }
 
-const JSClassDefinition* LoadClassByID(const void* TypeId)
+const JSClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId)
 {
-    return GetJSClassRegister()->LoadClassByID(TypeId);
+    return Registry->LoadClassByID(TypeId);
 }
 
-const JSClassDefinition* FindCppTypeClassByName(const PString& Name)
+const JSClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name)
 {
-    return GetJSClassRegister()->FindCppTypeClassByName(Name);
+    return Registry->FindCppTypeClassByName(Name);
 }
 
-const JSClassDefinition* FindCppTypeClassByCName(const char* Name)
+const JSClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name)
 {
-    return GetJSClassRegister()->FindCppTypeClassByName(Name);
-}
-
-bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit)
-{
-    if (auto clsDef = const_cast<JSClassDefinition*>(GetJSClassRegister()->FindClassByID(TypeId)))
-    {
-        clsDef->OnEnter = OnEnter;
-        clsDef->OnExit = OnExit;
-        return true;
-    }
-    return false;
+    return Registry->FindCppTypeClassByName(Name);
 }
 
 #if USING_IN_UNREAL_ENGINE
@@ -382,19 +370,19 @@ bool IsEditorOnlyUFunction(const UFunction* Func)
     return false;
 }
 
-void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
+void RegisterAddon(JSClassRegister* Registry, const char* Name, AddonRegisterFunc RegisterFunc)
 {
-    GetJSClassRegister()->RegisterAddon(Name, RegisterFunc);
+    Registry->RegisterAddon(Name, RegisterFunc);
 }
 
-AddonRegisterFunc FindAddonRegisterFunc(const PString& Name)
+AddonRegisterFunc FindAddonRegisterFunc(JSClassRegister* Registry, const PString& Name)
 {
-    return GetJSClassRegister()->FindAddonRegisterFunc(Name);
+    return Registry->FindAddonRegisterFunc(Name);
 }
 
-const JSClassDefinition* FindClassByType(UStruct* Type)
+const JSClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type)
 {
-    return GetJSClassRegister()->FindClassByType(Type);
+    return Registry->FindClassByType(Type);
 }
 #endif
 

@@ -426,6 +426,13 @@ namespace Puerts
 #endif
     public delegate void pesapi_function_finalize(IntPtr apis, IntPtr data, IntPtr env_private);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate IntPtr pesapi_on_native_object_enter(IntPtr ptr, IntPtr class_data, IntPtr env_private);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void pesapi_on_native_object_exit(IntPtr ptr, IntPtr class_data, IntPtr env_private, IntPtr userdata);
+
+
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
@@ -772,6 +779,15 @@ namespace Puerts
 #endif
     public delegate void pesapi_set_env_private_func(IntPtr env, IntPtr ptr);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public delegate bool pesapi_trace_native_object_lifecycle_func(IntPtr env,
+        pesapi_on_native_object_enter on_enter,
+        pesapi_on_native_object_exit on_exit);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void pesapi_set_registry_func(IntPtr env, IntPtr registry);
+
     [StructLayout(LayoutKind.Sequential)]
     public struct pesapi_ffi
     {
@@ -859,15 +875,11 @@ namespace Puerts
         public pesapi_global_func global;
         public pesapi_get_env_private_func get_env_private;
         public pesapi_set_env_private_func set_env_private;
+        public pesapi_trace_native_object_lifecycle_func trace_native_object_lifecycle;
+        public pesapi_set_registry_func set_registry;
     }
 
     //register api
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate IntPtr pesapi_on_native_object_enter(IntPtr ptr, IntPtr class_data, IntPtr env_private);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void pesapi_on_native_object_exit(IntPtr ptr, IntPtr class_data, IntPtr env_private, IntPtr userdata);
-
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.U1)]
     public delegate bool pesapi_class_not_found_callback(IntPtr type_id);
@@ -877,6 +889,9 @@ namespace Puerts
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_finalize(IntPtr apis, IntPtr ptr, IntPtr class_data, IntPtr env_private);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate IntPtr pesapi_create_registry_func();
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate IntPtr pesapi_alloc_type_infos_func(UIntPtr count);
@@ -919,29 +934,26 @@ namespace Puerts
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_define_class_func(
+        IntPtr registry,
         IntPtr type_id, IntPtr super_type_id,
+        [MarshalAs(UnmanagedType.LPStr)] string module_name,
         [MarshalAs(UnmanagedType.LPStr)] string type_name,
         pesapi_constructor constructor,
         pesapi_finalize finalize,
         UIntPtr property_count,
         IntPtr properties,
-        IntPtr data);
+        IntPtr data,
+        [MarshalAs(UnmanagedType.U1)] bool copy_str);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate IntPtr pesapi_get_class_data_func(IntPtr type_id, [MarshalAs(UnmanagedType.U1)] bool force_load);
+    public delegate IntPtr pesapi_get_class_data_func(IntPtr registry, IntPtr type_id, [MarshalAs(UnmanagedType.U1)] bool force_load);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    [return: MarshalAs(UnmanagedType.U1)]
-    public delegate bool pesapi_trace_native_object_lifecycle_func(
-        IntPtr type_id,
-        pesapi_on_native_object_enter on_enter,
-        pesapi_on_native_object_exit on_exit);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void pesapi_on_class_not_found_func(pesapi_class_not_found_callback callback);
+    public delegate void pesapi_on_class_not_found_func(IntPtr registry, pesapi_class_not_found_callback callback);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_class_type_info_func(
+        IntPtr registry,
         [MarshalAs(UnmanagedType.LPStr)] string proto_magic_id,
         IntPtr type_id,
         IntPtr constructor_info,
@@ -952,12 +964,14 @@ namespace Puerts
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate IntPtr pesapi_find_type_id_func(
+        IntPtr registry,
         [MarshalAs(UnmanagedType.LPStr)] string module_name,
         [MarshalAs(UnmanagedType.LPStr)] string type_name);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct pesapi_reg_api
     {
+        public pesapi_create_registry_func create_registry;
         public pesapi_alloc_type_infos_func alloc_type_infos;
         public pesapi_set_type_info_func set_type_info;
         public pesapi_create_signature_info_func create_signature_info;
@@ -966,7 +980,6 @@ namespace Puerts
         public pesapi_set_property_info_func set_property_info;
         public pesapi_define_class_func define_class;
         public pesapi_get_class_data_func get_class_data;
-        public pesapi_trace_native_object_lifecycle_func trace_native_object_lifecycle;
         public pesapi_on_class_not_found_func on_class_not_found;
         public pesapi_class_type_info_func class_type_info;
         public pesapi_find_type_id_func find_type_id;

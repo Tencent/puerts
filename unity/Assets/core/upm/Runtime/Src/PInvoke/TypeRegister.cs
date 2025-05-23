@@ -18,11 +18,13 @@ namespace Puerts
         private readonly ConcurrentDictionary<Type, int> typeToId = new ConcurrentDictionary<Type, int>();
 
         private readonly pesapi_reg_api reg_api;
+        private readonly IntPtr registry;
 
         private TypeRegister()
         {
             reg_api = Marshal.PtrToStructure<pesapi_reg_api>(NativeAPI.GetRegsterApi());
-            reg_api.on_class_not_found(OnTypeNotFound);
+            registry = reg_api.create_registry();
+            reg_api.on_class_not_found(registry, OnTypeNotFound);
         }
 
         public static TypeRegister Instance
@@ -40,6 +42,14 @@ namespace Puerts
                     }
                 }
                 return instance;
+            }
+        }
+
+        public IntPtr Registry
+        {
+            get
+            {
+                return registry;
             }
         }
 
@@ -131,7 +141,7 @@ namespace Puerts
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
             // TODO: 有C# 类型变更要重新加载的限制
-            reg_api.define_class(new IntPtr(typeId), new IntPtr(baseTypeId), type.Name, null, null, new UIntPtr(idx), properties, IntPtr.Zero); 
+            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, null, null, new UIntPtr(idx), properties, IntPtr.Zero, true); 
             return typeId;
         }
 
