@@ -155,6 +155,51 @@ namespace Puerts
                 );
                 return getStringExpr;
             }
+            else if (typeof(Delegate).IsAssignableFrom(type))
+            {
+                var invokeMethodInfo = type.GetMethod("Invoke");
+                var delegateParams = invokeMethodInfo.GetParameters()
+                    .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
+                    .ToArray();
+
+                var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
+                var stringFormatMethod = typeof(string).GetMethod(
+                    "Format",
+                    new[] { typeof(string), typeof(object) }
+                );
+
+                // 生成每个参数的日志表达式
+                var logExpressions = delegateParams
+                    .Select(param =>
+                    {
+                        // 构建字符串格式参数：$"{param.Name}: {param.Value}"
+                        var formatString = Expression.Constant($"{param.Name}: {{0}}"); // "x: {0}"
+                        var paramValue = param.Type.IsValueType
+                                        ? (Expression)Expression.Convert(param, typeof(object))
+                                        : param;
+
+                        // 调用 string.Format("x: {0}", (object)x)
+                        var formattedMessage = Expression.Call(
+                                        stringFormatMethod,
+                                        formatString,
+                                        paramValue
+                                    );
+
+                        // 调用 Debug.Log(formattedMessage)
+                        return Expression.Call(logMethod, formattedMessage);
+                    })
+                    .Cast<Expression>()
+                    .ToList();
+
+                var body = Expression.Block(
+                        logExpressions.Concat(new[]
+                        {
+                             Expression.Default(invokeMethodInfo.ReturnType) // 最后一个是返回值
+                        })
+                    );
+
+                return Expression.Lambda(type, body, delegateParams);
+            }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {
                 // IntPtr ptr = get_native_object_ptr(env, val);
@@ -198,6 +243,10 @@ namespace Puerts
             else if (type == typeof(string))
             {
                 return Expression.Not(callPApi(context.Apis, "is_string", context.Env, value));
+            }
+            else if (typeof(Delegate).IsAssignableFrom(type))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_function", context.Env, value));
             }
             else
             {
