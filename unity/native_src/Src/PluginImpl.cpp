@@ -204,6 +204,11 @@ public:
 
     //-------------------------- end debug --------------------------
     
+    virtual void TerminateExecution() override
+    {
+        jsEngine.TerminateExecution();
+    }
+    
     PUERTS_NAMESPACE::JSEngine jsEngine;
 };
 

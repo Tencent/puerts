@@ -197,6 +197,8 @@ public:
 
     //-------------------------- end debug --------------------------
     
+    virtual void TerminateExecution() = 0;
+    
     virtual ~IPuertsPlugin()
     {
     }
