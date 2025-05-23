@@ -128,17 +128,19 @@ namespace Puerts
             var delegateParams = invokeMethodInfo.GetParameters()
                 .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
                 .ToArray();
-            var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
-            var stringFormatMethod = typeof(string).GetMethod(
-                "Format",
-                new[] { typeof(string), typeof(object) }
-            );
+            
             var checkException = typeof(Helpper).GetMethod("CheckException");
 
             var variables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();
 
             // 生成每个参数的日志表达式
+            /*
+            var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
+            var stringFormatMethod = typeof(string).GetMethod(
+                "Format",
+                new[] { typeof(string), typeof(object) }
+            );
             blockExpressions.AddRange(delegateParams
                 .Select(param =>
                 {
@@ -159,6 +161,7 @@ namespace Puerts
                         return Expression.Call(logMethod, formattedMessage);
                 })
                 .Cast<Expression>());
+            */
 
             // var scope = apis.open_scope(envRef);
             var scope = Expression.Variable(typeof(IntPtr));
