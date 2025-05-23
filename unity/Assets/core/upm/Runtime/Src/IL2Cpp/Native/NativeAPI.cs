@@ -402,7 +402,7 @@ namespace Puerts
         public static extern void pesapi_set_property_uint32(IntPtr apis, IntPtr env, IntPtr obj, uint key, IntPtr value);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr pesapi_call_function(IntPtr apis, IntPtr env, IntPtr func, IntPtr this_object, int argc, IntPtr argv);
+        public static extern IntPtr pesapi_call_function(IntPtr apis, IntPtr env, IntPtr func, IntPtr this_object, int argc, IntPtr[] argv);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_eval(IntPtr apis, IntPtr env, IntPtr code, UIntPtr code_size, string path);

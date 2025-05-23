@@ -76,6 +76,15 @@ namespace Puerts
                 var objIdx = NativeAPI.pesapi_get_native_holder_ptr(api, info).ToInt32();
                 return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
             }
+
+            public static void CheckException(IntPtr apis, IntPtr scope)
+            {
+                if (NativeAPI.pesapi_has_caught(apis, scope))
+                {
+                    string msg = Marshal.PtrToStringUTF8(NativeAPI.pesapi_get_exception_as_string(apis, scope, true));
+                    throw new InvalidOperationException(msg);
+                }
+            }
         }
 
         class CompileContext
@@ -111,6 +120,88 @@ namespace Puerts
             {
                 throw new Exception("nativeToScript: " + type + " not support yet!");
             }
+        }
+
+        private static Expression delegateBridage(Type type, ParameterExpression apis, Expression envRef, Expression funcRef)
+        {
+            var invokeMethodInfo = type.GetMethod("Invoke");
+            var delegateParams = invokeMethodInfo.GetParameters()
+                .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
+                .ToArray();
+            var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
+            var stringFormatMethod = typeof(string).GetMethod(
+                "Format",
+                new[] { typeof(string), typeof(object) }
+            );
+            var checkException = typeof(Helpper).GetMethod("CheckException");
+
+            var variables = new List<ParameterExpression>();
+            var blockExpressions = new List<Expression>();
+
+            // 生成每个参数的日志表达式
+            blockExpressions.AddRange(delegateParams
+                .Select(param =>
+                {
+                        // 构建字符串格式参数：$"{param.Name}: {param.Value}"
+                        var formatString = Expression.Constant($"{type.Name} {param.Name}: {{0}}"); // "x: {0}"
+                        var paramValue = param.Type.IsValueType
+                                    ? (Expression)Expression.Convert(param, typeof(object))
+                                    : param;
+
+                        // 调用 string.Format("x: {0}", (object)x)
+                        var formattedMessage = Expression.Call(
+                                    stringFormatMethod,
+                                    formatString,
+                                    paramValue
+                                );
+
+                        // 调用 Debug.Log(formattedMessage)
+                        return Expression.Call(logMethod, formattedMessage);
+                })
+                .Cast<Expression>());
+
+            // var scope = apis.open_scope(envRef);
+            var scope = Expression.Variable(typeof(IntPtr));
+            variables.Add(scope);
+            blockExpressions.Add(Expression.Assign(scope, callPApi(apis, "open_scope", envRef)));
+
+            var env = Expression.Variable(typeof(IntPtr));
+            variables.Add(env);
+            blockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env_from_ref", envRef)));
+
+            var context = new CompileContext()
+            {
+                Variables = variables,
+                BlockExpressions = blockExpressions,
+                Apis = apis,
+                Env = env
+            };
+
+            List<Expression> scriptValues = invokeMethodInfo.GetParameters().Select((ParameterInfo pi, int index) => nativeToScript(context, pi.ParameterType, delegateParams[index])).ToList();
+
+            var argv = Expression.Variable(typeof(IntPtr[]));
+            variables.Add(argv);
+            blockExpressions.Add(Expression.Assign(argv, Expression.NewArrayInit(typeof(IntPtr), scriptValues)));
+
+            var func = callPApi(apis, "get_value_from_ref", env, funcRef);
+            // pesapi_call_function(IntPtr apis, IntPtr env, IntPtr func, IntPtr this_object, int argc, IntPtr[] argv);
+
+            var res = Expression.Variable(typeof(IntPtr));
+            variables.Add(res);
+            var callFunc = callPApi(apis, "call_function", env, func, Expression.Default(typeof(IntPtr)), Expression.Constant(scriptValues.Count), argv);
+            blockExpressions.Add(Expression.Assign(res, callFunc));
+
+            blockExpressions.Add(Expression.Call(checkException, apis, scope));
+
+            // apis.close_scope(scope); TODO: all to finally
+            blockExpressions.Add(callPApi(apis, "close_scope", scope));
+
+            if (invokeMethodInfo.ReturnType != typeof(void))
+            {
+                blockExpressions.Add(scriptToNative(context, invokeMethodInfo.ReturnType, res));
+            }
+
+            return Expression.Lambda(type, Expression.Block(variables, blockExpressions), delegateParams);
         }
 
         private static Expression scriptToNative(CompileContext context, Type type, Expression value)
@@ -157,48 +248,16 @@ namespace Puerts
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
-                var invokeMethodInfo = type.GetMethod("Invoke");
-                var delegateParams = invokeMethodInfo.GetParameters()
-                    .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
-                    .ToArray();
+                // envRef =
+                var envRef = Expression.Variable(typeof(IntPtr));
+                context.Variables.Add(envRef);
+                context.BlockExpressions.Add(Expression.Assign(envRef, callPApi(context.Apis, "create_env_ref", context.Env)));
 
-                var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
-                var stringFormatMethod = typeof(string).GetMethod(
-                    "Format",
-                    new[] { typeof(string), typeof(object) }
-                );
+                var funcRef = Expression.Variable(typeof(IntPtr));
+                context.Variables.Add(funcRef);
+                context.BlockExpressions.Add(Expression.Assign(funcRef, callPApi(context.Apis, "create_value_ref", context.Env, value, Expression.Constant((uint)0))));
 
-                // 生成每个参数的日志表达式
-                var logExpressions = delegateParams
-                    .Select(param =>
-                    {
-                        // 构建字符串格式参数：$"{param.Name}: {param.Value}"
-                        var formatString = Expression.Constant($"{param.Name}: {{0}}"); // "x: {0}"
-                        var paramValue = param.Type.IsValueType
-                                        ? (Expression)Expression.Convert(param, typeof(object))
-                                        : param;
-
-                        // 调用 string.Format("x: {0}", (object)x)
-                        var formattedMessage = Expression.Call(
-                                        stringFormatMethod,
-                                        formatString,
-                                        paramValue
-                                    );
-
-                        // 调用 Debug.Log(formattedMessage)
-                        return Expression.Call(logMethod, formattedMessage);
-                    })
-                    .Cast<Expression>()
-                    .ToList();
-
-                var body = Expression.Block(
-                        logExpressions.Concat(new[]
-                        {
-                             Expression.Default(invokeMethodInfo.ReturnType) // 最后一个是返回值
-                        })
-                    );
-
-                return Expression.Lambda(type, body, delegateParams);
+                return delegateBridage(type, context.Apis, envRef, funcRef);
             }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {

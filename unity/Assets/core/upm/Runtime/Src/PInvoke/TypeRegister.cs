@@ -120,11 +120,11 @@ namespace Puerts
                 try
                 {
                     pesapi_Callbacks.Add(method, ExpressionsWrap.MethodWrap(method, true));
-                    UnityEngine.Debug.Log("wrap " + method + " ok");
+                    //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }
                 catch (Exception e)
                 {
-                    //UnityEngine.Debug.Log("wrap " + method + " fail! message: " + e.Message + ", stack:" + e.StackTrace );
+                    UnityEngine.Debug.Log("wrap " + method + " fail! message: " + e.Message + ", stack:" + e.StackTrace );
                 }
             }
 
