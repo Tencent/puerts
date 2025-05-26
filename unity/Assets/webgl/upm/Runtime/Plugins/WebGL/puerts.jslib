@@ -40,9 +40,6 @@ var exportDLL = {
             InjectPapiGLNativeImpl: Module._InjectPapiGLNativeImpl,
             PApiCallbackWithScope: Module._PApiCallbackWithScope,
             PApiConstructorWithScope: Module._PApiConstructorWithScope,
-            WasmAdd: Module._WasmAdd,
-            IndirectWasmAdd: Module._IndirectWasmAdd,
-            GetWasmAddPtr: Module._GetWasmAddPtr,
             
             HEAP8,
             HEAPU8,
