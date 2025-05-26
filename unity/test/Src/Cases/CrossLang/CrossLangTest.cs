@@ -1311,5 +1311,22 @@ namespace Puerts.UnitTest
             }, "invalid arguments to PassObj");
             jsEnv.Tick();
         }
+
+        [Test]
+        public void CastJsFunctionAsTwoDiffDelegate()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var cb1 = jsEnv.Eval<Action<int>>(@"
+            function __GCB(a, b) {
+              __GMSG = `${a}${b}`
+            }
+            __GCB;
+            ");
+            cb1(1);
+            Assert.AreEqual("1undefined", jsEnv.Eval<string>("__GMSG"));
+            var cb2 = jsEnv.Eval<Action<string, long>>("__GCB");
+            cb2("hello", 999);
+            Assert.AreEqual("hello999", jsEnv.Eval<string>("__GMSG"));
+        }
     }
 }
