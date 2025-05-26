@@ -1316,6 +1316,8 @@ namespace Puerts.UnitTest
         public void CastJsFunctionAsTwoDiffDelegate()
         {
             var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.UsingAction<int>();
+            jsEnv.UsingAction<string, long>();
             var cb1 = jsEnv.Eval<Action<int>>(@"
             function __GCB(a, b) {
               __GMSG = `${a}${b}`
