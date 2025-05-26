@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -85,6 +86,12 @@ namespace Puerts
                     throw new InvalidOperationException(msg);
                 }
             }
+
+            public static IntPtr ToScript(IntPtr apis, IntPtr env, string str)
+            {
+                byte[] utf16 = Encoding.Unicode.GetBytes(str);
+                return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)utf16.Length));
+            }
         }
 
         class CompileContext
@@ -115,6 +122,11 @@ namespace Puerts
             {
                 //apis.create_int32(env, value)
                 return callPApi(context.Apis, "create_int32", context.Env, value);
+            }
+            else if (type == typeof(string))
+            {
+                var toScriptMethod = typeof(Helpper).GetMethod("ToScript", new[] { typeof(IntPtr), typeof(IntPtr), typeof(string) });
+                return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
             {

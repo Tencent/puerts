@@ -158,13 +158,14 @@ namespace Puerts
             apis.close_scope(scope);
         }
 
-        public static void Print(string msg)
+        public static string Print(string msg)
         {
             if (msg == "throw")
             {
                 throw new Exception("js force throw");
             }
             UnityEngine.Debug.Log(msg);
+            return "c#:" + msg;
         }
 
         public void AAA(Func<int, int> callback)

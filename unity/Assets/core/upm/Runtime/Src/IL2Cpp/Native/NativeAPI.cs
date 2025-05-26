@@ -199,10 +199,10 @@ namespace Puerts
         public static extern IntPtr pesapi_create_double(IntPtr apis, IntPtr env, double value);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr pesapi_create_string_utf8(IntPtr apis, IntPtr env, string str, UIntPtr length);
+        public static extern IntPtr pesapi_create_string_utf8(IntPtr apis, IntPtr env, byte[] str, UIntPtr length);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr pesapi_create_string_utf16(IntPtr apis, IntPtr env, string str, UIntPtr length);
+        public static extern IntPtr pesapi_create_string_utf16(IntPtr apis, IntPtr env, byte[] str, UIntPtr length);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_binary(IntPtr apis, IntPtr env, IntPtr data, UIntPtr length);
@@ -468,11 +468,11 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate IntPtr pesapi_create_string_utf8_func(IntPtr env, string str, UIntPtr length);
+    public delegate IntPtr pesapi_create_string_utf8_func(IntPtr env, byte[] str, UIntPtr length);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate IntPtr pesapi_create_string_utf16_func(IntPtr env, string str, UIntPtr length);
+    public delegate IntPtr pesapi_create_string_utf16_func(IntPtr env, byte[] str, UIntPtr length);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
