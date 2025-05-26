@@ -861,7 +861,7 @@ static Il2CppObject* FunctionToDelegate(struct pesapi_ffi* apis, pesapi_env env,
     Il2CppGCHandle* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
     if (!handle_store) return nullptr;
 
-    if (ret == nullptr)
+    if (ret == nullptr || (Object::GetClass(ret) != classInfo->TypeId))
     {
         PObjectRefInfo* delegateInfo;
         ret = (Il2CppObject *)DelegateAllocate(classInfo->TypeId, classInfo->DelegateBridge, &delegateInfo);
