@@ -95,7 +95,6 @@ namespace Puerts
 
             public static JSObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
-                //var envRef = NativeAPI.pesapi_create_env_ref(apis, env);
                 var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
                 return new JSObject(apis, valueRef);
             }
@@ -215,7 +214,7 @@ namespace Puerts
             
             var checkException = typeof(Helpper).GetMethod(nameof(Helpper.CheckException));
 
-            // 生成每个参数的日志表达式
+            // 打印各参数，用作调试
             /*
             var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
             var stringFormatMethod = typeof(string).GetMethod(
@@ -274,8 +273,8 @@ namespace Puerts
             blockExpressions.Add(Expression.Assign(argv, Expression.NewArrayInit(typeof(IntPtr), scriptValues)));
 
             var func = callPApi(apis, "get_value_from_ref", env, funcRef);
-            // pesapi_call_function(IntPtr apis, IntPtr env, IntPtr func, IntPtr this_object, int argc, IntPtr[] argv);
 
+            // res = pesapi_call_function(apis, env, func, default(IntPtr), argc, argv);
             var res = Expression.Variable(typeof(IntPtr));
             variables.Add(res);
 
@@ -353,7 +352,6 @@ namespace Puerts
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
-                // envRef =
                 var envRef = Expression.Variable(typeof(IntPtr));
                 context.Variables.Add(envRef);
                 context.BlockExpressions.Add(Expression.Assign(envRef, callPApi(context.Apis, "create_env_ref", context.Env)));
