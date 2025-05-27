@@ -100,7 +100,7 @@ namespace Puerts
                 return new JSObject(apis, valueRef);
             }
 
-            public static string ScriptToNative__String(IntPtr apis, IntPtr env, IntPtr value)
+            public static string ScriptToNative_String(IntPtr apis, IntPtr env, IntPtr value)
             {
                 UIntPtr outLen = UIntPtr.Zero;
                 NativeAPI.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
@@ -141,7 +141,7 @@ namespace Puerts
                 }
                 else if (NativeAPI.pesapi_is_string(apis, env, value))
                 {
-                    return ScriptToNative__String(apis, env, value);
+                    return ScriptToNative_String(apis, env, value);
                 }
                 else if (NativeAPI.pesapi_is_array(apis, env, value))
                 {
@@ -337,7 +337,7 @@ namespace Puerts
                 return getStringExpr;
                 */
                 // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
-                var toStringMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative__String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                var toStringMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
                 return Expression.Call(toStringMethod, context.Apis, context.Env, value);
             }
             else if (typeof(object) == type)
