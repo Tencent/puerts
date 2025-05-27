@@ -87,20 +87,20 @@ namespace Puerts
                 }
             }
 
-            public static IntPtr ToScript(IntPtr apis, IntPtr env, string str)
+            public static IntPtr NativeToScript(IntPtr apis, IntPtr env, string str)
             {
                 byte[] utf16 = Encoding.Unicode.GetBytes(str);
                 return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
 
-            public static JSObject ToScriptObject(IntPtr apis, IntPtr env, IntPtr value)
+            public static JSObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
                 //var envRef = NativeAPI.pesapi_create_env_ref(apis, env);
                 var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
                 return new JSObject(apis, valueRef);
             }
 
-            public static string ToString(IntPtr apis, IntPtr env, IntPtr value)
+            public static string ScriptToNative__String(IntPtr apis, IntPtr env, IntPtr value)
             {
                 UIntPtr outLen = UIntPtr.Zero;
                 NativeAPI.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
@@ -109,7 +109,7 @@ namespace Puerts
                 return System.Text.Encoding.Unicode.GetString(buf);
             }
 
-            public static object ToObject(IntPtr apis, IntPtr env, IntPtr value)
+            public static object ScriptToNative_Object(IntPtr apis, IntPtr env, IntPtr value)
             {
                 if (NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value))
                 {
@@ -141,19 +141,19 @@ namespace Puerts
                 }
                 else if (NativeAPI.pesapi_is_string(apis, env, value))
                 {
-                    return ToString(apis, env, value);
+                    return ScriptToNative__String(apis, env, value);
                 }
                 else if (NativeAPI.pesapi_is_array(apis, env, value))
                 {
-                    return ToScriptObject(apis, env, value);
+                    return ScriptToNative_ScriptObject(apis, env, value);
                 }
                 else if (NativeAPI.pesapi_is_object(apis, env, value))
                 {
-                    return ToScriptObject(apis, env, value);
+                    return ScriptToNative_ScriptObject(apis, env, value);
                 }
                 else if (NativeAPI.pesapi_is_function(apis, env, value))
                 {
-                    return ToScriptObject(apis, env, value);
+                    return ScriptToNative_ScriptObject(apis, env, value);
                 }
                 var objId = NativeAPI.pesapi_get_native_object_ptr(apis, env, value);
                 if (objId != IntPtr.Zero)
@@ -337,17 +337,17 @@ namespace Puerts
                 return getStringExpr;
                 */
                 // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
-                var toStringMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToString), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                var toStringMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative__String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
                 return Expression.Call(toStringMethod, context.Apis, context.Env, value);
             }
             else if (typeof(object) == type)
             {
-                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToObject));
+                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_Object));
                 return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
             }
             else if (typeof(JSObject) == type)
             {
-                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToScriptObject));
+                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
