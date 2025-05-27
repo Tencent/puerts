@@ -1330,5 +1330,22 @@ namespace Puerts.UnitTest
             cb2("hello", 999);
             Assert.AreEqual("hello999", jsEnv.Eval<string>("__GMSG"));
         }
+
+        public delegate string NotGenericTestFunc(long t);
+
+        [Test]
+        public void NotGenericTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.UsingAction<string, long>();
+            var cb1 = jsEnv.Eval<NotGenericTestFunc>(@"
+            function __NGTF(a) {
+              return `${a}`
+            }
+            __NGTF;
+            ");
+            ;
+            Assert.AreEqual("9999", cb1(9999));
+        }
     }
 }
