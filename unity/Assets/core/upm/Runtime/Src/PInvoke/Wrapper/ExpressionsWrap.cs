@@ -90,7 +90,7 @@ namespace Puerts
             public static IntPtr ToScript(IntPtr apis, IntPtr env, string str)
             {
                 byte[] utf16 = Encoding.Unicode.GetBytes(str);
-                return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)utf16.Length));
+                return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
         }
 
