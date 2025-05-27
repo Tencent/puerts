@@ -93,7 +93,7 @@ namespace Puerts
                 return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
 
-            public static JSObject ToJSObject(IntPtr apis, IntPtr env, IntPtr value)
+            public static JSObject ToScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
                 //var envRef = NativeAPI.pesapi_create_env_ref(apis, env);
                 var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
@@ -303,7 +303,7 @@ namespace Puerts
             }
             else if (typeof (JSObject) == type)
             {
-                var toJSObjectMethod = typeof(Helpper).GetMethod("ToJSObject");
+                var toJSObjectMethod = typeof(Helpper).GetMethod("ToScriptObject");
                 return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
             }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
