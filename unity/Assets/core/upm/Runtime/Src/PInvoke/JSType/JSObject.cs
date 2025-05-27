@@ -18,19 +18,29 @@ namespace Puerts
     public class JSObject
     {
         internal IntPtr apis;
-        internal IntPtr valueRef;
-
+        internal IntPtr objRef;
 
         internal JSObject(IntPtr apis, IntPtr valueRef)
         {
-            UnityEngine.Debug.Log(string.Format("JSObject {0} {1}", apis, valueRef));
             this.apis = apis;
-            this.valueRef = valueRef;
+            this.objRef = valueRef;
         }
 
         public T Get<T>(string key) 
         {
-            return default(T);
+            var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
+            var scope = NativeAPI.pesapi_open_scope(apis, envRef);
+            var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
+            var obj = NativeAPI.pesapi_get_value_from_ref(apis, env, objRef);
+            var value = NativeAPI.pesapi_get_property(apis, env, obj, key);
+            try
+            {
+                return ExpressionsWrap.GetNativeTranlator<T>()(apis, env, value);
+            }
+            finally
+            {
+                NativeAPI.pesapi_close_scope(apis, scope);
+            }
         }
 
         ~JSObject() 

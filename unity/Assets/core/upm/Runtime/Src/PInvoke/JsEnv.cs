@@ -176,8 +176,7 @@ namespace Puerts
 
         public void PassObj(JSObject obj)
         {
-            UnityEngine.Debug.Log(obj.apis);
-            UnityEngine.Debug.Log(obj.valueRef);
+            UnityEngine.Debug.Log(obj.Get<string>("msg"));
         }
 
         /*

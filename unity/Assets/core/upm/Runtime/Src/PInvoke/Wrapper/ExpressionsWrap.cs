@@ -471,5 +471,36 @@ namespace Puerts
                 Expression.Label(voidReturn)
                 ), apis, info)).Compile();
         }
+
+        private static Dictionary<Type, Delegate> NativeTranlatorCache = new Dictionary<Type, Delegate>();
+
+        public static Func<IntPtr, IntPtr, IntPtr, TResult> GetNativeTranlator<TResult>()
+        {
+            Delegate ret;
+            if (!NativeTranlatorCache.TryGetValue(typeof(TResult), out ret))
+            {
+                var apis = Expression.Parameter(typeof(IntPtr), "apis");
+                var env = Expression.Parameter(typeof(IntPtr), "env");
+                var value = Expression.Parameter(typeof(IntPtr), "value");
+
+                var variables = new List<ParameterExpression>();
+                var blockExpressions = new List<Expression>();
+
+                var context = new CompileContext()
+                {
+                    Variables = variables,
+                    BlockExpressions = blockExpressions,
+                    Apis = apis,
+                    Env = env
+                };
+
+                blockExpressions.Add(scriptToNative(context, typeof(TResult), value));
+                
+                ret = Expression.Lambda(typeof(Func<IntPtr, IntPtr, IntPtr, TResult>), Expression.Block(variables, blockExpressions), apis, env, value).Compile();
+                NativeTranlatorCache.Add(typeof(TResult), ret);
+            }
+
+            return ret as Func<IntPtr, IntPtr, IntPtr, TResult>;
+        }
     }
 }
