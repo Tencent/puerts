@@ -99,6 +99,15 @@ namespace Puerts
                 var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
                 return new JSObject(apis, valueRef);
             }
+
+            public static string ToString(IntPtr apis, IntPtr env, IntPtr value)
+            {
+                UIntPtr outLen = UIntPtr.Zero;
+                NativeAPI.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
+                byte[] buf = new byte[outLen.ToUInt32() * 2];
+                NativeAPI.pesapi_get_value_string_utf16(apis, env, value, buf, ref outLen);
+                return System.Text.Encoding.Unicode.GetString(buf);
+            }
         }
 
         class CompileContext
@@ -241,6 +250,7 @@ namespace Puerts
             }
             else if (type == typeof(string))
             {
+                /*
                 // UIntPtr bufsize = UIntPtr.Zero;
                 var refBuffSize = Expression.Variable(typeof(UIntPtr));
                 context.Variables.Add(refBuffSize);
@@ -273,6 +283,10 @@ namespace Puerts
                     bufVar
                 );
                 return getStringExpr;
+                */
+                // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
+                var toStringMethod = typeof(Helpper).GetMethod("ToString", BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                return Expression.Call(toStringMethod, context.Apis, context.Env, value);
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
