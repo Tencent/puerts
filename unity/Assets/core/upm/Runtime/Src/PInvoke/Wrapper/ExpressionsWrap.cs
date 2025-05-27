@@ -385,7 +385,7 @@ namespace Puerts
                 Expression.OrElse(left, right));
         }
 
-        public static pesapi_callback MethodWrap(MethodInfo methodInfo, bool checkArgs)
+        public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool checkArgs)
         {
             var variables = new List<ParameterExpression>(); 
             var blockExpressions = new List<Expression>();

@@ -119,7 +119,7 @@ namespace Puerts
                 if (method.IsGenericMethodDefinition) continue;
                 try
                 {
-                    pesapi_Callbacks.Add(method, ExpressionsWrap.MethodWrap(method, true));
+                    pesapi_Callbacks.Add(method, ExpressionsWrap.GenMethodWrap(method, true));
                     //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }
                 catch (Exception e)
