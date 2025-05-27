@@ -155,7 +155,15 @@ namespace Puerts
             var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
             apis.set_property(env, global, "jsEnv", jsJsEnv);
 
+            var loadType = apis.create_function(env, ExpressionsWrap.GenMethodWrap(typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true), IntPtr.Zero, null);
+            apis.set_property(env, global, "loadType", loadType);
+
             apis.close_scope(scope);
+        }
+
+        public Type GetTypeByString(string className)
+        {
+            return PuertsIl2cpp.TypeUtils.GetType(className);
         }
 
         /*public static string Print(string msg)

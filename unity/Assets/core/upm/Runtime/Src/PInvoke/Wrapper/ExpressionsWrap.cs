@@ -62,15 +62,20 @@ namespace Puerts
 
     public static class ExpressionsWrap
     {
+        internal class NativeType
+        {
+            public int typeId;
+
+            public static NativeType LoadType(Type type)
+            {
+                return new NativeType()
+                {
+                    typeId = TypeRegister.Instance.FindOrAddTypeId(type)
+                };
+            }
+        }
         internal static class Helpper // 为了简化Express Tree生成复杂度的封装
         {
-            public static T GetObject<T>(IntPtr api, IntPtr env, IntPtr obj)
-            {
-                var envIdx = NativeAPI.pesapi_get_env_private(api, env).ToInt32();
-                var objIdx = NativeAPI.pesapi_get_native_object_ptr(api, env, obj).ToInt32();
-                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
-            }
-
             public static T GetSelf<T>(IntPtr api, IntPtr env, IntPtr info)
             {
                 var envIdx = NativeAPI.pesapi_get_env_private(api, env).ToInt32();
@@ -119,6 +124,24 @@ namespace Puerts
                 return NativeAPI.pesapi_get_value_from_ref(apis, env, obj.objRef);
             }
 
+            public static IntPtr NativeToScript_NativeType(IntPtr apis, IntPtr env, NativeType t)
+            {
+                return NativeAPI.pesapi_create_class(apis, env, new IntPtr(t.typeId));
+            }
+
+            public static T ScriptToNative_T<T>(IntPtr apis, IntPtr env, IntPtr obj)
+            {
+                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                var objIdx = NativeAPI.pesapi_get_native_object_ptr(apis, env, obj).ToInt32();
+                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
+            }
+
+            public static bool IsAssignable<T>(IntPtr apis, IntPtr env, IntPtr obj)
+            {
+                var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
+                return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
+            }
+
             public static JSObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
                 var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
@@ -131,7 +154,7 @@ namespace Puerts
                 NativeAPI.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
                 byte[] buf = new byte[outLen.ToUInt32() * 2];
                 NativeAPI.pesapi_get_value_string_utf16(apis, env, value, buf, ref outLen);
-                return System.Text.Encoding.Unicode.GetString(buf);
+                return Encoding.Unicode.GetString(buf);
             }
 
             public static object ScriptToNative_Object(IntPtr apis, IntPtr env, IntPtr value)
@@ -228,6 +251,11 @@ namespace Puerts
             else if (type == typeof(JSObject))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ScriptObject));
+                return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
+            }
+            else if (type == typeof(NativeType))
+            {
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_NativeType));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
@@ -368,18 +396,18 @@ namespace Puerts
                 return getStringExpr;
                 */
                 // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
-                var toStringMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-                return Expression.Call(toStringMethod, context.Apis, context.Env, value);
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(object) == type)
             {
-                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_Object));
-                return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_Object));
+                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(JSObject) == type)
             {
-                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
-                return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
+                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
@@ -392,6 +420,11 @@ namespace Puerts
                 context.BlockExpressions.Add(Expression.Assign(funcRef, callPApi(context.Apis, "create_value_ref", context.Env, value, Expression.Constant((uint)0))));
 
                 return delegateBridage(type, context.Apis, envRef, funcRef);
+            }
+            else if (!type.IsValueType)
+            {
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(type);
+                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {
@@ -448,6 +481,11 @@ namespace Puerts
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
                 return Expression.Not(callPApi(context.Apis, "is_function", context.Env, value));
+            }
+            else if (!type.IsValueType)
+            {
+                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable)).MakeGenericMethod(type);
+                return Expression.Not(Expression.Call(isAssignableMethod, context.Apis, context.Env, value));
             }
             else
             {
