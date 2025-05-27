@@ -17,13 +17,15 @@ namespace Puerts
 
     public class JSObject
     {
-        private readonly JsEnv jsEnv;
+        internal IntPtr apis;
+        internal IntPtr valueRef;
 
-        private IntPtr nativeJsObjectPtr;
 
-
-        internal JSObject(IntPtr nativeJsObjectPtr, JsEnv jsEnv)
+        internal JSObject(IntPtr apis, IntPtr valueRef)
         {
+            UnityEngine.Debug.Log(string.Format("JSObject {0} {1}", apis, valueRef));
+            this.apis = apis;
+            this.valueRef = valueRef;
         }
 
         public T Get<T>(string key) 

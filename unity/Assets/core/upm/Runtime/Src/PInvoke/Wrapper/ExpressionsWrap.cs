@@ -92,6 +92,13 @@ namespace Puerts
                 byte[] utf16 = Encoding.Unicode.GetBytes(str);
                 return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
+
+            public static JSObject ToJSObject(IntPtr apis, IntPtr env, IntPtr value)
+            {
+                //var envRef = NativeAPI.pesapi_create_env_ref(apis, env);
+                var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
+                return new JSObject(apis, valueRef);
+            }
         }
 
         class CompileContext
@@ -280,6 +287,11 @@ namespace Puerts
 
                 return delegateBridage(type, context.Apis, envRef, funcRef);
             }
+            else if (typeof (JSObject) == type)
+            {
+                var toJSObjectMethod = typeof(Helpper).GetMethod("ToJSObject");
+                return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
+            }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {
                 // IntPtr ptr = get_native_object_ptr(env, val);
@@ -323,6 +335,10 @@ namespace Puerts
             else if (type == typeof(string))
             {
                 return Expression.Not(callPApi(context.Apis, "is_string", context.Env, value));
+            }
+            else if (type == typeof(JSObject))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_object", context.Env, value));
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {

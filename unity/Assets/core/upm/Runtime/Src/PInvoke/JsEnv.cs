@@ -174,6 +174,12 @@ namespace Puerts
             UnityEngine.Debug.Log("AAA callback(100) = " + callback(42));
         }
 
+        public void PassObj(JSObject obj)
+        {
+            UnityEngine.Debug.Log(obj.apis);
+            UnityEngine.Debug.Log(obj.valueRef);
+        }
+
         /*
         [MonoPInvokeCallback(typeof(pesapi_callback))]
         static void Print(IntPtr apis, IntPtr info)
