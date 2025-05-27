@@ -87,7 +87,7 @@ namespace Puerts
                 }
             }
 
-            public static IntPtr NativeToScript(IntPtr apis, IntPtr env, string str)
+            public static IntPtr NativeToScript_String(IntPtr apis, IntPtr env, string str)
             {
                 byte[] utf16 = Encoding.Unicode.GetBytes(str);
                 return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
@@ -197,7 +197,7 @@ namespace Puerts
             }
             else if (type == typeof(string))
             {
-                var toScriptMethod = typeof(Helpper).GetMethod("ToScript", new[] { typeof(IntPtr), typeof(IntPtr), typeof(string) });
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_String));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
