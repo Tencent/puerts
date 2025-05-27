@@ -1337,7 +1337,7 @@ namespace Puerts.UnitTest
         public void NotGenericTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingAction<string, long>();
+            jsEnv.UsingFunc<long, string>();
             var cb1 = jsEnv.Eval<NotGenericTestFunc>(@"
             function __NGTF(a) {
               return `${a}`
