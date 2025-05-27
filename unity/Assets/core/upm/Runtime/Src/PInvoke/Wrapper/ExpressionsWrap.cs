@@ -143,14 +143,15 @@ namespace Puerts
                 {
                     return ScriptToNative_String(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_array(apis, env, value))
-                {
-                    return ScriptToNative_ScriptObject(apis, env, value);
-                }
                 else if (NativeAPI.pesapi_is_object(apis, env, value))
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
                 }
+                else if (NativeAPI.pesapi_is_array(apis, env, value))
+                {
+                    return ScriptToNative_ScriptObject(apis, env, value);
+                }
+                // TODO: NativeAPI.pesapi_is_binary
                 else if (NativeAPI.pesapi_is_function(apis, env, value))
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
