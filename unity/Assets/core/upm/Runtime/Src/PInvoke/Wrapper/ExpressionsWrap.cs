@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Text;
 using System.Linq;
 using System.Linq.Expressions;
@@ -62,7 +62,7 @@ namespace Puerts
 
     public static class ExpressionsWrap
     {
-        internal static class Helpper // ÎªÁË¼ò»¯Express TreeÉú³É¸´ÔÓ¶ÈµÄ·â×°
+        internal static class Helpper // ä¸ºäº†ç®€åŒ–Express Treeç”Ÿæˆå¤æ‚åº¦çš„å°è£…
         {
             public static T GetObject<T>(IntPtr api, IntPtr env, IntPtr obj)
             {
@@ -107,6 +107,61 @@ namespace Puerts
                 byte[] buf = new byte[outLen.ToUInt32() * 2];
                 NativeAPI.pesapi_get_value_string_utf16(apis, env, value, buf, ref outLen);
                 return System.Text.Encoding.Unicode.GetString(buf);
+            }
+
+            public static object ToObject(IntPtr apis, IntPtr env, IntPtr value)
+            {
+                if (NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value))
+                {
+                    return null;
+                }
+                else if (NativeAPI.pesapi_is_boolean(apis, env, value))
+                {
+                    return NativeAPI.pesapi_get_value_bool(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_int32(apis, env, value))
+                {
+                    return NativeAPI.pesapi_get_value_int32(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_uint32(apis, env, value))
+                {
+                    return NativeAPI.pesapi_get_value_uint32(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_int64(apis, env, value))
+                {
+                    return NativeAPI.pesapi_get_value_int64(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_uint64(apis, env, value))
+                {
+                    return NativeAPI.pesapi_get_value_uint64(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_double(apis, env, value))
+                {
+                    return NativeAPI.pesapi_get_value_double(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_string(apis, env, value))
+                {
+                    return ToString(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_array(apis, env, value))
+                {
+                    return ToScriptObject(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_object(apis, env, value))
+                {
+                    return ToScriptObject(apis, env, value);
+                }
+                else if (NativeAPI.pesapi_is_function(apis, env, value))
+                {
+                    return ToScriptObject(apis, env, value);
+                }
+                var objId = NativeAPI.pesapi_get_native_object_ptr(apis, env, value);
+                if (objId != IntPtr.Zero)
+                {
+                    var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                    return JsEnv.jsEnvs[envIdx].objectPool.Get(objId.ToInt32());
+                }
+                throw new NotSupportedException("Unsupported value type");
             }
         }
 
@@ -159,9 +214,7 @@ namespace Puerts
             
             var checkException = typeof(Helpper).GetMethod(nameof(Helpper.CheckException));
 
-
-
-            // Éú³ÉÃ¿¸ö²ÎÊıµÄÈÕÖ¾±í´ïÊ½
+            // ç”Ÿæˆæ¯ä¸ªå‚æ•°çš„æ—¥å¿—è¡¨è¾¾å¼
             /*
             var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
             var stringFormatMethod = typeof(string).GetMethod(
@@ -171,25 +224,24 @@ namespace Puerts
             blockExpressions.AddRange(delegateParams
                 .Select(param =>
                 {
-                        // ¹¹½¨×Ö·û´®¸ñÊ½²ÎÊı£º$"{param.Name}: {param.Value}"
+                        // æ„å»ºå­—ç¬¦ä¸²æ ¼å¼å‚æ•°ï¼š$"{param.Name}: {param.Value}"
                         var formatString = Expression.Constant($"{type.Name} {param.Name}: {{0}}"); // "x: {0}"
                         var paramValue = param.Type.IsValueType
                                     ? (Expression)Expression.Convert(param, typeof(object))
                                     : param;
 
-                        // µ÷ÓÃ string.Format("x: {0}", (object)x)
+                        // è°ƒç”¨ string.Format("x: {0}", (object)x)
                         var formattedMessage = Expression.Call(
                                     stringFormatMethod,
                                     formatString,
                                     paramValue
                                 );
 
-                        // µ÷ÓÃ Debug.Log(formattedMessage)
+                        // è°ƒç”¨ Debug.Log(formattedMessage)
                         return Expression.Call(logMethod, formattedMessage);
                 })
                 .Cast<Expression>());
             */
-
             
             var outerVariables = new List<ParameterExpression>();
             var outerExpressions = new List<Expression>();
@@ -257,7 +309,7 @@ namespace Puerts
                 context.BlockExpressions.Add(Expression.Assign(refBuffSize, Expression.Field(null, typeof(UIntPtr), "Zero")));
 
                 // NativeAPI.pesapi_get_value_string_utf16(apis, env, str, null, ref bufsize);
-                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, Expression.Constant(null, typeof(byte[])), refBuffSize)); // ²»Ìí¼Óµ½BlockExpressions»á±»ÓÅ»¯µô£¬¿´ÉÏÈ¥ÊÇLambdaÄÇ·´Ïò±éÀúÓï·¨Ê÷£¬Èç¹û²»ÊÇ×îÖÕµÄ±í´ïÊ½ËùĞè£¨ÒÀÀµ£©µÄ¶¼»ágcµô
+                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, Expression.Constant(null, typeof(byte[])), refBuffSize)); // ä¸æ·»åŠ åˆ°BlockExpressionsä¼šè¢«ä¼˜åŒ–æ‰ï¼Œçœ‹ä¸Šå»æ˜¯Lambdaé‚£åå‘éå†è¯­æ³•æ ‘ï¼Œå¦‚æœä¸æ˜¯æœ€ç»ˆçš„è¡¨è¾¾å¼æ‰€éœ€ï¼ˆä¾èµ–ï¼‰çš„éƒ½ä¼šgcæ‰
 
                 // byte[] buf = new byte[bufsize.ToUInt32() * 2];
                 var bufVar = Expression.Variable(typeof(byte[]), "buf");
@@ -284,9 +336,19 @@ namespace Puerts
                 );
                 return getStringExpr;
                 */
-                // ÒÔÉÏÊÇÖ±½ÓÍ¨¹ıExpress TreeÉú³É£¬¶Ô±ÈÈçÏÂ·â×°ºÃµÄÂß¼­
+                // ä»¥ä¸Šæ˜¯ç›´æ¥é€šè¿‡Express Treeç”Ÿæˆï¼Œå¯¹æ¯”å¦‚ä¸‹å°è£…å¥½çš„é€»è¾‘
                 var toStringMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToString), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
                 return Expression.Call(toStringMethod, context.Apis, context.Env, value);
+            }
+            else if (typeof(object) == type)
+            {
+                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToObject));
+                return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
+            }
+            else if (typeof(JSObject) == type)
+            {
+                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToScriptObject));
+                return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
@@ -300,11 +362,6 @@ namespace Puerts
                 context.BlockExpressions.Add(Expression.Assign(funcRef, callPApi(context.Apis, "create_value_ref", context.Env, value, Expression.Constant((uint)0))));
 
                 return delegateBridage(type, context.Apis, envRef, funcRef);
-            }
-            else if (typeof (JSObject) == type)
-            {
-                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToScriptObject));
-                return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
             }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {
@@ -349,6 +406,10 @@ namespace Puerts
             else if (type == typeof(string))
             {
                 return Expression.Not(callPApi(context.Apis, "is_string", context.Env, value));
+            }
+            else if (type == typeof(object))
+            {
+                return Expression.Constant(false); // accpet any type
             }
             else if (type == typeof(JSObject))
             {

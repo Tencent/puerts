@@ -149,7 +149,7 @@ namespace Puerts
             var global = apis.global(env);
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
-            var print = apis.create_function(env,  ExpressionsWrap.GenMethodWrap(typeof(JsEnv).GetMethod("Print"), true), IntPtr.Zero, null);
+            var print = apis.create_function(env,  ExpressionsWrap.GenMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true), IntPtr.Zero, null);
             apis.set_property(env, global, "print", print);
 
             var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
@@ -158,7 +158,7 @@ namespace Puerts
             apis.close_scope(scope);
         }
 
-        public static string Print(string msg)
+        /*public static string Print(string msg)
         {
             if (msg == "throw")
             {
@@ -166,7 +166,7 @@ namespace Puerts
             }
             UnityEngine.Debug.Log(msg);
             return "c#:" + msg;
-        }
+        }*/
 
         public void AAA(Func<int, int> callback)
         {
