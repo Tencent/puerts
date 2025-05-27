@@ -78,7 +78,7 @@ struct JsClassInfoHeader
 
 WrapFuncPtr FindWrapFunc(const char* signature);
 struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
-Il2CppMethodPointer FindBridgeFunc(const char* signature);
+Il2CppMethodPointer FindBridgeFunc(const char* signature, bool IsShared);
 
 struct JsClassInfo : public JsClassInfoHeader
 {
@@ -2610,7 +2610,7 @@ static bool RegisterType(Il2CppClass* klass)
         try
         {
             std::string signature = GetMethodSignature(invoke, true, false);
-            classInfo->DelegateBridge = FindBridgeFunc(signature.c_str());
+            classInfo->DelegateBridge = FindBridgeFunc(signature.c_str(), Class::IsInflated(klass));
         }
         catch (Il2CppExceptionWrapper& exception)
         {
