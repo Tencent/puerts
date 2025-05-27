@@ -174,9 +174,10 @@ namespace Puerts
             UnityEngine.Debug.Log("AAA callback(100) = " + callback(42));
         }
 
-        public void PassObj(JSObject obj)
+        public JSObject PassObj(JSObject obj)
         {
             UnityEngine.Debug.Log(obj.Get<string>("msg"));
+            return obj;
         }
 
         /*

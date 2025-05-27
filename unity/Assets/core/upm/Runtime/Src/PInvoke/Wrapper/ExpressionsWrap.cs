@@ -93,6 +93,32 @@ namespace Puerts
                 return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
 
+            public static IntPtr NativeToScript_ScriptObject(IntPtr apis, IntPtr env, JSObject obj)
+            {
+                if (apis != obj.apis)
+                {
+                    throw new InvalidCastException("ScriptObject form other papi provider!");
+                }
+
+                // apis is the same, using apis
+                var objEnvRef = NativeAPI.pesapi_get_ref_associated_env(apis, obj.objRef);
+                if (!NativeAPI.pesapi_env_ref_is_valid(apis, objEnvRef))
+                {
+                    throw new InvalidCastException("ScriptObject env is invalid!");
+                }
+                
+                var scope = NativeAPI.pesapi_open_scope(apis, objEnvRef);
+                
+                var isEnvEq = NativeAPI.pesapi_get_env_from_ref(apis, objEnvRef) == env;
+                NativeAPI.pesapi_close_scope(apis, scope);
+                //TODO: 提供一种能判断env是否同样的方式
+                //if (!isEnvEq)
+                //{
+                //    throw new InvalidCastException("ScriptObject own by anther env");
+                //}
+                return NativeAPI.pesapi_get_value_from_ref(apis, env, obj.objRef);
+            }
+
             public static JSObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
                 var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
@@ -197,6 +223,11 @@ namespace Puerts
             else if (type == typeof(string))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_String));
+                return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
+            }
+            else if (type == typeof(JSObject))
+            {
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ScriptObject));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
