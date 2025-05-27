@@ -157,7 +157,7 @@ namespace Puerts
                 .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
                 .ToArray();
             
-            var checkException = typeof(Helpper).GetMethod("CheckException");
+            var checkException = typeof(Helpper).GetMethod(nameof(Helpper.CheckException));
 
 
 
@@ -285,7 +285,7 @@ namespace Puerts
                 return getStringExpr;
                 */
                 // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
-                var toStringMethod = typeof(Helpper).GetMethod("ToString", BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                var toStringMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToString), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
                 return Expression.Call(toStringMethod, context.Apis, context.Env, value);
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
@@ -303,7 +303,7 @@ namespace Puerts
             }
             else if (typeof (JSObject) == type)
             {
-                var toJSObjectMethod = typeof(Helpper).GetMethod("ToScriptObject");
+                var toJSObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.ToScriptObject));
                 return Expression.Call(toJSObjectMethod, context.Apis, context.Env, value);
             }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
@@ -425,7 +425,7 @@ namespace Puerts
             if (!methodInfo.IsStatic)
             {
                 // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                var getSelfMethod = typeof(Helpper).GetMethod("GetSelf").MakeGenericMethod(methodInfo.DeclaringType);
+                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(methodInfo.DeclaringType);
                 self = Expression.Variable(methodInfo.DeclaringType, "self");
                 variables.Add(self);
                 var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
