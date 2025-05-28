@@ -526,6 +526,30 @@ namespace Puerts
             {
                 return Expression.Not(callPApi(context.Apis, "is_object", context.Env, value));
             }
+            else if (type == typeof(bool))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_boolean", context.Env, value));
+            }
+            else if (type == typeof(uint))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_uint32", context.Env, value));
+            }
+            else if (type == typeof(long))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_int64", context.Env, value));
+            }
+            else if (type == typeof(ulong))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_uint64", context.Env, value));
+            }
+            else if (type == typeof(double))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_double", context.Env, value));
+            }
+            else if (type == typeof(ArrayBuffer))
+            {
+                return Expression.Not(callPApi(context.Apis, "is_binary", context.Env, value));
+            }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
                 return Expression.Not(callPApi(context.Apis, "is_function", context.Env, value));
