@@ -381,17 +381,25 @@ namespace Puerts
             }
         }
 
-        private static  MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object)});
-        private static MethodInfo stringFormatMethod = typeof(string).GetMethod("Format",new[] { typeof(string), typeof(object)});
+        private static MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
+        private static MethodInfo stringFormatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
 
-        private static Expression Printf(string format, Expression expression)
+        private static Expression Printf(string format, params Expression[] arguments)
         {
             var formatString = Expression.Constant(format);
+            
+            // Convert all arguments to object array
+            var convertedArgs = arguments.Select(arg => 
+                Expression.Convert(arg, typeof(object))
+            ).ToArray();
+            
+            var argsArray = Expression.NewArrayInit(typeof(object), convertedArgs);
+            
             var formattedMessage = Expression.Call(
-                                    stringFormatMethod,
-                                    formatString,
-                                    Expression.Convert(expression, typeof(object))
-                                );
+                stringFormatMethod,
+                formatString,
+                argsArray
+            );
 
             return Expression.Call(logMethod, formattedMessage);
         }
@@ -407,7 +415,7 @@ namespace Puerts
 
             // 打印各参数，用作调试
             //var printArgs = delegateParams
-            //    .Select(param => Printf($"{type.Name} {param.Name}: {{0}}", param))
+            //    .Select(param => Printf($"{{1}} {param.Name}: {{0}}", param, Expression.Constant(type.Name)))
             //    .Cast<Expression>();
             
             var outerVariables = new List<ParameterExpression>();
