@@ -94,6 +94,10 @@ namespace Puerts
 
             public static IntPtr NativeToScript_String(IntPtr apis, IntPtr env, string str)
             {
+                if (str == null)
+                {
+                    return NativeAPI.pesapi_create_null(apis, env);
+                }
                 byte[] utf16 = Encoding.Unicode.GetBytes(str);
                 return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
@@ -129,11 +133,64 @@ namespace Puerts
                 return NativeAPI.pesapi_create_class(apis, env, new IntPtr(t.typeId));
             }
 
+            public static IntPtr NativeToScript_Object(IntPtr apis, IntPtr env, object t)
+            {
+                if(t == null)
+                {
+                    return NativeAPI.pesapi_create_null(apis, env);
+                }
+                else if (t is int intValue)
+                {
+                    return NativeAPI.pesapi_create_int32(apis, env, intValue);
+                }
+                else if (t is uint uintValue)
+                {
+                    return NativeAPI.pesapi_create_uint32(apis, env, uintValue);
+                }
+                else if (t is long longValue)
+                {
+                    return NativeAPI.pesapi_create_int64(apis, env, longValue);
+                }
+                else if (t is ulong ulongValue)
+                {
+                    return NativeAPI.pesapi_create_uint64(apis, env, ulongValue);
+                }
+                else if (t is double doubleValue)
+                {
+                    return NativeAPI.pesapi_create_double(apis, env, doubleValue);
+                }
+                else if (t is bool boolValue)
+                {
+                    return NativeAPI.pesapi_create_boolean(apis, env, boolValue);
+                }
+                else if (t is string strValue)
+                {
+                    return NativeToScript_String(apis, env, strValue);
+                }
+                else if (t is JSObject jsObject)
+                {
+                    return NativeToScript_ScriptObject(apis, env, jsObject);
+                }
+                else if (t is ArrayBuffer arrayBuffer)
+                {
+                    return NativeAPI.pesapi_create_binary(apis, env, arrayBuffer.Bytes, new UIntPtr((uint)arrayBuffer.Count));
+                }
+                else if (!t.GetType().IsValueType)
+                {
+                    return NativeToScript_T<object>(apis, env, t);
+                }
+                throw new NotSupportedException($"NativeToScript_Object does not support type: {t.GetType()}");
+            }
+
             public static IntPtr NativeToScript_T<T>(IntPtr apis, IntPtr env, T value)
             {
+                if (value == null)
+                {
+                    return NativeAPI.pesapi_create_null(apis, env);
+                }
                 var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
                 var objectPool = JsEnv.jsEnvs[envIdx].objectPool;
-                var typeId = TypeRegister.Instance.FindOrAddTypeId(typeof(T));
+                var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
                 var objId = objectPool.FindOrAddObject(value);
                 return NativeAPI.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
             }
@@ -296,6 +353,11 @@ namespace Puerts
             else if (type == typeof(NativeType))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_NativeType));
+                return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
+            }
+            else if (type == typeof(object))
+            {
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_Object));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else if (!type.IsValueType && type != typeof(object))
