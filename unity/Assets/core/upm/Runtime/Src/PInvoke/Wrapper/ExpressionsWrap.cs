@@ -133,6 +133,11 @@ namespace Puerts
                 return NativeAPI.pesapi_create_class(apis, env, new IntPtr(t.typeId));
             }
 
+            public static IntPtr NativeToScript_ArrayBuffer(IntPtr apis, IntPtr env, ArrayBuffer arrayBuffer)
+            {
+                return NativeAPI.pesapi_create_binary(apis, env, arrayBuffer.Bytes, new UIntPtr((uint)arrayBuffer.Count));
+            }
+
             public static IntPtr NativeToScript_Object(IntPtr apis, IntPtr env, object t)
             {
                 if(t == null)
@@ -173,7 +178,7 @@ namespace Puerts
                 }
                 else if (t is ArrayBuffer arrayBuffer)
                 {
-                    return NativeAPI.pesapi_create_binary(apis, env, arrayBuffer.Bytes, new UIntPtr((uint)arrayBuffer.Count));
+                    return NativeToScript_ArrayBuffer(apis, env, arrayBuffer);
                 }
                 else if (!t.GetType().IsValueType)
                 {
@@ -353,6 +358,11 @@ namespace Puerts
             else if (type == typeof(NativeType))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_NativeType));
+                return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
+            }
+            else if (type == typeof(ArrayBuffer))
+            {
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ArrayBuffer));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else if (type == typeof(object))
