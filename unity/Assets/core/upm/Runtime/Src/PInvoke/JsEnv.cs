@@ -149,17 +149,23 @@ namespace Puerts
             var global = apis.global(env);
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
-            var print = apis.create_function(env,  ExpressionsWrap.GenMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true), IntPtr.Zero, null);
+            logDelegate = ExpressionsWrap.GenMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
+            var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
             apis.set_property(env, global, "print", print);
 
             var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
             apis.set_property(env, global, "jsEnv", jsJsEnv);
 
-            var loadType = apis.create_function(env, ExpressionsWrap.GenMethodWrap(typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true), IntPtr.Zero, null);
+            loadTypeDelegate = ExpressionsWrap.GenMethodWrap(typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
+            var loadType = apis.create_function(env, loadTypeDelegate, IntPtr.Zero, null);
             apis.set_property(env, global, "loadType", loadType);
 
             apis.close_scope(scope);
         }
+
+        private pesapi_callback logDelegate;
+
+        private pesapi_callback loadTypeDelegate;
 
         public Type GetTypeByString(string className)
         {

@@ -20,12 +20,15 @@ namespace Puerts
 
         private readonly pesapi_reg_api reg_api;
         private readonly IntPtr registry;
+        private readonly pesapi_class_not_found_callback onTypeNotFoundDelegate;
+        private readonly List<pesapi_callback> callbacksCache = new List<pesapi_callback>();
 
         private TypeRegister()
         {
             reg_api = Marshal.PtrToStructure<pesapi_reg_api>(NativeAPI.GetRegsterApi());
             registry = reg_api.create_registry();
-            reg_api.on_class_not_found(registry, OnTypeNotFound);
+            onTypeNotFoundDelegate = new pesapi_class_not_found_callback(OnTypeNotFound);
+            reg_api.on_class_not_found(registry, onTypeNotFoundDelegate);
         }
 
         public static TypeRegister Instance
@@ -136,6 +139,7 @@ namespace Puerts
                 try
                 {
                     IntPtr ptr = StringToIntPtr(kv.Key.Name);
+                    callbacksCache.Add(kv.Value);
                     reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, kv.Value, IntPtr.Zero, IntPtr.Zero);
                 }
                 catch { }
