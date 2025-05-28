@@ -21,7 +21,7 @@ namespace Puerts
         private readonly pesapi_reg_api reg_api;
         private readonly IntPtr registry;
         private readonly pesapi_class_not_found_callback onTypeNotFoundDelegate;
-        private readonly List<pesapi_callback> callbacksCache = new List<pesapi_callback>();
+        private readonly List<Delegate> callbacksCache = new List<Delegate>();
 
         private TypeRegister()
         {
@@ -145,7 +145,16 @@ namespace Puerts
                 catch { }
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
-            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, null, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
+            var ctors = type.GetConstructors();
+
+            pesapi_constructor ctorWrap = null;
+            if (ctors.Length > 0)
+            {
+                //UnityEngine.Debug.LogWarning("add ctors for " + type);
+                ctorWrap = ExpressionsWrap.GenConstructorWrap(ctors[0], true);
+                callbacksCache.Add(ctorWrap);
+            }
+            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
             registerFinished[typeId] = true;
             return typeId;
         }

@@ -771,6 +771,63 @@ namespace Puerts
                 ), apis, info)).Compile();
         }
 
+        public static pesapi_constructor GenConstructorWrap(ConstructorInfo constructorInfo, bool checkArgs)
+        {
+            var variables = new List<ParameterExpression>();
+            var blockExpressions = new List<Expression>();
+
+            var apis = Expression.Parameter(typeof(IntPtr), "apis");
+            var info = Expression.Parameter(typeof(IntPtr), "info");
+
+            // var env = ffi.get_env(info);
+            var env = Expression.Variable(typeof(IntPtr));
+            variables.Add(env);
+            blockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env", info)));
+
+            var context = new CompileContext()
+            {
+                Variables = variables,
+                BlockExpressions = blockExpressions,
+                Apis = apis,
+                Env = env
+            };
+
+            var jsArgs = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, pi, info, index)).ToArray();
+
+            var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
+
+            blockExpressions.Add(nativeToScript(context, constructorInfo.DeclaringType, callNew));
+
+            var block = Expression.Block(variables, blockExpressions);
+
+            var exVar = Expression.Variable(typeof(Exception), "ex");
+
+            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
+
+            var formatExpr = Expression.Call(
+                formatMethod,
+                Expression.Constant("C# Exception: {0}, Stack: {1}"),
+                Expression.NewArrayInit(
+                    typeof(object),
+                    Expression.Convert(Expression.Property(exVar, "Message"), typeof(object)),
+                    Expression.Convert(Expression.Property(exVar, "StackTrace"), typeof(object))
+                )
+            );
+
+            var catchBlock = Expression.Block(
+                typeof(IntPtr),
+                callPApi(apis, "throw_by_string", info, formatExpr),
+                Expression.Default(typeof(IntPtr))
+            );
+
+            var tryCatchExpr = Expression.TryCatch(
+                Expression.Block(typeof(IntPtr), block),
+                Expression.Catch(exVar, catchBlock)
+            );
+
+            return Expression.Lambda<pesapi_constructor>(tryCatchExpr, apis, info).Compile();
+        }
+
         private static Dictionary<Type, Delegate> NativeTranlatorCache = new Dictionary<Type, Delegate>();
 
         public static Func<IntPtr, IntPtr, IntPtr, TResult> GetNativeTranlator<TResult>()
