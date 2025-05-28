@@ -166,6 +166,13 @@ namespace Puerts
                 return Encoding.Unicode.GetString(buf);
             }
 
+            public static ArrayBuffer ScriptToNative_ArrayBuffer(IntPtr apis, IntPtr env, IntPtr value)
+            {
+                UIntPtr outLen = UIntPtr.Zero;
+                IntPtr ptr = NativeAPI.pesapi_get_value_binary(apis, env, value, ref outLen);
+                return new ArrayBuffer(ptr, (int)outLen.ToUInt32());
+            }
+
             public static object ScriptToNative_Object(IntPtr apis, IntPtr env, IntPtr value)
             {
                 if (NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value))
@@ -208,7 +215,10 @@ namespace Puerts
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
                 }
-                // TODO: NativeAPI.pesapi_is_binary
+                else if (NativeAPI.pesapi_is_binary(apis, env, value))
+                {
+                    return ScriptToNative_ArrayBuffer(apis, env, value);
+                }
                 else if (NativeAPI.pesapi_is_function(apis, env, value))
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
@@ -430,6 +440,11 @@ namespace Puerts
                 */
                 // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
+            }
+            else if (typeof(ArrayBuffer) == type)
+            {
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ArrayBuffer), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
                 return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(object) == type)
