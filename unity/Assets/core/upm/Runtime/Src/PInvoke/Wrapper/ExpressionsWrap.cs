@@ -295,7 +295,7 @@ namespace Puerts
         private static  MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object)});
         private static MethodInfo stringFormatMethod = typeof(string).GetMethod("Format",new[] { typeof(string), typeof(object)});
 
-        private static void Printf(CompileContext context, string format, Expression expression)
+        private static Expression Printf(string format, Expression expression)
         {
             var formatString = Expression.Constant(format);
             var formattedMessage = Expression.Call(
@@ -304,7 +304,7 @@ namespace Puerts
                                     expression
                                 );
 
-            context.BlockExpressions.Add(Expression.Call(logMethod, formattedMessage));
+            return Expression.Call(logMethod, formattedMessage);
         }
 
         private static Expression delegateBridage(Type type, ParameterExpression apis, Expression envRef, Expression funcRef)
