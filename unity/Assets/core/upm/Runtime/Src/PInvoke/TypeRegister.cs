@@ -16,6 +16,7 @@ namespace Puerts
         private readonly object writeLock = new object();
         private volatile Type[] typeArray = new Type[] { null }; // id not zero
         private readonly ConcurrentDictionary<Type, int> typeToId = new ConcurrentDictionary<Type, int>();
+        private readonly ConcurrentDictionary<int, bool> registerFinished = new ConcurrentDictionary<int, bool>();
 
         private readonly pesapi_reg_api reg_api;
         private readonly IntPtr registry;
@@ -110,6 +111,7 @@ namespace Puerts
         public int Register(Type type)
         {
             int typeId = FindOrAddTypeId(type);
+            if (registerFinished.ContainsKey(typeId)) return typeId;
 
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
             MethodInfo[] methods = type.GetMethods(flag);
@@ -127,7 +129,6 @@ namespace Puerts
                     UnityEngine.Debug.Log("wrap " + method + " fail! message: " + e.Message + ", stack:" + e.StackTrace );
                 }
             }
-
             IntPtr properties = reg_api.alloc_property_descriptors(new UIntPtr((uint)pesapi_Callbacks.Count));
             uint idx = 0;
             foreach(var kv in pesapi_Callbacks)
@@ -140,8 +141,8 @@ namespace Puerts
                 catch { }
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
-            // TODO: 有C# 类型变更要重新加载的限制
-            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, null, null, new UIntPtr(idx), properties, IntPtr.Zero, true); 
+            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, null, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
+            registerFinished[typeId] = true;
             return typeId;
         }
 
