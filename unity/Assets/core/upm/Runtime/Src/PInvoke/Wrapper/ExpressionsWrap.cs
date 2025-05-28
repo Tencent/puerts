@@ -129,6 +129,15 @@ namespace Puerts
                 return NativeAPI.pesapi_create_class(apis, env, new IntPtr(t.typeId));
             }
 
+            public static IntPtr NativeToScript_T<T>(IntPtr apis, IntPtr env, T value)
+            {
+                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                var objectPool = JsEnv.jsEnvs[envIdx].objectPool;
+                var typeId = TypeRegister.Instance.FindOrAddTypeId(typeof(T));
+                var objId = objectPool.FindOrAddObject(value);
+                return NativeAPI.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
+            }
+
             public static T ScriptToNative_T<T>(IntPtr apis, IntPtr env, IntPtr obj)
             {
                 var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
@@ -243,6 +252,10 @@ namespace Puerts
                 //apis.create_int32(env, value)
                 return callPApi(context.Apis, "create_int32", context.Env, value);
             }
+            else if (type == typeof(bool))
+            {
+                return callPApi(context.Apis, "create_boolean", context.Env, value);
+            }
             else if (type == typeof(string))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_String));
@@ -256,6 +269,11 @@ namespace Puerts
             else if (type == typeof(NativeType))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_NativeType));
+                return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
+            }
+            else if (!type.IsValueType && type != typeof(object))
+            {
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_T)).MakeGenericMethod(type);
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
