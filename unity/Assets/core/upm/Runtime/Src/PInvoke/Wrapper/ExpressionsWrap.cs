@@ -400,8 +400,27 @@ namespace Puerts
         {
             if (type == typeof(int))
             {
-                //return apis.get_value_int32(env, val);
                 return callPApi(context.Apis, "get_value_int32", context.Env, value);
+            }
+            else if (type == typeof(uint))
+            {
+                return callPApi(context.Apis, "get_value_uint32", context.Env, value);
+            }
+            else if (type == typeof(long))
+            {
+                return callPApi(context.Apis, "get_value_int64", context.Env, value);
+            }
+            else if (type == typeof(ulong))
+            {
+                return callPApi(context.Apis, "get_value_uint64", context.Env, value);
+            }
+            else if (type == typeof(double))
+            {
+                return callPApi(context.Apis, "get_value_double", context.Env, value);
+            }
+            else if (type == typeof(bool))
+            {
+                return callPApi(context.Apis, "get_value_bool", context.Env, value);
             }
             else if (type == typeof(string))
             {
