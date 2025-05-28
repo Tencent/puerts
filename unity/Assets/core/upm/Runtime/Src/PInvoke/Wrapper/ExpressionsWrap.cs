@@ -145,8 +145,9 @@ namespace Puerts
                 return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
             }
 
-            public static bool IsAssignable<T>(IntPtr apis, IntPtr env, IntPtr obj)
+            public static bool IsAssignable_ByRef<T>(IntPtr apis, IntPtr env, IntPtr obj)
             {
+                if (NativeAPI.pesapi_is_null(apis, env, obj)) return true;
                 var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
                 return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
@@ -507,16 +508,21 @@ namespace Puerts
             return Expression.NotEqual(callPApi(context.Apis, "get_args_len", info), Expression.Constant(methodInfo.GetParameters().Length));
         }
 
+        private static Expression directCheckArgumentConditions(Expression apis, Expression env, Expression value, params string[] apiNames)
+        {
+            return Expression.Not(buildOrExpression(apiNames.Select(n => callPApi(apis, n, env, value))));
+        }
+
         private static Expression checkArgument(CompileContext context, Type type, Expression value)
         {
             if (type == typeof(int))
             {
                 // !apis.is_int32(env, value);
-                return Expression.Not(callPApi(context.Apis, "is_int32", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_int32");
             }
             else if (type == typeof(string))
             {
-                return Expression.Not(callPApi(context.Apis, "is_string", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_string");
             }
             else if (type == typeof(object))
             {
@@ -524,39 +530,39 @@ namespace Puerts
             }
             else if (type == typeof(JSObject))
             {
-                return Expression.Not(callPApi(context.Apis, "is_object", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_object");
             }
             else if (type == typeof(bool))
             {
-                return Expression.Not(callPApi(context.Apis, "is_boolean", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_boolean");
             }
             else if (type == typeof(uint))
             {
-                return Expression.Not(callPApi(context.Apis, "is_uint32", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_uint32");
             }
             else if (type == typeof(long))
             {
-                return Expression.Not(callPApi(context.Apis, "is_int64", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_int64");
             }
             else if (type == typeof(ulong))
             {
-                return Expression.Not(callPApi(context.Apis, "is_uint64", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_uint64");
             }
             else if (type == typeof(double))
             {
-                return Expression.Not(callPApi(context.Apis, "is_double", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_double");
             }
             else if (type == typeof(ArrayBuffer))
             {
-                return Expression.Not(callPApi(context.Apis, "is_binary", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_binary");
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
-                return Expression.Not(callPApi(context.Apis, "is_function", context.Env, value));
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_function");
             }
             else if (!type.IsValueType)
             {
-                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable)).MakeGenericMethod(type);
+                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
                 return Expression.Not(Expression.Call(isAssignableMethod, context.Apis, context.Env, value));
             }
             else
