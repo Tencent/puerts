@@ -390,7 +390,7 @@ namespace Puerts
             var formattedMessage = Expression.Call(
                                     stringFormatMethod,
                                     formatString,
-                                    expression
+                                    Expression.Convert(expression, typeof(object))
                                 );
 
             return Expression.Call(logMethod, formattedMessage);
@@ -406,33 +406,9 @@ namespace Puerts
             var checkException = typeof(Helpper).GetMethod(nameof(Helpper.CheckException));
 
             // 打印各参数，用作调试
-            /*
-            var logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
-            var stringFormatMethod = typeof(string).GetMethod(
-                "Format",
-                new[] { typeof(string), typeof(object) }
-            );
-            blockExpressions.AddRange(delegateParams
-                .Select(param =>
-                {
-                        // 构建字符串格式参数：$"{param.Name}: {param.Value}"
-                        var formatString = Expression.Constant($"{type.Name} {param.Name}: {{0}}"); // "x: {0}"
-                        var paramValue = param.Type.IsValueType
-                                    ? (Expression)Expression.Convert(param, typeof(object))
-                                    : param;
-
-                        // 调用 string.Format("x: {0}", (object)x)
-                        var formattedMessage = Expression.Call(
-                                    stringFormatMethod,
-                                    formatString,
-                                    paramValue
-                                );
-
-                        // 调用 Debug.Log(formattedMessage)
-                        return Expression.Call(logMethod, formattedMessage);
-                })
-                .Cast<Expression>());
-            */
+            //var printArgs = delegateParams
+            //    .Select(param => Printf($"{type.Name} {param.Name}: {{0}}", param))
+            //    .Cast<Expression>();
             
             var outerVariables = new List<ParameterExpression>();
             var outerExpressions = new List<Expression>();
@@ -443,6 +419,7 @@ namespace Puerts
             outerExpressions.Add(Expression.Assign(scope, callPApi(apis, "open_scope", envRef)));
 
             var variables = new List<ParameterExpression>();
+            //var blockExpressions = new List<Expression>(printArgs);
             var blockExpressions = new List<Expression>();
 
             var env = Expression.Variable(typeof(IntPtr));
