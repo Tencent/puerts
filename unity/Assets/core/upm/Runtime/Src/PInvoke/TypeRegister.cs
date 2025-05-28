@@ -148,7 +148,7 @@ namespace Puerts
         public bool OnTypeNotFound(IntPtr type_id)
         {
             Type type = FindTypeById(type_id.ToInt32());
-            //UnityEngine.Debug.Log("Loading type: " + type + ", id: " + type_id.ToInt32());
+            UnityEngine.Debug.Log("Loading type: " + type + ", id: " + type_id.ToInt32());
             Register(type);
             return true;
         }

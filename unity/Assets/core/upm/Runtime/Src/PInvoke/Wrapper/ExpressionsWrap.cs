@@ -282,6 +282,21 @@ namespace Puerts
             }
         }
 
+        private static  MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object)});
+        private static MethodInfo stringFormatMethod = typeof(string).GetMethod("Format",new[] { typeof(string), typeof(object)});
+
+        private static void Printf(CompileContext context, string format, Expression expression)
+        {
+            var formatString = Expression.Constant(format);
+            var formattedMessage = Expression.Call(
+                                    stringFormatMethod,
+                                    formatString,
+                                    expression
+                                );
+
+            context.BlockExpressions.Add(Expression.Call(logMethod, formattedMessage));
+        }
+
         private static Expression delegateBridage(Type type, ParameterExpression apis, Expression envRef, Expression funcRef)
         {
             var invokeMethodInfo = type.GetMethod("Invoke");
@@ -562,7 +577,7 @@ namespace Puerts
                 var checkExpression = buildOrExpression(methodInfo.GetParameters()
                     .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, jsArgs[index]))
                     .Concat(new[] { checkArgumentLen(context, info, methodInfo) }));
-
+                //UnityEngine.Debug.Log("gen.......... invalid arguments to " + methodInfo.Name);
                 var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant("invalid arguments to " + methodInfo.Name));
                 blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, Expression.Return(voidReturn))));
             }
