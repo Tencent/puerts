@@ -263,6 +263,22 @@ namespace Puerts
                 //apis.create_int32(env, value)
                 return callPApi(context.Apis, "create_int32", context.Env, value);
             }
+            else if (type == typeof(uint))
+            {
+                return callPApi(context.Apis, "create_uint32", context.Env, value);
+            }
+            else if (type == typeof(long))
+            {
+                return callPApi(context.Apis, "create_int64", context.Env, value);
+            }
+            else if (type == typeof(ulong))
+            {
+                return callPApi(context.Apis, "create_uint64", context.Env, value);
+            }
+            else if (type == typeof(double))
+            {
+                return callPApi(context.Apis, "create_double", context.Env, value);
+            }
             else if (type == typeof(bool))
             {
                 return callPApi(context.Apis, "create_boolean", context.Env, value);
