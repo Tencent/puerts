@@ -747,7 +747,7 @@ namespace Puerts
             }
         }
 
-        private static Expression getArgument(CompileContext context, ParameterInfo parameterInfo, ParameterExpression info, int index)
+        private static Expression getArgument(CompileContext context, ParameterExpression info, int index)
         {
             //var temp = apis.get_arg(info, index);
             var temp = Expression.Variable(typeof(IntPtr));
@@ -789,7 +789,7 @@ namespace Puerts
                 Env = env
             };
 
-            var jsArgs = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, pi, info, index)).ToArray();
+            var jsArgs = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, info, index)).ToArray();
 
             LabelTarget voidReturn = Expression.Label();
 
@@ -855,6 +855,87 @@ namespace Puerts
                 ), apis, info)).Compile();
         }
 
+        public static pesapi_callback GenFieldGetter(FieldInfo fieldInfo)
+        {
+            var variables = new List<ParameterExpression>();
+            var blockExpressions = new List<Expression>();
+
+            var apis = Expression.Parameter(typeof(IntPtr), "apis");
+            var info = Expression.Parameter(typeof(IntPtr), "info");
+
+            // var env = ffi.get_env(info);
+            var env = Expression.Variable(typeof(IntPtr));
+            variables.Add(env);
+            blockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env", info)));
+
+            var context = new CompileContext()
+            {
+                Variables = variables,
+                BlockExpressions = blockExpressions,
+                Apis = apis,
+                Env = env
+            };
+
+            ParameterExpression self = null;
+
+            if (!fieldInfo.IsStatic)
+            {
+                // Class1 self = Helpper.Get<Class1>(apis, env, info);
+                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(fieldInfo.DeclaringType);
+                self = Expression.Variable(fieldInfo.DeclaringType, "self");
+                variables.Add(self);
+                var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
+                blockExpressions.Add(Expression.Assign(self, callGetSelf));
+            }
+
+            var field = Expression.Field(self, fieldInfo);
+            blockExpressions.Add(nativeToScript(context, fieldInfo.FieldType, field));
+            return (Expression.Lambda<pesapi_callback>(Expression.Block(
+                variables, blockExpressions
+                ), apis, info)).Compile();
+        }
+
+        public static pesapi_callback GenFieldSetter(FieldInfo fieldInfo)
+        {
+            var variables = new List<ParameterExpression>();
+            var blockExpressions = new List<Expression>();
+
+            var apis = Expression.Parameter(typeof(IntPtr), "apis");
+            var info = Expression.Parameter(typeof(IntPtr), "info");
+
+            // var env = ffi.get_env(info);
+            var env = Expression.Variable(typeof(IntPtr));
+            variables.Add(env);
+            blockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env", info)));
+
+            var context = new CompileContext()
+            {
+                Variables = variables,
+                BlockExpressions = blockExpressions,
+                Apis = apis,
+                Env = env
+            };
+
+            ParameterExpression self = null;
+
+            if (!fieldInfo.IsStatic)
+            {
+                // Class1 self = Helpper.Get<Class1>(apis, env, info);
+                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(fieldInfo.DeclaringType);
+                self = Expression.Variable(fieldInfo.DeclaringType, "self");
+                variables.Add(self);
+                var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
+                blockExpressions.Add(Expression.Assign(self, callGetSelf));
+            }
+
+            var field = Expression.Field(self, fieldInfo);
+            var jsValue = getArgument(context, info, 0);
+            blockExpressions.Add(Expression.Assign(field, scriptToNative(context, fieldInfo.FieldType, jsValue)));
+            return (Expression.Lambda<pesapi_callback>(Expression.Block(
+                variables, blockExpressions
+                ), apis, info)).Compile();
+        }
+
         public static pesapi_constructor GenConstructorWrap(ConstructorInfo constructorInfo, bool checkArgs)
         {
             var variables = new List<ParameterExpression>();
@@ -876,7 +957,7 @@ namespace Puerts
                 Env = env
             };
 
-            var jsArgs = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, pi, info, index)).ToArray();
+            var jsArgs = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, info, index)).ToArray();
 
             var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
 

@@ -134,7 +134,8 @@ namespace Puerts
             if (registerFinished.ContainsKey(typeId)) return typeId;
 
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-            MethodInfo[] methods = type.GetMethods(flag);
+            MethodInfo[] methodInfos = type.GetMethods(flag);
+            FieldInfo[] fieldInfos = type.GetFields(flag);
             Dictionary<MethodInfo, pesapi_callback> methodCallbacks = new Dictionary<MethodInfo, pesapi_callback>();
             Dictionary<MemberKey, AccessorInfo> propertyCallbacks = new Dictionary<MemberKey, AccessorInfo>();
             Action<MemberKey, pesapi_callback, pesapi_callback> addPropertyCallback = (MemberKey name, pesapi_callback getter, pesapi_callback setter) =>
@@ -148,31 +149,50 @@ namespace Puerts
                 if (getter != null) accessorCallbackPair.Getter = getter;
                 if (setter != null) accessorCallbackPair.Setter = setter;
             };
-            foreach (var method in methods)
+            foreach (var fieldInfo in fieldInfos)
             {
-                if (method.IsGenericMethodDefinition) continue;
                 try
                 {
-                    var callback = ExpressionsWrap.GenMethodWrap(method, true);
+                    var getter = ExpressionsWrap.GenFieldGetter(fieldInfo);
+                    callbacksCache.Add(getter);
+                    addPropertyCallback(new MemberKey(fieldInfo.Name, fieldInfo.IsStatic), getter, null);
+                    if (!fieldInfo.IsInitOnly && !fieldInfo.IsLiteral)
+                    {
+                        var setter = ExpressionsWrap.GenFieldSetter(fieldInfo);
+                        callbacksCache.Add(setter);
+                        addPropertyCallback(new MemberKey(fieldInfo.Name, fieldInfo.IsStatic), null, setter);
+                    }
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogWarning("wrap " + fieldInfo + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
+                }
+            }
+            foreach (var methodInfo in methodInfos)
+            {
+                if (methodInfo.IsGenericMethodDefinition) continue;
+                try
+                {
+                    var callback = ExpressionsWrap.GenMethodWrap(methodInfo, true);
                     callbacksCache.Add(callback);
                     //AccessorCallbackPair accessorCallbackPair = null;
-                    if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length == 0) // getter of property
+                    if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("get_") && methodInfo.GetParameters().Length == 0) // getter of property
                     {
-                        addPropertyCallback(new MemberKey(method.Name.Substring(4), method.IsStatic), callback, null);
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), callback, null);
                     }
-                    else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length == 1) // setter of property
+                    else if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("set_") && methodInfo.GetParameters().Length == 1) // setter of property
                     {
-                        addPropertyCallback(new MemberKey(method.Name.Substring(4), method.IsStatic), null, callback);
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, callback);
                     }
                     else
                     {
-                        methodCallbacks.Add(method, callback);
+                        methodCallbacks.Add(methodInfo, callback);
                     }
                     //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.Log("wrap " + method + " fail! message: " + e.Message + ", stack:" + e.StackTrace );
+                    UnityEngine.Debug.LogWarning("wrap " + methodInfo + " fail! message: " + e.Message + ", stack:" + e.StackTrace );
                 }
             }
             IntPtr properties = reg_api.alloc_property_descriptors(new UIntPtr((uint)(methodCallbacks.Count + propertyCallbacks.Count)));
@@ -212,7 +232,7 @@ namespace Puerts
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("wrap ctor for " + type + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
+                UnityEngine.Debug.LogWarning("wrap ctor for " + type + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
             }
             reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
             registerFinished[typeId] = true;
