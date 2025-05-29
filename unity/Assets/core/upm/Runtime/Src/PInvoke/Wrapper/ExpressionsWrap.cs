@@ -784,8 +784,9 @@ namespace Puerts
                 Expression.OrElse(left, right));
         }
 
-        private static T GenMethodBaseWrap<T>(MethodBase methodBase, Type returnType, bool checkArgs, Action<CompileContext, ParameterExpression, ParameterExpression, Expression[], LabelTarget> bodyBuilder)
+        private static T GenMethodBaseWrap<T>(MethodBase methodBase, bool checkArgs, Action<CompileContext, ParameterExpression, ParameterExpression, Expression[], LabelTarget> bodyBuilder)
         {
+            Type returnType = typeof(T).GetMethod("Invoke").ReturnType;
             var variables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();
 
@@ -864,7 +865,7 @@ namespace Puerts
 
         public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool checkArgs)
         {
-            return GenMethodBaseWrap<pesapi_callback>(methodInfo, typeof(void), checkArgs, (context, info, self, jsArgs, exitPoint) =>
+            return GenMethodBaseWrap<pesapi_callback>(methodInfo, checkArgs, (context, info, self, jsArgs, exitPoint) =>
             {
                 var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
                 var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
@@ -884,7 +885,7 @@ namespace Puerts
 
         public static pesapi_constructor GenConstructorWrap(ConstructorInfo constructorInfo, bool checkArgs)
         {
-            return GenMethodBaseWrap<pesapi_constructor>(constructorInfo, typeof(IntPtr), checkArgs, (context, info, self, jsArgs, exitPoint) =>
+            return GenMethodBaseWrap<pesapi_constructor>(constructorInfo, checkArgs, (context, info, self, jsArgs, exitPoint) =>
             {
                 var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
 
