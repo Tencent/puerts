@@ -678,7 +678,7 @@ namespace Puerts
             return callPApi(context.Apis, "add_return", info, nativeToScript(context, type, value));
         }
 
-        private static Expression checkArgumentLen(CompileContext context, ParameterExpression info, MethodInfo methodInfo)
+        private static Expression checkArgumentLen(CompileContext context, ParameterExpression info, MethodBase methodInfo)
         {
             return Expression.NotEqual(callPApi(context.Apis, "get_args_len", info), Expression.Constant(methodInfo.GetParameters().Length));
         }
@@ -894,12 +894,24 @@ namespace Puerts
 
             var jsArgs = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, info, index)).ToArray();
 
+            var exitPoint = Expression.Label(typeof(IntPtr));
+
+            if (checkArgs)
+            {
+                var checkExpression = buildOrExpression(constructorInfo.GetParameters()
+                    .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, jsArgs[index]))
+                    .Concat(new[] { checkArgumentLen(context, info, constructorInfo) }));
+                //UnityEngine.Debug.Log("gen.......... invalid arguments to " + methodInfo.Name);
+                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant("invalid arguments to ctor of " + constructorInfo.DeclaringType.Name));
+                blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, Expression.Return(exitPoint, Expression.Default(typeof(IntPtr))))));
+            }
+
             var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
 
             var isValueType = constructorInfo.DeclaringType.IsValueType;
             var addToObjectPoolMethod = isValueType ? typeof(Helpper).GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
-
-            blockExpressions.Add(Expression.Call(addToObjectPoolMethod, apis, env, callNew));
+            var addToObjectPool = Expression.Call(addToObjectPoolMethod, apis, env, callNew);
+            blockExpressions.Add(Expression.Label(exitPoint, addToObjectPool));
 
             var block = Expression.Block(variables, blockExpressions);
 
