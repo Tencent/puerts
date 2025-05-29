@@ -977,7 +977,8 @@ namespace Puerts
             }
 
             var field = Expression.Field(self, fieldInfo);
-            blockExpressions.Add(nativeToScript(context, fieldInfo.FieldType, field));
+            var addReturn = returnToScript(context, fieldInfo.FieldType, info, field);
+            blockExpressions.Add(addReturn);
             return (Expression.Lambda<pesapi_callback>(Expression.Block(
                 variables, blockExpressions
                 ), apis, info)).Compile();
