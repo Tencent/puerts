@@ -352,6 +352,10 @@ namespace Puerts
             {
                 return callPApi(context.Apis, "create_double", context.Env, value);
             }
+            else if (tranType == typeof(float))
+            {
+                return callPApi(context.Apis, "create_double", context.Env, Expression.Convert(value, typeof(double)));
+            }
             else if (tranType == typeof(bool))
             {
                 return callPApi(context.Apis, "create_boolean", context.Env, value);
@@ -503,6 +507,10 @@ namespace Puerts
             else if (tranType == typeof(double))
             {
                 ret = callPApi(context.Apis, "get_value_double", context.Env, value);
+            }
+            else if (tranType == typeof(float))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_double", context.Env, value), typeof(float));
             }
             else if (tranType == typeof(bool))
             {
@@ -661,6 +669,10 @@ namespace Puerts
             else if (type == typeof(ulong))
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_uint64");
+            }
+            else if (type == typeof(float))
+            {
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_double");
             }
             else if (type == typeof(double))
             {
