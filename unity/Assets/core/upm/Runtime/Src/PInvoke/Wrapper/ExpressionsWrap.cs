@@ -784,94 +784,7 @@ namespace Puerts
                 Expression.OrElse(left, right));
         }
 
-        public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool checkArgs)
-        {
-            var variables = new List<ParameterExpression>(); 
-            var blockExpressions = new List<Expression>();
-
-            var apis = Expression.Parameter(typeof(IntPtr), "apis");
-            var info = Expression.Parameter(typeof(IntPtr), "info");
-
-            // var env = ffi.get_env(info);
-            var env = Expression.Variable(typeof(IntPtr));
-            variables.Add(env);
-            blockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env", info)));
-
-            var context = new CompileContext()
-            {
-                Variables = variables,
-                BlockExpressions = blockExpressions,
-                Apis = apis,
-                Env = env
-            };
-
-            var jsArgs = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, info, index)).ToArray();
-
-            LabelTarget voidReturn = Expression.Label();
-
-            if (checkArgs)
-            {
-                var checkExpression = buildOrExpression(methodInfo.GetParameters()
-                    .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, jsArgs[index]))
-                    .Concat(new[] { checkArgumentLen(context, info, methodInfo) }));
-                //UnityEngine.Debug.Log("gen.......... invalid arguments to " + methodInfo.Name);
-                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant("invalid arguments to " + methodInfo.Name));
-                blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, Expression.Return(voidReturn))));
-            }
-
-            ParameterExpression self = null;
-
-            if (!methodInfo.IsStatic)
-            {
-                // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(methodInfo.DeclaringType);
-                self = Expression.Variable(methodInfo.DeclaringType, "self");
-                variables.Add(self);
-                var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
-                blockExpressions.Add(Expression.Assign(self, callGetSelf));
-            }
-
-            var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
-            var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
-
-            if (addReturn != null)
-            {
-                blockExpressions.Add(addReturn);
-            }
-            else
-            {
-                blockExpressions.Add(callMethod);
-            }
-
-            var block = Expression.Block(variables, blockExpressions);
-
-            var exVar = Expression.Variable(typeof(Exception), "ex");
-
-            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
-
-            var formatExpr = Expression.Call(
-                formatMethod,
-                Expression.Constant("C# Exception: {0}, Stack: {1}"),
-                Expression.NewArrayInit(
-                    typeof(object),
-                    Expression.Convert(Expression.Property(exVar, "Message"), typeof(object)),
-                    Expression.Convert(Expression.Property(exVar, "StackTrace"), typeof(object))
-                )
-            );
-
-            var catchBlock = Expression.Block(
-                callPApi(apis, "throw_by_string", info, formatExpr)
-            );
-
-            var tryCatchExpr = Expression.TryCatch(block, Expression.Catch(exVar, catchBlock));
-
-            return (Expression.Lambda<pesapi_callback>(Expression.Block(
-                tryCatchExpr,
-                Expression.Label(voidReturn)
-                ), apis, info)).Compile();
-        }
-
-        public static pesapi_constructor GenConstructorWrap(ConstructorInfo constructorInfo, bool checkArgs)
+        private static T GenMethodBaseWrap<T>(MethodBase methodBase, Type returnType, bool checkArgs, Action<CompileContext, ParameterExpression, ParameterExpression, Expression[], LabelTarget> bodyBuilder)
         {
             var variables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();
@@ -892,26 +805,32 @@ namespace Puerts
                 Env = env
             };
 
-            var jsArgs = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, info, index)).ToArray();
-
-            var exitPoint = Expression.Label(typeof(IntPtr));
+            var jsArgs = methodBase.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, info, index)).ToArray();
+            var isVoid = returnType == typeof(void);
+            var exitPoint = isVoid ? Expression.Label() : Expression.Label(returnType);
 
             if (checkArgs)
             {
-                var checkExpression = buildOrExpression(constructorInfo.GetParameters()
+                var checkExpression = buildOrExpression(methodBase.GetParameters()
                     .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, jsArgs[index]))
-                    .Concat(new[] { checkArgumentLen(context, info, constructorInfo) }));
-                //UnityEngine.Debug.Log("gen.......... invalid arguments to " + methodInfo.Name);
-                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant($"invalid arguments to ctor of {constructorInfo.DeclaringType.Name}"));
-                blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, Expression.Return(exitPoint, Expression.Default(typeof(IntPtr))))));
+                    .Concat(new[] { checkArgumentLen(context, info, methodBase) }));
+                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant($"invalid arguments to {methodBase.Name} of {methodBase.DeclaringType.Name}"));
+                blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, isVoid ? Expression.Return(exitPoint) : Expression.Return(exitPoint, Expression.Default(returnType)))));
             }
 
-            var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
+            ParameterExpression self = null;
 
-            var isValueType = constructorInfo.DeclaringType.IsValueType;
-            var addToObjectPoolMethod = isValueType ? typeof(Helpper).GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
-            var addToObjectPool = Expression.Call(addToObjectPoolMethod, apis, env, callNew);
-            blockExpressions.Add(Expression.Label(exitPoint, addToObjectPool));
+            if (!methodBase.IsStatic && !methodBase.IsConstructor)
+            {
+                // Class1 self = Helpper.Get<Class1>(apis, env, info);
+                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(methodBase.DeclaringType);
+                self = Expression.Variable(methodBase.DeclaringType, "self");
+                variables.Add(self);
+                var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
+                blockExpressions.Add(Expression.Assign(self, callGetSelf));
+            }
+
+            bodyBuilder(context, info, self, jsArgs, exitPoint);
 
             var block = Expression.Block(variables, blockExpressions);
 
@@ -930,17 +849,50 @@ namespace Puerts
             );
 
             var catchBlock = Expression.Block(
-                typeof(IntPtr),
+                returnType,
                 callPApi(apis, "throw_by_string", info, formatExpr),
-                Expression.Default(typeof(IntPtr))
+                Expression.Default(returnType)
             );
 
             var tryCatchExpr = Expression.TryCatch(
-                Expression.Block(typeof(IntPtr), block),
+                Expression.Block(returnType, block),
                 Expression.Catch(exVar, catchBlock)
             );
 
-            return Expression.Lambda<pesapi_constructor>(tryCatchExpr, apis, info).Compile();
+            return Expression.Lambda<T>(tryCatchExpr, apis, info).Compile();
+        }
+
+        public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool checkArgs)
+        {
+            return GenMethodBaseWrap<pesapi_callback>(methodInfo, typeof(void), checkArgs, (context, info, self, jsArgs, exitPoint) =>
+            {
+                var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
+                var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
+
+                if (addReturn != null)
+                {
+                    context.BlockExpressions.Add(addReturn);
+                }
+                else
+                {
+                    context.BlockExpressions.Add(callMethod);
+                }
+                context.BlockExpressions.Add(Expression.Label(exitPoint));
+            });
+
+        }
+
+        public static pesapi_constructor GenConstructorWrap(ConstructorInfo constructorInfo, bool checkArgs)
+        {
+            return GenMethodBaseWrap<pesapi_constructor>(constructorInfo, typeof(IntPtr), checkArgs, (context, info, self, jsArgs, exitPoint) =>
+            {
+                var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
+
+                var isValueType = constructorInfo.DeclaringType.IsValueType;
+                var addToObjectPoolMethod = isValueType ? typeof(Helpper).GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
+                var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, callNew);
+                context.BlockExpressions.Add(Expression.Label(exitPoint, addToObjectPool));
+            });
         }
 
         public static pesapi_callback GenFieldGetter(FieldInfo fieldInfo)
