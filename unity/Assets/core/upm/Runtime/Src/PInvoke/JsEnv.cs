@@ -172,33 +172,6 @@ namespace Puerts
             return PuertsIl2cpp.TypeUtils.GetType(className);
         }
 
-        /*public static string Print(string msg)
-        {
-            if (msg == "throw")
-            {
-                throw new Exception("js force throw");
-            }
-            UnityEngine.Debug.Log(msg);
-            return "c#:" + msg;
-        }*/
-
-        public void AAA(Func<int, int> callback)
-        {
-            UnityEngine.Debug.Log("AAA callback(100) = " + callback(100));
-            UnityEngine.Debug.Log("AAA callback(100) = " + callback(42));
-        }
-
-        public void BBB(Action<string> callback)
-        {
-            callback("hello");
-        }
-
-        public JSObject PassObj(JSObject obj)
-        {
-            UnityEngine.Debug.Log(obj.Get<string>("msg"));
-            return obj;
-        }
-
         /*
         [MonoPInvokeCallback(typeof(pesapi_callback))]
         static void Print(IntPtr apis, IntPtr info)
