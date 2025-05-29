@@ -83,6 +83,12 @@ namespace Puerts
                 return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
             }
 
+            public static IntPtr FindOrAddObject(IntPtr apis, IntPtr env, object obj)
+            {
+                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.FindOrAddObject(obj));
+            }
+
             public static void CheckException(IntPtr apis, IntPtr scope)
             {
                 if (NativeAPI.pesapi_has_caught(apis, scope))
@@ -796,7 +802,9 @@ namespace Puerts
 
             var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
 
-            blockExpressions.Add(nativeToScript(context, constructorInfo.DeclaringType, callNew));
+            var findOrAddObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
+
+            blockExpressions.Add(Expression.Call(findOrAddObjectMethod, apis, env, callNew));
 
             var block = Expression.Block(variables, blockExpressions);
 
