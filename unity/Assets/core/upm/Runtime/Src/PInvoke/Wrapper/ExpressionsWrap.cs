@@ -326,64 +326,69 @@ namespace Puerts
 
         private static Expression nativeToScript(CompileContext context, Type type, Expression value)
         {
-            if (type == typeof(int))
+            Type tranType = type.IsEnum ? Enum.GetUnderlyingType(type) : type;
+            if (type.IsEnum)
+            {
+                value = Expression.Convert(value, tranType);
+            }
+            if (tranType == typeof(int))
             {
                 //apis.create_int32(env, value)
                 return callPApi(context.Apis, "create_int32", context.Env, value);
             }
-            else if (type == typeof(uint))
+            else if (tranType == typeof(uint))
             {
                 return callPApi(context.Apis, "create_uint32", context.Env, value);
             }
-            else if (type == typeof(long))
+            else if (tranType == typeof(long))
             {
                 return callPApi(context.Apis, "create_int64", context.Env, value);
             }
-            else if (type == typeof(ulong))
+            else if (tranType == typeof(ulong))
             {
                 return callPApi(context.Apis, "create_uint64", context.Env, value);
             }
-            else if (type == typeof(double))
+            else if (tranType == typeof(double))
             {
                 return callPApi(context.Apis, "create_double", context.Env, value);
             }
-            else if (type == typeof(bool))
+            else if (tranType == typeof(bool))
             {
                 return callPApi(context.Apis, "create_boolean", context.Env, value);
             }
-            else if (type == typeof(string))
+            else if (tranType == typeof(string))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_String));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
-            else if (type == typeof(JSObject))
+            else if (tranType == typeof(JSObject))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ScriptObject));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
-            else if (type == typeof(NativeType))
+            else if (tranType == typeof(NativeType))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_NativeType));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
-            else if (type == typeof(ArrayBuffer))
+            else if (tranType == typeof(ArrayBuffer))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ArrayBuffer));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
-            else if (type == typeof(object))
+            else if (tranType == typeof(object))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_Object));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
-            else if (!type.IsValueType && type != typeof(object))
+            else if (!tranType.IsValueType && tranType != typeof(object))
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_T)).MakeGenericMethod(type);
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_T)).MakeGenericMethod(tranType);
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
             {
-                throw new Exception("nativeToScript: " + type + " not support yet!");
+                throw new Exception("nativeToScript: " + tranType + " not support yet!");
             }
         }
 
@@ -477,31 +482,33 @@ namespace Puerts
 
         private static Expression scriptToNative(CompileContext context, Type type, Expression value)
         {
-            if (type == typeof(int))
+            Type tranType = type.IsEnum ? Enum.GetUnderlyingType(type) : type;
+            Expression ret = null;
+            if (tranType == typeof(int))
             {
-                return callPApi(context.Apis, "get_value_int32", context.Env, value);
+                ret = callPApi(context.Apis, "get_value_int32", context.Env, value);
             }
-            else if (type == typeof(uint))
+            else if (tranType == typeof(uint))
             {
-                return callPApi(context.Apis, "get_value_uint32", context.Env, value);
+                ret = callPApi(context.Apis, "get_value_uint32", context.Env, value);
             }
-            else if (type == typeof(long))
+            else if (tranType == typeof(long))
             {
-                return callPApi(context.Apis, "get_value_int64", context.Env, value);
+                ret = callPApi(context.Apis, "get_value_int64", context.Env, value);
             }
-            else if (type == typeof(ulong))
+            else if (tranType == typeof(ulong))
             {
-                return callPApi(context.Apis, "get_value_uint64", context.Env, value);
+                ret = callPApi(context.Apis, "get_value_uint64", context.Env, value);
             }
-            else if (type == typeof(double))
+            else if (tranType == typeof(double))
             {
-                return callPApi(context.Apis, "get_value_double", context.Env, value);
+                ret = callPApi(context.Apis, "get_value_double", context.Env, value);
             }
-            else if (type == typeof(bool))
+            else if (tranType == typeof(bool))
             {
-                return callPApi(context.Apis, "get_value_bool", context.Env, value);
+                ret = callPApi(context.Apis, "get_value_bool", context.Env, value);
             }
-            else if (type == typeof(string))
+            else if (tranType == typeof(string))
             {
                 /*
                 // UIntPtr bufsize = UIntPtr.Zero;
@@ -539,24 +546,24 @@ namespace Puerts
                 */
                 // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
+                ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
-            else if (typeof(ArrayBuffer) == type)
+            else if (typeof(ArrayBuffer) == tranType)
             {
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ArrayBuffer), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
+                ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
-            else if (typeof(object) == type)
+            else if (typeof(object) == tranType)
             {
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_Object));
-                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
+                ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
-            else if (typeof(JSObject) == type)
+            else if (typeof(JSObject) == tranType)
             {
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
-                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
+                ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
-            else if (typeof(Delegate).IsAssignableFrom(type))
+            else if (typeof(Delegate).IsAssignableFrom(tranType))
             {
                 var envRef = Expression.Variable(typeof(IntPtr));
                 context.Variables.Add(envRef);
@@ -566,12 +573,12 @@ namespace Puerts
                 context.Variables.Add(funcRef);
                 context.BlockExpressions.Add(Expression.Assign(funcRef, callPApi(context.Apis, "create_value_ref", context.Env, value, Expression.Constant((uint)0))));
 
-                return delegateBridage(type, context.Apis, envRef, funcRef);
+                ret = delegateBridage(tranType, context.Apis, envRef, funcRef);
             }
-            else if (!type.IsValueType)
+            else if (!tranType.IsValueType)
             {
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(type);
-                return Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
+                ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {
@@ -588,8 +595,13 @@ namespace Puerts
             }*/
             else
             {
-                throw new Exception("scriptToNative: " + type + " not support yet!");
+                throw new Exception("scriptToNative: " + tranType + " not support yet!");
             }
+            if (type.IsEnum)
+            {
+                ret = Expression.Convert(ret, type);
+            }
+            return ret;
         }
 
         private static Expression returnToScript(CompileContext context, Type type, ParameterExpression info, Expression value)
@@ -613,6 +625,10 @@ namespace Puerts
 
         private static Expression checkArgument(CompileContext context, Type type, Expression value)
         {
+            if (type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
             if (type == typeof(int))
             {
                 // !apis.is_int32(env, value);
