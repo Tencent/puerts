@@ -111,6 +111,23 @@ namespace Puerts
             }
         }
 
+        struct MemberKey
+        {
+            public MemberKey(string n, bool b)
+            {
+                Name = n;
+                IsStatic = b;
+            }
+            public string Name;
+            public bool IsStatic;
+        }
+
+        class AccessorInfo
+        {
+            public pesapi_callback Getter;
+            public pesapi_callback Setter;
+        }
+
         public int Register(Type type)
         {
             int typeId = FindOrAddTypeId(type);
@@ -118,13 +135,39 @@ namespace Puerts
 
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
             MethodInfo[] methods = type.GetMethods(flag);
-            Dictionary<MethodInfo, pesapi_callback> pesapi_Callbacks = new Dictionary<MethodInfo, pesapi_callback>();
-            foreach(var method in methods)
+            Dictionary<MethodInfo, pesapi_callback> methodCallbacks = new Dictionary<MethodInfo, pesapi_callback>();
+            Dictionary<MemberKey, AccessorInfo> propertyCallbacks = new Dictionary<MemberKey, AccessorInfo>();
+            Action<MemberKey, pesapi_callback, pesapi_callback> addPropertyCallback = (MemberKey name, pesapi_callback getter, pesapi_callback setter) =>
+            {
+                AccessorInfo accessorCallbackPair;
+                if (!propertyCallbacks.TryGetValue(name, out accessorCallbackPair))
+                {
+                    accessorCallbackPair = new AccessorInfo();
+                    propertyCallbacks.Add(name, accessorCallbackPair);
+                }
+                if (getter != null) accessorCallbackPair.Getter = getter;
+                if (setter != null) accessorCallbackPair.Setter = setter;
+            };
+            foreach (var method in methods)
             {
                 if (method.IsGenericMethodDefinition) continue;
                 try
                 {
-                    pesapi_Callbacks.Add(method, ExpressionsWrap.GenMethodWrap(method, true));
+                    var callback = ExpressionsWrap.GenMethodWrap(method, true);
+                    callbacksCache.Add(callback);
+                    //AccessorCallbackPair accessorCallbackPair = null;
+                    if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length == 0) // getter of property
+                    {
+                        addPropertyCallback(new MemberKey(method.Name.Substring(4), method.IsStatic), callback, null);
+                    }
+                    else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length == 1) // setter of property
+                    {
+                        addPropertyCallback(new MemberKey(method.Name.Substring(4), method.IsStatic), null, callback);
+                    }
+                    else
+                    {
+                        methodCallbacks.Add(method, callback);
+                    }
                     //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }
                 catch (Exception e)
@@ -132,14 +175,23 @@ namespace Puerts
                     UnityEngine.Debug.Log("wrap " + method + " fail! message: " + e.Message + ", stack:" + e.StackTrace );
                 }
             }
-            IntPtr properties = reg_api.alloc_property_descriptors(new UIntPtr((uint)pesapi_Callbacks.Count));
+            IntPtr properties = reg_api.alloc_property_descriptors(new UIntPtr((uint)(methodCallbacks.Count + propertyCallbacks.Count)));
             uint idx = 0;
-            foreach(var kv in pesapi_Callbacks)
+            foreach(var kv in propertyCallbacks)
             {
                 try
                 {
                     IntPtr ptr = StringToIntPtr(kv.Key.Name);
-                    callbacksCache.Add(kv.Value);
+                    reg_api.set_property_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, kv.Value.Getter, kv.Value.Setter, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                }
+                catch { }
+
+            }
+            foreach(var kv in methodCallbacks)
+            {
+                try
+                {
+                    IntPtr ptr = StringToIntPtr(kv.Key.Name);
                     reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, kv.Value, IntPtr.Zero, IntPtr.Zero);
                 }
                 catch { }
