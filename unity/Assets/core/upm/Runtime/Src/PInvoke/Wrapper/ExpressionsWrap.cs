@@ -89,6 +89,13 @@ namespace Puerts
                 return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.FindOrAddObject(obj));
             }
 
+            // do not find, just Add for ValueType
+            public static IntPtr AddValueType<T>(IntPtr apis, IntPtr env, T val) where T : struct
+            {
+                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.AddBoxedValueType(val));
+            }
+
             public static void CheckException(IntPtr apis, IntPtr scope)
             {
                 if (NativeAPI.pesapi_has_caught(apis, scope))
@@ -190,10 +197,14 @@ namespace Puerts
                 {
                     return NativeToScript_T<object>(apis, env, t);
                 }
+                else if(t.GetType().IsValueType && !t.GetType().IsPrimitive)
+                {
+                    return NativeToScript_ValueType_Boxed(apis, env, t);
+                }
                 throw new NotSupportedException($"NativeToScript_Object does not support type: {t.GetType()}");
             }
 
-            public static IntPtr NativeToScript_T<T>(IntPtr apis, IntPtr env, T value)
+            public static IntPtr NativeToScript_T<T>(IntPtr apis, IntPtr env, T value) where T : class
             {
                 if (value == null)
                 {
@@ -206,6 +217,20 @@ namespace Puerts
                 return NativeAPI.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
             }
 
+            public static IntPtr NativeToScript_ValueType_Boxed(IntPtr apis, IntPtr env, object value)
+            {
+                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                var objectPool = JsEnv.jsEnvs[envIdx].objectPool;
+                var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
+                var objId = objectPool.AddBoxedValueType(value);
+                return NativeAPI.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
+            }
+
+            public static IntPtr NativeToScript_ValueType<T>(IntPtr apis, IntPtr env, T value) where T : struct
+            {
+                return NativeToScript_ValueType_Boxed(apis, env, value);
+            }
+
             public static T ScriptToNative_T<T>(IntPtr apis, IntPtr env, IntPtr obj)
             {
                 var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
@@ -216,6 +241,12 @@ namespace Puerts
             public static bool IsAssignable_ByRef<T>(IntPtr apis, IntPtr env, IntPtr obj)
             {
                 if (NativeAPI.pesapi_is_null(apis, env, obj)) return true;
+                var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
+                return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
+            }
+
+            public static bool IsAssignable_ValueType<T>(IntPtr apis, IntPtr env, IntPtr obj)
+            {
                 var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
                 return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
@@ -385,9 +416,14 @@ namespace Puerts
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_Object));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
-            else if (!tranType.IsValueType && tranType != typeof(object))
+            else if (!tranType.IsValueType)
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_T)).MakeGenericMethod(tranType);
+                return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
+            }
+            else if (tranType.IsValueType && !tranType.IsPrimitive)
+            {
+                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ValueType)).MakeGenericMethod(tranType);
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
@@ -588,6 +624,11 @@ namespace Puerts
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
+            else if (tranType.IsValueType && !tranType.IsPrimitive) // the same as byref
+            {
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
+                ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
+            }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
             {
                 // IntPtr ptr = get_native_object_ptr(env, val);
@@ -689,6 +730,11 @@ namespace Puerts
             else if (!type.IsValueType)
             {
                 var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
+                return Expression.Not(Expression.Call(isAssignableMethod, context.Apis, context.Env, value));
+            }
+            else if (type.IsValueType && !type.IsPrimitive)
+            {
+                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ValueType)).MakeGenericMethod(type);
                 return Expression.Not(Expression.Call(isAssignableMethod, context.Apis, context.Env, value));
             }
             else
@@ -830,9 +876,10 @@ namespace Puerts
 
             var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
 
-            var findOrAddObjectMethod = typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
+            var isValueType = constructorInfo.DeclaringType.IsValueType;
+            var addToObjectPoolMethod = isValueType ? typeof(Helpper).GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
 
-            blockExpressions.Add(Expression.Call(findOrAddObjectMethod, apis, env, callNew));
+            blockExpressions.Add(Expression.Call(addToObjectPoolMethod, apis, env, callNew));
 
             var block = Expression.Block(variables, blockExpressions);
 
