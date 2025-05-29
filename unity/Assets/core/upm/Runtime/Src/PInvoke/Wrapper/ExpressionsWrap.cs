@@ -902,7 +902,7 @@ namespace Puerts
                     .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, jsArgs[index]))
                     .Concat(new[] { checkArgumentLen(context, info, constructorInfo) }));
                 //UnityEngine.Debug.Log("gen.......... invalid arguments to " + methodInfo.Name);
-                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant("invalid arguments to ctor of " + constructorInfo.DeclaringType.Name));
+                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant($"invalid arguments to ctor of {constructorInfo.DeclaringType.Name}"));
                 blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, Expression.Return(exitPoint, Expression.Default(typeof(IntPtr))))));
             }
 
