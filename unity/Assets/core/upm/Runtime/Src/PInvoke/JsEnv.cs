@@ -146,6 +146,9 @@ namespace Puerts
 
             apis.set_env_private(env, new IntPtr(Idx));
 
+            onObjectReleaseRefDelegate = onObjectReleaseRef;
+            apis.trace_native_object_lifecycle(env, null, onObjectReleaseRefDelegate);
+
             var global = apis.global(env);
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
@@ -166,6 +169,13 @@ namespace Puerts
         private pesapi_callback logDelegate;
 
         private pesapi_callback loadTypeDelegate;
+
+        private pesapi_on_native_object_exit onObjectReleaseRefDelegate;
+
+        private void onObjectReleaseRef(IntPtr ptr, IntPtr classData, IntPtr envPrivate, IntPtr userdata)
+        {
+            objectPool.Remove(ptr.ToInt32());
+        }
 
         public Type GetTypeByString(string className)
         {
