@@ -177,6 +177,10 @@ namespace Puerts
                 {
                     return NativeAPI.pesapi_create_double(apis, env, doubleValue);
                 }
+                else if (t is float floatValue)
+                {
+                    return NativeAPI.pesapi_create_double(apis, env, floatValue);
+                }
                 else if (t is bool boolValue)
                 {
                     return NativeAPI.pesapi_create_boolean(apis, env, boolValue);
