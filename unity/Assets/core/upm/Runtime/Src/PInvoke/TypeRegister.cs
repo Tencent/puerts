@@ -197,14 +197,22 @@ namespace Puerts
                 catch { }
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
-            var ctors = type.GetConstructors();
-
+            
             pesapi_constructor ctorWrap = null;
-            if (ctors.Length > 0)
+
+            try
             {
-                //UnityEngine.Debug.LogWarning("add ctors for " + type);
-                ctorWrap = ExpressionsWrap.GenConstructorWrap(ctors[0], true);
-                callbacksCache.Add(ctorWrap);
+                var ctors = type.GetConstructors();
+                if (ctors.Length > 0)
+                {
+                    //UnityEngine.Debug.LogWarning("add ctors for " + type);
+                    ctorWrap = ExpressionsWrap.GenConstructorWrap(ctors[0], true);
+                    callbacksCache.Add(ctorWrap);
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.Log("wrap ctor for " + type + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
             }
             reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
             registerFinished[typeId] = true;
