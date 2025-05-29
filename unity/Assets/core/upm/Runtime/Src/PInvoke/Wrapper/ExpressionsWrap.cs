@@ -181,6 +181,10 @@ namespace Puerts
                 {
                     return NativeAPI.pesapi_create_double(apis, env, floatValue);
                 }
+                else if (t is char charValue)
+                {
+                    return NativeAPI.pesapi_create_int32(apis, env, charValue);
+                }
                 else if (t is bool boolValue)
                 {
                     return NativeAPI.pesapi_create_boolean(apis, env, boolValue);
@@ -391,6 +395,10 @@ namespace Puerts
             {
                 return callPApi(context.Apis, "create_double", context.Env, Expression.Convert(value, typeof(double)));
             }
+            else if (tranType == typeof(char))
+            {
+                return callPApi(context.Apis, "create_int32", context.Env, Expression.Convert(value, typeof(int)));
+            }
             else if (tranType == typeof(bool))
             {
                 return callPApi(context.Apis, "create_boolean", context.Env, value);
@@ -547,6 +555,10 @@ namespace Puerts
             else if (tranType == typeof(double))
             {
                 ret = callPApi(context.Apis, "get_value_double", context.Env, value);
+            }
+            else if (tranType == typeof(char))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_int32", context.Env, value), typeof(char));
             }
             else if (tranType == typeof(float))
             {
@@ -718,6 +730,10 @@ namespace Puerts
             else if (type == typeof(float))
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_double");
+            }
+            else if (type == typeof(char))
+            {
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_int32");
             }
             else if (type == typeof(double))
             {
