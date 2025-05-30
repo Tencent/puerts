@@ -678,14 +678,9 @@ namespace Puerts
             return callPApi(context.Apis, "add_return", info, nativeToScript(context, type, value));
         }
 
-        private static Expression checkArgumentLen(CompileContext context, ParameterExpression info, MethodBase methodInfo)
-        {
-            return Expression.NotEqual(callPApi(context.Apis, "get_args_len", info), Expression.Constant(methodInfo.GetParameters().Length));
-        }
-
         private static Expression directCheckArgumentConditions(Expression apis, Expression env, Expression value, params string[] apiNames)
         {
-            return Expression.Not(buildOrExpression(apiNames.Select(n => callPApi(apis, n, env, value))));
+            return buildOrExpression(apiNames.Select(n => callPApi(apis, n, env, value)));
         }
 
         private static Expression checkArgument(CompileContext context, Type type, Expression value)
@@ -705,7 +700,7 @@ namespace Puerts
             }
             else if (type == typeof(object))
             {
-                return Expression.Constant(false); // accpet any type
+                return Expression.Constant(true); // accpet any type
             }
             else if (type == typeof(JSObject))
             {
@@ -750,12 +745,12 @@ namespace Puerts
             else if (!type.IsValueType)
             {
                 var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
-                return Expression.Not(Expression.Call(isAssignableMethod, context.Apis, context.Env, value));
+                return Expression.Call(isAssignableMethod, context.Apis, context.Env, value);
             }
             else if (type.IsValueType && !type.IsPrimitive)
             {
                 var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ValueType)).MakeGenericMethod(type);
-                return Expression.Not(Expression.Call(isAssignableMethod, context.Apis, context.Env, value));
+                return Expression.Call(isAssignableMethod, context.Apis, context.Env, value);
             }
             else
             {
@@ -784,9 +779,77 @@ namespace Puerts
                 Expression.OrElse(left, right));
         }
 
-        private static T GenMethodBaseWrap<T>(MethodBase methodBase, bool checkArgs, Func<CompileContext, ParameterExpression, ParameterExpression, Expression[], Expression> bodyBuilder)
+        private static Expression buildAndExpression(IEnumerable<Expression> conditions)
         {
+            if (!conditions.Any())
+                return Expression.Constant(false);
+
+            if (conditions.Count() == 1)
+                return conditions.First();
+
+            return conditions.Aggregate((left, right) =>
+                Expression.AndAlso(left, right));
+        }
+
+        private static Expression buildArgumentsCheck(CompileContext context, MethodBase methodBase, ParameterExpression jsArgc, Func<int, Expression> getJsArg)
+        {
+            List<Expression> expressions = new List<Expression>();
+            expressions.Add(Expression.Equal(jsArgc, Expression.Constant(methodBase.GetParameters().Length)));
+            if (methodBase.GetParameters().Length > 0)
+            {
+                expressions.AddRange(methodBase.GetParameters()
+                        .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, getJsArg(index))));
+            }
+            return buildAndExpression(expressions);
+        }
+
+        private static Expression createConditionalChain(
+            Expression[] tests,
+            Expression[] ifTrues,
+            Expression ifFalse)
+        {
+            Expression result = ifFalse;
+            for (int i = tests.Length - 1; i >= 0; i--)
+            {
+                result = Expression.Condition(tests[i], ifTrues[i], result);
+            }
+            return result;
+        }
+
+        private static Expression createVoidIfElseIfChain(
+            Expression[] tests,
+            Expression[] ifTrues,
+            Expression ifFalse)
+        {
+            var endLabel = Expression.Label("End");
+            var blocks = new List<Expression>();
+
+            for (int i = 0; i < tests.Length; i++)
+            {
+                blocks.Add(
+                    Expression.IfThen(
+                        tests[i],
+                        Expression.Block(
+                            ifTrues[i],
+                            Expression.Goto(endLabel)
+                        )
+                    )
+                );
+            }
+
+            blocks.Add(ifFalse);
+            blocks.Add(Expression.Label(endLabel));
+
+            return Expression.Block(blocks);
+        }
+
+        private static T GenMethodBaseWrap<T>(MethodBase[] methodBases, bool forceCheckArgs, Func<CompileContext, MethodBase, ParameterExpression, ParameterExpression, Func<int, Expression>, Expression> bodyBuilder)
+        {
+            bool checkArgs = forceCheckArgs || methodBases.Length > 1;
+            var methodBase0 = methodBases[0];
             Type returnType = typeof(T).GetMethod("Invoke").ReturnType;
+            var isVoid = returnType == typeof(void);
+
             var variables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();
 
@@ -806,41 +869,48 @@ namespace Puerts
                 Env = env
             };
 
-            var jsArgs = methodBase.GetParameters().Select((ParameterInfo pi, int index) => getArgument(context, info, index)).ToArray();
-            var isVoid = returnType == typeof(void);
-            var exitPoint = isVoid ? Expression.Label() : Expression.Label(returnType);
+            // var argc = ffi.get_args_len(info)
+            var jsArgc = Expression.Variable(typeof(int));
+            variables.Add(jsArgc);
+            blockExpressions.Add(Expression.Assign(jsArgc, callPApi(context.Apis, "get_args_len", info)));
 
-            if (checkArgs)
+            List<Expression> lazyjsArgs = new List<Expression>();
+            Func<int, Expression> getJsArg = (index) =>
             {
-                var checkExpression = buildOrExpression(methodBase.GetParameters()
-                    .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, jsArgs[index]))
-                    .Concat(new[] { checkArgumentLen(context, info, methodBase) }));
-                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant($"invalid arguments to {methodBase.Name} of {methodBase.DeclaringType.Name}"));
-                blockExpressions.Add(Expression.IfThen(checkExpression, Expression.Block(throwToJs, isVoid ? Expression.Return(exitPoint) : Expression.Return(exitPoint, Expression.Default(returnType)))));
-            }
+                if (index < lazyjsArgs.Count && lazyjsArgs[index] != null) return lazyjsArgs[index];
+                var arg = getArgument(context, info, index);
+                int addCount = index + 1 - lazyjsArgs.Count;
+                for (int i = 0; i < addCount; ++i) lazyjsArgs.Add(null);
+                lazyjsArgs[index] = arg;
+                return arg;
+            };
 
             ParameterExpression self = null;
 
-            if (!methodBase.IsStatic && !methodBase.IsConstructor)
+            if (!methodBase0.IsStatic && !methodBase0.IsConstructor)
             {
                 // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(methodBase.DeclaringType);
-                self = Expression.Variable(methodBase.DeclaringType, "self");
+                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(methodBase0.DeclaringType);
+                self = Expression.Variable(methodBase0.DeclaringType, "self");
                 variables.Add(self);
                 var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
                 blockExpressions.Add(Expression.Assign(self, callGetSelf));
             }
 
-            var ret = bodyBuilder(context, info, self, jsArgs);
-            
-            if (isVoid)
+            if (checkArgs)
             {
-                blockExpressions.Add(ret); blockExpressions.Add(ret);
-                blockExpressions.Add(Expression.Label(exitPoint));
+                var tests = methodBases.Select(mb => buildArgumentsCheck(context, mb, jsArgc, getJsArg)).ToArray();
+
+                var ifTrues = methodBases.Select(mb => bodyBuilder(context, mb, info, self, getJsArg)).ToArray();
+
+                var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant($"invalid arguments to {methodBase0.Name} of {methodBase0.DeclaringType.Name}"));
+                var ifFalse = isVoid ? throwToJs : Expression.Block(throwToJs, Expression.Default(returnType));
+
+                blockExpressions.Add(isVoid ? createVoidIfElseIfChain(tests, ifTrues, ifFalse) : createConditionalChain(tests, ifTrues, ifFalse));
             }
-            else
+            else // methodBases.Length == 1;
             {
-                context.BlockExpressions.Add(Expression.Label(exitPoint, ret));
+                blockExpressions.Add(buildArgumentsCheck(context, methodBase0, jsArgc, getJsArg));
             }
 
             var block = Expression.Block(variables, blockExpressions);
@@ -873,11 +943,12 @@ namespace Puerts
             return Expression.Lambda<T>(tryCatchExpr, apis, info).Compile();
         }
 
-        public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool checkArgs)
+        public static pesapi_callback GenMethodWrap(MethodInfo[] methodInfos, bool forceCheckArgs)
         {
-            return GenMethodBaseWrap<pesapi_callback>(methodInfo, checkArgs, (context, info, self, jsArgs) =>
+            return GenMethodBaseWrap<pesapi_callback>(methodInfos, forceCheckArgs, (context, methodBase, info, self, getJsArg) =>
             {
-                var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
+                var methodInfo = methodBase as MethodInfo;
+                var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, getJsArg(index))));
                 var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
 
                 return (addReturn != null) ? addReturn : callMethod;
@@ -885,11 +956,17 @@ namespace Puerts
 
         }
 
-        public static pesapi_constructor GenConstructorWrap(ConstructorInfo constructorInfo, bool checkArgs)
+        public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool forceCheckArgs)
         {
-            return GenMethodBaseWrap<pesapi_constructor>(constructorInfo, checkArgs, (context, info, self, jsArgs) =>
+            return GenMethodWrap(new MethodInfo[] { methodInfo }, forceCheckArgs);
+        }
+
+        public static pesapi_constructor GenConstructorWrap(ConstructorInfo[] constructorInfos, bool forceCheckArgs)
+        {
+            return GenMethodBaseWrap<pesapi_constructor>(constructorInfos, forceCheckArgs, (context, methodBase, info, self, getJsArg) =>
             {
-                var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
+                var constructorInfo = methodBase as ConstructorInfo;
+                var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, getJsArg(index))));
 
                 var isValueType = constructorInfo.DeclaringType.IsValueType;
                 var addToObjectPoolMethod = isValueType ? typeof(Helpper).GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));

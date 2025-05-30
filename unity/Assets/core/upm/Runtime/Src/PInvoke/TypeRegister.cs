@@ -136,18 +136,36 @@ namespace Puerts
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
             MethodInfo[] methodInfos = type.GetMethods(flag);
             FieldInfo[] fieldInfos = type.GetFields(flag);
-            Dictionary<MethodInfo, pesapi_callback> methodCallbacks = new Dictionary<MethodInfo, pesapi_callback>();
+            Dictionary<MemberKey, List<MethodInfo>> methodCallbacks = new Dictionary<MemberKey, List<MethodInfo>>();
             Dictionary<MemberKey, AccessorInfo> propertyCallbacks = new Dictionary<MemberKey, AccessorInfo>();
-            Action<MemberKey, pesapi_callback, pesapi_callback> addPropertyCallback = (MemberKey name, pesapi_callback getter, pesapi_callback setter) =>
+            Action<MemberKey, pesapi_callback, pesapi_callback> addPropertyCallback = (key, getter, setter) =>
             {
                 AccessorInfo accessorCallbackPair;
-                if (!propertyCallbacks.TryGetValue(name, out accessorCallbackPair))
+                if (!propertyCallbacks.TryGetValue(key, out accessorCallbackPair))
                 {
                     accessorCallbackPair = new AccessorInfo();
-                    propertyCallbacks.Add(name, accessorCallbackPair);
+                    propertyCallbacks.Add(key, accessorCallbackPair);
                 }
-                if (getter != null) accessorCallbackPair.Getter = getter;
-                if (setter != null) accessorCallbackPair.Setter = setter;
+                if (getter != null)
+                {
+                    accessorCallbackPair.Getter = getter;
+                    callbacksCache.Add(getter);
+                }
+                if (setter != null)
+                {
+                    accessorCallbackPair.Setter = setter;
+                    callbacksCache.Add(setter);
+                }
+            };
+            Action<MemberKey, MethodInfo> addOverload = (key, methodInfo) =>
+            {
+                List<MethodInfo> overloads;
+                if (!methodCallbacks.TryGetValue(key, out overloads))
+                {
+                    overloads = new List<MethodInfo>();
+                    methodCallbacks.Add(key, overloads);
+                }
+                overloads.Add(methodInfo);
             };
             foreach (var fieldInfo in fieldInfos)
             {
@@ -173,20 +191,18 @@ namespace Puerts
                 if (methodInfo.IsGenericMethodDefinition) continue;
                 try
                 {
-                    var callback = ExpressionsWrap.GenMethodWrap(methodInfo, true);
-                    callbacksCache.Add(callback);
                     //AccessorCallbackPair accessorCallbackPair = null;
                     if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("get_") && methodInfo.GetParameters().Length == 0) // getter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), callback, null);
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), ExpressionsWrap.GenMethodWrap(methodInfo, true), null);
                     }
                     else if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("set_") && methodInfo.GetParameters().Length == 1) // setter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, callback);
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.GenMethodWrap(methodInfo, true));
                     }
                     else
                     {
-                        methodCallbacks.Add(methodInfo, callback);
+                        addOverload(new MemberKey(methodInfo.Name, methodInfo.IsStatic), methodInfo);
                     }
                     //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }
@@ -212,7 +228,9 @@ namespace Puerts
                 try
                 {
                     IntPtr ptr = StringToIntPtr(kv.Key.Name);
-                    reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, kv.Value, IntPtr.Zero, IntPtr.Zero);
+                    pesapi_callback callback = ExpressionsWrap.GenMethodWrap(kv.Value.ToArray(), true);
+                    callbacksCache.Add(callback);
+                    reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, callback, IntPtr.Zero, IntPtr.Zero);
                 }
                 catch { }
             }
@@ -226,7 +244,7 @@ namespace Puerts
                 if (ctors.Length > 0)
                 {
                     //UnityEngine.Debug.LogWarning("add ctors for " + type);
-                    ctorWrap = ExpressionsWrap.GenConstructorWrap(ctors[0], true);
+                    ctorWrap = ExpressionsWrap.GenConstructorWrap(ctors, true);
                     callbacksCache.Add(ctorWrap);
                 }
             }
