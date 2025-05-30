@@ -590,41 +590,6 @@ namespace Puerts
             }
             else if (tranType == typeof(string))
             {
-                /*
-                // UIntPtr bufsize = UIntPtr.Zero;
-                var refBuffSize = Expression.Variable(typeof(UIntPtr));
-                context.Variables.Add(refBuffSize);
-                context.BlockExpressions.Add(Expression.Assign(refBuffSize, Expression.Field(null, typeof(UIntPtr), "Zero")));
-
-                // NativeAPI.pesapi_get_value_string_utf16(apis, env, str, null, ref bufsize);
-                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, Expression.Constant(null, typeof(byte[])), refBuffSize)); // 不添加到BlockExpressions会被优化掉，看上去是Lambda那反向遍历语法树，如果不是最终的表达式所需（依赖）的都会gc掉
-
-                // byte[] buf = new byte[bufsize.ToUInt32() * 2];
-                var bufVar = Expression.Variable(typeof(byte[]), "buf");
-                context.Variables.Add(bufVar);
-                var toUInt32Method = typeof(UIntPtr).GetMethod("ToUInt32");
-                var multiplyExpr = Expression.Multiply(
-                    Expression.Call(refBuffSize, toUInt32Method),
-                    Expression.Constant((uint)2)
-                );
-                var newArrayExpr = Expression.NewArrayBounds(typeof(byte), multiplyExpr);
-                context.BlockExpressions.Add(Expression.Assign(bufVar, newArrayExpr));
-
-
-                // NativeAPI.pesapi_get_value_string_utf16(apis, env, str, buf, ref bufsize);
-                context.BlockExpressions.Add(callPApi(context.Apis, "get_value_string_utf16", context.Env, value, bufVar, refBuffSize));
-
-                // return System.Text.Encoding.Unicode.GetString(buf)
-                var encodingUnicode = Expression.Property(null, typeof(System.Text.Encoding).GetProperty("Unicode"));
-                var getStringMethod = typeof(System.Text.Encoding).GetMethod("GetString", new[] { typeof(byte[]) });
-                var getStringExpr = Expression.Call(
-                    encodingUnicode,
-                    getStringMethod,
-                    bufVar
-                );
-                return getStringExpr;
-                */
-                // 以上是直接通过Express Tree生成，对比如下封装好的逻辑
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
