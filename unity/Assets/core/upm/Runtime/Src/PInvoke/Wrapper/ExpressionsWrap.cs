@@ -784,7 +784,7 @@ namespace Puerts
                 Expression.OrElse(left, right));
         }
 
-        private static T GenMethodBaseWrap<T>(MethodBase methodBase, bool checkArgs, Action<CompileContext, ParameterExpression, ParameterExpression, Expression[], LabelTarget> bodyBuilder)
+        private static T GenMethodBaseWrap<T>(MethodBase methodBase, bool checkArgs, Func<CompileContext, ParameterExpression, ParameterExpression, Expression[], Expression> bodyBuilder)
         {
             Type returnType = typeof(T).GetMethod("Invoke").ReturnType;
             var variables = new List<ParameterExpression>();
@@ -831,7 +831,17 @@ namespace Puerts
                 blockExpressions.Add(Expression.Assign(self, callGetSelf));
             }
 
-            bodyBuilder(context, info, self, jsArgs, exitPoint);
+            var ret = bodyBuilder(context, info, self, jsArgs);
+            
+            if (isVoid)
+            {
+                blockExpressions.Add(ret); blockExpressions.Add(ret);
+                blockExpressions.Add(Expression.Label(exitPoint));
+            }
+            else
+            {
+                context.BlockExpressions.Add(Expression.Label(exitPoint, ret));
+            }
 
             var block = Expression.Block(variables, blockExpressions);
 
@@ -865,34 +875,27 @@ namespace Puerts
 
         public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool checkArgs)
         {
-            return GenMethodBaseWrap<pesapi_callback>(methodInfo, checkArgs, (context, info, self, jsArgs, exitPoint) =>
+            return GenMethodBaseWrap<pesapi_callback>(methodInfo, checkArgs, (context, info, self, jsArgs) =>
             {
                 var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
                 var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
 
-                if (addReturn != null)
-                {
-                    context.BlockExpressions.Add(addReturn);
-                }
-                else
-                {
-                    context.BlockExpressions.Add(callMethod);
-                }
-                context.BlockExpressions.Add(Expression.Label(exitPoint));
+                return (addReturn != null) ? addReturn : callMethod;
             });
 
         }
 
         public static pesapi_constructor GenConstructorWrap(ConstructorInfo constructorInfo, bool checkArgs)
         {
-            return GenMethodBaseWrap<pesapi_constructor>(constructorInfo, checkArgs, (context, info, self, jsArgs, exitPoint) =>
+            return GenMethodBaseWrap<pesapi_constructor>(constructorInfo, checkArgs, (context, info, self, jsArgs) =>
             {
                 var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, jsArgs[index])));
 
                 var isValueType = constructorInfo.DeclaringType.IsValueType;
                 var addToObjectPoolMethod = isValueType ? typeof(Helpper).GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
                 var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, callNew);
-                context.BlockExpressions.Add(Expression.Label(exitPoint, addToObjectPool));
+
+                return addToObjectPool;
             });
         }
 
