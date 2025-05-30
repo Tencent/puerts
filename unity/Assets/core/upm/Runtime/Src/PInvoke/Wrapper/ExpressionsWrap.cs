@@ -96,6 +96,26 @@ namespace Puerts
                 return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.AddBoxedValueType(val));
             }
 
+            public static int GetEnvIndex(IntPtr api, IntPtr env)
+            {
+                return NativeAPI.pesapi_get_env_private(api, env).ToInt32();
+            }
+
+            public static int GetSelfId(IntPtr api, IntPtr info)
+            {
+                return NativeAPI.pesapi_get_native_holder_ptr(api, info).ToInt32();
+            }
+
+            public static T GetSelfDirect<T>(int envIdx, int objId)
+            {
+                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objId);
+            }
+
+            public static void UpdateValueType<T>(int envIdx, int objId, T val) where T : struct
+            {
+                JsEnv.jsEnvs[envIdx].objectPool.ReplaceValueType(objId, val);
+            }
+
             public static void CheckException(IntPtr apis, IntPtr scope)
             {
                 if (NativeAPI.pesapi_has_caught(apis, scope))
@@ -843,12 +863,21 @@ namespace Puerts
             return Expression.Block(blocks);
         }
 
+        private static MethodInfo GetEnvIndexMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetEnvIndex));
+
+        private static MethodInfo GetSelfIdMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelfId));
+
+        private static MethodInfo GetSelfDirectMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelfDirect));
+
+        private static MethodInfo UpdateValueTypeMethod = typeof(Helpper).GetMethod(nameof(Helpper.UpdateValueType));
+
         private static T BuildMethodBaseWrap<T>(MethodBase[] methodBases, bool forceCheckArgs, Func<CompileContext, MethodBase, ParameterExpression, ParameterExpression, Func<int, Expression>, Expression> buildBody)
         {
             bool checkArgs = forceCheckArgs || methodBases.Length > 1;
             var methodBase0 = methodBases[0];
+            bool isValueTypeMethod = methodBase0.DeclaringType.IsValueType;
             Type returnType = typeof(T).GetMethod("Invoke").ReturnType;
-            var isVoid = returnType == typeof(void);
+            var isLambdaVoid = returnType == typeof(void);
 
             var variables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();
@@ -874,6 +903,14 @@ namespace Puerts
             variables.Add(jsArgc);
             blockExpressions.Add(Expression.Assign(jsArgc, callPApi(context.Apis, "get_args_len", info)));
 
+            var envIdx = Expression.Variable(typeof(int));
+            variables.Add(envIdx);
+            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(GetEnvIndexMethod, apis, env)));
+
+            var selfId = Expression.Variable(typeof(int));
+            variables.Add(selfId);
+            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(GetSelfIdMethod, apis, info)));
+
             List<Expression> lazyjsArgs = new List<Expression>();
             Func<int, Expression> getJsArg = (index) =>
             {
@@ -890,12 +927,14 @@ namespace Puerts
             if (!methodBase0.IsStatic && !methodBase0.IsConstructor)
             {
                 // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(methodBase0.DeclaringType);
+                var getSelfMethod = GetSelfDirectMethod.MakeGenericMethod(methodBase0.DeclaringType);
                 self = Expression.Variable(methodBase0.DeclaringType, "self");
                 variables.Add(self);
-                var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
+                var callGetSelf = Expression.Call(getSelfMethod, envIdx, selfId);
                 blockExpressions.Add(Expression.Assign(self, callGetSelf));
             }
+
+            Expression invokeBlock = null;
 
             if (checkArgs)
             {
@@ -904,14 +943,37 @@ namespace Puerts
                 var ifTrues = methodBases.Select(mb => buildBody(context, mb, info, self, getJsArg)).ToArray();
 
                 var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant($"invalid arguments to {methodBase0.Name} of {methodBase0.DeclaringType.Name}"));
-                var ifFalse = isVoid ? throwToJs : Expression.Block(throwToJs, Expression.Default(returnType));
+                var ifFalse = isLambdaVoid ? throwToJs : Expression.Block(throwToJs, Expression.Default(returnType));
 
-                blockExpressions.Add(isVoid ? buildVoidIfElseIfChain(tests, ifTrues, ifFalse) : buildConditionalChain(tests, ifTrues, ifFalse));
+                invokeBlock = isLambdaVoid ? buildVoidIfElseIfChain(tests, ifTrues, ifFalse) : buildConditionalChain(tests, ifTrues, ifFalse);
             }
             else // methodBases.Length == 1;
             {
-                blockExpressions.Add(buildArgumentsCheck(context, methodBase0, jsArgc, getJsArg));
+                invokeBlock = buildBody(context, methodBase0, info, self, getJsArg);
             }
+
+            blockExpressions.Add(invokeBlock);
+
+            if (!methodBase0.IsStatic && !methodBase0.IsConstructor && isValueTypeMethod)
+            {
+                var updateMethod = UpdateValueTypeMethod.MakeGenericMethod(methodBase0.DeclaringType);
+                var updateCall = Expression.Call(updateMethod, envIdx, selfId, self);
+                if (isLambdaVoid)
+                {
+                    blockExpressions.Add(updateCall);
+                }
+                else
+                {
+                    var temp = Expression.Variable(returnType);
+                    variables.Add(temp);
+                    blockExpressions.Add(Expression.Assign(temp, invokeBlock));
+
+                    blockExpressions.Add(updateCall);
+
+                    blockExpressions.Add(temp);
+                }
+            }
+
 
             var block = Expression.Block(variables, blockExpressions);
 
@@ -1030,6 +1092,14 @@ namespace Puerts
             variables.Add(env);
             blockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env", info)));
 
+            var envIdx = Expression.Variable(typeof(int));
+            variables.Add(envIdx);
+            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(GetEnvIndexMethod, apis, env)));
+
+            var selfId = Expression.Variable(typeof(int));
+            variables.Add(selfId);
+            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(GetSelfIdMethod, apis, info)));
+
             var context = new CompileContext()
             {
                 Variables = variables,
@@ -1042,17 +1112,23 @@ namespace Puerts
 
             if (!fieldInfo.IsStatic)
             {
-                // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(fieldInfo.DeclaringType);
+                var getSelfMethod = GetSelfDirectMethod.MakeGenericMethod(fieldInfo.DeclaringType);
                 self = Expression.Variable(fieldInfo.DeclaringType, "self");
                 variables.Add(self);
-                var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
+                var callGetSelf = Expression.Call(getSelfMethod, envIdx, selfId);
                 blockExpressions.Add(Expression.Assign(self, callGetSelf));
             }
 
             var field = Expression.Field(self, fieldInfo);
             var jsValue = getArgument(context, info, 0);
             blockExpressions.Add(Expression.Assign(field, scriptToNative(context, fieldInfo.FieldType, jsValue)));
+
+            if (!fieldInfo.IsStatic && fieldInfo.DeclaringType.IsValueType)
+            {
+                var updateMethod = UpdateValueTypeMethod.MakeGenericMethod(fieldInfo.DeclaringType);
+                var updateCall = Expression.Call(updateMethod, envIdx, selfId, self);
+                blockExpressions.Add(updateCall);
+            }
             return (Expression.Lambda<pesapi_callback>(Expression.Block(
                 variables, blockExpressions
                 ), apis, info)).Compile();
