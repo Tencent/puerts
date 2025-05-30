@@ -803,7 +803,7 @@ namespace Puerts
             return buildAndExpression(expressions);
         }
 
-        private static Expression createConditionalChain(
+        private static Expression buildConditionalChain(
             Expression[] tests,
             Expression[] ifTrues,
             Expression ifFalse)
@@ -816,7 +816,7 @@ namespace Puerts
             return result;
         }
 
-        private static Expression createVoidIfElseIfChain(
+        private static Expression buildVoidIfElseIfChain(
             Expression[] tests,
             Expression[] ifTrues,
             Expression ifFalse)
@@ -843,7 +843,7 @@ namespace Puerts
             return Expression.Block(blocks);
         }
 
-        private static T GenMethodBaseWrap<T>(MethodBase[] methodBases, bool forceCheckArgs, Func<CompileContext, MethodBase, ParameterExpression, ParameterExpression, Func<int, Expression>, Expression> bodyBuilder)
+        private static T BuildMethodBaseWrap<T>(MethodBase[] methodBases, bool forceCheckArgs, Func<CompileContext, MethodBase, ParameterExpression, ParameterExpression, Func<int, Expression>, Expression> buildBody)
         {
             bool checkArgs = forceCheckArgs || methodBases.Length > 1;
             var methodBase0 = methodBases[0];
@@ -901,12 +901,12 @@ namespace Puerts
             {
                 var tests = methodBases.Select(mb => buildArgumentsCheck(context, mb, jsArgc, getJsArg)).ToArray();
 
-                var ifTrues = methodBases.Select(mb => bodyBuilder(context, mb, info, self, getJsArg)).ToArray();
+                var ifTrues = methodBases.Select(mb => buildBody(context, mb, info, self, getJsArg)).ToArray();
 
                 var throwToJs = callPApi(apis, "throw_by_string", info, Expression.Constant($"invalid arguments to {methodBase0.Name} of {methodBase0.DeclaringType.Name}"));
                 var ifFalse = isVoid ? throwToJs : Expression.Block(throwToJs, Expression.Default(returnType));
 
-                blockExpressions.Add(isVoid ? createVoidIfElseIfChain(tests, ifTrues, ifFalse) : createConditionalChain(tests, ifTrues, ifFalse));
+                blockExpressions.Add(isVoid ? buildVoidIfElseIfChain(tests, ifTrues, ifFalse) : buildConditionalChain(tests, ifTrues, ifFalse));
             }
             else // methodBases.Length == 1;
             {
@@ -943,9 +943,9 @@ namespace Puerts
             return Expression.Lambda<T>(tryCatchExpr, apis, info).Compile();
         }
 
-        public static pesapi_callback GenMethodWrap(MethodInfo[] methodInfos, bool forceCheckArgs)
+        public static pesapi_callback BuildMethodWrap(MethodInfo[] methodInfos, bool forceCheckArgs)
         {
-            return GenMethodBaseWrap<pesapi_callback>(methodInfos, forceCheckArgs, (context, methodBase, info, self, getJsArg) =>
+            return BuildMethodBaseWrap<pesapi_callback>(methodInfos, forceCheckArgs, (context, methodBase, info, self, getJsArg) =>
             {
                 var methodInfo = methodBase as MethodInfo;
                 var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, getJsArg(index))));
@@ -956,14 +956,14 @@ namespace Puerts
 
         }
 
-        public static pesapi_callback GenMethodWrap(MethodInfo methodInfo, bool forceCheckArgs)
+        public static pesapi_callback BuildMethodWrap(MethodInfo methodInfo, bool forceCheckArgs)
         {
-            return GenMethodWrap(new MethodInfo[] { methodInfo }, forceCheckArgs);
+            return BuildMethodWrap(new MethodInfo[] { methodInfo }, forceCheckArgs);
         }
 
-        public static pesapi_constructor GenConstructorWrap(ConstructorInfo[] constructorInfos, bool forceCheckArgs)
+        public static pesapi_constructor BuildConstructorWrap(ConstructorInfo[] constructorInfos, bool forceCheckArgs)
         {
-            return GenMethodBaseWrap<pesapi_constructor>(constructorInfos, forceCheckArgs, (context, methodBase, info, self, getJsArg) =>
+            return BuildMethodBaseWrap<pesapi_constructor>(constructorInfos, forceCheckArgs, (context, methodBase, info, self, getJsArg) =>
             {
                 var constructorInfo = methodBase as ConstructorInfo;
                 var callNew = Expression.New(constructorInfo, constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, getJsArg(index))));
@@ -976,7 +976,7 @@ namespace Puerts
             });
         }
 
-        public static pesapi_callback GenFieldGetter(FieldInfo fieldInfo)
+        public static pesapi_callback BuildFieldGetter(FieldInfo fieldInfo)
         {
             var variables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();
@@ -1017,7 +1017,7 @@ namespace Puerts
                 ), apis, info)).Compile();
         }
 
-        public static pesapi_callback GenFieldSetter(FieldInfo fieldInfo)
+        public static pesapi_callback BuildFieldSetter(FieldInfo fieldInfo)
         {
             var variables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();

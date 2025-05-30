@@ -155,14 +155,14 @@ namespace Puerts
             var global = apis.global(env);
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
-            logDelegate = ExpressionsWrap.GenMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
+            logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
             var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
             apis.set_property(env, global, "print", print);
 
             var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
             apis.set_property(env, global, "jsEnv", jsJsEnv);
 
-            loadTypeDelegate = ExpressionsWrap.GenMethodWrap(typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
+            loadTypeDelegate = ExpressionsWrap.BuildMethodWrap(typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
             var loadType = apis.create_function(env, loadTypeDelegate, IntPtr.Zero, null);
             apis.set_property(env, global, "loadType", loadType);
 

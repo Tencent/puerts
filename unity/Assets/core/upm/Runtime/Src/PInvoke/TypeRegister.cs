@@ -171,12 +171,12 @@ namespace Puerts
             {
                 try
                 {
-                    var getter = ExpressionsWrap.GenFieldGetter(fieldInfo);
+                    var getter = ExpressionsWrap.BuildFieldGetter(fieldInfo);
                     callbacksCache.Add(getter);
                     addPropertyCallback(new MemberKey(fieldInfo.Name, fieldInfo.IsStatic), getter, null);
                     if (!fieldInfo.IsInitOnly && !fieldInfo.IsLiteral)
                     {
-                        var setter = ExpressionsWrap.GenFieldSetter(fieldInfo);
+                        var setter = ExpressionsWrap.BuildFieldSetter(fieldInfo);
                         callbacksCache.Add(setter);
                         addPropertyCallback(new MemberKey(fieldInfo.Name, fieldInfo.IsStatic), null, setter);
                     }
@@ -194,11 +194,11 @@ namespace Puerts
                     //AccessorCallbackPair accessorCallbackPair = null;
                     if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("get_") && methodInfo.GetParameters().Length == 0) // getter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), ExpressionsWrap.GenMethodWrap(methodInfo, true), null);
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), ExpressionsWrap.BuildMethodWrap(methodInfo, true), null);
                     }
                     else if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("set_") && methodInfo.GetParameters().Length == 1) // setter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.GenMethodWrap(methodInfo, true));
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.BuildMethodWrap(methodInfo, true));
                     }
                     else
                     {
@@ -228,7 +228,7 @@ namespace Puerts
                 try
                 {
                     IntPtr ptr = StringToIntPtr(kv.Key.Name);
-                    pesapi_callback callback = ExpressionsWrap.GenMethodWrap(kv.Value.ToArray(), true);
+                    pesapi_callback callback = ExpressionsWrap.BuildMethodWrap(kv.Value.ToArray(), true);
                     callbacksCache.Add(callback);
                     reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, callback, IntPtr.Zero, IntPtr.Zero);
                 }
@@ -244,7 +244,7 @@ namespace Puerts
                 if (ctors.Length > 0)
                 {
                     //UnityEngine.Debug.LogWarning("add ctors for " + type);
-                    ctorWrap = ExpressionsWrap.GenConstructorWrap(ctors, true);
+                    ctorWrap = ExpressionsWrap.BuildConstructorWrap(ctors, true);
                     callbacksCache.Add(ctorWrap);
                 }
             }
