@@ -150,14 +150,14 @@ namespace Puerts
                 }
                 
                 var scope = NativeAPI.pesapi_open_scope(apis, objEnvRef);
-                
-                var isEnvEq = NativeAPI.pesapi_get_env_from_ref(apis, objEnvRef) == env;
+
+                //目前的实现，apis相等而且env private(env index)相等表示是同一个虚拟机实例
+                var isEnvEq = NativeAPI.pesapi_get_env_private(apis, NativeAPI.pesapi_get_env_from_ref(apis, objEnvRef)) == NativeAPI.pesapi_get_env_private(apis,env);
                 NativeAPI.pesapi_close_scope(apis, scope);
-                //TODO: 提供一种能判断env是否同样的方式
-                //if (!isEnvEq)
-                //{
-                //    throw new InvalidCastException("ScriptObject own by anther env");
-                //}
+                if (!isEnvEq)
+                {
+                    throw new InvalidCastException("ScriptObject own by anther env");
+                }
                 return NativeAPI.pesapi_get_value_from_ref(apis, env, obj.objRef);
             }
 
