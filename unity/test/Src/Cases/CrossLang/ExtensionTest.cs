@@ -70,6 +70,20 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void DirectPrimitiveTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<int>(@"
+                (function() {
+                    let obj = new CS.Puerts.UnitTest.ExtensionTestHelper();
+                    let res = CS.Puerts.UnitTest.HelperExtension.PrimitiveExtension(obj);
+                    return res;
+                })()
+            ");
+            Assert.AreEqual(res, 111);
+        }
+
+        [Test]
         public void ExtensionPlainTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();

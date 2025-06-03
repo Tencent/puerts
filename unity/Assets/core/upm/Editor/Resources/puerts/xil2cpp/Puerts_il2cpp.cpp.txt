@@ -2583,7 +2583,7 @@ static bool RegisterType(Il2CppClass* klass)
     auto AddMethod = [&](const MethodInfo* method, bool isGetter, bool isSetter, const char* name) -> bool
     {
         //const char* methodName = (isGetter || isSetter) ? name + 4 : name;
-        bool isExtensionMethod = IsExtensionMethod(method);
+        bool isExtensionMethod = method->klass != klass && IsExtensionMethod(method);
         bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
         for (int i = 0; i < classInfo->Methods.size(); ++i)
         {
