@@ -381,7 +381,7 @@ namespace Puerts
         public static extern IntPtr pesapi_get_ref_associated_env(IntPtr apis, IntPtr value_ref);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr pesapi_get_ref_internal_fields(IntPtr apis, IntPtr value_ref, ref uint pinternal_field_count);
+        public static extern IntPtr pesapi_get_ref_internal_fields(IntPtr apis, IntPtr value_ref, out uint pinternal_field_count);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_property(IntPtr apis, IntPtr env, IntPtr obj, string key);
