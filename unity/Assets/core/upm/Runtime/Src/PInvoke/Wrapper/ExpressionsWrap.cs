@@ -281,8 +281,40 @@ namespace Puerts
 
             public static JSObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
-                var valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 0);
-                return new JSObject(apis, valueRef);
+                IntPtr valueRef;
+                bool hasLastRef = true;
+                if (!NativeAPI.pesapi_get_private(apis, env, value, out valueRef) || valueRef == IntPtr.Zero)
+                {
+                    valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 1);
+                    NativeAPI.pesapi_set_private(apis, env, value, valueRef);
+                    hasLastRef = false;
+                }
+                uint internal_field_count = 0;
+                IntPtr weakHandlePtr = NativeAPI.pesapi_get_ref_internal_fields(apis, valueRef, out internal_field_count);
+                if (internal_field_count != 1)
+                {
+                    throw new InvalidProgramException($"invalud internal fields count {internal_field_count}!");
+                }
+                if (!hasLastRef)
+                {
+                    Marshal.StructureToPtr(IntPtr.Zero, weakHandlePtr, false);
+                }
+
+                JSObject ret = null;
+
+                IntPtr weakHandle = Marshal.PtrToStructure<IntPtr>(weakHandlePtr);
+
+                if (weakHandle != IntPtr.Zero)
+                {
+                    ret = GCHandle.FromIntPtr(weakHandle).Target as JSObject;
+                }
+                if (ret == null)
+                {
+                    ret = new JSObject(apis, valueRef);
+                    weakHandle = GCHandle.ToIntPtr(GCHandle.Alloc(ret));
+                    Marshal.StructureToPtr(weakHandle, weakHandlePtr, false);
+                }
+                return ret;
             }
 
             public static string ScriptToNative_String(IntPtr apis, IntPtr env, IntPtr value)
