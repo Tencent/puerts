@@ -161,10 +161,8 @@ namespace PuertsIl2cpp
             foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 // special handling circular definition by pointer
-                if (
-                    (field.FieldType.IsByRef || field.FieldType.IsPointer) &&
-                    field.FieldType.GetElementType() == type
-                ) {
+                if (field.FieldType.IsPointer || (field.FieldType.IsByRef && field.FieldType.GetElementType() == type))
+                {
                     sb.Append("Pv");
                 } 
                 else
@@ -246,6 +244,10 @@ namespace PuertsIl2cpp
             else if (type == typeof(object)) //object特殊处理，比如check可以不用判断，比如return可以优化
             {
                 return TypeSignatures.SystemObject;
+            }
+            else if (type.IsPointer)
+            {
+                return TypeSignatures.RefOrPointerPrefix + "v";
             }
             else if (type.IsByRef || type.IsPointer)
             {

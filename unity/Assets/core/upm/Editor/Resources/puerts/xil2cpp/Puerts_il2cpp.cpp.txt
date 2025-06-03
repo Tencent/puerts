@@ -267,7 +267,7 @@ static std::string GetTypeSignature(const Il2CppType* type)
     //case IL2CPP_TYPE_BYREF:
     case IL2CPP_TYPE_PTR:
     {
-        ret = "P" + GetTypeSignature(type->data.type);
+        ret = "Pv";
         break;
     }
     //case IL2CPP_TYPE_ENUM:
