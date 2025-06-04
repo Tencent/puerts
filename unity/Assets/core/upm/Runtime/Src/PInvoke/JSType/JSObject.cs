@@ -14,11 +14,12 @@ using System.Reflection;
 
 namespace Puerts
 {
-
+    // TODO: rename to ScriptObject
     public class JSObject
     {
         internal IntPtr apis;
         internal IntPtr objRef;
+        internal Dictionary<Type, Delegate> delegateCache = new Dictionary<Type, Delegate>();
 
         internal JSObject(IntPtr apis, IntPtr valueRef)
         {
@@ -53,6 +54,24 @@ namespace Puerts
 #if THREAD_SAFE
             }
 #endif
+        }
+
+
+        internal void cacheDelegate(Type type, Delegate del)
+        {
+            delegateCache.Add(type, del);
+        }
+
+        internal bool tryGetCachedDelegate<T>(out T del) where T : Delegate
+        {
+            Delegate ret;
+            if (delegateCache.TryGetValue(typeof(T), out ret))
+            {
+                del = ret as T;
+                return true;
+            }
+            del = null;
+            return false;
         }
     }
 

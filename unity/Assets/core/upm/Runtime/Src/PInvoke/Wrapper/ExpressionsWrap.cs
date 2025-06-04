@@ -519,7 +519,7 @@ namespace Puerts
             return Expression.Call(logMethod, formattedMessage);
         }
 
-        private static Expression delegateBridage(Type type, ParameterExpression apis, Expression envRef, Expression funcRef)
+        private static Expression delegateBridage(Type type, Expression scriptObject)
         {
             var invokeMethodInfo = type.GetMethod("Invoke");
             var delegateParams = invokeMethodInfo.GetParameters()
@@ -535,6 +535,18 @@ namespace Puerts
             
             var outerVariables = new List<ParameterExpression>();
             var outerExpressions = new List<Expression>();
+
+            var apis = Expression.Variable(typeof(IntPtr));
+            outerVariables.Add(apis);
+            outerExpressions.Add(Expression.Assign(apis, Expression.Field(scriptObject, nameof(JSObject.apis))));
+
+            var funcRef = Expression.Variable(typeof(IntPtr));
+            outerVariables.Add(funcRef);
+            outerExpressions.Add(Expression.Assign(funcRef, Expression.Field(scriptObject, nameof(JSObject.objRef))));
+
+            var envRef = Expression.Variable(typeof(IntPtr));
+            outerVariables.Add(envRef);
+            outerExpressions.Add(Expression.Assign(envRef, callPApi(apis, "get_ref_associated_env", funcRef)));
 
             // var scope = apis.open_scope(envRef);
             var scope = Expression.Variable(typeof(IntPtr));
@@ -642,15 +654,12 @@ namespace Puerts
             }
             else if (typeof(Delegate).IsAssignableFrom(tranType))
             {
-                var envRef = Expression.Variable(typeof(IntPtr));
-                context.Variables.Add(envRef);
-                context.BlockExpressions.Add(Expression.Assign(envRef, callPApi(context.Apis, "create_env_ref", context.Env)));
+                var scriptObject = Expression.Variable(typeof(JSObject));
+                context.Variables.Add(scriptObject);
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
+                context.BlockExpressions.Add(Expression.Assign(scriptObject, Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value)));
 
-                var funcRef = Expression.Variable(typeof(IntPtr));
-                context.Variables.Add(funcRef);
-                context.BlockExpressions.Add(Expression.Assign(funcRef, callPApi(context.Apis, "create_value_ref", context.Env, value, Expression.Constant((uint)0))));
-
-                ret = delegateBridage(tranType, context.Apis, envRef, funcRef);
+                ret = delegateBridage(tranType, scriptObject);
             }
             else if (!tranType.IsValueType)
             {
