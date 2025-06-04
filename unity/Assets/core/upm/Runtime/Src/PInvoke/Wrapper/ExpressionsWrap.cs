@@ -543,73 +543,73 @@ namespace Puerts
             //    .Select(param => Printf($"{{1}} {param.Name}: {{0}}", param, Expression.Constant(type.Name)))
             //    .Cast<Expression>();
             
-            var outerVariables = new List<ParameterExpression>();
-            var outerExpressions = new List<Expression>();
+            var lambdaVariables = new List<ParameterExpression>();
+            var lambdaExpressions = new List<Expression>();
 
             var apis = Expression.Variable(typeof(IntPtr));
-            outerVariables.Add(apis);
-            outerExpressions.Add(Expression.Assign(apis, Expression.Field(scriptObject, nameof(JSObject.apis))));
+            lambdaVariables.Add(apis);
+            lambdaExpressions.Add(Expression.Assign(apis, Expression.Field(scriptObject, nameof(JSObject.apis))));
 
             var funcRef = Expression.Variable(typeof(IntPtr));
-            outerVariables.Add(funcRef);
-            outerExpressions.Add(Expression.Assign(funcRef, Expression.Field(scriptObject, nameof(JSObject.objRef))));
+            lambdaVariables.Add(funcRef);
+            lambdaExpressions.Add(Expression.Assign(funcRef, Expression.Field(scriptObject, nameof(JSObject.objRef))));
 
             var envRef = Expression.Variable(typeof(IntPtr));
-            outerVariables.Add(envRef);
-            outerExpressions.Add(Expression.Assign(envRef, callPApi(apis, "get_ref_associated_env", funcRef)));
+            lambdaVariables.Add(envRef);
+            lambdaExpressions.Add(Expression.Assign(envRef, callPApi(apis, "get_ref_associated_env", funcRef)));
 
             // var scope = apis.open_scope(envRef);
             var scope = Expression.Variable(typeof(IntPtr));
-            outerVariables.Add(scope);
-            outerExpressions.Add(Expression.Assign(scope, callPApi(apis, "open_scope", envRef)));
+            lambdaVariables.Add(scope);
+            lambdaExpressions.Add(Expression.Assign(scope, callPApi(apis, "open_scope", envRef)));
 
-            var variables = new List<ParameterExpression>();
-            //var blockExpressions = new List<Expression>(printArgs);
-            var blockExpressions = new List<Expression>();
+            var tryBlockvariables = new List<ParameterExpression>();
+            //var tryBlockvariables = new List<Expression>(printArgs);
+            var tryBlockExpressions = new List<Expression>();
 
             var env = Expression.Variable(typeof(IntPtr));
-            variables.Add(env);
-            blockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env_from_ref", envRef)));
+            tryBlockvariables.Add(env);
+            tryBlockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env_from_ref", envRef)));
 
-            var context = new CompileContext()
+            var tryBlockContext = new CompileContext()
             {
-                Variables = variables,
-                BlockExpressions = blockExpressions,
+                Variables = tryBlockvariables,
+                BlockExpressions = tryBlockExpressions,
                 Apis = apis,
                 Env = env
             };
 
-            List<Expression> scriptValues = invokeMethodInfo.GetParameters().Select((ParameterInfo pi, int index) => nativeToScript(context, pi.ParameterType, delegateParams[index])).ToList();
+            List<Expression> scriptValues = invokeMethodInfo.GetParameters().Select((ParameterInfo pi, int index) => nativeToScript(tryBlockContext, pi.ParameterType, delegateParams[index])).ToList();
 
             var argv = Expression.Variable(typeof(IntPtr[]));
-            variables.Add(argv);
-            blockExpressions.Add(Expression.Assign(argv, Expression.NewArrayInit(typeof(IntPtr), scriptValues)));
+            tryBlockvariables.Add(argv);
+            tryBlockExpressions.Add(Expression.Assign(argv, Expression.NewArrayInit(typeof(IntPtr), scriptValues)));
 
             var func = callPApi(apis, "get_value_from_ref", env, funcRef);
 
             // res = pesapi_call_function(apis, env, func, default(IntPtr), argc, argv);
             var res = Expression.Variable(typeof(IntPtr));
-            variables.Add(res);
+            tryBlockvariables.Add(res);
 
             var callFunc = callPApi(apis, "call_function", env, func, Expression.Default(typeof(IntPtr)), Expression.Constant(scriptValues.Count), argv);
-            blockExpressions.Add(Expression.Assign(res, callFunc));
+            tryBlockExpressions.Add(Expression.Assign(res, callFunc));
 
-            blockExpressions.Add(Expression.Call(checkException, apis, scope));
+            tryBlockExpressions.Add(Expression.Call(checkException, apis, scope));
 
             if (invokeMethodInfo.ReturnType != typeof(void))
             {
-                blockExpressions.Add(scriptToNative(context, invokeMethodInfo.ReturnType, res));
+                tryBlockExpressions.Add(scriptToNative(tryBlockContext, invokeMethodInfo.ReturnType, res));
             }
 
-            outerExpressions.Add(Expression.TryFinally(Expression.Block(variables, blockExpressions), callPApi(apis, "close_scope", scope)));
-            var lamda = Expression.Lambda(type, Expression.Block(outerVariables, outerExpressions), delegateParams);
+            lambdaExpressions.Add(Expression.TryFinally(Expression.Block(tryBlockvariables, tryBlockExpressions), callPApi(apis, "close_scope", scope)));
+            var lambda = Expression.Lambda(type, Expression.Block(lambdaVariables, lambdaExpressions), delegateParams);
 
             var cacheMethod = typeof(JSObject).GetMethod(nameof(JSObject.cacheDelegate)).MakeGenericMethod(type);
             
             var condition = Expression.Condition(
                 callTryGet,
                 result,
-                Expression.Call(scriptObject, cacheMethod, lamda)
+                Expression.Call(scriptObject, cacheMethod, lambda)
             );
 
             return condition;
