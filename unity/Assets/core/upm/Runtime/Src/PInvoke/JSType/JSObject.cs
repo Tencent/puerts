@@ -30,6 +30,10 @@ namespace Puerts
         public T Get<T>(string key) 
         {
             var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
+            if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
+            {
+                throw new InvalidOperationException("associated script env has disposed!");
+            }
             var scope = NativeAPI.pesapi_open_scope(apis, envRef);
             var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
             var obj = NativeAPI.pesapi_get_value_from_ref(apis, env, objRef);
@@ -50,7 +54,26 @@ namespace Puerts
             lock(jsEnv) 
             {
 #endif
-            
+            UnityEngine.Debug.Log("~JSObject~JSObject~JSObject");
+            var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
+            if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
+            {
+                NativeAPI.pesapi_release_env_ref(apis, envRef);
+            }
+            else
+            {
+                var scope = NativeAPI.pesapi_open_scope(apis, envRef);
+                try
+                {
+                    var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
+                    var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                    JsEnv.jsEnvs[envIdx].addPendingKillScriptObjects(objRef);
+                } 
+                finally
+                {
+                    NativeAPI.pesapi_close_scope(apis, scope);
+                }
+            }
 #if THREAD_SAFE
             }
 #endif

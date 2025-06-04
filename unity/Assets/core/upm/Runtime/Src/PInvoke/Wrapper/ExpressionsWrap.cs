@@ -311,7 +311,7 @@ namespace Puerts
                 if (ret == null)
                 {
                     ret = new JSObject(apis, valueRef);
-                    weakHandle = GCHandle.ToIntPtr(GCHandle.Alloc(ret));
+                    weakHandle = GCHandle.ToIntPtr(GCHandle.Alloc(ret, GCHandleType.Weak));
                     Marshal.StructureToPtr(weakHandle, weakHandlePtr, false);
                 }
                 return ret;

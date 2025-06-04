@@ -445,6 +445,40 @@ namespace Puerts
 #endif
         }
 
+        List<IntPtr> pendingKillScriptObjectRefs = new List<IntPtr>();
+
+        internal void addPendingKillScriptObjects(IntPtr envRef)
+        {
+            lock (pendingKillScriptObjectRefs)
+            {
+                pendingKillScriptObjectRefs.Add(envRef);
+            }
+        }
+
+        internal void cleanupPendingKillScriptObjects()
+        {
+            lock (pendingKillScriptObjectRefs)
+            {
+                if (pendingKillScriptObjectRefs.Count == 0) return;
+                var scope = apis.open_scope(envRef);
+                try
+                {
+                    var env = apis.get_env_from_ref(envRef);
+                    while (pendingKillScriptObjectRefs.Count > 0)
+                    {
+                        var lastIndex = pendingKillScriptObjectRefs.Count - 1;
+                        var objRef = pendingKillScriptObjectRefs[lastIndex];
+                        pendingKillScriptObjectRefs.RemoveAt(lastIndex);
+
+                    }
+                }
+                finally
+                {
+                    apis.close_scope(scope);
+                }
+            }
+        }
+
         ~JsEnv()
         {
 #if THREAD_SAFE
