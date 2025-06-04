@@ -486,7 +486,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             }
             if (OnExit)
             {
-                OnExit(KV.first, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(InIsolate), PNode->UserData);
+                OnExit(KV.first, ClassDefinition->Data, PData, PNode->UserData);
             }
             PNode = PNode->Next;
         }
