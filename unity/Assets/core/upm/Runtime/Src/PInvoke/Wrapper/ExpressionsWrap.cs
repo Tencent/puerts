@@ -519,7 +519,7 @@ namespace Puerts
             return Expression.Call(logMethod, formattedMessage);
         }
 
-        private static Expression delegateBridage(Type type, Expression scriptObject)
+        private static Expression findOrCreateFunctionAdapter(Type type, Expression scriptObject)
         {
             var invokeMethodInfo = type.GetMethod("Invoke");
             var delegateParams = invokeMethodInfo.GetParameters()
@@ -659,7 +659,7 @@ namespace Puerts
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 context.BlockExpressions.Add(Expression.Assign(scriptObject, Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value)));
 
-                ret = delegateBridage(tranType, scriptObject);
+                ret = findOrCreateFunctionAdapter(tranType, scriptObject);
             }
             else if (!tranType.IsValueType)
             {
