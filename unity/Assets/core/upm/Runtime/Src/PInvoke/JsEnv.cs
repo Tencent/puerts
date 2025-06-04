@@ -379,12 +379,17 @@ namespace Puerts
 #endif
         }
 
+        public Action TickHandler;
+
         public void Tick()
         {
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
+            cleanupPendingKillScriptObjects();
+            PuertsDLL.InspectorTick(isolate);
+            PuertsDLL.LogicTick(isolate);
+            if (TickHandler != null) TickHandler();
 #if THREAD_SAFE
             }
 #endif
@@ -447,11 +452,12 @@ namespace Puerts
 
         List<IntPtr> pendingKillScriptObjectRefs = new List<IntPtr>();
 
-        internal void addPendingKillScriptObjects(IntPtr envRef)
+        internal void addPendingKillScriptObjects(IntPtr objRef)
         {
             lock (pendingKillScriptObjectRefs)
             {
-                pendingKillScriptObjectRefs.Add(envRef);
+                pendingKillScriptObjectRefs.Add(objRef);
+                //UnityEngine.Debug.Log($"addPendingKillScriptObjects {objRef}");
             }
         }
 
@@ -470,6 +476,26 @@ namespace Puerts
                         var objRef = pendingKillScriptObjectRefs[lastIndex];
                         pendingKillScriptObjectRefs.RemoveAt(lastIndex);
 
+                        uint internal_field_count = 0;
+                        IntPtr weakHandlePtr = apis.get_ref_internal_fields(objRef, out internal_field_count);
+                        if (internal_field_count != 1)
+                        {
+                            throw new InvalidProgramException($"invalud internal fields count {internal_field_count}!");
+                        }
+
+                        IntPtr weakHandle = Marshal.PtrToStructure<IntPtr>(weakHandlePtr);
+
+                        if (weakHandle != IntPtr.Zero)
+                        {
+                            var handle = GCHandle.FromIntPtr(weakHandle);
+                            if (handle.Target == null)
+                            {
+                                var obj = apis.get_value_from_ref(env, objRef);
+                                apis.set_private(env, obj, IntPtr.Zero);
+                                //UnityEngine.Debug.Log($"cleanupPendingKillScriptObjects {objRef}");
+                                apis.release_value_ref(objRef);
+                            }
+                        }
                     }
                 }
                 finally

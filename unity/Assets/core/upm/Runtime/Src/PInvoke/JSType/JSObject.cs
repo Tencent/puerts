@@ -54,7 +54,6 @@ namespace Puerts
             lock(jsEnv) 
             {
 #endif
-            UnityEngine.Debug.Log("~JSObject~JSObject~JSObject");
             var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
             if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
             {
