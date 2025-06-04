@@ -232,7 +232,10 @@ namespace Puerts
                     callbacksCache.Add(callback);
                     reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, callback, IntPtr.Zero, IntPtr.Zero);
                 }
-                catch { }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogWarning("wrap " + kv.Key.Name + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
+                }
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
             
