@@ -57,13 +57,13 @@ namespace Puerts
         }
 
 
-        internal T cacheDelegate<T>(Type type, T del) where T : Delegate
+        public T cacheDelegate<T>(T del) where T : Delegate
         {
-            delegateCache.Add(type, del);
+            delegateCache.Add(typeof(T), del);
             return del;
         }
 
-        internal bool tryGetCachedDelegate<T>(out T del) where T : Delegate
+        public bool tryGetCachedDelegate<T>(out T del) where T : Delegate
         {
             Delegate ret;
             if (delegateCache.TryGetValue(typeof(T), out ret))

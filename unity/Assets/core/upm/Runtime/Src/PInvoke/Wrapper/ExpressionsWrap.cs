@@ -519,8 +519,18 @@ namespace Puerts
             return Expression.Call(logMethod, formattedMessage);
         }
 
-        private static Expression findOrCreateFunctionAdapter(Type type, Expression scriptObject)
+        private static Expression createFunctionAdapter(CompileContext outsideContext, Type type, Expression scriptObject)
         {
+            // cache existed?
+            var result = Expression.Variable(type);
+            outsideContext.Variables.Add(result);
+            var tryGetMethod = typeof(JSObject).GetMethod(nameof(JSObject.tryGetCachedDelegate)).MakeGenericMethod(type);
+            var callTryGet = Expression.Call(
+                scriptObject,
+                tryGetMethod,
+                result
+            );
+
             var invokeMethodInfo = type.GetMethod("Invoke");
             var delegateParams = invokeMethodInfo.GetParameters()
                 .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
@@ -592,8 +602,17 @@ namespace Puerts
             }
 
             outerExpressions.Add(Expression.TryFinally(Expression.Block(variables, blockExpressions), callPApi(apis, "close_scope", scope)));
+            var lamda = Expression.Lambda(type, Expression.Block(outerVariables, outerExpressions), delegateParams);
 
-            return Expression.Lambda(type, Expression.Block(outerVariables, outerExpressions), delegateParams);
+            var cacheMethod = typeof(JSObject).GetMethod(nameof(JSObject.cacheDelegate)).MakeGenericMethod(type);
+            
+            var condition = Expression.Condition(
+                callTryGet,
+                result,
+                Expression.Call(scriptObject, cacheMethod, lamda)
+            );
+
+            return condition;
         }
 
         private static Expression scriptToNative(CompileContext context, Type type, Expression value)
@@ -659,7 +678,7 @@ namespace Puerts
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 context.BlockExpressions.Add(Expression.Assign(scriptObject, Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value)));
 
-                ret = findOrCreateFunctionAdapter(tranType, scriptObject);
+                ret = createFunctionAdapter(context, tranType, scriptObject);
             }
             else if (!tranType.IsValueType)
             {
