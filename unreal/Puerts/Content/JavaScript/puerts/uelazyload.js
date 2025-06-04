@@ -302,7 +302,7 @@ var global = global || (function () { return this; }());
     
     function translateType(t) {
         if (typeof t !== 'number') {
-            if (Object.hasOwnProperty(t, '__puerts_ufield')) {
+            if (t.hasOwnProperty('__puerts_ufield')) {
                 return t.__puerts_ufield
             } else {
                 return t.StaticClass();
