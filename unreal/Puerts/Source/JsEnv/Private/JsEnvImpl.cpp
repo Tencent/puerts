@@ -4425,11 +4425,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         New->StaticLink(true);
 
         auto CDO = New->GetDefaultObject();
-        if (auto AnimClass = Cast<UAnimBlueprintGeneratedClass>(New))
-        {
-            AnimClass->UpdateCustomPropertyListForPostConstruction();
-        }
-        else if (auto WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(New))
+        if (auto WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(New))
         {
             WidgetClass->UpdateCustomPropertyListForPostConstruction();
         }
