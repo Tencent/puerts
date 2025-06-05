@@ -480,6 +480,10 @@ namespace Puerts
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_Object));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
+            else if (tranType.IsByRef)
+            {
+                throw new Exception("nativeToScript: byref type " + tranType + " not support yet!");
+            }
             else if (!tranType.IsValueType)
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_T)).MakeGenericMethod(tranType);
