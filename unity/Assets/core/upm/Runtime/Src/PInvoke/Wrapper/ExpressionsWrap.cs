@@ -680,6 +680,10 @@ namespace Puerts
 
                 ret = createFunctionAdapter(context, tranType, scriptObject);
             }
+            else if (tranType.IsByRef)
+            {
+                ret = scriptToNative(context, type.GetElementType(), callPApi(context.Apis, "get_property_uint32", context.Env, value, Expression.Constant((uint)0)));
+            }
             else if (!tranType.IsValueType)
             {
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
@@ -786,6 +790,10 @@ namespace Puerts
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_function");
+            }
+            else if (type.IsByRef)
+            {
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_object");
             }
             else if (!type.IsValueType)
             {
@@ -1032,13 +1040,51 @@ namespace Puerts
 
         public static pesapi_callback BuildMethodWrap(MethodInfo[] methodInfos, bool forceCheckArgs)
         {
-            return BuildMethodBaseWrap<pesapi_callback>(methodInfos, forceCheckArgs, (context, methodBase, info, self, getJsArg) =>
+            return BuildMethodBaseWrap<pesapi_callback>(methodInfos, forceCheckArgs, (contextOutside, methodBase, info, self, getJsArg) =>
             {
                 var methodInfo = methodBase as MethodInfo;
-                var callMethod = Expression.Call(self, methodInfo, methodInfo.GetParameters().Select((ParameterInfo pi, int index) => scriptToNative(context, pi.ParameterType, getJsArg(index))));
-                var addReturn = returnToScript(context, methodInfo.ReturnType, info, callMethod);
 
-                return (addReturn != null) ? addReturn : callMethod;
+                var variables = new List<ParameterExpression>();
+                var blockExpressions = new List<Expression>();
+                var context = new CompileContext()
+                {
+                    Variables = variables,
+                    BlockExpressions = blockExpressions,
+                    Apis = contextOutside.Apis,
+                    Env = contextOutside.Env
+                };
+
+                var tempVariables = methodInfo.GetParameters().Select(pi => Expression.Variable(pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType)).ToArray();
+                variables.AddRange(tempVariables);
+                var assignments = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => Expression.Assign(tempVariables[index], scriptToNative(context, pi.ParameterType, getJsArg(index))));
+                blockExpressions.AddRange(assignments);
+
+                var callMethod = Expression.Call(self, methodInfo, tempVariables);
+
+                // call method
+                ParameterExpression tempResult = null;
+                if (methodInfo.ReturnType != typeof(void))
+                {
+                    tempResult = Expression.Variable(methodInfo.ReturnType);
+                    variables.Add(tempResult);
+                    blockExpressions.Add(Expression.Assign(tempResult, callMethod));
+                }
+                else
+                {
+                    blockExpressions.Add(callMethod);
+                }
+
+                blockExpressions.AddRange(methodBase.GetParameters()
+                    .Where(pi => pi.ParameterType.IsByRef).
+                    Select((ParameterInfo pi, int index) => callPApi(context.Apis, "set_property_uint32", context.Env, getJsArg(index), Expression.Constant((uint)0), nativeToScript(context, pi.ParameterType.GetElementType(), tempVariables[index]))));
+
+                // return if needed
+                if (methodInfo.ReturnType != typeof(void))
+                {
+                    blockExpressions.Add(returnToScript(context, methodInfo.ReturnType, info, tempResult));
+                }
+
+                return Expression.Block(variables, blockExpressions);
             });
 
         }
