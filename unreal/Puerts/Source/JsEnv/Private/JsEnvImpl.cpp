@@ -20,7 +20,9 @@
 #include "JSLogger.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JSGeneratedClass.h"
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION <= 5
 #include "JSAnimGeneratedClass.h"
+#endif
 #include "JSWidgetGeneratedClass.h"
 #include "JSGeneratedFunction.h"
 #endif
@@ -843,6 +845,7 @@ FJsEnvImpl::~FJsEnvImpl()
                     JSWidgetGeneratedClass->Release();
                 }
             }
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION <= 5
             else if (auto JSAnimGeneratedClass = Cast<UJSAnimGeneratedClass>(GeneratedClass))
             {
                 if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSWidgetGeneratedClass))
@@ -850,6 +853,7 @@ FJsEnvImpl::~FJsEnvImpl()
                     JSAnimGeneratedClass->Release();
                 }
             }
+#endif
         }
 #endif
 
