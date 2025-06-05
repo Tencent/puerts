@@ -172,9 +172,13 @@ void FJsEnvModule::StartupModule()
     int* Dummy = new (std::nothrow) int[0];
     if (!Dummy)
     {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+        UE_LOG(JsEnvModule, Error, TEXT("new (std::nothrow) int[0] return nullptr, try fix it!"));
+#else
         UE_LOG(JsEnvModule, Warning, TEXT("new (std::nothrow) int[0] return nullptr, try fix it!"));
         MallocWrapper = new FMallocWrapper(GMalloc);
         GMalloc = MallocWrapper;
+#endif
     }
     delete[] Dummy;
 
@@ -254,6 +258,7 @@ void FJsEnvModule::ShutdownModule()
     v8::platform::DeletePlatform_Without_Stl(platform_);
 #endif
 
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION <= 5
     if (MallocWrapper && MallocWrapper == GMalloc)
     {
         GMalloc = MallocWrapper->InnerMalloc;
@@ -261,6 +266,7 @@ void FJsEnvModule::ShutdownModule()
         MallocWrapper = nullptr;
         UE_LOG(JsEnvModule, Warning, TEXT("GMalloc restored!"));
     }
+#endif
 }
 
 void* FJsEnvModule::GetV8Platform()

@@ -10,7 +10,6 @@
 #include "Engine/Blueprint.h"
 #include "JSGeneratedFunction.h"
 #include "JSWidgetGeneratedClass.h"
-#include "JSAnimGeneratedClass.h"
 #include "JSLogger.h"
 
 #define OLD_METHOD_PREFIX "__puerts_old__"
@@ -32,18 +31,6 @@ UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent,
         JSGeneratedClass->Constructor = v8::UniquePersistent<v8::Function>(Isolate, Constructor);
         JSGeneratedClass->Prototype = v8::UniquePersistent<v8::Object>(Isolate, Prototype);
         JSGeneratedClass->ClassConstructor = &UJSWidgetGeneratedClass::StaticConstructor;
-        Class = JSGeneratedClass;
-    }
-    else if (Cast<UAnimBlueprintGeneratedClass>(Parent))
-    {
-        auto JSGeneratedClass = NewObject<UJSAnimGeneratedClass>(Outer, *Name, RF_Public);
-#ifdef THREAD_SAFE
-        JSGeneratedClass->Isolate = Isolate;
-#endif
-        JSGeneratedClass->DynamicInvoker = DynamicInvoker;
-        JSGeneratedClass->Constructor = v8::UniquePersistent<v8::Function>(Isolate, Constructor);
-        JSGeneratedClass->Prototype = v8::UniquePersistent<v8::Object>(Isolate, Prototype);
-        JSGeneratedClass->ClassConstructor = &UJSAnimGeneratedClass::StaticConstructor;
         Class = JSGeneratedClass;
     }
     else
