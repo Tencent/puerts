@@ -174,7 +174,7 @@ namespace Puerts
         public static extern void PreservePuertsCPP();
 #endif
 #endif
-
+#if !ENABLE_IL2CPP
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_null(IntPtr apis, IntPtr env);
         
@@ -416,6 +416,7 @@ namespace Puerts
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_env_private(IntPtr apis, IntPtr env, IntPtr ptr);
+#endif
     }
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
