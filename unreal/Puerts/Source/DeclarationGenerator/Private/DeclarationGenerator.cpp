@@ -56,6 +56,12 @@
 #define TYPE_DECL_END "// __TYPE_DECL_END"
 #define TYPE_ASSOCIATION "ASSOCIATION"
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+#define GET_VERSION_ID(PD) LexToString(PD->CookedHash)
+#else
+#define GET_VERSION_ID(PD) PD->PackageGuid.ToString()
+#endif
+
 bool IsTypeScriptKeyword(const FString& InputString)
 {
     static TArray<FString> TypeScriptKeywords = {TEXT("break"), TEXT("as"), TEXT("any"), TEXT("switch"), TEXT("case"), TEXT("if"),
@@ -638,7 +644,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
 
         if (PackageData && BlueprintTypeDeclInfoPtr)
         {
-            auto FileVersion = PackageData->PackageGuid.ToString();
+            auto FileVersion = GET_VERSION_ID(PackageData);
             BlueprintTypeDeclInfoPtr->IsExist = true;
             BlueprintTypeDeclInfoPtr->Changed = InGenFull || (FileVersion != BlueprintTypeDeclInfoPtr->FileVersionString);
             BlueprintTypeDeclInfoPtr->FileVersionString = FileVersion;
@@ -646,7 +652,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
         else
         {
             BlueprintTypeDeclInfoCache.Add(AssetData.PackageName,
-                {TMap<FName, FString>(), PackageData ? PackageData->PackageGuid.ToString() : FString(TEXT("")), true, true, false});
+                {TMap<FName, FString>(), PackageData ? GET_VERSION_ID(PackageData) : FString(TEXT("")), true, true, false});
         }
     }
 }
@@ -955,7 +961,11 @@ bool FTypeScriptDeclarationGenerator::GenFunction(
             else
             {
                 FStringBuffer TmpBuf;
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+                TMap<FName, FString>* MetaMap = FMetaData::GetMapForObject(Function);
+#else
                 TMap<FName, FString>* MetaMap = UMetaData::GetMapForObject(Function);
+#endif
                 const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
                 FString* DefaultValuePtr = nullptr;
                 if (MetaMap)
