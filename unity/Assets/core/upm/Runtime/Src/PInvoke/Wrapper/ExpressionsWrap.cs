@@ -691,14 +691,29 @@ namespace Puerts
                 var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
-            else if (typeof(Delegate).IsAssignableFrom(tranType))
+            else if (typeof(Delegate).IsAssignableFrom(tranType) && tranType != typeof(Delegate) && tranType != typeof(MulticastDelegate))
             {
-                var scriptObject = Expression.Variable(typeof(JSObject));
-                context.Variables.Add(scriptObject);
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
-                context.BlockExpressions.Add(Expression.Assign(scriptObject, Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value)));
+                var test = callPApi(context.Apis, "is_function", context.Env, value);
 
-                ret = createFunctionAdapter(context, tranType, scriptObject);
+                var ifTrueVariables = new List<ParameterExpression>();
+                var ifTrueExpressions = new List<Expression>();
+                var ifTrueContext = new CompileContext()
+                {
+                    Variables = ifTrueVariables,
+                    BlockExpressions = ifTrueExpressions,
+                    Apis = context.Apis,
+                    Env = context.Env
+                };
+
+                var scriptObject = Expression.Variable(typeof(JSObject));
+                ifTrueVariables.Add(scriptObject);
+                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
+                ifTrueExpressions.Add(Expression.Assign(scriptObject, Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value)));
+                ifTrueExpressions.Add(createFunctionAdapter(ifTrueContext, tranType, scriptObject));
+                var ifTrue = Expression.Block(ifTrueVariables, ifTrueExpressions);
+
+                var ifFalse = Expression.Call(typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType), context.Apis, context.Env, value);
+                return Expression.Condition(test, ifTrue, ifFalse);
             }
             else if (tranType.IsByRef)
             {
@@ -817,7 +832,10 @@ namespace Puerts
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
-                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_function");
+                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
+                return buildOrExpression(new string[] { "is_null", "is_function" }.Select(n => callPApi(context.Apis, n, context.Env, value))
+                    .Concat(new Expression[] { Expression.Call(isAssignableMethod, context.Apis, context.Env, value) })
+                    );
             }
             else if (type.IsByRef)
             {
@@ -1145,6 +1163,38 @@ namespace Puerts
 
         public static pesapi_constructor BuildConstructorWrap(Type type, ConstructorInfo[] constructorInfos, bool forceCheckArgs)
         {
+            //
+            if (typeof(Delegate).IsAssignableFrom(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
+            {
+                return BuildMethodBaseWrap<pesapi_constructor>(type, constructorInfos.Take(1).ToArray(), false, (contextOutside, methodBase, info, self, getJsArg) =>
+                {
+                    var constructorInfo = methodBase as ConstructorInfo;
+
+                    var variables = new List<ParameterExpression>();
+                    var blockExpressions = new List<Expression>();
+                    var context = new CompileContext()
+                    {
+                        Variables = variables,
+                        BlockExpressions = blockExpressions,
+                        Apis = contextOutside.Apis,
+                        Env = contextOutside.Env
+                    };
+
+                    var arg0 = getJsArg(0);
+
+                    var delObj = scriptToNative(context, type, arg0);
+
+                    var result = Expression.Variable(typeof(IntPtr));
+                    variables.Add(result);
+                    var addToObjectPoolMethod = typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
+                    var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, delObj);
+                    blockExpressions.Add(Expression.Assign(result, addToObjectPool));
+
+                    blockExpressions.Add(result);
+
+                    return Expression.Block(variables, blockExpressions);
+                });
+            }
             return BuildMethodBaseWrap<pesapi_constructor>(type, constructorInfos, forceCheckArgs, (contextOutside, methodBase, info, self, getJsArg) =>
             {
                 var constructorInfo = methodBase as ConstructorInfo;

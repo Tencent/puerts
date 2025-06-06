@@ -178,7 +178,14 @@ namespace Puerts
             string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
             Eval(context, debugpath);
             ExecuteModule("puerts/init_il2cpp.mjs");
-            //ExecuteModule("puerts/log.mjs");
+            ExecuteModule("puerts/log.mjs");
+            ExecuteModule("puerts/csharp.mjs");
+
+            ExecuteModule("puerts/events.mjs");
+            ExecuteModule("puerts/timer.mjs");
+            ExecuteModule("puerts/promises.mjs");
+
+            ExecuteModule("puerts/websocketpp.mjs");
         }
 
         public ILoader GetLoader()
