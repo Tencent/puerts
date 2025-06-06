@@ -159,23 +159,25 @@ namespace Puerts
             //TODO: dispose globalObj
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
-            logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
+            logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug), typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
             var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
             apis.set_property(env, globalVal, "print", print);
 
             var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
             apis.set_property(env, globalVal, "jsEnv", jsJsEnv);
 
-            loadTypeDelegate = ExpressionsWrap.BuildMethodWrap(typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
+            loadTypeDelegate = ExpressionsWrap.BuildMethodWrap(typeof(ExpressionsWrap.NativeType), typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
             var loadType = apis.create_function(env, loadTypeDelegate, IntPtr.Zero, null);
             apis.set_property(env, globalVal, "loadType", loadType);
 
             apis.close_scope(scope);
 
+            PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
+
             string debugpath;
             string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
             Eval(context, debugpath);
-            //ExecuteModule("puerts/init_il2cpp.mjs");
+            ExecuteModule("puerts/init_il2cpp.mjs");
             //ExecuteModule("puerts/log.mjs");
         }
 

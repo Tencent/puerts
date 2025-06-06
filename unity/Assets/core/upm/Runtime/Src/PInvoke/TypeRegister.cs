@@ -186,6 +186,11 @@ namespace Puerts
                     UnityEngine.Debug.LogWarning("wrap " + fieldInfo + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
                 }
             }
+            var extensionMethods = PuertsIl2cpp.ExtensionMethodInfo.Get(type.AssemblyQualifiedName);
+            if(extensionMethods != null && extensionMethods.Length > 0)
+            {
+                methodInfos = methodInfos.Concat(extensionMethods).ToArray();
+            }
             foreach (var methodInfo in methodInfos)
             {
                 if (methodInfo.IsGenericMethodDefinition) continue;
@@ -194,15 +199,15 @@ namespace Puerts
                     //AccessorCallbackPair accessorCallbackPair = null;
                     if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("get_") && methodInfo.GetParameters().Length == 0) // getter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), ExpressionsWrap.BuildMethodWrap(methodInfo, true), null);
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), ExpressionsWrap.BuildMethodWrap(type, methodInfo, true), null);
                     }
                     else if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("set_") && methodInfo.GetParameters().Length == 1) // setter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.BuildMethodWrap(methodInfo, true));
+                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.BuildMethodWrap(type, methodInfo, true));
                     }
                     else
                     {
-                        addOverload(new MemberKey(methodInfo.Name, methodInfo.IsStatic), methodInfo);
+                        addOverload(new MemberKey(methodInfo.Name, methodInfo.IsStatic && PuertsIl2cpp.ExtensionMethodInfo.GetExtendedType(methodInfo) != type), methodInfo);
                     }
                     //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }
@@ -228,13 +233,13 @@ namespace Puerts
                 try
                 {
                     IntPtr ptr = StringToIntPtr(kv.Key.Name);
-                    pesapi_callback callback = ExpressionsWrap.BuildMethodWrap(kv.Value.ToArray(), true);
+                    pesapi_callback callback = ExpressionsWrap.BuildMethodWrap(type, kv.Value.ToArray(), true);
                     callbacksCache.Add(callback);
                     reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, callback, IntPtr.Zero, IntPtr.Zero);
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.LogWarning("wrap " + kv.Key.Name + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
+                    UnityEngine.Debug.LogWarning($"wrap {type.GetMethod(kv.Key.Name)} of {type} fail! message: {e.Message}, stack: {e.StackTrace}");
                 }
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
@@ -247,7 +252,7 @@ namespace Puerts
                 if (ctors.Length > 0)
                 {
                     //UnityEngine.Debug.LogWarning("add ctors for " + type);
-                    ctorWrap = ExpressionsWrap.BuildConstructorWrap(ctors, true);
+                    ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, ctors, true);
                     callbacksCache.Add(ctorWrap);
                 }
             }

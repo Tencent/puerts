@@ -18,7 +18,7 @@ namespace PuertsIl2cpp
 {
 	public static class ExtensionMethodInfo
 	{
-        private static Type GetExtendedType(MethodInfo method)
+        internal static Type GetExtendedType(MethodInfo method)
         {
             var paramInfo = method.GetParameters();
             if (paramInfo.Length == 0)
