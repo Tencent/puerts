@@ -253,7 +253,6 @@ namespace Puerts
                 {
                     //UnityEngine.Debug.LogWarning("add ctors for " + type);
                     ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, ctors, true);
-                    callbacksCache.Add(ctorWrap);
                 }
             }
             catch (Exception e)
@@ -268,6 +267,7 @@ namespace Puerts
                     return IntPtr.Zero;
                 };
             }
+            callbacksCache.Add(ctorWrap);
             reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
             registerFinished[typeId] = true;
             return typeId;
