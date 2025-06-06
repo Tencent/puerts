@@ -558,6 +558,12 @@ namespace Puerts
                 if (disposed) return;
                 if (OnDispose != null) OnDispose();
                 jsEnvs[Idx] = null;
+
+                var scope = apis.open_scope(envRef);
+                var env = apis.get_env_from_ref(envRef);
+                apis.trace_native_object_lifecycle(env, null, null);
+                apis.close_scope(scope);
+
                 apis.release_env_ref(envRef);
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
