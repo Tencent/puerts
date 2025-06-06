@@ -260,6 +260,14 @@ namespace Puerts
             {
                 UnityEngine.Debug.LogWarning("wrap ctor for " + type + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
             }
+            if (ctorWrap == null)
+            {
+                ctorWrap = (apis, info) =>
+                {
+                    NativeAPI.pesapi_throw_by_string(apis, info, $"no constructor for {type}");
+                    return IntPtr.Zero;
+                };
+            }
             reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
             registerFinished[typeId] = true;
             return typeId;
