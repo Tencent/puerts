@@ -156,6 +156,7 @@ namespace Puerts
 
             var globalObj = ExpressionsWrap.Helpper.ScriptToNative_ScriptObject(papis, env, globalVal);
             moduleExecutor = globalObj.Get<Func<string, JSObject>>("__puertsExecuteModule");
+            //TODO: dispose globalObj
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
             logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
@@ -174,7 +175,7 @@ namespace Puerts
             string debugpath;
             string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
             Eval(context, debugpath);
-            ExecuteModule("puerts/init_il2cpp.mjs");
+            //ExecuteModule("puerts/init_il2cpp.mjs");
             //ExecuteModule("puerts/log.mjs");
         }
 

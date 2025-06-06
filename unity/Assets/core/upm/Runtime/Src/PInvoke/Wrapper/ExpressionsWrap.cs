@@ -643,6 +643,22 @@ namespace Puerts
             {
                 ret = callPApi(context.Apis, "get_value_double", context.Env, value);
             }
+            else if (tranType == typeof(byte))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_int32", context.Env, value), typeof(byte));
+            }
+            else if (tranType == typeof(sbyte))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_int32", context.Env, value), typeof(sbyte));
+            }
+            else if (tranType == typeof(short))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_int32", context.Env, value), typeof(short));
+            }
+            else if (tranType == typeof(ushort))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_int32", context.Env, value), typeof(ushort));
+            }
             else if (tranType == typeof(char))
             {
                 ret = Expression.Convert(callPApi(context.Apis, "get_value_int32", context.Env, value), typeof(char));
@@ -778,6 +794,14 @@ namespace Puerts
             else if (type == typeof(float))
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_double");
+            }
+            else if (type == typeof(sbyte) || type == typeof(short))
+            {
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_int32");
+            }
+            else if (type == typeof(byte) || type == typeof(ushort))
+            {
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_int32", "is_uint32");
             }
             else if (type == typeof(char))
             {
