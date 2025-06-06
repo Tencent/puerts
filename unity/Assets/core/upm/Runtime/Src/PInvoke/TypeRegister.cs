@@ -239,7 +239,7 @@ namespace Puerts
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.LogWarning($"wrap {type.GetMethod(kv.Key.Name)} of {type} fail! message: {e.Message}, stack: {e.StackTrace}");
+                    UnityEngine.Debug.LogWarning($"wrap {kv.Key.Name} of {type} fail! message: {e.Message}, stack: {e.StackTrace}");
                 }
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
