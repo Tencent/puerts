@@ -825,6 +825,10 @@ namespace Puerts
             }
             else if (type == typeof(System.TypedReference))
             {
+                // 用TypedReference去实例化一个泛型函数，会导致mono崩溃，崩溃时报这个信息：
+                // Assertion at C:\build\output\Unity-Technologies\mono\mono\metadata\reflection.c:2658, condition `is_ok (error)' not met, function:reflection_bind_generic_method_parameters, MVAR 0 cannot be expanded with type 0x16
+                // 似乎是内部写死的规则，先禁用
+                // TODO: 后续可以通过按特殊类（比如上面的int之类）处理来支持
                 throw new Exception("checkArgument: " + type + " will cause crash!");
             }
             else if (!type.IsValueType)
