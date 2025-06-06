@@ -152,21 +152,35 @@ namespace Puerts
             onObjectReleaseRefDelegate = onObjectReleaseRef;
             apis.trace_native_object_lifecycle(env, null, onObjectReleaseRefDelegate);
 
-            var global = apis.global(env);
+            var globalVal = apis.global(env);
+
+            var globalObj = ExpressionsWrap.Helpper.ScriptToNative_ScriptObject(papis, env, globalVal);
+            moduleExecutor = globalObj.Get<Func<string, JSObject>>("__puertsExecuteModule");
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
             logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
             var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
-            apis.set_property(env, global, "print", print);
+            apis.set_property(env, globalVal, "print", print);
 
             var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
-            apis.set_property(env, global, "jsEnv", jsJsEnv);
+            apis.set_property(env, globalVal, "jsEnv", jsJsEnv);
 
             loadTypeDelegate = ExpressionsWrap.BuildMethodWrap(typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
             var loadType = apis.create_function(env, loadTypeDelegate, IntPtr.Zero, null);
-            apis.set_property(env, global, "loadType", loadType);
+            apis.set_property(env, globalVal, "loadType", loadType);
 
             apis.close_scope(scope);
+
+            string debugpath;
+            string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
+            Eval(context, debugpath);
+            ExecuteModule("puerts/init_il2cpp.mjs");
+            //ExecuteModule("puerts/log.mjs");
+        }
+
+        public ILoader GetLoader()
+        {
+            return loader;
         }
 
         private pesapi_callback logDelegate;
@@ -174,6 +188,8 @@ namespace Puerts
         private pesapi_callback loadTypeDelegate;
 
         private pesapi_on_native_object_exit onObjectReleaseRefDelegate;
+
+        private Func<string, JSObject> moduleExecutor;
 
         private void onObjectReleaseRef(IntPtr ptr, IntPtr classData, IntPtr envPrivate, IntPtr userdata)
         {
@@ -211,8 +227,14 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
-            return default(T);
+            if (exportee == "" && typeof(T) != typeof(JSObject))
+            {
+                throw new Exception("T must be Puerts.JSObject when getting the module namespace");
+            }
+            JSObject jso = moduleExecutor(specifier);
+            if (exportee == "") return (T)(object)jso;
+
+            return jso.Get<T>(exportee);
 #if THREAD_SAFE
             }
 #endif
@@ -222,8 +244,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
-            return null;
+            return moduleExecutor(specifier);
 #if THREAD_SAFE
             }
 #endif
