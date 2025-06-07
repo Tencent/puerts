@@ -310,7 +310,8 @@ namespace Puerts
                 }
                 if (ret == null)
                 {
-                    ret = new JSObject(apis, valueRef);
+                    var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                    ret = new JSObject(JsEnv.jsEnvs[envIdx], apis, valueRef);
                     weakHandle = GCHandle.ToIntPtr(GCHandle.Alloc(ret, GCHandleType.Weak));
                     Marshal.StructureToPtr(weakHandle, weakHandlePtr, false);
                 }

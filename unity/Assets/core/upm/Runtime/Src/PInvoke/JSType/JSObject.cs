@@ -20,9 +20,11 @@ namespace Puerts
         internal IntPtr apis;
         internal IntPtr objRef;
         internal Dictionary<Type, Delegate> delegateCache = new Dictionary<Type, Delegate>();
+        private JsEnv jsEnv;
 
-        internal JSObject(IntPtr apis, IntPtr valueRef)
+        internal JSObject(JsEnv jsEnv, IntPtr apis, IntPtr valueRef)
         {
+            this.jsEnv = jsEnv;
             this.apis = apis;
             this.objRef = valueRef;
         }
@@ -61,17 +63,7 @@ namespace Puerts
             }
             else
             {
-                var scope = NativeAPI.pesapi_open_scope(apis, envRef);
-                try
-                {
-                    var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
-                    var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
-                    JsEnv.jsEnvs[envIdx].addPendingKillScriptObjects(objRef);
-                } 
-                finally
-                {
-                    NativeAPI.pesapi_close_scope(apis, scope);
-                }
+                jsEnv.addPendingKillScriptObjects(objRef);
             }
 #if THREAD_SAFE
             }
