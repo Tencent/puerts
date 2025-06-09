@@ -272,9 +272,14 @@ namespace Puerts
                 return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
             }
 
-            public static bool IsAssignable_ByRef<T>(IntPtr apis, IntPtr env, IntPtr obj)
+            public static bool IsAssignable_ByRef<T>(IntPtr apis, IntPtr env, IntPtr value)
             {
-                var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
+                var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, value).ToInt32();
+                if (typeId == 0)
+                {
+                    // TODO: 考虑到兼容性，目前先支持undefined，默认应该只支持null
+                    return NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value);
+                }
                 return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
 
