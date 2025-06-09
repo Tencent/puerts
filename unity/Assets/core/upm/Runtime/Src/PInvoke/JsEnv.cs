@@ -33,6 +33,7 @@ namespace Puerts
 
         public Backend Backend;
 
+        IntPtr papis;
         pesapi_ffi apis;
         IntPtr envRef;
 
@@ -120,7 +121,6 @@ namespace Puerts
             else if (backend == BackendType.QuickJS)
                 Backend = new BackendQuickJS(this);
 
-            IntPtr papis;
             if (backend == BackendType.V8 || backend == BackendType.Node)
             {
                 envRef = Puerts.NativeAPI.GetV8PapiEnvRef(isolate);
@@ -289,13 +289,32 @@ namespace Puerts
 #endif
         }
 
+        //TODO: 和void版本逻辑类似
         public TResult Eval<TResult>(string chunk, string chunkName = "chunk")
         {
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
-            return default(TResult);
+            var scope = apis.open_scope(envRef);
+            try
+            {
+
+                var env = apis.get_env_from_ref(envRef);
+
+                byte[] codeBuff = System.Text.Encoding.UTF8.GetBytes(chunk);
+                var res = apis.eval(env, codeBuff, new UIntPtr((uint)codeBuff.Length), chunkName);
+
+                if (apis.has_caught(scope))
+                {
+                    string msg = Marshal.PtrToStringUTF8(apis.get_exception_as_string(scope, true));
+                    throw new InvalidOperationException(msg);
+                }
+                return ExpressionsWrap.GetNativeTranlator<TResult>()(papis, env, res);
+            }
+            finally
+            {
+                apis.close_scope(scope);
+            }
 #if THREAD_SAFE
             }
 #endif
