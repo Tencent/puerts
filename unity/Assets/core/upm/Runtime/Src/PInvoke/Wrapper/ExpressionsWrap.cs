@@ -1275,9 +1275,29 @@ namespace Puerts
             var field = Expression.Field(self, fieldInfo);
             var addReturn = returnToScript(context, fieldInfo.FieldType, info, field);
             blockExpressions.Add(addReturn);
-            return (Expression.Lambda<pesapi_callback>(Expression.Block(
-                variables, blockExpressions
-                ), apis, info)).Compile();
+
+            var block = Expression.Block(variables, blockExpressions);
+
+            var exVar = Expression.Variable(typeof(Exception), "ex");
+
+            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
+
+            var formatExpr = Expression.Call(
+                formatMethod,
+                Expression.Constant("C# Exception: {0}, Stack: {1}"),
+                Expression.NewArrayInit(
+                    typeof(object),
+                    Expression.Convert(Expression.Property(exVar, "Message"), typeof(object)),
+                    Expression.Convert(Expression.Property(exVar, "StackTrace"), typeof(object))
+                )
+            );
+
+            var tryCatchExpr = Expression.TryCatch(
+                block,
+                Expression.Catch(exVar, callPApi(apis, "throw_by_string", info, formatExpr))
+            );
+
+            return (Expression.Lambda<pesapi_callback>(tryCatchExpr, apis, info)).Compile();
         }
 
         public static pesapi_callback BuildFieldSetter(FieldInfo fieldInfo)
@@ -1330,9 +1350,29 @@ namespace Puerts
                 var updateCall = Expression.Call(updateMethod, envIdx, selfId, self);
                 blockExpressions.Add(updateCall);
             }
-            return (Expression.Lambda<pesapi_callback>(Expression.Block(
-                variables, blockExpressions
-                ), apis, info)).Compile();
+
+            var block = Expression.Block(typeof(void), variables, blockExpressions);
+
+            var exVar = Expression.Variable(typeof(Exception), "ex");
+
+            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
+
+            var formatExpr = Expression.Call(
+                formatMethod,
+                Expression.Constant("C# Exception: {0}, Stack: {1}"),
+                Expression.NewArrayInit(
+                    typeof(object),
+                    Expression.Convert(Expression.Property(exVar, "Message"), typeof(object)),
+                    Expression.Convert(Expression.Property(exVar, "StackTrace"), typeof(object))
+                )
+            );
+
+            var tryCatchExpr = Expression.TryCatch(
+                block,
+                Expression.Catch(exVar, callPApi(apis, "throw_by_string", info, formatExpr))
+            );
+
+            return (Expression.Lambda<pesapi_callback>(tryCatchExpr, apis, info)).Compile();
         }
 
         private static Dictionary<Type, Delegate> NativeTranlatorCache = new Dictionary<Type, Delegate>();
