@@ -263,12 +263,12 @@ namespace Puerts
             {
                 var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
                 var objIdx = NativeAPI.pesapi_get_native_object_ptr(apis, env, obj).ToInt32();
+                if (objIdx == 0) return default(T);
                 return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
             }
 
             public static bool IsAssignable_ByRef<T>(IntPtr apis, IntPtr env, IntPtr obj)
             {
-                if (NativeAPI.pesapi_is_null(apis, env, obj)) return true;
                 var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
                 return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
@@ -320,6 +320,10 @@ namespace Puerts
 
             public static string ScriptToNative_String(IntPtr apis, IntPtr env, IntPtr value)
             {
+                if (NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value))
+                {
+                    return null;
+                }
                 UIntPtr outLen = UIntPtr.Zero;
                 NativeAPI.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
                 byte[] buf = new byte[outLen.ToUInt32() * 2];
@@ -781,7 +785,7 @@ namespace Puerts
             }
             else if (type == typeof(string))
             {
-                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_string");
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_undefined", "is_string");
             }
             else if (type == typeof(object))
             {
@@ -789,7 +793,7 @@ namespace Puerts
             }
             else if (type == typeof(JSObject))
             {
-                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_object");
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_undefined", "is_object");
             }
             else if (type == typeof(bool))
             {
@@ -829,7 +833,7 @@ namespace Puerts
             }
             else if (type == typeof(ArrayBuffer))
             {
-                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_binary");
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_undefined", "is_binary");
             }
             else if (typeof(Delegate).IsAssignableFrom(type))
             {
