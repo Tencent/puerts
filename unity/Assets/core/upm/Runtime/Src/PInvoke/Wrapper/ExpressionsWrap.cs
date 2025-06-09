@@ -589,6 +589,19 @@ namespace Puerts
             var env = Expression.Variable(typeof(IntPtr));
             tryBlockvariables.Add(env);
             tryBlockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env_from_ref", envRef)));
+            
+            // Check if env is IntPtr.Zero and throw exception
+            tryBlockExpressions.Add(
+                Expression.IfThen(
+                    Expression.Equal(env, Expression.Constant(IntPtr.Zero)),
+                    Expression.Throw(
+                        Expression.New(
+                            typeof(InvalidOperationException).GetConstructor(new[] { typeof(string) }),
+                            Expression.Constant("JsEnv had been destroy")
+                        )
+                    )
+                )
+            );
 
             var tryBlockContext = new CompileContext()
             {
