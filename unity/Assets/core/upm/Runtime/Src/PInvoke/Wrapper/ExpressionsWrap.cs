@@ -137,6 +137,11 @@ namespace Puerts
 
             public static IntPtr NativeToScript_ScriptObject(IntPtr apis, IntPtr env, JSObject obj)
             {
+                if (obj == null)
+                {
+                    return NativeAPI.pesapi_create_null(apis, env);
+                }
+
                 if (apis != obj.apis)
                 {
                     throw new InvalidCastException("ScriptObject form other papi provider!");
