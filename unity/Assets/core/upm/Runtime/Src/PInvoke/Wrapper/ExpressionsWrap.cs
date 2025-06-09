@@ -763,6 +763,20 @@ namespace Puerts
             return ret;
         }
 
+        private static Expression scriptToNative(CompileContext context, ParameterInfo parameterInfo, Expression value)
+        {
+            var res = scriptToNative(context, parameterInfo.ParameterType, value);
+            if (parameterInfo.HasDefaultValue)
+            {
+                return Expression.Condition(callPApi(context.Apis, "is_undefined", context.Env, value), Expression.Constant(parameterInfo.DefaultValue, parameterInfo.ParameterType), res);
+            }
+            // TODO: 可变参数
+            else
+            {
+                return res;
+            }
+        }
+
         private static Expression returnToScript(CompileContext context, Type type, ParameterExpression info, Expression value)
         {
             if (type == typeof(void))
@@ -875,6 +889,12 @@ namespace Puerts
             }
         }
 
+        private static Expression checkArgument(CompileContext context, ParameterInfo parameterInfo, Expression value)
+        {
+            var test = checkArgument(context, parameterInfo.ParameterType, value);
+            return (parameterInfo.HasDefaultValue || parameterInfo.IsDefined(typeof(ParamArrayAttribute), false)) ? Expression.OrElse(callPApi(context.Apis, "is_undefined", context.Env, value), test) : test;
+        }
+
         private static Expression getArgument(CompileContext context, ParameterExpression info, int index)
         {
             //var temp = apis.get_arg(info, index);
@@ -908,16 +928,45 @@ namespace Puerts
                 Expression.AndAlso(left, right));
         }
 
+        private static Expression buildArgumentsLengthCheck(MethodBase methodBase, bool isExtensionMethod, ParameterExpression jsArgc)
+        {
+            bool hasDefault = false;
+            bool hasParams = false;
+            int expectArgc = 0;
+
+            var ps = methodBase.GetParameters();
+            for (int i = 0; i < ps.Length; ++i)
+            {
+                var pi = ps[i];
+                if (pi.HasDefaultValue)
+                {
+                    hasDefault = true; ;
+                }
+                else if (i == ps.Length - 1 && pi.IsDefined(typeof(ParamArrayAttribute), false))
+                {
+                    hasParams = true;
+                }
+                else
+                {
+                    ++expectArgc;
+                }
+            }
+
+            expectArgc -=  isExtensionMethod ? 1 : 0;
+
+            return (!hasDefault && !hasParams) ? Expression.Equal(jsArgc, Expression.Constant(expectArgc)) : Expression.GreaterThanOrEqual(jsArgc, Expression.Constant(expectArgc));
+
+        }
+
         private static Expression buildArgumentsCheck(CompileContext context, MethodBase methodBase, bool isExtensionMethod, ParameterExpression jsArgc, Func<int, Expression> getJsArg)
         {
             List<Expression> expressions = new List<Expression>();
-            var expectArgc = methodBase.GetParameters().Length - (isExtensionMethod ? 1 : 0);
-            expressions.Add(Expression.Equal(jsArgc, Expression.Constant(expectArgc)));
+            expressions.Add(buildArgumentsLengthCheck(methodBase, isExtensionMethod, jsArgc));
             if (methodBase.GetParameters().Length > 0)
             {
                 expressions.AddRange(methodBase.GetParameters()
                     .Skip(isExtensionMethod ? 1 : 0)
-                    .Select((ParameterInfo pi, int index) => checkArgument(context, pi.ParameterType, getJsArg(index))));
+                    .Select((ParameterInfo pi, int index) => checkArgument(context, pi, getJsArg(index))));
             }
             return buildAndExpression(expressions);
         }
@@ -1133,7 +1182,7 @@ namespace Puerts
 
                 var tempVariables = methodInfo.GetParameters().Select(pi => Expression.Variable(pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType)).ToArray();
                 variables.AddRange(tempVariables);
-                var assignments = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => (extensionMethod && index == 0) ? Expression.Assign(tempVariables[index], self) : Expression.Assign(tempVariables[index], scriptToNative(context, pi.ParameterType, getJsArg(index))));
+                var assignments = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => (extensionMethod && index == 0) ? Expression.Assign(tempVariables[index], self) : Expression.Assign(tempVariables[index], scriptToNative(context, pi, getJsArg(index))));
                 blockExpressions.AddRange(assignments);
 
                 var callMethod = Expression.Call(extensionMethod ? null : self, methodInfo, tempVariables);
