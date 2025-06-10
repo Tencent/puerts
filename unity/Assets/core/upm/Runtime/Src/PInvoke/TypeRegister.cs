@@ -134,7 +134,7 @@ namespace Puerts
             if (registerFinished.ContainsKey(typeId)) return typeId;
 
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-            MethodInfo[] methodInfos = type.GetMethods(flag);
+            MethodInfo[] methodInfos = type.GetMethods(flag | BindingFlags.NonPublic);
             FieldInfo[] fieldInfos = type.GetFields(flag);
             Dictionary<MemberKey, List<MethodInfo>> methodCallbacks = new Dictionary<MemberKey, List<MethodInfo>>();
             Dictionary<MemberKey, AccessorInfo> propertyCallbacks = new Dictionary<MemberKey, AccessorInfo>();
@@ -194,20 +194,29 @@ namespace Puerts
             foreach (var methodInfo in methodInfos)
             {
                 if (methodInfo.IsGenericMethodDefinition) continue;
+
+                string methodName = methodInfo.Name;
+
+                if (!methodInfo.IsPublic)
+                {
+                    int dotPos = methodName.LastIndexOf('.');
+                    if (dotPos == -1) continue;
+                    methodName = methodName.Substring(dotPos + 1);
+                }
                 try
                 {
                     //AccessorCallbackPair accessorCallbackPair = null;
-                    if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("get_") && methodInfo.GetParameters().Length == 0) // getter of property
+                    if (methodInfo.IsSpecialName && methodName.StartsWith("get_") && methodInfo.GetParameters().Length == 0) // getter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), ExpressionsWrap.BuildMethodWrap(type, methodInfo, true), null);
+                        addPropertyCallback(new MemberKey(methodName.Substring(4), methodInfo.IsStatic), ExpressionsWrap.BuildMethodWrap(type, methodInfo, true), null);
                     }
-                    else if (methodInfo.IsSpecialName && methodInfo.Name.StartsWith("set_") && methodInfo.GetParameters().Length == 1) // setter of property
+                    else if (methodInfo.IsSpecialName && methodName.StartsWith("set_") && methodInfo.GetParameters().Length == 1) // setter of property
                     {
-                        addPropertyCallback(new MemberKey(methodInfo.Name.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.BuildMethodWrap(type, methodInfo, true));
+                        addPropertyCallback(new MemberKey(methodName.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.BuildMethodWrap(type, methodInfo, true));
                     }
                     else
                     {
-                        addOverload(new MemberKey(methodInfo.Name, methodInfo.IsStatic && PuertsIl2cpp.ExtensionMethodInfo.GetExtendedType(methodInfo) != type), methodInfo);
+                        addOverload(new MemberKey(methodName, methodInfo.IsStatic && PuertsIl2cpp.ExtensionMethodInfo.GetExtendedType(methodInfo) != type), methodInfo);
                     }
                     //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }
