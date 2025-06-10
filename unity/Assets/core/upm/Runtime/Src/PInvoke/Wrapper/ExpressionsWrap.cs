@@ -1324,40 +1324,41 @@ namespace Puerts
             return BuildMethodWrap(type, new MethodInfo[] { methodInfo }, forceCheckArgs);
         }
 
+        public static pesapi_constructor BuildDelegateConstructorWrap(Type type, ConstructorInfo[] constructorInfos, bool forceCheckArgs)
+        {
+            return BuildMethodBaseWrap<pesapi_constructor>(type, constructorInfos.Take(1).ToArray(), false, (contextOutside, methodBase, info, self, getJsArg) =>
+            {
+                var constructorInfo = methodBase as ConstructorInfo;
+
+                var variables = new List<ParameterExpression>();
+                var blockExpressions = new List<Expression>();
+                var context = new CompileContext()
+                {
+                    Variables = variables,
+                    BlockExpressions = blockExpressions,
+                    Apis = contextOutside.Apis,
+                    Env = contextOutside.Env
+                };
+
+                var arg0 = getJsArg(0);
+
+                var delObj = scriptToNative(context, type, arg0);
+
+                var result = Expression.Variable(typeof(IntPtr));
+                variables.Add(result);
+                var addToObjectPoolMethod = typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
+                var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, delObj);
+                blockExpressions.Add(Expression.Assign(result, addToObjectPool));
+
+                blockExpressions.Add(result);
+
+                return Expression.Block(variables, blockExpressions);
+            });
+            
+        }
+
         public static pesapi_constructor BuildConstructorWrap(Type type, ConstructorInfo[] constructorInfos, bool forceCheckArgs)
         {
-            //
-            if (typeof(Delegate).IsAssignableFrom(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
-            {
-                return BuildMethodBaseWrap<pesapi_constructor>(type, constructorInfos.Take(1).ToArray(), false, (contextOutside, methodBase, info, self, getJsArg) =>
-                {
-                    var constructorInfo = methodBase as ConstructorInfo;
-
-                    var variables = new List<ParameterExpression>();
-                    var blockExpressions = new List<Expression>();
-                    var context = new CompileContext()
-                    {
-                        Variables = variables,
-                        BlockExpressions = blockExpressions,
-                        Apis = contextOutside.Apis,
-                        Env = contextOutside.Env
-                    };
-
-                    var arg0 = getJsArg(0);
-
-                    var delObj = scriptToNative(context, type, arg0);
-
-                    var result = Expression.Variable(typeof(IntPtr));
-                    variables.Add(result);
-                    var addToObjectPoolMethod = typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
-                    var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, delObj);
-                    blockExpressions.Add(Expression.Assign(result, addToObjectPool));
-
-                    blockExpressions.Add(result);
-
-                    return Expression.Block(variables, blockExpressions);
-                });
-            }
             return BuildMethodBaseWrap<pesapi_constructor>(type, constructorInfos, forceCheckArgs, (contextOutside, methodBase, info, self, getJsArg) =>
             {
                 var constructorInfo = methodBase as ConstructorInfo;

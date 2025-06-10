@@ -285,7 +285,7 @@ namespace Puerts
             {
                 if ((typeof(MulticastDelegate).IsAssignableFrom(type) && type != typeof(MulticastDelegate)))
                 {
-                    ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, type.GetConstructors(), true);
+                    ctorWrap = ExpressionsWrap.BuildDelegateConstructorWrap(type, type.GetConstructors(), true);
                 }
                 else
                 {
