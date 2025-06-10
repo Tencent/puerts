@@ -382,10 +382,6 @@ namespace Puerts
                 {
                     return ScriptToNative_String(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_object(apis, env, value))
-                {
-                    return ScriptToNative_ScriptObject(apis, env, value);
-                }
                 else if (NativeAPI.pesapi_is_array(apis, env, value))
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
@@ -402,7 +398,13 @@ namespace Puerts
                 if (objId != IntPtr.Zero)
                 {
                     var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
-                    return JsEnv.jsEnvs[envIdx].objectPool.Get(objId.ToInt32());
+                    var res = JsEnv.jsEnvs[envIdx].objectPool.Get(objId.ToInt32());
+                    var typedValue = res as TypedValue;
+                    return typedValue == null ? res : typedValue.Target;
+                }
+                else if (NativeAPI.pesapi_is_object(apis, env, value))
+                {
+                    return ScriptToNative_ScriptObject(apis, env, value);
                 }
                 throw new NotSupportedException("Unsupported value type");
             }
