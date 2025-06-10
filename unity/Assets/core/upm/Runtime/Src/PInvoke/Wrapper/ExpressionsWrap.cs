@@ -943,7 +943,7 @@ namespace Puerts
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_undefined", "is_binary");
             }
-            else if (typeof(Delegate).IsAssignableFrom(type))
+            else if (typeof(Delegate).IsAssignableFrom(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
             {
                 var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
                 return buildOrExpression(new string[] { "is_null", "is_function" }.Select(n => callPApi(context.Apis, n, context.Env, value))
