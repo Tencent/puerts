@@ -802,7 +802,7 @@ namespace Puerts
                         Expression.Assign(argc, Expression.Constant(0))
                     )
                 );
-                context.BlockExpressions.Add(Printf("argc: {0} index:{1}", argc, Expression.Constant(parameterInfoIndex)));
+                //context.BlockExpressions.Add(Printf("argc: {0} index:{1}", argc, Expression.Constant(parameterInfoIndex)));
 
                 // Create array with actual argument count
                 var array = Expression.Variable(parameterInfo.ParameterType);
