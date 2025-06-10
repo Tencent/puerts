@@ -1366,7 +1366,7 @@ namespace Puerts
 
                 var tempVariables = constructorInfo.GetParameters().Select(pi => Expression.Variable(pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType)).ToArray();
                 variables.AddRange(tempVariables);
-                var assignments = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => Expression.Assign(tempVariables[index], scriptToNative(context, pi.ParameterType, getJsArg(index))));
+                var assignments = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => Expression.Assign(tempVariables[index], scriptToNative(context, pi, index, info, getJsArg(index))));
                 blockExpressions.AddRange(assignments);
 
                 var callNew = Expression.New(constructorInfo, tempVariables);
