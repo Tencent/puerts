@@ -408,6 +408,22 @@ namespace Puerts
                 }
                 throw new NotSupportedException("Unsupported value type");
             }
+
+            private static Dictionary<string, MethodInfo> methidInfoCache = new Dictionary<string, MethodInfo>();
+
+            internal static MethodInfo GetMethod(string methodName)
+            {
+                lock (methidInfoCache)
+                {
+                    MethodInfo res;
+                    if (!methidInfoCache.TryGetValue(methodName, out res))
+                    {
+                        res = typeof(Helpper).GetMethod(methodName);
+                        methidInfoCache.Add(methodName, res);
+                    }
+                    return res;
+                }
+            }
         }
 
         class CompileContext
@@ -495,7 +511,7 @@ namespace Puerts
             }
             else if (tranType == typeof(string))
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_String));
+                var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_String));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             //TODO: 用例没有覆盖
@@ -505,22 +521,22 @@ namespace Puerts
             }
             else if (tranType == typeof(JSObject))
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ScriptObject));
+                var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_ScriptObject));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else if (tranType == typeof(NativeType))
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_NativeType));
+                var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_NativeType));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else if (tranType == typeof(ArrayBuffer))
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ArrayBuffer));
+                var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_ArrayBuffer));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else if (tranType == typeof(object))
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_Object));
+                var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_Object));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else if (tranType.IsByRef)
@@ -529,12 +545,12 @@ namespace Puerts
             }
             else if (!tranType.IsValueType)
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_T)).MakeGenericMethod(tranType);
+                var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_T)).MakeGenericMethod(tranType);
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else if (tranType.IsValueType && !tranType.IsPrimitive)
             {
-                var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ValueType)).MakeGenericMethod(tranType);
+                var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_ValueType)).MakeGenericMethod(tranType);
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
             else
@@ -583,7 +599,7 @@ namespace Puerts
                 .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
                 .ToArray();
             
-            var checkException = typeof(Helpper).GetMethod(nameof(Helpper.CheckException));
+            var checkException = Helpper.GetMethod(nameof(Helpper.CheckException));
 
             // 打印各参数，用作调试
             //var printArgs = delegateParams
@@ -729,22 +745,22 @@ namespace Puerts
             }
             else if (tranType == typeof(string))
             {
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_String), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_String));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(ArrayBuffer) == tranType)
             {
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ArrayBuffer), BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_ArrayBuffer));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(object) == tranType)
             {
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_Object));
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_Object));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(JSObject) == tranType)
             {
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(Delegate).IsAssignableFrom(tranType) && tranType != typeof(Delegate) && tranType != typeof(MulticastDelegate))
@@ -763,12 +779,12 @@ namespace Puerts
 
                 var scriptObject = Expression.Variable(typeof(JSObject));
                 ifTrueVariables.Add(scriptObject);
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 ifTrueExpressions.Add(Expression.Assign(scriptObject, Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value)));
                 ifTrueExpressions.Add(createFunctionAdapter(ifTrueContext, tranType, scriptObject));
                 var ifTrue = Expression.Block(ifTrueVariables, ifTrueExpressions);
 
-                var ifFalse = Expression.Call(typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType), context.Apis, context.Env, value);
+                var ifFalse = Expression.Call(Helpper.GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType), context.Apis, context.Env, value);
                 return Expression.Condition(test, ifTrue, ifFalse);
             }
             else if (tranType.IsByRef)
@@ -777,12 +793,12 @@ namespace Puerts
             }
             else if (!tranType.IsValueType)
             {
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (tranType.IsValueType && !tranType.IsPrimitive) // the same as byref
             {
-                var scriptToNativeMethod = typeof(Helpper).GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_T)).MakeGenericMethod(tranType);
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             /*else if (type.IsValueType && !type.IsPrimitive && UnmanagedType.IsUnmanaged(type))
@@ -969,7 +985,7 @@ namespace Puerts
             }
             else if (typeof(Delegate).IsAssignableFrom(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
             {
-                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
+                var isAssignableMethod = Helpper.GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
                 return buildOrExpression(new string[] { "is_null", "is_function" }.Select(n => callPApi(context.Apis, n, context.Env, value))
                     .Concat(new Expression[] { Expression.Call(isAssignableMethod, context.Apis, context.Env, value) })
                     );
@@ -988,12 +1004,12 @@ namespace Puerts
             }
             else if (!type.IsValueType)
             {
-                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
+                var isAssignableMethod = Helpper.GetMethod(nameof(Helpper.IsAssignable_ByRef)).MakeGenericMethod(type);
                 return Expression.Call(isAssignableMethod, context.Apis, context.Env, value);
             }
             else if (type.IsValueType && !type.IsPrimitive)
             {
-                var isAssignableMethod = typeof(Helpper).GetMethod(nameof(Helpper.IsAssignable_ValueType)).MakeGenericMethod(type);
+                var isAssignableMethod = Helpper.GetMethod(nameof(Helpper.IsAssignable_ValueType)).MakeGenericMethod(type);
                 return Expression.Call(isAssignableMethod, context.Apis, context.Env, value);
             }
             else
@@ -1125,14 +1141,6 @@ namespace Puerts
             return Expression.Block(blocks);
         }
 
-        private static MethodInfo GetEnvIndexMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetEnvIndex));
-
-        private static MethodInfo GetSelfIdMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelfId));
-
-        private static MethodInfo GetSelfDirectMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelfDirect));
-
-        private static MethodInfo UpdateValueTypeMethod = typeof(Helpper).GetMethod(nameof(Helpper.UpdateValueType));
-
         private static bool isExtensionOf(MethodInfo methodInfo, Type type)
         {
             return type != null && methodInfo != null && type == PuertsIl2cpp.ExtensionMethodInfo.GetExtendedType(methodInfo);
@@ -1172,11 +1180,11 @@ namespace Puerts
 
             var envIdx = Expression.Variable(typeof(int));
             variables.Add(envIdx);
-            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(GetEnvIndexMethod, apis, env)));
+            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(typeof(Helpper).GetMethod(nameof(Helpper.GetEnvIndex)), apis, env)));
 
             var selfId = Expression.Variable(typeof(int));
             variables.Add(selfId);
-            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(GetSelfIdMethod, apis, info)));
+            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(typeof(Helpper).GetMethod(nameof(Helpper.GetSelfId)), apis, info)));
 
             List<Expression> lazyjsArgs = new List<Expression>();
             Func<int, Expression> getJsArg = (index) =>
@@ -1196,7 +1204,7 @@ namespace Puerts
                 if (self == null)
                 {
                     // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                    var getSelfMethod = GetSelfDirectMethod.MakeGenericMethod(type);
+                    var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelfDirect)).MakeGenericMethod(type);
                     self = Expression.Variable(type);
                     variables.Add(self);
                     var callGetSelf = Expression.Call(getSelfMethod, envIdx, selfId);
@@ -1227,7 +1235,7 @@ namespace Puerts
 
             if (!methodBase0.IsStatic && !methodBase0.IsConstructor && isValueTypeMethod)
             {
-                var updateMethod = UpdateValueTypeMethod.MakeGenericMethod(type);
+                var updateMethod = typeof(Helpper).GetMethod(nameof(Helpper.UpdateValueType)).MakeGenericMethod(type);
                 var updateCall = Expression.Call(updateMethod, envIdx, selfId, self);
                 if (isLambdaVoid)
                 {
@@ -1362,7 +1370,7 @@ namespace Puerts
 
                 var result = Expression.Variable(typeof(IntPtr));
                 variables.Add(result);
-                var addToObjectPoolMethod = typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
+                var addToObjectPoolMethod = Helpper.GetMethod(nameof(Helpper.FindOrAddObject));
                 var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, delObj);
                 blockExpressions.Add(Expression.Assign(result, addToObjectPool));
 
@@ -1399,7 +1407,7 @@ namespace Puerts
                 var result = Expression.Variable(typeof(IntPtr));
                 variables.Add(result);
                 var isValueType = constructorInfo.DeclaringType.IsValueType;
-                var addToObjectPoolMethod = isValueType ? typeof(Helpper).GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : typeof(Helpper).GetMethod(nameof(Helpper.FindOrAddObject));
+                var addToObjectPoolMethod = isValueType ? Helpper.GetMethod(nameof(Helpper.AddValueType)).MakeGenericMethod(constructorInfo.DeclaringType) : Helpper.GetMethod(nameof(Helpper.FindOrAddObject));
                 var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, callNew);
                 blockExpressions.Add(Expression.Assign(result, addToObjectPool));
 
@@ -1445,7 +1453,7 @@ namespace Puerts
             if (!fieldInfo.IsStatic)
             {
                 // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(fieldInfo.DeclaringType);
+                var getSelfMethod = Helpper.GetMethod(nameof(Helpper.GetSelf)).MakeGenericMethod(fieldInfo.DeclaringType);
                 self = Expression.Variable(fieldInfo.DeclaringType, "self");
                 variables.Add(self);
                 var callGetSelf = Expression.Call(getSelfMethod, apis, env, info);
@@ -1495,11 +1503,11 @@ namespace Puerts
 
             var envIdx = Expression.Variable(typeof(int));
             variables.Add(envIdx);
-            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(GetEnvIndexMethod, apis, env)));
+            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(Helpper.GetMethod(nameof(Helpper.GetEnvIndex)), apis, env)));
 
             var selfId = Expression.Variable(typeof(int));
             variables.Add(selfId);
-            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(GetSelfIdMethod, apis, info)));
+            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(Helpper.GetMethod(nameof(Helpper.GetSelfId)), apis, info)));
 
             var context = new CompileContext()
             {
@@ -1513,7 +1521,7 @@ namespace Puerts
 
             if (!fieldInfo.IsStatic)
             {
-                var getSelfMethod = GetSelfDirectMethod.MakeGenericMethod(fieldInfo.DeclaringType);
+                var getSelfMethod = Helpper.GetMethod(nameof(Helpper.GetSelfDirect)).MakeGenericMethod(fieldInfo.DeclaringType);
                 self = Expression.Variable(fieldInfo.DeclaringType, "self");
                 variables.Add(self);
                 var callGetSelf = Expression.Call(getSelfMethod, envIdx, selfId);
@@ -1526,7 +1534,7 @@ namespace Puerts
 
             if (!fieldInfo.IsStatic && fieldInfo.DeclaringType.IsValueType)
             {
-                var updateMethod = UpdateValueTypeMethod.MakeGenericMethod(fieldInfo.DeclaringType);
+                var updateMethod = Helpper.GetMethod(nameof(Helpper.UpdateValueType)).MakeGenericMethod(fieldInfo.DeclaringType);
                 var updateCall = Expression.Call(updateMethod, envIdx, selfId, self);
                 blockExpressions.Add(updateCall);
             }
