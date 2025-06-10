@@ -1279,9 +1279,15 @@ namespace Puerts
                     blockExpressions.Add(callMethod);
                 }
 
-                blockExpressions.AddRange(methodInfo.GetParameters()
-                    .Where(pi => pi.ParameterType.IsByRef).
-                    Select((ParameterInfo pi, int index) => callPApi(context.Apis, "set_property_uint32", context.Env, getJsArg(index), Expression.Constant((uint)0), nativeToScript(context, pi.ParameterType.GetElementType(), tempVariables[index]))));
+                var parameters = methodBase.GetParameters();
+                for (int i = 0; i < parameters.Length; ++i)
+                {
+                    var parameter = parameters[i];
+                    if (parameter.ParameterType.IsByRef)
+                    {
+                        blockExpressions.Add(callPApi(context.Apis, "set_property_uint32", context.Env, getJsArg(i), Expression.Constant((uint)0), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
+                    }
+                }
 
                 // return if needed
                 if (methodInfo.ReturnType != typeof(void))
@@ -1361,10 +1367,15 @@ namespace Puerts
                 var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, callNew);
                 blockExpressions.Add(Expression.Assign(result, addToObjectPool));
 
-
-                blockExpressions.AddRange(constructorInfo.GetParameters()
-                    .Where(pi => pi.ParameterType.IsByRef).
-                    Select((ParameterInfo pi, int index) => callPApi(context.Apis, "set_property_uint32", context.Env, getJsArg(index), Expression.Constant((uint)0), nativeToScript(context, pi.ParameterType.GetElementType(), tempVariables[index]))));
+                var parameters = methodBase.GetParameters();
+                for (int i = 0; i < parameters.Length; ++i)
+                {
+                    var parameter = parameters[i];
+                    if (parameter.ParameterType.IsByRef)
+                    {
+                        blockExpressions.Add(callPApi(context.Apis, "set_property_uint32", context.Env, getJsArg(i), Expression.Constant((uint)0), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
+                    }
+                }
 
                 blockExpressions.Add(result);
 
