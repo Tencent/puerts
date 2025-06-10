@@ -128,6 +128,16 @@ namespace Puerts
             public pesapi_callback Setter;
         }
 
+        private bool parameterTypeNotAcceptable(Type type)
+        {
+            return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer;
+        }
+
+        private bool returnTypeNotAcceptable(Type type)
+        {
+            return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer || type.IsByRef;
+        }
+
         public int Register(Type type)
         {
             int typeId = FindOrAddTypeId(type);
@@ -208,6 +218,7 @@ namespace Puerts
             foreach (var methodInfo in methodInfos)
             {
                 if (methodInfo.IsGenericMethodDefinition) continue;
+                if (methodInfo.GetParameters().Any(pi => parameterTypeNotAcceptable(pi.ParameterType)) || returnTypeNotAcceptable(methodInfo.ReturnType)) continue;
 
                 string methodName = methodInfo.Name;
 
@@ -271,11 +282,19 @@ namespace Puerts
 
             try
             {
-                var ctors = type.GetConstructors();
-                if (ctors.Length > 0)
+                if ((typeof(MulticastDelegate).IsAssignableFrom(type) && type != typeof(MulticastDelegate)))
                 {
-                    //UnityEngine.Debug.LogWarning("add ctors for " + type);
-                    ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, ctors, true);
+                    ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, type.GetConstructors(), true);
+                }
+                else
+                {
+                    var ctors = type.GetConstructors()
+                        .Where(ctorInfo => !ctorInfo.GetParameters().Any(pi => parameterTypeNotAcceptable(pi.ParameterType)))
+                        .ToArray();
+                    if (ctors.Length > 0)
+                    {
+                        ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, ctors, true);
+                    }
                 }
             }
             catch (Exception e)
