@@ -482,6 +482,10 @@ namespace Puerts
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_String));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
             }
+            else if (tranType == typeof(byte) || tranType == typeof(sbyte) || tranType == typeof(short) || tranType == typeof(ushort))
+            {
+                return callPApi(context.Apis, "create_int32", context.Env, Expression.Convert(value, typeof(int)));
+            }
             else if (tranType == typeof(JSObject))
             {
                 var toScriptMethod = typeof(Helpper).GetMethod(nameof(Helpper.NativeToScript_ScriptObject));
