@@ -134,7 +134,7 @@ namespace Puerts
             if (registerFinished.ContainsKey(typeId)) return typeId;
 
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-            MethodInfo[] methodInfos = type.GetMethods(flag | BindingFlags.NonPublic);
+            var methodInfos = type.GetMethods(flag | BindingFlags.NonPublic).ToList();
             FieldInfo[] fieldInfos = type.GetFields(flag);
             Dictionary<MemberKey, List<MethodInfo>> methodCallbacks = new Dictionary<MemberKey, List<MethodInfo>>();
             Dictionary<MemberKey, AccessorInfo> propertyCallbacks = new Dictionary<MemberKey, AccessorInfo>();
@@ -189,7 +189,21 @@ namespace Puerts
             var extensionMethods = PuertsIl2cpp.ExtensionMethodInfo.Get(type.AssemblyQualifiedName);
             if(extensionMethods != null && extensionMethods.Length > 0)
             {
-                methodInfos = methodInfos.Concat(extensionMethods).ToArray();
+                foreach (var extensionMethod in extensionMethods)
+                {
+                    var method = extensionMethod;
+                    if (method.IsGenericMethodDefinition)
+                    {
+                        var genericArguments = method.GetGenericArguments();
+                        var constraintedArgumentTypes = new Type[genericArguments.Length];
+                        for (var j = 0; j < genericArguments.Length; j++)
+                        {
+                            constraintedArgumentTypes[j] = genericArguments[j].BaseType;
+                        }
+                        method = method.MakeGenericMethod(constraintedArgumentTypes);
+                    }
+                    methodInfos.Add(method);
+                }
             }
             foreach (var methodInfo in methodInfos)
             {
