@@ -21,7 +21,7 @@ namespace Puerts
         private readonly pesapi_reg_api reg_api;
         private readonly IntPtr registry;
         private readonly pesapi_class_not_found_callback onTypeNotFoundDelegate;
-        private readonly List<Delegate> callbacksCache = new List<Delegate>();
+        internal readonly List<Delegate> callbacksCache = new List<Delegate>();
 
         private TypeRegister()
         {

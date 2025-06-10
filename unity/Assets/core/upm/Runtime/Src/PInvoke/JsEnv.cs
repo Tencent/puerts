@@ -170,6 +170,10 @@ namespace Puerts
             var loadType = apis.create_function(env, loadTypeDelegate, IntPtr.Zero, null);
             apis.set_property(env, globalVal, "loadType", loadType);
 
+            createFunctionDelegate = createFunction;
+            var createFunc = apis.create_function(env, createFunctionDelegate, IntPtr.Zero, null);
+            apis.set_property(env, globalVal, "createFunction", createFunc);
+
             apis.close_scope(scope);
 
             PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
@@ -231,6 +235,40 @@ namespace Puerts
             UnityEngine.Debug.Log(msg);
         }
         */
+
+        [MonoPInvokeCallback(typeof(pesapi_callback))]
+        void createFunction(IntPtr apis, IntPtr info)
+        {
+            var env = NativeAPI.pesapi_get_env(apis, info);
+            var argc = NativeAPI.pesapi_get_args_len(apis, info);
+            var methods = new List<System.Reflection.MethodInfo>();
+            for(int i = 0; i < argc; ++i)
+            {
+                var arg = NativeAPI.pesapi_get_arg(apis, info, i);
+                var method = ExpressionsWrap.GetNativeTranlator<System.Reflection.MethodInfo>()(apis, env, arg);
+                if (method != null) methods.Add(method);
+            }
+
+            if (methods.Count > 0)
+            {
+                var wrap = ExpressionsWrap.BuildMethodWrap(methods[0].DeclaringType, methods.ToArray(), true);
+                TypeRegister.Instance.callbacksCache.Add(wrap);
+                pesapi_function_finalize functionFinalize = null;
+                functionFinalize = (IntPtr apis, IntPtr data, IntPtr env_private) =>
+                {
+                    TypeRegister.Instance.callbacksCache.Remove(wrap);
+                    TypeRegister.Instance.callbacksCache.Remove(functionFinalize);
+                };
+                TypeRegister.Instance.callbacksCache.Add(functionFinalize);
+                NativeAPI.pesapi_add_return(apis, info, NativeAPI.pesapi_create_function(apis, env, wrap, IntPtr.Zero, functionFinalize));
+            }
+            else
+            {
+                NativeAPI.pesapi_add_return(apis, info, NativeAPI.pesapi_create_null(apis, env));
+            }
+        }
+
+        pesapi_callback createFunctionDelegate;
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {
