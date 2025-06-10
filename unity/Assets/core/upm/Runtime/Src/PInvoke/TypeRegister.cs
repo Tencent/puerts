@@ -219,6 +219,7 @@ namespace Puerts
             {
                 if (methodInfo.IsGenericMethodDefinition) continue;
                 if (methodInfo.GetParameters().Any(pi => parameterTypeNotAcceptable(pi.ParameterType)) || returnTypeNotAcceptable(methodInfo.ReturnType)) continue;
+                if (methodInfo.IsDefined(typeof(CLSCompliantAttribute), false)) continue;
 
                 string methodName = methodInfo.Name;
 
