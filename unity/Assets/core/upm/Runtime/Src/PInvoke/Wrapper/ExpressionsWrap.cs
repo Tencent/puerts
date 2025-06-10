@@ -418,6 +418,22 @@ namespace Puerts
             public Expression Env;
         }
 
+        private static Dictionary<string, MethodInfo> papiMethodCache = new Dictionary<string, MethodInfo>();
+
+        private static MethodInfo GetPApiMethodInfo(string apiName)
+        {
+            lock(papiMethodCache)
+            {
+                MethodInfo res;
+                if (!papiMethodCache.TryGetValue(apiName, out res))
+                {
+                    res = typeof(NativeAPI).GetMethod("pesapi_" + apiName);
+                    papiMethodCache.Add(apiName, res);
+                }
+                return res;
+            }
+        }
+
         private static Expression callPApi(Expression apis, string apiName, params Expression[] arguments)
         {
             /*
@@ -428,7 +444,7 @@ namespace Puerts
             return callField;
             */
             // call NativeAPI
-            var methodInfo = typeof(NativeAPI).GetMethod("pesapi_" + apiName);
+            var methodInfo = GetPApiMethodInfo(apiName);
             return Expression.Call(null, methodInfo, new [] { apis }.Concat(arguments));
         }
 
