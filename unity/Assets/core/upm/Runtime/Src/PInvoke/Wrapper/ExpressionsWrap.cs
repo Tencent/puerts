@@ -432,6 +432,11 @@ namespace Puerts
 
         private static Expression nativeToScript(CompileContext context, Type type, Expression value)
         {
+            Type underlyingType = Nullable.GetUnderlyingType(type);
+            if (underlyingType != null)
+            {
+                return Expression.Condition(Expression.Equal(value, Expression.Constant(null, type)), callPApi(context.Apis, "create_null", context.Env), nativeToScript(context, underlyingType, Expression.Convert(value, underlyingType)));
+            }
             Type tranType = type.IsEnum ? Enum.GetUnderlyingType(type) : type;
             if (type.IsEnum)
             {
@@ -871,6 +876,12 @@ namespace Puerts
 
         private static Expression checkArgument(CompileContext context, Type type, Expression value)
         {
+            Type underlyingType = Nullable.GetUnderlyingType(type);
+            if (underlyingType != null)
+            {
+                var isNullOrUndefined = Expression.OrElse(callPApi(context.Apis, "is_null", context.Env, value), callPApi(context.Apis, "is_undefined", context.Env, value)); // TODO: 太多pinvoke了，添加获取类型更好？
+                return Expression.OrElse(isNullOrUndefined, checkArgument(context, underlyingType, value));
+            }
             if (type.IsEnum)
             {
                 type = Enum.GetUnderlyingType(type);
