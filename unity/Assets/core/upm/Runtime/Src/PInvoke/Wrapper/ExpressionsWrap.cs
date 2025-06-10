@@ -781,17 +781,77 @@ namespace Puerts
             return ret;
         }
 
-        private static Expression scriptToNative(CompileContext context, ParameterInfo parameterInfo, Expression value)
+        private static Expression scriptToNative(CompileContext context, ParameterInfo parameterInfo, int parameterInfoIndex, Expression info, Expression value)
         {
-            var res = scriptToNative(context, parameterInfo.ParameterType, value);
-            if (parameterInfo.HasDefaultValue)
+            var totalArgc = callPApi(context.Apis, "get_args_len", info);
+            if (parameterInfo.IsDefined(typeof(ParamArrayAttribute), false))
             {
-                return Expression.Condition(callPApi(context.Apis, "is_undefined", context.Env, value), Expression.Constant(parameterInfo.DefaultValue, parameterInfo.ParameterType), res);
+                // Calculate actual argument count (total args - start index)
+                var argc = Expression.Variable(typeof(int));
+                context.Variables.Add(argc);
+                context.BlockExpressions.Add(
+                    Expression.Assign(argc, 
+                        Expression.Subtract(totalArgc, Expression.Constant(parameterInfoIndex))
+                    )
+                );
+                
+                // Ensure argc is not negative
+                context.BlockExpressions.Add(
+                    Expression.IfThen(
+                        Expression.LessThan(argc, Expression.Constant(0)),
+                        Expression.Assign(argc, Expression.Constant(0))
+                    )
+                );
+                context.BlockExpressions.Add(Printf("argc: {0} index:{1}", argc, Expression.Constant(parameterInfoIndex)));
+
+                // Create array with actual argument count
+                var array = Expression.Variable(parameterInfo.ParameterType);
+                context.Variables.Add(array);
+                context.BlockExpressions.Add(
+                    Expression.Assign(array, 
+                        Expression.NewArrayBounds(parameterInfo.ParameterType.GetElementType(), argc)
+                    )
+                );
+
+                
+                // Loop through arguments starting from parameterInfoIndex
+                var index = Expression.Variable(typeof(int));
+                context.Variables.Add(index);
+                context.BlockExpressions.Add(Expression.Assign(index, Expression.Constant(0)));
+                var loopLabel = Expression.Label();
+                context.BlockExpressions.Add(Expression.Loop(
+                    Expression.IfThenElse(
+                        Expression.LessThan(index, argc),
+                        Expression.Block(
+                            Expression.Assign(
+                                Expression.ArrayAccess(array, index),
+                                scriptToNative(
+                                    context, 
+                                    parameterInfo.ParameterType.GetElementType(), 
+                                    callPApi(context.Apis, "get_arg", info,
+                                        Expression.Add(index, Expression.Constant(parameterInfoIndex)))
+                                )
+                            ),
+                            Expression.PostIncrementAssign(index)
+                        ),
+                        Expression.Break(loopLabel)
+                    ),
+                    loopLabel
+                ));
+
+                return array;
             }
-            // TODO: 可变参数
             else
             {
-                return res;
+                var res = scriptToNative(context, parameterInfo.ParameterType, value);
+                if (parameterInfo.HasDefaultValue)
+                {
+                    return Expression.Condition(callPApi(context.Apis, "is_undefined", context.Env, value), Expression.Constant(parameterInfo.DefaultValue, parameterInfo.ParameterType), res);
+                }
+                else
+                {
+                    return res;
+                }
             }
         }
 
@@ -909,8 +969,9 @@ namespace Puerts
 
         private static Expression checkArgument(CompileContext context, ParameterInfo parameterInfo, Expression value)
         {
-            var test = checkArgument(context, parameterInfo.ParameterType, value);
-            return (parameterInfo.HasDefaultValue || parameterInfo.IsDefined(typeof(ParamArrayAttribute), false)) ? Expression.OrElse(callPApi(context.Apis, "is_undefined", context.Env, value), test) : test;
+            var hasParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false);
+            var test = checkArgument(context, hasParams ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType, value);
+            return (parameterInfo.HasDefaultValue || hasParams) ? Expression.OrElse(callPApi(context.Apis, "is_undefined", context.Env, value), test) : test;
         }
 
         private static Expression getArgument(CompileContext context, ParameterExpression info, int index)
@@ -1200,7 +1261,7 @@ namespace Puerts
 
                 var tempVariables = methodInfo.GetParameters().Select(pi => Expression.Variable(pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType)).ToArray();
                 variables.AddRange(tempVariables);
-                var assignments = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => (extensionMethod && index == 0) ? Expression.Assign(tempVariables[index], self) : Expression.Assign(tempVariables[index], scriptToNative(context, pi, getJsArg(index))));
+                var assignments = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => (extensionMethod && index == 0) ? Expression.Assign(tempVariables[index], self) : Expression.Assign(tempVariables[index], scriptToNative(context, pi, index, info, getJsArg(index))));
                 blockExpressions.AddRange(assignments);
 
                 var callMethod = Expression.Call(extensionMethod ? null : self, methodInfo, tempVariables);
