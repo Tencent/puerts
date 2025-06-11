@@ -49,7 +49,6 @@ namespace Puerts.UnitTest
             public const string stringProp = "hello";
             public Inner()
             {
-                UnityEngine.Debug.Log("Inner " + typeof(Inner));
             }
         }
 
