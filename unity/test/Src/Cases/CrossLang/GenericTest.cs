@@ -44,9 +44,13 @@ namespace Puerts.UnitTest
     [UnityEngine.Scripting.Preserve]
     public class GenericTestClass<T>
     {
+        [UnityEngine.Scripting.Preserve]
         public class Inner
         {
+            [UnityEngine.Scripting.Preserve]
             public const string stringProp = "hello";
+
+            [UnityEngine.Scripting.Preserve]
             public Inner()
             {
             }
