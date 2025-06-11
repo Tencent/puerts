@@ -305,9 +305,9 @@ PESAPI_MODULE_EXPORT pesapi_scope pesapi_open_scope_placement(struct pesapi_ffi*
     return apis->open_scope_placement(env_ref, memory);
 }
 
-PESAPI_MODULE_EXPORT bool pesapi_has_caught(struct pesapi_ffi* apis, pesapi_scope scope)
+PESAPI_MODULE_EXPORT int pesapi_has_caught(struct pesapi_ffi* apis, pesapi_scope scope)
 {
-    return apis->has_caught(scope);
+    return apis->has_caught(scope) ? 1 : 0;
 }
 
 PESAPI_MODULE_EXPORT const char* pesapi_get_exception_as_string(struct pesapi_ffi* apis, pesapi_scope scope, bool with_stack)

@@ -567,9 +567,9 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref env_ref, struct pesapi_s
     return scope;
 }
 
-bool pesapi_has_caught(pesapi_scope scope)
+int pesapi_has_caught(pesapi_scope scope)
 {
-    return scope && scope->trycatch.HasCaught();
+    return (scope && scope->trycatch.HasCaught()) ? 1 : 0;
 }
 
 const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack)

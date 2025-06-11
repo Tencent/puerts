@@ -226,7 +226,7 @@ typedef pesapi_env_ref (*pesapi_duplicate_env_ref_func)(pesapi_env_ref env_ref);
 typedef void (*pesapi_release_env_ref_func)(pesapi_env_ref env_ref);
 typedef pesapi_scope (*pesapi_open_scope_func)(pesapi_env_ref env_ref);
 typedef pesapi_scope (*pesapi_open_scope_placement_func)(pesapi_env_ref env_ref, struct pesapi_scope_memory* memory);
-typedef bool (*pesapi_has_caught_func)(pesapi_scope scope);
+typedef int (*pesapi_has_caught_func)(pesapi_scope scope);
 typedef const char* (*pesapi_get_exception_as_string_func)(pesapi_scope scope, bool with_stack);
 typedef void (*pesapi_close_scope_func)(pesapi_scope scope);
 typedef void (*pesapi_close_scope_placement_func)(pesapi_scope scope);
