@@ -14,6 +14,34 @@ namespace Puerts.Editor
 {
     namespace Generator
     {
+        public class FileExporter
+        {
+            public static void ExportWrapper(string saveTo, ILoader loader = null)
+            {
+
+            }
+
+            public static void GenRegisterInfo(string outDir, ILoader loader = null)
+            {
+                using (StreamWriter textWriter = new StreamWriter(Path.Combine(outDir, "RegisterInfo_Gen.cs"), false, Encoding.UTF8))
+                {
+                    textWriter.Write(@"namespace PuertsStaticWrap
+{
+#if !PUERTS_GENERAL
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public static class PuerRegisterInfo_Gen
+    {
+        public static void AddRegisterInfoGetterIntoJsEnv(Puerts.JsEnv jsEnv)
+        {
+        }
+    }
+}
+");
+                    textWriter.Flush();
+                }
+            }
+        }
     }
 
 }

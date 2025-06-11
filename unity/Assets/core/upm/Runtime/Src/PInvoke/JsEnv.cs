@@ -445,6 +445,28 @@ namespace Puerts
 #endif
         }
 
+        public void SetDefaultBindingMode(BindingMode bindingMode)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            // TODO
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void AddRegisterInfoGetter(Type type, Func<TypeMapping.RegisterInfo> getter)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            // TODO
+#if THREAD_SAFE
+            }
+#endif
+        }
+
         public Action TickHandler;
 
         public void Tick()
