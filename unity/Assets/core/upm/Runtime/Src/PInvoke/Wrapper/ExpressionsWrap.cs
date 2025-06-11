@@ -1282,10 +1282,8 @@ namespace Puerts
 
             var exVar = Expression.Variable(typeof(Exception), "ex");
 
-            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
-
             var formatExpr = Expression.Call(
-                formatMethod,
+                stringFormatMethod,
                 Expression.Constant("C# Exception: {0}, Stack: {1}"),
                 Expression.NewArrayInit(
                     typeof(object),
@@ -1492,10 +1490,8 @@ namespace Puerts
 
             var exVar = Expression.Variable(typeof(Exception), "ex");
 
-            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
-
             var formatExpr = Expression.Call(
-                formatMethod,
+                stringFormatMethod,
                 Expression.Constant("C# Exception: {0}, Stack: {1}"),
                 Expression.NewArrayInit(
                     typeof(object),
@@ -1567,10 +1563,8 @@ namespace Puerts
 
             var exVar = Expression.Variable(typeof(Exception), "ex");
 
-            var formatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
-
             var formatExpr = Expression.Call(
-                formatMethod,
+                stringFormatMethod,
                 Expression.Constant("C# Exception: {0}, Stack: {1}"),
                 Expression.NewArrayInit(
                     typeof(object),
