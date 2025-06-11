@@ -1176,6 +1176,15 @@ namespace Puerts
         {
             bool checkArgs = forceCheckArgs || methodBases.Length > 1;
             var methodBase0 = methodBases[0];
+            foreach (var pi in methodBase0.GetParameters())
+            {
+                if (pi.HasDefaultValue || pi.IsDefined(typeof(ParamArrayAttribute), false))
+                {
+                    // TODO: 和原来版本保持一致，3.0了，可以考虑是否去掉这规则
+                    checkArgs = true;
+                    break;
+                }
+            }
             bool isValueTypeMethod = type.IsValueType;
             Type returnType = typeof(T).GetMethod("Invoke").ReturnType;
             var isLambdaVoid = returnType == typeof(void);

@@ -240,11 +240,11 @@ namespace Puerts
                     //AccessorCallbackPair accessorCallbackPair = null;
                     if (methodInfo.IsSpecialName && methodName.StartsWith("get_") && methodInfo.GetParameters().Length == 0) // getter of property
                     {
-                        addPropertyCallback(new MemberKey(methodName.Substring(4), methodInfo.IsStatic), ExpressionsWrap.BuildMethodWrap(type, methodInfo, true), null);
+                        addPropertyCallback(new MemberKey(methodName.Substring(4), methodInfo.IsStatic), ExpressionsWrap.BuildMethodWrap(type, methodInfo, false), null);
                     }
                     else if (methodInfo.IsSpecialName && methodName.StartsWith("set_") && methodInfo.GetParameters().Length == 1) // setter of property
                     {
-                        addPropertyCallback(new MemberKey(methodName.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.BuildMethodWrap(type, methodInfo, true));
+                        addPropertyCallback(new MemberKey(methodName.Substring(4), methodInfo.IsStatic), null, ExpressionsWrap.BuildMethodWrap(type, methodInfo, false));
                     }
                     else
                     {
@@ -279,7 +279,7 @@ namespace Puerts
                 try
                 {
                     IntPtr ptr = StringToIntPtr(kv.Key.Name);
-                    pesapi_callback callback = ExpressionsWrap.BuildMethodWrap(type, kv.Value.ToArray(), true);
+                    pesapi_callback callback = ExpressionsWrap.BuildMethodWrap(type, kv.Value.ToArray(), false);
                     callbacksCache.Add(callback);
                     reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, callback, IntPtr.Zero, IntPtr.Zero);
                 }
@@ -301,7 +301,7 @@ namespace Puerts
             {
                 if ((typeof(MulticastDelegate).IsAssignableFrom(type) && type != typeof(MulticastDelegate)))
                 {
-                    ctorWrap = ExpressionsWrap.BuildDelegateConstructorWrap(type, type.GetConstructors(), true);
+                    ctorWrap = ExpressionsWrap.BuildDelegateConstructorWrap(type, type.GetConstructors(), false);
                 }
                 else
                 {
@@ -310,7 +310,7 @@ namespace Puerts
                         .ToArray();
                     if (ctors.Length > 0)
                     {
-                        ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, ctors, true);
+                        ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, ctors, false);
                     }
                 }
             }
