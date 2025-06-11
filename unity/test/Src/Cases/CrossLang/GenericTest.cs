@@ -47,6 +47,10 @@ namespace Puerts.UnitTest
         public class Inner
         {
             public const string stringProp = "hello";
+            public Inner()
+            {
+                UnityEngine.Debug.Log("Inner " + typeof(Inner));
+            }
         }
 
         public static T v;
@@ -244,15 +248,15 @@ namespace Puerts.UnitTest
         public void GenericAccessTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            var res = jsEnv.Eval<int>(@"
+            var res = jsEnv.Eval<string>(@"
                 (function() {
                     let GenericTestClass = puerts.$generic(CS.Puerts.UnitTest.GenericTestClass$1, CS.System.Int32);
-                    console.log(GenericTestClass.Inner.stringProp);
                     GenericTestClass.v = 6;
-                    return GenericTestClass.v;
+                    new GenericTestClass.Inner();
+                    return GenericTestClass.Inner.stringProp;
                 })()
             ");
-            Assert.AreEqual(res, 6);
+            Assert.AreEqual(res, "hello");
             jsEnv.Tick();
         }
     }

@@ -187,6 +187,10 @@ function makeGeneric(genericTypeInfo, ...genericArgs) {
         if (nestedTypes) {
             for(var i = 0; i < nestedTypes.Length; i++) {
                 let ntype = nestedTypes.get_Item(i);
+                if (ntype.IsGenericTypeDefinition) {
+                    genericArgs = genericArgs.map(g => puer.$typeof(g) || g);
+                    ntype = ntype.MakeGenericType(...genericArgs);
+                }
                 try {
                     typ[ntype.Name] = csTypeToClass(ntype);
                 } catch (e) {
