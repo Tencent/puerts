@@ -4,7 +4,7 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
-#if UNITY_2020_1_OR_NEWER
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,21 +12,21 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if !PUERTS_GENERAL
 using Puerts.Editor.Generator;
 using Puerts.TypeMapping;
 using UnityEditor;
 using UnityEditor.Build;
-
-#if !PUERTS_GENERAL
 using Mono.Reflection;
 using UnityEngine;
-
+#endif
 namespace PuertsIl2cpp.Editor
 {
     namespace Generator
     {
         public class FileExporter
         {
+#if !PUERTS_GENERAL
             public static List<string> GetValueTypeFieldSignatures(Type type)
             {
                 List<string> ret = new List<string>();
@@ -585,8 +585,15 @@ namespace PuertsIl2cpp.Editor
 
                 }
             }
+#endif
 
-            public static void GenExtensionMethodInfos(string outDir)
+            private static Type getExtendedTypeOf(MethodInfo method)
+            {
+                var type = method.GetParameters()[0].ParameterType;
+                return type.IsGenericParameter ? type.BaseType : type;
+            }
+
+            public static void GenExtensionMethodInfos(string outDir, Puerts.ILoader loader = null)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
                     "Puerts.BindingAttribute",
@@ -606,10 +613,10 @@ namespace PuertsIl2cpp.Editor
                     where !System.IO.Path.GetFileName(type.Assembly.Location).Contains("Editor")
 #endif
                                                   from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public).Select(method => TypeUtils.HandleMaybeGenericMethod(method)).Where(method => method != null)
-                                                  where Utils.isDefined(method, typeof(ExtensionAttribute))
-                                                  group type by Utils.getExtendedType(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
+                                                  where method.IsDefined(typeof(ExtensionAttribute), false)
+                                                  group type by getExtendedTypeOf(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
 
-                using (var jsEnv = new Puerts.JsEnv())
+                using (var jsEnv = (loader == null ?  new Puerts.JsEnv() : new Puerts.JsEnv(loader)))
                 {
                     var wrapRender = jsEnv.ExecuteModule<Func<List<KeyValuePair<Type, List<Type>>>, string>>(
                         "puerts/templates/extension_methods_gen.tpl.mjs", "default");
@@ -622,7 +629,7 @@ namespace PuertsIl2cpp.Editor
                     }
                 }
             }
-
+#if !PUERTS_GENERAL
             public static void GenLinkXml(string outDir)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
@@ -729,8 +736,7 @@ namespace PuertsIl2cpp.Editor
                     }
                 }
             }
+#endif
         }
     }
 }
-#endif
-#endif

@@ -40,6 +40,8 @@ namespace Puerts.Editor
 ");
                     textWriter.Flush();
                 }
+
+                PuertsIl2cpp.Editor.Generator.FileExporter.GenExtensionMethodInfos(outDir, loader);
             }
         }
     }

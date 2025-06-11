@@ -8,7 +8,7 @@ import { FOR } from './tte.mjs'
 
 export default function TypingTemplate(rawInfo) {
     return `
-#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION|| !UNITY_IPHONE) && ENABLE_IL2CPP
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -28,7 +28,7 @@ public static class ExtensionMethodInfos_Gen
     }
 }
 }
-#endif`.trim();
+`.trim();
 }
 
 
