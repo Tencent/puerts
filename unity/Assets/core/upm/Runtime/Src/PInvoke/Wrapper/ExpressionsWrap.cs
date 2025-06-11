@@ -1180,11 +1180,11 @@ namespace Puerts
 
             var envIdx = Expression.Variable(typeof(int));
             variables.Add(envIdx);
-            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(typeof(Helpper).GetMethod(nameof(Helpper.GetEnvIndex)), apis, env)));
+            blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(Helpper.GetMethod(nameof(Helpper.GetEnvIndex)), apis, env)));
 
             var selfId = Expression.Variable(typeof(int));
             variables.Add(selfId);
-            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(typeof(Helpper).GetMethod(nameof(Helpper.GetSelfId)), apis, info)));
+            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(Helpper.GetMethod(nameof(Helpper.GetSelfId)), apis, info)));
 
             List<Expression> lazyjsArgs = new List<Expression>();
             Func<int, Expression> getJsArg = (index) =>
@@ -1204,7 +1204,7 @@ namespace Puerts
                 if (self == null)
                 {
                     // Class1 self = Helpper.Get<Class1>(apis, env, info);
-                    var getSelfMethod = typeof(Helpper).GetMethod(nameof(Helpper.GetSelfDirect)).MakeGenericMethod(type);
+                    var getSelfMethod = Helpper.GetMethod(nameof(Helpper.GetSelfDirect)).MakeGenericMethod(type);
                     self = Expression.Variable(type);
                     variables.Add(self);
                     var callGetSelf = Expression.Call(getSelfMethod, envIdx, selfId);
@@ -1235,7 +1235,7 @@ namespace Puerts
 
             if (!methodBase0.IsStatic && !methodBase0.IsConstructor && isValueTypeMethod)
             {
-                var updateMethod = typeof(Helpper).GetMethod(nameof(Helpper.UpdateValueType)).MakeGenericMethod(type);
+                var updateMethod = Helpper.GetMethod(nameof(Helpper.UpdateValueType)).MakeGenericMethod(type);
                 var updateCall = Expression.Call(updateMethod, envIdx, selfId, self);
                 if (isLambdaVoid)
                 {
