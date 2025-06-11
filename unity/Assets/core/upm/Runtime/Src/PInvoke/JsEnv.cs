@@ -324,7 +324,6 @@ namespace Puerts
             finally
             {
                 NativeAPI.pesapi_close_scope(papis, scope);
-                Console.WriteLine("7");
             }
 #if THREAD_SAFE
             }
