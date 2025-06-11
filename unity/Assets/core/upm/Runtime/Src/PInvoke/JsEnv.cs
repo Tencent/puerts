@@ -159,9 +159,9 @@ namespace Puerts
             //TODO: dispose globalObj
 
             //var print = apis.create_function(env, Print, IntPtr.Zero, null);
-            logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug), typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
-            var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
-            apis.set_property(env, globalVal, "print", print);
+            //logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug), typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
+            //var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
+            //apis.set_property(env, globalVal, "print", print);
 
             var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
             apis.set_property(env, globalVal, "jsEnv", jsJsEnv);
@@ -197,7 +197,7 @@ namespace Puerts
             return loader;
         }
 
-        private pesapi_callback logDelegate;
+        //private pesapi_callback logDelegate;
 
         private pesapi_callback loadTypeDelegate;
 

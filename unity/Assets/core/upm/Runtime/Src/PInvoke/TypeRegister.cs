@@ -193,7 +193,12 @@ namespace Puerts
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.LogWarning("wrap " + fieldInfo + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
+                    var msg = $"wrap {fieldInfo} fail! message: {e.Message}, stack: {e.StackTrace}";
+#if UNITY_EDITOR
+                    UnityEngine.Debug.LogWarning(msg);
+#else
+                    Console.WriteLine(msg);
+#endif
                 }
             }
             var extensionMethods = PuertsIl2cpp.ExtensionMethodInfo.Get(type.AssemblyQualifiedName);
@@ -249,7 +254,12 @@ namespace Puerts
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.LogWarning("wrap " + methodInfo + " fail! message: " + e.Message + ", stack:" + e.StackTrace );
+                    var msg = $"wrap {methodInfo} fail! message: {e.Message}, stack: {e.StackTrace}";
+#if UNITY_EDITOR
+                    UnityEngine.Debug.LogWarning(msg);
+#else
+                    Console.WriteLine(msg);
+#endif
                 }
             }
             IntPtr properties = reg_api.alloc_property_descriptors(new UIntPtr((uint)(methodCallbacks.Count + propertyCallbacks.Count)));
@@ -275,7 +285,12 @@ namespace Puerts
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.LogWarning($"wrap {kv.Key.Name} of {type} fail! message: {e.Message}, stack: {e.StackTrace}");
+                    var msg = $"wrap {kv.Key.Name} of {type} fail! message: {e.Message}, stack: {e.StackTrace}";
+#if UNITY_EDITOR
+                    UnityEngine.Debug.LogWarning(msg);
+#else
+                    Console.WriteLine(msg);
+#endif
                 }
             }
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
@@ -301,7 +316,12 @@ namespace Puerts
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning("wrap ctor for " + type + " fail! message: " + e.Message + ", stack:" + e.StackTrace);
+                var msg = $"wrap ctor for {type} fail! message: {e.Message}, stack: {e.StackTrace}";
+#if UNITY_EDITOR
+                UnityEngine.Debug.LogWarning(msg);
+#else
+                Console.WriteLine(msg);
+#endif
             }
             if (ctorWrap == null)
             {
@@ -320,7 +340,6 @@ namespace Puerts
         public bool OnTypeNotFound(IntPtr type_id)
         {
             Type type = FindTypeById(type_id.ToInt32());
-            UnityEngine.Debug.Log("Loading type: " + type + ", id: " + type_id.ToInt32());
             Register(type);
             return true;
         }

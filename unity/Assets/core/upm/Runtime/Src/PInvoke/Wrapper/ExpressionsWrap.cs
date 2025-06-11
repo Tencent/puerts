@@ -583,8 +583,10 @@ namespace Puerts
             }
         }
 
-        private static MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
         private static MethodInfo stringFormatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
+
+#if UNITY_EDITOR
+        private static MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
 
         private static Expression Printf(string format, params Expression[] arguments)
         {
@@ -605,7 +607,7 @@ namespace Puerts
 
             return Expression.Call(logMethod, formattedMessage);
         }
-
+#endif
         private static Expression createFunctionAdapter(CompileContext outsideContext, Type type, Expression scriptObject)
         {
             // cache existed?
