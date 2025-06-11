@@ -34,7 +34,6 @@ namespace Puerts
         public Backend Backend;
 
         IntPtr papis;
-        pesapi_ffi apis;
         IntPtr envRef;
 
         protected int debugPort;
@@ -136,23 +135,21 @@ namespace Puerts
                 throw new InvalidProgramException("unexpected backend: " + backend);
             }
 
-            apis = Marshal.PtrToStructure<pesapi_ffi>(papis);
+            var scope = NativeAPI.pesapi_open_scope(papis, envRef);
 
-            var scope = apis.open_scope(envRef);
+            var env = NativeAPI.pesapi_get_env_from_ref(papis, envRef);
 
-            var env = apis.get_env_from_ref(envRef);
+            NativeAPI.pesapi_set_registry(papis, env, TypeRegister.Instance.Registry);
 
-            apis.set_registry(env, TypeRegister.Instance.Registry);
-
-            apis.set_env_private(env, new IntPtr(Idx));
+            NativeAPI.pesapi_set_env_private(papis, env, new IntPtr(Idx));
 
             // 这个和析构函数不一样，比如一个原生对象，如果传指针，不用做对象的delete，但如果宿主是带gc的语言，还是要处理引用持有的问题
             // 不过析构那如果参数带上是否要析构，设计上可以不需要这个回调
             // onObjectReleaseRef还有另外一个设定是和enter那配合使用，enter返回个userdata（比如objectPool索引），在exit那使用
             onObjectReleaseRefDelegate = onObjectReleaseRef;
-            apis.trace_native_object_lifecycle(env, null, onObjectReleaseRefDelegate);
+            NativeAPI.pesapi_trace_native_object_lifecycle(papis, env, null, onObjectReleaseRefDelegate);
 
-            var globalVal = apis.global(env);
+            var globalVal = NativeAPI.pesapi_global(papis, env);
 
             var globalObj = ExpressionsWrap.Helpper.ScriptToNative_ScriptObject(papis, env, globalVal);
             moduleExecutor = globalObj.Get<Func<string, JSObject>>("__puertsExecuteModule");
@@ -163,18 +160,18 @@ namespace Puerts
             //var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
             //apis.set_property(env, globalVal, "print", print);
 
-            var jsJsEnv = apis.native_object_to_value(env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
-            apis.set_property(env, globalVal, "jsEnv", jsJsEnv);
+            var jsJsEnv = NativeAPI.pesapi_native_object_to_value(papis, env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
+            NativeAPI.pesapi_set_property(papis, env, globalVal, "jsEnv", jsJsEnv);
 
             loadTypeDelegate = ExpressionsWrap.BuildMethodWrap(typeof(ExpressionsWrap.NativeType), typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
-            var loadType = apis.create_function(env, loadTypeDelegate, IntPtr.Zero, null);
-            apis.set_property(env, globalVal, "loadType", loadType);
+            var loadType = NativeAPI.pesapi_create_function(papis, env, loadTypeDelegate, IntPtr.Zero, null);
+            NativeAPI.pesapi_set_property(papis, env, globalVal, "loadType", loadType);
 
             createFunctionDelegate = createFunction;
-            var createFunc = apis.create_function(env, createFunctionDelegate, IntPtr.Zero, null);
-            apis.set_property(env, globalVal, "createFunction", createFunc);
+            var createFunc = NativeAPI.pesapi_create_function(papis, env, createFunctionDelegate, IntPtr.Zero, null);
+            NativeAPI.pesapi_set_property(papis, env, globalVal, "createFunction", createFunc);
 
-            apis.close_scope(scope);
+            NativeAPI.pesapi_close_scope(papis, scope);
 
             PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
 
@@ -310,26 +307,24 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            var scope = apis.open_scope(envRef);
+            var scope = NativeAPI.pesapi_open_scope(papis, envRef);
             try
             {
-
-                var env = apis.get_env_from_ref(envRef);
-
+                var env = NativeAPI.pesapi_get_env_from_ref(papis, envRef);
                 byte[] codeBuff = System.Text.Encoding.UTF8.GetBytes(chunk);
-                var res = apis.eval(env, codeBuff, new UIntPtr((uint)codeBuff.Length), chunkName);
-
-                if (apis.has_caught(scope))
+                var res = NativeAPI.pesapi_eval(papis, env, codeBuff, new UIntPtr((uint)codeBuff.Length), chunkName);
+                if (NativeAPI.pesapi_has_caught(papis, scope))
                 {
-                    string msg = Marshal.PtrToStringUTF8(apis.get_exception_as_string(scope, true));
+                    IntPtr ptr = NativeAPI.pesapi_get_exception_as_string(papis, scope, true);
+                    string msg = Marshal.PtrToStringUTF8(ptr);
                     throw new InvalidOperationException(msg);
                 }
-
                 return typeof(__NOTHING) == typeof(TResult) ? default(TResult) : ExpressionsWrap.GetNativeTranlator<TResult>()(papis, env, res);
             }
             finally
             {
-                apis.close_scope(scope);
+                NativeAPI.pesapi_close_scope(papis, scope);
+                Console.WriteLine("7");
             }
 #if THREAD_SAFE
             }
@@ -554,10 +549,10 @@ namespace Puerts
             lock (pendingKillScriptObjectRefs)
             {
                 if (pendingKillScriptObjectRefs.Count == 0) return;
-                var scope = apis.open_scope(envRef);
+                var scope = NativeAPI.pesapi_open_scope(papis, envRef);
                 try
                 {
-                    var env = apis.get_env_from_ref(envRef);
+                    var env = NativeAPI.pesapi_get_env_from_ref(papis, envRef);
                     while (pendingKillScriptObjectRefs.Count > 0)
                     {
                         var lastIndex = pendingKillScriptObjectRefs.Count - 1;
@@ -565,7 +560,7 @@ namespace Puerts
                         pendingKillScriptObjectRefs.RemoveAt(lastIndex);
 
                         uint internal_field_count = 0;
-                        IntPtr weakHandlePtr = apis.get_ref_internal_fields(objRef, out internal_field_count);
+                        IntPtr weakHandlePtr = NativeAPI.pesapi_get_ref_internal_fields(papis, objRef, out internal_field_count);
                         if (internal_field_count != 1)
                         {
                             throw new InvalidProgramException($"invalud internal fields count {internal_field_count}!");
@@ -578,17 +573,17 @@ namespace Puerts
                             var handle = GCHandle.FromIntPtr(weakHandle);
                             if (handle.Target == null)
                             {
-                                var obj = apis.get_value_from_ref(env, objRef);
-                                apis.set_private(env, obj, IntPtr.Zero);
+                                var obj = NativeAPI.pesapi_get_value_from_ref(papis, env, objRef);
+                                NativeAPI.pesapi_set_private(papis, env, obj, IntPtr.Zero);
                                 //UnityEngine.Debug.Log($"cleanupPendingKillScriptObjects {objRef}");
-                                apis.release_value_ref(objRef);
+                                NativeAPI.pesapi_release_value_ref(papis, objRef);
                             }
                         }
                     }
                 }
                 finally
                 {
-                    apis.close_scope(scope);
+                    NativeAPI.pesapi_close_scope(papis, scope);
                 }
             }
         }
@@ -625,12 +620,12 @@ namespace Puerts
                 if (OnDispose != null) OnDispose();
                 jsEnvs[Idx] = null;
 
-                var scope = apis.open_scope(envRef);
-                var env = apis.get_env_from_ref(envRef);
-                apis.trace_native_object_lifecycle(env, null, null);
-                apis.close_scope(scope);
+                var scope = NativeAPI.pesapi_open_scope(papis, envRef);
+                var env = NativeAPI.pesapi_get_env_from_ref(papis, envRef);
+                NativeAPI.pesapi_trace_native_object_lifecycle(papis, env, null, null);
+                NativeAPI.pesapi_close_scope(papis, scope);
 
-                apis.release_env_ref(envRef);
+                NativeAPI.pesapi_release_env_ref(papis, envRef);
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
                 disposed = true;

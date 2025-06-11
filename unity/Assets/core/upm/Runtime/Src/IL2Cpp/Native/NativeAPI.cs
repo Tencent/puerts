@@ -406,7 +406,7 @@ namespace Puerts
         public static extern IntPtr pesapi_call_function(IntPtr apis, IntPtr env, IntPtr func, IntPtr this_object, int argc, IntPtr[] argv);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr pesapi_eval(IntPtr apis, IntPtr env, IntPtr code, UIntPtr code_size, string path);
+        public static extern IntPtr pesapi_eval(IntPtr apis, IntPtr env, byte[] code, UIntPtr code_size, string path);
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_global(IntPtr apis, IntPtr env);
@@ -416,6 +416,12 @@ namespace Puerts
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_env_private(IntPtr apis, IntPtr env, IntPtr ptr);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool pesapi_trace_native_object_lifecycle(IntPtr apis, IntPtr env, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void pesapi_set_registry(IntPtr apis, IntPtr env, IntPtr registry);
 #endif
     }
 

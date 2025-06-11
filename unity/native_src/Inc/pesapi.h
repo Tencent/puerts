@@ -345,7 +345,7 @@ struct pesapi_ffi
     pesapi_get_env_private_func get_env_private;
     pesapi_set_env_private_func set_env_private;
     pesapi_trace_native_object_lifecycle_func trace_native_object_lifecycle;
-    pesapi_set_registry_func set_registry_func;
+    pesapi_set_registry_func set_registry;
 };
 
 PESAPI_EXTERN pesapi_registry pesapi_create_registry();
