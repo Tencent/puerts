@@ -155,10 +155,9 @@ namespace Puerts
             moduleExecutor = globalObj.Get<Func<string, JSObject>>("__puertsExecuteModule");
             //TODO: dispose globalObj
 
-            //var print = apis.create_function(env, Print, IntPtr.Zero, null);
-            //logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(UnityEngine.Debug), typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) }), true);
-            //var print = apis.create_function(env, logDelegate, IntPtr.Zero, null);
-            //apis.set_property(env, globalVal, "print", print);
+            logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(Console), typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(object) }), true);
+            var print = NativeAPI.pesapi_create_function(papis, env, logDelegate, IntPtr.Zero, null);
+            NativeAPI.pesapi_set_property(papis, env, globalVal, "print", print);
 
             var jsJsEnv = NativeAPI.pesapi_native_object_to_value(papis, env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(typeof(JsEnv))), new IntPtr(objectPool.FindOrAddObject(this)), false);
             NativeAPI.pesapi_set_property(papis, env, globalVal, "jsEnv", jsJsEnv);
@@ -194,7 +193,7 @@ namespace Puerts
             return loader;
         }
 
-        //private pesapi_callback logDelegate;
+        private pesapi_callback logDelegate;
 
         private pesapi_callback loadTypeDelegate;
 
