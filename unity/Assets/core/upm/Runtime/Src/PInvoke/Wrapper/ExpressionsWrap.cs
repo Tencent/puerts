@@ -1217,10 +1217,6 @@ namespace Puerts
             variables.Add(envIdx);
             blockExpressions.Add(Expression.Assign(envIdx, Expression.Call(Helpper.GetMethod(nameof(Helpper.GetEnvIndex)), apis, env)));
 
-            var selfId = Expression.Variable(typeof(int));
-            variables.Add(selfId);
-            blockExpressions.Add(Expression.Assign(selfId, Expression.Call(Helpper.GetMethod(nameof(Helpper.GetSelfId)), apis, info)));
-
             List<Expression> lazyjsArgs = new List<Expression>();
             Func<int, Expression> getJsArg = (index) =>
             {
@@ -1230,6 +1226,19 @@ namespace Puerts
                 for (int i = 0; i < addCount; ++i) lazyjsArgs.Add(null);
                 lazyjsArgs[index] = arg;
                 return arg;
+            };
+
+            ParameterExpression selfId = null;
+
+            Func<ParameterExpression> GetSelfId = () =>
+            {
+                if (selfId == null)
+                {
+                    selfId = Expression.Variable(typeof(int));
+                    variables.Add(selfId);
+                    blockExpressions.Add(Expression.Assign(selfId, Expression.Call(Helpper.GetMethod(nameof(Helpper.GetSelfId)), apis, info)));
+                }
+                return selfId;
             };
 
             ParameterExpression self = null;
@@ -1242,7 +1251,7 @@ namespace Puerts
                     var getSelfMethod = Helpper.MakeGenericMethod(nameof(Helpper.GetSelfDirect), type);
                     self = Expression.Variable(type);
                     variables.Add(self);
-                    var callGetSelf = Expression.Call(getSelfMethod, envIdx, selfId);
+                    var callGetSelf = Expression.Call(getSelfMethod, envIdx, GetSelfId());
                     blockExpressions.Add(Expression.Assign(self, callGetSelf));
                 }
                 return self;
@@ -1271,7 +1280,7 @@ namespace Puerts
             if (!methodBase0.IsStatic && !methodBase0.IsConstructor && isValueTypeMethod)
             {
                 var updateMethod = Helpper.MakeGenericMethod(nameof(Helpper.UpdateValueType), type);
-                var updateCall = Expression.Call(updateMethod, envIdx, selfId, self);
+                var updateCall = Expression.Call(updateMethod, envIdx, GetSelfId(), GetSelf());
                 if (isLambdaVoid)
                 {
                     blockExpressions.Add(updateCall);
