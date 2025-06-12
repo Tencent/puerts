@@ -1346,7 +1346,8 @@ namespace Puerts
 
                 var tempVariables = methodInfo.GetParameters().Select(pi => Expression.Variable(pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType)).ToArray();
                 variables.AddRange(tempVariables);
-                var assignments = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => (extensionMethod && index == 0) ? Expression.Assign(tempVariables[index], self) : Expression.Assign(tempVariables[index], scriptToNative(context, pi, index, info, getJsArg(index))));
+                var argStartPos = extensionMethod ? 1 : 0;
+                var assignments = methodInfo.GetParameters().Select((ParameterInfo pi, int index) => (extensionMethod && index == 0) ? Expression.Assign(tempVariables[index], self) : Expression.Assign(tempVariables[index], scriptToNative(context, pi, index - argStartPos, info, getJsArg(index - argStartPos))));
                 blockExpressions.AddRange(assignments);
 
                 var callMethod = Expression.Call(extensionMethod ? null : self, methodInfo, tempVariables);
