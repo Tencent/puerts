@@ -364,6 +364,8 @@ void CppObjectMapper::Initialize(JSContext* ctx_)
     ctx = ctx_;
     rt = JS_GetRuntime(ctx);
     JS_SetRuntimeOpaque1(rt, this);
+    // 0x4000: DUMP_LEAKS, 0x8000: DUMP_ATOM_LEAKS
+    JS_SetDumpFlags(rt, 0x4000 | 0x8000);
     //new (&CDataCache) eastl::unordered_map<const void*, FObjectCacheNode, eastl::hash<const void*>, 
     //        eastl::equal_to<const void*>, eastl::allocator_malloc>();
     //new (&TypeIdToFunctionMap) eastl::unordered_map<const void*, JSValue, eastl::hash<const void*>, 
