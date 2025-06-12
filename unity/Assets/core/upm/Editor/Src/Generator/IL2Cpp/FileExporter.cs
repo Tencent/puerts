@@ -618,16 +618,22 @@ namespace PuertsIl2cpp.Editor
 
                 using (var jsEnv = (loader == null ?  new Puerts.JsEnv() : new Puerts.JsEnv(loader)))
                 {
-                    var wrapRender = jsEnv.ExecuteModule<Func<List<KeyValuePair<Type, List<Type>>>, string>>(
-                        "puerts/templates/extension_methods_gen.tpl.mjs", "default");
-                    string fileContent = wrapRender(extendedType2extensionType);
                     var filePath = outDir + "ExtensionMethodInfos_Gen.cs";
                     using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
                     {
-                        textWriter.Write(fileContent);
-                        textWriter.Flush();
+                        renderExtensionMethods(jsEnv, extendedType2extensionType, textWriter);
                     }
                 }
+            }
+
+            static void renderExtensionMethods(Puerts.JsEnv jsEnv, List<KeyValuePair<Type, List<Type>>> extendedType2extensionType, StreamWriter textWriter)
+            {
+                var wrapRender = jsEnv.ExecuteModule<Func<List<KeyValuePair<Type, List<Type>>>, string>>(
+                        "puerts/templates/extension_methods_gen.tpl.mjs", "default");
+                string fileContent = wrapRender(extendedType2extensionType);
+                
+                textWriter.Write(fileContent);
+                textWriter.Flush();
             }
 #if !PUERTS_GENERAL
             public static void GenLinkXml(string outDir)
