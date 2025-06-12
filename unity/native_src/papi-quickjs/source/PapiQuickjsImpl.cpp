@@ -97,7 +97,7 @@ T pesapi_get_value_generic(pesapi_env env, pesapi_value pvalue, Func convertFunc
 }
 
 template<typename Func>
-bool pesapi_is_generic(pesapi_env env, pesapi_value pvalue, Func convertFunc)
+int pesapi_is_generic(pesapi_env env, pesapi_value pvalue, Func convertFunc)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     if (ctx != nullptr)
@@ -108,7 +108,7 @@ bool pesapi_is_generic(pesapi_env env, pesapi_value pvalue, Func convertFunc)
 }
 
 template<typename Func>
-bool pesapi_is_generic_ctx(pesapi_env env, pesapi_value pvalue, Func convertFunc)
+int pesapi_is_generic_ctx(pesapi_env env, pesapi_value pvalue, Func convertFunc)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     if (ctx != nullptr)
@@ -129,7 +129,7 @@ pesapi_value pesapi_create_undefined(pesapi_env env)
     return pesapiValueFromQjsValue(&literal_values_undefined);
 }
 
-pesapi_value pesapi_create_boolean(pesapi_env env, bool value)
+pesapi_value pesapi_create_boolean(pesapi_env env, int value)
 {
     return pesapiValueFromQjsValue(value ? &literal_values_true : &literal_values_false);
 }
@@ -206,19 +206,19 @@ pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
     return pesapiValueFromQjsValue(ret);
 }
 
-int JS_ToBool2(JSContext *ctx, bool *pres, JSValue val)
+int JS_ToBool2(JSContext *ctx, int *pres, JSValue val)
 {
     int res = JS_ToBool(ctx, val);
     if (res != -1)
     {
-        *pres = (bool)res;
+        *pres = (int)res;
     }
     return res;
 }
 
-bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
+int pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_get_value_generic<bool>(env, pvalue, JS_ToBool2);
+    return pesapi_get_value_generic<int>(env, pvalue, JS_ToBool2);
 }
 
 int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value pvalue)
@@ -325,74 +325,74 @@ uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
     return 0;
 }
 
-bool pesapi_is_null(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_null(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsNull);
 }
 
-bool pesapi_is_undefined(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_undefined(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsUndefined);
 }
 
-bool pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsBool);
 }
 
-bool pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsNumber);
 }
 
-bool pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsNumber);
 }
 
-bool pesapi_is_int64(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_int64(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic_ctx(env, pvalue, JS_IsBigInt);
 }
 
-bool pesapi_is_uint64(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_uint64(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic_ctx(env, pvalue, JS_IsBigInt);
 }
 
-bool pesapi_is_double(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_double(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsNumber);
 }
 
-bool pesapi_is_string(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_string(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsString);
 }
 
-bool pesapi_is_object(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_object(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsObject);
 }
 
-bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_function(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic_ctx(env, pvalue, JS_IsFunction);
 }
 
-bool pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, [](JSValue val) -> JS_BOOL {
         return JS_IsArrayBuffer(val) || JS_IsArrayBufferView(val);
     });
 }
 
-bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_array(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic_ctx(env, pvalue, JS_IsArray);
 }
 
-pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize)
+pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(ctx);
@@ -417,7 +417,7 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
     return mapper->GetNativeObjectTypeId(*value);
 }
 
-bool pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
+int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
 {
     return pesapi_get_native_object_typeid(env, pvalue) == type_id; // TODO: api 不正交
 }
@@ -463,7 +463,7 @@ void pesapi_update_boxed_value(pesapi_env env, pesapi_value p_boxed_value, pesap
     JS_SetPropertyUint32(ctx, *boxed_value, 0, *val);
 }
 
-bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
+int pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
     return pesapi_is_object(env, value);
 }
@@ -541,7 +541,7 @@ pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
     return ret;
 }
 
-bool pesapi_env_ref_is_valid(pesapi_env_ref penv_ref)
+int pesapi_env_ref_is_valid(pesapi_env_ref penv_ref)
 {
     auto env_ref = reinterpret_cast<pesapi::qjsimpl::pesapi_env_ref__*>(penv_ref);
     return !env_ref->env_life_cycle_tracker.expired();
@@ -602,13 +602,13 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_
     return reinterpret_cast<pesapi_scope>(memory);
 }
 
-bool pesapi_has_caught(pesapi_scope pscope)
+int pesapi_has_caught(pesapi_scope pscope)
 {
     auto scope = reinterpret_cast<pesapi::qjsimpl::pesapi_scope__*>(pscope);
     return scope->caught != nullptr;
 }
 
-const char* pesapi_get_exception_as_string(pesapi_scope pscope, bool with_stack)
+const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
 {
     auto scope = reinterpret_cast<pesapi::qjsimpl::pesapi_scope__*>(pscope);
     if (scope->caught != nullptr)
@@ -725,7 +725,7 @@ void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref pvalue_ref)
     JS_FreeValue(ctx, value_ref->value_persistent);
 }
 
-bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
+int pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     JSValue* obj = qjsValueFromPesapiValue(pvalue);
@@ -772,7 +772,7 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
     JS_SetPropertyStr(ctx, *obj, key, *val);
 }
 
-bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
+int pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(ctx);
@@ -780,7 +780,7 @@ bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
     return mapper->GetPrivate(*obj, out_ptr);
 }
 
-bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
+int pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(ctx);
@@ -875,7 +875,7 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
 }
 
 
-bool pesapi_trace_native_object_lifecycle(pesapi_env env, 
+int pesapi_trace_native_object_lifecycle(pesapi_env env, 
     pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
