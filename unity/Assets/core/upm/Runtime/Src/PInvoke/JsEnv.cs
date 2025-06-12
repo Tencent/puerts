@@ -615,6 +615,18 @@ namespace Puerts
             lock (jsEnvs)
             {
                 if (disposed) return;
+                
+                // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
+                TickHandler = null;
+                moduleExecutor = null;
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                cleanupPendingKillScriptObjects();
+
+                // TODO: 如果外部持有Delegate指向quickjs的函数，还是会assertion "list_empty(&rt->gc_obj_list)"
+                // 原来的版本在原生侧有个统一的放置地方（JSEngine），所以能销毁
+                // 后面看能否也类似的存在JsEnv这里，统一销毁
+
                 if (OnDispose != null) OnDispose();
                 jsEnvs[Idx] = null;
 
