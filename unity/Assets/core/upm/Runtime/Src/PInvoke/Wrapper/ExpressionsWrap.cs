@@ -283,10 +283,10 @@ namespace Puerts
                 return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
 
-            public static bool IsAssignable_ValueType<T>(IntPtr apis, IntPtr env, IntPtr obj)
+            public static bool IsAssignable_ValueType<TValueType>(IntPtr apis, IntPtr env, IntPtr obj) where TValueType : struct
             {
                 var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
-                return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
+                return typeId != 0 && typeof(TValueType).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
 
             public static JSObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
