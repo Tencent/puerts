@@ -253,8 +253,8 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             var res = jsEnv.Eval<string>(@"
                 (function() {
-                    let GenericTestClass = puerts.$generic(CS.Puerts.UnitTest.GenericTestClass$1, CS.System.Int32);
-                    GenericTestClass.v = 6;
+                    let GenericTestClass = puerts.$generic(CS.Puerts.UnitTest.GenericTestClass$1, CS.System.String);
+                    GenericTestClass.v = '6';
                     new GenericTestClass.Inner();
                     return GenericTestClass.Inner.stringProp;
                 })()
