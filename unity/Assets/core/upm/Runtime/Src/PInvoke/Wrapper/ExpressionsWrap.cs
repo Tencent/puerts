@@ -1314,7 +1314,7 @@ namespace Puerts
                 Expression.Catch(exVar, catchBlock)
             );
 
-            return Expression.Lambda<T>(tryCatchExpr, apis, info).Compile();
+            return Expression.Lambda<T>(tryCatchExpr, $"{type.Name}_m_{methodBase0.Name}", new[] { apis, info }).Compile();
         }
 
         public static pesapi_callback BuildMethodWrap(Type type, MethodInfo[] methodInfos, bool forceCheckArgs)
@@ -1516,7 +1516,7 @@ namespace Puerts
                 Expression.Catch(exVar, callPApi(apis, "throw_by_string", info, formatExpr))
             );
 
-            return (Expression.Lambda<pesapi_callback>(tryCatchExpr, apis, info)).Compile();
+            return (Expression.Lambda<pesapi_callback>(tryCatchExpr, $"{fieldInfo.DeclaringType.Name}_g_{fieldInfo.Name}", new[] { apis, info })).Compile();
         }
 
         public static pesapi_callback BuildFieldSetter(FieldInfo fieldInfo)
@@ -1589,7 +1589,7 @@ namespace Puerts
                 Expression.Catch(exVar, callPApi(apis, "throw_by_string", info, formatExpr))
             );
 
-            return (Expression.Lambda<pesapi_callback>(tryCatchExpr, apis, info)).Compile();
+            return (Expression.Lambda<pesapi_callback>(tryCatchExpr, $"{fieldInfo.DeclaringType.Name}_s_{fieldInfo.Name}", new[] { apis, info })).Compile();
         }
 
         private static Dictionary<Type, Delegate> NativeTranlatorCache = new Dictionary<Type, Delegate>();
