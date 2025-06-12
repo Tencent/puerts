@@ -2108,7 +2108,7 @@ void JS_FreeRuntime(JSRuntime *rt)
             p = list_entry(el, JSGCObjectHeader, link);
             if (p->ref_count != 0) {
                 if (!header_done) {
-                    printf("Object leaks:\n");
+                    fprintf(stderr, "Object leaks:\n");
                     JS_DumpObjectHeader(rt);
                     header_done = TRUE;
                 }
@@ -2124,7 +2124,7 @@ void JS_FreeRuntime(JSRuntime *rt)
             }
         }
         if (count != 0)
-            printf("Secondary object leaks: %d\n", count);
+            fprintf(stderr, "Secondary object leaks: %d\n", count);
     }
 #endif
 
@@ -11802,7 +11802,7 @@ static JSValue JS_ToQuotedString(JSContext *ctx, JSValue val1)
 
 static __maybe_unused void JS_DumpObjectHeader(JSRuntime *rt)
 {
-    printf("%14s %4s %4s %14s %10s %s\n",
+    fprintf(stderr, "%14s %4s %4s %14s %10s %s\n",
            "ADDRESS", "REFS", "SHRF", "PROTO", "CLASS", "PROPS");
 }
 
@@ -11818,24 +11818,24 @@ static __maybe_unused void JS_DumpObject(JSRuntime *rt, JSObject *p)
 
     /* XXX: should encode atoms with special characters */
     sh = p->shape; /* the shape can be NULL while freeing an object */
-    printf("%14p %4d ",
+    fprintf(stderr, "%14p %4d ",
            (void *)p,
            p->header.ref_count);
     if (sh) {
-        printf("%3d%c %14p ",
+        fprintf(stderr, "%3d%c %14p ",
                sh->header.ref_count,
                " *"[sh->is_hashed],
                (void *)sh->proto);
     } else {
-        printf("%3s  %14s ", "-", "-");
+        fprintf(stderr, "%3s  %14s ", "-", "-");
     }
-    printf("%10s ",
+    fprintf(stderr, "%10s ",
            JS_AtomGetStrRT(rt, atom_buf, sizeof(atom_buf), rt->class_array[p->class_id].class_name));
     if (p->is_exotic && p->fast_array) {
-        printf("[ ");
+        fprintf(stderr, "[ ");
         for(i = 0; i < p->u.array.count; i++) {
             if (i != 0)
-                printf(", ");
+                fprintf(stderr, ", ");
             switch (p->class_id) {
             case JS_CLASS_ARRAY:
             case JS_CLASS_ARGUMENTS:
@@ -11857,30 +11857,30 @@ static __maybe_unused void JS_DumpObject(JSRuntime *rt, JSObject *p)
                     int size = 1 << typed_array_size_log2(p->class_id);
                     const uint8_t *b = p->u.array.u.uint8_ptr + i * size;
                     while (size-- > 0)
-                        printf("%02X", *b++);
+                        fprintf(stderr, "%02X", *b++);
                 }
                 break;
             }
         }
-        printf(" ] ");
+        fprintf(stderr, " ] ");
     }
 
     if (sh) {
-        printf("{ ");
+        fprintf(stderr, "{ ");
         for(i = 0, prs = get_shape_prop(sh); i < sh->prop_count; i++, prs++) {
             if (prs->atom != JS_ATOM_NULL) {
                 pr = &p->prop[i];
                 if (!is_first)
-                    printf(", ");
-                printf("%s: ",
+                    fprintf(stderr, ", ");
+                fprintf(stderr, "%s: ",
                        JS_AtomGetStrRT(rt, atom_buf, sizeof(atom_buf), prs->atom));
                 if ((prs->flags & JS_PROP_TMASK) == JS_PROP_GETSET) {
-                    printf("[getset %p %p]", (void *)pr->u.getset.getter,
+                    fprintf(stderr, "[getset %p %p]", (void *)pr->u.getset.getter,
                            (void *)pr->u.getset.setter);
                 } else if ((prs->flags & JS_PROP_TMASK) == JS_PROP_VARREF) {
-                    printf("[varref %p]", (void *)pr->u.var_ref);
+                    fprintf(stderr, "[varref %p]", (void *)pr->u.var_ref);
                 } else if ((prs->flags & JS_PROP_TMASK) == JS_PROP_AUTOINIT) {
-                    printf("[autoinit %p %d %p]",
+                    fprintf(stderr, "[autoinit %p %d %p]",
                            (void *)js_autoinit_get_realm(pr),
                            js_autoinit_get_id(pr),
                            (void *)pr->u.init.opaque);
@@ -11890,7 +11890,7 @@ static __maybe_unused void JS_DumpObject(JSRuntime *rt, JSObject *p)
                 is_first = FALSE;
             }
         }
-        printf(" }");
+        fprintf(stderr, " }");
     }
 
     if (js_class_has_bytecode(p->class_id)) {
@@ -11898,18 +11898,18 @@ static __maybe_unused void JS_DumpObject(JSRuntime *rt, JSObject *p)
         JSVarRef **var_refs;
         if (b->closure_var_count) {
             var_refs = p->u.func.var_refs;
-            printf(" Closure:");
+            fprintf(stderr, " Closure:");
             for(i = 0; i < b->closure_var_count; i++) {
-                printf(" ");
+                fprintf(stderr, " ");
                 JS_DumpValue(rt, var_refs[i]->value);
             }
             if (p->u.func.home_object) {
-                printf(" HomeObject: ");
+                fprintf(stderr, " HomeObject: ");
                 JS_DumpValue(rt, JS_MKPTR(JS_TAG_OBJECT, p->u.func.home_object));
             }
         }
     }
-    printf("\n");
+    fprintf(stderr, "\n");
 }
 
 static __maybe_unused void JS_DumpGCObject(JSRuntime *rt, JSGCObjectHeader *p)
@@ -11917,30 +11917,30 @@ static __maybe_unused void JS_DumpGCObject(JSRuntime *rt, JSGCObjectHeader *p)
     if (p->gc_obj_type == JS_GC_OBJ_TYPE_JS_OBJECT) {
         JS_DumpObject(rt, (JSObject *)p);
     } else {
-        printf("%14p %4d ",
+        fprintf(stderr, "%14p %4d ",
                (void *)p,
                p->ref_count);
         switch(p->gc_obj_type) {
         case JS_GC_OBJ_TYPE_FUNCTION_BYTECODE:
-            printf("[function bytecode]");
+            fprintf(stderr, "[function bytecode]");
             break;
         case JS_GC_OBJ_TYPE_SHAPE:
-            printf("[shape]");
+            fprintf(stderr, "[shape]");
             break;
         case JS_GC_OBJ_TYPE_VAR_REF:
-            printf("[var_ref]");
+            fprintf(stderr, "[var_ref]");
             break;
         case JS_GC_OBJ_TYPE_ASYNC_FUNCTION:
-            printf("[async_function]");
+            fprintf(stderr, "[async_function]");
             break;
         case JS_GC_OBJ_TYPE_JS_CONTEXT:
-            printf("[js_context]");
+            fprintf(stderr, "[js_context]");
             break;
         default:
-            printf("[unknown %d]", p->gc_obj_type);
+            fprintf(stderr, "[unknown %d]", p->gc_obj_type);
             break;
         }
-        printf("\n");
+        fprintf(stderr, "\n");
     }
 }
 
