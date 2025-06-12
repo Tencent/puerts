@@ -130,12 +130,12 @@ namespace Puerts
 
         private bool parameterTypeNotAcceptable(Type type)
         {
-            return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer;
+            return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer || (type.IsValueType && !type.IsPrimitive && type.IsByRefLike);
         }
 
         private bool returnTypeNotAcceptable(Type type)
         {
-            return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer || type.IsByRef;
+            return parameterTypeNotAcceptable(type) || type.IsByRef;
         }
 
         public int Register(Type type)
