@@ -50,6 +50,12 @@ namespace Puerts.UnitTest
         {
             return (string.Format("Extension2<{0},{1}>", typeof(T1), typeof(T2)));
         }
+
+        [UnityEngine.Scripting.Preserve]
+        public static string Extension3<T>(this T a, string b) where T : ExtensionTestHelper
+        {
+            return b;
+        }
     }
 
     [TestFixture]
@@ -111,6 +117,7 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res.ToString(), "Puerts.UnitTest.ExtensionTestHelper");
         }
 
+        [Test]
         public void ExtensionGenerateBaseTest_1()
         {
             var jsEnv = UnitTestEnv.GetEnv();
@@ -122,6 +129,20 @@ namespace Puerts.UnitTest
                 })()
             ");
             Assert.AreEqual(res.ToString(), "Puerts.UnitTest.ExtensionTestHelper");
+        }
+
+        [Test]
+        public void ExtensionGenerateBaseTest_3()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<string>(@"
+                (function() {
+                    let obj = new CS.Puerts.UnitTest.ExtensionTestHelper();
+                    let res = obj.Extension3('123');
+                    return res;
+                })()
+            ");
+            Assert.AreEqual(res, "123");
         }
 
         [Test]
