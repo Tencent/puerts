@@ -552,26 +552,7 @@ namespace Puerts
                         var objRef = pendingKillScriptObjectRefs[lastIndex];
                         pendingKillScriptObjectRefs.RemoveAt(lastIndex);
 
-                        uint internal_field_count = 0;
-                        IntPtr weakHandlePtr = NativeAPI.pesapi_get_ref_internal_fields(papis, objRef, out internal_field_count);
-                        if (internal_field_count != 1)
-                        {
-                            throw new InvalidProgramException($"invalud internal fields count {internal_field_count}!");
-                        }
-
-                        IntPtr weakHandle = Marshal.PtrToStructure<IntPtr>(weakHandlePtr);
-
-                        if (weakHandle != IntPtr.Zero)
-                        {
-                            var handle = GCHandle.FromIntPtr(weakHandle);
-                            if (handle.Target == null)
-                            {
-                                var obj = NativeAPI.pesapi_get_value_from_ref(papis, env, objRef);
-                                NativeAPI.pesapi_set_private(papis, env, obj, IntPtr.Zero);
-                                //UnityEngine.Debug.Log($"cleanupPendingKillScriptObjects {objRef}");
-                                NativeAPI.pesapi_release_value_ref(papis, objRef);
-                            }
-                        }
+                        JSObject.ReleaseObjRef(papis, env, objRef);
                     }
                 }
                 finally
@@ -586,7 +567,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            Dispose(true);
+            Dispose(false);
 #if THREAD_SAFE
             }
 #endif

@@ -9,13 +9,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Puerts
 {
     // TODO: rename to ScriptObject
-    public class JSObject
+    public class JSObject : IDisposable
     {
         internal IntPtr apis;
         internal IntPtr objRef;
@@ -50,8 +49,41 @@ namespace Puerts
             }
         }
 
-        ~JSObject() 
+        public void Dispose()
         {
+            Dispose(true);
+        }
+
+        private bool disposed = false;
+
+        internal static void ReleaseObjRef(IntPtr apis, IntPtr env, IntPtr objRef)
+        {
+            uint internal_field_count = 0;
+            IntPtr weakHandlePtr = NativeAPI.pesapi_get_ref_internal_fields(apis, objRef, out internal_field_count);
+            if (internal_field_count != 1)
+            {
+                throw new InvalidProgramException($"invalud internal fields count {internal_field_count}!");
+            }
+
+            IntPtr weakHandle = Marshal.PtrToStructure<IntPtr>(weakHandlePtr);
+
+            if (weakHandle != IntPtr.Zero)
+            {
+                var handle = GCHandle.FromIntPtr(weakHandle);
+                if (handle.Target == null)
+                {
+                    var obj = NativeAPI.pesapi_get_value_from_ref(apis, env, objRef);
+                    NativeAPI.pesapi_set_private(apis, env, obj, IntPtr.Zero);
+                    //UnityEngine.Debug.Log($"cleanupPendingKillScriptObjects {objRef}");
+                    NativeAPI.pesapi_release_value_ref(apis, objRef);
+                }
+            }
+        }
+
+        protected virtual void Dispose(bool dispose)
+        {
+            if (disposed) return;
+
 #if THREAD_SAFE
             lock(jsEnv) 
             {
@@ -63,11 +95,33 @@ namespace Puerts
             }
             else
             {
-                jsEnv.addPendingKillScriptObjects(objRef);
+                if (dispose)
+                {
+                    var scope = NativeAPI.pesapi_open_scope(apis, envRef);
+                    try
+                    {
+                        var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
+                        ReleaseObjRef(apis, env, objRef);
+                    }
+                    finally
+                    {
+                        NativeAPI.pesapi_close_scope(apis, scope);
+                    }
+                }
+                else
+                {
+                    // from gc
+                    jsEnv.addPendingKillScriptObjects(objRef);
+                }
             }
 #if THREAD_SAFE
             }
 #endif
+        }
+
+        ~JSObject() 
+        {
+            Dispose(false);
         }
 
 
