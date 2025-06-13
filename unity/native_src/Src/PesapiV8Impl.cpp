@@ -545,7 +545,7 @@ void pesapi_release_env_ref(pesapi_env_ref env_ref)
 
 pesapi_scope pesapi_open_scope(pesapi_env_ref env_ref)
 {
-    if (env_ref->env_life_cycle_tracker.expired())
+    if (!env_ref || env_ref->env_life_cycle_tracker.expired())
     {
         return nullptr;
     }
@@ -557,7 +557,7 @@ pesapi_scope pesapi_open_scope(pesapi_env_ref env_ref)
 
 pesapi_scope pesapi_open_scope_placement(pesapi_env_ref env_ref, struct pesapi_scope_memory* memory)
 {
-    if (env_ref->env_life_cycle_tracker.expired())
+    if (!env_ref || env_ref->env_life_cycle_tracker.expired())
     {
         return nullptr;
     }

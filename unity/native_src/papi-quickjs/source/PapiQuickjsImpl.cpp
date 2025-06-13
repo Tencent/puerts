@@ -580,7 +580,7 @@ void pesapi_release_env_ref(pesapi_env_ref penv_ref)
 pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 {
     auto env_ref = reinterpret_cast<pesapi::qjsimpl::pesapi_env_ref__*>(penv_ref);
-    if (env_ref->env_life_cycle_tracker.expired())
+    if (!env_ref || env_ref->env_life_cycle_tracker.expired())
     {
         return nullptr;
     }
@@ -593,7 +593,7 @@ pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_scope_memory* memory)
 {
     auto env_ref = reinterpret_cast<pesapi::qjsimpl::pesapi_env_ref__*>(penv_ref);
-    if (env_ref->env_life_cycle_tracker.expired())
+    if (!env_ref || env_ref->env_life_cycle_tracker.expired())
     {
         return nullptr;
     }
