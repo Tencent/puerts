@@ -613,31 +613,34 @@ namespace Puerts
         protected virtual void Dispose(bool dispose)
         {
             if (disposed) return;
+            
+            // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
+            TickHandler = null;
+            moduleExecutor = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            cleanupPendingKillScriptObjects();
+
+            // TODO: 如果外部持有Delegate指向quickjs的函数，还是会assertion "list_empty(&rt->gc_obj_list)"
+            // 原来的版本在原生侧有个统一的放置地方（JSEngine），所以能销毁
+            // 后面看能否也类似的存在JsEnv这里，统一销毁
+
+            if (OnDispose != null) OnDispose();
+            
+
+            var scope = NativeAPI.pesapi_open_scope(papis, envRef);
+            var env = NativeAPI.pesapi_get_env_from_ref(papis, envRef);
+            NativeAPI.pesapi_trace_native_object_lifecycle(papis, env, null, null);
+            NativeAPI.pesapi_close_scope(papis, scope);
+
+            NativeAPI.pesapi_release_env_ref(papis, envRef);
+            PuertsDLL.DestroyJSEngine(isolate);
+            isolate = IntPtr.Zero;
+            disposed = true;
+
             lock (jsEnvs)
             {
-                // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
-                TickHandler = null;
-                moduleExecutor = null;
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                cleanupPendingKillScriptObjects();
-
-                // TODO: 如果外部持有Delegate指向quickjs的函数，还是会assertion "list_empty(&rt->gc_obj_list)"
-                // 原来的版本在原生侧有个统一的放置地方（JSEngine），所以能销毁
-                // 后面看能否也类似的存在JsEnv这里，统一销毁
-
-                if (OnDispose != null) OnDispose();
                 jsEnvs[Idx] = null;
-
-                var scope = NativeAPI.pesapi_open_scope(papis, envRef);
-                var env = NativeAPI.pesapi_get_env_from_ref(papis, envRef);
-                NativeAPI.pesapi_trace_native_object_lifecycle(papis, env, null, null);
-                NativeAPI.pesapi_close_scope(papis, scope);
-
-                NativeAPI.pesapi_release_env_ref(papis, envRef);
-                PuertsDLL.DestroyJSEngine(isolate);
-                isolate = IntPtr.Zero;
-                disposed = true;
             }
         }
 
