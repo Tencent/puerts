@@ -612,10 +612,9 @@ namespace Puerts
 
         protected virtual void Dispose(bool dispose)
         {
+            if (disposed) return;
             lock (jsEnvs)
             {
-                if (disposed) return;
-                
                 // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
                 TickHandler = null;
                 moduleExecutor = null;
