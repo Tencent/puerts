@@ -73,11 +73,14 @@ void PApiObjectFinalizer(JSRuntime* rt, JSValue val)
     CppObjectMapper* mapper = reinterpret_cast<CppObjectMapper*>(JS_GetRuntimeOpaque1(rt));
     ObjectUserData* object_udata = (ObjectUserData*)JS_GetOpaque(val, mapper->classId);
 
-    if (object_udata->callFinalize && object_udata->typeInfo->Finalize)
+    if (object_udata && object_udata->ptr)
     {
-        object_udata->typeInfo->Finalize(&g_pesapi_ffi, (void*)object_udata->ptr, object_udata->typeInfo->Data, (void*)(mapper->GetEnvPrivate()));
+        if (object_udata->callFinalize && object_udata->typeInfo->Finalize)
+        {
+            object_udata->typeInfo->Finalize(&g_pesapi_ffi, (void*)object_udata->ptr, object_udata->typeInfo->Data, (void*)(mapper->GetEnvPrivate()));
+        }
+        mapper->RemoveFromCache(object_udata->typeInfo, object_udata->ptr);
     }
-    mapper->RemoveFromCache(object_udata->typeInfo, object_udata->ptr);
     js_free_rt(rt, object_udata);
 }
 
@@ -248,7 +251,6 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
                 callbackInfo.this_val = JS_NewObjectProtoClass(ctx, proto, mapper->classId);
                 JS_FreeValue(ctx, proto);
                 void* ptr = clsDef->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
-                mapper->BindAndAddToCache(clsDef, ptr, callbackInfo.this_val, true);
                 if (JS_IsException(callbackInfo.res))
                 {
                     JS_FreeValue(ctx, callbackInfo.this_val);
@@ -256,6 +258,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
                 }
                 else
                 {
+                    mapper->BindAndAddToCache(clsDef, ptr, callbackInfo.this_val, true);
                     return callbackInfo.this_val;
                 }
             }
