@@ -656,14 +656,10 @@ namespace Puerts
             //var tryBlockvariables = new List<Expression>(printArgs);
             var tryBlockExpressions = new List<Expression>();
 
-            var env = Expression.Variable(typeof(IntPtr));
-            tryBlockvariables.Add(env);
-            tryBlockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env_from_ref", envRef)));
-            
             // Check if env is IntPtr.Zero and throw exception
             tryBlockExpressions.Add(
                 Expression.IfThen(
-                    Expression.Equal(env, Expression.Constant(IntPtr.Zero)),
+                    Expression.Equal(scope, Expression.Constant(IntPtr.Zero)),
                     Expression.Throw(
                         Expression.New(
                             typeof(InvalidOperationException).GetConstructor(new[] { typeof(string) }),
@@ -672,6 +668,10 @@ namespace Puerts
                     )
                 )
             );
+
+            var env = Expression.Variable(typeof(IntPtr));
+            tryBlockvariables.Add(env);
+            tryBlockExpressions.Add(Expression.Assign(env, callPApi(apis, "get_env_from_ref", envRef)));
 
             var tryBlockContext = new CompileContext()
             {
@@ -1409,7 +1409,9 @@ namespace Puerts
 
                 var arg0 = getJsArg(0);
 
-                var delObj = scriptToNative(context, type, arg0);
+                var delObj = Expression.Variable(type);
+                variables.Add(delObj);
+                blockExpressions.Add(Expression.Assign(delObj, scriptToNative(context, type, arg0)));
 
                 var result = Expression.Variable(typeof(IntPtr));
                 variables.Add(result);

@@ -503,6 +503,7 @@ namespace Puerts
         public static void LogCallback(string msg)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            Console.WriteLine(msg);
 #else
             UnityEngine.Debug.Log(msg);
 #endif
@@ -524,6 +525,22 @@ namespace Puerts
 #else
             UnityEngine.Debug.Log(msg);
 #endif
+        }
+
+        List<WeakReference<JSObject>> allocedJsObject = new List<WeakReference<JSObject>>();
+
+        internal void addAllocedJsObject(JSObject obj)
+        {
+            foreach (var weakRef in allocedJsObject)
+            {
+                JSObject d;
+                if (!weakRef.TryGetTarget(out d))
+                {
+                    weakRef.SetTarget(obj);
+                    return;
+                }
+            }
+            allocedJsObject.Add(new WeakReference<JSObject>(obj));
         }
 
         List<IntPtr> pendingKillScriptObjectRefs = new List<IntPtr>();
@@ -603,6 +620,16 @@ namespace Puerts
             GC.Collect();
             GC.WaitForPendingFinalizers();
             cleanupPendingKillScriptObjects();
+
+            foreach (var weakRef in allocedJsObject)
+            {
+                JSObject obj;
+                if (weakRef.TryGetTarget(out obj))
+                {
+                    obj.Dispose();
+                }
+            }
+            allocedJsObject.Clear();
 
             // TODO: 如果外部持有Delegate指向quickjs的函数，还是会assertion "list_empty(&rt->gc_obj_list)"
             // 原来的版本在原生侧有个统一的放置地方（JSEngine），所以能销毁

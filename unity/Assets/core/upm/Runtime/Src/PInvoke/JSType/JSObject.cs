@@ -26,6 +26,7 @@ namespace Puerts
             this.jsEnv = jsEnv;
             this.apis = apis;
             this.objRef = valueRef;
+            jsEnv.addAllocedJsObject(this);
         }
 
         public T Get<T>(string key) 
@@ -88,6 +89,7 @@ namespace Puerts
             lock(jsEnv) 
             {
 #endif
+            disposed = true;
             var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
             if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
             {
@@ -114,6 +116,8 @@ namespace Puerts
                     jsEnv.addPendingKillScriptObjects(objRef);
                 }
             }
+            objRef = IntPtr.Zero;
+            jsEnv = null;
 #if THREAD_SAFE
             }
 #endif
