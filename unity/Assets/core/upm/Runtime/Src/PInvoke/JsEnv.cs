@@ -613,7 +613,14 @@ namespace Puerts
         protected virtual void Dispose(bool dispose)
         {
             if (disposed) return;
-            
+
+            try
+            {
+                if (OnDispose != null) OnDispose();
+            }
+            catch { }
+
+            OnDispose = null;
             // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
             TickHandler = null;
             moduleExecutor = null;
@@ -624,8 +631,6 @@ namespace Puerts
             // TODO: 如果外部持有Delegate指向quickjs的函数，还是会assertion "list_empty(&rt->gc_obj_list)"
             // 原来的版本在原生侧有个统一的放置地方（JSEngine），所以能销毁
             // 后面看能否也类似的存在JsEnv这里，统一销毁
-
-            if (OnDispose != null) OnDispose();
             
 
             var scope = NativeAPI.pesapi_open_scope(papis, envRef);
