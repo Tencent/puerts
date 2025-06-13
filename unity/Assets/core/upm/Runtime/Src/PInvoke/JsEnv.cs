@@ -93,21 +93,8 @@ namespace Puerts
             }
             lock (jsEnvs)
             {
-                Idx = -1;
-                for (int i = 0; i < jsEnvs.Count; i++)
-                {
-                    if (jsEnvs[i] == null)
-                    {
-                        Idx = i;
-                        jsEnvs[Idx] = this;
-                        break;
-                    }
-                }
-                if (Idx == -1)
-                {
-                    Idx = jsEnvs.Count;
-                    jsEnvs.Add(this);
-                }
+                Idx = jsEnvs.Count;
+                jsEnvs.Add(this);
             }
 
             objectPool = new ObjectPool();
@@ -203,7 +190,15 @@ namespace Puerts
 
         private void onObjectReleaseRef(IntPtr ptr, IntPtr classData, IntPtr envPrivate, IntPtr userdata)
         {
-            objectPool.Remove(ptr.ToInt32());
+            try
+            {
+                objectPool.Remove(ptr.ToInt32());
+            }
+            catch
+            {
+                // 如果出现这错误，应该怎么上报呢？
+                //Console.Error.WriteLine($"onObjectReleaseRef for {ptr} throw {e}");
+            }
         }
 
         public Type GetTypeByString(string className)
