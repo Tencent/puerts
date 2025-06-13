@@ -84,7 +84,7 @@ namespace Puerts
 
         public Type FindTypeById(int id)
         {
-            var current = typeArray; // »ñÈ¡µ±Ç°Êý×é¿ìÕÕ
+            var current = typeArray; // ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             return (uint)id < (uint)current.Length ? current[id] : null;
         }
 
@@ -130,6 +130,7 @@ namespace Puerts
 
         private bool parameterTypeNotAcceptable(Type type)
         {
+            if (type.IsByRef && type.GetElementType().IsByRefLike) return true;
             return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer || (type.IsValueType && !type.IsPrimitive && type.IsByRefLike);
         }
 
@@ -181,6 +182,7 @@ namespace Puerts
             {
                 try
                 {
+                    if (returnTypeNotAcceptable(fieldInfo.FieldType)) continue;
                     var getter = ExpressionsWrap.BuildFieldGetter(fieldInfo);
                     callbacksCache.Add(getter);
                     addPropertyCallback(new MemberKey(fieldInfo.Name, fieldInfo.IsStatic), getter, null);
