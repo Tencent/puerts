@@ -64,7 +64,7 @@ import * as ts from "typescript";
              return false;
          }
  
-         if (!MetaSpecifier.CommonMetaData.get(this.Specifier).call(null, this, metaData))
+         if (!MetaSpecifier.CommonMetaData.get(this.Specifier)!.call(null, this, metaData))
          {// we know the specifier is invalid for specific key
              return null;
          }
@@ -223,14 +223,21 @@ import * as ts from "typescript";
  */
 function extractMetaSpecifierFromExpression(expression: ts.Expression, prefix: string, regExp?: RegExp) : MetaSpecifier | null
 {
-    const execRegExp = regExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : regExp;
-    const execResult = execRegExp.exec(expression.getText().trim());
-    if (execResult == null)
-    {// should capture the result
+    let specifierName: string | null = null;
+    if (ts.isPropertyAccessExpression(expression)) {
+        specifierName = expression.name.text;
+    }
+    else if (ts.isIdentifier(expression)) {
+        specifierName = expression.text;
+    }
+    else {
         return null;
     }
 
-    return new MetaSpecifier(execResult[1]);
+    if (specifierName) {
+        return new MetaSpecifier(specifierName);
+    }
+    return null;
 }
 
 /**
@@ -242,10 +249,17 @@ function extractMetaSpecifierFromExpression(expression: ts.Expression, prefix: s
  */
 function extractMetaSpecifierFromBinaryExpression(expression: ts.BinaryExpression, prefix: string, regExp?: RegExp) : MetaSpecifier | null
 {
-    const execRegExp = regExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : regExp;
-    const execResult = execRegExp.exec(expression.left.getText().trim());
-    if (execResult == null)
-    {
+    let specifierKey: string | null = null;
+    const leftExpr = expression.left;
+
+    if (ts.isPropertyAccessExpression(leftExpr)) {
+        specifierKey = leftExpr.name.text;
+    }
+    else if (ts.isIdentifier(leftExpr)) {
+        specifierKey = leftExpr.text;
+    }
+
+    if (!specifierKey) {
         return null;
     }
 
@@ -281,7 +295,7 @@ function extractMetaSpecifierFromBinaryExpression(expression: ts.BinaryExpressio
     {// invalid format
         return null;
     }
-    return new MetaSpecifier(execResult[1], values);
+    return new MetaSpecifier(specifierKey, values);
 }
 
 /**
@@ -300,7 +314,7 @@ function collectMetaDataFromIdentifyDecorator(expressions: ts.NodeArray<ts.Expre
     const MetaKeyRegExp = keyRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : keyRegExp;
     expressions.forEach((value)=>
     {
-        let metaSpecifier: MetaSpecifier;
+        let metaSpecifier: MetaSpecifier | null;
         if (ts.isBinaryExpression(value))
         {// should be the meta key value or , ${prefix}.identifier = (value);
             metaSpecifier = extractMetaSpecifierFromBinaryExpression(value, prefix, MetaKeyValueRegExp);
@@ -312,14 +326,12 @@ function collectMetaDataFromIdentifyDecorator(expressions: ts.NodeArray<ts.Expre
 
         if (metaSpecifier == null)
         {
-            console.warn(`the ${prefix}: ${value.getFullText()} is not valid meta data`);
             return;
         }
 
         const applyResult= metaSpecifier.ApplyInIdentity(metaData);
         if (applyResult == null)
         {
-            console.warn(`the ${prefix}: ${value.getFullText()} is not valid meta data`);
         }
         else if (applyResult == false)
         {// unknown specifier currently
@@ -343,7 +355,7 @@ function collectMetaDataFromMetaDecorator(expressions: ts.NodeArray<ts.Expressio
     const MetaKeyValueRegExp = keyValueRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : keyValueRegExp;
     const MetaKeyRegExp = keyRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : keyRegExp;
     expressions.forEach((value)=>{
-        let metaSpecifier: MetaSpecifier;
+        let metaSpecifier: MetaSpecifier | null;
         if (ts.isBinaryExpression(value))
         {// should be the meta key value or , ${prefix}.identifier.assign(value);
             metaSpecifier = extractMetaSpecifierFromBinaryExpression(value, prefix, MetaKeyValueRegExp);
@@ -355,18 +367,15 @@ function collectMetaDataFromMetaDecorator(expressions: ts.NodeArray<ts.Expressio
 
         if (metaSpecifier == null)
         {
-            console.warn(`the umeta: ${value.getFullText()} is not valid meta data`);
             return;
         }
 
         const applyResult= metaSpecifier.ApplyInMeta(metaData);
         if (applyResult == null)
         {
-            console.warn(`the umeta: ${value.getFullText()} is not valid meta data`);
         }
         else if (applyResult == false)
         {// unknown specifier currently, this should never happen
-            console.warn(`logic error: umeta data should never be unrecognized`);
         }                    
     });
 }
@@ -386,14 +395,16 @@ function collectMetaDataFromDecorator(decorator: ts.Decorator, prefix: string, s
         return;
     }
     
-    const expressionText = expression.expression.getFullText(); //  get the callable signature
-    //  should use cache to hold the reg exp object ?
-    if (new RegExp(`^${prefix}\.${prefix}$`).test(expressionText))
-    {// the decorator match @prefix.prefix
+    const expressionText = expression.expression.getFullText().trim(); //  get the callable signature
+    const expectedDecoratorName = `.${prefix}.${prefix}`; // e.g., .uproperty.uproperty
+    const expectedUmetaName = `.${prefix}.umeta`;   // e.g., .uproperty.umeta
+
+    if (expressionText.endsWith(expectedDecoratorName) || expressionText === prefix + "." + prefix)
+    {// the decorator match @prefix.prefix (e.g. uproperty.uproperty or UE.uproperty.uproperty)
         collectMetaDataFromIdentifyDecorator(expression.arguments, prefix, specifiers, metaData);
     }
-    else if (new RegExp(`^${prefix}\.umeta$`).test(expressionText))
-    {// the decorator match @prefix.umeta
+    else if (expressionText.endsWith(expectedUmetaName) || expressionText === prefix + ".umeta" )
+    {// the decorator match @prefix.umeta (e.g. uproperty.umeta or UE.uproperty.umeta)
         collectMetaDataFromMetaDecorator(expression.arguments, prefix, specifiers, metaData);
     }
 }
@@ -547,7 +558,6 @@ function processClassMetaData(specifiers: Array<MetaSpecifier>, metaData: Map<st
             ClassFlags = ClassFlags | UE.ClassFlags.CLASS_HideDropDown;
             break;
         case 'DependsOn'.toLowerCase():
-            console.log('currently depend on meta data specifier is not supported');
             break;
         case 'MinimalAPI'.toLowerCase():
             if (!value.IsMetaKey())
@@ -756,7 +766,6 @@ function processClassMetaData(specifiers: Array<MetaSpecifier>, metaData: Map<st
 
     if (!bValidSpecifiers)
     {
-        console.warn(`invalid specifier for uclass: ${InvalidSpecifier}`);
         return null;
     }
 
@@ -1294,7 +1303,6 @@ function processFunctionMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
 
     if (!bValidSpecifiers)
     {
-        console.warn(`invalid meta data for ufunction: ${InvalidMessage}`);
         return null;
     }
     
@@ -1386,7 +1394,6 @@ function processParamMetaData(specifiers: Array<MetaSpecifier>, metaData: Map<st
 
     if (!bValidSpecifiers)
     {
-        console.warn(`invalid meta data for uparam: ${InvalidMessage}`);
         return null;
     }
 
@@ -1585,7 +1592,6 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
             PropertyFlags = PropertyFlags | (BigInt(UE.PropertyFlags.CPF_GlobalConfig) | BigInt(UE.PropertyFlags.CPF_Config));
             break;
         case `Localized`.toLowerCase():
-            console.warn(`the localized specifier is deprecated`);
             break;
         case `Transient`.toLowerCase():
             if (!value.IsMetaKey())
@@ -1617,7 +1623,6 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
                 return markInvalidSince(`${value.Specifier} should be a meta key`);
             }
 
-            console.warn('NonPIETransient is deprecated - NonPIEDuplicateTransient should be used instead');
             PropertyFlags = PropertyFlags | BigInt(UE.PropertyFlags.CPF_NonPIEDuplicateTransient);
             break;
         case `NonPIEDuplicateTransient`.toLowerCase():
@@ -1680,7 +1685,6 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
             PropertyFlags = PropertyFlags | BigInt(UE.PropertyFlags.CPF_RepSkip);
             break;
         case `RepRetry`.toLowerCase():
-            console.error('RepRetry is deprecated');
             break;
         case `Interp`.toLowerCase():
             if (!value.IsMetaKey())
@@ -1845,7 +1849,6 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
 
     if (!bValidSpecifiers)
     {
-        console.warn(`invalid meta data for uproperty: ${InvalidMessage}`);
         return null;
     }
 
@@ -1853,7 +1856,9 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
 
     const FinalFlags = PropertyFlags | ImpliedPropertyFlags;
     metaDataResult.SetPropertyFlags(Number(FinalFlags >> 32n), Number(FinalFlags & 0xffffffffn));
-    metaData.forEach((value, key)=>{metaDataResult.SetMetaData(key, value);});
+    metaData.forEach((value, key)=>{ 
+        metaDataResult.SetMetaData(key, value); 
+    });
     metaDataResult.SetRepCallbackName(RepCallbackName);
 
     return metaDataResult;
@@ -1863,20 +1868,20 @@ function processPropertyMetaData(specifiers: Array<MetaSpecifier>, metaData: Map
  *  compile the class data
  * @param type 
  */
-export function compileClassMetaData(type: ts.Type): UE.PEClassMetaData
+export function compileClassMetaData(type: ts.Type): UE.PEClassMetaData | null
 {
     //  fetch the decorator
-    let decorators = null;
-    if (type.getSymbol().valueDeclaration != null)
+    let decorators: readonly ts.Decorator[] | undefined = undefined;
+    if (type.getSymbol()?.valueDeclaration != null)
     {
-        decorators = type.getSymbol().valueDeclaration.decorators;
+        decorators = ts.getDecorators(type.getSymbol()!.valueDeclaration!);
     }
-    if (decorators == null)
+    if (decorators == null || decorators.length === 0)
     {   //  no decorators
         return null;
     }
     
-    let [specifiers, metaData] = getMetaDataFromDecorators(decorators, 'uclass');
+    let [specifiers, metaData] = getMetaDataFromDecorators(decorators as ts.NodeArray<ts.Decorator>, 'uclass');
     return processClassMetaData(specifiers, metaData);
 }
 
@@ -1884,16 +1889,16 @@ export function compileClassMetaData(type: ts.Type): UE.PEClassMetaData
  * compile the function meta data
  * @param func  
  */
-export function compileFunctionMetaData(func: ts.Symbol): UE.PEFunctionMetaData
+export function compileFunctionMetaData(func: ts.Symbol): UE.PEFunctionMetaData | null
 {
     //  fetch the decorator
-    const decorators = func.valueDeclaration != null ? func.valueDeclaration.decorators : null;
-    if (decorators == null)
+    const decorators = func.valueDeclaration != null ? ts.getDecorators(func.valueDeclaration) : null;
+    if (decorators == null || decorators.length === 0)
     {   //  no decorators
         return null;
     }
     
-    let [specifiers, metaData] = getMetaDataFromDecorators(decorators, 'ufunction');
+    let [specifiers, metaData] = getMetaDataFromDecorators(decorators as ts.NodeArray<ts.Decorator>, 'ufunction');
     return processFunctionMetaData(specifiers, metaData);
 }
 
@@ -1902,16 +1907,16 @@ export function compileFunctionMetaData(func: ts.Symbol): UE.PEFunctionMetaData
  * @param param 
  * @returns 
  */
-export function compileParamMetaData(param: ts.Symbol): UE.PEParamMetaData
+export function compileParamMetaData(param: ts.Symbol): UE.PEParamMetaData | null
 {
     //  fetch the decorator
-    const decorators = param.valueDeclaration != null ? param.valueDeclaration.decorators : null;
-    if (decorators == null)
+    const decorators = param.valueDeclaration != null ? ts.getDecorators(param.valueDeclaration) : null;
+    if (decorators == null || decorators.length === 0)
     {
         return null;
     }
 
-    let [specifiers, metaData] = getMetaDataFromDecorators(decorators, 'uparam');
+    let [specifiers, metaData] = getMetaDataFromDecorators(decorators as ts.NodeArray<ts.Decorator>, 'uparam');
     return processParamMetaData(specifiers, metaData);
 }
 
@@ -1920,15 +1925,16 @@ export function compileParamMetaData(param: ts.Symbol): UE.PEParamMetaData
  * @param prop 
  * @returns 
  */
-export function compilePropertyMetaData(prop: ts.Symbol): UE.PEPropertyMetaData
+export function compilePropertyMetaData(prop: ts.Symbol): UE.PEPropertyMetaData | null
 {
     //  fetch the decorator
-    const decorators = prop.valueDeclaration != null ? prop.valueDeclaration.decorators : null;
-    if (decorators == null)
-    {
+    const decorators = prop.valueDeclaration != null ? ts.getDecorators(prop.valueDeclaration) : null;
+    if (decorators == null || decorators.length === 0)
+    { //  no decorators
         return null;
     }
 
-    let [specifiers, metaData] = getMetaDataFromDecorators(decorators, 'uproperty');
-    return processPropertyMetaData(specifiers, metaData);
+    let [specifiers, metaData] = getMetaDataFromDecorators(decorators as ts.NodeArray<ts.Decorator>, 'uproperty');
+    const result = processPropertyMetaData(specifiers, metaData);
+    return result;
 }

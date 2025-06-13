@@ -1039,14 +1039,26 @@ function watch(configFilePath:string) {
                                     postProcessPinType(symbol.valueDeclaration, propPinType.pinType, true);
                                     //console.log("add member variable", symbol.getName());
                                     let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
-                                    let flags:bigint = BigInt(getFlagsValue(sflags, PropertyFlags));
+                                    let localFlags:bigint = BigInt(getFlagsValue(sflags, PropertyFlags)); // From //@flags
                                     let cond = 0;
+
                                     if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
+                                        // Handle @flags() decorator
+                                        localFlags |= getDecoratorFlagsValue(symbol.valueDeclaration, "flags", PropertyFlags);
+
+                                        // Handle @condition() for CPF_Net
                                         cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "condition", ELifetimeCondition));
                                         if (cond != 0) {
-                                            flags = flags | BigInt(PropertyFlags.CPF_Net);
+                                            localFlags |= BigInt(PropertyFlags.CPF_Net); 
                                         }
-                                        flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, "flags", PropertyFlags);
+
+                                        // Handle specific @edit_on_instance decorator as an override
+                                        if (hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
+                                            localFlags &= ~BigInt(PropertyFlags.CPF_DisableEditOnInstance); // Remove restriction
+                                            localFlags |= BigInt(PropertyFlags.CPF_Edit); // Ensure it's editable if this is used
+                                        }
+                                        
+                                        // Attachment logic (preserved)
                                         symbol.valueDeclaration.decorators.forEach((decorator) => {
                                             let expression = decorator.expression;
                                             if (ts.isCallExpression(expression)) {
@@ -1058,14 +1070,23 @@ function watch(configFilePath:string) {
                                             }
                                         });
                                     }
-                                    if (hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
-                                        flags &= ~BigInt(PropertyFlags.CPF_DisableEditOnInstance);
-                                    } else {
-                                        flags |= BigInt(PropertyFlags.CPF_DisableEditOnInstance);
-                                    }
 
-                                    // bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond);
-                                    bp.AddMemberVariableWithMetaData(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond, uemeta.compilePropertyMetaData(symbol));
+                                    let propertyMetaData = uemeta.compilePropertyMetaData(symbol);
+
+                                    // If UEMeta provides no metadata (e.g. no @uproperty decorator on the member) AND
+                                    // localFlags themselves don't already make the property editable, 
+                                    // then apply a default CPF_DisableEditOnInstance to localFlags.
+                                    // This makes un-decorated or un-annotated properties non-editable on instances by default.
+                                    if (!propertyMetaData && !(localFlags & BigInt(PropertyFlags.CPF_Edit))) {
+                                       // Check hasDecorator again because the main decorators loop might not have run if no decorators exist at all
+                                       if (!symbol.valueDeclaration || !symbol.valueDeclaration.decorators || !hasDecorator(symbol.valueDeclaration, "edit_on_instance")) { 
+                                            localFlags |= BigInt(PropertyFlags.CPF_DisableEditOnInstance);
+                                       }
+                                    }
+                                    // When propertyMetaData *is* present, its internal flags (derived by UEMeta.ts from EditAnywhere etc.)
+                                    // are authoritative. localFlags here are for truly additional/override flags.
+
+                                    bp.AddMemberVariableWithMetaData(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(localFlags & 0xffffffffn), Number(localFlags >> 32n), cond, propertyMetaData);
                                 }
                             }
                         });
