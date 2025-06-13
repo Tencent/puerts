@@ -57,7 +57,7 @@ namespace Puerts
 
         private bool disposed = false;
 
-        internal static void ReleaseObjRef(IntPtr apis, IntPtr env, IntPtr objRef)
+        internal static void ReleaseObjRef(IntPtr apis, IntPtr env, IntPtr objRef, bool force)
         {
             uint internal_field_count = 0;
             IntPtr weakHandlePtr = NativeAPI.pesapi_get_ref_internal_fields(apis, objRef, out internal_field_count);
@@ -68,17 +68,56 @@ namespace Puerts
 
             IntPtr weakHandle = Marshal.PtrToStructure<IntPtr>(weakHandlePtr);
 
+            bool targetReleased = false;
+
             if (weakHandle != IntPtr.Zero)
             {
                 var handle = GCHandle.FromIntPtr(weakHandle);
                 if (handle.Target == null)
                 {
-                    var obj = NativeAPI.pesapi_get_value_from_ref(apis, env, objRef);
-                    NativeAPI.pesapi_set_private(apis, env, obj, IntPtr.Zero);
-                    //UnityEngine.Debug.Log($"cleanupPendingKillScriptObjects {objRef}");
-                    NativeAPI.pesapi_release_value_ref(apis, objRef);
+                    targetReleased = true;
                 }
             }
+            if (targetReleased || force)
+            {
+                var obj = NativeAPI.pesapi_get_value_from_ref(apis, env, objRef);
+                NativeAPI.pesapi_set_private(apis, env, obj, IntPtr.Zero);
+                //UnityEngine.Debug.Log($"cleanupPendingKillScriptObjects {objRef}");
+                NativeAPI.pesapi_release_value_ref(apis, objRef);
+            }
+        }
+
+        internal void ForceDispose()
+        {
+            if (disposed) return;
+#if THREAD_SAFE
+            lock(jsEnv) 
+            {
+#endif
+            disposed = true;
+            var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
+            if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
+            {
+                NativeAPI.pesapi_release_value_ref(apis, objRef);
+            }
+            else
+            {
+                var scope = NativeAPI.pesapi_open_scope(apis, envRef);
+                try
+                {
+                    var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
+                    ReleaseObjRef(apis, env, objRef, true);
+                }
+                finally
+                {
+                    NativeAPI.pesapi_close_scope(apis, scope);
+                }
+            }
+            objRef = IntPtr.Zero;
+            jsEnv = null;
+#if THREAD_SAFE
+            }
+#endif
         }
 
         protected virtual void Dispose(bool dispose)
@@ -93,7 +132,7 @@ namespace Puerts
             var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
             if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
             {
-                NativeAPI.pesapi_release_env_ref(apis, envRef);
+                NativeAPI.pesapi_release_value_ref(apis, objRef);
             }
             else
             {
@@ -103,7 +142,7 @@ namespace Puerts
                     try
                     {
                         var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
-                        ReleaseObjRef(apis, env, objRef);
+                        ReleaseObjRef(apis, env, objRef, false);
                     }
                     finally
                     {

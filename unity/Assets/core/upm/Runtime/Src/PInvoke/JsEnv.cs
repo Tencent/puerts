@@ -569,7 +569,7 @@ namespace Puerts
                         var objRef = pendingKillScriptObjectRefs[lastIndex];
                         pendingKillScriptObjectRefs.RemoveAt(lastIndex);
 
-                        JSObject.ReleaseObjRef(papis, env, objRef);
+                        JSObject.ReleaseObjRef(papis, env, objRef, false);
                     }
                 }
                 finally
@@ -626,7 +626,7 @@ namespace Puerts
                 JSObject obj;
                 if (weakRef.TryGetTarget(out obj))
                 {
-                    obj.Dispose();
+                    obj.ForceDispose();
                 }
             }
             allocedJsObject.Clear();
