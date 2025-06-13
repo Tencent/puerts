@@ -1409,9 +1409,7 @@ namespace Puerts
 
                 var arg0 = getJsArg(0);
 
-                var delObj = Expression.Variable(type);
-                variables.Add(delObj);
-                blockExpressions.Add(Expression.Assign(delObj, scriptToNative(context, type, arg0)));
+                var delObj = scriptToNative(context, type, arg0);
 
                 var result = Expression.Variable(typeof(IntPtr));
                 variables.Add(result);
