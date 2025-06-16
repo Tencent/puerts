@@ -83,7 +83,7 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve]
         public int Test5(string i, int j, params bool[] k)
         {
-            return -1;
+            return k == null ? - 1 : k.Length;
         }
         [UnityEngine.Scripting.Preserve]
         public int Test6(int d, int i = 1, params string[] strs)
@@ -207,7 +207,7 @@ namespace Puerts.UnitTest
                     return temp.Test5('1', 1, false,false,false);
                 })()
            ");
-            Assert.AreEqual(-1, ret);
+            Assert.AreEqual(3, ret);
             jsEnv.Tick();
             
         }
@@ -222,7 +222,7 @@ namespace Puerts.UnitTest
                     return temp.Test5('1', 1, false);
                 })()
            ");
-            Assert.AreEqual(-1, ret);
+            Assert.AreEqual(1, ret);
             jsEnv.Tick();
             
         }
