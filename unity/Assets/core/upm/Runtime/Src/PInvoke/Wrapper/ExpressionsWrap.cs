@@ -858,60 +858,54 @@ namespace Puerts
             var totalArgc = callPApi(context.Apis, "get_args_len", info);
             if (parameterInfo.IsDefined(typeof(ParamArrayAttribute), false))
             {
-                // Calculate actual argument count (total args - start index)
-                var argc = Expression.Variable(typeof(int));
-                context.Variables.Add(argc);
-                context.BlockExpressions.Add(
-                    Expression.Assign(argc, 
-                        Expression.Subtract(totalArgc, Expression.Constant(parameterInfoIndex))
-                    )
-                );
-                
-                // Ensure argc is not negative
-                context.BlockExpressions.Add(
-                    Expression.IfThen(
-                        Expression.LessThan(argc, Expression.Constant(0)),
-                        Expression.Assign(argc, Expression.Constant(0))
-                    )
-                );
-                //context.BlockExpressions.Add(Printf("argc: {0} index:{1}", argc, Expression.Constant(parameterInfoIndex)));
-
-                // Create array with actual argument count
-                var array = Expression.Variable(parameterInfo.ParameterType);
-                context.Variables.Add(array);
-                context.BlockExpressions.Add(
-                    Expression.Assign(array, 
-                        Expression.NewArrayBounds(parameterInfo.ParameterType.GetElementType(), argc)
-                    )
+                var test = Expression.Call(
+                    Helpper.MakeGenericMethod(nameof(Helpper.IsAssignable_ByRef), parameterInfo.ParameterType),
+                    context.Apis,
+                    context.Env,
+                    value
                 );
 
-                
-                // Loop through arguments starting from parameterInfoIndex
-                var index = Expression.Variable(typeof(int));
-                context.Variables.Add(index);
-                context.BlockExpressions.Add(Expression.Assign(index, Expression.Constant(0)));
+                Expression trueBranch = scriptToNative(context, parameterInfo.ParameterType, value);
+
+                var argcVar = Expression.Variable(typeof(int), "argc");
+                var arrayVar = Expression.Variable(parameterInfo.ParameterType, "array");
+                var indexVar = Expression.Variable(typeof(int), "index");
                 var loopLabel = Expression.Label();
-                context.BlockExpressions.Add(Expression.Loop(
-                    Expression.IfThenElse(
-                        Expression.LessThan(index, argc),
-                        Expression.Block(
-                            Expression.Assign(
-                                Expression.ArrayAccess(array, index),
-                                scriptToNative(
-                                    context, 
-                                    parameterInfo.ParameterType.GetElementType(), 
-                                    callPApi(context.Apis, "get_arg", info,
-                                        Expression.Add(index, Expression.Constant(parameterInfoIndex)))
-                                )
-                            ),
-                            Expression.PostIncrementAssign(index)
-                        ),
-                        Expression.Break(loopLabel)
-                    ),
-                    loopLabel
-                ));
 
-                return array;
+                var elementType = parameterInfo.ParameterType.GetElementType();
+                var falseBranch = Expression.Block(
+                    new[] { argcVar, arrayVar, indexVar },
+                    Expression.Assign(argcVar,
+                        Expression.Subtract(totalArgc, Expression.Constant(parameterInfoIndex))),
+                    Expression.IfThen(
+                        Expression.LessThan(argcVar, Expression.Constant(0)),
+                        Expression.Assign(argcVar, Expression.Constant(0))
+                    ),
+                    Expression.Assign(arrayVar,
+                        Expression.NewArrayBounds(elementType, argcVar)),
+                    Expression.Assign(indexVar, Expression.Constant(0)),
+                    Expression.Loop(
+                        Expression.IfThenElse(
+                            Expression.LessThan(indexVar, argcVar),
+                            Expression.Block(
+                                Expression.Assign(
+                                    Expression.ArrayAccess(arrayVar, indexVar),
+                                    scriptToNative(
+                                        context,
+                                        elementType,
+                                        callPApi(context.Apis, "get_arg", info,
+                                            Expression.Add(indexVar, Expression.Constant(parameterInfoIndex)))
+                                )),
+                                Expression.PostIncrementAssign(indexVar)
+                            ),
+                            Expression.Break(loopLabel)
+                        ),
+                        loopLabel
+                    ),
+                    arrayVar
+                );
+
+                return Expression.Condition(test, trueBranch, falseBranch);
             }
             else
             {
@@ -1049,7 +1043,11 @@ namespace Puerts
         private static Expression checkArgument(CompileContext context, ParameterInfo parameterInfo, Expression value)
         {
             var hasParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false);
-            var test = checkArgument(context, hasParams ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType, value);
+            var test = checkArgument(context, parameterInfo.ParameterType, value);
+            if (hasParams)
+            {
+                test = Expression.OrElse(test, checkArgument(context, parameterInfo.ParameterType.GetElementType(), value));
+            }
             return (parameterInfo.HasDefaultValue || hasParams) ? Expression.OrElse(callPApi(context.Apis, "is_undefined", context.Env, value), test) : test;
         }
 
