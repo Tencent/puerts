@@ -52,9 +52,16 @@ struct pesapi_value_ref__ : pesapi_env_ref__
 
 struct pesapi_scope__
 {
-    explicit pesapi_scope__(v8::Isolate* isolate) : scope(isolate), trycatch(isolate)
+    explicit pesapi_scope__(v8::Isolate* isolate) : 
+#ifdef THREAD_SAFE
+        locker(isolate),
+#endif
+        scope(isolate), trycatch(isolate)
     {
     }
+#ifdef THREAD_SAFE
+    v8::Locker locker;
+#endif
     v8::HandleScope scope;
     v8::TryCatch trycatch;
     puerts::PString errinfo;
