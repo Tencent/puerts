@@ -118,6 +118,7 @@ set(qjs_sources
 set(papi_sources
     source/PapiQuickjsImpl.cpp
     source/CppObjectMapperQuickjs.cpp
+    source/BackendEnv.cpp
 )
 
 add_definitions(-D_CHAR16T)
