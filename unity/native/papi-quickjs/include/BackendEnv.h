@@ -8,9 +8,9 @@
 #pragma once
 
 #include <map>
-#include <string>
-#include <algorithm>
-#include <unordered_map>
+#include <EASTL/string.h>
+#include <EASTL/map.h>
+#include <EASTL/allocator_malloc.h>
 #include "quickjs.h"
 
 #define EXECUTEMODULEGLOBANAME "__puertsExecuteModule"
@@ -31,7 +31,12 @@ namespace PUERTS_NAMESPACE
         {
         } 
 
-        std::map<std::string, JSModuleDef*> PathToModuleMap;
+        inline static FBackendEnv* Get(JSRuntime *rt)
+        {
+            return reinterpret_cast<FBackendEnv*>(JS_GetRuntimeOpaque(rt));
+        }
+
+        eastl::map<eastl::basic_string<char, eastl::allocator_malloc>, JSModuleDef*, eastl::less<eastl::basic_string<char, eastl::allocator_malloc>>, eastl::allocator_malloc> PathToModuleMap;
         JSValue JsFileLoader;
         JSValue JsFileNormalize;
         
@@ -41,7 +46,7 @@ namespace PUERTS_NAMESPACE
         
         char* NormalizeModuleName(JSContext *ctx, const char *base_name, const char *name);
 
-        std::map<int, std::string> ScriptIdToPathMap;
+        eastl::map<int, eastl::basic_string<char, eastl::allocator_malloc>, eastl::less<int>, eastl::allocator_malloc> ScriptIdToPathMap;
 
         // PromiseCallback
         //v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
@@ -50,7 +55,7 @@ namespace PUERTS_NAMESPACE
 
         void UnInitialize();
         
-        std::string GetJSStackTrace();
+        //std::string GetJSStackTrace();
     };
 
     namespace esmodule 

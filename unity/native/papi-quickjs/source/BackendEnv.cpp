@@ -175,7 +175,7 @@ JSModuleDef* FBackendEnv::LoadModule(JSContext* ctx, const char *name)
     auto Ret = (JSModuleDef *)JS_VALUE_GET_PTR(EvalRet);
 
     auto Meta = JS_GetImportMeta(ctx, Ret);
-    std::string str = name;
+    eastl::basic_string<char, eastl::allocator_malloc> str = name;
     str = "puer:" + str;
     JS_SetPropertyStr(ctx, Meta, "url", JS_NewString(ctx, str.c_str()));
     JS_FreeValue(ctx, Meta);
@@ -251,8 +251,7 @@ char* esmodule::module_normalize(
 {
     return static_cast<FBackendEnv*>(opaque)->NormalizeModuleName(ctx, base_name, name);
 }
-
-
+/*
 std::string FBackendEnv::GetJSStackTrace()
 {
     // new Error("").stack
@@ -277,5 +276,6 @@ std::string FBackendEnv::GetJSStackTrace()
     JS_FreeValue(ctx, stack);
     return ret;
 }
+*/
 
 }
