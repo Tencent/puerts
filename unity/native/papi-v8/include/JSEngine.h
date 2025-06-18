@@ -21,16 +21,8 @@
 #ifdef MULT_BACKENDS
 #include "IPuertsPlugin.h"
 #endif
-#ifdef WITH_IL2CPP_OPTIMIZATION
-#include "pesapi.h"
-#ifdef WITH_QUICKJS
-#include "CppObjectMapperQuickjs.h"
-#endif
-#ifdef WITH_V8
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
-#endif
-#endif
 
 #if WITH_NODEJS
 #pragma warning(push, 0)
@@ -220,14 +212,7 @@ private:
 
     JSFunction* ModuleExecutor = nullptr;
     
-#ifdef WITH_IL2CPP_OPTIMIZATION
-#ifdef WITH_QUICKJS
-    pesapi::qjsimpl::CppObjectMapper CppObjectMapperQjs;
-#endif
-#ifdef WITH_V8
     FCppObjectMapper CppObjectMapperV8;
-#endif
-#endif
     
 public:
     JSFunction* JSObjectValueGetter = nullptr;

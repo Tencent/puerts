@@ -134,16 +134,8 @@ namespace PUERTS_NAMESPACE
             v8::FunctionTemplate::New(Isolate, &JSObjectValueGetterFunction)->GetFunction(Context).ToLocalChecked()
         );
         
-#ifdef WITH_IL2CPP_OPTIMIZATION
-#ifdef WITH_QUICKJS
-        auto ctx = Context->context_;
-        CppObjectMapperQjs.Initialize(ctx);
-#endif
-#ifdef WITH_V8
         CppObjectMapperV8.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapperV8));
-#endif
-#endif
 
         BackendEnv.StartPolling();
     }
