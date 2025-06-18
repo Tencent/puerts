@@ -121,14 +121,6 @@ public:
 
     void RequestFullGarbageCollectionForTesting();
 
-    JSFunction* CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction);
-
-    void ReleaseJSFunction(JSFunction* InFunction);
-
-    JSObject* CreateJSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject);
-
-    void ReleaseJSObject(JSObject* InObject);
-
     void CreateInspector(int32_t Port);
 
     void DestroyInspector();
@@ -195,7 +187,6 @@ private:
     FCppObjectMapper CppObjectMapperV8;
     
 public:
-    JSFunction* JSObjectValueGetter = nullptr;
 
     std::string GetJSStackTrace();
 };
