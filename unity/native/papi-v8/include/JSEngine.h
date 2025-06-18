@@ -106,16 +106,6 @@ public:
 
     ~JSEngine();
 
-    void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
-
-    bool Eval(const char *Code, const char* Path);
-
-    int RegisterClass(const char *FullName, int BaseTypeId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size);
-
-    bool RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
-
-    bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete);
-
     v8::Local<v8::Value> GetClassConstructor(int ClassID);
 
     v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context, int ClassID, void *Ptr);
