@@ -9,7 +9,6 @@
 #include "Log.h"
 #include <memory>
 #include <stdarg.h>
-#include "ExecuteModuleJSCode.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -228,34 +227,6 @@ namespace PUERTS_NAMESPACE
         {
             delete LifeCycleInfos[i];
         }
-    }
-
-    JSFunction* JSEngine::GetModuleExecutor()
-    {
-        if (ModuleExecutor == nullptr)
-        {
-            bool success = Eval(ExecuteModuleJSCode, "__puer_execute__.mjs");
-            if (!success) return nullptr;
-            
-#ifdef THREAD_SAFE
-            v8::Locker Locker(MainIsolate);
-#endif
-            v8::Isolate::Scope IsolateScope(MainIsolate);
-            v8::HandleScope HandleScope(MainIsolate);
-            v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);
-            v8::Context::Scope ContextScope(Context);
-            v8::Local<v8::Object> Global = Context->Global();
-            auto Ret = Global->Get(Context, v8::String::NewFromUtf8(MainIsolate, EXECUTEMODULEGLOBANAME).ToLocalChecked());
-            v8::Local<v8::Value> Func;
-            if (Ret.ToLocal(&Func) && Func->IsFunction())
-            {
-                ModuleExecutor = CreateJSFunction(
-                    MainIsolate, Context, 
-                    Func.As<v8::Function>()
-                );
-            }
-        }
-        return ModuleExecutor;
     }
 
     bool JSEngine::Eval(const char *Code, const char* Path)

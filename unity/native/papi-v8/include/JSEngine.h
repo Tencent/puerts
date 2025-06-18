@@ -217,8 +217,6 @@ private:
 public:
     JSFunction* JSObjectValueGetter = nullptr;
 
-    JSFunction* GetModuleExecutor();
-
     v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
     
     v8::MaybeLocal<v8::Function> CreateFunction(CSharpFunctionCallback Callback, JsFunctionFinalizeCallback Finalize, int64_t Data);
