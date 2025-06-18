@@ -119,6 +119,7 @@ set(papi_sources
     source/PapiQuickjsImpl.cpp
     source/CppObjectMapperQuickjs.cpp
     source/BackendEnv.cpp
+    source/PapiExport.cpp
 )
 
 add_definitions(-D_CHAR16T)
