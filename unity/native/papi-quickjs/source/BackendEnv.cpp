@@ -18,6 +18,12 @@
 namespace PUERTS_NAMESPACE
 {
 
+enum PromiseRejectEvent {
+    kPromiseRejectWithNoHandler = 0,
+    kPromiseHandlerAddedAfterReject = 1,
+    kPromiseRejectAfterResolved = 2,
+    kPromiseResolveAfterResolved = 3,
+};
 
 void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quickjs_context)
 {
@@ -33,16 +39,41 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
     
     JsFileLoader = JS_Undefined();
     JsFileNormalize = JS_Undefined();
+    JsPromiseRejectCallback = JS_Undefined();
     
     JS_SetModuleLoaderFunc(rt, esmodule::module_normalize, esmodule::js_module_loader, this);
     
+    JSValue G = JS_GetGlobalObject(ctx);
+
     JSValue FuncData;
     JS_INITPTR(FuncData, JS_TAG_EXTERNAL, (void*)this);
     JSValue Func = JS_NewCFunctionData(ctx, esmodule::ExecuteModule, 0, 0, 1, &FuncData);
-    
-    JSValue G = JS_GetGlobalObject(ctx);
     JS_SetPropertyStr(ctx, G, EXECUTEMODULEGLOBANAME, Func);
+
+    JSValue SetPromiseRejectCallback = JS_NewCFunctionData(ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data)
+    {
+        if (argc > 0)
+        {
+            FBackendEnv* Backend = (FBackendEnv*)(JS_VALUE_GET_PTR(func_data[0]));
+            Backend->JsPromiseRejectCallback = argv[0];
+        }
+        return JS_Undefined();
+    }, 0, 0, 1, &FuncData);
+    JS_SetPropertyStr(ctx, G, "__tgjsSetPromiseRejectCallback", SetPromiseRejectCallback);
+
+    JS_SetHostPromiseRejectionTracker(rt, [](JSContext *ctx, JSValueConst promise, JSValueConst reason, JS_BOOL is_handled, void *opaque)
+    {
+        FBackendEnv* Backend = (FBackendEnv*)opaque;
+        if (!JS_IsFunction(ctx, Backend->JsPromiseRejectCallback))
+        {
+            return;
+        }
+        JSValue args[] = { JS_NewInt32(ctx, is_handled ? kPromiseHandlerAddedAfterReject : kPromiseRejectWithNoHandler), promise, reason};
+        JS_Call(ctx, Backend->JsPromiseRejectCallback, JS_Undefined(), 3, args);
+    }, (void*)this);
+
     JS_FreeValue(ctx, G);
+
     JS_SetRuntimeOpaque(rt, this);
 
     CppObjectMapperQjs.Initialize(ctx);
@@ -51,6 +82,7 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
 void FBackendEnv::UnInitialize()
 {
     CppObjectMapperQjs.Cleanup();
+    JS_FreeValueRT(rt, JsPromiseRejectCallback);
     JS_FreeValueRT(rt, JsFileNormalize);
     JS_FreeValueRT(rt, JsFileLoader);
     JS_FreeContext(ctx);

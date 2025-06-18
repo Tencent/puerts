@@ -40,6 +40,8 @@ namespace PUERTS_NAMESPACE
         eastl::map<eastl::basic_string<char, eastl::allocator_malloc>, JSModuleDef*, eastl::less<eastl::basic_string<char, eastl::allocator_malloc>>, eastl::allocator_malloc> PathToModuleMap;
         JSValue JsFileLoader;
         JSValue JsFileNormalize;
+
+        JSValue JsPromiseRejectCallback;
         
         JSModuleDef* LoadModule(JSContext* ctx, const char *name);
         
