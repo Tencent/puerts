@@ -6,8 +6,6 @@
 */
 #include "BackendEnv.h"
 
-#define JS_TAG_EXTERNAL (JS_TAG_FLOAT64 + 1)
-
 #if !defined(CONFIG_CHECK_JSVALUE) && defined(JS_NAN_BOXING)
 #define JS_INITVAL(s, t, val) s = JS_MKVAL(t, val)
 #define JS_INITPTR(s, t, p) s = JS_MKPTR(t, p)
@@ -45,10 +43,14 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
     JSValue G = JS_GetGlobalObject(ctx);
     JS_SetPropertyStr(ctx, G, EXECUTEMODULEGLOBANAME, Func);
     JS_FreeValue(ctx, G);
+    JS_SetRuntimeOpaque(rt, this);
+
+    CppObjectMapperQjs.Initialize(ctx);
 }
 
 void FBackendEnv::UnInitialize()
 {
+    CppObjectMapperQjs.Cleanup();
     JS_FreeValueRT(rt, JsFileNormalize);
     JS_FreeValueRT(rt, JsFileLoader);
     JS_FreeContext(ctx);

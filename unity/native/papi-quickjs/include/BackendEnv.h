@@ -12,6 +12,7 @@
 #include <EASTL/map.h>
 #include <EASTL/allocator_malloc.h>
 #include "quickjs.h"
+#include "CppObjectMapperQuickjs.h"
 
 #define EXECUTEMODULEGLOBANAME "__puertsExecuteModule"
 
@@ -54,6 +55,8 @@ namespace PUERTS_NAMESPACE
         void Initialize(void* external_quickjs_runtime, void* external_quickjs_context);
 
         void UnInitialize();
+
+        pesapi::qjsimpl::CppObjectMapper CppObjectMapperQjs;
         
         //std::string GetJSStackTrace();
     };
