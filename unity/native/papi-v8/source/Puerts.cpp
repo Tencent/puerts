@@ -97,6 +97,21 @@ V8_EXPORT pesapi_ffi* GetV8FFIApi()
     return &v8impl::g_pesapi_ffi;
 }
 
+V8_EXPORT pesapi_env_ref CreateV8PapiEnvRef()
+{
+    auto jsEnv = new JSEngine(nullptr, nullptr);
+#ifdef THREAD_SAFE
+    v8::Locker Locker(JsEngine->MainIsolate);
+#endif
+    v8::Isolate::Scope IsolateScope(jsEnv->MainIsolate);
+    v8::HandleScope HandleScope(jsEnv->MainIsolate);
+    v8::Local<v8::Context> Context = jsEnv->BackendEnv.MainContext.Get(jsEnv->MainIsolate);
+    v8::Context::Scope ContextScope(Context);
+    
+    auto env = reinterpret_cast<pesapi_env>(*Context); //TODO: 实现相关
+    return v8impl::g_pesapi_ffi.create_env_ref(env);
+}
+
 V8_EXPORT void LowMemoryNotification(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
