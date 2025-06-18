@@ -52,7 +52,7 @@ namespace PUERTS_NAMESPACE
         // PromiseCallback
         //v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
 
-        void Initialize(void* external_quickjs_runtime, void* external_quickjs_context);
+        void Initialize(void* external_quickjs_runtime = nullptr, void* external_quickjs_context = nullptr);
 
         void UnInitialize();
 

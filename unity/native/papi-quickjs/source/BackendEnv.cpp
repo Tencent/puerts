@@ -21,8 +21,8 @@ namespace PUERTS_NAMESPACE
 
 void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quickjs_context)
 {
-    rt = JS_NewRuntime();
-    ctx = JS_NewContext(rt);
+    rt = external_quickjs_runtime ? (JSRuntime *)external_quickjs_runtime: JS_NewRuntime();
+    ctx = external_quickjs_context ? (JSContext *)external_quickjs_context : JS_NewContext(rt);
     
     //if (external_quickjs_runtime == nullptr) 
     //{
