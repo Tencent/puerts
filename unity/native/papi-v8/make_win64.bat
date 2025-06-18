@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set CONFIG=Release
+set CONFIG=RelWithDebInfo
 if not "%1"=="" (
     set CONFIG=%1
 )
