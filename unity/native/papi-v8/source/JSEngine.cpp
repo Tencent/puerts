@@ -12,35 +12,14 @@
 
 namespace PUERTS_NAMESPACE
 {
-    static void GetLastException(const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-        Info.GetReturnValue().Set(JsEngine->LastException.Get(Isolate));
-    }
-
-    void JSEngine::SetLastException(v8::Local<v8::Value> Exception)
-    {
-        LastException.Reset(MainIsolate, Exception);
-        LastExceptionInfo = FV8Utils::ExceptionToString(MainIsolate, Exception);
-    }
-
-#ifdef MULT_BACKENDS
-    JSEngine::JSEngine(puerts::IPuertsPlugin* InPuertsPlugin, void* external_quickjs_runtime, void* external_quickjs_context)
-#else
     JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
-#endif
     {
-        GeneralDestructor = nullptr;
         FBackendEnv::GlobalPrepare();
 
         BackendEnv.Initialize(external_quickjs_runtime, external_quickjs_context);
         MainIsolate = BackendEnv.MainIsolate;
 
         auto Isolate = MainIsolate;
-#ifdef MULT_BACKENDS
-        ResultInfo.PuertsPlugin = InPuertsPlugin;
-#endif
         ResultInfo.Isolate = Isolate;
         Isolate->SetData(0, this);
         Isolate->SetData(1, &BackendEnv);
@@ -69,7 +48,6 @@ namespace PUERTS_NAMESPACE
         DestroyInspector();
         
         BackendEnv.JsPromiseRejectCallback.Reset();
-        LastException.Reset();
 
         {
             auto Isolate = MainIsolate;
