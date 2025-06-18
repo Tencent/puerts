@@ -78,41 +78,29 @@ PESAPI_MODULE_EXPORT pesapi_ffi* GetQjsFFIApi()
     return &pesapi::qjsimpl::g_pesapi_ffi;
 }
 
-PESAPI_MODULE_EXPORT void LowMemoryNotification(puerts::FBackendEnv *BackendEnv)
+PESAPI_MODULE_EXPORT pesapi_env_ref CreateQjsPapiEnvRef()
 {
-}
-PESAPI_MODULE_EXPORT bool IdleNotificationDeadline(puerts::FBackendEnv *BackendEnv, double DeadlineInSeconds)
-{
-    return false;
-}
-PESAPI_MODULE_EXPORT void RequestMinorGarbageCollectionForTesting(puerts::FBackendEnv *BackendEnv)
-{
-}
-PESAPI_MODULE_EXPORT void RequestFullGarbageCollectionForTesting(puerts::FBackendEnv *BackendEnv)
-{
+    auto BackendEnv = new puerts::FBackendEnv();
+    BackendEnv->Initialize();
+    auto env = reinterpret_cast<pesapi_env>(BackendEnv->ctx);
+    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(env);
 }
 
-
-//-------------------------- begin debug --------------------------
-
-PESAPI_MODULE_EXPORT void CreateInspector(puerts::FBackendEnv *BackendEnv, int32_t Port)
+PESAPI_MODULE_EXPORT void DestroyQjsPapiEnvRef(pesapi_env_ref env_ref)
 {
+    if (env_ref)
+    {
+        auto env = pesapi::qjsimpl::g_pesapi_ffi.get_env_from_ref(env_ref);
+        if (env)
+        {
+            auto ctx = reinterpret_cast<JSContext*>(env);
+            pesapi::qjsimpl::g_pesapi_ffi.release_env_ref(env_ref);
+            auto BackendEnv = puerts::FBackendEnv::Get(JS_GetRuntime(ctx));
+            BackendEnv->UnInitialize();
+            delete BackendEnv;
+        }
+    }
 }
-
-PESAPI_MODULE_EXPORT void DestroyInspector(puerts::FBackendEnv *BackendEnv)
-{
-}
-
-PESAPI_MODULE_EXPORT int InspectorTick(puerts::FBackendEnv *BackendEnv)
-{
-    return 0;
-}
-
-PESAPI_MODULE_EXPORT void LogicTick(puerts::FBackendEnv *BackendEnv)
-{
-}
-
-//-------------------------- end debug --------------------------
 
 #ifdef __cplusplus
 }
