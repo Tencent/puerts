@@ -83,6 +83,7 @@ PESAPI_MODULE_EXPORT void LowMemoryNotification(puerts::FBackendEnv *BackendEnv)
 }
 PESAPI_MODULE_EXPORT bool IdleNotificationDeadline(puerts::FBackendEnv *BackendEnv, double DeadlineInSeconds)
 {
+    return false;
 }
 PESAPI_MODULE_EXPORT void RequestMinorGarbageCollectionForTesting(puerts::FBackendEnv *BackendEnv)
 {
@@ -104,6 +105,7 @@ PESAPI_MODULE_EXPORT void DestroyInspector(puerts::FBackendEnv *BackendEnv)
 
 PESAPI_MODULE_EXPORT int InspectorTick(puerts::FBackendEnv *BackendEnv)
 {
+    return 0;
 }
 
 PESAPI_MODULE_EXPORT void LogicTick(puerts::FBackendEnv *BackendEnv)
