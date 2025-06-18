@@ -147,24 +147,24 @@ if(NOT MSVC)
 endif()
 
 if ( APPLE AND IOS )
-    add_library(papqjs STATIC ${qjs_sources} ${eastl_sources} ${papi_sources})
+    add_library(papiqjs STATIC ${qjs_sources} ${eastl_sources} ${papi_sources})
 else ()
-    add_library(papqjs SHARED ${qjs_sources} ${eastl_sources} ${papi_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
+    add_library(papiqjs SHARED ${qjs_sources} ${eastl_sources} ${papi_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
 endif()
-target_compile_definitions(papqjs PRIVATE ${qjs_defines})
-target_include_directories(papqjs PUBLIC
+target_compile_definitions(papiqjs PRIVATE ${qjs_defines})
+target_include_directories(papiqjs PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(papqjs PUBLIC ${qjs_libs} puerts)
+target_link_libraries(papiqjs PUBLIC ${qjs_libs} puerts)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdlib")
 
-target_compile_definitions(papqjs PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
-target_compile_definitions(papqjs PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
-target_compile_definitions(papqjs PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
+target_compile_definitions(papiqjs PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
+target_compile_definitions(papiqjs PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
+target_compile_definitions(papiqjs PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
 #target_compile_definitions(PapiQjs PUBLIC EASTL_DLL)
-target_compile_definitions(papqjs PUBLIC USING_REGISTER_API_SHARED)
-target_compile_options(papqjs PRIVATE
+target_compile_definitions(papiqjs PUBLIC USING_REGISTER_API_SHARED)
+target_compile_options(papiqjs PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
         -fno-exceptions
         -fno-unwind-tables
