@@ -12,14 +12,6 @@
 
 namespace PUERTS_NAMESPACE
 {
-    v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size)
-    {
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Size);
-        void* Buff = Ab->GetBackingStore()->Data();
-        ::memcpy(Buff, Ptr, Size);
-        return Ab;
-    }
-
     static void GetLastException(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
@@ -63,9 +55,6 @@ namespace PUERTS_NAMESPACE
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(Isolate, Context);
         v8::Local<v8::Object> Global = Context->Global();
-
-        JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
-
         
         CppObjectMapperV8.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapperV8));
@@ -78,19 +67,9 @@ namespace PUERTS_NAMESPACE
         LogicTick();
         BackendEnv.StopPolling();
         DestroyInspector();
-
-        JSObjectIdMap.Reset();
+        
         BackendEnv.JsPromiseRejectCallback.Reset();
         LastException.Reset();
-
-        for (int i = 0; i < Templates.size(); ++i)
-        {
-            Templates[i].Reset();
-        }
-        for (int i = 0; i < Metadatas.size(); ++i)
-        {
-            Metadatas[i].Reset();
-        }
 
         {
             auto Isolate = MainIsolate;
@@ -101,66 +80,15 @@ namespace PUERTS_NAMESPACE
             v8::HandleScope HandleScope(Isolate);
             auto Context = ResultInfo.Context.Get(Isolate);
             v8::Context::Scope ContextScope(Context);
-
-            for (auto Iter = ObjectMap.begin(); Iter != ObjectMap.end(); ++Iter)
-            {
-                auto Value = Iter->second.Get(MainIsolate);
-                if (Value->IsObject())
-                {
-                    auto Object = Value->ToObject(Context).ToLocalChecked();
-                    auto LifeCycleInfo = static_cast<FLifeCycleInfo *>(FV8Utils::GetPoninter(Object, 1));
-                    if (LifeCycleInfo && LifeCycleInfo->Size > 0)
-                    {
-                        auto Ptr = FV8Utils::GetPoninter(Object);
-                        free(Ptr);
-                    }
-                }
-                Iter->second.Reset();
-            }
             BackendEnv.PathToModuleMap.clear();
             BackendEnv.ScriptIdToPathMap.clear();
         }
-        {
-            std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-            for (auto Iter = JSFunctions.begin(); Iter != JSFunctions.end(); ++Iter)
-            {
-                delete *Iter;
-            }
-        }
-        {
-            std::lock_guard<std::mutex> guard(JSObjectsMutex);
-            for (auto Iter = JSObjectMap.begin(); Iter != JSObjectMap.end(); ++Iter)
-            {
-                delete Iter->second;
-            }
-        }
-
         ResultInfo.Context.Reset();
         ResultInfo.Result.Reset();
 
         CppObjectMapperV8.UnInitialize(MainIsolate);
-
-        for (int i = 0; i < CallbackWithFinalizeInfos.size(); ++i)
-        {
-            CallbackWithFinalizeInfos[i]->JsFunction.Reset();
-        }
         
         BackendEnv.UnInitialize();
-
-        for (int i = 0; i < CallbackInfos.size(); ++i)
-        {
-            delete CallbackInfos[i];
-        }
-        
-        for (int i = 0; i < CallbackWithFinalizeInfos.size(); ++i)
-        {
-            delete CallbackWithFinalizeInfos[i];
-        }
-
-        for (int i = 0; i < LifeCycleInfos.size(); ++i)
-        {
-            delete LifeCycleInfos[i];
-        }
     }
 
     void JSEngine::LowMemoryNotification()

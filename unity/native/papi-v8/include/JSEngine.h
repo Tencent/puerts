@@ -15,7 +15,6 @@
 #include <memory>
 #include "Common.h"
 
-#include "JSFunction.h"
 #include "V8InspectorImpl.h"
 #include "BackendEnv.h"
 #ifdef MULT_BACKENDS
@@ -52,43 +51,21 @@ typedef void (*JsFunctionFinalizeCallback)(v8::Isolate* Isolate, int64_t UserDat
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 
-struct FCallbackInfo
-{
-    FCallbackInfo(bool InIsStatic, CSharpFunctionCallback InCallback, int64_t InData) : IsStatic(InIsStatic), Callback(InCallback), Data(InData) {}
-    bool IsStatic;
-    CSharpFunctionCallback Callback;
-    int64_t Data;
-};
-
-struct FCallbackInfoWithFinalize : public FCallbackInfo
-{
-    FCallbackInfoWithFinalize(bool InIsStatic, CSharpFunctionCallback InCallback, int64_t InData, JsFunctionFinalizeCallback InFinalize, class JSEngine* InJSE)
-       : FCallbackInfo(InIsStatic, InCallback, InData), Finalize(InFinalize), JSE(InJSE)
-    {}
-    JsFunctionFinalizeCallback Finalize;
-    class JSEngine* JSE;
-    v8::Global<v8::Function> JsFunction;
-};
-
-struct FLifeCycleInfo
-{
-    FLifeCycleInfo(int InClassID, CSharpConstructorCallback InConstructor, CSharpDestructorCallback InDestructor, int64_t InData, int InSize)
-        : ClassID(InClassID), Constructor(InConstructor), Destructor(InDestructor), Data(InData), Size(InSize){}
-    int ClassID;
-    CSharpConstructorCallback Constructor;
-    CSharpDestructorCallback Destructor;
-    int64_t Data;
-    int Size;
-};
-
-v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size);
-
 enum JSEngineBackend
 {
     V8          = 0,
     Node        = 1,
     QuickJS     = 2,
     Auto = 3
+};
+
+struct FResultInfo
+{
+    v8::Isolate* Isolate;
+    
+    v8::UniquePersistent<v8::Context> Context;
+
+    v8::UniquePersistent<v8::Value> Result;
 };
 
 class JSEngine
@@ -146,44 +123,12 @@ public:
 
     v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
 
-    V8_INLINE static JSEngine * Get(v8::Isolate* Isolate)
-    {
-        return FV8Utils::IsolateData<JSEngine>(Isolate);
-    }
-
     int32_t Idx;
 
     FBackendEnv BackendEnv;
     
 private:
-    std::vector<FCallbackInfo*> CallbackInfos;
-    
-    std::vector<FCallbackInfoWithFinalize*> CallbackWithFinalizeInfos;
 
-    std::vector<FLifeCycleInfo*> LifeCycleInfos;
-
-    std::vector<v8::UniquePersistent<v8::FunctionTemplate>> Templates;
-
-    std::vector<v8::UniquePersistent<v8::Map>> Metadatas;
-
-    std::map<std::string, int> NameToTemplateID;
-
-    std::map<void*, v8::UniquePersistent<v8::Value>> ObjectMap;
-
-    std::vector<JSFunction*> JSFunctions;
-
-    v8::UniquePersistent<v8::Map> JSObjectIdMap;
-
-    std::map<int32_t, JSObject*> JSObjectMap;
-
-    std::vector<int32_t> ObjectMapFreeIndex;
-
-    std::mutex JSFunctionsMutex;
-
-    std::mutex JSObjectsMutex;
-
-    JSFunction* ModuleExecutor = nullptr;
-    
     FCppObjectMapper CppObjectMapperV8;
     
 public:

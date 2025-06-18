@@ -15,11 +15,8 @@
 #define API_LEVEL 36
 
 using puerts::JSEngine;
-using puerts::FValue;
 using puerts::FResultInfo;
-using puerts::JSFunction;
 using puerts::FV8Utils;
-using puerts::FLifeCycleInfo;
 using puerts::JsValueType;
 
 #ifdef __cplusplus

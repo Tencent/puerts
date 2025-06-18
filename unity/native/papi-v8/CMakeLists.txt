@@ -69,7 +69,6 @@ set ( PUERTS_INC
     include/BackendEnv.h
     include/JSEngine.h
     include/V8Utils.h
-    include/JSFunction.h
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
 )
@@ -78,7 +77,6 @@ set ( PUERTS_SRC
     source/Puerts.cpp
     source/BackendEnv.cpp
     source/JSEngine.cpp
-    source/JSFunction.cpp
     source/CppObjectMapper.cpp
     source/DataTransfer.cpp
     source/PesapiV8Impl.cpp
