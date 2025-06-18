@@ -205,14 +205,7 @@ namespace PUERTS_NAMESPACE
         ResultInfo.Context.Reset();
         ResultInfo.Result.Reset();
 
-#ifdef WITH_IL2CPP_OPTIMIZATION
-#ifdef WITH_QUICKJS
-        CppObjectMapperQjs.Cleanup();
-#endif
-#ifdef WITH_V8
         CppObjectMapperV8.UnInitialize(MainIsolate);
-#endif
-#endif
 
         for (int i = 0; i < CallbackWithFinalizeInfos.size(); ++i)
         {
