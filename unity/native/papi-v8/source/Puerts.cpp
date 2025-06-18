@@ -22,13 +22,6 @@ using puerts::FV8Utils;
 using puerts::FLifeCycleInfo;
 using puerts::JsValueType;
 
-LogCallback GLogCallback = nullptr;
-LogCallback GLogWarningCallback = nullptr;
-LogCallback GLogErrorCallback = nullptr;
-#ifdef WITH_IL2CPP_OPTIMIZATION
-extern pesapi_func_ptr reg_apis[];
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -153,13 +146,6 @@ V8_EXPORT void LogicTick(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     return JsEngine->LogicTick();
-}
-
-V8_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
-{
-    GLogCallback = Log;
-    GLogWarningCallback = LogError;
-    GLogErrorCallback = LogWarning;
 }
 
 //-------------------------- end debug --------------------------
