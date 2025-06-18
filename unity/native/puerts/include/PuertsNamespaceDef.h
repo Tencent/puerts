@@ -61,26 +61,26 @@
 # define PUERTS_HAS_ATTRIBUTE_VISIBILITY 0
 #endif
 
-#ifndef REGISTER_API
+#ifndef PUERTS_API
 #ifdef _MSC_VER
-#ifdef BUILDING_REGISTER_API_SHARED
-# define REGISTER_API __declspec(dllexport)
-#elif USING_REGISTER_API_SHARED
-# define REGISTER_API __declspec(dllimport)
+#ifdef BUILDING_PUERTS_API_SHARED
+# define PUERTS_API __declspec(dllexport)
+#elif USING_PUERTS_API_SHARED
+# define PUERTS_API __declspec(dllimport)
 #else
-# define REGISTER_API
+# define PUERTS_API
 #endif  // BUILDING_V8_SHARED
 
 #else  // _MSC_VER
 
 #if PUERTS_HAS_ATTRIBUTE_VISIBILITY
-# ifdef BUILDING_REGISTER_API_SHARED
-#  define REGISTER_API __attribute__ ((visibility("default")))
+# ifdef BUILDING_PUERTS_API_SHARED
+#  define PUERTS_API __attribute__ ((visibility("default")))
 # else
-#  define REGISTER_API
+#  define PUERTS_API
 # endif
 #else
-# define REGISTER_API
+# define PUERTS_API
 #endif
 
 #endif  // _MSC_VER

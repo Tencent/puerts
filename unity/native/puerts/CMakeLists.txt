@@ -45,7 +45,7 @@ else ()
     add_library(puerts SHARED ${puerts_sources} ${eastl_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
 endif()
 
-target_compile_definitions(puerts PUBLIC BUILDING_REGISTER_API_SHARED)
+target_compile_definitions(puerts PUBLIC BUILDING_PUERTS_API_SHARED)
 
 target_compile_definitions(puerts PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
 target_compile_definitions(puerts PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
