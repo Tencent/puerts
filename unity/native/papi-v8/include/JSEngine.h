@@ -106,14 +106,6 @@ public:
 
     ~JSEngine();
 
-    v8::Local<v8::Value> GetClassConstructor(int ClassID);
-
-    v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context, int ClassID, void *Ptr);
-
-    void BindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr, v8::Local<v8::Object> JSObject);
-
-    void UnBindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr);
-
     v8::UniquePersistent<v8::Value> LastException;
     std::string LastExceptionInfo;
 
@@ -151,8 +143,6 @@ public:
         MainIsolate->TerminateExecution();
 #endif
     }
-    
-    static void CallbackDataGarbageCollected(const v8::WeakCallbackInfo<FCallbackInfoWithFinalize>& Data);
 
     v8::Isolate* MainIsolate;
 
@@ -206,10 +196,6 @@ private:
     
 public:
     JSFunction* JSObjectValueGetter = nullptr;
-
-    v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
-    
-    v8::MaybeLocal<v8::Function> CreateFunction(CSharpFunctionCallback Callback, JsFunctionFinalizeCallback Finalize, int64_t Data);
 
     std::string GetJSStackTrace();
 };
