@@ -18,6 +18,8 @@ namespace Puerts
 #else
         const string PAPIDLLNAME = "papiqjs";
 #endif
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetQjsPapiVersion();
 
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetQjsFFIApi();

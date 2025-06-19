@@ -11,7 +11,6 @@ using System.Text;
 
 namespace Puerts
 {
-    /*
 #pragma warning disable 414
     public class MonoPInvokeCallbackAttribute : System.Attribute
     {
@@ -22,8 +21,6 @@ namespace Puerts
         }
     }
 #pragma warning restore 414
-
-
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
@@ -36,6 +33,9 @@ namespace Puerts
 #else
         const string PUERTSDLLNAME = "puerts";
 #endif
+
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetPapiVersion();
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(IntPtr log, IntPtr logWarning, IntPtr logError);
@@ -54,5 +54,4 @@ namespace Puerts
             SetLogCallback(fn1, fn2, fn3);
         }
     }
-    */
 }

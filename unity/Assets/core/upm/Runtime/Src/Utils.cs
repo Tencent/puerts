@@ -78,6 +78,26 @@ namespace Puerts
 #else
 namespace Puerts
 {
+
+    [Flags]
+    public enum JsValueType
+    {
+        Invalid = 0,
+        NullOrUndefined = 1,
+        BigInt = 2,
+        Number = 4,
+        String = 8,
+        Boolean = 16,
+        NativeObject = 32,
+        JsObject = 64,
+        Array = 128,
+        Function = 256,
+        Date = 512,
+        ArrayBuffer = 1024,
+        Unknow = 2048,
+        Any = NullOrUndefined | BigInt | Number | String | Boolean | NativeObject | JsObject | Array | Function | Date | ArrayBuffer,
+    };
+
     public static class Utils
     {
         public static long TwoIntToLong(int b, int a)

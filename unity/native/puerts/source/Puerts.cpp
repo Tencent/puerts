@@ -21,13 +21,9 @@ extern "C" {
 #endif
 
 // deprecated, delete in 1.4 plz
-PESAPI_MODULE_EXPORT int GetLibVersion()
+PESAPI_MODULE_EXPORT int GetPapiVersion()
 {
-    return API_LEVEL;
-}
-PESAPI_MODULE_EXPORT int GetApiLevel()
-{
-    return API_LEVEL;
+    return PESAPI_VERSION;
 }
 
 PESAPI_MODULE_EXPORT pesapi_func_ptr* GetRegsterApi()

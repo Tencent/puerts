@@ -24,51 +24,9 @@ extern "C" {
 #endif
 
 // deprecated, delete in 1.4 plz
-V8_EXPORT int GetLibVersion()
+V8_EXPORT int GetV8PapiVersion()
 {
-    return API_LEVEL;
-}
-V8_EXPORT int GetApiLevel()
-{
-    return API_LEVEL;
-}
-
-V8_EXPORT int GetLibBackend(v8::Isolate *Isolate)
-{
-#if WITH_NODEJS
-    return puerts::JSEngineBackend::Node;
-#elif WITH_QUICKJS
-    return puerts::JSEngineBackend::QuickJS;
-#else
-    return puerts::JSEngineBackend::V8;
-#endif
-}
-
-V8_EXPORT v8::Isolate *CreateJSEngine(int backend)
-{
-#if WITH_QUICKJS
-    if (backend != puerts::JSEngineBackend::QuickJS && backend != puerts::JSEngineBackend::Auto) return nullptr;
-#else
-    if (backend == puerts::JSEngineBackend::QuickJS && backend != puerts::JSEngineBackend::Auto) return nullptr;
-#endif
-    auto JsEngine = new JSEngine(nullptr, nullptr);
-    return JsEngine->MainIsolate;
-}
-
-V8_EXPORT v8::Isolate *CreateJSEngineWithExternalEnv(int backend, void* external_quickjs_runtime, void* external_quickjs_context)
-{
-#if WITH_QUICKJS
-    auto JsEngine = new JSEngine(external_quickjs_runtime, external_quickjs_context);
-    return JsEngine->MainIsolate;
-#else
-    return nullptr;
-#endif
-}
-
-V8_EXPORT void DestroyJSEngine(v8::Isolate *Isolate)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    delete JsEngine;
+    return PESAPI_VERSION;
 }
 
 V8_EXPORT void TerminateExecution(v8::Isolate *Isolate)
@@ -143,7 +101,6 @@ V8_EXPORT void RequestFullGarbageCollectionForTesting(v8::Isolate *Isolate)
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     JsEngine->RequestFullGarbageCollectionForTesting();
 }
-
 
 //-------------------------- begin debug --------------------------
 

@@ -26,6 +26,8 @@ namespace Puerts
             this.env = env;
         }
 
+        public abstract int GetApiVersion();
+
         public abstract IntPtr CreateEnvRef();
 
         public abstract IntPtr GetApi();
@@ -39,6 +41,11 @@ namespace Puerts
     {
         public BackendV8(JsEnv env) : base(env)
         {
+        }
+
+        public override int GetApiVersion()
+        {
+            return PapiV8Native.GetV8PapiVersion();
         }
 
         public override IntPtr CreateEnvRef()
@@ -114,6 +121,11 @@ namespace Puerts
     {
         public BackendQuickJS(JsEnv env) : base(env)
         {
+        }
+
+        public override int GetApiVersion()
+        {
+            return PapiQjsNative.GetQjsPapiVersion();
         }
 
         public override IntPtr CreateEnvRef()

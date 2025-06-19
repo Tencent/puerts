@@ -18,6 +18,8 @@ namespace Puerts
 #else
         const string PAPIDLLNAME = "papiv8";
 #endif
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetV8PapiVersion();
 
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetV8FFIApi();

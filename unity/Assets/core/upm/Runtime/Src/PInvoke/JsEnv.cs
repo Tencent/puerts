@@ -53,7 +53,7 @@ namespace Puerts
         {
         }
 
-        private void InitApi(BackendType backendExpect)
+        private void InitApi(BackendType backendExpect, int apiVersionExpect)
         {
             if (backendExpect == BackendType.V8)
                 Backend = new BackendV8(this);
@@ -65,6 +65,10 @@ namespace Puerts
             {
                 throw new InvalidProgramException("unexpected backend: " + backendExpect);
             }
+            if (Backend.GetApiVersion() != apiVersionExpect)
+            {
+                throw new InvalidProgramException("backend: version not match for" + backendExpect + ", expect " + apiVersionExpect + ", but got " + Backend.GetApiVersion());
+            }
             envRef = Backend.CreateEnvRef();
             papis = Backend.GetApi();
         }
@@ -74,14 +78,14 @@ namespace Puerts
 #if !UNITY_EDITOR && UNITY_WEBGL
             if (jsEnvs.Count == 0) PuertsDLL.InitPuertsWebGL();
 #endif
-            const int libVersionExpect = 36;
-            int libVersion = PuertsDLL.GetApiLevel();
+            const int libVersionExpect = 11;
+            int libVersion = PuertsNative.GetPapiVersion();
             if (libVersion != libVersionExpect)
             {
                 disposed = true;
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-            PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
+            PuertsNative.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
 
             if (backendExpect == BackendType.Auto)
@@ -91,7 +95,7 @@ namespace Puerts
                 {
                     try
                     {
-                        InitApi((BackendType)i);
+                        InitApi((BackendType)i, libVersionExpect);
                         found = true;
                         break;
                     } catch { }
@@ -106,7 +110,7 @@ namespace Puerts
             {
                 try
                 {
-                    InitApi(backendExpect);
+                    InitApi(backendExpect, libVersionExpect);
                 }
                 catch (Exception e)
                 {

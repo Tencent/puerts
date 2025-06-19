@@ -8,8 +8,6 @@
 #include "CppObjectMapperQuickjs.h"
 #include "pesapi.h"
 
-#define API_LEVEL 36
-
 namespace puerts
 {
 enum JSEngineBackend
@@ -25,46 +23,9 @@ enum JSEngineBackend
 extern "C" {
 #endif
 
-// deprecated, delete in 1.4 plz
-PESAPI_MODULE_EXPORT int GetLibVersion()
+PESAPI_MODULE_EXPORT int GetQjsPapiVersion()
 {
-    return API_LEVEL;
-}
-PESAPI_MODULE_EXPORT int GetApiLevel()
-{
-    return API_LEVEL;
-}
-
-PESAPI_MODULE_EXPORT int GetLibBackend(puerts::FBackendEnv *BackendEnv)
-{
-    return puerts::JSEngineBackend::QuickJS;
-}
-
-PESAPI_MODULE_EXPORT puerts::FBackendEnv *CreateJSEngine(int backend)
-{
-    if (backend != puerts::JSEngineBackend::QuickJS && backend != puerts::JSEngineBackend::Auto) return nullptr;
-
-    auto BackendEnv = new puerts::FBackendEnv();
-    BackendEnv->Initialize();
-    return BackendEnv;
-}
-
-PESAPI_MODULE_EXPORT puerts::FBackendEnv *CreateJSEngineWithExternalEnv(int backend, void* external_quickjs_runtime, void* external_quickjs_context)
-{
-    auto BackendEnv = new puerts::FBackendEnv();
-    BackendEnv->Initialize(external_quickjs_runtime, external_quickjs_context);
-    return BackendEnv;
-}
-
-PESAPI_MODULE_EXPORT void DestroyJSEngine(puerts::FBackendEnv *BackendEnv)
-{
-    BackendEnv->UnInitialize();
-    delete BackendEnv;
-}
-
-PESAPI_MODULE_EXPORT void TerminateExecution(puerts::FBackendEnv *BackendEnv)
-{
-    
+    return PESAPI_VERSION;
 }
 
 PESAPI_MODULE_EXPORT pesapi_env_ref GetQjsPapiEnvRef(puerts::FBackendEnv *BackendEnv)
