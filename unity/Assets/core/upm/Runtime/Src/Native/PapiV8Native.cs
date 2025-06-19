@@ -30,7 +30,9 @@ namespace Puerts
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void DestroyV8PapiEnvRef(IntPtr envRef);
 
-        /*
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetV8Isolate(IntPtr envRef);
+
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void LowMemoryNotification(IntPtr isolate);
 
@@ -54,6 +56,8 @@ namespace Puerts
 
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void LogicTick(IntPtr isolate);
-        */
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void TerminateExecution(IntPtr isolate);
     }
 }

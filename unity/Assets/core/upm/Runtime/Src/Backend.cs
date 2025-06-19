@@ -39,6 +39,8 @@ namespace Puerts
 
     public class BackendV8 : Backend
     {
+        IntPtr isolate;
+
         public BackendV8(JsEnv env) : base(env)
         {
         }
@@ -50,7 +52,9 @@ namespace Puerts
 
         public override IntPtr CreateEnvRef()
         {
-            return PapiV8Native.CreateV8PapiEnvRef();
+            var envRef = PapiV8Native.CreateV8PapiEnvRef();
+            isolate = PapiV8Native.GetV8Isolate(envRef);
+            return envRef;
         }
 
         public override IntPtr GetApi()
@@ -68,8 +72,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
-            return false;
+            return PapiV8Native.IdleNotificationDeadline(isolate, DeadlineInSeconds);
 #if THREAD_SAFE
             }
 #endif
@@ -80,7 +83,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
+            PapiV8Native.LowMemoryNotification(isolate);
 #if THREAD_SAFE
             }
 #endif
@@ -91,7 +94,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
+            PapiV8Native.RequestMinorGarbageCollectionForTesting(isolate);
 #if THREAD_SAFE
             }
 #endif
@@ -102,7 +105,18 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO
+            PapiV8Native.RequestFullGarbageCollectionForTesting(isolate);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void TerminateExecution()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            PapiV8Native.TerminateExecution(isolate);
 #if THREAD_SAFE
             }
 #endif

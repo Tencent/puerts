@@ -23,16 +23,9 @@ using puerts::JsValueType;
 extern "C" {
 #endif
 
-// deprecated, delete in 1.4 plz
 V8_EXPORT int GetV8PapiVersion()
 {
     return PESAPI_VERSION;
-}
-
-V8_EXPORT void TerminateExecution(v8::Isolate *Isolate)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->TerminateExecution();
 }
 
 V8_EXPORT pesapi_env_ref GetV8PapiEnvRef(v8::Isolate *Isolate)
@@ -81,6 +74,16 @@ V8_EXPORT void DestroyV8PapiEnvRef(pesapi_env_ref env_ref)
     delete JsEngine;
 }
 
+V8_EXPORT v8::Isolate *GetV8Isolate(pesapi_env_ref env_ref)
+{
+    auto scope = v8impl::g_pesapi_ffi.open_scope(env_ref);
+    auto env = v8impl::g_pesapi_ffi.get_env_from_ref(env_ref);
+    auto context = reinterpret_cast<v8::Context*>(env);
+    v8::Isolate *isolate = context->GetIsolate();
+    v8impl::g_pesapi_ffi.close_scope(scope);
+    return isolate;
+}
+
 V8_EXPORT void LowMemoryNotification(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
@@ -126,6 +129,15 @@ V8_EXPORT void LogicTick(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     return JsEngine->LogicTick();
+}
+
+
+V8_EXPORT void TerminateExecution(v8::Isolate *Isolate)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    Isolate->TerminateExecution();
 }
 
 //-------------------------- end debug --------------------------
