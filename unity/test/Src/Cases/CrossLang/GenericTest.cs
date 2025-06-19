@@ -41,6 +41,24 @@ namespace Puerts.UnitTest
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
+    public class GenericTestClass<T>
+    {
+        [UnityEngine.Scripting.Preserve]
+        public class Inner
+        {
+            [UnityEngine.Scripting.Preserve]
+            public const string stringProp = "hello";
+
+            [UnityEngine.Scripting.Preserve]
+            public Inner()
+            {
+            }
+        }
+
+        public static T v;
+    }
+
     [TestFixture]
     public class GenericUnitTest
     {
@@ -228,5 +246,21 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
 #endif
+
+        [Test]
+        public void GenericAccessTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<string>(@"
+                (function() {
+                    let GenericTestClass = puerts.$generic(CS.Puerts.UnitTest.GenericTestClass$1, CS.System.String);
+                    GenericTestClass.v = '6';
+                    new GenericTestClass.Inner();
+                    return GenericTestClass.Inner.stringProp;
+                })()
+            ");
+            Assert.AreEqual(res, "hello");
+            jsEnv.Tick();
+        }
     }
 }

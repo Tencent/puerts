@@ -24,8 +24,13 @@ bool FPEMetaDataUtils::AddMetaData(UField* InField, TMap<FName, FString>& InMeta
         { return !InField->HasMetaData(InNewData.Key) || InField->GetMetaData(InNewData.Key) != InNewData.Value; });
 
     // set the metadata for this field, since blueprint compilation will handle parent issue, we set meta data directly
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+    FMetaData& MetaData = InField->GetOutermost()->GetMetaData();
+    MetaData.SetObjectValues(InField, MoveTemp(InMetaData));
+#else
     UMetaData* MetaData = InField->GetOutermost()->GetMetaData();
     MetaData->SetObjectValues(InField, MoveTemp(InMetaData));
+#endif
 
     return bChanged;
 }
@@ -270,7 +275,11 @@ bool UPEClassMetaData::SetClassMetaData(UClass* InClass)
     for (TPair<FName, FString>& Pair : MetaData)
     {
         FName& CurrentKey = Pair.Key;
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+        FName NewKey = FMetaData::GetRemappedKeyName(CurrentKey);
+#else
         FName NewKey = UMetaData::GetRemappedKeyName(CurrentKey);
+#endif
 
         if (NewKey != NAME_None)
         {

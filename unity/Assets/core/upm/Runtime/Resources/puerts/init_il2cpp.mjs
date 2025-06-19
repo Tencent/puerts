@@ -17,7 +17,7 @@ puer.loadType = function(nameOrCSType, ...genericArgs) {
         csType = jsEnv.GetTypeByString(nameOrCSType)
     }
     if (csType) {
-        if (genericArgs && csType.IsGenericTypeDefinition) {
+        if (genericArgs && genericArgs.length > 0 && csType.IsGenericTypeDefinition) {
             genericArgs = genericArgs.map(g => puer.$typeof(g));
             csType = csType.MakeGenericType(...genericArgs);
         }

@@ -145,6 +145,7 @@ var exportDLL = {
     "InspectorTick",
     "LogicTick",
     "SetLogCallback",
+    "TerminateExecution",
     "GetWebGLFFIApi",
     "GetWebGLPapiEnvRef",
     "GetQjsFFIApi", // declare for compile
