@@ -59,16 +59,149 @@ namespace PuertsIl2cpp
 
         public static Func<string, MethodInfo[]> LoadExtensionMethod;
 
+        private static volatile Dictionary<Type, MethodInfo[]> extensionMethodMap = null;
+
+        static MethodInfo[] EmptyMethodInfos = new MethodInfo[] { };
+
+        public static MethodInfo[] ReflectionGetExtensionMethodsOf(string typeName)
+        {
+            Type type_to_be_extend = Type.GetType(typeName);
+            if (type_to_be_extend == null) return EmptyMethodInfos;
+            if (extensionMethodMap == null)
+            {
+                List<Type> type_def_extention_method = new List<Type>();
+
+                IEnumerator<Type> enumerator = GetAllTypes().GetEnumerator();
+
+                while (enumerator.MoveNext())
+                {
+                    Type type = enumerator.Current;
+                    if (type.IsDefined(typeof(ExtensionAttribute), false))
+                    {
+                        type_def_extention_method.Add(type);
+                    }
+                }
+                enumerator.Dispose();
+
+                extensionMethodMap = (from type in type_def_extention_method.Distinct()
+                                                         // #if UNITY_EDITOR
+                                                         //                                       where !type.Assembly.Location.Contains("Editor")
+                                                         // #endif
+                                                     from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                                                     where method.IsDefined(typeof(ExtensionAttribute), false) && IsSupportedMethod(method)
+                                                     group method by GetExtendedType(method)).ToDictionary(g => g.Key, g => g.ToArray());
+            }
+            MethodInfo[] ret = null;
+            extensionMethodMap.TryGetValue(type_to_be_extend, out ret);
+            return ret;
+        }
+
+        public static bool IsSupportedMethod(MethodInfo method)
+        {
+            if (!method.ContainsGenericParameters)
+                return true;
+            var methodParameters = method.GetParameters();
+            var returnType = method.ReturnType;
+            var hasValidGenericParameter = false;
+            var returnTypeValid = !returnType.IsGenericParameter;
+            // 在参数列表里找得到和泛型参数相同的参数
+            for (var i = 0; i < methodParameters.Length; i++)
+            {
+                var parameterType = methodParameters[i].ParameterType;
+                // 如果参数是泛型参数
+                if (parameterType.IsGenericParameter)
+                {
+                    // 所有参数的基类都不是值类型，且不是另一个泛型
+                    if (
+                        parameterType.BaseType != null && (
+                            parameterType.BaseType.IsValueType ||
+                            (
+                                parameterType.BaseType.IsGenericType &&
+                                !parameterType.BaseType.IsGenericTypeDefinition
+                            )
+                        )
+                    ) return false;
+                    var parameterConstraints = parameterType.GetGenericParameterConstraints();
+                    // 所有泛型参数都有值类型约束
+                    if (parameterConstraints.Length == 0) return false;
+                    foreach (var parameterConstraint in parameterConstraints)
+                    {
+                        // 所有泛型参数的类型约束都不是值类型
+                        if (parameterConstraint.IsValueType || (parameterConstraint == typeof(ValueType)))
+                            return false;
+                    }
+                    hasValidGenericParameter = true;
+                    if (!returnTypeValid)
+                    {
+                        if (parameterType == returnType)
+                        {
+                            returnTypeValid = true;
+                        }
+                    }
+                }
+            }
+            return hasValidGenericParameter && returnTypeValid;
+        }
+        public static List<Type> GetAllTypes(bool exclude_generic_definition = true)
+        {
+            List<Type> allTypes = new List<Type>();
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                try
+                {
+#if (UNITY_EDITOR || PUERTS_GENERAL) && !NET_STANDARD_2_0
+                    if (!(assemblies[i].ManifestModule is System.Reflection.Emit.ModuleBuilder))
+                    {
+#endif
+                    allTypes.AddRange(assemblies[i].GetTypes()
+                        .Where(type => exclude_generic_definition ? !type.IsGenericTypeDefinition : true));
+#if (UNITY_EDITOR || PUERTS_GENERAL) && !NET_STANDARD_2_0
+                    }
+#endif
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            return allTypes;
+        }
+
         public static bool LoadExtensionMethodInfo() {
             var ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
                 select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen")).FirstOrDefault(x => x != null);
+            bool noGen = false;
             if (ExtensionMethodInfos_Gen == null)
+            {
                 ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen_Internal")).FirstOrDefault(x => x != null);
+                                            select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen_Internal")).FirstOrDefault(x => x != null);
+                noGen = true;
+            }
             var TryLoadExtensionMethod = ExtensionMethodInfos_Gen.GetMethod("TryLoadExtensionMethod");
-            if (TryLoadExtensionMethod == null) return false;
-            LoadExtensionMethod = (Func<string, MethodInfo[]>)Delegate.CreateDelegate(
-                typeof(Func<string, MethodInfo[]>), null, TryLoadExtensionMethod);
+            if (TryLoadExtensionMethod == null)
+            {
+                LoadExtensionMethod = ReflectionGetExtensionMethodsOf;
+            }
+            if (noGen)
+            {
+                var staticGetExtensionMethodsOf = (Func<string, MethodInfo[]>)Delegate.CreateDelegate(
+                    typeof(Func<string, MethodInfo[]>), null, TryLoadExtensionMethod);
+                LoadExtensionMethod = (name) =>
+                {
+                    var ret = staticGetExtensionMethodsOf(name);
+                    if (ret == null || ret.Length == 0)
+                    {
+                        ret = ReflectionGetExtensionMethodsOf(name);
+                    }
+                    return ret;
+                };
+            }
+            else
+            {
+                LoadExtensionMethod = (Func<string, MethodInfo[]>)Delegate.CreateDelegate(
+                    typeof(Func<string, MethodInfo[]>), null, TryLoadExtensionMethod);
+            }
             return true;
         }
 	}
