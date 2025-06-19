@@ -96,57 +96,27 @@ namespace Puerts
 
         public bool IdleNotificationDeadline(double DeadlineInSeconds)
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             return PapiV8Native.IdleNotificationDeadline(isolate, DeadlineInSeconds);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public override void LowMemoryNotification()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             PapiV8Native.LowMemoryNotification(isolate);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public void RequestMinorGarbageCollectionForTesting()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             PapiV8Native.RequestMinorGarbageCollectionForTesting(isolate);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public void RequestFullGarbageCollectionForTesting()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             PapiV8Native.RequestFullGarbageCollectionForTesting(isolate);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public void TerminateExecution()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             PapiV8Native.TerminateExecution(isolate);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public override void RemoteDebuggerListen(int debugPort)
@@ -174,6 +144,7 @@ namespace Puerts
 
     public class BackendQuickJS : BackendJs
     {
+        private IntPtr envRef;
         public BackendQuickJS()
         {
         }
@@ -185,7 +156,8 @@ namespace Puerts
 
         public override IntPtr CreateEnvRef()
         {
-            return PapiQjsNative.CreateQjsPapiEnvRef();
+            envRef = PapiQjsNative.CreateQjsPapiEnvRef();
+            return envRef;
         }
 
         public override IntPtr GetApi()
@@ -200,13 +172,7 @@ namespace Puerts
 
         public override void LowMemoryNotification()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
-            // TODO
-#if THREAD_SAFE
-            }
-#endif
+            PapiQjsNative.RunGC(envRef);
         }
     }
 }

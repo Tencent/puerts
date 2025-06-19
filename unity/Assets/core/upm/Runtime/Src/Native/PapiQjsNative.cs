@@ -29,5 +29,8 @@ namespace Puerts
         
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void DestroyQjsPapiEnvRef(IntPtr envRef);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RunGC(IntPtr envRef);
     }
 }
