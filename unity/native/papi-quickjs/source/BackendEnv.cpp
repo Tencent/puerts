@@ -55,7 +55,8 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
         if (argc > 0)
         {
             FBackendEnv* Backend = (FBackendEnv*)(JS_VALUE_GET_PTR(func_data[0]));
-            Backend->JsPromiseRejectCallback = argv[0];
+            JS_FreeValue(ctx, Backend->JsPromiseRejectCallback);
+            Backend->JsPromiseRejectCallback = JS_DupValue(ctx, argv[0]);
         }
         return JS_Undefined();
     }, 0, 0, 1, &FuncData);
