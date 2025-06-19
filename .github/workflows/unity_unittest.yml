@@ -6,7 +6,7 @@ on:
     paths: 
       - unity/Assets/**
       - unity/test/**
-      - unity/native_src/**
+      - unity/native/**
       - unity/cli/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
