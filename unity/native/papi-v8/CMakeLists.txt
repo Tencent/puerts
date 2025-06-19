@@ -74,7 +74,7 @@ set ( PUERTS_INC
 )
 
 set ( PUERTS_SRC
-    source/Puerts.cpp
+    source/PapiExport.cpp
     source/BackendEnv.cpp
     source/JSEngine.cpp
     source/CppObjectMapper.cpp
