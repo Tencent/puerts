@@ -56,6 +56,9 @@
 #define TYPE_DECL_END "// __TYPE_DECL_END"
 #define TYPE_ASSOCIATION "ASSOCIATION"
 
+bool bSearchAllPluginBP = true;
+static FAutoConsoleVariableRef CVarSearchAllPluginBP(TEXT("bSearchAllPluginBP"), bSearchAllPluginBP, TEXT(".\n"), ECVF_Default);
+
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
 #define GET_VERSION_ID(PD) LexToString(PD->CookedHash)
 #else
@@ -522,18 +525,27 @@ void FTypeScriptDeclarationGenerator::NamespaceEnd(UObject* Obj, FStringBuffer& 
 void FTypeScriptDeclarationGenerator::WriteOutput(UObject* Obj, const FStringBuffer& Buff)
 {
     const UPackage* Pkg = GetPackage(Obj);
-    bool IsPluginBPClass = Pkg && !Obj->IsNative() && !Pkg->GetName().StartsWith(TEXT("/Game/"));
-    if (Pkg && !Obj->IsNative() && !IsPluginBPClass && BlueprintTypeDeclInfoCache.Find(Pkg->GetFName()))
+    if (Pkg && !Obj->IsNative())
     {
         FStringBuffer Temp;
         Temp.Prefix = Output.Prefix;
         NamespaceBegin(Obj, Temp);
         Temp << Buff;
         NamespaceEnd(Obj, Temp);
-        BlueprintTypeDeclInfoCache[Pkg->GetFName()].NameToDecl.Add(Obj->GetFName(), Temp.Buffer);
-        BlueprintTypeDeclInfoCache[Pkg->GetFName()].IsExist = true;
+
+        BlueprintTypeDeclInfo* BlueprintTypeDeclInfo = BlueprintTypeDeclInfoCache.Find(Pkg->GetFName());
+        if (!BlueprintTypeDeclInfo)
+        {
+            BlueprintTypeDeclInfoCache.Add(Pkg->GetFName(), {TMap<FName, FString>(), FString(TEXT("")), true, false, true});
+        }
+        BlueprintTypeDeclInfo = BlueprintTypeDeclInfoCache.Find(Pkg->GetFName());
+        if (BlueprintTypeDeclInfo)
+        {
+            BlueprintTypeDeclInfo->NameToDecl.Add(Obj->GetFName(), Temp.Buffer);
+            BlueprintTypeDeclInfo->IsExist = true;
+        }
     }
-    else if (Obj->IsNative() || IsPluginBPClass)
+    else
     {
         NamespaceBegin(Obj, Output);
         Output << Buff;
@@ -615,6 +627,20 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
     FARFilter BPFilter;
     BPFilter.PackagePaths.Add(PackagePath);
     BPFilter.PackagePaths.Add(FName(TEXT("/Engine")));
+    if (bSearchAllPluginBP)
+    {
+        TArray<TSharedRef<IPlugin>> AllPlugins = IPluginManager::Get().GetDiscoveredPlugins();
+        for (TSharedRef<IPlugin> Plugin : AllPlugins)
+        {
+            if (!Plugin->CanContainContent())
+            {
+                continue;
+            }
+            FString PluginConfigFilename = Plugin->GetBaseDir();
+            FString PluginName = Plugin->GetName();
+            BPFilter.PackagePaths.Add(FName(FString::Printf(TEXT("/%s"), *PluginName)));
+        }
+    }
     BPFilter.bRecursivePaths = true;
     BPFilter.bRecursiveClasses = true;
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
