@@ -31,6 +31,7 @@ namespace Puerts
 
         public T Get<T>(string key) 
         {
+            jsEnv.CheckLiveness();
             var envRef = PuertsNative.pesapi_get_ref_associated_env(apis, objRef);
             if (!PuertsNative.pesapi_env_ref_is_valid(apis, envRef))
             {
