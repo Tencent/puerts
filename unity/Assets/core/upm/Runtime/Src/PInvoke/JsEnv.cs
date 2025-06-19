@@ -469,9 +469,18 @@ namespace Puerts
             lock(this) {
 #endif
             cleanupPendingKillScriptObjects();
-            // TODO: move to backend
-            //PuertsDLL.InspectorTick(isolate);
-            //PuertsDLL.LogicTick(isolate);
+            if (Backend.DebuggerTick())
+            {
+#if CSHARP_7_3_OR_NEWER
+                if (waitDebugerTaskSource != null)
+                {
+                    var tmp = waitDebugerTaskSource;
+                    waitDebugerTaskSource = null;
+                    tmp.SetResult(true);
+                }
+#endif
+            }
+            Backend.Tick();
             if (TickHandler != null) TickHandler();
 #if THREAD_SAFE
             }
@@ -484,8 +493,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            // TODO: move to backend
-            //while (!PuertsDLL.InspectorTick(isolate)) { }
+            while (!Backend.DebuggerTick()) { }
 #if THREAD_SAFE
             }
 #endif

@@ -28,6 +28,13 @@ namespace Puerts
 
         public abstract IntPtr GetModuleExecutor(IntPtr env);
 
+        public virtual void Tick(){ }
+
+        public virtual bool DebuggerTick()
+        {
+            return true;
+        }
+
         public abstract void DestroyEnvRef(IntPtr envRef);
 
         public abstract void LowMemoryNotification();
@@ -67,6 +74,17 @@ namespace Puerts
         {
             return PapiV8Native.GetV8FFIApi();
         }
+
+        public override bool DebuggerTick()
+        {
+            return PapiV8Native.InspectorTick(isolate);
+        }
+
+        public override void Tick() 
+        {
+            PapiV8Native.LogicTick(isolate);
+        }
+
 
         public override void DestroyEnvRef(IntPtr envRef) 
         {
