@@ -641,11 +641,6 @@ namespace Puerts
             }
             allocedJsObject.Clear();
 
-            // TODO: 如果外部持有Delegate指向quickjs的函数，还是会assertion "list_empty(&rt->gc_obj_list)"
-            // 原来的版本在原生侧有个统一的放置地方（JSEngine），所以能销毁
-            // 后面看能否也类似的存在JsEnv这里，统一销毁
-            
-
             var scope = PuertsNative.pesapi_open_scope(papis, envRef);
             var env = PuertsNative.pesapi_get_env_from_ref(papis, envRef);
             PuertsNative.pesapi_trace_native_object_lifecycle(papis, env, null, null);
