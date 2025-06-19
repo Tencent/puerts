@@ -20,28 +20,34 @@ namespace Puerts
 
     public abstract class Backend
     {
-        protected JsEnv env;
-        public Backend(JsEnv env)
-        {
-            this.env = env;
-        }
-
         public abstract int GetApiVersion();
 
         public abstract IntPtr CreateEnvRef();
 
         public abstract IntPtr GetApi();
 
+        public abstract IntPtr GetModuleExecutor(IntPtr env);
+
         public abstract void DestroyEnvRef(IntPtr envRef);
 
         public abstract void LowMemoryNotification();
     }
 
-    public class BackendV8 : Backend
+    public abstract class BackendJs : Backend
+    {
+        public override IntPtr GetModuleExecutor(IntPtr env)
+        {
+            var papis = GetApi();
+            var globalVal = PuertsNative.pesapi_global(papis, env);
+            return PuertsNative.pesapi_get_property(papis, env, globalVal, "__puertsExecuteModule");
+        }
+    }
+
+    public class BackendV8 : BackendJs
     {
         IntPtr isolate;
 
-        public BackendV8(JsEnv env) : base(env)
+        public BackendV8()
         {
         }
 
@@ -126,14 +132,14 @@ namespace Puerts
 
     public class BackendNodeJS : BackendV8
     {
-        public BackendNodeJS(JsEnv env) : base(env)
+        public BackendNodeJS()
         {
         }
     }
 
-    public class BackendQuickJS : Backend
+    public class BackendQuickJS : BackendJs
     {
-        public BackendQuickJS(JsEnv env) : base(env)
+        public BackendQuickJS()
         {
         }
 

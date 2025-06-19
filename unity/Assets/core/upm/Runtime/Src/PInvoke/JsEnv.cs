@@ -56,11 +56,11 @@ namespace Puerts
         private void InitApi(BackendType backendExpect, int apiVersionExpect)
         {
             if (backendExpect == BackendType.V8)
-                Backend = new BackendV8(this);
+                Backend = new BackendV8();
             else if (backendExpect == BackendType.Node)
-                Backend = new BackendNodeJS(this);
+                Backend = new BackendNodeJS();
             else if (backendExpect == BackendType.QuickJS)
-                Backend = new BackendQuickJS(this);
+                Backend = new BackendQuickJS();
             else
             {
                 throw new InvalidProgramException("unexpected backend: " + backendExpect);
@@ -144,9 +144,8 @@ namespace Puerts
 
             var globalVal = PuertsNative.pesapi_global(papis, env);
 
-            var globalObj = ExpressionsWrap.Helpper.ScriptToNative_ScriptObject(papis, env, globalVal);
-            moduleExecutor = globalObj.Get<Func<string, JSObject>>("__puertsExecuteModule");
-            //TODO: dispose globalObj
+            var moduleExecutorFunc = Backend.GetModuleExecutor(env);
+            moduleExecutor = ExpressionsWrap.GetNativeTranlator<Func<string, JSObject>>()(papis, env, moduleExecutorFunc);
 
             logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(Console), typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(object) }), true);
             var print = PuertsNative.pesapi_create_function(papis, env, logDelegate, IntPtr.Zero, null);
