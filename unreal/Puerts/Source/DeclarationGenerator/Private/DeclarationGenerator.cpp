@@ -55,12 +55,9 @@
 #define TYPE_DECL_START "// __TYPE_DECL_START: "
 #define TYPE_DECL_END "// __TYPE_DECL_END"
 #define TYPE_ASSOCIATION "ASSOCIATION"
+
 bool bSearchAllPluginBP = true;
-static FAutoConsoleVariableRef CVarSearchAllPluginBP(
-    TEXT("bSearchAllPluginBP"),
-    bSearchAllPluginBP,
-    TEXT(".\n"),
-    ECVF_Default);
+static FAutoConsoleVariableRef CVarSearchAllPluginBP(TEXT("bSearchAllPluginBP"), bSearchAllPluginBP, TEXT(".\n"), ECVF_Default);
 
 bool IsTypeScriptKeyword(const FString& InputString)
 {
@@ -524,12 +521,12 @@ void FTypeScriptDeclarationGenerator::WriteOutput(UObject* Obj, const FStringBuf
     const UPackage* Pkg = GetPackage(Obj);
     if (Pkg && !Obj->IsNative())
     {
-        FStringBuffer Temp;                                                                                                                                                             
+        FStringBuffer Temp;
         Temp.Prefix = Output.Prefix;
         NamespaceBegin(Obj, Temp);
         Temp << Buff;
         NamespaceEnd(Obj, Temp);
-        
+
         BlueprintTypeDeclInfo* BlueprintTypeDeclInfo = BlueprintTypeDeclInfoCache.Find(Pkg->GetFName());
         if (!BlueprintTypeDeclInfo)
         {
