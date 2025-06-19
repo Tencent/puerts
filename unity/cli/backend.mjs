@@ -71,7 +71,7 @@ export default async function downloadBackend(cwd, name, url = "") {
     if (!existsSync(join(cwd, "CMakeLists.txt"))) {
         throw new Error("invalid puerts native_src directory: " + cwd);
     }
-    const backendDir = join(cwd, '../native_src/.backends');
+    const backendDir = join(cwd, '.backends');
     mkdir("-p", backendDir);
     if (existsSync(join(backendDir, name)) && statSync(join(backendDir, name)).isDirectory()) {
         console.log(`[Puer] download skip: ${name} already exists `);
@@ -92,7 +92,8 @@ export default async function downloadBackend(cwd, name, url = "") {
             await downloadAndExtractTarGz(url, backendDir);
 
         } else {
-            throw new Error(`invalid backend: ${name}, backend url not found`);
+            //throw new Error(`invalid backend: ${name}, backend url not found`);
+            console.log(`backend: ${name}, backend url not found, download skiped`);
         }
     }
 }

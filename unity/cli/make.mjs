@@ -292,7 +292,11 @@ async function runPuertsMake(cwd, options) {
     if (options.backend == "v8_9.4") {
         options.backend = "v8_9.4.146.24";
     }
-    if (!existsSync(`${cwd}/../native_src/.backends/${options.backend}`)) {
+    const bn = basename(cwd);
+    if (!options.backend) {
+        options.backend = bn;
+    }
+    if (bn != "puerts" && !existsSync(join(cwd, `.backends/${options.backend}`))) {
         await downloadBackend(cwd, options.backend);
     }
     if (options.platform == "win" && options.config != "Release") {
@@ -301,9 +305,9 @@ async function runPuertsMake(cwd, options) {
 
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`;
-    const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath;
+    const OUTPUT_PATH = join(cwd, '../../Assets/core/upm/Plugins/', BuildConfig.outputPluginPath);
     const __dirname = dirname(fileURLToPath(import.meta.url));
-    const BackendConfig = JSON.parse(readFileSync(join(__dirname, 'backends.json'), 'utf-8'))[options.backend]?.config;
+    const BackendConfig = JSON.parse(readFileSync(join(__dirname, 'backends.json'), 'utf-8'))[options.backend]?.config || {};
 
     if (BackendConfig?.skip?.[options.platform]?.[options.arch]) {
         console.log("=== Puer ===");
@@ -324,7 +328,7 @@ async function runPuertsMake(cwd, options) {
         BackendConfig.definition.push("JITLESS");
     }
     const definitionD = (BackendConfig.definition || []).join(';');
-    const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';');
+    const linkD = (BackendConfig['link-libraries']?.[options.platform]?.[options.arch] || []).join(';');
     const incD = (BackendConfig.include || []).join(';');
 
     mkdir('-p', CMAKE_BUILD_PATH);
@@ -343,7 +347,7 @@ async function runPuertsMake(cwd, options) {
     );
     if (isExecutable) return {};
     if (!(outputFile instanceof Array)) outputFile = [outputFile];
-    const copyConfig = (BackendConfig['copy-libraries'][options.platform]?.[options.arch] || [])
+    const copyConfig = (BackendConfig['copy-libraries']?.[options.platform]?.[options.arch] || [])
         .map((pathToBackend) => join(cwd, '../native_src/.backends', options.backend, pathToBackend))
         .concat(outputFile);
 

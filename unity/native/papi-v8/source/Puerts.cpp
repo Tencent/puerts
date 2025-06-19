@@ -112,6 +112,17 @@ V8_EXPORT pesapi_env_ref CreateV8PapiEnvRef()
     return v8impl::g_pesapi_ffi.create_env_ref(env);
 }
 
+V8_EXPORT void DestroyV8PapiEnvRef(pesapi_env_ref env_ref)
+{
+    auto scope = v8impl::g_pesapi_ffi.open_scope(env_ref);
+    auto env = v8impl::g_pesapi_ffi.get_env_from_ref(env_ref);
+    auto context = reinterpret_cast<v8::Context*>(env);
+    v8::Isolate *isolate = context->GetIsolate();
+    v8impl::g_pesapi_ffi.close_scope(scope);
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(isolate);
+    delete JsEngine;
+}
+
 V8_EXPORT void LowMemoryNotification(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);

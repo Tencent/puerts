@@ -16,25 +16,27 @@ namespace Puerts
     public class NativeAPI
     {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
-        const string DLLNAME = "__Internal";
+        const string PUERTSDLLNAME = "__Internal";
+        const string PAPIV8DLLNAME = "__Internal";
 #else
-        const string DLLNAME = "puerts";
+        const string PUERTSDLLNAME = "puerts";
+        const string PAPIV8DLLNAME = "papiqjs";
 #endif
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetRegsterApi();
 
 #if !UNITY_WEBGL || UNITY_EDITOR
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetV8FFIApi();
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetV8PapiEnvRef(IntPtr isolate);
 #endif
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetQjsFFIApi();
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetQjsPapiEnvRef(IntPtr isolate);
 
 #if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_IPHONE) && ENABLE_IL2CPP
@@ -175,252 +177,252 @@ namespace Puerts
 #endif
 
 #if !ENABLE_IL2CPP
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_null(IntPtr apis, IntPtr env);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_undefined(IntPtr apis, IntPtr env);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_boolean(IntPtr apis, IntPtr env, bool value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_int32(IntPtr apis, IntPtr env, int value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_uint32(IntPtr apis, IntPtr env, uint value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_int64(IntPtr apis, IntPtr env, long value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_uint64(IntPtr apis, IntPtr env, ulong value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_double(IntPtr apis, IntPtr env, double value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_string_utf8(IntPtr apis, IntPtr env, byte[] str, UIntPtr length);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_string_utf16(IntPtr apis, IntPtr env, byte[] str, UIntPtr length);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_binary(IntPtr apis, IntPtr env, byte[] data, UIntPtr length);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_array(IntPtr apis, IntPtr env);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_object(IntPtr apis, IntPtr env);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_function(IntPtr apis, IntPtr env, pesapi_callback native_impl, IntPtr data, pesapi_function_finalize finalize);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_class(IntPtr apis, IntPtr env, IntPtr type_id);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_get_value_bool(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int pesapi_get_value_int32(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint pesapi_get_value_uint32(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern long pesapi_get_value_int64(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern ulong pesapi_get_value_uint64(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern double pesapi_get_value_double(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_value_string_utf8(IntPtr apis, IntPtr env, IntPtr value, byte[] buf, ref UIntPtr bufsize);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_value_string_utf16(IntPtr apis, IntPtr env, IntPtr value, byte[] buf, ref UIntPtr bufsize);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_value_binary(IntPtr apis, IntPtr env, IntPtr pvalue, ref UIntPtr bufsize);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint pesapi_get_array_length(IntPtr apis, IntPtr env, IntPtr value);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_null(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_undefined(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_boolean(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_int32(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_uint32(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_int64(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_uint64(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_double(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_string(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_object(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_function(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_binary(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_array(IntPtr apis, IntPtr env, IntPtr value);
 
         // Native object handling
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_native_object_to_value(IntPtr apis, IntPtr env, IntPtr type_id, IntPtr object_ptr, bool call_finalize);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_native_object_ptr(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_native_object_typeid(IntPtr apis, IntPtr env, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_instance_of(IntPtr apis, IntPtr env, IntPtr type_id, IntPtr value);
 
         // Callback handling
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int pesapi_get_args_len(IntPtr apis, IntPtr info);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_arg(IntPtr apis, IntPtr info, int index);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_env(IntPtr apis, IntPtr info);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_native_holder_ptr(IntPtr apis, IntPtr info);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_native_holder_typeid(IntPtr apis, IntPtr info);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_userdata(IntPtr apis, IntPtr info);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_add_return(IntPtr apis, IntPtr info, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_throw_by_string(IntPtr apis, IntPtr pinfo, string msg);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_env_ref(IntPtr apis, IntPtr env);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_env_ref_is_valid(IntPtr apis, IntPtr env);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_env_from_ref(IntPtr apis, IntPtr env_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_duplicate_env_ref(IntPtr apis, IntPtr env_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_release_env_ref(IntPtr apis, IntPtr env_ref);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_open_scope(IntPtr apis, IntPtr env_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_open_scope_placement(IntPtr apis, IntPtr env_ref, IntPtr memory);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_has_caught(IntPtr apis, IntPtr scope);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_exception_as_string(IntPtr apis, IntPtr scope, bool with_stack);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_close_scope(IntPtr apis, IntPtr scope);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_close_scope_placement(IntPtr apis, IntPtr scope);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_value_ref(IntPtr apis, IntPtr env, IntPtr value, uint internal_field_count);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_duplicate_value_ref(IntPtr apis, IntPtr value_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_release_value_ref(IntPtr apis, IntPtr value_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_value_from_ref(IntPtr apis, IntPtr env, IntPtr value_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_ref_weak(IntPtr apis, IntPtr env, IntPtr value_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_set_owner(IntPtr apis, IntPtr env, IntPtr value, IntPtr owner);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_ref_associated_env(IntPtr apis, IntPtr value_ref);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_ref_internal_fields(IntPtr apis, IntPtr value_ref, out uint pinternal_field_count);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_property(IntPtr apis, IntPtr env, IntPtr obj, string key);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_property(IntPtr apis, IntPtr env, IntPtr obj, string key, IntPtr value);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_get_private(IntPtr apis, IntPtr env, IntPtr obj, out IntPtr out_ptr);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_set_private(IntPtr apis, IntPtr env, IntPtr obj, IntPtr ptr);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_property_uint32(IntPtr apis, IntPtr env, IntPtr obj, uint key);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_property_uint32(IntPtr apis, IntPtr env, IntPtr obj, uint key, IntPtr value);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_call_function(IntPtr apis, IntPtr env, IntPtr func, IntPtr this_object, int argc, IntPtr[] argv);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_eval(IntPtr apis, IntPtr env, byte[] code, UIntPtr code_size, string path);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_global(IntPtr apis, IntPtr env);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_get_env_private(IntPtr apis, IntPtr env);
         
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_env_private(IntPtr apis, IntPtr env, IntPtr ptr);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_trace_native_object_lifecycle(IntPtr apis, IntPtr env, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_registry(IntPtr apis, IntPtr env, IntPtr registry);
 #endif
     }

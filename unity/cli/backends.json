@@ -1,9 +1,70 @@
 {
     "quickjs": {
-        "url": "https://github.com/puerts/backend-quickjs/releases/download/QJS_241030/qjs_v8_bin.tgz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER",
+                "WITH_QUICKJS",
+                "WITHOUT_INSPECTOR"
+            ],
+            "include": [
+            ],
+            "link-libraries": {
+                "win": {
+                    "ia32": [
+                    ],
+                    "x64": [
+                    ]
+                },
+                "osx": {
+                    "x64": [
+                    ],
+                    "arm64": [
+                    ]
+                },
+                "android": {
+                    "armv7": [
+                    ],
+                    "arm64": [
+                    ],
+                    "x64": [
+                    ]
+                },
+                "ohos": {
+                    "armv7": [
+                    ],
+                    "arm64": [
+                    ]
+                },
+                "linux": {
+                    "x64": [
+                    ]
+                },
+                "ns":{
+                    "arm64": [
+                    ]
+                }
+            },
+            "copy-libraries": {
+                "win": {
+                    "ia32": [
+                    ],
+                    "x64": [
+                    ]
+                },
+                "ios": {
+                    "arm64": [
+                    ]
+                },
+                "wasm": {
+                    "wasm32": [
+                    ]
+                }
+            }
+        }
+    },
+    "papi-quickjs": {
+        "config": {
+            "definition": [
                 "WITH_QUICKJS",
                 "WITHOUT_INSPECTOR"
             ],

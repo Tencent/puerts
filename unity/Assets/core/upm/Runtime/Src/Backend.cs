@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+using System;
+
 
 namespace Puerts
 {
@@ -24,6 +26,12 @@ namespace Puerts
             this.env = env;
         }
 
+        public abstract IntPtr CreateEnvRef();
+
+        public abstract IntPtr GetApi();
+
+        public abstract void DestroyEnvRef(IntPtr envRef);
+
         public abstract void LowMemoryNotification();
     }
 
@@ -33,16 +41,28 @@ namespace Puerts
         {
         }
 
+        public override IntPtr CreateEnvRef()
+        {
+            return PapiV8Native.CreateV8PapiEnvRef();
+        }
+
+        public override IntPtr GetApi()
+        {
+            return PapiV8Native.GetV8FFIApi();
+        }
+
+        public override void DestroyEnvRef(IntPtr envRef) 
+        {
+            PapiV8Native.DestroyV8PapiEnvRef(envRef);
+        }
+
         public bool IdleNotificationDeadline(double DeadlineInSeconds)
         {
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
-            return PuertsDLL.IdleNotificationDeadline(env.isolate, DeadlineInSeconds);
-#else
+            // TODO
             return false;
-#endif
 #if THREAD_SAFE
             }
 #endif
@@ -53,9 +73,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
-            PuertsDLL.LowMemoryNotification(env.isolate);
-#endif
+            // TODO
 #if THREAD_SAFE
             }
 #endif
@@ -66,9 +84,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
-            PuertsDLL.RequestMinorGarbageCollectionForTesting(env.isolate);
-#endif
+            // TODO
 #if THREAD_SAFE
             }
 #endif
@@ -79,9 +95,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
-            PuertsDLL.RequestFullGarbageCollectionForTesting(env.isolate);
-#endif
+            // TODO
 #if THREAD_SAFE
             }
 #endif
@@ -102,14 +116,27 @@ namespace Puerts
         {
         }
 
+        public override IntPtr CreateEnvRef()
+        {
+            return PapiQjsNative.CreateQjsPapiEnvRef();
+        }
+
+        public override IntPtr GetApi()
+        {
+            return PapiQjsNative.GetQjsFFIApi();
+        }
+
+        public override void DestroyEnvRef(IntPtr envRef)
+        {
+            PapiQjsNative.DestroyQjsPapiEnvRef(envRef);
+        }
+
         public override void LowMemoryNotification()
         {
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
-            PuertsDLL.LowMemoryNotification(env.isolate);
-#endif
+            // TODO
 #if THREAD_SAFE
             }
 #endif

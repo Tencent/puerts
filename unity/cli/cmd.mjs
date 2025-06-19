@@ -31,7 +31,7 @@ program
             .default("Release")
             .choices(["Release", "Debug"])
     )
-    .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
+    .option("--backend <backend>", "the JS backend will be used")
     .option('-ws, --websocket <number>', 'with websocket support')
     .option('-G, --generator <generator-name>', 'cmake generator name')
     .option('-ts, --thread_safe', 'thread safe')

@@ -69,15 +69,17 @@ namespace Puerts
     public class PuertsDLL
     {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
-        const string DLLNAME = "__Internal";
+        const string PUERTSDLLNAME = "__Internal";
+        const string PAPIV8DLLNAME = "__Internal";
 #else
-        const string DLLNAME = "puerts";
+        const string PUERTSDLLNAME = "puerts";
+        const string PAPIV8DLLNAME = "papiqjs";
 #endif
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetApiLevel")]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetApiLevel")]
         protected static extern int _GetApiLevel();
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int GetLibVersion();
 
         public static int GetApiLevel() {
@@ -98,43 +100,43 @@ namespace Puerts
             }
         }
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int GetLibBackend(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngine(int backendType);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngineWithExternalEnv(int backendType, IntPtr externalRuntime, IntPtr externalContext);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void DestroyJSEngine(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void LowMemoryNotification(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool IdleNotificationDeadline(IntPtr isolate, double DeadlineInSeconds);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void RequestMinorGarbageCollectionForTesting(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void RequestFullGarbageCollectionForTesting(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void CreateInspector(IntPtr isolate, int port);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void DestroyInspector(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool InspectorTick(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void LogicTick(IntPtr isolate);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(IntPtr log, IntPtr logWarning, IntPtr logError);
 
         public static void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError)

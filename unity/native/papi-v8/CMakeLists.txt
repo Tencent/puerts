@@ -41,7 +41,7 @@ endif()
 # 添加puerts子项目并显式指定二进制目录
 add_subdirectory(../puerts ${CMAKE_CURRENT_BINARY_DIR}/puerts)
 
-set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/../.backends/${JS_ENGINE})
+set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/.backends/${JS_ENGINE})
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/ThirdParty)
 

@@ -211,17 +211,35 @@ function getExeSuffix() {
 
 export async function dotnetTest(cwd, backend, filter = '', thread_safe = false) {
     // 编译binary
-    const copyConfig = await runPuertsMake(join(cwd, '../../native_src'), {
+    let dlls = await runPuertsMake(join(cwd, '../../native/puerts'), {
         platform: getPlatform(),
         config: "Debug",
-        backend: backend || 'v8_9.4',
         arch: process.arch,
         websocket: 1,
         thread_safe: thread_safe
     });
 
+    const qjsdlls = await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        websocket: 1,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(qjsdlls);
+
+    const v8dlls = await runPuertsMake(join(cwd, '../../native/papi-v8'), {
+        backend: 'v8_9.4.146.24',
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        websocket: 1,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(v8dlls);
+
     // await runTest(cwd, copyConfig, true, filter);
-    await runTest(cwd, copyConfig, false, filter);
+    await runTest(cwd, dlls, false, filter);
 }
 
 export async function unityTest(cwd, unityPath) {
