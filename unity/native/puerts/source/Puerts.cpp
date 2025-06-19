@@ -26,7 +26,7 @@ PESAPI_MODULE_EXPORT int GetPapiVersion()
     return PESAPI_VERSION;
 }
 
-PESAPI_MODULE_EXPORT pesapi_func_ptr* GetRegsterApi()
+PESAPI_MODULE_EXPORT pesapi_func_ptr* GetRegisterApi()
 {
     return reg_apis;
 }

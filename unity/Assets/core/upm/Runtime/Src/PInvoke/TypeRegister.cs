@@ -25,7 +25,7 @@ namespace Puerts
 
         private TypeRegister()
         {
-            reg_api = Marshal.PtrToStructure<pesapi_reg_api>(NativeAPI.GetRegsterApi());
+            reg_api = Marshal.PtrToStructure<pesapi_reg_api>(PuertsNative.GetRegisterApi());
             registry = reg_api.create_registry();
             onTypeNotFoundDelegate = new pesapi_class_not_found_callback(OnTypeNotFound);
             reg_api.on_class_not_found(registry, onTypeNotFoundDelegate);

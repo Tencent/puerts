@@ -23,22 +23,6 @@ namespace Puerts
         const string PAPIV8DLLNAME = "papiqjs";
 #endif
 
-        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetRegsterApi();
-
-#if !UNITY_WEBGL || UNITY_EDITOR
-        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetV8FFIApi();
-
-        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetV8PapiEnvRef(IntPtr isolate);
-#endif
-        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetQjsFFIApi();
-
-        [DllImport(PAPIV8DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr GetQjsPapiEnvRef(IntPtr isolate);
-
 #if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_IPHONE) && ENABLE_IL2CPP
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void InitialPuerts(IntPtr PesapiImpl);
