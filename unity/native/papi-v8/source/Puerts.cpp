@@ -101,7 +101,7 @@ V8_EXPORT pesapi_env_ref CreateV8PapiEnvRef()
 {
     auto jsEnv = new JSEngine(nullptr, nullptr);
 #ifdef THREAD_SAFE
-    v8::Locker Locker(JsEngine->MainIsolate);
+    v8::Locker Locker(jsEnv->MainIsolate);
 #endif
     v8::Isolate::Scope IsolateScope(jsEnv->MainIsolate);
     v8::HandleScope HandleScope(jsEnv->MainIsolate);
