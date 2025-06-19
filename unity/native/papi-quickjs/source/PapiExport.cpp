@@ -88,18 +88,12 @@ PESAPI_MODULE_EXPORT pesapi_env_ref CreateQjsPapiEnvRef()
 
 PESAPI_MODULE_EXPORT void DestroyQjsPapiEnvRef(pesapi_env_ref env_ref)
 {
-    if (env_ref)
-    {
-        auto env = pesapi::qjsimpl::g_pesapi_ffi.get_env_from_ref(env_ref);
-        if (env)
-        {
-            auto ctx = reinterpret_cast<JSContext*>(env);
-            pesapi::qjsimpl::g_pesapi_ffi.release_env_ref(env_ref);
-            auto BackendEnv = puerts::FBackendEnv::Get(JS_GetRuntime(ctx));
-            BackendEnv->UnInitialize();
-            delete BackendEnv;
-        }
-    }
+    auto env = pesapi::qjsimpl::g_pesapi_ffi.get_env_from_ref(env_ref);
+    auto ctx = reinterpret_cast<JSContext*>(env);
+    pesapi::qjsimpl::g_pesapi_ffi.release_env_ref(env_ref);
+    auto BackendEnv = puerts::FBackendEnv::Get(JS_GetRuntime(ctx));
+    BackendEnv->UnInitialize();
+    delete BackendEnv;
 }
 
 #ifdef __cplusplus
