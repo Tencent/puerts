@@ -50,9 +50,9 @@ struct FResultInfo
 class JSEngine
 {
 private: 
-#if !WITH_QUICKJS
+
     static void HostInitializeImportMetaObject(v8::Local<v8::Context> context, v8::Local<v8::Module> module, v8::Local<v8::Object> meta);
-#endif
+
 public:
 
     JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
@@ -77,9 +77,7 @@ public:
     
     void TerminateExecution()
     {
-#if !WITH_QUICKJS
         MainIsolate->TerminateExecution();
-#endif
     }
 
     v8::Isolate* MainIsolate;

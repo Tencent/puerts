@@ -76,25 +76,17 @@ namespace PUERTS_NAMESPACE
 
     bool JSEngine::IdleNotificationDeadline(double DeadlineInSeconds)
     {
-#ifndef WITH_QUICKJS
         return MainIsolate->IdleNotificationDeadline(DeadlineInSeconds);
-#else
-        return true;
-#endif
     }
 
     void JSEngine::RequestMinorGarbageCollectionForTesting()
     {
-#ifndef WITH_QUICKJS
         MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
-#endif
     }
 
     void JSEngine::RequestFullGarbageCollectionForTesting()
     {
-#ifndef WITH_QUICKJS
         MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
-#endif
     }
 
     void JSEngine::CreateInspector(int32_t Port)

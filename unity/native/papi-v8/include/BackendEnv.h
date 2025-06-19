@@ -87,17 +87,6 @@ namespace PUERTS_NAMESPACE
 #endif
 
         // Module
-#if defined(WITH_QUICKJS)
-        std::map<std::string, JSModuleDef*> PathToModuleMap;
-        JSValue JsFileLoader;
-        JSValue JsFileNormalize;
-        
-        JSModuleDef* LoadModule(JSContext* ctx, const char *name);
-        
-        char* ResolveQjsModule(JSContext *ctx, const char *base_name, const char *name, bool throwIfFail);
-        
-        char* NormalizeModuleName(JSContext *ctx, const char *base_name, const char *name);
-#else
         std::map<std::string, v8::UniquePersistent<v8::Module>> PathToModuleMap;
         struct FModuleInfo
         {
@@ -120,7 +109,7 @@ namespace PUERTS_NAMESPACE
             v8::Local<v8::FixedArray> import_attributes,    // not implement yet
 #endif
             v8::Local<v8::Module> referrer);
-#endif
+
         std::map<int, std::string> ScriptIdToPathMap;
 
         // PromiseCallback
@@ -148,9 +137,8 @@ namespace PUERTS_NAMESPACE
         bool ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path);
 
         std::string GetJSStackTrace();
-#if !defined(WITH_QUICKJS)
+        
         v8::Local<v8::Object> GetV8Extras(v8::Isolate* isolate, v8::Local<v8::Context> context);
-#endif
     };
 
 #if WITH_NODEJS
@@ -162,8 +150,6 @@ namespace PUERTS_NAMESPACE
 
     namespace esmodule 
     {
-#if !WITH_QUICKJS
-
 #if V8_MAJOR_VERSION >= 10
         v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(v8::Local<v8::Context> Context, v8::Local<v8::Data> HostDefinedOptions,
             v8::Local<v8::Value> ResourceName, v8::Local<v8::String> Specifier, v8::Local<v8::FixedArray> ImportAssertions);
@@ -174,12 +160,5 @@ namespace PUERTS_NAMESPACE
         void HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta);
         
         void ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info);
-#else 
-        JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque);
-    
-        char* module_normalize(JSContext *ctx, const char *base_name, const char *name, void* opaque);
-    
-        JSValue ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
-#endif
     }
 }

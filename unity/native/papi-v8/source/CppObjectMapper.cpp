@@ -72,9 +72,7 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
     LocalTemplate->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1, CDataName
     PointerTemplate = v8::UniquePersistent<v8::FunctionTemplate>(InIsolate, LocalTemplate);
-#ifndef WITH_QUICKJS
     PrivateKey.Reset(InIsolate, v8::Symbol::New(InIsolate));
-#endif
 
     v8::Local<v8::Context> Context = InIsolate->GetCurrentContext();
     auto This = v8::External::New(InIsolate, this);
@@ -292,7 +290,6 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-#ifndef WITH_QUICKJS
             auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
             if (FastCallInfo)
             {
@@ -303,16 +300,12 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                         v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
             }
             else
-#endif
             {
                 Template->PrototypeTemplate()->Set(
                     v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                     v8::FunctionTemplate::New(
-                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
-#ifndef WITH_QUICKJS
-                                                                                    ,
+                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data),
                         v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
-#endif
                         ));
             }
             ++FunctionInfo;
@@ -320,7 +313,6 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-#ifndef WITH_QUICKJS
             auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
             if (FastCallInfo)
             {
@@ -330,15 +322,11 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                         v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
             }
             else
-#endif
             {
                 Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                     v8::FunctionTemplate::New(
-                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
-#ifndef WITH_QUICKJS
-                                                                                    ,
+                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data),
                         v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
-#endif
                         ));
             }
             ++FunctionInfo;
@@ -416,15 +404,9 @@ void FCppObjectMapper::BindCppObject(
     }
 }
 
-#define QJS_PRIVATE_KEY_STR "__,kp@"
-
 void* FCppObjectMapper::GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject)
 {
-#ifndef WITH_QUICKJS
     auto Key = PrivateKey.Get(Context->GetIsolate());
-#else
-    auto Key = FV8Utils::InternalString(Context->GetIsolate(), QJS_PRIVATE_KEY_STR);
-#endif
     v8::MaybeLocal<v8::Value> maybeValue = JSObject->Get(Context, Key);
     if (maybeValue.IsEmpty())
     {
@@ -442,11 +424,7 @@ void* FCppObjectMapper::GetPrivateData(v8::Local<v8::Context> Context, v8::Local
 
 void FCppObjectMapper::SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr)
 {
-#ifndef WITH_QUICKJS
     auto Key = PrivateKey.Get(Context->GetIsolate());
-#else
-    auto Key = FV8Utils::InternalString(Context->GetIsolate(), QJS_PRIVATE_KEY_STR);
-#endif
     (void) (JSObject->Set(Context, Key, v8::External::New(Context->GetIsolate(), Ptr)));
 }
 
@@ -503,9 +481,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     FunctionDatas.clear();
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
-#ifndef WITH_QUICKJS
     PrivateKey.Reset();
-#endif
     PointerTemplate.Reset();
 }
 

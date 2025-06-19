@@ -110,9 +110,7 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
     std::vector<PesapiCallbackData*> FunctionDatas;
-#ifndef WITH_QUICKJS
     v8::Global<v8::Symbol> PrivateKey;
-#endif
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
     
