@@ -30,14 +30,22 @@ namespace Puerts
 
         public virtual void Tick(){ }
 
+        public abstract void DestroyEnvRef(IntPtr envRef);
+
+        public abstract void LowMemoryNotification();
+
+        public virtual void RemoteDebuggerListen(int port)
+        {
+        }
+
         public virtual bool DebuggerTick()
         {
             return true;
         }
 
-        public abstract void DestroyEnvRef(IntPtr envRef);
-
-        public abstract void LowMemoryNotification();
+        public virtual void CloseRemoteDebugger()
+        {
+        }
     }
 
     public abstract class BackendJs : Backend
@@ -73,11 +81,6 @@ namespace Puerts
         public override IntPtr GetApi()
         {
             return PapiV8Native.GetV8FFIApi();
-        }
-
-        public override bool DebuggerTick()
-        {
-            return PapiV8Native.InspectorTick(isolate);
         }
 
         public override void Tick() 
@@ -146,6 +149,20 @@ namespace Puerts
 #endif
         }
 
+        public override void RemoteDebuggerListen(int debugPort)
+        {
+            PapiV8Native.CreateInspector(isolate, debugPort);
+        }
+
+        public override bool DebuggerTick()
+        {
+            return PapiV8Native.InspectorTick(isolate);
+        }
+
+        public override void CloseRemoteDebugger()
+        {
+            PapiV8Native.DestroyInspector(isolate);
+        }
     }
 
     public class BackendNodeJS : BackendV8

@@ -166,6 +166,11 @@ namespace Puerts
 
             PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
 
+            if (debugPort != -1)
+            {
+                Backend.RemoteDebuggerListen(debugPort);
+            }
+
             string debugpath;
             string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
             Eval(context, debugpath);
@@ -631,6 +636,8 @@ namespace Puerts
                 if (OnDispose != null) OnDispose();
             }
             catch { }
+
+            Backend.CloseRemoteDebugger();
 
             OnDispose = null;
             // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
