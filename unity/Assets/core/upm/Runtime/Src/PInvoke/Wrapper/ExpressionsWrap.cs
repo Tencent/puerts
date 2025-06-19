@@ -78,32 +78,32 @@ namespace Puerts
         {
             public static T GetSelf<T>(IntPtr api, IntPtr env, IntPtr info)
             {
-                var envIdx = NativeAPI.pesapi_get_env_private(api, env).ToInt32();
-                var objIdx = NativeAPI.pesapi_get_native_holder_ptr(api, info).ToInt32();
+                var envIdx = PuertsNative.pesapi_get_env_private(api, env).ToInt32();
+                var objIdx = PuertsNative.pesapi_get_native_holder_ptr(api, info).ToInt32();
                 return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
             }
 
             public static IntPtr FindOrAddObject(IntPtr apis, IntPtr env, object obj)
             {
-                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                 return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.FindOrAddObject(obj));
             }
 
             // do not find, just Add for ValueType
             public static IntPtr AddValueType<T>(IntPtr apis, IntPtr env, T val) where T : struct
             {
-                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                 return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.AddBoxedValueType(val));
             }
 
             public static int GetEnvIndex(IntPtr api, IntPtr env)
             {
-                return NativeAPI.pesapi_get_env_private(api, env).ToInt32();
+                return PuertsNative.pesapi_get_env_private(api, env).ToInt32();
             }
 
             public static int GetSelfId(IntPtr api, IntPtr info)
             {
-                return NativeAPI.pesapi_get_native_holder_ptr(api, info).ToInt32();
+                return PuertsNative.pesapi_get_native_holder_ptr(api, info).ToInt32();
             }
 
             public static T GetSelfDirect<T>(int envIdx, int objId)
@@ -118,9 +118,9 @@ namespace Puerts
 
             public static void CheckException(IntPtr apis, IntPtr scope)
             {
-                if (NativeAPI.pesapi_has_caught(apis, scope))
+                if (PuertsNative.pesapi_has_caught(apis, scope))
                 {
-                    string msg = Marshal.PtrToStringUTF8(NativeAPI.pesapi_get_exception_as_string(apis, scope, true));
+                    string msg = Marshal.PtrToStringUTF8(PuertsNative.pesapi_get_exception_as_string(apis, scope, true));
                     throw new InvalidOperationException(msg);
                 }
             }
@@ -129,17 +129,17 @@ namespace Puerts
             {
                 if (str == null)
                 {
-                    return NativeAPI.pesapi_create_null(apis, env);
+                    return PuertsNative.pesapi_create_null(apis, env);
                 }
                 byte[] utf16 = Encoding.Unicode.GetBytes(str);
-                return NativeAPI.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
+                return PuertsNative.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
 
             public static IntPtr NativeToScript_ScriptObject(IntPtr apis, IntPtr env, JSObject obj)
             {
                 if (obj == null)
                 {
-                    return NativeAPI.pesapi_create_null(apis, env);
+                    return PuertsNative.pesapi_create_null(apis, env);
                 }
 
                 if (apis != obj.apis)
@@ -148,71 +148,71 @@ namespace Puerts
                 }
 
                 // apis is the same, using apis
-                var objEnvRef = NativeAPI.pesapi_get_ref_associated_env(apis, obj.objRef);
-                if (!NativeAPI.pesapi_env_ref_is_valid(apis, objEnvRef))
+                var objEnvRef = PuertsNative.pesapi_get_ref_associated_env(apis, obj.objRef);
+                if (!PuertsNative.pesapi_env_ref_is_valid(apis, objEnvRef))
                 {
                     throw new InvalidCastException("ScriptObject env is invalid!");
                 }
                 
-                var scope = NativeAPI.pesapi_open_scope(apis, objEnvRef);
+                var scope = PuertsNative.pesapi_open_scope(apis, objEnvRef);
 
                 //目前的实现，apis相等而且env private(env index)相等表示是同一个虚拟机实例
-                var isEnvEq = NativeAPI.pesapi_get_env_private(apis, NativeAPI.pesapi_get_env_from_ref(apis, objEnvRef)) == NativeAPI.pesapi_get_env_private(apis,env);
-                NativeAPI.pesapi_close_scope(apis, scope);
+                var isEnvEq = PuertsNative.pesapi_get_env_private(apis, PuertsNative.pesapi_get_env_from_ref(apis, objEnvRef)) == PuertsNative.pesapi_get_env_private(apis,env);
+                PuertsNative.pesapi_close_scope(apis, scope);
                 if (!isEnvEq)
                 {
                     throw new InvalidCastException("ScriptObject own by anther env");
                 }
-                return NativeAPI.pesapi_get_value_from_ref(apis, env, obj.objRef);
+                return PuertsNative.pesapi_get_value_from_ref(apis, env, obj.objRef);
             }
 
             public static IntPtr NativeToScript_NativeType(IntPtr apis, IntPtr env, NativeType t)
             {
-                return NativeAPI.pesapi_create_class(apis, env, new IntPtr(t.typeId));
+                return PuertsNative.pesapi_create_class(apis, env, new IntPtr(t.typeId));
             }
 
             public static IntPtr NativeToScript_ArrayBuffer(IntPtr apis, IntPtr env, ArrayBuffer arrayBuffer)
             {
-                return NativeAPI.pesapi_create_binary(apis, env, arrayBuffer.Bytes, new UIntPtr((uint)arrayBuffer.Count));
+                return PuertsNative.pesapi_create_binary(apis, env, arrayBuffer.Bytes, new UIntPtr((uint)arrayBuffer.Count));
             }
 
             public static IntPtr NativeToScript_Object(IntPtr apis, IntPtr env, object t)
             {
                 if(t == null)
                 {
-                    return NativeAPI.pesapi_create_null(apis, env);
+                    return PuertsNative.pesapi_create_null(apis, env);
                 }
                 else if (t is int intValue)
                 {
-                    return NativeAPI.pesapi_create_int32(apis, env, intValue);
+                    return PuertsNative.pesapi_create_int32(apis, env, intValue);
                 }
                 else if (t is uint uintValue)
                 {
-                    return NativeAPI.pesapi_create_uint32(apis, env, uintValue);
+                    return PuertsNative.pesapi_create_uint32(apis, env, uintValue);
                 }
                 else if (t is long longValue)
                 {
-                    return NativeAPI.pesapi_create_int64(apis, env, longValue);
+                    return PuertsNative.pesapi_create_int64(apis, env, longValue);
                 }
                 else if (t is ulong ulongValue)
                 {
-                    return NativeAPI.pesapi_create_uint64(apis, env, ulongValue);
+                    return PuertsNative.pesapi_create_uint64(apis, env, ulongValue);
                 }
                 else if (t is double doubleValue)
                 {
-                    return NativeAPI.pesapi_create_double(apis, env, doubleValue);
+                    return PuertsNative.pesapi_create_double(apis, env, doubleValue);
                 }
                 else if (t is float floatValue)
                 {
-                    return NativeAPI.pesapi_create_double(apis, env, floatValue);
+                    return PuertsNative.pesapi_create_double(apis, env, floatValue);
                 }
                 else if (t is char charValue)
                 {
-                    return NativeAPI.pesapi_create_int32(apis, env, charValue);
+                    return PuertsNative.pesapi_create_int32(apis, env, charValue);
                 }
                 else if (t is bool boolValue)
                 {
-                    return NativeAPI.pesapi_create_boolean(apis, env, boolValue);
+                    return PuertsNative.pesapi_create_boolean(apis, env, boolValue);
                 }
                 else if (t is string strValue)
                 {
@@ -241,22 +241,22 @@ namespace Puerts
             {
                 if (value == null)
                 {
-                    return NativeAPI.pesapi_create_null(apis, env);
+                    return PuertsNative.pesapi_create_null(apis, env);
                 }
-                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                 var objectPool = JsEnv.jsEnvs[envIdx].objectPool;
                 var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
                 var objId = objectPool.FindOrAddObject(value);
-                return NativeAPI.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
+                return PuertsNative.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
             }
 
             public static IntPtr NativeToScript_ValueType_Boxed(IntPtr apis, IntPtr env, object value)
             {
-                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                 var objectPool = JsEnv.jsEnvs[envIdx].objectPool;
                 var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
                 var objId = objectPool.AddBoxedValueType(value);
-                return NativeAPI.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
+                return PuertsNative.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
             }
 
             public static IntPtr NativeToScript_ValueType<T>(IntPtr apis, IntPtr env, T value) where T : struct
@@ -266,26 +266,26 @@ namespace Puerts
 
             public static T ScriptToNative_T<T>(IntPtr apis, IntPtr env, IntPtr obj)
             {
-                var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
-                var objIdx = NativeAPI.pesapi_get_native_object_ptr(apis, env, obj).ToInt32();
+                var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
+                var objIdx = PuertsNative.pesapi_get_native_object_ptr(apis, env, obj).ToInt32();
                 if (objIdx == 0) return default(T);
                 return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
             }
 
             public static bool IsAssignable_ByRef<T>(IntPtr apis, IntPtr env, IntPtr value)
             {
-                var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, value).ToInt32();
+                var typeId = PuertsNative.pesapi_get_native_object_typeid(apis, env, value).ToInt32();
                 if (typeId == 0)
                 {
                     // TODO: 考虑到兼容性，目前先支持undefined，默认应该只支持null
-                    return NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value);
+                    return PuertsNative.pesapi_is_null(apis, env, value) || PuertsNative.pesapi_is_undefined(apis, env, value);
                 }
                 return typeId != 0 && typeof(T).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
 
             public static bool IsAssignable_ValueType<TValueType>(IntPtr apis, IntPtr env, IntPtr obj) where TValueType : struct
             {
-                var typeId = NativeAPI.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
+                var typeId = PuertsNative.pesapi_get_native_object_typeid(apis, env, obj).ToInt32();
                 return typeId != 0 && typeof(TValueType).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
 
@@ -293,14 +293,14 @@ namespace Puerts
             {
                 IntPtr valueRef;
                 bool hasLastRef = true;
-                if (!NativeAPI.pesapi_get_private(apis, env, value, out valueRef) || valueRef == IntPtr.Zero)
+                if (!PuertsNative.pesapi_get_private(apis, env, value, out valueRef) || valueRef == IntPtr.Zero)
                 {
-                    valueRef = NativeAPI.pesapi_create_value_ref(apis, env, value, 1);
-                    NativeAPI.pesapi_set_private(apis, env, value, valueRef);
+                    valueRef = PuertsNative.pesapi_create_value_ref(apis, env, value, 1);
+                    PuertsNative.pesapi_set_private(apis, env, value, valueRef);
                     hasLastRef = false;
                 }
                 uint internal_field_count = 0;
-                IntPtr weakHandlePtr = NativeAPI.pesapi_get_ref_internal_fields(apis, valueRef, out internal_field_count);
+                IntPtr weakHandlePtr = PuertsNative.pesapi_get_ref_internal_fields(apis, valueRef, out internal_field_count);
                 if (internal_field_count != 1)
                 {
                     throw new InvalidProgramException($"invalud internal fields count {internal_field_count}!");
@@ -320,7 +320,7 @@ namespace Puerts
                 }
                 if (ret == null)
                 {
-                    var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                    var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                     ret = new JSObject(JsEnv.jsEnvs[envIdx], apis, valueRef);
                     weakHandle = GCHandle.ToIntPtr(GCHandle.Alloc(ret, GCHandleType.Weak));
                     Marshal.StructureToPtr(weakHandle, weakHandlePtr, false);
@@ -330,79 +330,79 @@ namespace Puerts
 
             public static string ScriptToNative_String(IntPtr apis, IntPtr env, IntPtr value)
             {
-                if (NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value))
+                if (PuertsNative.pesapi_is_null(apis, env, value) || PuertsNative.pesapi_is_undefined(apis, env, value))
                 {
                     return null;
                 }
                 UIntPtr outLen = UIntPtr.Zero;
-                NativeAPI.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
+                PuertsNative.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
                 byte[] buf = new byte[outLen.ToUInt32() * 2];
-                NativeAPI.pesapi_get_value_string_utf16(apis, env, value, buf, ref outLen);
+                PuertsNative.pesapi_get_value_string_utf16(apis, env, value, buf, ref outLen);
                 return Encoding.Unicode.GetString(buf);
             }
 
             public static ArrayBuffer ScriptToNative_ArrayBuffer(IntPtr apis, IntPtr env, IntPtr value)
             {
                 UIntPtr outLen = UIntPtr.Zero;
-                IntPtr ptr = NativeAPI.pesapi_get_value_binary(apis, env, value, ref outLen);
+                IntPtr ptr = PuertsNative.pesapi_get_value_binary(apis, env, value, ref outLen);
                 return new ArrayBuffer(ptr, (int)outLen.ToUInt32());
             }
 
             public static object ScriptToNative_Object(IntPtr apis, IntPtr env, IntPtr value)
             {
-                if (NativeAPI.pesapi_is_null(apis, env, value) || NativeAPI.pesapi_is_undefined(apis, env, value))
+                if (PuertsNative.pesapi_is_null(apis, env, value) || PuertsNative.pesapi_is_undefined(apis, env, value))
                 {
                     return null;
                 }
-                else if (NativeAPI.pesapi_is_boolean(apis, env, value))
+                else if (PuertsNative.pesapi_is_boolean(apis, env, value))
                 {
-                    return NativeAPI.pesapi_get_value_bool(apis, env, value);
+                    return PuertsNative.pesapi_get_value_bool(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_int32(apis, env, value))
+                else if (PuertsNative.pesapi_is_int32(apis, env, value))
                 {
-                    return NativeAPI.pesapi_get_value_int32(apis, env, value);
+                    return PuertsNative.pesapi_get_value_int32(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_uint32(apis, env, value))
+                else if (PuertsNative.pesapi_is_uint32(apis, env, value))
                 {
-                    return NativeAPI.pesapi_get_value_uint32(apis, env, value);
+                    return PuertsNative.pesapi_get_value_uint32(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_int64(apis, env, value))
+                else if (PuertsNative.pesapi_is_int64(apis, env, value))
                 {
-                    return NativeAPI.pesapi_get_value_int64(apis, env, value);
+                    return PuertsNative.pesapi_get_value_int64(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_uint64(apis, env, value))
+                else if (PuertsNative.pesapi_is_uint64(apis, env, value))
                 {
-                    return NativeAPI.pesapi_get_value_uint64(apis, env, value);
+                    return PuertsNative.pesapi_get_value_uint64(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_double(apis, env, value))
+                else if (PuertsNative.pesapi_is_double(apis, env, value))
                 {
-                    return NativeAPI.pesapi_get_value_double(apis, env, value);
+                    return PuertsNative.pesapi_get_value_double(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_string(apis, env, value))
+                else if (PuertsNative.pesapi_is_string(apis, env, value))
                 {
                     return ScriptToNative_String(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_array(apis, env, value))
+                else if (PuertsNative.pesapi_is_array(apis, env, value))
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_binary(apis, env, value))
+                else if (PuertsNative.pesapi_is_binary(apis, env, value))
                 {
                     return ScriptToNative_ArrayBuffer(apis, env, value);
                 }
-                else if (NativeAPI.pesapi_is_function(apis, env, value))
+                else if (PuertsNative.pesapi_is_function(apis, env, value))
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
                 }
-                var objId = NativeAPI.pesapi_get_native_object_ptr(apis, env, value);
+                var objId = PuertsNative.pesapi_get_native_object_ptr(apis, env, value);
                 if (objId != IntPtr.Zero)
                 {
-                    var envIdx = NativeAPI.pesapi_get_env_private(apis, env).ToInt32();
+                    var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                     var res = JsEnv.jsEnvs[envIdx].objectPool.Get(objId.ToInt32());
                     var typedValue = res as TypedValue;
                     return typedValue == null ? res : typedValue.Target;
                 }
-                else if (NativeAPI.pesapi_is_object(apis, env, value))
+                else if (PuertsNative.pesapi_is_object(apis, env, value))
                 {
                     return ScriptToNative_ScriptObject(apis, env, value);
                 }
@@ -467,7 +467,7 @@ namespace Puerts
                 MethodInfo res;
                 if (!papiMethodCache.TryGetValue(apiName, out res))
                 {
-                    res = typeof(NativeAPI).GetMethod("pesapi_" + apiName);
+                    res = typeof(PuertsNative).GetMethod("pesapi_" + apiName);
                     papiMethodCache.Add(apiName, res);
                 }
                 return res;
@@ -483,7 +483,7 @@ namespace Puerts
             var callField = Expression.Call(getField, fieldInfo.FieldType.GetMethod("Invoke"), arguments);
             return callField;
             */
-            // call NativeAPI
+            // call PuertsNative
             var methodInfo = GetPApiMethodInfo(apiName);
             return Expression.Call(null, methodInfo, new [] { apis }.Concat(arguments));
         }

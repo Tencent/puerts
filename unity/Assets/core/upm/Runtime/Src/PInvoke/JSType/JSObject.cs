@@ -31,22 +31,22 @@ namespace Puerts
 
         public T Get<T>(string key) 
         {
-            var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
-            if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
+            var envRef = PuertsNative.pesapi_get_ref_associated_env(apis, objRef);
+            if (!PuertsNative.pesapi_env_ref_is_valid(apis, envRef))
             {
                 throw new InvalidOperationException("associated script env has disposed!");
             }
-            var scope = NativeAPI.pesapi_open_scope(apis, envRef);
-            var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
-            var obj = NativeAPI.pesapi_get_value_from_ref(apis, env, objRef);
-            var value = NativeAPI.pesapi_get_property(apis, env, obj, key);
+            var scope = PuertsNative.pesapi_open_scope(apis, envRef);
+            var env = PuertsNative.pesapi_get_env_from_ref(apis, envRef);
+            var obj = PuertsNative.pesapi_get_value_from_ref(apis, env, objRef);
+            var value = PuertsNative.pesapi_get_property(apis, env, obj, key);
             try
             {
                 return ExpressionsWrap.GetNativeTranlator<T>()(apis, env, value);
             }
             finally
             {
-                NativeAPI.pesapi_close_scope(apis, scope);
+                PuertsNative.pesapi_close_scope(apis, scope);
             }
         }
 
@@ -60,7 +60,7 @@ namespace Puerts
         internal static void ReleaseObjRef(IntPtr apis, IntPtr env, IntPtr objRef, bool force)
         {
             uint internal_field_count = 0;
-            IntPtr weakHandlePtr = NativeAPI.pesapi_get_ref_internal_fields(apis, objRef, out internal_field_count);
+            IntPtr weakHandlePtr = PuertsNative.pesapi_get_ref_internal_fields(apis, objRef, out internal_field_count);
             if (internal_field_count != 1)
             {
                 throw new InvalidProgramException($"invalud internal fields count {internal_field_count}!");
@@ -80,10 +80,10 @@ namespace Puerts
             }
             if (targetReleased || force)
             {
-                var obj = NativeAPI.pesapi_get_value_from_ref(apis, env, objRef);
-                NativeAPI.pesapi_set_private(apis, env, obj, IntPtr.Zero);
+                var obj = PuertsNative.pesapi_get_value_from_ref(apis, env, objRef);
+                PuertsNative.pesapi_set_private(apis, env, obj, IntPtr.Zero);
                 //UnityEngine.Debug.Log($"cleanupPendingKillScriptObjects {objRef}");
-                NativeAPI.pesapi_release_value_ref(apis, objRef);
+                PuertsNative.pesapi_release_value_ref(apis, objRef);
             }
         }
 
@@ -95,22 +95,22 @@ namespace Puerts
             {
 #endif
             disposed = true;
-            var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
-            if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
+            var envRef = PuertsNative.pesapi_get_ref_associated_env(apis, objRef);
+            if (!PuertsNative.pesapi_env_ref_is_valid(apis, envRef))
             {
-                NativeAPI.pesapi_release_value_ref(apis, objRef);
+                PuertsNative.pesapi_release_value_ref(apis, objRef);
             }
             else
             {
-                var scope = NativeAPI.pesapi_open_scope(apis, envRef);
+                var scope = PuertsNative.pesapi_open_scope(apis, envRef);
                 try
                 {
-                    var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
+                    var env = PuertsNative.pesapi_get_env_from_ref(apis, envRef);
                     ReleaseObjRef(apis, env, objRef, true);
                 }
                 finally
                 {
-                    NativeAPI.pesapi_close_scope(apis, scope);
+                    PuertsNative.pesapi_close_scope(apis, scope);
                 }
             }
             objRef = IntPtr.Zero;
@@ -129,24 +129,24 @@ namespace Puerts
             {
 #endif
             disposed = true;
-            var envRef = NativeAPI.pesapi_get_ref_associated_env(apis, objRef);
-            if (!NativeAPI.pesapi_env_ref_is_valid(apis, envRef))
+            var envRef = PuertsNative.pesapi_get_ref_associated_env(apis, objRef);
+            if (!PuertsNative.pesapi_env_ref_is_valid(apis, envRef))
             {
-                NativeAPI.pesapi_release_value_ref(apis, objRef);
+                PuertsNative.pesapi_release_value_ref(apis, objRef);
             }
             else
             {
                 if (dispose)
                 {
-                    var scope = NativeAPI.pesapi_open_scope(apis, envRef);
+                    var scope = PuertsNative.pesapi_open_scope(apis, envRef);
                     try
                     {
-                        var env = NativeAPI.pesapi_get_env_from_ref(apis, envRef);
+                        var env = PuertsNative.pesapi_get_env_from_ref(apis, envRef);
                         ReleaseObjRef(apis, env, objRef, false);
                     }
                     finally
                     {
-                        NativeAPI.pesapi_close_scope(apis, scope);
+                        PuertsNative.pesapi_close_scope(apis, scope);
                     }
                 }
                 else

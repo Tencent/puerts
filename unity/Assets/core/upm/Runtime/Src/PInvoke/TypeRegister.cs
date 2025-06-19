@@ -329,7 +329,7 @@ namespace Puerts
             {
                 ctorWrap = (apis, info) =>
                 {
-                    NativeAPI.pesapi_throw_by_string(apis, info, $"no constructor for {type}");
+                    PuertsNative.pesapi_throw_by_string(apis, info, $"no constructor for {type}");
                     return IntPtr.Zero;
                 };
             }
