@@ -149,27 +149,6 @@ namespace Puerts
             return backend.GetLoader();
         }
 
-        /*
-        [MonoPInvokeCallback(typeof(pesapi_callback))]
-        static void Print(IntPtr apis, IntPtr info)
-        {
-            var env = PuertsNative.pesapi_get_env(apis, info);
-            var str = PuertsNative.pesapi_get_arg(apis, info, 0);
-            if (!PuertsNative.pesapi_is_string(apis, env, str))
-            {
-                PuertsNative.pesapi_throw_by_string(apis, info, "invalid arguments to Print");
-                return;
-            }
-
-            UIntPtr bufsize = UIntPtr.Zero;
-            PuertsNative.pesapi_get_value_string_utf16(apis, env, str, null, ref bufsize);
-            byte[] buf = new byte[bufsize.ToUInt32() * 2];
-            PuertsNative.pesapi_get_value_string_utf16(apis, env, str, buf, ref bufsize);
-            string msg = System.Text.Encoding.Unicode.GetString(buf);
-            UnityEngine.Debug.Log(msg);
-        }
-        */
-
         [MonoPInvokeCallback(typeof(pesapi_callback))]
         void createFunction(IntPtr apis, IntPtr info)
         {
