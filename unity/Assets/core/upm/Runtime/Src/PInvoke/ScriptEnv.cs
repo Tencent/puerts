@@ -18,7 +18,7 @@ namespace Puerts
 {
     public class ScriptEnv : IDisposable
     {
-        internal static List<ScriptEnv> xEnvs = new List<ScriptEnv>();
+        internal static List<ScriptEnv> scriptEnvs = new List<ScriptEnv>();
 
         internal readonly int Idx;
 
@@ -66,10 +66,10 @@ namespace Puerts
                 throw e;
             }
 
-            lock (xEnvs)
+            lock (scriptEnvs)
             {
-                Idx = xEnvs.Count;
-                xEnvs.Add(this);
+                Idx = scriptEnvs.Count;
+                scriptEnvs.Add(this);
             }
 
             objectPool = new ObjectPool();
@@ -454,9 +454,9 @@ namespace Puerts
             Backend.DestroyEnvRef(envRef);
             disposed = true;
 
-            lock (xEnvs)
+            lock (scriptEnvs)
             {
-                xEnvs[Idx] = null;
+                scriptEnvs[Idx] = null;
             }
         }
 
