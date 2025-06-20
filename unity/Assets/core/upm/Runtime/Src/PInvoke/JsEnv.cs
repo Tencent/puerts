@@ -16,9 +16,6 @@ using System.Threading.Tasks;
 
 namespace Puerts
 {
-    public delegate void JSFunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
-    public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
-
     public class JsEnv : IDisposable
     {
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
