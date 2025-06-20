@@ -59,6 +59,13 @@ PESAPI_MODULE_EXPORT void DestroyQjsPapiEnvRef(pesapi_env_ref env_ref)
     free(BackendEnv);
 }
 
+PESAPI_MODULE_EXPORT void RunGC(pesapi_env_ref env_ref)
+{
+    auto env = pesapi::qjsimpl::g_pesapi_ffi.get_env_from_ref(env_ref);
+    auto ctx = reinterpret_cast<JSContext*>(env);
+    JS_RunGC(JS_GetRuntime(ctx));
+}
+
 #ifdef __cplusplus
 }
 #endif
