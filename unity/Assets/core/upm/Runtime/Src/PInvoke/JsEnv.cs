@@ -22,8 +22,6 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
-        private readonly ILoader loader;
-
         public Backend Backend;
 
         public ScriptEnv env;
@@ -49,7 +47,7 @@ namespace Puerts
 
         public static BackendType DefaultBackendType = BackendType.Auto;
 
-        private void InitApi(BackendType backendExpect, int apiVersionExpect)
+        private void InitInnerEnv(BackendType backendExpect, int apiVersionExpect, ILoader loader, int debugPort)
         {
             if (backendExpect == BackendType.V8)
             {
@@ -67,11 +65,13 @@ namespace Puerts
             {
                 throw new InvalidProgramException("unexpected backend: " + backendExpect);
             }
-            env = new ScriptEnv(Backend, debugPort);
+            
             if (Backend.GetApiVersion() != apiVersionExpect)
             {
                 throw new InvalidProgramException("backend: version not match for " + backendExpect + ", expect " + apiVersionExpect + ", but got " + Backend.GetApiVersion());
             }
+
+            env = new ScriptEnv(Backend, debugPort);
         }
 
         public JsEnv(ILoader loader, int debugPort, BackendType backendExpect, IntPtr externalRuntime, IntPtr externalContext)
@@ -87,7 +87,6 @@ namespace Puerts
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
             PuertsNative.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
-            this.loader = loader;
             this.debugPort = debugPort;
 
             backendExpect = (backendExpect == BackendType.Auto) ? DefaultBackendType : backendExpect;
@@ -98,7 +97,7 @@ namespace Puerts
                 {
                     try
                     {
-                        InitApi((BackendType)i, libVersionExpect);
+                        InitInnerEnv((BackendType)i, libVersionExpect, loader, debugPort);
                         found = true;
                         break;
                     } catch (Exception e){ }
@@ -113,7 +112,7 @@ namespace Puerts
             {
                 try
                 {
-                    InitApi(backendExpect, libVersionExpect);
+                    InitInnerEnv(backendExpect, libVersionExpect, loader, debugPort);
                 }
                 catch (Exception e)
                 {
