@@ -14,7 +14,7 @@ let puer = global.puer = global.puerts = global.puer || global.puerts || {};
 puer.loadType = function(nameOrCSType, ...genericArgs) {
     let csType = nameOrCSType
     if (typeof nameOrCSType == "string") { // convert string to csType
-        csType = jsEnv.GetTypeByString(nameOrCSType)
+        csType = scriptEnv.GetTypeByString(nameOrCSType)
     }
     if (csType) {
         if (genericArgs && csType.IsGenericTypeDefinition) {
@@ -50,7 +50,7 @@ let GET_MEMBER_FLAGS = BindingFlags.DeclaredOnly | BindingFlags.Instance | Bindi
 puer.getNestedTypes = function(nameOrCSType) {
     let csType = nameOrCSType
     if (typeof nameOrCSType == "string") {
-        csType = jsEnv.GetTypeByString(nameOrCSType)
+        csType = scriptEnv.GetTypeByString(nameOrCSType)
     }
     if (csType) {
         return csType.GetNestedTypes(GET_MEMBER_FLAGS)
@@ -95,7 +95,7 @@ puer.evalScript = global.__tgjsEvalScript || function (script, debugPath) {
 }
 global.__tgjsEvalScript = undefined;
 
-let loader = jsEnv.GetLoader();
+let loader = scriptEnv.GetLoader();
 // function loadFile(path) {
 //     let resolved, content
 //     if (resolved = loader.Resolve(path)) {
@@ -119,6 +119,6 @@ puer.fileExists = loader.FileExists.bind(loader);
 
 global.__tgjsRegisterTickHandler = function(fn) {
     fn = new CS.System.Action(fn);
-    jsEnv.TickHandler = CS.System.Delegate.Combine(jsEnv.TickHandler, fn)
+    scriptEnv.TickHandler = CS.System.Delegate.Combine(scriptEnv.TickHandler, fn)
 }
 

@@ -95,7 +95,7 @@ namespace Puerts
             PuertsNative.pesapi_set_property(papis, env, globalVal, "print", print);
 
             var jsJsEnv = PuertsNative.pesapi_native_object_to_value(papis, env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(this.GetType())), new IntPtr(objectPool.FindOrAddObject(this)), false);
-            PuertsNative.pesapi_set_property(papis, env, globalVal, "jsEnv", jsJsEnv);
+            PuertsNative.pesapi_set_property(papis, env, globalVal, "scriptEnv", jsJsEnv);
 
             loadTypeDelegate = ExpressionsWrap.BuildMethodWrap(typeof(ExpressionsWrap.NativeType), typeof(ExpressionsWrap.NativeType).GetMethod(nameof(ExpressionsWrap.NativeType.LoadType)), true);
             var loadType = PuertsNative.pesapi_create_function(papis, env, loadTypeDelegate, IntPtr.Zero, null);
