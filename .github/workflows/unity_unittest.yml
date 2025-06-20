@@ -116,15 +116,7 @@ jobs:
       - name: UnitTest-quickjs
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test quickjs
-      - name: UnitTest-mult-v8
-        run: |
-          cd unity/test/dotnet
-          node ../../cli dotnet-test mult
-      - name: UnitTest-mult-v8-qjs
-        run: |
-          cd unity/test/dotnet
-          node ../../cli dotnet-test mult -sq
+          node ../../cli dotnet-test -sq
       - name: UnitTest-v8-ts
         run: |
           cd unity/test/dotnet
@@ -157,15 +149,7 @@ jobs:
       - name: UnitTest-quickjs
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test quickjs
-      - name: UnitTest-mult-v8
-        run: |
-          cd unity/test/dotnet
-          node ../../cli dotnet-test mult
-      - name: UnitTest-mult-v8-qjs
-        run: |
-          cd unity/test/dotnet
-          node ../../cli dotnet-test mult -sq
+          node ../../cli dotnet-test -sq
       - name: UnitTest-v8-ts
         run: |
           cd unity/test/dotnet
@@ -205,15 +189,7 @@ jobs:
       - name: UnitTest-quickjs
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test quickjs
-      - name: UnitTest-mult-v8
-        run: |
-          cd unity/test/dotnet
-          node ../../cli dotnet-test mult
-      - name: UnitTest-mult-v8-qjs
-        run: |
-          cd unity/test/dotnet
-          node ../../cli dotnet-test mult -sq
+          node ../../cli dotnet-test -sq
       - name: UnitTest-v8-ts
         run: |
           cd unity/test/dotnet
