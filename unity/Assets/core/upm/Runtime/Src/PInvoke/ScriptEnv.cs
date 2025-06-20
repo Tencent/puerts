@@ -220,24 +220,6 @@ namespace Puerts
 
         pesapi_callback createFunctionDelegate;
 
-        [Obsolete]
-        public T ExecuteModule<T>(string specifier, string exportee)
-        {
-#if THREAD_SAFE
-            lock(this) {
-#endif
-            if (exportee == "" && typeof(T) != typeof(JSObject))
-            {
-                throw new Exception("T must be Puerts.JSObject when getting the module namespace");
-            }
-            JSObject jso = moduleExecutor(specifier);
-            if (exportee == "") return (T)(object)jso;
-
-            return jso.Get<T>(exportee);
-#if THREAD_SAFE
-            }
-#endif
-        }
         public JSObject ExecuteModule(string specifier)
         {
 #if THREAD_SAFE
