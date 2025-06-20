@@ -28,7 +28,19 @@ namespace Puerts
 
         public abstract IntPtr GetModuleExecutor(IntPtr env);
 
-        public virtual void Tick(){ }
+        public abstract object GetLoader();
+
+        public virtual void OnEnter(ScriptEnv scriptEnv)
+        {
+        }
+
+        public virtual void OnTick()
+        { 
+        }
+
+        public virtual void OnExit(ScriptEnv scriptEnv)
+        {
+        }
 
         public abstract void DestroyEnvRef(IntPtr envRef);
 
@@ -48,13 +60,40 @@ namespace Puerts
         }
     }
 
-    public abstract class BackendJs : Backend
+    public abstract class BackendJs: Backend
     {
+        private ILoader loader;
+
+        public BackendJs(ILoader loader)
+        {
+            this.loader = loader;
+        }
         public override IntPtr GetModuleExecutor(IntPtr env)
         {
             var papis = GetApi();
             var globalVal = PuertsNative.pesapi_global(papis, env);
             return PuertsNative.pesapi_get_property(papis, env, globalVal, "__puertsExecuteModule");
+        }
+
+        public override object GetLoader()
+        {
+            return loader;
+        }
+
+        public override void OnEnter(ScriptEnv scriptEnv)
+        {
+            string debugpath;
+            string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
+            scriptEnv.Eval(context, debugpath);
+            scriptEnv.ExecuteModule("puerts/init_il2cpp.mjs");
+            scriptEnv.ExecuteModule("puerts/log.mjs");
+            scriptEnv.ExecuteModule("puerts/csharp.mjs");
+
+            scriptEnv.ExecuteModule("puerts/events.mjs");
+            scriptEnv.ExecuteModule("puerts/timer.mjs");
+            scriptEnv.ExecuteModule("puerts/promises.mjs");
+
+            scriptEnv.ExecuteModule("puerts/websocketpp.mjs");
         }
     }
 
@@ -62,9 +101,7 @@ namespace Puerts
     {
         IntPtr isolate;
 
-        public BackendV8()
-        {
-        }
+        public BackendV8(ILoader loader) : base(loader) { }
 
         public override int GetApiVersion()
         {
@@ -83,7 +120,7 @@ namespace Puerts
             return PapiV8Native.GetV8FFIApi();
         }
 
-        public override void Tick() 
+        public override void OnTick() 
         {
             PapiV8Native.LogicTick(isolate);
         }
@@ -137,17 +174,13 @@ namespace Puerts
 
     public class BackendNodeJS : BackendV8
     {
-        public BackendNodeJS()
-        {
-        }
+        public BackendNodeJS(ILoader loader) : base(loader) { }
     }
 
     public class BackendQuickJS : BackendJs
     {
         private IntPtr envRef;
-        public BackendQuickJS()
-        {
-        }
+        public BackendQuickJS(ILoader loader) : base(loader) { }
 
         public override int GetApiVersion()
         {

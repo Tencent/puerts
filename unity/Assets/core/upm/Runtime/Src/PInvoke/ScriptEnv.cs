@@ -31,9 +31,6 @@ namespace Puerts
 
         protected int debugPort;
 
-        // TODO: move to Backend
-        private readonly ILoader loader;
-
         private void InitApi(int apiVersionExpect)
         {
             envRef = Backend.CreateEnvRef();
@@ -44,7 +41,7 @@ namespace Puerts
             }
         }
 
-        public ScriptEnv(Backend backend, int debugPort, ILoader loader)
+        public ScriptEnv(Backend backend, int debugPort)
         {
             this.Backend = backend;
 
@@ -115,23 +112,10 @@ namespace Puerts
             
             if (debugPort != -1)
             {
-                this.Backend.RemoteDebuggerListen(debugPort);
+                Backend.RemoteDebuggerListen(debugPort);
             }
 
-            this.loader = loader;
-            // TODO: move to backend
-            string debugpath;
-            string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
-            Eval(context, debugpath);
-            ExecuteModule("puerts/init_il2cpp.mjs");
-            ExecuteModule("puerts/log.mjs");
-            ExecuteModule("puerts/csharp.mjs");
-
-            ExecuteModule("puerts/events.mjs");
-            ExecuteModule("puerts/timer.mjs");
-            ExecuteModule("puerts/promises.mjs");
-
-            ExecuteModule("puerts/websocketpp.mjs");
+            Backend.OnEnter(this);
         }
 
         private pesapi_callback logDelegate;
@@ -160,9 +144,9 @@ namespace Puerts
             return PuertsIl2cpp.TypeUtils.GetType(className);
         }
 
-        public ILoader GetLoader()
+        public object GetLoader()
         {
-            return loader;
+            return Backend.GetLoader();
         }
 
         /*
@@ -295,7 +279,7 @@ namespace Puerts
                 }
 #endif
             }
-            Backend.Tick();
+            Backend.OnTick();
             if (TickHandler != null) TickHandler();
 #if THREAD_SAFE
             }
@@ -410,6 +394,7 @@ namespace Puerts
         protected virtual void Dispose(bool dispose)
         {
             if (disposed) return;
+            Backend.OnExit(this);
             Backend.CloseRemoteDebugger();
             // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
             TickHandler = null;

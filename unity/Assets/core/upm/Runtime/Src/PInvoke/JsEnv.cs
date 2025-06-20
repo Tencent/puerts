@@ -53,21 +53,21 @@ namespace Puerts
         {
             if (backendExpect == BackendType.V8)
             {
-                Backend = new BackendV8();
+                Backend = new BackendV8(loader);
             }
             else if (backendExpect == BackendType.Node)
             {
-                Backend = new BackendNodeJS();
+                Backend = new BackendNodeJS(loader);
             }
             else if (backendExpect == BackendType.QuickJS)
             {
-                Backend = new BackendQuickJS();
+                Backend = new BackendQuickJS(loader);
             }
             else
             {
                 throw new InvalidProgramException("unexpected backend: " + backendExpect);
             }
-            env = new ScriptEnv(Backend, debugPort, loader);
+            env = new ScriptEnv(Backend, debugPort);
             if (Backend.GetApiVersion() != apiVersionExpect)
             {
                 throw new InvalidProgramException("backend: version not match for " + backendExpect + ", expect " + apiVersionExpect + ", but got " + Backend.GetApiVersion());
