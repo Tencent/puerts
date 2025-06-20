@@ -50,6 +50,8 @@ namespace Puerts
         {
         }
 
+        public static BackendType DefaultBackendType = BackendType.Auto;
+
         private void InitApi(BackendType backendExpect, int apiVersionExpect)
         {
             if (backendExpect == BackendType.V8)
@@ -85,6 +87,7 @@ namespace Puerts
             PuertsNative.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
 
+            backendExpect = (backendExpect == BackendType.Auto) ? DefaultBackendType : backendExpect;
             if (backendExpect == BackendType.Auto)
             {
                 bool found = false;
@@ -115,7 +118,7 @@ namespace Puerts
                     throw e;
                 }
             }
-            
+            //Console.Error.WriteLine($"++++++++++++++++++++++ {backendExpect} {Backend.GetType()}");
 
             lock (jsEnvs)
             {

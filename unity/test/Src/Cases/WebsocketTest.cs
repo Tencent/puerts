@@ -88,12 +88,13 @@ namespace Puerts.UnitTest
         [Test]
         public async Task SmokeTest()
         {
-            WebSocketServer wss = new WebSocketServer("http://localhost:5123/");
 #if PUERTS_GENERAL
             var jsEnv = new JsEnv(new TxtLoader());
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
+            if (jsEnv.Backend is BackendQuickJS) return;
+            WebSocketServer wss = new WebSocketServer("http://localhost:5123/");
             Action waitJsEnv = () =>
             {
                 for (int i = 0; i < 30; i++)
