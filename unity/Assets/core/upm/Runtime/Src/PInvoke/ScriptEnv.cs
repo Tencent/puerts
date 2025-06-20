@@ -24,7 +24,7 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
-        private Backend Backend;
+        private Backend backend;
 
         IntPtr papis;
         IntPtr envRef;
@@ -33,17 +33,17 @@ namespace Puerts
 
         private void InitApi(int apiVersionExpect)
         {
-            envRef = Backend.CreateEnvRef();
-            papis = Backend.GetApi();
-            if (Backend.GetApiVersion() != apiVersionExpect)
+            envRef = backend.CreateEnvRef();
+            papis = backend.GetApi();
+            if (backend.GetApiVersion() != apiVersionExpect)
             {
-                throw new InvalidProgramException("backend: version not match for " + Backend.GetType() + ", expect " + apiVersionExpect + ", but got " + Backend.GetApiVersion());
+                throw new InvalidProgramException("backend: version not match for " + backend.GetType() + ", expect " + apiVersionExpect + ", but got " + backend.GetApiVersion());
             }
         }
 
         public ScriptEnv(Backend backend, int debugPort)
         {
-            this.Backend = backend;
+            this.backend = backend;
 
             const int libVersionExpect = 11;
             int libVersion = PuertsNative.GetPapiVersion();
@@ -87,7 +87,7 @@ namespace Puerts
 
             var globalVal = PuertsNative.pesapi_global(papis, env);
 
-            var moduleExecutorFunc = this.Backend.GetModuleExecutor(env);
+            var moduleExecutorFunc = this.backend.GetModuleExecutor(env);
             moduleExecutor = ExpressionsWrap.GetNativeTranlator<Func<string, JSObject>>()(papis, env, moduleExecutorFunc);
 
             logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(Console), typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(object) }), true);
@@ -112,10 +112,10 @@ namespace Puerts
             
             if (debugPort != -1)
             {
-                Backend.RemoteDebuggerListen(debugPort);
+                this.backend.RemoteDebuggerListen(debugPort);
             }
 
-            Backend.OnEnter(this);
+            this.backend.OnEnter(this);
         }
 
         private pesapi_callback logDelegate;
@@ -146,7 +146,7 @@ namespace Puerts
 
         public object GetLoader()
         {
-            return Backend.GetLoader();
+            return backend.GetLoader();
         }
 
         /*
@@ -268,7 +268,7 @@ namespace Puerts
             lock(this) {
 #endif
             cleanupPendingKillScriptObjects();
-            if (debugPort == -1 || Backend.DebuggerTick())
+            if (debugPort == -1 || backend.DebuggerTick())
             {
 #if CSHARP_7_3_OR_NEWER
                 if (waitDebugerTaskSource != null)
@@ -279,7 +279,7 @@ namespace Puerts
                 }
 #endif
             }
-            Backend.OnTick();
+            backend.OnTick();
             if (TickHandler != null) TickHandler();
 #if THREAD_SAFE
             }
@@ -292,7 +292,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            while (!Backend.DebuggerTick()) { }
+            while (!backend.DebuggerTick()) { }
 #if THREAD_SAFE
             }
 #endif
@@ -394,8 +394,8 @@ namespace Puerts
         protected virtual void Dispose(bool dispose)
         {
             if (disposed) return;
-            Backend.OnExit(this);
-            Backend.CloseRemoteDebugger();
+            backend.OnExit(this);
+            backend.CloseRemoteDebugger();
             // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
             TickHandler = null;
             moduleExecutor = null;
@@ -418,7 +418,7 @@ namespace Puerts
             PuertsNative.pesapi_trace_native_object_lifecycle(papis, env, null, null);
             PuertsNative.pesapi_close_scope(papis, scope);
 
-            Backend.DestroyEnvRef(envRef);
+            backend.DestroyEnvRef(envRef);
             disposed = true;
 
             lock (scriptEnvs)
