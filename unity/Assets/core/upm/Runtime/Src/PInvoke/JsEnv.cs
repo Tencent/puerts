@@ -317,16 +317,16 @@ namespace Puerts
 #endif
         }
 
-        ~JsEnv()
-        {
-#if THREAD_SAFE
-            lock(this) {
-#endif
-            Dispose(false);
-#if THREAD_SAFE
-            }
-#endif
-        }
+//        ~JsEnv()
+//        {
+//#if THREAD_SAFE
+//            lock(this) {
+//#endif
+//            Dispose(false);
+//#if THREAD_SAFE
+//            }
+//#endif
+//        }
 
         public void Dispose()
         {
