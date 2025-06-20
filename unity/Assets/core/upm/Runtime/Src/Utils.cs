@@ -111,22 +111,6 @@ namespace Puerts
             b = (int)c;
         }
 
-        public static IntPtr GetObjectPtr(int jsEnvIdx, Type type, object obj)
-        {
-            var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
-            return new IntPtr(type.IsValueType() ? jsEnv.objectPool.AddBoxedValueType(obj) : jsEnv.objectPool.FindOrAddObject(obj));
-        }
-
-        public static object GetSelf(int jsEnvIdx, IntPtr self)
-        {
-            return JsEnv.jsEnvs[jsEnvIdx].objectPool.Get(self.ToInt32());
-        }
-
-        public static void SetSelf(int jsEnvIdx, IntPtr self, object obj)
-        {
-            JsEnv.jsEnvs[jsEnvIdx].objectPool.ReplaceValueType(self.ToInt32(), obj);
-        }
-
         private static bool HasValidContraint(Type type, List<Type> validTypes)
         {
             if (type.IsGenericType)

@@ -80,20 +80,20 @@ namespace Puerts
             {
                 var envIdx = PuertsNative.pesapi_get_env_private(api, env).ToInt32();
                 var objIdx = PuertsNative.pesapi_get_native_holder_ptr(api, info).ToInt32();
-                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
+                return (T)ScriptEnv.xEnvs[envIdx].objectPool.Get(objIdx);
             }
 
             public static IntPtr FindOrAddObject(IntPtr apis, IntPtr env, object obj)
             {
                 var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
-                return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.FindOrAddObject(obj));
+                return new IntPtr(ScriptEnv.xEnvs[envIdx].objectPool.FindOrAddObject(obj));
             }
 
             // do not find, just Add for ValueType
             public static IntPtr AddValueType<T>(IntPtr apis, IntPtr env, T val) where T : struct
             {
                 var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
-                return new IntPtr(JsEnv.jsEnvs[envIdx].objectPool.AddBoxedValueType(val));
+                return new IntPtr(ScriptEnv.xEnvs[envIdx].objectPool.AddBoxedValueType(val));
             }
 
             public static int GetEnvIndex(IntPtr api, IntPtr env)
@@ -108,12 +108,12 @@ namespace Puerts
 
             public static T GetSelfDirect<T>(int envIdx, int objId)
             {
-                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objId);
+                return (T)ScriptEnv.xEnvs[envIdx].objectPool.Get(objId);
             }
 
             public static void UpdateValueType<T>(int envIdx, int objId, T val) where T : struct
             {
-                JsEnv.jsEnvs[envIdx].objectPool.ReplaceValueType(objId, val);
+                ScriptEnv.xEnvs[envIdx].objectPool.ReplaceValueType(objId, val);
             }
 
             public static void CheckException(IntPtr apis, IntPtr scope)
@@ -244,7 +244,7 @@ namespace Puerts
                     return PuertsNative.pesapi_create_null(apis, env);
                 }
                 var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
-                var objectPool = JsEnv.jsEnvs[envIdx].objectPool;
+                var objectPool = ScriptEnv.xEnvs[envIdx].objectPool;
                 var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
                 var objId = objectPool.FindOrAddObject(value);
                 return PuertsNative.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
@@ -253,7 +253,7 @@ namespace Puerts
             public static IntPtr NativeToScript_ValueType_Boxed(IntPtr apis, IntPtr env, object value)
             {
                 var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
-                var objectPool = JsEnv.jsEnvs[envIdx].objectPool;
+                var objectPool = ScriptEnv.xEnvs[envIdx].objectPool;
                 var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
                 var objId = objectPool.AddBoxedValueType(value);
                 return PuertsNative.pesapi_native_object_to_value(apis, env, new IntPtr(typeId), new IntPtr(objId), false);
@@ -269,7 +269,7 @@ namespace Puerts
                 var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                 var objIdx = PuertsNative.pesapi_get_native_object_ptr(apis, env, obj).ToInt32();
                 if (objIdx == 0) return default(T);
-                return (T)JsEnv.jsEnvs[envIdx].objectPool.Get(objIdx);
+                return (T)ScriptEnv.xEnvs[envIdx].objectPool.Get(objIdx);
             }
 
             public static bool IsAssignable_ByRef<T>(IntPtr apis, IntPtr env, IntPtr value)
@@ -321,7 +321,7 @@ namespace Puerts
                 if (ret == null)
                 {
                     var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
-                    ret = new JSObject(JsEnv.jsEnvs[envIdx], apis, valueRef);
+                    ret = new JSObject(ScriptEnv.xEnvs[envIdx], apis, valueRef);
                     weakHandle = GCHandle.ToIntPtr(GCHandle.Alloc(ret, GCHandleType.Weak));
                     Marshal.StructureToPtr(weakHandle, weakHandlePtr, false);
                 }
@@ -398,7 +398,7 @@ namespace Puerts
                 if (objId != IntPtr.Zero)
                 {
                     var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
-                    var res = JsEnv.jsEnvs[envIdx].objectPool.Get(objId.ToInt32());
+                    var res = ScriptEnv.xEnvs[envIdx].objectPool.Get(objId.ToInt32());
                     var typedValue = res as TypedValue;
                     return typedValue == null ? res : typedValue.Target;
                 }

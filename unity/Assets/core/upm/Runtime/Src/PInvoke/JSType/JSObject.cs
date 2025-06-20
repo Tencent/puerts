@@ -19,19 +19,19 @@ namespace Puerts
         internal IntPtr apis;
         internal IntPtr objRef;
         internal Dictionary<Type, Delegate> delegateCache = new Dictionary<Type, Delegate>();
-        private JsEnv jsEnv;
+        private ScriptEnv scripEnv;
 
-        internal JSObject(JsEnv jsEnv, IntPtr apis, IntPtr valueRef)
+        internal JSObject(ScriptEnv env, IntPtr apis, IntPtr valueRef)
         {
-            this.jsEnv = jsEnv;
+            this.scripEnv = env;
             this.apis = apis;
             this.objRef = valueRef;
-            jsEnv.addAllocedJsObject(this);
+            env.addAllocedJsObject(this);
         }
 
         public T Get<T>(string key) 
         {
-            jsEnv.CheckLiveness();
+            this.scripEnv.CheckLiveness();
             var envRef = PuertsNative.pesapi_get_ref_associated_env(apis, objRef);
             if (!PuertsNative.pesapi_env_ref_is_valid(apis, envRef))
             {
@@ -115,7 +115,7 @@ namespace Puerts
                 }
             }
             objRef = IntPtr.Zero;
-            jsEnv = null;
+            scripEnv = null;
 #if THREAD_SAFE
             }
 #endif
@@ -153,11 +153,11 @@ namespace Puerts
                 else
                 {
                     // from gc
-                    jsEnv.addPendingKillScriptObjects(objRef);
+                    scripEnv.addPendingKillScriptObjects(objRef);
                 }
             }
             objRef = IntPtr.Zero;
-            jsEnv = null;
+            scripEnv = null;
 #if THREAD_SAFE
             }
 #endif
