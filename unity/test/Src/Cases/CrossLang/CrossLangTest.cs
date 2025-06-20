@@ -146,6 +146,11 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve] A = 1,
         [UnityEngine.Scripting.Preserve] B = 213
     }
+
+    public class NewObject
+    {
+
+    }
    
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
@@ -168,6 +173,12 @@ namespace Puerts.UnitTest
         public static void TestEnumCheck(string a, TestEnum e = TestEnum.A, int b = 10) // 有默认值会促使其检查参数类型
         {
 
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public NewObject PushObject()
+        {
+            return new NewObject();
         }
     }
     public unsafe class TestHelper
@@ -1083,6 +1094,21 @@ namespace Puerts.UnitTest
                 })()
             ");
             Assert.AreEqual("213 1 213", ret);
+            jsEnv.Tick();
+        }
+
+        [Test]
+        public void PushObjectTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var ret = jsEnv.Eval<string>(@"
+                (function() {
+                    const helper = new CS.Puerts.UnitTest.CrossLangTestHelper();
+                    const obj = helper.PushObject();
+                    return puer.$typeof(obj.constructor).Name;
+                })()
+            ");
+            Assert.AreEqual("NewObject", ret);
             jsEnv.Tick();
         }
 

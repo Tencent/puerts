@@ -212,8 +212,15 @@ function makeGenericMethod(cls, methodName, ...genericArgs) {
     }
 }
 
-function getType(cls) {
+function slowGetType(cls) {
+    if (cls.hasOwnProperty("__p_typeId")) {
+        cls.__p_innerType =  getCSTypeById(cls.__p_typeId);
+    }
     return cls.__p_innerType;
+}
+
+function getType(cls) {
+    return cls.__p_innerType || slowGetType(cls);
 }
 
 function bindThisToFirstArgument(func, parentFunc) {

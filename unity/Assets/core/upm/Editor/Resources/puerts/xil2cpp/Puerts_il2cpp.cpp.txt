@@ -2461,6 +2461,16 @@ static void LoadTypeWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
     ${invokePapi('add_return')}(info, ret);
 }
 
+static void GetCSTypeByIdWrapper(struct pesapi_ffi* apis, pesapi_callback_info info)
+{
+    pesapi_env env = ${invokePapi('get_env')}(info);
+    int64_t typeId = ${invokePapi('get_value_int64')}(env,  ${invokePapi('get_arg')}(info, 0));
+    Il2CppClass* klass = reinterpret_cast<Il2CppClass*>(typeId);
+    auto obj = (Il2CppObject*)Reflection::GetTypeObject(&(klass->byval_arg));
+    auto ret = CSRefToJsValue(apis, env, obj->klass, (Il2CppObject *)obj);
+    ${invokePapi('add_return')}(info, ret);
+}
+
 puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef, Il2CppObject *objPool, Il2CppReflectionMethod* objPoolAddMethodInfo, Il2CppReflectionMethod* objPoolRemoveMethodInfo)
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
@@ -2469,6 +2479,7 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
     ${invokePapi('set_env_private')}(env, jsEnvPrivate);
     auto loadType = ${invokePapi('create_function')}(env, LoadTypeWrapper, nullptr, nullptr);
     auto createFunction = ${invokePapi('create_function')}(env, createFunctionWrapper, nullptr, nullptr);
+    auto getCSTypeById = ${invokePapi('create_function')}(env, GetCSTypeByIdWrapper, nullptr, nullptr);
     if (loadType && createFunction)
     {
         pesapi_value global = ${invokePapi('global')}(env);
@@ -2476,6 +2487,7 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
         {
             ${invokePapi('set_property')}(env, global, "loadType", loadType);
             ${invokePapi('set_property')}(env, global, "createFunction", createFunction);
+            ${invokePapi('set_property')}(env, global, "getCSTypeById", getCSTypeById);
             pesapi_on_class_not_found(ClassNotFoundCallback);
             return jsEnvPrivate;
         }
