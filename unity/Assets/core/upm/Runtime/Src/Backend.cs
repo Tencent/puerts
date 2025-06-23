@@ -20,16 +20,21 @@ namespace Puerts
 
     public abstract class Backend
     {
+        // load papi provider
         public abstract int GetApiVersion();
 
         public abstract IntPtr CreateEnvRef();
 
         public abstract IntPtr GetApi();
 
+        public abstract void DestroyEnvRef(IntPtr envRef);
+
+        // module loader/executor
         public abstract IntPtr GetModuleExecutor(IntPtr env);
 
         public abstract object GetLoader();
 
+        // life cycle callbacks
         public virtual void OnEnter(ScriptEnv scriptEnv)
         {
         }
@@ -42,11 +47,8 @@ namespace Puerts
         {
         }
 
-        public abstract void DestroyEnvRef(IntPtr envRef);
-
-        public abstract void LowMemoryNotification();
-
-        public virtual void RemoteDebuggerListen(int port)
+        // remote debugger
+        public virtual void OpenRemoteDebugger(int port)
         {
         }
 
@@ -58,6 +60,9 @@ namespace Puerts
         public virtual void CloseRemoteDebugger()
         {
         }
+
+        // gc
+        public abstract void LowMemoryNotification();
     }
 
     public abstract class BackendJs: Backend
@@ -156,7 +161,7 @@ namespace Puerts
             PapiV8Native.TerminateExecution(isolate);
         }
 
-        public override void RemoteDebuggerListen(int debugPort)
+        public override void OpenRemoteDebugger(int debugPort)
         {
             PapiV8Native.CreateInspector(isolate, debugPort);
         }

@@ -112,7 +112,7 @@ namespace Puerts
             
             if (debugPort != -1)
             {
-                this.backend.RemoteDebuggerListen(debugPort);
+                this.backend.OpenRemoteDebugger(debugPort);
             }
 
             this.backend.OnEnter(this);
