@@ -33,6 +33,7 @@ namespace Puerts
         string Resolve(string specifier, string referrer);
     }
 
+    /*
 #if ENABLE_IL2CPP
     [UnityEngine.Scripting.Preserve]
 #endif
@@ -40,8 +41,7 @@ namespace Puerts
     {
         void OnBuiltinLoaded(JsEnv env);
     }
-
-
+    */
 
 #if ENABLE_IL2CPP
     [UnityEngine.Scripting.Preserve]

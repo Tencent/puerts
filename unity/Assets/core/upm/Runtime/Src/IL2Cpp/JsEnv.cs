@@ -189,8 +189,8 @@ namespace Puerts
                     jsEnvs.Add(this);
                 }
             }
-            if (loader is IBuiltinLoadedListener)
-                (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
+            //if (loader is IBuiltinLoadedListener)
+            //    (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
             
             pesapi_ffi ffi = Marshal.PtrToStructure<pesapi_ffi>(apis);
             var scope = ffi.open_scope(nativePesapiEnv);
