@@ -108,7 +108,6 @@ namespace Puerts
             PuertsNative.pesapi_close_scope(papis, scope);
 
             PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
-
             
             if (debugPort != -1)
             {
@@ -228,16 +227,6 @@ namespace Puerts
             }
 #endif
         }
-
-        public int Index
-        {
-            get
-            {
-                return Idx;
-            }
-        }
-
-        private List<IntPtr> tickHandler = new List<IntPtr>();
 
         public Action TickHandler;
 
