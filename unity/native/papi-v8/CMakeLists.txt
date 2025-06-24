@@ -61,9 +61,6 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/../puerts/include
 )
 
-# 添加puerts库路径
-link_directories(${PROJECT_SOURCE_DIR}/../puerts/lib)
-
 set ( PUERTS_INC
     include/Common.h
     include/BackendEnv.h
@@ -96,10 +93,10 @@ endif()
 if ( APPLE )
     if ( IOS )
         set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
-        add_library(papiv8 STATIC
+        add_library(PapiV8 STATIC
            ${PUERTS_SRC} ${PUERTS_INC}
         )
-		set_xcode_property (papiv8 IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
+		set_xcode_property (PapiV8 IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
         if ( NOT DEFINED FOR_SILICON )
             set(CMAKE_OSX_ARCHITECTURES x86_64)
@@ -107,26 +104,26 @@ if ( APPLE )
             set(CMAKE_OSX_ARCHITECTURES arm64)
         endif ()
         
-        add_library(papiv8 SHARED
+        add_library(PapiV8 SHARED
             ${PUERTS_SRC} ${PUERTS_INC}
         )
         target_link_options(
-            papiv8 
+            PapiV8 
             PRIVATE "-Wl,-rpath,@loader_path/${CMAKE_OSX_ARCHITECTURES}/"
             PRIVATE "-Wl,-rpath,@loader_path/"
         )
     endif ()
 elseif ( SWITCH_PLATFORM )
-    add_library(papiv8 STATIC
+    add_library(PapiV8 STATIC
         ${PUERTS_SRC} ${PUERTS_INC}
     )
 else ()
     if (CMAKE_SYSTEM_NAME MATCHES "Emscripten") 
-        add_library(papiv8 STATIC
+        add_library(PapiV8 STATIC
             ${PUERTS_SRC} ${PUERTS_INC}
         )
     else ()
-        add_library(papiv8 SHARED
+        add_library(PapiV8 SHARED
             ${PUERTS_SRC} ${PUERTS_INC}
         )
    endif ()
@@ -183,8 +180,8 @@ if ( WITH_WEBSOCKET EQUAL 3 )
     set_property(TARGET OpenSSL::Crypto PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
     add_dependencies(OpenSSL::Crypto OpenSSL)
 
-    add_dependencies(papiv8 OpenSSL)
-    target_link_libraries(papiv8 OpenSSL::SSL OpenSSL::Crypto)
+    add_dependencies(PapiV8 OpenSSL)
+    target_link_libraries(PapiV8 OpenSSL::SSL OpenSSL::Crypto)
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL)
 endif ()
 
@@ -219,9 +216,9 @@ if ( WITH_WEBSOCKET EQUAL 2 )
     
     target_compile_definitions(wolfssl PUBLIC WOLFSSL_OPENSSLEXTRA WOLFSSL_OPENSSLALL OPENSSL_EXTRA OPENSSL_ALL HAVE_EX_DATA WOLFSSL_OPENSSH)
     
-    target_link_libraries(papiv8 wolfssl)
+    target_link_libraries(PapiV8 wolfssl)
     
-    target_include_directories(papiv8 PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
+    target_include_directories(PapiV8 PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
 
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL OPENSSL_EXTRA OPENSSL_ALL WOLFSSL_OPENSSH PUERTS_USE_WOLFSSL)
     
@@ -242,7 +239,7 @@ endif ()
 
 if ( MSYS OR WIN32 )
     if ( WIN32 ) 
-        target_link_libraries(papiv8
+        target_link_libraries(PapiV8
             winmm.lib
             dbghelp.lib
             shlwapi.lib
@@ -268,7 +265,7 @@ elseif ( OHOS )
 elseif ( ANDROID )
 
     find_library(log-lib log)
-    target_link_libraries(papiv8
+    target_link_libraries(PapiV8
         ${log-lib}
     )
 
@@ -279,7 +276,7 @@ elseif ( ANDROID )
 
     elseif ( ANDROID_ABI STREQUAL "arm64-v8a")
         # link
-        target_link_libraries(papiv8
+        target_link_libraries(PapiV8
             ${log-lib}
         )
         
@@ -290,7 +287,7 @@ elseif ( ANDROID )
         list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_ANDROID_x64)
     endif ()
     
-    target_link_options(papiv8 PRIVATE -s)
+    target_link_options(PapiV8 PRIVATE -s)
 
     #set_target_properties( puerts PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/android_version.script)
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/android_version.script")
@@ -322,7 +319,7 @@ elseif ( APPLE )
 
 elseif (UNIX)
     # link
-    target_link_libraries(papiv8 pthread)
+    target_link_libraries(PapiV8 pthread)
     
     # definition
     list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_LINUX)
@@ -335,15 +332,15 @@ endif ()
 
 
 # link
-target_link_libraries(papiv8
+target_link_libraries(PapiV8
     ${BACKEND_LIB_NAMES}
-    puerts
+    PuertsCore
 )
 list(APPEND PUERTS_COMPILE_DEFINITIONS ${BACKEND_DEFINITIONS})
 
-target_compile_definitions (papiv8 PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
+target_compile_definitions (PapiV8 PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
-	set_property(TARGET papiv8 PROPERTY
+	set_property(TARGET PapiV8 PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()

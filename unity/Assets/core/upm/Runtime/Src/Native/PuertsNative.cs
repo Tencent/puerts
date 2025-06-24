@@ -31,7 +31,7 @@ namespace Puerts
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
         const string PUERTSDLLNAME = "__Internal";
 #else
-        const string PUERTSDLLNAME = "puerts";
+        const string PUERTSDLLNAME = "PuertsCore";
 #endif
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]

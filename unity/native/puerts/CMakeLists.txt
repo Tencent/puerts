@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(Puerts LANGUAGES C CXX)
+project(PuertsCore LANGUAGES C CXX)
 
 include(CheckCCompilerFlag)
 include(GNUInstallDirs)
@@ -40,18 +40,18 @@ file(GLOB_RECURSE eastl_headers "../EASTL/include/EASTL/**.h")
 
 
 if ( APPLE AND IOS )
-    add_library(puerts STATIC ${puerts_sources} ${eastl_sources})
+    add_library(PuertsCore STATIC ${puerts_sources} ${eastl_sources})
 else ()
-    add_library(puerts SHARED ${puerts_sources} ${eastl_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
+    add_library(PuertsCore SHARED ${puerts_sources} ${eastl_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
 endif()
 
-target_compile_definitions(puerts PUBLIC BUILDING_PUERTS_API_SHARED)
+target_compile_definitions(PuertsCore PUBLIC BUILDING_PUERTS_API_SHARED)
 
-target_compile_definitions(puerts PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
-target_compile_definitions(puerts PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
-target_compile_definitions(puerts PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
+target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
+target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
+target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
 #target_compile_definitions(PapiQjs PUBLIC EASTL_DLL)
-target_compile_options(puerts PRIVATE
+target_compile_options(PuertsCore PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
         -fno-exceptions
         -fno-unwind-tables
@@ -64,4 +64,4 @@ target_compile_options(puerts PRIVATE
     >
 )
 
-install(TARGETS puerts DESTINATION ${PROJECT_SOURCE_DIR}/lib)
+install(TARGETS PuertsCore DESTINATION ${PROJECT_SOURCE_DIR}/lib)
