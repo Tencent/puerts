@@ -50,7 +50,7 @@ target_compile_definitions(PuertsCore PUBLIC BUILDING_PUERTS_API_SHARED)
 target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
 target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
 target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
-#target_compile_definitions(PapiQjs PUBLIC EASTL_DLL)
+target_compile_definitions(PuertsCore PUBLIC EASTL_DLL)
 target_compile_options(PuertsCore PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
         -fno-exceptions
