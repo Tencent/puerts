@@ -55,10 +55,8 @@ aux_source_directory(${LUA_SRC_PATH} LUA_CORE)
 list(REMOVE_ITEM LUA_CORE ${LUA_SRC_PATH}/lua.c ${LUA_SRC_PATH}/luac.c)
 
 set(PAPI_SRC
-    #source/PapiQuickjsImpl.cpp
-    #source/CppObjectMapperQuickjs.cpp
-    #source/BackendEnv.cpp
-    #source/PapiExport.cpp
+    source/PesapiLuaImpl.cpp
+    source/CppObjectMapperLua.cpp
 )
 
 
@@ -69,43 +67,43 @@ if (APPLE)
     if (IOS)
         ADD_DEFINITIONS(-DLUA_USE_IOS) # Despite claiming to be ISO C, iOS does not implement 'system'.(iOS11)
         set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
-        add_library(papilua STATIC
+        add_library(PapiLua STATIC
            ${LUA_CORE}
            ${EASTL_SRC}
            ${PAPI_SRC}
         )
-		set_xcode_property (papilua IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
+		set_xcode_property (PapiLua IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
         ADD_DEFINITIONS(-DLUA_USE_MACOSX) #osx platform emmylua debugger must have this option or can not load cpath
         if (BUILD_SILICON)
            set(CMAKE_OSX_ARCHITECTURES arm64)
 
-            add_library(papilua SHARED
+            add_library(PapiLua SHARED
                 ${LUA_CORE}
                 ${EASTL_SRC}
                 ${PAPI_SRC}
             )
         else ()
             set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
-            add_library(papilua MODULE
+            add_library(PapiLua MODULE
                 ${LUA_CORE}
                 ${EASTL_SRC}
                 ${PAPI_SRC}
             )
-            set_target_properties ( papilua PROPERTIES BUNDLE TRUE )
-            #set_target_properties ( papilua PROPERTIES FRAMEWORK TRUE )
-            #set_target_properties ( papilua PROPERTIES MACOSX_RPATH TRUE )
+            set_target_properties ( PapiLua PROPERTIES BUNDLE TRUE )
+            #set_target_properties ( PapiLua PROPERTIES FRAMEWORK TRUE )
+            #set_target_properties ( PapiLua PROPERTIES MACOSX_RPATH TRUE )
         endif ()
     endif ()
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Switch")
-    add_library(papilua STATIC
+    add_library(PapiLua STATIC
         ${LUA_CORE}
         ${EASTL_SRC}
         ${PAPI_SRC}
     )
-    target_compile_options(papilua PRIVATE -m64 -mcpu=cortex-a57+fp+simd+crypto+crc -fno-common -fno-short-enums -ffunction-sections -fdata-sections -fPIC -fms-extensions)
+    target_compile_options(PapiLua PRIVATE -m64 -mcpu=cortex-a57+fp+simd+crypto+crc -fno-common -fno-short-enums -ffunction-sections -fdata-sections -fPIC -fms-extensions)
 else ( )
-    add_library(papilua SHARED
+    add_library(PapiLua SHARED
         ${LUA_CORE}
         ${EASTL_SRC}
         ${PAPI_SRC}
@@ -113,14 +111,27 @@ else ( )
 endif ( )
 
 if ( WIN32 AND NOT CYGWIN )
-    target_compile_definitions (papilua PRIVATE LUA_BUILD_AS_DLL)
-    target_link_libraries(papilua
+    target_compile_definitions (PapiLua PRIVATE LUA_BUILD_AS_DLL)
+    target_link_libraries(PapiLua
         ws2_32
-        puerts
+        PuertsCore
     )
 else ( )
-    target_link_libraries(papilua
+    target_link_libraries(PapiLua
         m
-        puerts
+        PuertsCore
     )
 endif ( )
+
+target_compile_options(PapiLua PRIVATE
+    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
+        -fno-exceptions
+        -fno-unwind-tables
+        -fno-asynchronous-unwind-tables
+        -fno-rtti
+    >
+    $<$<CXX_COMPILER_ID:MSVC>:
+        /EHa-  # 禁用异常处理
+        /GR-   # 禁用RTTI
+    >
+)
