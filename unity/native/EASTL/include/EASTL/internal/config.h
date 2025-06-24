@@ -284,10 +284,22 @@ namespace eastl
 #ifndef EASTL_API // If the build file hasn't already defined this to be dllexport...
 	#if EASTL_DLL
 		#if defined(_MSC_VER)
-			#define EASTL_API      __declspec(dllimport)
+            #if BUILDING_EASTL
+                #define EASTL_API      __declspec(dllexport)
+            #elif USING_EASTL
+			    #define EASTL_API      __declspec(dllimport)
+            #else
+                #define EASTL_API
+            #endif
 			#define EASTL_LOCAL
 		#elif defined(__CYGWIN__)
-			#define EASTL_API      __attribute__((dllimport))
+            #if BUILDING_EASTL
+                #define EASTL_API      __attribute__((dllexport))
+            #elif USING_EASTL
+			    #define EASTL_API      __attribute__((dllimport))
+            #else
+                #define EASTL_API
+            #endif
 			#define EASTL_LOCAL
 		#elif (defined(__GNUC__) && (__GNUC__ >= 4))
 			#define EASTL_API      __attribute__ ((visibility("default")))
@@ -311,10 +323,22 @@ namespace eastl
 #ifndef EASTL_EASTDC_API
 	#if EASTL_DLL
 		#if defined(_MSC_VER)
-			#define EASTL_EASTDC_API      __declspec(dllimport)
+            #if BUILDING_EASTL
+                #define EASTL_EASTDC_API      __declspec(dllexport)
+            #elif USING_EASTL
+			    #define EASTL_EASTDC_API      __declspec(dllimport)
+            #else
+                #define EASTL_EASTDC_API
+            #endif
 			#define EASTL_EASTDC_LOCAL
 		#elif defined(__CYGWIN__)
-			#define EASTL_EASTDC_API      __attribute__((dllimport))
+            #if BUILDING_EASTL
+                #define EASTL_EASTDC_API      __attribute__((dllexport))
+            #elif USING_EASTL
+			    #define EASTL_EASTDC_API      __attribute__((dllimport))
+            #else
+                #define EASTL_EASTDC_API
+            #endif
 			#define EASTL_EASTDC_LOCAL
 		#elif (defined(__GNUC__) && (__GNUC__ >= 4))
 			#define EASTL_EASTDC_API      __attribute__ ((visibility("default")))

@@ -148,9 +148,9 @@ if(NOT MSVC)
 endif()
 
 if ( APPLE AND IOS )
-    add_library(PapiQuickjs STATIC ${qjs_sources} ${eastl_sources} ${papi_sources})
+    add_library(PapiQuickjs STATIC ${qjs_sources} ${papi_sources})
 else ()
-    add_library(PapiQuickjs SHARED ${qjs_sources} ${eastl_sources} ${papi_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
+    add_library(PapiQuickjs SHARED ${qjs_sources} ${papi_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
 endif()
 target_compile_definitions(PapiQuickjs PRIVATE ${qjs_defines})
 target_include_directories(PapiQuickjs PUBLIC
@@ -163,7 +163,7 @@ target_link_libraries(PapiQuickjs PUBLIC ${qjs_libs} PuertsCore)
 target_compile_definitions(PapiQuickjs PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
 target_compile_definitions(PapiQuickjs PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
 target_compile_definitions(PapiQuickjs PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
-#target_compile_definitions(PapiQuickjs PUBLIC EASTL_DLL)
+target_compile_definitions(PapiQuickjs PRIVATE EASTL_DLL USING_EASTL)
 target_compile_definitions(PapiQuickjs PUBLIC USING_REGISTER_API_SHARED)
 target_compile_options(PapiQuickjs PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
