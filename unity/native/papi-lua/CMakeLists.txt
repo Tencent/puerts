@@ -57,6 +57,7 @@ list(REMOVE_ITEM LUA_CORE ${LUA_SRC_PATH}/lua.c ${LUA_SRC_PATH}/luac.c)
 set(PAPI_SRC
     source/PesapiLuaImpl.cpp
     source/CppObjectMapperLua.cpp
+    source/PapiExport.cpp
 )
 
 

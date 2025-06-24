@@ -8,17 +8,6 @@
 #include "CppObjectMapperQuickjs.h"
 #include "pesapi.h"
 
-namespace puerts
-{
-enum JSEngineBackend
-{
-    V8          = 0,
-    Node        = 1,
-    QuickJS     = 2,
-    Auto = 3
-};
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,12 +15,6 @@ extern "C" {
 PESAPI_MODULE_EXPORT int GetQjsPapiVersion()
 {
     return PESAPI_VERSION;
-}
-
-PESAPI_MODULE_EXPORT pesapi_env_ref GetQjsPapiEnvRef(puerts::FBackendEnv *BackendEnv)
-{
-    auto env = reinterpret_cast<pesapi_env>(BackendEnv->ctx);
-    return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(env);
 }
 
 PESAPI_MODULE_EXPORT pesapi_ffi* GetQjsFFIApi()
