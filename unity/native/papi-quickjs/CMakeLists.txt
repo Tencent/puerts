@@ -148,9 +148,9 @@ if(NOT MSVC)
 endif()
 
 if ( APPLE AND IOS )
-    add_library(PapiQuickjs STATIC ${qjs_sources} ${papi_sources})
+    add_library(PapiQuickjs STATIC ${qjs_sources} ${eastl_sources} ${papi_sources})
 else ()
-    add_library(PapiQuickjs SHARED ${qjs_sources} ${papi_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
+    add_library(PapiQuickjs SHARED ${qjs_sources} ${eastl_sources} ${papi_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
 endif()
 target_compile_definitions(PapiQuickjs PRIVATE ${qjs_defines})
 target_include_directories(PapiQuickjs PUBLIC

@@ -70,6 +70,7 @@ if (APPLE)
         set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
         add_library(PapiLua STATIC
            ${LUA_CORE}
+           ${EASTL_SRC}
            ${PAPI_SRC}
         )
 		set_xcode_property (PapiLua IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
@@ -80,12 +81,14 @@ if (APPLE)
 
             add_library(PapiLua SHARED
                 ${LUA_CORE}
+                ${EASTL_SRC}
                 ${PAPI_SRC}
             )
         else ()
             set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
             add_library(PapiLua MODULE
                 ${LUA_CORE}
+                ${EASTL_SRC}
                 ${PAPI_SRC}
             )
             set_target_properties ( PapiLua PROPERTIES BUNDLE TRUE )
@@ -96,12 +99,14 @@ if (APPLE)
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Switch")
     add_library(PapiLua STATIC
         ${LUA_CORE}
+        ${EASTL_SRC}
         ${PAPI_SRC}
     )
     target_compile_options(PapiLua PRIVATE -m64 -mcpu=cortex-a57+fp+simd+crypto+crc -fno-common -fno-short-enums -ffunction-sections -fdata-sections -fPIC -fms-extensions)
 else ( )
     add_library(PapiLua SHARED
         ${LUA_CORE}
+        ${EASTL_SRC}
         ${PAPI_SRC}
     )
 endif ( )
