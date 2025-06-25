@@ -107,7 +107,6 @@ else ( )
 endif ( )
 
 if ( WIN32 AND NOT CYGWIN )
-    target_compile_definitions (PapiLua PRIVATE LUA_BUILD_AS_DLL)
     target_link_libraries(PapiLua
         ws2_32
         PuertsCore
