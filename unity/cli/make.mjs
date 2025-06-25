@@ -232,7 +232,11 @@ const platformCompileConfig = {
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
-                return `${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`;
+                let libs = [`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`];
+                if (existsSync(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`)) {
+                    libs.push(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`);
+                }
+                return libs;
             }
         },
         'ia32': {
@@ -245,7 +249,11 @@ const platformCompileConfig = {
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
-                return `${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`;
+                let libs = [`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`];
+                if (existsSync(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`)) {
+                    libs.push(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`);
+                }
+                return libs;
             }
         }
     },
