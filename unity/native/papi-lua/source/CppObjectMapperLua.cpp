@@ -69,8 +69,8 @@ namespace luaimpl
         if (const auto classDef = puerts::LoadClassByID(registry, typeId))
         {
             lua_createtable(L, 0, 0);
-            const MetaInfo* metaInfo = GetMetaRefOfClass(L, classDef);
-            lua_rawgeti(L, LUA_REGISTRYINDEX, metaInfo->ref);
+            const int meta_ref = GetMetaRefOfClass(L, classDef);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, meta_ref);
             lua_pushlightuserdata(L, &dummy_idx_tag);
             lua_rawget(L, -2);
             lua_remove(L, -2);
@@ -132,8 +132,8 @@ namespace luaimpl
         obj->Ptr                 = ptr;
         obj->TypeId              = classDefinition->TypeId;
         obj->NeedDelete          = !passByPointer;
-        const MetaInfo* metaInfo = GetMetaRefOfClass(L, classDefinition);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, metaInfo->ref);
+        const int meta_ref = GetMetaRefOfClass(L, classDefinition);
+        lua_rawgeti(L, LUA_REGISTRYINDEX, meta_ref);
         lua_setmetatable(L, -2);
 
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_CacheRef);
@@ -246,10 +246,6 @@ namespace luaimpl
             }
         }
         m_DataCache.clear();
-        for (const auto& pairs : m_TypeIdToMetaMap)
-        {
-            free(pairs.second);
-        }
         m_TypeIdToMetaMap.clear();
         luaL_unref(L, LUA_REGISTRYINDEX, m_CacheRef);
         luaL_unref(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
@@ -478,7 +474,7 @@ namespace luaimpl
         return callback_info.RetNum;
     }
 
-    MetaInfo* CppObjectMapper::GetMetaRefOfClass(lua_State* L, const puerts::JSClassDefinition* classDefinition)
+    int CppObjectMapper::GetMetaRefOfClass(lua_State* L, const puerts::JSClassDefinition* classDefinition)
     {
         // requires at least 13 slots in stack: 8 fixed slots (obj_methods, obj_getters, obj_setters, static_functions, static_getters, static_setters, meta, cls_meta), 5 extension
         // slots (__index, obj_methods, obj_getters, super_meta_ref, __index)
@@ -486,17 +482,16 @@ namespace luaimpl
         const auto iterator = m_TypeIdToMetaMap.find(classDefinition->TypeId);
         if (iterator == m_TypeIdToMetaMap.end())
         {
-            MetaInfo* metaInfo       = (MetaInfo*)malloc(sizeof(MetaInfo));
-            metaInfo->ref = 0;
-            int org_top              = lua_gettop(L);
-            MetaInfo* super_meta_ref = nullptr;
-            bool has_super           = false;
+            int meta_ref = -1;
+            int org_top = lua_gettop(L);
+            int super_meta_ref = -1;
+            bool has_super = false;
             if (classDefinition->SuperTypeId)
             {
                 if (const puerts::JSClassDefinition* superDefinition = puerts::LoadClassByID(registry, classDefinition->SuperTypeId))
                 {
-                    super_meta_ref       = GetMetaRefOfClass(L, superDefinition);
-                    has_super            = true;
+                    super_meta_ref = GetMetaRefOfClass(L, superDefinition);
+                    has_super = true;
                 }
             }
 
@@ -582,7 +577,7 @@ namespace luaimpl
             lua_pushvalue(L, obj_getters);
             if (has_super)
             {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref->ref);
+                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref);
                 lua_pushstring(L, "__index");
                 lua_rawget(L, -2);
                 lua_remove(L, -2);
@@ -598,7 +593,7 @@ namespace luaimpl
             lua_pushvalue(L, obj_setters);
             if (has_super)
             {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref->ref);
+                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref);
                 lua_pushstring(L, "__newindex");
                 lua_rawget(L, -2);
                 lua_remove(L, -2);
@@ -628,7 +623,7 @@ namespace luaimpl
             lua_pushvalue(L, static_functions);
             if (has_super)
             {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref->ref);
+                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref);
                 lua_pushlightuserdata(L, &dummy_idx_tag);
 
                 lua_rawget(L, -2);
@@ -651,7 +646,7 @@ namespace luaimpl
             lua_pushvalue(L, static_setters);
             if (has_super)
             {
-                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref->ref);
+                lua_rawgeti(L, LUA_REGISTRYINDEX, super_meta_ref);
                 lua_pushlightuserdata(L, &dummy_idx_tag);
                 lua_rawget(L, -2);
                 lua_remove(L, -2);
@@ -672,15 +667,15 @@ namespace luaimpl
             lua_pushlightuserdata(L, &dummy_idx_tag);
             lua_insert(L, cls_meta);
             lua_rawset(L, meta);
-            metaInfo->ref = luaL_ref(L, LUA_REGISTRYINDEX);
+            meta_ref = luaL_ref(L, LUA_REGISTRYINDEX);
             lua_pop(L, 6);
 
             if (org_top != lua_gettop(L))
             {
                 luaL_error(L, "stack top changed ? %d, %d\n", org_top, lua_gettop(L));
             }
-            m_TypeIdToMetaMap[classDefinition->TypeId] = metaInfo;
-            return metaInfo;
+            m_TypeIdToMetaMap[classDefinition->TypeId] = meta_ref;
+            return meta_ref;
         }
         return iterator->second;
     }
