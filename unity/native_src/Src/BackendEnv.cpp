@@ -476,6 +476,7 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
     } 
     else 
     {
+        bool found = false;
         auto finder = PathToModuleMap.find(key);
         if (finder != PathToModuleMap.end()) 
         {
@@ -488,18 +489,20 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
             }
 #endif
             PathToModuleMap.erase(key);
-#if !WITH_QUICKJS
-            return true;
-#else
+            found = true;
+        }
+
+#if WITH_QUICKJS
 #ifdef THREAD_SAFE
             v8::Locker Locker(Isolate);
 #endif
             v8::Isolate::Scope IsolateScope(Isolate);
             v8::HandleScope HandleScope(Isolate);
             JSContext* ctx = Context->context_;
-            return JS_ReleaseLoadedModule(ctx, Path);
+        found = JS_ReleaseLoadedModule(ctx, Path) || found;
 #endif
-        }
+
+        return found;
     }
     return false;
 }
