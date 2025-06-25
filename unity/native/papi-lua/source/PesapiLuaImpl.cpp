@@ -778,6 +778,7 @@ static int error_func(lua_State* L)
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])
 {
     lua_State* L = luaStateFromPesapiEnv(env);
+    int oldTop = lua_gettop(L);
     lua_pushcfunction(L, error_func);
     int errfunc = lua_gettop(L);
 
@@ -789,13 +790,12 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     }
 
     int res = lua_pcall(L, argc, 1, errfunc);
-    if (res == 0)
-    {
-        lua_remove(L, errfunc);
-    }
 
+    lua_remove(L, errfunc);
     lua_pushinteger(L, res);
-    return pesapiValueFromLuaValue(lua_gettop(L) - 1);
+    //lua_insert(L, oldTop + 1);
+
+    return pesapiValueFromLuaValue(oldTop + 1);
 }
 
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
@@ -808,16 +808,13 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     int ret = luaL_loadbuffer(L, reinterpret_cast<const char*>(code), code_size, path);
     if (ret == 0)
     {
-        ret = lua_pcall(L, 0, -1, errfunc);
-        if (ret == 0)
-        {
-            lua_remove(L, errfunc);
-        }
-        else
-        {
-            lua_pushinteger(L, ret);
-        }
+        ret = lua_pcall(L, 0, 1, errfunc);
     }
+
+    lua_remove(L, errfunc);
+    lua_pushinteger(L, ret);
+    //lua_insert(L, oldTop + 1);
+
     return pesapiValueFromLuaValue(oldTop + 1);
 }
 
