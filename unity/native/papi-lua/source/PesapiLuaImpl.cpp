@@ -1,4 +1,4 @@
-#include "lua.hpp"
+﻿#include "lua.hpp"
 #include "pesapi.h"
 #include "CppObjectMapperLua.h"
 
@@ -158,14 +158,14 @@ int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
-    return lua_tointeger(L, idx);
+    return (int32_t)lua_tointeger(L, idx);
 }
 
 uint32_t pesapi_get_value_uint32(pesapi_env env, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
-    return lua_tointeger(L, idx);
+    return (uint32_t)lua_tointeger(L, idx);
 }
 
 int64_t pesapi_get_value_int64(pesapi_env env, pesapi_value pvalue)
@@ -419,8 +419,8 @@ pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value p_boxed_value)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int index = luaValueFromPesapiValue(p_boxed_value);
-    index    = lua_absindex(L, index);
-    int top      = lua_gettop(L);
+    index = lua_absindex(L, index);
+    int top = lua_gettop(L);
     if (top < index)
     {
         return 0;
@@ -436,8 +436,8 @@ pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value p_boxed_value)
 void pesapi_update_boxed_value(pesapi_env env, pesapi_value p_boxed_value, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
-    intptr_t index = luaValueFromPesapiValue(p_boxed_value);
-    int t          = lua_type(L, index);
+    int index = luaValueFromPesapiValue(p_boxed_value);
+    int t = lua_type(L, index);
     if (t == LUA_TTABLE)
     {
         lua_pushvalue(L, luaValueFromPesapiValue(pvalue));
@@ -609,7 +609,7 @@ struct pesapi_value_ref__ : public pesapi_env_ref__
     }
     int value_ref;
     uint32_t internal_field_count;
-    void* internal_fields[0];
+    void* internal_fields[1]; // 改为长度为1的数组
 };
 
 pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, uint32_t internal_field_count)
@@ -619,8 +619,12 @@ pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue, ui
     lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_MAINTHREAD);
     lua_State* mL = lua_tothread(L, -1);
     lua_assert(mL);
-    auto ret = (pesapi_value_ref)malloc(sizeof(pesapi_value_ref__) + internal_field_count * sizeof(void*));
-    memset(ret, 0, sizeof(pesapi_value_ref__) + internal_field_count * sizeof(void*));
+    
+    size_t totalSize = sizeof(pesapi_value_ref__) + 
+                      (internal_field_count > 0 ? (internal_field_count - 1) : 0) * sizeof(void*);
+    
+    auto ret = (pesapi_value_ref)malloc(totalSize);
+    memset(ret, 0, totalSize);
 
     lua_pop(L, 1);
     lua_pushvalue(L, idx);
