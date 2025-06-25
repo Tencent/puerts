@@ -472,13 +472,13 @@ pesapi_env pesapi_get_env(pesapi_callback_info pinfo)
 void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<pesapi::luaimpl::pesapi_callback_info__*>(pinfo);
-    return pesapi_get_native_object_ptr(pesapiEnvFromLuaState(info->L), pesapiValueFromLuaValue(info->ArgStart + 1));
+    return pesapi_get_native_object_ptr(pesapiEnvFromLuaState(info->L), pesapiValueFromLuaValue(1));
 }
 
 const void* pesapi_get_native_holder_typeid(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<pesapi::luaimpl::pesapi_callback_info__*>(pinfo);
-    return pesapi_get_native_object_typeid(pesapiEnvFromLuaState(info->L), pesapiValueFromLuaValue(info->ArgStart + 1));
+    return pesapi_get_native_object_typeid(pesapiEnvFromLuaState(info->L), pesapiValueFromLuaValue(1));
 }
 
 void* pesapi_get_userdata(pesapi_callback_info pinfo)
