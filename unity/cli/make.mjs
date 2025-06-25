@@ -327,6 +327,10 @@ async function runPuertsMake(cwd, options) {
     const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';');
     const incD = (BackendConfig.include || []).join(';');
 
+    if (options.rebuild && existsSync(CMAKE_BUILD_PATH)) {
+        rm('-rf', CMAKE_BUILD_PATH);
+    }
+
     mkdir('-p', CMAKE_BUILD_PATH);
     mkdir('-p', OUTPUT_PATH);
     const DArgsName = ['-DBACKEND_DEFINITIONS=', '-DBACKEND_LIB_NAMES=', '-DBACKEND_INC_NAMES='];
