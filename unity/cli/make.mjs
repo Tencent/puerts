@@ -115,8 +115,10 @@ const platformCompileConfig = {
                 if (!NDK) throw new Error("please set OHOS_NDK environment variable first!");
                 const ABI = 'armeabi-v7a';
                 const cmake_bin_path = `${NDK}/build-tools/cmake/bin/cmake`;
+                const ninja_bin_path = `${NDK}/build-tools/cmake/bin/ninja`;
+                const toolchain_file = `${NDK}/build/cmake/ohos.toolchain.cmake`;
 
-                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/ohos.toolchain.cmake`).code);
+                assert.equal(0, exec(`"${cmake_bin_path}" ${cmakeDArgs} -GNinja -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B"${CMAKE_BUILD_PATH}"  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE="${toolchain_file}" -DCMAKE_MAKE_PROGRAM="${ninja_bin_path}"`).code);
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
@@ -132,8 +134,10 @@ const platformCompileConfig = {
                 if (!NDK) throw new Error("please set OHOS_NDK environment variable first!");
                 const ABI = 'arm64-v8a';
                 const cmake_bin_path = `${NDK}/build-tools/cmake/bin/cmake`;
+                const ninja_bin_path = `${NDK}/build-tools/cmake/bin/ninja`;
+                const toolchain_file = `${NDK}/build/cmake/ohos.toolchain.cmake`;
 
-                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/ohos.toolchain.cmake`).code);
+                assert.equal(0, exec(`"${cmake_bin_path}" ${cmakeDArgs} -GNinja -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B"${CMAKE_BUILD_PATH}"  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE="${toolchain_file}" -DCMAKE_MAKE_PROGRAM="${ninja_bin_path}"`).code);
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
