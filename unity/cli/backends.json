@@ -124,6 +124,66 @@
             }
         }
     },
+    "papi-lua": {
+        "config": {
+            "definition": [
+            ],
+            "include": [
+            ],
+            "link-libraries": {
+                "win": {
+                    "ia32": [
+                    ],
+                    "x64": [
+                    ]
+                },
+                "osx": {
+                    "x64": [
+                    ],
+                    "arm64": [
+                    ]
+                },
+                "android": {
+                    "armv7": [
+                    ],
+                    "arm64": [
+                    ],
+                    "x64": [
+                    ]
+                },
+                "ohos": {
+                    "armv7": [
+                    ],
+                    "arm64": [
+                    ]
+                },
+                "linux": {
+                    "x64": [
+                    ]
+                },
+                "ns":{
+                    "arm64": [
+                    ]
+                }
+            },
+            "copy-libraries": {
+                "win": {
+                    "ia32": [
+                    ],
+                    "x64": [
+                    ]
+                },
+                "ios": {
+                    "arm64": [
+                    ]
+                },
+                "wasm": {
+                    "wasm32": [
+                    ]
+                }
+            }
+        }
+    },
     "nodejs_16": {
         "url": "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_1115/nodejs_bin_16.16.0.tgz",
         "config": {
