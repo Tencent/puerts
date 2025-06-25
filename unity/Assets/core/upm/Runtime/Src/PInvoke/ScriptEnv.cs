@@ -138,11 +138,13 @@ namespace Puerts
             }
         }
 
+        [UnityEngine.Scripting.Preserve]
         public Type GetTypeByString(string className)
         {
             return PuertsIl2cpp.TypeUtils.GetType(className);
         }
 
+        [UnityEngine.Scripting.Preserve]
         public object GetLoader()
         {
             return backend.GetLoader();
