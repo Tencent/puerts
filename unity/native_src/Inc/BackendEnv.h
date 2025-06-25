@@ -180,6 +180,8 @@ namespace PUERTS_NAMESPACE
         char* module_normalize(JSContext *ctx, const char *base_name, const char *name, void* opaque);
     
         JSValue ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
+
+        JSValue ExternalExecuteModule(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic, JSValue* func_data);
 #endif
     }
 }

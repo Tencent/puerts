@@ -249,9 +249,14 @@ namespace PUERTS_NAMESPACE
     {
         if (ModuleExecutor == nullptr)
         {
-            bool success = Eval(ExecuteModuleJSCode, "__puer_execute__.mjs");
-            if (!success) return nullptr;
-            
+#if QJS_BACKEND
+        	/* while quickjs external runtime, the module executor uses ExternalExecuteModule, donot need to eval __puer_execute__.mjs */
+        	if (!MainIsolate->is_external_runtime_)
+#endif
+        	{
+            	bool success = Eval(ExecuteModuleJSCode, "__puer_execute__.mjs");
+           		if (!success) return nullptr;
+        	}
 #ifdef THREAD_SAFE
             v8::Locker Locker(MainIsolate);
 #endif

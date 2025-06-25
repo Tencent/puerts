@@ -347,12 +347,20 @@ void FBackendEnv::Initialize(void* external_quickjs_runtime, void* external_quic
     
     auto rt = Isolate->runtime_;
     auto ctx = Context->context_;
-    JS_SetModuleLoaderFunc(rt, esmodule::module_normalize, esmodule::js_module_loader, this);
-    
+    JSCFunctionData* executor = nullptr;
+    if (!Isolate->is_external_runtime_)
+    {
+        JS_SetModuleLoaderFunc(rt, esmodule::module_normalize, esmodule::js_module_loader, this);
+        executor = &esmodule::ExecuteModule;
+    }
+    else
+    {
+        executor = &esmodule::ExternalExecuteModule;
+    }
     JSValue FuncData;
-    JS_INITPTR(FuncData, JS_TAG_EXTERNAL, (void*)this);
-    JSValue Func = JS_NewCFunctionData(ctx, esmodule::ExecuteModule, 0, 0, 1, &FuncData);
-    
+    JS_INITPTR(FuncData, JS_TAG_EXTERNAL, (void*) this);
+    JSValue Func = JS_NewCFunctionData(ctx, executor, 0, 0, 1, &FuncData);
+
     JSValue G = JS_GetGlobalObject(ctx);
     JS_SetPropertyStr(ctx, G, EXECUTEMODULEGLOBANAME, Func);
     JS_FreeValue(ctx, G);
@@ -636,6 +644,33 @@ JSModuleDef* FBackendEnv::LoadModule(JSContext* ctx, const char *name)
     JS_FreeValue(ctx, Context);
     
     return Ret;
+}
+
+JSValue esmodule::ExternalExecuteModule(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic, JSValue* func_data)
+{
+    if (argc == 1)
+    {
+        const char* Specifier = JS_ToCString(ctx, argv[0]);
+        FBackendEnv* Backend = (FBackendEnv*) (JS_VALUE_GET_PTR(func_data[0]));
+        JSModuleDef* EntryModule = JS_RunModule(ctx, nullptr, Specifier);
+        JS_FreeCString(ctx, Specifier);
+        if (!EntryModule)
+        {
+            return JS_EXCEPTION;
+            //return JS_ThrowReferenceError(ctx, "could not load module filename '%s'", Specifier);
+        }
+        auto Namespace = js_get_module_ns(ctx, EntryModule);
+        if (JS_IsUndefined(Namespace) || JS_IsNull(Namespace))
+        {
+            return JS_NewObject(ctx);
+        }
+        else
+        {
+            return Namespace;
+        }
+    }
+
+    return JS_Undefined();
 }
 
 JSValue esmodule::ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data)
