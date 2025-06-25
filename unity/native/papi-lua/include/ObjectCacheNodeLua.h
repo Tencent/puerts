@@ -18,7 +18,7 @@ namespace luaimpl
 class FObjectCacheNode
 {
 public:
-    inline FObjectCacheNode(const void* TypeId_, void* userdata) :TypeId(TypeId_), UserData(userdata), Next(nullptr), MustCallFinalize(false)
+    inline FObjectCacheNode(const void* TypeId_) :TypeId(TypeId_), UserData(nullptr), Next(nullptr), MustCallFinalize(false)
     {
     }
 

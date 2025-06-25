@@ -148,16 +148,15 @@ namespace luaimpl
         }
         else
         {
-            void* userdata = nullptr;
-            if (onEnter)
-            {
-                userdata = onEnter(ptr, classDefinition->Data, GetEnvPrivate());
-            }
-            auto ret     = m_DataCache.insert({ptr, FObjectCacheNode(classDefinition->TypeId, userdata)});
+            auto ret     = m_DataCache.insert({ptr, FObjectCacheNode(classDefinition->TypeId)});
             cacheNodePtr = &(ret.first->second);
 
         }
         cacheNodePtr->Value = ref;
+        if (onEnter)
+        {
+            cacheNodePtr->UserData = onEnter(ptr, classDefinition->Data, GetEnvPrivate());
+        }
     }
 
     void CppObjectMapper::UnBindCppObject(lua_State* L, const puerts::JSClassDefinition* classDefinition, void* ptr)
