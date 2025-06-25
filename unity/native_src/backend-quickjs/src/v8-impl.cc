@@ -93,6 +93,9 @@ Isolate* Promise::GetIsolate() {
 
 void V8FinalizerWrap(JSRuntime *rt, JSValue val) {
     Isolate* isolate = (Isolate*)JS_GetRuntimeOpaque(rt);
+    if (!isolate) {
+        return;
+    }
     Isolate::Scope Isolatescope(isolate);
     ObjectUserData* objectUdata = reinterpret_cast<ObjectUserData*>(JS_GetOpaque(val, isolate->class_id_));
     if (objectUdata) {
@@ -142,6 +145,9 @@ Isolate::~Isolate() {
     JS_FreeValueRT(runtime_, literal_values_[kEmptyStringIndex]);
     if (!is_external_runtime_) {
         JS_FreeRuntime(runtime_);
+    }
+    else {
+        JS_SetRuntimeOpaque(runtime_, nullptr);
     }
 };
 
