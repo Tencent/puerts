@@ -75,6 +75,45 @@ namespace Puerts
                 outputStr(table.concat(args, '\t'))
             end
             ");
+
+            scriptEnv.Eval(@"local metatable = {}
+            local rawget = rawget
+            local setmetatable = setmetatable
+            local function import_type(full_name)
+                local type = scriptEnv:GetTypeByString(full_name)
+                if not type then return nil end
+                local cls = loadType(type)
+                rawset(cls, '__p_innerType', type)
+                return cls
+            end
+
+            function metatable:__index(key) 
+                local fqn = rawget(self,'.fqn')
+                fqn = ((fqn and fqn .. '.') or '') .. key
+
+                local obj = import_type(fqn)
+
+                if obj == nil then
+                    -- It might be an assembly, so we load it too.
+                    obj = { ['.fqn'] = fqn }
+                    setmetatable(obj, metatable)
+                elseif obj == true then
+                    return rawget(self, key)
+                end
+
+                -- Cache this lookup
+                rawset(self, key, obj)
+                return obj
+            end
+
+            function metatable:__newindex()
+                error('No such type: ' .. rawget(self,'.fqn'), 2)
+            end
+
+            CS = CS or {}
+            setmetatable(CS, metatable)
+            typeof = function(t) return t.__p_innerType end
+            ");
         }
     }
 }
