@@ -246,9 +246,7 @@ namespace luaimpl
                         lua_pop(L, 1);
                     }
                 }
-                FObjectCacheNode* temp = PNode;
                 PNode = PNode->Next;
-                free(temp);
             }
         }
         m_DataCache.clear();
