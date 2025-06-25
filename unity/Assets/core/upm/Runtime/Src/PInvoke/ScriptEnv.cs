@@ -41,7 +41,7 @@ namespace Puerts
             }
         }
 
-        public ScriptEnv(Backend backend, int debugPort)
+        public ScriptEnv(Backend backend, int debugPort = -1)
         {
             this.backend = backend;
 
@@ -92,7 +92,7 @@ namespace Puerts
 
             logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(Console), typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(object) }), true);
             var print = PuertsNative.pesapi_create_function(papis, env, logDelegate, IntPtr.Zero, null);
-            PuertsNative.pesapi_set_property(papis, env, globalVal, "print", print);
+            PuertsNative.pesapi_set_property(papis, env, globalVal, "debug_log", print);
 
             var jsJsEnv = PuertsNative.pesapi_native_object_to_value(papis, env, new IntPtr(TypeRegister.Instance.FindOrAddTypeId(this.GetType())), new IntPtr(objectPool.FindOrAddObject(this)), false);
             PuertsNative.pesapi_set_property(papis, env, globalVal, "scriptEnv", jsJsEnv);
