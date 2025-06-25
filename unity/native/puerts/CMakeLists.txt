@@ -52,13 +52,13 @@ target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DI
 target_compile_definitions(PuertsCore PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
 target_compile_definitions(PuertsCore PRIVATE EASTL_DLL BUILDING_EASTL)
 target_compile_options(PuertsCore PRIVATE
-    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:
         -fno-exceptions
         -fno-unwind-tables
         -fno-asynchronous-unwind-tables
         -fno-rtti
     >
-    $<$<CXX_COMPILER_ID:MSVC>:
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:
         /EHa-  # 禁用异常处理
         /GR-   # 禁用RTTI
     >

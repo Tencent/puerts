@@ -166,13 +166,13 @@ target_compile_definitions(PapiQuickjs PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_
 target_compile_definitions(PapiQuickjs PRIVATE EASTL_DLL USING_EASTL)
 target_compile_definitions(PapiQuickjs PUBLIC USING_REGISTER_API_SHARED)
 target_compile_options(PapiQuickjs PRIVATE
-    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:
         -fno-exceptions
         -fno-unwind-tables
         -fno-asynchronous-unwind-tables
         -fno-rtti
     >
-    $<$<CXX_COMPILER_ID:MSVC>:
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:
         /EHa-  # 禁用异常处理
         /GR-   # 禁用RTTI
     >
