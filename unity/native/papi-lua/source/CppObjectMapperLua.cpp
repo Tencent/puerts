@@ -165,17 +165,14 @@ namespace luaimpl
         auto iterator = m_DataCache.find(ptr);
         if (iterator != m_DataCache.end())
         {
-            FObjectCacheNode* node = &(iterator->second);
-            node->Remove(classDefinition->TypeId, true);
-            if (!node->TypeId)
+            if (onExit)
             {
-                void* userdata = node->UserData;
+                onExit(ptr, classDefinition->Data, GetEnvPrivate(), iterator->second.UserData);
+            }
+            auto Removed = iterator->second.Remove(classDefinition->TypeId, true);
+            if (!iterator->second.TypeId)
+            {
                 m_DataCache.erase(ptr);
-                if (onExit)
-                {
-                    onExit(ptr, classDefinition->Data, GetEnvPrivate(), userdata);
-                }
-                free(node);
             }
         }
     }
