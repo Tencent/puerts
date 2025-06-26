@@ -8,15 +8,6 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include<cstring>
 #include <algorithm>
 
-enum
-{
-    JS_ATOM_NULL_,
-#define DEF(name, str) JS_ATOM_##name,
-#include "quickjs-atom.h"
-#undef DEF
-    JS_ATOM_END,
-};
-
 #ifndef PUERTS_IS_ARRAYBUFFER
     #define PUERTS_IS_ARRAYBUFFER JS_IsArrayBuffer
 #endif
@@ -238,8 +229,10 @@ Local<Value> Exception::Error(Local<String> message) {
     Value* val = isolate->Alloc<Value>();
     JSContext* ctx = isolate->current_context_->context_;
     val->value_ = JS_NewError(ctx);
-    JS_DefinePropertyValue(ctx, val->value_, JS_ATOM_message, JS_NewString(ctx, *String::Utf8Value(isolate, message)),
+    JSAtom messageAtom = JS_NewAtom(ctx, "message");
+    JS_DefinePropertyValue(ctx, val->value_, messageAtom, JS_NewString(ctx, *String::Utf8Value(isolate, message)),
                            JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE);
+    JS_FreeAtom(ctx, messageAtom);
     return Local<Value>(val);
 }
 
@@ -997,7 +990,9 @@ MaybeLocal<Object> ObjectTemplate::NewInstance(Local<Context> context)
     Object* obj = context->GetIsolate()->Alloc<Object>();
     if (constructor_template_) {
         JSValue func = constructor_template_ ->GetFunction(context).ToLocalChecked()->value_;
-        JSValue proto = JS_GetProperty(context->context_, func, JS_ATOM_prototype);
+        JSAtom prototypeAtom = JS_NewAtom(context->context_, "prototype");
+        JSValue proto = JS_GetProperty(context->context_, func, prototypeAtom);
+        JS_FreeAtom(context->context_, prototypeAtom);
         obj->value_ = JS_NewObjectProtoClass(context->context_, proto, context->GetIsolate()->class_id_);
         JS_FreeValue(context->context_, proto);
         size_t size = sizeof(ObjectUserData) + sizeof(void*) * (internal_field_count_ - 1);
@@ -1088,7 +1083,9 @@ MaybeLocal<Function> FunctionTemplate::GetFunction(Local<Context> context) {
         callbackInfo.isConstructCall = (bool)JS_ToBool(ctx, func_data[3]);
         
         if (callbackInfo.isConstructCall && internal_field_count > 0) {
-            JSValue proto = JS_GetProperty(ctx, this_val, JS_ATOM_prototype);
+            JSAtom prototypeAtom = JS_NewAtom(ctx, "prototype");
+            JSValue proto = JS_GetProperty(ctx, this_val, prototypeAtom);
+            JS_FreeAtom(ctx, prototypeAtom);
             callbackInfo.this_ = JS_NewObjectProtoClass(ctx, proto, isolate->class_id_);
             JS_FreeValue(ctx, proto);
             size_t size = sizeof(ObjectUserData) + sizeof(void*) * (internal_field_count - 1);
@@ -1115,15 +1112,17 @@ MaybeLocal<Function> FunctionTemplate::GetFunction(Local<Context> context) {
     }, 0, 0, 4, &func_data[0]);
     
     auto aname = JS_NewAtom(context->context_, name_.c_str());
+    JSAtom nameAtom = JS_NewAtom(context->context_, "name");
     JS_DefinePropertyValue( 
         context->context_, 
         func, 
-        JS_ATOM_name,
+        nameAtom,
         JS_AtomToString(context->context_, aname), 
         JS_PROP_CONFIGURABLE
     );
+    JS_FreeAtom(context->context_, nameAtom);
     JS_FreeAtom(context->context_, aname);
-
+    
     if (cfunction_data_.is_construtor_) {
         JS_SetConstructorBit(context->context_, func, 1);
         JSValue proto = JS_NewObject(context->context_);
@@ -1137,7 +1136,9 @@ MaybeLocal<Function> FunctionTemplate::GetFunction(Local<Context> context) {
         
         if (!parent_.IsEmpty()) {
             Local<Function> parent_func = parent_->GetFunction(context).ToLocalChecked();
-            JSValue parent_proto = JS_GetProperty(context->context_, parent_func->value_, JS_ATOM_prototype);
+            JSAtom prototypeAtom = JS_NewAtom(context->context_, "prototype");
+            JSValue parent_proto = JS_GetProperty(context->context_, parent_func->value_, prototypeAtom);
+            JS_FreeAtom(context->context_, prototypeAtom);
             JS_SetPrototype(context->context_, proto, parent_proto);
             JS_FreeValue(context->context_, parent_proto);
         }
@@ -1319,7 +1320,9 @@ Local<Array> Array::New(Isolate* isolate) {
 
 uint32_t Array::Length() const {
     auto context = Isolate::current_->GetCurrentContext()->context_;
-    auto len = JS_GetProperty(context, value_, JS_ATOM_length);
+    JSAtom lengthAtom = JS_NewAtom(context, "length");
+    auto len = JS_GetProperty(context, value_, lengthAtom);
+    JS_FreeAtom(context, lengthAtom);
     if (JS_IsException(len)) {
         return 0;
     }
@@ -1368,7 +1371,9 @@ Local<Value> TryCatch::Exception() const {
 MaybeLocal<Value> TryCatch::StackTrace(Local<Context> context) const {
     auto str = context->GetIsolate()->Alloc<String>();
     JSValue ex = isolate_->hasPendingException_ ?  isolate_->pendingException_ : catched_;
-    str->value_ = JS_GetProperty(isolate_->current_context_->context_, ex, JS_ATOM_stack);;
+    JSAtom stackAtom = JS_NewAtom(isolate_->current_context_->context_, "stack");
+    str->value_ = JS_GetProperty(isolate_->current_context_->context_, ex, stackAtom);
+    JS_FreeAtom(isolate_->current_context_->context_, stackAtom);
     return MaybeLocal<Value>(Local<String>(str));
 }
 
@@ -1376,7 +1381,9 @@ MaybeLocal<Value> TryCatch::StackTrace(
         Local<Context> context, Local<Value> exception) {
     auto isolate_ = context->GetIsolate();
     auto str = isolate_->Alloc<String>();
-    str->value_ = JS_GetProperty(isolate_->current_context_->context_, exception->value_, JS_ATOM_stack);
+    JSAtom stackAtom = JS_NewAtom(isolate_->current_context_->context_, "stack");
+    str->value_ = JS_GetProperty(isolate_->current_context_->context_, exception->value_, stackAtom);
+    JS_FreeAtom(isolate_->current_context_->context_, stackAtom);
     return MaybeLocal<Value>(Local<String>(str));
 }
     
