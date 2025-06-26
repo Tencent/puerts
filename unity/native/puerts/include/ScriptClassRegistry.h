@@ -33,7 +33,7 @@ namespace PUERTS_REG_NAMESPACE
 {
 class CFunctionInfo;
 class PString;
-class JSClassRegister;
+class ScriptClassRegistry;
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
@@ -128,35 +128,35 @@ MSVC_PRAGMA(warning(pop))
     }
     
     
-JSClassRegister* CreateRegistry();
+ScriptClassRegistry* CreateRegistry();
 
-void PUERTS_API RegisterJSClass(JSClassRegister* Registry, const ScriptClassDefinition& ClassDefinition);
+void PUERTS_API RegisterJSClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
 
-void PUERTS_API SetClassTypeInfo(JSClassRegister* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+void PUERTS_API SetClassTypeInfo(ScriptClassRegistry* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
 
 typedef void (*ClassDefinitionForeachCallback)(const ScriptClassDefinition* ClassDefinition);
 
-void PUERTS_API ForeachRegisterClass(JSClassRegister* Registry, ClassDefinitionForeachCallback Callback);
+void PUERTS_API ForeachRegisterClass(ScriptClassRegistry* Registry, ClassDefinitionForeachCallback Callback);
 
-PUERTS_API const ScriptClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId);
+PUERTS_API const ScriptClassDefinition* FindClassByID(ScriptClassRegistry* Registry, const void* TypeId);
 
-PUERTS_API void OnClassNotFound(JSClassRegister* Registry, pesapi_class_not_found_callback Callback);
+PUERTS_API void OnClassNotFound(ScriptClassRegistry* Registry, pesapi_class_not_found_callback Callback);
 
-PUERTS_API const ScriptClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId);
+PUERTS_API const ScriptClassDefinition* LoadClassByID(ScriptClassRegistry* Registry, const void* TypeId);
 
-PUERTS_API const ScriptClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name);
+PUERTS_API const ScriptClassDefinition* FindCppTypeClassByName(ScriptClassRegistry* Registry, const PString& Name);
 
-PUERTS_API const ScriptClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name);
+PUERTS_API const ScriptClassDefinition* FindCppTypeClassByCName(ScriptClassRegistry* Registry, const char* Name);
 
 #if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
-AddonRegisterFunc FindAddonRegisterFunc(JSClassRegister* Registry, const PString& Name);
+AddonRegisterFunc FindAddonRegisterFunc(ScriptClassRegistry* Registry, const PString& Name);
 
-void RegisterAddon(JSClassRegister* Registry, const char* Name, AddonRegisterFunc RegisterFunc);
+void RegisterAddon(ScriptClassRegistry* Registry, const char* Name, AddonRegisterFunc RegisterFunc);
 
-PUERTS_API const ScriptClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type);
+PUERTS_API const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type);
 
 PUERTS_API bool IsEditorOnlyUFunction(const UFunction* Func);
 

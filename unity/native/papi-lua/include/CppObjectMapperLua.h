@@ -7,7 +7,7 @@
 #include <EASTL/allocator_malloc.h>
 #include <EASTL/shared_ptr.h>
 #include "ObjectCacheNodeLua.h"
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 
 namespace pesapi
 {
@@ -79,7 +79,7 @@ public:
 
     void UnInitialize(lua_State* L);
 
-    puerts::JSClassRegister* registry = nullptr;
+    puerts::ScriptClassRegistry* registry = nullptr;
     pesapi_on_native_object_enter onEnter = nullptr;
     pesapi_on_native_object_exit onExit = nullptr;
     void* envPrivate = nullptr;

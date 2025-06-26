@@ -17,7 +17,7 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include <unordered_map>
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
 
@@ -56,7 +56,7 @@ struct PesapiCallbackData
 class FCppObjectMapper final : public ICppObjectMapper
 {
 public:
-    virtual void SetRegistry(JSClassRegister* InRegistry) override
+    virtual void SetRegistry(ScriptClassRegistry* InRegistry) override
     {
         Registry = InRegistry;
     }
@@ -69,7 +69,7 @@ public:
     }
 
 private:
-    JSClassRegister* Registry = nullptr;
+    ScriptClassRegistry* Registry = nullptr;
     pesapi_on_native_object_enter OnEnter = nullptr;
     pesapi_on_native_object_exit OnExit = nullptr;
 

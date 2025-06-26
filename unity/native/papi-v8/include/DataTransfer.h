@@ -13,7 +13,7 @@
 #include "UObject/Package.h"
 #include "UObject/Class.h"
 #else
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 #endif
 
 #include "NamespaceDef.h"

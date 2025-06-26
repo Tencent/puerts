@@ -9,7 +9,7 @@
 #include "pesapi.h"
 #include "TypeInfo.hpp"
 #include "PString.h"
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 #include <string.h>
 #include <EASTL/vector.h>
 #include <EASTL/allocator_malloc.h>
@@ -208,19 +208,19 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
     classDef.Properties = p_properties.data();
     classDef.Variables = p_variables.data();
 
-    puerts::RegisterJSClass(reinterpret_cast<puerts::JSClassRegister*>(registry), classDef);
+    puerts::RegisterJSClass(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), classDef);
 }
 
 void* pesapi_get_class_data(pesapi_registry _registry, const void* type_id, int force_load)
 {
-    auto registry = reinterpret_cast<puerts::JSClassRegister*>(_registry);
+    auto registry = reinterpret_cast<puerts::ScriptClassRegistry*>(_registry);
     auto clsDef = force_load ? puerts::LoadClassByID(registry, type_id) : puerts::FindClassByID(registry, type_id);
     return clsDef ? clsDef->Data : nullptr;
 }
 
 void pesapi_on_class_not_found(pesapi_registry registry, pesapi_class_not_found_callback callback)
 {
-    puerts::OnClassNotFound(reinterpret_cast<puerts::JSClassRegister*>(registry), callback);
+    puerts::OnClassNotFound(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), callback);
 }
 
 void pesapi_class_type_info(pesapi_registry registry, const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
@@ -231,7 +231,7 @@ void pesapi_class_type_info(pesapi_registry registry, const char* proto_magic_id
         return;
     }
 
-    puerts::SetClassTypeInfo(reinterpret_cast<puerts::JSClassRegister*>(registry), type_id, static_cast<const puerts::NamedFunctionInfo*>(constructor_info),
+    puerts::SetClassTypeInfo(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), type_id, static_cast<const puerts::NamedFunctionInfo*>(constructor_info),
         static_cast<const puerts::NamedFunctionInfo*>(methods_info), static_cast<const puerts::NamedFunctionInfo*>(functions_info),
         static_cast<const puerts::NamedPropertyInfo*>(properties_info),
         static_cast<const puerts::NamedPropertyInfo*>(variables_info));
@@ -242,7 +242,7 @@ const void* pesapi_find_type_id(pesapi_registry registry, const char* module_nam
     puerts::PString fullname = module_name;
     fullname += ".";
     fullname += type_name;
-    const auto class_def = puerts::FindCppTypeClassByName(reinterpret_cast<puerts::JSClassRegister*>(registry), fullname);
+    const auto class_def = puerts::FindCppTypeClassByName(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), fullname);
     return class_def ? class_def->TypeId : nullptr;
 }
 

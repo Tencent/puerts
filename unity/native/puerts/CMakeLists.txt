@@ -20,7 +20,7 @@ message(STATUS "Building in ${CMAKE_BUILD_TYPE} mode")
 message(STATUS "Building with ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION} on ${CMAKE_SYSTEM}")
 
 set(puerts_sources
-    source/JSClassRegister.cpp
+    source/ScriptClassRegistry.cpp
     source/pesapi_wrap.c
     source/PesapiRegister.cpp
     source/Puerts.cpp

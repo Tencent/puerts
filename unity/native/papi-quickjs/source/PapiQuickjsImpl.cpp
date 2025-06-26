@@ -885,7 +885,7 @@ int pesapi_trace_native_object_lifecycle(pesapi_env env,
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
-    CppObjectMapper::Get(ctx)->SetRegistry(reinterpret_cast<puerts::JSClassRegister*>(registry));
+    CppObjectMapper::Get(ctx)->SetRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(registry));
 }
 
 pesapi_ffi g_pesapi_ffi {

@@ -9,7 +9,7 @@
 #include "pesapi.h"
 #include "TypeInfo.hpp"
 #include "PString.h"
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 
 #include <string>
 #include <sstream>
@@ -859,7 +859,7 @@ int pesapi_trace_native_object_lifecycle(pesapi_env env,
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->SetRegistry(reinterpret_cast<puerts::JSClassRegister*>(registry));
+    puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->SetRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(registry));
 }
 
 pesapi_ffi g_pesapi_ffi {

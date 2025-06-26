@@ -6,7 +6,7 @@
 #include <EASTL/allocator_malloc.h>
 #include <EASTL/shared_ptr.h>
 #include "ObjectCacheNodeQuickjs.h"
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 
 #define JS_TAG_EXTERNAL (JS_TAG_FLOAT64 + 1)
 
@@ -26,7 +26,7 @@ struct ObjectUserData
 
 struct CppObjectMapper
 {
-    void SetRegistry(puerts::JSClassRegister* InRegistry)
+    void SetRegistry(puerts::ScriptClassRegistry* InRegistry)
     {
         registry = InRegistry;
     }
@@ -38,7 +38,7 @@ struct CppObjectMapper
         return true;
     }
 
-    puerts::JSClassRegister* registry = nullptr;
+    puerts::ScriptClassRegistry* registry = nullptr;
     pesapi_on_native_object_enter onEnter = nullptr;
     pesapi_on_native_object_exit onExit = nullptr;
 

@@ -6,7 +6,7 @@
  * which is part of this source code package.
  */
 
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 #if USING_IN_UNREAL_ENGINE
 #include "UObject/Class.h"
 #endif
@@ -65,11 +65,11 @@ void ScriptClassDefinitionDelete(ScriptClassDefinition* ClassDefinition)
     ::free(ClassDefinition);
 }
 
-class JSClassRegister
+class ScriptClassRegistry
 {
 public:
-    JSClassRegister();
-    ~JSClassRegister();
+    ScriptClassRegistry();
+    ~ScriptClassRegistry();
 
     void RegisterClass(const ScriptClassDefinition& ClassDefinition);
 
@@ -123,11 +123,11 @@ private:
 #endif
 };
 
-JSClassRegister::JSClassRegister()
+ScriptClassRegistry::ScriptClassRegistry()
 {
 }
 
-JSClassRegister::~JSClassRegister()
+ScriptClassRegistry::~ScriptClassRegistry()
 {
     for (auto& KV : CDataIdToClassDefinition)
     {
@@ -143,7 +143,7 @@ JSClassRegister::~JSClassRegister()
 #endif
 }
 
-void JSClassRegister::RegisterClass(const ScriptClassDefinition& ClassDefinition)
+void ScriptClassRegistry::RegisterClass(const ScriptClassDefinition& ClassDefinition)
 {
     if (ClassDefinition.TypeId && ClassDefinition.ScriptName)
     {
@@ -203,7 +203,7 @@ void SetReflectoinInfo(ScriptFunctionInfo* Methods, const NamedFunctionInfo* Met
     }
 }
 
-void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
+void ScriptClassRegistry::SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
     const NamedFunctionInfo* MethodInfos, const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos,
     const NamedPropertyInfo* VariableInfos)
 {
@@ -220,7 +220,7 @@ void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionIn
     }
 }
 
-const ScriptClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
+const ScriptClassDefinition* ScriptClassRegistry::FindClassByID(const void* TypeId)
 {
     if (!TypeId)
     {
@@ -237,7 +237,7 @@ const ScriptClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
     }
 }
 
-const ScriptClassDefinition* JSClassRegister::FindCppTypeClassByName(const PString& Name)
+const ScriptClassDefinition* ScriptClassRegistry::FindCppTypeClassByName(const PString& Name)
 {
     auto Iter = CDataNameToClassDefinition.find(Name);
     if (Iter == CDataNameToClassDefinition.end())
@@ -251,12 +251,12 @@ const ScriptClassDefinition* JSClassRegister::FindCppTypeClassByName(const PStri
 }
 
 #if USING_IN_UNREAL_ENGINE
-void JSClassRegister::RegisterAddon(const PString& Name, AddonRegisterFunc RegisterFunc)
+void ScriptClassRegistry::RegisterAddon(const PString& Name, AddonRegisterFunc RegisterFunc)
 {
     AddonRegisterInfos[Name] = RegisterFunc;
 }
 
-AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const PString& Name)
+AddonRegisterFunc ScriptClassRegistry::FindAddonRegisterFunc(const PString& Name)
 {
     auto Iter = AddonRegisterInfos.find(Name);
     if (Iter == AddonRegisterInfos.end())
@@ -269,7 +269,7 @@ AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const PString& Name)
     }
 }
 
-const ScriptClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
+const ScriptClassDefinition* ScriptClassRegistry::FindClassByType(UStruct* Type)
 {
     auto Iter = StructNameToClassDefinition.find(Type->GetName());
     if (Iter == StructNameToClassDefinition.end())
@@ -283,7 +283,7 @@ const ScriptClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
 }
 #endif
 
-void JSClassRegister::ForeachRegisterClass(ClassDefinitionForeachCallback Callback)
+void ScriptClassRegistry::ForeachRegisterClass(ClassDefinitionForeachCallback Callback)
 {
     for (auto& KV : CDataNameToClassDefinition)
     {
@@ -297,50 +297,50 @@ void JSClassRegister::ForeachRegisterClass(ClassDefinitionForeachCallback Callba
 #endif
 }
 
-JSClassRegister* CreateRegistry()
+ScriptClassRegistry* CreateRegistry()
 {
-    auto ret = (JSClassRegister*)malloc(sizeof(JSClassRegister));
-    new (ret)JSClassRegister();
+    auto ret = (ScriptClassRegistry*)malloc(sizeof(ScriptClassRegistry));
+    new (ret)ScriptClassRegistry();
     return ret;
 }
 
-void RegisterJSClass(JSClassRegister* Registry, const ScriptClassDefinition& ClassDefinition)
+void RegisterJSClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition)
 {
     Registry->RegisterClass(ClassDefinition);
 }
 
-void SetClassTypeInfo(JSClassRegister* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+void SetClassTypeInfo(ScriptClassRegistry* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos)
 {
     Registry->SetClassTypeInfo(TypeId, ConstructorInfos, MethodInfos, FunctionInfos, PropertyInfos, VariableInfos);
 }
 
-void ForeachRegisterClass(JSClassRegister* Registry, ClassDefinitionForeachCallback Callback)
+void ForeachRegisterClass(ScriptClassRegistry* Registry, ClassDefinitionForeachCallback Callback)
 {
     Registry->ForeachRegisterClass(Callback);
 }
 
-const ScriptClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId)
+const ScriptClassDefinition* FindClassByID(ScriptClassRegistry* Registry, const void* TypeId)
 {
     return Registry->FindClassByID(TypeId);
 }
 
-void OnClassNotFound(JSClassRegister* Registry, pesapi_class_not_found_callback Callback)
+void OnClassNotFound(ScriptClassRegistry* Registry, pesapi_class_not_found_callback Callback)
 {
     Registry->OnClassNotFound(Callback);
 }
 
-const ScriptClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId)
+const ScriptClassDefinition* LoadClassByID(ScriptClassRegistry* Registry, const void* TypeId)
 {
     return Registry->LoadClassByID(TypeId);
 }
 
-const ScriptClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name)
+const ScriptClassDefinition* FindCppTypeClassByName(ScriptClassRegistry* Registry, const PString& Name)
 {
     return Registry->FindCppTypeClassByName(Name);
 }
 
-const ScriptClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name)
+const ScriptClassDefinition* FindCppTypeClassByCName(ScriptClassRegistry* Registry, const char* Name)
 {
     return Registry->FindCppTypeClassByName(Name);
 }
@@ -373,17 +373,17 @@ bool IsEditorOnlyUFunction(const UFunction* Func)
     return false;
 }
 
-void RegisterAddon(JSClassRegister* Registry, const char* Name, AddonRegisterFunc RegisterFunc)
+void RegisterAddon(ScriptClassRegistry* Registry, const char* Name, AddonRegisterFunc RegisterFunc)
 {
     Registry->RegisterAddon(Name, RegisterFunc);
 }
 
-AddonRegisterFunc FindAddonRegisterFunc(JSClassRegister* Registry, const PString& Name)
+AddonRegisterFunc FindAddonRegisterFunc(ScriptClassRegistry* Registry, const PString& Name)
 {
     return Registry->FindAddonRegisterFunc(Name);
 }
 
-const ScriptClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type)
+const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type)
 {
     return Registry->FindClassByType(Type);
 }

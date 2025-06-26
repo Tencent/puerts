@@ -13,7 +13,7 @@
 #include "PropertyTranslator.h"
 #include "StructWrapper.h"
 #endif
-#include "JSClassRegister.h"
+#include "ScriptClassRegistry.h"
 
 #include "NamespaceDef.h"
 
@@ -51,7 +51,7 @@ public:
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
-    virtual void SetRegistry(JSClassRegister* InRegistry) = 0;
+    virtual void SetRegistry(ScriptClassRegistry* InRegistry) = 0;
 
     virtual bool TraceObjectLifecycle(pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit) = 0;
 

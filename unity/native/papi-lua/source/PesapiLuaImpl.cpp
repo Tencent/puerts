@@ -853,7 +853,7 @@ void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     auto mapper = CppObjectMapper::Get(L);
-    mapper->registry = reinterpret_cast<puerts::JSClassRegister*>(registry);
+    mapper->registry = reinterpret_cast<puerts::ScriptClassRegistry*>(registry);
 }
 
 pesapi_ffi g_pesapi_ffi {
