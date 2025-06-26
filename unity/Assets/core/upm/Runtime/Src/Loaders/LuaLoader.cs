@@ -10,17 +10,19 @@ public class LuaDefaultLoader : LuaLoader
     public virtual object ReadFile(string filepath, out string debugpath)
     {
         filepath = filepath.Replace('.', '/');
-        if (!filepath.EndsWith(".lua"))
-        {
-            filepath += ".lua";
-            UnityEngine.Debug.Log($"filepath= {filepath}");
-        }
         debugpath = filepath;
-        UnityEngine.Debug.Log($"debugpath= {debugpath}");
+        if (!debugpath.EndsWith(".lua"))
+        {
+            debugpath += ".lua";
+        }
         try
         {
+#if PUERTS_GENERAL
+            return File.ReadAllText(debugpath);
+#else
             UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(filepath);
             return (file == null) ? null : file.text;
+#endif
         }
         catch
         {
