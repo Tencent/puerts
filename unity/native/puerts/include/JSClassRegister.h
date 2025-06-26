@@ -37,20 +37,20 @@ class JSClassRegister;
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
-struct PUERTS_API JSFunctionInfo
+struct PUERTS_API ScriptFunctionInfo
 {
-    JSFunctionInfo() : Name(nullptr), Callback(nullptr)
+    ScriptFunctionInfo() : Name(nullptr), Callback(nullptr)
     {
     }
 
-    JSFunctionInfo(
+    ScriptFunctionInfo(
         const char* InName, pesapi_callback InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr)
         : Name(InName), Callback(InCallback), Data(InData), ReflectionInfo(InReflectionInfo)
     {
     }
 
     template <class CallbackType>
-    JSFunctionInfo(
+    ScriptFunctionInfo(
         const char* InName, CallbackType InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr)
         : Name(InName), Callback(reinterpret_cast<pesapi_callback>(InCallback)), Data(InData), ReflectionInfo(InReflectionInfo)
     {
@@ -62,20 +62,20 @@ struct PUERTS_API JSFunctionInfo
     const CFunctionInfo* ReflectionInfo = nullptr;
 };
 
-struct PUERTS_API JSPropertyInfo
+struct PUERTS_API ScriptPropertyInfo
 {
-    JSPropertyInfo() : Name(nullptr), Getter(nullptr), Setter(nullptr)
+    ScriptPropertyInfo() : Name(nullptr), Getter(nullptr), Setter(nullptr)
     {
     }
 
-    JSPropertyInfo(const char* InName, pesapi_callback InGetter, pesapi_callback InSetter, void* InGetterData = nullptr,
+    ScriptPropertyInfo(const char* InName, pesapi_callback InGetter, pesapi_callback InSetter, void* InGetterData = nullptr,
         void* InSetterData = nullptr)
         : Name(InName), Getter(InGetter), Setter(InSetter), GetterData(InGetterData), SetterData(InSetterData)
     {
     }
 
     template <class CallbackType>
-    JSPropertyInfo(const char* InName, CallbackType InGetter, CallbackType InSetter, void* InGetterData = nullptr,
+    ScriptPropertyInfo(const char* InName, CallbackType InGetter, CallbackType InSetter, void* InGetterData = nullptr,
         void* InSetterData = nullptr)
         : Name(InName)
         , Getter(reinterpret_cast<pesapi_callback>(InGetter))
@@ -95,7 +95,7 @@ struct PUERTS_API JSPropertyInfo
 struct NamedFunctionInfo;
 struct NamedPropertyInfo;
 
-struct PUERTS_API JSClassDefinition
+struct PUERTS_API ScriptClassDefinition
 {
     const void* TypeId;
     const void* SuperTypeId;
@@ -107,10 +107,10 @@ struct PUERTS_API JSClassDefinition
     {
         Initialize = reinterpret_cast<pesapi_constructor>(InInitialize);
     }
-    JSFunctionInfo* Methods;       //成员方法
-    JSFunctionInfo* Functions;     //静态方法
-    JSPropertyInfo* Properties;    //成员属性
-    JSPropertyInfo* Variables;     //静态属性
+    ScriptFunctionInfo* Methods;       //成员方法
+    ScriptFunctionInfo* Functions;     //静态方法
+    ScriptPropertyInfo* Properties;    //成员属性
+    ScriptPropertyInfo* Variables;     //静态属性
     pesapi_finalize Finalize;
     // int InternalFieldCount;
     NamedFunctionInfo* ConstructorInfos;
@@ -122,7 +122,7 @@ struct PUERTS_API JSClassDefinition
 };
 MSVC_PRAGMA(warning(pop))
 
-#define JSClassEmptyDefinition                               \
+#define ScriptClassEmptyDefinition                           \
     {                                                        \
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0       \
     }
@@ -130,24 +130,24 @@ MSVC_PRAGMA(warning(pop))
     
 JSClassRegister* CreateRegistry();
 
-void PUERTS_API RegisterJSClass(JSClassRegister* Registry, const JSClassDefinition& ClassDefinition);
+void PUERTS_API RegisterJSClass(JSClassRegister* Registry, const ScriptClassDefinition& ClassDefinition);
 
 void PUERTS_API SetClassTypeInfo(JSClassRegister* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
 
-typedef void (*ClassDefinitionForeachCallback)(const JSClassDefinition* ClassDefinition);
+typedef void (*ClassDefinitionForeachCallback)(const ScriptClassDefinition* ClassDefinition);
 
 void PUERTS_API ForeachRegisterClass(JSClassRegister* Registry, ClassDefinitionForeachCallback Callback);
 
-PUERTS_API const JSClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId);
+PUERTS_API const ScriptClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId);
 
 PUERTS_API void OnClassNotFound(JSClassRegister* Registry, pesapi_class_not_found_callback Callback);
 
-PUERTS_API const JSClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId);
+PUERTS_API const ScriptClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId);
 
-PUERTS_API const JSClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name);
+PUERTS_API const ScriptClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name);
 
-PUERTS_API const JSClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name);
+PUERTS_API const ScriptClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name);
 
 #if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
@@ -156,7 +156,7 @@ AddonRegisterFunc FindAddonRegisterFunc(JSClassRegister* Registry, const PString
 
 void RegisterAddon(JSClassRegister* Registry, const char* Name, AddonRegisterFunc RegisterFunc);
 
-PUERTS_API const JSClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type);
+PUERTS_API const ScriptClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type);
 
 PUERTS_API bool IsEditorOnlyUFunction(const UFunction* Func);
 

@@ -121,12 +121,12 @@ namespace luaimpl
                 }
             }
         }
-        const puerts::JSClassDefinition* classDefinition = puerts::LoadClassByID(registry, typeId);
+        const puerts::ScriptClassDefinition* classDefinition = puerts::LoadClassByID(registry, typeId);
         BindCppObject(L, classDefinition, ptr, passByPointer);
         return lua_gettop(L);
     }
 
-    void CppObjectMapper::BindCppObject(lua_State* L, const puerts::JSClassDefinition* classDefinition, void* ptr, bool passByPointer)
+    void CppObjectMapper::BindCppObject(lua_State* L, const puerts::ScriptClassDefinition* classDefinition, void* ptr, bool passByPointer)
     {
         CppObject* obj           = static_cast<CppObject*>(lua_newuserdata(L, sizeof(CppObject)));
         obj->Ptr                 = ptr;
@@ -159,7 +159,7 @@ namespace luaimpl
         }
     }
 
-    void CppObjectMapper::UnBindCppObject(lua_State* L, const puerts::JSClassDefinition* classDefinition, void* ptr)
+    void CppObjectMapper::UnBindCppObject(lua_State* L, const puerts::ScriptClassDefinition* classDefinition, void* ptr)
     {
         auto iterator = m_DataCache.find(ptr);
         if (iterator != m_DataCache.end())
@@ -227,7 +227,7 @@ namespace luaimpl
                     // RAX为0，地址真的是0，也就是说unbind的时候，userdata删掉了，但是注册表索引还在，有可能逻辑有问题，有可能GC的时候，没有及时同步过来，这里先做一下保护
                     if (obj != nullptr)
                     {
-                        const puerts::JSClassDefinition* ClassDefinition = puerts::FindClassByID(registry, obj->TypeId);
+                        const puerts::ScriptClassDefinition* ClassDefinition = puerts::FindClassByID(registry, obj->TypeId);
                         // 值类型需要删除，所以这里必须要执行，但是执行之后，指针会被删除，所以下面的就不要执行了，虚拟机会销毁，所以lua不会内存泄露，LuaEnv也会销毁，所以C#也不会内存泄露
                         // 因为值类型的内存是手动申请的，所以必须要手动释放
                         if (ClassDefinition && ClassDefinition->Finalize && need_delete && obj->NeedDelete)
@@ -330,7 +330,7 @@ namespace luaimpl
 
     int object_new(lua_State* L)
     {
-        puerts::JSClassDefinition* class_definition = static_cast<puerts::JSClassDefinition*>(lua_touserdata(L, lua_upvalueindex(1)));
+        puerts::ScriptClassDefinition* class_definition = static_cast<puerts::ScriptClassDefinition*>(lua_touserdata(L, lua_upvalueindex(1)));
         pesapi_callback_info__ callback_info{L, 1, 0, class_definition->Data};
         CppObjectMapper::Get(L)->BindCppObject(L, class_definition, class_definition->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info)), false);
         return 1;
@@ -338,7 +338,7 @@ namespace luaimpl
 
     int object_gc(lua_State* L)
     {
-        puerts::JSClassDefinition* class_definition = (puerts::JSClassDefinition*)lua_touserdata(L, lua_upvalueindex(1));
+        puerts::ScriptClassDefinition* class_definition = (puerts::ScriptClassDefinition*)lua_touserdata(L, lua_upvalueindex(1));
         CppObject* cppObject = (CppObject*)lua_touserdata(L, -1);
         const auto instance  = CppObjectMapper::Get(L);
         instance->UnBindCppObject(L, class_definition, cppObject->Ptr);
@@ -426,7 +426,7 @@ namespace luaimpl
 
     int property_getter_wrap(lua_State* L)
     {
-        puerts::JSPropertyInfo* prop_info = (puerts::JSPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
+        puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
         pesapi_callback_info__ callback_info{L, 1, 0, prop_info->GetterData};
         prop_info->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
         return callback_info.RetNum;
@@ -434,7 +434,7 @@ namespace luaimpl
 
     static int property_setter_wrap(lua_State* L)
     {
-        puerts::JSPropertyInfo* prop_info = (puerts::JSPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
+        puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
         pesapi_callback_info__ callback_info{L, 1, 0, prop_info->SetterData};
         prop_info->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
         return callback_info.RetNum;
@@ -443,7 +443,7 @@ namespace luaimpl
     static int variable_getter_wrap(lua_State* L)
     {
 
-        puerts::JSPropertyInfo* prop_info = (puerts::JSPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
+        puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
         pesapi_callback_info__ callback_info{L, 0, 0,  prop_info->GetterData};
         prop_info->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
         return callback_info.RetNum;
@@ -451,7 +451,7 @@ namespace luaimpl
 
     static int variable_setter_wrap(lua_State* L)
     {
-        puerts::JSPropertyInfo* prop_info = (puerts::JSPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
+        puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
         pesapi_callback_info__ callback_info{L, 0, 0, prop_info->SetterData};
         prop_info->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
         return callback_info.RetNum;
@@ -459,7 +459,7 @@ namespace luaimpl
 
     static int method_wrap(lua_State* L)
     {
-        puerts::JSFunctionInfo* func_info = (puerts::JSFunctionInfo*)lua_touserdata(L, lua_upvalueindex(1));
+        puerts::ScriptFunctionInfo* func_info = (puerts::ScriptFunctionInfo*)lua_touserdata(L, lua_upvalueindex(1));
         pesapi_callback_info__ callback_info{L, 1, 0, func_info->Data};
         func_info->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
         return callback_info.RetNum;
@@ -468,13 +468,13 @@ namespace luaimpl
     static int function_wrap(lua_State* L)
     {
 
-        puerts::JSFunctionInfo* func_info = (puerts::JSFunctionInfo*)lua_touserdata(L, lua_upvalueindex(1));
+        puerts::ScriptFunctionInfo* func_info = (puerts::ScriptFunctionInfo*)lua_touserdata(L, lua_upvalueindex(1));
         pesapi_callback_info__ callback_info{L, 0, 0, func_info->Data};
         func_info->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
         return callback_info.RetNum;
     }
 
-    int CppObjectMapper::GetMetaRefOfClass(lua_State* L, const puerts::JSClassDefinition* classDefinition)
+    int CppObjectMapper::GetMetaRefOfClass(lua_State* L, const puerts::ScriptClassDefinition* classDefinition)
     {
         // requires at least 13 slots in stack: 8 fixed slots (obj_methods, obj_getters, obj_setters, static_functions, static_getters, static_setters, meta, cls_meta), 5 extension
         // slots (__index, obj_methods, obj_getters, super_meta_ref, __index)
@@ -488,7 +488,7 @@ namespace luaimpl
             bool has_super = false;
             if (classDefinition->SuperTypeId)
             {
-                if (const puerts::JSClassDefinition* superDefinition = puerts::LoadClassByID(registry, classDefinition->SuperTypeId))
+                if (const puerts::ScriptClassDefinition* superDefinition = puerts::LoadClassByID(registry, classDefinition->SuperTypeId))
                 {
                     super_meta_ref = GetMetaRefOfClass(L, superDefinition);
                     has_super = true;
@@ -512,7 +512,7 @@ namespace luaimpl
             lua_newtable(L);
             int meta = lua_gettop(L);
 
-            puerts::JSPropertyInfo* PropertyInfo = classDefinition->Properties;
+            puerts::ScriptPropertyInfo* PropertyInfo = classDefinition->Properties;
             while (PropertyInfo && PropertyInfo->Name)
             {
                 if (PropertyInfo->Getter)
@@ -552,7 +552,7 @@ namespace luaimpl
                 ++PropertyInfo;
             }
 
-            puerts::JSFunctionInfo* FunctionInfo = classDefinition->Methods;
+            puerts::ScriptFunctionInfo* FunctionInfo = classDefinition->Methods;
             while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
             {
                 lua_pushstring(L, FunctionInfo->Name);
@@ -606,7 +606,7 @@ namespace luaimpl
             lua_rawset(L, meta);
 
             lua_pushstring(L, "__gc");
-            lua_pushlightuserdata(L, const_cast<puerts::JSClassDefinition*>(classDefinition));
+            lua_pushlightuserdata(L, const_cast<puerts::ScriptClassDefinition*>(classDefinition));
             lua_pushcclosure(L, object_gc, 1);
             lua_rawset(L, meta);
 
@@ -614,7 +614,7 @@ namespace luaimpl
             int cls_meta = lua_gettop(L);
 
             lua_pushstring(L, "__call");
-            lua_pushlightuserdata(L, const_cast<puerts::JSClassDefinition*>(classDefinition));
+            lua_pushlightuserdata(L, const_cast<puerts::ScriptClassDefinition*>(classDefinition));
             lua_pushcclosure(L, object_new, 1);
             lua_rawset(L, cls_meta);
 

@@ -35,10 +35,10 @@ static T* PropertyInfoDuplicate(T* Arr)
     return Ret;
 }
 
-JSClassDefinition* JSClassDefinitionDuplicate(const JSClassDefinition* ClassDefinition)
+ScriptClassDefinition* ScriptClassDefinitionDuplicate(const ScriptClassDefinition* ClassDefinition)
 {
-    auto Ret = (JSClassDefinition*)::malloc(sizeof(JSClassDefinition));
-    ::memcpy(Ret, ClassDefinition, sizeof(JSClassDefinition));
+    auto Ret = (ScriptClassDefinition*)::malloc(sizeof(ScriptClassDefinition));
+    ::memcpy(Ret, ClassDefinition, sizeof(ScriptClassDefinition));
     Ret->Methods = PropertyInfoDuplicate(ClassDefinition->Methods);
     Ret->Functions = PropertyInfoDuplicate(ClassDefinition->Functions);
     Ret->Properties = PropertyInfoDuplicate(ClassDefinition->Properties);
@@ -51,7 +51,7 @@ JSClassDefinition* JSClassDefinitionDuplicate(const JSClassDefinition* ClassDefi
     return Ret;
 }
 
-void JSClassDefinitionDelete(JSClassDefinition* ClassDefinition)
+void ScriptClassDefinitionDelete(ScriptClassDefinition* ClassDefinition)
 {
     ::free(ClassDefinition->Methods);
     ::free(ClassDefinition->Functions);
@@ -71,21 +71,21 @@ public:
     JSClassRegister();
     ~JSClassRegister();
 
-    void RegisterClass(const JSClassDefinition& ClassDefinition);
+    void RegisterClass(const ScriptClassDefinition& ClassDefinition);
 
     void SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
         const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
 
     void ForeachRegisterClass(ClassDefinitionForeachCallback Callback);
 
-    const JSClassDefinition* FindClassByID(const void* TypeId);
+    const ScriptClassDefinition* FindClassByID(const void* TypeId);
 
     void OnClassNotFound(pesapi_class_not_found_callback InCallback)
     {
         ClassNotFoundCallback = InCallback;
     }
 
-    const JSClassDefinition* LoadClassByID(const void* TypeId)
+    const ScriptClassDefinition* LoadClassByID(const void* TypeId)
     {
         if (!TypeId)
         {
@@ -103,23 +103,23 @@ public:
         return clsDef;
     }
 
-    const JSClassDefinition* FindCppTypeClassByName(const PString& Name);
+    const ScriptClassDefinition* FindCppTypeClassByName(const PString& Name);
 
 #if USING_IN_UNREAL_ENGINE
     void RegisterAddon(const PString& Name, AddonRegisterFunc RegisterFunc);
 
     AddonRegisterFunc FindAddonRegisterFunc(const PString& Name);
 
-    const JSClassDefinition* FindClassByType(UStruct* Type);
+    const ScriptClassDefinition* FindClassByType(UStruct* Type);
 #endif
 
 private:
-    eastl::map<const void*, JSClassDefinition*, eastl::less<const void*>, eastl::allocator_malloc> CDataIdToClassDefinition;
-    eastl::map<PString, JSClassDefinition*, eastl::less<PString>, eastl::allocator_malloc> CDataNameToClassDefinition; //需要禁用rtti，否则含析构函数的类会导致对libstdc++/libc++的依赖，尽管没有使用c++的api
+    eastl::map<const void*, ScriptClassDefinition*, eastl::less<const void*>, eastl::allocator_malloc> CDataIdToClassDefinition;
+    eastl::map<PString, ScriptClassDefinition*, eastl::less<PString>, eastl::allocator_malloc> CDataNameToClassDefinition; //需要禁用rtti，否则含析构函数的类会导致对libstdc++/libc++的依赖，尽管没有使用c++的api
     pesapi_class_not_found_callback ClassNotFoundCallback = nullptr;
 #if USING_IN_UNREAL_ENGINE
     eastl::map<PString, AddonRegisterFunc, eastl::less<PString>, eastl::allocator_malloc> AddonRegisterInfos;
-    eastl::map<FString, JSClassDefinition*, eastl::less<FString>, eastl::allocator_malloc> StructNameToClassDefinition;
+    eastl::map<FString, ScriptClassDefinition*, eastl::less<FString>, eastl::allocator_malloc> StructNameToClassDefinition;
 #endif
 };
 
@@ -131,29 +131,29 @@ JSClassRegister::~JSClassRegister()
 {
     for (auto& KV : CDataIdToClassDefinition)
     {
-        JSClassDefinitionDelete(KV.second);
+        ScriptClassDefinitionDelete(KV.second);
     }
     CDataIdToClassDefinition.clear();
 #if USING_IN_UNREAL_ENGINE
     for (auto& KV : StructNameToClassDefinition)
     {
-        JSClassDefinitionDelete(KV.second);
+        ScriptClassDefinitionDelete(KV.second);
     }
     StructNameToClassDefinition.clear();
 #endif
 }
 
-void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
+void JSClassRegister::RegisterClass(const ScriptClassDefinition& ClassDefinition)
 {
     if (ClassDefinition.TypeId && ClassDefinition.ScriptName)
     {
         auto cd_iter = CDataIdToClassDefinition.find(ClassDefinition.TypeId);
         if (cd_iter != CDataIdToClassDefinition.end())
         {
-            //JSClassDefinitionDelete(cd_iter->second);
+            //ScriptClassDefinitionDelete(cd_iter->second);
             return;
         }
-        CDataIdToClassDefinition[ClassDefinition.TypeId] = JSClassDefinitionDuplicate(&ClassDefinition);
+        CDataIdToClassDefinition[ClassDefinition.TypeId] = ScriptClassDefinitionDuplicate(&ClassDefinition);
         PString SN = ClassDefinition.ScriptName;
         CDataNameToClassDefinition[SN] = CDataIdToClassDefinition[ClassDefinition.TypeId];
         CDataIdToClassDefinition[ClassDefinition.TypeId]->ScriptName = CDataNameToClassDefinition.find(SN)->first.c_str();
@@ -165,15 +165,15 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
         auto ud_iter = StructNameToClassDefinition.find(SN);
         if (ud_iter != StructNameToClassDefinition.end())
         {
-            //JSClassDefinitionDelete(ud_iter->second);
+            //ScriptClassDefinitionDelete(ud_iter->second);
             return;
         }
-        StructNameToClassDefinition[SN] = JSClassDefinitionDuplicate(&ClassDefinition);
+        StructNameToClassDefinition[SN] = ScriptClassDefinitionDuplicate(&ClassDefinition);
     }
 #endif
 }
 
-void SetReflectoinInfo(JSFunctionInfo* Methods, const NamedFunctionInfo* MethodInfos)
+void SetReflectoinInfo(ScriptFunctionInfo* Methods, const NamedFunctionInfo* MethodInfos)
 {
     eastl::map<PString, eastl::tuple<int, const NamedFunctionInfo*>, eastl::less<PString>, eastl::allocator_malloc> InfoMap;
     const NamedFunctionInfo* MethodInfo = MethodInfos;
@@ -191,7 +191,7 @@ void SetReflectoinInfo(JSFunctionInfo* Methods, const NamedFunctionInfo* MethodI
         ++MethodInfo;
     }
 
-    JSFunctionInfo* Method = Methods;
+    ScriptFunctionInfo* Method = Methods;
     while (Method->Name)
     {
         auto Iter = InfoMap.find(Method->Name);
@@ -207,7 +207,7 @@ void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionIn
     const NamedFunctionInfo* MethodInfos, const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos,
     const NamedPropertyInfo* VariableInfos)
 {
-    auto ClassDef = const_cast<JSClassDefinition*>(FindClassByID(TypeId));
+    auto ClassDef = const_cast<ScriptClassDefinition*>(FindClassByID(TypeId));
     if (ClassDef)
     {
         ClassDef->ConstructorInfos = PropertyInfoDuplicate(const_cast<NamedFunctionInfo*>(ConstructorInfos));
@@ -220,7 +220,7 @@ void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionIn
     }
 }
 
-const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
+const ScriptClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
 {
     if (!TypeId)
     {
@@ -237,7 +237,7 @@ const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
     }
 }
 
-const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const PString& Name)
+const ScriptClassDefinition* JSClassRegister::FindCppTypeClassByName(const PString& Name)
 {
     auto Iter = CDataNameToClassDefinition.find(Name);
     if (Iter == CDataNameToClassDefinition.end())
@@ -269,7 +269,7 @@ AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const PString& Name)
     }
 }
 
-const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
+const ScriptClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
 {
     auto Iter = StructNameToClassDefinition.find(Type->GetName());
     if (Iter == StructNameToClassDefinition.end())
@@ -304,7 +304,7 @@ JSClassRegister* CreateRegistry()
     return ret;
 }
 
-void RegisterJSClass(JSClassRegister* Registry, const JSClassDefinition& ClassDefinition)
+void RegisterJSClass(JSClassRegister* Registry, const ScriptClassDefinition& ClassDefinition)
 {
     Registry->RegisterClass(ClassDefinition);
 }
@@ -320,7 +320,7 @@ void ForeachRegisterClass(JSClassRegister* Registry, ClassDefinitionForeachCallb
     Registry->ForeachRegisterClass(Callback);
 }
 
-const JSClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId)
+const ScriptClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId)
 {
     return Registry->FindClassByID(TypeId);
 }
@@ -330,17 +330,17 @@ void OnClassNotFound(JSClassRegister* Registry, pesapi_class_not_found_callback 
     Registry->OnClassNotFound(Callback);
 }
 
-const JSClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId)
+const ScriptClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId)
 {
     return Registry->LoadClassByID(TypeId);
 }
 
-const JSClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name)
+const ScriptClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name)
 {
     return Registry->FindCppTypeClassByName(Name);
 }
 
-const JSClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name)
+const ScriptClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name)
 {
     return Registry->FindCppTypeClassByName(Name);
 }
@@ -383,7 +383,7 @@ AddonRegisterFunc FindAddonRegisterFunc(JSClassRegister* Registry, const PString
     return Registry->FindAddonRegisterFunc(Name);
 }
 
-const JSClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type)
+const ScriptClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type)
 {
     return Registry->FindClassByType(Type);
 }

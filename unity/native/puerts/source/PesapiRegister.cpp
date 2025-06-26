@@ -144,7 +144,7 @@ const char* GPesapiModuleName = nullptr;
 void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor,
     pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* data, int copy_str)
 {
-    puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
+    puerts::ScriptClassDefinition classDef = ScriptClassEmptyDefinition;
     classDef.TypeId = type_id;
     classDef.SuperTypeId = super_type_id;
     puerts::PString ScriptNameWithModuleName = GPesapiModuleName == nullptr ? puerts::PString() : GPesapiModuleName;
@@ -163,10 +163,10 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
     classDef.Initialize = constructor;
     classDef.Finalize = finalize;
 
-    eastl::vector<puerts::JSFunctionInfo, eastl::allocator_malloc> p_methods;
-    eastl::vector<puerts::JSFunctionInfo, eastl::allocator_malloc> p_functions;
-    eastl::vector<puerts::JSPropertyInfo, eastl::allocator_malloc> p_properties;
-    eastl::vector<puerts::JSPropertyInfo, eastl::allocator_malloc> p_variables;
+    eastl::vector<puerts::ScriptFunctionInfo, eastl::allocator_malloc> p_methods;
+    eastl::vector<puerts::ScriptFunctionInfo, eastl::allocator_malloc> p_functions;
+    eastl::vector<puerts::ScriptPropertyInfo, eastl::allocator_malloc> p_properties;
+    eastl::vector<puerts::ScriptPropertyInfo, eastl::allocator_malloc> p_variables;
 
     for (int i = 0; i < property_count; i++)
     {
@@ -184,7 +184,7 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
         }
         else if (p->method != nullptr)
         {
-            puerts::JSFunctionInfo finfo{p->name, p->method, p->data0};
+            puerts::ScriptFunctionInfo finfo{p->name, p->method, p->data0};
             if (p->is_static)
             {
                 p_functions.push_back(finfo);
@@ -198,10 +198,10 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
 
     free_property_descriptor(properties, property_count);
 
-    p_methods.push_back(puerts::JSFunctionInfo());
-    p_functions.push_back(puerts::JSFunctionInfo());
-    p_properties.push_back(puerts::JSPropertyInfo());
-    p_variables.push_back(puerts::JSPropertyInfo());
+    p_methods.push_back(puerts::ScriptFunctionInfo());
+    p_functions.push_back(puerts::ScriptFunctionInfo());
+    p_properties.push_back(puerts::ScriptPropertyInfo());
+    p_variables.push_back(puerts::ScriptPropertyInfo());
 
     classDef.Methods = p_methods.data();
     classDef.Functions = p_functions.data();

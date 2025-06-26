@@ -84,7 +84,7 @@ void PApiObjectFinalizer(JSRuntime* rt, JSValue val)
     js_free_rt(rt, object_udata);
 }
 
-void CppObjectMapper::BindAndAddToCache(const puerts::JSClassDefinition* typeInfo, const void* ptr, JSValue value, bool callFinalize)
+void CppObjectMapper::BindAndAddToCache(const puerts::ScriptClassDefinition* typeInfo, const void* ptr, JSValue value, bool callFinalize)
 {
     ObjectUserData* object_udata = (ObjectUserData*)js_malloc(ctx, sizeof(ObjectUserData));
     object_udata->typeInfo = typeInfo;
@@ -113,7 +113,7 @@ void CppObjectMapper::BindAndAddToCache(const puerts::JSClassDefinition* typeInf
     }
 }
 
-void CppObjectMapper::RemoveFromCache(const puerts::JSClassDefinition* typeInfo, const void* ptr)
+void CppObjectMapper::RemoveFromCache(const puerts::ScriptClassDefinition* typeInfo, const void* ptr)
 {
     auto Iter = CDataCache.find(ptr);
     if (Iter != CDataCache.end())
@@ -193,7 +193,7 @@ JSValue CppObjectMapper::MakeMethod(pesapi_callback Callback, void* Data)
     return func;
 }
 
-void CppObjectMapper::InitMethod(puerts::JSFunctionInfo* FuncInfo, JSValue Obj)
+void CppObjectMapper::InitMethod(puerts::ScriptFunctionInfo* FuncInfo, JSValue Obj)
 {
     JSValue func = MakeMethod(FuncInfo->Callback, FuncInfo->Data);
 
@@ -202,7 +202,7 @@ void CppObjectMapper::InitMethod(puerts::JSFunctionInfo* FuncInfo, JSValue Obj)
     JS_FreeAtom(ctx, methodName);
 }
 
-void CppObjectMapper::InitProperty(puerts::JSPropertyInfo* PropInfo, JSValue Obj)
+void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, JSValue Obj)
 {
     JSValue getter = JS_UNDEFINED;
     JSValue setter = JS_UNDEFINED;
@@ -228,7 +228,7 @@ void CppObjectMapper::InitProperty(puerts::JSPropertyInfo* PropInfo, JSValue Obj
     JS_FreeValue(ctx, setter);
 }
 
-JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* ClassDefinition)
+JSValue CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition* ClassDefinition)
 {
     auto it = TypeIdToFunctionMap.find(ClassDefinition->TypeId);
     if (it == TypeIdToFunctionMap.end())
@@ -240,7 +240,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
             };
 
         JSValue func = JS_NewCFunctionData(ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *ctor_data) -> JSValue {
-            const puerts::JSClassDefinition* clsDef = (const puerts::JSClassDefinition*)(JS_VALUE_GET_PTR(ctor_data[0]));
+            const puerts::ScriptClassDefinition* clsDef = (const puerts::ScriptClassDefinition*)(JS_VALUE_GET_PTR(ctor_data[0]));
             CppObjectMapper* mapper = (CppObjectMapper*)(JS_VALUE_GET_PTR(ctor_data[1]));
             
             pesapi::qjsimpl::pesapi_scope__ scope(ctx);
@@ -282,7 +282,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
 
         JSValue proto = JS_NewObject(ctx);
 
-        puerts::JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
+        puerts::ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
         while (PropertyInfo && PropertyInfo->Name)
         {
             InitProperty(PropertyInfo, proto);
@@ -296,7 +296,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
             ++PropertyInfo;
         }
 
-        puerts::JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
+        puerts::ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
             InitMethod(FunctionInfo, proto);
@@ -424,7 +424,7 @@ void CppObjectMapper::Cleanup()
         FObjectCacheNode* PNode = &KV.second;
         while (PNode)
         {
-            const puerts::JSClassDefinition* ClassDefinition = puerts::FindClassByID(registry, PNode->TypeId);
+            const puerts::ScriptClassDefinition* ClassDefinition = puerts::FindClassByID(registry, PNode->TypeId);
             // quickjs是可以保证释放的，所以这里不需要释放
             /*
             if (PNode->MustCallFinalize)

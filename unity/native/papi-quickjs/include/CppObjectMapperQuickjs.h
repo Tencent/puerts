@@ -19,7 +19,7 @@ extern pesapi_ffi g_pesapi_ffi;
 
 struct ObjectUserData
 {
-    const puerts::JSClassDefinition* typeInfo;
+    const puerts::ScriptClassDefinition* typeInfo;
     const void* ptr;
     bool callFinalize;
 };
@@ -70,7 +70,7 @@ struct CppObjectMapper
     const void* envPrivate = nullptr;
     eastl::shared_ptr<int> ref = eastl::allocate_shared<int>(eastl::allocator_malloc("shared_ptr"), 0);
 
-    puerts::JSClassDefinition PtrClassDef = JSClassEmptyDefinition;
+    puerts::ScriptClassDefinition PtrClassDef = ScriptClassEmptyDefinition;
 
     JSAtom privateDataKey;
 
@@ -145,14 +145,14 @@ struct CppObjectMapper
     static JSValue CreateError(JSContext* ctx, const char* message);
 
     JSValue MakeMethod(pesapi_callback Callback, void* Data);
-    void InitMethod(puerts::JSFunctionInfo* FuncInfo, JSValue Obj);
-    void InitProperty(puerts::JSPropertyInfo* PropInfo, JSValue Obj);
+    void InitMethod(puerts::ScriptFunctionInfo* FuncInfo, JSValue Obj);
+    void InitProperty(puerts::ScriptPropertyInfo* PropInfo, JSValue Obj);
 
-    JSValue FindOrCreateClass(const puerts::JSClassDefinition* ClassDefinition);
+    JSValue FindOrCreateClass(const puerts::ScriptClassDefinition* ClassDefinition);
 
-    void BindAndAddToCache(const puerts::JSClassDefinition* typeInfo, const void* ptr, JSValue value, bool callFinalize);
+    void BindAndAddToCache(const puerts::ScriptClassDefinition* typeInfo, const void* ptr, JSValue value, bool callFinalize);
 
-    void RemoveFromCache(const puerts::JSClassDefinition* typeInfo, const void* ptr);
+    void RemoveFromCache(const puerts::ScriptClassDefinition* typeInfo, const void* ptr);
 
     JSValue PushNativeObject(const void* TypeId, void* ObjectPtr, bool callFinalize);
 

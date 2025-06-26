@@ -115,7 +115,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     if (ClassDefinition)
     {
         auto Result = GetTemplateOfClass(Isolate, ClassDefinition)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-        BindCppObject(Isolate, const_cast<JSClassDefinition*>(ClassDefinition), Ptr, Result, PassByPointer);
+        BindCppObject(Isolate, const_cast<ScriptClassDefinition*>(ClassDefinition), Ptr, Result, PassByPointer);
         return Result;
     }
     else
@@ -208,7 +208,7 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     if (Info.IsConstructCall())
     {
         auto Self = Info.This();
-        JSClassDefinition* ClassDefinition = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSClassDefinition, Data);
+        ScriptClassDefinition* ClassDefinition = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), ScriptClassDefinition, Data);
         void* Ptr = nullptr;
 
         if (ClassDefinition->Initialize)
@@ -226,32 +226,32 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 static void PesapiCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    JSFunctionInfo* FunctionInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSFunctionInfo, Data);
+    ScriptFunctionInfo* FunctionInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), ScriptFunctionInfo, Data);
     FunctionInfo->Callback(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
 static void PesapiGetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    JSPropertyInfo* PropertyInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSPropertyInfo, GetterData);
+    ScriptPropertyInfo* PropertyInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), ScriptPropertyInfo, GetterData);
     PropertyInfo->Getter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
 static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    JSPropertyInfo* PropertyInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), JSPropertyInfo, SetterData);
+    ScriptPropertyInfo* PropertyInfo = container_of(v8::Local<v8::External>::Cast(Info.Data())->Value(), ScriptPropertyInfo, SetterData);
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
-v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition)
+v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition)
 {
     auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
     if (Iter == TypeIdToTemplateMap.end())
     {
         auto Template = v8::FunctionTemplate::New(
-            Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<JSClassDefinition*>(ClassDefinition)->Data)));
+            Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<ScriptClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
-        JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
+        ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
         while (PropertyInfo && PropertyInfo->Name)
         {
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
@@ -287,7 +287,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ++PropertyInfo;
         }
 
-        JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
+        ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
             auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
@@ -350,24 +350,24 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
     }
 }
 
-static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefinition>& Data)
+static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<ScriptClassDefinition>& Data)
 {
-    JSClassDefinition* ClassDefinition = Data.GetParameter();
+    ScriptClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->Finalize)
         ClassDefinition->Finalize(&v8impl::g_pesapi_ffi, Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);
 }
 
-static void CDataGarbageCollectedWithoutFree(const v8::WeakCallbackInfo<JSClassDefinition>& Data)
+static void CDataGarbageCollectedWithoutFree(const v8::WeakCallbackInfo<ScriptClassDefinition>& Data)
 {
-    JSClassDefinition* ClassDefinition = Data.GetParameter();
+    ScriptClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);
 }
 
 void FCppObjectMapper::BindCppObject(
-    v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
+    v8::Isolate* Isolate, ScriptClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
     DataTransfer::SetPointer(Isolate, JSObject, Ptr, 0);
     DataTransfer::SetPointer(Isolate, JSObject, ClassDefinition->TypeId, 1);
@@ -389,12 +389,12 @@ void FCppObjectMapper::BindCppObject(
     if (!PassByPointer)
     {
         CacheNodePtr->MustCallFinalize = true;
-        CacheNodePtr->Value.SetWeak<JSClassDefinition>(
+        CacheNodePtr->Value.SetWeak<ScriptClassDefinition>(
             ClassDefinition, CDataGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
     else
     {
-        CacheNodePtr->Value.SetWeak<JSClassDefinition>(
+        CacheNodePtr->Value.SetWeak<ScriptClassDefinition>(
             ClassDefinition, CDataGarbageCollectedWithoutFree, v8::WeakCallbackType::kInternalFields);
     }
 
@@ -428,7 +428,7 @@ void FCppObjectMapper::SetPrivateData(v8::Local<v8::Context> Context, v8::Local<
     (void) (JSObject->Set(Context, Key, v8::External::New(Context->GetIsolate(), Ptr)));
 }
 
-void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr)
+void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, ScriptClassDefinition* ClassDefinition, void* Ptr)
 {
     auto Iter = CDataCache.find(Ptr);
     if (Iter != CDataCache.end())
@@ -453,7 +453,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         FObjectCacheNode* PNode = &KV.second;
         while (PNode)
         {
-            const JSClassDefinition* ClassDefinition = FindClassByID(Registry, PNode->TypeId);
+            const ScriptClassDefinition* ClassDefinition = FindClassByID(Registry, PNode->TypeId);
             if (PNode->MustCallFinalize)
             {
                 if (ClassDefinition && ClassDefinition->Finalize)

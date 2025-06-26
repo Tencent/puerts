@@ -67,9 +67,9 @@ public:
 
     int CreateFunction(lua_State* L, pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize);
 
-    void UnBindCppObject(lua_State* L, const puerts::JSClassDefinition* classDefinition, void* Ptr);
+    void UnBindCppObject(lua_State* L, const puerts::ScriptClassDefinition* classDefinition, void* Ptr);
 
-    void BindCppObject(lua_State* L, const puerts::JSClassDefinition* classDefinition, void* ptr, bool PassByPointer);
+    void BindCppObject(lua_State* L, const puerts::ScriptClassDefinition* classDefinition, void* ptr, bool PassByPointer);
 
     void* GetPrivateData(lua_State* L, int index) const;
 
@@ -102,7 +102,7 @@ private:
     int m_CacheRef            = 0;
     int m_CachePrivateDataRef = 0;
 
-    int GetMetaRefOfClass(lua_State* L, const puerts::JSClassDefinition* classDefinition);
+    int GetMetaRefOfClass(lua_State* L, const puerts::ScriptClassDefinition* classDefinition);
 
 };
 }
