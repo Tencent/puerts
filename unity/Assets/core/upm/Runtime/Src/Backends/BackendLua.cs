@@ -13,7 +13,17 @@ namespace Puerts
     public class BackendLua : Backend
     {
         private IntPtr envRef;
-        public BackendLua() { }
+
+        private LuaLoader luaLoader;
+        public BackendLua(LuaLoader loader)
+        {
+            luaLoader = loader;
+        }
+
+        public BackendLua()
+        {
+            luaLoader = new LuaDefaultLoader();
+        }
 
         public override int GetApiVersion()
         {
@@ -50,8 +60,7 @@ namespace Puerts
 
         public override object GetLoader()
         {
-            // TODO
-            return null;
+            return luaLoader;
         }
 
         public override void OnEnter(ScriptEnv scriptEnv)
@@ -114,6 +123,25 @@ namespace Puerts
             CS = CS or {}
             setmetatable(CS, metatable)
             typeof = function(t) return t.__p_innerType end
+            ");
+
+            scriptEnv.Eval(@"
+            local loader = scriptEnv:GetLoader()
+            local function cs_searcher(modname)
+                local out_dbg_path = {}
+                local content = loader:ReadFile(modname, out_dbg_path)
+
+                if not content then
+                    return '\n\t[cs_searcher] module ['..modname..'] not found'
+                end
+                return function()
+                    local chunk, err = load(content, out_dbg_path[1], 't')
+                    if not chunk then error(err) end
+                    return chunk()
+                end
+            end
+            local searchers = package.searchers or package.loaders
+            table.insert(searchers, cs_searcher)
             ");
         }
     }
