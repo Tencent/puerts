@@ -335,6 +335,11 @@ async function runPuertsMake(cwd, options) {
     options.websocket = options.websocket || 0;
     CmakeDArgs += ` -DWITH_WEBSOCKET=${options.websocket}`;
 
+
+    for(let opt in BackendConfig?.cmake_options){
+        CmakeDArgs = CmakeDArgs.concat(` ${BackendConfig?.cmake_options[opt]}`)
+    }
+
     var outputFile = BuildConfig.hook(
         CMAKE_BUILD_PATH,
         options,
