@@ -37,6 +37,7 @@ program
     .option('-ts, --thread_safe', 'thread safe')
     .option('-wi, --with_inspector', 'with inspector')
     .option('-jl, --jitless', 'jitless')
+    .option('--with_symbols', 'generate symbol file for debug')
     .action(function (quickcommand, options) {
         let backend = options.backend;
         let config = options.config;

@@ -68,8 +68,13 @@ const platformCompileConfig = {
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         },
         'arm64': {
@@ -85,8 +90,13 @@ const platformCompileConfig = {
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         },
         'x64': {
@@ -102,8 +112,13 @@ const platformCompileConfig = {
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         }
     },
@@ -121,8 +136,13 @@ const platformCompileConfig = {
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         },
         'arm64': {
@@ -138,8 +158,13 @@ const platformCompileConfig = {
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         }
     },
@@ -198,7 +223,11 @@ const platformCompileConfig = {
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
-                return `${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`;
+                let libs = [`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`];
+                if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`)){
+                    libs.push(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`);
+                }
+                return libs;
             }
         },
         'ia32': {
@@ -211,7 +240,11 @@ const platformCompileConfig = {
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
-                return `${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`;
+                let libs = [`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`];
+                if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`)){
+                    libs.push(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`);
+                }
+                return libs;
             }
         }
     },
@@ -334,6 +367,7 @@ async function runPuertsMake(cwd, options) {
     
     options.websocket = options.websocket || 0;
     CmakeDArgs += ` -DWITH_WEBSOCKET=${options.websocket}`;
+    CmakeDArgs += ` -DWITH_SYMBOLS=${options.with_symbols ? 'ON' : 'OFF'}`;
 
 
     for(let opt in BackendConfig?.cmake_options){
