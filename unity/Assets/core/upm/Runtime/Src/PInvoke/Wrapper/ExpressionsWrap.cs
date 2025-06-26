@@ -336,7 +336,7 @@ namespace Puerts
                 }
                 UIntPtr outLen = UIntPtr.Zero;
                 PuertsNative.pesapi_get_value_string_utf16(apis, env, value, null, ref outLen);
-                byte[] buf = new byte[(outLen.ToUInt32() + 1) * 2];
+                byte[] buf = new byte[outLen.ToUInt32() * 2];
                 PuertsNative.pesapi_get_value_string_utf16(apis, env, value, buf, ref outLen);
                 return Encoding.Unicode.GetString(buf);
             }
