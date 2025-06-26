@@ -70,7 +70,8 @@ namespace Puerts
             function print(...)
                 local args = {...}
                 for i = 1, #args do
-                    args[i] = tostring(args[i])
+                    local arg = args[i]
+                    args[i] = (type(arg) == 'userdata' and type(arg.ToString) == 'function') and arg:ToString() or tostring(arg)
                 end
                 outputStr(table.concat(args, '\t'))
             end
