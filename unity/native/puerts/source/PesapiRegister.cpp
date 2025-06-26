@@ -208,7 +208,7 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
     classDef.Properties = p_properties.data();
     classDef.Variables = p_variables.data();
 
-    puerts::RegisterJSClass(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), classDef);
+    puerts::RegisterScriptClass(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), classDef);
 }
 
 void* pesapi_get_class_data(pesapi_registry _registry, const void* type_id, int force_load)

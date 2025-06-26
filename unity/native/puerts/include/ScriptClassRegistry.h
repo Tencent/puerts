@@ -130,7 +130,7 @@ MSVC_PRAGMA(warning(pop))
     
 ScriptClassRegistry* CreateRegistry();
 
-void PUERTS_API RegisterJSClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
+void PUERTS_API RegisterScriptClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
 
 void PUERTS_API SetClassTypeInfo(ScriptClassRegistry* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);

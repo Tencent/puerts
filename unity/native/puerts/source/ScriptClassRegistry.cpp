@@ -304,7 +304,7 @@ ScriptClassRegistry* CreateRegistry()
     return ret;
 }
 
-void RegisterJSClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition)
+void RegisterScriptClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition)
 {
     Registry->RegisterClass(ClassDefinition);
 }
