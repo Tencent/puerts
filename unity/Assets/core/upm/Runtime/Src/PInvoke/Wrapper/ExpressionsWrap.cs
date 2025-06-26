@@ -583,10 +583,10 @@ namespace Puerts
             }
         }
 
-        private static MethodInfo stringFormatMethod = typeof(string).GetMethod("Format", new[] { typeof(string), typeof(object[]) });
+        private static MethodInfo stringFormatMethod = typeof(string).GetMethod(nameof(string.Format), new[] { typeof(string), typeof(object[]) });
 
 #if UNITY_EDITOR
-        private static MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod("Log", new[] { typeof(object) });
+        private static MethodInfo logMethod = typeof(UnityEngine.Debug).GetMethod(nameof(UnityEngine.Debug.Log), new[] { typeof(object) });
 #else
         private static MethodInfo logMethod = typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(object) });
 #endif
