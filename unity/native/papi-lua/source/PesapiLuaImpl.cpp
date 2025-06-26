@@ -228,8 +228,8 @@ const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalu
     }
     
     // If buf is NULL or too small, return required size
-    if (buf == NULL || *bufsize < utf16_len + 1) {
-        if (bufsize) *bufsize = utf16_len + 1;
+    if (buf == NULL || *bufsize < utf16_len) {
+        if (bufsize) *bufsize = utf16_len;
         return NULL;
     }
     
@@ -260,9 +260,8 @@ const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalu
             p++;
         }
     }
-    *q = 0; // Null terminator
     
-    if (bufsize) *bufsize = utf16_len + 1;
+    if (bufsize) *bufsize = utf16_len;
     return buf;
 }
 
