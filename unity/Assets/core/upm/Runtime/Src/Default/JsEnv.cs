@@ -218,12 +218,12 @@ namespace Puerts
             try 
             {
                 ExecuteModule("puerts/init.mjs");
-                ExecuteModule("puerts/log.mjs");
                 ExecuteModule("puerts/csharp.mjs");
                 ExecuteModule("puerts/events.mjs");
                 
                 if (externalContext == IntPtr.Zero || externalRuntime == IntPtr.Zero) 
                 {
+                    ExecuteModule("puerts/log.mjs");
                     ExecuteModule("puerts/timer.mjs");
                     ExecuteModule("puerts/promises.mjs");
                 }
