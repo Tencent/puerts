@@ -168,6 +168,18 @@ namespace Puerts
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_is_instance_of(IntPtr apis, IntPtr env, IntPtr type_id, IntPtr value);
 
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr pesapi_boxing(IntPtr apis, IntPtr env, IntPtr value);
+
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr pesapi_unboxing(IntPtr apis, IntPtr env, IntPtr value);
+
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void pesapi_update_boxed_value(IntPtr apis, IntPtr env, IntPtr boxed_value, IntPtr value);
+
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool pesapi_is_boxed_value(IntPtr apis, IntPtr env, IntPtr value);
+
         // Callback handling
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int pesapi_get_args_len(IntPtr apis, IntPtr info);

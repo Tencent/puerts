@@ -1014,7 +1014,7 @@ namespace Puerts
             }
             else if (type.IsByRef)
             {
-                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_object");
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_boxed_value");
             }
             else if (type == typeof(System.TypedReference))
             {
@@ -1371,7 +1371,7 @@ namespace Puerts
                     var parameter = parameters[i];
                     if (parameter.ParameterType.IsByRef)
                     {
-                        blockExpressions.Add(callPApi(context.Apis, "set_property_uint32", context.Env, getJsArg(i), Expression.Constant((uint)0), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
+                        blockExpressions.Add(callPApi(context.Apis, "update_boxed_value", context.Env, getJsArg(i), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
                     }
                 }
 
@@ -1460,7 +1460,7 @@ namespace Puerts
                     var parameter = parameters[i];
                     if (parameter.ParameterType.IsByRef)
                     {
-                        blockExpressions.Add(callPApi(context.Apis, "set_property_uint32", context.Env, getJsArg(i), Expression.Constant((uint)0), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
+                        blockExpressions.Add(callPApi(context.Apis, "update_boxed_value", context.Env, getJsArg(i), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
                     }
                 }
 
