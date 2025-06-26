@@ -670,12 +670,9 @@ Local<Set> Set::New(Isolate* isolate) {
     return Local<Set>(set);
 }
 
-static std::vector<uint8_t> dummybuffer;
-
 Local<ArrayBuffer> ArrayBuffer::New(Isolate* isolate, size_t byte_length) {
     ArrayBuffer *ab = isolate->Alloc<ArrayBuffer>();
-    if (dummybuffer.size() < byte_length) dummybuffer.resize(byte_length, 0);
-    ab->value_ = JS_NewArrayBufferCopy(isolate->current_context_->context_, dummybuffer.data(), byte_length);
+    ab->value_ = JS_NewArrayBufferCopy(isolate->current_context_->context_, nullptr, byte_length);
     return Local<ArrayBuffer>(ab);
 }
 
