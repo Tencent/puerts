@@ -80,28 +80,26 @@ public:
     AutoValueScope(struct pesapi_ffi* apis, pesapi_env_ref envRef)
     {
         _apis = apis;
-        if (!${invokePapi('open_scope_placement')}(envRef, &_mem))
-        {
-            _apis = nullptr;
-        }
+        _scope = ${invokePapi('open_scope_placement')}(envRef, &_mem);
     }
 
     ~AutoValueScope()
     {
-        if (_apis)
+        if (_scope)
         {
             auto apis = _apis;
-            ${invokePapi('close_scope_placement')}(scope());
+            ${invokePapi('close_scope_placement')}(_scope);
         }
     }
     
     inline pesapi_scope scope()
     {
-        return (pesapi_scope)&_mem;
+        return _scope;
     }
-     
+    
     struct pesapi_ffi* _apis;
     pesapi_scope_memory _mem;
+    pesapi_scope _scope;
 };
 
 struct DataTransfer
