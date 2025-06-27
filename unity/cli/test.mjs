@@ -237,6 +237,14 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         thread_safe: thread_safe
     });
     dlls = dlls.concat(v8dlls);
+    
+    const luadlls = await runPuertsMake(join(cwd, '../../native/papi-lua'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(luadlls);
 
     // await runTest(cwd, copyConfig, true, filter);
     await runTest(cwd, dlls, false, filter);
