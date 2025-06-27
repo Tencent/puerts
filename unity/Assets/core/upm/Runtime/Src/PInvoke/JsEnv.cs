@@ -5,8 +5,6 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -27,8 +25,6 @@ namespace Puerts
     public class JsEnv : IDisposable
     {
         internal readonly int Idx;
-
-        internal ObjectPool objectPool;
 
         public Backend Backend;
 
@@ -356,8 +352,3 @@ namespace Puerts
         }
     }
 }
-
-#endif
-
-
-

@@ -19,34 +19,22 @@ using Puerts.TypeMapping;
 
 namespace Puerts
 {
-    public enum BackendType : int
+    public class ScriptEnv : IDisposable
     {
-        V8 = 0,
-        Node = 1,
-        QuickJS = 2,
-        Auto = 3
-    }
-
-    [UnityEngine.Scripting.Preserve]
-    public class JsEnv : IDisposable
-    {
-        private static List<JsEnv> jsEnvs = new List<JsEnv>();
+        private static List<ScriptEnv> scriptEnvs = new List<ScriptEnv>();
         private static bool isInitialized = false;
         private static Type persistentObjectInfoType;
         private static MethodInfo extensionMethodGetMethodInfo;
         private readonly int Idx;
-        IntPtr apis;
-        IntPtr nativeJsEnv;
-        IntPtr nativePesapiEnv;
+        IntPtr papis;
+        IntPtr envRef;
         IntPtr nativeScriptObjectsRefsMgr;
 
         private Func<string, JSObject> moduleExecutor;
 
-        ILoader loader;
-
         protected int debugPort;
 
-        public Backend Backend;
+        public Backend backend;
         
         PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 
@@ -57,23 +45,31 @@ namespace Puerts
         }
         
         [UnityEngine.Scripting.Preserve]
-        public ILoader GetLoader() 
+        public object GetLoader() 
         {
-            return loader;
+            return backend.GetLoader();
+        }
+        
+        private void InitApi(int apiVersionExpect)
+        {
+            envRef = backend.CreateEnvRef();
+            papis = backend.GetApi();
+            if (backend.GetApiVersion() != apiVersionExpect)
+            {
+                throw new InvalidProgramException("backend: version not match for " + backend.GetType() + ", expect " + apiVersionExpect + ", but got " + backend.GetApiVersion());
+            }
         }
 
-        public JsEnv(): this(new DefaultLoader(), -1) {}
-
-        public JsEnv(ILoader loader, int debugPort = -1, BackendType backendExpect = BackendType.Auto, IntPtr externalRuntime = default(IntPtr), IntPtr externalContext = default(IntPtr))
+        public ScriptEnv(Backend backend, int debugPort = -1)
         {
-            this.loader = loader;
+            this.backend = backend;
             disposed = true;
             if (!isInitialized)
             {
 #if !UNITY_EDITOR && UNITY_WEBGL
                 PuertsDLL.InitPuertsWebGL();
 #endif
-                lock (jsEnvs)
+                lock (scriptEnvs)
                 {
                     if (!isInitialized)
                     {
@@ -100,24 +96,32 @@ namespace Puerts
             }
 #endif
 
-            backendExpect = (backendExpect == BackendType.Auto) ? BackendType.V8 : backendExpect;
-            if (backendExpect == BackendType.QuickJS)
+            const int libVersionExpect = 11;
+            int libVersion = PuertsNative.GetPapiVersion();
+            if (libVersion != libVersionExpect)
             {
-                Backend = new BackendQuickJS(loader);
-                
+                throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-            else
-            {
-                //TODO: WebGL
-                Backend = new BackendV8(loader);
-            }
-            apis = Backend.GetApi();
-            nativePesapiEnv = Backend.CreateEnvRef();
-            disposed = false;
-            var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
-            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
-            Puerts.NativeAPI.SetObjectToGlobal(apis, nativePesapiEnv, "scriptEnv", this);
+            try
+            {
+                InitApi(libVersionExpect);
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            disposed = false;
+            lock (scriptEnvs)
+            {
+                Idx = scriptEnvs.Count;
+                scriptEnvs.Add(this);
+            }
+            
+            var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
+            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(papis, envRef, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
+
+            Puerts.NativeAPI.SetObjectToGlobal(papis, envRef, "scriptEnv", this);
 
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
@@ -140,44 +144,12 @@ namespace Puerts
 
 
             if (debugPort != -1) {
-                Backend.OpenRemoteDebugger(debugPort);
+                backend.OpenRemoteDebugger(debugPort);
             }
-#if !UNITY_WEBGL
-            string debugpath;
-            string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
-            Eval(context, debugpath);
-#endif
-            ExecuteModule("puerts/init_il2cpp.mjs");
-            ExecuteModule("puerts/log.mjs");
-            ExecuteModule("puerts/csharp.mjs");
-            
-            ExecuteModule("puerts/events.mjs");
-            ExecuteModule("puerts/timer.mjs");
-            ExecuteModule("puerts/promises.mjs");
-#if !UNITY_WEBGL
-            ExecuteModule("puerts/websocketpp.mjs");
-#endif
 
             this.debugPort = debugPort;
-            // prevent c# gc, manual call Dispose if you release this
-            lock (jsEnvs)
-            {
-                Idx = -1;
-                for (int i = 0; i < jsEnvs.Count; i++)
-                {
-                    if (jsEnvs[i] == null)
-                    {
-                        Idx = i;
-                        jsEnvs[Idx] = this;
-                        break;
-                    }
-                }
-                if (Idx == -1)
-                {
-                    Idx = jsEnvs.Count;
-                    jsEnvs.Add(this);
-                }
-            }
+            
+            this.backend.OnEnter(this);
         }
         
         [MonoPInvokeCallback(typeof(Puerts.NativeAPI.LogCallback))]
@@ -232,19 +204,19 @@ namespace Puerts
 
         public void Eval(string chunk, string chunkName = "chunk")
         {
-            Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, null);
+            Puerts.NativeAPI.EvalInternal(papis, envRef, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, null);
         }
 
         public T Eval<T>(string chunk, string chunkName = "chunk")
         {
-            return (T)Puerts.NativeAPI.EvalInternal(apis, nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, typeof(T));
+            return (T)Puerts.NativeAPI.EvalInternal(papis, envRef, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, typeof(T));
         }
         
         Func<string, Puerts.JSObject> GetModuleExecutor()
         {
             if (moduleExecutor == null) 
             {
-                moduleExecutor = Puerts.NativeAPI.GetModuleExecutor(apis, nativePesapiEnv, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
+                moduleExecutor = Puerts.NativeAPI.GetModuleExecutor(papis, envRef, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
             }
             return moduleExecutor;
         }
@@ -268,11 +240,26 @@ namespace Puerts
         public Action TickHandler;
         public void Tick()
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             Puerts.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
-            Backend.DebuggerTick();
-            // TODO:
-            //Backend.LogicTick();
+            if (debugPort == -1 || backend.DebuggerTick())
+            {
+#if CSHARP_7_3_OR_NEWER
+                if (waitDebugerTaskSource != null)
+                {
+                    var tmp = waitDebugerTaskSource;
+                    waitDebugerTaskSource = null;
+                    tmp.SetResult(true);
+                }
+#endif
+            }
+            backend.OnTick();
             if (TickHandler != null) TickHandler();
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void WaitDebugger()
@@ -281,7 +268,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            while (!Backend.DebuggerTick()) { }
+            while (!backend.DebuggerTick()) { }
 #if THREAD_SAFE
             }
 #endif
@@ -297,7 +284,7 @@ namespace Puerts
         }
 #endif
         
-        ~JsEnv()
+        ~ScriptEnv()
         {
             Dispose(true);
         }
@@ -321,14 +308,14 @@ namespace Puerts
                 System.GC.Collect();
                 System.GC.WaitForPendingFinalizers();
                 
-                Backend.DestroyEnvRef(nativePesapiEnv);
+                backend.DestroyEnvRef(envRef);
                 Puerts.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
                 nativeScriptObjectsRefsMgr = IntPtr.Zero;
                 disposed = true;
             }
-            lock (jsEnvs)
+            lock (scriptEnvs)
             {
-                jsEnvs[Idx] = null;
+                scriptEnvs[Idx] = null;
             }
         }
         
