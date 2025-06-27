@@ -7,6 +7,9 @@ public interface LuaLoader
 
 public class LuaDefaultLoader : LuaLoader
 {
+#if ENABLE_IL2CPP
+    [UnityEngine.Scripting.Preserve]
+#endif
     public virtual object ReadFile(string filepath, out string debugpath)
     {
         filepath = filepath.Replace('.', '/');
