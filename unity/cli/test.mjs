@@ -266,10 +266,10 @@ export async function unityTest(cwd, unityPath) {
     rm("-rf", `${cwd}/Assets/Gen`);
     rm("-rf", `${cwd}/build`);
     rm("-rf", `${cwd}/Assets/Gen.meta`);
-    rm("-rf", join(cwd, 'Assets/csc.rsp'));
-    writeFileSync(`${cwd}/Assets/csc.rsp`, `
-        -define:PUERTS_DISABLE_IL2CPP_OPTIMIZATION
-    `);
+    //rm("-rf", join(cwd, 'Assets/csc.rsp'));
+    //writeFileSync(`${cwd}/Assets/csc.rsp`, `
+    //    -define:PUERTS_DISABLE_IL2CPP_OPTIMIZATION
+    //`);
     rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
     
     /*
@@ -293,6 +293,7 @@ export async function unityTest(cwd, unityPath) {
     console.log("[Puer] Running test in v1");
     const v1code = exec(`${cwd}/build/v1/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log1.txt`).code;
     assert.equal(0, v1code);
+    */
 
     console.log("[Puer] Generating FunctionBridge");
     rm("-rf", join(cwd, 'Assets/csc.rsp'));
@@ -300,7 +301,7 @@ export async function unityTest(cwd, unityPath) {
         -define:PUERTS_CPP_OUTPUT_TO_UPM
         -define:PUERTS_IL2CPP_OPTIMIZATION
     `);
-    */
+    
     
     await runPuertsMake(join(cwd, '../../native/puerts'), {
         platform: getPlatform(),
