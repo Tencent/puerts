@@ -14,7 +14,10 @@
 #include <EASTL/vector.h>
 #include <EASTL/allocator_malloc.h>
 
-EXTERN_C_START
+namespace pesapi
+{
+namespace regimpl
+{
 
 struct pesapi_type_info__
 {
@@ -44,8 +47,8 @@ struct pesapi_property_descriptor__
 
     union
     {
-        pesapi_type_info type_info;
-        pesapi_signature_info signature_info;
+        pesapi_type_info__* type_info;
+        pesapi_signature_info__* signature_info;
     } info;
 };
 
@@ -58,13 +61,13 @@ pesapi_type_info pesapi_alloc_type_infos(size_t count)
 {
     auto ret = static_cast<pesapi_type_info__*>(malloc(sizeof(pesapi_type_info__) * count));
     memset(ret, 0, sizeof(pesapi_type_info__) * count);
-    return ret;
+    return reinterpret_cast<pesapi_type_info>(ret);
 }
 
 void pesapi_set_type_info(
     pesapi_type_info type_infos, size_t index, const char* name, int is_pointer, int is_const, int is_ref, int is_primitive)
 {
-    type_infos[index] = {name, is_pointer, is_const, is_ref, is_primitive};
+    reinterpret_cast<pesapi_type_info__*>(type_infos)[index] = {name, is_pointer, is_const, is_ref, is_primitive};
 }
 
 pesapi_signature_info pesapi_create_signature_info(
@@ -75,43 +78,46 @@ pesapi_signature_info pesapi_create_signature_info(
     info->return_type = return_type;
     info->parameter_count = parameter_count;
     info->parameter_types = parameter_types;
-    return info;
+    return reinterpret_cast<pesapi_signature_info>(info);
 }
 
 pesapi_property_descriptor pesapi_alloc_property_descriptors(size_t count)
 {
     auto ret = static_cast<pesapi_property_descriptor__*>(malloc(sizeof(pesapi_property_descriptor__) * count));
     memset(ret, 0, sizeof(pesapi_property_descriptor__) * count);
-    return ret;
+    return reinterpret_cast<pesapi_property_descriptor>(ret);
 }
 
-void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index, const char* name, int is_static,
+void pesapi_set_method_info(pesapi_property_descriptor pproperties, size_t index, const char* name, int is_static,
     pesapi_callback method, void* data, pesapi_signature_info signature_info)
 {
+    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
     properties[index].name = name;
     properties[index].is_static = is_static;
     properties[index].method = method;
     properties[index].data0 = data;
-    properties[index].info.signature_info = signature_info;
+    properties[index].info.signature_info = reinterpret_cast<pesapi_signature_info__*>(signature_info);
 }
 
-void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, int is_static,
+void pesapi_set_property_info(pesapi_property_descriptor pproperties, size_t index, const char* name, int is_static,
     pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, pesapi_type_info type_info)
 {
+    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
     properties[index].name = name;
     properties[index].is_static = is_static;
     properties[index].getter = getter;
     properties[index].setter = setter;
     properties[index].data0 = getter_data;
     properties[index].data1 = setter_data;
-    properties[index].info.type_info = type_info;
+    properties[index].info.type_info = reinterpret_cast<pesapi_type_info__*>(type_info);
 }
 
-static void free_property_descriptor(pesapi_property_descriptor properties, size_t property_count)
+static void free_property_descriptor(pesapi_property_descriptor pproperties, size_t property_count)
 {
+    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
     for (size_t i = 0; i < property_count; i++)
     {
-        pesapi_property_descriptor p = properties + i;
+        pesapi_property_descriptor__* p = properties + i;
         if (p->getter != nullptr || p->setter != nullptr)
         {
             if (p->info.type_info)
@@ -142,7 +148,7 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
 const char* GPesapiModuleName = nullptr;
 
 void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* data, int copy_str)
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor pproperties, void* data, int copy_str)
 {
     puerts::ScriptClassDefinition classDef = ScriptClassEmptyDefinition;
     classDef.TypeId = type_id;
@@ -168,9 +174,10 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
     eastl::vector<puerts::ScriptPropertyInfo, eastl::allocator_malloc> p_properties;
     eastl::vector<puerts::ScriptPropertyInfo, eastl::allocator_malloc> p_variables;
 
+    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
     for (int i = 0; i < property_count; i++)
     {
-        pesapi_property_descriptor p = properties + i;
+        pesapi_property_descriptor__* p = properties + i;
         if (p->getter != nullptr || p->setter != nullptr)
         {
             if (p->is_static)
@@ -196,7 +203,7 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
         }
     }
 
-    free_property_descriptor(properties, property_count);
+    free_property_descriptor(pproperties, property_count);
 
     p_methods.push_back(puerts::ScriptFunctionInfo());
     p_functions.push_back(puerts::ScriptFunctionInfo());
@@ -246,13 +253,20 @@ const void* pesapi_find_type_id(pesapi_registry registry, const char* module_nam
     return class_def ? class_def->TypeId : nullptr;
 }
 
-EXTERN_C_END
+pesapi_registry_api g_reg_apis = {
+    (pesapi_create_registry_func)pesapi_create_registry,
+    (pesapi_alloc_type_infos_func)pesapi_alloc_type_infos,
+    (pesapi_set_type_info_func)pesapi_set_type_info,
+    (pesapi_create_signature_info_func)pesapi_create_signature_info,
+    (pesapi_alloc_property_descriptors_func)pesapi_alloc_property_descriptors,
+    (pesapi_set_method_info_func)pesapi_set_method_info,
+    (pesapi_set_property_info_func)pesapi_set_property_info,
+    (pesapi_define_class_func)pesapi_define_class,
+    (pesapi_get_class_data_func)pesapi_get_class_data,
+    (pesapi_on_class_not_found_func)pesapi_on_class_not_found,
+    (pesapi_class_type_info_func)pesapi_class_type_info,
+    (pesapi_find_type_id_func)pesapi_find_type_id
+};
 
-MSVC_PRAGMA(warning(push))
-MSVC_PRAGMA(warning(disable : 4191))
-pesapi_func_ptr reg_apis[] = {(pesapi_func_ptr) &pesapi_create_registry, (pesapi_func_ptr) &pesapi_alloc_type_infos,
-    (pesapi_func_ptr) &pesapi_set_type_info, (pesapi_func_ptr) &pesapi_create_signature_info, (pesapi_func_ptr) &pesapi_alloc_property_descriptors,
-    (pesapi_func_ptr) &pesapi_set_method_info, (pesapi_func_ptr) &pesapi_set_property_info, (pesapi_func_ptr) &pesapi_define_class,
-    (pesapi_func_ptr) &pesapi_get_class_data, (pesapi_func_ptr) &pesapi_on_class_not_found, (pesapi_func_ptr) &pesapi_class_type_info,
-    (pesapi_func_ptr) &pesapi_find_type_id};
-MSVC_PRAGMA(warning(pop))
+}    // namespace regimpl
+}    // namespace pesapi

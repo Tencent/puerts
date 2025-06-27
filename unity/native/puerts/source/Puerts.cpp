@@ -14,7 +14,14 @@
 LogCallback GLogCallback = nullptr;
 LogCallback GLogWarningCallback = nullptr;
 LogCallback GLogErrorCallback = nullptr;
-extern pesapi_func_ptr reg_apis[];
+
+namespace pesapi
+{
+namespace regimpl
+{
+extern pesapi_registry_api g_reg_apis;
+}
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,9 +33,9 @@ PESAPI_MODULE_EXPORT int GetPapiVersion()
     return PESAPI_VERSION;
 }
 
-PESAPI_MODULE_EXPORT pesapi_func_ptr* GetRegisterApi()
+PESAPI_MODULE_EXPORT pesapi_registry_api* GetRegisterApi()
 {
-    return reg_apis;
+    return &pesapi::regimpl::g_reg_apis;
 }
 
 PESAPI_MODULE_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
