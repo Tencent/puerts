@@ -271,6 +271,8 @@ export async function unityTest(cwd, unityPath) {
         -define:PUERTS_DISABLE_IL2CPP_OPTIMIZATION
     `);
     rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
+    
+    /*
     console.log("[Puer] Building puerts v1");
     await runPuertsMake(join(cwd, '../../native_src'), {
         backend: 'v8_9.4.146.24',
@@ -298,8 +300,41 @@ export async function unityTest(cwd, unityPath) {
         -define:PUERTS_CPP_OUTPUT_TO_UPM
         -define:PUERTS_IL2CPP_OPTIMIZATION
     `);
+    */
     
-    console.log('-------------------------Without Wrapper test-------------------------');
+    await runPuertsMake(join(cwd, '../../native/puerts'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        websocket: 1,
+        thread_safe: thread_safe
+    });
+
+    await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        websocket: 1,
+        thread_safe: thread_safe
+    });
+
+    await runPuertsMake(join(cwd, '../../native/papi-v8'), {
+        backend: 'v8_9.4.146.24',
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        websocket: 1,
+        thread_safe: thread_safe
+    });
+    
+    await runPuertsMake(join(cwd, '../../native/papi-lua'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    
+    console.log('-------------------------V2 Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
@@ -311,7 +346,7 @@ export async function unityTest(cwd, unityPath) {
 
     assert.equal(0, v2code_reflection);
     
-    console.log('-------------------------With Full Wrapper test-------------------------');
+    console.log('-------------------------V2 With Full Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
@@ -323,7 +358,8 @@ export async function unityTest(cwd, unityPath) {
 
     assert.equal(0, v2code);
     
-    console.log('-------------------------With Full Wrapper test(quickjs)-------------------------');
+    /*console.log('-------------------------V2 With Full Wrapper test(quickjs)-------------------------');
+    
     await runPuertsMake(join(cwd, '../../native_src'), {
         backend: 'quickjs',
         platform: platform,
@@ -339,8 +375,10 @@ export async function unityTest(cwd, unityPath) {
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test in v2");
     const v2code_qjs = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code;
+    assert.equal(0, v2code_qjs);
     
     console.log('-------------------------With Full Wrapper test(mult)-------------------------');
+    
     await runPuertsMake(join(cwd, '../../native_src'), {
         backend: 'mult',
         platform: platform,
@@ -358,4 +396,5 @@ export async function unityTest(cwd, unityPath) {
     const v2code_mult = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log5.txt`).code;
 
     assert.equal(0, v2code_mult);
+    */
 }

@@ -40,7 +40,6 @@ namespace Puerts
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetRegisterApi();
 
-#if !ENABLE_IL2CPP
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_null(IntPtr apis, IntPtr env);
 
@@ -300,7 +299,6 @@ namespace Puerts
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_registry(IntPtr apis, IntPtr env, IntPtr registry);
-#endif
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(IntPtr log, IntPtr logWarning, IntPtr logError);

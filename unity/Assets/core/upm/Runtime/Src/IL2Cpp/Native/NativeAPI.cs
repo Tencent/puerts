@@ -17,10 +17,8 @@ namespace Puerts
     {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
         const string PUERTSDLLNAME = "__Internal";
-        const string PAPIV8DLLNAME = "__Internal";
 #else
         const string PUERTSDLLNAME = "puerts";
-        const string PAPIV8DLLNAME = "papiqjs";
 #endif
 
 #if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_IPHONE) && ENABLE_IL2CPP
@@ -134,7 +132,7 @@ namespace Puerts
             {
                 //SetLogCallback(fn1);
                 SetLogCallbackInternal(fn1);
-                PuertsDLL.SetLogCallback(fn1, fn2, fn3);
+                PuertsNative.SetLogCallback(fn1, fn2, fn3);
             }
             catch(DllNotFoundException)
             {

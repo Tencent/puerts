@@ -63,6 +63,7 @@ namespace Puerts
             return luaLoader;
         }
 
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
         public override void OnEnter(ScriptEnv scriptEnv)
         {
             // override print
@@ -144,5 +145,6 @@ namespace Puerts
             table.insert(searchers, cs_searcher)
             ");
         }
+#endif
     }
 }

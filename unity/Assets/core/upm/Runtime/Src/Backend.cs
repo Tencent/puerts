@@ -26,6 +26,7 @@ namespace Puerts
 
         public abstract object GetLoader();
 
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
         // life cycle callbacks
         public virtual void OnEnter(ScriptEnv scriptEnv)
         {
@@ -38,7 +39,7 @@ namespace Puerts
         public virtual void OnExit(ScriptEnv scriptEnv)
         {
         }
-
+#endif
         // remote debugger
         public virtual void OpenRemoteDebugger(int port)
         {

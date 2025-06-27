@@ -30,6 +30,7 @@ namespace Puerts
             return loader;
         }
 
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
         public override void OnEnter(ScriptEnv scriptEnv)
         {
             string debugpath;
@@ -45,5 +46,6 @@ namespace Puerts
 
             scriptEnv.ExecuteModule("puerts/websocketpp.mjs");
         }
+#endif
     }
 }

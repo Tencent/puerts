@@ -116,6 +116,9 @@ static void PApiFree(struct pesapi_ffi* api, void* ptr, void* class_data, void* 
     ValueTypeFree(ptr); //TODO: class_data->IsValueType
 }
 
+static pesapi_registry_api* g_registry_api = nullptr;
+static pesapi_registry g_registry = nullptr;
+
 static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static FieldInfo* g_arrayBufferCountField = nullptr;
@@ -128,7 +131,7 @@ static Il2CppClass* s_ParamArrayAttribute;
 static Il2CppClass* s_ExtensionAttribute;
 
 static bool RegisterType(Il2CppClass* klass);
-static bool ClassNotFoundCallback(const void* typeId)
+static int ClassNotFoundCallback(const void* typeId)
 {
     return RegisterType((Il2CppClass*)typeId);
 }
@@ -1160,7 +1163,7 @@ handle_underlying:
             {
                 if (IsDelegate(klass))
                 {
-                    JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)pesapi_get_class_data(klass, true);
+                    JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)g_registry_api->get_class_data(g_registry, klass, true);
                     if (!jsClassInfo)
                     {
                         Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
@@ -2153,6 +2156,7 @@ Il2CppObject* EvalInternal(struct pesapi_ffi* apis, intptr_t ptr, Il2CppArray * 
     
     AutoValueScope ValueScope(apis, envRef);
     auto env = ${invokePapi('get_env_from_ref')}(envRef);
+    apis->set_registry(env, g_registry);
     
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(__path);
     std::string path = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
@@ -2465,8 +2469,11 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
 {
     puerts::AutoValueScope ValueScope(apis, envRef);
     auto env = ${invokePapi('get_env_from_ref')}(envRef);
+    
+    apis->set_registry(env, g_registry);
     auto jsEnvPrivate = new puerts::JsEnvPrivate(apis, envRef, objPool, objPoolAddMethodInfo, objPoolRemoveMethodInfo);
     ${invokePapi('set_env_private')}(env, jsEnvPrivate);
+    apis->trace_native_object_lifecycle(env, (pesapi_on_native_object_enter)&OnCsObjectEnter, (pesapi_on_native_object_exit)&OnCsObjectExit);
     auto loadType = ${invokePapi('create_function')}(env, LoadTypeWrapper, nullptr, nullptr);
     auto createFunction = ${invokePapi('create_function')}(env, createFunctionWrapper, nullptr, nullptr);
     if (loadType && createFunction)
@@ -2476,7 +2483,7 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
         {
             ${invokePapi('set_property')}(env, global, "loadType", loadType);
             ${invokePapi('set_property')}(env, global, "createFunction", createFunction);
-            pesapi_on_class_not_found(ClassNotFoundCallback);
+            g_registry_api->on_class_not_found(g_registry, ClassNotFoundCallback);
             return jsEnvPrivate;
         }
     }
@@ -2493,7 +2500,7 @@ void CleanupPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref envRef)
         auto jsEnvPrivate = (puerts::JsEnvPrivate*) ${invokePapi('get_env_private')}(env);
         jsEnvPrivate->CleanupPendingKillScriptObjects();
         // delete jsEnvPrivate;
-        ${invokePapi('release_env_ref')}(envRef);
+        //${invokePapi('release_env_ref')}(envRef);
     }
 }
 
@@ -2568,7 +2575,7 @@ static bool RegisterType(Il2CppClass* klass)
 {
     Class::Init(klass);
 
-    if (pesapi_get_class_data(klass, false))
+    if (g_registry_api->get_class_data(g_registry, klass, false))
     {
         return true;
     }
@@ -2736,19 +2743,19 @@ static bool RegisterType(Il2CppClass* klass)
     }
 
     size_t propertiesCount = gseters.size() + methods.size() + classInfo->Fields.size();
-    auto properties = pesapi_alloc_property_descriptors(propertiesCount);
+    auto properties = g_registry_api->alloc_property_descriptors(propertiesCount);
     size_t pos = 0;
 
     for (auto const& method : methods)
     {
-        pesapi_set_method_info(
+        g_registry_api->set_method_info(
             properties, pos++, method->Name, method->IsStatic, &MethodCallback, method, nullptr);
     }
 
     for (auto const& kv : gseters)
     {
         auto geter_or_setter = kv.second.first ? kv.second.first : kv.second.second;
-        pesapi_set_property_info(properties, pos++, geter_or_setter->Name, geter_or_setter->IsStatic,
+        g_registry_api->set_property_info(properties, pos++, geter_or_setter->Name, geter_or_setter->IsStatic,
             kv.second.first ? &MethodCallback : nullptr,
             kv.second.second ? &MethodCallback : nullptr,
             kv.second.first,
@@ -2758,14 +2765,12 @@ static bool RegisterType(Il2CppClass* klass)
 
     for (auto& field : classInfo->Fields)
     {
-        pesapi_set_property_info(properties, pos++, field.Data->FieldInfo->name, field.IsStatic,
+        g_registry_api->set_property_info(properties, pos++, field.Data->FieldInfo->name, field.IsStatic,
             GetterCallback, SetterCallback, field.Data, field.Data, nullptr);
     }
 
-    pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->TypeId->name,
-        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
-
-    pesapi_trace_native_object_lifecycle(classInfo->TypeId, (pesapi_on_native_object_enter)&OnCsObjectEnter, (pesapi_on_native_object_exit)&OnCsObjectExit);
+    g_registry_api->define_class(g_registry, classInfo->TypeId, classInfo->SuperTypeId, nullptr, classInfo->TypeId->name,
+        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo, false);
 
     return true;
 }
@@ -2777,9 +2782,7 @@ static bool RegisterType(Il2CppClass* klass)
 extern "C" {
 #endif
 
-void pesapi_init(pesapi_func_ptr* func_array);
-
-void InitialPuerts(pesapi_func_ptr* func_array)
+void InitialPuerts(pesapi_registry_api* registry_api)
 {
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
@@ -2792,7 +2795,8 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     InternalCalls::Add("Puerts.NativeAPI::SetExtensionMethodGet(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetExtensionMethodGet);
-    pesapi_init(func_array);
+    puerts::g_registry_api = registry_api;
+    puerts::g_registry = registry_api->create_registry();
     
     puerts::s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
     puerts::s_ExtensionAttribute = Class::FromName(il2cpp_defaults.corlib, "System.Runtime.CompilerServices", "ExtensionAttribute");

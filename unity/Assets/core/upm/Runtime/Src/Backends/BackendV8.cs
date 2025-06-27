@@ -33,11 +33,12 @@ namespace Puerts
             return PapiV8Native.GetV8FFIApi();
         }
 
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
         public override void OnTick()
         {
             PapiV8Native.LogicTick(isolate);
         }
-
+#endif
 
         public override void DestroyEnvRef(IntPtr envRef)
         {
