@@ -78,7 +78,7 @@ struct JsClassInfoHeader
 
 WrapFuncPtr FindWrapFunc(const char* signature);
 struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
-Il2CppMethodPointer FindBridgeFunc(const char* signature);
+Il2CppMethodPointer FindBridgeFunc(const char* signature, bool IsShared);
 
 struct JsClassInfo : public JsClassInfoHeader
 {
@@ -267,7 +267,7 @@ static std::string GetTypeSignature(const Il2CppType* type)
     //case IL2CPP_TYPE_BYREF:
     case IL2CPP_TYPE_PTR:
     {
-        ret = "P" + GetTypeSignature(type->data.type);
+        ret = "Pv";
         break;
     }
     //case IL2CPP_TYPE_ENUM:
@@ -861,7 +861,7 @@ static Il2CppObject* FunctionToDelegate(struct pesapi_ffi* apis, pesapi_env env,
     Il2CppGCHandle* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
     if (!handle_store) return nullptr;
 
-    if (ret == nullptr)
+    if (ret == nullptr || (Object::GetClass(ret) != classInfo->TypeId))
     {
         PObjectRefInfo* delegateInfo;
         ret = (Il2CppObject *)DelegateAllocate(classInfo->TypeId, classInfo->DelegateBridge, &delegateInfo);
@@ -2583,7 +2583,7 @@ static bool RegisterType(Il2CppClass* klass)
     auto AddMethod = [&](const MethodInfo* method, bool isGetter, bool isSetter, const char* name) -> bool
     {
         //const char* methodName = (isGetter || isSetter) ? name + 4 : name;
-        bool isExtensionMethod = IsExtensionMethod(method);
+        bool isExtensionMethod = method->klass != klass && IsExtensionMethod(method);
         bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
         for (int i = 0; i < classInfo->Methods.size(); ++i)
         {
@@ -2610,7 +2610,7 @@ static bool RegisterType(Il2CppClass* klass)
         try
         {
             std::string signature = GetMethodSignature(invoke, true, false);
-            classInfo->DelegateBridge = FindBridgeFunc(signature.c_str());
+            classInfo->DelegateBridge = FindBridgeFunc(signature.c_str(), Class::IsInflated(klass));
         }
         catch (Il2CppExceptionWrapper& exception)
         {
