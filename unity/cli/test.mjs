@@ -296,11 +296,11 @@ export async function unityTest(cwd, unityPath) {
     */
 
     console.log("[Puer] Generating FunctionBridge");
-    rm("-rf", join(cwd, 'Assets/csc.rsp'));
-    writeFileSync(`${cwd}/Assets/csc.rsp`, `
-        -define:PUERTS_CPP_OUTPUT_TO_UPM
-        -define:PUERTS_IL2CPP_OPTIMIZATION
-    `);
+    //rm("-rf", join(cwd, 'Assets/csc.rsp'));
+    //writeFileSync(`${cwd}/Assets/csc.rsp`, `
+    //    -define:PUERTS_CPP_OUTPUT_TO_UPM
+    //    -define:PUERTS_IL2CPP_OPTIMIZATION
+    //`);
     
     
     await runPuertsMake(join(cwd, '../../native/puerts'), {
