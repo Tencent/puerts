@@ -75,23 +75,10 @@ if (APPLE)
 		set_xcode_property (PapiLua IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
         ADD_DEFINITIONS(-DLUA_USE_MACOSX) #osx platform emmylua debugger must have this option or can not load cpath
-        if (BUILD_SILICON)
-           set(CMAKE_OSX_ARCHITECTURES arm64)
-
-            add_library(PapiLua SHARED
-                ${LUA_CORE}
-                ${PAPI_SRC}
-            )
-        else ()
-            set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
-            add_library(PapiLua MODULE
-                ${LUA_CORE}
-                ${PAPI_SRC}
-            )
-            set_target_properties ( PapiLua PROPERTIES BUNDLE TRUE )
-            #set_target_properties ( PapiLua PROPERTIES FRAMEWORK TRUE )
-            #set_target_properties ( PapiLua PROPERTIES MACOSX_RPATH TRUE )
-        endif ()
+        add_library(PapiLua SHARED
+            ${LUA_CORE}
+            ${PAPI_SRC}
+        )
     endif ()
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Switch")
     add_library(PapiLua STATIC
