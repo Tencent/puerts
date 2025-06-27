@@ -120,7 +120,7 @@ else ( )
 endif ( )
 
 target_compile_definitions(PapiLua PRIVATE EASTL_DLL USING_EASTL)
-target_compile_definitions(PapiLua PRIVATE EASTL_DLL CHAR8_T_DEFINED)
+#target_compile_definitions(PapiLua PRIVATE CHAR8_T_DEFINED)
 target_compile_definitions(PapiLua PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
 target_compile_definitions(PapiLua PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
 target_compile_definitions(PapiLua PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
