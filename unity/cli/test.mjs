@@ -305,17 +305,13 @@ export async function unityTest(cwd, unityPath) {
     await runPuertsMake(join(cwd, '../../native/puerts'), {
         platform: getPlatform(),
         config: "Debug",
-        arch: process.arch,
-        websocket: 1,
-        thread_safe: thread_safe
+        arch: process.arch
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
         platform: getPlatform(),
         config: "Debug",
-        arch: process.arch,
-        websocket: 1,
-        thread_safe: thread_safe
+        arch: process.arch
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-v8'), {
@@ -323,15 +319,13 @@ export async function unityTest(cwd, unityPath) {
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        websocket: 1,
-        thread_safe: thread_safe
+        websocket: 1
     });
     
     await runPuertsMake(join(cwd, '../../native/papi-lua'), {
         platform: getPlatform(),
         config: "Debug",
-        arch: process.arch,
-        thread_safe: thread_safe
+        arch: process.arch
     });
     
     console.log('-------------------------V2 Without Wrapper test-------------------------');
