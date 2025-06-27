@@ -47,16 +47,10 @@ jobs:
         shell: bash
         run: |
           cd unity/test/unity
-          echo "testresult in v1"
-          cat log1.txt | grep "Failed\|Passed" 
           echo "testresult in v2(reflection)"
           cat log2.txt | grep "Failed\|Passed" 
           echo "testresult in v2"
           cat log3.txt | grep "Failed\|Passed" 
-          echo "testresult in v2(quickjs)"
-          cat log4.txt | grep "Failed\|Passed" 
-          echo "testresult in v2(mult)"
-          cat log5.txt | grep "Failed\|Passed" 
       
 #  unittest-osx-unity:
 #    runs-on: macos-latest
