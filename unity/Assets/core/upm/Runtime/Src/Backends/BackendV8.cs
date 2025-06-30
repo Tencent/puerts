@@ -16,6 +16,10 @@ namespace Puerts
 
         public BackendV8(ILoader loader) : base(loader) { }
 
+        public BackendV8() : this(new DefaultLoader())
+        {
+        }
+
         public override int GetApiVersion()
         {
             return PapiV8Native.GetV8PapiVersion();

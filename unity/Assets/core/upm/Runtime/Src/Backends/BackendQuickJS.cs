@@ -15,6 +15,10 @@ namespace Puerts
         private IntPtr envRef;
         public BackendQuickJS(ILoader loader) : base(loader) { }
 
+        public BackendQuickJS(): this(new DefaultLoader())
+        { 
+        }
+
         public override int GetApiVersion()
         {
             return PapiQjsNative.GetQjsPapiVersion();
