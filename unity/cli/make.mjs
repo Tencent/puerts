@@ -148,7 +148,7 @@ const platformCompileConfig = {
             outputPluginPath: 'iOS',
             hook: function (CMAKE_BUILD_PATH, options, cmakeAddedLibraryName, cmakeDArgs) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`).code);
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`).code);
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
@@ -369,8 +369,8 @@ async function makeOSXUniveralBinary(cwd, copyConfig) {
     const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/macOS';
     const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
 
-    const arm64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + `/lib${cmakeAddedLibraryName}.dylib`;
-    const x64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + `/${cmakeAddedLibraryName}.bundle`;
+    const arm64binary = join(cwd, '../../Assets/core/upm/Plugins/', platformCompileConfig.osx.arm64.outputPluginPath, `lib${cmakeAddedLibraryName}.dylib`);
+    const x64binary = join(cwd, '../../Assets/core/upm/Plugins/', platformCompileConfig.osx.x64.outputPluginPath, `${cmakeAddedLibraryName}.bundle`);
     assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${arm64binary} ${x64binary}`).code);
 
     rm('-rf', arm64binary);
