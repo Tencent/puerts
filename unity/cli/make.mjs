@@ -366,7 +366,7 @@ async function runPuertsMake(cwd, options) {
 }
 
 async function makeOSXUniveralBinary(cwd, copyConfig) {
-    const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/macOS';
+    const OUTPUT_PATH = join(cwd, '../../Assets/core/upm/Plugins/macOS');
     const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
 
     const arm64binary = join(cwd, '../../Assets/core/upm/Plugins/', platformCompileConfig.osx.arm64.outputPluginPath, `lib${cmakeAddedLibraryName}.dylib`);
