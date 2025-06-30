@@ -5,10 +5,6 @@ project(PuertsCore LANGUAGES C CXX)
 include(CheckCCompilerFlag)
 include(GNUInstallDirs)
 
-set(CMAKE_C_VISIBILITY_PRESET hidden)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS ON)
-set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 14)
 
 if(NOT CMAKE_BUILD_TYPE)
