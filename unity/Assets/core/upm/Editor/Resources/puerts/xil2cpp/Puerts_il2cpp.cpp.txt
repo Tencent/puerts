@@ -2199,31 +2199,10 @@ void SetObjectToGlobal(struct pesapi_ffi* apis, pesapi_env_ref envRef, Il2CppStr
     }
 }
 
-#define EXECUTEMODULEGLOBANAME "__puertsExecuteModule"
-
-Il2CppObject* GetModuleExecutor(struct pesapi_ffi* apis, intptr_t ptr, Il2CppReflectionType* rtype)
+Il2CppObject* PValueToCSharp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value val, Il2CppReflectionType* rtype)
 {
-    pesapi_env_ref envRef = reinterpret_cast<pesapi_env_ref>(ptr);
-
-    AutoValueScope ValueScope(apis, envRef);
-    auto env = ${invokePapi('get_env_from_ref')}(envRef);
-    
-    pesapi_value global = ${invokePapi('global')}(env);
-    if (!global)
-    {
-        Exception::Raise(Exception::GetInvalidOperationException("can not get global for env"));
-        return nullptr;
-    }
-    
-    pesapi_value func = ${invokePapi('get_property')}(env, global, EXECUTEMODULEGLOBANAME);
-    if (!func)
-    {
-        Exception::Raise(Exception::GetInvalidOperationException("can not find ExecuteModule for env"));
-        return nullptr;
-    }
-
     auto type = il2cpp_codegen_class_from_type(rtype->type);
-    return JsValueToCSRef(apis, type, env, func);
+    return JsValueToCSRef(apis, type, env, val);
 }
 
 struct JsEnvPrivate
@@ -2789,7 +2768,7 @@ void InitialPuerts(pesapi_registry_api* registry_api)
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
     InternalCalls::Add("Puerts.NativeAPI::EvalInternal(System.IntPtr,System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("Puerts.NativeAPI::SetObjectToGlobal(System.IntPtr,System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
-    InternalCalls::Add("Puerts.NativeAPI::GetModuleExecutor(System.IntPtr,System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
+    InternalCalls::Add("Puerts.NativeAPI::PValueToCSharp(System.IntPtr,System.IntPtr,System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::PValueToCSharp);
     InternalCalls::Add("Puerts.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr,System.Object,System.Reflection.MethodBase,System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);

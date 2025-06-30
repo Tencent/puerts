@@ -61,7 +61,7 @@ namespace Puerts
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static object GetModuleExecutor(IntPtr apis, IntPtr NativeJsEnvPtr, Type type)
+        public static object PValueToCSharp(IntPtr apis, IntPtr env, IntPtr val, Type type)
         {
             throw new NotImplementedException();
         }

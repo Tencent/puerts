@@ -120,6 +120,12 @@ namespace Puerts
             
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
             nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(papis, envRef, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
+            
+            var scope = PuertsNative.pesapi_open_scope(papis, envRef);
+            var env = PuertsNative.pesapi_get_env_from_ref(papis, envRef);
+            var moduleExecutorFunc = this.backend.GetModuleExecutor(env);
+            moduleExecutor = Puerts.NativeAPI.PValueToCSharp(papis, env, moduleExecutorFunc, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
+            PuertsNative.pesapi_close_scope(papis, scope);
 
             Puerts.NativeAPI.SetObjectToGlobal(papis, envRef, "scriptEnv", this);
 
@@ -211,22 +217,13 @@ namespace Puerts
         {
             return (T)Puerts.NativeAPI.EvalInternal(papis, envRef, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, typeof(T));
         }
-        
-        Func<string, Puerts.JSObject> GetModuleExecutor()
-        {
-            if (moduleExecutor == null) 
-            {
-                moduleExecutor = Puerts.NativeAPI.GetModuleExecutor(papis, envRef, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
-            }
-            return moduleExecutor;
-        }
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
-            JSObject jso = GetModuleExecutor()(specifier);
+            JSObject jso = moduleExecutor(specifier);
             
             if (exportee == "") return (T)(object)jso;
             
@@ -234,7 +231,7 @@ namespace Puerts
         }
         public JSObject ExecuteModule(string specifier)
         {
-            return GetModuleExecutor()(specifier);
+            return moduleExecutor(specifier);
         }
 
         public Action TickHandler;
