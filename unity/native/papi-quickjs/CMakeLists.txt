@@ -147,7 +147,7 @@ if(NOT MSVC)
     list(APPEND qjs_libs m)
 endif()
 
-if ( (APPLE AND IOS) OR SWITCH_PLATFORM or (CMAKE_SYSTEM_NAME MATCHES "Emscripten") )
+if ( (APPLE AND IOS) OR SWITCH_PLATFORM OR (CMAKE_SYSTEM_NAME MATCHES "Emscripten") )
     add_library(PapiQuickjs STATIC ${qjs_sources} ${papi_sources})
 else ()
     add_library(PapiQuickjs SHARED ${qjs_sources} ${papi_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
