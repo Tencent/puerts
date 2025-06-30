@@ -90,6 +90,11 @@ if (APPLE)
             ${PAPI_SRC}
         )
     endif ()
+elseif ( CMAKE_SYSTEM_NAME MATCHES "Emscripten" )
+    add_library(PapiLua STATIC
+        ${LUA_CORE}
+        ${PAPI_SRC}
+    )
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Switch")
     add_library(PapiLua STATIC
         ${LUA_CORE}
