@@ -1800,6 +1800,16 @@ handle_underlying:
         if (isLastArgument && hasParamArray)
         {
             int jsParamStart = i - csArgStart;
+            pesapi_value firstVal = ${invokePapi('get_arg')}(info, jsParamStart);
+            if (firstVal)
+            {
+                auto objClass  = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, firstVal);
+                if (objClass && Class::IsAssignableFrom(parameterKlass, objClass))
+                {
+                    args[i] = ${invokePapi('get_native_object_ptr')}(env, firstVal);
+                    continue;
+                }
+            }
             auto elementType = Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
             auto arrayLen = js_args_len - jsParamStart > 0 ? js_args_len - jsParamStart : 0;
             auto array = Array::NewSpecific(parameterKlass, arrayLen);
