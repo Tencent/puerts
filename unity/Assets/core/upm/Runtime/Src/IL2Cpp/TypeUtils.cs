@@ -89,7 +89,7 @@ namespace PuertsIl2cpp
                                                          // #endif
                                                      from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
                                                      where method.IsDefined(typeof(ExtensionAttribute), false) && IsSupportedMethod(method)
-                                                     group method by GetExtendedType(method)).ToDictionary(g => g.Key, g => g.ToArray());
+                                                     group method by GetExtendedType(method)).Where(g => g.Key != null).ToDictionary(g => g.Key, g => g.ToArray());
             }
             MethodInfo[] ret = null;
             extensionMethodMap.TryGetValue(type_to_be_extend, out ret);
