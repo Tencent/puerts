@@ -85,10 +85,10 @@ namespace Puerts
             onObjectReleaseRefDelegate = onObjectReleaseRef;
             PuertsNative.pesapi_trace_native_object_lifecycle(papis, env, null, onObjectReleaseRefDelegate);
 
-            var globalVal = PuertsNative.pesapi_global(papis, env);
-
             var moduleExecutorFunc = this.backend.GetModuleExecutor(env);
             moduleExecutor = ExpressionsWrap.GetNativeTranlator<Func<string, JSObject>>()(papis, env, moduleExecutorFunc);
+
+            var globalVal = PuertsNative.pesapi_global(papis, env);
 
             logDelegate = ExpressionsWrap.BuildMethodWrap(typeof(Console), typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(object) }), true);
             var print = PuertsNative.pesapi_create_function(papis, env, logDelegate, IntPtr.Zero, null);
