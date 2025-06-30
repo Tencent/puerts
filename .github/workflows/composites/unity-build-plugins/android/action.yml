@@ -17,7 +17,7 @@ inputs:
   build_proj_dir:
     description: 'build project dir'     
     required: false
-    default: 'native_src'
+    default: 'native'
   GITHUB_TOKEN:
     required:
 
@@ -30,8 +30,19 @@ runs:
         cd unity
         npm i
         cd ${{ inputs.build_proj_dir }}
-        ANDROID_NDK=~/android-ndk-r21b node ../cli make --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
-        rm -rf .backends/${{ inputs.backend }}
+        cd puerts
+        ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-v8
+        ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        rm -rf .backends/papi-v8
+        cd ..
+        cd papi-quickjs
+        ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-lua
+        ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:

@@ -17,7 +17,7 @@ inputs:
   build_proj_dir:
     description: 'build project dir'     
     required: false
-    default: 'native_src'
+    default: 'native'
   GITHUB_TOKEN:
     required:
 
@@ -30,7 +30,18 @@ runs:
         cd unity
         npm i
         cd ${{ inputs.build_proj_dir }}
-        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../cli make --platform ohos --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd puerts
+        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../../cli make --platform ohos --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-v8
+        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../../cli make --platform ohos --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-quickjs
+        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../../cli make --platform ohos --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-lua
+        OHOS_NDK_HOME=~/ohos-sdk/linux/native node ../../cli make --platform ohos --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:

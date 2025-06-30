@@ -17,7 +17,7 @@ inputs:
   build_proj_dir:
     description: 'build project dir'     
     required: false
-    default: 'native_src'
+    default: 'native'
   GITHUB_TOKEN:
     required:
 
@@ -36,7 +36,18 @@ runs:
         cd unity
         npm i
         cd ${{ inputs.build_proj_dir }}
-        node ../cli make --platform linux --arch x64 --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd puerts
+        node ../../cli make --platform linux --arch x64 --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-v8
+        node ../../cli make --platform linux --arch x64 --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-quickjs
+        node ../../cli make --platform linux --arch x64 --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
+        cd papi-lua
+        node ../../cli make --platform linux --arch x64 --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
