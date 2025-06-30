@@ -1174,19 +1174,6 @@ handle_underlying:
             auto ptr = ${invokePapi('get_native_object_ptr')}(env, jsval);
             if (!ptr)
             {
-                if ((klass == g_typeofArrayBuffer || klass == il2cpp_defaults.object_class) && ${invokePapi('is_binary')}(env, jsval)) 
-                {
-                    Il2CppObject* ret = il2cpp::vm::Object::New(g_typeofArrayBuffer);
-
-                    const MethodInfo* ctor = il2cpp_class_get_method_from_name(g_typeofArrayBuffer, ".ctor", 3);
-                    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, void*, int, int, const MethodInfo* method);
-                    
-                    void* data;
-                    size_t length;
-                    data = ${invokePapi('get_value_binary')}(env, jsval, &length);
-                    ((NativeCtorPtr)ctor->methodPointer)(ret, data, (int)length, 0, ctor);   
-                    return ret;
-                }
                 if ((klass == g_typeofPersistentObjectInfo || klass == il2cpp_defaults.object_class) && ${invokePapi('is_object')}(env, jsval))
                 {
                     Il2CppClass* persistentObjectInfoClass = g_typeofPersistentObjectInfo;
@@ -1257,6 +1244,19 @@ handle_underlying:
                         goto return_nothing;
                     }
                     goto handle_underlying;
+                }
+                if ((klass == g_typeofArrayBuffer || klass == il2cpp_defaults.object_class) && ${invokePapi('is_binary')}(env, jsval)) 
+                {
+                    Il2CppObject* ret = il2cpp::vm::Object::New(g_typeofArrayBuffer);
+
+                    const MethodInfo* ctor = il2cpp_class_get_method_from_name(g_typeofArrayBuffer, ".ctor", 3);
+                    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, void*, int, int, const MethodInfo* method);
+                    
+                    void* data;
+                    size_t length;
+                    data = ${invokePapi('get_value_binary')}(env, jsval, &length);
+                    ((NativeCtorPtr)ctor->methodPointer)(ret, data, (int)length, 0, ctor);   
+                    return ret;
                 }
             return_nothing:
                 return nullptr;
