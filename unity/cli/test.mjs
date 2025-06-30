@@ -229,7 +229,6 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
     dlls = dlls.concat(qjsdlls);
 
     const v8dlls = await runPuertsMake(join(cwd, '../../native/papi-v8'), {
-        backend: 'v8_9.4.146.24',
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
@@ -316,7 +315,6 @@ export async function unityTest(cwd, unityPath) {
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-v8'), {
-        backend: 'v8_9.4.146.24',
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,

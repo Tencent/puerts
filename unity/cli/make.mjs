@@ -296,7 +296,7 @@ async function runPuertsMake(cwd, options) {
     if (!options.backend) {
         options.backend = bn;
     }
-    if (bn != "puerts" && !existsSync(join(cwd, `.backends/${options.backend}`))) {
+    if (!existsSync(join(cwd, `.backends/${options.backend}`))) {
         await downloadBackend(cwd, options.backend);
     }
     if (options.platform == "win" && options.config != "Release") {
