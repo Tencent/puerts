@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -79,9 +79,9 @@ namespace Puerts
 
             PuertsNative.pesapi_set_env_private(papis, env, new IntPtr(Idx));
 
-            // Õâ¸öºÍÎö¹¹º¯Êı²»Ò»Ñù£¬±ÈÈçÒ»¸öÔ­Éú¶ÔÏó£¬Èç¹û´«Ö¸Õë£¬²»ÓÃ×ö¶ÔÏóµÄdelete£¬µ«Èç¹ûËŞÖ÷ÊÇ´øgcµÄÓïÑÔ£¬»¹ÊÇÒª´¦ÀíÒıÓÃ³ÖÓĞµÄÎÊÌâ
-            // ²»¹ıÎö¹¹ÄÇÈç¹û²ÎÊı´øÉÏÊÇ·ñÒªÎö¹¹£¬Éè¼ÆÉÏ¿ÉÒÔ²»ĞèÒªÕâ¸ö»Øµ÷
-            // onObjectReleaseRef»¹ÓĞÁíÍâÒ»¸öÉè¶¨ÊÇºÍenterÄÇÅäºÏÊ¹ÓÃ£¬enter·µ»Ø¸öuserdata£¨±ÈÈçobjectPoolË÷Òı£©£¬ÔÚexitÄÇÊ¹ÓÃ
+            // è¿™ä¸ªå’Œææ„å‡½æ•°ä¸ä¸€æ ·ï¼Œæ¯”å¦‚ä¸€ä¸ªåŸç”Ÿå¯¹è±¡ï¼Œå¦‚æœä¼ æŒ‡é’ˆï¼Œä¸ç”¨åšå¯¹è±¡çš„deleteï¼Œä½†å¦‚æœå®¿ä¸»æ˜¯å¸¦gcçš„è¯­è¨€ï¼Œè¿˜æ˜¯è¦å¤„ç†å¼•ç”¨æŒæœ‰çš„é—®é¢˜
+            // ä¸è¿‡ææ„é‚£å¦‚æœå‚æ•°å¸¦ä¸Šæ˜¯å¦è¦ææ„ï¼Œè®¾è®¡ä¸Šå¯ä»¥ä¸éœ€è¦è¿™ä¸ªå›è°ƒ
+            // onObjectReleaseRefè¿˜æœ‰å¦å¤–ä¸€ä¸ªè®¾å®šæ˜¯å’Œenteré‚£é…åˆä½¿ç”¨ï¼Œenterè¿”å›ä¸ªuserdataï¼ˆæ¯”å¦‚objectPoolç´¢å¼•ï¼‰ï¼Œåœ¨exité‚£ä½¿ç”¨
             onObjectReleaseRefDelegate = onObjectReleaseRef;
             PuertsNative.pesapi_trace_native_object_lifecycle(papis, env, null, onObjectReleaseRefDelegate);
 
@@ -133,7 +133,7 @@ namespace Puerts
             }
             catch
             {
-                // Èç¹û³öÏÖÕâ´íÎó£¬Ó¦¸ÃÔõÃ´ÉÏ±¨ÄØ£¿
+                // å¦‚æœå‡ºç°è¿™é”™è¯¯ï¼Œåº”è¯¥æ€ä¹ˆä¸ŠæŠ¥å‘¢ï¼Ÿ
                 //Console.Error.WriteLine($"onObjectReleaseRef for {ptr} throw {e}");
             }
         }
