@@ -14,7 +14,7 @@ on:
       - .github/workflows/unreal_ci.yml
 
 env:
-  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_new_xcode.tgz"
+  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_new_xcode_win2022.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__241009/v8_bin_9.4.146.24.tgz"
   QJS_URL: "https://github.com/puerts/backend-quickjs/releases/download/QJS_241030/qjs_v8_bin.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
@@ -87,16 +87,10 @@ jobs:
         ${{ matrix.cmdinfo['change_backend'] }}
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xfz temp.tgz
-        wget -O SetupAndroid.bat -q  https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/SetupAndroid.bat
         mkdir output
     - name: SetupAndroid
       run: |
-        dir C:\Android\android-sdk
-        dir C:\Android\android-sdk\cmdline-tools
-        dir C:\Android\android-sdk\cmdline-tools\latest
-        dir C:\Android\android-sdk\cmdline-tools\latest\bin
-        dir .
-        .\SetupAndroid.bat
+        Engine\Extras\Android\SetupAndroid.bat
         chcp 65001 #set code page to utf-8
         echo "NDKROOT=C:\Android\android-sdk\ndk\21.4.7075529" >> $env:GITHUB_ENV
     - name: Build
