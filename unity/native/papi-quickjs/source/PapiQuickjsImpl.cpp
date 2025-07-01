@@ -312,7 +312,9 @@ uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
     auto ctx = qjsContextFromPesapiEnv(env);
     if (ctx != nullptr)
     {
-        auto len = JS_GetProperty(ctx, reinterpret_cast<pesapi::qjsimpl::pesapi_value__*>(pvalue)->v, JS_ATOM_length);
+        JSAtom lengthAtom = JS_NewAtom(ctx, "length");
+        auto len = JS_GetProperty(ctx, reinterpret_cast<pesapi::qjsimpl::pesapi_value__*>(pvalue)->v, lengthAtom);
+        JS_FreeAtom(ctx, lengthAtom);
         if (JS_IsException(len))
         {
             return 0;
@@ -528,8 +530,10 @@ void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
     auto info = reinterpret_cast<pesapi::qjsimpl::pesapi_callback_info__*>(pinfo);
     info->res = JS_EXCEPTION;
     info->ex = JS_NewError(info->ctx);
-    JS_DefinePropertyValue(info->ctx, info->ex, JS_ATOM_message, JS_NewString(info->ctx, msg),
+    JSAtom messageAtom = JS_NewAtom(info->ctx, "message");
+    JS_DefinePropertyValue(info->ctx, info->ex, messageAtom, JS_NewString(info->ctx, msg),
                            JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE);
+    JS_FreeAtom(info->ctx, messageAtom);
 }
 
 pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
@@ -622,7 +626,9 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
         {
             //JSValue fileNameVal = JS_GetProperty(ctx, scope->caught->exception, JS_ATOM_fileName);
             //JSValue lineNumVal = JS_GetProperty(ctx, scope->caught->exception, JS_ATOM_lineNumber);
-            JSValue stackVal = JS_GetProperty(ctx, scope->caught->exception, JS_ATOM_stack);
+            JSAtom stackAtom = JS_NewAtom(ctx, "stack");
+            JSValue stackVal = JS_GetProperty(ctx, scope->caught->exception, stackAtom);
+            JS_FreeAtom(ctx, stackAtom);
             if (JS_IsString(stackVal))
             {
                 auto stack = JS_ToCString(ctx, stackVal);

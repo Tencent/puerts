@@ -8,15 +8,6 @@
 #include <EASTL/allocator_malloc.h>
 #include "CppObjectMapperQuickjs.h"
 
-enum
-{
-    JS_ATOM_NULL_,
-#define DEF(name, str) JS_ATOM_##name,
-#include "quickjs-atom.h"
-#undef DEF
-    JS_ATOM_END,
-};
-
 namespace pesapi
 {
 namespace qjsimpl
