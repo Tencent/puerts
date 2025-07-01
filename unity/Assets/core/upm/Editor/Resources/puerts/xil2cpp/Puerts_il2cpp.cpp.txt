@@ -2730,36 +2730,81 @@ static bool RegisterType(Il2CppClass* klass)
         }
         //puerts::WrapData** wrapDatas = reinterpret_cast<puerts::WrapData**>(method.OverloadDatas.data());
     }
+    
+    g_registry_api->define_class(g_registry, classInfo->TypeId, classInfo->SuperTypeId, nullptr, classInfo->TypeId->name,
+        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, classInfo, false);
 
     size_t propertiesCount = gseters.size() + methods.size() + classInfo->Fields.size();
-    auto properties = g_registry_api->alloc_property_descriptors(propertiesCount);
-    size_t pos = 0;
-
+    int staticPropertyCount = 0;
+    int instancePropertyCount = 0;
+    int staticMethodCount = 0;
+    int instanceMethodCount = 0;
+    
     for (auto const& method : methods)
     {
-        g_registry_api->set_method_info(
-            properties, pos++, method->Name, method->IsStatic, &MethodCallback, method, nullptr);
+        if (method->IsStatic)
+        {
+            ++staticMethodCount;
+        }
+        else
+        {
+            ++instanceMethodCount;
+        }
     }
 
     for (auto const& kv : gseters)
     {
         auto geter_or_setter = kv.second.first ? kv.second.first : kv.second.second;
-        g_registry_api->set_property_info(properties, pos++, geter_or_setter->Name, geter_or_setter->IsStatic,
-            kv.second.first ? &MethodCallback : nullptr,
-            kv.second.second ? &MethodCallback : nullptr,
-            kv.second.first,
-            kv.second.second,
-            nullptr);
+        if (geter_or_setter->IsStatic)
+        {
+            ++staticPropertyCount;
+        }
+        else
+        {
+            ++instancePropertyCount;
+        }
     }
 
     for (auto& field : classInfo->Fields)
     {
-        g_registry_api->set_property_info(properties, pos++, field.Data->FieldInfo->name, field.IsStatic,
-            GetterCallback, SetterCallback, field.Data, field.Data, nullptr);
+        if (field.IsStatic)
+        {
+            ++staticPropertyCount;
+        }
+        else
+        {
+            ++instancePropertyCount;
+        }
+    }
+    
+    g_registry_api->set_property_info_size(g_registry, classInfo->TypeId, instanceMethodCount, staticMethodCount, instancePropertyCount, staticPropertyCount);
+
+    int ipidx = 0;
+    int spidx = 0;
+    int imidx = 0;
+    int smidx = 0;
+    for (auto const& method : methods)
+    {
+        g_registry_api->set_method_info(
+            g_registry, classInfo->TypeId, method->IsStatic ? smidx++ : imidx++, method->Name, method->IsStatic, &MethodCallback, method, false);
     }
 
-    g_registry_api->define_class(g_registry, classInfo->TypeId, classInfo->SuperTypeId, nullptr, classInfo->TypeId->name,
-        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo, false);
+    for (auto const& kv : gseters)
+    {
+        auto geter_or_setter = kv.second.first ? kv.second.first : kv.second.second;
+        g_registry_api->set_property_info(g_registry, classInfo->TypeId, geter_or_setter->IsStatic ? spidx++ : ipidx++, geter_or_setter->Name, geter_or_setter->IsStatic,
+            kv.second.first ? &MethodCallback : nullptr,
+            kv.second.second ? &MethodCallback : nullptr,
+            kv.second.first,
+            kv.second.second,
+            false);
+    }
+
+    for (auto& field : classInfo->Fields)
+    {
+        g_registry_api->set_property_info(g_registry, classInfo->TypeId, field.IsStatic ? spidx++ : ipidx++, field.Data->FieldInfo->name, field.IsStatic,
+            GetterCallback, SetterCallback, field.Data, field.Data, false);
+    }
 
     return true;
 }

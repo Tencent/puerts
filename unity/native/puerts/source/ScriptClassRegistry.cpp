@@ -19,17 +19,25 @@
 namespace PUERTS_REG_NAMESPACE
 {
 template <class T>
-static T* PropertyInfoDuplicate(T* Arr)
+static int PropertyInfoCountWithEndingNode(T* Arr)
 {
     if (Arr == nullptr)
-        return nullptr;
+        return 0;
     int Count = 0;
-    ;
     while (true)
     {
         if (Arr[Count++].Name == nullptr)
             break;
     }
+    return Count;
+}
+
+template <class T>
+static T* PropertyInfoDuplicate(T* Arr)
+{
+    if (Arr == nullptr)
+        return nullptr;
+    int Count = PropertyInfoCountWithEndingNode(Arr);
     T* Ret = (T*)::malloc(sizeof(T) *Count);
     ::memcpy(Ret, Arr, sizeof(T) * Count);
     return Ret;
@@ -115,7 +123,7 @@ public:
 
 private:
     eastl::map<const void*, ScriptClassDefinition*, eastl::less<const void*>, eastl::allocator_malloc> CDataIdToClassDefinition;
-    eastl::map<PString, ScriptClassDefinition*, eastl::less<PString>, eastl::allocator_malloc> CDataNameToClassDefinition; //ÐèÒª½ûÓÃrtti£¬·ñÔòº¬Îö¹¹º¯ÊýµÄÀà»áµ¼ÖÂ¶Ôlibstdc++/libc++µÄÒÀÀµ£¬¾¡¹ÜÃ»ÓÐÊ¹ÓÃc++µÄapi
+    eastl::map<PString, ScriptClassDefinition*, eastl::less<PString>, eastl::allocator_malloc> CDataNameToClassDefinition; //ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½rttiï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ¼ï¿½Â¶ï¿½libstdc++/libc++ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ê¹ï¿½ï¿½c++ï¿½ï¿½api
     pesapi_class_not_found_callback ClassNotFoundCallback = nullptr;
 #if USING_IN_UNREAL_ENGINE
     eastl::map<PString, AddonRegisterFunc, eastl::less<PString>, eastl::allocator_malloc> AddonRegisterInfos;

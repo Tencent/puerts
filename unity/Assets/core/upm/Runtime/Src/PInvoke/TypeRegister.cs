@@ -92,7 +92,7 @@ namespace Puerts
 
         public Type FindTypeById(int id)
         {
-            var current = typeArray; // ��ȡ��ǰ�������
+            var current = typeArray; 
             return (uint)id < (uint)current.Length ? current[id] : null;
         }
 
@@ -157,11 +157,21 @@ namespace Puerts
             FieldInfo[] fieldInfos = type.GetFields(flag);
             Dictionary<MemberKey, List<MethodInfo>> methodCallbacks = new Dictionary<MemberKey, List<MethodInfo>>();
             Dictionary<MemberKey, AccessorInfo> propertyCallbacks = new Dictionary<MemberKey, AccessorInfo>();
+            int staticPropertyCount = 0;
+            int instancePropertyCount = 0;
             Action<MemberKey, pesapi_callback, pesapi_callback> addPropertyCallback = (key, getter, setter) =>
             {
                 AccessorInfo accessorCallbackPair;
                 if (!propertyCallbacks.TryGetValue(key, out accessorCallbackPair))
                 {
+                    if (key.IsStatic)
+                    {
+                        ++staticPropertyCount;
+                    }
+                    else
+                    {
+                        ++instancePropertyCount;
+                    }
                     accessorCallbackPair = new AccessorInfo();
                     propertyCallbacks.Add(key, accessorCallbackPair);
                 }
@@ -176,11 +186,21 @@ namespace Puerts
                     callbacksCache.Add(setter);
                 }
             };
+            int staticMethodCount = 0;
+            int instanceMethodCount = 0;
             Action<MemberKey, MethodInfo> addOverload = (key, methodInfo) =>
             {
                 List<MethodInfo> overloads;
                 if (!methodCallbacks.TryGetValue(key, out overloads))
                 {
+                    if (key.IsStatic)
+                    {
+                        ++staticMethodCount;
+                    }
+                    else
+                    {
+                        ++instanceMethodCount;
+                    }
                     overloads = new List<MethodInfo>();
                     methodCallbacks.Add(key, overloads);
                 }
@@ -272,37 +292,7 @@ namespace Puerts
 #endif
                 }
             }
-            IntPtr properties = reg_api.alloc_property_descriptors(new UIntPtr((uint)(methodCallbacks.Count + propertyCallbacks.Count)));
-            uint idx = 0;
-            foreach(var kv in propertyCallbacks)
-            {
-                try
-                {
-                    IntPtr ptr = StringToIntPtr(kv.Key.Name);
-                    reg_api.set_property_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, kv.Value.Getter, kv.Value.Setter, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                }
-                catch { }
-
-            }
-            foreach(var kv in methodCallbacks)
-            {
-                try
-                {
-                    IntPtr ptr = StringToIntPtr(kv.Key.Name);
-                    pesapi_callback callback = ExpressionsWrap.BuildMethodWrap(type, kv.Value.ToArray(), false);
-                    callbacksCache.Add(callback);
-                    reg_api.set_method_info(properties, new UIntPtr(idx++), ptr, kv.Key.IsStatic, callback, IntPtr.Zero, IntPtr.Zero);
-                }
-                catch (Exception e)
-                {
-                    var msg = $"wrap {kv.Key.Name} of {type} fail! message: {e.Message}, stack: {e.StackTrace}";
-#if UNITY_EDITOR
-                    UnityEngine.Debug.LogWarning(msg);
-#else
-                    Console.WriteLine(msg);
-#endif
-                }
-            }
+            
             int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
             
             pesapi_constructor ctorWrap = null;
@@ -342,7 +332,41 @@ namespace Puerts
                 };
             }
             callbacksCache.Add(ctorWrap);
-            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, new UIntPtr(idx), properties, IntPtr.Zero, true);
+            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, IntPtr.Zero, true);
+            reg_api.set_property_info_size(registry, new IntPtr(typeId), instanceMethodCount, staticMethodCount, instancePropertyCount, staticPropertyCount);
+
+            int ipidx = 0;
+            int spidx = 0;
+            foreach (var kv in propertyCallbacks)
+            {
+                try
+                {
+                    reg_api.set_property_info(registry, new IntPtr(typeId), kv.Key.IsStatic ? spidx++ : ipidx++, kv.Key.Name, kv.Key.IsStatic, kv.Value.Getter, kv.Value.Setter, IntPtr.Zero, IntPtr.Zero, true);
+                }
+                catch { }
+
+            }
+            int imidx = 0;
+            int smidx = 0;
+            foreach (var kv in methodCallbacks)
+            {
+                try
+                {
+                    pesapi_callback callback = ExpressionsWrap.BuildMethodWrap(type, kv.Value.ToArray(), false);
+                    callbacksCache.Add(callback);
+                    reg_api.set_method_info(registry, new IntPtr(typeId), kv.Key.IsStatic ? smidx++ : imidx++, kv.Key.Name, kv.Key.IsStatic, callback, IntPtr.Zero, true);
+                }
+                catch (Exception e)
+                {
+                    var msg = $"wrap {kv.Key.Name} of {type} fail! message: {e.Message}, stack: {e.StackTrace}";
+#if UNITY_EDITOR
+                    UnityEngine.Debug.LogWarning(msg);
+#else
+                    Console.WriteLine(msg);
+#endif
+                }
+            }
+
             registerFinished[typeId] = true;
             return typeId;
         }

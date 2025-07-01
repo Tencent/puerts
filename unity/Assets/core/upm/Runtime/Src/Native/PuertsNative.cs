@@ -812,29 +812,6 @@ namespace Puerts
         IntPtr return_type, UIntPtr parameter_count, IntPtr parameter_types);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate IntPtr pesapi_alloc_property_descriptors_func(UIntPtr count);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void pesapi_set_method_info_func(
-        IntPtr properties, UIntPtr index,
-        IntPtr name,
-        [MarshalAs(UnmanagedType.U1)] bool is_static,
-        pesapi_callback method,
-        IntPtr data,
-        IntPtr signature_info);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void pesapi_set_property_info_func(
-        IntPtr properties, UIntPtr index,
-        IntPtr name,
-        [MarshalAs(UnmanagedType.U1)] bool is_static,
-        pesapi_callback getter,
-        pesapi_callback setter,
-        IntPtr getter_data,
-        IntPtr setter_data,
-        IntPtr type_info);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_define_class_func(
         IntPtr registry,
         IntPtr type_id, IntPtr super_type_id,
@@ -842,10 +819,38 @@ namespace Puerts
         [MarshalAs(UnmanagedType.LPStr)] string type_name,
         pesapi_constructor constructor,
         pesapi_finalize finalize,
-        UIntPtr property_count,
-        IntPtr properties,
         IntPtr data,
-        [MarshalAs(UnmanagedType.U1)] bool copy_str);
+        bool copy_str);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void pesapi_set_property_info_size_func(
+        IntPtr registry,
+        IntPtr type_id,
+        int method_count, int function_count, int property_count, int variable_count);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void pesapi_set_method_info_func(
+        IntPtr registry,
+        IntPtr type_id,
+        int index,
+        [MarshalAs(UnmanagedType.LPStr)] string name,
+        bool is_static,
+        pesapi_callback method,
+        IntPtr data,
+        bool copy_str);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void pesapi_set_property_info_func(
+        IntPtr registry,
+        IntPtr type_id,
+        int index,
+        [MarshalAs(UnmanagedType.LPStr)] string name,
+        bool is_static,
+        pesapi_callback getter,
+        pesapi_callback setter,
+        IntPtr getter_data,
+        IntPtr setter_data,
+        bool copy_str);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate IntPtr pesapi_get_class_data_func(IntPtr registry, IntPtr type_id, [MarshalAs(UnmanagedType.U1)] bool force_load);
@@ -877,10 +882,10 @@ namespace Puerts
         public pesapi_alloc_type_infos_func alloc_type_infos;
         public pesapi_set_type_info_func set_type_info;
         public pesapi_create_signature_info_func create_signature_info;
-        public pesapi_alloc_property_descriptors_func alloc_property_descriptors;
+        public pesapi_define_class_func define_class;
+        public pesapi_set_property_info_size_func set_property_info_size;
         public pesapi_set_method_info_func set_method_info;
         public pesapi_set_property_info_func set_property_info;
-        public pesapi_define_class_func define_class;
         public pesapi_get_class_data_func get_class_data;
         public pesapi_on_class_not_found_func on_class_not_found;
         public pesapi_class_type_info_func class_type_info;

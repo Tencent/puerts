@@ -81,74 +81,23 @@ pesapi_signature_info pesapi_create_signature_info(
     return reinterpret_cast<pesapi_signature_info>(info);
 }
 
-pesapi_property_descriptor pesapi_alloc_property_descriptors(size_t count)
+const char * str_dup(const char* str)
 {
-    auto ret = static_cast<pesapi_property_descriptor__*>(malloc(sizeof(pesapi_property_descriptor__) * count));
-    memset(ret, 0, sizeof(pesapi_property_descriptor__) * count);
-    return reinterpret_cast<pesapi_property_descriptor>(ret);
-}
-
-void pesapi_set_method_info(pesapi_property_descriptor pproperties, size_t index, const char* name, int is_static,
-    pesapi_callback method, void* data, pesapi_signature_info signature_info)
-{
-    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
-    properties[index].name = name;
-    properties[index].is_static = is_static;
-    properties[index].method = method;
-    properties[index].data0 = data;
-    properties[index].info.signature_info = reinterpret_cast<pesapi_signature_info__*>(signature_info);
-}
-
-void pesapi_set_property_info(pesapi_property_descriptor pproperties, size_t index, const char* name, int is_static,
-    pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, pesapi_type_info type_info)
-{
-    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
-    properties[index].name = name;
-    properties[index].is_static = is_static;
-    properties[index].getter = getter;
-    properties[index].setter = setter;
-    properties[index].data0 = getter_data;
-    properties[index].data1 = setter_data;
-    properties[index].info.type_info = reinterpret_cast<pesapi_type_info__*>(type_info);
-}
-
-static void free_property_descriptor(pesapi_property_descriptor pproperties, size_t property_count)
-{
-    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
-    for (size_t i = 0; i < property_count; i++)
+    if (str == nullptr)
     {
-        pesapi_property_descriptor__* p = properties + i;
-        if (p->getter != nullptr || p->setter != nullptr)
-        {
-            if (p->info.type_info)
-            {
-                free(p->info.type_info);
-            }
-        }
-        else if (p->method != nullptr)
-        {
-            if (p->info.signature_info)
-            {
-                if (p->info.signature_info->return_type)
-                {
-                    free(p->info.signature_info->return_type);
-                }
-                if (p->info.signature_info->parameter_types)
-                {
-                    free(p->info.signature_info->parameter_types);
-                }
-                p->info.signature_info->~pesapi_signature_info__();
-                free(p->info.signature_info);
-            }
-        }
+        return nullptr;
     }
+    auto len = strlen(str);
+    auto ret = (char*)malloc(len + 1);
+    memcpy(ret, str, len + 1);
+    return ret;
 }
 
 // set module name here during loading, set nullptr after module loaded
 const char* GPesapiModuleName = nullptr;
 
 void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor pproperties, void* data, int copy_str)
+    pesapi_finalize finalize, void* data, int copy_str)
 {
     puerts::ScriptClassDefinition classDef = ScriptClassEmptyDefinition;
     classDef.TypeId = type_id;
@@ -162,60 +111,64 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
     }
     else
     {
-        classDef.ScriptName = type_name;
+        classDef.ScriptName = copy_str ? str_dup(type_name) : type_name;
     }
     classDef.Data = data;
 
     classDef.Initialize = constructor;
     classDef.Finalize = finalize;
 
-    eastl::vector<puerts::ScriptFunctionInfo, eastl::allocator_malloc> p_methods;
-    eastl::vector<puerts::ScriptFunctionInfo, eastl::allocator_malloc> p_functions;
-    eastl::vector<puerts::ScriptPropertyInfo, eastl::allocator_malloc> p_properties;
-    eastl::vector<puerts::ScriptPropertyInfo, eastl::allocator_malloc> p_variables;
+    puerts::RegisterScriptClass(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), classDef);
+}
 
-    auto properties = reinterpret_cast<pesapi_property_descriptor__*>(pproperties);
-    for (int i = 0; i < property_count; i++)
+void pesapi_set_property_info_size(pesapi_registry registry, const void* type_id, int method_count, int function_count, int property_count, int variable_count)
+{
+    puerts::ScriptClassDefinition* classDef = const_cast<puerts::ScriptClassDefinition*>(puerts::FindClassByID(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), type_id));
+    if (classDef)
     {
-        pesapi_property_descriptor__* p = properties + i;
-        if (p->getter != nullptr || p->setter != nullptr)
+        classDef->Methods = (puerts::ScriptFunctionInfo*)malloc((method_count + 1) * sizeof(puerts::ScriptFunctionInfo));
+        memset(classDef->Methods, 0, (method_count + 1) * sizeof(puerts::ScriptFunctionInfo));
+        classDef->Functions = (puerts::ScriptFunctionInfo*)malloc((function_count + 1) * sizeof(puerts::ScriptFunctionInfo));
+        memset(classDef->Functions, 0, (function_count + 1) * sizeof(puerts::ScriptFunctionInfo));
+        classDef->Properties = (puerts::ScriptPropertyInfo*)malloc((property_count + 1) * sizeof(puerts::ScriptPropertyInfo));
+        memset(classDef->Properties, 0, (property_count + 1) * sizeof(puerts::ScriptPropertyInfo));
+        classDef->Variables = (puerts::ScriptPropertyInfo*)malloc((variable_count + 1) * sizeof(puerts::ScriptPropertyInfo));
+        memset(classDef->Variables, 0, (variable_count + 1) * sizeof(puerts::ScriptPropertyInfo));
+    }
+}
+
+void pesapi_set_method_info(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static,
+    pesapi_callback method, void* data, int copy_str)
+{
+    const puerts::ScriptClassDefinition* classDef = puerts::FindClassByID(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), type_id);
+    if (classDef)
+    {
+        if (is_static)
         {
-            if (p->is_static)
-            {
-                p_variables.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
-            }
-            else
-            {
-                p_properties.push_back({p->name, p->getter, p->setter, p->data0, p->data1});
-            }
+            classDef->Functions[index] = {copy_str ? str_dup(name) : name, method, data};
         }
-        else if (p->method != nullptr)
+        else
         {
-            puerts::ScriptFunctionInfo finfo{p->name, p->method, p->data0};
-            if (p->is_static)
-            {
-                p_functions.push_back(finfo);
-            }
-            else
-            {
-                p_methods.push_back(finfo);
-            }
+            classDef->Methods[index] = {copy_str ? str_dup(name) : name, method, data};
         }
     }
+}
 
-    free_property_descriptor(pproperties, property_count);
-
-    p_methods.push_back(puerts::ScriptFunctionInfo());
-    p_functions.push_back(puerts::ScriptFunctionInfo());
-    p_properties.push_back(puerts::ScriptPropertyInfo());
-    p_variables.push_back(puerts::ScriptPropertyInfo());
-
-    classDef.Methods = p_methods.data();
-    classDef.Functions = p_functions.data();
-    classDef.Properties = p_properties.data();
-    classDef.Variables = p_variables.data();
-
-    puerts::RegisterScriptClass(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), classDef);
+void pesapi_set_property_info(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static,
+    pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, int copy_str)
+{
+    const puerts::ScriptClassDefinition* classDef = puerts::FindClassByID(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), type_id);
+    if (classDef)
+    {
+        if (is_static)
+        {
+            classDef->Variables[index] = {copy_str ? str_dup(name) : name, getter, setter, getter_data, setter_data};
+        }
+        else
+        {
+            classDef->Properties[index] = {copy_str ? str_dup(name) : name, getter, setter, getter_data, setter_data};
+        }
+    }
 }
 
 void* pesapi_get_class_data(pesapi_registry _registry, const void* type_id, int force_load)
@@ -254,18 +207,18 @@ const void* pesapi_find_type_id(pesapi_registry registry, const char* module_nam
 }
 
 pesapi_registry_api g_reg_apis = {
-    (pesapi_create_registry_func)pesapi_create_registry,
-    (pesapi_alloc_type_infos_func)pesapi_alloc_type_infos,
-    (pesapi_set_type_info_func)pesapi_set_type_info,
-    (pesapi_create_signature_info_func)pesapi_create_signature_info,
-    (pesapi_alloc_property_descriptors_func)pesapi_alloc_property_descriptors,
-    (pesapi_set_method_info_func)pesapi_set_method_info,
-    (pesapi_set_property_info_func)pesapi_set_property_info,
-    (pesapi_define_class_func)pesapi_define_class,
-    (pesapi_get_class_data_func)pesapi_get_class_data,
-    (pesapi_on_class_not_found_func)pesapi_on_class_not_found,
-    (pesapi_class_type_info_func)pesapi_class_type_info,
-    (pesapi_find_type_id_func)pesapi_find_type_id
+    pesapi_create_registry,
+    pesapi_alloc_type_infos,
+    pesapi_set_type_info,
+    pesapi_create_signature_info,
+    pesapi_define_class,
+    pesapi_set_property_info_size,
+    pesapi_set_method_info,
+    pesapi_set_property_info,
+    pesapi_get_class_data,
+    pesapi_on_class_not_found,
+    pesapi_class_type_info,
+    pesapi_find_type_id
 };
 
 }    // namespace regimpl
