@@ -178,7 +178,7 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/arm64',
             hook: function (CMAKE_BUILD_PATH, options, cmakeAddedLibraryName, cmakeDArgs) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -D-DCMAKE_OSX_ARCHITECTURES=arm64 -DPLATFORM_MAC_ARM64 -GXcode ..`).code);
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_OSX_ARCHITECTURES=arm64 -DPLATFORM_MAC_ARM64 -GXcode ..`).code);
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
                 assert.equal(0, exec(`codesign --sign - --options linker-signed --force ${CMAKE_BUILD_PATH}/${options.config}/lib${cmakeAddedLibraryName}.dylib`).code);
