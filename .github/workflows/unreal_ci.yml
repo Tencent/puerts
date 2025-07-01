@@ -90,6 +90,10 @@ jobs:
         mkdir output
     - name: SetupAndroid
       run: |
+        dir C:\Android\android-sdk
+        dir C:\Android\android-sdk\cmdline-tools
+        dir C:\Android\android-sdk\cmdline-tools\latest
+        dir C:\Android\android-sdk\cmdline-tools\latest\bin
         Engine\Extras\Android\SetupAndroid.bat
         chcp 65001 #set code page to utf-8
         echo "NDKROOT=C:\Android\android-sdk\ndk\21.4.7075529" >> $env:GITHUB_ENV
