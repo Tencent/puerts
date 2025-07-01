@@ -87,6 +87,7 @@ jobs:
         ${{ matrix.cmdinfo['change_backend'] }}
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xfz temp.tgz
+        wget -O SetupAndroid.bat -q  https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/SetupAndroid.bat
         mkdir output
     - name: SetupAndroid
       run: |
@@ -94,8 +95,7 @@ jobs:
         dir C:\Android\android-sdk\cmdline-tools
         dir C:\Android\android-sdk\cmdline-tools\latest
         dir C:\Android\android-sdk\cmdline-tools\latest\bin
-        $env:ANDROID_HOME = "C:\Program Files (x86)\Android\android-sdk"
-        Engine\Extras\Android\SetupAndroid.bat
+        SetupAndroid.bat
         chcp 65001 #set code page to utf-8
         echo "NDKROOT=C:\Android\android-sdk\ndk\21.4.7075529" >> $env:GITHUB_ENV
     - name: Build
