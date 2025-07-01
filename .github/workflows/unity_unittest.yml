@@ -21,7 +21,7 @@ env:
 
 jobs:
   unittest-win-unity:
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v3
@@ -85,7 +85,7 @@ jobs:
 #          cat log2.txt | grep "Failed\|Passed" 
 
   unittest-win-dotnet:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/setup-dotnet@v3
         with:
