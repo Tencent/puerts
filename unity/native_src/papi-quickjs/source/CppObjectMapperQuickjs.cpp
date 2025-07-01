@@ -64,7 +64,9 @@ JSValue CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, pe
 JSValue CppObjectMapper::CreateError(JSContext* ctx, const char* message)
 {
     JSValue ret = JS_NewError(ctx);
-    JS_DefinePropertyValue(ctx, ret, JS_ATOM_message, JS_NewString(ctx, message), JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE);
+    JSAtom message_atom = JS_NewAtom(ctx, "message");
+    JS_DefinePropertyValue(ctx, ret, message_atom, JS_NewString(ctx, message), JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE);
+    JS_FreeAtom(ctx, message_atom);
     return ret;
 }
 
@@ -156,7 +158,9 @@ JSValue CppObjectMapper::PushNativeObject(const void* TypeId, void* ObjectPtr, b
         ClassDefinition = &PtrClassDef;
     }
     JSValue ctor = FindOrCreateClass(ClassDefinition);
-    JSValue proto = JS_GetProperty(ctx, ctor, JS_ATOM_prototype);
+    JSAtom prototype_atom = JS_NewAtom(ctx, "prototype");
+    JSValue proto = JS_GetProperty(ctx, ctor, prototype_atom);
+    JS_FreeAtom(ctx, prototype_atom);
     JSValue obj = JS_NewObjectProtoClass(ctx, proto, classId);
     JS_FreeValue(ctx, proto);
     BindAndAddToCache(ClassDefinition, ObjectPtr, obj, callFinalize);
@@ -247,7 +251,9 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
             if (clsDef->Initialize)
             {
                 pesapi_callback_info__ callbackInfo  { ctx, this_val, argc, argv, JS_VALUE_GET_PTR(ctor_data[2]), JS_UNDEFINED, JS_UNDEFINED };
-                JSValue proto = JS_GetProperty(ctx, this_val, JS_ATOM_prototype);
+                JSAtom prototype_atom = JS_NewAtom(ctx, "prototype");
+                JSValue proto = JS_GetProperty(ctx, this_val, prototype_atom);
+                JS_FreeAtom(ctx, prototype_atom);
                 callbackInfo.this_val = JS_NewObjectProtoClass(ctx, proto, mapper->classId);
                 JS_FreeValue(ctx, proto);
                 void* ptr = clsDef->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
@@ -270,14 +276,16 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
 
         JS_SetConstructorBit(ctx, func, 1);
 
+        JSAtom name_atom = JS_NewAtom(ctx, "name");
         auto clsName = JS_NewAtom(ctx, ClassDefinition->ScriptName);
         JS_DefinePropertyValue( 
             ctx, 
             func, 
-            JS_ATOM_name,
+            name_atom,
             JS_AtomToString(ctx, clsName), 
             JS_PROP_CONFIGURABLE
         );
+        JS_FreeAtom(ctx, name_atom);
         JS_FreeAtom(ctx, clsName);
 
         JSValue proto = JS_NewObject(ctx);
@@ -318,7 +326,9 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
             if (auto SuperDefinition = puerts::LoadClassByID(ClassDefinition->SuperTypeId))
             {
                 JSValue super_func = FindOrCreateClass(SuperDefinition);
-                JSValue parent_proto = JS_GetProperty(ctx, super_func, JS_ATOM_prototype);
+                JSAtom prototype_atom = JS_NewAtom(ctx, "prototype");
+                JSValue parent_proto = JS_GetProperty(ctx, super_func, prototype_atom);
+                JS_FreeAtom(ctx, prototype_atom);
                 JS_SetPrototype(ctx, proto, parent_proto);
                 JS_FreeValue(ctx, parent_proto);
             }
