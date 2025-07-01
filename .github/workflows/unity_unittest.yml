@@ -13,6 +13,17 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
+  pull_request:
+    paths: 
+      - unity/Assets/**
+      - unity/test/**
+      - unity/native/**
+      - unity/cli/**
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+      - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+      - .github/workflows/unity_unittest.yml
 #    branches-ignore:
 #      - 'unity-3.0.0'
   
