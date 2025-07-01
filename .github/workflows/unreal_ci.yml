@@ -94,6 +94,7 @@ jobs:
         dir C:\Android\android-sdk\cmdline-tools
         dir C:\Android\android-sdk\cmdline-tools\latest
         dir C:\Android\android-sdk\cmdline-tools\latest\bin
+        echo "ANDROID_HOME=C:\Program Files (x86)\Android\android-sdk" >> $env:GITHUB_ENV
         Engine\Extras\Android\SetupAndroid.bat
         chcp 65001 #set code page to utf-8
         echo "NDKROOT=C:\Android\android-sdk\ndk\21.4.7075529" >> $env:GITHUB_ENV
