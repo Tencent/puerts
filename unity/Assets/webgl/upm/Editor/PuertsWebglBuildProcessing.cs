@@ -136,6 +136,9 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
         var args = Path.GetFullPath("Packages/com.tencent.puerts.webgl/Cli/Javascripts~/index.js") + " " + command + " -p " + string.Join(" ", resourcesPattens.ConvertAll(p => 
             "\"" + p.Replace("\\", "/") + "\"")) + " -o \"" + output + "\"";
         var executeFileName = "node";
+#if UNITY_EDITOR_OSX
+        executeFileName = "/usr/local/bin/node";
+#endif
 
 #if !UNITY_EDITOR_WIN
         string userHome = Environment.GetEnvironmentVariable("HOME");
@@ -158,24 +161,27 @@ public class PuertsWebglBuildProcessing : IPreprocessBuildWithReport, IPostproce
             UseShellExecute = false,
             CreateNoWindow = true
         };
+#if UNITY_EDITOR_OSX
+        startInfo.EnvironmentVariables["PATH"] = "/usr/local/bin:" + Environment.GetEnvironmentVariable("PATH");
+#endif
 
         using (var process = System.Diagnostics.Process.Start(startInfo))
         {
-            process.OutputDataReceived += (sender, e) => 
+            process.OutputDataReceived += (sender, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
                     UnityEngine.Debug.Log(e.Data);
             };
-            process.ErrorDataReceived += (sender, e) => 
+            process.ErrorDataReceived += (sender, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
                     UnityEngine.Debug.LogError(e.Data);
             };
-            
+
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             process.WaitForExit();
-            
+
             if (process.ExitCode != 0)
             {
                 UnityEngine.Debug.LogError($"Node process exited with code: {process.ExitCode}");
