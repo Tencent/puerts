@@ -79,7 +79,7 @@ jobs:
           cachekey: '2021'
           install_path: /Applications/UNITY
           unity_modules: mac-il2cpp
-          architecture: arm64
+          architecture: x86_64
           UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
