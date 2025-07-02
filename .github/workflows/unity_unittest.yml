@@ -42,8 +42,8 @@ jobs:
 #        uses: ./.github/workflows/composites/unity-setup/
 #        with:
 #          os: 'win'
-#          version: '2022.3.59f1'
-#          cachekey: '2022'
+#          version: '2021.3.16f1'
+#          cachekey: '2021'
 #          install_path: C:/UNITY
 #          unity_modules: windows-il2cpp
 #          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
@@ -73,8 +73,8 @@ jobs:
         uses: ./.github/workflows/composites/unity-setup/
         with:
           os: 'osx'
-          version: '2021.3.16f1'
-          cachekey: 'unity2021arm64'
+          version: '2022.3.59f1'
+          cachekey: 'unity2022arm64'
           install_path: /Applications/UNITY
           unity_modules: mac-il2cpp
           architecture: arm64
@@ -86,7 +86,7 @@ jobs:
           cd unity
           npm i
           cd test/unity
-          node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
+          node ../../cli unity-test --unity /Applications/UNITY/2022.3.59f1/Unity.app/Contents/MacOS/Unity
       - name: TestResult
 #        if: always()
         shell: bash
