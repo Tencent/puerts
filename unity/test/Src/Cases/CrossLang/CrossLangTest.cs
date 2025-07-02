@@ -471,6 +471,7 @@ namespace Puerts.UnitTest
             AssertAndPrint("CSArrayBufferTestProp", arrayBufferTestProp.Bytes[0], 192);
             AssertAndPrint("CSArrayBufferTestFieldStatic", arrayBufferTestFieldStatic.Bytes[0], 192);
             AssertAndPrint("CSArrayBufferTestPropStatic", arrayBufferTestPropStatic.Bytes[0], 192);
+            arrayBufferTestPropStatic.Bytes[0] = 193;
         }
         /**
         * 判断引用即可
@@ -897,7 +898,9 @@ namespace Puerts.UnitTest
                     testHelper.arrayBufferTestProp = new Uint8Array([192]).buffer
                     TestHelper.arrayBufferTestFieldStatic = new Uint8Array([192]).buffer
                     TestHelper.arrayBufferTestPropStatic = new Uint8Array([192]).buffer
+                    const tmp = TestHelper.arrayBufferTestPropStatic;
                     testHelper.ArrayBufferTestCheckMemberValue();
+                    assertAndPrint('JSArrayBufferShouldBeCopied', new Uint8Array(tmp)[0], 192);
                 })()
             ");
             jsEnv.Tick();
