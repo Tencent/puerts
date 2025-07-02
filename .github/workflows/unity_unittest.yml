@@ -13,6 +13,7 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
+      - .github/workflows/composites/**
   pull_request:
     paths: 
       - unity/Assets/**
@@ -24,6 +25,7 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
+      - .github/workflows/composites/**
 #    branches-ignore:
 #      - 'unity-3.0.0'
   
