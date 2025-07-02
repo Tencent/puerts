@@ -999,6 +999,7 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         objMapper.setEnvPrivate(ptr);
     }
 
+    /*
     interface APIInfo {
         func: Function
         sig: string
@@ -1032,15 +1033,35 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         {func: pesapi_global, sig: "ii"},
         {func: pesapi_set_env_private, sig: "vii"}
     ];
+    */
 
-    var res = Object.create(null);
-    apiInfo.forEach((info) => {
-        res[info.func.name + "_js"] = info.func;
-    });
-
-    res.GetWebGLFFIApi = GetWebGLFFIApi;
-
-    return res;
+    return {
+        GetWebGLFFIApi: GetWebGLFFIApi,
+        pesapi_create_array_js: pesapi_create_array,
+        pesapi_create_object_js: pesapi_create_object,
+        pesapi_create_function_js: pesapi_create_function,
+        pesapi_create_class_js: pesapi_create_class,
+        pesapi_get_array_length_js: pesapi_get_array_length,
+        pesapi_native_object_to_value_js: pesapi_native_object_to_value,
+        pesapi_throw_by_string_js: pesapi_throw_by_string,
+        pesapi_open_scope_placement_js: pesapi_open_scope_placement,
+        pesapi_has_caught_js: pesapi_has_caught,
+        pesapi_get_exception_as_string_js: pesapi_get_exception_as_string,
+        pesapi_close_scope_placement_js: pesapi_close_scope_placement,
+        pesapi_create_value_ref_js: pesapi_create_value_ref,
+        pesapi_release_value_ref_js: pesapi_release_value_ref,
+        pesapi_get_value_from_ref_js: pesapi_get_value_from_ref,
+        pesapi_get_property_js: pesapi_get_property,
+        pesapi_set_property_js: pesapi_set_property,
+        pesapi_get_private_js: pesapi_get_private,
+        pesapi_set_private_js: pesapi_set_private,
+        pesapi_get_property_uint32_js: pesapi_get_property_uint32,
+        pesapi_set_property_uint32_js: pesapi_set_property_uint32,
+        pesapi_call_function_js: pesapi_call_function,
+        pesapi_eval_js: pesapi_eval,
+        pesapi_global_js: pesapi_global,
+        pesapi_set_env_private_js: pesapi_set_env_private
+    };
 }
 
 function GetWebGLFFIApi(engine: PuertsJSEngine) {
