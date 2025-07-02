@@ -22,19 +22,19 @@ PESAPI_EXTERN pesapi_value pesapi_create_object_js(pesapi_env env);
 PESAPI_EXTERN pesapi_value pesapi_create_function_js(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize);
 PESAPI_EXTERN pesapi_value pesapi_create_class_js(pesapi_env env, const void* type_id);
 PESAPI_EXTERN uint32_t pesapi_get_array_length_js(pesapi_env env, pesapi_value value);
-PESAPI_EXTERN pesapi_value pesapi_native_object_to_value_js(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize);
+PESAPI_EXTERN pesapi_value pesapi_native_object_to_value_js(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize);
 PESAPI_EXTERN void pesapi_throw_by_string_js(pesapi_callback_info pinfo, const char* msg);
 PESAPI_EXTERN pesapi_scope pesapi_open_scope_placement_js(pesapi_env_ref env_ref, struct pesapi_scope_memory* memory);
-PESAPI_EXTERN bool pesapi_has_caught_js(pesapi_scope scope);
-PESAPI_EXTERN const char* pesapi_get_exception_as_string_js(pesapi_scope scope, bool with_stack);
+PESAPI_EXTERN int pesapi_has_caught_js(pesapi_scope scope);
+PESAPI_EXTERN const char* pesapi_get_exception_as_string_js(pesapi_scope scope, int with_stack);
 PESAPI_EXTERN void pesapi_close_scope_placement_js(pesapi_scope scope);
 PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref_js(pesapi_env env, pesapi_value value, uint32_t internal_field_count);
 PESAPI_EXTERN void pesapi_release_value_ref_js(pesapi_value_ref value_ref);
 PESAPI_EXTERN void pesapi_get_value_from_ref_js(pesapi_env env, void* ptr, pesapi::webglimpl::JSValue* pvalue);
 PESAPI_EXTERN void pesapi_get_property_js(pesapi_env env, pesapi_value object, const char* key, pesapi::webglimpl::JSValue* pvalue);
 PESAPI_EXTERN void pesapi_set_property_js(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
-PESAPI_EXTERN bool pesapi_get_private_js(pesapi_env env, pesapi_value object, void** out_ptr);
-PESAPI_EXTERN bool pesapi_set_private_js(pesapi_env env, pesapi_value object, void* ptr);
+PESAPI_EXTERN int pesapi_get_private_js(pesapi_env env, pesapi_value object, void** out_ptr);
+PESAPI_EXTERN int pesapi_set_private_js(pesapi_env env, pesapi_value object, void* ptr);
 PESAPI_EXTERN void pesapi_get_property_uint32_js(pesapi_env env, pesapi_value object, uint32_t key, pesapi::webglimpl::JSValue* pvalue);
 PESAPI_EXTERN void pesapi_set_property_uint32_js(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
 PESAPI_EXTERN void pesapi_call_function_js(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[], pesapi::webglimpl::JSValue* presult);
@@ -318,7 +318,7 @@ T pesapi_get_value_generic(pesapi_env env, pesapi_value pvalue, Func convertFunc
 }
 
 template<typename Func>
-bool pesapi_is_generic(pesapi_env env, pesapi_value pvalue, Func convertFunc)
+int pesapi_is_generic(pesapi_env env, pesapi_value pvalue, Func convertFunc)
 {
 	(void)env;
 	return convertFunc(*(reinterpret_cast<JSValue*>(pvalue)));
@@ -396,10 +396,10 @@ JSValue JS_NewBufferLen(void *buf, uint32_t buf_len)
     return v;
 }
 
-int JS_ToBool(bool *pres, JSValue val)
+int JS_ToBool(int *pres, JSValue val)
 {
     int32_t tag = JS_VALUE_GET_TAG(val);
-    bool ret;
+    int ret;
     switch(tag) {
     case JS_TAG_INT:
         ret = JS_VALUE_GET_INT(val) != 0;
@@ -528,7 +528,7 @@ static inline int JS_ToFloat64(double *pres, JSValue val)
     return 0;
 }
 
-static inline bool JS_IsNumber(JSValue val)
+static inline int JS_IsNumber(JSValue val)
 {
     uint32_t tag = JS_VALUE_GET_TAG(val);
     return tag == JS_TAG_INT || JS_TAG_IS_FLOAT64(tag);
@@ -545,7 +545,7 @@ pesapi_value pesapi_create_undefined(pesapi_env env)
     return pesapiValueFromQjsValue(&literal_values_undefined);
 }
 
-pesapi_value pesapi_create_boolean(pesapi_env env, bool value)
+pesapi_value pesapi_create_boolean(pesapi_env env, int value)
 {
     return pesapiValueFromQjsValue(value ? &literal_values_true : &literal_values_false);
 }
@@ -618,9 +618,9 @@ pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
     return pesapiValueFromQjsValue(ret);
 }
 
-bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
+int pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_get_value_generic<bool>(env, pvalue, JS_ToBool);
+    return pesapi_get_value_generic<int>(env, pvalue, JS_ToBool);
 }
 
 int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value pvalue)
@@ -704,92 +704,92 @@ uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
 	return 0;
 }
 
-bool pesapi_is_null(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_null(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_NULL;
     });
 }
 
-bool pesapi_is_undefined(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_undefined(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_UNDEFINED;
     });
 }
 
-bool pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_BOOL;
     });
 }
 
-bool pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsNumber);
 }
 
-bool pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsNumber);
 }
 
-bool pesapi_is_int64(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_int64(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_INT64;
     });
 }
 
-bool pesapi_is_uint64(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_uint64(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_UINT64;
     });
 }
 
-bool pesapi_is_double(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_double(pesapi_env env, pesapi_value pvalue)
 {
     return pesapi_is_generic(env, pvalue, JS_IsNumber);
 }
 
-bool pesapi_is_string(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_string(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_STRING || JS_VALUE_GET_TAG(val) == JS_TAG_STRING16;
     });
 }
 
-bool pesapi_is_object(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_object(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) <= JS_TAG_OBJECT && JS_VALUE_GET_TAG(val) >= JS_TAG_NATIVE_OBJECT;
     });
 }
 
-bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_function(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_FUNCTION;
     });
 }
 
-bool pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_BUFFER;
     });
 }
 
-bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
+int pesapi_is_array(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, [](JSValue val) -> bool {
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> int {
         return JS_VALUE_GET_TAG(val) == JS_TAG_ARRAY;
     });
 }
 
-pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize)
+pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize)
 {
     auto ret = allocValueInCurrentScope();
     *ret = JS_MKPTR(JS_TAG_NATIVE_OBJECT, pesapi_native_object_to_value_js(env, type_id, object_ptr, call_finalize));
@@ -809,7 +809,7 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
     return (jsvalue.tag == JS_TAG_NATIVE_OBJECT) ? jsvalue.u.nto.typeId : nullptr;
 }
 
-bool pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
+int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
 {
     Il2CppClass* klass = (Il2CppClass*)type_id;
     Il2CppClass* objClass = (Il2CppClass*) pesapi_get_native_object_typeid(env, pvalue);
@@ -836,7 +836,7 @@ void pesapi_update_boxed_value(pesapi_env env, pesapi_value p_boxed_value, pesap
     pesapi_set_property_uint32(env, p_boxed_value, 0, pvalue);
 }
 
-bool pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
+int pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
     return pesapi_is_array(env, value);
 }
@@ -904,7 +904,7 @@ pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
     return SINGLE_ENV_REF;
 }
 
-bool pesapi_env_ref_is_valid(pesapi_env_ref penv_ref)
+int pesapi_env_ref_is_valid(pesapi_env_ref penv_ref)
 {
     return true; // valid forever
 }
@@ -939,13 +939,13 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_
 }
 
 // implement by js
-bool pesapi_has_caught(pesapi_scope pscope)
+int pesapi_has_caught(pesapi_scope pscope)
 {
     return false;
 }
 
 // implement by js
-const char* pesapi_get_exception_as_string(pesapi_scope pscope, bool with_stack)
+const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
 {
     return nullptr;
 }
@@ -1014,7 +1014,7 @@ void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref pvalue_ref)
     pesapi_release_value_ref_js((pesapi_value_ref)(value_ref->ptr));
 }
 
-bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
+int pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
 {
     return false;
 }
@@ -1044,13 +1044,13 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const cha
 //}
 
 // implement by js
-bool pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
+int pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
 {
     return {};
 }
 
 // implement by js
-bool pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
+int pesapi_set_private(pesapi_env env, pesapi_value pobject, void* ptr)
 {
     return false;
 }
