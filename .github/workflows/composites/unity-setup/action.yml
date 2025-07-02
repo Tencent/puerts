@@ -58,3 +58,4 @@ runs:
         unity-username: ${{ inputs.UNITY_USERNAME }}
         unity-password: ${{ inputs.UNITY_PASSWORD }}
         unity-serial: ${{ inputs.UNITY_SERIAL }}
+        project-path: ${{ github.workspace }}/unity/test/unity
