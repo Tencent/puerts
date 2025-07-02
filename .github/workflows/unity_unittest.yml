@@ -29,57 +29,19 @@ env:
   RUNID: 613573412
 
 jobs:
-  unittest-win-unity:
-    runs-on: windows-2022
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Unity
-        uses: ./.github/workflows/composites/unity-setup/
-        with:
-          os: 'win'
-          version: '2021.3.16f1'
-          cachekey: '2021'
-          install_path: C:/UNITY
-          unity_modules: windows-il2cpp
-          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-      - name: UnitTest
-        run: |
-          cd unity
-          npm i
-          cd test/unity
-          node ../../cli unity-test --unity C:/UNITY/2021.3.16f1/Editor/Unity.exe
-      - name: TestResult
-        if: always()
-        shell: bash
-        run: |
-          cd unity/test/unity
-          echo "testresult in v1"
-          cat log1.txt | grep "Failed\|Passed" 
-          echo "testresult in v2(reflection)"
-          cat log2.txt | grep "Failed\|Passed" 
-          echo "testresult in v2"
-          cat log3.txt | grep "Failed\|Passed" 
-          echo "testresult in v2(quickjs)"
-          cat log4.txt | grep "Failed\|Passed" 
-          echo "testresult in v2(mult)"
-          cat log5.txt | grep "Failed\|Passed" 
-      
-#  unittest-osx-unity:
-#    runs-on: macos-latest
+#  unittest-win-unity:
+#    runs-on: windows-2022
+#
 #    steps:
 #      - uses: actions/checkout@v3
 #      - name: Setup Unity
 #        uses: ./.github/workflows/composites/unity-setup/
 #        with:
-#          os: 'osx'
+#          os: 'win'
 #          version: '2021.3.16f1'
 #          cachekey: '2021'
-#          install_path: /Applications/UNITY
-#          unity_modules: mac-il2cpp
-#          architecture: x86_64
+#          install_path: C:/UNITY
+#          unity_modules: windows-il2cpp
 #          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
 #          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
 #          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
@@ -88,7 +50,7 @@ jobs:
 #          cd unity
 #          npm i
 #          cd test/unity
-#          node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
+#          node ../../cli unity-test --unity C:/UNITY/2021.3.16f1/Editor/Unity.exe
 #      - name: TestResult
 #        if: always()
 #        shell: bash
@@ -96,8 +58,46 @@ jobs:
 #          cd unity/test/unity
 #          echo "testresult in v1"
 #          cat log1.txt | grep "Failed\|Passed" 
-#          echo "testresult in v2"
+#          echo "testresult in v2(reflection)"
 #          cat log2.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2"
+#          cat log3.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2(quickjs)"
+#          cat log4.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2(mult)"
+#          cat log5.txt | grep "Failed\|Passed" 
+      
+  unittest-osx-unity:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Unity
+        uses: ./.github/workflows/composites/unity-setup/
+        with:
+          os: 'osx'
+          version: '2021.3.16f1'
+          cachekey: '2021'
+          install_path: /Applications/UNITY
+          unity_modules: mac-il2cpp
+          architecture: x86_64
+          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          cd test/unity
+          node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
+      - name: TestResult
+        if: always()
+        shell: bash
+        run: |
+          cd unity/test/unity
+          echo "testresult in v1"
+          cat log1.txt | grep "Failed\|Passed" 
+          echo "testresult in v2"
+          cat log2.txt | grep "Failed\|Passed" 
 
   unittest-win-dotnet:
     runs-on: windows-2022
