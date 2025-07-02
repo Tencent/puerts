@@ -53,7 +53,7 @@ runs:
         install-path: ${{ inputs.install_path }}
         architecture: ${{ inputs.architecture }}
     - name: Activate Unity
-      uses: kuler90/activate-unity@v1.1.3
+      uses: chexiongsheng/activate-unity@master
       with:
         unity-username: ${{ inputs.UNITY_USERNAME }}
         unity-password: ${{ inputs.UNITY_PASSWORD }}
