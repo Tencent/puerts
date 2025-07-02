@@ -372,6 +372,7 @@ async function makeOSXUniveralBinary(cwd, copyConfig) {
     const arm64binary = join(cwd, '../../Assets/core/upm/Plugins/', platformCompileConfig.osx.arm64.outputPluginPath, `lib${cmakeAddedLibraryName}.dylib`);
     const x64binary = join(cwd, '../../Assets/core/upm/Plugins/', platformCompileConfig.osx.x64.outputPluginPath, `${cmakeAddedLibraryName}.bundle`);
     assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${arm64binary} ${x64binary}`).code);
+    assert.equal(0, exec(`codesign --sign - --options linker-signed --force ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')}`).code);
 
     rm('-rf', arm64binary);
     rm('-rf', x64binary);
