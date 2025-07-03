@@ -499,7 +499,8 @@ namespace PuertsIl2cpp.Editor
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
 
 #if UNITY_WEBGL
-                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
+                    //打开这个会导致支持不了WebGL和QuickJs并存，因为生成代码的papid都调用WebGL的静态实现了
+//                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
 #endif
 
                     var cppWrapInfo = new CppWrappersInfo
@@ -721,7 +722,7 @@ namespace PuertsIl2cpp.Editor
                     jsEnv.ExecuteModule("puerts/templates/il2cpp_snippets.mjs");
 
 #if UNITY_WEBGL
-                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
+//                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
 #endif
 
                     string dataTransContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text.Replace("\\", "\\\\") + "`");
