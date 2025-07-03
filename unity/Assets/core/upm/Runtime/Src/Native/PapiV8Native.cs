@@ -14,7 +14,7 @@ namespace Puerts
     public class PapiV8Native
     {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
-        const string PAPIV8DLLNAME = "__Internal";
+        const string PAPIDLLNAME = "__Internal";
 #else
         const string PAPIDLLNAME = "PapiV8";
 #endif

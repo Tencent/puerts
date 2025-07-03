@@ -80,9 +80,6 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, BackendType backendExpect, IntPtr externalRuntime, IntPtr externalContext)
         {
-#if !UNITY_EDITOR && UNITY_WEBGL
-            if (jsEnvs.Count == 0) PuertsDLL.InitPuertsWebGL();
-#endif
             const int libVersionExpect = 11;
             int libVersion = PuertsNative.GetPapiVersion();
             if (libVersion != libVersionExpect)

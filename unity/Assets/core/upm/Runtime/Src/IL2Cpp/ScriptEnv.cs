@@ -67,7 +67,7 @@ namespace Puerts
             if (!isInitialized)
             {
 #if !UNITY_EDITOR && UNITY_WEBGL
-                PuertsDLL.InitPuertsWebGL();
+                NativeAPI.InitPuertsWebGL();
 #endif
                 lock (scriptEnvs)
                 {
