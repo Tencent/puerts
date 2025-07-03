@@ -528,7 +528,29 @@ export namespace PuertsJSEngine {
         PApiCallbackWithScope: (nativeCallback:number, ffi: number, info: number) => void;
         PApiConstructorWithScope: (nativeCallback:number, ffi: number, info: number) => number;
         InjectPapiGLNativeImpl: () => number;
-        HEAP8: Int8Array;
+        find_class_by_id: (registry: number, typeId: number) => number;
+        load_class_by_id:  (registry: number, typeId: number) => number;
+        get_class_name: (classDef: number) => number;
+        get_class_initialize: (classDef: number) => number;
+        get_class_finalize: (classDef: number) => number;
+        get_class_type_id: (classDef: number) => number;
+        get_class_super_type_id: (classDef: number) => number;
+        get_class_methods: (classDef: number) => number;
+        get_class_functions: (classDef: number) => number;
+        get_class_properties: (classDef: number) => number;
+        get_class_variables: (classDef: number) => number;
+        get_next_property_info: (propInfo: number) => number;
+        get_next_function_info: (funcInfo: number) => number;
+        get_property_info_name: (propInfo: number) => number;
+        get_property_info_getter: (propInfo: number) => number;
+        get_property_info_setter: (propInfo: number) => number;
+        get_function_info_name: (funcInfo: number) => number;
+        get_function_info_callback: (funcInfo: number) => number;
+        get_class_data: (classDef: number) => number;
+        get_property_info_getter_data: (propInfo: number) => number;
+        get_property_info_setter_data: (propInfo: number) => number;
+        get_function_info_data: (funcInfo: number) => number;
+    HEAP8: Int8Array;
         HEAPU8: Uint8Array;
         HEAP32: Int32Array;
         HEAPF32: Float32Array;
@@ -577,6 +599,28 @@ export class PuertsJSEngine {
             InjectPapiGLNativeImpl,
             PApiCallbackWithScope,
             PApiConstructorWithScope,
+            find_class_by_id,
+            load_class_by_id,
+            get_class_name,
+            get_class_initialize,
+            get_class_finalize,
+            get_class_type_id,
+            get_class_super_type_id,
+            get_class_methods,
+            get_class_functions,
+            get_class_properties,
+            get_class_variables,
+            get_next_property_info,
+            get_next_function_info,
+            get_property_info_name,
+            get_property_info_getter,
+            get_property_info_setter,
+            get_function_info_name,
+            get_function_info_callback,
+            get_class_data,
+            get_property_info_getter_data,
+            get_property_info_setter_data,
+            get_function_info_data,
             HEAP8,
             HEAPU8,
             HEAP32,
@@ -608,6 +652,29 @@ export class PuertsJSEngine {
             InjectPapiGLNativeImpl,
             PApiCallbackWithScope,
             PApiConstructorWithScope,
+
+            find_class_by_id,
+            load_class_by_id,
+            get_class_name,
+            get_class_initialize,
+            get_class_finalize,
+            get_class_type_id,
+            get_class_super_type_id,
+            get_class_methods,
+            get_class_functions,
+            get_class_properties,
+            get_class_variables,
+            get_next_property_info,
+            get_next_function_info,
+            get_property_info_name,
+            get_property_info_getter,
+            get_property_info_setter,
+            get_function_info_name,
+            get_function_info_callback,
+            get_class_data,
+            get_property_info_getter_data,
+            get_property_info_setter_data,
+            get_function_info_data,
 
             HEAP8,
             HEAPU8,

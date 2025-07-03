@@ -15,6 +15,9 @@
 #include <string.h>
 #include "TypeInfo.hpp"
 #include "PString.h"
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#endif
 
 namespace PUERTS_REG_NAMESPACE
 {
@@ -398,3 +401,126 @@ const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStr
 #endif
 
 }    // namespace PUERTS_NAMESPACE
+
+#if defined(__EMSCRIPTEN__)
+extern "C"
+{
+    const PUERTS_NAMESPACE::ScriptClassDefinition* EMSCRIPTEN_KEEPALIVE find_class_by_id(
+        PUERTS_NAMESPACE::ScriptClassRegistry* Registry, const void* TypeId)
+    {
+        return puerts::FindClassByID(Registry, TypeId);
+    }
+
+    const PUERTS_NAMESPACE::ScriptClassDefinition* EMSCRIPTEN_KEEPALIVE load_class_by_id(
+        PUERTS_NAMESPACE::ScriptClassRegistry* Registry, const void* TypeId)
+    {
+        return puerts::LoadClassByID(Registry, TypeId);
+    }
+
+    const char* EMSCRIPTEN_KEEPALIVE get_class_name(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->ScriptName;
+    }
+
+    pesapi_constructor EMSCRIPTEN_KEEPALIVE get_class_initialize(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->Initialize;
+    }
+
+    pesapi_finalize EMSCRIPTEN_KEEPALIVE get_class_finalize(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->Finalize;
+    }
+
+    const void* EMSCRIPTEN_KEEPALIVE get_class_type_id(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->TypeId;
+    }
+
+    const void* EMSCRIPTEN_KEEPALIVE get_class_super_type_id(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->SuperTypeId;
+    }
+
+    const PUERTS_NAMESPACE::ScriptFunctionInfo* EMSCRIPTEN_KEEPALIVE get_class_methods(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        if (classDef->Methods && classDef->Methods->Name == nullptr) return nullptr;
+        return classDef->Methods;
+    }
+
+    const PUERTS_NAMESPACE::ScriptFunctionInfo* EMSCRIPTEN_KEEPALIVE get_class_functions(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        if (classDef->Functions && classDef->Functions->Name == nullptr) return nullptr;
+        return classDef->Functions;
+    }
+
+    const PUERTS_NAMESPACE::ScriptPropertyInfo* EMSCRIPTEN_KEEPALIVE get_class_properties(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        if (classDef->Properties && classDef->Properties->Name == nullptr) return nullptr;
+        return classDef->Properties;
+    }
+
+    const PUERTS_NAMESPACE::ScriptPropertyInfo* EMSCRIPTEN_KEEPALIVE get_class_variables(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        if (classDef->Variables && classDef->Variables->Name == nullptr) return nullptr;
+        return classDef->Variables;
+    }
+
+    const PUERTS_NAMESPACE::ScriptPropertyInfo* EMSCRIPTEN_KEEPALIVE get_next_property_info(const PUERTS_NAMESPACE::ScriptPropertyInfo* current)
+    {
+        ++current;
+        return current->Name == nullptr ? nullptr : current;
+    }
+
+    const PUERTS_NAMESPACE::ScriptFunctionInfo* EMSCRIPTEN_KEEPALIVE get_next_function_info(const PUERTS_NAMESPACE::ScriptFunctionInfo* current)
+    {
+        ++current;
+        return current->Name == nullptr ? nullptr : current;
+    }
+
+    const char* EMSCRIPTEN_KEEPALIVE get_property_info_name(const PUERTS_NAMESPACE::ScriptPropertyInfo* propInfo)
+    {
+        return propInfo->Name;
+    }
+
+    pesapi_callback EMSCRIPTEN_KEEPALIVE get_property_info_getter(const PUERTS_NAMESPACE::ScriptPropertyInfo* propInfo)
+    {
+        return propInfo->Getter;
+    }
+
+    pesapi_callback EMSCRIPTEN_KEEPALIVE get_property_info_setter(const PUERTS_NAMESPACE::ScriptPropertyInfo* propInfo)
+    {
+        return propInfo->Setter;
+    }
+
+    const char* EMSCRIPTEN_KEEPALIVE get_function_info_name(const PUERTS_NAMESPACE::ScriptFunctionInfo* funcInfo)
+    {
+        return funcInfo->Name;
+    }
+
+    pesapi_callback EMSCRIPTEN_KEEPALIVE get_function_info_callback(const PUERTS_NAMESPACE::ScriptFunctionInfo* funcInfo)
+    {
+        return funcInfo->Callback;
+    }
+
+    void* EMSCRIPTEN_KEEPALIVE get_class_data(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->Data;
+    }
+
+    void* EMSCRIPTEN_KEEPALIVE get_property_info_getter_data(const PUERTS_NAMESPACE::ScriptPropertyInfo* propInfo)
+    {
+        return propInfo->GetterData;
+    }
+
+    void* EMSCRIPTEN_KEEPALIVE get_property_info_setter_data(const PUERTS_NAMESPACE::ScriptPropertyInfo* propInfo)
+    {
+        return propInfo->SetterData;
+    }
+
+    void* EMSCRIPTEN_KEEPALIVE get_function_info_data(const PUERTS_NAMESPACE::ScriptFunctionInfo* funcInfo)
+    {
+        return funcInfo->Data;
+    }
+}
+#endif

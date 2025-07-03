@@ -32,18 +32,23 @@ namespace Puerts
 
         public override void OnEnter(ScriptEnv scriptEnv)
         {
+#if !UNITY_WEBGL || UNITY_EDITOR
             string debugpath;
             string context = loader.ReadFile("puerts/esm_bootstrap.cjs", out debugpath);
             scriptEnv.Eval(context, debugpath);
+#endif
             scriptEnv.ExecuteModule("puerts/init_il2cpp.mjs");
+#if !UNITY_WEBGL || UNITY_EDITOR
             scriptEnv.ExecuteModule("puerts/log.mjs");
+#endif
             scriptEnv.ExecuteModule("puerts/csharp.mjs");
 
             scriptEnv.ExecuteModule("puerts/events.mjs");
             scriptEnv.ExecuteModule("puerts/timer.mjs");
             scriptEnv.ExecuteModule("puerts/promises.mjs");
-
+#if !UNITY_WEBGL || UNITY_EDITOR
             scriptEnv.ExecuteModule("puerts/websocketpp.mjs");
+#endif
         }
     }
 }

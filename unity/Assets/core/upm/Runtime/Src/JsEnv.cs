@@ -16,10 +16,16 @@ namespace Puerts
 {
     public enum BackendType : int
     {
+#if !UNITY_EDITOR && UNITY_WEBGL
+        WebGL = 0,
+        QuickJS = 1,
+        Auto = 2
+#else
         V8 = 0,
         Node = 1,
         QuickJS = 2,
         Auto = 3
+#endif
     }
 
     public class JsEnv : IDisposable
@@ -49,23 +55,35 @@ namespace Puerts
         {
         }
 
+#if !UNITY_EDITOR && UNITY_WEBGL
+        public static BackendType DefaultBackendType = BackendType.WebGL;
+#else
         public static BackendType DefaultBackendType = BackendType.Auto;
+#endif
 
         private void InitInnerEnv(BackendType backendExpect, int apiVersionExpect, ILoader loader, int debugPort)
         {
+
+#if !UNITY_EDITOR && UNITY_WEBGL
+            if (backendExpect == BackendType.WebGL)
+            {
+                Backend = new BackendWebGL();
+            }
+#else
             if (backendExpect == BackendType.V8)
             {
                 Backend = new BackendV8(loader);
             }
-            else if (backendExpect == BackendType.Node)
+            if (backendExpect == BackendType.Node)
             {
                 Backend = new BackendNodeJS(loader);
             }
-            else if (backendExpect == BackendType.QuickJS)
+#endif
+            if (backendExpect == BackendType.QuickJS)
             {
                 Backend = new BackendQuickJS(loader);
             }
-            else
+            if (Backend == null)
             {
                 throw new InvalidProgramException("unexpected backend: " + backendExpect);
             }

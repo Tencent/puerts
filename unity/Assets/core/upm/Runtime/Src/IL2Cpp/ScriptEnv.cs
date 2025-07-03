@@ -66,9 +66,6 @@ namespace Puerts
             disposed = true;
             if (!isInitialized)
             {
-#if !UNITY_EDITOR && UNITY_WEBGL
-                NativeAPI.InitPuertsWebGL();
-#endif
                 lock (scriptEnvs)
                 {
                     if (!isInitialized)
