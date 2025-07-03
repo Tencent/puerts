@@ -15,7 +15,7 @@ import WebGLBackendRegisterAPI from "./mixins/register";
 import WebGLBackendSetToInvokeJSArgumentApi from "./mixins/setToInvokeJSArgument";
 import WebGLBackendSetToJSInvokeReturnApi from "./mixins/setToJSInvokeReturn";
 import WebGLBackendSetToJSOutArgumentAPI from "./mixins/setToJSOutArgument";
-import {WebGLFFIApi, WebGLRegsterApi} from "./pesapiImpl"
+import {WebGLFFIApi} from "./pesapiImpl"
 
 declare const PUERTS_JS_RESOURCES: any;
 declare const wxRequire: any;
@@ -48,7 +48,6 @@ global.PuertsWebGL = {
             WebGLBackendSetToJSInvokeReturnApi(engine),
             WebGLBackendSetToJSOutArgumentAPI(engine),
             WebGLBackendRegisterAPI(engine),
-            WebGLRegsterApi(engine),
             WebGLFFIApi(engine),
             {
                 // bridgeLog: true,

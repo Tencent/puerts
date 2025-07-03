@@ -110,7 +110,7 @@ function ExecuteModule(fileName: string) {
         return {};
     }
     if (!loader) {
-        loader = (globalThis as any).jsEnv.loader;
+        loader = (globalThis as any).scriptEnv.GetLoader();
         loaderResolve = loader.Resolve ? (function(fileName: string, to: string = "") {
             const resolvedName = loader.Resolve(fileName, to);
             if (!resolvedName) {
@@ -549,8 +549,8 @@ class ClassRegister {
             const getter_data = wasmApi.get_property_info_getter_data(propertyInfoPtr);
             const setter_data = wasmApi.get_property_info_setter_data(propertyInfoPtr);
             return {
-                get: genJsCallback(wasmApi, getter, getter_data, webglFFI, isStatic),
-                set: genJsCallback(wasmApi, setter, setter_data, webglFFI, isStatic),
+                get: getter === 0 ? undefined : genJsCallback(wasmApi, getter, getter_data, webglFFI, isStatic),
+                set: setter === 0 ? undefined : genJsCallback(wasmApi, setter, setter_data, webglFFI, isStatic),
                 configurable: true,
                 enumerable: true
             }
@@ -559,7 +559,7 @@ class ClassRegister {
         let methodPtr = wasmApi.get_class_methods(typeDef);
         while (methodPtr != 0) {
             const fieldName = wasmApi.UTF8ToString(wasmApi.get_function_info_name(methodPtr) as any);
-            console.log(`method: ${name} ${fieldName}`);
+            //console.log(`method: ${name} ${fieldName}`);
             PApiNativeObject.prototype[fieldName] = nativeMethodInfoToJs(methodPtr, false);
             methodPtr = wasmApi.get_next_function_info(methodPtr);
         }
@@ -567,7 +567,7 @@ class ClassRegister {
         let functionPtr = wasmApi.get_class_functions(typeDef);
         while (functionPtr != 0) {
             const fieldName = wasmApi.UTF8ToString(wasmApi.get_function_info_name(functionPtr) as any);
-            console.log(`function: ${name} ${fieldName}`);
+            //console.log(`function: ${name} ${fieldName}`);
             (PApiNativeObject as any)[fieldName] = nativeMethodInfoToJs(functionPtr, true);
             functionPtr = wasmApi.get_next_function_info(functionPtr);
         }
@@ -575,7 +575,7 @@ class ClassRegister {
         let propertyPtr = wasmApi.get_class_properties(typeDef);
         while (propertyPtr != 0) {
             const fieldName = wasmApi.UTF8ToString(wasmApi.get_property_info_name(propertyPtr) as any);
-            console.log(`property: ${name} ${fieldName}`);
+            //console.log(`property: ${name} ${fieldName}`);
             Object.defineProperty(PApiNativeObject.prototype, fieldName, nativePropertyInfoToJs(propertyPtr, false));
             propertyPtr = wasmApi.get_next_property_info(propertyPtr);
         }
@@ -583,12 +583,12 @@ class ClassRegister {
         let variablePtr = wasmApi.get_class_variables(typeDef);
         while (variablePtr != 0) {
             const fieldName = wasmApi.UTF8ToString(wasmApi.get_property_info_name(variablePtr) as any);
-            console.log(`variable: ${name} ${fieldName}`);
+            //console.log(`variable: ${name} ${fieldName}`);
             Object.defineProperty(PApiNativeObject, fieldName, nativePropertyInfoToJs(variablePtr, false));
             variablePtr = wasmApi.get_next_property_info(variablePtr);
         }
 
-        console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
+        //console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
 
         this.registerClass(typeId, PApiNativeObject, wasmApi.getWasmTableEntry(finalize), data);
     }
@@ -1186,118 +1186,4 @@ function GetWebGLPapiVersion(): number {
 
 function CreateWebGLPapiEnvRef() {
     return 2048; // just not nullptr
-}
-
-export function WebGLRegsterApi(engine: PuertsJSEngine) {
-    type Descriptor = 
-        | { name: string; isStatic: boolean; callback: number; data: number }
-        | { 
-            name: string; 
-            isStatic: boolean; 
-            getter: number; 
-            setter: number; 
-            getter_data: number; 
-            setter_data: number 
-          };
-
-    // Initialize with proper type assertion
-    const descriptorsArray: Array<Array<Descriptor>> = [[]] as Array<Array<Descriptor>>;
-    return {
-        GetRegsterApi: function() {
-            return 0;
-        },
-        pesapi_alloc_property_descriptors: function(count:number): number {
-            descriptorsArray.push([]);
-            return descriptorsArray.length - 1;
-        },
-        pesapi_define_class: function(typeId: number, superTypeId: number, pname: CSString, constructor: number, finalize: number, propertyCount: number, properties: number, data: number) : void {
-            const descriptors = descriptorsArray[properties];
-            descriptorsArray[properties] = undefined;
-            const name = engine.unityApi.UTF8ToString(pname);
-
-            const PApiNativeObject = function (...args: any[]) {
-                let callbackInfo: number = undefined;
-                const argc = arguments.length;
-                const scope = Scope.enter();
-                try {
-                    callbackInfo = jsArgsToCallbackInfo(engine.unityApi, argc, args);
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
-                    const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-                    if (hasException) {
-                        throw getAndClearLastException();
-                    }
-                    objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
-                } finally {
-                    returnNativeCallbackInfo(engine.unityApi, argc, callbackInfo);
-                    scope.close(engine.unityApi);
-                }
-            }
-            Object.defineProperty(PApiNativeObject, "name", { value: name });
-
-            if (superTypeId != 0) {
-                const superType = ClassRegister.getInstance().loadClassById(superTypeId);
-                if (superType) {
-                    Object.setPrototypeOf(PApiNativeObject.prototype, superType.prototype);
-                }
-            }
-
-            descriptors.forEach(descriptor => {
-                if ('callback' in descriptor) {
-                    const jsCallback = genJsCallback(engine.unityApi, descriptor.callback, descriptor.data, webglFFI, descriptor.isStatic);
-                    if (descriptor.isStatic) {
-                        (PApiNativeObject as any)[descriptor.name] = jsCallback;
-                    } else {
-                        PApiNativeObject.prototype[descriptor.name] = jsCallback;
-                    }
-                } else {
-                    //console.log(`genJsCallback ${descriptor.name} ${descriptor.getter_data} ${webglFFI}`);
-                    var propertyDescriptor: PropertyDescriptor = {
-                        get: descriptor.getter === 0 ? undefined : genJsCallback(engine.unityApi, descriptor.getter, descriptor.getter_data, webglFFI, descriptor.isStatic),
-                        set: descriptor.setter === 0 ? undefined : genJsCallback(engine.unityApi, descriptor.setter, descriptor.setter_data, webglFFI, descriptor.isStatic),
-                        configurable: true,
-                        enumerable: true
-                    }
-                    if (descriptor.isStatic) {
-                        Object.defineProperty(PApiNativeObject, descriptor.name, propertyDescriptor);
-                    } else {
-                        Object.defineProperty(PApiNativeObject.prototype, descriptor.name, propertyDescriptor);
-                    }
-                }
-            });
-
-            //console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
-
-            ClassRegister.getInstance().registerClass(typeId, PApiNativeObject, engine.unityApi.getWasmTableEntry(finalize), data);
-        },
-        pesapi_get_class_data: function(typeId: number, forceLoad: boolean) : number {
-            return ClassRegister.getInstance().getClassDataById(typeId, forceLoad);
-        },
-        pesapi_on_class_not_found: function(callbackPtr: pesapi_class_not_found_callback) {
-            const jsCallback =engine.unityApi.getWasmTableEntry(callbackPtr);
-            ClassRegister.getInstance().setClassNotFoundCallback((typeId: number) : boolean => {
-                const ret = jsCallback(typeId);
-                return !!ret;
-            });
-        },
-        pesapi_set_method_info: function(properties: number, index: number, pname: CSString, is_static: boolean, method: number, data: number, signature_info: number): void {
-            const name = engine.unityApi.UTF8ToString(pname);
-            descriptorsArray[properties][index] = {
-                name: name,
-                isStatic: is_static,
-                callback: method,
-                data: data
-            };
-        },
-        pesapi_set_property_info: function(properties: number, index: number, pname: CSString, is_static: boolean, getter: number, setter: number, getter_data: number, setter_data: number, type_info: number): void {
-            const name = engine.unityApi.UTF8ToString(pname);
-            descriptorsArray[properties][index] = {
-                name: name,
-                isStatic: is_static,
-                getter: getter,
-                setter: setter,
-                getter_data: getter_data,
-                setter_data: setter_data
-            };
-        }
-    }
 }
