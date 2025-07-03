@@ -86,12 +86,6 @@ namespace Puerts
                     }
                 }
             }
-#if UNITY_WEBGL
-            else
-            {
-                throw new InvalidOperationException("more than one JsEnv instance is not supported in WebGL");
-            }
-#endif
 
             const int libVersionExpect = 11;
             int libVersion = PuertsNative.GetPapiVersion();

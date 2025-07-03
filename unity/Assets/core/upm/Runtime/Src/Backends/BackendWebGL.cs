@@ -12,9 +12,11 @@ namespace Puerts
 {
     public class BackendWebGL : BackendJs
     {
-        private IntPtr envRef;
+        static private bool hasOneInstance = false;
         public BackendWebGL(ILoader loader) : base(loader)
         {
+            if (hasOneInstance) throw new InvalidOperationException("more than one JsEnv instance is not supported in WebGL");
+            hasOneInstance = true;
             PapiWebGLNative.PreservePuertsCPP();
             PapiWebGLNative.InitPuertsWebGL();
         }
