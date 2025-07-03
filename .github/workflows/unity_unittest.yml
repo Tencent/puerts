@@ -76,7 +76,7 @@ jobs:
         with:
           os: 'osx'
           version: '2022.3.59f1'
-          cachekey: 'unity2022arm64'
+          cachekey: 'unity2022osxarm64'
           install_path: /Applications/UNITY
           unity_modules: mac-il2cpp
           architecture: arm64
@@ -88,7 +88,7 @@ jobs:
           cd unity
           npm i
           cd test/unity
-          node ../../cli unity-test --unity /Applications/UNITY/2021.3.16f1/Unity.app/Contents/MacOS/Unity
+          node ../../cli unity-test --unity /Applications/UNITY/2022.3.59f1/Unity.app/Contents/MacOS/Unity
       - name: TestResult
         if: always()
         shell: bash
