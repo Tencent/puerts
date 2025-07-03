@@ -264,5 +264,20 @@ namespace Puerts.UnitTest
             }
         }
 #endif
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [Test]
+        public void WebGLAndQuickjsBackend()
+        {
+            var jsEnv1 = new ScriptEnv(new BackendQuickJS(UnitTestEnv.GetLoader()));
+            var res = jsEnv1.Eval<string>("'hello'");
+            Assert.AreEqual("hello", res);
+
+            Assert.Catch(() =>
+            {
+                new ScriptEnv(new BackendWebGL(UnitTestEnv.GetLoader()));
+            });
+        }
+#endif
     }
 }
