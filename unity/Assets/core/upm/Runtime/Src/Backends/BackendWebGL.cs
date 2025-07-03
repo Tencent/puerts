@@ -48,6 +48,15 @@ namespace Puerts
         public override void LowMemoryNotification()
         {
         }
+
+        public override void OnEnter(ScriptEnv scriptEnv)
+        {
+            scriptEnv.ExecuteModule("puerts/init_il2cpp.mjs");
+            scriptEnv.ExecuteModule("puerts/csharp.mjs");
+            scriptEnv.ExecuteModule("puerts/events.mjs");
+            scriptEnv.ExecuteModule("puerts/timer.mjs");
+            scriptEnv.ExecuteModule("puerts/promises.mjs");
+        }
     }
 }
 #endif
