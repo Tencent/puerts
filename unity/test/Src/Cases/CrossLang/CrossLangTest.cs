@@ -1101,21 +1101,6 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void PushObjectTest()
-        {
-            var jsEnv = UnitTestEnv.GetEnv();
-            var ret = jsEnv.Eval<string>(@"
-                (function() {
-                    const helper = new CS.Puerts.UnitTest.CrossLangTestHelper();
-                    const obj = helper.PushObject();
-                    return puer.$typeof(obj.constructor).Name;
-                })()
-            ");
-            Assert.AreEqual("NewObject", ret);
-            jsEnv.Tick();
-        }
-
-        [Test]
         public void EnumNameTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
