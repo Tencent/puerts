@@ -8,7 +8,7 @@
  * 业务JS <-> WASM <-> unity jslib <-> 本js
  * 但整条链路其实都在一个v8(jscore)虚拟机里
  */
-import { JSFunction, global, PuertsJSEngine, jsFunctionOrObjectFactory, setOutValue32 } from "./library";
+import { global, PuertsJSEngine} from "./library";
 import {WebGLFFIApi} from "./pesapiImpl"
 
 declare const PUERTS_JS_RESOURCES: any;
