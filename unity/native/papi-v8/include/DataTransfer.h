@@ -385,16 +385,10 @@ public:
 
     FORCEINLINE static v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Local<v8::Context> Context, void* Data, size_t DataLength)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(Context->GetIsolate(), Data, DataLength);
-#else
-#if USING_IN_UNREAL_ENGINE
-        return v8::ArrayBuffer::New(Context->GetIsolate(), Data, DataLength);
-#else
-        auto Backing = v8::ArrayBuffer::NewBackingStore(Data, DataLength, v8::BackingStore::EmptyDeleter, nullptr);
-        return v8::ArrayBuffer::New(Context->GetIsolate(), std::move(Backing));
-#endif
-#endif
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Context->GetIsolate(), DataLength);
+        void* Buff = Ab->GetBackingStore()->Data();
+        ::memcpy(Buff, Data, DataLength);
+        return Ab;
     }
 
     FORCEINLINE static void* GetArrayBufferData(v8::Local<v8::ArrayBuffer> InArrayBuffer)
