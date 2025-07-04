@@ -426,6 +426,15 @@ if ( WITH_WEBSOCKET EQUAL 2 )
 	    set_property(TARGET wolfssl PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif ()
+
+    get_target_property(target_type puerts TYPE)
+    if (target_type STREQUAL "STATIC_LIBRARY" AND NOT BUILD_SHARED_LIBS)
+        add_custom_command(TARGET puerts POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:wolfssl>"
+            "$<TARGET_FILE_DIR:puerts>/$<TARGET_FILE_NAME:wolfssl>"
+            COMMENT "copy wolfssl to output directory")
+    endif()
 endif ()
 
 if ( USING_MULT_BACKEND )
@@ -459,6 +468,10 @@ if ( USING_MULT_BACKEND )
         target_compile_definitions (puerts PRIVATE MULT_BACKEND_V8)
         if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
             target_compile_definitions (v8backend PUBLIC WITH_IL2CPP_OPTIMIZATION)
+        endif()
+        if ( WITH_WEBSOCKET EQUAL 2 )
+            target_include_directories(v8backend PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
+            target_link_libraries(v8backend PRIVATE wolfssl)
         endif()
     endif ()
     # -------------------end v8 backend-------------------------
@@ -497,6 +510,10 @@ if ( USING_MULT_BACKEND )
         target_compile_definitions (puerts PRIVATE MULT_BACKEND_QJS)
         if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
             target_compile_definitions (qjsbackend PUBLIC WITH_IL2CPP_OPTIMIZATION)
+        endif()
+        if ( WITH_WEBSOCKET EQUAL 2 )
+            target_include_directories(qjsbackend PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
+            target_link_libraries(qjsbackend PRIVATE wolfssl)
         endif()
     endif ()
     # -------------------end qjs backend-------------------------
