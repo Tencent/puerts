@@ -24,6 +24,18 @@ namespace Puerts.UnitTest
     }
 
     [UnityEngine.Scripting.Preserve]
+    public struct TakeTestGC
+    {
+        [UnityEngine.Scripting.Preserve]
+        public TakeTestGC(int n)
+        {
+            testGC = new TestGC();
+        }
+
+        public TestGC testGC;
+    }
+
+    [UnityEngine.Scripting.Preserve]
     public class OverloadTestObject
     {
         public static int LastCall = 999;
@@ -134,6 +146,11 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve] A = 1,
         [UnityEngine.Scripting.Preserve] B = 213
     }
+
+    public class NewObject
+    {
+
+    }
    
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
@@ -156,6 +173,12 @@ namespace Puerts.UnitTest
         public static void TestEnumCheck(string a, TestEnum e = TestEnum.A, int b = 10) // 有默认值会促使其检查参数类型
         {
 
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public NewObject PushObject()
+        {
+            return new NewObject();
         }
     }
     public unsafe class TestHelper
@@ -1078,6 +1101,21 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void PushObjectTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var ret = jsEnv.Eval<string>(@"
+                (function() {
+                    const helper = new CS.Puerts.UnitTest.CrossLangTestHelper();
+                    const obj = helper.PushObject();
+                    return puer.$typeof(obj.constructor).Name;
+                })()
+            ");
+            Assert.AreEqual("NewObject", ret);
+            jsEnv.Tick();
+        }
+
+        [Test]
         public void EnumNameTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
@@ -1133,12 +1171,60 @@ namespace Puerts.UnitTest
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
+            TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
             const randomCount = Math.floor(Math.random() * 50) + 1;
 
             var objs = []
             for (let i = 0; i < randomCount; i++) {
                 objs.push(new CS.Puerts.UnitTest.TestGC())
+            }
+            randomCount;
+            ");
+
+            if (jsEnv.Backend is BackendV8)
+            {
+                jsEnv.Eval("gc()");
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(objCount, TestGC.ObjCount);
+            Assert.True(objCount > 0);
+
+            jsEnv.Eval("objs = undefined");
+
+            if (jsEnv.Backend is BackendV8)
+            {
+                jsEnv.Eval("gc()");
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(0, TestGC.ObjCount);
+
+            jsEnv.Dispose();
+        }
+
+        [Test]
+        public void TestJsStructGC()
+        {
+#if PUERTS_GENERAL
+            var jsEnv = new JsEnv(new TxtLoader());
+#else
+            var jsEnv = new JsEnv(new DefaultLoader());
+#endif
+            TestGC.ObjCount = 0;
+            var objCount = jsEnv.Eval<int>(@"
+            const randomCount = Math.floor(Math.random() * 50) + 1;
+
+            var objs = []
+            for (let i = 0; i < randomCount; i++) {
+                objs.push(new CS.Puerts.UnitTest.TakeTestGC(1))
             }
             randomCount;
             ");
@@ -1253,6 +1339,42 @@ namespace Puerts.UnitTest
             ");
             }, "invalid arguments to PassObj");
             jsEnv.Tick();
+        }
+
+        [Test]
+        public void CastJsFunctionAsTwoDiffDelegate()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.UsingAction<int>();
+            jsEnv.UsingAction<string, long>();
+            var cb1 = jsEnv.Eval<Action<int>>(@"
+            function __GCB(a, b) {
+              __GMSG = `${a}${b}`
+            }
+            __GCB;
+            ");
+            cb1(1);
+            Assert.AreEqual("1undefined", jsEnv.Eval<string>("__GMSG"));
+            var cb2 = jsEnv.Eval<Action<string, long>>("__GCB");
+            cb2("hello", 999);
+            Assert.AreEqual("hello999", jsEnv.Eval<string>("__GMSG"));
+        }
+
+        public delegate string NotGenericTestFunc(long t);
+
+        [Test]
+        public void NotGenericTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.UsingFunc<long, string>();
+            var cb1 = jsEnv.Eval<NotGenericTestFunc>(@"
+            function __NGTF(a) {
+              return `${a}`
+            }
+            __NGTF;
+            ");
+            ;
+            Assert.AreEqual("9999", cb1(9999));
         }
     }
 }
