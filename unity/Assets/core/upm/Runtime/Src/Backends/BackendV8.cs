@@ -87,9 +87,4 @@ namespace Puerts
             PapiV8Native.DestroyInspector(isolate);
         }
     }
-
-    public class BackendNodeJS : BackendV8
-    {
-        public BackendNodeJS(ILoader loader) : base(loader) { }
-    }
 }
