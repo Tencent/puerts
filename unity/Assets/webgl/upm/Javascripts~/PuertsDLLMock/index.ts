@@ -1,3 +1,10 @@
+/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
 /**
  * 根据 https://docs.unity3d.com/2018.4/Documentation/Manual/webgl-interactingwithbrowserscripting.html
  * 我们的目的就是在WebGL模式下，实现和puerts.dll的效果。具体在于实现一个jslib，里面应包含PuertsDLL.cs的所有接口

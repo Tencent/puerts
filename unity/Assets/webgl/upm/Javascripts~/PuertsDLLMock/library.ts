@@ -1,3 +1,9 @@
+/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
 
 declare let global: any;
 global = global || globalThis || window;
@@ -29,6 +35,7 @@ export namespace PuertsJSEngine {
         PApiCallbackWithScope: (nativeCallback:number, ffi: number, info: number) => void;
         PApiConstructorWithScope: (nativeCallback:number, ffi: number, info: number) => number;
         InjectPapiGLNativeImpl: () => number;
+
         find_class_by_id: (registry: number, typeId: number) => number;
         load_class_by_id:  (registry: number, typeId: number) => number;
         get_class_name: (classDef: number) => number;
@@ -51,7 +58,8 @@ export namespace PuertsJSEngine {
         get_property_info_getter_data: (propInfo: number) => number;
         get_property_info_setter_data: (propInfo: number) => number;
         get_function_info_data: (funcInfo: number) => number;
-    HEAP8: Int8Array;
+        
+        HEAP8: Int8Array;
         HEAPU8: Uint8Array;
         HEAP32: Int32Array;
         HEAPF32: Float32Array;
@@ -62,15 +70,7 @@ export namespace PuertsJSEngine {
 export class PuertsJSEngine {
     public readonly unityApi: PuertsJSEngine.UnityAPI;
 
-    /** 字符串缓存，默认为256字节 */
-    public strBuffer: number;
-    public stringBufferSize: number = 256;
-    public lastReturnCSResult: any = null;
     public lastException: Error = null;
-
-    // 这两个是Puerts用的的真正的CSharp函数指针
-    public GetJSArgumentsCallback: IntPtr
-    public generalDestructor: IntPtr
 
     constructor(ctorParam: PuertsJSEngine.EngineConstructorParam) {
         const { 
@@ -123,8 +123,6 @@ export class PuertsJSEngine {
             HEAPF32,
             HEAPF64,
         } = ctorParam;
-
-        this.strBuffer = _malloc(this.stringBufferSize);
 
         this.unityApi = {
             UTF8ToString,

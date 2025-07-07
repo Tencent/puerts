@@ -1,3 +1,10 @@
+/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
 import { PuertsJSEngine } from "./library";
 import *  as Buffer from "./buffer"
 
@@ -1104,42 +1111,6 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
     function pesapi_set_registry(env: number, registry_: number): void {
         registry = registry_;
     }
-
-    /*
-    interface APIInfo {
-        func: Function
-        sig: string
-    }
-
-    const apiInfo: APIInfo[] = [
-        {func: pesapi_create_array, sig: "ii"},
-        {func: pesapi_create_object, sig: "ii"},
-        {func: pesapi_create_function, sig: "iiiii"},
-        {func: pesapi_create_class, sig: "iii"},
-        {func: pesapi_get_array_length, sig: "iii"},
-        {func: pesapi_native_object_to_value, sig: "iiiii"},
-        {func: pesapi_throw_by_string, sig: "vii"},
-        //{func: pesapi_open_scope, sig: "ii"},
-        {func: pesapi_open_scope_placement, sig: "iii"},
-        {func: pesapi_has_caught, sig: "ii"},
-        {func: pesapi_get_exception_as_string, sig: "iii"},
-        //{func: pesapi_close_scope, sig: "vi"},
-        {func: pesapi_close_scope_placement, sig: "vi"},
-        {func: pesapi_create_value_ref, sig: "iiii"},
-        {func: pesapi_release_value_ref, sig: "vi"},
-        {func: pesapi_get_value_from_ref, sig: "viii"},
-        {func: pesapi_get_property, sig: "viiii"},
-        {func: pesapi_set_property, sig: "viiii"},
-        {func: pesapi_get_private, sig: "iiii"},
-        {func: pesapi_set_private, sig: "iiii"},
-        {func: pesapi_get_property_uint32, sig: "viiii"},
-        {func: pesapi_set_property_uint32, sig: "viiii"},
-        {func: pesapi_call_function, sig: "viiiiii"},
-        {func: pesapi_eval, sig: "viiiii"},
-        {func: pesapi_global, sig: "ii"},
-        {func: pesapi_set_env_private, sig: "vii"}
-    ];
-    */
 
     return {
         GetWebGLFFIApi: GetWebGLFFIApi,
