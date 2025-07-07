@@ -215,7 +215,8 @@ namespace Puerts.UnitTest
             JsEnv jsEnv = null;
             try
             {
-                jsEnv = new JsEnv(UnitTestEnv.GetLoader(), -1, BackendType.V8, IntPtr.Zero, IntPtr.Zero);
+                //TODO: osx 下nodejs和v8 backend会冲突，先new Node然后new V8的时候会崩
+                jsEnv = new JsEnv(UnitTestEnv.GetLoader(), -1, JsEnv.DefaultBackendType == BackendType.Node ? BackendType.Node : BackendType.V8, IntPtr.Zero, IntPtr.Zero);
                 backendStr = jsEnv.Eval<string>(@"((typeof gc) != 'undefined' || (typeof v8) != 'undefined') ? 'v8': 'quickjs';");
                 jsEnv.Dispose();
                 createEnvSucess = true;
