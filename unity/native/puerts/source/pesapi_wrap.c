@@ -55,6 +55,11 @@ PESAPI_MODULE_EXPORT pesapi_value pesapi_create_binary(struct pesapi_ffi* apis, 
     return apis->create_binary(env, data, length);
 }
 
+PESAPI_MODULE_EXPORT pesapi_value pesapi_create_binary_by_value(struct pesapi_ffi* apis, pesapi_env env, void* data, size_t length)
+{
+    return apis->create_binary_by_value(env, data, length);
+}
+
 PESAPI_MODULE_EXPORT pesapi_value pesapi_create_array(struct pesapi_ffi* apis, pesapi_env env)
 {
     return apis->create_array(env);

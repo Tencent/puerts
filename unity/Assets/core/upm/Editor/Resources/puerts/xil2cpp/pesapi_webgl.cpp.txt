@@ -592,6 +592,11 @@ pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
     return pesapi_create_generic2(env, bin, length, JS_NewBufferLen);
 }
 
+pesapi_value pesapi_create_binary_by_value(pesapi_env env, void *bin, size_t length)
+{
+    return pesapi_create_generic2(env, bin, length, JS_NewBufferLen);
+}
+
 pesapi_value pesapi_create_array(pesapi_env env)
 {
     auto ret = allocValueInCurrentScope();
@@ -1177,6 +1182,7 @@ extern "C"
         api->create_string_utf8 = &pesapi::webglimpl::pesapi_create_string_utf8;
         api->create_string_utf16 = &pesapi::webglimpl::pesapi_create_string_utf16;
         api->create_binary = &pesapi::webglimpl::pesapi_create_binary;
+        api->create_binary_by_value = &pesapi::webglimpl::pesapi_create_binary;
         
         api->create_array = &pesapi::webglimpl::pesapi_create_array;
         api->create_object = &pesapi::webglimpl::pesapi_create_object;

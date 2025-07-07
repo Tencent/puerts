@@ -52,6 +52,7 @@ namespace webglimpl
     inline pesapi_value pesapi_create_string_utf8(pesapi_env env, const char *str, size_t length);
     inline pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t *str, size_t length);
     inline pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length);
+    inline pesapi_value pesapi_create_binary_by_value(pesapi_env env, void *bin, size_t length);
     inline pesapi_value pesapi_create_array(pesapi_env env);
     inline pesapi_value pesapi_create_object(pesapi_env env);
     inline pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize);

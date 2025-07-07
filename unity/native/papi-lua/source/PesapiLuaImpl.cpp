@@ -112,7 +112,15 @@ pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t *str, siz
     return pesapiValueFromLuaValue(lua_gettop(L));
 }
 
+// TODO: 搞个binary的类型，能支持在lua里写，支持指针传递
 pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
+{
+    lua_State* L = luaStateFromPesapiEnv(env);
+    lua_pushlstring(L, (char*)bin, length);
+    return pesapiValueFromLuaValue(lua_gettop(L));
+}
+
+pesapi_value pesapi_create_binary_by_value(pesapi_env env, void *bin, size_t length)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     lua_pushlstring(L, (char*)bin, length);
@@ -867,6 +875,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_create_string_utf8,
     &pesapi_create_string_utf16,
     &pesapi_create_binary,
+    &pesapi_create_binary_by_value,
     &pesapi_create_array,
     &pesapi_create_object,
     &pesapi_create_function,

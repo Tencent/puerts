@@ -907,7 +907,7 @@ pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2Cpp
             Il2CppArray* buffer;
             il2cpp_field_get_value(obj, g_arrayBufferBytesField, &buffer);
 
-            return ${invokePapi('create_binary')}(env, Array::GetFirstElementAddress(buffer), (size_t)length);
+            return ${invokePapi('create_binary_by_value')}(env, Array::GetFirstElementAddress(buffer), (size_t)length);
         }
     }
     return nullptr;

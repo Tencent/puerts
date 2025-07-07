@@ -271,6 +271,7 @@ struct pesapi_ffi
     pesapi_create_string_utf8_func create_string_utf8;
     pesapi_create_string_utf16_func create_string_utf16;
     pesapi_create_binary_func create_binary;
+    pesapi_create_binary_func create_binary_by_value;
     pesapi_create_array_func create_array;
     pesapi_create_object_func create_object;
     pesapi_create_function_func create_function;

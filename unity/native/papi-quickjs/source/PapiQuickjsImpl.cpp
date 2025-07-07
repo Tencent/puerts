@@ -179,6 +179,16 @@ pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
     return pesapi_create_generic2(env, bin, length, JS_NewArrayBufferWrap);
 }
 
+static JSValue JS_NewArrayBufferCopyWrap(JSContext *ctx, void *bin, size_t len)
+{
+    return JS_NewArrayBufferCopy(ctx, (uint8_t *) bin, len);
+}
+
+pesapi_value pesapi_create_binary_by_value(pesapi_env env, void *bin, size_t length)
+{
+    return pesapi_create_generic2(env, bin, length, JS_NewArrayBufferCopyWrap);
+}
+
 pesapi_value pesapi_create_array(pesapi_env env)
 {
     return pesapi_create_generic0(env, JS_NewArray);
@@ -906,6 +916,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_create_string_utf8,
     &pesapi_create_string_utf16,
     &pesapi_create_binary,
+    &pesapi_create_binary_by_value,
     &pesapi_create_array,
     &pesapi_create_object,
     &pesapi_create_function,

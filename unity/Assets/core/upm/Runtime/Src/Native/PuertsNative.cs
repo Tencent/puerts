@@ -74,6 +74,9 @@ namespace Puerts
         public static extern IntPtr pesapi_create_binary(IntPtr apis, IntPtr env, byte[] data, UIntPtr length);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr pesapi_create_binary_by_value(IntPtr apis, IntPtr env, byte[] data, UIntPtr length);
+
+        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_create_array(IntPtr apis, IntPtr env);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -704,6 +707,7 @@ namespace Puerts
         public pesapi_create_string_utf8_func create_string_utf8;
         public pesapi_create_string_utf16_func create_string_utf16;
         public pesapi_create_binary_func create_binary;
+        public pesapi_create_binary_func create_binary_by_value;
         public pesapi_create_array_func create_array;
         public pesapi_create_object_func create_object;
         public pesapi_create_function_func create_function;

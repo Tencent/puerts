@@ -166,6 +166,12 @@ pesapi_value pesapi_create_binary(pesapi_env env, void* bin, size_t length)
     return v8impl::PesapiValueFromV8LocalValue(puerts::DataTransfer::NewArrayBuffer(context, bin, length));
 }
 
+pesapi_value pesapi_create_binary_by_value(pesapi_env env, void* bin, size_t length)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    return v8impl::PesapiValueFromV8LocalValue(puerts::DataTransfer::NewArrayBufferCopy(context, bin, length));
+}
+
 pesapi_value pesapi_create_array(pesapi_env env)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -874,6 +880,7 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_create_string_utf8,
     &pesapi_create_string_utf16,
     &pesapi_create_binary,
+    &pesapi_create_binary_by_value,
     &pesapi_create_array,
     &pesapi_create_object,
     &pesapi_create_function,
