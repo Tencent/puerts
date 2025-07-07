@@ -31,7 +31,7 @@ namespace Puerts
         public static extern void DestroyNodejsPapiEnvRef(IntPtr envRef);
 
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr NodejsGetIsolate(IntPtr envRef);
+        public static extern IntPtr GetNodejsIsolate(IntPtr envRef);
 
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void NodejsLowMemoryNotification(IntPtr isolate);

@@ -27,7 +27,7 @@ namespace Puerts
         public override IntPtr CreateEnvRef()
         {
             var envRef = PapiNodejsNative.CreateNodejsPapiEnvRef();
-            isolate = PapiNodejsNative.NodejsGetIsolate(envRef);
+            isolate = PapiNodejsNative.GetNodejsIsolate(envRef);
             return envRef;
         }
 

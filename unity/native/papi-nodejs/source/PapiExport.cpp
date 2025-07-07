@@ -74,7 +74,7 @@ V8_EXPORT void DestroyNodejsPapiEnvRef(pesapi_env_ref env_ref)
     delete JsEngine;
 }
 
-V8_EXPORT v8::Isolate *NodejsGetIsolate(pesapi_env_ref env_ref)
+V8_EXPORT v8::Isolate *GetNodejsIsolate(pesapi_env_ref env_ref)
 {
     auto scope = v8impl::g_pesapi_ffi.open_scope(env_ref);
     auto env = v8impl::g_pesapi_ffi.get_env_from_ref(env_ref);
