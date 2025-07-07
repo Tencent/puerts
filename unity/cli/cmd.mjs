@@ -143,10 +143,14 @@ program
     .command("dotnet-test [backend]")
     .option("--filter <filter>", "testcase will be filtered", "")
     .option('-sq, --switch_qjs', 'switch to quickjs backend')
+    .option('-sn, --switch_njs', 'switch to nodejs backend')
     .option('-ts, --thread_safe', 'thread safe')
     .action((backend, options) => {
         if (options.switch_qjs) {
             process.env.SwitchToQJS = '1';
+        }
+        if (options.switch_njs) {
+            process.env.SwitchToNJS = '1';
         }
         dotnetTest(cwd, backend || "quickjs", options.filter, options.thread_safe);
     });

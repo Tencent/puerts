@@ -47,7 +47,7 @@ namespace Puerts
             PapiV8Native.DestroyV8PapiEnvRef(envRef);
         }
 
-        public bool IdleNotificationDeadline(double DeadlineInSeconds)
+        public virtual bool IdleNotificationDeadline(double DeadlineInSeconds)
         {
             return PapiV8Native.IdleNotificationDeadline(isolate, DeadlineInSeconds);
         }
@@ -57,17 +57,17 @@ namespace Puerts
             PapiV8Native.LowMemoryNotification(isolate);
         }
 
-        public void RequestMinorGarbageCollectionForTesting()
+        public virtual void RequestMinorGarbageCollectionForTesting()
         {
             PapiV8Native.RequestMinorGarbageCollectionForTesting(isolate);
         }
 
-        public void RequestFullGarbageCollectionForTesting()
+        public virtual void RequestFullGarbageCollectionForTesting()
         {
             PapiV8Native.RequestFullGarbageCollectionForTesting(isolate);
         }
 
-        public void TerminateExecution()
+        public virtual void TerminateExecution()
         {
             PapiV8Native.TerminateExecution(isolate);
         }

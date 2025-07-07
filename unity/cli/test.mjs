@@ -244,6 +244,14 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         thread_safe: thread_safe
     });
     dlls = dlls.concat(luadlls);
+    
+    const nodedlls = await runPuertsMake(join(cwd, '../../native/papi-nodejs'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(nodedlls);
 
     // await runTest(cwd, copyConfig, true, filter);
     await runTest(cwd, dlls, false, filter);

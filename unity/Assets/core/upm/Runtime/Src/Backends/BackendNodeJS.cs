@@ -10,8 +10,9 @@ using System;
 
 namespace Puerts
 {
-    public class BackendNodeJS : BackendJs
+    public class BackendNodeJS : BackendV8
     {
+        IntPtr isolate;
         public BackendNodeJS(ILoader loader) : base(loader) { }
 
         public BackendNodeJS() : this(new DefaultLoader())
@@ -25,7 +26,9 @@ namespace Puerts
 
         public override IntPtr CreateEnvRef()
         {
-            return PapiNodejsNative.CreateNodejsPapiEnvRef();
+            var envRef = PapiNodejsNative.CreateNodejsPapiEnvRef();
+            isolate = PapiNodejsNative.NodejsGetIsolate(envRef);
+            return envRef;
         }
 
         public override IntPtr GetApi()
@@ -38,8 +41,49 @@ namespace Puerts
             PapiNodejsNative.DestroyNodejsPapiEnvRef(envRef);
         }
 
+        public override void OnTick()
+        {
+            PapiNodejsNative.NodejsLogicTick(isolate);
+        }
+
         public override void LowMemoryNotification()
         {
+            PapiNodejsNative.NodejsLowMemoryNotification(isolate);
+        }
+
+        public override bool IdleNotificationDeadline(double DeadlineInSeconds)
+        {
+            return PapiNodejsNative.NodejsIdleNotificationDeadline(isolate, DeadlineInSeconds);
+        }
+
+        public override void RequestMinorGarbageCollectionForTesting()
+        {
+            PapiNodejsNative.NodejsRequestMinorGarbageCollectionForTesting(isolate);
+        }
+
+        public override void RequestFullGarbageCollectionForTesting()
+        {
+            PapiNodejsNative.NodejsRequestFullGarbageCollectionForTesting(isolate);
+        }
+
+        public override void TerminateExecution()
+        {
+            PapiNodejsNative.NodejsTerminateExecution(isolate);
+        }
+
+        public override void OpenRemoteDebugger(int debugPort)
+        {
+            PapiNodejsNative.NodejsCreateInspector(isolate, debugPort);
+        }
+
+        public override bool DebuggerTick()
+        {
+            return PapiNodejsNative.NodejsInspectorTick(isolate);
+        }
+
+        public override void CloseRemoteDebugger()
+        {
+            PapiNodejsNative.NodejsDestroyInspector(isolate);
         }
     }
 }

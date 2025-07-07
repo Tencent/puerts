@@ -110,16 +110,10 @@ jobs:
           npm i
           cd test/dotnet
           node ../../cli dotnet-test v8_9.4
-      - name: UnitTest-v8-10-6
-        run: |
-          cd unity
-          npm i
-          cd test/dotnet
-          node ../../cli dotnet-test v8_10.6.194
       - name: UnitTest-nodejs
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test nodejs_16
+          node ../../cli dotnet-test -sn
       - name: UnitTest-quickjs
         run: |
           cd unity/test/dotnet
@@ -127,7 +121,7 @@ jobs:
       - name: UnitTest-v8-ts
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test v8_9.4 -ts
+          node ../../cli dotnet-test -ts
           
   unittest-osx-dotnet:
     runs-on: macos-latest
@@ -142,17 +136,11 @@ jobs:
           cd unity
           npm i
           cd test/dotnet
-          node ../../cli dotnet-test v8_9.4
-      - name: UnitTest-v8-10-6
-        run: |
-          cd unity
-          npm i
-          cd test/dotnet
-          node ../../cli dotnet-test v8_10.6.194
+          node ../../cli dotnet-test
       - name: UnitTest-nodejs
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test nodejs_16
+          node ../../cli dotnet-test -sn
       - name: UnitTest-quickjs
         run: |
           cd unity/test/dotnet
@@ -160,7 +148,7 @@ jobs:
       - name: UnitTest-v8-ts
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test v8_9.4 -ts
+          node ../../cli dotnet-test -ts
           
   unittest-linux-dotnet:
     runs-on: ubuntu-latest
@@ -182,17 +170,11 @@ jobs:
           cd unity
           npm i
           cd test/dotnet
-          node ../../cli dotnet-test v8_9.4
-      - name: UnitTest-v8-10-6
-        run: |
-          cd unity
-          npm i
-          cd test/dotnet
-          node ../../cli dotnet-test v8_10.6.194
+          node ../../cli dotnet-test
       - name: UnitTest-nodejs
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test nodejs_16
+          node ../../cli dotnet-test -sn
       - name: UnitTest-quickjs
         run: |
           cd unity/test/dotnet
@@ -200,4 +182,4 @@ jobs:
       - name: UnitTest-v8-ts
         run: |
           cd unity/test/dotnet
-          node ../../cli dotnet-test v8_9.4 -ts
+          node ../../cli dotnet-test -ts

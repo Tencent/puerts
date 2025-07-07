@@ -29,5 +29,35 @@ namespace Puerts
 
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void DestroyNodejsPapiEnvRef(IntPtr envRef);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr NodejsGetIsolate(IntPtr envRef);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NodejsLowMemoryNotification(IntPtr isolate);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool NodejsIdleNotificationDeadline(IntPtr isolate, double DeadlineInSeconds);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NodejsRequestMinorGarbageCollectionForTesting(IntPtr isolate);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NodejsRequestFullGarbageCollectionForTesting(IntPtr isolate);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NodejsCreateInspector(IntPtr isolate, int port);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NodejsDestroyInspector(IntPtr isolate);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool NodejsInspectorTick(IntPtr isolate);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NodejsLogicTick(IntPtr isolate);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NodejsTerminateExecution(IntPtr isolate);
     }
 }

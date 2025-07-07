@@ -74,7 +74,7 @@ V8_EXPORT void DestroyNodejsPapiEnvRef(pesapi_env_ref env_ref)
     delete JsEngine;
 }
 
-V8_EXPORT v8::Isolate *GetNodejsIsolate(pesapi_env_ref env_ref)
+V8_EXPORT v8::Isolate *NodejsGetIsolate(pesapi_env_ref env_ref)
 {
     auto scope = v8impl::g_pesapi_ffi.open_scope(env_ref);
     auto env = v8impl::g_pesapi_ffi.get_env_from_ref(env_ref);
@@ -84,15 +84,36 @@ V8_EXPORT v8::Isolate *GetNodejsIsolate(pesapi_env_ref env_ref)
     return isolate;
 }
 
+V8_EXPORT void NodejsLowMemoryNotification(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->LowMemoryNotification();
+}
+V8_EXPORT bool NodejsIdleNotificationDeadline(v8::Isolate *Isolate, double DeadlineInSeconds)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->IdleNotificationDeadline(DeadlineInSeconds);
+}
+V8_EXPORT void NodejsRequestMinorGarbageCollectionForTesting(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->RequestMinorGarbageCollectionForTesting();
+}
+V8_EXPORT void NodejsRequestFullGarbageCollectionForTesting(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->RequestFullGarbageCollectionForTesting();
+}
+
 //-------------------------- begin debug --------------------------
 
-V8_EXPORT void CreateNodejsInspector(v8::Isolate *Isolate, int32_t Port)
+V8_EXPORT void NodejsCreateInspector(v8::Isolate *Isolate, int32_t Port)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     JsEngine->CreateInspector(Port);
 }
 
-V8_EXPORT void DestroyNodejsInspector(v8::Isolate *Isolate)
+V8_EXPORT void NodejsDestroyInspector(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     JsEngine->DestroyInspector();

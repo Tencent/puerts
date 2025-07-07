@@ -151,13 +151,13 @@ namespace Puerts.UnitTest
                 loader = new TxtLoader();
                 if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
                 {
-                    System.Console.Write("---------------------SwitchToQJS------------------------\n");
                     JsEnv.DefaultBackendType = BackendType.QuickJS;
                 }
-                else
+                else if (System.Environment.GetEnvironmentVariable("SwitchToNJS") == "1")
                 {
-                    System.Console.Write("---------------------Default JsEnv------------------------\n");
+                    JsEnv.DefaultBackendType = BackendType.Node;
                 }
+                System.Console.WriteLine($"---------------------DefaultBackendType: {JsEnv.DefaultBackendType}------------------------\n");
                 env = new JsEnv(loader);
                 
                 CommonJS.InjectSupportForCJS(env);
