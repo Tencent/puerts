@@ -454,6 +454,10 @@ void FPuertsModule::Enable()
 {
     Enabled = true;
 
+    // 在MakeSharedJsEnv->RebindJs->load js 可能会有逻辑触发对象加载, 例如直接LoadClass
+    // AddUObjectCreateListener逻辑在rebindjs后则可能导致Inject缺漏导致 部分重写方法报错漏调用
+    GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
+    GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 #if WITH_EDITOR
     if (IsRunningGame())
     {
@@ -463,9 +467,6 @@ void FPuertsModule::Enable()
 #else
     MakeSharedJsEnv();
 #endif
-
-    GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
-    GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 }
 
 void FPuertsModule::Disable()
