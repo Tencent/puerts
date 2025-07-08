@@ -68,10 +68,11 @@ namespace Puerts
             // override print
             scriptEnv.Eval(@"
             local tudb = scriptEnv:GetTypeByString('UnityEngine.Debug')
-            local Debug = loadType(tudb)
+            
             local outputStr
             if tudb then
-                outputStr = loadType(tudb).Log
+                local Debug = loadType(tudb)
+                outputStr = Debug and Debug.Log
             else
                 local tc = scriptEnv:GetTypeByString('System.Console')
                 outputStr = loadType(tc).WriteLine
