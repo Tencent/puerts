@@ -61,6 +61,8 @@ public:
 
     void RedirectToTypeScriptFinish();
 
+    void CancelFunctionRedirection(UFunction* Function);
+
     void CancelRedirection();
 
     bool NotSupportInject();
