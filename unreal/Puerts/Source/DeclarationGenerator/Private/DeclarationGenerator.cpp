@@ -1181,7 +1181,7 @@ void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UStruct* Struct, FStr
         const FunctionKey& FunctionKey = Iter->first;
         FunctionOverloads& Overloads = Outputs[FunctionKey];
         for (FunctionOverloads::RangedForIteratorType OverloadIter = Overloads.begin(); OverloadIter != Overloads.end();
-            ++OverloadIter)
+             ++OverloadIter)
         {
             if (auto Class = Cast<UClass>(Struct))
             {
@@ -1215,7 +1215,7 @@ void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UStruct* Struct, FStr
             {
                 FunctionOverloads& SuperOverloads = SuperOutputsIter->second;
                 for (FunctionOverloads::RangedForIteratorType SuperOverloadIter = SuperOverloads.begin();
-                    SuperOverloadIter != SuperOverloads.end(); ++SuperOverloadIter)
+                     SuperOverloadIter != SuperOverloads.end(); ++SuperOverloadIter)
                 {
                     if (!Overloads.Contains(*SuperOverloadIter))
                     {
@@ -1312,7 +1312,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
     for (int i = 0; i < Class->Interfaces.Num(); i++)
     {
         for (TFieldIterator<UFunction> FunctionIt(Class->Interfaces[i].Class, EFieldIteratorFlags::IncludeSuper); FunctionIt;
-            ++FunctionIt)
+             ++FunctionIt)
         {
             FStringBuffer TmpBuff;
             if (!GenFunction(TmpBuff, *FunctionIt))
