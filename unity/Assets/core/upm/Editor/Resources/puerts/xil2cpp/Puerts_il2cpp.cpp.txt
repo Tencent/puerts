@@ -126,6 +126,7 @@ static MethodInfoHelper<Il2CppArray*(Il2CppString*)> g_ExtensionMethodGetHelper;
 
 static Il2CppClass* s_ParamArrayAttribute;
 static Il2CppClass* s_ExtensionAttribute;
+static Il2CppClass* s_UnityEngineObject;
 
 static bool RegisterType(Il2CppClass* klass);
 static bool ClassNotFoundCallback(const void* typeId)
@@ -1308,6 +1309,29 @@ handle_underlying:
     return Object::Box(klass, toBox);
 }
 
+static bool IsAliveUnityEngineObject(Il2CppObject *obj) 
+{
+    if (!obj)
+    {
+        return false;
+    }
+
+    if (!Class::IsAssignableFrom(s_UnityEngineObject, obj->klass)) 
+    {
+        return false;
+    }
+
+    FieldInfo *field = il2cpp_class_get_field_from_name(obj->klass, "m_CachedPtr");
+    if (!field) 
+    {
+        return false;
+    }
+
+    void *cachedPtr = nullptr;
+    il2cpp_field_get_value(obj, field, &cachedPtr);
+    return cachedPtr != nullptr;
+}
+
 pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj)
 {
     if (targetClass == il2cpp_defaults.void_class ) return ${invokePapi('create_undefined')}(env);
@@ -1346,10 +1370,13 @@ pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass
     }
 
     jsVal = TryTranslateBuiltin(apis, env, obj);
-
     if (jsVal)
     {
         return jsVal;
+    }
+
+    if (Class::IsAssignableFrom(s_UnityEngineObject, obj->klass) && !IsAliveUnityEngineObject(obj)) {
+        return apis->create_null(env);
     }
 
     auto objClass = obj && obj->klass ? obj->klass : targetClass;
@@ -2808,6 +2835,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     
     puerts::s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
     puerts::s_ExtensionAttribute = Class::FromName(il2cpp_defaults.corlib, "System.Runtime.CompilerServices", "ExtensionAttribute");
+    puerts::s_UnityEngineObject = il2cpp::vm::Class::FromName(il2cpp::vm::Assembly::GetImage(il2cpp::vm::Assembly::Load("UnityEngine.dll")), "UnityEngine", "Object");
 }
 
 void AddPendingKillScriptObjects(struct pesapi_ffi* apis, puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
