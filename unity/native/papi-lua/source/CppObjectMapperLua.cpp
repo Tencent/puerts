@@ -129,6 +129,17 @@ namespace luaimpl
         return isBuffer;
     }
 
+    unsigned char* CppObjectMapper::GetBufferData(lua_State* L, int index, size_t* out_size) {
+        if (!IsBuffer(L, index)) {
+            return nullptr;
+        }
+        
+        ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, index);
+        if (out_size) {
+            *out_size = buf->size;
+        }
+        return buf->ptr;
+    }
 
     void CppObjectMapper::Initialize(lua_State* L)
     {
