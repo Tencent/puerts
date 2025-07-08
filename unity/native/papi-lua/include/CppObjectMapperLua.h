@@ -81,6 +81,8 @@ public:
 
     int CreateBufferCopy(lua_State* L, const unsigned char* data, size_t size);
 
+    bool IsBuffer(lua_State* L, int index);
+
     void UnInitialize(lua_State* L);
 
     puerts::ScriptClassRegistry* registry = nullptr;

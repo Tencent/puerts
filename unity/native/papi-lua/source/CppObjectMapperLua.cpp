@@ -106,6 +106,30 @@ namespace luaimpl
         return lua_gettop(L); // 返回创建值的index
     }
 
+    bool CppObjectMapper::IsBuffer(lua_State* L, int index) {
+        // 检查值是否为userdata
+        if (!lua_isuserdata(L, index)) {
+            return false;
+        }
+        
+        // 获取值的元表
+        if (!lua_getmetatable(L, index)) {
+            return false;
+        }
+        
+        // 获取预存储的ByteBuffer元表
+        lua_rawgeti(L, LUA_REGISTRYINDEX, m_BufferMetatableRef);
+        
+        // 比较两个元表是否相同
+        bool isBuffer = lua_rawequal(L, -1, -2) != 0;
+        
+        // 清理栈（弹出两个元表）
+        lua_pop(L, 2);
+        
+        return isBuffer;
+    }
+
+
     void CppObjectMapper::Initialize(lua_State* L)
     {
         lua_newtable(L);
