@@ -13,6 +13,66 @@ namespace luaimpl
     {
     }
 
+    struct ByteBuffer {
+        size_t size;
+        unsigned char *data;
+    };
+
+    static int bytebuffer_gc(lua_State* L) {
+        ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, 1);
+        if (buf->data) free(buf->data);
+        return 0;
+    }
+
+    static int bytebuffer_len(lua_State* L) {
+        ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, 1);
+        lua_pushinteger(L, buf->size);
+        return 1;
+    }
+
+    static int bytebuffer_index(lua_State* L) {
+        ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, 1);
+        lua_Integer index = luaL_checkinteger(L, 2);
+        if (index < 1 || index > (lua_Integer)buf->size) {
+            return luaL_error(L, "index out of range (1 to %d)", buf->size);
+        }
+        lua_pushinteger(L, buf->data[index-1]);
+        return 1;
+    }
+
+    static int bytebuffer_newindex(lua_State* L) {
+        ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, 1);
+        lua_Integer index = luaL_checkinteger(L, 2);
+        lua_Integer value = luaL_checkinteger(L, 3);
+        if (index < 1 || index > (lua_Integer)buf->size) {
+            return luaL_error(L, "index out of range (1 to %d)", buf->size);
+        }
+        if (value < 0 || value > 255) {
+            return luaL_error(L, "value must be between 0 and 255");
+        }
+        buf->data[index-1] = (unsigned char)value;
+        return 0;
+    }
+
+    static int buffer_new(lua_State* L) {
+        lua_Integer size = luaL_checkinteger(L, 1);
+        if (size <= 0) return luaL_error(L, "buffer size must be positive");
+        
+        ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, sizeof(ByteBuffer));
+        buf->size = size;
+        buf->data = (unsigned char*)calloc(size, 1);
+        
+        // 获取CppObjectMapper实例
+        auto pmapper = (CppObjectMapper**)lua_getextraspace(L);
+        CppObjectMapper* mapper = *pmapper;
+        
+        // 使用预存储的元表引用设置元表
+        lua_rawgeti(L, LUA_REGISTRYINDEX, mapper->m_BufferMetatableRef);
+        lua_setmetatable(L, -2);
+        
+        return 1;
+    }
+
     void CppObjectMapper::Initialize(lua_State* L)
     {
         lua_newtable(L);
@@ -27,6 +87,22 @@ namespace luaimpl
         m_CachePrivateDataRef = luaL_ref(L, LUA_REGISTRYINDEX);
         auto pmapper = (CppObjectMapper**)lua_getextraspace(L);
         *pmapper = this;
+        
+        // 创建并存储ByteBuffer元表
+        luaL_newmetatable(L, "ByteBuffer");
+        lua_pushcfunction(L, bytebuffer_gc);
+        lua_setfield(L, -2, "__gc");
+        lua_pushcfunction(L, bytebuffer_len);
+        lua_setfield(L, -2, "__len");
+        lua_pushcfunction(L, bytebuffer_index);
+        lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, bytebuffer_newindex);
+        lua_setfield(L, -2, "__newindex");
+        m_BufferMetatableRef = luaL_ref(L, LUA_REGISTRYINDEX);
+        
+        // 注册全局buffer函数
+        lua_pushcfunction(L, buffer_new);
+        lua_setglobal(L, "buffer");
     }
 
     static int PesapiFunctionCallback(lua_State* L)

@@ -93,6 +93,8 @@ public:
     {
         envPrivate = envPrivate_;
     }
+    
+    int m_BufferMetatableRef  = 0;
 
 private:
     eastl::unordered_map<void*, FObjectCacheNode, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc> m_DataCache;
