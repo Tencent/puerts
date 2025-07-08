@@ -124,7 +124,7 @@ void UTypeScriptGeneratedClass::StaticConstructor(const FObjectInitializer& Obje
 {
     auto Class = ObjectInitializer.GetClass();
 
-    //蓝图继承ts类，既然进了这里，表明链上必然有ts类，由于目前不支持ts继承蓝图，所以顶部节点往下找的第一个UTypeScriptGeneratedClass就是本类
+    // 蓝图继承ts类，既然进了这里，表明链上必然有ts类，由于目前不支持ts继承蓝图，所以顶部节点往下找的第一个UTypeScriptGeneratedClass就是本类
     while (Class)
     {
         if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
@@ -140,13 +140,26 @@ void UTypeScriptGeneratedClass::RestoreNativeFunc()
 {
     for (auto& KV : TempNativeFuncStorage)
     {
-        if (!FunctionToRedirect.Contains(KV.Key))
+        // 没有被js重写的方法会被重置回去Native
+        bool bContains = FunctionToRedirect.Contains(KV.Key);
+        if (!bContains)
         {
             auto Function = FindFunctionByName(KV.Key, EIncludeSuperFlag::ExcludeSuper);
             if (Function)
             {
-                Function->SetNativeFunc(KV.Value);
-                AddNativeFunction(*Function->GetName(), KV.Value);
+                FNativeFuncPtr InPointer = KV.Value;
+                // fixcrash 异步加载时还没有postload导致UFunction的NativeFunc还没设置上就被缓存到TempNativeFuncStorage,
+                // 错误Restore成空, 下次方法Invoke时空方法调用崩溃 两个条件：1. postload没有调用（异步时一般都没有调用） 2. js
+                // module加载失败（例如删了ts和js被删了 但是TS代理蓝图还在使用）
+                if (InPointer == nullptr)
+                {
+                    CancelFunctionRedirection(Function);
+                }
+                else
+                {
+                    Function->SetNativeFunc(InPointer);
+                    AddNativeFunction(*Function->GetName(), InPointer);
+                }
             }
         }
     }
@@ -192,7 +205,8 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
         for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
         {
             auto Function = *FuncIt;
-            if (!Function->IsNative() && Function->HasAnyFunctionFlags(FUNC_Public))
+            // 只有蓝图可重写的方法才需要设置LazyLoadCallJS重写
+            if (!Function->IsNative() && Function->HasAnyFunctionFlags(FUNC_BlueprintEvent))
             {
                 TempNativeFuncStorage.Add(Function->GetFName(), Function->GetNativeFunc());
                 Function->FunctionFlags |= FUNC_Native;
@@ -228,6 +242,15 @@ void UTypeScriptGeneratedClass::RedirectToTypeScriptFinish()
     }
 }
 
+void UTypeScriptGeneratedClass::CancelFunctionRedirection(UFunction* Function)
+{
+    Function->FunctionFlags &= ~FUNC_Native;
+    // Function->SetNativeFunc(ProcessInternal);
+    Function->Bind();    // the same as Function->SetNativeFunc(ProcessInternal) if no native
+    NativeFunctionLookupTable.RemoveAll(
+        [=](const FNativeFunctionLookup& NativeFunctionLookup) { return Function->GetFName() == NativeFunctionLookup.Name; });
+}
+
 void UTypeScriptGeneratedClass::CancelRedirection()
 {
     for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
@@ -237,11 +260,7 @@ void UTypeScriptGeneratedClass::CancelRedirection()
         {
             continue;
         }
-        Function->FunctionFlags &= ~FUNC_Native;
-        // Function->SetNativeFunc(ProcessInternal);
-        Function->Bind();    // the same as Function->SetNativeFunc(ProcessInternal) if no native
-        NativeFunctionLookupTable.RemoveAll(
-            [=](const FNativeFunctionLookup& NativeFunctionLookup) { return Function->GetFName() == NativeFunctionLookup.Name; });
+        CancelFunctionRedirection(Function);
     }
 }
 
@@ -271,19 +290,19 @@ void UTypeScriptGeneratedClass::Bind()
 
     if (HasConstructor)
     {
-        //普通对象会从CDO拷贝，而CDO会从蓝图AR那反序列化（见UBlueprintGeneratedClass::SerializeDefaultObject），这会
-        //导致TS的构造函数对生成的蓝图变量赋值都失效，不太符合程序员直觉，设置CPF_SkipSerialization可以跳过这个过程。
-        //然而在构造对象还有一个PostConstructInit步骤，里头有个从基类的CDO拷贝值的过程（ps：UE对象构造巨复杂，对象巨大）
-        //这个过程如果是CDO的话，目前只找到把属性的flag设置为CPF_Transient | CPF_InstancedReference才能搞定
-        // TODO: 后续尝试下TypeScript生成类不继承UBlueprintGeneratedClass的实现，能实现的话优雅些
+        // 普通对象会从CDO拷贝，而CDO会从蓝图AR那反序列化（见UBlueprintGeneratedClass::SerializeDefaultObject），这会
+        // 导致TS的构造函数对生成的蓝图变量赋值都失效，不太符合程序员直觉，设置CPF_SkipSerialization可以跳过这个过程。
+        // 然而在构造对象还有一个PostConstructInit步骤，里头有个从基类的CDO拷贝值的过程（ps：UE对象构造巨复杂，对象巨大）
+        // 这个过程如果是CDO的话，目前只找到把属性的flag设置为CPF_Transient | CPF_InstancedReference才能搞定
+        //  TODO: 后续尝试下TypeScript生成类不继承UBlueprintGeneratedClass的实现，能实现的话优雅些
         for (TFieldIterator<PropertyMacro> PropertyIt(this, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
         {
             PropertyMacro* Property = *PropertyIt;
             Property->SetPropertyFlags(CPF_SkipSerialization | CPF_Transient | CPF_InstancedReference);
         }
 
-        //可避免非CDO的在PostConstructInit从基类拷贝值
-        // ClassFlags |= CLASS_Native;
+        // 可避免非CDO的在PostConstructInit从基类拷贝值
+        //  ClassFlags |= CLASS_Native;
     }
 #if WITH_EDITOR
     if (DynamicInvoker.IsValid())
