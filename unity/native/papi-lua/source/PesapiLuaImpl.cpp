@@ -116,15 +116,15 @@ pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t *str, siz
 pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
-    lua_pushlstring(L, (char*)bin, length);
-    return pesapiValueFromLuaValue(lua_gettop(L));
+    auto mapper = CppObjectMapper::Get(L);
+    return pesapiValueFromLuaValue(mapper->CreateBufferByPointer(L, (unsigned char*)bin, length));
 }
 
 pesapi_value pesapi_create_binary_by_value(pesapi_env env, void *bin, size_t length)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
-    lua_pushlstring(L, (char*)bin, length);
-    return pesapiValueFromLuaValue(lua_gettop(L));
+    auto mapper = CppObjectMapper::Get(L);
+    return pesapiValueFromLuaValue(mapper->CreateBufferCopy(L, (unsigned char*)bin, length));
 }
 
 pesapi_value pesapi_create_array(pesapi_env env)
@@ -277,7 +277,9 @@ void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsi
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
-    return const_cast<char*>(lua_tolstring(L, idx, bufsize));
+    
+    auto mapper = CppObjectMapper::Get(L);
+    return mapper->GetBufferData(L, idx, bufsize);
 }
 
 uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
@@ -369,7 +371,8 @@ int pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
-    return lua_type(L, idx) == LUA_TSTRING;
+    auto mapper = CppObjectMapper::Get(L);
+    return mapper->IsBuffer(L, idx);
 }
 
 int pesapi_is_array(pesapi_env env, pesapi_value pvalue)
