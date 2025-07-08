@@ -50,15 +50,44 @@ namespace luaimpl
     }
 
     static int buffer_new(lua_State* L) {
-        lua_Integer size = luaL_checkinteger(L, 1);
-        if (size <= 0) return luaL_error(L, "buffer size must be positive");
-        
-        // 分配内存：结构体+数据区
-        size_t total_size = sizeof(ByteBuffer) + size - 1;
-        ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, total_size);
-        buf->size = size;
-        buf->ptr = buf->data; // 指向内部数据
-        memset(buf->data, 0, size); // 清零数据区
+        if (lua_type(L, 1) == LUA_TNUMBER) {
+            // 参数为数字：创建指定长度的全零缓冲区
+            lua_Integer size = luaL_checkinteger(L, 1);
+            if (size <= 0) return luaL_error(L, "buffer size must be positive");
+            
+            // 分配内存：结构体+数据区
+            size_t total_size = sizeof(ByteBuffer) + size - 1;
+            ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, total_size);
+            buf->size = size;
+            buf->ptr = buf->data; // 指向内部数据
+            memset(buf->data, 0, size); // 清零数据区
+        } else if (lua_type(L, 1) == LUA_TTABLE) {
+            // 参数为表：使用表长度作为缓冲区长度，复制表元素
+            lua_Integer size = luaL_len(L, 1);
+            if (size <= 0) return luaL_error(L, "array size must be positive");
+            
+            // 分配内存：结构体+数据区
+            size_t total_size = sizeof(ByteBuffer) + size - 1;
+            ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, total_size);
+            buf->size = size;
+            buf->ptr = buf->data; // 指向内部数据
+            
+            // 遍历表并复制元素
+            for (lua_Integer i = 1; i <= size; i++) {
+                lua_rawgeti(L, 1, i);
+                if (!lua_isinteger(L, -1)) {
+                    return luaL_error(L, "array element at index %d must be an integer", i);
+                }
+                lua_Integer value = lua_tointeger(L, -1);
+                if (value < 0 || value > 255) {
+                    return luaL_error(L, "array element at index %d must be between 0 and 255", i);
+                }
+                buf->data[i-1] = (unsigned char)value;
+                lua_pop(L, 1); // 弹出当前元素
+            }
+        } else {
+            return luaL_error(L, "buffer function expects a number (size) or a table (array)");
+        }
         
         // 获取CppObjectMapper实例
         auto pmapper = (CppObjectMapper**)lua_getextraspace(L);
