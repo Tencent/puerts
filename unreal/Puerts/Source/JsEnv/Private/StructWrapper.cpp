@@ -1,6 +1,6 @@
 /*
  * Tencent is pleased to support the open source community by making Puerts available.
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
  * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
  * which is part of this source code package.
@@ -558,12 +558,17 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
             UnEscape = Info[1]->BooleanValue(Isolate);
         }
         auto Path = FV8Utils::ToFString(Isolate, Info[0]);
-        auto Object =
-            StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
-        if (Object)
+
+        if (FPackageName::DoesPackageExist(FSoftObjectPath(Path).GetLongPackageName()))
         {
-            auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
-            Info.GetReturnValue().Set(Result);
+            auto Object =
+                StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
+            if (Object)
+            {
+                auto Result =
+                    FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
+                Info.GetReturnValue().Set(Result);
+            }
         }
         else
         {

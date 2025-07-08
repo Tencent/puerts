@@ -1,6 +1,6 @@
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Copyright (C) 2020 Tencent.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
@@ -476,6 +476,7 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
     } 
     else 
     {
+        bool found = false;
         auto finder = PathToModuleMap.find(key);
         if (finder != PathToModuleMap.end()) 
         {
@@ -488,18 +489,20 @@ bool FBackendEnv::ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> 
             }
 #endif
             PathToModuleMap.erase(key);
-#if !WITH_QUICKJS
-            return true;
-#else
+            found = true;
+        }
+
+#if WITH_QUICKJS
 #ifdef THREAD_SAFE
             v8::Locker Locker(Isolate);
 #endif
             v8::Isolate::Scope IsolateScope(Isolate);
             v8::HandleScope HandleScope(Isolate);
             JSContext* ctx = Context->context_;
-            return JS_ReleaseLoadedModule(ctx, Path);
+        found = JS_ReleaseLoadedModule(ctx, Path) || found;
 #endif
-        }
+
+        return found;
     }
     return false;
 }

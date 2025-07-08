@@ -1,6 +1,6 @@
 ﻿/*
  * Tencent is pleased to support the open source community by making Puerts available.
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
  * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
  * which is part of this source code package.
@@ -385,15 +385,13 @@ public:
 
     FORCEINLINE static v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Local<v8::Context> Context, void* Data, size_t DataLength)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(Context->GetIsolate(), Data, DataLength);
-#else
 #if USING_IN_UNREAL_ENGINE
         return v8::ArrayBuffer::New(Context->GetIsolate(), Data, DataLength);
 #else
-        auto Backing = v8::ArrayBuffer::NewBackingStore(Data, DataLength, v8::BackingStore::EmptyDeleter, nullptr);
-        return v8::ArrayBuffer::New(Context->GetIsolate(), std::move(Backing));
-#endif
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Context->GetIsolate(), DataLength);
+        void* Buff = Ab->GetBackingStore()->Data();
+        ::memcpy(Buff, Data, DataLength);
+        return Ab;
 #endif
     }
 

@@ -1,6 +1,6 @@
 /*
  * Tencent is pleased to support the open source community by making Puerts available.
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
@@ -212,8 +212,15 @@ function makeGenericMethod(cls, methodName, ...genericArgs) {
     }
 }
 
-function getType(cls) {
+function slowGetType(cls) {
+    if (cls.hasOwnProperty("__p_typeId")) {
+        cls.__p_innerType =  getCSTypeById(cls.__p_typeId);
+    }
     return cls.__p_innerType;
+}
+
+function getType(cls) {
+    return cls.__p_innerType || slowGetType(cls);
 }
 
 function bindThisToFirstArgument(func, parentFunc) {

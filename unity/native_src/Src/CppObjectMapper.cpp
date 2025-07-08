@@ -1,6 +1,6 @@
 /*
  * Tencent is pleased to support the open source community by making Puerts available.
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
  * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
  * which is part of this source code package.
@@ -343,6 +343,8 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
             ++FunctionInfo;
         }
+        
+        Template->Set(v8::String::NewFromUtf8(Isolate, "__p_typeId", v8::NewStringType::kNormal).ToLocalChecked(), v8::BigInt::New(Isolate, (intptr_t)ClassDefinition->TypeId));
 
         if (ClassDefinition->SuperTypeId)
         {

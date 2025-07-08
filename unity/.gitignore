@@ -35,11 +35,16 @@
 /Assets/core/upm/Plugins/Android/**/*.so
 /Assets/core/upm/Plugins/Android/**/*.so~
 /Assets/core/upm/Plugins/Android/**/*.a
+/Assets/core/upm/Plugins/OpenHarmony/**/*.so
+/Assets/core/upm/Plugins/OpenHarmony/**/*.so~
+/Assets/core/upm/Plugins/OpenHarmony/**/*.a
 /Assets/core/upm/Plugins/iOS/**/*.a
 /Assets/core/upm/Plugins/macOS/**/*.bundle
 /Assets/core/upm/Plugins/macOS/**/*.dylib
 /Assets/core/upm/Plugins/x86/**/*.dll
+/Assets/core/upm/Plugins/x86/**/*.pdb
 /Assets/core/upm/Plugins/x86_64/**/*.dll
+/Assets/core/upm/Plugins/x86_64/**/*.pdb
 /Assets/core/upm/Plugins/x86/**/*.dll
 /Assets/core/upm/Plugins/x86_64/**/*.so
 /Assets/core/upm/Plugins/puerts_il2cpp/*

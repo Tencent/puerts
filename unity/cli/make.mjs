@@ -63,13 +63,23 @@ const platformCompileConfig = {
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
 
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code);
+                let cmake_gen = `cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B"${CMAKE_BUILD_PATH}" -DCMAKE_TOOLCHAIN_FILE="${NDK}/build/cmake/android.toolchain.cmake" -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`;
+                if(process.platform == "win32"){
+                    cmake_gen += ' -G"Unix Makefiles"';
+                    cmake_gen += ` -DCMAKE_MAKE_PROGRAM="${NDK}/prebuilt/windows-x86_64/bin/make.exe"`;
+                }
+                assert.equal(0, exec(cmake_gen).code);
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         },
         'arm64': {
@@ -80,13 +90,23 @@ const platformCompileConfig = {
                 const ABI = 'arm64-v8a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
 
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code);
+                let cmake_gen = `cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B"${CMAKE_BUILD_PATH}" -DCMAKE_TOOLCHAIN_FILE="${NDK}/build/cmake/android.toolchain.cmake" -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`;
+                if(process.platform == "win32"){
+                    cmake_gen += ' -G"Unix Makefiles"';
+                    cmake_gen += ` -DCMAKE_MAKE_PROGRAM="${NDK}/prebuilt/windows-x86_64/bin/make.exe"`;
+                }
+                assert.equal(0, exec(cmake_gen).code);
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         },
         'x64': {
@@ -97,13 +117,23 @@ const platformCompileConfig = {
                 const ABI = 'x86_64';
                 const TOOLCHAIN_NAME = 'x86_64-4.9';
 
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code);
+                let cmake_gen = `cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B"${CMAKE_BUILD_PATH}" -DCMAKE_TOOLCHAIN_FILE="${NDK}/build/cmake/android.toolchain.cmake" -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`;
+                if(process.platform == "win32"){
+                    cmake_gen += ' -G"Unix Makefiles"';
+                    cmake_gen += ` -DCMAKE_MAKE_PROGRAM="${NDK}/prebuilt/windows-x86_64/bin/make.exe"`;
+                }
+                assert.equal(0, exec(cmake_gen).code);
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         }
     },
@@ -115,14 +145,24 @@ const platformCompileConfig = {
                 if (!NDK) throw new Error("please set OHOS_NDK environment variable first!");
                 const ABI = 'armeabi-v7a';
                 const cmake_bin_path = `${NDK}/build-tools/cmake/bin/cmake`;
-
-                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/ohos.toolchain.cmake`).code);
+                const ninja_bin_path = `${NDK}/build-tools/cmake/bin/ninja`;
+                const toolchain_file = `${NDK}/build/cmake/ohos.toolchain.cmake`;
+                let CMAKE_RPATH_SETTING = '';
+                if (process.platform == "win32") {
+                    CMAKE_RPATH_SETTING = '-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON';
+                }
+                assert.equal(0, exec(`"${cmake_bin_path}" ${cmakeDArgs} -GNinja ${CMAKE_RPATH_SETTING} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B"${CMAKE_BUILD_PATH}"  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE="${toolchain_file}" -DCMAKE_MAKE_PROGRAM="${ninja_bin_path}"`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         },
         'arm64': {
@@ -132,14 +172,24 @@ const platformCompileConfig = {
                 if (!NDK) throw new Error("please set OHOS_NDK environment variable first!");
                 const ABI = 'arm64-v8a';
                 const cmake_bin_path = `${NDK}/build-tools/cmake/bin/cmake`;
-
-                assert.equal(0, exec(`${cmake_bin_path} ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B${CMAKE_BUILD_PATH}  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/ohos.toolchain.cmake`).code);
-                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
+                const ninja_bin_path = `${NDK}/build-tools/cmake/bin/ninja`;
+                const toolchain_file = `${NDK}/build/cmake/ohos.toolchain.cmake`;
+                let CMAKE_RPATH_SETTING = '';
+                if (process.platform == "win32") {
+                    CMAKE_RPATH_SETTING = '-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON';
+                }
+                assert.equal(0, exec(`"${cmake_bin_path}" ${cmakeDArgs} -GNinja ${CMAKE_RPATH_SETTING} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DOHOS_ARCH=${ABI} -H. -B"${CMAKE_BUILD_PATH}"  -DOHOS_PLATFORM=OHOS -DCMAKE_TOOLCHAIN_FILE="${toolchain_file}" -DCMAKE_MAKE_PROGRAM="${ninja_bin_path}"`).code)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`];
-                else
-                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                else{
+                    let libs = [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`];
+                    if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`)){
+                        libs.push(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.symbol.so~`);
+                    }
+                    return libs;
+                }
             }
         }
     },
@@ -198,7 +248,11 @@ const platformCompileConfig = {
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
-                return `${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`;
+                let libs = [`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`];
+                if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`)){
+                    libs.push(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`);
+                }
+                return libs;
             }
         },
         'ia32': {
@@ -211,7 +265,11 @@ const platformCompileConfig = {
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
-                return `${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`;
+                let libs = [`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.dll`];
+                if(options.with_symbols && existsSync(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`)){
+                    libs.push(`${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.pdb`);
+                }
+                return libs;
             }
         }
     },
@@ -327,6 +385,10 @@ async function runPuertsMake(cwd, options) {
     const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';');
     const incD = (BackendConfig.include || []).join(';');
 
+    if (options.rebuild && existsSync(CMAKE_BUILD_PATH)) {
+        rm('-rf', CMAKE_BUILD_PATH);
+    }
+
     mkdir('-p', CMAKE_BUILD_PATH);
     mkdir('-p', OUTPUT_PATH);
     const DArgsName = ['-DBACKEND_DEFINITIONS=', '-DBACKEND_LIB_NAMES=', '-DBACKEND_INC_NAMES='];
@@ -334,6 +396,12 @@ async function runPuertsMake(cwd, options) {
     
     options.websocket = options.websocket || 0;
     CmakeDArgs += ` -DWITH_WEBSOCKET=${options.websocket}`;
+    CmakeDArgs += ` -DWITH_SYMBOLS=${options.with_symbols ? 'ON' : 'OFF'}`;
+
+
+    for(let opt in BackendConfig?.cmake_options){
+        CmakeDArgs = CmakeDArgs.concat(` ${BackendConfig?.cmake_options[opt]}`)
+    }
 
     var outputFile = BuildConfig.hook(
         CMAKE_BUILD_PATH,

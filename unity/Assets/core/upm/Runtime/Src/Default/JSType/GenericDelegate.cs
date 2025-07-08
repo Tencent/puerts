@@ -1,6 +1,6 @@
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Copyright (C) 2020 Tencent.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
@@ -11,6 +11,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+#if !THREAD_SAFE
+using System.Threading;
+#endif
 
 namespace Puerts
 {
@@ -340,6 +343,9 @@ namespace Puerts
 #if UNITY_EDITOR || DEBUG
         private string stacktrace;
 #endif
+#if !THREAD_SAFE
+        static Thread s_MainThread = Thread.CurrentThread;
+#endif
 
         internal IntPtr getJsFuncPtr() 
         {
@@ -377,6 +383,20 @@ namespace Puerts
             else 
             {
                 jsEnv.CheckLiveness();
+            }
+        }
+        
+        private void CheckThread()
+        {
+#if !THREAD_SAFE
+            if (Thread.CurrentThread != s_MainThread)
+            {
+#if UNITY_EDITOR || DEBUG
+                throw new Exception("GenericDelegate should only be used in main thread, stacktrace:" + (string.IsNullOrEmpty(this.stacktrace) ? "unknown" : this.stacktrace));
+#else
+                throw new Exception("GenericDelegate should only be used in main thread");
+#endif
+#endif
             }
         }
 
@@ -438,6 +458,7 @@ namespace Puerts
 
         public void Action()
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -455,6 +476,7 @@ namespace Puerts
 
         public void Action<T1>(T1 p1)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -473,6 +495,7 @@ namespace Puerts
 
         public void Action<T1, T2>(T1 p1, T2 p2) 
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -492,6 +515,7 @@ namespace Puerts
 
         public void Action<T1, T2, T3>(T1 p1, T2 p2, T3 p3)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -512,6 +536,7 @@ namespace Puerts
 
         public void Action<T1, T2, T3, T4>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -533,6 +558,7 @@ namespace Puerts
 
         public TResult Func<TResult>()
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -553,6 +579,7 @@ namespace Puerts
 
         public TResult Func<T1, TResult>(T1 p1)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -574,6 +601,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, TResult>(T1 p1, T2 p2)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -596,6 +624,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, T3, TResult>(T1 p1, T2 p2, T3 p3)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -619,6 +648,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, T3, T4, TResult>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+            CheckThread();
             CheckLiveness();
 #if THREAD_SAFE
             lock(jsEnv) {

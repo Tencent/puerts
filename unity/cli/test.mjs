@@ -250,7 +250,7 @@ export async function unityTest(cwd, unityPath) {
         backend: 'v8_9.4.146.24',
         platform: platform,
         config: 'Debug',
-        arch: 'x64',
+        arch: process.arch,
         websocket: 1
     });
 
@@ -302,7 +302,7 @@ export async function unityTest(cwd, unityPath) {
         backend: 'quickjs',
         platform: platform,
         config: 'Debug',
-        arch: 'x64',
+        arch: process.arch,
         websocket: 1
     });
 
@@ -319,7 +319,7 @@ export async function unityTest(cwd, unityPath) {
         backend: 'mult',
         platform: platform,
         config: 'Debug',
-        arch: 'x64',
+        arch: process.arch,
         websocket: 1
     });
 
