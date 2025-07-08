@@ -56236,10 +56236,39 @@ JSValue JS_NewString16Len(JSContext *ctx, const uint16_t *str1, size_t len1)
     return js_new_string16_len(ctx, str1, len1);
 }
 
-const uint16_t *JS_ToCString16Len(JSContext *ctx, JSValue val, uint16_t *buff, size_t *plen)
+const uint16_t *JS_ToCString16Len(JSContext *ctx, JSValue val1, uint16_t *buff, size_t *plen)
 {
+    JSValue val;
     JSString *str;
     int len;
+    JSObject *p;
+
+    if (JS_VALUE_GET_TAG(val1) == JS_TAG_STRING) {
+        val = js_dup(val1);
+        goto go;
+    }
+
+    val = JS_ToString(ctx, val1);
+    if (!JS_IsException(val))
+        goto go;
+
+    // Stringification can fail when there is an exception pending,
+    // e.g. a stack overflow InternalError. Special-case exception
+    // objects to make debugging easier, look up the .message property
+    // and stringify that.
+    if (JS_VALUE_GET_TAG(val1) != JS_TAG_OBJECT)
+        goto fail;
+
+    p = JS_VALUE_GET_OBJ(val1);
+    if (p->class_id != JS_CLASS_ERROR)
+        goto fail;
+
+    val = JS_GetProperty(ctx, val1, JS_ATOM_message);
+    if (JS_VALUE_GET_TAG(val) != JS_TAG_STRING) {
+        JS_FreeValue(ctx, val);
+        goto fail;
+    }
+go:
     str = JS_VALUE_GET_STRING(val);
     len = str->len;
     if (!buff) // get len
@@ -56250,6 +56279,10 @@ const uint16_t *JS_ToCString16Len(JSContext *ctx, JSValue val, uint16_t *buff, s
     *plen = len < *plen ? len : *plen;
     copy_str16(buff, str, 0, *plen);
     return buff;
+ fail:
+    if (plen)
+        *plen = 0;
+    return NULL;
 }
 
 /*-------end additional function---------*/
