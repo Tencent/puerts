@@ -60,6 +60,8 @@ public:
     void RedirectToTypeScript(UFunction* InFunction);
 
     void RedirectToTypeScriptFinish();
+    
+    void CancelFunctionRedirection(UFunction* Function);
 
     void CancelRedirection();
 

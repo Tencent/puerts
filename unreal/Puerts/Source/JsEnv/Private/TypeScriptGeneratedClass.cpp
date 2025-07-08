@@ -140,13 +140,25 @@ void UTypeScriptGeneratedClass::RestoreNativeFunc()
 {
     for (auto& KV : TempNativeFuncStorage)
     {
-        if (!FunctionToRedirect.Contains(KV.Key))
+        // 没有被js重写的方法会被重置回去Native
+        bool bContains = FunctionToRedirect.Contains(KV.Key);
+        if (!bContains)
         {
             auto Function = FindFunctionByName(KV.Key, EIncludeSuperFlag::ExcludeSuper);
             if (Function)
             {
-                Function->SetNativeFunc(KV.Value);
-                AddNativeFunction(*Function->GetName(), KV.Value);
+                FNativeFuncPtr InPointer = KV.Value;
+                // fixcrash 异步加载时还没有postload导致UFunction的NativeFunc还没设置上就被缓存到TempNativeFuncStorage, 错误Restore成空, 下次方法Invoke时空方法调用崩溃
+                // 两个条件：1. postload没有调用（异步时一般都没有调用） 2. js module加载失败（例如删了ts和js被删了 但是TS代理蓝图还在使用）
+                if (InPointer == nullptr)
+                {
+                    CancelFunctionRedirection(Function);
+                }
+                else
+                {
+                    Function->SetNativeFunc(InPointer);
+                    AddNativeFunction(*Function->GetName(), InPointer);
+                }
             }
         }
     }
@@ -192,7 +204,8 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
         for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
         {
             auto Function = *FuncIt;
-            if (!Function->IsNative() && Function->HasAnyFunctionFlags(FUNC_Public))
+            // 只有蓝图可重写的方法才需要设置LazyLoadCallJS重写
+            if (!Function->IsNative() && Function->HasAnyFunctionFlags(FUNC_BlueprintEvent))
             {
                 TempNativeFuncStorage.Add(Function->GetFName(), Function->GetNativeFunc());
                 Function->FunctionFlags |= FUNC_Native;
@@ -228,6 +241,15 @@ void UTypeScriptGeneratedClass::RedirectToTypeScriptFinish()
     }
 }
 
+void UTypeScriptGeneratedClass::CancelFunctionRedirection(UFunction* Function)
+{
+    Function->FunctionFlags &= ~FUNC_Native;
+    // Function->SetNativeFunc(ProcessInternal);
+    Function->Bind();    // the same as Function->SetNativeFunc(ProcessInternal) if no native
+    NativeFunctionLookupTable.RemoveAll(
+        [=](const FNativeFunctionLookup& NativeFunctionLookup) { return Function->GetFName() == NativeFunctionLookup.Name; });
+}
+
 void UTypeScriptGeneratedClass::CancelRedirection()
 {
     for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
@@ -237,11 +259,7 @@ void UTypeScriptGeneratedClass::CancelRedirection()
         {
             continue;
         }
-        Function->FunctionFlags &= ~FUNC_Native;
-        // Function->SetNativeFunc(ProcessInternal);
-        Function->Bind();    // the same as Function->SetNativeFunc(ProcessInternal) if no native
-        NativeFunctionLookupTable.RemoveAll(
-            [=](const FNativeFunctionLookup& NativeFunctionLookup) { return Function->GetFName() == NativeFunctionLookup.Name; });
+        CancelFunctionRedirection(Function);
     }
 }
 
