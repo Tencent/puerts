@@ -332,3 +332,58 @@ if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) 
 	set_property(TARGET PapiV8 PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
+
+set(EXPORTED_SYMBOLS
+    GetV8PapiVersion
+    GetV8PapiEnvRef
+    GetV8FFIApi
+    CreateV8PapiEnvRef
+    DestroyV8PapiEnvRef
+    GetV8Isolate
+    LowMemoryNotification
+    IdleNotificationDeadline
+    RequestMinorGarbageCollectionForTesting
+    RequestFullGarbageCollectionForTesting
+    CreateInspector
+    DestroyInspector
+    InspectorTick
+    LogicTick
+    TerminateExecution
+)
+
+if(APPLE)  # macOS
+    # 生成带下划线前缀的符号列表
+    set(MACOS_SYMBOL_FILE "${CMAKE_CURRENT_BINARY_DIR}/symbols_macos.exports")
+    file(WRITE ${MACOS_SYMBOL_FILE} "")
+    foreach(symbol IN LISTS EXPORTED_SYMBOLS)
+        file(APPEND ${MACOS_SYMBOL_FILE} "_${symbol}\n")
+    endforeach()
+    
+    # 设置链接器选项
+    target_link_options(PapiV8 PRIVATE 
+        "-Wl,-exported_symbols_list,${MACOS_SYMBOL_FILE}"
+    )
+
+elseif(UNIX AND NOT APPLE)  # Linux 和 Android
+    # 生成版本脚本文件
+    set(VERSION_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/symbols.version")
+    file(WRITE ${VERSION_SCRIPT} "V8PAPI_1.0 {\n    global:\n")
+    foreach(symbol IN LISTS EXPORTED_SYMBOLS)
+        file(APPEND ${VERSION_SCRIPT} "        ${symbol};\n")
+    endforeach()
+    file(APPEND ${VERSION_SCRIPT} "    local: *;\n};\n")
+    
+    # 设置链接器选项
+    if(ANDROID)
+        # Android 需要额外指定链接器类型
+        target_link_options(PapiV8 PRIVATE 
+            "-Wl,--version-script=${VERSION_SCRIPT}"
+            "-Wl,--no-undefined"
+        )
+    else()
+        # Linux
+        target_link_options(PapiV8 PRIVATE 
+            "-Wl,--version-script=${VERSION_SCRIPT}"
+        )
+    endif()
+endif()
