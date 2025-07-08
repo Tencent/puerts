@@ -471,10 +471,10 @@ namespace luaimpl
     int obj_new_indexer(lua_State* L)
     {
         // setter
-        if (!lua_isnil(L, lua_upvalueindex(2)))
+        if (!lua_isnil(L, lua_upvalueindex(1)))
         {
             lua_pushvalue(L, 2);
-            lua_gettable(L, lua_upvalueindex(2));
+            lua_gettable(L, lua_upvalueindex(1));
             if (!lua_isnil(L, -1))
             { // has setter
                 lua_pushvalue(L, 1);
@@ -485,10 +485,10 @@ namespace luaimpl
             lua_pop(L, 1);
         }
 
-        if (!lua_isnil(L, lua_upvalueindex(3)))
+        if (!lua_isnil(L, lua_upvalueindex(2)))
         {
             lua_settop(L, 3);
-            lua_pushvalue(L, lua_upvalueindex(3));
+            lua_pushvalue(L, lua_upvalueindex(2));
             lua_insert(L, 1);
             lua_call(L, 3, 0);
             return 0;
