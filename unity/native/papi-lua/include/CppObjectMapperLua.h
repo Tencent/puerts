@@ -77,6 +77,10 @@ public:
 
     int LoadTypeById(lua_State* L, const void* typeId);
 
+    int CreateBufferByPointer(lua_State* L, unsigned char* ptr, size_t size);
+
+    int CreateBufferCopy(lua_State* L, const unsigned char* data, size_t size);
+
     void UnInitialize(lua_State* L);
 
     puerts::ScriptClassRegistry* registry = nullptr;

@@ -15,14 +15,9 @@ namespace luaimpl
 
     struct ByteBuffer {
         size_t size;
-        unsigned char *data;
+        unsigned char *ptr;
+        unsigned char data[1];
     };
-
-    static int bytebuffer_gc(lua_State* L) {
-        ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, 1);
-        if (buf->data) free(buf->data);
-        return 0;
-    }
 
     static int bytebuffer_len(lua_State* L) {
         ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, 1);
@@ -36,7 +31,7 @@ namespace luaimpl
         if (index < 1 || index > (lua_Integer)buf->size) {
             return luaL_error(L, "index out of range (1 to %d)", buf->size);
         }
-        lua_pushinteger(L, buf->data[index-1]);
+        lua_pushinteger(L, buf->ptr[index-1]);
         return 1;
     }
 
@@ -50,7 +45,7 @@ namespace luaimpl
         if (value < 0 || value > 255) {
             return luaL_error(L, "value must be between 0 and 255");
         }
-        buf->data[index-1] = (unsigned char)value;
+        buf->ptr[index-1] = (unsigned char)value;
         return 0;
     }
 
@@ -58,9 +53,12 @@ namespace luaimpl
         lua_Integer size = luaL_checkinteger(L, 1);
         if (size <= 0) return luaL_error(L, "buffer size must be positive");
         
-        ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, sizeof(ByteBuffer));
+        // 分配内存：结构体+数据区
+        size_t total_size = sizeof(ByteBuffer) + size - 1;
+        ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, total_size);
         buf->size = size;
-        buf->data = (unsigned char*)calloc(size, 1);
+        buf->ptr = buf->data; // 指向内部数据
+        memset(buf->data, 0, size); // 清零数据区
         
         // 获取CppObjectMapper实例
         auto pmapper = (CppObjectMapper**)lua_getextraspace(L);
@@ -71,6 +69,41 @@ namespace luaimpl
         lua_setmetatable(L, -2);
         
         return 1;
+    }
+
+    // 创建Buffer实例（持有外部指针）
+    int CppObjectMapper::CreateBufferByPointer(lua_State* L, unsigned char* ptr, size_t size) {
+        // 只分配结构体本身
+        ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, sizeof(ByteBuffer));
+        buf->size = size;
+        buf->ptr = ptr; // 指向外部数据
+        
+        // 使用预存储的元表引用设置元表
+        lua_rawgeti(L, LUA_REGISTRYINDEX, m_BufferMetatableRef);
+        lua_setmetatable(L, -2);
+        
+        return lua_gettop(L); // 返回创建值的index
+    }
+
+    // 创建Buffer实例（拷贝数据）
+    int CppObjectMapper::CreateBufferCopy(lua_State* L, const unsigned char* data, size_t size) {
+        // 分配内存：结构体+数据区
+        size_t total_size = sizeof(ByteBuffer) + size - 1;
+        ByteBuffer* buf = (ByteBuffer*)lua_newuserdata(L, total_size);
+        buf->size = size;
+        buf->ptr = buf->data; // 指向内部数据
+        
+        if (data) {
+            memcpy(buf->data, data, size); // 拷贝数据
+        } else {
+            memset(buf->data, 0, size); // 清零数据区
+        }
+        
+        // 使用预存储的元表引用设置元表
+        lua_rawgeti(L, LUA_REGISTRYINDEX, m_BufferMetatableRef);
+        lua_setmetatable(L, -2);
+        
+        return lua_gettop(L); // 返回创建值的index
     }
 
     void CppObjectMapper::Initialize(lua_State* L)
@@ -90,8 +123,6 @@ namespace luaimpl
         
         // 创建并存储ByteBuffer元表
         luaL_newmetatable(L, "ByteBuffer");
-        lua_pushcfunction(L, bytebuffer_gc);
-        lua_setfield(L, -2, "__gc");
         lua_pushcfunction(L, bytebuffer_len);
         lua_setfield(L, -2, "__len");
         lua_pushcfunction(L, bytebuffer_index);
