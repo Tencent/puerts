@@ -337,17 +337,6 @@ namespace Puerts
             }
         }
 
-        ~ScriptEnv()
-        {
-#if THREAD_SAFE
-            lock(this) {
-#endif
-            Dispose(false);
-#if THREAD_SAFE
-            }
-#endif
-        }
-
         public void Dispose()
         {
 #if THREAD_SAFE
