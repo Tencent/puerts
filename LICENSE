@@ -1,8 +1,10 @@
 Tencent is pleased to support the open source community by making Puerts available. 
 
-Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+Copyright (C) 2020 Tencent.  All rights reserved.
 
 Puerts is licensed under the BSD 3-Clause license, except for the third-party components listed below. 
+
+The copyright notice pertaining to the Tencent code in this repo was previously in the name of “THL A29 Limited.”  That entity has now been de-registered.  You should treat all previously distributed copies of the code as if the copyright notice was in the name of “Tencent.”
 
 Terms of the BSD 3-Clause license:
 --------------------------------------------------------------------
