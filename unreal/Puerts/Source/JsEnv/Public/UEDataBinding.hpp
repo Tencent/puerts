@@ -417,9 +417,24 @@ struct ScriptTypeName<FArrayBufferValue>
     }
 };
 
+template<typename T>
+struct is_ue_container : std::false_type {};
+
+template<typename T>
+struct is_ue_container<TArray<T>> : std::true_type {};
+
+template<typename T>
+struct is_ue_container<TSet<T>> : std::true_type {};
+
+template <typename TKey, typename TValue>
+struct is_ue_container<TMap<TKey, TValue>> : std::true_type {};
+
 template <typename T>
 struct ScriptTypeNameWithNamespace<T,
-    typename std::enable_if<is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value>::type>
+    typename std::enable_if<
+        is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value &&
+       !is_ue_container<typename std::remove_pointer<typename std::decay<T>::type>::type>::value
+    >::type>
 {
     static constexpr auto value()
     {
