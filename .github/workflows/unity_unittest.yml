@@ -96,6 +96,8 @@ jobs:
           cat log2.txt | grep "Failed\|Passed\|ENV_BACKEND" 
           echo "testresult in v2"
           cat log3.txt | grep "Failed\|Passed\|ENV_BACKEND" 
+          echo "testresult in v2(quickjs)"
+          cat log4.txt | grep "Failed\|Passed\|ENV_BACKEND" 
 
   unittest-win-dotnet:
     runs-on: windows-2022

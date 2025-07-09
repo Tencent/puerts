@@ -359,15 +359,8 @@ export async function unityTest(cwd, unityPath) {
 
     assert.equal(0, v2code);
     
-    /*console.log('-------------------------V2 With Full Wrapper test(quickjs)-------------------------');
-    
-    await runPuertsMake(join(cwd, '../../native_src'), {
-        backend: 'quickjs',
-        platform: platform,
-        config: 'Debug',
-        arch: 'x64',
-        websocket: 1
-    });
+    console.log('-------------------------V2 With Full Wrapper test(quickjs)-------------------------');
+    process.env.SwitchToQJS = '1';
 
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
@@ -378,7 +371,7 @@ export async function unityTest(cwd, unityPath) {
     const v2code_qjs = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code;
     assert.equal(0, v2code_qjs);
     
-    console.log('-------------------------With Full Wrapper test(mult)-------------------------');
+    /*console.log('-------------------------With Full Wrapper test(mult)-------------------------');
     
     await runPuertsMake(join(cwd, '../../native_src'), {
         backend: 'mult',
