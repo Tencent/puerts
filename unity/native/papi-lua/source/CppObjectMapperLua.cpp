@@ -27,6 +27,12 @@ namespace luaimpl
 
     static int bytebuffer_index(lua_State* L) {
         ByteBuffer* buf = (ByteBuffer*)lua_touserdata(L, 1);
+        
+        if (lua_type(L, 2) == LUA_TSTRING) {
+            lua_pushnil(L); 
+            return 1;
+        }
+        
         lua_Integer index = luaL_checkinteger(L, 2);
         if (index < 1 || index > (lua_Integer)buf->size) {
             return luaL_error(L, "index out of range (1 to %d)", buf->size);
