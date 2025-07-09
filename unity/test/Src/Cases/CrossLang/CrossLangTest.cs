@@ -1377,6 +1377,7 @@ namespace Puerts.UnitTest
             Assert.AreEqual("9999", cb1(9999));
         }
 
+#if !PUERTS_GENERAL
         [Test]
         public void PassDestroyedUnityObjectTest()
         {
@@ -1400,5 +1401,6 @@ __PDUOTF;");
             }
             Assert.AreEqual(true, is_null(tex2D));
         }
+#endif
     }
 }
