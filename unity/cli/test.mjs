@@ -267,6 +267,19 @@ export async function unityTest(cwd, unityPath) {
         return;
     }
     
+    // Helper function to check test result and log if needed
+    function checkTestResult(exitCode, logFile) {
+        if (exitCode !== 0) {
+            try {
+                const logContent = readFileSync(logFile, 'utf-8');
+                console.error(logContent);
+            } catch (e) {
+                console.error(`Failed to read log file: ${e.message}`);
+            }
+        }
+        return exitCode;
+    }
+    
     const platform = getPlatform();
     const exeSuffix = getExeSuffix();
 
@@ -349,8 +362,10 @@ export async function unityTest(cwd, unityPath) {
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test in v2");
-    const v2code_reflection = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
-
+    const v2code_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code,
+        `${cwd}/log2.txt`
+    );
     assert.equal(0, v2code_reflection);
     
     console.log('-------------------------V2 With Full Wrapper test-------------------------');
@@ -361,8 +376,10 @@ export async function unityTest(cwd, unityPath) {
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test in v2");
-    const v2code = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log3.txt`).code;
-
+    const v2code = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log3.txt`).code,
+        `${cwd}/log3.txt`
+    );
     assert.equal(0, v2code);
     
     console.log('-------------------------V2 With Full Wrapper test(quickjs)-------------------------');
@@ -374,7 +391,10 @@ export async function unityTest(cwd, unityPath) {
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test in v2");
-    const v2code_qjs = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code;
+    const v2code_qjs = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code,
+        `${cwd}/log4.txt`
+    );
     assert.equal(0, v2code_qjs);
     
     console.log('-------------------------With Full Wrapper test(nodejs)-------------------------');
@@ -387,7 +407,9 @@ export async function unityTest(cwd, unityPath) {
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test in v2");
-    const v2code_mult = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log5.txt`).code;
-
-    assert.equal(0, v2code_mult);
+    const v2code_nodejs = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log5.txt`).code,
+        `${cwd}/log5.txt`
+    );
+    assert.equal(0, v2code_nodejs);
 }
