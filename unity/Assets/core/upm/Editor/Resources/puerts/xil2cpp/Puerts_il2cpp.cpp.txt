@@ -126,7 +126,8 @@ static MethodInfoHelper<Il2CppArray*(Il2CppString*)> g_ExtensionMethodGetHelper;
 
 static Il2CppClass* s_ParamArrayAttribute;
 static Il2CppClass* s_ExtensionAttribute;
-static Il2CppClass* s_UnityEngineObject;
+static Il2CppClass* s_UnityEngineObjectClass;
+static const MethodInfo* s_UnityEngineObjectOpEqualityMethodInfo;
 
 static bool RegisterType(Il2CppClass* klass);
 static bool ClassNotFoundCallback(const void* typeId)
@@ -1309,27 +1310,15 @@ handle_underlying:
     return Object::Box(klass, toBox);
 }
 
-static bool IsAliveUnityEngineObject(Il2CppObject *obj) 
+static bool IsDeadUnityEngineObject(Il2CppObject *obj)
 {
-    if (!obj)
+    if (!Class::IsAssignableFrom(s_UnityEngineObjectClass, obj->klass))
     {
         return false;
     }
 
-    if (!Class::IsAssignableFrom(s_UnityEngineObject, obj->klass)) 
-    {
-        return false;
-    }
-
-    FieldInfo *field = il2cpp_class_get_field_from_name(obj->klass, "m_CachedPtr");
-    if (!field) 
-    {
-        return false;
-    }
-
-    void *cachedPtr = nullptr;
-    il2cpp_field_get_value(obj, field, &cachedPtr);
-    return cachedPtr != nullptr;
+    typedef bool (*NativeFuncPtr)(Il2CppObject* lhs, Il2CppObject* rhs, const MethodInfo* method);
+    return ((NativeFuncPtr)s_UnityEngineObjectOpEqualityMethodInfo->methodPointer)(obj, nullptr, s_UnityEngineObjectOpEqualityMethodInfo);
 }
 
 pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj)
@@ -1375,7 +1364,8 @@ pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass
         return jsVal;
     }
 
-    if (Class::IsAssignableFrom(s_UnityEngineObject, obj->klass) && !IsAliveUnityEngineObject(obj)) {
+    if (IsDeadUnityEngineObject(obj))
+    {
         return apis->create_null(env);
     }
 
@@ -2835,7 +2825,10 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     
     puerts::s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
     puerts::s_ExtensionAttribute = Class::FromName(il2cpp_defaults.corlib, "System.Runtime.CompilerServices", "ExtensionAttribute");
-    puerts::s_UnityEngineObject = il2cpp::vm::Class::FromName(il2cpp::vm::Assembly::GetImage(il2cpp::vm::Assembly::Load("UnityEngine.dll")), "UnityEngine", "Object");
+    puerts::s_UnityEngineObjectClass = il2cpp::vm::Class::FromName(il2cpp::vm::Assembly::GetImage(il2cpp::vm::Assembly::Load("UnityEngine.dll")), "UnityEngine", "Object");
+    IL2CPP_ASSERT(puerts::s_UnityEngineObjectClass);
+    puerts::s_UnityEngineObjectOpEqualityMethodInfo = Class::GetMethodFromName(puerts::s_UnityEngineObjectClass, "op_Equality", 2);
+    IL2CPP_ASSERT(puerts::s_UnityEngineObjectOpEqualityMethodInfo);
 }
 
 void AddPendingKillScriptObjects(struct pesapi_ffi* apis, puerts::JsEnvPrivate* jsEnvPrivate, pesapi_value_ref valueRef)
