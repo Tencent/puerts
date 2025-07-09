@@ -315,41 +315,40 @@ export async function unityTest(cwd, unityPath) {
     assert.equal(0, v1code);
     */
 
-    console.log("[Puer] Generating FunctionBridge");
+    //console.log("[Puer] Generating FunctionBridge");
     //rm("-rf", join(cwd, 'Assets/csc.rsp'));
     //writeFileSync(`${cwd}/Assets/csc.rsp`, `
     //    -define:PUERTS_CPP_OUTPUT_TO_UPM
     //    -define:PUERTS_IL2CPP_OPTIMIZATION
     //`);
     
-    
     await runPuertsMake(join(cwd, '../../native/puerts'), {
-        platform: getPlatform(),
+        platform: platform,
         config: "Debug",
         arch: process.arch
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
-        platform: getPlatform(),
+        platform: platform,
         config: "Debug",
         arch: process.arch
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-v8'), {
-        platform: getPlatform(),
+        platform: platform,
         config: "Debug",
         arch: process.arch,
         websocket: 1
     });
     
     await runPuertsMake(join(cwd, '../../native/papi-lua'), {
-        platform: getPlatform(),
+        platform: platform,
         config: "Debug",
         arch: process.arch
     });
     
     await runPuertsMake(join(cwd, '../../native/papi-nodejs'), {
-        platform: getPlatform(),
+        platform: platform,
         config: "Debug",
         arch: process.arch
     });
@@ -358,10 +357,10 @@ export async function unityTest(cwd, unityPath) {
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
-    console.log("[Puer] Building testplayer for v2");
+    console.log("[Puer] Building testplayer");
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
+    console.log("[Puer] Running test");
     const v2code_reflection = checkTestResult(
         exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code,
         `${cwd}/log2.txt`
@@ -372,10 +371,10 @@ export async function unityTest(cwd, unityPath) {
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
-    console.log("[Puer] Building testplayer for v2");
+    console.log("[Puer] Building testplayer");
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
+    console.log("[Puer] Running test");
     const v2code = checkTestResult(
         exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log3.txt`).code,
         `${cwd}/log3.txt`
@@ -384,13 +383,7 @@ export async function unityTest(cwd, unityPath) {
     
     console.log('-------------------------V2 With Full Wrapper test(quickjs)-------------------------');
     process.env.SwitchToQJS = '1';
-
-    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-
-    console.log("[Puer] Building testplayer for v2");
-    mkdir("-p", `${cwd}/build/v2`);
-    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
+    console.log("[Puer] Running test");
     const v2code_qjs = checkTestResult(
         exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code,
         `${cwd}/log4.txt`
@@ -400,13 +393,7 @@ export async function unityTest(cwd, unityPath) {
     console.log('-------------------------With Full Wrapper test(nodejs)-------------------------');
     process.env.SwitchToQJS = '0';
     process.env.SwitchToNJS = '1';
-
-    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-
-    console.log("[Puer] Building testplayer for v2");
-    mkdir("-p", `${cwd}/build/v2`);
-    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
+    console.log("[Puer] Running test");
     const v2code_nodejs = checkTestResult(
         exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log5.txt`).code,
         `${cwd}/log5.txt`
