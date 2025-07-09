@@ -1574,14 +1574,14 @@ handle_underlying:
 
 static pesapi_value JsObjectUnRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue)
 {
-    return (${invokePapi('is_object')}(env, jsValue)) ?  ${invokePapi('get_property_uint32')}(env, jsValue, 0) : nullptr;
+    return (${invokePapi('is_boxed_value')}(env, jsValue)) ?  ${invokePapi('unboxing')}(env, jsValue) : nullptr;
 }
 
 static void JsObjectSetRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value outer, pesapi_value val)
 {
-    if (outer && val && ${invokePapi('is_object')}(env, outer))
+    if (outer && val && ${invokePapi('is_boxed_value')}(env, outer))
     {
-        ${invokePapi('set_property_uint32')}(env, outer, 0, val);
+        ${invokePapi('update_boxed_value')}(env, outer, val);
     }
 }
 
