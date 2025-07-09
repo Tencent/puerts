@@ -25,7 +25,7 @@ namespace Puerts.UnitTest
                 end)
                 
                 assertAndPrint('LuaGetArrayBufferOutArgFromCS', outRef[1][1], 4)
-                assertAndPrint('JSGetArrayBufferReturnFromCS', rAB[1], 5)
+                assertAndPrint('LuaGetArrayBufferReturnFromCS', rAB[1], 5)
 
                 testHelper.arrayBufferTestField = buffer({192})
                 testHelper.arrayBufferTestProp = buffer({192})
