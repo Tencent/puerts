@@ -394,7 +394,8 @@ void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
-    CppObject* cppObject = (CppObject*)lua_touserdata(L, idx);
+    auto mapper = CppObjectMapper::Get(L);
+    CppObject* cppObject = mapper->GetCppObject(L, idx);
     return cppObject ? cppObject->Ptr : nullptr;
 }
 
@@ -402,7 +403,8 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
-    CppObject* cppObject = (CppObject*)lua_touserdata(L, idx);
+    auto mapper = CppObjectMapper::Get(L);
+    CppObject* cppObject = mapper->GetCppObject(L, idx);
     return cppObject ? cppObject->TypeId : nullptr;
 }
 
@@ -410,7 +412,8 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pval
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
-    CppObject* cppObject = (CppObject*)lua_touserdata(L, idx);
+    auto mapper = CppObjectMapper::Get(L);
+    CppObject* cppObject = mapper->GetCppObject(L, idx);
     // TODO: check inheritance
     return cppObject && (cppObject->TypeId == type_id);
 }

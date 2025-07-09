@@ -255,6 +255,31 @@ namespace luaimpl
         return luaL_error(L, "no such type");
     }
 
+    bool CppObjectMapper::IsCppObject(lua_State* L, int index)
+    {
+        if (!lua_isuserdata(L, index) || !lua_getmetatable(L, index)) {
+            return false; // 没有元表
+        }
+        
+        // 使用dummy_idx_tag的地址作为key
+        lua_pushlightuserdata(L, &dummy_idx_tag);
+        lua_rawget(L, -2);
+        
+        bool result = !lua_isnil(L, -1);
+        
+        lua_pop(L, 2); // 弹出查询结果和元表
+        return result;
+    }
+
+    CppObject* CppObjectMapper::GetCppObject(lua_State* L, int index)
+    {
+        if (!IsCppObject(L, index)) {
+            return nullptr;
+        }
+        
+        return (CppObject*)lua_touserdata(L, index);
+    }
+
     bool CppObjectMapper::IsInstanceOfCppObject(lua_State* L, const void* TypeId, int ObjectIndex)
     {
         CppObject* cppObject = (CppObject*)lua_touserdata(L, ObjectIndex);

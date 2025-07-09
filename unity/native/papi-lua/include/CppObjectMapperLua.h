@@ -84,6 +84,10 @@ public:
     bool IsBuffer(lua_State* L, int index);
     
     unsigned char* GetBufferData(lua_State* L, int index, size_t* out_size);
+
+    bool IsCppObject(lua_State* L, int index);
+
+    CppObject* GetCppObject(lua_State* L, int index);
     
     void UnInitialize(lua_State* L);
 
