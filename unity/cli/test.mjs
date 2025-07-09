@@ -353,7 +353,7 @@ export async function unityTest(cwd, unityPath) {
         arch: process.arch
     });
     
-    console.log('-------------------------V2 Without Wrapper test-------------------------');
+    console.log('-------------------------Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
@@ -362,12 +362,34 @@ export async function unityTest(cwd, unityPath) {
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test");
     const v2code_reflection = checkTestResult(
-        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code,
-        `${cwd}/log2.txt`
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_reflection.txt`).code,
+        `${cwd}/log_reflection.txt`
     );
     assert.equal(0, v2code_reflection);
+
+    console.log('-------------------------Without Wrapper test(quickjs)-------------------------');
+    process.env.SwitchToQJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_qjs_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_reflection.txt`).code,
+        `${cwd}/log_qjs_reflection.txt`
+    );
+    assert.equal(0, v2code_qjs_reflection);
     
-    console.log('-------------------------V2 With Full Wrapper test-------------------------');
+    console.log('-------------------------Without Wrapper test(nodejs)-------------------------');
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_nodejs_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_reflection.txt`).code,
+        `${cwd}/log_nodejs_reflection.txt`
+    );
+    assert.equal(0, v2code_nodejs_reflection);
+
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '0';
+    
+    console.log('-------------------------Full Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
@@ -376,27 +398,27 @@ export async function unityTest(cwd, unityPath) {
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test");
     const v2code = checkTestResult(
-        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log3.txt`).code,
-        `${cwd}/log3.txt`
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_w.txt`).code,
+        `${cwd}/log_w.txt`
     );
     assert.equal(0, v2code);
     
-    console.log('-------------------------V2 With Full Wrapper test(quickjs)-------------------------');
+    console.log('-------------------------Full Wrapper test(quickjs)-------------------------');
     process.env.SwitchToQJS = '1';
     console.log("[Puer] Running test");
     const v2code_qjs = checkTestResult(
-        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code,
-        `${cwd}/log4.txt`
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_w.txt`).code,
+        `${cwd}/log_qjs_w.txt`
     );
     assert.equal(0, v2code_qjs);
     
-    console.log('-------------------------With Full Wrapper test(nodejs)-------------------------');
+    console.log('-------------------------Full Wrapper test(nodejs)-------------------------');
     process.env.SwitchToQJS = '0';
     process.env.SwitchToNJS = '1';
     console.log("[Puer] Running test");
     const v2code_nodejs = checkTestResult(
-        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log5.txt`).code,
-        `${cwd}/log5.txt`
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_w.txt`).code,
+        `${cwd}/log_nodejs_w.txt`
     );
     assert.equal(0, v2code_nodejs);
 }
