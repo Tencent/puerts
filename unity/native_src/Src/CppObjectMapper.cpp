@@ -343,8 +343,6 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
             ++FunctionInfo;
         }
-        
-        Template->Set(v8::String::NewFromUtf8(Isolate, "__p_typeId", v8::NewStringType::kNormal).ToLocalChecked(), v8::BigInt::New(Isolate, (intptr_t)ClassDefinition->TypeId));
 
         if (ClassDefinition->SuperTypeId)
         {
