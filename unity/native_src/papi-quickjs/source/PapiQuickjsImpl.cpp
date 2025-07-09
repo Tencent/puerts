@@ -169,14 +169,14 @@ pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t *str, siz
     return pesapi_create_generic2(env, str, length, JS_NewString16Len);
 }
 
-static JSValue JS_NewArrayBufferWrap(JSContext *ctx, void *bin, size_t len)
+static JSValue JS_NewArrayBufferCopyWrap(JSContext *ctx, void *bin, size_t len)
 {
-    return JS_NewArrayBuffer(ctx, (uint8_t *) bin, len, nullptr, nullptr, false);
+    return JS_NewArrayBufferCopy(ctx, (uint8_t *) bin, len);
 }
 
 pesapi_value pesapi_create_binary(pesapi_env env, void *bin, size_t length)
 {
-    return pesapi_create_generic2(env, bin, length, JS_NewArrayBufferWrap);
+    return pesapi_create_generic2(env, bin, length, JS_NewArrayBufferCopyWrap);
 }
 
 pesapi_value pesapi_create_array(pesapi_env env)
