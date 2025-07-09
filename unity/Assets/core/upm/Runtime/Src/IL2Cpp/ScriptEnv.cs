@@ -295,6 +295,7 @@ namespace Puerts
                 moduleExecutor = null;
                 System.GC.Collect();
                 System.GC.WaitForPendingFinalizers();
+                Puerts.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
                 
                 backend.DestroyEnvRef(envRef);
                 Puerts.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
