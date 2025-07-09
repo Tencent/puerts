@@ -335,6 +335,12 @@ export async function unityTest(cwd, unityPath) {
         arch: process.arch
     });
     
+    await runPuertsMake(join(cwd, '../../native/papi-nodejs'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch
+    });
+    
     console.log('-------------------------V2 Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
