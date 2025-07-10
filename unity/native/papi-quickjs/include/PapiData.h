@@ -16,7 +16,7 @@ namespace qjsimpl
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(JSContext *ctx)
-        : context_persistent(JS_DupContext(ctx))
+        : context_persistent(ctx)
         , ref_count(1)
         , env_life_cycle_tracker(pesapi::qjsimpl::CppObjectMapper::GetEnvLifeCycleTracker(ctx))
     {
@@ -24,7 +24,6 @@ struct pesapi_env_ref__
     
     ~pesapi_env_ref__()
     {
-        JS_FreeContext(context_persistent);
     }
 
     JSContext *context_persistent;
