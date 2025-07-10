@@ -689,7 +689,7 @@ namespace Puerts.UnitTest
     public class CrossLangTest
     {
         [Test]
-        public void JSFunctionInstanceTest()
+        public void ScriptFunctionInstanceTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
@@ -701,8 +701,7 @@ namespace Puerts.UnitTest
 
                     const oFunc = () => 3
                     const rFunc = testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
-                        testHelper.functionTestEndValue = oFunc;
-                        return testHelper.functionTestEndValue;
+                        return oFunc;
                     });
 
                     const evfn = () => 30;
@@ -1040,7 +1039,7 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
         [Test]
-        public void JSObjectInstanceTest()
+        public void ScriptObjectInstanceTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
