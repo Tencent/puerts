@@ -236,7 +236,7 @@ namespace Puerts.UnitTest
                 testHelper:NullableNativeStructTestCheckMemberValue()
             ");
         }
-        /*
+        
         [Test]
         public void ScriptObjectInstanceLuaTest()
         {
@@ -260,7 +260,7 @@ namespace Puerts.UnitTest
                 TestHelper.jsObjectTestPropStatic = { puerts = 'niubi' }
                 testHelper:JSObjectTestCheckMemberValue()
             ");
-        }*/
+        }
 
         [Test]
         public void DateTimeLuaTest()

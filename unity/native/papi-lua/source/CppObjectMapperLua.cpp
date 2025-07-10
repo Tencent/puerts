@@ -186,8 +186,6 @@ namespace luaimpl
         lua_setmetatable(L, -2);
         m_CacheRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
-        lua_newtable(L);
-        m_CachePrivateDataRef = luaL_ref(L, LUA_REGISTRYINDEX);
         auto pmapper = (CppObjectMapper**)lua_getextraspace(L);
         *pmapper = this;
         
@@ -378,36 +376,42 @@ namespace luaimpl
         }
     }
 
+    static int dummy_private_tag = 0;
+
     void* CppObjectMapper::GetPrivateData(lua_State* L, int index) const
     {
         index = lua_absindex(L, index);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
-        lua_pushvalue(L, index);
-        lua_rawget(L, -2);
-        if (lua_isnil(L, -1))
-        {
-            lua_pop(L, 2);
+        if (!lua_istable(L, index)) {
             return nullptr;
         }
-        void* data = lua_touserdata(L, -1);
-        lua_pop(L, 2);
-        return data;
+        
+        // 获取table[&dummy_private_tag]的值
+        lua_pushlightuserdata(L, &dummy_private_tag);
+        lua_rawget(L, index);
+        
+        // 检查值是否为lightuserdata
+        if (lua_islightuserdata(L, -1)) {
+            void* ptr = lua_touserdata(L, -1);
+            lua_pop(L, 1); // 弹出获取的值
+            return ptr;
+        }
+        
+        lua_pop(L, 1); // 弹出获取的值
+        return nullptr;
     }
 
     void CppObjectMapper::SetPrivateData(lua_State* L, int index, void* ptr)
     {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, index);
-        if (ptr == nullptr)
-        {
-            lua_pushnil(L);
+        index = lua_absindex(L, index);
+        if (!lua_istable(L, index)) {
+            return;
         }
-        else
-        {
-            lua_pushlightuserdata(L, ptr);
-        }
-        lua_rawset(L, -3);
-        lua_pop(L, 1);
+        
+        lua_pushlightuserdata(L, &dummy_private_tag);
+        lua_pushlightuserdata(L, ptr);
+        
+        // table[&dummy_private_tag] = ptr
+        lua_rawset(L, index);
     }
 
     void CppObjectMapper::UnInitialize(lua_State* L)
@@ -450,7 +454,6 @@ namespace luaimpl
         m_DataCache.clear();
         m_TypeIdToMetaMap.clear();
         luaL_unref(L, LUA_REGISTRYINDEX, m_CacheRef);
-        luaL_unref(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
     }
 
     // param   --- [1]: obj, [2]: key
