@@ -102,10 +102,10 @@ jobs:
           )
           for log_file in "${log_files[@]}"; do
             echo "Processing $log_file"
-            grep "ENV_BACKEND" "$log_file"
-            passed_count=$(grep -c "Passed" "$log_file")
+            grep "ENV_BACKEND" "$log_file" || true
+            passed_count=$(grep -c "Passed" "$log_file" || true)
             echo "Passed: $passed_count"
-            grep "Failed" "$log_file"
+            grep "Failed" "$log_file" || true
             echo
           done
           
