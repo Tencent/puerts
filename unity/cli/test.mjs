@@ -398,8 +398,8 @@ export async function unityTest(cwd, unityPath) {
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
     console.log("[Puer] Running test");
     const v2code = checkTestResult(
-        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_w.txt`).code,
-        `${cwd}/log_w.txt`
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_full_wrapper.txt`).code,
+        `${cwd}/log_full_wrapper.txt`
     );
     assert.equal(0, v2code);
     
@@ -407,8 +407,8 @@ export async function unityTest(cwd, unityPath) {
     process.env.SwitchToQJS = '1';
     console.log("[Puer] Running test");
     const v2code_qjs = checkTestResult(
-        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_w.txt`).code,
-        `${cwd}/log_qjs_w.txt`
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_full_wrapper.txt`).code,
+        `${cwd}/log_qjs_full_wrapper.txt`
     );
     assert.equal(0, v2code_qjs);
     
@@ -417,8 +417,8 @@ export async function unityTest(cwd, unityPath) {
     process.env.SwitchToNJS = '1';
     console.log("[Puer] Running test");
     const v2code_nodejs = checkTestResult(
-        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_w.txt`).code,
-        `${cwd}/log_nodejs_w.txt`
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_full_wrapper.txt`).code,
+        `${cwd}/log_nodejs_full_wrapper.txt`
     );
     assert.equal(0, v2code_nodejs);
 }

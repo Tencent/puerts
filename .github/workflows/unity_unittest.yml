@@ -96,15 +96,17 @@ jobs:
             "log_reflection.txt"
             "log_qjs_reflection.txt"
             "log_nodejs_reflection.txt"
-            "log_w.txt"
-            "log_qjs_w.txt"
-            "log_nodejs_w.txt"
+            "log_full_wrapper.txt"
+            "log_qjs_full_wrapper.txt"
+            "log_nodejs_full_wrapper.txt"
           )
           for log_file in "${log_files[@]}"; do
             echo "Processing $log_file"
             grep "ENV_BACKEND" "$log_file" || true
             passed_count=$(grep -c "Passed" "$log_file" || true)
             echo "Passed: $passed_count"
+            failed_count=$(grep -c "Failed" "$log_file" || true)
+            echo "Failed: $failed_count"
             grep "Failed" "$log_file" || true
             echo
           done
