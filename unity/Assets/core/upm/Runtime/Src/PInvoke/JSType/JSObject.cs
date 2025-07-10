@@ -88,7 +88,7 @@ namespace Puerts
             }
         }
 
-        internal void ForceDispose()
+        private void CoreDispose(bool isForced, bool isDisposing)
         {
             if (disposed) return;
 #if THREAD_SAFE
@@ -103,15 +103,22 @@ namespace Puerts
             }
             else
             {
-                var scope = PuertsNative.pesapi_open_scope(apis, envRef);
-                try
+                if (isForced || isDisposing)
                 {
-                    var env = PuertsNative.pesapi_get_env_from_ref(apis, envRef);
-                    ReleaseObjRef(apis, env, objRef, true);
+                    var scope = PuertsNative.pesapi_open_scope(apis, envRef);
+                    try
+                    {
+                        var env = PuertsNative.pesapi_get_env_from_ref(apis, envRef);
+                        ReleaseObjRef(apis, env, objRef, isForced);
+                    }
+                    finally
+                    {
+                        PuertsNative.pesapi_close_scope(apis, scope);
+                    }
                 }
-                finally
+                else
                 {
-                    PuertsNative.pesapi_close_scope(apis, scope);
+                    scripEnv.addPendingKillScriptObjects(objRef);
                 }
             }
             objRef = IntPtr.Zero;
@@ -121,46 +128,14 @@ namespace Puerts
 #endif
         }
 
-        protected virtual void Dispose(bool dispose)
+        internal void ForceDispose()
         {
-            if (disposed) return;
+            CoreDispose(true, false);
+        }
 
-#if THREAD_SAFE
-            lock(jsEnv) 
-            {
-#endif
-            disposed = true;
-            var envRef = PuertsNative.pesapi_get_ref_associated_env(apis, objRef);
-            if (!PuertsNative.pesapi_env_ref_is_valid(apis, envRef))
-            {
-                PuertsNative.pesapi_release_value_ref(apis, objRef);
-            }
-            else
-            {
-                if (dispose)
-                {
-                    var scope = PuertsNative.pesapi_open_scope(apis, envRef);
-                    try
-                    {
-                        var env = PuertsNative.pesapi_get_env_from_ref(apis, envRef);
-                        ReleaseObjRef(apis, env, objRef, false);
-                    }
-                    finally
-                    {
-                        PuertsNative.pesapi_close_scope(apis, scope);
-                    }
-                }
-                else
-                {
-                    // from gc
-                    scripEnv.addPendingKillScriptObjects(objRef);
-                }
-            }
-            objRef = IntPtr.Zero;
-            scripEnv = null;
-#if THREAD_SAFE
-            }
-#endif
+        protected virtual void Dispose(bool disposing)
+        {
+            CoreDispose(false, disposing);
         }
 
         ~JSObject() 
