@@ -37,7 +37,7 @@ namespace Puerts.UnitTest
             ");
         }
 
-        /*[Test]
+        [Test]
         public void ScriptFunctionInstanceLuaTest()
         {
             var luaEnv = new ScriptEnv(new BackendLua());
@@ -52,13 +52,15 @@ namespace Puerts.UnitTest
                 end)
 
                 local evfn = function() return 30 end
+                testHelper:add_functionEvent(evfn)
                 testHelper.functionTestField = function() return 3 end
                 testHelper.functionTestProp = function() return 3 end
                 TestHelper.functionTestFieldStatic = function() return 3 end
                 TestHelper.functionTestPropStatic = function() return 3 end
                 testHelper:JSFunctionTestCheckMemberValue()
+                testHelper:remove_functionEvent(evfn);
             ");
-        }*/
+        }
 
         [Test]
         public void NumberInstanceLuaTest()

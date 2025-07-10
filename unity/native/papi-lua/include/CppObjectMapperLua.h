@@ -114,6 +114,7 @@ private:
     eastl::shared_ptr<int> ref = eastl::allocate_shared<int>(eastl::allocator_malloc("shared_ptr"), 0);
 
     int m_CacheRef = 0;
+    int m_CachePrivateDataRef = 0;
 
     int GetMetaRefOfClass(lua_State* L, const puerts::ScriptClassDefinition* classDefinition);
 

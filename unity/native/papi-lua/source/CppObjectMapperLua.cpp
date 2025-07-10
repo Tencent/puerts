@@ -186,6 +186,14 @@ namespace luaimpl
         lua_setmetatable(L, -2);
         m_CacheRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
+        lua_newtable(L);
+        lua_newtable(L);
+        lua_pushstring(L, "__mode");
+        lua_pushstring(L, "k");
+        lua_rawset(L, -3);
+        lua_setmetatable(L, -2);
+        m_CachePrivateDataRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
         auto pmapper = (CppObjectMapper**)lua_getextraspace(L);
         *pmapper = this;
         
@@ -381,37 +389,41 @@ namespace luaimpl
     void* CppObjectMapper::GetPrivateData(lua_State* L, int index) const
     {
         index = lua_absindex(L, index);
-        if (!lua_istable(L, index)) {
-            return nullptr;
-        }
         
-        // 获取table[&dummy_private_tag]的值
-        lua_pushlightuserdata(L, &dummy_private_tag);
-        lua_rawget(L, index);
+        // 获取弱键表
+        lua_rawgeti(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
         
-        // 检查值是否为lightuserdata
+        // 以Lua值为键获取值
+        lua_pushvalue(L, index);
+        lua_rawget(L, -2);
+        
+        void* ptr = nullptr;
         if (lua_islightuserdata(L, -1)) {
-            void* ptr = lua_touserdata(L, -1);
-            lua_pop(L, 1); // 弹出获取的值
-            return ptr;
+            ptr = lua_touserdata(L, -1);
         }
         
-        lua_pop(L, 1); // 弹出获取的值
-        return nullptr;
+        // 弹出获取的值和弱键表
+        lua_pop(L, 2);
+        
+        return ptr;
     }
 
     void CppObjectMapper::SetPrivateData(lua_State* L, int index, void* ptr)
     {
         index = lua_absindex(L, index);
-        if (!lua_istable(L, index)) {
-            return;
-        }
         
-        lua_pushlightuserdata(L, &dummy_private_tag);
+        // 获取弱键表
+        lua_rawgeti(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
+        
+        // 以Lua值为键，指针为值
+        lua_pushvalue(L, index);
         lua_pushlightuserdata(L, ptr);
         
-        // table[&dummy_private_tag] = ptr
-        lua_rawset(L, index);
+        // 设置table[key] = value
+        lua_rawset(L, -3);
+        
+        // 弹出弱键表
+        lua_pop(L, 1);
     }
 
     void CppObjectMapper::UnInitialize(lua_State* L)
@@ -454,6 +466,7 @@ namespace luaimpl
         m_DataCache.clear();
         m_TypeIdToMetaMap.clear();
         luaL_unref(L, LUA_REGISTRYINDEX, m_CacheRef);
+        luaL_unref(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
     }
 
     // param   --- [1]: obj, [2]: key
