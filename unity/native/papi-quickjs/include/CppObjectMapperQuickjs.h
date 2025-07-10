@@ -3,6 +3,7 @@
 #include "pesapi.h"
 #include "quickjs.h"
 #include <EASTL/unordered_map.h>
+#include <EASTL/hash_set.h>
 #include <EASTL/allocator_malloc.h>
 #include <EASTL/shared_ptr.h>
 #include "ObjectCacheNodeQuickjs.h"
@@ -62,6 +63,11 @@ struct CppObjectMapper
 
     eastl::unordered_map<const void*, FObjectCacheNode, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc> CDataCache;
     eastl::unordered_map<const void*, JSValue, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc> TypeIdToFunctionMap;
+
+    eastl::hash_set<JSValue*, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc> StrongRefObjects;
+
+    inline void AddStrongRefObject(JSValue* obj) { StrongRefObjects.insert(obj); }
+    inline void RemoveStrongRefObject(JSValue* obj) { StrongRefObjects.erase(obj); }
 
     JSRuntime* rt;
     JSContext* ctx;

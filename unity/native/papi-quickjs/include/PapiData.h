@@ -45,10 +45,14 @@ struct pesapi_value_ref__ : pesapi_env_ref__
     explicit pesapi_value_ref__(JSContext *ctx, JSValue v, uint32_t field_count)
         : pesapi_env_ref__(ctx), value_persistent(JS_DupValue(ctx, v)), internal_field_count(field_count)
     {
+        auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(ctx);
+        mapper->AddStrongRefObject(&value_persistent);
     }
     
     ~pesapi_value_ref__()
     {
+        auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(context_persistent);
+        mapper->RemoveStrongRefObject(&value_persistent);
         JS_FreeValue(context_persistent, value_persistent);
     }
 
