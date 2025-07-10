@@ -357,7 +357,7 @@ int pesapi_is_object(pesapi_env env, pesapi_value pvalue)
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
     int type = lua_type(L, idx);
-    return type == LUA_TTABLE || type == LUA_TUSERDATA;
+    return type == LUA_TTABLE || type == LUA_TFUNCTION;
 }
 
 int pesapi_is_function(pesapi_env env, pesapi_value pvalue)
