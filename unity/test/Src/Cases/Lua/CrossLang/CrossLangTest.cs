@@ -415,7 +415,7 @@ namespace Puerts.UnitTest
                 callback();
             });
         }
-        /*
+        
         [Test]
         public void TestLuaGCTest()
         {
@@ -423,7 +423,7 @@ namespace Puerts.UnitTest
             TestGC.ObjCount = 0;
             var objCount = luaEnv.Eval<int>(@"
                 local randomCount = math.random(50) + 1
-                local objs = {}
+                objs = {}
                 for i = 1, randomCount do
                     objs[i] = CS.Puerts.UnitTest.TestGC()
                 end
@@ -450,7 +450,7 @@ namespace Puerts.UnitTest
 
             luaEnv.Dispose();
         }
-        
+
         [Test]
         public void TestLuaStructGCTest()
         {
@@ -458,7 +458,7 @@ namespace Puerts.UnitTest
             TestGC.ObjCount = 0;
             var objCount = luaEnv.Eval<int>(@"
                 local randomCount = math.random(50) + 1
-                local objs = {}
+                objs = {}
                 for i = 1, randomCount do
                     objs[i] = CS.Puerts.UnitTest.TakeTestGC(1)
                 end
@@ -485,6 +485,47 @@ namespace Puerts.UnitTest
 
             luaEnv.Dispose();
         }
-        */
+
+        [Test]
+        public void CastLuaFunctionAsTwoDiffDelegateTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            luaEnv.Eval(@"
+                function __GCB(a, b)
+                    if b == nil then
+                        __GMSG = tostring(a)
+                    else
+                        __GMSG = tostring(a) .. tostring(b)
+                    end
+                end
+            ");
+
+            // Cast as Action<int>
+            var cb1 = luaEnv.Eval<Action<int>>("return __GCB");
+            cb1(1);
+            var msg1 = luaEnv.Eval<string>("return __GMSG");
+            Assert.AreEqual("1", msg1);
+
+            // Cast as Action<string, long>
+            var cb2 = luaEnv.Eval<Action<string, long>>("return __GCB");
+            cb2("hello", 999);
+            var msg2 = luaEnv.Eval<string>("return __GMSG");
+            Assert.AreEqual("hello999", msg2);
+        }
+
+        [Test]
+        public void NotGenericLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            luaEnv.Eval(@"
+                function __NGTF(a)
+                    return tostring(a)
+                end
+            ");
+
+            var cb = luaEnv.Eval<Func<long, string>>("return __NGTF");
+            var ret = cb(9999);
+            Assert.AreEqual("9999", ret);
+        }
     }
 }
