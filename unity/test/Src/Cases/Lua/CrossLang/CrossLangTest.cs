@@ -318,7 +318,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void FuncAsLuaObjectTest()
+        public void FuncAsScriptObjectLuaTest()
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             var jso = luaEnv.Eval<JSObject>(@"
