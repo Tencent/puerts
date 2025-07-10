@@ -56273,11 +56273,13 @@ go:
     len = str->len;
     if (!buff) // get len
     {
+        JS_FreeValue(ctx, val);
         *plen = len;
         return NULL;
     }
     *plen = len < *plen ? len : *plen;
     copy_str16(buff, str, 0, *plen);
+    JS_FreeValue(ctx, val);
     return buff;
  fail:
     if (plen)
