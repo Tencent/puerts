@@ -349,5 +349,142 @@ namespace Puerts.UnitTest
                 testHelper:PassObj(nil)
             ");
         }
+
+        [Test]
+        public void WriteOnlyLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            luaEnv.Eval(@"
+                local o = CS.Puerts.UnitTest.TestObject(1)
+                local v = o.WriteOnly
+                local sv = CS.Puerts.UnitTest.TestObject.StaticWriteOnly
+            ");
+        }
+
+        [Test]
+        public void TestStructAccessLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            var ret = luaEnv.Eval<string>(@"
+                local s1 = CS.Puerts.UnitTest.TestStruct2(5345, 3214, 'fqpziq')
+                return s1:ToString()
+            ");
+            Assert.AreEqual("5345:3214:fqpziq", ret);
+        }
+
+        [Test]
+        public void NativeUnsafeStructInstanceLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            luaEnv.Eval(@"
+                local TestHelper = CS.Puerts.UnitTest.TestHelper
+                local assertAndPrint = TestHelper.AssertAndPrint
+                local testHelper = TestHelper.GetInstance()
+
+                local outRef = {}
+                local oNativeUnsafeStruct = CS.Puerts.UnitTest.TestUnsafeStruct(1)
+                outRef[1] = oNativeUnsafeStruct
+
+                local rNativeUnsafeStruct = testHelper:NativeUnsafeStructTestPipeLine(oNativeUnsafeStruct, outRef, function(obj)
+                    assertAndPrint('LuaGetNativeUnsafeStructArgFromCS', obj.uintField, oNativeUnsafeStruct.uintField)
+                    return oNativeUnsafeStruct
+                end)
+                
+                assertAndPrint('LuaGetNativeUnsafeStructOutArgFromCS', outRef[1].uintField, oNativeUnsafeStruct.uintField)
+                assertAndPrint('LuaGetNativeUnsafeStructReturnFromCS', rNativeUnsafeStruct.uintField, oNativeUnsafeStruct.uintField)
+
+                testHelper.nativeUnsafeStructTestField = CS.Puerts.UnitTest.TestUnsafeStruct(765)
+                testHelper.nativeUnsafeStructTestProp = CS.Puerts.UnitTest.TestUnsafeStruct(765)
+                TestHelper.nativeUnsafeStructTestFieldStatic = CS.Puerts.UnitTest.TestUnsafeStruct(765)
+                TestHelper.nativeUnsafeStructTestPropStatic = CS.Puerts.UnitTest.TestUnsafeStruct(765)
+                testHelper:NativeUnsafeStructTestCheckMemberValue()
+            ");
+        }
+
+        [Test]
+        public void CallDelegateAfterLuaEnvDisposedTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            var callback = luaEnv.Eval<Action>(@"
+                return function() print('hello') end
+            ");
+            callback();
+            luaEnv.Dispose();
+            Assert.Catch(() =>
+            {
+                callback();
+            });
+        }
+        /*
+        [Test]
+        public void TestLuaGCTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            TestGC.ObjCount = 0;
+            var objCount = luaEnv.Eval<int>(@"
+                local randomCount = math.random(50) + 1
+                local objs = {}
+                for i = 1, randomCount do
+                    objs[i] = CS.Puerts.UnitTest.TestGC()
+                end
+                return randomCount
+            ");
+
+            luaEnv.Eval("collectgarbage('collect')");
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(objCount, TestGC.ObjCount);
+            Assert.True(objCount > 0);
+
+            luaEnv.Eval("objs = nil");
+            luaEnv.Eval("collectgarbage('collect')");
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(0, TestGC.ObjCount);
+
+            luaEnv.Dispose();
+        }
+        
+        [Test]
+        public void TestLuaStructGCTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            TestGC.ObjCount = 0;
+            var objCount = luaEnv.Eval<int>(@"
+                local randomCount = math.random(50) + 1
+                local objs = {}
+                for i = 1, randomCount do
+                    objs[i] = CS.Puerts.UnitTest.TakeTestGC(1)
+                end
+                return randomCount
+            ");
+
+            luaEnv.Eval("collectgarbage('collect')");
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(objCount, TestGC.ObjCount);
+            Assert.True(objCount > 0);
+
+            luaEnv.Eval("objs = nil");
+            luaEnv.Eval("collectgarbage('collect')");
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(0, TestGC.ObjCount);
+
+            luaEnv.Dispose();
+        }
+        */
     }
 }

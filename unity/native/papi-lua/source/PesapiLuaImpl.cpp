@@ -579,6 +579,10 @@ void pesapi_release_env_ref(pesapi_env_ref penv_ref)
 pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 {
     auto env_ref = reinterpret_cast<pesapi::luaimpl::pesapi_env_ref__*>(penv_ref);
+    if (!env_ref || env_ref->env_life_cycle_tracker.expired())
+    {
+        return nullptr;
+    }
     env_ref->scope_top = lua_gettop(env_ref->L);
     return reinterpret_cast<pesapi_scope>(penv_ref);
 }
@@ -602,6 +606,7 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
 
 void pesapi_close_scope(pesapi_scope pscope)
 {
+    if (!pscope) return;
     auto env_ref = reinterpret_cast<pesapi::luaimpl::pesapi_env_ref__*>(pscope);
     lua_settop(env_ref->L, env_ref->scope_top); // release all value alloc in scope
     env_ref->scope_top = 0;
