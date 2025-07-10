@@ -460,6 +460,12 @@ void CppObjectMapper::Cleanup()
     {
         JS_FreeValue(ctx, kv.second);
     }
+
+    for(auto& obj : StrongRefObjects)
+    {
+        JS_FreeValue(ctx, *obj);
+    }
+    StrongRefObjects.clear();
     CDataCache.clear();
     TypeIdToFunctionMap.clear();
     //CDataCache.~hash_map();

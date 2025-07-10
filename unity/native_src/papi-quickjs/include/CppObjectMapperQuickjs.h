@@ -3,6 +3,7 @@
 #include "pesapi.h"
 #include "quickjs.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include "ObjectCacheNodeQuickjs.h"
 #include "JSClassRegister.h"
@@ -45,6 +46,10 @@ struct CppObjectMapper
 
     std::unordered_map<const void*, FObjectCacheNode, std::hash<const void*>, std::equal_to<const void*>> CDataCache;
     std::unordered_map<const void*, JSValue, std::hash<const void*>, std::equal_to<const void*>> TypeIdToFunctionMap;
+    std::unordered_set<JSValue*, std::hash<const void*>, std::equal_to<const void*>> StrongRefObjects;
+
+    inline void AddStrongRefObject(JSValue* obj) { StrongRefObjects.insert(obj); }
+    inline void RemoveStrongRefObject(JSValue* obj) { StrongRefObjects.erase(obj); }
 
     JSRuntime* rt;
     JSContext* ctx;
