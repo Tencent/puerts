@@ -92,18 +92,22 @@ jobs:
         shell: bash
         run: |
           cd unity/test/unity
-          echo "testresult in v2(reflection)"
-          cat log_reflection.txt | grep "Failed\|Passed\|ENV_BACKEND" 
-          echo "testresult in v2(quickjs_reflection)"
-          cat log_qjs_reflection.txt | grep "Failed\|Passed\|ENV_BACKEND" 
-          echo "testresult in v2(nodejs_reflection)"
-          cat log_nodejs_reflection.txt | grep "Failed\|Passed\|ENV_BACKEND" 
-          echo "testresult in v2"
-          cat log_w.txt | grep "Failed\|Passed\|ENV_BACKEND" 
-          echo "testresult in v2(quickjs)"
-          cat log_qjs_w.txt | grep "Failed\|Passed\|ENV_BACKEND" 
-          echo "testresult in v2(nodejs)"
-          cat log_nodejs_w.txt | grep "Failed\|Passed\|ENV_BACKEND" 
+          log_files=(
+            "log_reflection.txt"
+            "log_qjs_reflection.txt"
+            "log_nodejs_reflection.txt"
+            "log_w.txt"
+            "log_qjs_w.txt"
+            "log_nodejs_w.txt"
+          )
+          for log_file in "${log_files[@]}"; do
+            echo "Processing $log_file"
+            grep "ENV_BACKEND" "$log_file"
+            passed_count=$(grep -c "Passed" "$log_file")
+            echo "Passed: $passed_count"
+            grep "Failed" "$log_file"
+            echo
+          done
           
 
   unittest-win-dotnet:
