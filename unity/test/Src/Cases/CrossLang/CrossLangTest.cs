@@ -431,6 +431,11 @@ namespace Puerts.UnitTest
             set { _bigintTestPropStatic = value; }
         }
 
+        public ulong GetBigULong()
+        {
+            return ((ulong)long.MaxValue) + 1;
+        }
+
         public void BigintTestCheckMemberValue()
         {
             AssertAndPrint("CSBigintTestField", bigintTestField, 9007199254740987);
@@ -1359,6 +1364,26 @@ namespace Puerts.UnitTest
             ");
             ;
             Assert.AreEqual("9999", cb1(9999));
+        }
+
+        [Test]
+        public void BigULongTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<string>(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+                
+                    const testHelper = TestHelper.GetInstance();
+                    const bulong = testHelper.GetBigULong();
+                    assertAndPrint('ULongCmp', 9223372036854775807n < bulong);
+                    return bulong
+                })()
+            ");
+
+            // 9223372036854775808
+            Assert.AreEqual((((ulong)long.MaxValue) + 1).ToString(), res);
         }
     }
 }
