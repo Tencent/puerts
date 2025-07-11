@@ -166,10 +166,15 @@ namespace Puerts
             scriptEnv.Eval(@"
             local loadType = loadType
             local puerts = require('puerts')
+            local CS = require('csharp')
             local unpack = unpack or table.unpack
+            local createFunction = createFunction
+            _G.createFunction = nil
+
+            puerts.createFunction = createFunction
+
             function puerts.generic(l_type, ...)
                 local cs_type = puerts.typeof(l_type)
-                print(type(cs_type))
                 if not cs_type then error('invalid type') end
                 local n = select('#', ...)
                 if n == 0 then error('no generic argument') end
@@ -181,6 +186,34 @@ namespace Puerts
                 end
                 return loadType(cs_type:MakeGenericType(unpack(args)))
             end
+
+            function puerts.genericMethod(l_type, method_name, ...)
+                local cs_type = puerts.typeof(l_type)
+                if not cs_type then error('invalid type') end
+                local n = select('#', ...)
+                if n == 0 then error('no generic argument') end
+                local args = {}
+                for i = 1, n do
+                    local arg = puerts.typeof(select(i, ...))
+                    if not arg then error('invalid type') end
+                    table.insert(args, arg)
+                end
+
+                local members = CS.Puerts.Utils.GetMethodAndOverrideMethodByName(cs_type, method_name)
+
+                local overloadFunctions = {}
+                for i = 0, members.Length -1 do
+                    local method = members:GetValue(i)
+                    if (method.IsGenericMethodDefinition and method:GetGenericArguments().Length == n) then
+                        local methodImpl = method:MakeGenericMethod(unpack(args))
+                        table.insert(overloadFunctions, methodImpl)
+                    end
+                end
+                if #overloadFunctions > 0 then
+                    return createFunction(unpack(overloadFunctions))
+                end
+            end
+            
             ");
         }
     }

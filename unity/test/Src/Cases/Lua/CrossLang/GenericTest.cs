@@ -10,7 +10,6 @@ namespace Puerts.UnitTest
         [Test]
         public void ListGenericLuaTest()
         {
-            var preserveList = new System.Collections.Generic.List<int>();
             var luaEnv = new ScriptEnv(new BackendLua());
             var res = luaEnv.Eval<int>(@"
                 local CS = require('csharp')
@@ -24,6 +23,21 @@ namespace Puerts.UnitTest
                 return res;
             ");
             Assert.AreEqual(res, 6);
+            luaEnv.Dispose();
+        }
+
+        [Test]
+        public void StaticGenericMethodLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            string genericTypeName1 = luaEnv.Eval<string>(@"
+                local CS = require('csharp')
+                local puerts = require('puerts')
+                local func = puerts.genericMethod(CS.Puerts.UnitTest.GenericTestClass, 'StaticGenericMethod', CS.System.Int32);
+                return func();
+            ");
+            Assert.AreEqual(genericTypeName1, "Int32");
+
             luaEnv.Dispose();
         }
     }
