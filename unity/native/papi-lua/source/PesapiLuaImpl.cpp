@@ -519,13 +519,22 @@ struct pesapi_env_ref__
         : L(_L)
         , env_life_cycle_tracker(CppObjectMapper::GetEnvLifeCycleTracker(_L))
         , ref_count(1)
-        , scope_top(0)
     {
     }
     lua_State* L;
     eastl::weak_ptr<int> env_life_cycle_tracker;
     int ref_count;
-    int scope_top; // for scope
+};
+
+struct pesapi_scope__
+{
+    explicit pesapi_scope__(lua_State* _L)
+        : L(_L)
+        , scope_top(lua_gettop(L))
+    {
+    }
+    lua_State* L;
+    int scope_top;
 };
 
 pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
@@ -583,38 +592,51 @@ pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
     {
         return nullptr;
     }
-    env_ref->scope_top = lua_gettop(env_ref->L);
-    return reinterpret_cast<pesapi_scope>(penv_ref);
+    pesapi_scope ret = static_cast<pesapi_scope>(malloc(sizeof(pesapi::luaimpl::pesapi_scope__)));
+    memset(ret, 0, sizeof(pesapi::luaimpl::pesapi_scope__));
+    new (ret) pesapi::luaimpl::pesapi_scope__(env_ref->L);
+    return ret;
 }
 
 pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct pesapi_scope_memory* memory)
 {
-    return pesapi_open_scope(penv_ref);
+    auto env_ref = reinterpret_cast<pesapi::luaimpl::pesapi_env_ref__*>(penv_ref);
+    if (!env_ref || env_ref->env_life_cycle_tracker.expired())
+    {
+        return nullptr;
+    }
+    memset(memory, 0, sizeof(struct pesapi_scope_memory));
+    new (memory) pesapi::luaimpl::pesapi_scope__(env_ref->L);
+    return reinterpret_cast<pesapi_scope>(memory);
 }
 
 int pesapi_has_caught(pesapi_scope pscope)
 {
-    auto env_ref = reinterpret_cast<pesapi::luaimpl::pesapi_env_ref__*>(pscope);
-    return lua_gettop(env_ref->L) > 0 && lua_tointeger(env_ref->L, -1) != 0;
+    auto scope = reinterpret_cast<pesapi::luaimpl::pesapi_scope__*>(pscope);
+    return lua_gettop(scope->L) > 0 && lua_tointeger(scope->L, -1) != 0;
 }
 
 const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
 {
-    auto env_ref = reinterpret_cast<pesapi::luaimpl::pesapi_env_ref__*>(pscope);
-    return lua_tostring(env_ref->L, -2);
+    auto scope = reinterpret_cast<pesapi::luaimpl::pesapi_scope__*>(pscope);
+    return lua_tostring(scope->L, -2);
 }
 
 void pesapi_close_scope(pesapi_scope pscope)
 {
     if (!pscope) return;
-    auto env_ref = reinterpret_cast<pesapi::luaimpl::pesapi_env_ref__*>(pscope);
-    lua_settop(env_ref->L, env_ref->scope_top); // release all value alloc in scope
-    env_ref->scope_top = 0;
+    auto scope = reinterpret_cast<pesapi::luaimpl::pesapi_scope__*>(pscope);
+    lua_settop(scope->L, scope->scope_top); // release all value alloc in scope
+    scope->pesapi::luaimpl::pesapi_scope__::~pesapi_scope__();
+    free(scope);
 }
 
 void pesapi_close_scope_placement(pesapi_scope pscope)
 {
-    pesapi_close_scope(pscope);
+    if (!pscope) return;
+    auto scope = reinterpret_cast<pesapi::luaimpl::pesapi_scope__*>(pscope);
+    lua_settop(scope->L, scope->scope_top); // release all value alloc in scope
+    scope->pesapi::luaimpl::pesapi_scope__::~pesapi_scope__();
 }
 
 struct pesapi_value_ref__ : public pesapi_env_ref__
