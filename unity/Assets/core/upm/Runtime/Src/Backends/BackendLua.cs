@@ -121,9 +121,21 @@ namespace Puerts
                 error('No such type: ' .. rawget(self,'.fqn'), 2)
             end
 
-            CS = CS or {}
+            local CS = {}
+            local puerts = {}
             setmetatable(CS, metatable)
-            typeof = function(t) return t.__p_innerType end
+            function puerts.typeof(t) return t.__p_innerType end
+            local function puerts_searcher(modname) 
+                if modname == 'csharp' then
+                    return function() return CS end
+                elseif modname == 'puerts' then
+                    return function() return puerts end
+                else
+                    return '\n\t[puerts_searcher] module ['..modname..'] not found'
+                end
+            end
+            local searchers = package.searchers or package.loaders
+            table.insert(searchers, puerts_searcher)
             ");
 
             scriptEnv.Eval(@"

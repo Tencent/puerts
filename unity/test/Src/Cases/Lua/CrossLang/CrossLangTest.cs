@@ -12,6 +12,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -42,6 +43,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -67,6 +69,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -96,6 +99,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -128,6 +132,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -157,6 +162,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -186,6 +192,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -215,6 +222,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -244,6 +252,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -269,6 +278,8 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             var ret = luaEnv.Eval<string>(@"
+                local CS = require('csharp')
+                local typeof = require('puerts').typeof
                 local helper = CS.Puerts.UnitTest.CrossLangTestHelper()
                 local val = helper:GetDateTime()
                 return tostring(val:GetType() == typeof(CS.System.DateTime))
@@ -281,6 +292,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             var ret = luaEnv.Eval<string>(@"
+                local CS = require('csharp')
                 local helper = CS.Puerts.UnitTest.CrossLangTestHelper()
                 local fstart = helper.EnumField
                 helper.EnumField = CS.Puerts.UnitTest.TestEnum.A
@@ -296,6 +308,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             var ret = luaEnv.Eval<float>(@"
+                local CS = require('csharp')
                 local foove = CS.Puerts.UnitTest.FooVE.Instance()
                 return foove.foo.width
             ");
@@ -307,12 +320,14 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local o = CS.Puerts.UnitTest.OverloadTestObject()
                 o:WithObjectParam('tt')
             ");
             Assert.AreEqual(1, OverloadTestObject.LastCall);
 
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local o = CS.Puerts.UnitTest.OverloadTestObject()
                 o:WithObjectParam(888)
             ");
@@ -334,6 +349,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 CS.Puerts.UnitTest.CrossLangTestHelper.TestEnumCheck('a', 1, 2)
             ");
         }
@@ -343,6 +359,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local testHelper = TestHelper.GetInstance()
                 testHelper:PassStr(nil)
@@ -355,6 +372,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local o = CS.Puerts.UnitTest.TestObject(1)
                 local v = o.WriteOnly
                 local sv = CS.Puerts.UnitTest.TestObject.StaticWriteOnly
@@ -366,6 +384,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             var ret = luaEnv.Eval<string>(@"
+                local CS = require('csharp')
                 local s1 = CS.Puerts.UnitTest.TestStruct2(5345, 3214, 'fqpziq')
                 return s1:ToString()
             ");
@@ -377,6 +396,7 @@ namespace Puerts.UnitTest
         {
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
+                local CS = require('csharp')
                 local TestHelper = CS.Puerts.UnitTest.TestHelper
                 local assertAndPrint = TestHelper.AssertAndPrint
                 local testHelper = TestHelper.GetInstance()
@@ -422,6 +442,7 @@ namespace Puerts.UnitTest
             var luaEnv = new ScriptEnv(new BackendLua());
             TestGC.ObjCount = 0;
             var objCount = luaEnv.Eval<int>(@"
+                local CS = require('csharp')
                 local randomCount = math.random(50) + 1
                 objs = {}
                 for i = 1, randomCount do
@@ -457,6 +478,7 @@ namespace Puerts.UnitTest
             var luaEnv = new ScriptEnv(new BackendLua());
             TestGC.ObjCount = 0;
             var objCount = luaEnv.Eval<int>(@"
+                local CS = require('csharp')
                 local randomCount = math.random(50) + 1
                 objs = {}
                 for i = 1, randomCount do
