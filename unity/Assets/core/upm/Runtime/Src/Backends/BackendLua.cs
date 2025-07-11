@@ -99,8 +99,14 @@ namespace Puerts
             end
 
             function metatable:__index(key) 
+                if key == '__p_innerType' then return end
                 local fqn = rawget(self,'.fqn')
-                fqn = ((fqn and fqn .. '.') or '') .. key
+                local name = key
+                if name:match('_%d+$') then
+                    name = name:gsub('_', '`', 1)
+                end
+
+                fqn = ((fqn and fqn .. '.') or '') .. name
 
                 local obj = import_type(fqn)
 
@@ -155,6 +161,26 @@ namespace Puerts
             end
             local searchers = package.searchers or package.loaders
             table.insert(searchers, cs_searcher)
+            ");
+
+            scriptEnv.Eval(@"
+            local loadType = loadType
+            local puerts = require('puerts')
+            local unpack = unpack or table.unpack
+            function puerts.generic(l_type, ...)
+                local cs_type = puerts.typeof(l_type)
+                print(type(cs_type))
+                if not cs_type then error('invalid type') end
+                local n = select('#', ...)
+                if n == 0 then error('no generic argument') end
+                local args = {}
+                for i = 1, n do
+                    local arg = puerts.typeof(select(i, ...))
+                    if not arg then error('invalid type') end
+                    table.insert(args, arg)
+                end
+                return loadType(cs_type:MakeGenericType(unpack(args)))
+            end
             ");
         }
     }
