@@ -36,6 +36,7 @@ namespace Puerts.UnitTest
                 testHelper:ArrayBufferTestCheckMemberValue();
                 assertAndPrint('LuaArrayBufferShouldBeCopied', tmp[1], 192);
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -62,6 +63,7 @@ namespace Puerts.UnitTest
                 testHelper:JSFunctionTestCheckMemberValue()
                 testHelper:remove_functionEvent(evfn);
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -92,6 +94,7 @@ namespace Puerts.UnitTest
                 TestHelper.numberTestPropStatic = 3
                 testHelper:NumberTestCheckMemberValue()
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -125,6 +128,7 @@ namespace Puerts.UnitTest
                 local ustr = testHelper:UnicodeStr('你好')
                 assertAndPrint('UnicodeStr', ustr, '小马哥')
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -155,6 +159,7 @@ namespace Puerts.UnitTest
                 TestHelper.boolTestPropStatic = true
                 testHelper:BoolTestCheckMemberValue()
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -185,6 +190,7 @@ namespace Puerts.UnitTest
                 TestHelper.nativeObjectTestPropStatic = CS.Puerts.UnitTest.TestObject(678)
                 testHelper:NativeObjectTestCheckMemberValue()
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -215,6 +221,7 @@ namespace Puerts.UnitTest
                 TestHelper.nativeStructTestPropStatic = CS.Puerts.UnitTest.TestStruct(765)
                 testHelper:NativeStructTestCheckMemberValue()
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -245,6 +252,7 @@ namespace Puerts.UnitTest
                 TestHelper.nullableNativeStructTestPropStatic = nil
                 testHelper:NullableNativeStructTestCheckMemberValue()
             ");
+            luaEnv.Dispose();
         }
         
         [Test]
@@ -271,6 +279,7 @@ namespace Puerts.UnitTest
                 TestHelper.jsObjectTestPropStatic = { puerts = 'niubi' }
                 testHelper:JSObjectTestCheckMemberValue()
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -285,6 +294,7 @@ namespace Puerts.UnitTest
                 return tostring(val:GetType() == typeof(CS.System.DateTime))
             ");
             Assert.AreEqual("true", ret);
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -301,6 +311,7 @@ namespace Puerts.UnitTest
                 return tostring(fstart) .. ' ' .. tostring(fend) .. ' ' .. tostring(ret)
             ");
             Assert.AreEqual("213 1 213", ret);
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -313,6 +324,7 @@ namespace Puerts.UnitTest
                 return foove.foo.width
             ");
             Assert.AreEqual(125f, ret);
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -325,13 +337,13 @@ namespace Puerts.UnitTest
                 o:WithObjectParam('tt')
             ");
             Assert.AreEqual(1, OverloadTestObject.LastCall);
-
             luaEnv.Eval(@"
                 local CS = require('csharp')
                 local o = CS.Puerts.UnitTest.OverloadTestObject()
                 o:WithObjectParam(888)
             ");
             Assert.AreEqual(2, OverloadTestObject.LastCall);
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -342,6 +354,7 @@ namespace Puerts.UnitTest
                 return function() end
             ");
             Assert.True(jso != null);
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -352,6 +365,7 @@ namespace Puerts.UnitTest
                 local CS = require('csharp')
                 CS.Puerts.UnitTest.CrossLangTestHelper.TestEnumCheck('a', 1, 2)
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -365,6 +379,7 @@ namespace Puerts.UnitTest
                 testHelper:PassStr(nil)
                 testHelper:PassObj(nil)
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -377,6 +392,7 @@ namespace Puerts.UnitTest
                 local v = o.WriteOnly
                 local sv = CS.Puerts.UnitTest.TestObject.StaticWriteOnly
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -389,6 +405,7 @@ namespace Puerts.UnitTest
                 return s1:ToString()
             ");
             Assert.AreEqual("5345:3214:fqpziq", ret);
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -419,6 +436,7 @@ namespace Puerts.UnitTest
                 TestHelper.nativeUnsafeStructTestPropStatic = CS.Puerts.UnitTest.TestUnsafeStruct(765)
                 testHelper:NativeUnsafeStructTestCheckMemberValue()
             ");
+            luaEnv.Dispose();
         }
 
         [Test]
@@ -548,6 +566,7 @@ namespace Puerts.UnitTest
             var cb = luaEnv.Eval<Func<long, string>>("return __NGTF");
             var ret = cb(9999);
             Assert.AreEqual("9999", ret);
+            luaEnv.Dispose();
         }
     }
 }
