@@ -213,6 +213,10 @@ namespace Puerts
                     return createFunction(unpack(overloadFunctions))
                 end
             end
+
+            function puerts.ref(x) return {x} end
+            function puerts.unref(r) return r[1] end
+            function puerts.setref(r, x) r[1] = x end
             
             ");
         }
