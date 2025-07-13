@@ -455,7 +455,21 @@ bool FBackendEnv::InspectorTick()
 {
     if (Inspector != nullptr)
     {
-        return Inspector->Tick();
+        try
+        {
+            return Inspector->Tick();
+        }
+        catch (const std::exception& e)
+        {
+            // 记录调试器异常但不崩溃
+            // 在生产环境中，调试器问题不应该影响主程序运行
+            return false;
+        }
+        catch (...)
+        {
+            // 捕获所有其他异常
+            return false;
+        }
     }
     return true;
 }

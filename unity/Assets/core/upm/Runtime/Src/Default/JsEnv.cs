@@ -817,17 +817,30 @@ namespace Puerts
             CheckLiveness();
             ReleasePendingJSFunctions();
             ReleasePendingJSObjects();
-            if (PuertsDLL.InspectorTick(isolate))
+            
+            // 安全的调试器Tick调用，避免多层调用时的崩溃
+            try
             {
-#if CSHARP_7_3_OR_NEWER
-                if (waitDebugerTaskSource != null)
+                if (PuertsDLL.InspectorTick(isolate))
                 {
-                    var tmp = waitDebugerTaskSource;
-                    waitDebugerTaskSource = null;
-                    tmp.SetResult(true);
+#if CSHARP_7_3_OR_NEWER
+                    if (waitDebugerTaskSource != null)
+                    {
+                        var tmp = waitDebugerTaskSource;
+                        waitDebugerTaskSource = null;
+                        tmp.SetResult(true);
+                    }
+#endif
                 }
+            }
+            catch (System.Exception e)
+            {
+                // 调试器异常不应该导致整个应用崩溃
+#if !PUERTS_GENERAL && !UNITY_WSA
+                UnityEngine.Debug.LogWarning("PuerTS InspectorTick exception (recovered): " + e.Message);
 #endif
             }
+            
             PuertsDLL.LogicTick(isolate);
             foreach (var fn in tickHandler)
             {
@@ -849,7 +862,29 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-                while (!PuertsDLL.InspectorTick(isolate)) { }
+                var startTime = System.DateTime.Now;
+                var timeout = System.TimeSpan.FromSeconds(30); // 30秒超时
+                
+                try
+                {
+                    while (!PuertsDLL.InspectorTick(isolate)) 
+                    { 
+                        if ((System.DateTime.Now - startTime) > timeout)
+                        {
+#if !PUERTS_GENERAL && !UNITY_WSA
+                            UnityEngine.Debug.LogWarning("PuerTS WaitDebugger timeout after 30 seconds");
+#endif
+                            break;
+                        }
+                        System.Threading.Thread.Sleep(10); // 避免过度占用CPU
+                    }
+                }
+                catch (System.Exception e)
+                {
+#if !PUERTS_GENERAL && !UNITY_WSA
+                    UnityEngine.Debug.LogError("PuerTS WaitDebugger exception: " + e.Message);
+#endif
+                }
 #if THREAD_SAFE
             }
 #endif

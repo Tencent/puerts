@@ -329,7 +329,20 @@ namespace Puerts
         public void Tick()
         {
             Puerts.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
-            Puerts.PuertsDLL.InspectorTick(nativeJsEnv);
+            
+            // 安全的调试器Tick调用，避免多层调用时的崩溃
+            try
+            {
+                Puerts.PuertsDLL.InspectorTick(nativeJsEnv);
+            }
+            catch (System.Exception e)
+            {
+                // 调试器异常不应该导致整个应用崩溃
+#if !PUERTS_GENERAL && !UNITY_WSA
+                UnityEngine.Debug.LogWarning("PuerTS InspectorTick exception (recovered): " + e.Message);
+#endif
+            }
+            
             Puerts.PuertsDLL.LogicTick(nativeJsEnv);
             if (TickHandler != null) TickHandler();
         }
@@ -340,7 +353,29 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            while (!Puerts.PuertsDLL.InspectorTick(nativeJsEnv)) { }
+            var startTime = System.DateTime.Now;
+            var timeout = System.TimeSpan.FromSeconds(30); // 30秒超时
+            
+            try
+            {
+                while (!Puerts.PuertsDLL.InspectorTick(nativeJsEnv)) 
+                { 
+                    if ((System.DateTime.Now - startTime) > timeout)
+                    {
+#if !PUERTS_GENERAL && !UNITY_WSA
+                        UnityEngine.Debug.LogWarning("PuerTS WaitDebugger timeout after 30 seconds");
+#endif
+                        break;
+                    }
+                    System.Threading.Thread.Sleep(10); // 避免过度占用CPU
+                }
+            }
+            catch (System.Exception e)
+            {
+#if !PUERTS_GENERAL && !UNITY_WSA
+                UnityEngine.Debug.LogError("PuerTS WaitDebugger exception: " + e.Message);
+#endif
+            }
 #if THREAD_SAFE
             }
 #endif
