@@ -1220,12 +1220,12 @@ int V8Plugin::InspectorTick()
     }
     catch (const std::exception& e)
     {
-        // 调试器异常不应该导致插件崩溃
+        // Inspector exceptions should not crash the plugin
         return 0;
     }
     catch (...)
     {
-        // 捕获所有其他异常
+        // Catch all other exceptions
         return 0;
     }
 }

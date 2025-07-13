@@ -824,7 +824,7 @@ namespace PUERTS_NAMESPACE
             
             if (TryCatch.HasCaught())
             {
-                // 记录异常但不崩溃，调试器错误不应该影响主程序
+                // Log exception but don't crash, debugger errors shouldn't affect main program
                 SetLastException(TryCatch.Exception());
                 return false;
             }

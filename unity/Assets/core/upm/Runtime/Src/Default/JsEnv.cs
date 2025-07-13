@@ -818,7 +818,7 @@ namespace Puerts
             ReleasePendingJSFunctions();
             ReleasePendingJSObjects();
             
-            // 安全的调试器Tick调用，避免多层调用时的崩溃
+            // Safe InspectorTick call to avoid crashes in multi-layer scenarios
             try
             {
                 if (PuertsDLL.InspectorTick(isolate))
@@ -835,7 +835,7 @@ namespace Puerts
             }
             catch (System.Exception e)
             {
-                // 调试器异常不应该导致整个应用崩溃
+                // Inspector exceptions should not crash the entire application
 #if !PUERTS_GENERAL && !UNITY_WSA
                 UnityEngine.Debug.LogWarning("PuerTS InspectorTick exception (recovered): " + e.Message);
 #endif
@@ -863,7 +863,7 @@ namespace Puerts
             lock(this) {
 #endif
                 var startTime = System.DateTime.Now;
-                var timeout = System.TimeSpan.FromSeconds(30); // 30秒超时
+                var timeout = System.TimeSpan.FromSeconds(30); // 30 seconds timeout
                 
                 try
                 {
@@ -876,7 +876,7 @@ namespace Puerts
 #endif
                             break;
                         }
-                        System.Threading.Thread.Sleep(10); // 避免过度占用CPU
+                        System.Threading.Thread.Sleep(10); // Avoid excessive CPU usage
                     }
                 }
                 catch (System.Exception e)

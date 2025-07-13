@@ -461,13 +461,13 @@ bool FBackendEnv::InspectorTick()
         }
         catch (const std::exception& e)
         {
-            // 记录调试器异常但不崩溃
-            // 在生产环境中，调试器问题不应该影响主程序运行
+            // Log inspector exception but don't crash
+            // In production, debugger issues shouldn't affect main program
             return false;
         }
         catch (...)
         {
-            // 捕获所有其他异常
+            // Catch all other exceptions
             return false;
         }
     }
