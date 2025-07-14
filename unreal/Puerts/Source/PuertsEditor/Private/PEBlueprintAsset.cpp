@@ -1188,6 +1188,11 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
         EPropertyFlags InputFlags = static_cast<EPropertyFlags>((static_cast<uint64>(InHFLags) << 32) + InLFlags);
 
         InputFlags |= InMetaData->PropertyFlags;
+        // meta data has instanced specifier
+        if (InMetaData->MetaData.Contains(TEXT("EditInline")))
+        {
+            InputFlags &= ~CPF_DisableEditOnInstance;
+        }
         InLFlags = (static_cast<uint64>(InputFlags) & 0xffffffff);
         InHFLags = (static_cast<uint64>(InputFlags) >> 32);
     }
