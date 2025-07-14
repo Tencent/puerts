@@ -27,7 +27,7 @@ struct AutoRegisterForFVector2D
             .Method("op_Equality", MakeFunction(&FVector2D::operator==))
             .Method("op_Inequality", MakeFunction(&FVector2D::operator!=))
             .Method("op_UnaryNegation", SelectFunction(FVector2D(FVector2D::*)() const, &FVector2D::operator-))
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
             .Method("op_Addition",
                 CombineOverloads(MakeOverload(FVector2D(FVector2D::*)(const FVector2D&) const, &FVector2D::operator+),
                     MakeOverload(FVector2D(FVector2D::*)(double) const, &FVector2D::operator+)))

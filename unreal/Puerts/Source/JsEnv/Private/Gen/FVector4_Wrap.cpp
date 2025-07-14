@@ -38,7 +38,7 @@ struct AutoRegisterForFVector4
             .Method("op_Equality", MakeFunction(&FVector4::operator==))
             .Method("op_Inequality", MakeFunction(&FVector4::operator!=))
             .Method("op_ExclusiveOr", MakeFunction(&FVector4::operator^))
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
             .Method("set_Item", SelectFunction(double& (FVector4::*) (int32), &FVector4::operator[]))
             .Method("get_Item", SelectFunction(double (FVector4::*)(int32) const, &FVector4::operator[]))
             .Method("Component", CombineOverloads(MakeOverload(double& (FVector4::*) (int32), &FVector4::Component),

@@ -57,7 +57,7 @@ struct AutoRegisterForFTransform
             .Method("InverseTransformVectorNoScale", MakeFunction(&FTransform::InverseTransformVectorNoScale))
             .Method("TransformRotation", MakeFunction(&FTransform::TransformRotation))
             .Method("InverseTransformRotation", MakeFunction(&FTransform::InverseTransformRotation))
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
             .Method("ScaleTranslation",
                 CombineOverloads(MakeOverload(void (FTransform::*)(const FVector&), &FTransform::ScaleTranslation),
                     MakeOverload(void (FTransform::*)(const double&), &FTransform::ScaleTranslation)))
