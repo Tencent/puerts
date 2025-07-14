@@ -28,7 +28,7 @@ struct AutoRegisterForFBox2D
                                        MakeOverload(FBox2D(FBox2D::*)(const FBox2D&) const, &FBox2D::operator+)))
             .Method("set_Item", SelectFunction(FVector2D & (FBox2D::*) (int32), &FBox2D::operator[]))
             .Method("ComputeSquaredDistanceToPoint", MakeFunction(&FBox2D::ComputeSquaredDistanceToPoint))
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
             .Method("ExpandBy", SelectFunction(FBox2D(FBox2D::*)(const double W) const, &FBox2D::ExpandBy))
 #else
             .Method("ExpandBy", SelectFunction(FBox2D(FBox2D::*)(const float W) const, &FBox2D::ExpandBy))

@@ -25,7 +25,7 @@ struct AutoRegisterForFGuid
             .Method("get_Item", SelectFunction(const uint32& (FGuid::*) (int32) const, &FGuid::operator[]))
             .Method("Invalidate", MakeFunction(&FGuid::Invalidate))
             .Method("IsValid", MakeFunction(&FGuid::IsValid))
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
             .Method("ToString", MakeFunction(&FGuid::ToString, EGuidFormats::Digits))
 #else
             .Method("ToString", CombineOverloads(MakeOverload(FString(FGuid::*)() const, &FGuid::ToString),
