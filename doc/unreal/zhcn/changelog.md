@@ -1,3 +1,38 @@
+### v1.0.9 2025年7月15日
+
+####  新增特性
+
+* ue 5.6.0兼容
+
+#### 优化
+
+* 优化ToFString()为直接utf16内存拷贝. (#2010)
+
+#### 变更
+
+* 由于在一些平台下不稳定，移除v8 10.6.194的支持
+
+#### bug修复
+
+* 修复mac arm64下nodejs backend的编译错误
+
+* 打开THREAD_SAFE后，UDynamicDelegateProxy::ProcessEvent可能访问无效的Isolate fix #2045
+
+* 开启THREAD_SAFE宏后，C++持有JS里的函数引用，可能会因为虚拟机生命周期和函数引用不一致而崩溃 fix #2048 
+
+* 解决带参数事件，如果蓝图没声明，mixin去覆盖，回调时崩溃的问题 fix #1947
+
+* d.ts生成报错解决(#2081)
+
+* mixin复制的父类函数清除EInternalObjectFlags::Native标记 fix #2118
+
+* UE.Object.Load 入参是无效 ObjectPath 时，避免意外触发 FlushAsyncLoading (#2119)
+
+* 异步加载时，继承ue类功能js绑定失败导致没有回调的问题
+
+* 修复静态绑定中作为参数的std::function类型的参数如果包含TArray等容器类的时候，自动生成的TS声明的错误 (#2130)
+
+
 ### v1.0.8 2025年3月26日
 
 ####  新增特性

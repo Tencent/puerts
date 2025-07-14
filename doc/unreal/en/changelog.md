@@ -1,3 +1,37 @@
+### v1.0.9 2025/7/15
+
+#### New Features  
+
+* UE 5.6.0 compatibility  
+
+#### Optimizations  
+
+* Optimized `ToFString()` to directly copy UTF-16 memory. (#2010)  
+
+#### Changes  
+
+* Removed support for v8 10.6.194 due to instability on certain platforms  
+
+#### Bug Fixes  
+
+* Fixed compilation errors for Node.js backend on macOS ARM64  
+
+* Fixed potential access to invalid `Isolate` in `UDynamicDelegateProxy::ProcessEvent` when `THREAD_SAFE` is enabled (fix #2045)  
+
+* Fixed crashes caused by inconsistent lifetimes of C++-held JS function references and virtual machines when `THREAD_SAFE` is enabled (fix #2048)  
+
+* Fixed crash when invoking parameterized events overridden by mixins without blueprint declarations (fix #1947)  
+
+* Resolved d.ts generation errors (#2081)  
+
+* Cleared `EInternalObjectFlags::Native` flag for parent class functions copied by mixins (fix #2118)  
+
+* Prevented accidental triggering of `FlushAsyncLoading` when `UE.Object.Load` receives invalid `ObjectPath` (#2119)  
+
+* Fixed JS binding failures for inherited UE classes during asynchronous loading, which caused missing callbacks  
+
+* Corrected auto-generated TS declarations for `std::function` parameters containing container classes (e.g., `TArray`) in static bindings (#2130)  
+
 ### v1.0.8 2025/3/26
 
 #### New Features
