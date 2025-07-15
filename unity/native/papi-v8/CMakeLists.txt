@@ -275,7 +275,9 @@ elseif ( ANDROID )
         list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_ANDROID_x64)
     endif ()
     
-    target_link_options(PapiV8 PRIVATE -s)
+    if ( CMAKE_BUILD_TYPE MATCHES "Release" )
+        target_link_options(PapiV8 PRIVATE -s)
+    endif ()
 
     #set_target_properties( puerts PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/android_version.script)
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/android_version.script")
