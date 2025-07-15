@@ -31,7 +31,10 @@ add_definitions(-DEASTL_OPENSOURCE=1)
 include_directories(include)
 include_directories(../EASTL/include)
 
-file(GLOB eastl_sources "../EASTL/source/*.cpp")
+set(eastl_sources 
+    ../EASTL/source/red_black_tree.cpp
+    ../EASTL/source/hashtable.cpp
+)
 file(GLOB_RECURSE eastl_headers "../EASTL/include/EASTL/**.h")
 
 
