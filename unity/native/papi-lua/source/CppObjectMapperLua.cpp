@@ -428,45 +428,6 @@ namespace luaimpl
 
     void CppObjectMapper::UnInitialize(lua_State* L)
     {
-        const auto PData = GetEnvPrivate();
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_CacheRef);
-        for (auto& KV : m_DataCache)
-        {
-            FObjectCacheNode* PNode = &KV.second;
-            bool need_delete       = true;
-            while (PNode)
-            {
-                if (need_delete)
-                {
-                    lua_rawgeti(L, -1, PNode->Value);
-                    // lua_assert是私有宏，只有在lua中生效，GameCore中不生效
-                    lua_assert(lua_isuserdata(L, -1));
-                    const auto obj = (CppObject*) lua_touserdata(L, -1);
-                    // RAX为0，地址真的是0，也就是说unbind的时候，userdata删掉了，但是注册表索引还在，有可能逻辑有问题，有可能GC的时候，没有及时同步过来，这里先做一下保护
-                    if (obj != nullptr)
-                    {
-                        const puerts::ScriptClassDefinition* ClassDefinition = puerts::FindClassByID(registry, obj->TypeId);
-                        // 值类型需要删除，所以这里必须要执行，但是执行之后，指针会被删除，所以下面的就不要执行了，虚拟机会销毁，所以lua不会内存泄露，LuaEnv也会销毁，所以C#也不会内存泄露
-                        // 因为值类型的内存是手动申请的，所以必须要手动释放
-                        if (ClassDefinition && ClassDefinition->Finalize && need_delete && obj->NeedDelete)
-                        {
-                            ClassDefinition->Finalize(&g_pesapi_ffi, KV.first, ClassDefinition->Data, PData);
-                            need_delete = false;
-                        }
-                        if (this->onExit)
-                        {
-                            this->onExit(KV.first, ClassDefinition->Data, PData, KV.second.UserData);
-                        }
-                        lua_pop(L, 1);
-                    }
-                }
-                PNode = PNode->Next;
-            }
-        }
-        m_DataCache.clear();
-        m_TypeIdToMetaMap.clear();
-        luaL_unref(L, LUA_REGISTRYINDEX, m_CacheRef);
-        luaL_unref(L, LUA_REGISTRYINDEX, m_CachePrivateDataRef);
     }
 
     // param   --- [1]: obj, [2]: key
