@@ -24,8 +24,8 @@ PESAPI_MODULE_EXPORT pesapi_ffi* GetQjsFFIApi()
 
 PESAPI_MODULE_EXPORT pesapi_env_ref CreateQjsPapiEnvRef()
 {
-    auto BackendEnv = (puerts::FBackendEnv*)(malloc(sizeof(puerts::FBackendEnv)));
-    new (BackendEnv) puerts::FBackendEnv();
+    auto BackendEnv = (pesapi::qjsimpl::FBackendEnv*)(malloc(sizeof(pesapi::qjsimpl::FBackendEnv)));
+    new (BackendEnv) pesapi::qjsimpl::FBackendEnv();
     BackendEnv->Initialize();
     auto env = reinterpret_cast<pesapi_env>(BackendEnv->ctx);
     return pesapi::qjsimpl::g_pesapi_ffi.create_env_ref(env);
@@ -36,7 +36,7 @@ PESAPI_MODULE_EXPORT void DestroyQjsPapiEnvRef(pesapi_env_ref env_ref)
     auto env = pesapi::qjsimpl::g_pesapi_ffi.get_env_from_ref(env_ref);
     auto ctx = reinterpret_cast<JSContext*>(env);
     pesapi::qjsimpl::g_pesapi_ffi.release_env_ref(env_ref);
-    auto BackendEnv = puerts::FBackendEnv::Get(JS_GetRuntime(ctx));
+    auto BackendEnv = pesapi::qjsimpl::FBackendEnv::Get(JS_GetRuntime(ctx));
     BackendEnv->UnInitialize();
     BackendEnv->~FBackendEnv();
     free(BackendEnv);

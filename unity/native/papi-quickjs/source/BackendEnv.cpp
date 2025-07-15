@@ -15,7 +15,9 @@
 #endif
 
 
-namespace PUERTS_NAMESPACE
+namespace pesapi
+{
+namespace qjsimpl
 {
 
 enum PromiseRejectEvent {
@@ -313,4 +315,5 @@ std::string FBackendEnv::GetJSStackTrace()
 }
 */
 
+}
 }

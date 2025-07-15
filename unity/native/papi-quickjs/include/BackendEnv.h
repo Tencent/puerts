@@ -16,7 +16,9 @@
 
 #define EXECUTEMODULEGLOBANAME "__puertsExecuteModule"
 
-namespace PUERTS_NAMESPACE
+namespace pesapi
+{
+namespace qjsimpl
 {
     class FBackendEnv 
     {
@@ -71,4 +73,5 @@ namespace PUERTS_NAMESPACE
     
         JSValue ExecuteModule(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic, JSValue *func_data);
     }
+}
 }
