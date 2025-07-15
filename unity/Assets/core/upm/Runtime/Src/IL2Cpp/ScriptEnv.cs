@@ -120,25 +120,6 @@ namespace Puerts
 
             Puerts.NativeAPI.SetObjectToGlobal(papis, envRef, "scriptEnv", this);
 
-            //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
-#if !DISABLE_AUTO_REGISTER
-            const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.PuerRegisterInfo_Gen";
-            var autoRegister = Type.GetType(AutoStaticCodeRegisterClassName, false);
-            if (autoRegister == null)
-            {
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    autoRegister = assembly.GetType(AutoStaticCodeRegisterClassName, false);
-                    if (autoRegister != null) break;
-                }
-            }
-            if (autoRegister != null)
-            {
-                var methodInfoOfRegister = autoRegister.GetMethod("AddRegisterInfoGetterIntoJsEnv");
-                methodInfoOfRegister.Invoke(null, new object[] { this });
-            }
-#endif
-
 
             if (debugPort != -1) {
                 backend.OpenRemoteDebugger(debugPort);
