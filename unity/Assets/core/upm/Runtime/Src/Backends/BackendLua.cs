@@ -90,6 +90,7 @@ namespace Puerts
             scriptEnv.Eval(@"local metatable = {}
             local rawget = rawget
             local setmetatable = setmetatable
+            local loadType = loadType
             local function import_type(full_name)
                 local type = scriptEnv:GetTypeByString(full_name)
                 if not type then return nil end
@@ -97,18 +98,24 @@ namespace Puerts
                 rawset(cls, '__p_innerType', type)
                 return cls
             end
+            local function import_generic_type(full_name)
+                local type = scriptEnv:GetTypeByString(full_name)
+                return {__p_innerType = type}
+            end
 
             function metatable:__index(key) 
                 if key == '__p_innerType' then return end
                 local fqn = rawget(self,'.fqn')
                 local name = key
+                local is_generic = false
                 if name:match('_%d+$') then
                     name = name:gsub('_', '`', 1)
+                    is_generic = true
                 end
 
                 fqn = ((fqn and fqn .. '.') or '') .. name
 
-                local obj = import_type(fqn)
+                local obj = is_generic and import_generic_type(fqn) or import_type(fqn)
 
                 if obj == nil then
                     -- It might be an assembly, so we load it too.
