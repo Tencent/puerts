@@ -172,12 +172,7 @@ namespace Puerts.UnitTest
                 })();
             ");
             
-            if (jsEnv2.Backend is BackendV8)
-                (jsEnv2.Backend as BackendV8).LowMemoryNotification();
-            else if (jsEnv2.Backend is BackendNodeJS)
-                (jsEnv2.Backend as BackendNodeJS).LowMemoryNotification();
-            else if (jsEnv2.Backend is BackendQuickJS)
-                (jsEnv2.Backend as BackendQuickJS).LowMemoryNotification();
+            jsEnv2.Backend.LowMemoryNotification();
             
             jsEnv1.Eval(@"
                 (function() {
