@@ -21,7 +21,7 @@ namespace Puerts
         const string PUERTSDLLNAME = "puerts";
 #endif
 
-#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_IPHONE) && ENABLE_IL2CPP
+#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && ENABLE_IL2CPP
         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
         public static extern void InitialPuerts(IntPtr PesapiImpl);
 

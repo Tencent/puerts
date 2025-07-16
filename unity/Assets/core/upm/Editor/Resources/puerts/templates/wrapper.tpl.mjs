@@ -170,7 +170,7 @@ export default function TypingTemplate(data) {
     }
 
     return $
-        `#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE)
+        `#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION
         ${FOR(toJsArray(data.Namespaces), name => `
 using ${name};`
         )}
