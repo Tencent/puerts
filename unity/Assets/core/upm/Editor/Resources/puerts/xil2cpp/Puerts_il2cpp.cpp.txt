@@ -2303,6 +2303,7 @@ static void* OnCsObjectEnter(void* ptr, JsClassInfo* classInfo, JsEnvPrivate* js
         {
             return reinterpret_cast<void*>(jsEnvPrivate->RefCSObject(Object::Box(classInfo->TypeId, ptr)));
         }
+        return nullptr;
     }
     else
     {
