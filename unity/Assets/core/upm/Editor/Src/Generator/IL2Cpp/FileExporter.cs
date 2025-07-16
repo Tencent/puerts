@@ -324,7 +324,7 @@ namespace PuertsIl2cpp.Editor
                         }
                         catch (Exception e)
                         {
-                            UnityEngine.Debug.LogWarning(string.Format("get instructions of {0} ({2}:{3}) throw {1}", mb, e.Message, mb.DeclaringType == null ? "" : mb.DeclaringType.Assembly.GetName().Name, mb.DeclaringType));
+                            UnityEngine.Debug.LogWarning(string.Format("get instructions of {0} ({2}:{3}) throw {1}", mb, e.Message, mb.DeclaringType == null ? "" : mb.DeclaringType.Assembly.Location, mb.DeclaringType));
                             return new MethodBase[] { };
                         }
                     });
