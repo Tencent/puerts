@@ -228,7 +228,7 @@ namespace Puerts.UnitTest
             {
                 Log("create v8 backend success");
                 Assert.AreEqual("v8", backendStr);
-                Assert.True(jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS);
+                Assert.True(jsEnv.Backend is BackendV8 || jsEnv.Backend.GetType().Name == "BackendNodeJS");
             }
             else
             {
