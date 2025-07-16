@@ -99,7 +99,7 @@ public:
                     }
                     MakesureFunctinMeteExisted(Class, Function);
                     GeneratedFileContent +=
-                        FString::Printf(TEXT("PF->Add(TEXT(\"%s\"), TEXT(\"%s\"));\r\n"), *Property->GetName(), *EscapeValue);
+                        FString::Printf(TEXT("__PF->Add(TEXT(\"%s\"), TEXT(\"%s\"));\r\n"), *Property->GetName(), *EscapeValue);
                 }
             }
         }
@@ -142,12 +142,12 @@ private:
     {
         if (!ClassDefGened)
         {
-            GeneratedFileContent += FString::Printf(TEXT("PC = &ParamDefaultMetas.Add(TEXT(\"%s\"));\r\n"), *InClass->GetName());
+            GeneratedFileContent += FString::Printf(TEXT("__PC = &ParamDefaultMetas.Add(TEXT(\"%s\"));\r\n"), *InClass->GetName());
             ClassDefGened = true;
         }
         if (!FuncDefGened)
         {
-            GeneratedFileContent += FString::Printf(TEXT("PF = &PC->Add(TEXT(\"%s\"));\r\n"), *InFunction->GetName());
+            GeneratedFileContent += FString::Printf(TEXT("__PF = &__PC->Add(TEXT(\"%s\"));\r\n"), *InFunction->GetName());
             FuncDefGened = true;
         }
     }

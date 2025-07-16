@@ -13,8 +13,8 @@
 
 static TMap<FName, TMap<FName, TMap<FName, FString>>> ParamDefaultMetas;
 
-static TMap<FName, TMap<FName, FString>>* PC = nullptr;
-static TMap<FName, FString>* PF = nullptr;
+static TMap<FName, TMap<FName, FString>>* __PC = nullptr;
+static TMap<FName, FString>* __PF = nullptr;
 
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
 UE_DISABLE_OPTIMIZATION
