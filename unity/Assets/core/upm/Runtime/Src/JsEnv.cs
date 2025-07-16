@@ -75,9 +75,10 @@ namespace Puerts
             {
                 Backend = new BackendV8(loader);
             }
+
             if (backendExpect == BackendType.Node)
             {
-                Backend = new BackendNodeJS(loader);
+                Backend = Activator.CreateInstance(Type.GetType("Puerts.BackendNodeJS"), loader) as Backend;
             }
 #endif
             if (backendExpect == BackendType.QuickJS)
