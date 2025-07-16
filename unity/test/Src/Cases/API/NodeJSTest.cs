@@ -11,7 +11,7 @@ namespace Puerts.UnitTest
         public void BackendIsNodeJSTest()
         {
             var env = UnitTestEnv.GetEnv();
-            if (env.Backend is BackendNodeJS) {
+            if (env.Backend.GetType().Name  == "BackendNodeJS") {
                 int pid = env.Eval<int>("process.pid");
                 
                 Assert.AreEqual(pid, System.Diagnostics.Process.GetCurrentProcess().Id);
