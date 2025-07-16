@@ -28,6 +28,7 @@ namespace Puerts
 #endif
     }
 
+    [Obsolete("use ScriptEnv instead")]
     public class JsEnv : IDisposable
     {
         internal readonly int Idx;
@@ -141,7 +142,6 @@ namespace Puerts
             }
         }
 
-        [Obsolete]
         public T ExecuteModule<T>(string specifier, string exportee)
         {
             if (exportee == "" && typeof(T) != typeof(JSObject))
