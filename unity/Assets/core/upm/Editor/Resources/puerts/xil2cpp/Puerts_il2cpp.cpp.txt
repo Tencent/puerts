@@ -622,13 +622,59 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 static void GetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     FieldWrapData* wrapData = static_cast<FieldWrapData*>(${invokePapi('get_userdata')}(info));
-    wrapData->Getter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
+    try
+    {
+        wrapData->Getter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
+    }
+    catch (Il2CppExceptionWrapper& exception)
+    {
+        Il2CppClass* klass = il2cpp::vm::Object::GetClass(exception.ex);
+        const MethodInfo* toStringMethod = il2cpp::vm::Class::GetMethodFromName(klass, "ToString", 0);
+
+        Il2CppException* outException = NULL;
+        Il2CppString* result = (Il2CppString*)il2cpp::vm::Runtime::Invoke(toStringMethod, exception.ex, NULL, &outException);
+        if (outException != NULL)
+        {
+            std::string err_info = "unknow c# execption for getter of ";
+            err_info += wrapData->FieldInfo->name;
+            apis->throw_by_string(info, err_info.c_str());
+        }
+        else
+        {
+            const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(result);
+            std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
+            apis->throw_by_string(info, str.c_str());
+        }
+    }
 }
 
 static void SetterCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     FieldWrapData* wrapData = static_cast<FieldWrapData*>(${invokePapi('get_userdata')}(info));
-    wrapData->Setter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
+    try
+    {
+        wrapData->Setter(apis, info, wrapData->FieldInfo, wrapData->Offset, wrapData->TypeInfo);
+    }
+    catch (Il2CppExceptionWrapper& exception)
+    {
+        Il2CppClass* klass = il2cpp::vm::Object::GetClass(exception.ex);
+        const MethodInfo* toStringMethod = il2cpp::vm::Class::GetMethodFromName(klass, "ToString", 0);
+
+        Il2CppException* outException = NULL;
+        Il2CppString* result = (Il2CppString*)il2cpp::vm::Runtime::Invoke(toStringMethod, exception.ex, NULL, &outException);
+        if (outException != NULL)
+        {
+            std::string err_info = "unknow c# execption for setter of ";
+            err_info += wrapData->FieldInfo->name;
+            apis->throw_by_string(info, err_info.c_str());
+        }
+        else
+        {
+            const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(result);
+            std::string str = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
+            apis->throw_by_string(info, str.c_str());
+        }
+    }
 }
 
 void GetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
@@ -1163,7 +1209,7 @@ handle_underlying:
                 if (IsDelegate(klass))
                 {
                     JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)pesapi_get_class_data(klass, true);
-                    if (!jsClassInfo)
+                    if (!jsClassInfo || !jsClassInfo->DelegateBridge)
                     {
                         Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
                     }
