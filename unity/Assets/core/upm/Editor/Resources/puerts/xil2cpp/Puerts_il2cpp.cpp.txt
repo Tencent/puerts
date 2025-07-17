@@ -1164,7 +1164,7 @@ handle_underlying:
                 if (IsDelegate(klass))
                 {
                     JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)g_registry_api->get_class_data(g_registry, klass, true);
-                    if (!jsClassInfo)
+                    if (!jsClassInfo || !jsClassInfo->DelegateBridge)
                     {
                         Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
                     }
