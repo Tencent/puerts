@@ -394,36 +394,40 @@ namespace PuertsIl2cpp.Editor
                         .Select(s => s.FirstOrDefault())
                         .ToList();
                 }
-                else if (onlyConfigure)
+                if (onlyConfigure)
                 {
-                    var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
-                        "Puerts.BindingAttribute",
-                    });
+                    var configureTypes = new List<Type>();
+                    if (!noWrapper)
+                    {
+                        var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
+                            "Puerts.BindingAttribute",
+                        });
 
-                    var configureTypes = new HashSet<Type>(configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
-                        .Where(o => o is Type)
-                        .Cast<Type>()
-                        .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t))
-                        .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
-                        .Distinct()
-                        .ToList());
+                        configureTypes = configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
+                            .Where(o => o is Type)
+                            .Cast<Type>()
+                            .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t))
+                            .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
+                            .Distinct()
+                            .ToList();
 
-                    // configureTypes.Clear();
+                        // configureTypes.Clear();
 
-                    genWrapperCtor = configureTypes
-                        .SelectMany(t => t.GetConstructors(flag))
-                        .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
+                        genWrapperCtor = configureTypes
+                            .SelectMany(t => t.GetConstructors(flag))
+                            .Where(m => !Utils.IsNotSupportedMember(m, true))
+                            .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
-                    genWrapperMethod = configureTypes
-                        .SelectMany(t => t.GetMethods(flag))
-                        .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
+                        genWrapperMethod = configureTypes
+                            .SelectMany(t => t.GetMethods(flag))
+                            .Where(m => !Utils.IsNotSupportedMember(m, true))
+                            .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
-                    genWrapperField = configureTypes
-                        .SelectMany(t => t.GetFields(flag))
-                        .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
+                        genWrapperField = configureTypes
+                            .SelectMany(t => t.GetFields(flag))
+                            .Where(m => !Utils.IsNotSupportedMember(m, true))
+                            .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
+                    }
 
                     var configureUsedTypes = configureTypes
                         .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
@@ -433,11 +437,77 @@ namespace PuertsIl2cpp.Editor
                         .Distinct();
                     
                     valueTypeInfos = new List<ValueTypeInfo>();
-                    foreach (var type in configureUsedTypes.Concat(delegateUsedTypes))
+                    foreach (var type in configureUsedTypes)
                     {
                         IterateAllValueType(type, valueTypeInfos);
                     }
-                    
+
+
+                    var allTypeMayContainUsing = from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                                                 where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
+                                                 from type in assembly.GetTypes()
+                                                 where !type.IsGenericTypeDefinition
+                                                 select type;
+
+                    var usingDecls = allTypeMayContainUsing.SelectMany(t =>
+                        {
+                            var flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                            return t.GetMethods(flag).Cast<MethodBase>().Concat(t.GetConstructors(flag));
+                        })
+                        .Where(m => m.GetMethodBody() != null && !m.IsGenericMethodDefinition && !m.IsAbstract).SelectMany(
+                        mb =>
+                        {
+                            try
+                            {
+                                return mb.GetInstructions();
+                            }
+                            catch { }
+                            return new List<Instruction>();
+                        }).Select(i => i.Operand).Where(o => o is MethodInfo)
+                        .Cast<MethodInfo>().Where(mb => mb.IsGenericMethod && mb.DeclaringType == typeof(Puerts.JsEnv) && (mb.Name == "UsingAction" || mb.Name == "UsingFunc"));
+
+                    bridgeInfos = new List<SignatureInfo>();
+                    foreach (var decl in usingDecls)
+                    {
+                        string returnSignature = null;
+                        string parametersSignature = "";
+                        List<string> parameterSignatureList = new List<string>();
+                        var genericArguments = decl.GetGenericArguments();
+                        if (decl.Name == "UsingAction")
+                        {
+                            returnSignature = "v";
+                            foreach (var ga in genericArguments)
+                            {
+                                var sig = TypeUtils.GetTypeSignature(ga);
+                                parametersSignature += sig;
+                                parameterSignatureList.Add(sig);
+                            }
+                        }
+                        else
+                        {
+                            returnSignature = TypeUtils.GetTypeSignature(genericArguments.Last());
+                            foreach (var ga in (genericArguments.Take(genericArguments.Length - 1)))
+                            {
+                                var sig = TypeUtils.GetTypeSignature(ga);
+                                parametersSignature += sig;
+                                parameterSignatureList.Add(sig);
+                            }
+                        }
+                        foreach (var ga in genericArguments)
+                        {
+                            IterateAllValueType(ga, valueTypeInfos);
+                        }
+
+                        bridgeInfos.Add(new SignatureInfo()
+                        {
+                            Signature = returnSignature + parametersSignature,
+                            CsName = decl.ToString(),
+                            ReturnSignature = returnSignature,
+                            ThisSignature = null,
+                            ParameterSignatures = parameterSignatureList
+                        });
+                    }
+
                     valueTypeInfos = valueTypeInfos
                         .GroupBy(s => s.Signature)
                         .Select(s => s.FirstOrDefault())

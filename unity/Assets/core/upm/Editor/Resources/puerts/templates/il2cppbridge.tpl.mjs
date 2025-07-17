@@ -40,6 +40,7 @@ function genBridge(bridgeInfo, isOptimizeSize) {
     var parameterSignatures = il2cpp_snippets.listToJsArray(bridgeInfo.ParameterSignatures);
     let hasVarArgs = parameterSignatures.length > 0 && parameterSignatures[parameterSignatures.length -1][0] == 'V'
     return t`
+// ${bridgeInfo.CsName}
 static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}MethodInfo* method) {
     // PLog("Running b_${bridgeInfo.Signature}");
 
