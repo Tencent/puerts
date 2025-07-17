@@ -29,7 +29,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaLoopPerformance()
         {
-            // 测试Lua循环性能
+            // Test Lua loop performance
             string luaCode = @"
                 local startTime = os.clock()
                 local sum = 0
@@ -43,15 +43,15 @@ namespace Puerts.UnitTest
             var result = jsEnv.Eval(luaCode);
             Assert.IsNotNull(result);
             
-            // 验证计算结果正确
+            // Verify calculation result is correct
             long expectedSum = (long)(100000 * 100001) / 2;
-            // 注意：Lua返回多个值时，在C#中会是一个数组
+            // Note: When Lua returns multiple values, it will be an array in C#
         }
 
         [Test]
         public void TestLuaFunctionCallPerformance()
         {
-            // 测试Lua函数调用性能
+            // Test Lua function call performance
             string luaCode = @"
                 local function fibonacci(n)
                     if n <= 1 then
@@ -74,7 +74,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaTableOperationPerformance()
         {
-            // 测试Lua表操作性能
+            // Test Lua table operation performance
             string luaCode = @"
                 local startTime = os.clock()
                 local t = {}
@@ -92,14 +92,14 @@ namespace Puerts.UnitTest
             var result = jsEnv.Eval(luaCode);
             Assert.IsNotNull(result);
             
-            // 验证计算结果正确
+            // Verify calculation result is correct
             long expectedSum = (long)(10000 * 10001);
         }
 
         [Test]
         public void TestLuaStringOperationPerformance()
         {
-            // 测试Lua字符串操作性能
+            // Test Lua string operation performance
             string luaCode = @"
                 local startTime = os.clock()
                 local str = ''
@@ -117,7 +117,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaMathOperationPerformance()
         {
-            // 测试Lua数学运算性能
+            // Test Lua math operation performance
             string luaCode = @"
                 local startTime = os.clock()
                 local sum = 0
@@ -135,7 +135,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaClosurePerformance()
         {
-            // 测试Lua闭包性能
+            // Test Lua closure performance
             string luaCode = @"
                 local startTime = os.clock()
                 local closures = {}
@@ -157,7 +157,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaMetatablePerformance()
         {
-            // 测试Lua元表性能
+            // Test Lua metatable performance
             string luaCode = @"
                 local startTime = os.clock()
                 local mt = {
@@ -188,7 +188,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCoroutinePerformance()
         {
-            // 测试Lua协程性能
+            // Test Lua coroutine performance
             string luaCode = @"
                 local startTime = os.clock()
                 local function generator()
@@ -215,7 +215,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaMemoryAllocationPerformance()
         {
-            // 测试Lua内存分配性能
+            // Test Lua memory allocation performance
             string luaCode = @"
                 local startTime = os.clock()
                 local objects = {}
@@ -237,7 +237,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaGarbageCollectionPerformance()
         {
-            // 测试Lua垃圾回收性能
+            // Test Lua garbage collection performance
             string luaCode = @"
                 local startTime = os.clock()
                 for j = 1, 100 do
@@ -262,7 +262,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpCallPerformance()
         {
-            // 测试Lua调用C#方法的性能
+            // Test Lua calling C# method performance
             string luaCode = @"
                 local startTime = os.clock()
                 local sum = 0
@@ -280,7 +280,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpObjectCreationPerformance()
         {
-            // 测试Lua创建C#对象的性能
+            // Test Lua creating C# object performance
             string luaCode = @"
                 local startTime = os.clock()
                 local objects = {}
@@ -298,7 +298,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpPropertyAccessPerformance()
         {
-            // 测试Lua访问C#属性的性能
+            // Test Lua accessing C# property performance
             string luaCode = @"
                 local obj = CS.Puerts.UnitTest.LuaTestObject(42, 'test')
                 local startTime = os.clock()
@@ -318,7 +318,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpMethodCallPerformance()
         {
-            // 测试Lua调用C#实例方法的性能
+            // Test Lua calling C# instance method performance
             string luaCode = @"
                 local obj = CS.Puerts.UnitTest.LuaTestObject(42, 'test')
                 local startTime = os.clock()
@@ -338,7 +338,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaArrayAccessPerformance()
         {
-            // 测试Lua访问C#数组的性能
+            // Test Lua accessing C# array performance
             string luaCode = @"
                 local arr = CS.Puerts.UnitTest.LuaTestHelper.CreateArray(1000)
                 local startTime = os.clock()
@@ -357,7 +357,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaDelegateCallPerformance()
         {
-            // 测试Lua调用C#委托的性能
+            // Test Lua calling C# delegate performance
             string luaCode = @"
                 local func = CS.Puerts.UnitTest.LuaTestHelper.CreateDelegate()
                 local startTime = os.clock()
@@ -376,7 +376,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaEnumAccessPerformance()
         {
-            // 测试Lua访问C#枚举的性能
+            // Test Lua accessing C# enum performance
             string luaCode = @"
                 local startTime = os.clock()
                 local sum = 0
@@ -395,7 +395,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaStructAccessPerformance()
         {
-            // 测试Lua访问C#结构体的性能
+            // Test Lua accessing C# struct performance
             string luaCode = @"
                 local startTime = os.clock()
                 local sum = 0
@@ -414,7 +414,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaDateTimeAccessPerformance()
         {
-            // 测试Lua访问C# DateTime的性能
+            // Test Lua accessing C# DateTime performance
             string luaCode = @"
                 local startTime = os.clock()
                 local sum = 0
@@ -433,24 +433,24 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaMixedOperationsPerformance()
         {
-            // 测试Lua混合操作的性能
+            // Test Lua mixed operations performance
             string luaCode = @"
                 local startTime = os.clock()
                 local sum = 0
                 local objects = {}
                 
                 for i = 1, 1000 do
-                    -- 创建C#对象
+                    -- Create C# object
                     local obj = CS.Puerts.UnitTest.LuaTestObject(i, 'test' .. i)
                     objects[i] = obj
                     
-                    -- Lua计算
+                    -- Lua calculation
                     local luaSum = 0
                     for j = 1, 100 do
                         luaSum = luaSum + j
                     end
                     
-                    -- 调用C#方法
+                    -- Call C# method
                     local csharpResult = CS.Puerts.UnitTest.LuaTestHelper.Add(i, luaSum)
                     sum = sum + csharpResult
                 end

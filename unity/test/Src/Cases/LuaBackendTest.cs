@@ -28,7 +28,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaBasicSyntax()
         {
-            // 测试基本的Lua语法
+            // Test basic Lua syntax
             string luaCode = @"
                 local a = 10
                 local b = 20
@@ -43,21 +43,21 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaTable()
         {
-            // 测试Lua表（table）
+            // Test Lua table
             string luaCode = @"
                 local t = {name = 'test', value = 42}
                 return t.name, t.value
             ";
             
             var result = jsEnv.Eval(luaCode);
-            // 注意：Lua返回多个值时，在C#中会是一个数组
+            // Note: When Lua returns multiple values, it will be an array in C#
             Assert.IsNotNull(result);
         }
 
         [Test]
         public void TestLuaFunction()
         {
-            // 测试Lua函数定义和调用
+            // Test Lua function definition and call
             string luaCode = @"
                 local function add(x, y)
                     return x + y
@@ -72,7 +72,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaString()
         {
-            // 测试Lua字符串操作
+            // Test Lua string operations
             string luaCode = @"
                 local str1 = 'Hello'
                 local str2 = 'World'
@@ -87,7 +87,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaConditional()
         {
-            // 测试Lua条件语句
+            // Test Lua conditional statements
             string luaCode = @"
                 local x = 10
                 local result
@@ -106,7 +106,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaLoop()
         {
-            // 测试Lua循环
+            // Test Lua loops
             string luaCode = @"
                 local sum = 0
                 for i = 1, 5 do
@@ -122,7 +122,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaArray()
         {
-            // 测试Lua数组（数字索引的table）
+            // Test Lua array (numeric indexed table)
             string luaCode = @"
                 local arr = {1, 2, 3, 4, 5}
                 local sum = 0
@@ -139,7 +139,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaClosure()
         {
-            // 测试Lua闭包
+            // Test Lua closures
             string luaCode = @"
                 local function createCounter()
                     local count = 0
@@ -153,14 +153,14 @@ namespace Puerts.UnitTest
             ";
             
             var result = jsEnv.Eval(luaCode);
-            // 注意：Lua返回多个值时，在C#中会是一个数组
+            // Note: When Lua returns multiple values, it will be an array in C#
             Assert.IsNotNull(result);
         }
 
         [Test]
         public void TestLuaMetatable()
         {
-            // 测试Lua元表（metatable）
+            // Test Lua metatable
             string luaCode = @"
                 local t = {}
                 local mt = {
@@ -182,7 +182,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaErrorHandling()
         {
-            // 测试Lua错误处理
+            // Test Lua error handling
             string luaCode = @"
                 local success, result = pcall(function()
                     error('test error')
@@ -191,14 +191,14 @@ namespace Puerts.UnitTest
             ";
             
             var result = jsEnv.Eval(luaCode);
-            // 注意：pcall返回两个值：success状态和错误信息
+            // Note: pcall returns two values: success status and error message
             Assert.IsNotNull(result);
         }
 
         [Test]
         public void TestLuaModules()
         {
-            // 测试Lua模块系统
+            // Test Lua module system
             string luaCode = @"
                 local module = {}
                 function module.add(x, y)
@@ -217,7 +217,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCoroutine()
         {
-            // 测试Lua协程
+            // Test Lua coroutines
             string luaCode = @"
                 local co = coroutine.create(function()
                     coroutine.yield(1)
@@ -237,9 +237,9 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaFileIO()
         {
-            // 测试Lua文件I/O（如果支持）
+            // Test Lua file I/O (if supported)
             string luaCode = @"
-                -- 测试字符串操作作为文件I/O的替代
+                -- Test string operations as file I/O alternative
                 local str = 'test content'
                 local len = string.len(str)
                 local upper = string.upper(str)
@@ -253,7 +253,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaMath()
         {
-            // 测试Lua数学库
+            // Test Lua math library
             string luaCode = @"
                 local pi = math.pi
                 local floor = math.floor(3.7)
@@ -269,7 +269,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaStringLibrary()
         {
-            // 测试Lua字符串库
+            // Test Lua string library
             string luaCode = @"
                 local str = 'hello world'
                 local upper = string.upper(str)
@@ -286,7 +286,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaTableLibrary()
         {
-            // 测试Lua表库
+            // Test Lua table library
             string luaCode = @"
                 local t = {3, 1, 4, 1, 5}
                 table.insert(t, 9)
@@ -302,9 +302,9 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaBitwiseOperations()
         {
-            // 测试Lua位运算（如果支持）
+            // Test Lua bitwise operations (if supported)
             string luaCode = @"
-                -- 使用基本算术运算作为位运算的替代
+                -- Use basic arithmetic operations as bitwise operations alternative
                 local a = 5
                 local b = 3
                 local add = a + b
@@ -320,7 +320,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaEnvironment()
         {
-            // 测试Lua环境变量
+            // Test Lua environment variables
             string luaCode = @"
                 local env = _ENV or _G
                 env.test_var = 'test_value'

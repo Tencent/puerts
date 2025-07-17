@@ -1,7 +1,7 @@
--- Lua工具类
+-- Lua utility class
 local utils = {}
 
--- 字符串工具
+-- String utilities
 function utils.trim(str)
     return string.match(str, "^%s*(.-)%s*$")
 end
@@ -31,7 +31,7 @@ function utils.capitalize(str)
     return string.upper(string.sub(str, 1, 1)) .. string.sub(str, 2)
 end
 
--- 表工具
+-- Table utilities
 function utils.copy(t)
     if type(t) ~= "table" then
         return t
@@ -118,7 +118,7 @@ function utils.indexOf(t, value)
     return nil
 end
 
--- 数组工具
+-- Array utilities
 function utils.map(t, func)
     local result = {}
     for i, v in ipairs(t) do
@@ -171,7 +171,7 @@ function utils.unique(t)
     return result
 end
 
--- 数学工具
+-- Math utilities
 function utils.clamp(value, min, max)
     return math.max(min, math.min(max, value))
 end
@@ -196,7 +196,7 @@ function utils.randomInt(min, max)
     return math.floor(utils.randomRange(min, max + 1))
 end
 
--- 时间工具
+-- Time utilities
 function utils.formatTime(seconds)
     local hours = math.floor(seconds / 3600)
     local minutes = math.floor((seconds % 3600) / 60)
@@ -219,7 +219,7 @@ function utils.formatDuration(seconds)
     end
 end
 
--- 类型检查工具
+-- Type checking utilities
 function utils.isNumber(value)
     return type(value) == "number"
 end
@@ -257,7 +257,7 @@ function utils.isArray(t)
     return count == #t
 end
 
--- 调试工具
+-- Debug utilities
 function utils.dump(value, indent)
     indent = indent or 0
     local spaces = string.rep("  ", indent)
@@ -280,7 +280,7 @@ function utils.printTable(t, name)
     print(name .. " = " .. utils.dump(t))
 end
 
--- 错误处理工具
+-- Error handling utilities
 function utils.tryCatch(tryFunc, catchFunc)
     local success, result = pcall(tryFunc)
     if success then
@@ -305,15 +305,15 @@ function utils.retry(func, maxAttempts, delay)
         end
         
         if attempt < maxAttempts then
-            -- 在实际环境中，这里应该使用os.execute("sleep " .. delay)或其他方式
-            -- 但在测试环境中，我们只是模拟延迟
+            -- In real environment, should use os.execute("sleep " .. delay) or other methods
+            -- But in test environment, we just simulate delay
         end
     end
     
     error("Max retry attempts reached")
 end
 
--- 缓存工具
+-- Cache utilities
 function utils.memoize(func)
     local cache = {}
     return function(...)
@@ -325,12 +325,12 @@ function utils.memoize(func)
     end
 end
 
--- 防抖工具
+-- Debounce utilities
 function utils.debounce(func, delay)
     local timer = nil
     return function(...)
         if timer then
-            -- 清除之前的定时器
+            -- Clear previous timer
         end
         
         local args = {...}
@@ -338,13 +338,13 @@ function utils.debounce(func, delay)
             func(unpack(args))
         end
         
-        -- 在实际环境中，这里应该设置定时器
-        -- 但在测试环境中，我们直接调用
+        -- In real environment, should set timer here
+        -- But in test environment, we call directly
         timer()
     end
 end
 
--- 节流工具
+-- Throttle utilities
 function utils.throttle(func, delay)
     local lastCall = 0
     return function(...)
@@ -356,5 +356,5 @@ function utils.throttle(func, delay)
     end
 end
 
--- 导出工具类
+-- Export utility class
 return utils 

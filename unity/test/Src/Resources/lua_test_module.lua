@@ -1,7 +1,7 @@
--- Lua测试模块
+-- Lua test module
 local module = {}
 
--- 基本数学运算
+-- Basic math operations
 function module.add(a, b)
     return a + b
 end
@@ -21,7 +21,7 @@ function module.divide(a, b)
     return a / b
 end
 
--- 字符串操作
+-- String operations
 function module.concat(str1, str2)
     return str1 .. str2
 end
@@ -34,7 +34,7 @@ function module.lower(str)
     return string.lower(str)
 end
 
--- 表操作
+-- Table operations
 function module.createTable()
     return {}
 end
@@ -55,7 +55,7 @@ function module.tableSize(t)
     return count
 end
 
--- 工具函数
+-- Utility functions
 function module.isNumber(value)
     return type(value) == 'number'
 end
@@ -72,11 +72,11 @@ function module.isFunction(value)
     return type(value) == 'function'
 end
 
--- 常量
+-- Constants
 module.PI = 3.14159
 module.VERSION = "1.0.0"
 
--- 私有变量（通过闭包实现）
+-- Private variables (implemented through closure)
 local privateCounter = 0
 
 function module.getCounter()
@@ -92,5 +92,5 @@ function module.resetCounter()
     privateCounter = 0
 end
 
--- 返回模块
+-- Return module
 return module 

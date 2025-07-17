@@ -1,13 +1,13 @@
--- Lua配置文件
+-- Lua configuration file
 local config = {
-    -- 应用设置
+    -- Application settings
     app = {
         name = "LuaTestApp",
         version = "1.0.0",
         debug = true
     },
     
-    -- 数据库设置
+    -- Database settings
     database = {
         host = "localhost",
         port = 3306,
@@ -16,14 +16,14 @@ local config = {
         database = "testdb"
     },
     
-    -- 网络设置
+    -- Network settings
     network = {
         port = 8080,
         maxConnections = 100,
         timeout = 30
     },
     
-    -- 日志设置
+    -- Logging settings
     logging = {
         level = "INFO",
         file = "app.log",
@@ -31,14 +31,14 @@ local config = {
         backupCount = 5
     },
     
-    -- 缓存设置
+    -- Cache settings
     cache = {
         enabled = true,
         maxSize = 1000,
-        ttl = 3600  -- 1小时
+        ttl = 3600  -- 1 hour
     },
     
-    -- 安全设置
+    -- Security settings
     security = {
         enableSSL = true,
         certificatePath = "/path/to/cert.pem",
@@ -46,7 +46,7 @@ local config = {
     }
 }
 
--- 获取配置值的函数
+-- Function to get configuration value
 function config.get(path)
     local keys = {}
     for key in string.gmatch(path, "[^%.]+") do
@@ -65,7 +65,7 @@ function config.get(path)
     return current
 end
 
--- 设置配置值的函数
+-- Function to set configuration value
 function config.set(path, value)
     local keys = {}
     for key in string.gmatch(path, "[^%.]+") do
@@ -87,11 +87,11 @@ function config.set(path, value)
     return true
 end
 
--- 验证配置的函数
+-- Function to validate configuration
 function config.validate()
     local errors = {}
     
-    -- 验证必需的配置项
+    -- Validate required configuration items
     if not config.app.name then
         table.insert(errors, "app.name is required")
     end
@@ -111,5 +111,5 @@ function config.validate()
     return #errors == 0, errors
 end
 
--- 导出配置
+-- Export configuration
 return config 

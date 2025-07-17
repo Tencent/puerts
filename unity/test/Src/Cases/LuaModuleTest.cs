@@ -28,7 +28,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaModuleDefinition()
         {
-            // 测试Lua模块定义
+            // Test Lua module definition
             string luaCode = @"
                 local module = {}
                 
@@ -54,7 +54,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaModuleUsage()
         {
-            // 测试Lua模块使用
+            // Test Lua module usage
             string luaCode = @"
                 local mathModule = {}
                 
@@ -79,7 +79,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaModuleWithLocalVariables()
         {
-            // 测试Lua模块中的局部变量
+            // Test Lua module with local variables
             string luaCode = @"
                 local module = {}
                 local privateVar = 42
@@ -102,7 +102,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaModuleWithMetatable()
         {
-            // 测试Lua模块使用元表
+            // Test Lua module using metatable
             string luaCode = @"
                 local module = {}
                 local mt = {
@@ -130,7 +130,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaModuleInheritance()
         {
-            // 测试Lua模块继承
+            // Test Lua module inheritance
             string luaCode = @"
                 local baseModule = {}
                 
@@ -158,7 +158,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaModuleSingleton()
         {
-            // 测试Lua单例模块
+            // Test Lua singleton module
             string luaCode = @"
                 local singleton = {}
                 local instance = nil
@@ -190,7 +190,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaModuleFactory()
         {
-            // 测试Lua模块工厂模式
+            // Test Lua module factory pattern
             string luaCode = @"
                 local factory = {}
                 

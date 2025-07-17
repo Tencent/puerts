@@ -63,7 +63,7 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve]
         public static void VoidFunction()
         {
-            // 空函数，用于测试void返回类型
+            // Empty function for testing void return type
         }
 
         [UnityEngine.Scripting.Preserve]
@@ -90,7 +90,7 @@ namespace Puerts.UnitTest
         public static void CallDelegate(Func<int, int> func, int value)
         {
             int result = func(value);
-            // 可以通过某种方式验证结果
+            // Can verify result through some mechanism
         }
     }
 
@@ -165,7 +165,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpStaticMethod()
         {
-            // 测试Lua调用C#静态方法
+            // Test Lua calling C# static method
             string luaCode = @"
                 local result = CS.Puerts.UnitTest.LuaTestHelper.Add(5, 3)
                 return result
@@ -178,7 +178,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpStringMethod()
         {
-            // 测试Lua调用C#字符串方法
+            // Test Lua calling C# string method
             string luaCode = @"
                 local result = CS.Puerts.UnitTest.LuaTestHelper.Concat('Hello', 'World')
                 return result
@@ -191,7 +191,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpBooleanMethod()
         {
-            // 测试Lua调用C#布尔方法
+            // Test Lua calling C# boolean method
             string luaCode = @"
                 local result1 = CS.Puerts.UnitTest.LuaTestHelper.IsEven(4)
                 local result2 = CS.Puerts.UnitTest.LuaTestHelper.IsEven(5)
@@ -205,7 +205,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpArrayMethod()
         {
-            // 测试Lua调用C#数组方法
+            // Test Lua calling C# array method
             string luaCode = @"
                 local arr = CS.Puerts.UnitTest.LuaTestHelper.CreateArray(5)
                 return arr.Length, arr[0], arr[4]
@@ -218,7 +218,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaGetCSharpProperty()
         {
-            // 测试Lua获取C#属性
+            // Test Lua getting C# property
             string luaCode = @"
                 local obj = CS.Puerts.UnitTest.LuaTestObject(42, 'test')
                 return obj.Value, obj.Name
@@ -231,7 +231,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaSetCSharpProperty()
         {
-            // 测试Lua设置C#属性
+            // Test Lua setting C# property
             string luaCode = @"
                 local obj = CS.Puerts.UnitTest.LuaTestObject(0, '')
                 obj.Value = 100
@@ -246,7 +246,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpInstanceMethod()
         {
-            // 测试Lua调用C#实例方法
+            // Test Lua calling C# instance method
             string luaCode = @"
                 local obj = CS.Puerts.UnitTest.LuaTestObject(42, 'test')
                 local value = obj:GetValue()
@@ -261,7 +261,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpVoidMethod()
         {
-            // 测试Lua调用C# void方法
+            // Test Lua calling C# void method
             string luaCode = @"
                 CS.Puerts.UnitTest.LuaTestHelper.VoidFunction()
                 return 'success'
@@ -274,7 +274,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpOutParameter()
         {
-            // 测试Lua调用C# out参数方法
+            // Test Lua calling C# out parameter method
             string luaCode = @"
                 local outValue = 0
                 local result = CS.Puerts.UnitTest.LuaTestHelper.TestOutParameter(outValue)
@@ -288,7 +288,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpRefParameter()
         {
-            // 测试Lua调用C# ref参数方法
+            // Test Lua calling C# ref parameter method
             string luaCode = @"
                 local refValue = 10
                 local result = CS.Puerts.UnitTest.LuaTestHelper.TestRefParameter(refValue)
@@ -302,7 +302,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallCSharpDelegate()
         {
-            // 测试Lua调用C#委托
+            // Test Lua calling C# delegate
             string luaCode = @"
                 local func = CS.Puerts.UnitTest.LuaTestHelper.CreateDelegate()
                 local result = func(5)
@@ -316,7 +316,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaPassFunctionToCSharp()
         {
-            // 测试Lua传递函数给C#
+            // Test Lua passing function to C#
             string luaCode = @"
                 local luaFunc = function(x) return x * 3 end
                 CS.Puerts.UnitTest.LuaTestHelper.CallDelegate(luaFunc, 4)
@@ -330,7 +330,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpEnum()
         {
-            // 测试Lua访问C#枚举
+            // Test Lua accessing C# enum
             string luaCode = @"
                 local enumValue = CS.Puerts.UnitTest.TestEnum.A
                 return enumValue
@@ -343,7 +343,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpStruct()
         {
-            // 测试Lua访问C#结构体
+            // Test Lua accessing C# struct
             string luaCode = @"
                 local struct = CS.Puerts.UnitTest.TestStruct(42.0)
                 return struct.value
@@ -356,7 +356,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpNullableStruct()
         {
-            // 测试Lua访问C#可空结构体
+            // Test Lua accessing C# nullable struct
             string luaCode = @"
                 local nullableStruct = CS.Puerts.UnitTest.TestStruct(42.0)
                 return nullableStruct.HasValue, nullableStruct.Value.value
@@ -369,7 +369,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpDateTime()
         {
-            // 测试Lua访问C# DateTime
+            // Test Lua accessing C# DateTime
             string luaCode = @"
                 local dateTime = CS.Puerts.UnitTest.CrossLangTestHelper.GetDateTime()
                 return dateTime.Year > 2000
@@ -382,7 +382,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpArrayBuffer()
         {
-            // 测试Lua访问C# ArrayBuffer
+            // Test Lua accessing C# ArrayBuffer
             string luaCode = @"
                 local buffer = CS.Puerts.ArrayBuffer(10)
                 return buffer.Length
@@ -395,7 +395,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpJSObject()
         {
-            // 测试Lua访问C# JSObject
+            // Test Lua accessing C# JSObject
             string luaCode = @"
                 local jsObj = CS.Puerts.JSObject()
                 return jsObj ~= nil
@@ -408,7 +408,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpGenericMethod()
         {
-            // 测试Lua访问C#泛型方法
+            // Test Lua accessing C# generic method
             string luaCode = @"
                 local list = CS.System.Collections.Generic.List(CS.System.String)()
                 list:Add('test')
@@ -422,7 +422,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpStaticField()
         {
-            // 测试Lua访问C#静态字段
+            // Test Lua accessing C# static field
             string luaCode = @"
                 local value = CS.Puerts.UnitTest.LuaTestHelper.GetNumber()
                 return value
@@ -435,7 +435,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpStaticProperty()
         {
-            // 测试Lua访问C#静态属性
+            // Test Lua accessing C# static property
             string luaCode = @"
                 local value = CS.Puerts.UnitTest.LuaTestHelper.GetString()
                 return value
@@ -448,7 +448,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaHandleCSharpNull()
         {
-            // 测试Lua处理C# null值
+            // Test Lua handling C# null value
             string luaCode = @"
                 local nullValue = CS.Puerts.UnitTest.LuaTestHelper.GetNull()
                 return nullValue == nil
@@ -461,7 +461,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpOverloadedMethod()
         {
-            // 测试Lua访问C#重载方法
+            // Test Lua accessing C# overloaded method
             string luaCode = @"
                 local obj = CS.Puerts.UnitTest.OverloadTestObject()
                 obj:WithObjectParam('test')
@@ -478,7 +478,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAccessCSharpExplicitInterface()
         {
-            // 测试Lua访问C#显式接口实现
+            // Test Lua accessing C# explicit interface implementation
             string luaCode = @"
                 local fooVE = CS.Puerts.UnitTest.FooVE.Instance()
                 local width = fooVE.foo.width

@@ -28,11 +28,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaSyntaxError()
         {
-            // 测试Lua语法错误
+            // Test Lua syntax error
             string luaCode = @"
                 local a = 10
                 local b = 20
-                local result = a + b  -- 缺少分号或end
+                local result = a + b  -- Missing semicolon or end
                 return result
             ";
             
@@ -42,10 +42,10 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaRuntimeError()
         {
-            // 测试Lua运行时错误
+            // Test Lua runtime error
             string luaCode = @"
                 local a = nil
-                local result = a + 10  -- 尝试对nil进行算术运算
+                local result = a + 10  -- Try arithmetic operation on nil
                 return result
             ";
             
@@ -55,7 +55,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaPcallSuccess()
         {
-            // 测试Lua pcall成功情况
+            // Test Lua pcall success case
             string luaCode = @"
                 local success, result = pcall(function()
                     return 42
@@ -70,7 +70,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaPcallFailure()
         {
-            // 测试Lua pcall失败情况
+            // Test Lua pcall failure case
             string luaCode = @"
                 local success, error = pcall(function()
                     error('test error')
@@ -85,7 +85,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaXpcall()
         {
-            // 测试Lua xpcall
+            // Test Lua xpcall
             string luaCode = @"
                 local function errorHandler(err)
                     return 'handled: ' .. tostring(err)
@@ -105,7 +105,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAssert()
         {
-            // 测试Lua assert函数
+            // Test Lua assert function
             string luaCode = @"
                 local success, result = pcall(function()
                     assert(false, 'assertion failed')
@@ -120,7 +120,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaAssertSuccess()
         {
-            // 测试Lua assert成功情况
+            // Test Lua assert success case
             string luaCode = @"
                 local result = assert(true, 'should not fail')
                 return result
@@ -133,7 +133,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaErrorFunction()
         {
-            // 测试Lua error函数
+            // Test Lua error function
             string luaCode = @"
                 local success, result = pcall(function()
                     error('custom error message', 2)
@@ -148,11 +148,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaTypeError()
         {
-            // 测试Lua类型错误
+            // Test Lua type error
             string luaCode = @"
                 local success, result = pcall(function()
                     local str = 'hello'
-                    str[1] = 'a'  -- 尝试修改字符串
+                    str[1] = 'a'  -- Try to modify string
                 end)
                 return success, result
             ";
@@ -164,11 +164,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaIndexError()
         {
-            // 测试Lua索引错误
+            // Test Lua index error
             string luaCode = @"
                 local success, result = pcall(function()
                     local t = {}
-                    local value = t.nonexistent.field  -- 访问不存在的字段
+                    local value = t.nonexistent.field  -- Access non-existent field
                 end)
                 return success, result
             ";
@@ -180,11 +180,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCallError()
         {
-            // 测试Lua调用错误
+            // Test Lua call error
             string luaCode = @"
                 local success, result = pcall(function()
                     local notAFunction = 42
-                    notAFunction()  -- 尝试调用非函数
+                    notAFunction()  -- Try to call non-function
                 end)
                 return success, result
             ";
@@ -196,10 +196,10 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaArithmeticError()
         {
-            // 测试Lua算术错误
+            // Test Lua arithmetic error
             string luaCode = @"
                 local success, result = pcall(function()
-                    local result = 1 / 0  -- 除零错误
+                    local result = 1 / 0  -- Division by zero error
                 end)
                 return success, result
             ";
@@ -211,12 +211,12 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaMemoryError()
         {
-            // 测试Lua内存错误（模拟）
+            // Test Lua memory error (simulated)
             string luaCode = @"
                 local success, result = pcall(function()
                     local t = {}
                     for i = 1, 1000000 do
-                        t[i] = string.rep('x', 1000)  -- 创建大量字符串
+                        t[i] = string.rep('x', 1000)  -- Create large strings
                     end
                 end)
                 return success, result
@@ -229,7 +229,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCoroutineError()
         {
-            // 测试Lua协程错误
+            // Test Lua coroutine error
             string luaCode = @"
                 local success, result = pcall(function()
                     local co = coroutine.create(function()
@@ -247,7 +247,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaMetatableError()
         {
-            // 测试Lua元表错误
+            // Test Lua metatable error
             string luaCode = @"
                 local success, result = pcall(function()
                     local t = {}
@@ -255,7 +255,7 @@ namespace Puerts.UnitTest
                         __index = function() error('metatable error') end
                     }
                     setmetatable(t, mt)
-                    local value = t.nonexistent  -- 触发元表错误
+                    local value = t.nonexistent  -- Trigger metatable error
                 end)
                 return success, result
             ";
@@ -267,7 +267,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaFileError()
         {
-            // 测试Lua文件操作错误
+            // Test Lua file operation error
             string luaCode = @"
                 local success, result = pcall(function()
                     local file = io.open('nonexistent.txt', 'r')
@@ -287,10 +287,10 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpException()
         {
-            // 测试Lua调用C#时抛出异常
+            // Test Lua calling C# throwing exception
             string luaCode = @"
                 local success, result = pcall(function()
-                    CS.Puerts.UnitTest.LuaTestHelper.TestOutParameter(nil)  -- 传递nil给out参数
+                    CS.Puerts.UnitTest.LuaTestHelper.TestOutParameter(nil)  -- Pass nil to out parameter
                 end)
                 return success, result
             ";
@@ -302,11 +302,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpNullReference()
         {
-            // 测试Lua访问C# null对象
+            // Test Lua accessing C# null object
             string luaCode = @"
                 local success, result = pcall(function()
                     local nullObj = CS.Puerts.UnitTest.LuaTestHelper.GetNull()
-                    local value = nullObj.ToString()  -- 在null对象上调用方法
+                    local value = nullObj.ToString()  -- Call method on null object
                 end)
                 return success, result
             ";
@@ -318,10 +318,10 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpInvalidCast()
         {
-            // 测试Lua传递给C#的参数类型错误
+            // Test Lua passing wrong parameter type to C#
             string luaCode = @"
                 local success, result = pcall(function()
-                    CS.Puerts.UnitTest.LuaTestHelper.Add('string', 42)  -- 传递字符串给int参数
+                    CS.Puerts.UnitTest.LuaTestHelper.Add('string', 42)  -- Pass string to int parameter
                 end)
                 return success, result
             ";
@@ -333,11 +333,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpArrayBounds()
         {
-            // 测试Lua访问C#数组越界
+            // Test Lua accessing C# array out of bounds
             string luaCode = @"
                 local success, result = pcall(function()
                     local arr = CS.Puerts.UnitTest.LuaTestHelper.CreateArray(5)
-                    local value = arr[10]  -- 访问越界索引
+                    local value = arr[10]  -- Access out of bounds index
                 end)
                 return success, result
             ";
@@ -349,11 +349,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpMethodNotFound()
         {
-            // 测试Lua调用不存在的C#方法
+            // Test Lua calling non-existent C# method
             string luaCode = @"
                 local success, result = pcall(function()
                     local obj = CS.Puerts.UnitTest.LuaTestObject(42, 'test')
-                    obj:NonExistentMethod()  -- 调用不存在的方法
+                    obj:NonExistentMethod()  -- Call non-existent method
                 end)
                 return success, result
             ";
@@ -365,11 +365,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpPropertyNotFound()
         {
-            // 测试Lua访问不存在的C#属性
+            // Test Lua accessing non-existent C# property
             string luaCode = @"
                 local success, result = pcall(function()
                     local obj = CS.Puerts.UnitTest.LuaTestObject(42, 'test')
-                    local value = obj.NonExistentProperty  -- 访问不存在的属性
+                    local value = obj.NonExistentProperty  -- Access non-existent property
                 end)
                 return success, result
             ";
@@ -381,10 +381,10 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpConstructorError()
         {
-            // 测试Lua创建C#对象时构造函数错误
+            // Test Lua creating C# object with constructor error
             string luaCode = @"
                 local success, result = pcall(function()
-                    local obj = CS.Puerts.UnitTest.LuaTestObject('invalid', 42)  -- 参数类型错误
+                    local obj = CS.Puerts.UnitTest.LuaTestObject('invalid', 42)  -- Wrong parameter type
                 end)
                 return success, result
             ";
@@ -396,10 +396,10 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpEnumError()
         {
-            // 测试Lua访问不存在的C#枚举值
+            // Test Lua accessing non-existent C# enum value
             string luaCode = @"
                 local success, result = pcall(function()
-                    local enumValue = CS.Puerts.UnitTest.TestEnum.NonExistent  -- 访问不存在的枚举值
+                    local enumValue = CS.Puerts.UnitTest.TestEnum.NonExistent  -- Access non-existent enum value
                 end)
                 return success, result
             ";
@@ -411,10 +411,10 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpStructError()
         {
-            // 测试Lua访问C#结构体时错误
+            // Test Lua accessing C# struct with error
             string luaCode = @"
                 local success, result = pcall(function()
-                    local struct = CS.Puerts.UnitTest.TestStruct('invalid')  -- 参数类型错误
+                    local struct = CS.Puerts.UnitTest.TestStruct('invalid')  -- Wrong parameter type
                 end)
                 return success, result
             ";
@@ -426,11 +426,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpDelegateError()
         {
-            // 测试Lua调用C#委托时错误
+            // Test Lua calling C# delegate with error
             string luaCode = @"
                 local success, result = pcall(function()
                     local func = CS.Puerts.UnitTest.LuaTestHelper.CreateDelegate()
-                    local result = func('invalid')  -- 传递错误类型的参数
+                    local result = func('invalid')  -- Pass wrong parameter type
                 end)
                 return success, result
             ";
@@ -442,11 +442,11 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaCSharpGenericError()
         {
-            // 测试Lua访问C#泛型时错误
+            // Test Lua accessing C# generic with error
             string luaCode = @"
                 local success, result = pcall(function()
                     local list = CS.System.Collections.Generic.List(CS.System.Int32)()
-                    list:Add('string')  -- 添加错误类型的元素
+                    list:Add('string')  -- Add wrong type element
                 end)
                 return success, result
             ";
@@ -458,23 +458,23 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaErrorRecovery()
         {
-            // 测试Lua错误恢复
+            // Test Lua error recovery
             string luaCode = @"
                 local results = {}
                 
-                -- 第一个调用应该成功
+                -- First call should succeed
                 local success1, result1 = pcall(function()
                     return CS.Puerts.UnitTest.LuaTestHelper.Add(1, 2)
                 end)
                 results[1] = {success = success1, result = result1}
                 
-                -- 第二个调用应该失败
+                -- Second call should fail
                 local success2, result2 = pcall(function()
                     return CS.Puerts.UnitTest.LuaTestHelper.Add('invalid', 2)
                 end)
                 results[2] = {success = success2, result = result2}
                 
-                -- 第三个调用应该成功
+                -- Third call should succeed
                 local success3, result3 = pcall(function()
                     return CS.Puerts.UnitTest.LuaTestHelper.Add(3, 4)
                 end)
@@ -490,7 +490,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaErrorInCoroutine()
         {
-            // 测试Lua协程中的错误处理
+            // Test Lua error handling in coroutine
             string luaCode = @"
                 local function coroutineWithError()
                     coroutine.yield(1)
@@ -517,7 +517,7 @@ namespace Puerts.UnitTest
         [Test]
         public void TestLuaErrorInMetatable()
         {
-            // 测试Lua元表中的错误处理
+            // Test Lua error handling in metatable
             string luaCode = @"
                 local mt = {
                     __index = function(t, k)
@@ -539,19 +539,19 @@ namespace Puerts.UnitTest
                 
                 local results = {}
                 
-                -- 测试__index错误
+                -- Test __index error
                 local success1, result1 = pcall(function()
                     return t.error
                 end)
                 results[1] = {success = success1, result = result1}
                 
-                -- 测试__newindex错误
+                -- Test __newindex error
                 local success2, result2 = pcall(function()
                     t.error = 'value'
                 end)
                 results[2] = {success = success2, result = result2}
                 
-                -- 测试正常访问
+                -- Test normal access
                 local success3, result3 = pcall(function()
                     return t.normal
                 end)
