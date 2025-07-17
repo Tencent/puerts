@@ -507,6 +507,7 @@ namespace PuertsIl2cpp.Editor
                             ParameterSignatures = parameterSignatureList
                         });
                     }
+                    bridgeInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
                     valueTypeInfos = valueTypeInfos
                         .GroupBy(s => s.Signature)
