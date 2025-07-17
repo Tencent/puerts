@@ -256,6 +256,22 @@ namespace PuertsIl2cpp.Editor
                     return unityIsOptimizeSize;
                 }
             }
+
+            class SignatureInfoEqualityComparer : IEqualityComparer<SignatureInfo>
+            {
+                public bool Equals(SignatureInfo x, SignatureInfo y)
+                {
+                    if (x == null || y == null)
+                        return false;
+                    return x.Signature == y.Signature;
+                }
+
+                public int GetHashCode(SignatureInfo obj)
+                {
+                    return obj.Signature?.GetHashCode() ?? 0;
+                }
+            }
+
             public static void GenCPPWrap(string saveTo, bool onlyConfigure = false, bool noWrapper = false)
             {
                 Utils.SetFilters(Puerts.Configure.GetFilters());
@@ -371,7 +387,6 @@ namespace PuertsIl2cpp.Editor
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
                     .ToList();
-                bridgeInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
                 var genWrapperCtor = ctorToWrapper;
                 var genWrapperMethod = methodToWrap;
@@ -394,6 +409,18 @@ namespace PuertsIl2cpp.Editor
                         .Select(s => s.FirstOrDefault())
                         .ToList();
                 }
+
+                Action<string, string, List<string>> addBridgeInfo = (returnSignature, csName, parameterSignatureList) =>
+                {
+                    bridgeInfos.Add(new SignatureInfo()
+                    {
+                        Signature = returnSignature + string.Join("", parameterSignatureList),
+                        CsName = csName,
+                        ReturnSignature = returnSignature,
+                        ThisSignature = null,
+                        ParameterSignatures = parameterSignatureList.ToList()
+                    });
+                };
                 if (onlyConfigure)
                 {
                     var configureTypes = new List<Type>();
@@ -498,16 +525,8 @@ namespace PuertsIl2cpp.Editor
                             IterateAllValueType(ga, valueTypeInfos);
                         }
 
-                        bridgeInfos.Add(new SignatureInfo()
-                        {
-                            Signature = returnSignature + parametersSignature,
-                            CsName = decl.ToString(),
-                            ReturnSignature = returnSignature,
-                            ThisSignature = null,
-                            ParameterSignatures = parameterSignatureList
-                        });
+                        addBridgeInfo(returnSignature, decl.ToString(), parameterSignatureList);
                     }
-                    bridgeInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
                     valueTypeInfos = valueTypeInfos
                         .GroupBy(s => s.Signature)
@@ -516,6 +535,19 @@ namespace PuertsIl2cpp.Editor
 
                     Utils.SetFilters(null);
                 }
+
+                var ps = new List<string>();
+                var vs = TypeUtils.GetTypeSignature(typeof(void));
+                var os = TypeUtils.GetTypeSignature(typeof(Console));
+                for (int i = 0; i < 10; ++i)
+                {
+                    addBridgeInfo(vs, "Action_Shared_" + ps.Count, ps);
+                    addBridgeInfo(os, "Func_Shared_" + ps.Count, ps);
+                    ps.Add(os);
+                }
+
+                bridgeInfos = bridgeInfos.Distinct(new SignatureInfoEqualityComparer()).ToList();
+                bridgeInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
                 var wrapperInfos = genWrapperMethod
                     .Where(m => !m.IsGenericMethodDefinition && !m.IsAbstract)

@@ -2654,6 +2654,39 @@ static bool RegisterType(Il2CppClass* klass)
         {
             std::string signature = GetMethodSignature(invoke, true, false);
             classInfo->DelegateBridge = FindBridgeFunc(signature.c_str(), Class::IsInflated(klass));
+            if (!classInfo->DelegateBridge)
+            {
+                signature = "";
+                auto IsSharedable = [](const Il2CppType* type) -> bool
+                    {
+                        if (type->byref) return false;
+                        if (type->type == IL2CPP_TYPE_VOID) return true;
+                        Il2CppClass* paramClass = Class::FromIl2CppType(type, false);
+                        Class::Init(paramClass);
+                        if (Class::IsValuetype(paramClass)) return false;
+                        return true;
+                    };
+
+                if (IsSharedable(invoke->return_type))
+                {
+                    signature += invoke->return_type->type == IL2CPP_TYPE_VOID ? "v" : "o";
+                    bool isParamsSharedable = true;
+                    for (uint32_t i = 0; i < invoke->parameters_count; ++i)
+                    {
+                        const Il2CppType* type = Method::GetParam(invoke, i);
+                        if (!IsSharedable(type))
+                        {
+                            isParamsSharedable = false;
+                            break;
+                        }
+                        signature += "o";
+                    }
+                    if (isParamsSharedable && signature.size() <= 10)
+                    {
+                        classInfo->DelegateBridge = FindBridgeFunc(signature.c_str(), Class::IsInflated(klass));
+                    }
+                }
+            }
         }
         catch (Il2CppExceptionWrapper& exception)
         {
