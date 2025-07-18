@@ -1,6 +1,9 @@
 name: build ios unity plugin
 
 inputs:
+  backend:
+    description: 'backend'     
+    required: true
   config:
     type: choice
     description: Release Or Debug
@@ -27,26 +30,14 @@ runs:
         cd unity
         npm i
         cd ${{ inputs.build_proj_dir }}
-        cd puerts
-        node ../../cli make --platform ios --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
-        cd ..
-        cd papi-v8
-        node ../../cli make --platform ios --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
-        cd ..
-        cd papi-quickjs
-        node ../../cli make --platform ios --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
-        cd ..
-        cd papi-lua
-        node ../../cli make --platform ios --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
-        cd ..
-        cd papi-nodejs
+        cd ${{ inputs.backend }}
         node ../../cli make --platform ios --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
         cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         path: ./unity/Assets/core/upm/Plugins/**/*
-        name: Unity_Plugins_${{ inputs.config }}_ios
+        name: Unity_Plugins_${{ inputs.backend }}_${{ inputs.config }}_ios
     - name: Clean
       shell: bash
       run: rm -rf ./unity/Assets/core/upm/Plugins/**/*

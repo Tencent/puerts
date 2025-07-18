@@ -1,6 +1,9 @@
 name: build wasm unity plugin
 
 inputs:
+  backend:
+    description: 'backend'     
+    required: true
   config:
     type: choice
     description: Release Or Debug
@@ -38,20 +41,14 @@ runs:
         ./emsdk activate 3.1.8
         source ./emsdk_env.sh
         cd ../${{ inputs.build_proj_dir }}
-        cd puerts
-        node ../../cli make --platform wasm --arch wasm32 --config ${{ inputs.config }}
-        cd ..
-        cd papi-quickjs
-        node ../../cli make --platform wasm --arch wasm32 --config ${{ inputs.config }}
-        cd ..
-        cd papi-lua
+        cd ${{ inputs.backend }}
         node ../../cli make --platform wasm --arch wasm32 --config ${{ inputs.config }}
         cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         path: ./unity/Assets/core/upm/Plugins/**/*
-        name: Unity_Plugins_${{ inputs.config }}_wasm
+        name: Unity_Plugins_${{ inputs.backend }}_${{ inputs.config }}_wasm
     - name: Clean
       shell: bash
       run: rm -rf ./unity/Assets/core/upm/Plugins/**/*
