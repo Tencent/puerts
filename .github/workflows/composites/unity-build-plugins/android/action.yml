@@ -40,6 +40,9 @@ runs:
         cd papi-lua
         ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
         cd ..
+        cd papi-nodejs
+        ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:

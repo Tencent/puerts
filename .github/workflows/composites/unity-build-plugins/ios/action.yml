@@ -39,6 +39,9 @@ runs:
         cd papi-lua
         node ../../cli make --platform ios --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
         cd ..
+        cd papi-nodejs
+        node ../../cli make --platform ios --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
