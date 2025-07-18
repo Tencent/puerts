@@ -34,13 +34,16 @@ runs:
       run: |
         cd unity
         npm i
-        git clone https://github.com/emscripten-core/emsdk.git
-        cd emsdk
-        git pull
-        ./emsdk install 3.1.8
-        ./emsdk activate 3.1.8
-        source ./emsdk_env.sh
-        cd ../${{ inputs.build_proj_dir }}
+        if [ ! -d "emsdk" ]; then
+            git clone https://github.com/emscripten-core/emsdk.git
+            cd emsdk
+            git pull
+            ./emsdk install 3.1.8
+            ./emsdk activate 3.1.8
+            cd ..
+        fi
+        source emsdk/emsdk_env.sh
+        cd ${{ inputs.build_proj_dir }}
         cd ${{ inputs.backend }}
         node ../../cli make --platform wasm --arch wasm32 --config ${{ inputs.config }}
         cd ..
