@@ -385,11 +385,48 @@ export async function unityTest(cwd, unityPath) {
         `${cwd}/log_nodejs_reflection.txt`
     );
     assert.equal(0, v2code_nodejs_reflection);
+    
+    console.log('-------------------------Minimum bridge and Without Wrapper test-------------------------');
 
     process.env.SwitchToQJS = '0';
     process.env.SwitchToNJS = '0';
     
+    execUnityEditor(`-executeMethod TestBuilder.GenMinimumWrappersAndBridge`);
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+
+    console.log("[Puer] Building testplayer");
+    mkdir("-p", `${cwd}/build/v2`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+    console.log("[Puer] Running test");
+    const v2code_minimum_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_minimum_reflection.txt`).code,
+        `${cwd}/log_minimum_reflection.txt`
+    );
+    assert.equal(0, v2code_minimum_reflection);
+
+    console.log('-------------------------Minimum bridge and Without Wrapper test(quickjs)-------------------------');
+    process.env.SwitchToQJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_qjs_minimum_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_minimum_reflection.txt`).code,
+        `${cwd}/log_qjs_minimum_reflection.txt`
+    );
+    assert.equal(0, v2code_qjs_minimum_reflection);
+    
+    console.log('-------------------------Minimum bridge and Without Wrapper test(nodejs)-------------------------');
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_nodejs_minimum_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_minimum_reflection.txt`).code,
+        `${cwd}/log_nodejs_minimum_reflection.txt`
+    );
+    assert.equal(0, v2code_nodejs_minimum_reflection);
+    
     console.log('-------------------------Full Wrapper test-------------------------');
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '0';
+    
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
