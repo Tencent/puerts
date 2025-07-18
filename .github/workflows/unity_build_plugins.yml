@@ -201,15 +201,15 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
 
-#  linux64:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: puerts
-#        uses: ./.github/workflows/composites/unity-build-plugins/linux/
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          backend: puerts
+  linux64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: puerts
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: puerts
 #      - name: papi-v8
 #        uses: ./.github/workflows/composites/unity-build-plugins/linux/
 #        with:
