@@ -455,7 +455,21 @@ bool FBackendEnv::InspectorTick()
 {
     if (Inspector != nullptr)
     {
-        return Inspector->Tick();
+        try
+        {
+            return Inspector->Tick();
+        }
+        catch (const std::exception& e)
+        {
+            // Log inspector exception but don't crash
+            // In production, debugger issues shouldn't affect main program
+            return false;
+        }
+        catch (...)
+        {
+            // Catch all other exceptions
+            return false;
+        }
     }
     return true;
 }

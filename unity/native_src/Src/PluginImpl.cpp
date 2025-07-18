@@ -1214,7 +1214,20 @@ void V8Plugin::V8Plugin::DestroyInspector()
 
 int V8Plugin::InspectorTick()
 {
-    return jsEngine.InspectorTick() ? 1 : 0;
+    try
+    {
+        return jsEngine.InspectorTick() ? 1 : 0;
+    }
+    catch (const std::exception& e)
+    {
+        // Inspector exceptions should not crash the plugin
+        return 0;
+    }
+    catch (...)
+    {
+        // Catch all other exceptions
+        return 0;
+    }
 }
 
 void V8Plugin::LogicTick()
