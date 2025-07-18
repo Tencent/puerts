@@ -21,6 +21,7 @@ namespace Puerts.Editor
             public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
 
 #if !PUERTS_GENERAL
+            /*
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate (all in one)", false, 1)]
             public static void GenV1() 
             {
@@ -49,15 +50,16 @@ namespace Puerts.Editor
 
                 Utils.SetFilters(null);
             }
+            */
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts", false, 6)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate index.d.ts", false, 1)]
             public static void GenerateDTS()
             {
                 var start = DateTime.Now;
                 var saveTo = Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
                 Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
-                //FileExporter.ExportDTS(saveTo);
+                FileExporter.ExportDTS(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
@@ -69,7 +71,7 @@ namespace Puerts.Editor
                 var saveTo = Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
                 Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
-                //FileExporter.ExportDTS(saveTo, null, true);
+                FileExporter.ExportDTS(saveTo, null, true);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
@@ -88,7 +90,7 @@ namespace Puerts.Editor
                 }
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/RegisterInfo", false, 7)]
+            //[MenuItem(PUERTS_MENU_PREFIX + "/Generate/RegisterInfo", false, 7)]
             public static void GenRegisterInfo()
             {
                 var start = DateTime.Now;

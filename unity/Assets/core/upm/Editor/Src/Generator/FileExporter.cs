@@ -43,6 +43,66 @@ namespace Puerts.Editor
 
                 PuertsIl2cpp.Editor.Generator.FileExporter.GenExtensionMethodInfos(outDir, loader);
             }
+
+            public static Dictionary<string, List<KeyValuePair<object, int>>> configure;
+
+            static Dictionary<string, List<KeyValuePair<object, int>>> getConfigure()
+            {
+                if (!Utils.HasFilter)
+                {
+                    Utils.SetFilters(Configure.GetFilters());
+                }
+
+                if (configure == null)
+                {
+                    configure = Configure.GetConfigureByTags(new List<string>() {
+                        "Puerts.BindingAttribute",
+                        "Puerts.BlittableCopyAttribute",
+                        "Puerts.TypingAttribute",
+                    });
+                }
+
+                return configure;
+            }
+
+
+            public static void ExportDTS(string saveTo, ILoader loader = null, bool csharpModuleWillGen = false)
+            {
+                var configure = getConfigure();
+
+                var genTypes = configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
+                        .Where(o => o is Type)
+                        .Cast<Type>()
+                        .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
+                        .Distinct()
+                        .ToList();
+
+                var tsTypes = configure["Puerts.TypingAttribute"].Select(kv => kv.Key)
+                    .Where(o => o is Type)
+                    .Cast<Type>()
+                    .Where(t => !t.IsGenericTypeDefinition)
+                    .Concat(genTypes)
+                    .Concat(new Type[] { typeof(System.Type) }) // System.Type will be use in puerts.d.ts, so always generate it 
+                    .Distinct();
+
+                if (loader == null)
+                {
+                    loader = new DefaultLoader();
+                }
+                using (var jsEnv = new JsEnv(loader))
+                {
+                    jsEnv.UsingFunc<DTS.TypingGenInfo, bool, string>();
+                    var typingRender = jsEnv.ExecuteModule<Func<DTS.TypingGenInfo, bool, string>>("puerts/templates/dts.tpl.mjs", "default");
+                    using (StreamWriter textWriter = new StreamWriter(saveTo + "Typing/csharp/index.d.ts", false, Encoding.UTF8))
+                    {
+                        string fileContext = typingRender(DTS.TypingGenInfo.FromTypes(tsTypes), csharpModuleWillGen);
+                        textWriter.Write(fileContext);
+                        textWriter.Flush();
+                    }
+                }
+
+                Utils.SetFilters(null);
+            }
         }
     }
 
