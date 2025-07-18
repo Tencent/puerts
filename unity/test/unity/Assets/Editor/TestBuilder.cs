@@ -24,7 +24,7 @@ public class TestBuilder
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
-        Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
+        //Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
     }
     public static void GenV2() 
     {
@@ -32,7 +32,14 @@ public class TestBuilder
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
-        Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
+        //Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
+    }
+    public static void GenMinimumWrappersAndBridge() 
+    {
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateMinimumWrappersAndBridge();
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
     }
     [MenuItem("PuerTS/Tester/BuildV2")]
     public static void BuildWindowsV2() { BuildWindows(true); }
