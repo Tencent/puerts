@@ -210,28 +210,27 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: puerts
-#      - name: papi-v8
-#        uses: ./.github/workflows/composites/unity-build-plugins/linux/
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          backend: papi-v8
-#      - name: papi-quickjs
-#        uses: ./.github/workflows/composites/unity-build-plugins/linux/
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          backend: papi-quickjs
-#      - name: papi-lua
-#        uses: ./.github/workflows/composites/unity-build-plugins/linux/
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          backend: papi-lua
-#       - name: papi-nodejs
-#        uses: ./.github/workflows/composites/unity-build-plugins/linux/
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          backend: papi-nodejs
-          
-          
+      - name: papi-v8
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-v8
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
+       - name: papi-nodejs
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-nodejs
+
   wasm:
     runs-on: ubuntu-latest
     steps:
@@ -251,4 +250,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-lua
-          
