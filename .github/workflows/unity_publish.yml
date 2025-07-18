@@ -13,7 +13,6 @@ env:
 jobs:
   android:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v3
       - name: Install NDK
@@ -24,14 +23,34 @@ jobs:
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-      - name: BuildAndroid
+      - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-  
+          backend: puerts
+      - name: papi-v8
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-v8
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
+      - name: papi-nodejs
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-nodejs
+          
   ohos:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v3
       - name: Install NDK
@@ -42,60 +61,166 @@ jobs:
           tar xvfz ohos-sdk-windows_linux-public.tar.gz
           cd ohos-sdk/linux
           unzip -q -o -d ./ native-linux-x64-4.1.7.5-Release.zip
-      - name: BuildOHOS
+      - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/ohos/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: puerts
+      - name: papi-v8
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-v8
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
 
   ios:
     runs-on: macos-13
-
     steps:
       - uses: actions/checkout@v3
-      - name: BuildiOS
+      - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: puerts
+      - name: papi-v8
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-v8
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
+      - name: papi-nodejs
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-nodejs
 
   osx:
     runs-on: macos-13
-
     steps:
       - uses: actions/checkout@v3
-      - name: BuildOSX
+      - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: puerts
+      - name: papi-v8
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-v8
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
+      - name: papi-nodejs
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-nodejs
 
   windows:
     runs-on: windows-2022
-
     steps:
       - uses: actions/checkout@v3
-      - name: BuildWindows
+      - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: puerts
+      - name: papi-v8
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-v8
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
+      - name: papi-nodejs
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-nodejs
 
   linux64:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v3
-      - name: BuildLinux
+      - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          
+          backend: puerts
+      - name: papi-v8
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-v8
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
+      - name: papi-nodejs
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-nodejs
+
   wasm:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v3
-      - name: BuildWasm
+      - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/wasm/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: puerts
+      - name: papi-quickjs
+        uses: ./.github/workflows/composites/unity-build-plugins/wasm/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-quickjs
+      - name: papi-lua
+        uses: ./.github/workflows/composites/unity-build-plugins/wasm/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-lua
 
   publish:
     runs-on: ubuntu-latest
@@ -110,15 +235,43 @@ jobs:
             
       - uses: actions/download-artifact@v4
         with:
-          pattern: Unity_Plugins_Release_*
-          path: Archive/upm/Plugins/
+          pattern: Unity_Plugins_puerts_Release_*
+          path: core/upm/Plugins/
           merge-multiple: true
-          
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Unity_Plugins_papi-v8_Release_*
+          path: v8/upm/Plugins/
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Unity_Plugins_papi-quickjs_Release_*
+          path: quickjs/upm/Plugins/
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Unity_Plugins_papi-lua_Release_*
+          path: lua/upm/Plugins/
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Unity_Plugins_papi-nodejs_Release_*
+          path: nodejs/upm/Plugins/
+          merge-multiple: true
+
       - name: Create Release Asset
         run: |
           cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/core/upm
           ls -l $GITHUB_WORKSPACE/unity/Assets/core/upm
-          cd Archive/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_${{ github.event.inputs.tag_name }}.tar.gz upm && cd -
+          cd core/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && rm Runtime/Src/Backends/* && rm Runtime/Src/Native/Papi*Native.cs && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Backends/BackendJs.cs Runtime/Src/Backends/ && tar cvfz ../PuerTS_Core_${{ github.event.inputs.tag_name }}.tar.gz upm && cd -
+          cd v8/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Backends/BackendV8.cs Runtime/Src/Backends/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Native/PapiV8Native.cs Runtime/Src/Native/ && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tar.gz upm && cd -
+          cd quickjs/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Backends/BackendQuickJS.cs Runtime/Src/Backends/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Native/PapiQjsNative.cs Runtime/Src/Native/ && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tar.gz upm && cd -
+          cd lua/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Backends/BackendLua.cs Runtime/Src/Backends/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Native/PapiLuaNative.cs Runtime/Src/Native/ && tar cvfz ../PuerTS_Lua_${{ github.event.inputs.tag_name }}.tar.gz upm && cd -
+          cd nodejs/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Backends/BackendNodeJS.cs Runtime/Src/Backends/ && cp -r -p $GITHUB_WORKSPACE/unity/Assets/core/upm/Runtime/Src/Native/PapiNodejsNative.cs Runtime/Src/Native/ && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tar.gz upm && cd -
           
       - name: Create Release
         id: create_release
@@ -135,15 +288,59 @@ jobs:
           draft: false
           prerelease: false
           
-      - name: Upload Plugins
+      - name: Upload Core
         #id: upload-release-asset 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: PuerTS_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_path: ./PuerTS_Core${{ github.event.inputs.tag_name }}.tar.gz
+          asset_name: PuerTS_Core${{ github.event.inputs.tag_name }}.tar.gz
+          asset_content_type: application/tgz
+
+      - name: Upload V8 Backend
+        #id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PuerTS_V8_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_name: PuerTS_V8_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_content_type: application/tgz
+
+      - name: Upload Quickjs Backend
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_name: PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_content_type: application/tgz
+
+      - name: Upload Lua Backend
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PuerTS_Lua_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_name: "PuerTS_Lua_${{ github.event.inputs.tag_name }}.tar.gz"
+          asset_content_type: application/tgz
+
+      - name: Upload Nodejs Backend
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_name: "PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tar.gz"
           asset_content_type: application/tgz
 
       # - name: Trigger demo/upm repository update
