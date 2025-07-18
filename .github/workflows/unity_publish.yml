@@ -295,8 +295,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Core${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: PuerTS_Core${{ github.event.inputs.tag_name }}.tar.gz
+          asset_path: ./PuerTS_Core_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_name: PuerTS_Core_${{ github.event.inputs.tag_name }}.tar.gz
           asset_content_type: application/tgz
 
       - name: Upload V8 Backend
