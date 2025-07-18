@@ -1,9 +1,6 @@
 name: build android unity plugin
 
 inputs:
-  backend:
-    description: 'js backend'     
-    required: true
   config:
     type: choice
     description: Release Or Debug
@@ -47,7 +44,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         path: ./unity/Assets/core/upm/Plugins/**/*
-        name: Unity_Plugins_${{ inputs.backend }}_${{ inputs.config }}_android
+        name: Unity_Plugins_${{ inputs.config }}_android
     - name: Clean
       shell: bash
       run: rm -rf ./unity/Assets/core/upm/Plugins/**/*
