@@ -1,9 +1,0 @@
-const CSharp = require('csharp');
-
-CSharp.UnityEngine.Debug.LogWarning('module1 loading');
-
-function callMe(msg) {
-    console.log('callMe called', msg);
-}
-
-exports.callMe = callMe;

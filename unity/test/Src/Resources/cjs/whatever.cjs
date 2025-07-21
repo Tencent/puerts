@@ -1,1 +1,0 @@
-exports["default"] = 'hello world';

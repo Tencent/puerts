@@ -1,2 +1,0 @@
-import str from './lib.js'
-export default str
