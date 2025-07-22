@@ -273,7 +273,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
           websocket: 2
-          config: Debug
 
   wasm:
     runs-on: ubuntu-latest
