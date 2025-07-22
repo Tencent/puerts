@@ -2343,6 +2343,8 @@ struct JsEnvPrivate
 
 static void* OnCsObjectEnter(void* ptr, JsClassInfo* classInfo, JsEnvPrivate* jsEnvPrivate)
 {
+    //TODO: papi封装的addon也触发这里，但那是原生对象，不是C#对象，暂时用classInfo是否为空来判断，不过这得确保addon在define_class那data输入nullptr
+    if (!classInfo) return nullptr;
     if (classInfo->IsValueType)
     {
         if (classInfo->TypeId->has_references)
@@ -2359,6 +2361,7 @@ static void* OnCsObjectEnter(void* ptr, JsClassInfo* classInfo, JsEnvPrivate* js
 
 static void OnCsObjectExit(void* ptr, JsClassInfo* classInfo, JsEnvPrivate* jsEnvPrivate, void* userdata)
 {
+    if (!classInfo) return;
     if (!classInfo->IsValueType || classInfo->TypeId->has_references)
     {
         intptr_t idx = reinterpret_cast<intptr_t>(userdata);
