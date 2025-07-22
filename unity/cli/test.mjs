@@ -254,7 +254,7 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        websocket: 2,
+        websocket: 1,
         thread_safe: thread_safe
     });
     dlls = dlls.concat(wsppaddondlls);
@@ -361,7 +361,7 @@ export async function unityTest(cwd, unityPath) {
     await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
         platform: platform,
         config: "Debug",
-        websocket: 2,
+        websocket: 1,
         arch: process.arch
     });
     
