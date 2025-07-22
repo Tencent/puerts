@@ -152,6 +152,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+      - name: wsppaddon
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: wsppaddon
+          websocket: 2
 
   osx:
     runs-on: macos-13
