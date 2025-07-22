@@ -153,6 +153,14 @@ if ( WITH_WEBSOCKET EQUAL 2 )
 
     FetchContent_MakeAvailable(wolfssl)
     
+    # 添加编译选项忽略stringop-overflow警告
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(wolfssl PRIVATE 
+            -Wno-error=stringop-overflow 
+            -Wno-stringop-overflow
+        )
+    endif()
+    
     target_compile_definitions(wolfssl PUBLIC WOLFSSL_OPENSSLEXTRA WOLFSSL_OPENSSLALL OPENSSL_EXTRA OPENSSL_ALL HAVE_EX_DATA WOLFSSL_OPENSSH)
     
     target_link_libraries(WSPPAddon wolfssl)
