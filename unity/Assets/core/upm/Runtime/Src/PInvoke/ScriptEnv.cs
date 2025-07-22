@@ -115,8 +115,6 @@ namespace Puerts
             }
 
             this.backend.OnEnter(this);
-
-            WSPPAddonNative.Register(PuertsNative.GetRegisterApi(), TypeRegister.Instance.Registry);
         }
 
         private pesapi_callback logDelegate;
@@ -150,6 +148,13 @@ namespace Puerts
         public object GetLoader()
         {
             return backend.GetLoader();
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public void LoadAddon(string name)
+        {
+            Type type = PuertsIl2cpp.TypeUtils.GetType("Puerts." + name + "Native");
+            type.GetMethod("Register").Invoke(null, new object[] { PuertsNative.GetRegisterApi(), TypeRegister.Instance.Registry });
         }
 
         [MonoPInvokeCallback(typeof(pesapi_callback))]

@@ -23,6 +23,7 @@ namespace Puerts
     {
         private static List<ScriptEnv> scriptEnvs = new List<ScriptEnv>();
         private static bool isInitialized = false;
+        private static IntPtr registry = IntPtr.Zero;
         private static Type persistentObjectInfoType;
         private static MethodInfo extensionMethodGetMethodInfo;
         private readonly int Idx;
@@ -74,9 +75,8 @@ namespace Puerts
                         Puerts.NativeAPI.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
                         IntPtr prapi = PuertsNative.GetRegisterApi();
                         var reg_api = Marshal.PtrToStructure<pesapi_reg_api>(prapi);
-                        IntPtr registry = reg_api.create_registry();
+                        registry = reg_api.create_registry();
                         Puerts.NativeAPI.InitialPuerts(prapi, registry);
-                        WSPPAddonNative.Register(prapi, registry);
                         extensionMethodGetMethodInfo = typeof(PuertsIl2cpp.ExtensionMethodInfo).GetMethod("Get");
                         Puerts.NativeAPI.SetExtensionMethodGet(extensionMethodGetMethodInfo);
 
@@ -182,6 +182,13 @@ namespace Puerts
         public Type GetTypeByString(string className)
         {
             return PuertsIl2cpp.TypeUtils.GetType(className);
+        }
+        
+        [UnityEngine.Scripting.Preserve]
+        public void LoadAddon(string name)
+        {
+            Type type = PuertsIl2cpp.TypeUtils.GetType("Puerts." + name + "Native");
+            type.GetMethod("Register").Invoke(null, new object[] { PuertsNative.GetRegisterApi(), registry });
         }
 
         public void Eval(string chunk, string chunkName = "chunk")
