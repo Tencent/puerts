@@ -9,8 +9,8 @@ var global = global || globalThis || (function () { return this; }());
 
 if (typeof global.WebSocketPP == 'undefined') {
     try {
-        scriptEnv.LoadAddon("WSPPAddon");
-        global.WebSocketPP = findClassByName("WebSocketPP");
+        puer.loadAddon("WSPPAddon");
+        global.WebSocketPP = puer.findClassByName("WebSocketPP");
     } catch (e) {
     }
 }
