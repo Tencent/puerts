@@ -119,12 +119,13 @@ struct PUERTS_API ScriptClassDefinition
     NamedPropertyInfo* PropertyInfos;
     NamedPropertyInfo* VariableInfos;
     void* Data = nullptr;
+    int TraceLifecycle;
 };
 MSVC_PRAGMA(warning(pop))
 
 #define ScriptClassEmptyDefinition                           \
     {                                                        \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0       \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0    \
     }
     
     

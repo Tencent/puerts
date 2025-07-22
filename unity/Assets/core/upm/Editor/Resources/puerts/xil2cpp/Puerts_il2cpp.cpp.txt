@@ -2343,7 +2343,6 @@ struct JsEnvPrivate
 
 static void* OnCsObjectEnter(void* ptr, JsClassInfo* classInfo, JsEnvPrivate* jsEnvPrivate)
 {
-    //TODO: papi封装的addon也触发这里，但那是原生对象，不是C#对象，暂时用classInfo是否为空来判断，不过这得确保addon在define_class那data输入nullptr
     if (!classInfo) return nullptr;
     if (classInfo->IsValueType)
     {
@@ -2815,7 +2814,7 @@ static bool RegisterType(Il2CppClass* klass)
     }
     
     g_registry_api->define_class(g_registry, classInfo->TypeId, classInfo->SuperTypeId, nullptr, classInfo->TypeId->name,
-        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, classInfo, false);
+        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, classInfo, false, true);
 
     size_t propertiesCount = gseters.size() + methods.size() + classInfo->Fields.size();
     int staticPropertyCount = 0;

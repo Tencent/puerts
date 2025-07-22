@@ -332,7 +332,7 @@ namespace Puerts
                 };
             }
             callbacksCache.Add(ctorWrap);
-            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, IntPtr.Zero, true);
+            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, IntPtr.Zero, true, true);
             ++staticMethodCount; // for __p_innerType
             reg_api.set_property_info_size(registry, new IntPtr(typeId), instanceMethodCount, staticMethodCount, instancePropertyCount, staticPropertyCount);
 

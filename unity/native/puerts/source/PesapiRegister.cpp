@@ -97,7 +97,7 @@ const char * str_dup(const char* str)
 const char* GPesapiModuleName = nullptr;
 
 void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, void* data, int copy_str)
+    pesapi_finalize finalize, void* data, int copy_str, int trace_lifecycle)
 {
     puerts::ScriptClassDefinition classDef = ScriptClassEmptyDefinition;
     classDef.TypeId = type_id;
@@ -117,6 +117,7 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
 
     classDef.Initialize = constructor;
     classDef.Finalize = finalize;
+    classDef.TraceLifecycle = trace_lifecycle;
 
     puerts::RegisterScriptClass(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), classDef);
 }

@@ -824,7 +824,7 @@ namespace Puerts
         pesapi_constructor constructor,
         pesapi_finalize finalize,
         IntPtr data,
-        bool copy_str);
+        bool copy_str, bool trace_lifecycle);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_set_property_info_size_func(

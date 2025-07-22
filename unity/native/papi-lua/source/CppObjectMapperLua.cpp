@@ -361,7 +361,7 @@ namespace luaimpl
 
         }
         cacheNodePtr->Value = ref;
-        if (onEnter)
+        if (classDefinition->TraceLifecycle && onEnter)
         {
             cacheNodePtr->UserData = onEnter(ptr, classDefinition->Data, GetEnvPrivate());
         }
@@ -372,7 +372,7 @@ namespace luaimpl
         auto iterator = m_DataCache.find(ptr);
         if (iterator != m_DataCache.end())
         {
-            if (onExit)
+            if (classDefinition->TraceLifecycle && onExit)
             {
                 onExit(ptr, classDefinition->Data, GetEnvPrivate(), iterator->second.UserData);
             }

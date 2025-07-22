@@ -109,7 +109,7 @@ void CppObjectMapper::BindAndAddToCache(const puerts::ScriptClassDefinition* typ
     CacheNodePtr->MustCallFinalize = callFinalize;
     CacheNodePtr->Value = value;
 
-    if (onEnter)
+    if (typeInfo->TraceLifecycle && onEnter)
     {
         CacheNodePtr->UserData = onEnter((void*)ptr, typeInfo->Data, (void*)GetEnvPrivate());
     }
@@ -120,7 +120,7 @@ void CppObjectMapper::RemoveFromCache(const puerts::ScriptClassDefinition* typeI
     auto Iter = CDataCache.find(ptr);
     if (Iter != CDataCache.end())
     {
-        if (onExit)
+        if (typeInfo->TraceLifecycle && onExit)
         {
             onExit( (void*)ptr, typeInfo->Data, (void*)GetEnvPrivate(), Iter->second.UserData);
         }
@@ -450,7 +450,7 @@ void CppObjectMapper::Cleanup()
             {
                 ClassDefinition = &PtrClassDef;
             }
-            if (onExit)
+            if (ClassDefinition->TraceLifecycle && onExit)
             {
                 onExit((void*)KV.first, ClassDefinition->Data, (void*)PData, PNode->UserData);
             }

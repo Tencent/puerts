@@ -323,7 +323,7 @@ typedef pesapi_registry (*pesapi_create_registry_func)();
 typedef pesapi_type_info (*pesapi_alloc_type_infos_func)(size_t count);
 typedef void (*pesapi_set_type_info_func)(pesapi_type_info type_infos, size_t index, const char* name, int is_pointer, int is_const, int is_ref, int is_primitive);
 typedef pesapi_signature_info (*pesapi_create_signature_info_func)(pesapi_type_info return_type, size_t parameter_count, pesapi_type_info parameter_types);
-typedef void (*pesapi_define_class_func)(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor, pesapi_finalize finalize, void* data, int copy_str);
+typedef void (*pesapi_define_class_func)(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor, pesapi_finalize finalize, void* data, int copy_str, int trace_lifecycle);
 typedef void (*pesapi_set_property_info_size_func)(pesapi_registry registry, const void* type_id, int method_count, int function_count, int property_count, int variable_count);
 typedef void (*pesapi_set_method_info_func)(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static, pesapi_callback method, void* data, int copy_str);
 typedef void (*pesapi_set_property_info_func)(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static, pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, int copy_str);

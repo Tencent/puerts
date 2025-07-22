@@ -398,7 +398,7 @@ void FCppObjectMapper::BindCppObject(
             ClassDefinition, CDataGarbageCollectedWithoutFree, v8::WeakCallbackType::kInternalFields);
     }
 
-    if (OnEnter)
+    if (ClassDefinition->TraceLifecycle && OnEnter)
     {
         CacheNodePtr->UserData = OnEnter(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
     }
@@ -433,7 +433,7 @@ void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, ScriptClassDefiniti
     auto Iter = CDataCache.find(Ptr);
     if (Iter != CDataCache.end())
     {
-        if (OnExit)
+        if (ClassDefinition->TraceLifecycle && OnExit)
         {
             OnExit(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
         }
@@ -462,7 +462,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
                 }
                 PNode->MustCallFinalize = false;
             }
-            if (OnExit)
+            if (ClassDefinition->TraceLifecycle && OnExit)
             {
                 OnExit(KV.first, ClassDefinition->Data, PData, PNode->UserData);
             }
