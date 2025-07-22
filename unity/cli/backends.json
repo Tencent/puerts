@@ -245,6 +245,8 @@
             }
         }
     },
+    "wsppaddon": {
+    },
     "papi-nodejs": {
         "url": "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_1115/nodejs_bin_16.16.0.tgz",
         "tar-output" : "nodejs_16",

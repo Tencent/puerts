@@ -364,7 +364,7 @@ JSValue CppObjectMapper::findClassByName(JSContext *ctx, JSValueConst this_val, 
 
     if (clsDef)
     {
-        return FindOrCreateClass(clsDef);
+        return JS_DupValue(ctx, FindOrCreateClass(clsDef));
     }
     else
     {

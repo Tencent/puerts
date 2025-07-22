@@ -7,6 +7,10 @@
 
 var global = global || globalThis || (function () { return this; }());
 
+try {
+    global.WebSocketPP = findClassByName("WebSocketPP");
+} catch (e) {
+}
 const WebSocketPP = global.WebSocketPP;
 //global.WebSocketPP = undefined;
 

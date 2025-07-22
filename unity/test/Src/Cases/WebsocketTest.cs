@@ -93,8 +93,6 @@ namespace Puerts.UnitTest
 #else
             var jsEnv = new JsEnv(new DefaultLoader());
 #endif
-            //TODO: 新版本qjs由于是纯qjs接口，没有websocket pp的支持
-            if (jsEnv.Backend.GetType() != typeof(BackendV8)) return;
             WebSocketServer wss = new WebSocketServer("http://localhost:5123/");
             Action waitJsEnv = () =>
             {

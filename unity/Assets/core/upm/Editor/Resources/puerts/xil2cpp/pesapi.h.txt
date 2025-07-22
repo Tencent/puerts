@@ -22,7 +22,7 @@
 #if defined(__APPLE__) && defined(BUILDING_PES_EXTENSION) && !defined(PESAPI_ADPT_C)
 #include "TargetConditionals.h"
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-#define USING_OBJC_REFLECTION
+//#define USING_OBJC_REFLECTION
 #endif
 #endif
 
@@ -79,45 +79,15 @@
 
 #else
 
-#ifdef PUERTS_SHARED 
-
-#define PESAPI_MODULE(modname, initfunc)                                                                   \
-    EXTERN_C_START                                                                                         \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array);        \
-    PESAPI_MODULE_EXPORT const char* PESAPI_MODULE_INITIALIZER(dynamic)(pesapi_func_ptr * func_ptr_array); \
-    PESAPI_MODULE_EXPORT int PESAPI_MODULE_VERSION()();                                                    \
-    EXTERN_C_END                                                                                           \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array)         \
-    {                                                                                                      \
-        pesapi_init(func_ptr_array);                                                                       \
-        initfunc();                                                                                        \
-    }                                                                                                      \
-    PESAPI_MODULE_EXPORT const char* PESAPI_MODULE_INITIALIZER(dynamic)(pesapi_func_ptr * func_ptr_array)  \
-    {                                                                                                      \
-        if (func_ptr_array)                                                                                \
-        {                                                                                                  \
-            pesapi_init(func_ptr_array);                                                                   \
-            initfunc();                                                                                    \
-        }                                                                                                  \
-        return #modname;                                                                                   \
-    }                                                                                                      \
-    PESAPI_MODULE_EXPORT int PESAPI_MODULE_VERSION()()                                                     \
-    {                                                                                                      \
-        return PESAPI_VERSION;                                                                             \
+#define PESAPI_MODULE(modname, initfunc)                                                                                                      \
+    EXTERN_C_START                                                                                                                            \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(struct pesapi_registry_api * registry_api, pesapi_registry registry);        \
+    EXTERN_C_END                                                                                                                              \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(struct pesapi_registry_api * registry_api, pesapi_registry registry)         \
+    {                                                                                                                                         \
+        initfunc(registry_api, registry);                                                                                                     \
     }
 
-#else
-
-#define PESAPI_MODULE(modname, initfunc)                                                                   \
-    EXTERN_C_START                                                                                         \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array);        \
-    EXTERN_C_END                                                                                           \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array)         \
-    {                                                                                                      \
-        initfunc();                                                                                        \
-    }
-
-#endif
 
 #endif
 

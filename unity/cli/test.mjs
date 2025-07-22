@@ -215,7 +215,6 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        websocket: 1,
         thread_safe: thread_safe
     });
 
@@ -223,7 +222,6 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        websocket: 1,
         thread_safe: thread_safe
     });
     dlls = dlls.concat(qjsdlls);
@@ -232,7 +230,6 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        websocket: 1,
         thread_safe: thread_safe
     });
     dlls = dlls.concat(v8dlls);
@@ -252,6 +249,14 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         thread_safe: thread_safe
     });
     dlls = dlls.concat(nodedlls);
+
+    const wsppaddondlls = await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(wsppaddondlls);
 
     // await runTest(cwd, copyConfig, true, filter);
     await runTest(cwd, dlls, false, filter);
@@ -337,8 +342,7 @@ export async function unityTest(cwd, unityPath) {
     await runPuertsMake(join(cwd, '../../native/papi-v8'), {
         platform: platform,
         config: "Debug",
-        arch: process.arch,
-        websocket: 1
+        arch: process.arch
     });
     
     await runPuertsMake(join(cwd, '../../native/papi-lua'), {
@@ -348,6 +352,12 @@ export async function unityTest(cwd, unityPath) {
     });
     
     await runPuertsMake(join(cwd, '../../native/papi-nodejs'), {
+        platform: platform,
+        config: "Debug",
+        arch: process.arch
+    });
+
+    await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
         platform: platform,
         config: "Debug",
         arch: process.arch

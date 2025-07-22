@@ -115,6 +115,8 @@ namespace Puerts
             }
 
             this.backend.OnEnter(this);
+
+            WSPPAddonNative.Register(PuertsNative.GetRegisterApi(), TypeRegister.Instance.Registry);
         }
 
         private pesapi_callback logDelegate;

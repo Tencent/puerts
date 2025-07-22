@@ -2896,7 +2896,7 @@ static bool RegisterType(Il2CppClass* klass)
 extern "C" {
 #endif
 
-void InitialPuerts(pesapi_registry_api* registry_api)
+void InitialPuerts(pesapi_registry_api* registry_api, pesapi_registry registry)
 {
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
@@ -2910,7 +2910,7 @@ void InitialPuerts(pesapi_registry_api* registry_api)
     InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     InternalCalls::Add("Puerts.NativeAPI::SetExtensionMethodGet(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetExtensionMethodGet);
     puerts::g_registry_api = registry_api;
-    puerts::g_registry = registry_api->create_registry();
+    puerts::g_registry = registry;
     
     puerts::s_ParamArrayAttribute = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
     puerts::s_ExtensionAttribute = Class::FromName(il2cpp_defaults.corlib, "System.Runtime.CompilerServices", "ExtensionAttribute");

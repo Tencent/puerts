@@ -72,7 +72,11 @@ namespace Puerts
                     {
                         //only once is enough
                         Puerts.NativeAPI.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
-                        Puerts.NativeAPI.InitialPuerts(PuertsNative.GetRegisterApi());
+                        IntPtr prapi = PuertsNative.GetRegisterApi();
+                        var reg_api = Marshal.PtrToStructure<pesapi_reg_api>(prapi);
+                        IntPtr registry = reg_api.create_registry();
+                        Puerts.NativeAPI.InitialPuerts(prapi, registry);
+                        WSPPAddonNative.Register(prapi, registry);
                         extensionMethodGetMethodInfo = typeof(PuertsIl2cpp.ExtensionMethodInfo).GetMethod("Get");
                         Puerts.NativeAPI.SetExtensionMethodGet(extensionMethodGetMethodInfo);
 
