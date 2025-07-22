@@ -153,11 +153,14 @@ if ( WITH_WEBSOCKET EQUAL 2 )
 
     FetchContent_MakeAvailable(wolfssl)
     
-    # 添加编译选项忽略stringop-overflow警告
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(wolfssl PRIVATE 
             -Wno-error=stringop-overflow 
             -Wno-stringop-overflow
+        )
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(wolfssl PRIVATE 
+            -Wno-unknown-warning-option
         )
     endif()
     
