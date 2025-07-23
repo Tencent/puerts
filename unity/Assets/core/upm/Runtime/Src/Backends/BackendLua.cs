@@ -177,6 +177,8 @@ namespace Puerts
             local unpack = unpack or table.unpack
             local createFunction = createFunction
             _G.createFunction = nil
+            local changeArgStart = changeArgStart
+            _G.changeArgStart = nil
 
             puerts.createFunction = createFunction
 
@@ -209,15 +211,21 @@ namespace Puerts
                 local members = CS.Puerts.Utils.GetMethodAndOverrideMethodByName(cs_type, method_name)
 
                 local overloadFunctions = {}
+                local isStatic = true
                 for i = 0, members.Length -1 do
                     local method = members:GetValue(i)
                     if (method.IsGenericMethodDefinition and method:GetGenericArguments().Length == n) then
                         local methodImpl = method:MakeGenericMethod(unpack(args))
+                        isStatic = methodImpl.IsStatic
                         table.insert(overloadFunctions, methodImpl)
                     end
                 end
                 if #overloadFunctions > 0 then
-                    return createFunction(unpack(overloadFunctions))
+                    local res = createFunction(unpack(overloadFunctions))
+                    if not isStatic then
+                        changeArgStart(res, 1)
+                    end
+                    return res
                 end
             end
 

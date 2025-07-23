@@ -176,6 +176,20 @@ namespace luaimpl
         return buf->ptr;
     }
 
+    int ChangeArgStart(lua_State* L)
+    {
+        if (lua_iscfunction(L, 1) && lua_isnumber(L, 2))
+        {
+            lua_getupvalue(L, 1, 1);
+            if (lua_isuserdata(L, -1))
+            {
+                PesapiCallbackData* FunctionInfo = reinterpret_cast<PesapiCallbackData*>(lua_touserdata(L, -1));
+                FunctionInfo->ArgStart = static_cast<int>(lua_tonumber(L, 2));
+            }
+        }
+        return 0;
+    }
+
     void CppObjectMapper::Initialize(lua_State* L)
     {
         lua_newtable(L);
@@ -210,12 +224,15 @@ namespace luaimpl
         // 注册全局buffer函数
         lua_pushcfunction(L, buffer_new);
         lua_setglobal(L, "buffer");
+
+        lua_pushcfunction(L, ChangeArgStart);
+        lua_setglobal(L, "changeArgStart");
     }
 
     static int PesapiFunctionCallback(lua_State* L)
     {
         PesapiCallbackData* FunctionInfo = reinterpret_cast<PesapiCallbackData*>(lua_touserdata(L, lua_upvalueindex(1)));
-        pesapi_callback_info__ info{L, 0, 0, FunctionInfo->Data};
+        pesapi_callback_info__ info{L, FunctionInfo->ArgStart, 0, FunctionInfo->Data};
         FunctionInfo->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&info));
         return 1;
     }
@@ -242,6 +259,7 @@ namespace luaimpl
         CallbackData->Data     = Data;
         CallbackData->Finalize = Finalize;
         CallbackData->Mapper   = this;
+        CallbackData->ArgStart = 0;
 
         lua_pushcclosure(L, PesapiFunctionCallback, 1);
         return lua_gettop(L);

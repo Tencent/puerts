@@ -37,6 +37,7 @@ struct PesapiCallbackData
     void* Data;
     pesapi_function_finalize Finalize = nullptr;
     class CppObjectMapper* Mapper;
+    int ArgStart;
 };
 
 class CppObjectMapper
