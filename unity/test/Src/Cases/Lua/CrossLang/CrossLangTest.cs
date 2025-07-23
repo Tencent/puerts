@@ -453,7 +453,8 @@ namespace Puerts.UnitTest
                 callback();
             });
         }
-        
+
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void TestLuaGCTest()
         {
@@ -525,6 +526,7 @@ namespace Puerts.UnitTest
 
             luaEnv.Dispose();
         }
+#endif
 
         [Test]
         public void CastLuaFunctionAsTwoDiffDelegateTest()
