@@ -41,7 +41,13 @@ namespace Puerts
             scriptEnv.ExecuteModule("puerts/events.mjs");
             scriptEnv.ExecuteModule("puerts/timer.mjs");
             scriptEnv.ExecuteModule("puerts/promises.mjs");
+            // TODO: 查下不禁用为什么会触发如下异常：
+            // RuntimeError: table index is out of bounds
+            //      at Type_GetMethod_m66AD062187F19497DBCA900823B0C268322DC231(http://localhost:50160/Build/webglbin.wasm:wasm-function[Type_GetMethod_m66AD062187F19497DBCA900823B0C268322DC231@27681]:0x71e8a2)
+            //      at ScriptEnv_LoadAddon_m4A27319E673FE42F298B69E1FD43A099F293E7A3(http://localhost:50160/Build/webglbin.wasm:wasm-function[ScriptEnv_LoadAddon_m4A27319E673FE42F298B69E1FD43A099F293E7A3@38978]:0xbe718a)
+#if !UNITY_WEBGL || UNITY_EDITOR
             scriptEnv.ExecuteModule("puerts/websocketpp.mjs");
+#endif
         }
     }
 }

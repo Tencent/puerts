@@ -122,7 +122,10 @@ function loadAddon(name) {
 }
 
 puer.loadAddon = loadAddon;
-puer.findClassByName = findClassByName;
+
+if (typeof global.findClassByName == 'function') {
+    puer.findClassByName = findClassByName;
+}
 
 global.__tgjsRegisterTickHandler = function(fn) {
     fn = new CS.System.Action(fn);

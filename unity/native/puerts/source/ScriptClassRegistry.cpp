@@ -507,6 +507,11 @@ extern "C"
     {
         return classDef->Data;
     }
+    
+    int EMSCRIPTEN_KEEPALIVE get_class_trace_lifecycle(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->TraceLifecycle;
+    }
 
     void* EMSCRIPTEN_KEEPALIVE get_property_info_getter_data(const PUERTS_NAMESPACE::ScriptPropertyInfo* propInfo)
     {
