@@ -137,7 +137,7 @@ namespace Puerts
             local CS = {}
             local puerts = {}
             setmetatable(CS, metatable)
-            function puerts.typeof(t) return t.__p_innerType end
+            function puerts.typeof(t) return type(t) == 'table' and t.__p_innerType or nil end
             local function puerts_searcher(modname) 
                 if modname == 'csharp' then
                     return function() return CS end
@@ -182,13 +182,13 @@ namespace Puerts
 
             function puerts.generic(l_type, ...)
                 local cs_type = puerts.typeof(l_type)
-                if not cs_type then error('invalid type') end
+                if not cs_type then error('the class must be a constructor') end
                 local n = select('#', ...)
                 if n == 0 then error('no generic argument') end
                 local args = {}
                 for i = 1, n do
                     local arg = puerts.typeof(select(i, ...))
-                    if not arg then error('invalid type') end
+                    if not arg then error('invalid Type for generic arguments '.. i) end
                     table.insert(args, arg)
                 end
                 return loadType(cs_type:MakeGenericType(unpack(args)))
@@ -196,13 +196,13 @@ namespace Puerts
 
             function puerts.genericMethod(l_type, method_name, ...)
                 local cs_type = puerts.typeof(l_type)
-                if not cs_type then error('invalid type') end
+                if not cs_type then error('the class must be a constructor') end
                 local n = select('#', ...)
                 if n == 0 then error('no generic argument') end
                 local args = {}
                 for i = 1, n do
                     local arg = puerts.typeof(select(i, ...))
-                    if not arg then error('invalid type') end
+                    if not arg then error('invalid Type for generic arguments '.. i) end
                     table.insert(args, arg)
                 end
 
