@@ -798,8 +798,13 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
     } else if (arg === null) {
         Buffer.writeInt32(heap, JSTag.JS_TAG_NULL, tagPtr);
     } else if (typeof arg === 'bigint') {
-        Buffer.writeInt64(heap, arg, dataPtr);
-        Buffer.writeInt32(heap, JSTag.JS_TAG_INT64, tagPtr);
+        if (arg > 9223372036854775807n) {
+            Buffer.writeUInt64(heap, arg, dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_UINT64, tagPtr);
+        } else {
+            Buffer.writeInt64(heap, arg, dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_INT64, tagPtr);
+        }
     } else if (typeof arg === 'number') {
         if (Number.isInteger(arg)) {
             if (arg >= -2147483648 && arg <= 2147483647) {
@@ -1113,10 +1118,17 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         registry = registry_;
     }
 
+    function TranToString(pvalue: pesapi_value): void {
+        const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
+        const str = value.toString();
+        jsValueToPapiValue(engine.unityApi, str, pvalue);
+    }
+
     return {
         GetWebGLFFIApi: GetWebGLFFIApi,
         GetWebGLPapiVersion: GetWebGLPapiVersion,
         CreateWebGLPapiEnvRef: CreateWebGLPapiEnvRef,
+        TranToString: TranToString,
         pesapi_create_array_js: pesapi_create_array,
         pesapi_create_object_js: pesapi_create_object,
         pesapi_create_function_js: pesapi_create_function,

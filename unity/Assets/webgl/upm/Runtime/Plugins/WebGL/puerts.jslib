@@ -173,6 +173,7 @@ var exportDLL = {
     "GetWebGLPapiVersion",
     "GetWebGLFFIApi",
     "CreateWebGLPapiEnvRef",
+    "TranToString",
     //"GetQjsFFIApi", // declare for compile
     //"GetQjsPapiEnvRef", // declare for compile
     //"GetRegsterApi",

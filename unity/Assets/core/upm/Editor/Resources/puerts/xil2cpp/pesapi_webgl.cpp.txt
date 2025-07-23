@@ -43,6 +43,7 @@ PESAPI_EXTERN pesapi_value pesapi_global_js(pesapi_env env);
 PESAPI_EXTERN void pesapi_set_env_private_js(pesapi_env env, const void* ptr);
 PESAPI_EXTERN int pesapi_trace_native_object_lifecycle_js(pesapi_env env, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
 PESAPI_EXTERN void pesapi_set_registry_js(pesapi_env env, pesapi_registry registry);
+PESAPI_EXTERN void TranToString(pesapi_value val);
 
 EXTERN_C_END
 
@@ -678,8 +679,17 @@ const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, ch
 const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalue, uint16_t* buf, size_t* bufsize)
 {
     auto jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
-    if (JS_TAG_STRING16 == JS_VALUE_GET_TAG(jsvalue) && bufsize)
+    if (bufsize)
     {
+        if (JS_TAG_STRING16 != JS_VALUE_GET_TAG(jsvalue))
+        {
+            TranToString(pvalue);
+            jsvalue = *(reinterpret_cast<JSValue*>(pvalue));
+        }
+        if (JS_TAG_STRING16 != JS_VALUE_GET_TAG(jsvalue))
+        {
+            return buf;
+        }
         if (buf != nullptr)
         {
             size_t size = jsvalue.u.str.len < *bufsize ? jsvalue.u.str.len : *bufsize; 
