@@ -821,17 +821,17 @@ namespace Puerts
             // Safe InspectorTick call to avoid crashes in multi-layer scenarios
             try
             {
-                if (PuertsDLL.InspectorTick(isolate))
-                {
+            if (PuertsDLL.InspectorTick(isolate))
+            {
 #if CSHARP_7_3_OR_NEWER
-                    if (waitDebugerTaskSource != null)
-                    {
-                        var tmp = waitDebugerTaskSource;
-                        waitDebugerTaskSource = null;
-                        tmp.SetResult(true);
-                    }
-#endif
+                if (waitDebugerTaskSource != null)
+                {
+                    var tmp = waitDebugerTaskSource;
+                    waitDebugerTaskSource = null;
+                    tmp.SetResult(true);
                 }
+#endif
+            }
             }
             catch (System.Exception e)
             {

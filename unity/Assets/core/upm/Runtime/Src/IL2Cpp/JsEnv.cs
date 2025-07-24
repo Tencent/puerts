@@ -333,7 +333,7 @@ namespace Puerts
             // Safe InspectorTick call to avoid crashes in multi-layer scenarios
             try
             {
-                Puerts.PuertsDLL.InspectorTick(nativeJsEnv);
+            Puerts.PuertsDLL.InspectorTick(nativeJsEnv);
             }
             catch (System.Exception e)
             {

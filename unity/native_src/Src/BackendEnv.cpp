@@ -457,7 +457,7 @@ bool FBackendEnv::InspectorTick()
     {
         try
         {
-            return Inspector->Tick();
+        return Inspector->Tick();
         }
         catch (const std::exception& e)
         {

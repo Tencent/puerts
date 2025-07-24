@@ -1216,7 +1216,7 @@ int V8Plugin::InspectorTick()
 {
     try
     {
-        return jsEngine.InspectorTick() ? 1 : 0;
+    return jsEngine.InspectorTick() ? 1 : 0;
     }
     catch (const std::exception& e)
     {
