@@ -46,6 +46,33 @@ global.PuertsWebGL = {
             WebGLFFIApi(engine),
             {
                 // bridgeLog: true,
+<<<<<<< HEAD
+=======
+                GetLibVersion: function () {
+                    return 35;
+                },
+                GetApiLevel: function () {
+                    return 35;
+                },
+                GetLibBackend: function () {
+                    return 0;
+                },
+                CreateJSEngine: function () {
+                    if (jsEngineReturned) {
+                        console.warn("only one available jsEnv is allowed in WebGL mode");
+                        return 1024;
+                    }
+                    jsEngineReturned = true;
+                    return 1024;
+                },
+                CreateJSEngineWithExternalEnv: function () { },
+                DestroyJSEngine: function () { },
+                GetLastExceptionInfo: function (isolate: IntPtr,/* out int */strlen: any) {
+                    if (engine.lastException === null) return 'null';
+                    if (typeof engine.lastException == 'undefined') return 'undefined';
+                    return engine.JSStringToCSString(engine.lastException.stack, strlen);
+                },
+>>>>>>> fix-issue-2013-debug-crash
                 LowMemoryNotification: function (isolate: IntPtr) { },
                 IdleNotificationDeadline: function (isolate: IntPtr) { },
                 RequestMinorGarbageCollectionForTesting: function (isolate: IntPtr) { },

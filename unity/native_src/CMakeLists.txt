@@ -14,6 +14,7 @@ include(CheckCCompilerFlag)
 option ( USING_V8 "using v8" ON )
 option ( USING_QJS "using quickjs" ON )
 option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
+option ( WITH_SYMBOLS "generate debug symbols" OFF )
 
 if("${JS_ENGINE}" MATCHES "^v8_10.6.194")
     set(CMAKE_CXX_STANDARD 17)
@@ -426,6 +427,15 @@ if ( WITH_WEBSOCKET EQUAL 2 )
 	    set_property(TARGET wolfssl PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif ()
+
+    get_target_property(target_type puerts TYPE)
+    if (target_type STREQUAL "STATIC_LIBRARY" AND NOT BUILD_SHARED_LIBS)
+        add_custom_command(TARGET puerts POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:wolfssl>"
+            "$<TARGET_FILE_DIR:puerts>/$<TARGET_FILE_NAME:wolfssl>"
+            COMMENT "copy wolfssl to output directory")
+    endif()
 endif ()
 
 if ( USING_MULT_BACKEND )
@@ -459,6 +469,10 @@ if ( USING_MULT_BACKEND )
         target_compile_definitions (puerts PRIVATE MULT_BACKEND_V8)
         if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
             target_compile_definitions (v8backend PUBLIC WITH_IL2CPP_OPTIMIZATION)
+        endif()
+        if ( WITH_WEBSOCKET EQUAL 2 )
+            target_include_directories(v8backend PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
+            target_link_libraries(v8backend PRIVATE wolfssl)
         endif()
     endif ()
     # -------------------end v8 backend-------------------------
@@ -497,6 +511,10 @@ if ( USING_MULT_BACKEND )
         target_compile_definitions (puerts PRIVATE MULT_BACKEND_QJS)
         if (NOT WITHOUT_IL2CPP_OPTIMIZATION)
             target_compile_definitions (qjsbackend PUBLIC WITH_IL2CPP_OPTIMIZATION)
+        endif()
+        if ( WITH_WEBSOCKET EQUAL 2 )
+            target_include_directories(qjsbackend PRIVATE ${wolfssl_SOURCE_DIR}/wolfssl)
+            target_link_libraries(qjsbackend PRIVATE wolfssl)
         endif()
     endif ()
     # -------------------end qjs backend-------------------------
@@ -537,6 +555,13 @@ elseif ( OHOS )
         # definition
         list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_OHOS_x64)
     endif ()
+
+    if (WITH_SYMBOLS)
+        add_custom_command(TARGET puerts POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/libpuerts.so" "${CMAKE_BINARY_DIR}/libpuerts.symbol.so~"
+                COMMAND "${TOOLCHAIN_BIN_PATH}/llvm-strip" -x "${CMAKE_BINARY_DIR}/libpuerts.so"
+                COMMENT "Strip debug symbols done on final binary.")
+    endif()
 elseif ( ANDROID )
 
     find_library(log-lib log)
@@ -562,16 +587,17 @@ elseif ( ANDROID )
         list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_ANDROID_x64)
     endif ()
     
-    target_link_options(puerts PRIVATE -s)
-
     #set_target_properties( puerts PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/android_version.script)
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/android_version.script")
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
-    #add_custom_command(TARGET puerts POST_BUILD
-    #        COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -g -S -d --strip-debug --verbose
-    #        "${CMAKE_BINARY_DIR}/libpuerts.so"
-    #        COMMENT "Strip debug symbols done on final binary.")
-
+    if (WITH_SYMBOLS)
+        add_custom_command(TARGET puerts POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/libpuerts.so" "${CMAKE_BINARY_DIR}/libpuerts.symbol.so~"
+                COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -g -S -d --strip-debug --verbose "${CMAKE_BINARY_DIR}/libpuerts.so"
+                COMMENT "Strip debug symbols done on final binary.")
+    else()
+        target_link_options(puerts PRIVATE -s)
+    endif()
 elseif ( APPLE )
 
     if ( IOS )

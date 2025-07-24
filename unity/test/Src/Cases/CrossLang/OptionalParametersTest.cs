@@ -83,7 +83,11 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve]
         public int Test5(string i, int j, params bool[] k)
         {
+<<<<<<< HEAD
             return k == null ? -1 : k.Length;
+=======
+            return k == null ? - 1 : k.Length;
+>>>>>>> fix-issue-2013-debug-crash
         }
         [UnityEngine.Scripting.Preserve]
         public int Test6(int d, int i = 1, params string[] strs)

@@ -18,7 +18,11 @@
 #endif
 #endif
 
+<<<<<<< HEAD
 #define API_LEVEL 36
+=======
+#define API_LEVEL 35
+>>>>>>> fix-issue-2013-debug-crash
 
 using puerts::JSEngine;
 using puerts::FValue;

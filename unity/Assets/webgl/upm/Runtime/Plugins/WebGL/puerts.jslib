@@ -40,6 +40,7 @@ var exportDLL = {
             InjectPapiGLNativeImpl: Module._InjectPapiGLNativeImpl,
             PApiCallbackWithScope: Module._PApiCallbackWithScope,
             PApiConstructorWithScope: Module._PApiConstructorWithScope,
+<<<<<<< HEAD
             
             find_class_by_id: Module._find_class_by_id,
             load_class_by_id: Module._load_class_by_id,
@@ -64,6 +65,8 @@ var exportDLL = {
             get_property_info_getter_data: Module._get_property_info_getter_data,
             get_property_info_setter_data: Module._get_property_info_setter_data,
             get_function_info_data: Module._get_function_info_data,
+=======
+>>>>>>> fix-issue-2013-debug-crash
             
             HEAP8,
             HEAPU8,
@@ -170,7 +173,10 @@ var exportDLL = {
     "LogicTick",
     "SetLogCallback",
     "TerminateExecution",
+<<<<<<< HEAD
     "GetWebGLPapiVersion",
+=======
+>>>>>>> fix-issue-2013-debug-crash
     "GetWebGLFFIApi",
     "CreateWebGLPapiEnvRef",
     "TranToString",

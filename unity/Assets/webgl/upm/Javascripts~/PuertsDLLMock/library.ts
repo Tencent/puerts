@@ -96,6 +96,7 @@ export class PuertsJSEngine {
             InjectPapiGLNativeImpl,
             PApiCallbackWithScope,
             PApiConstructorWithScope,
+<<<<<<< HEAD
             find_class_by_id,
             load_class_by_id,
             get_class_name,
@@ -119,6 +120,8 @@ export class PuertsJSEngine {
             get_property_info_getter_data,
             get_property_info_setter_data,
             get_function_info_data,
+=======
+>>>>>>> fix-issue-2013-debug-crash
             HEAP8,
             HEAPU8,
             HEAP32,
@@ -148,6 +151,7 @@ export class PuertsJSEngine {
             InjectPapiGLNativeImpl,
             PApiCallbackWithScope,
             PApiConstructorWithScope,
+<<<<<<< HEAD
 
             find_class_by_id,
             load_class_by_id,
@@ -172,6 +176,8 @@ export class PuertsJSEngine {
             get_property_info_getter_data,
             get_property_info_setter_data,
             get_function_info_data,
+=======
+>>>>>>> fix-issue-2013-debug-crash
 
             HEAP8,
             HEAPU8,

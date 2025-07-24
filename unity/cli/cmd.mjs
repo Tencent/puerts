@@ -31,12 +31,18 @@ program
             .default("Release")
             .choices(["Release", "Debug"])
     )
+<<<<<<< HEAD
     .option("--backend <backend>", "the JS backend will be used")
+=======
+    .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
+    .option('--rebuild', 'clean and rebuild')
+>>>>>>> fix-issue-2013-debug-crash
     .option('-ws, --websocket <number>', 'with websocket support')
     .option('-G, --generator <generator-name>', 'cmake generator name')
     .option('-ts, --thread_safe', 'thread safe')
     .option('-wi, --with_inspector', 'with inspector')
     .option('-jl, --jitless', 'jitless')
+    .option('--with_symbols', 'generate symbol file for debug')
     .action(function (quickcommand, options) {
         let backend = options.backend;
         let config = options.config;

@@ -6,8 +6,8 @@ In simple terms, the optimization principle of il2cpp is to bypass PInvoke and d
 ## Enabling
 
 * For versions 2.1.1 and below, the feature is disabled by default on all platforms.  To enable it, go to Unity's `Player Settings` and add the Scripting Define Symbol: `PUERTS_IL2CPP_OPTIMIZATION`.
-* For versions 2.2.0 and above, the feature is enabled by default on Windows, macOS, Linux, and Android. To disable it, add the Scripting Define Symbol: `PUERTS_DISABLE_IL2CPP_OPTIMIZATION`. On iOS and WebGL platforms, the feature is disabled by default; to enable it, add the Scripting Define Symbol: `PUERTS_IL2CPP_OPTIMIZATION`.。
-
+*For versions 2.2.0 to 2.2.1, the feature is enabled by default on Windows, macOS, Linux, and Android. To disable it, go to Unity's Player Settings, add the Scripting Define Symbol: PUERTS_DISABLE_IL2CPP_OPTIMIZATION. It is disabled by default on iOS and WebGL; to enable it, add the Scripting Define Symbol: PUERTS_IL2CPP_OPTIMIZATION.
+* For versions 2.2.2 and above, the feature is enabled by default on Windows, macOS, Linux, Android, and WebGL. To disable it, go to Unity's Player Settings, add the Scripting Define Symbol: PUERTS_DISABLE_IL2CPP_OPTIMIZATION. It remains disabled by default on iOS; to enable it, add the Scripting Define Symbol: PUERTS_IL2CPP_OPTIMIZATION.
 ## Usage Steps
 
 * For higher performance (full wrapper glue code generation):

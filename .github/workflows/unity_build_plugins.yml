@@ -24,7 +24,11 @@ on:
       - .github/workflows/composites/unity-build-plugins/**
   pull_request:
     paths: 
+<<<<<<< HEAD
       - unity/native/**
+=======
+      - unity/native_src/**
+>>>>>>> fix-issue-2013-debug-crash
       - unity/cli/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
@@ -33,8 +37,11 @@ on:
       - unreal/Puerts/ThirdParty/**
       - .github/workflows/unity_build_plugins.yml
       - .github/workflows/composites/unity-build-plugins/**
+<<<<<<< HEAD
 #    branches-ignore:
 #      - 'unity-3.0.0'
+=======
+>>>>>>> fix-issue-2013-debug-crash
 
 env:
   RUNID: 613573412
@@ -197,6 +204,10 @@ jobs:
 
   windows:
     runs-on: windows-2022
+<<<<<<< HEAD
+=======
+
+>>>>>>> fix-issue-2013-debug-crash
     steps:
       - uses: actions/checkout@v3
       - name: puerts

@@ -13,21 +13,31 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
+<<<<<<< HEAD
       - .github/workflows/composites/**
+=======
+>>>>>>> fix-issue-2013-debug-crash
   pull_request:
     paths: 
       - unity/Assets/**
       - unity/test/**
+<<<<<<< HEAD
       - unity/native/**
+=======
+      - unity/native_src/**
+>>>>>>> fix-issue-2013-debug-crash
       - unity/cli/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
+<<<<<<< HEAD
       - .github/workflows/composites/**
 #    branches-ignore:
 #      - 'unity-3.0.0'
+=======
+>>>>>>> fix-issue-2013-debug-crash
   
 env:
   RUNID: 613573412
@@ -43,7 +53,11 @@ jobs:
 #        with:
 #          os: 'win'
 #          version: '2022.3.59f1'
+<<<<<<< HEAD
 #          cachekey: 'unity2022x64'
+=======
+#          cachekey: 'unity2022x64master'
+>>>>>>> fix-issue-2013-debug-crash
 #          install_path: C:/UNITY
 #          unity_modules: windows-il2cpp
 #          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
@@ -56,15 +70,32 @@ jobs:
 #          cd test/unity
 #          node ../../cli unity-test --unity C:/UNITY/2022.3.59f1/Editor/Unity.exe
 #      - name: TestResult
+<<<<<<< HEAD
 ##        if: always()
 #        shell: bash
 #        run: |
 #          cd unity/test/unity
+=======
+#        if: always()
+#        shell: bash
+#        run: |
+#          cd unity/test/unity
+#          echo "testresult in v1"
+#          cat log1.txt | grep "Failed\|Passed" 
+>>>>>>> fix-issue-2013-debug-crash
 #          echo "testresult in v2(reflection)"
 #          cat log2.txt | grep "Failed\|Passed" 
 #          echo "testresult in v2"
 #          cat log3.txt | grep "Failed\|Passed" 
+<<<<<<< HEAD
 
+=======
+#          echo "testresult in v2(quickjs)"
+#          cat log4.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2(mult)"
+#          cat log5.txt | grep "Failed\|Passed" 
+      
+>>>>>>> fix-issue-2013-debug-crash
   unittest-osx-unity:
     runs-on: macos-latest
     steps:
@@ -74,7 +105,11 @@ jobs:
         with:
           os: 'osx'
           version: '2022.3.59f1'
+<<<<<<< HEAD
           cachekey: 'unity2022arm64'
+=======
+          cachekey: 'unity2022osxarm64'
+>>>>>>> fix-issue-2013-debug-crash
           install_path: /Applications/UNITY
           unity_modules: mac-il2cpp
           architecture: arm64
@@ -88,6 +123,7 @@ jobs:
           cd test/unity
           node ../../cli unity-test --unity /Applications/UNITY/2022.3.59f1/Unity.app/Contents/MacOS/Unity
       - name: TestResult
+<<<<<<< HEAD
 #        if: always()
         shell: bash
         run: |
@@ -114,6 +150,22 @@ jobs:
             echo
           done
           
+=======
+        if: always()
+        shell: bash
+        run: |
+          cd unity/test/unity
+          echo "testresult in v1"
+          cat log1.txt | grep "Failed\|Passed" 
+          echo "testresult in v2(reflection)"
+          cat log2.txt | grep "Failed\|Passed" 
+          echo "testresult in v2"
+          cat log3.txt | grep "Failed\|Passed" 
+          echo "testresult in v2(quickjs)"
+          cat log4.txt | grep "Failed\|Passed" 
+          echo "testresult in v2(mult)"
+          cat log5.txt | grep "Failed\|Passed" 
+>>>>>>> fix-issue-2013-debug-crash
 
   unittest-win-dotnet:
     runs-on: windows-2022

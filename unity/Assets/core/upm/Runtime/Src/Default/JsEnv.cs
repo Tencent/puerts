@@ -1,0 +1,1099 @@
+﻿/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 Tencent.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
+
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using Puerts.TypeMapping;
+using System.Reflection;
+#if CSHARP_7_3_OR_NEWER
+using System.Threading.Tasks;
+#endif
+
+namespace Puerts
+{
+    public delegate void JSFunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
+    public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
+
+    public class JsEnv : IDisposable
+    {
+        public static List<JsEnv> jsEnvs = new List<JsEnv>();
+
+        internal readonly int Idx;
+
+        internal readonly GeneralGetterManager GeneralGetterManager;
+
+        internal readonly GeneralSetterManager GeneralSetterManager;
+
+        internal TypeManager TypeRegister 
+        {
+            get {
+#if !PUERTS_GENERAL
+                UnityEngine.Debug.LogWarning("use JsEnv.TypeManager instead");
+#endif
+                return TypeManager;
+            }
+        }
+
+        internal readonly TypeManager TypeManager = null;
+
+        internal readonly GenericDelegateFactory genericDelegateFactory;
+
+        internal readonly JSObjectFactory jsObjectFactory;
+
+        internal readonly GenericDelegate JSObjectValueGetter;
+
+        internal GenericDelegate ModuleExecutor;
+
+        internal IntPtr isolate;
+
+        public IntPtr Isolate {
+            get {
+                return isolate;
+            }
+        }
+
+        internal ObjectPool objectPool;
+
+        private readonly ILoader loader;
+        private bool loaderCanCheckESM;
+
+        public Backend Backend;
+
+#if UNITY_EDITOR
+        public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
+        public delegate void JsEnvDisposeCallback(JsEnv env);
+        public static JsEnvCreateCallback OnJsEnvCreate;
+        public static JsEnvDisposeCallback OnJsEnvDispose;
+
+        public int debugPort;
+#else 
+        protected int debugPort;
+#endif
+
+        internal Action OnDispose;
+
+        public JsEnv() 
+            : this(new DefaultLoader(), -1, BackendType.Auto, IntPtr.Zero, IntPtr.Zero)
+        {
+        }
+
+        public JsEnv(ILoader loader, int debugPort = -1)
+             : this(loader, debugPort, BackendType.Auto, IntPtr.Zero, IntPtr.Zero)
+        {
+        }
+
+        public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
+            : this(loader, -1, BackendType.Auto, externalRuntime, externalContext)
+        {
+        }
+
+        public JsEnv(ILoader loader, int debugPort, BackendType backend, IntPtr externalRuntime, IntPtr externalContext)
+        {
+#if !UNITY_EDITOR && UNITY_WEBGL
+            if (jsEnvs.Count == 0) PuertsDLL.InitPuertsWebGL();
+#endif
+            const int libVersionExpect = 35;
+            int libVersion = PuertsDLL.GetApiLevel();
+            if (libVersion != libVersionExpect)
+            {
+                throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
+            }
+            PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
+            this.loader = loader;
+            this.loaderCanCheckESM = loader is IModuleChecker;
+            
+            if (externalRuntime != IntPtr.Zero)
+            {
+                isolate = PuertsDLL.CreateJSEngineWithExternalEnv((int)backend, externalRuntime, externalContext);
+            }
+            else
+            {
+                isolate = PuertsDLL.CreateJSEngine((int)backend);
+            }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (PuertsDLL.GetLibBackend(isolate) != 2 && jsEnvs.Count > 0)
+            {
+                disposed = true;
+                throw new InvalidOperationException("more than one JsEnv instance is not supported in WebGL");
+            }
+#endif
+
+            if (isolate == IntPtr.Zero)
+            {
+                disposed = true;
+                throw new InvalidProgramException("create jsengine fail for " + backend);
+            }
+            lock (jsEnvs)
+            {
+                Idx = -1;
+                for (int i = 0; i < jsEnvs.Count; i++)
+                {
+                    if (jsEnvs[i] == null)
+                    {
+                        Idx = i;
+                        jsEnvs[Idx] = this;
+                        break;
+                    }
+                }
+                if (Idx == -1)
+                {
+                    Idx = jsEnvs.Count;
+                    jsEnvs.Add(this);
+                }
+            }
+
+            objectPool = new ObjectPool();
+            TypeManager = new TypeManager(this);
+            genericDelegateFactory = new GenericDelegateFactory(this);
+            jsObjectFactory = new JSObjectFactory();
+
+            GeneralGetterManager = new GeneralGetterManager();
+            GeneralSetterManager = new GeneralSetterManager();
+
+            if (PuertsDLL.GetLibBackend(isolate) == 0) 
+                Backend = new BackendV8(this);
+            else if (PuertsDLL.GetLibBackend(isolate) == 1)
+                Backend = new BackendNodeJS(this);
+            else if (PuertsDLL.GetLibBackend(isolate) == 2)
+                Backend = new BackendQuickJS(this);
+
+            // 注册JS对象通用GC回调
+            PuertsDLL.SetGeneralDestructor(isolate, StaticCallbacks.GeneralDestructor);
+
+            // 把JSEnv的id和Callback的id拼成一个long存起来，并将StaticCallbacks.JsEnvCallbackWrap注册给V8。而后通过StaticCallbacks.JsEnvCallbackWrap从long中取出函数和envid并调用。
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsRegisterTickHandler", StaticCallbacks.JsEnvCallbackWrap, AddCallback(RegisterTickHandler));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetGenericMethod", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetGenericMethod));
+            PuertsDLL.SetGlobalFunction(isolate, "createFunction", StaticCallbacks.JsEnvCallbackWrap, AddCallback(CreateFunction));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsLoadType", StaticCallbacks.JsEnvCallbackWrap, AddCallback(LoadType));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetNestedTypes", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetNestedTypes));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
+            
+            //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
+#if !DISABLE_AUTO_REGISTER
+            const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.PuerRegisterInfo_Gen";
+            var autoRegister = Type.GetType(AutoStaticCodeRegisterClassName, false);
+            if (autoRegister == null)
+            {
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    autoRegister = assembly.GetType(AutoStaticCodeRegisterClassName, false);
+                    if (autoRegister != null) break;
+                }
+            }
+            if (autoRegister != null)
+            {
+                var methodInfoOfRegister = autoRegister.GetMethod("AddRegisterInfoGetterIntoJsEnv");
+                methodInfoOfRegister.Invoke(null, new object[] { this });
+            }
+#endif
+            TypeManager.InitArrayTypeId();
+
+#if THREAD_SAFE
+            lock (this)
+            {
+#endif
+            var ptr = PuertsDLL.GetJSObjectValueGetter(isolate);
+            if (ptr == IntPtr.Zero)
+            {
+                string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
+                throw new Exception(exceptionInfo);
+            }
+            JSObjectValueGetter = new GenericDelegate(ptr, this, "JSObjectValueGetter");
+#if THREAD_SAFE
+            }
+#endif
+
+            if (debugPort != -1)
+            {
+                PuertsDLL.CreateInspector(isolate, debugPort);
+            }
+            try 
+            {
+                ExecuteModule("puerts/init.mjs");
+                ExecuteModule("puerts/csharp.mjs");
+                ExecuteModule("puerts/events.mjs");
+                
+                if (externalContext == IntPtr.Zero || externalRuntime == IntPtr.Zero) 
+                {
+                    ExecuteModule("puerts/log.mjs");
+                    ExecuteModule("puerts/timer.mjs");
+                    ExecuteModule("puerts/promises.mjs");
+                }
+                else 
+                {
+                    OnDispose += ExecuteModule<Action>("puerts/dispose.mjs", "default");
+                }
+                if (!(Backend is BackendNodeJS)) 
+                {
+                    ExecuteModule("puerts/polyfill.mjs");
+                }
+                else
+                {
+                    ExecuteModule("puerts/nodepatch.mjs");
+                }
+                
+#if !UNITY_WEBGL
+                ExecuteModule("puerts/websocketpp.mjs");
+#endif
+
+#if UNITY_EDITOR
+                if (OnJsEnvCreate != null) 
+                {
+                    OnJsEnvCreate(this, loader, debugPort);
+                }
+                OnDispose += () => {
+                    if (OnJsEnvDispose != null) 
+                    {
+                        OnJsEnvDispose(this);
+                    }
+                };
+#endif
+                this.debugPort = debugPort;
+            } 
+            catch (Exception ex)
+            {
+                Dispose();
+                throw;
+            }
+            if (loader is IBuiltinLoadedListener)
+                (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
+
+        }
+
+        internal string ResolveModuleContent(string identifer, out string pathForDebug) 
+        {
+            pathForDebug = identifer;
+            if (!loader.FileExists(identifer)) 
+            {
+                return null;
+            }
+            if (loaderCanCheckESM ? 
+                !((IModuleChecker)loader).IsESM(identifer) :
+                identifer.Length < 4 || identifer.EndsWith(".cjs")
+            )
+            {
+                pathForDebug = "";
+                return String.Format(@"
+                    export default puerts.require('{0}');
+
+                ", identifer);
+            } 
+            else 
+            {
+                return loader.ReadFile(identifer, out pathForDebug);
+            }
+        }
+
+        /**
+        * execute the module and get the result
+        * when exportee is null, get the module namespace
+        * when exportee is not null, get the specified member of the module namespace
+        *
+        * example: JsEnv.ExecuteModule("main.mjs")
+        */
+        public T ExecuteModule<T>(string specifier, string exportee)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            if (exportee == "" && typeof(T) != typeof(JSObject)) {
+                throw new Exception("T must be Puerts.JSObject when getting the module namespace");
+            }
+            if (ModuleExecutor == null)
+            {
+                var ptr = PuertsDLL.GetModuleExecutor(isolate);
+                if (ptr == IntPtr.Zero)
+                {
+                    string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
+                    throw new Exception(exceptionInfo);
+                }
+                ModuleExecutor = new GenericDelegate(ptr, this, "ModuleExecutor");
+            }
+            JSObject jso = ModuleExecutor.Func<string, JSObject>(specifier);
+
+            if (exportee == "") return (T)(object)jso;
+
+            return jso.Get<T>(exportee);
+#if THREAD_SAFE
+            }
+#endif
+        }
+        public JSObject ExecuteModule(string specifier)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            if (ModuleExecutor == null)
+            {
+                var ptr = PuertsDLL.GetModuleExecutor(isolate);
+                if (ptr == IntPtr.Zero)
+                {
+                    string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
+                    throw new Exception(exceptionInfo);
+                }
+                ModuleExecutor = new GenericDelegate(ptr, this, "ModuleExecutor");
+            }
+            return ModuleExecutor.Func<string, JSObject>(specifier);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void Eval(string chunk, string chunkName = "chunk")
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            IntPtr resultInfo = PuertsDLL.EvalChecked(isolate, chunk, chunkName);
+            if (resultInfo == IntPtr.Zero)
+            {
+                string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
+                throw new Exception(exceptionInfo);
+            }
+            PuertsDLL.ResetResult(resultInfo);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public TResult Eval<TResult>(string chunk, string chunkName = "chunk")
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            IntPtr resultInfo = PuertsDLL.EvalChecked(isolate, chunk, chunkName);
+            if (resultInfo == IntPtr.Zero)
+            {
+                string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
+                throw new Exception(exceptionInfo);
+            }
+            TResult result = StaticTranslate<TResult>.Get(Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
+            PuertsDLL.ResetResult(resultInfo);
+            return result;
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public bool ClearModuleCache(string path)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            return PuertsDLL.ClearModuleCache(isolate, path);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void ClearModuleCache()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            PuertsDLL.ClearModuleCache(isolate, "");
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public static void ClearAllModuleCaches () 
+        {
+            lock (jsEnvs)
+            {
+                foreach (var jsEnv in jsEnvs)
+                {
+                    jsEnv.ClearModuleCache();
+                }
+            }
+        }
+
+        public void AddRegisterInfoGetter(Type type, Func<RegisterInfo> getter)
+        {
+#if THREAD_SAFE
+            lock (this)
+            {
+#endif
+            TypeManager.AddRegisterInfoGetter(type, getter);
+#if THREAD_SAFE
+            }
+#endif
+        }
+        public void SetDefaultBindingMode(BindingMode bindingMode)
+        {
+#if THREAD_SAFE
+            lock (this)
+            {
+#endif
+            TypeManager.RegisterInfoManager.DefaultBindingMode = bindingMode;
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        private readonly List<JSFunctionCallback> callbacks = new List<JSFunctionCallback>();
+
+        internal void InvokeCallback(IntPtr isolate, int callbackIdx, IntPtr info, IntPtr self, int paramLen)
+        {
+            callbacks[callbackIdx](isolate, info, self, paramLen);
+        }
+
+        internal long AddCallback(JSFunctionCallback callback)
+        {
+            int callbackIdx = callbacks.Count;
+            callbacks.Add(callback);
+            return Utils.TwoIntToLong(Idx, callbackIdx);
+        }
+
+        internal long AddCallbackSlow(JSFunctionCallback callback)
+        {
+            for(int i = 0; i < callbacks.Count; ++i)
+            {
+                if (callbacks[i] == null)
+                {
+                    callbacks[i] = callback;
+                    return Utils.TwoIntToLong(Idx, i);
+                }
+            }
+            return AddCallback(callback);
+        }
+
+        internal void ReleaseCallback(int callbackIdx)
+        {
+            callbacks[callbackIdx] = null;
+        }
+
+        private readonly List<JSConstructorCallback> constructorCallbacks = new List<JSConstructorCallback>();
+
+        internal IntPtr InvokeConstructor(IntPtr isolate, int callbackIdx, IntPtr info, int paramLen)
+        {
+            object obj = constructorCallbacks[callbackIdx](isolate, info, paramLen);
+            if (obj == null) return IntPtr.Zero;
+            int objectId = objectPool.FindOrAddObject(obj);
+            return new IntPtr(objectId);
+        }
+
+        internal long AddConstructor(JSConstructorCallback callback)
+        {
+            int callbackIdx = constructorCallbacks.Count;
+            constructorCallbacks.Add(callback);
+            return Utils.TwoIntToLong(Idx, callbackIdx);
+        }
+
+        internal void JsReleaseObject(int objectID)
+        {
+            objectPool.Remove(objectID);
+            //if (obj != null) UnityEngine.Debug.Log("release " + obj + "(" + obj.GetHashCode() + ")");
+        }
+
+        void GetLoader(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            GeneralSetterManager.AnyTranslator(Idx, isolate, NativeValueApi.SetValueToResult, info, loader);
+        }
+
+        public void RegisterGeneralGetSet(Type type, GeneralGetter getter, GeneralSetter setter)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            if (getter != null) GeneralGetterManager.RegisterGetter(type, getter);
+            if (setter != null) GeneralSetterManager.RegisterSetter(type, setter);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        //use by BlittableCopy
+        public int GetTypeId(Type type)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            return TypeManager.GetTypeId(isolate, type);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        internal GenericDelegate ToGenericDelegate(IntPtr ptr)
+        {
+            return genericDelegateFactory.ToGenericDelegate(ptr);
+        }
+
+        public int Index
+        {
+            get
+            {
+                return Idx;
+            }
+        }
+
+        private List<IntPtr> tickHandler = new List<IntPtr>();
+        void RegisterTickHandler(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
+            {
+                if (paramLen != 1)
+                {
+                    return;
+                }
+
+                IntPtr fn = IntPtr.Zero;
+                var value1 = PuertsDLL.GetArgumentValue(isolate, info, 0);
+                if (PuertsDLL.GetJsValueType(isolate, value1, false) == JsValueType.Function)
+                {
+                    fn = PuertsDLL.GetFunctionFromValue(isolate, value1, false);
+                    if (fn == IntPtr.Zero)
+                    {
+                        return;
+                    }
+                    tickHandler.Add(fn);
+
+                }
+            }
+            catch (Exception e)
+            {
+                PuertsDLL.ThrowException(isolate,
+                    "registerTickHandler throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
+            
+        }
+
+        Type GetTypeFromJs(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            Type type = null;
+            var value = PuertsDLL.GetArgumentValue(isolate, info, 0);
+            if (PuertsDLL.GetJsValueType(isolate, value, false) == JsValueType.String)
+            {
+                string classFullName = PuertsDLL.GetStringFromValue(isolate, value, false);
+                var maybeType = TypeManager.GetType(classFullName);
+                if (paramLen == 1)
+                {
+                    type = maybeType;
+                }
+                else if (maybeType != null
+                    && maybeType.IsGenericTypeDefinition
+                    && maybeType.GetGenericArguments().Length == (paramLen - 1)) //泛型
+                {
+                    var genericArguments = new Type[paramLen - 1];
+                    for (int i = 1; i < paramLen; i++)
+                    {
+                        value = PuertsDLL.GetArgumentValue(isolate, info, i);
+                        if (PuertsDLL.GetJsValueType(isolate, value, false) != JsValueType.Function) return null;
+                        var argTypeId = PuertsDLL.GetTypeIdFromValue(isolate, value, false);
+                        if (argTypeId == -1) return null;
+                        genericArguments[i - 1] = TypeManager.GetType(argTypeId);
+                    }
+                    type = maybeType.MakeGenericType(genericArguments);
+                }
+            }
+            else if (PuertsDLL.GetJsValueType(isolate, value, false) == JsValueType.NativeObject)
+            {
+                type = StaticTranslate<Type>.Get(Index, isolate, NativeValueApi.GetValueFromArgument, value, false);
+            }
+
+            return type;
+        }
+
+        void GetGenericMethod(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
+            {
+                if (paramLen < 3) {
+                    throw new Exception("invalid arguments length");
+                }
+                var csTypeJSValue = PuertsDLL.GetArgumentValue(isolate, info, 0);
+                if (PuertsDLL.GetJsValueType(isolate, csTypeJSValue, false) != JsValueType.NativeObject) {
+                    throw new Exception("the class must be a constructor");
+                }
+                Type type = StaticTranslate<Type>.Get(Index, isolate, NativeValueApi.GetValueFromArgument, csTypeJSValue, false);
+                string methodName = PuertsDLL.GetStringFromValue(isolate, PuertsDLL.GetArgumentValue(isolate, info, 1), false);
+                
+                var genericArguments = new Type[paramLen - 2];
+                for (int i = 2; i < paramLen; i++)
+                {
+                    var value = PuertsDLL.GetArgumentValue(isolate, info, i);
+                    if (PuertsDLL.GetJsValueType(isolate, value, false) != JsValueType.Function) 
+                    {
+                        throw new Exception("invalid Type for generic arguments " + (i - 2));
+                    }
+                    var argTypeId = PuertsDLL.GetTypeIdFromValue(isolate, value, false);
+                    if (argTypeId == -1) 
+                    {
+                        throw new Exception("invalid Type for generic arguments " + (i - 2));
+                    }
+                    genericArguments[i - 2] = TypeManager.GetType(argTypeId);
+                }
+
+                var callbackID = AddCallback(new GenericMethodWrap(methodName, this, type, genericArguments).Invoke);
+                PuertsDLL.ReturnCSharpFunctionCallback(isolate, info, StaticCallbacks.JsEnvCallbackWrap, callbackID);
+            }
+            catch(Exception e)
+            {
+                PuertsDLL.ThrowException(isolate, "GetGenericMethod throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
+        }
+
+        void CreateFunction(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
+            {
+                List<MethodInfo> methodInfos = new List<MethodInfo>();
+                for(int i = 0; i < paramLen; ++i)
+                {
+                    var arg = PuertsDLL.GetArgumentValue(isolate, info, i);
+                    MethodInfo methodInfo = StaticTranslate<MethodInfo>.Get(Index, isolate, NativeValueApi.GetValueFromArgument, arg, false);
+                    if (methodInfo == null)
+                    {
+                        PuertsDLL.ThrowException(isolate, "expect a MethodInfo");
+                        return;
+                    }
+                    methodInfos.Add(methodInfo);
+                }
+
+                if (methodInfos.Count == 0)
+                {
+                    PuertsDLL.ThrowException(isolate, "expect atleast one MethodInfo");
+                    return;
+                }
+
+                var callbackID = AddCallbackSlow(new MethodReflectionWrap(methodInfos[0].Name,
+                        methodInfos.Select(m => new OverloadReflectionWrap(m, this, false)).ToList()
+                    ).Invoke);
+                PuertsDLL.ReturnCSharpFunctionCallback2(isolate, info, StaticCallbacks.JsEnvCallbackWrap, StaticCallbacks.FunctionFinalizeCallback, callbackID);
+            }
+            catch (Exception e)
+            {
+                PuertsDLL.ThrowException(isolate, "CreateFunction throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
+        }
+
+        void LoadType(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
+            {
+                Type type = GetTypeFromJs(isolate, info, self, paramLen);
+                
+                if (type != null)
+                {
+                    int typeId = TypeManager.GetTypeId(isolate, type);
+                    PuertsDLL.ReturnClass(isolate, info, typeId);
+                }
+            }
+            catch(Exception e)
+            {
+                PuertsDLL.ThrowException(isolate, "loadClass throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
+        }
+
+        void GetNestedTypes(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
+            {
+                Type type = GetTypeFromJs(isolate, info, self, paramLen);
+                if (type != null)
+                {
+                    StaticTranslate<Type[]>.Set(Index, isolate, NativeValueApi.SetValueToResult, info, type.GetNestedTypes());
+                }
+            }
+            catch (Exception e)
+            {
+                PuertsDLL.ThrowException(isolate, "GetNestedType throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
+        }
+
+        public void UsingAction<T1>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterAction<T1>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingAction<T1, T2>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterAction<T1, T2>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingAction<T1, T2, T3>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterAction<T1, T2, T3>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingAction<T1, T2, T3, T4>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterAction<T1, T2, T3, T4>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingFunc<TResult>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterFunc<TResult>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingFunc<T1, TResult>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterFunc<T1, TResult>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingFunc<T1, T2, TResult>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterFunc<T1, T2, TResult>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingFunc<T1, T2, T3, TResult>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterFunc<T1, T2, T3, TResult>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void UsingFunc<T1, T2, T3, T4, TResult>()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            genericDelegateFactory.RegisterFunc<T1, T2, T3, T4, TResult>();
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void Tick()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            CheckLiveness();
+            ReleasePendingJSFunctions();
+            ReleasePendingJSObjects();
+            
+            // Safe InspectorTick call to avoid crashes in multi-layer scenarios
+            try
+            {
+            if (PuertsDLL.InspectorTick(isolate))
+            {
+#if CSHARP_7_3_OR_NEWER
+                if (waitDebugerTaskSource != null)
+                {
+                    var tmp = waitDebugerTaskSource;
+                    waitDebugerTaskSource = null;
+                    tmp.SetResult(true);
+                }
+#endif
+            }
+            }
+            catch (System.Exception e)
+            {
+                // Inspector exceptions should not crash the entire application
+#if !PUERTS_GENERAL && !UNITY_WSA
+                UnityEngine.Debug.LogWarning("PuerTS InspectorTick exception (recovered): " + e.Message);
+#endif
+            }
+            
+            PuertsDLL.LogicTick(isolate);
+            foreach (var fn in tickHandler)
+            {
+                IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
+                if (resultInfo==IntPtr.Zero)
+                {
+                    var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
+                    throw new Exception(exceptionInfo);
+                }
+            }
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void WaitDebugger()
+        {
+            if (debugPort == -1) return;
+#if THREAD_SAFE
+            lock(this) {
+#endif
+                var startTime = System.DateTime.Now;
+                var timeout = System.TimeSpan.FromSeconds(30); // 30 seconds timeout
+                
+                try
+                {
+                    while (!PuertsDLL.InspectorTick(isolate)) 
+                    { 
+                        if ((System.DateTime.Now - startTime) > timeout)
+                        {
+#if !PUERTS_GENERAL && !UNITY_WSA
+                            UnityEngine.Debug.LogWarning("PuerTS WaitDebugger timeout after 30 seconds");
+#endif
+                            break;
+                        }
+                        System.Threading.Thread.Sleep(10); // Avoid excessive CPU usage
+                    }
+                }
+                catch (System.Exception e)
+                {
+#if !PUERTS_GENERAL && !UNITY_WSA
+                    UnityEngine.Debug.LogError("PuerTS WaitDebugger exception: " + e.Message);
+#endif
+                }
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+#if CSHARP_7_3_OR_NEWER
+        TaskCompletionSource<bool> waitDebugerTaskSource;
+        public Task WaitDebuggerAsync()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            if (debugPort == -1) return null;
+            waitDebugerTaskSource = new TaskCompletionSource<bool>();
+            return waitDebugerTaskSource.Task;
+#if THREAD_SAFE
+            }
+#endif
+        }
+#endif
+
+        [MonoPInvokeCallback(typeof(LogCallback))]
+        public static void LogCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
+
+        [MonoPInvokeCallback(typeof(LogCallback))]
+        public static void LogWarningCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
+
+        [MonoPInvokeCallback(typeof(LogCallback))]
+        public static void LogErrorCallback(string msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(msg);
+#endif
+        }
+
+        ~JsEnv()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            Dispose(true);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void Dispose()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            Dispose(true);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        private bool disposed = false;
+
+        protected virtual void Dispose(bool dispose)
+        {
+            lock (jsEnvs)
+            {
+                if (disposed) return;
+                if (OnDispose != null) OnDispose();
+                genericDelegateFactory.CloseAll();
+                jsEnvs[Idx] = null;
+                PuertsDLL.DestroyJSEngine(isolate);
+                isolate = IntPtr.Zero;
+                disposed = true;
+            }
+        }
+
+        internal bool CheckLiveness(bool shouldThrow = true)
+        {
+            if (disposed && shouldThrow)
+            {
+                throw new InvalidOperationException("JsEnv has been disposed!");
+            }
+            return !disposed;
+        }
+
+        Dictionary<IntPtr, int> funcRefCount = new Dictionary<IntPtr, int>();
+        Dictionary<IntPtr, int> JSObjRefCount = new Dictionary<IntPtr, int>();
+
+        internal void IncFuncRef(IntPtr nativeJsFuncPtr)
+        {
+            if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
+            lock (funcRefCount)
+            {
+                int refCount;
+                if (funcRefCount.TryGetValue(nativeJsFuncPtr, out refCount))
+                {
+                    ++refCount;
+                }
+                else
+                {
+                    refCount = 1;
+                }
+                funcRefCount[nativeJsFuncPtr] = refCount;
+            }
+        }
+
+        internal void DecFuncRef(IntPtr nativeJsFuncPtr)
+        {
+            if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
+
+            lock (funcRefCount)
+            {
+                funcRefCount[nativeJsFuncPtr] = funcRefCount[nativeJsFuncPtr] - 1;
+            }
+        }
+
+        internal void IncJSObjRef(IntPtr nativeJSObjectPtr)
+        {
+            if (disposed || nativeJSObjectPtr == IntPtr.Zero) return;
+            lock (JSObjRefCount)
+            {
+                int refCount;
+                if (JSObjRefCount.TryGetValue(nativeJSObjectPtr, out refCount))
+                {
+                    ++refCount;
+                }
+                else
+                {
+                    refCount = 1;
+                }
+                JSObjRefCount[nativeJSObjectPtr] = refCount;
+            }
+        }
+
+        internal void DecJSObjRef(IntPtr nativeJSObjectPtr)
+        {
+            if (disposed || nativeJSObjectPtr == IntPtr.Zero) return;
+
+            lock (JSObjRefCount)
+            {
+                JSObjRefCount[nativeJSObjectPtr] = JSObjRefCount[nativeJSObjectPtr] - 1;
+            }
+        }
+
+        List<IntPtr> pendingRemovedList = new List<IntPtr>();
+
+        internal void ReleasePendingJSFunctions()
+        {
+            lock (funcRefCount)
+            {
+                pendingRemovedList.Clear();
+                var enumerator = funcRefCount.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current.Value <= 0) pendingRemovedList.Add(enumerator.Current.Key);
+                }
+                for(int i = 0; i  < pendingRemovedList.Count; ++i)
+                {
+                    var nativeJsFuncPtr = pendingRemovedList[i];
+                    funcRefCount.Remove(nativeJsFuncPtr);
+                    if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
+                    {
+                        genericDelegateFactory.RemoveGenericDelegate(nativeJsFuncPtr);
+                        PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
+                    }
+                }
+                pendingRemovedList.Clear();
+            }
+        }
+
+        List<IntPtr> pendingRemovedJsObjList = new List<IntPtr>();
+
+        internal void ReleasePendingJSObjects()
+        {
+            lock (JSObjRefCount)
+            {
+                pendingRemovedJsObjList.Clear();
+                var enumerator = JSObjRefCount.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current.Value <= 0) pendingRemovedJsObjList.Add(enumerator.Current.Key);
+                }
+                for(int i = 0; i  < pendingRemovedJsObjList.Count; ++i)
+                {
+                    var nativeJsObjPtr = pendingRemovedJsObjList[i];
+                    JSObjRefCount.Remove(nativeJsObjPtr);
+                    if (!jsObjectFactory.IsJsObjectAlive(nativeJsObjPtr))
+                    {
+                        jsObjectFactory.RemoveJSObject(nativeJsObjPtr);
+                        PuertsDLL.ReleaseJSObject(isolate, nativeJsObjPtr);
+                    }
+                }
+                pendingRemovedJsObjList.Clear();
+            }
+        }
+    }
+}
+
+#endif
+
+
+

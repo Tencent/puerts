@@ -5,6 +5,12 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+<<<<<<< HEAD
+=======
+#if UNITY_2020_1_OR_NEWER
+#if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION && (PUERTS_IL2CPP_OPTIMIZATION || !UNITY_IPHONE) || UNITY_EDITOR || PUERTS_GENERAL
+
+>>>>>>> fix-issue-2013-debug-crash
 using System;
 using System.Reflection;
 using System.Collections.Generic;
@@ -15,7 +21,11 @@ namespace PuertsIl2cpp
 {
 	public static class ExtensionMethodInfo
 	{
+<<<<<<< HEAD
         internal static Type GetExtendedType(MethodInfo method)
+=======
+        private static Type GetExtendedType(MethodInfo method)
+>>>>>>> fix-issue-2013-debug-crash
         {
             var paramInfo = method.GetParameters();
             if (paramInfo.Length == 0)
@@ -59,6 +69,7 @@ namespace PuertsIl2cpp
 
         public static Func<string, MethodInfo[]> LoadExtensionMethod;
 
+<<<<<<< HEAD
         private static volatile Dictionary<Type, MethodInfo[]> extensionMethodMap = null;
 
         static MethodInfo[] EmptyMethodInfos = new MethodInfo[] { };
@@ -202,6 +213,18 @@ namespace PuertsIl2cpp
                 LoadExtensionMethod = (Func<string, MethodInfo[]>)Delegate.CreateDelegate(
                     typeof(Func<string, MethodInfo[]>), null, TryLoadExtensionMethod);
             }
+=======
+        public static bool LoadExtensionMethodInfo() {
+            var ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen")).FirstOrDefault(x => x != null);
+            if (ExtensionMethodInfos_Gen == null)
+                ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen_Internal")).FirstOrDefault(x => x != null);
+            var TryLoadExtensionMethod = ExtensionMethodInfos_Gen.GetMethod("TryLoadExtensionMethod");
+            if (TryLoadExtensionMethod == null) return false;
+            LoadExtensionMethod = (Func<string, MethodInfo[]>)Delegate.CreateDelegate(
+                typeof(Func<string, MethodInfo[]>), null, TryLoadExtensionMethod);
+>>>>>>> fix-issue-2013-debug-crash
             return true;
         }
 	}
@@ -598,3 +621,9 @@ namespace PuertsIl2cpp
         }
     }
 }
+<<<<<<< HEAD
+=======
+
+#endif
+#endif
+>>>>>>> fix-issue-2013-debug-crash

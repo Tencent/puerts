@@ -304,7 +304,7 @@ export async function unityTest(cwd, unityPath) {
         backend: 'v8_9.4.146.24',
         platform: platform,
         config: 'Debug',
-        arch: 'x64',
+        arch: process.arch,
         websocket: 1
     });
 
@@ -452,6 +452,7 @@ export async function unityTest(cwd, unityPath) {
     );
     assert.equal(0, v2code);
     
+<<<<<<< HEAD
     console.log('-------------------------Full Wrapper test(quickjs)-------------------------');
     process.env.SwitchToQJS = '1';
     console.log("[Puer] Running test");
@@ -470,4 +471,41 @@ export async function unityTest(cwd, unityPath) {
         `${cwd}/log_nodejs_full_wrapper.txt`
     );
     assert.equal(0, v2code_nodejs);
+=======
+    console.log('-------------------------With Full Wrapper test(quickjs)-------------------------');
+    await runPuertsMake(join(cwd, '../../native_src'), {
+        backend: 'quickjs',
+        platform: platform,
+        config: 'Debug',
+        arch: process.arch,
+        websocket: 1
+    });
+
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+
+    console.log("[Puer] Building testplayer for v2");
+    mkdir("-p", `${cwd}/build/v2`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+    console.log("[Puer] Running test in v2");
+    const v2code_qjs = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code;
+    
+    console.log('-------------------------With Full Wrapper test(mult)-------------------------');
+    await runPuertsMake(join(cwd, '../../native_src'), {
+        backend: 'mult',
+        platform: platform,
+        config: 'Debug',
+        arch: process.arch,
+        websocket: 1
+    });
+
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+
+    console.log("[Puer] Building testplayer for v2");
+    mkdir("-p", `${cwd}/build/v2`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+    console.log("[Puer] Running test in v2");
+    const v2code_mult = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log5.txt`).code;
+
+    assert.equal(0, v2code_mult);
+>>>>>>> fix-issue-2013-debug-crash
 }

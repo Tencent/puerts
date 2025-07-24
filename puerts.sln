@@ -1,0 +1,35 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unreal", "unreal", "{33E0AF2B-7FAF-B55E-7BCE-F381B1249B6F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Puerts", "Puerts", "{54E25BDA-0EAB-B02D-1832-AEAAFEE953D1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{57CDE7D1-CABB-4441-7304-9EFBCA2827FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpParamDefaultValueMetas.ubtplugin", "unreal\Puerts\Source\CSharpParamDefaultValueMetas\CSharpParamDefaultValueMetas.ubtplugin.csproj", "{EEAEA0E9-C864-BF45-4CFC-3B00433C8115}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EEAEA0E9-C864-BF45-4CFC-3B00433C8115}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEAEA0E9-C864-BF45-4CFC-3B00433C8115}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEAEA0E9-C864-BF45-4CFC-3B00433C8115}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEAEA0E9-C864-BF45-4CFC-3B00433C8115}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{54E25BDA-0EAB-B02D-1832-AEAAFEE953D1} = {33E0AF2B-7FAF-B55E-7BCE-F381B1249B6F}
+		{57CDE7D1-CABB-4441-7304-9EFBCA2827FE} = {54E25BDA-0EAB-B02D-1832-AEAAFEE953D1}
+		{EEAEA0E9-C864-BF45-4CFC-3B00433C8115} = {57CDE7D1-CABB-4441-7304-9EFBCA2827FE}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {77C9D240-A60C-417C-9370-B2DC4AAF89F3}
+	EndGlobalSection
+EndGlobal

@@ -807,7 +807,35 @@ namespace PUERTS_NAMESPACE
 
     bool JSEngine::InspectorTick()
     {
-        return BackendEnv.InspectorTick() ? 1 : 0;
+        try 
+        {
+#ifdef THREAD_SAFE
+            v8::Locker Locker(MainIsolate);
+#endif
+            v8::Isolate::Scope IsolateScope(MainIsolate);
+            v8::HandleScope HandleScope(MainIsolate);
+            v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);
+            v8::Context::Scope ContextScope(Context);
+            
+            // 添加异常捕获，避免调试器错误导致崩溃
+            v8::TryCatch TryCatch(MainIsolate);
+            
+            bool result = BackendEnv.InspectorTick();
+            
+            if (TryCatch.HasCaught())
+            {
+                // Log exception but don't crash, debugger errors shouldn't affect main program
+                SetLastException(TryCatch.Exception());
+                return false;
+            }
+            
+            return result;
+        }
+        catch (...)
+        {
+            // 捕获所有异常，确保不会崩溃
+            return false;
+        }
     }
     
     bool JSEngine::ClearModuleCache(const char* Path)

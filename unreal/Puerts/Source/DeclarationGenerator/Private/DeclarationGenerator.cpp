@@ -56,6 +56,15 @@
 #define TYPE_DECL_END "// __TYPE_DECL_END"
 #define TYPE_ASSOCIATION "ASSOCIATION"
 
+bool bSearchAllPluginBP = true;
+static FAutoConsoleVariableRef CVarSearchAllPluginBP(TEXT("bSearchAllPluginBP"), bSearchAllPluginBP, TEXT(".\n"), ECVF_Default);
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+#define GET_VERSION_ID(PD) LexToString(PD->CookedHash)
+#else
+#define GET_VERSION_ID(PD) PD->PackageGuid.ToString()
+#endif
+
 bool IsTypeScriptKeyword(const FString& InputString)
 {
     static TArray<FString> TypeScriptKeywords = {TEXT("break"), TEXT("as"), TEXT("any"), TEXT("switch"), TEXT("case"), TEXT("if"),
@@ -406,10 +415,15 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
     End();
 
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-    PlatformFile.CopyDirectoryTree(*(FPaths::ProjectDir() / TEXT("Typing")),
-        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing")), false);
-    PlatformFile.CopyDirectoryTree(*(FPaths::ProjectContentDir() / TEXT("JavaScript")),
-        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Content") / TEXT("JavaScript")), true);
+    // 删除旧版本提交到Plugin的ue/ue_bp d.ts 避免残留污染编译
+    FString PuertsBaseDir = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir();
+    PlatformFile.DeleteFile(*(PuertsBaseDir / TEXT("Typing/ue/ue.d.ts")));
+    PlatformFile.DeleteFile(*(PuertsBaseDir / TEXT("Typing/ue/ue_bp.d.ts")));
+
+    FString ProjectTypingDir = (FPaths::ProjectDir() / TEXT("Typing"));
+    PlatformFile.CopyDirectoryTree(*ProjectTypingDir, *(PuertsBaseDir / TEXT("Typing")), false);
+    PlatformFile.CopyDirectoryTree(
+        *(FPaths::ProjectContentDir() / TEXT("JavaScript")), *(PuertsBaseDir / TEXT("Content") / TEXT("JavaScript")), true);
 
     const FString UEDeclarationFilePath = FPaths::ProjectDir() / TEXT("Typing/ue/ue.d.ts");
 
@@ -516,18 +530,27 @@ void FTypeScriptDeclarationGenerator::NamespaceEnd(UObject* Obj, FStringBuffer& 
 void FTypeScriptDeclarationGenerator::WriteOutput(UObject* Obj, const FStringBuffer& Buff)
 {
     const UPackage* Pkg = GetPackage(Obj);
-    bool IsPluginBPClass = Pkg && !Obj->IsNative() && !Pkg->GetName().StartsWith(TEXT("/Game/"));
-    if (Pkg && !Obj->IsNative() && !IsPluginBPClass && BlueprintTypeDeclInfoCache.Find(Pkg->GetFName()))
+    if (Pkg && !Obj->IsNative())
     {
         FStringBuffer Temp;
         Temp.Prefix = Output.Prefix;
         NamespaceBegin(Obj, Temp);
         Temp << Buff;
         NamespaceEnd(Obj, Temp);
-        BlueprintTypeDeclInfoCache[Pkg->GetFName()].NameToDecl.Add(Obj->GetFName(), Temp.Buffer);
-        BlueprintTypeDeclInfoCache[Pkg->GetFName()].IsExist = true;
+
+        BlueprintTypeDeclInfo* BlueprintTypeDeclInfo = BlueprintTypeDeclInfoCache.Find(Pkg->GetFName());
+        if (!BlueprintTypeDeclInfo)
+        {
+            BlueprintTypeDeclInfoCache.Add(Pkg->GetFName(), {TMap<FName, FString>(), FString(TEXT("")), true, false, true});
+        }
+        BlueprintTypeDeclInfo = BlueprintTypeDeclInfoCache.Find(Pkg->GetFName());
+        if (BlueprintTypeDeclInfo)
+        {
+            BlueprintTypeDeclInfo->NameToDecl.Add(Obj->GetFName(), Temp.Buffer);
+            BlueprintTypeDeclInfo->IsExist = true;
+        }
     }
-    else if (Obj->IsNative() || IsPluginBPClass)
+    else
     {
         NamespaceBegin(Obj, Output);
         Output << Buff;
@@ -609,6 +632,20 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
     FARFilter BPFilter;
     BPFilter.PackagePaths.Add(PackagePath);
     BPFilter.PackagePaths.Add(FName(TEXT("/Engine")));
+    if (bSearchAllPluginBP)
+    {
+        TArray<TSharedRef<IPlugin>> AllPlugins = IPluginManager::Get().GetDiscoveredPlugins();
+        for (TSharedRef<IPlugin> Plugin : AllPlugins)
+        {
+            if (!Plugin->CanContainContent())
+            {
+                continue;
+            }
+            FString PluginConfigFilename = Plugin->GetBaseDir();
+            FString PluginName = Plugin->GetName();
+            BPFilter.PackagePaths.Add(FName(FString::Printf(TEXT("/%s"), *PluginName)));
+        }
+    }
     BPFilter.bRecursivePaths = true;
     BPFilter.bRecursiveClasses = true;
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
@@ -638,7 +675,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
 
         if (PackageData && BlueprintTypeDeclInfoPtr)
         {
-            auto FileVersion = PackageData->PackageGuid.ToString();
+            auto FileVersion = GET_VERSION_ID(PackageData);
             BlueprintTypeDeclInfoPtr->IsExist = true;
             BlueprintTypeDeclInfoPtr->Changed = InGenFull || (FileVersion != BlueprintTypeDeclInfoPtr->FileVersionString);
             BlueprintTypeDeclInfoPtr->FileVersionString = FileVersion;
@@ -646,7 +683,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
         else
         {
             BlueprintTypeDeclInfoCache.Add(AssetData.PackageName,
-                {TMap<FName, FString>(), PackageData ? PackageData->PackageGuid.ToString() : FString(TEXT("")), true, true, false});
+                {TMap<FName, FString>(), PackageData ? GET_VERSION_ID(PackageData) : FString(TEXT("")), true, true, false});
         }
     }
 }
@@ -955,7 +992,11 @@ bool FTypeScriptDeclarationGenerator::GenFunction(
             else
             {
                 FStringBuffer TmpBuf;
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+                TMap<FName, FString>* MetaMap = FMetaData::GetMapForObject(Function);
+#else
                 TMap<FName, FString>* MetaMap = UMetaData::GetMapForObject(Function);
+#endif
                 const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
                 FString* DefaultValuePtr = nullptr;
                 if (MetaMap)
@@ -1642,7 +1683,7 @@ public:
 
                     for (auto& Arg : Args)
                     {
-                        if (Arg.ToUpper().Equals(TEXT("FULL")))
+                        if (Arg.ToUpper().Contains(TEXT("FULL")))
                         {
                             GenFull = true;
                         }

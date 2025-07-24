@@ -1108,6 +1108,7 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         objMapper.setEnvPrivate(ptr);
     }
 
+<<<<<<< HEAD
     function pesapi_trace_native_object_lifecycle(env: number, onEnter:number, onExit:number) {
         const enterCallback = engine.unityApi.getWasmTableEntry(onEnter);
         const exitCallback = engine.unityApi.getWasmTableEntry(onExit);
@@ -1129,6 +1130,46 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         GetWebGLPapiVersion: GetWebGLPapiVersion,
         CreateWebGLPapiEnvRef: CreateWebGLPapiEnvRef,
         TranToString: TranToString,
+=======
+    /*
+    interface APIInfo {
+        func: Function
+        sig: string
+    }
+
+    const apiInfo: APIInfo[] = [
+        {func: pesapi_create_array, sig: "ii"},
+        {func: pesapi_create_object, sig: "ii"},
+        {func: pesapi_create_function, sig: "iiiii"},
+        {func: pesapi_create_class, sig: "iii"},
+        {func: pesapi_get_array_length, sig: "iii"},
+        {func: pesapi_native_object_to_value, sig: "iiiii"},
+        {func: pesapi_throw_by_string, sig: "vii"},
+        //{func: pesapi_open_scope, sig: "ii"},
+        {func: pesapi_open_scope_placement, sig: "iii"},
+        {func: pesapi_has_caught, sig: "ii"},
+        {func: pesapi_get_exception_as_string, sig: "iii"},
+        //{func: pesapi_close_scope, sig: "vi"},
+        {func: pesapi_close_scope_placement, sig: "vi"},
+        {func: pesapi_create_value_ref, sig: "iiii"},
+        {func: pesapi_release_value_ref, sig: "vi"},
+        {func: pesapi_get_value_from_ref, sig: "viii"},
+        {func: pesapi_get_property, sig: "viiii"},
+        {func: pesapi_set_property, sig: "viiii"},
+        {func: pesapi_get_private, sig: "iiii"},
+        {func: pesapi_set_private, sig: "iiii"},
+        {func: pesapi_get_property_uint32, sig: "viiii"},
+        {func: pesapi_set_property_uint32, sig: "viiii"},
+        {func: pesapi_call_function, sig: "viiiiii"},
+        {func: pesapi_eval, sig: "viiiii"},
+        {func: pesapi_global, sig: "ii"},
+        {func: pesapi_set_env_private, sig: "vii"}
+    ];
+    */
+
+    return {
+        GetWebGLFFIApi: GetWebGLFFIApi,
+>>>>>>> fix-issue-2013-debug-crash
         pesapi_create_array_js: pesapi_create_array,
         pesapi_create_object_js: pesapi_create_object,
         pesapi_create_function_js: pesapi_create_function,
@@ -1152,9 +1193,13 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         pesapi_call_function_js: pesapi_call_function,
         pesapi_eval_js: pesapi_eval,
         pesapi_global_js: pesapi_global,
+<<<<<<< HEAD
         pesapi_set_env_private_js: pesapi_set_env_private,
         pesapi_trace_native_object_lifecycle_js: pesapi_trace_native_object_lifecycle,
         pesapi_set_registry_js: pesapi_set_registry
+=======
+        pesapi_set_env_private_js: pesapi_set_env_private
+>>>>>>> fix-issue-2013-debug-crash
     };
 }
 

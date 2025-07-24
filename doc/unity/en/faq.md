@@ -131,3 +131,7 @@ By default, reflection is not used to obtain extension functions after packaging
 #### `GetComponent<XXX>()` is null in CS, but not null when called in JS, why?
 
 Actually, the C# object is not null. It is the `==` operator overloaded by UnityEngine.Object. When an object is Destroyed, uninitialized, etc., `obj == null` returns true; `GetComponent<XXX>()` also returns null if the component does not exist, and the result of the
+
+#### undefined symbol: InitialPuerts
+
+No code has been generated. Please follow the [il2cpp Optimization Features/Usage Steps](performance/il2cpp.md#usage-steps) Steps to proceed.

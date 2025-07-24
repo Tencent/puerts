@@ -20,7 +20,6 @@
 #include "JSLogger.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JSGeneratedClass.h"
-#include "JSAnimGeneratedClass.h"
 #include "JSWidgetGeneratedClass.h"
 #include "JSGeneratedFunction.h"
 #endif
@@ -841,13 +840,6 @@ FJsEnvImpl::~FJsEnvImpl()
                 if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSWidgetGeneratedClass))
                 {
                     JSWidgetGeneratedClass->Release();
-                }
-            }
-            else if (auto JSAnimGeneratedClass = Cast<UJSAnimGeneratedClass>(GeneratedClass))
-            {
-                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSWidgetGeneratedClass))
-                {
-                    JSAnimGeneratedClass->Release();
                 }
             }
         }
@@ -4433,11 +4425,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         New->StaticLink(true);
 
         auto CDO = New->GetDefaultObject();
-        if (auto AnimClass = Cast<UAnimBlueprintGeneratedClass>(New))
-        {
-            AnimClass->UpdateCustomPropertyListForPostConstruction();
-        }
-        else if (auto WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(New))
+        if (auto WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(New))
         {
             WidgetClass->UpdateCustomPropertyListForPostConstruction();
         }

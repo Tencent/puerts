@@ -558,12 +558,17 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
             UnEscape = Info[1]->BooleanValue(Isolate);
         }
         auto Path = FV8Utils::ToFString(Isolate, Info[0]);
-        auto Object =
-            StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
-        if (Object)
+
+        if (FPackageName::DoesPackageExist(FSoftObjectPath(Path).GetLongPackageName()))
         {
-            auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
-            Info.GetReturnValue().Set(Result);
+            auto Object =
+                StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
+            if (Object)
+            {
+                auto Result =
+                    FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
+                Info.GetReturnValue().Set(Result);
+            }
         }
         else
         {

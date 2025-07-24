@@ -32,8 +32,13 @@ struct AutoRegisterForFGuid
                                     MakeOverload(FString(FGuid::*)(EGuidFormats Format) const, &FGuid::ToString)))
 #endif
             .Function("NewGuid", MakeFunction(&FGuid::NewGuid))
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
+            .Function("Parse", SelectFunction(bool (*)(const FString&, FGuid&), &FGuid::Parse))
+            .Function("ParseExact", SelectFunction(bool (*)(const FString&, EGuidFormats, FGuid&), &FGuid::ParseExact))
+#else
             .Function("Parse", MakeFunction(&FGuid::Parse))
             .Function("ParseExact", MakeFunction(&FGuid::ParseExact))
+#endif
             .Register();
     }
 };

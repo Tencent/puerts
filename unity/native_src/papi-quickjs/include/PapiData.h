@@ -7,15 +7,6 @@
 #include <vector>
 #include "CppObjectMapperQuickjs.h"
 
-enum
-{
-    JS_ATOM_NULL_,
-#define DEF(name, str) JS_ATOM_##name,
-#include "quickjs-atom.h"
-#undef DEF
-    JS_ATOM_END,
-};
-
 namespace pesapi
 {
 namespace qjsimpl
@@ -24,7 +15,7 @@ namespace qjsimpl
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(JSContext *ctx)
-        : context_persistent(JS_DupContext(ctx))
+        : context_persistent(ctx)
         , ref_count(1)
         , env_life_cycle_tracker(pesapi::qjsimpl::CppObjectMapper::GetEnvLifeCycleTracker(ctx))
     {
@@ -32,7 +23,6 @@ struct pesapi_env_ref__
     
     ~pesapi_env_ref__()
     {
-        JS_FreeContext(context_persistent);
     }
 
     JSContext *context_persistent;
@@ -53,10 +43,14 @@ struct pesapi_value_ref__ : pesapi_env_ref__
     explicit pesapi_value_ref__(JSContext *ctx, JSValue v, uint32_t field_count)
         : pesapi_env_ref__(ctx), value_persistent(JS_DupValue(ctx, v)), internal_field_count(field_count)
     {
+        auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(ctx);
+        mapper->AddStrongRefObject(&value_persistent);
     }
     
     ~pesapi_value_ref__()
     {
+        auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(context_persistent);
+        mapper->RemoveStrongRefObject(&value_persistent);
         JS_FreeValue(context_persistent, value_persistent);
     }
 

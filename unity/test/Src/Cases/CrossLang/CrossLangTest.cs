@@ -147,11 +147,14 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve] B = 213
     }
 
+<<<<<<< HEAD
     public class NewObject
     {
 
     }
    
+=======
+>>>>>>> fix-issue-2013-debug-crash
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
     {
@@ -1366,6 +1369,7 @@ namespace Puerts.UnitTest
             Assert.AreEqual("9999", cb1(9999));
         }
 
+<<<<<<< HEAD
         [Test]
         public void BigULongTest()
         {
@@ -1385,5 +1389,32 @@ namespace Puerts.UnitTest
             // 9223372036854775808
             Assert.AreEqual((((ulong)long.MaxValue) + 1).ToString(), res);
         }
+=======
+#if !PUERTS_GENERAL
+        [Test]
+        public void PassDestroyedUnityObjectTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.UsingFunc<UnityEngine.Object, bool>();
+            // 无效的UnityEninge.Object会以null的形式传入脚本
+            var is_null = jsEnv.Eval<Func<UnityEngine.Object, bool>>(@"
+function __PDUOTF(o){
+    return o === null;
+}
+__PDUOTF;");
+            Assert.AreEqual(true, is_null(null));
+            UnityEngine.Texture2D tex2D = new UnityEngine.Texture2D(1, 1);
+            try
+            {
+                Assert.AreEqual(false, is_null(tex2D));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(tex2D);
+            }
+            Assert.AreEqual(true, is_null(tex2D));
+        }
+#endif
+>>>>>>> fix-issue-2013-debug-crash
     }
 }
