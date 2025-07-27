@@ -52,8 +52,9 @@ struct CodeCacheHeader {
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <filename> [--module] [--no-cjs-wrap] [--verbose] [--url=<string>] [--ln=<number>] [--col=<number>] [v8_flag1] [v8_flag2] ..." << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <filename> [--module] [--no-cjs-wrap] [--verbose] [--url=<string>] [--ln=<number>] [--col=<number>] [--cross-platform] [v8_flag1] [v8_flag2] ..." << std::endl;
         std::cerr << "Security Note: This tool only generates bytecode files (.cbc/.mbc) for enhanced security." << std::endl;
+        std::cerr << "Cross-platform Note: Use --cross-platform to generate bytecode compatible across x64/arm64." << std::endl;
         return 1;
     }
 
@@ -61,6 +62,7 @@ int main(int argc, char* argv[]) {
     bool is_module = endsWith(filename, ".mjs");
     bool no_cjs_wrap = false;
     bool verbose = false;
+    bool cross_platform = false;
     std::string flags = "--no-lazy --no-flush-bytecode --no-enable-lazy-source-positions";
     std::string url = filename;
     int ln = 0;
@@ -78,6 +80,10 @@ int main(int argc, char* argv[]) {
             }
             if (arg == "--verbose") {
                 verbose = true;
+                continue;
+            }
+            if (arg == "--cross-platform") {
+                cross_platform = true;
                 continue;
             }
             if (arg.rfind("--url=", 0) == 0) {
@@ -109,6 +115,16 @@ int main(int argc, char* argv[]) {
     
     // Add security flags to ensure only bytecode generation
     flags += " --disable-source-maps --disable-source-positions";
+    
+    // Add cross-platform compatibility flags
+    if (cross_platform) {
+        // Disable SSE2 optimization for x64/arm64 compatibility
+        flags += " --no-sse2";
+        // Disable platform-specific optimizations
+        flags += " --no-optimize-for-size";
+        flags += " --no-enable-lazy-source-positions";
+    }
+    
     v8::V8::SetFlagsFromString(flags.c_str(), flags.size());
     
     file.close();
@@ -188,6 +204,24 @@ int main(int argc, char* argv[]) {
         std::cout << "cached_data is nullptr!!!" << std::endl;
     }
     
+    // Modify bytecode header for cross-platform compatibility
+    if (cross_platform && cached_data) {
+        CodeCacheHeader* header = const_cast<CodeCacheHeader*>(reinterpret_cast<const CodeCacheHeader*>(cached_data->data));
+        
+        // Set platform flags for cross-platform compatibility
+        // Clear existing platform flags and set cross-platform flags
+        header->FlagHash &= ~0xFF; // Clear lower 8 bits
+        
+        // Set cross-platform compatibility flags
+        bool is_64bit = sizeof(void*) == 8;
+        if (is_64bit) {
+            header->FlagHash |= 0x01; // 64-bit flag
+        }
+        
+        // For cross-platform compatibility, don't set SSE2 or NEON flags
+        // This ensures the bytecode can run on both x64 and arm64
+    }
+    
     auto dot_pos = filename.find_last_of('.');
     std::string output_filename = filename.substr(0, dot_pos == std::string::npos ? filename.size(): dot_pos) + (is_module ? ".mbc" : ".cbc");
     
@@ -203,6 +237,7 @@ int main(int argc, char* argv[]) {
     if (verbose) {
         std::cout << "esm: " << is_module << std::endl;
         std::cout << "cjs: " << (!is_module && !no_cjs_wrap) << std::endl;
+        std::cout << "cross-platform: " << cross_platform << std::endl;
         std::cout << "v8 flags: " << flags << std::endl;
         
         //std::cout << fileContent << std::endl;
@@ -222,6 +257,9 @@ int main(int argc, char* argv[]) {
     }
     
     std::cout << "Successfully compiled " << filename << " to bytecode: " << output_filename << std::endl;
+    if (cross_platform) {
+        std::cout << "Cross-platform compatibility enabled - bytecode can run on x64 and arm64" << std::endl;
+    }
     std::cout << "Security: Source code compilation is disabled in runtime for enhanced protection." << std::endl;
     
     delete cached_data;

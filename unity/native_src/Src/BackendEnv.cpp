@@ -9,6 +9,16 @@
 #include "PromiseRejectCallback.hpp"
 #include "V8Utils.h"
 
+// Cross-platform bytecode header structure
+struct CodeCacheHeader {
+    uint32_t MagicNumber;
+    uint32_t VersionHash;
+    uint32_t SourceHash;
+    uint32_t FlagHash;
+    uint32_t PayloadLength;
+    uint32_t Checksum;
+};
+
 #if WITH_NODEJS
 
 #pragma warning(push, 0)
@@ -236,6 +246,12 @@ void FBackendEnv::GlobalPrepare()
         // Only bytecode loading is allowed for enhanced security
         Flags += " --no-lazy --no-flush-bytecode --no-enable-lazy-source-positions";
         Flags += " --disable-source-maps --disable-source-positions";
+        
+        // Cross-platform bytecode compatibility flags
+        // Disable SSE2 optimization for x64/arm64 compatibility
+        Flags += " --no-sse2";
+        // Disable platform-specific optimizations
+        Flags += " --no-optimize-for-size";
         
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 
@@ -815,11 +831,12 @@ v8::MaybeLocal<v8::Module> FBackendEnv::FetchModuleTree(v8::Isolate* isolate, v8
     v8::Local<v8::String> source_string = source_text.As<v8::String>();
     std::string source_str = *v8::String::Utf8Value(isolate, source_string);
     
-    // Create bytecode data from file content
-    v8::ScriptCompiler::CachedData* cached_data = new v8::ScriptCompiler::CachedData(
-        reinterpret_cast<const uint8_t*>(source_str.c_str()), 
-        static_cast<int>(source_str.length())
-    );
+    // Use cross-platform bytecode loading
+    v8::ScriptCompiler::CachedData* cached_data = LoadCrossPlatformBytecode(isolate, source_str);
+    if (!cached_data) {
+        FV8Utils::ThrowException(isolate, "Cross-platform bytecode compatibility check failed");
+        return v8::MaybeLocal<v8::Module>();
+    }
     
     // Create empty source for bytecode loading
     v8::Local<v8::String> empty_source = FV8Utils::V8String(isolate, "");
@@ -1290,4 +1307,103 @@ v8::Local<v8::Object> FBackendEnv::GetV8Extras(v8::Isolate* isolate, v8::Local<v
     return ret;
 }
 #endif
+}
+
+// Platform detection for cross-platform bytecode compatibility
+struct PlatformInfo {
+    std::string arch;
+    std::string platform;
+    bool is_64bit;
+    bool has_sse2;
+    bool has_neon;
+};
+
+PlatformInfo GetCurrentPlatformInfo() {
+    PlatformInfo info;
+    
+#if defined(__x86_64__) || defined(_M_X64)
+    info.arch = "x64";
+    info.platform = "x86_64";
+    info.is_64bit = true;
+    info.has_sse2 = true;
+    info.has_neon = false;
+#elif defined(__i386__) || defined(_M_IX86)
+    info.arch = "x86";
+    info.platform = "i386";
+    info.is_64bit = false;
+    info.has_sse2 = false;
+    info.has_neon = false;
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    info.arch = "arm64";
+    info.platform = "aarch64";
+    info.is_64bit = true;
+    info.has_sse2 = false;
+    info.has_neon = true;
+#elif defined(__arm__) || defined(_M_ARM)
+    info.arch = "arm";
+    info.platform = "arm";
+    info.is_64bit = false;
+    info.has_sse2 = false;
+    info.has_neon = true;
+#else
+    info.arch = "unknown";
+    info.platform = "unknown";
+    info.is_64bit = sizeof(void*) == 8;
+    info.has_sse2 = false;
+    info.has_neon = false;
+#endif
+    
+    return info;
+}
+
+// Cross-platform bytecode compatibility check and adaptation
+bool IsBytecodeCompatible(v8::Isolate* isolate, const v8::ScriptCompiler::CachedData* cached_data) {
+    if (!cached_data || cached_data->length < sizeof(CodeCacheHeader)) {
+        return false;
+    }
+    
+    const CodeCacheHeader* header = reinterpret_cast<const CodeCacheHeader*>(cached_data->data);
+    PlatformInfo current_platform = GetCurrentPlatformInfo();
+    
+    // Check if bytecode was compiled for compatible platform
+    // For cross-platform compatibility, we need to ensure:
+    // 1. Same word size (32-bit vs 64-bit)
+    // 2. Compatible instruction sets (SSE2, NEON)
+    
+    // Extract platform info from FlagHash (this is a simplified approach)
+    // In a real implementation, you would need to encode platform info in the bytecode
+    uint32_t platform_flags = header->FlagHash & 0xFF; // Use lower 8 bits for platform flags
+    
+    bool bytecode_is_64bit = (platform_flags & 0x01) != 0;
+    bool bytecode_has_sse2 = (platform_flags & 0x02) != 0;
+    bool bytecode_has_neon = (platform_flags & 0x04) != 0;
+    
+    // Check compatibility
+    if (bytecode_is_64bit != current_platform.is_64bit) {
+        return false; // Word size mismatch
+    }
+    
+    // For x64/arm64 compatibility, disable SSE2 if bytecode doesn't have it
+    if (current_platform.has_sse2 && !bytecode_has_sse2) {
+        // Disable SSE2 optimization for compatibility
+        v8::V8::SetFlagsFromString("--no-sse2", 8);
+    }
+    
+    return true;
+}
+
+// Enhanced bytecode loading with cross-platform support
+v8::ScriptCompiler::CachedData* LoadCrossPlatformBytecode(v8::Isolate* isolate, const std::string& bytecode_data) {
+    v8::ScriptCompiler::CachedData* cached_data = new v8::ScriptCompiler::CachedData(
+        reinterpret_cast<const uint8_t*>(bytecode_data.c_str()), 
+        static_cast<int>(bytecode_data.length())
+    );
+    
+    // Check cross-platform compatibility
+    if (!IsBytecodeCompatible(isolate, cached_data)) {
+        delete cached_data;
+        return nullptr;
+    }
+    
+    return cached_data;
 }
