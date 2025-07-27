@@ -232,6 +232,11 @@ void FBackendEnv::GlobalPrepare()
 #if V8_MAJOR_VERSION <= 9
         Flags += " --no-harmony-top-level-await";
 #endif
+        // Security flags to disable source code compilation
+        // Only bytecode loading is allowed for enhanced security
+        Flags += " --no-lazy --no-flush-bytecode --no-enable-lazy-source-positions";
+        Flags += " --disable-source-maps --disable-source-positions";
+        
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 
 #if defined(WITH_NODEJS)
@@ -783,6 +788,17 @@ v8::MaybeLocal<v8::Module> FBackendEnv::FetchModuleTree(v8::Isolate* isolate, v8
         FV8Utils::ThrowException(isolate, "source_text is not a string!");
         return v8::MaybeLocal<v8::Module>();
     }
+    
+    // Check if file is bytecode (.cbc or .mbc)
+    std::string file_path_str = *v8::String::Utf8Value(isolate, absolute_file_path);
+    bool is_bytecode = file_path_str.ends_with(".cbc") || file_path_str.ends_with(".mbc");
+    
+    if (!is_bytecode) {
+        // Disable source code compilation for security - only bytecode is allowed
+        FV8Utils::ThrowException(isolate, "Source code compilation is disabled for security. Only bytecode (.cbc/.mbc) files are allowed.");
+        return v8::MaybeLocal<v8::Module>();
+    }
+    
     v8::Local<v8::String> script_url = absolute_file_path;
     if (pathForDebug.size() > 0 )
     {
@@ -794,10 +810,32 @@ v8::MaybeLocal<v8::Module> FBackendEnv::FetchModuleTree(v8::Isolate* isolate, v8
     v8::ScriptOrigin origin(script_url, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0), v8::True(isolate),
         v8::Local<v8::Integer>(), v8::Local<v8::Value>(), v8::False(isolate), v8::False(isolate), v8::True(isolate));
 #endif
-    v8::ScriptCompiler::Source source(source_text.As<v8::String>(), origin);
+    
+    // Load bytecode data
+    v8::Local<v8::String> source_string = source_text.As<v8::String>();
+    std::string source_str = *v8::String::Utf8Value(isolate, source_string);
+    
+    // Create bytecode data from file content
+    v8::ScriptCompiler::CachedData* cached_data = new v8::ScriptCompiler::CachedData(
+        reinterpret_cast<const uint8_t*>(source_str.c_str()), 
+        static_cast<int>(source_str.length())
+    );
+    
+    // Create empty source for bytecode loading
+    v8::Local<v8::String> empty_source = FV8Utils::V8String(isolate, "");
+    v8::ScriptCompiler::Source source(empty_source, origin, cached_data);
+    
     v8::Local<v8::Module> module;
-    if (!v8::ScriptCompiler::CompileModule(isolate, &source).ToLocal(&module))
+    if (!v8::ScriptCompiler::CompileModule(isolate, &source, v8::ScriptCompiler::kConsumeCodeCache).ToLocal(&module))
     {
+        delete cached_data;
+        return v8::MaybeLocal<v8::Module>();
+    }
+    
+    // Check if bytecode was rejected
+    if (cached_data->rejected) {
+        delete cached_data;
+        FV8Utils::ThrowException(isolate, "Invalid bytecode file or version mismatch");
         return v8::MaybeLocal<v8::Module>();
     }
 
@@ -856,9 +894,11 @@ v8::MaybeLocal<v8::Module> FBackendEnv::FetchModuleTree(v8::Isolate* isolate, v8
         PathToModuleMap.erase(absolute_file_path_str);
         ScriptIdToModuleInfo.erase(script_id);
         delete info;
+        delete cached_data;
         return v8::MaybeLocal<v8::Module>();
     }
 
+    delete cached_data;
     return module;
 }
 

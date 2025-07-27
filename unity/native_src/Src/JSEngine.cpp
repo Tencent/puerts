@@ -293,25 +293,60 @@ namespace PUERTS_NAMESPACE
 #endif
         v8::TryCatch TryCatch(Isolate);
 
-        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
-        if (CompiledScript.IsEmpty())
-        {
+        // Check if this is a bytecode file
+        std::string path_str = Path ? Path : "";
+        bool is_bytecode = path_str.ends_with(".cbc") || path_str.ends_with(".mbc");
+        
+        if (is_bytecode) {
+            // Load bytecode
+            std::string code_str = Code ? Code : "";
+            v8::ScriptCompiler::CachedData* cached_data = new v8::ScriptCompiler::CachedData(
+                reinterpret_cast<const uint8_t*>(code_str.c_str()), 
+                static_cast<int>(code_str.length())
+            );
+            
+            // Create empty source for bytecode loading
+            v8::Local<v8::String> empty_source = FV8Utils::V8String(Isolate, "");
+            v8::ScriptCompiler::Source script_source(empty_source, Origin, cached_data);
+            
+            auto CompiledScript = v8::ScriptCompiler::Compile(Context, &script_source, v8::ScriptCompiler::kConsumeCodeCache);
+            if (CompiledScript.IsEmpty())
+            {
+                delete cached_data;
+                SetLastException(TryCatch.Exception());
+                return false;
+            }
+            
+            // Check if bytecode was rejected
+            if (cached_data->rejected) {
+                delete cached_data;
+                FV8Utils::ThrowException(Isolate, "Invalid bytecode file or version mismatch");
+                SetLastException(TryCatch.Exception());
+                return false;
+            }
+            
+            auto maybeValue = CompiledScript.ToLocalChecked()->Run(Context);
+            if (TryCatch.HasCaught())
+            {
+                delete cached_data;
+                SetLastException(TryCatch.Exception());
+                return false;
+            }
+
+            if (!maybeValue.IsEmpty())
+            {
+                ResultInfo.Result.Reset(Isolate, maybeValue.ToLocalChecked());
+            }
+            
+            delete cached_data;
+            return true;
+        } else {
+            // Disable source code compilation for security - only bytecode is allowed
+            // This prevents external execution of JS source code
+            FV8Utils::ThrowException(Isolate, "Source code compilation is disabled for security. Only bytecode (.cbc/.mbc) files are allowed.");
             SetLastException(TryCatch.Exception());
             return false;
         }
-        auto maybeValue = CompiledScript.ToLocalChecked()->Run(Context);//error info output
-        if (TryCatch.HasCaught())
-        {
-            SetLastException(TryCatch.Exception());
-            return false;
-        }
-
-        if (!maybeValue.IsEmpty())
-        {
-            ResultInfo.Result.Reset(Isolate, maybeValue.ToLocalChecked());
-        }
-
-        return true;
     }
 
     JSObject *JSEngine::CreateJSObject(v8::Isolate *InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)

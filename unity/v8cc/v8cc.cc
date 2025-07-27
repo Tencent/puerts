@@ -53,6 +53,7 @@ struct CodeCacheHeader {
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <filename> [--module] [--no-cjs-wrap] [--verbose] [--url=<string>] [--ln=<number>] [--col=<number>] [v8_flag1] [v8_flag2] ..." << std::endl;
+        std::cerr << "Security Note: This tool only generates bytecode files (.cbc/.mbc) for enhanced security." << std::endl;
         return 1;
     }
 
@@ -106,6 +107,8 @@ int main(int argc, char* argv[]) {
 
     std::string fileContent = buffer.str();
     
+    // Add security flags to ensure only bytecode generation
+    flags += " --disable-source-maps --disable-source-positions";
     v8::V8::SetFlagsFromString(flags.c_str(), flags.size());
     
     file.close();
@@ -217,6 +220,9 @@ int main(int argc, char* argv[]) {
         std::cout << "PayloadLength : " << cch->PayloadLength << std::endl;
         std::cout << "Checksum : " << cch->Checksum << std::endl;
     }
+    
+    std::cout << "Successfully compiled " << filename << " to bytecode: " << output_filename << std::endl;
+    std::cout << "Security: Source code compilation is disabled in runtime for enhanced protection." << std::endl;
     
     delete cached_data;
     
