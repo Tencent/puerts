@@ -168,7 +168,7 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
         // 生成project 用于跑wrapper
         writeFileSync(
             join(workdir, `${testProjectName}.csproj`),
-            originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, false), '</Project>'].join('\n'))
+            originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, false), '</Project>'].join('\n')).replace('<ImplicitUsings>enable</ImplicitUsings>', '<ImplicitUsings>disable</ImplicitUsings>')
         );
 
         assert.equal(0, exec(`dotnet build ${testProjectName}.csproj -p:StartupObject=PuerGen -v quiet`, { cwd: workdir }).code);
@@ -181,7 +181,7 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     // 生成csproj
     writeFileSync(
         join(workdir, `${testProjectName}.csproj`),
-        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, !runInReflection), '</Project>'].join('\n'))
+        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, !runInReflection), '</Project>'].join('\n')).replace('<ImplicitUsings>enable</ImplicitUsings>', '<ImplicitUsings>disable</ImplicitUsings>')
     );
 
     // 运行测试
