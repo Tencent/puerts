@@ -1171,7 +1171,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1185,7 +1185,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1218,7 +1218,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1232,7 +1232,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }

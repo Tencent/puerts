@@ -10,7 +10,7 @@ using System;
 
 namespace Puerts
 {
-    public class BackendNodeJS : BackendV8
+    public class BackendNodeJS : BackendJs
     {
         IntPtr isolate;
         public BackendNodeJS(ILoader loader) : base(loader) { }
@@ -51,22 +51,22 @@ namespace Puerts
             PapiNodejsNative.NodejsLowMemoryNotification(isolate);
         }
 
-        public override bool IdleNotificationDeadline(double DeadlineInSeconds)
+        public bool IdleNotificationDeadline(double DeadlineInSeconds)
         {
             return PapiNodejsNative.NodejsIdleNotificationDeadline(isolate, DeadlineInSeconds);
         }
 
-        public override void RequestMinorGarbageCollectionForTesting()
+        public void RequestMinorGarbageCollectionForTesting()
         {
             PapiNodejsNative.NodejsRequestMinorGarbageCollectionForTesting(isolate);
         }
 
-        public override void RequestFullGarbageCollectionForTesting()
+        public void RequestFullGarbageCollectionForTesting()
         {
             PapiNodejsNative.NodejsRequestFullGarbageCollectionForTesting(isolate);
         }
 
-        public override void TerminateExecution()
+        public void TerminateExecution()
         {
             PapiNodejsNative.NodejsTerminateExecution(isolate);
         }
