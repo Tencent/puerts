@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DebugType>None</DebugType>
+    <DebugSymbols>False</DebugSymbols>
+    <IncludeSymbols>False</IncludeSymbols>
+  </PropertyGroup>
+</Project>

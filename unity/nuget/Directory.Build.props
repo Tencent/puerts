@@ -1,0 +1,57 @@
+<Project>
+  <PropertyGroup>
+    <DefineConstants>PUERTS_GENERAL;DISABLE_AUTO_REGISTER;PUERTS_REFLECT_ALL_EXTENSION</DefineConstants>
+
+    <NoWarn>NU5128</NoWarn>
+
+    <BuildPackageVersion>0.0.1</BuildPackageVersion>
+
+    <PackageProjectUrl>https://github.com/Tencent/puerts</PackageProjectUrl>
+
+    <Description>PUER(普洱) Typescript. Let's write your game in UE or Unity with TypeScript.</Description>
+    <Authors>Tencent</Authors>
+    <Copyright>Copyright (C) 2020 Tencent.</Copyright>
+
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>Icon128.png</PackageIcon>
+
+    <PackageTags>puerts;typescript;unity;unrealengine;v8;dotnet;quickjs;lua</PackageTags>
+
+    <PuertsCoreVersion>$(BuildPackageVersion)</PuertsCoreVersion>
+    <PuertsLuaVersion>$(BuildPackageVersion)</PuertsLuaVersion>
+    <PuertsNodeJsVersion>$(BuildPackageVersion)</PuertsNodeJsVersion>
+    <PuertsQuickJsVersion>$(BuildPackageVersion)</PuertsQuickJsVersion>
+    <PuertsV8Version>$(BuildPackageVersion)</PuertsV8Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\LICENSE" Pack="true" PackagePath="\" Link="Properties\LICENSE"/>
+    <None Include="..\..\..\unreal\Puerts\Resources\Icon128.png" Pack="true" PackagePath="\" Link="Properties\Icon128.png" />
+    <None Include="..\..\..\README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+
+  <!-- https://github.com/dotnet/sourcelink -->
+  <PropertyGroup Label="SourceLink">
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+  </PropertyGroup>
+
+  <!-- https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#continuousintegrationbuild -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+      <Deterministic>true</Deterministic>
+  	  <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup> 
+
+  <PropertyGroup>
+      <PuertsCurrentTargetFrameworks>net8.0</PuertsCurrentTargetFrameworks>
+      <PuertsNativeAssetsLinuxTargetFrameworks>net8.0</PuertsNativeAssetsLinuxTargetFrameworks>
+      <PuertsNativeAssetsWin32TargetFrameworks>net8.0</PuertsNativeAssetsWin32TargetFrameworks>
+      <PuertsNativeAssetsmacOSTargetFramework>net8.0</PuertsNativeAssetsmacOSTargetFramework>
+      <PuertsCurrentTargetmacOSPlatformVersion>14.0</PuertsCurrentTargetmacOSPlatformVersion>
+  </PropertyGroup>
+
+</Project>
