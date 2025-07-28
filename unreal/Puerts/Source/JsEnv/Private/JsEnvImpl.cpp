@@ -2550,7 +2550,7 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
     {
         TArray<TWeakObjectPtr<UDynamicDelegateProxy>>& Callbacks = AutoReleaseCallbacksMap.FindOrAdd(Owner);
 
-        DelegateProxy = NewObject<UDynamicDelegateProxy>(Owner);
+        DelegateProxy = NewObject<UDynamicDelegateProxy>();
 #ifdef THREAD_SAFE
         DelegateProxy->Isolate = Isolate;
 #endif
