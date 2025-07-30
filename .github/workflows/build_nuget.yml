@@ -1,0 +1,140 @@
+name: Build Nuget
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish package?'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    env:
+      NATIVE_BACKENDS: puerts papi-lua papi-quickjs papi-v8 papi-nodejs
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: windows-2022
+            platform: win
+            arch: x64
+          - os: macos-15
+            platform: osx
+            arch: auto
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install libc++-dev (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libc++-dev libc++abi-dev
+
+      - name: Build all native backends (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -ex
+          backends="${NATIVE_BACKENDS}"
+          repo_root=$(pwd)
+
+          for backend in $backends; do
+            echo "Building $backend for ${{ matrix.platform }}-${{ matrix.arch }}"
+            cd "$repo_root/unity/native/$backend"
+            node ../../cli make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+            cd "$repo_root"
+          done
+
+      - name: Build all native backends (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          set -ex
+          backends="${NATIVE_BACKENDS}"
+          repo_root=$(pwd)
+
+          for backend in $backends; do
+            echo "Building $backend for ${{ matrix.platform }}"
+            cd "$repo_root/unity/native/$backend"
+            node ../../cli make --platform ${{ matrix.platform }}
+            cd "$repo_root"
+          done
+
+      - name: Build all native backends (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $ErrorActionPreference = "Stop"
+          $backends = $env:NATIVE_BACKENDS.Split(" ")
+          $repoRoot = (Get-Location)
+          foreach ($backend in $backends) {
+            Write-Host "Building $backend for ${{ matrix.platform }}-${{ matrix.arch }}"
+            Set-Location "$repoRoot/unity/native/$backend"
+            node ../../cli make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+            Set-Location $repoRoot
+          }
+        shell: pwsh
+      
+        # See: https://github.com/Tencent/puerts/blob/e230b37c313c62185ceb5207c37e79e53e1afada/unity/cli/make.mjs#L173
+        # mv(`${CMAKE_BUILD_PATH}/${options.config}/lib${cmakeAddedLibraryName}.dylib`, `${CMAKE_BUILD_PATH}/${options.config}/${cmakeAddedLibraryName}.bundle`);
+        # generated builds unity/Assets/core/upm/Plugins/macOS/PuertsCore.bundle
+        # Rename macOS bundle format to dylib files to ensure upload-artifact works correctly
+      - name: Process macOS native artifacts
+        if: runner.os == 'macOS' && matrix.arch == 'auto'
+        run: |
+          set -ex
+          for backend in $NATIVE_BACKENDS; do
+            echo "Processing $backend for ${{ matrix.platform }}"
+            for file in unity/Assets/core/upm/Plugins/macOS/*.bundle; do
+              [ -f "$file" ] && mv -n "$file" "${file%.bundle}.dylib"
+              echo "Renamed $file to ${file%.bundle}.dylib"
+            done
+          done
+      
+      - name: Upload all native artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: natives-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            unity/Assets/core/upm/Plugins/macOS/*.dylib
+            unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            unity/native/papi-nodejs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-nodejs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            unity/native/papi-quickjs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-quickjs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+  pack_nuget:
+    name: Pack NuGet
+    needs: build
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: unity/nuget/downloaded_natives
+      - name: List downloaded artifacts
+        run: |
+          ls unity/nuget/downloaded_natives
+          tree unity/nuget/downloaded_natives
+        shell: pwsh
+      - name: Run NuGet Task
+        run: |
+          cd unity/nuget
+          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd" --UploadPackage "${{ github.event.inputs.publish }}"
+        shell: pwsh
+      - name: Upload NuGet Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages 
+          path: |
+            unity/nuget/packageOutput/*.nupkg
+            unity/nuget/packageOutput/*.snupkg

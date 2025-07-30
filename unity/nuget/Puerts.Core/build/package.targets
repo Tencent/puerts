@@ -1,0 +1,11 @@
+<Project>
+  <Target Name="CopyPuertsResources" AfterTargets="Build">
+    <ItemGroup>
+      <_PkgResources Include="$(MSBuildThisFileDirectory)..\contentFiles\puerts\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(_PkgResources)"
+      DestinationFolder="$(OutDir)puerts\%(RecursiveDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>

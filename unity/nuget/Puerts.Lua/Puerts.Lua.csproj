@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>$(PuertsLuaVersion)</PackageVersion>
+    <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiLuaNative.cs">
+        <Link>Native\PapiLuaNative.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendLua.cs">
+        <Link>Backends\BackendLua.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Loaders\LuaLoader.cs">
+        <Link>Loaders\LuaLoader.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

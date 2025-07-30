@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>$(PuertsQuickJsVersion)</PackageVersion>
+    <TargetFramework>$(PuertsNativeAssetsmacOSTargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="..\NativeAssets.Common.props" />
+
+  <ItemGroup>
+    <None Include="lib\**\*.dylib" Pack="True" PackagePath="runtimes\" />
+  </ItemGroup>
+
+</Project>
