@@ -429,34 +429,6 @@ void CppObjectMapper::Cleanup()
     JS_FreeAtom(ctx, privateDataKey);
 
     auto PData = GetEnvPrivate();
-    for (auto& KV : CDataCache)
-    {
-        FObjectCacheNode* PNode = &KV.second;
-        while (PNode)
-        {
-            const puerts::ScriptClassDefinition* ClassDefinition = puerts::FindClassByID(registry, PNode->TypeId);
-            // quickjs是可以保证释放的，所以这里不需要释放
-            /*
-            if (PNode->MustCallFinalize)
-            {
-                if (ClassDefinition && ClassDefinition->Finalize)
-                {
-                    ClassDefinition->Finalize(&g_pesapi_ffi, (void*)KV.first, ClassDefinition->Data, (void*)PData);
-                }
-                PNode->MustCallFinalize = false;
-            }
-            */
-            if (!ClassDefinition)
-            {
-                ClassDefinition = &PtrClassDef;
-            }
-            if (ClassDefinition->OnExit)
-            {
-                ClassDefinition->OnExit((void*)KV.first, ClassDefinition->Data, (void*)PData, PNode->UserData);
-            }
-            PNode = PNode->Next;
-        }
-    }
 
     for(auto& kv : TypeIdToFunctionMap)
     {
