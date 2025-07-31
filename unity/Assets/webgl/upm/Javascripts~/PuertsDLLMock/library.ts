@@ -55,7 +55,8 @@ export namespace PuertsJSEngine {
         get_function_info_name: (funcInfo: number) => number;
         get_function_info_callback: (funcInfo: number) => number;
         get_class_data: (classDef: number) => number;
-        get_class_trace_lifecycle: (classDef: number) => number;
+        get_class_on_enter: (classDef: number) => number;
+        get_class_on_exit: (classDef: number) => number;
         get_property_info_getter_data: (propInfo: number) => number;
         get_property_info_setter_data: (propInfo: number) => number;
         get_function_info_data: (funcInfo: number) => number;
@@ -115,7 +116,8 @@ export class PuertsJSEngine {
             get_function_info_name,
             get_function_info_callback,
             get_class_data,
-            get_class_trace_lifecycle,
+            get_class_on_enter,
+            get_class_on_exit,
             get_property_info_getter_data,
             get_property_info_setter_data,
             get_function_info_data,
@@ -168,7 +170,8 @@ export class PuertsJSEngine {
             get_function_info_name,
             get_function_info_callback,
             get_class_data,
-            get_class_trace_lifecycle,
+            get_class_on_enter,
+            get_class_on_exit,
             get_property_info_getter_data,
             get_property_info_setter_data,
             get_function_info_data,

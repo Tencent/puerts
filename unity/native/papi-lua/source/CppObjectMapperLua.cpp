@@ -379,9 +379,9 @@ namespace luaimpl
 
         }
         cacheNodePtr->Value = ref;
-        if (classDefinition->TraceLifecycle && onEnter)
+        if (classDefinition->OnEnter)
         {
-            cacheNodePtr->UserData = onEnter(ptr, classDefinition->Data, GetEnvPrivate());
+            cacheNodePtr->UserData = classDefinition->OnEnter(ptr, classDefinition->Data, GetEnvPrivate());
         }
     }
 
@@ -390,9 +390,9 @@ namespace luaimpl
         auto iterator = m_DataCache.find(ptr);
         if (iterator != m_DataCache.end())
         {
-            if (classDefinition->TraceLifecycle && onExit)
+            if (classDefinition->OnExit)
             {
-                onExit(ptr, classDefinition->Data, GetEnvPrivate(), iterator->second.UserData);
+                classDefinition->OnExit(ptr, classDefinition->Data, GetEnvPrivate(), iterator->second.UserData);
             }
             auto Removed = iterator->second.Remove(classDefinition->TypeId, true);
             if (!iterator->second.TypeId)

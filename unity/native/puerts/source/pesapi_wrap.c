@@ -425,12 +425,6 @@ PESAPI_MODULE_EXPORT void pesapi_set_env_private(struct pesapi_ffi* apis, pesapi
     apis->set_env_private(env, ptr);
 }
 
-PESAPI_MODULE_EXPORT int pesapi_trace_native_object_lifecycle(struct pesapi_ffi* apis, pesapi_env env, 
-    pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
-{
-    return apis->trace_native_object_lifecycle(env, on_enter, on_exit);
-}
-
 PESAPI_MODULE_EXPORT void pesapi_set_registry(struct pesapi_ffi* apis, pesapi_env env, pesapi_registry registry)
 {
     apis->set_registry(env, registry);

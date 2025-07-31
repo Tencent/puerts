@@ -53,8 +53,6 @@ public:
 
     virtual void SetRegistry(ScriptClassRegistry* InRegistry) = 0;
 
-    virtual bool TraceObjectLifecycle(pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit) = 0;
-
     virtual ~ICppObjectMapper()
     {
     }

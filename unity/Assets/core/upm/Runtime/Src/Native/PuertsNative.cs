@@ -298,9 +298,6 @@ namespace Puerts
         public static extern void pesapi_set_env_private(IntPtr apis, IntPtr env, IntPtr ptr);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool pesapi_trace_native_object_lifecycle(IntPtr apis, IntPtr env, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
-
-        [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void pesapi_set_registry(IntPtr apis, IntPtr env, IntPtr registry);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -685,12 +682,6 @@ namespace Puerts
     public delegate void pesapi_set_env_private_func(IntPtr env, IntPtr ptr);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    [return: MarshalAs(UnmanagedType.U1)]
-    public delegate bool pesapi_trace_native_object_lifecycle_func(IntPtr env,
-        pesapi_on_native_object_enter on_enter,
-        pesapi_on_native_object_exit on_exit);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void pesapi_set_registry_func(IntPtr env, IntPtr registry);
 
     [StructLayout(LayoutKind.Sequential)]
@@ -781,7 +772,6 @@ namespace Puerts
         public pesapi_global_func global;
         public pesapi_get_env_private_func get_env_private;
         public pesapi_set_env_private_func set_env_private;
-        public pesapi_trace_native_object_lifecycle_func trace_native_object_lifecycle;
         public pesapi_set_registry_func set_registry;
     }
 
@@ -879,6 +869,13 @@ namespace Puerts
         [MarshalAs(UnmanagedType.LPStr)] string module_name,
         [MarshalAs(UnmanagedType.LPStr)] string type_name);
 
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public delegate bool pesapi_trace_native_object_lifecycle_func(IntPtr registry, IntPtr typeId,
+        pesapi_on_native_object_enter on_enter,
+        pesapi_on_native_object_exit on_exit);
+
     [StructLayout(LayoutKind.Sequential)]
     public struct pesapi_reg_api
     {
@@ -894,5 +891,6 @@ namespace Puerts
         public pesapi_on_class_not_found_func on_class_not_found;
         public pesapi_class_type_info_func class_type_info;
         public pesapi_find_type_id_func find_type_id;
+        public pesapi_trace_native_object_lifecycle_func trace_native_object_lifecycle;
     }
 }

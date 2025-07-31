@@ -97,7 +97,7 @@ const char * str_dup(const char* str)
 const char* GPesapiModuleName = nullptr;
 
 void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, void* data, int copy_str, int trace_lifecycle)
+    pesapi_finalize finalize, void* data, int copy_str)
 {
     puerts::ScriptClassDefinition classDef = ScriptClassEmptyDefinition;
     classDef.TypeId = type_id;
@@ -117,7 +117,6 @@ void pesapi_define_class(pesapi_registry registry, const void* type_id, const vo
 
     classDef.Initialize = constructor;
     classDef.Finalize = finalize;
-    classDef.TraceLifecycle = trace_lifecycle;
 
     puerts::RegisterScriptClass(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), classDef);
 }
@@ -207,6 +206,12 @@ const void* pesapi_find_type_id(pesapi_registry registry, const char* module_nam
     return class_def ? class_def->TypeId : nullptr;
 }
 
+int pesapi_trace_native_object_lifecycle(
+    pesapi_registry registry, const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
+{
+    return puerts::TraceObjectLifecycle(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), type_id, on_enter, on_exit);
+}
+
 pesapi_registry_api g_reg_apis = {
     pesapi_create_registry,
     pesapi_alloc_type_infos,
@@ -219,7 +224,8 @@ pesapi_registry_api g_reg_apis = {
     pesapi_get_class_data,
     pesapi_on_class_not_found,
     pesapi_class_type_info,
-    pesapi_find_type_id
+    pesapi_find_type_id,
+    pesapi_trace_native_object_lifecycle
 };
 
 }    // namespace regimpl

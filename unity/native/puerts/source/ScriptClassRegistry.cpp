@@ -356,6 +356,17 @@ const ScriptClassDefinition* FindCppTypeClassByCName(ScriptClassRegistry* Regist
     return Registry->FindCppTypeClassByName(Name);
 }
 
+bool TraceObjectLifecycle(ScriptClassRegistry* Registry, const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit)
+{
+    if (auto clsDef = const_cast<ScriptClassDefinition*>(Registry->FindClassByID(TypeId)))
+    {
+        clsDef->OnEnter = OnEnter;
+        clsDef->OnExit = OnExit;
+        return true;
+    }
+    return false;
+}
+
 #if USING_IN_UNREAL_ENGINE
 
 bool IsEditorOnlyUFunction(const UFunction* Func)
@@ -508,9 +519,14 @@ extern "C"
         return classDef->Data;
     }
     
-    int EMSCRIPTEN_KEEPALIVE get_class_trace_lifecycle(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    pesapi_on_native_object_enter EMSCRIPTEN_KEEPALIVE get_class_on_enter(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
     {
-        return classDef->TraceLifecycle;
+        return classDef->OnEnter;
+    }
+
+    pesapi_on_native_object_exit EMSCRIPTEN_KEEPALIVE get_class_on_exit(const PUERTS_NAMESPACE::ScriptClassDefinition* classDef)
+    {
+        return classDef->OnExit;
     }
 
     void* EMSCRIPTEN_KEEPALIVE get_property_info_getter_data(const PUERTS_NAMESPACE::ScriptPropertyInfo* propInfo)

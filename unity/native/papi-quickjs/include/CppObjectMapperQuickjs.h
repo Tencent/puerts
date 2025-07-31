@@ -32,16 +32,7 @@ struct CppObjectMapper
         registry = InRegistry;
     }
 
-    bool TraceObjectLifecycle(pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit) 
-    {
-        onEnter = OnEnter;
-        onExit = OnExit;
-        return true;
-    }
-
     puerts::ScriptClassRegistry* registry = nullptr;
-    pesapi_on_native_object_enter onEnter = nullptr;
-    pesapi_on_native_object_exit onExit = nullptr;
 
     inline static CppObjectMapper* Get(JSContext* ctx)
     {

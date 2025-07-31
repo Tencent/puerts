@@ -41,7 +41,6 @@ PESAPI_EXTERN void pesapi_call_function_js(pesapi_env env, pesapi_value func, pe
 PESAPI_EXTERN void pesapi_eval_js(pesapi_env env, const uint8_t* code, size_t code_size, const char* path, pesapi::webglimpl::JSValue* result);
 PESAPI_EXTERN pesapi_value pesapi_global_js(pesapi_env env);
 PESAPI_EXTERN void pesapi_set_env_private_js(pesapi_env env, const void* ptr);
-PESAPI_EXTERN int pesapi_trace_native_object_lifecycle_js(pesapi_env env, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
 PESAPI_EXTERN void pesapi_set_registry_js(pesapi_env env, pesapi_registry registry);
 PESAPI_EXTERN void TranToString(pesapi_value val);
 
@@ -1238,7 +1237,6 @@ extern "C"
         api->set_property = &pesapi_set_property_js;
         api->get_private = &pesapi_get_private_js;
         api->set_private = &pesapi_set_private_js;
-        api->trace_native_object_lifecycle = &pesapi_trace_native_object_lifecycle_js;
         api->set_registry = &pesapi_set_registry_js;
         
         return api;

@@ -2511,7 +2511,6 @@ puerts::JsEnvPrivate* InitialPapiEnvRef(struct pesapi_ffi* apis, pesapi_env_ref 
     apis->set_registry(env, g_registry);
     auto jsEnvPrivate = new puerts::JsEnvPrivate(apis, envRef, objPool, objPoolAddMethodInfo, objPoolRemoveMethodInfo);
     ${invokePapi('set_env_private')}(env, jsEnvPrivate);
-    apis->trace_native_object_lifecycle(env, (pesapi_on_native_object_enter)&OnCsObjectEnter, (pesapi_on_native_object_exit)&OnCsObjectExit);
     auto loadType = ${invokePapi('create_function')}(env, LoadTypeWrapper, nullptr, nullptr);
     auto createFunction = ${invokePapi('create_function')}(env, createFunctionWrapper, nullptr, nullptr);
     if (loadType && createFunction)
@@ -2814,7 +2813,7 @@ static bool RegisterType(Il2CppClass* klass)
     }
     
     g_registry_api->define_class(g_registry, classInfo->TypeId, classInfo->SuperTypeId, nullptr, classInfo->TypeId->name,
-        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, classInfo, false, true);
+        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, classInfo, false);
 
     size_t propertiesCount = gseters.size() + methods.size() + classInfo->Fields.size();
     int staticPropertyCount = 0;
@@ -2887,6 +2886,8 @@ static bool RegisterType(Il2CppClass* klass)
         g_registry_api->set_property_info(g_registry, classInfo->TypeId, field.IsStatic ? spidx++ : ipidx++, field.Data->FieldInfo->name, field.IsStatic,
             GetterCallback, SetterCallback, field.Data, field.Data, false);
     }
+    
+    g_registry_api->trace_native_object_lifecycle(g_registry, classInfo->TypeId, (pesapi_on_native_object_enter)&OnCsObjectEnter, (pesapi_on_native_object_exit)&OnCsObjectExit);
 
     return true;
 }

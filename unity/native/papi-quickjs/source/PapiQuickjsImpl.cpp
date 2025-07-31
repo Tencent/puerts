@@ -890,14 +890,6 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
     CppObjectMapper::Get(ctx)->SetEnvPrivate(ptr);
 }
 
-
-int pesapi_trace_native_object_lifecycle(pesapi_env env, 
-    pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
-{
-    auto ctx = qjsContextFromPesapiEnv(env);
-    return CppObjectMapper::Get(ctx)->TraceObjectLifecycle(on_enter, on_exit);
-}
-
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
@@ -990,7 +982,6 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_global,
     &pesapi_get_env_private,
     &pesapi_set_env_private,
-    &pesapi_trace_native_object_lifecycle,
     &pesapi_set_registry
 };
 

@@ -61,17 +61,8 @@ public:
         Registry = InRegistry;
     }
 
-    virtual bool TraceObjectLifecycle(pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit) override
-    {
-        this->OnEnter = OnEnter;
-        this->OnExit = OnExit;
-        return true;
-    }
-
 private:
     ScriptClassRegistry* Registry = nullptr;
-    pesapi_on_native_object_enter OnEnter = nullptr;
-    pesapi_on_native_object_exit OnExit = nullptr;
 
 public:
     void Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext);

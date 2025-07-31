@@ -398,9 +398,9 @@ void FCppObjectMapper::BindCppObject(
             ClassDefinition, CDataGarbageCollectedWithoutFree, v8::WeakCallbackType::kInternalFields);
     }
 
-    if (OnEnter)
+    if (ClassDefinition->OnEnter)
     {
-        CacheNodePtr->UserData = OnEnter(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
+        CacheNodePtr->UserData = ClassDefinition->OnEnter(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
     }
 }
 
@@ -433,9 +433,9 @@ void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, ScriptClassDefiniti
     auto Iter = CDataCache.find(Ptr);
     if (Iter != CDataCache.end())
     {
-        if (OnExit)
+        if (ClassDefinition->OnExit)
         {
-            OnExit(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
+            ClassDefinition->OnExit(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
         }
         auto Removed = Iter->second.Remove(ClassDefinition->TypeId, true);
         if (!Iter->second.TypeId)    // last one
@@ -462,9 +462,9 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
                 }
                 PNode->MustCallFinalize = false;
             }
-            if (OnExit)
+            if (ClassDefinition->OnExit)
             {
-                OnExit(KV.first, ClassDefinition->Data, PData, PNode->UserData);
+                ClassDefinition->OnExit(KV.first, ClassDefinition->Data, PData, PNode->UserData);
             }
             PNode = PNode->Next;
         }

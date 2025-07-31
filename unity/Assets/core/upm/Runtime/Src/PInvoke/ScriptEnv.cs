@@ -79,12 +79,6 @@ namespace Puerts
 
             PuertsNative.pesapi_set_env_private(papis, env, new IntPtr(Idx));
 
-            // 这个和析构函数不一样，比如一个原生对象，如果传指针，不用做对象的delete，但如果宿主是带gc的语言，还是要处理引用持有的问题
-            // 不过析构那如果参数带上是否要析构，设计上可以不需要这个回调
-            // onObjectReleaseRef还有另外一个设定是和enter那配合使用，enter返回个userdata（比如objectPool索引），在exit那使用
-            onObjectReleaseRefDelegate = onObjectReleaseRef;
-            PuertsNative.pesapi_trace_native_object_lifecycle(papis, env, null, onObjectReleaseRefDelegate);
-
             var moduleExecutorFunc = this.backend.GetModuleExecutor(env);
             moduleExecutor = ExpressionsWrap.GetNativeTranlator<Func<string, JSObject>>()(papis, env, moduleExecutorFunc);
 
@@ -121,12 +115,17 @@ namespace Puerts
 
         private pesapi_callback loadTypeDelegate;
 
-        private pesapi_on_native_object_exit onObjectReleaseRefDelegate;
+        
 
         private Func<string, JSObject> moduleExecutor;
 
-        private void onObjectReleaseRef(IntPtr ptr, IntPtr classData, IntPtr envPrivate, IntPtr userdata)
+        // 这个和析构函数不一样，比如一个原生对象，如果传指针，不用做对象的delete，但如果宿主是带gc的语言，还是要处理引用持有的问题
+        // 不过析构那如果参数带上是否要析构，设计上可以不需要这个回调
+        // onObjectReleaseRef还有另外一个设定是和enter那配合使用，enter返回个userdata（比如objectPool索引），在exit那使用
+        internal static void OnObjectReleaseRef(IntPtr ptr, IntPtr classData, IntPtr envPrivate, IntPtr userdata)
         {
+            var envIdx = envPrivate.ToInt32();
+            var objectPool = scriptEnvs[envIdx].objectPool;
             try
             {
                 objectPool.Remove(ptr.ToInt32());
@@ -137,6 +136,8 @@ namespace Puerts
                 //Console.Error.WriteLine($"onObjectReleaseRef for {ptr} throw {e}");
             }
         }
+
+        internal static pesapi_on_native_object_exit OnObjectReleaseRefDelegate = OnObjectReleaseRef;
 
         [UnityEngine.Scripting.Preserve]
         public Type GetTypeByString(string className)
@@ -381,7 +382,6 @@ namespace Puerts
 
             var scope = PuertsNative.pesapi_open_scope(papis, envRef);
             var env = PuertsNative.pesapi_get_env_from_ref(papis, envRef);
-            PuertsNative.pesapi_trace_native_object_lifecycle(papis, env, null, null);
             PuertsNative.pesapi_close_scope(papis, scope);
 
             backend.DestroyEnvRef(envRef);

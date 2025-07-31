@@ -119,13 +119,14 @@ struct PUERTS_API ScriptClassDefinition
     NamedPropertyInfo* PropertyInfos;
     NamedPropertyInfo* VariableInfos;
     void* Data = nullptr;
-    int TraceLifecycle;
+    pesapi_on_native_object_enter OnEnter = nullptr;
+    pesapi_on_native_object_exit OnExit = nullptr;
 };
 MSVC_PRAGMA(warning(pop))
 
 #define ScriptClassEmptyDefinition                           \
     {                                                        \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0    \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
     }
     
     
@@ -149,6 +150,8 @@ PUERTS_API const ScriptClassDefinition* LoadClassByID(ScriptClassRegistry* Regis
 PUERTS_API const ScriptClassDefinition* FindCppTypeClassByName(ScriptClassRegistry* Registry, const PString& Name);
 
 PUERTS_API const ScriptClassDefinition* FindCppTypeClassByCName(ScriptClassRegistry* Registry, const char* Name);
+
+PUERTS_API bool TraceObjectLifecycle(ScriptClassRegistry* Registry, const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
 
 #if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);

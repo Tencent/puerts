@@ -879,16 +879,6 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
     mapper->SetEnvPrivate(const_cast<void*>(ptr));
 }
 
-int pesapi_trace_native_object_lifecycle(pesapi_env env, 
-    pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
-{
-    lua_State* L = luaStateFromPesapiEnv(env);
-    auto mapper = CppObjectMapper::Get(L);
-    mapper->onEnter = on_enter;
-    mapper->onExit = on_exit;
-    return 0;
-}
-
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
@@ -982,7 +972,6 @@ pesapi_ffi g_pesapi_ffi {
     &pesapi_global,
     &pesapi_get_env_private,
     &pesapi_set_env_private,
-    &pesapi_trace_native_object_lifecycle,
     &pesapi_set_registry
 };
 

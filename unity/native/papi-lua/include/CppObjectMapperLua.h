@@ -93,8 +93,6 @@ public:
     void UnInitialize(lua_State* L);
 
     puerts::ScriptClassRegistry* registry = nullptr;
-    pesapi_on_native_object_enter onEnter = nullptr;
-    pesapi_on_native_object_exit onExit = nullptr;
     void* envPrivate = nullptr;
 
     inline void* GetEnvPrivate() const

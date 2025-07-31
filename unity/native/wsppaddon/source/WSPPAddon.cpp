@@ -401,7 +401,7 @@ int g_dummy_type_id = 0;
 static void ModuleInit(struct pesapi_registry_api *registry_api, pesapi_registry registry)
 {
     // 原生模块trace_lifecycle参数必须为false
-    registry_api->define_class(registry, &g_dummy_type_id, nullptr, nullptr, "WebSocketPP", CreateInstance, ReleaseInstance, nullptr, false, false);
+    registry_api->define_class(registry, &g_dummy_type_id, nullptr, nullptr, "WebSocketPP", CreateInstance, ReleaseInstance, nullptr, false);
     registry_api->set_property_info_size(registry, &g_dummy_type_id, 5, 0, 0, 0);
     registry_api->set_method_info(registry, &g_dummy_type_id, 0, "send", false, &V8WebSocketClientImpl::SendWrap, nullptr, false);
     registry_api->set_method_info(registry, &g_dummy_type_id, 1, "setHandles", false, &V8WebSocketClientImpl::SetHandlesWrap, nullptr, false);

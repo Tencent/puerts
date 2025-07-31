@@ -368,6 +368,8 @@ namespace Puerts
                 }
             }
 
+            reg_api.trace_native_object_lifecycle(registry, new IntPtr(typeId), null, ScriptEnv.OnObjectReleaseRefDelegate);
+
             registerFinished[typeId] = true;
             return typeId;
         }

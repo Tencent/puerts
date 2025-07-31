@@ -483,7 +483,7 @@ class ObjectPool {
     }
 }
 
-type TypeInfos = { typeId: number; finalize: Function; data: number; traceLifecycle: boolean}
+type TypeInfos = { typeId: number; finalize: Function; data: number; enter: Function; exit: Function}
 
 class ClassRegister {
     private static instance: ClassRegister;
@@ -517,7 +517,8 @@ class ClassRegister {
         const constructor = wasmApi.get_class_initialize(typeDef);
         const finalize = wasmApi.get_class_finalize(typeDef);
         const data = wasmApi.get_class_data(typeDef);
-        const trace_lifecycle = wasmApi.get_class_trace_lifecycle(typeDef);
+        const enterCallback = wasmApi.getWasmTableEntry(wasmApi.get_class_on_enter(typeDef));
+        const exitCallback = wasmApi.getWasmTableEntry(wasmApi.get_class_on_exit(typeDef));
 
         const PApiNativeObject = function (...args: any[]) {
             let callbackInfo: number = undefined;
@@ -598,7 +599,7 @@ class ClassRegister {
 
         //console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
 
-        this.registerClass(typeId, PApiNativeObject, wasmApi.getWasmTableEntry(finalize), data, trace_lifecycle);
+        this.registerClass(typeId, PApiNativeObject, wasmApi.getWasmTableEntry(finalize), data, enterCallback, exitCallback);
     }
 
     public loadClassById(typeId: number): Function {
@@ -611,8 +612,8 @@ class ClassRegister {
         }
     }
 
-    public registerClass(typeId: number, cls: Function, finalize: Function, clsData: number, trace_lifecycle: number): void {
-        const infos = { typeId, finalize, data: clsData, traceLifecycle: trace_lifecycle != 0 };
+    public registerClass(typeId: number, cls: Function, finalize: Function, clsData: number, enter: Function, exit: Function): void {
+        const infos = { typeId, finalize, data: clsData, enter, exit};
 
         Object.defineProperty(cls, '$Infos', {
             value: infos,
@@ -654,8 +655,8 @@ class ObjectMapper {
     private objectPool: ObjectPool;
     private privateData: number = undefined;
     private objId2ud = new Map<number, number>();
-    private onEnter: (objId: number, data: number, privateData: number) => number = undefined;
-    private onExit: (objId: number, data: number, privateData: number, ud: number) => void = undefined;
+    //private onEnter: (objId: number, data: number, privateData: number) => number = undefined;
+    //private onExit: (objId: number, data: number, privateData: number, ud: number) => void = undefined;
 
     constructor() {
         this.objectPool = new ObjectPool(this.OnNativeObjectFinalized.bind(this));
@@ -680,9 +681,9 @@ class ObjectMapper {
 
     public bindNativeObject(objId: number, jsObj: object, typeId:number, cls: Function, callFinalize: boolean): void {
         this.objectPool.add(objId, jsObj, typeId, callFinalize);
-        const {data, traceLifecycle} = (cls as any).$Infos as TypeInfos;
-        if (traceLifecycle && this.onEnter) {
-            const ud: number = this.onEnter(objId, data, this.privateData);
+        const {data, enter} = (cls as any).$Infos as TypeInfos;
+        if (enter) {
+            const ud: number = enter(objId, data, this.privateData);
             this.objId2ud.set(objId, ud);
         }
     }
@@ -691,22 +692,17 @@ class ObjectMapper {
         this.privateData = privateData;
     }
 
-    public traceNativeObject(onEnter: Function, onExit: Function) {
-        this.onEnter = onEnter as (objId: number, data: number, privateData: number) => number;
-        this.onExit = onExit as (objId: number, data: number, privateData: number, ud: number) => void;
-    }
-
     private OnNativeObjectFinalized(objId: number, typeId:number, callFinalize: boolean) {
         //console.error(`OnNativeObjectFinalized ${objId}`);
         const cls = ClassRegister.getInstance().findClassById(typeId);
-        const {finalize, data, traceLifecycle} = (cls as any).$Infos as TypeInfos;
+        const {finalize, data, exit} = (cls as any).$Infos as TypeInfos;
         if (callFinalize && finalize) {
             finalize(webglFFI, objId, data, this.privateData);
         }
-        if (traceLifecycle && this.onExit && this.objId2ud.has(objId)) {
+        if (exit && this.objId2ud.has(objId)) {
             const ud = this.objId2ud.get(objId);
             this.objId2ud.delete(objId);
-            this.onExit(objId, data, this.privateData, ud);
+            exit(objId, data, this.privateData, ud);
         }
     }
 }
@@ -1108,12 +1104,6 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         objMapper.setEnvPrivate(ptr);
     }
 
-    function pesapi_trace_native_object_lifecycle(env: number, onEnter:number, onExit:number) {
-        const enterCallback = engine.unityApi.getWasmTableEntry(onEnter);
-        const exitCallback = engine.unityApi.getWasmTableEntry(onExit);
-        objMapper.traceNativeObject(enterCallback, exitCallback);
-    }
-
     function pesapi_set_registry(env: number, registry_: number): void {
         registry = registry_;
     }
@@ -1153,7 +1143,6 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         pesapi_eval_js: pesapi_eval,
         pesapi_global_js: pesapi_global,
         pesapi_set_env_private_js: pesapi_set_env_private,
-        pesapi_trace_native_object_lifecycle_js: pesapi_trace_native_object_lifecycle,
         pesapi_set_registry_js: pesapi_set_registry
     };
 }
