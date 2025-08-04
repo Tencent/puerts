@@ -4,6 +4,10 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
+
+using System;
+using System.IO;
+using System.Linq;
 using Cake.Common;
 using Cake.Common.IO;
 using Cake.Common.Tools.DotNet;
@@ -12,9 +16,8 @@ using Cake.Core;
 using Cake.Core.Diagnostics;
 using Cake.Core.IO;
 using Cake.Frosting;
-using System;
-using System.IO;
-using System.Linq;
+
+namespace Build;
 
 public static class Program
 {
@@ -40,19 +43,18 @@ public class BuildContext : FrostingContext
     public IDirectory ProjectsRoot => this.HasArgument("ProjectsRoot")
         ? FileSystem.GetDirectory(new DirectoryPath(Arguments.GetArgument("ProjectsRoot")))
         : throw new CakeException($"Argument '{nameof(ProjectsRoot)}' is required.");
-    public bool IsUploadPackageEnabled => this.HasArgument("UploadPackage")
-        && Arguments.GetArgument("UploadPackage").Equals("true", StringComparison.OrdinalIgnoreCase);
-    public string NUGET_SOURCE => this.HasEnvironmentVariable("NUGET_SOURCE")
-        ? Environment.GetEnvironmentVariable("NUGET_SOURCE")
-        : throw new CakeException("NUGET_SOURCE is not defined in environment variables");
-    public string NUGET_PUB_KEY
+    public bool IsUploadPackageEnabled => this.HasArgument("Source") && this.HasArgument("ApiKey");
+    public string Source => this.HasArgument("Source")
+        ? Arguments.GetArgument("Source")
+        : throw new CakeException($"Argument '{nameof(Source)}' is required.");
+    public string ApiKey
     {
         get
         {
-            Log.Warning("Accessing Secret: {0}", nameof(NUGET_PUB_KEY));
-            return this.HasEnvironmentVariable("NUGET_PUB_KEY")
-                ? Environment.GetEnvironmentVariable("NUGET_PUB_KEY")
-                : throw new CakeException("NUGET_PUB_KEY is not defined in environment variables");
+            Log.Warning("Accessing Secret: {0}", nameof(ApiKey));
+            return this.HasArgument("ApiKey")
+                ? Arguments.GetArgument("ApiKey")
+                : throw new CakeException($"Argument '{nameof(ApiKey)}' is required.");
         }
     }
     public BuildContext(ICakeContext context)
@@ -216,8 +218,8 @@ public class BuildContext : FrostingContext
                         new FilePath(nugetPackageFile),
                         new Cake.Common.Tools.DotNet.NuGet.Push.DotNetNuGetPushSettings()
                         {
-                            Source = context.NUGET_SOURCE,
-                            ApiKey = context.NUGET_PUB_KEY
+                            Source = context.Source,
+                            ApiKey = context.ApiKey
                         });
                 }
             }
@@ -234,14 +236,9 @@ public class BuildContext : FrostingContext
             {
                 context.Log.Information("Build and packaging completed successfully.");
                 context.Log.Information("Native assets have been collected and NuGet packages have been created.");
-                if (context.IsUploadPackageEnabled)
-                {
-                    context.Log.Information("NuGet packages have been uploaded to the specified source.");
-                }
-                else
-                {
-                    context.Log.Information("Package upload is disabled. No packages were uploaded.");
-                }
+                context.Log.Information(context.IsUploadPackageEnabled
+                    ? "NuGet packages have been uploaded to the specified source."
+                    : "Package upload is disabled. No packages were uploaded.");
             }
         }
 
@@ -265,27 +262,27 @@ public class BuildContext : FrostingContext
             /// This also needs to be defined in their csproj file.
             /// </remarks>
             public static readonly ProjectAndRidWithNativeName[] NativeAssetsProjects =
-                [
-                new ProjectAndRidWithNativeName { Name = "Puerts.Core.NativeAssets.Win32", DotNetRid ="win-x64", DotNetNativeName = "Core" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.Core.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Core" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.Core.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "Core" },
+            [
+                new() { Name = "Puerts.Core.NativeAssets.Win32", DotNetRid ="win-x64", DotNetNativeName = "Core" },
+                new() { Name = "Puerts.Core.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Core" },
+                new() { Name = "Puerts.Core.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "Core" },
 
-                new ProjectAndRidWithNativeName { Name = "Puerts.Lua.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "Lua" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.Lua.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Lua" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.Lua.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "Lua" },
+                new() { Name = "Puerts.Lua.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "Lua" },
+                new() { Name = "Puerts.Lua.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Lua" },
+                new() { Name = "Puerts.Lua.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "Lua" },
 
-                new ProjectAndRidWithNativeName { Name = "Puerts.NodeJS.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "NodeJS" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.NodeJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "NodeJS" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.NodeJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "NodeJS" },
+                new() { Name = "Puerts.NodeJS.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "NodeJS" },
+                new() { Name = "Puerts.NodeJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "NodeJS" },
+                new() { Name = "Puerts.NodeJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "NodeJS" },
 
-                new ProjectAndRidWithNativeName { Name = "Puerts.QuickJS.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "QuickJS" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.QuickJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "QuickJS" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.QuickJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "QuickJS" },
+                new() { Name = "Puerts.QuickJS.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "QuickJS" },
+                new() { Name = "Puerts.QuickJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "QuickJS" },
+                new() { Name = "Puerts.QuickJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "QuickJS" },
 
-                new ProjectAndRidWithNativeName { Name = "Puerts.V8.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "V8" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.V8.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "V8" },
-                new ProjectAndRidWithNativeName { Name = "Puerts.V8.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "V8" },
-                ];
+                new() { Name = "Puerts.V8.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "V8" },
+                new() { Name = "Puerts.V8.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "V8" },
+                new() { Name = "Puerts.V8.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "V8" },
+            ];
         }
 
         public class ProjectAndRidWithNativeName
