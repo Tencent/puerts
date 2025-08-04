@@ -1409,5 +1409,6 @@ __PDUOTF;");
             }
             Assert.AreEqual(true, is_null(tex2D));
         }
-#endif    }
+#endif
+    }
 }
