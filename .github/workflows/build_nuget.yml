@@ -126,10 +126,17 @@ jobs:
           ls unity/nuget/downloaded_natives
           tree unity/nuget/downloaded_natives
         shell: pwsh
-      - name: Run NuGet Task
+      - name: Run NuGet Packaging and Publishing
+        if: ${{ github.event.inputs.publish == 'true' }}
         run: |
           cd unity/nuget
-          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd" --UploadPackage "${{ github.event.inputs.publish }}"
+          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd" --Source "https://api.nuget.org/v3/index.json" --ApiKey "${{ secrets.NUGET_PUB_KEY }}"
+        shell: pwsh
+      - name: Run NuGet Packaging
+        if: ${{ github.event.inputs.publish == 'false' }}
+        run: |
+          cd unity/nuget
+          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd"
         shell: pwsh
       - name: Upload NuGet Packages
         uses: actions/upload-artifact@v4

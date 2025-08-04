@@ -60,39 +60,38 @@ var jsEnv = new ScriptEnv(
 <PuertsNativeAssetsLinuxTargetFrameworks>net8.0</PuertsNativeAssetsLinuxTargetFrameworks>
 <PuertsNativeAssetsWin32TargetFrameworks>net8.0</PuertsNativeAssetsWin32TargetFrameworks>
 <PuertsNativeAssetsmacOSTargetFramework>net8.0</PuertsNativeAssetsmacOSTargetFramework>
-<PuertsCurrentTargetmacOSPlatformVersion>14.0</PuertsCurrentTargetmacOSPlatformVersion>
 ```
 
-## 环境变量
+## 构建发布
+
+在Windows下构建、发布
 
 ```powershell
-$env:NUGET_SOURCE="https://example.com/v3/index.json"
-$env:NUGET_PUB_KEY="key"
+# 构建
+.\build.ps1 --NativeAssetsDirectory "xxx\puerts\unity\downloaded_natives" --ProjectsRoot "xxx\puerts\unity\nuget"
+# 构建并发布
+.\build.ps1 --NativeAssetsDirectory "xxx\puerts\unity\downloaded_natives" --ProjectsRoot "xxx\puerts\unity\nuget" --Source "https://api.nuget.org/v3/index.json" --ApiKey "your-nuget-api-key"
+
 ```
 
-`NUGET_SOURCE` 打包发布的目标源 - 在指定 `UploadPackage` 后必须设置
-
-`NUGET_PUB_KEY` 目标源的密钥 - 在指定 `UploadPackage` 后必须设置
-
-## 构建
-
-在Windows下构建
-
-```powershell
-.\build.ps1 --NativeAssetsDirectory "xxx\puerts\unity\downloaded_natives" --ProjectsRoot "xxx\puerts\unity\nuget" --UploadPackage $true
-```
-
-在Linux/macOS下构建
+在Linux/macOS下构建、发布
 
 ```shell
-.\build.sh --NativeAssetsDirectory "xxx\puerts\unity\downloaded_natives" --ProjectsRoot "xxx\puerts\unity\nuget" --UploadPackage "true"
+# 构建
+./build.sh --NativeAssetsDirectory "xxx/puerts/unity/downloaded_natives" --ProjectsRoot "xxx/puerts/unity/nuget"
+# 构建并发布
+/build.sh --NativeAssetsDirectory "xxx/puerts/unity/downloaded_natives" --ProjectsRoot "xxx/puerts/unity/nuget" --Source "https://api.nuget.org/v3/index.json" --ApiKey "your-nuget-api-key"
 ```
 
 ### 构建参数
 
 * `NativeAssetsDirectory` 原生文件目录，放置构建完成的 `native` 项目产物
 * `ProjectsRoot` nuget项目目录
-* `UploadPackage` 是否在构建完包之后上传到指定的 `NUGET_SOURCE`
+
+### 发布参数
+
+* `Source` 打包发布的目标源
+* `ApiKey` 目标源的密钥 注意密钥安全
 
 ### 定义构建
 
