@@ -33,6 +33,7 @@ namespace PUERTS_REG_NAMESPACE
 {
 class CFunctionInfo;
 class PString;
+class JSClassRegister;
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
@@ -118,45 +119,44 @@ struct REGISTER_API JSClassDefinition
     NamedPropertyInfo* PropertyInfos;
     NamedPropertyInfo* VariableInfos;
     void* Data = nullptr;
-    pesapi_on_native_object_enter OnEnter = nullptr;
-    pesapi_on_native_object_exit OnExit = nullptr;
 };
 MSVC_PRAGMA(warning(pop))
 
 #define JSClassEmptyDefinition                               \
     {                                                        \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0       \
     }
+    
+    
+JSClassRegister* CreateRegistry();
 
-void REGISTER_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
+void REGISTER_API RegisterJSClass(JSClassRegister* Registry, const JSClassDefinition& ClassDefinition);
 
-void REGISTER_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+void REGISTER_API SetClassTypeInfo(JSClassRegister* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
     const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
 
 typedef void (*ClassDefinitionForeachCallback)(const JSClassDefinition* ClassDefinition);
 
-void REGISTER_API ForeachRegisterClass(ClassDefinitionForeachCallback Callback);
+void REGISTER_API ForeachRegisterClass(JSClassRegister* Registry, ClassDefinitionForeachCallback Callback);
 
-REGISTER_API const JSClassDefinition* FindClassByID(const void* TypeId);
+REGISTER_API const JSClassDefinition* FindClassByID(JSClassRegister* Registry, const void* TypeId);
 
-REGISTER_API void OnClassNotFound(pesapi_class_not_found_callback Callback);
+REGISTER_API void OnClassNotFound(JSClassRegister* Registry, pesapi_class_not_found_callback Callback);
 
-REGISTER_API const JSClassDefinition* LoadClassByID(const void* TypeId);
+REGISTER_API const JSClassDefinition* LoadClassByID(JSClassRegister* Registry, const void* TypeId);
 
-REGISTER_API const JSClassDefinition* FindCppTypeClassByName(const PString& Name);
+REGISTER_API const JSClassDefinition* FindCppTypeClassByName(JSClassRegister* Registry, const PString& Name);
 
-REGISTER_API const JSClassDefinition* FindCppTypeClassByCName(const char* Name);
-
-REGISTER_API bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
+REGISTER_API const JSClassDefinition* FindCppTypeClassByCName(JSClassRegister* Registry, const char* Name);
 
 #if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
-AddonRegisterFunc FindAddonRegisterFunc(const PString& Name);
+AddonRegisterFunc FindAddonRegisterFunc(JSClassRegister* Registry, const PString& Name);
 
-void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
+void RegisterAddon(JSClassRegister* Registry, const char* Name, AddonRegisterFunc RegisterFunc);
 
-REGISTER_API const JSClassDefinition* FindClassByType(UStruct* Type);
+REGISTER_API const JSClassDefinition* FindClassByType(JSClassRegister* Registry, UStruct* Type);
 
 REGISTER_API bool IsEditorOnlyUFunction(const UFunction* Func);
 

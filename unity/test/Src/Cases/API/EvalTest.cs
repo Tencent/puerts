@@ -6,11 +6,16 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class EvalTest
     {
-        // [Test]
-        // public void ForceFail()
-        // {
-        //     Assert.True(1 == 2);
-        // }
+        [Test]
+        public void JustPrintBackend()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+#if PUERTS_GENERAL
+            Console.WriteLine("ENV_BACKEND: " + jsEnv.Backend.GetType());
+#else
+            UnityEngine.Debug.Log("ENV_BACKEND: " + jsEnv.Backend.GetType());
+#endif
+        }
         [Test]
         public void EvalError()
         {

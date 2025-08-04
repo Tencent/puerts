@@ -106,6 +106,7 @@ if( USING_MULT_BACKEND )
     set ( PUERTS_SRC
         Src/Log.cpp
         Src/PuertsMultBackend.cpp
+        Src/pesapi_wrap.c
     )
 else ()
     set ( PUERTS_SRC

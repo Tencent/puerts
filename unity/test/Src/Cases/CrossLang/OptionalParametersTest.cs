@@ -83,7 +83,7 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve]
         public int Test5(string i, int j, params bool[] k)
         {
-            return k == null ? - 1 : k.Length;
+            return k == null ? -1 : k.Length;
         }
         [UnityEngine.Scripting.Preserve]
         public int Test6(int d, int i = 1, params string[] strs)
@@ -227,6 +227,22 @@ namespace Puerts.UnitTest
             
         }
 
+        [Test]
+        public void InstanceMethodTest9()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
+                (function() {
+                    let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                    let arr = CS.System.Array.CreateInstance(puer.$typeof(CS.System.Boolean), 5); 
+                    return temp.Test5('1', 1, arr);
+                })()
+           ");
+            Assert.AreEqual(5, ret);
+            jsEnv.Tick();
+
+        }
+
         // [Test] 
         // public void InstanceMethodTest9()
         // {
@@ -240,7 +256,7 @@ namespace Puerts.UnitTest
         //         })()
         //    ");
         //     Assert.AreEqual(1, ret);
-            
+
         // }
 
         [Test]

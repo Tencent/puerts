@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>$(PuertsCoreVersion)</PackageVersion>
+    <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\*.cs">
+        <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\PInvoke\**\*.cs">
+        <Link>PInvoke\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PuertsNative.cs">
+        <Link>Native\PuertsNative.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendJs.cs">
+        <Link>Backends\BackendJs.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\IL2Cpp\TypeUtils.cs">
+        <Link>IL2Cpp\TypeUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\IL2Cpp\ExtensionMethodInfos_Gen_Internal.cs">
+        <Link>IL2Cpp\ExtensionMethodInfos_Gen_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\IL2Cpp\ArrayExtension.cs">
+        <Link>IL2Cpp\ArrayExtension.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\Assets\core\upm\Runtime\Resources\puerts\*.*" PackagePath="contentFiles\puerts">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+    <None Include="build\package.targets" Pack="true" PackagePath="\build\$(PackageId).targets" />
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

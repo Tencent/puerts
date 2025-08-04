@@ -147,6 +147,11 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve] B = 213
     }
 
+    public class NewObject
+    {
+
+    }
+   
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
     {
@@ -168,6 +173,12 @@ namespace Puerts.UnitTest
         public static void TestEnumCheck(string a, TestEnum e = TestEnum.A, int b = 10) // 有默认值会促使其检查参数类型
         {
 
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public NewObject PushObject()
+        {
+            return new NewObject();
         }
     }
     public unsafe class TestHelper
@@ -224,7 +235,7 @@ namespace Puerts.UnitTest
 
         public TestHelper()
         {
-#if UNITY_EDITOR || PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE)
+#if UNITY_EDITOR || PUERTS_DISABLE_IL2CPP_OPTIMIZATION
             var env = UnitTestEnv.GetEnv();
             env.UsingFunc<int>();
             env.UsingFunc<int, int>();
@@ -418,6 +429,11 @@ namespace Puerts.UnitTest
         {
             get { return _bigintTestPropStatic; }
             set { _bigintTestPropStatic = value; }
+        }
+
+        public ulong GetBigULong()
+        {
+            return ((ulong)long.MaxValue) + 1;
         }
 
         public void BigintTestCheckMemberValue()
@@ -678,7 +694,7 @@ namespace Puerts.UnitTest
     public class CrossLangTest
     {
         [Test]
-        public void JSFunctionInstanceTest()
+        public void ScriptFunctionInstanceTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
@@ -690,8 +706,7 @@ namespace Puerts.UnitTest
 
                     const oFunc = () => 3
                     const rFunc = testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
-                        testHelper.functionTestEndValue = oFunc;
-                        return testHelper.functionTestEndValue;
+                        return oFunc;
                     });
 
                     const evfn = () => 30;
@@ -1029,7 +1044,7 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
         [Test]
-        public void JSObjectInstanceTest()
+        public void ScriptObjectInstanceTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
@@ -1156,7 +1171,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1170,7 +1185,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1203,7 +1218,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1217,7 +1232,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8)
+            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1351,6 +1366,25 @@ namespace Puerts.UnitTest
             Assert.AreEqual("9999", cb1(9999));
         }
 
+        [Test]
+        public void BigULongTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<string>(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+                
+                    const testHelper = TestHelper.GetInstance();
+                    const bulong = testHelper.GetBigULong();
+                    assertAndPrint('ULongCmp', 9223372036854775807n < bulong);
+                    return bulong
+                })()
+            ");
+
+            // 9223372036854775808
+            Assert.AreEqual((((ulong)long.MaxValue) + 1).ToString(), res);
+        }
 #if !PUERTS_GENERAL
         [Test]
         public void PassDestroyedUnityObjectTest()
@@ -1375,6 +1409,5 @@ __PDUOTF;");
             }
             Assert.AreEqual(true, is_null(tex2D));
         }
-#endif
-    }
+#endif    }
 }

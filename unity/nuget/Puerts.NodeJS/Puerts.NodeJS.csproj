@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>$(PuertsNodeJSVersion)</PackageVersion>
+    <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiNodejsNative.cs">
+        <Link>Native\PapiNodejsNative.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendNodeJS.cs">
+        <Link>Backends\BackendNodeJS.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
@@ -151,14 +152,14 @@ namespace Puerts.UnitTest
                 loader = new TxtLoader();
                 if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
                 {
-                    System.Console.Write("---------------------SwitchToQJS------------------------\n");
-                    env = new JsEnv(loader, -1, BackendType.QuickJS, System.IntPtr.Zero, System.IntPtr.Zero);
+                    JsEnv.DefaultBackendType = BackendType.QuickJS;
                 }
-                else
+                else if (System.Environment.GetEnvironmentVariable("SwitchToNJS") == "1")
                 {
-                    System.Console.Write("---------------------Default JsEnv------------------------\n");
-                    env = new JsEnv(loader);
+                    JsEnv.DefaultBackendType = BackendType.Node;
                 }
+                System.Console.WriteLine($"---------------------DefaultBackendType: {JsEnv.DefaultBackendType}------------------------\n");
+                env = new JsEnv(loader);
                 
                 CommonJS.InjectSupportForCJS(env);
 #if PUERTS_GENERAL && !TESTING_REFLECTION

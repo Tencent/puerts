@@ -26,6 +26,22 @@ struct ObjectUserData
 
 struct CppObjectMapper
 {
+    void SetRegistry(puerts::JSClassRegister* InRegistry)
+    {
+        registry = InRegistry;
+    }
+
+    bool TraceObjectLifecycle(pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit) 
+    {
+        onEnter = OnEnter;
+        onExit = OnExit;
+        return true;
+    }
+
+    puerts::JSClassRegister* registry = nullptr;
+    pesapi_on_native_object_enter onEnter = nullptr;
+    pesapi_on_native_object_exit onExit = nullptr;
+
     inline static CppObjectMapper* Get(JSContext* ctx)
     {
         return reinterpret_cast<CppObjectMapper*>(JS_GetRuntimeOpaque1(JS_GetRuntime(ctx)));

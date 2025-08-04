@@ -1,3 +1,10 @@
+/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 Tencent.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
 import { PuertsJSEngine } from "./library";
 import *  as Buffer from "./buffer"
 
@@ -110,7 +117,7 @@ function ExecuteModule(fileName: string) {
         return {};
     }
     if (!loader) {
-        loader = (globalThis as any).jsEnv.loader;
+        loader = (globalThis as any).scriptEnv.GetLoader();
         loaderResolve = loader.Resolve ? (function(fileName: string, to: string = "") {
             const resolvedName = loader.Resolve(fileName, to);
             if (!resolvedName) {
@@ -476,7 +483,7 @@ class ObjectPool {
     }
 }
 
-type TypeInfos = { typeId: number; finalize: Function; data: number, onEnter?:Function, onExit?:Function }
+type TypeInfos = { typeId: number; finalize: Function; data: number; enter: Function; exit: Function}
 
 class ClassRegister {
     private static instance: ClassRegister;
@@ -498,19 +505,115 @@ class ClassRegister {
         return ClassRegister.instance;
     }
 
+    //public pesapi_define_class(typeId: number, superTypeId: number, pname: CSString, constructor: number, finalize: number, propertyCount: number, properties: number, data: number): void {
+        
+    //}
+
+    public defineClass(typeId: number): void {
+        const typeDef = wasmApi.load_class_by_id(registry, typeId);
+        const superTypeId: number = wasmApi.get_class_super_type_id(typeDef);
+        const pname = wasmApi.get_class_name(typeDef);
+        const name = wasmApi.UTF8ToString(pname as any);
+        const constructor = wasmApi.get_class_initialize(typeDef);
+        const finalize = wasmApi.get_class_finalize(typeDef);
+        const data = wasmApi.get_class_data(typeDef);
+        const enterCallback = wasmApi.getWasmTableEntry(wasmApi.get_class_on_enter(typeDef));
+        const exitCallback = wasmApi.getWasmTableEntry(wasmApi.get_class_on_exit(typeDef));
+
+        const PApiNativeObject = function (...args: any[]) {
+            let callbackInfo: number = undefined;
+            const argc = arguments.length;
+            const scope = Scope.enter();
+            try {
+                callbackInfo = jsArgsToCallbackInfo(wasmApi, argc, args);
+                Buffer.writeInt32(wasmApi.HEAPU8, data, callbackInfo + 8); // data
+                const objId = wasmApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
+                if (hasException) {
+                    throw getAndClearLastException();
+                }
+                objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
+            } finally {
+                returnNativeCallbackInfo(wasmApi, argc, callbackInfo);
+                scope.close(wasmApi);
+            }
+        }
+        Object.defineProperty(PApiNativeObject, "name", { value: name });
+
+        if (superTypeId != 0) {
+            const superType = this.loadClassById(superTypeId);
+            if (superType) {
+                Object.setPrototypeOf(PApiNativeObject.prototype, superType.prototype);
+            }
+        }
+
+        function nativeMethodInfoToJs(methodPtr: number, isStatic: boolean) : Function {
+            const nativeFuncPtr = wasmApi.get_function_info_callback(methodPtr);
+            const methodData = wasmApi.get_function_info_data(methodPtr);
+            return genJsCallback(wasmApi, nativeFuncPtr, methodData, webglFFI, isStatic);
+        }
+
+        function nativePropertyInfoToJs(propertyInfoPtr: number, isStatic: boolean) : PropertyDescriptor {
+            const getter = wasmApi.get_property_info_getter(propertyInfoPtr);
+            const setter = wasmApi.get_property_info_setter(propertyInfoPtr);
+            const getter_data = wasmApi.get_property_info_getter_data(propertyInfoPtr);
+            const setter_data = wasmApi.get_property_info_setter_data(propertyInfoPtr);
+            return {
+                get: getter === 0 ? undefined : genJsCallback(wasmApi, getter, getter_data, webglFFI, isStatic),
+                set: setter === 0 ? undefined : genJsCallback(wasmApi, setter, setter_data, webglFFI, isStatic),
+                configurable: true,
+                enumerable: true
+            }
+        }
+
+        let methodPtr = wasmApi.get_class_methods(typeDef);
+        while (methodPtr != 0) {
+            const fieldName = wasmApi.UTF8ToString(wasmApi.get_function_info_name(methodPtr) as any);
+            //console.log(`method: ${name} ${fieldName}`);
+            PApiNativeObject.prototype[fieldName] = nativeMethodInfoToJs(methodPtr, false);
+            methodPtr = wasmApi.get_next_function_info(methodPtr);
+        }
+
+        let functionPtr = wasmApi.get_class_functions(typeDef);
+        while (functionPtr != 0) {
+            const fieldName = wasmApi.UTF8ToString(wasmApi.get_function_info_name(functionPtr) as any);
+            //console.log(`function: ${name} ${fieldName}`);
+            (PApiNativeObject as any)[fieldName] = nativeMethodInfoToJs(functionPtr, true);
+            functionPtr = wasmApi.get_next_function_info(functionPtr);
+        }
+
+        let propertyPtr = wasmApi.get_class_properties(typeDef);
+        while (propertyPtr != 0) {
+            const fieldName = wasmApi.UTF8ToString(wasmApi.get_property_info_name(propertyPtr) as any);
+            //console.log(`property: ${name} ${fieldName}`);
+            Object.defineProperty(PApiNativeObject.prototype, fieldName, nativePropertyInfoToJs(propertyPtr, false));
+            propertyPtr = wasmApi.get_next_property_info(propertyPtr);
+        }
+
+        let variablePtr = wasmApi.get_class_variables(typeDef);
+        while (variablePtr != 0) {
+            const fieldName = wasmApi.UTF8ToString(wasmApi.get_property_info_name(variablePtr) as any);
+            //console.log(`variable: ${name} ${fieldName}`);
+            Object.defineProperty(PApiNativeObject, fieldName, nativePropertyInfoToJs(variablePtr, false));
+            variablePtr = wasmApi.get_next_property_info(variablePtr);
+        }
+
+        //console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
+
+        this.registerClass(typeId, PApiNativeObject, wasmApi.getWasmTableEntry(finalize), data, enterCallback, exitCallback);
+    }
+
     public loadClassById(typeId: number): Function {
         const cls = this.typeIdToClass.get(typeId);
         if (cls) {
             return cls;
         } else {
-            if (this.classNotFound && this.classNotFound(typeId)) {
-                return this.typeIdToClass.get(typeId);
-            }
+            this.defineClass(typeId);
+            return this.typeIdToClass.get(typeId);
         }
     }
 
-    public registerClass(typeId: number, cls: Function, finalize: Function, clsData: number): void {
-        const infos = { typeId, finalize, data: clsData };
+    public registerClass(typeId: number, cls: Function, finalize: Function, clsData: number, enter: Function, exit: Function): void {
+        const infos = { typeId, finalize, data: clsData, enter, exit};
 
         Object.defineProperty(cls, '$Infos', {
             value: infos,
@@ -546,20 +649,14 @@ class ClassRegister {
     public setClassNotFoundCallback(callback: (typeId: number) => boolean) {
         this.classNotFound = callback;
     }
-
-    public traceNativeObjectLifecycle(typeId: number, onEnter:Function, onExit:Function) {
-        const infos = this.getTypeInfos(typeId);
-        if (infos) {
-            infos.onEnter = onEnter;
-            infos.onExit = onExit;
-        }
-    }
 }
 
 class ObjectMapper {
     private objectPool: ObjectPool;
     private privateData: number = undefined;
     private objId2ud = new Map<number, number>();
+    //private onEnter: (objId: number, data: number, privateData: number) => number = undefined;
+    //private onExit: (objId: number, data: number, privateData: number, ud: number) => void = undefined;
 
     constructor() {
         this.objectPool = new ObjectPool(this.OnNativeObjectFinalized.bind(this));
@@ -584,9 +681,9 @@ class ObjectMapper {
 
     public bindNativeObject(objId: number, jsObj: object, typeId:number, cls: Function, callFinalize: boolean): void {
         this.objectPool.add(objId, jsObj, typeId, callFinalize);
-        const {onEnter, data} = (cls as any).$Infos as TypeInfos;
-        if (onEnter) {
-            const ud: number = onEnter(objId, data, this.privateData);
+        const {data, enter} = (cls as any).$Infos as TypeInfos;
+        if (enter) {
+            const ud: number = enter(objId, data, this.privateData);
             this.objId2ud.set(objId, ud);
         }
     }
@@ -598,14 +695,14 @@ class ObjectMapper {
     private OnNativeObjectFinalized(objId: number, typeId:number, callFinalize: boolean) {
         //console.error(`OnNativeObjectFinalized ${objId}`);
         const cls = ClassRegister.getInstance().findClassById(typeId);
-        const {finalize, onExit, data} = (cls as any).$Infos as TypeInfos;
+        const {finalize, data, exit} = (cls as any).$Infos as TypeInfos;
         if (callFinalize && finalize) {
             finalize(webglFFI, objId, data, this.privateData);
         }
-        if (onExit && this.objId2ud.has(objId)) {
+        if (exit && this.objId2ud.has(objId)) {
             const ud = this.objId2ud.get(objId);
             this.objId2ud.delete(objId);
-            onExit(objId, data, this.privateData, ud);
+            exit(objId, data, this.privateData, ud);
         }
     }
 }
@@ -613,6 +710,8 @@ class ObjectMapper {
 
 let webglFFI:number = undefined;
 let objMapper: ObjectMapper = undefined;
+let registry: number = undefined;
+let wasmApi: PuertsJSEngine.UnityAPI = undefined;
 
 // typedef struct String {
 //     const char *ptr;
@@ -695,8 +794,13 @@ function jsValueToPapiValue(wasmApi: PuertsJSEngine.UnityAPI, arg: any, value: p
     } else if (arg === null) {
         Buffer.writeInt32(heap, JSTag.JS_TAG_NULL, tagPtr);
     } else if (typeof arg === 'bigint') {
-        Buffer.writeInt64(heap, arg, dataPtr);
-        Buffer.writeInt32(heap, JSTag.JS_TAG_INT64, tagPtr);
+        if (arg > 9223372036854775807n) {
+            Buffer.writeUInt64(heap, arg, dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_UINT64, tagPtr);
+        } else {
+            Buffer.writeInt64(heap, arg, dataPtr);
+            Buffer.writeInt32(heap, JSTag.JS_TAG_INT64, tagPtr);
+        }
     } else if (typeof arg === 'number') {
         if (Number.isInteger(arg)) {
             if (arg >= -2147483648 && arg <= 2147483647) {
@@ -799,6 +903,7 @@ function genJsCallback(wasmApi: PuertsJSEngine.UnityAPI, callback: number, data:
 
 // 需要在Unity里调用PlayerSettings.WebGL.emscriptenArgs = " -s ALLOW_TABLE_GROWTH=1";
 export function WebGLFFIApi(engine: PuertsJSEngine) {
+    wasmApi = engine.unityApi;
     objMapper = new ObjectMapper();
 
     function pesapi_create_array(env: pesapi_env): pesapi_value { 
@@ -999,44 +1104,21 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         objMapper.setEnvPrivate(ptr);
     }
 
-    /*
-    interface APIInfo {
-        func: Function
-        sig: string
+    function pesapi_set_registry(env: number, registry_: number): void {
+        registry = registry_;
     }
 
-    const apiInfo: APIInfo[] = [
-        {func: pesapi_create_array, sig: "ii"},
-        {func: pesapi_create_object, sig: "ii"},
-        {func: pesapi_create_function, sig: "iiiii"},
-        {func: pesapi_create_class, sig: "iii"},
-        {func: pesapi_get_array_length, sig: "iii"},
-        {func: pesapi_native_object_to_value, sig: "iiiii"},
-        {func: pesapi_throw_by_string, sig: "vii"},
-        //{func: pesapi_open_scope, sig: "ii"},
-        {func: pesapi_open_scope_placement, sig: "iii"},
-        {func: pesapi_has_caught, sig: "ii"},
-        {func: pesapi_get_exception_as_string, sig: "iii"},
-        //{func: pesapi_close_scope, sig: "vi"},
-        {func: pesapi_close_scope_placement, sig: "vi"},
-        {func: pesapi_create_value_ref, sig: "iiii"},
-        {func: pesapi_release_value_ref, sig: "vi"},
-        {func: pesapi_get_value_from_ref, sig: "viii"},
-        {func: pesapi_get_property, sig: "viiii"},
-        {func: pesapi_set_property, sig: "viiii"},
-        {func: pesapi_get_private, sig: "iiii"},
-        {func: pesapi_set_private, sig: "iiii"},
-        {func: pesapi_get_property_uint32, sig: "viiii"},
-        {func: pesapi_set_property_uint32, sig: "viiii"},
-        {func: pesapi_call_function, sig: "viiiiii"},
-        {func: pesapi_eval, sig: "viiiii"},
-        {func: pesapi_global, sig: "ii"},
-        {func: pesapi_set_env_private, sig: "vii"}
-    ];
-    */
+    function TranToString(pvalue: pesapi_value): void {
+        const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
+        const str = value.toString();
+        jsValueToPapiValue(engine.unityApi, str, pvalue);
+    }
 
     return {
         GetWebGLFFIApi: GetWebGLFFIApi,
+        GetWebGLPapiVersion: GetWebGLPapiVersion,
+        CreateWebGLPapiEnvRef: CreateWebGLPapiEnvRef,
+        TranToString: TranToString,
         pesapi_create_array_js: pesapi_create_array,
         pesapi_create_object_js: pesapi_create_object,
         pesapi_create_function_js: pesapi_create_function,
@@ -1060,133 +1142,21 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         pesapi_call_function_js: pesapi_call_function,
         pesapi_eval_js: pesapi_eval,
         pesapi_global_js: pesapi_global,
-        pesapi_set_env_private_js: pesapi_set_env_private
+        pesapi_set_env_private_js: pesapi_set_env_private,
+        pesapi_set_registry_js: pesapi_set_registry
     };
 }
 
-function GetWebGLFFIApi(engine: PuertsJSEngine) {
+function GetWebGLFFIApi() {
     if (webglFFI) return webglFFI;
-    webglFFI = engine.unityApi.InjectPapiGLNativeImpl();
+    webglFFI = wasmApi.InjectPapiGLNativeImpl();
     return webglFFI;
 }
 
-export function WebGLRegsterApi(engine: PuertsJSEngine) {
-    GetWebGLFFIApi(engine); // 让webglFFI可用，否则注册genJsCallback传入的webglFFI是undefined
+function GetWebGLPapiVersion(): number {
+    return 11;
+}
 
-    type Descriptor = 
-        | { name: string; isStatic: boolean; callback: number; data: number }
-        | { 
-            name: string; 
-            isStatic: boolean; 
-            getter: number; 
-            setter: number; 
-            getter_data: number; 
-            setter_data: number 
-          };
-
-    // Initialize with proper type assertion
-    const descriptorsArray: Array<Array<Descriptor>> = [[]] as Array<Array<Descriptor>>;
-    return {
-        GetRegsterApi: function() {
-            return 0;
-        },
-        pesapi_alloc_property_descriptors: function(count:number): number {
-            descriptorsArray.push([]);
-            return descriptorsArray.length - 1;
-        },
-        pesapi_define_class: function(typeId: number, superTypeId: number, pname: CSString, constructor: number, finalize: number, propertyCount: number, properties: number, data: number) : void {
-            const descriptors = descriptorsArray[properties];
-            descriptorsArray[properties] = undefined;
-            const name = engine.unityApi.UTF8ToString(pname);
-
-            const PApiNativeObject = function (...args: any[]) {
-                let callbackInfo: number = undefined;
-                const argc = arguments.length;
-                const scope = Scope.enter();
-                try {
-                    callbackInfo = jsArgsToCallbackInfo(engine.unityApi, argc, args);
-                    Buffer.writeInt32(engine.unityApi.HEAPU8, data, callbackInfo + 8); // data
-                    const objId = engine.unityApi.PApiConstructorWithScope(constructor, webglFFI, callbackInfo); // 预期wasm只会通过throw_by_string抛异常，不产生直接js异常
-                    if (hasException) {
-                        throw getAndClearLastException();
-                    }
-                    objMapper.bindNativeObject(objId, this, typeId, PApiNativeObject, true);
-                } finally {
-                    returnNativeCallbackInfo(engine.unityApi, argc, callbackInfo);
-                    scope.close(engine.unityApi);
-                }
-            }
-            Object.defineProperty(PApiNativeObject, "name", { value: name });
-
-            if (superTypeId != 0) {
-                const superType = ClassRegister.getInstance().loadClassById(superTypeId);
-                if (superType) {
-                    Object.setPrototypeOf(PApiNativeObject.prototype, superType.prototype);
-                }
-            }
-
-            descriptors.forEach(descriptor => {
-                if ('callback' in descriptor) {
-                    const jsCallback = genJsCallback(engine.unityApi, descriptor.callback, descriptor.data, webglFFI, descriptor.isStatic);
-                    if (descriptor.isStatic) {
-                        (PApiNativeObject as any)[descriptor.name] = jsCallback;
-                    } else {
-                        PApiNativeObject.prototype[descriptor.name] = jsCallback;
-                    }
-                } else {
-                    //console.log(`genJsCallback ${descriptor.name} ${descriptor.getter_data} ${webglFFI}`);
-                    var propertyDescriptor: PropertyDescriptor = {
-                        get: descriptor.getter === 0 ? undefined : genJsCallback(engine.unityApi, descriptor.getter, descriptor.getter_data, webglFFI, descriptor.isStatic),
-                        set: descriptor.setter === 0 ? undefined : genJsCallback(engine.unityApi, descriptor.setter, descriptor.setter_data, webglFFI, descriptor.isStatic),
-                        configurable: true,
-                        enumerable: true
-                    }
-                    if (descriptor.isStatic) {
-                        Object.defineProperty(PApiNativeObject, descriptor.name, propertyDescriptor);
-                    } else {
-                        Object.defineProperty(PApiNativeObject.prototype, descriptor.name, propertyDescriptor);
-                    }
-                }
-            });
-
-            //console.log(`pesapi_define_class: ${name} ${typeId} ${superTypeId}`);
-
-            ClassRegister.getInstance().registerClass(typeId, PApiNativeObject, engine.unityApi.getWasmTableEntry(finalize), data);
-        },
-        pesapi_get_class_data: function(typeId: number, forceLoad: boolean) : number {
-            return ClassRegister.getInstance().getClassDataById(typeId, forceLoad);
-        },
-        pesapi_on_class_not_found: function(callbackPtr: pesapi_class_not_found_callback) {
-            const jsCallback =engine.unityApi.getWasmTableEntry(callbackPtr);
-            ClassRegister.getInstance().setClassNotFoundCallback((typeId: number) : boolean => {
-                const ret = jsCallback(typeId);
-                return !!ret;
-            });
-        },
-        pesapi_set_method_info: function(properties: number, index: number, pname: CSString, is_static: boolean, method: number, data: number, signature_info: number): void {
-            const name = engine.unityApi.UTF8ToString(pname);
-            descriptorsArray[properties][index] = {
-                name: name,
-                isStatic: is_static,
-                callback: method,
-                data: data
-            };
-        },
-        pesapi_set_property_info: function(properties: number, index: number, pname: CSString, is_static: boolean, getter: number, setter: number, getter_data: number, setter_data: number, type_info: number): void {
-            const name = engine.unityApi.UTF8ToString(pname);
-            descriptorsArray[properties][index] = {
-                name: name,
-                isStatic: is_static,
-                getter: getter,
-                setter: setter,
-                getter_data: getter_data,
-                setter_data: setter_data
-            };
-        },
-        pesapi_trace_native_object_lifecycle: function(typeId: number, onEnter:number, onExit:number) {
-            const enterCallback = engine.unityApi.getWasmTableEntry(onEnter);
-            const exitCallback = engine.unityApi.getWasmTableEntry(onExit);
-            ClassRegister.getInstance().traceNativeObjectLifecycle(typeId, enterCallback, exitCallback);
-        }
-    }
+function CreateWebGLPapiEnvRef() {
+    return 2048; // just not nullptr
 }

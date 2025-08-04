@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>$(PuertsV8Version)</PackageVersion>
+    <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiV8Native.cs">
+        <Link>Native\PapiV8Native.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendV8.cs">
+        <Link>Backends\BackendV8.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

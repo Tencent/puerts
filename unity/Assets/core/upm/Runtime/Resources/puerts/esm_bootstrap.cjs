@@ -175,7 +175,7 @@
     var __loader = undefined;
     const getLoader = () => {
         if (!__loader) {
-            __loader = typeof jsEnv != 'undefined' ? jsEnv.GetLoader() : __tgjsGetLoader();
+            __loader = typeof scriptEnv != 'undefined' ? scriptEnv.GetLoader() : __tgjsGetLoader();
         }
         return __loader;
     }

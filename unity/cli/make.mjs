@@ -198,7 +198,7 @@ const platformCompileConfig = {
             outputPluginPath: 'iOS',
             hook: function (CMAKE_BUILD_PATH, options, cmakeAddedLibraryName, cmakeDArgs) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`).code);
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`).code);
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
 
@@ -215,7 +215,7 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/x86_64',
             hook: function (CMAKE_BUILD_PATH, options, cmakeAddedLibraryName, cmakeDArgs) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -GXcode ..`).code);
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -GXcode -DCMAKE_OSX_ARCHITECTURES=x86_64 ..`).code);
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
                 assert.equal(0, exec(`codesign --sign - --options linker-signed --force ${CMAKE_BUILD_PATH}/${options.config}/lib${cmakeAddedLibraryName}.dylib`).code);
@@ -228,7 +228,7 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/arm64',
             hook: function (CMAKE_BUILD_PATH, options, cmakeAddedLibraryName, cmakeDArgs) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DFOR_SILICON=ON -GXcode ..`).code);
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_OSX_ARCHITECTURES=arm64 -GXcode ..`).code);
                 cd("..");
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code);
                 assert.equal(0, exec(`codesign --sign - --options linker-signed --force ${CMAKE_BUILD_PATH}/${options.config}/lib${cmakeAddedLibraryName}.dylib`).code);
@@ -350,7 +350,11 @@ async function runPuertsMake(cwd, options) {
     if (options.backend == "v8_9.4") {
         options.backend = "v8_9.4.146.24";
     }
-    if (!existsSync(`${cwd}/../native_src/.backends/${options.backend}`)) {
+    const bn = basename(cwd);
+    if (!options.backend) {
+        options.backend = bn;
+    }
+    if (!existsSync(join(cwd, `.backends/${options.backend}`))) {
         await downloadBackend(cwd, options.backend);
     }
     if (options.platform == "win" && options.config != "Release") {
@@ -359,9 +363,9 @@ async function runPuertsMake(cwd, options) {
 
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`;
-    const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath;
+    const OUTPUT_PATH = join(cwd, '../../Assets/core/upm/Plugins/', BuildConfig.outputPluginPath);
     const __dirname = dirname(fileURLToPath(import.meta.url));
-    const BackendConfig = JSON.parse(readFileSync(join(__dirname, 'backends.json'), 'utf-8'))[options.backend]?.config;
+    const BackendConfig = JSON.parse(readFileSync(join(__dirname, 'backends.json'), 'utf-8'))[options.backend]?.config || {};
 
     if (BackendConfig?.skip?.[options.platform]?.[options.arch]) {
         console.log("=== Puer ===");
@@ -382,7 +386,7 @@ async function runPuertsMake(cwd, options) {
         BackendConfig.definition.push("JITLESS");
     }
     const definitionD = (BackendConfig.definition || []).join(';');
-    const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';');
+    const linkD = (BackendConfig['link-libraries']?.[options.platform]?.[options.arch] || []).join(';');
     const incD = (BackendConfig.include || []).join(';');
 
     if (options.rebuild && existsSync(CMAKE_BUILD_PATH)) {
@@ -411,8 +415,8 @@ async function runPuertsMake(cwd, options) {
     );
     if (isExecutable) return {};
     if (!(outputFile instanceof Array)) outputFile = [outputFile];
-    const copyConfig = (BackendConfig['copy-libraries'][options.platform]?.[options.arch] || [])
-        .map((pathToBackend) => join(cwd, '../native_src/.backends', options.backend, pathToBackend))
+    const copyConfig = (BackendConfig['copy-libraries']?.[options.platform]?.[options.arch] || [])
+        .map((pathToBackend) => join(cwd, '.backends', options.backend, pathToBackend))
         .concat(outputFile);
 
     copyConfig?.forEach((filepath) => {
@@ -430,12 +434,13 @@ async function runPuertsMake(cwd, options) {
 }
 
 async function makeOSXUniveralBinary(cwd, copyConfig) {
-    const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/macOS';
+    const OUTPUT_PATH = join(cwd, '../../Assets/core/upm/Plugins/macOS');
     const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
 
-    const arm64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + `/lib${cmakeAddedLibraryName}.dylib`;
-    const x64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + `/${cmakeAddedLibraryName}.bundle`;
+    const arm64binary = join(cwd, '../../Assets/core/upm/Plugins/', platformCompileConfig.osx.arm64.outputPluginPath, `lib${cmakeAddedLibraryName}.dylib`);
+    const x64binary = join(cwd, '../../Assets/core/upm/Plugins/', platformCompileConfig.osx.x64.outputPluginPath, `${cmakeAddedLibraryName}.bundle`);
     assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${arm64binary} ${x64binary}`).code);
+    assert.equal(0, exec(`codesign --sign - --options linker-signed --force ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')}`).code);
 
     rm('-rf', arm64binary);
     rm('-rf', x64binary);

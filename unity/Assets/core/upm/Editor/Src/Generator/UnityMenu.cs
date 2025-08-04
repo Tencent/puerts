@@ -21,6 +21,7 @@ namespace Puerts.Editor
             public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
 
 #if !PUERTS_GENERAL
+            /*
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate (all in one)", false, 1)]
             public static void GenV1() 
             {
@@ -35,7 +36,7 @@ namespace Puerts.Editor
                 var saveTo = Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
 
-                FileExporter.ExportWrapper(saveTo);
+                //FileExporter.ExportWrapper(saveTo);
                 Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
@@ -49,8 +50,9 @@ namespace Puerts.Editor
 
                 Utils.SetFilters(null);
             }
+            */
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts", false, 6)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate index.d.ts", false, 1)]
             public static void GenerateDTS()
             {
                 var start = DateTime.Now;
@@ -88,13 +90,13 @@ namespace Puerts.Editor
                 }
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/RegisterInfo", false, 7)]
+            //[MenuItem(PUERTS_MENU_PREFIX + "/Generate/RegisterInfo", false, 7)]
             public static void GenRegisterInfo()
             {
                 var start = DateTime.Now;
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenRegisterInfo(saveTo);
+                //FileExporter.GenRegisterInfo(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
             }

@@ -22,7 +22,7 @@ const axios = rawAxios.create({
 
 const ProgressBar = require('progress');
 
-async function downloadAndExtractTarGz(url, outputDir) {
+async function downloadAndExtractTarGz(url, outputDir, backendName, orgDir) {
   const tempFilePath = path.join(outputDir, 'temp.tar.gz');
   
   const { headers } = await axios.head(url);
@@ -60,6 +60,11 @@ async function downloadAndExtractTarGz(url, outputDir) {
     file: tempFilePath,
     cwd: outputDir,
   });
+  
+  if (orgDir) {
+    // rename orgDir in outputDir to backendName
+    fs.renameSync(path.join(outputDir, orgDir), path.join(outputDir, backendName));
+  }
 
   // Step 4: Clean up the temporary file
   fs.unlinkSync(tempFilePath);
@@ -71,7 +76,7 @@ export default async function downloadBackend(cwd, name, url = "") {
     if (!existsSync(join(cwd, "CMakeLists.txt"))) {
         throw new Error("invalid puerts native_src directory: " + cwd);
     }
-    const backendDir = join(cwd, '../native_src/.backends');
+    const backendDir = join(cwd, '.backends');
     mkdir("-p", backendDir);
     if (existsSync(join(backendDir, name)) && statSync(join(backendDir, name)).isDirectory()) {
         console.log(`[Puer] download skip: ${name} already exists `);
@@ -79,7 +84,7 @@ export default async function downloadBackend(cwd, name, url = "") {
 
     } else if (url) {
         console.log(`[Puer] downloading ${name} from ${url}`);
-        await downloadAndExtractTarGz(url, backendDir);
+        await downloadAndExtractTarGz(url, backendDir, name);
 
     } else {
         const cfg = readBackendsConfig(cwd);
@@ -89,10 +94,11 @@ export default async function downloadBackend(cwd, name, url = "") {
         url = cfg[name].url;
         if (url) {
             console.log(`[Puer] downloading ${name} from ${url}`);
-            await downloadAndExtractTarGz(url, backendDir);
+            await downloadAndExtractTarGz(url, backendDir, name, cfg[name]['tar-output']);
 
         } else {
-            throw new Error(`invalid backend: ${name}, backend url not found`);
+            //throw new Error(`invalid backend: ${name}, backend url not found`);
+            console.log(`backend: ${name}, backend url not found, download skiped`);
         }
     }
 }

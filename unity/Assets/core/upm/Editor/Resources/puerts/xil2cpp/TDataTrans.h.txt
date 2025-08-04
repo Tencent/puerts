@@ -80,28 +80,26 @@ public:
     AutoValueScope(struct pesapi_ffi* apis, pesapi_env_ref envRef)
     {
         _apis = apis;
-        if (!${invokePapi('open_scope_placement')}(envRef, &_mem))
-        {
-            _apis = nullptr;
-        }
+        _scope = ${invokePapi('open_scope_placement')}(envRef, &_mem);
     }
 
     ~AutoValueScope()
     {
-        if (_apis)
+        if (_scope)
         {
             auto apis = _apis;
-            ${invokePapi('close_scope_placement')}(scope());
+            ${invokePapi('close_scope_placement')}(_scope);
         }
     }
     
     inline pesapi_scope scope()
     {
-        return (pesapi_scope)&_mem;
+        return _scope;
     }
-     
+    
     struct pesapi_ffi* _apis;
     pesapi_scope_memory _mem;
+    pesapi_scope _scope;
 };
 
 struct DataTransfer
@@ -471,6 +469,11 @@ struct Params
 {
     static Il2CppArray* PackPrimitive(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
     {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
         Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
         T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(ret));
         for(int i = start; i < length;++i)
@@ -482,6 +485,11 @@ struct Params
     
     static Il2CppArray* PackString(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
     {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
         Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
         for(int i = start; i < length;++i)
         {
@@ -492,6 +500,11 @@ struct Params
     
     static Il2CppArray* PackRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
     {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
         Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
         auto elemTypeId = il2cpp::vm::Class::GetElementClass(typeId);
         for(int i = start; i < length;++i)
@@ -503,6 +516,11 @@ struct Params
     
     static Il2CppArray* PackValueType(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
     {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
         Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
         T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(ret));
         for(int i = start; i < length;++i)

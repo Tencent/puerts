@@ -39,7 +39,7 @@ void FCppObjectMapper::findClassByName(const v8::FunctionCallbackInfo<v8::Value>
 
     PString TypeName = *(v8::String::Utf8Value(Isolate, Info[0]));
 
-    auto ClassDef = FindCppTypeClassByName(TypeName);
+    auto ClassDef = FindCppTypeClassByName(Registry, TypeName);
     if (ClassDef)
     {
         Info.GetReturnValue().Set(GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked());
@@ -53,7 +53,7 @@ void FCppObjectMapper::findClassByName(const v8::FunctionCallbackInfo<v8::Value>
 
 v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId)
 {
-    auto ClassDef = puerts::LoadClassByID(TypeId);
+    auto ClassDef = puerts::LoadClassByID(Registry, TypeId);
     if (!ClassDef)
     {
         return v8::MaybeLocal<v8::Function>();
@@ -113,7 +113,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     }
 
     // create and link
-    auto ClassDefinition = LoadClassByID(TypeId);
+    auto ClassDefinition = LoadClassByID(Registry, TypeId);
     if (ClassDefinition)
     {
         auto Result = GetTemplateOfClass(Isolate, ClassDefinition)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
@@ -185,7 +185,7 @@ bool FCppObjectMapper::IsInstanceOfCppObject(v8::Isolate* Isolate, const void* T
     {
         return true;
     }
-    auto ClassDefinition = FindClassByID(TypeId);
+    auto ClassDefinition = FindClassByID(Registry, TypeId);
     if (ClassDefinition)
     {
         auto Template = GetTemplateOfClass(Isolate, ClassDefinition);
@@ -346,7 +346,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
 
         if (ClassDefinition->SuperTypeId)
         {
-            if (auto SuperDefinition = LoadClassByID(ClassDefinition->SuperTypeId))
+            if (auto SuperDefinition = LoadClassByID(Registry, ClassDefinition->SuperTypeId))
             {
                 Template->Inherit(GetTemplateOfClass(Isolate, SuperDefinition));
             }
@@ -410,9 +410,9 @@ void FCppObjectMapper::BindCppObject(
             ClassDefinition, CDataGarbageCollectedWithoutFree, v8::WeakCallbackType::kInternalFields);
     }
 
-    if (ClassDefinition->OnEnter)
+    if (OnEnter)
     {
-        CacheNodePtr->UserData = ClassDefinition->OnEnter(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
+        CacheNodePtr->UserData = OnEnter(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
     }
 }
 
@@ -455,10 +455,9 @@ void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* 
     auto Iter = CDataCache.find(Ptr);
     if (Iter != CDataCache.end())
     {
-        if (ClassDefinition->OnExit)
+        if (OnExit)
         {
-            ClassDefinition->OnExit(
-                Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
+            OnExit(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
         }
         auto Removed = Iter->second.Remove(ClassDefinition->TypeId, true);
         if (!Iter->second.TypeId)    // last one
@@ -476,7 +475,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         FObjectCacheNode* PNode = &KV.second;
         while (PNode)
         {
-            const JSClassDefinition* ClassDefinition = FindClassByID(PNode->TypeId);
+            const JSClassDefinition* ClassDefinition = FindClassByID(Registry, PNode->TypeId);
             if (PNode->MustCallFinalize)
             {
                 if (ClassDefinition && ClassDefinition->Finalize)
@@ -485,10 +484,9 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
                 }
                 PNode->MustCallFinalize = false;
             }
-            if (ClassDefinition->OnExit)
+            if (OnExit)
             {
-                ClassDefinition->OnExit(
-                    KV.first, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(InIsolate), PNode->UserData);
+                OnExit(KV.first, ClassDefinition->Data, PData, PNode->UserData);
             }
             PNode = PNode->Next;
         }

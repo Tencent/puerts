@@ -168,7 +168,7 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
         // 生成project 用于跑wrapper
         writeFileSync(
             join(workdir, `${testProjectName}.csproj`),
-            originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, false), '</Project>'].join('\n'))
+            originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, false), '</Project>'].join('\n')).replace('<ImplicitUsings>enable</ImplicitUsings>', '<ImplicitUsings>disable</ImplicitUsings>')
         );
 
         assert.equal(0, exec(`dotnet build ${testProjectName}.csproj -p:StartupObject=PuerGen -v quiet`, { cwd: workdir }).code);
@@ -181,7 +181,7 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     // 生成csproj
     writeFileSync(
         join(workdir, `${testProjectName}.csproj`),
-        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, !runInReflection), '</Project>'].join('\n'))
+        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, !runInReflection), '</Project>'].join('\n')).replace('<ImplicitUsings>enable</ImplicitUsings>', '<ImplicitUsings>disable</ImplicitUsings>')
     );
 
     // 运行测试
@@ -211,17 +211,56 @@ function getExeSuffix() {
 
 export async function dotnetTest(cwd, backend, filter = '', thread_safe = false) {
     // 编译binary
-    const copyConfig = await runPuertsMake(join(cwd, '../../native_src'), {
+    let dlls = await runPuertsMake(join(cwd, '../../native/puerts'), {
         platform: getPlatform(),
         config: "Debug",
-        backend: backend || 'v8_9.4',
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+
+    const qjsdlls = await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(qjsdlls);
+
+    const v8dlls = await runPuertsMake(join(cwd, '../../native/papi-v8'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(v8dlls);
+    
+    const luadlls = await runPuertsMake(join(cwd, '../../native/papi-lua'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(luadlls);
+    
+    const nodedlls = await runPuertsMake(join(cwd, '../../native/papi-nodejs'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(nodedlls);
+
+    const wsppaddondlls = await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
+        platform: getPlatform(),
+        config: "Debug",
         arch: process.arch,
         websocket: 1,
         thread_safe: thread_safe
     });
+    dlls = dlls.concat(wsppaddondlls);
 
     // await runTest(cwd, copyConfig, true, filter);
-    await runTest(cwd, copyConfig, false, filter);
+    await runTest(cwd, dlls, false, filter);
 }
 
 export async function unityTest(cwd, unityPath) {
@@ -234,23 +273,38 @@ export async function unityTest(cwd, unityPath) {
         return;
     }
     
+    // Helper function to check test result and log if needed
+    function checkTestResult(exitCode, logFile) {
+        if (exitCode !== 0) {
+            try {
+                const logContent = readFileSync(logFile, 'utf-8');
+                console.error(logContent);
+            } catch (e) {
+                console.error(`Failed to read log file: ${e.message}`);
+            }
+        }
+        return exitCode;
+    }
+    
     const platform = getPlatform();
     const exeSuffix = getExeSuffix();
 
     rm("-rf", `${cwd}/Assets/Gen`);
     rm("-rf", `${cwd}/build`);
     rm("-rf", `${cwd}/Assets/Gen.meta`);
-    rm("-rf", join(cwd, 'Assets/csc.rsp'));
-    writeFileSync(`${cwd}/Assets/csc.rsp`, `
-        -define:PUERTS_DISABLE_IL2CPP_OPTIMIZATION
-    `);
+    //rm("-rf", join(cwd, 'Assets/csc.rsp'));
+    //writeFileSync(`${cwd}/Assets/csc.rsp`, `
+    //    -define:PUERTS_DISABLE_IL2CPP_OPTIMIZATION
+    //`);
     rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
+    
+    /*
     console.log("[Puer] Building puerts v1");
     await runPuertsMake(join(cwd, '../../native_src'), {
         backend: 'v8_9.4.146.24',
         platform: platform,
         config: 'Debug',
-        arch: process.arch,
+        arch: 'x64',
         websocket: 1
     });
 
@@ -265,71 +319,155 @@ export async function unityTest(cwd, unityPath) {
     console.log("[Puer] Running test in v1");
     const v1code = exec(`${cwd}/build/v1/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log1.txt`).code;
     assert.equal(0, v1code);
+    */
 
-    console.log("[Puer] Generating FunctionBridge");
-    rm("-rf", join(cwd, 'Assets/csc.rsp'));
-    writeFileSync(`${cwd}/Assets/csc.rsp`, `
-        -define:PUERTS_CPP_OUTPUT_TO_UPM
-        -define:PUERTS_IL2CPP_OPTIMIZATION
-    `);
+    //console.log("[Puer] Generating FunctionBridge");
+    //rm("-rf", join(cwd, 'Assets/csc.rsp'));
+    //writeFileSync(`${cwd}/Assets/csc.rsp`, `
+    //    -define:PUERTS_CPP_OUTPUT_TO_UPM
+    //    -define:PUERTS_IL2CPP_OPTIMIZATION
+    //`);
+    
+    await runPuertsMake(join(cwd, '../../native/puerts'), {
+        platform: platform,
+        config: "Debug",
+        arch: process.arch
+    });
+
+    await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
+        platform: platform,
+        config: "Debug",
+        arch: process.arch
+    });
+
+    await runPuertsMake(join(cwd, '../../native/papi-v8'), {
+        platform: platform,
+        config: "Debug",
+        arch: process.arch
+    });
+    
+    await runPuertsMake(join(cwd, '../../native/papi-lua'), {
+        platform: platform,
+        config: "Debug",
+        arch: process.arch
+    });
+    
+    await runPuertsMake(join(cwd, '../../native/papi-nodejs'), {
+        platform: platform,
+        config: "Debug",
+        arch: process.arch
+    });
+
+    await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
+        platform: platform,
+        config: "Debug",
+        websocket: 1,
+        arch: process.arch
+    });
     
     console.log('-------------------------Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
-    console.log("[Puer] Building testplayer for v2");
+    console.log("[Puer] Building testplayer");
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
-    const v2code_reflection = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
-
+    console.log("[Puer] Running test");
+    const v2code_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_reflection.txt`).code,
+        `${cwd}/log_reflection.txt`
+    );
     assert.equal(0, v2code_reflection);
+
+    console.log('-------------------------Without Wrapper test(quickjs)-------------------------');
+    process.env.SwitchToQJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_qjs_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_reflection.txt`).code,
+        `${cwd}/log_qjs_reflection.txt`
+    );
+    assert.equal(0, v2code_qjs_reflection);
     
-    console.log('-------------------------With Full Wrapper test-------------------------');
+    console.log('-------------------------Without Wrapper test(nodejs)-------------------------');
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_nodejs_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_reflection.txt`).code,
+        `${cwd}/log_nodejs_reflection.txt`
+    );
+    assert.equal(0, v2code_nodejs_reflection);
+    
+    console.log('-------------------------Minimum bridge and Without Wrapper test-------------------------');
+
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '0';
+    
+    execUnityEditor(`-executeMethod TestBuilder.GenMinimumWrappersAndBridge`);
+    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+
+    console.log("[Puer] Building testplayer");
+    mkdir("-p", `${cwd}/build/v2`);
+    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+    console.log("[Puer] Running test");
+    const v2code_minimum_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_minimum_reflection.txt`).code,
+        `${cwd}/log_minimum_reflection.txt`
+    );
+    assert.equal(0, v2code_minimum_reflection);
+
+    console.log('-------------------------Minimum bridge and Without Wrapper test(quickjs)-------------------------');
+    process.env.SwitchToQJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_qjs_minimum_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_minimum_reflection.txt`).code,
+        `${cwd}/log_qjs_minimum_reflection.txt`
+    );
+    assert.equal(0, v2code_qjs_minimum_reflection);
+    
+    console.log('-------------------------Minimum bridge and Without Wrapper test(nodejs)-------------------------');
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_nodejs_minimum_reflection = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_minimum_reflection.txt`).code,
+        `${cwd}/log_nodejs_minimum_reflection.txt`
+    );
+    assert.equal(0, v2code_nodejs_minimum_reflection);
+    
+    console.log('-------------------------Full Wrapper test-------------------------');
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '0';
+    
     execUnityEditor(`-executeMethod TestBuilder.GenV2`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
 
-    console.log("[Puer] Building testplayer for v2");
+    console.log("[Puer] Building testplayer");
     mkdir("-p", `${cwd}/build/v2`);
     execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
-    const v2code = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log3.txt`).code;
-
+    console.log("[Puer] Running test");
+    const v2code = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_full_wrapper.txt`).code,
+        `${cwd}/log_full_wrapper.txt`
+    );
     assert.equal(0, v2code);
     
-    console.log('-------------------------With Full Wrapper test(quickjs)-------------------------');
-    await runPuertsMake(join(cwd, '../../native_src'), {
-        backend: 'quickjs',
-        platform: platform,
-        config: 'Debug',
-        arch: process.arch,
-        websocket: 1
-    });
-
-    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-
-    console.log("[Puer] Building testplayer for v2");
-    mkdir("-p", `${cwd}/build/v2`);
-    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
-    const v2code_qjs = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log4.txt`).code;
+    console.log('-------------------------Full Wrapper test(quickjs)-------------------------');
+    process.env.SwitchToQJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_qjs = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_qjs_full_wrapper.txt`).code,
+        `${cwd}/log_qjs_full_wrapper.txt`
+    );
+    assert.equal(0, v2code_qjs);
     
-    console.log('-------------------------With Full Wrapper test(mult)-------------------------');
-    await runPuertsMake(join(cwd, '../../native_src'), {
-        backend: 'mult',
-        platform: platform,
-        config: 'Debug',
-        arch: process.arch,
-        websocket: 1
-    });
-
-    rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-
-    console.log("[Puer] Building testplayer for v2");
-    mkdir("-p", `${cwd}/build/v2`);
-    execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
-    console.log("[Puer] Running test in v2");
-    const v2code_mult = exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log5.txt`).code;
-
-    assert.equal(0, v2code_mult);
+    console.log('-------------------------Full Wrapper test(nodejs)-------------------------');
+    process.env.SwitchToQJS = '0';
+    process.env.SwitchToNJS = '1';
+    console.log("[Puer] Running test");
+    const v2code_nodejs = checkTestResult(
+        exec(`${cwd}/build/v2/Tester${exeSuffix} -batchmode -nographics -logFile ${cwd}/log_nodejs_full_wrapper.txt`).code,
+        `${cwd}/log_nodejs_full_wrapper.txt`
+    );
+    assert.equal(0, v2code_nodejs);
 }

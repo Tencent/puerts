@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>$(PuertsQuickJSVersion)</PackageVersion>
+    <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiQjsNative.cs">
+        <Link>Native\PapiQjsNative.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendQuickJS.cs">
+        <Link>Backends\BackendQuickJS.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

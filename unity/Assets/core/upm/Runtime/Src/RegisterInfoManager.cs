@@ -36,16 +36,6 @@ namespace Puerts
             public MemberType MemberType; 
 
             public BindingMode UseBindingMode;
-            
-    #if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
-            public V8ConstructorCallback Constructor;
-
-            public V8FunctionCallback Method;
-
-            public V8FunctionCallback PropertyGetter;
-
-            public V8FunctionCallback PropertySetter;
-    #endif
         }
 
         public class RegisterInfo 

@@ -4,7 +4,7 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
-#if UNITY_2020_1_OR_NEWER
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,21 +12,21 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if !PUERTS_GENERAL
 using Puerts.Editor.Generator;
 using Puerts.TypeMapping;
 using UnityEditor;
 using UnityEditor.Build;
-
-#if !PUERTS_GENERAL
 using Mono.Reflection;
 using UnityEngine;
-
+#endif
 namespace PuertsIl2cpp.Editor
 {
     namespace Generator
     {
         public class FileExporter
         {
+#if !PUERTS_GENERAL
             public static List<string> GetValueTypeFieldSignatures(Type type)
             {
                 List<string> ret = new List<string>();
@@ -602,7 +602,8 @@ namespace PuertsIl2cpp.Editor
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
 
 #if UNITY_WEBGL
-                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
+                    //打开这个会导致支持不了WebGL和QuickJs并存，因为生成代码的papid都调用WebGL的静态实现了
+//                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
 #endif
 
                     var cppWrapInfo = new CppWrappersInfo
@@ -688,8 +689,15 @@ namespace PuertsIl2cpp.Editor
 
                 }
             }
+#endif
 
-            public static void GenExtensionMethodInfos(string outDir)
+            private static Type getExtendedTypeOf(MethodInfo method)
+            {
+                var type = method.GetParameters()[0].ParameterType;
+                return type.IsGenericParameter ? type.BaseType : type;
+            }
+
+            public static void GenExtensionMethodInfos(string outDir, Puerts.ILoader loader = null)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
                     "Puerts.BindingAttribute",
@@ -709,23 +717,29 @@ namespace PuertsIl2cpp.Editor
                     where !System.IO.Path.GetFileName(type.Assembly.Location).Contains("Editor")
 #endif
                                                   from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public).Select(method => TypeUtils.HandleMaybeGenericMethod(method)).Where(method => method != null)
-                                                  where Utils.isDefined(method, typeof(ExtensionAttribute))
-                                                  group type by Utils.getExtendedType(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
+                                                  where method.IsDefined(typeof(ExtensionAttribute), false)
+                                                  group type by getExtendedTypeOf(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
 
-                using (var jsEnv = new Puerts.JsEnv())
+                using (var jsEnv = (loader == null ?  new Puerts.JsEnv() : new Puerts.JsEnv(loader)))
                 {
-                    var wrapRender = jsEnv.ExecuteModule<Func<List<KeyValuePair<Type, List<Type>>>, string>>(
-                        "puerts/templates/extension_methods_gen.tpl.mjs", "default");
-                    string fileContent = wrapRender(extendedType2extensionType);
                     var filePath = outDir + "ExtensionMethodInfos_Gen.cs";
                     using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
                     {
-                        textWriter.Write(fileContent);
-                        textWriter.Flush();
+                        renderExtensionMethods(jsEnv, extendedType2extensionType, textWriter);
                     }
                 }
             }
 
+            static void renderExtensionMethods(Puerts.JsEnv jsEnv, List<KeyValuePair<Type, List<Type>>> extendedType2extensionType, StreamWriter textWriter)
+            {
+                var wrapRender = jsEnv.ExecuteModule<Func<List<KeyValuePair<Type, List<Type>>>, string>>(
+                        "puerts/templates/extension_methods_gen.tpl.mjs", "default");
+                string fileContent = wrapRender(extendedType2extensionType);
+                
+                textWriter.Write(fileContent);
+                textWriter.Flush();
+            }
+#if !PUERTS_GENERAL
             public static void GenLinkXml(string outDir)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
@@ -786,7 +800,6 @@ namespace PuertsIl2cpp.Editor
             {
                 Dictionary<string, string> cPluginCode = new Dictionary<string, string>()
                 {
-                    { "pesapi_adpt.c", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_adpt.c").text },
                     { "pesapi.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi.h").text },
                     { "pesapi_webgl.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_webgl.h").text },
                     { "pesapi_webgl.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_webgl.cpp").text }
@@ -812,7 +825,7 @@ namespace PuertsIl2cpp.Editor
                     jsEnv.ExecuteModule("puerts/templates/il2cpp_snippets.mjs");
 
 #if UNITY_WEBGL
-                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
+//                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
 #endif
 
                     string dataTransContent = jsEnv.Eval<string>("`" + Resources.Load<TextAsset>("puerts/xil2cpp/TDataTrans.h").text.Replace("\\", "\\\\") + "`");
@@ -832,8 +845,7 @@ namespace PuertsIl2cpp.Editor
                     }
                 }
             }
+#endif
         }
     }
 }
-#endif
-#endif

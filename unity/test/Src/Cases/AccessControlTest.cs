@@ -5,8 +5,9 @@ using Puerts.TypeMapping;
 
 namespace Puerts.UnitTest
 {
+    /*
     // xIl2cpp模式暂无法让每个JsEnv使用单独的DefaultBinding值
-#if !UNITY_WEBGL && (PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP)
+#if !UNITY_WEBGL && (PUERTS_DISABLE_IL2CPP_OPTIMIZATION || !ENABLE_IL2CPP)
     public class AccessControlHelper {
         public static string StaticField = "StaticField";
         public string InstanceField = "InstanceField";
@@ -98,7 +99,7 @@ namespace Puerts.UnitTest
                     {
                         
                         { "StaticMethod_static", new MemberRegisterInfo { Name = "StaticMethod", IsStatic = true, MemberType = MemberType.Method, UseBindingMode = BindingMode.FastBinding
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || !ENABLE_IL2CPP
                         , Method = EmptyCallbackWrap
 #endif
                         } },
@@ -125,7 +126,7 @@ namespace Puerts.UnitTest
                     {
                         
                         {"StaticMethod_static", new MemberRegisterInfo { Name = "StaticMethod", IsStatic = true, MemberType = MemberType.Method, UseBindingMode = BindingMode.DontBinding
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE)
+#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION
                         , Method = EmptyCallbackWrap
 #endif
                         }},
@@ -145,4 +146,5 @@ namespace Puerts.UnitTest
         }
     }
 #endif
+    */
 }

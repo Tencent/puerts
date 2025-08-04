@@ -24,6 +24,16 @@ namespace Puerts.UnitTest
             {
                 // loader = new UnitTestLoader();
                 loader2 = new UnitTestLoader2();
+                if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
+                {
+                    JsEnv.DefaultBackendType = BackendType.QuickJS;
+                }
+#if !UNITY_WEBGL || UNITY_EDITOR
+                else if (System.Environment.GetEnvironmentVariable("SwitchToNJS") == "1")
+                {
+                    JsEnv.DefaultBackendType = BackendType.Node;
+                }
+#endif
 #if !UNITY_WEBGL || UNITY_EDITOR
                 env = new JsEnv(loader2);
                 CommonJS.InjectSupportForCJS(env);

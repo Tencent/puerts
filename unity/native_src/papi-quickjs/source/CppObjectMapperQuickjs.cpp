@@ -109,9 +109,9 @@ void CppObjectMapper::BindAndAddToCache(const puerts::JSClassDefinition* typeInf
     CacheNodePtr->MustCallFinalize = callFinalize;
     CacheNodePtr->Value = value;
 
-    if (typeInfo->OnEnter)
+    if (onEnter)
     {
-        CacheNodePtr->UserData = typeInfo->OnEnter((void*)ptr, typeInfo->Data, (void*)GetEnvPrivate());
+        CacheNodePtr->UserData = onEnter((void*)ptr, typeInfo->Data, (void*)GetEnvPrivate());
     }
 }
 
@@ -120,9 +120,9 @@ void CppObjectMapper::RemoveFromCache(const puerts::JSClassDefinition* typeInfo,
     auto Iter = CDataCache.find(ptr);
     if (Iter != CDataCache.end())
     {
-        if (typeInfo->OnExit)
+        if (onExit)
         {
-            typeInfo->OnExit( (void*)ptr, typeInfo->Data, (void*)GetEnvPrivate(), Iter->second.UserData);
+            onExit( (void*)ptr, typeInfo->Data, (void*)GetEnvPrivate(), Iter->second.UserData);
         }
         auto Removed = Iter->second.Remove(typeInfo->TypeId, true);
         if (!Iter->second.TypeId)    // last one
@@ -152,7 +152,7 @@ JSValue CppObjectMapper::PushNativeObject(const void* TypeId, void* ObjectPtr, b
         }
     }
 
-    auto ClassDefinition = puerts::LoadClassByID(TypeId);
+    auto ClassDefinition = puerts::LoadClassByID(registry, TypeId);
     if (!ClassDefinition)
     {
         ClassDefinition = &PtrClassDef;
@@ -323,7 +323,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
 
         if (ClassDefinition->SuperTypeId)
         {
-            if (auto SuperDefinition = puerts::LoadClassByID(ClassDefinition->SuperTypeId))
+            if (auto SuperDefinition = puerts::LoadClassByID(registry, ClassDefinition->SuperTypeId))
             {
                 JSValue super_func = FindOrCreateClass(SuperDefinition);
                 JSAtom prototype_atom = JS_NewAtom(ctx, "prototype");
@@ -343,7 +343,7 @@ JSValue CppObjectMapper::FindOrCreateClass(const puerts::JSClassDefinition* Clas
 
 JSValue CppObjectMapper::FindOrCreateClassByID(const void* typeId)
 {
-    auto clsDef = puerts::LoadClassByID(typeId);
+    auto clsDef = puerts::LoadClassByID(registry, typeId);
     if (!clsDef)
     {
         return JS_UNDEFINED;
@@ -359,7 +359,7 @@ JSValue CppObjectMapper::findClassByName(JSContext *ctx, JSValueConst this_val, 
     }
 
     const char* typeName = JS_ToCString(ctx, argv[0]);
-    auto clsDef = puerts::FindCppTypeClassByCName(typeName);
+    auto clsDef = puerts::FindCppTypeClassByCName(registry, typeName);
     JS_FreeCString(ctx, typeName);
 
     if (clsDef)
@@ -377,6 +377,8 @@ void CppObjectMapper::Initialize(JSContext* ctx_)
     ctx = ctx_;
     rt = JS_GetRuntime(ctx);
     JS_SetRuntimeOpaque1(rt, this);
+    // 0x4000: DUMP_LEAKS, 0x8000: DUMP_ATOM_LEAKS
+    JS_SetDumpFlags(rt, 0x4000 | 0x8000);
     //new (&CDataCache) eastl::unordered_map<const void*, FObjectCacheNode, eastl::hash<const void*>, 
     //        eastl::equal_to<const void*>, eastl::allocator_malloc>();
     //new (&TypeIdToFunctionMap) eastl::unordered_map<const void*, JSValue, eastl::hash<const void*>, 
@@ -432,7 +434,7 @@ void CppObjectMapper::Cleanup()
         FObjectCacheNode* PNode = &KV.second;
         while (PNode)
         {
-            const puerts::JSClassDefinition* ClassDefinition = puerts::FindClassByID(PNode->TypeId);
+            const puerts::JSClassDefinition* ClassDefinition = puerts::FindClassByID(registry, PNode->TypeId);
             // quickjs是可以保证释放的，所以这里不需要释放
             /*
             if (PNode->MustCallFinalize)
@@ -448,9 +450,9 @@ void CppObjectMapper::Cleanup()
             {
                 ClassDefinition = &PtrClassDef;
             }
-            if (ClassDefinition->OnExit)
+            if (onExit)
             {
-                ClassDefinition->OnExit((void*)KV.first, ClassDefinition->Data, (void*)PData, PNode->UserData);
+                onExit((void*)KV.first, ClassDefinition->Data, (void*)PData, PNode->UserData);
             }
             PNode = PNode->Next;
         }

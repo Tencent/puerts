@@ -2,7 +2,7 @@ name: build linux unity plugin
 
 inputs:
   backend:
-    description: 'js backend'     
+    description: 'backend'     
     required: true
   config:
     type: choice
@@ -17,7 +17,7 @@ inputs:
   build_proj_dir:
     description: 'build project dir'     
     required: false
-    default: 'native_src'
+    default: 'native'
   GITHUB_TOKEN:
     required:
 
@@ -36,7 +36,9 @@ runs:
         cd unity
         npm i
         cd ${{ inputs.build_proj_dir }}
-        node ../cli make --platform linux --arch x64 --backend ${{ inputs.backend }} --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ${{ inputs.backend }}
+        node ../../cli make --platform linux --arch x64 --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        cd ..
     - name: Upload
       uses: actions/upload-artifact@v4
       with:

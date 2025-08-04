@@ -172,12 +172,7 @@ namespace Puerts.UnitTest
                 })();
             ");
             
-            if (jsEnv2.Backend is BackendV8)
-                (jsEnv2.Backend as BackendV8).LowMemoryNotification();
-            else if (jsEnv2.Backend is BackendNodeJS)
-                (jsEnv2.Backend as BackendNodeJS).LowMemoryNotification();
-            else if (jsEnv2.Backend is BackendQuickJS)
-                (jsEnv2.Backend as BackendQuickJS).LowMemoryNotification();
+            jsEnv2.Backend.LowMemoryNotification();
             
             jsEnv1.Eval(@"
                 (function() {
@@ -228,7 +223,7 @@ namespace Puerts.UnitTest
             {
                 Log("create v8 backend success");
                 Assert.AreEqual("v8", backendStr);
-                Assert.True(jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS);
+                Assert.True(jsEnv.Backend is BackendV8 || jsEnv.Backend.GetType().Name == "BackendNodeJS");
             }
             else
             {
@@ -262,6 +257,21 @@ namespace Puerts.UnitTest
                 Log("create quickjs backend fail: " + errMsg);
                 Assert.True(errMsg.Contains("create jsengine fail for QuickJS"));
             }
+        }
+#endif
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [Test]
+        public void WebGLAndQuickjsBackend()
+        {
+            var jsEnv1 = new ScriptEnv(new BackendQuickJS(UnitTestEnv.GetLoader()));
+            var res = jsEnv1.Eval<string>("'hello'");
+            Assert.AreEqual("hello", res);
+
+            Assert.Catch(() =>
+            {
+                new ScriptEnv(new BackendWebGL(UnitTestEnv.GetLoader()));
+            });
         }
 #endif
     }
