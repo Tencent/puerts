@@ -99,17 +99,9 @@ jobs:
         with:
           name: natives-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            unity/Assets/core/upm/Plugins/macOS/*.dylib
-            unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
-            unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
-            unity/native/papi-nodejs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
-            unity/native/papi-nodejs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
-            unity/native/papi-quickjs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
-            unity/native/papi-quickjs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
-            unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
-            unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
-            unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
-            unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            unity/Assets/core/upm/Plugins/**/*
+            !unity/Assets/core/upm/Plugins/**/*.meta
+
   pack_nuget:
     name: Pack NuGet
     needs: build
@@ -124,7 +116,7 @@ jobs:
       - name: List downloaded artifacts
         run: |
           ls unity/nuget/downloaded_natives
-          tree unity/nuget/downloaded_natives
+          tree unity/nuget/downloaded_natives /F
         shell: pwsh
       - name: Run NuGet Packaging and Publishing
         if: ${{ github.event.inputs.publish == 'true' }}
