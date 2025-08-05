@@ -80,7 +80,7 @@ namespace Puerts
             PuertsNative.pesapi_set_env_private(papis, env, new IntPtr(Idx));
 
             var moduleExecutorFunc = this.backend.GetModuleExecutor(env);
-            moduleExecutor = ExpressionsWrap.GetNativeTranlator<Func<string, JSObject>>()(papis, env, moduleExecutorFunc);
+            moduleExecutor = ExpressionsWrap.GetNativeTranlator<Func<string, ScriptObject>>()(papis, env, moduleExecutorFunc);
 
             var globalVal = PuertsNative.pesapi_global(papis, env);
 
@@ -117,7 +117,7 @@ namespace Puerts
 
         
 
-        private Func<string, JSObject> moduleExecutor;
+        private Func<string, ScriptObject> moduleExecutor;
 
         // 这个和析构函数不一样，比如一个原生对象，如果传指针，不用做对象的delete，但如果宿主是带gc的语言，还是要处理引用持有的问题
         // 不过析构那如果参数带上是否要析构，设计上可以不需要这个回调
@@ -192,7 +192,7 @@ namespace Puerts
 
         pesapi_callback createFunctionDelegate;
 
-        public JSObject ExecuteModule(string specifier)
+        public ScriptObject ExecuteModule(string specifier)
         {
 #if THREAD_SAFE
             lock(this) {
@@ -293,20 +293,20 @@ namespace Puerts
         }
 #endif
 
-        List<WeakReference<JSObject>> allocedJsObject = new List<WeakReference<JSObject>>();
+        List<WeakReference<ScriptObject>> allocedJsScriptObject = new List<WeakReference<ScriptObject>>();
 
-        internal void addAllocedJsObject(JSObject obj)
+        internal void addAllocedScriptObject(ScriptObject obj)
         {
-            foreach (var weakRef in allocedJsObject)
+            foreach (var weakRef in allocedJsScriptObject)
             {
-                JSObject d;
+                ScriptObject d;
                 if (!weakRef.TryGetTarget(out d))
                 {
                     weakRef.SetTarget(obj);
                     return;
                 }
             }
-            allocedJsObject.Add(new WeakReference<JSObject>(obj));
+            allocedJsScriptObject.Add(new WeakReference<ScriptObject>(obj));
         }
 
         List<IntPtr> pendingKillScriptObjectRefs = new List<IntPtr>();
@@ -335,7 +335,7 @@ namespace Puerts
                         var objRef = pendingKillScriptObjectRefs[lastIndex];
                         pendingKillScriptObjectRefs.RemoveAt(lastIndex);
 
-                        JSObject.ReleaseObjRef(papis, env, objRef, false);
+                        ScriptObject.ReleaseObjRef(papis, env, objRef, false);
                     }
                 }
                 finally
@@ -370,15 +370,15 @@ namespace Puerts
             GC.WaitForPendingFinalizers();
             cleanupPendingKillScriptObjects();
 
-            foreach (var weakRef in allocedJsObject)
+            foreach (var weakRef in allocedJsScriptObject)
             {
-                JSObject obj;
+                ScriptObject obj;
                 if (weakRef.TryGetTarget(out obj))
                 {
                     obj.ForceDispose();
                 }
             }
-            allocedJsObject.Clear();
+            allocedJsScriptObject.Clear();
 
             var scope = PuertsNative.pesapi_open_scope(papis, envRef);
             var env = PuertsNative.pesapi_get_env_from_ref(papis, envRef);

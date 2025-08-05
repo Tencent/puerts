@@ -310,17 +310,17 @@ namespace PuertsIl2cpp.Editor
                 
 
                 Type[] PuerDelegates = {
-                    typeof(Func<string, Puerts.JSObject>),
-                    typeof(Func<Puerts.JSObject, string, string>),
-                    typeof(Func<Puerts.JSObject, string, int>),
-                    typeof(Func<Puerts.JSObject, string, uint>),
-                    typeof(Func<Puerts.JSObject, string, long>),
-                    typeof(Func<Puerts.JSObject, string, ulong>),
-                    typeof(Func<Puerts.JSObject, string, short>),
-                    typeof(Func<Puerts.JSObject, string, ushort>),
-                    typeof(Func<Puerts.JSObject, string, float>),
-                    typeof(Func<Puerts.JSObject, string, double>),
-                    typeof(Func<Puerts.JSObject, string, Puerts.JSObject>)
+                    typeof(Func<string, Puerts.ScriptObject>),
+                    typeof(Func<Puerts.ScriptObject, string, string>),
+                    typeof(Func<Puerts.ScriptObject, string, int>),
+                    typeof(Func<Puerts.ScriptObject, string, uint>),
+                    typeof(Func<Puerts.ScriptObject, string, long>),
+                    typeof(Func<Puerts.ScriptObject, string, ulong>),
+                    typeof(Func<Puerts.ScriptObject, string, short>),
+                    typeof(Func<Puerts.ScriptObject, string, ushort>),
+                    typeof(Func<Puerts.ScriptObject, string, float>),
+                    typeof(Func<Puerts.ScriptObject, string, double>),
+                    typeof(Func<Puerts.ScriptObject, string, Puerts.ScriptObject>)
                 };
 
                 HashSet<Type> typeInGenericArgument = new HashSet<Type>();
@@ -602,7 +602,7 @@ namespace PuertsIl2cpp.Editor
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
 
 #if UNITY_WEBGL
-                    //打开这个会导致支持不了WebGL和QuickJs并存，因为生成代码的papid都调用WebGL的静态实现了
+                    //鎵撳紑杩欎釜浼氬鑷存敮鎸佷笉浜哤ebGL鍜孮uickJs骞跺瓨锛屽洜涓虹敓鎴愪唬鐮佺殑papid閮借皟鐢╓ebGL鐨勯潤鎬佸疄鐜颁簡
 //                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
 #endif
 

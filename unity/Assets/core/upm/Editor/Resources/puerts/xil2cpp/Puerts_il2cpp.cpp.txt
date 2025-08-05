@@ -549,11 +549,11 @@ void SetGlobalType_ArrayBuffer(Il2CppReflectionType *type)
     g_arrayBufferBytesField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Bytes");
 }
 
-void SetGlobalType_JSObject(Il2CppReflectionType *type)
+void SetGlobalType_ScriptObject(Il2CppReflectionType *type)
 {
     if (!type)
     {
-        Exception::Raise(Exception::GetInvalidOperationException("type of JSObject is null"));
+        Exception::Raise(Exception::GetInvalidOperationException("type of ScriptObject is null"));
     }
     g_typeofPersistentObjectInfo = il2cpp_codegen_class_from_type(type->type);
 }
@@ -2203,9 +2203,9 @@ static void ReflectionSetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
     }
 }
 
-Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, struct pesapi_ffi* apis, Il2CppString* key, Il2CppReflectionType* rtype)
+Il2CppObject* ScriptObjectGetValue(Il2CppObject* scriptObject, struct pesapi_ffi* apis, Il2CppString* key, Il2CppReflectionType* rtype)
 {
-    PObjectRefInfo* objectInfo = GetPObjectRefInfo(jsObject);
+    PObjectRefInfo* objectInfo = GetPObjectRefInfo(scriptObject);
 
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(key);
     std::string key_std = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
@@ -2920,7 +2920,7 @@ extern "C" {
 void InitialPuerts(pesapi_registry_api* registry_api, pesapi_registry registry)
 {
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
-    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
+    InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_ScriptObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ScriptObject);
     InternalCalls::Add("Puerts.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
     InternalCalls::Add("Puerts.NativeAPI::EvalInternal(System.IntPtr,System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("Puerts.NativeAPI::SetObjectToGlobal(System.IntPtr,System.IntPtr,System.String,System.Object)", (Il2CppMethodPointer)puerts::SetObjectToGlobal);
@@ -2928,7 +2928,7 @@ void InitialPuerts(pesapi_registry_api* registry_api, pesapi_registry registry)
     InternalCalls::Add("Puerts.NativeAPI::InitialPapiEnvRef(System.IntPtr,System.IntPtr,System.Object,System.Reflection.MethodBase,System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::InitialPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::CleanupPapiEnvRef(System.IntPtr,System.IntPtr)", (Il2CppMethodPointer)puerts::CleanupPapiEnvRef);
     InternalCalls::Add("Puerts.NativeAPI::DestroyJSEnvPrivate(System.IntPtr)", (Il2CppMethodPointer)puerts::DestroyJSEnvPrivate);
-    InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
+    InternalCalls::Add("Puerts.ScriptObject::GetValue(System.IntPtr,System.String,System.Type)", (Il2CppMethodPointer)puerts::ScriptObjectGetValue);
     InternalCalls::Add("Puerts.NativeAPI::SetExtensionMethodGet(System.Reflection.MethodBase)", (Il2CppMethodPointer)puerts::SetExtensionMethodGet);
     puerts::g_registry_api = registry_api;
     puerts::g_registry = registry;

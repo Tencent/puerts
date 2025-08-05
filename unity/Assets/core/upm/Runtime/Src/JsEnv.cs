@@ -145,16 +145,16 @@ namespace Puerts
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {
-            if (exportee == "" && typeof(T) != typeof(JSObject))
+            if (exportee == "" && typeof(T) != typeof(ScriptObject))
             {
-                throw new Exception("T must be Puerts.JSObject when getting the module namespace");
+                throw new Exception("T must be Puerts.ScriptObject when getting the module namespace");
             }
-            JSObject jso = env.ExecuteModule(specifier);
+            ScriptObject jso = env.ExecuteModule(specifier);
             if (exportee == "") return (T)(object)jso;
 
             return jso.Get<T>(exportee);
         }
-        public JSObject ExecuteModule(string specifier)
+        public ScriptObject ExecuteModule(string specifier)
         {
             return env.ExecuteModule(specifier);
         }

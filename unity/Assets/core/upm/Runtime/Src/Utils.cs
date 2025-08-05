@@ -402,7 +402,7 @@ namespace Puerts
         {
             if (jsType == JsValueType.NativeObject) 
             {
-                if (csType == typeof(JSObject)) // 非要把一个NativeObject赋值给JSObject是允许的。
+                if (csType == typeof(ScriptObject)) // 非要把一个NativeObject赋值给JSObject是允许的。
                 {
                     return true;
                 }

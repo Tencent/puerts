@@ -14,24 +14,24 @@ using System.Runtime.CompilerServices;
 namespace Puerts
 {
     [UnityEngine.Scripting.Preserve]
-    public class JSObject
+    public class ScriptObject
     {
         IntPtr apis; // PObjectRefInfo first ptr
         IntPtr valueRef;
         IntPtr nativeJsEnv;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        object GetJSObjectValue(IntPtr apis, string key, Type resultType)
+        object GetValue(IntPtr apis, string key, Type resultType)
         {
             throw new NotImplementedException();
         }
 
         public T Get<T>(string key) 
         {
-            return (T)GetJSObjectValue(apis, key, typeof(T));
+            return (T)GetValue(apis, key, typeof(T));
         }
 
-        ~JSObject()
+        ~ScriptObject()
         {
             Puerts.NativeAPI.AddPendingKillScriptObjects(apis, nativeJsEnv, valueRef);
         }

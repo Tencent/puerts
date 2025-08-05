@@ -13,20 +13,19 @@ using System.Runtime.InteropServices;
 
 namespace Puerts
 {
-    // TODO: rename to ScriptObject
-    public class JSObject : IDisposable
+    public class ScriptObject : IDisposable
     {
         internal IntPtr apis;
         internal IntPtr objRef;
         internal Dictionary<Type, Delegate> delegateCache = new Dictionary<Type, Delegate>();
         private ScriptEnv scripEnv;
 
-        internal JSObject(ScriptEnv env, IntPtr apis, IntPtr valueRef)
+        internal ScriptObject(ScriptEnv env, IntPtr apis, IntPtr valueRef)
         {
             this.scripEnv = env;
             this.apis = apis;
             this.objRef = valueRef;
-            env.addAllocedJsObject(this);
+            env.addAllocedScriptObject(this);
         }
 
         public T Get<T>(string key) 
@@ -138,7 +137,7 @@ namespace Puerts
             CoreDispose(false, disposing);
         }
 
-        ~JSObject() 
+        ~ScriptObject() 
         {
             Dispose(false);
         }
