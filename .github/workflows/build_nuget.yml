@@ -94,14 +94,46 @@ jobs:
             done
           done
       
+      # puerts\unity\native\papi-nodejs\.backends\papi-nodejs\lib\Linux\libnode.so.93
+      # puerts\unity\native\papi-nodejs\.backends\papi-nodejs\lib\Win64\libnode.dll
+      # puerts\unity\native\papi-nodejs\.backends\papi-nodejs\lib\macOS\libnode.93.dylib
+      - name: Process libraries dependencies
+        run: |
+          # Move libnode libraries to build directories
+          if ("${{ matrix.platform }}" -eq "linux" -and (Test-Path "unity/native/papi-nodejs/build_linux_x64_papi-nodejs")) {
+            Move-Item -Path "unity/native/papi-nodejs/.backends/papi-nodejs/lib/Linux/libnode.so.93" -Destination "unity/native/papi-nodejs/build_linux_x64_papi-nodejs/libnode.so.93" -Force
+          }
+          if ("${{ matrix.platform }}" -eq "win" -and (Test-Path "unity/native/papi-nodejs/build_win_x64_papi-nodejs/Release")) {
+            Move-Item -Path "unity/native/papi-nodejs/.backends/papi-nodejs/lib/Win64/libnode.dll" -Destination "unity/native/papi-nodejs/build_win_x64_papi-nodejs/Release/libnode.dll" -Force
+          }
+          if ("${{ matrix.platform }}" -eq "osx" -and (Test-Path "unity/Assets/core/upm/Plugins/macOS")) {
+            Move-Item -Path "unity/native/papi-nodejs/.backends/papi-nodejs/lib/macOS/libnode.93.dylib" -Destination "unity/Assets/core/upm/Plugins/macOS/libnode.93.dylib" -Force
+          }
+        shell: pwsh
+
+      
+      
       - name: Upload all native artifacts
         uses: actions/upload-artifact@v4
         with:
           name: natives-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            unity/Assets/core/upm/Plugins/**/*
-            !unity/Assets/core/upm/Plugins/**/*.meta
+            unity/Assets/core/upm/Plugins/macOS/*.dylib
+            unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
 
+            unity/native/papi-nodejs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-nodejs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            unity/native/papi-nodejs/build_linux_x64_papi-nodejs/libnode.so.93
+
+            unity/native/papi-quickjs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-quickjs/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+
+            unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            
+            unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
   pack_nuget:
     name: Pack NuGet
     needs: build

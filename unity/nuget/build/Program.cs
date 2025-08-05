@@ -93,25 +93,49 @@ public class BuildContext : FrostingContext
 
             foreach (var projectItem in WellKnownProjects.NativeAssetsProjects)
             {
-                var unityRid = projectItem.DotNetRid switch
+                if (projectItem.CmakeRid == "osx")
                 {
-                    "win-x64" => "x86_64",
-                    "linux-x64" => "x86_64",
-                    "osx" => "macOS",
-                    _ => throw new NotSupportedException($"RID '{projectItem.DotNetRid}' is not supported.")
-                };
+                    // natives-osx-auto\Assets\core\upm\Plugins\macOS\*.dylib
+                    var nativeAssetsPathmacOS = nativeAssetsDirectory.Path
+                        .Combine("natives-osx-auto")
+                        .Combine("Assets")
+                        .Combine("core")
+                        .Combine("upm")
+                        .Combine("Plugins")
+                        .Combine("macOS");
 
-                var suffix = projectItem.DotNetRid switch
-                {
-                    "win-x64" => ".dll",
-                    "linux-x64" => ".so",
-                    "osx" => ".dylib",
-                    _ => throw new NotSupportedException($"RID '{projectItem.DotNetRid}' is not supported.")
-                };
+                    var targetDirectorymacOS = context.ProjectsRoot.Path
+                        .Combine(projectItem.Name)
+                        .Combine("lib")
+                        .Combine(projectItem.DotNetRid).Combine("native");
+
+                    Directory.CreateDirectory(targetDirectorymacOS.FullPath);
+
+                    var filesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/*{projectItem.DotNetNativeName}*dylib"), new GlobberSettings() { IsCaseSensitive = false });
+                    if (filesmacOS.Count == 0)
+                    {
+                        throw new CakeException($"No native assets found in '{nativeAssetsPathmacOS.FullPath}' for project '{projectItem.Name}'.");
+                    }
+                    if (filesmacOS.Count > 1)
+                    {
+                        throw new CakeException($"Multiple native assets found in '{nativeAssetsPathmacOS.FullPath}' for project '{projectItem.Name}'. Expected only one. Found: {filesmacOS.Count}, files: {string.Join(", ", filesmacOS.Select(f => f.FullPath))}");
+                    }
+                    context.CopyFiles(filesmacOS, targetDirectorymacOS.FullPath);
+
+                    // Copy libnode dependencies for NodeJS
+                    if (projectItem.DotNetNativeName == "NodeJS")
+                    {
+                        var libnodeFilesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/libnode*"), new GlobberSettings() { IsCaseSensitive = false });
+                        context.CopyFiles(libnodeFilesmacOS, targetDirectorymacOS.FullPath);
+                    }
+
+                    continue;
+                }
 
                 var nativeAssetsPath = nativeAssetsDirectory.Path
                     .Combine("natives-" + projectItem.CmakeRid)
-                    .Combine(unityRid);
+                    .Combine("native")
+                    .Combine(projectItem.CmakeNativeName);
 
                 if (!Directory.Exists(nativeAssetsPath.FullPath))
                 {
@@ -125,7 +149,7 @@ public class BuildContext : FrostingContext
 
                 Directory.CreateDirectory(targetDirectory.FullPath);
 
-                var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*{suffix}"));
+                var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*"));
                 context.CopyFiles(files, targetDirectory.FullPath);
             }
         }
@@ -286,7 +310,7 @@ public class BuildContext : FrostingContext
                     {
                         "win-x64" => "win-x64",
                         "linux-x64" => "linux-x64",
-                        "osx" => "osx-auto",
+                        "osx" => "osx",
                         _ => throw new NotSupportedException($"RID '{DotNetRid}' is not supported.")
                     };
                 }
