@@ -206,8 +206,7 @@ public class BuildContext : FrostingContext
                 }
 
                 var packageFiles = Directory.EnumerateFiles(packageOutputDirectory.FullPath)
-                    .Where(file => file.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase)
-                                   || file.EndsWith(".snupkg", StringComparison.OrdinalIgnoreCase));
+                    .Where(file => file.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase));
 
 
                 foreach (var nugetPackageFile in packageFiles)
@@ -219,7 +218,8 @@ public class BuildContext : FrostingContext
                         new Cake.Common.Tools.DotNet.NuGet.Push.DotNetNuGetPushSettings()
                         {
                             Source = context.Source,
-                            ApiKey = context.ApiKey
+                            ApiKey = context.ApiKey,
+                            SkipDuplicate = true
                         });
                 }
             }
