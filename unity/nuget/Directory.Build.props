@@ -4,11 +4,11 @@
 
     <NoWarn>NU5128</NoWarn>
 
-    <BuildPackageVersion>0.0.1</BuildPackageVersion>
+    <BuildPackageVersion>3.0.0-alpha1</BuildPackageVersion>
 
     <PackageProjectUrl>https://github.com/Tencent/puerts</PackageProjectUrl>
 
-    <Description>PUER(普洱) Typescript. Let's write your game in UE or Unity with TypeScript.</Description>
+    <Description>Puerts is a library that makes it easy to add scripting to your .NET applications. It currently supports JavaScript (via V8/Nodejs/Quickjs) and Lua.</Description>
     <Authors>Tencent</Authors>
     <Copyright>Copyright (C) 2020 Tencent.</Copyright>
 
@@ -16,7 +16,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Icon128.png</PackageIcon>
 
-    <PackageTags>puerts;typescript;unity;unrealengine;v8;dotnet;quickjs;lua</PackageTags>
+    <PackageTags>puerts;typescript;v8;nodejs;dotnet;quickjs;lua</PackageTags>
 
     <PuertsCoreVersion>$(BuildPackageVersion)</PuertsCoreVersion>
     <PuertsLuaVersion>$(BuildPackageVersion)</PuertsLuaVersion>
