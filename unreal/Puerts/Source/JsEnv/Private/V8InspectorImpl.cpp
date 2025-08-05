@@ -332,13 +332,14 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
         "Protocol-Version": "1.1"
         })";
 
-		JSONList = R"([
+        JSONList = R"([
 			{
 				"description": "Puerts Inspector",
 				"id": "0",
 				"title": "Puerts Inspector",
 				"type": "node",
-				"webSocketDebuggerUrl": "ws://127.0.0.1:)" + std::to_string(Port) + R"("
+				"webSocketDebuggerUrl": "ws://127.0.0.1:)" +
+                   std::to_string(Port) + R"("
 			}
 		])";
 
