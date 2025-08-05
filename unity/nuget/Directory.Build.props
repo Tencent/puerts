@@ -4,7 +4,7 @@
 
     <NoWarn>NU5128</NoWarn>
 
-    <BuildPackageVersion>3.0.0-alpha1</BuildPackageVersion>
+    <BuildPackageVersion>3.0.0-alpha2</BuildPackageVersion>
 
     <PackageProjectUrl>https://github.com/Tencent/puerts</PackageProjectUrl>
 
