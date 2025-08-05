@@ -130,7 +130,7 @@ jobs:
         if: ${{ github.event.inputs.publish == 'true' }}
         run: |
           cd unity/nuget
-          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd" --Source "https://api.nuget.org/v3/index.json" --ApiKey "${{ secrets.NUGET_PUB_KEY }}"
+          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd" --Source "https://api.nuget.org/v3/index.json" --ApiKey "${{ secrets.NUGET_API_KEY }}"
         shell: pwsh
       - name: Run NuGet Packaging
         if: ${{ github.event.inputs.publish == 'false' }}
