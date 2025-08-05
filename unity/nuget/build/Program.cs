@@ -111,10 +111,6 @@ public class BuildContext : FrostingContext
 
                 var nativeAssetsPath = nativeAssetsDirectory.Path
                     .Combine("natives-" + projectItem.CmakeRid)
-                    .Combine("Assets")
-                    .Combine("core")
-                    .Combine("upm")
-                    .Combine("Plugins")
                     .Combine(unityRid);
 
                 if (!Directory.Exists(nativeAssetsPath.FullPath))
