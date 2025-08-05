@@ -252,6 +252,12 @@ namespace Puerts
                 {
                     return PuertsNative.pesapi_create_null(apis, env);
                 }
+#if !PUERTS_GENERAL
+                if (value is UnityEngine.Object && (value as UnityEngine.Object) == null)
+                {
+                    return PuertsNative.pesapi_create_null(apis, env);
+                }
+#endif
                 var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                 var objectPool = ScriptEnv.scriptEnvs[envIdx].objectPool;
                 var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
