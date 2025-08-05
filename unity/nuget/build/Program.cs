@@ -126,7 +126,6 @@ public class BuildContext : FrostingContext
                 Directory.CreateDirectory(targetDirectory.FullPath);
 
                 var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*{suffix}"));
-                context.Log.Information($"native files: {files.ToString()}");
                 context.CopyFiles(files, targetDirectory.FullPath);
             }
         }
