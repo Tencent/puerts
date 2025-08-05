@@ -287,7 +287,7 @@ public class BuildContext : FrostingContext
                     {
                         "win-x64" => "win-x64",
                         "linux-x64" => "linux-x64",
-                        "osx" => "auto",
+                        "osx" => "osx-auto",
                         _ => throw new NotSupportedException($"RID '{DotNetRid}' is not supported.")
                     };
                 }
