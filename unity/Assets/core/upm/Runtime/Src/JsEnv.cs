@@ -308,32 +308,35 @@ namespace Puerts
 #endif
 
         [MonoPInvokeCallback(typeof(LogCallback))]
-        public static void LogCallback(string msg)
+        public static void LogCallback(IntPtr msg)
         {
+            var msgStr = Marshal.PtrToStringUTF8(msg) ?? string.Empty;
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            Console.WriteLine(msg);
+            Console.WriteLine(msgStr);
 #else
-            UnityEngine.Debug.Log(msg);
+            UnityEngine.Debug.Log(msgStr);
 #endif
         }
 
         [MonoPInvokeCallback(typeof(LogCallback))]
-        public static void LogWarningCallback(string msg)
+        public static void LogWarningCallback(IntPtr msg)
         {
+            var msgStr = Marshal.PtrToStringUTF8(msg) ?? string.Empty;
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            Console.WriteLine(msg);
+            Console.WriteLine(msgStr);
 #else
-            UnityEngine.Debug.LogWarning(msg);
+            UnityEngine.Debug.LogWarning(msgStr);
 #endif
         }
 
         [MonoPInvokeCallback(typeof(LogCallback))]
-        public static void LogErrorCallback(string msg)
+        public static void LogErrorCallback(IntPtr msg)
         {
+            var msgStr = Marshal.PtrToStringUTF8(msg) ?? string.Empty;
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            Console.WriteLine(msg);
+            Console.WriteLine(msgStr);
 #else
-            UnityEngine.Debug.LogError(msg);
+            UnityEngine.Debug.LogError(msgStr);
 #endif
         }
 
