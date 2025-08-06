@@ -8,7 +8,7 @@
   <Import Project="..\NativeAssets.Common.props" />
 
   <ItemGroup>
-    <None Include="lib\**\*.so" Pack="True" PackagePath="runtimes\" />
+    <None Include="lib\**\*.so*" Pack="True" PackagePath="runtimes\" />
   </ItemGroup>
 
 </Project>
