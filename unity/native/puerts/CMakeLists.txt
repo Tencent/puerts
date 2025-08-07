@@ -38,7 +38,7 @@ set(eastl_sources
 file(GLOB_RECURSE eastl_headers "../EASTL/include/EASTL/**.h")
 
 
-if ( APPLE AND IOS )
+if ( APPLE AND IOS OR SWITCH_PLATFORM OR (CMAKE_SYSTEM_NAME MATCHES "Emscripten") )
     add_library(PuertsCore STATIC ${puerts_sources} ${eastl_sources})
 else ()
     add_library(PuertsCore SHARED ${puerts_sources} ${eastl_sources}) # if add eastl_headers will undefined symbol: __udivti3 __udivmodti4 
