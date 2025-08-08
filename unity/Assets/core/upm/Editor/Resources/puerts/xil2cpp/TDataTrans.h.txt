@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#pragma once
+
 #include "pesapi.h"
 #include <stdarg.h>
 #include "vm/Class.h"
@@ -217,7 +219,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 };
 
 template <typename T>
-struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) < 8 && std::is_signed<T>::value>::type>
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) != 8 && std::is_signed<T>::value>::type>
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
@@ -236,7 +238,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 };
 
 template <typename T>
-struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) < 8 && !std::is_signed<T>::value>::type>
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) != 8 && !std::is_signed<T>::value>::type>
 {
     static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
     {
