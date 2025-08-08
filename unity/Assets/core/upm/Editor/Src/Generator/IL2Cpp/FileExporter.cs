@@ -481,7 +481,14 @@ namespace PuertsIl2cpp.Editor
                             var flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
                             return t.GetMethods(flag).Cast<MethodBase>().Concat(t.GetConstructors(flag));
                         })
-                        .Where(m => m.GetMethodBody() != null && !m.IsGenericMethodDefinition && !m.IsAbstract).SelectMany(
+                        .Where(m =>
+                        {
+                            try
+                            {
+                                return m.GetMethodBody() != null && !m.IsGenericMethodDefinition && !m.IsAbstract;
+                            }
+                            catch { return false; }
+                        }).SelectMany(
                         mb =>
                         {
                             try
