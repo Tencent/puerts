@@ -1700,7 +1700,10 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
             }
             int t;
             if (isLastArgument && hasParamArray)
+            {
                 t = (int) parameterKlass->element_class->byval_arg.type;
+                parameterKlass = parameterKlass->element_class;
+            }
             else
                 t = parameterType->type; 
 handle_underlying:
