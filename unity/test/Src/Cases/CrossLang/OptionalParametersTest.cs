@@ -91,6 +91,21 @@ namespace Puerts.UnitTest
             return i + d;
         }
         [UnityEngine.Scripting.Preserve]
+        public string Test7(string keyStr, bool returnKeyIfValueNotFound = true)
+        {
+            return "aa";
+        }
+        [UnityEngine.Scripting.Preserve]
+        public string Test7(string key, params string[] args)
+        {
+            return "bb";
+        }
+        [UnityEngine.Scripting.Preserve]
+        public string Test7(string key, params object[] args)
+        {
+            return "cc";
+        }
+        [UnityEngine.Scripting.Preserve]
         public bool TestOptClass(List<string> list = default(List<string>))
         {
             return list == null;
@@ -348,6 +363,22 @@ namespace Puerts.UnitTest
            ");
             Assert.AreEqual(0, ret);            
             jsEnv.Tick();
+        }
+        
+        [Test]
+        public void InstanceMethodTest17()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            string ret = jsEnv.Eval<string>(@"
+                (function() {
+                    let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                    let ret = temp.Test7('abc', 1);
+                    return ret;
+                })()
+           ");
+            Assert.AreEqual("cc", ret);
+            jsEnv.Tick();
+
         }
 
         [Test]
