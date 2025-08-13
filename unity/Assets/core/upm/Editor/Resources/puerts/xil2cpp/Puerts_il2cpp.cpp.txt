@@ -346,13 +346,8 @@ static bool HasParamArray(const MethodInfo* method)
         methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
 
 #if defined(UNITY_2022_1_OR_NEWER)
-    auto reader = il2cpp::vm::MetadataCache::GetCustomAttributeDataReader(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1));
-
-    auto ctorIter = reader.GetCtorIterator([](const MethodInfo* ctor) {
-        return ctor->klass == s_ParamArrayAttribute;
-    });
-    const MethodInfo* ctor;
-    return (reader.IterateAttributeCtors(&ctor, &ctorIter));
+    Il2CppMetadataCustomAttributeHandle attributeHandle = il2cpp::vm::MetadataCache::GetCustomAttributeTypeToken(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1));
+    return Reflection::HasAttribute(attributeHandle, s_ParamArrayAttribute);
 #else
     return (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1), s_ParamArrayAttribute));
 #endif
