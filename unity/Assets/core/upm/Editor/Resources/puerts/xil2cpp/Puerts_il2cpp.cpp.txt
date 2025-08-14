@@ -1372,7 +1372,11 @@ pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass
         targetClass = il2cpp_defaults.object_class;
     }
     
-    if (Class::IsEnum(targetClass))
+    if ((targetClass == il2cpp_defaults.object_class) && Class::IsEnum(obj->klass))
+    {
+        targetClass = Class::GetElementClass(obj->klass);
+    }
+    else if (Class::IsEnum(targetClass))
     {
         targetClass = Class::GetElementClass(targetClass);
     }
