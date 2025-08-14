@@ -346,7 +346,7 @@ static bool HasParamArray(const MethodInfo* method)
         methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
 
 #if defined(UNITY_2022_1_OR_NEWER)
-    Il2CppMetadataCustomAttributeHandle attributeHandle = il2cpp::vm::MetadataCache::GetCustomAttributeTypeToken(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1));
+    Il2CppMetadataCustomAttributeHandle attributeHandle = MetadataCache::GetCustomAttributeTypeToken(methodWithParameterAttributeInformation->klass->image, il2cpp::vm::Method::GetParameterToken(method, method->parameters_count - 1));
     return Reflection::HasAttribute(attributeHandle, s_ParamArrayAttribute);
 #else
     return (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1), s_ParamArrayAttribute));
