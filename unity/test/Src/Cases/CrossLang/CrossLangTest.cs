@@ -170,6 +170,9 @@ namespace Puerts.UnitTest
         }
 
         [UnityEngine.Scripting.Preserve]
+        public TestEnum[] EnumArray = { TestEnum.A, TestEnum.B };
+
+        [UnityEngine.Scripting.Preserve]
         public static void TestEnumCheck(string a, TestEnum e = TestEnum.A, int b = 10) // 有默认值会促使其检查参数类型
         {
 
@@ -1101,6 +1104,20 @@ namespace Puerts.UnitTest
                 })()
             ");
             Assert.AreEqual("213 1 213", ret);
+            jsEnv.Tick();
+        }
+
+        [Test]
+        public void EnumArrayTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var ret = jsEnv.Eval<string>(@"
+                (function() {
+                    const helper = new CS.Puerts.UnitTest.CrossLangTestHelper();
+                    return typeof helper.EnumArray.get_Item(0)
+                })()
+            ");
+            Assert.AreEqual("number", ret);
             jsEnv.Tick();
         }
 
