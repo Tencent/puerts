@@ -87,7 +87,14 @@ static FString SafeName(const FString& Name)
                    .Replace(TEXT(")"), TEXT("_"))
                    .Replace(TEXT("?"), TEXT("$"))
                    .Replace(TEXT(","), TEXT("_"))
-                   .Replace(TEXT("="), TEXT("_"));
+                   .Replace(TEXT("="), TEXT("_"))
+                   .Replace(TEXT("'"), TEXT("_"))
+                   .Replace(TEXT("<"), TEXT("_"))
+                   .Replace(TEXT(">"), TEXT("_"))
+                   .Replace(TEXT("？"), TEXT("_"))
+                   .Replace(TEXT("（"), TEXT("_"))
+                   .Replace(TEXT("）"), TEXT("_"));
+
     if (Ret.Len() > 0)
     {
         auto FirstChar = Ret[0];
@@ -1485,7 +1492,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
             {
                 TmpBuff << ", ";
             }
-            TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ?
+            TmpBuff << SafeParamName(Struct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
                                                                   Property->GetAuthoredName()
 #else
