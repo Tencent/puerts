@@ -31,7 +31,7 @@ namespace Puerts
         IntPtr envRef;
         IntPtr nativeScriptObjectsRefsMgr;
 
-        private Func<string, JSObject> moduleExecutor;
+        private Func<string, ScriptObject> moduleExecutor;
 
         protected int debugPort;
 
@@ -80,10 +80,10 @@ namespace Puerts
                         extensionMethodGetMethodInfo = typeof(PuertsIl2cpp.ExtensionMethodInfo).GetMethod("Get");
                         Puerts.NativeAPI.SetExtensionMethodGet(extensionMethodGetMethodInfo);
 
-                        persistentObjectInfoType = typeof(Puerts.JSObject);
+                        persistentObjectInfoType = typeof(Puerts.ScriptObject);
                         Puerts.NativeAPI.SetGlobalType_TypedValue(typeof(TypedValue));
                         Puerts.NativeAPI.SetGlobalType_ArrayBuffer(typeof(ArrayBuffer));
-                        Puerts.NativeAPI.SetGlobalType_JSObject(typeof(JSObject));
+                        Puerts.NativeAPI.SetGlobalType_ScriptObject(typeof(ScriptObject));
 
                         PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
                         isInitialized = true;
@@ -119,7 +119,7 @@ namespace Puerts
             var scope = PuertsNative.pesapi_open_scope(papis, envRef);
             var env = PuertsNative.pesapi_get_env_from_ref(papis, envRef);
             var moduleExecutorFunc = this.backend.GetModuleExecutor(env);
-            moduleExecutor = Puerts.NativeAPI.PValueToCSharp(papis, env, moduleExecutorFunc, typeof(Func<string, JSObject>)) as Func<string, JSObject>;
+            moduleExecutor = Puerts.NativeAPI.PValueToCSharp(papis, env, moduleExecutorFunc, typeof(Func<string, ScriptObject>)) as Func<string, ScriptObject>;
             PuertsNative.pesapi_close_scope(papis, scope);
 
             Puerts.NativeAPI.SetObjectToGlobal(papis, envRef, "scriptEnv", this);
@@ -203,16 +203,16 @@ namespace Puerts
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {
-            if (exportee == "" && typeof(T) != typeof(JSObject)) {
-                throw new Exception("T must be Puerts.JSObject when getting the module namespace");
+            if (exportee == "" && typeof(T) != typeof(ScriptObject)) {
+                throw new Exception("T must be Puerts.ScriptObject when getting the module namespace");
             }
-            JSObject jso = moduleExecutor(specifier);
+            ScriptObject jso = moduleExecutor(specifier);
             
             if (exportee == "") return (T)(object)jso;
             
             return jso.Get<T>(exportee);
         }
-        public JSObject ExecuteModule(string specifier)
+        public ScriptObject ExecuteModule(string specifier)
         {
             return moduleExecutor(specifier);
         }

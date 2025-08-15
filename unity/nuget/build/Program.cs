@@ -111,7 +111,7 @@ public class BuildContext : FrostingContext
 
                     Directory.CreateDirectory(targetDirectorymacOS.FullPath);
 
-                    var filesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/*{projectItem.DotNetNativeName}*dylib"), new GlobberSettings() { IsCaseSensitive = false});
+                    var filesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/*{projectItem.DotNetNativeName}*dylib"), new GlobberSettings() { IsCaseSensitive = false });
                     if (filesmacOS.Count == 0)
                     {
                         throw new CakeException($"No native assets found in '{nativeAssetsPathmacOS.FullPath}' for project '{projectItem.Name}'.");
@@ -121,6 +121,13 @@ public class BuildContext : FrostingContext
                         throw new CakeException($"Multiple native assets found in '{nativeAssetsPathmacOS.FullPath}' for project '{projectItem.Name}'. Expected only one. Found: {filesmacOS.Count}, files: {string.Join(", ", filesmacOS.Select(f => f.FullPath))}");
                     }
                     context.CopyFiles(filesmacOS, targetDirectorymacOS.FullPath);
+
+                    // Copy libnode dependencies for NodeJS
+                    if (projectItem.DotNetNativeName == "NodeJS")
+                    {
+                        var libnodeFilesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/libnode*"), new GlobberSettings() { IsCaseSensitive = false });
+                        context.CopyFiles(libnodeFilesmacOS, targetDirectorymacOS.FullPath);
+                    }
 
                     continue;
                 }
@@ -142,7 +149,7 @@ public class BuildContext : FrostingContext
 
                 Directory.CreateDirectory(targetDirectory.FullPath);
 
-                var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*.*"));
+                var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*"));
                 context.CopyFiles(files, targetDirectory.FullPath);
             }
         }
@@ -206,8 +213,7 @@ public class BuildContext : FrostingContext
                 }
 
                 var packageFiles = Directory.EnumerateFiles(packageOutputDirectory.FullPath)
-                    .Where(file => file.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase)
-                                   || file.EndsWith(".snupkg", StringComparison.OrdinalIgnoreCase));
+                    .Where(file => file.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase));
 
 
                 foreach (var nugetPackageFile in packageFiles)
@@ -219,7 +225,8 @@ public class BuildContext : FrostingContext
                         new Cake.Common.Tools.DotNet.NuGet.Push.DotNetNuGetPushSettings()
                         {
                             Source = context.Source,
-                            ApiKey = context.ApiKey
+                            ApiKey = context.ApiKey,
+                            SkipDuplicate = true
                         });
                 }
             }

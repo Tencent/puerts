@@ -350,7 +350,7 @@ namespace Puerts.UnitTest
         public void FuncAsScriptObjectLuaTest()
         {
             var luaEnv = new ScriptEnv(new BackendLua());
-            var jso = luaEnv.Eval<JSObject>(@"
+            var jso = luaEnv.Eval<ScriptObject>(@"
                 return function() end
             ");
             Assert.True(jso != null);
