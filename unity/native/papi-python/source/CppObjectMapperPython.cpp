@@ -26,6 +26,27 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
     data->data = Data;
     data->mapper = this;
 
+    auto* traceObj = PyObject_New(__papi_func_tracer, &papi_func_tracer_cls_def);
+    traceObj->func_tracer_udata = PyCapsule_New(data, nullptr, nullptr);
+
+    PyObject* func_data = PyTuple_New(3);
+    PyTuple_SetItem(func_data, 0, PyCapsule_New((void*) Callback, nullptr, nullptr));
+    PyTuple_SetItem(func_data, 1, PyCapsule_New(Data, nullptr, nullptr));
+    PyTuple_SetItem(func_data, 2, (PyObject*) traceObj);
+
+    PyMethodDef meh = {"__papi_func_tracer",
+        [](PyObject* self, PyObject* args) -> PyObject*
+        {
+            pesapi_scope__ scope(PyInterpreterState_Get());
+            auto callback = (pesapi_callback) PyCapsule_GetPointer(PyTuple_GetItem(args, 0), nullptr);
+            void* data = PyCapsule_GetPointer(PyTuple_GetItem(args, 1), nullptr);
+            pesapi_callback_info__ info = {
+                .self = self, .args = args, .argc = (int)PyTuple_Size(args), .data = data, .res = nullptr, .ex = nullptr};
+        },
+        METH_VARARGS};
+
+    PyObject* func = PyCMethod_New(&meh, func_data, 0, 0);
+
     return nullptr;
 }
 
@@ -40,7 +61,6 @@ PyObject* CppObjectMapper::CreateError(const char* message)
 void CppObjectMapper::BindAndAddToCache(
     const puerts::ScriptClassDefinition* typeInfo, const void* ptr, PyObject* value, bool callFinalize)
 {
-
 }
 
 // TODO
@@ -77,13 +97,11 @@ PyObject* CppObjectMapper::MakeMethod(pesapi_callback Callback, void* Data)
 // TODO
 void CppObjectMapper::InitMethod(puerts::ScriptFunctionInfo* FuncInfo, PyObject* Obj)
 {
-
 }
 
 // TODO
 void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj)
 {
-
 }
 
 // TODO
@@ -153,18 +171,21 @@ void CppObjectMapper::Initialize(PyInterpreterState* State)
             auto _mapper = static_cast<CppObjectMapper*>(PyCapsule_GetPointer(self, nullptr));
             PyObject* this_val = self;
             Py_ssize_t argc_ssize = PyTuple_Size(args);
-            if (argc_ssize < 0) {
+            if (argc_ssize < 0)
+            {
                 return nullptr;
             }
-            auto** argv = (PyObject**)PyMem_Malloc(sizeof(PyObject*) * (size_t)argc_ssize);
-            if (!argv) {
+            auto** argv = (PyObject**) PyMem_Malloc(sizeof(PyObject*) * (size_t) argc_ssize);
+            if (!argv)
+            {
                 PyErr_NoMemory();
                 return nullptr;
             }
-            for (Py_ssize_t i = 0; i < argc_ssize; ++i) {
+            for (Py_ssize_t i = 0; i < argc_ssize; ++i)
+            {
                 argv[i] = PyTuple_GetItem(args, i);
             }
-            PyObject* ret = _mapper->findClassByName(this_val, (int)argc_ssize, argv);
+            PyObject* ret = _mapper->findClassByName(this_val, (int) argc_ssize, argv);
             PyMem_Free(argv);
             return ret;
         },

@@ -1,15 +1,19 @@
 ﻿/*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 Tencent.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
-#include <EASTL/string.h>
+#include <EASTL/vector.h>
+#include <EASTL/allocator_malloc.h>
 
 #include "CppObjectMapperPython.h"
+
+#include "Opaque.h"
 
 namespace pesapi
 {
@@ -75,17 +79,60 @@ struct caught_exception_info
     const char* message;
 };
 
+struct pesapi_scope__;
+
+static pesapi_scope__* getCurrentScope(PyInterpreterState* state)
+{
+    auto dict = PyInterpreterState_GetDict(state);
+    return (pesapi_scope__*) PyDict_GetItemOpaqueString(dict, "__papi_scope__");
+}
+
+static void setCurrentScope(PyInterpreterState* state, pesapi_scope__* scope)
+{
+    auto dict = PyInterpreterState_GetDict(state);
+    PyDict_SetItemOpaqueString(dict, "__papi_scope__", scope);
+}
+
 struct pesapi_scope__
 {
-    PyObject* ctxVar;    // Python context var
+    PyInterpreterState* state;
     pesapi_env_ref__* env_ref = nullptr;
     caught_exception_info* caught = nullptr;
 
-    explicit pesapi_scope__(PyObject* CtxVar)
+    pesapi_scope__* prev_scope;
+
+    const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 5;
+    PyObject* values[SCOPE_FIX_SIZE_VALUES_SIZE];
+    uint32_t values_used;
+    eastl::vector<PyObject**, eastl::allocator_malloc>* dynamic_alloc_values = nullptr;
+
+    explicit pesapi_scope__(PyInterpreterState* state)
     {
-        this->ctxVar = CtxVar;
-        PyContext_Enter(ctxVar);
+        this->state = state;
+        prev_scope = getCurrentScope(state);
+        setCurrentScope(state, this);
+        values_used = 0;
         caught = nullptr;
+    }
+
+    PyObject** allocValue()
+    {
+        PyObject** ret = nullptr;
+        if (values_used < SCOPE_FIX_SIZE_VALUES_SIZE)
+        {
+            ret = &(values[values_used++]);
+        }
+        else
+        {
+            if (!dynamic_alloc_values)
+            {
+                dynamic_alloc_values = new eastl::vector<PyObject**, eastl::allocator_malloc>();
+            }
+            ret = (PyObject**) PyMem_Malloc(sizeof(PyObject*));
+            dynamic_alloc_values->push_back(ret);
+        }
+        *ret = Py_None;    // Initialize to None
+        return ret;
     }
 
     void setCaughtException(PyObject* ex)
@@ -102,12 +149,31 @@ struct pesapi_scope__
         if (caught)
         {
             Py_XDECREF(caught->exception);
+            caught->~caught_exception_info();
             PyMem_Free(caught);
         }
-        PyContext_Exit(ctxVar);
-        Py_XDECREF(ctxVar);
+        for (size_t i = 0; i < values_used; i++)
+        {
+            PyObject_GC_Del((void*) values[i]);
+        }
+
+        if (dynamic_alloc_values)
+        {
+            size_t size = dynamic_alloc_values->size();
+            for (size_t i = 0; i < size; i++)
+            {
+                PyObject** dynamicValue = (*dynamic_alloc_values)[i];
+                PyObject_Free((void*) *dynamicValue);
+                PyMem_Free(dynamicValue);
+            }
+            dynamic_alloc_values->~vector();
+            dynamic_alloc_values = nullptr;
+        }
+        setCurrentScope(state, prev_scope);
     }
 };
+
+static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pesapi_scope__) > sizeof(pesapi_scope_memory__)");
 
 struct pesapi_callback_info__
 {

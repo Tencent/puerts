@@ -1,9 +1,10 @@
 ﻿/*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 Tencent.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
@@ -97,26 +98,6 @@ public:
         return false;
     }
 
-    static int PyObject_SetOpaqueString(PyObject *obj, const char* key, void *opaque)
-    {
-        return PyObject_SetAttrString(obj, key, PyCapsule_New(opaque, nullptr, nullptr));
-    }
-    static void* PyObject_GetOpaqueString(PyObject *obj, const char* key)
-    {
-        if (PyObject_HasAttrString(obj, key))
-        {
-            PyObject* capsule = PyObject_GetAttrString(obj, key);
-            if (PyCapsule_CheckExact(capsule))
-            {
-                void* data = PyCapsule_GetPointer(capsule, nullptr);
-                Py_DECREF(capsule);
-                return data;
-            }
-            Py_XDECREF(capsule);
-        }
-        return nullptr;
-    }
-
     PyObject* CreateFunction(pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize);
 
     PyObject* FindOrCreateClassByID(const void* typeId);
@@ -168,37 +149,28 @@ public:
 
     typedef struct
     {
-        PyObject_HEAD
-        PyObject* dict;
+        PyObject_HEAD PyObject* object_udata;
     } __papi_obj;
 
-    PyTypeObject papi_obj_cls_def = []() -> PyTypeObject {
+    PyTypeObject papi_obj_cls_def = []() -> PyTypeObject
+    {
         PyTypeObject t{};
-        t.ob_base.ob_base.ob_refcnt = 1;
-        t.ob_base.ob_base.ob_type = &PyType_Type;
-        t.ob_base.ob_size = 0;
-
-        t.tp_name = "__papi_obj";
+        t.ob_base = PyVarObject_HEAD_INIT(&PyType_Type, 0) t.tp_name = "__papi_obj";
         t.tp_basicsize = sizeof(__papi_obj);
         t.tp_flags = Py_TPFLAGS_DEFAULT;
-        t.tp_dictoffset = offsetof(__papi_obj, dict);
         t.tp_new = PyType_GenericNew;
         t.tp_is_gc = nullptr;
         t.tp_finalize = [](PyObject* self)
         {
             auto mapper = Get(PyInterpreterState_Get());
-            auto* object_udata =
-                (ObjectUserData*)PyObject_GetOpaqueString(self, mapper->object_udataKey);
+            auto* object_udata = (ObjectUserData*) ((__papi_obj*) self)->object_udata;
 
             if (object_udata && object_udata->ptr)
             {
                 if (object_udata->callFinalize && object_udata->typeInfo->Finalize)
                 {
                     object_udata->typeInfo->Finalize(
-                        &g_pesapi_ffi,
-                        (void*)object_udata->ptr,
-                        object_udata->typeInfo->Data,
-                        (void*)(mapper->GetEnvPrivate()));
+                        &g_pesapi_ffi, (void*) object_udata->ptr, object_udata->typeInfo->Data, (void*) (mapper->GetEnvPrivate()));
                 }
                 mapper->RemoveFromCache(object_udata->typeInfo, object_udata->ptr);
             }
@@ -209,8 +181,7 @@ public:
 
     typedef struct
     {
-        PyObject_HEAD
-        PyObject* dict;
+        PyObject_HEAD PyObject* func_tracer_udata;
     } __papi_func_tracer;
 
     struct FuncFinalizeData
@@ -220,25 +191,21 @@ public:
         CppObjectMapper* mapper;
     };
 
-    PyTypeObject papi_func_tracer_cls_def = []() -> PyTypeObject {
+    PyTypeObject papi_func_tracer_cls_def = []() -> PyTypeObject
+    {
         PyTypeObject t{};
-        t.ob_base.ob_base.ob_refcnt = 1;
-        t.ob_base.ob_base.ob_type = &PyType_Type;
-        t.ob_base.ob_size = 0;
-
-        t.tp_name = "__papi_func_tracer";
+        t.ob_base = PyVarObject_HEAD_INIT(&PyType_Type, 0) t.tp_name = "__papi_func_tracer";
         t.tp_basicsize = sizeof(__papi_func_tracer);
         t.tp_flags = Py_TPFLAGS_DEFAULT;
-        t.tp_dictoffset = offsetof(__papi_func_tracer, dict);
         t.tp_new = PyType_GenericNew;
         t.tp_is_gc = nullptr;
         t.tp_finalize = [](PyObject* self)
         {
             auto mapper = Get(PyInterpreterState_Get());
-            FuncFinalizeData* data = (FuncFinalizeData*)PyObject_GetOpaqueString(self, mapper->func_tracer_udataKey);
+            FuncFinalizeData* data = (FuncFinalizeData*) ((__papi_func_tracer*) self)->func_tracer_udata;
             if (data->finalize)
             {
-                data->finalize(&g_pesapi_ffi, data->data, (void*)mapper->GetEnvPrivate());
+                data->finalize(&g_pesapi_ffi, data->data, (void*) mapper->GetEnvPrivate());
             }
             PyMem_Free(data);
         };

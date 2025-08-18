@@ -1,9 +1,10 @@
 ﻿/*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 Tencent.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #include <Python.h>
 #include <EASTL/string.h>
@@ -35,6 +36,17 @@ inline pesapi_env pesapiEnvFromPyState(PyInterpreterState* state)
 inline PyInterpreterState* pyStateFromPesapiEnv(pesapi_env v)
 {
     return reinterpret_cast<PyInterpreterState*>(v);
+}
+
+inline PyObject** allocValueInCurrentScope(PyInterpreterState* state)
+{
+    auto scope = getCurrentScope(state);
+    return scope->allocValue();
+}
+
+inline bool PyObject_CanAddAttrInDict(PyObject* obj)
+{
+    return obj->ob_type->tp_dictoffset > 0;
 }
 
 pesapi_value pesapi_create_null(pesapi_env env)
@@ -79,67 +91,61 @@ pesapi_value pesapi_create_double(pesapi_env env, double value)
 
 pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t len)
 {
-    return pesapiValueFromPyObject(PyUnicode_FromStringAndSize(str, len));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyUnicode_DecodeUTF8(str, len, nullptr);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t* str, size_t length)
 {
-    return pesapiValueFromPyObject(PyUnicode_DecodeUTF16(reinterpret_cast<const char*>(str), length * 2, nullptr, nullptr));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyUnicode_DecodeUTF16(reinterpret_cast<const char*>(str), length * 2, nullptr, nullptr);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_binary(pesapi_env env, void* str, size_t length)
 {
     auto* copy = static_cast<char*>(malloc(length));
-    if (!copy)
-    {
-        PyErr_NoMemory();
-        return nullptr;
-    }
     memcpy(copy, str, length);
-    PyObject* bytes = PyBytes_FromStringAndSize(copy, length);
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyBytes_FromStringAndSize(copy, length);
     free(copy);
-    if (!bytes)
-    {
-        PyErr_NoMemory();
-        return nullptr;
-    }
-    return pesapiValueFromPyObject(bytes);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_binary_by_value(pesapi_env env, void* str, size_t length)
 {
     void* copy = malloc(length);
     memcpy(copy, str, length);
-    PyObject* bytes = PyBytes_FromStringAndSize(static_cast<const char*>(copy), length);
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyBytes_FromStringAndSize(static_cast<const char*>(copy), length);
     free(copy);
-    return pesapiValueFromPyObject(bytes);
+    return pesapiValueFromPyObject(*ret);
 }
 
-pesapi_value pesapi_create_array(pesapi_env env)
+pesapi_value pesapi_create_array(pesapi_env env)    // TODO: JS 的 Array 和 Python 的 list 有区别
 {
-    return pesapiValueFromPyObject(PyList_New(0));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyList_New(0);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 {
     auto state = PyInterpreterState_Get();
     auto mapper = CppObjectMapper::Get(state);
-    if (mapper)
-    {
-        return pesapiValueFromPyObject(mapper->FindOrCreateClassByID(type_id));
-    }
-    return pesapiValueFromPyObject(Py_None);
+    auto ret = allocValueInCurrentScope(state);
+    *ret = mapper->FindOrCreateClassByID(type_id);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
     auto state = PyInterpreterState_Get();
     auto mapper = CppObjectMapper::Get(state);
-    if (mapper)
-    {
-        return pesapiValueFromPyObject(mapper->CreateFunction(native_impl, data, finalize));
-    }
-    return pesapiValueFromPyObject(Py_None);
+    auto ret = allocValueInCurrentScope(state);
+    *ret = mapper->CreateFunction(native_impl, data, finalize);
+    return pesapiValueFromPyObject(*ret);
 }
 
 int pesapi_get_value_bool(pesapi_env env, pesapi_value value)
@@ -352,11 +358,13 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value valu
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
 {
-    PyObject* list = PyList_New(1);
+    PyObject* list = PyList_New(2);
     PyObject* item = pyObjectFromPesapiValue(value);
+    PyObject* mark = PyUnicode_FromString("__p_b_v__");    // __pesapi_boxed_value__
     PyList_SetItem(list, 0, item);
-    PyObject_SetAttrString(list, "__p_b_v__", Py_True); // __pesapi_boxed_value__
+    PyList_SetItem(list, 1, mark);
     Py_INCREF(item);
+    Py_INCREF(mark);
     return pesapiValueFromPyObject(list);
 }
 
@@ -381,14 +389,13 @@ void pesapi_update_boxed_value(pesapi_env env, pesapi_value boxed_value, pesapi_
 int pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
     PyObject* obj = pyObjectFromPesapiValue(value);
-    if (PyList_Check(obj))
+    if (PyList_Check(obj) && PyList_Size(obj) == 2)
     {
-        PyObject* boxed_attr = PyObject_GetAttrString(obj, "__p_b_v__"); // __pesapi_boxed_value__
-        if (boxed_attr)
+        PyObject* marker = PyList_GetItem(obj, 1);
+        if (marker && PyUnicode_Check(marker) &&
+            PyUnicode_CompareWithASCIIString(marker, "__p_b_v__") == 0)    // __pesapi_boxed_value__
         {
-            int is_boxed = PyObject_IsTrue(boxed_attr);
-            Py_DECREF(boxed_attr);
-            return is_boxed;
+            return true;
         }
     }
     return false;
@@ -429,7 +436,7 @@ void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
 const void* pesapi_get_native_holder_typeid(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<pesapi_callback_info__*>(pinfo);
-    auto mapper = CppObjectMapper::Get(PyInterpreterState_Get());    // TODO
+    auto mapper = CppObjectMapper::Get(PyInterpreterState_Get());
     return mapper->GetNativeObjectTypeId(info->self);
 }
 
@@ -504,8 +511,9 @@ void pesapi_release_env_ref(pesapi_env_ref env_ref)
 
 pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
 {
-    auto* scope = new pesapi_scope__(PyContext_CopyCurrent());
-    scope->env_ref = reinterpret_cast<pesapi_env_ref__*>(penv_ref);
+    auto ref = reinterpret_cast<pesapi_env_ref__*>(penv_ref);
+    auto* scope = new pesapi_scope__(ref->state_persistent);
+    scope->env_ref = ref;
     scope->caught = nullptr;
     return reinterpret_cast<pesapi_scope>(scope);
 }
@@ -648,10 +656,26 @@ void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t ke
     PyObject_SetAttrString(obj, eastl::to_string(key).c_str(), pyObjectFromPesapiValue(value));
 }
 
-// TODO
+typedef struct
+{
+    PyObject_HEAD PyObject* dict;    // This will store the object's attributes.
+} pesDynamicAttrObject;
+
+PyTypeObject pesDynamicAttrObjectType = []() -> PyTypeObject
+{
+    PyTypeObject t = {};
+    t.ob_base = PyVarObject_HEAD_INIT(&PyType_Type, 0) t.tp_name = "pesDynamicAttrObject";
+    t.tp_basicsize = sizeof(pesDynamicAttrObject);
+    t.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
+    t.tp_new = PyType_GenericNew;
+    t.tp_dictoffset = offsetof(pesDynamicAttrObject, dict);
+
+    return t;
+}();
+
 pesapi_value pesapi_create_object(pesapi_env env)
 {
-    return pesapiValueFromPyObject(PyDict_New());
+    return pesapiValueFromPyObject(PyObject_CallObject((PyObject*) &pesDynamicAttrObjectType, nullptr));
 }
 
 // TODO
@@ -670,7 +694,7 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
 
 pesapi_value pesapi_global(pesapi_env env)
 {
-    auto globals = PyEval_GetGlobals();
+    auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
     return pesapiValueFromPyObject(globals);
 }
 
