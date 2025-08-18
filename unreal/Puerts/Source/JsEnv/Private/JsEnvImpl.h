@@ -185,7 +185,7 @@ public:
     };
 
     void BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data),
-        bool PassByPointer, ContainerType Type);
+        bool PassByPointer, ContainerType Type, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty);
 
     virtual void UnBindContainer(void* Ptr) override;
 
@@ -580,6 +580,8 @@ private:
         v8::UniquePersistent<v8::Value> Container;
         bool NeedRelease;
         ContainerType Type;
+        PropertyMacro* KeyProperty;
+        PropertyMacro* ValueProperty;
     };
 
     TMap<void*, ContainerCacheItem> ContainerCache;

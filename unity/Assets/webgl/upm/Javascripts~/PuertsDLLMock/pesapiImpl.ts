@@ -1110,7 +1110,10 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
 
     function TranToString(pvalue: pesapi_value): void {
         const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
-        const str = value.toString();
+        if (typeof value == 'undefined') {
+            
+        }
+        const str = (typeof value === 'undefined') ? "undefined" : ( value === null ? "null" : value.toString());
         jsValueToPapiValue(engine.unityApi, str, pvalue);
     }
 

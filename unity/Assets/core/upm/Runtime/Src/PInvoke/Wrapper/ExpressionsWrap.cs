@@ -144,7 +144,7 @@ namespace Puerts
                 return PuertsNative.pesapi_create_string_utf16(apis, env, utf16, new UIntPtr((uint)str.Length));
             }
 
-            public static IntPtr NativeToScript_ScriptObject(IntPtr apis, IntPtr env, JSObject obj)
+            public static IntPtr NativeToScript_ScriptObject(IntPtr apis, IntPtr env, ScriptObject obj)
             {
                 if (obj == null)
                 {
@@ -227,21 +227,29 @@ namespace Puerts
                 {
                     return NativeToScript_String(apis, env, strValue);
                 }
-                else if (t is JSObject jsObject)
+                else if (t is ScriptObject scriptObject)
                 {
-                    return NativeToScript_ScriptObject(apis, env, jsObject);
+                    return NativeToScript_ScriptObject(apis, env, scriptObject);
                 }
                 else if (t is ArrayBuffer arrayBuffer)
                 {
                     return NativeToScript_ArrayBuffer(apis, env, arrayBuffer);
                 }
-                else if (!t.GetType().IsValueType)
+                Type type = t.GetType();
+                if (!type.IsValueType)
                 {
                     return NativeToScript_T<object>(apis, env, t);
                 }
-                else if(t.GetType().IsValueType && !t.GetType().IsPrimitive)
+                else if(type.IsValueType && !type.IsPrimitive)
                 {
-                    return NativeToScript_ValueType_Boxed(apis, env, t);
+                    if (type.IsEnum)
+                    {
+                        return NativeToScript_Object(apis, env, Convert.ChangeType(t, Enum.GetUnderlyingType(type)));
+                    }
+                    else
+                    {
+                        return NativeToScript_ValueType_Boxed(apis, env, t);
+                    }
                 }
                 throw new NotSupportedException($"NativeToScript_Object does not support type: {t.GetType()}");
             }
@@ -252,6 +260,12 @@ namespace Puerts
                 {
                     return PuertsNative.pesapi_create_null(apis, env);
                 }
+#if !PUERTS_GENERAL
+                if (value is UnityEngine.Object && (value as UnityEngine.Object) == null)
+                {
+                    return PuertsNative.pesapi_create_null(apis, env);
+                }
+#endif
                 var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
                 var objectPool = ScriptEnv.scriptEnvs[envIdx].objectPool;
                 var typeId = TypeRegister.Instance.FindOrAddTypeId(value.GetType());
@@ -298,7 +312,7 @@ namespace Puerts
                 return typeId != 0 && typeof(TValueType).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
 
-            public static JSObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
+            public static ScriptObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
                 IntPtr valueRef;
                 bool hasLastRef = true;
@@ -319,18 +333,18 @@ namespace Puerts
                     Marshal.StructureToPtr(IntPtr.Zero, weakHandlePtr, false);
                 }
 
-                JSObject ret = null;
+                ScriptObject ret = null;
 
                 IntPtr weakHandle = Marshal.PtrToStructure<IntPtr>(weakHandlePtr);
 
                 if (weakHandle != IntPtr.Zero)
                 {
-                    ret = GCHandle.FromIntPtr(weakHandle).Target as JSObject;
+                    ret = GCHandle.FromIntPtr(weakHandle).Target as ScriptObject;
                 }
                 if (ret == null)
                 {
                     var envIdx = PuertsNative.pesapi_get_env_private(apis, env).ToInt32();
-                    ret = new JSObject(ScriptEnv.scriptEnvs[envIdx], apis, valueRef);
+                    ret = new ScriptObject(ScriptEnv.scriptEnvs[envIdx], apis, valueRef);
                     weakHandle = GCHandle.ToIntPtr(GCHandle.Alloc(ret, GCHandleType.Weak));
                     Marshal.StructureToPtr(weakHandle, weakHandlePtr, false);
                 }
@@ -552,7 +566,7 @@ namespace Puerts
             {
                 return callPApi(context.Apis, "create_int32", context.Env, Expression.Convert(value, typeof(int)));
             }
-            else if (tranType == typeof(JSObject))
+            else if (tranType == typeof(ScriptObject))
             {
                 var toScriptMethod = Helpper.GetMethod(nameof(Helpper.NativeToScript_ScriptObject));
                 return Expression.Call(toScriptMethod, context.Apis, context.Env, value);
@@ -624,7 +638,7 @@ namespace Puerts
             // cache existed?
             var result = Expression.Variable(type);
             outsideContext.Variables.Add(result);
-            var tryGetMethod = typeof(JSObject).GetMethod(nameof(JSObject.tryGetCachedDelegate)).MakeGenericMethod(type);
+            var tryGetMethod = typeof(ScriptObject).GetMethod(nameof(ScriptObject.tryGetCachedDelegate)).MakeGenericMethod(type);
             var callTryGet = Expression.Call(
                 scriptObject,
                 tryGetMethod,
@@ -648,11 +662,11 @@ namespace Puerts
 
             var apis = Expression.Variable(typeof(IntPtr));
             lambdaVariables.Add(apis);
-            lambdaExpressions.Add(Expression.Assign(apis, Expression.Field(scriptObject, nameof(JSObject.apis))));
+            lambdaExpressions.Add(Expression.Assign(apis, Expression.Field(scriptObject, nameof(ScriptObject.apis))));
 
             var funcRef = Expression.Variable(typeof(IntPtr));
             lambdaVariables.Add(funcRef);
-            lambdaExpressions.Add(Expression.Assign(funcRef, Expression.Field(scriptObject, nameof(JSObject.objRef))));
+            lambdaExpressions.Add(Expression.Assign(funcRef, Expression.Field(scriptObject, nameof(ScriptObject.objRef))));
 
             var envRef = Expression.Variable(typeof(IntPtr));
             lambdaVariables.Add(envRef);
@@ -717,7 +731,7 @@ namespace Puerts
             lambdaExpressions.Add(Expression.TryFinally(Expression.Block(tryBlockvariables, tryBlockExpressions), callPApi(apis, "close_scope", scope)));
             var lambda = Expression.Lambda(type, Expression.Block(lambdaVariables, lambdaExpressions), delegateParams);
 
-            var cacheMethod = typeof(JSObject).GetMethod(nameof(JSObject.cacheDelegate)).MakeGenericMethod(type);
+            var cacheMethod = typeof(ScriptObject).GetMethod(nameof(ScriptObject.cacheDelegate)).MakeGenericMethod(type);
             
             var condition = Expression.Condition(
                 callTryGet,
@@ -795,7 +809,7 @@ namespace Puerts
                 var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_Object));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
-            else if (typeof(JSObject) == tranType)
+            else if (typeof(ScriptObject) == tranType)
             {
                 var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
@@ -814,7 +828,7 @@ namespace Puerts
                     Env = context.Env
                 };
 
-                var scriptObject = Expression.Variable(typeof(JSObject));
+                var scriptObject = Expression.Variable(typeof(ScriptObject));
                 ifTrueVariables.Add(scriptObject);
                 var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
                 ifTrueExpressions.Add(Expression.Assign(scriptObject, Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value)));
@@ -970,7 +984,7 @@ namespace Puerts
             {
                 return Expression.Constant(true); // accpet any type
             }
-            else if (type == typeof(JSObject))
+            else if (type == typeof(ScriptObject))
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_null", "is_undefined", "is_object");
             }

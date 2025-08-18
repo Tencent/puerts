@@ -67,7 +67,7 @@ namespace Puerts
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetGlobalType_JSObject(Type type)
+        public static void SetGlobalType_ScriptObject(Type type)
         {
             throw new NotImplementedException();
         }

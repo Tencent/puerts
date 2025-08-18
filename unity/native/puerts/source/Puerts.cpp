@@ -41,8 +41,8 @@ PESAPI_MODULE_EXPORT pesapi_registry_api* GetRegisterApi()
 PESAPI_MODULE_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
 {
     GLogCallback = Log;
-    GLogWarningCallback = LogError;
-    GLogErrorCallback = LogWarning;
+    GLogWarningCallback = LogWarning;
+    GLogErrorCallback = LogError;
 }
 
 #ifdef __cplusplus

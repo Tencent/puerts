@@ -170,6 +170,9 @@ namespace Puerts.UnitTest
         }
 
         [UnityEngine.Scripting.Preserve]
+        public TestEnum[] EnumArray = { TestEnum.A, TestEnum.B };
+
+        [UnityEngine.Scripting.Preserve]
         public static void TestEnumCheck(string a, TestEnum e = TestEnum.A, int b = 10) // 有默认值会促使其检查参数类型
         {
 
@@ -613,16 +616,16 @@ namespace Puerts.UnitTest
         /**
         * JSObject
         */
-        public JSObject jsObjectTestField = default(JSObject);
-        protected JSObject _jsObjectTestProp = default(JSObject);
-        public JSObject jsObjectTestProp 
+        public ScriptObject jsObjectTestField = default(ScriptObject);
+        protected ScriptObject _jsObjectTestProp = default(ScriptObject);
+        public ScriptObject jsObjectTestProp 
         {
             get { return _jsObjectTestProp; }
             set { _jsObjectTestProp = value; }
         }
-        public static JSObject jsObjectTestFieldStatic = default(JSObject);
-        protected static JSObject _jsObjectTestPropStatic = default(JSObject);
-        public static JSObject jsObjectTestPropStatic
+        public static ScriptObject jsObjectTestFieldStatic = default(ScriptObject);
+        protected static ScriptObject _jsObjectTestPropStatic = default(ScriptObject);
+        public static ScriptObject jsObjectTestPropStatic
         {
             get { return _jsObjectTestPropStatic; }
             set { _jsObjectTestPropStatic = value; }
@@ -634,7 +637,7 @@ namespace Puerts.UnitTest
             AssertAndPrint("CSJSObjectTestFieldStatic", jsObjectTestFieldStatic.Get<string>("puerts") == "niubi");
             AssertAndPrint("CSJSObjectTestPropStatic", jsObjectTestPropStatic.Get<string>("puerts") == "niubi");
         }
-        public JSObject JSObjectTestPipeLine(JSObject initialValue, Func<JSObject, JSObject> JSValueHandler) 
+        public ScriptObject JSObjectTestPipeLine(ScriptObject initialValue, Func<ScriptObject, ScriptObject> JSValueHandler) 
         {
             AssertAndPrint("CSGetJSObjectArgFromJS", initialValue.Get<string>("puerts") == "niubi");
             AssertAndPrint("CSGetJSObjectReturnFromJS", JSValueHandler(initialValue) == initialValue);
@@ -1105,6 +1108,20 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void EnumArrayTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var ret = jsEnv.Eval<string>(@"
+                (function() {
+                    const helper = new CS.Puerts.UnitTest.CrossLangTestHelper();
+                    return typeof helper.EnumArray.get_Item(0)
+                })()
+            ");
+            Assert.AreEqual("number", ret);
+            jsEnv.Tick();
+        }
+
+        [Test]
         public void EnumNameTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
@@ -1277,7 +1294,7 @@ namespace Puerts.UnitTest
         public void FuncAsJsObject()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            var jso = jsEnv.Eval<JSObject>(@"
+            var jso = jsEnv.Eval<ScriptObject>(@"
             (function() {
                 function t(){}
                 return t;
