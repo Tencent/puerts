@@ -719,7 +719,7 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const cha
     return pesapi_create_undefined(env);
 }
 
-void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
+int pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
@@ -729,7 +729,9 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
     {
         auto _un_used = object.As<v8::Object>()->Set(
             context, v8::String::NewFromUtf8(context->GetIsolate(), key, v8::NewStringType::kNormal).ToLocalChecked(), value);
+        return 1;
     }
+    return 0;
 }
 
 int pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
@@ -775,7 +777,7 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, ui
     return pesapi_create_undefined(env);
 }
 
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
@@ -784,7 +786,9 @@ void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t k
     if (object->IsObject())
     {
         auto _un_used = object.As<v8::Object>()->Set(context, key, value);
+        return 1;
     }
+    return 0;
 }
 
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])

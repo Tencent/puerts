@@ -268,7 +268,7 @@ namespace Puerts
         public static extern IntPtr pesapi_get_property(IntPtr apis, IntPtr env, IntPtr obj, string key);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void pesapi_set_property(IntPtr apis, IntPtr env, IntPtr obj, string key, IntPtr value);
+        public static extern int pesapi_set_property(IntPtr apis, IntPtr env, IntPtr obj, string key, IntPtr value);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool pesapi_get_private(IntPtr apis, IntPtr env, IntPtr obj, out IntPtr out_ptr);
@@ -280,7 +280,7 @@ namespace Puerts
         public static extern IntPtr pesapi_get_property_uint32(IntPtr apis, IntPtr env, IntPtr obj, uint key);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void pesapi_set_property_uint32(IntPtr apis, IntPtr env, IntPtr obj, uint key, IntPtr value);
+        public static extern int pesapi_set_property_uint32(IntPtr apis, IntPtr env, IntPtr obj, uint key, IntPtr value);
 
         [DllImport(PUERTSDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr pesapi_call_function(IntPtr apis, IntPtr env, IntPtr func, IntPtr this_object, int argc, IntPtr[] argv);
@@ -642,7 +642,7 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate void pesapi_set_property_func(IntPtr env, IntPtr objectPtr, string key, IntPtr value);
+    public delegate int pesapi_set_property_func(IntPtr env, IntPtr objectPtr, string key, IntPtr value);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
@@ -658,7 +658,7 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate void pesapi_set_property_uint32_func(IntPtr env, IntPtr objectPtr, uint key, IntPtr value);
+    public delegate int pesapi_set_property_uint32_func(IntPtr env, IntPtr objectPtr, uint key, IntPtr value);
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

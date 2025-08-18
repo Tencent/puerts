@@ -375,9 +375,9 @@ PESAPI_MODULE_EXPORT pesapi_value pesapi_get_property(struct pesapi_ffi* apis, p
     return apis->get_property(env, object, key);
 }
 
-PESAPI_MODULE_EXPORT void pesapi_set_property(struct pesapi_ffi* apis, pesapi_env env, pesapi_value object, const char* key, pesapi_value value)
+PESAPI_MODULE_EXPORT int pesapi_set_property(struct pesapi_ffi* apis, pesapi_env env, pesapi_value object, const char* key, pesapi_value value)
 {
-    apis->set_property(env, object, key, value);
+    return apis->set_property(env, object, key, value);
 }
 
 PESAPI_MODULE_EXPORT int pesapi_get_private(struct pesapi_ffi* apis, pesapi_env env, pesapi_value object, void** out_ptr)
@@ -395,9 +395,9 @@ PESAPI_MODULE_EXPORT pesapi_value pesapi_get_property_uint32(struct pesapi_ffi* 
     return apis->get_property_uint32(env, object, key);
 }
 
-PESAPI_MODULE_EXPORT void pesapi_set_property_uint32(struct pesapi_ffi* apis, pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
+PESAPI_MODULE_EXPORT int pesapi_set_property_uint32(struct pesapi_ffi* apis, pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
 {
-    apis->set_property_uint32(env, object, key, value);
+    return apis->set_property_uint32(env, object, key, value);
 }
 
 PESAPI_MODULE_EXPORT pesapi_value pesapi_call_function(struct pesapi_ffi* apis, pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[])
