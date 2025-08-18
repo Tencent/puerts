@@ -14,11 +14,14 @@
 
 #include <string>
 #include <sstream>
+#include <algorithm>
 #include <vector>
 #include <cstring>
 #include <cstdint>
 #include <iostream>
 #include <unordered_map>
+#include <typeinfo>
+
 
 #define PY_SSIZE_T_CLEAN
 #define Py_BUILD_CORE 1
@@ -36,121 +39,111 @@
 #include "PyImpl.h"
 
 
-/*
-struct pesapi_value__
-{
-    std::variant<long int, double, std::string, std::vector<int>, std::vector<double>, 
-        std::unordered_map<std::string, std::string>> value;
-
-    // 构造函数
-    
-    pesapi_value__(long int v) : value(v)
-    {
-    }
-    pesapi_value__(double v) : value(v)
-    {
-    }
-    pesapi_value__(const std::string& v) : value(v)
-    {
-    }
-    pesapi_value__(std::vector<int>& v) : value(v)
-    {
-    }
-    pesapi_value__(std::vector<double>& v) : value(v)
-    {
-    }
-    pesapi_value__(std::unordered_map<std::string, std::string> v) : value(v)
-    {
-    }
-};
-
-struct pesapi_env__
-{
-    PyThreadState* ths;
-    PyObject* global;
-    PyObject* local;
-    
-    // 异常处理（参数是否有效）放在创建结构体的代码之前
-    pesapi_env__(PyThreadState* threadstate, PyObject* g, PyObject* l) : ths(threadstate), global(g), local(l)
-    {
-    }
-
-    // 确保C++回收env时，Python也回收相关变量
-    ~pesapi_env__()
-    {
-        Py_EndInterpreter(ths);
-        Py_DECREF(global);
-        Py_DECREF(local);
-    }
-
-};
-*/
-
-/*
-struct Visitor
-{
-    int& operator()(long int& i)
-    {
-        std::cout << "Int: " << i << std::endl;
-        return i;
-    }
-    double&operator()(double& d)
-    {
-        std::cout << "Double: " << d << std::endl;
-        return d;
-    }
-    // 非常量引用传入参数和返回值，可以修改同时不受内存分配释放的生命周期影响
-    std::string& operator()(std::string& s)
-    {
-        std::cout << "String: " << s << std::endl;
-        return s;
-    }
-    std::vector<long int>& operator()(std::vector<long int>& s)
-    {
-        std::cout << "Vec<int>: " << std::endl;
-        return s;
-    }
-    std::vector<double>& operator()(std::vector<double>& s)
-    {
-        std::cout << "Vec<double>: " << std::endl;
-        return s;
-    }
-    std::unordered_map<std::string, std::string>& operator()(std::unordered_map<std::string, std::string>& s)
-    {
-        std::cout << "Map: " << std::endl;
-        return s;
-    }
-};*/
 
 
 namespace pyimpl
 {
     inline PyObject* PyLocalValueFromPesapiValue(pesapi_value val)
     {
-        // 传入外部变量的指针，不会被销毁
-        //std::get返回常量引用!
-        PyObject* ret = nullptr;
-        if (std::get_if<long int>(&(val->value)))
-            ret = reinterpret_cast<PyObject*>(&std::get<long int>(val->value));
-        else if (std::get_if<double>(&(val->value)))
-            // 传入外部变量的指针，不会被销毁
-            ret = reinterpret_cast<PyObject*>(&std::get<double>(val->value));
-        else if (std::get_if<std::string>(&(val->value)))
-            // 传入外部变量的指针，不会被销毁
-            ret = reinterpret_cast<PyObject*>(&std::get<std::string>(val->value));
-        else if (std::get_if<std::vector<long int>>(&(val->value)))
-            // 传入外部变量的指针，不会被销毁
-            ret = reinterpret_cast<PyObject*>(&std::get<std::vector<long int>>(val->value));
-        else if (std::get_if<std::vector<double>>(&(val->value)))
-            // 传入外部变量的指针，不会被销毁
-            ret = reinterpret_cast<PyObject*>(&std::get<std::vector<double>>(val->value));
-        else if (std::get_if<std::unordered_map<std::string, std::string>>(&(val->value)))
-            // 传入外部变量的指针，不会被销毁
-            ret = reinterpret_cast<PyObject*>(&std::get<std::unordered_map<std::string,std::string>>(val->value));
-        return ret;
+    // 注意引用计数
+    // 传入外部变量的指针，不会被销毁
+    // std::get返回常量引用!
+        if (!(val->py_obj))
+        {
+            PyObject* ret = nullptr;
+            if (std::get_if<bool>(&(val->value)))
+                ret = PyBool_FromLong(std::get<bool>(val->value));
+            else if (std::get_if<int32_t>(&(val->value)))
+                ret = PyLong_FromLong(std::get<int32_t>(val->value));
+            else if (std::get_if<uint32_t>(&(val->value)))
+                ret = PyLong_FromLong(std::get<uint32_t>(val->value));
+            else if (std::get_if<int64_t>(&(val->value)))
+                ret = PyLong_FromLong(std::get<int64_t>(val->value));
+            else if (std::get_if<uint64_t>(&(val->value)))
+                ret = PyLong_FromLong(std::get<uint64_t>(val->value));
+            else if (std::get_if<double>(&(val->value)))
+                // 传入外部变量的指针，不会被销毁
+                ret = PyFloat_FromDouble(std::get<double>(val->value));
+            else if (std::get_if<const char*>(&(val->value)))
+                ret = PyUnicode_FromString(std::get<const char*>(val->value));
+            else if (std::get_if<std::vector<int32_t>>(&(val->value)))
+            {
+                std::vector<int32_t> array = std::get<std::vector<int32_t>>(val->value);
+                ret = PyList_New(0);
+                for (int i = 0; i < array.size(); i++)
+                {
+                    // REF+1
+                    PyObject* item = PyLong_FromLong(array[i]);
+                    // REF+1
+                    PyList_Append(ret, item);
+                    Py_DECREF(item);
+                }
+            }
+            else if (std::get_if<std::vector<double>>(&(val->value)))
+            {
+                std::vector<double> array = std::get<std::vector<double>>(val->value);
+                ret = PyList_New(0);
+                for (int i = 0; i < array.size(); i++)
+                {
+                    // REF+1
+                    PyObject* item = PyFloat_FromDouble(array[i]);
+                    // REF+1
+                    PyList_Append(ret, item);
+                    Py_DECREF(item);
+                }
+            }
+            else if (std::get_if<std::vector<const char*>>(&(val->value)))
+            {
+                std::vector<const char*> array = std::get<std::vector<const char*>>(val->value);
+                if (array.size() != 2)
+                {
+                    std::cerr << "Wrong std::vector<const char*> type input. Length should be 2." << std::endl;
+                    exit(false);
+                    // return nullptr;
+                }
+
+                // 不包括用户自定义类的转换
+                std::vector<const char*> types = {"int", "float", "str", "function"};
+                int pos = (int) (std::find(types.begin(), types.end(), array[1]) - types.begin());
+                if (pos != types.size())
+                {
+                    switch (pos)
+                    {
+                        case 0:
+                            // 任意精度整数转成8字节整数
+                            ret = PyLong_FromLong(atoi(array[0]));
+                            break;
+                        case 1:
+                            ret = PyFloat_FromDouble(strtod(array[0],nullptr));
+                            break;
+                        case 2:
+                            ret = PyUnicode_FromString(array[0]);
+                            break;
+                        case 3:
+                            ret = PyRun_String(array[0], Py_eval_input, PyDict_New(), PyDict_New());
+                            break;
+                    }
+                }
+                else
+                {
+                    std::cerr << "Unsupported type cast from C++ to Python in dictionary." << std::endl;
+                    exit(false);
+                }
+            }
+            else
+            {
+                std::cerr << "Unsupported type cast from C++ to Python." << std::endl;
+                exit(false);
+            }
+            val->py_obj = ret;
+            return ret;
+        }
+        else
+        {
+            return val->py_obj;
+        }
     }
 
-    
     inline PyThreadState* PyLocalStateFromPesapiEnv(pesapi_env env)
     {
         // PyThreadState* temp_py = reinterpret_cast<PyThreadState*>(env);
@@ -162,81 +155,104 @@ namespace pyimpl
         return env->ths;
     }
 
-
-    inline pesapi_value__ PesapiValueFromPyLocalValue(PyObject* value)
+    inline pesapi_value PesapiValueFromPyLocalValue(PyObject * value)
     {
         // pesapi_value val=reinterpret_cast<pesapi_value>(value);
+        pesapi_value pval=nullptr;
         if (PyLong_Check(value))
         {
             std::cout << "Int data type detected." << std::endl;
-            return pesapi_value__(PyLong_AsLong(value));
+            std::cout << typeid(static_cast<int64_t>(PyLong_AsLong(value))).name() << std::endl;
+            pval = new pesapi_value__(static_cast<int64_t>(PyLong_AsLong(value)));
         }
         else if (PyFloat_Check(value))
-            return pesapi_value__(PyFloat_AsDouble(value));
+            pval = new pesapi_value__(PyFloat_AsDouble(value));
         else if (PyUnicode_Check(value))
-            return pesapi_value__(PyUnicode_AsUTF8(value));
+            pval = new pesapi_value__(PyUnicode_AsUTF8(value));
         else if (PyList_Check(value))
         {
-            
             if (PyLong_Check(PyList_GetItem(value, 0)))
             {
-                std::vector<long int> vec = {};
+                std::vector<int32_t> vec = {};
                 // Py_ssize_t 和 int 类似，见官方说明文档？
                 for (Py_ssize_t i = 0; i < PyList_Size(value); i++)
                 {
+                    if (!PyLong_Check(PyList_GetItem(value, i)))
+                    {
+                        std::cerr << "item at index" << i << " is not a long integer, just store PyObject* directly." << std::endl;
+                        pval = new pesapi_value__(value);
+                        // exit(false);
+                        // return nullptr;
+                    }
                     PyObject* item = PyList_GetItem(value, i);
-                    vec.push_back(PyLong_AsLong(item));
+                    vec.push_back((int32_t)PyLong_AsLong(item));
                 }
-                return pesapi_value__(vec);
+                pval = new pesapi_value__(vec);
             }
             else if (PyFloat_Check(PyList_GetItem(value, 0)))
             {
                 std::vector<double> vec = {};
                 for (Py_ssize_t i = 0; i < PyList_Size(value); i++)
                 {
+                    if (!PyFloat_Check(PyList_GetItem(value, i)))
+                    {
+                        std::cerr << "item at index" << i << " is not a double, just store PyObject* directly." << std::endl;
+                        pval = new pesapi_value__(value);
+                        // exit(false);
+                        // return nullptr;
+                    }
                     PyObject* item = PyList_GetItem(value, i);
                     vec.push_back(PyFloat_AsDouble(item));
                 }
-                return pesapi_value__(vec);
+                pval = new pesapi_value__(vec);
             }
             else
             {
-                std::cerr << "Unsupported Type within list!" << std::endl;
-                exit(false);
-                //return NULL;
+                std::cerr << "Unsupported Type within list, just store PyObject* directly." << std::endl;
+                pval = new pesapi_value__(value);
+                //exit(false);
+                // return nullptr;
             }
-
         }
+
         else if (PyDict_Check(value))
         {
-            std::unordered_map<std::string, std::string> map;
+            std::unordered_map<const char*, std::vector<const char*>> map;
             Py_ssize_t pos = 0;
             PyObject* key;
             PyObject* kval;
             while (PyDict_Next(value, &pos, &key, &kval))
             {
-                if (!(PyUnicode_Check(key) && PyUnicode_Check(kval)))
+                if (!PyUnicode_Check(key))
                 {
-                    std::cerr<<"Invalid map structure encountered. Keys and values should be string."<<std::endl;
+                    std::cerr << "Invalid map structure encountered. Keys should be string." << std::endl;
                     exit(false);
-                    //return NULL;
+                    // return nullptr;
                 }
-                std::string key2 = PyUnicode_AsUTF8(key);
-                std::string kval2 = PyUnicode_AsUTF8(kval);
-                map[key2] = kval2;
+
+                const char* key2 = PyUnicode_AsUTF8(key);
+                const char* kval2 = PyUnicode_AsUTF8(PyObject_Str(kval));
+                // const char* --> string
+                const char* type=Py_TYPE(kval)->tp_name;
+                map[key2] = {kval2, type};
             }
-            return pesapi_value__(map);
+            Py_DECREF(key);
+            Py_DECREF(kval);
+
+            pval = new pesapi_value__(map);
         }
         else
         {
-            std::cerr << "Unsupported Type!" << std::endl;
-            exit(false);
-            //return NULL;
+            std::cerr << "Unsupported CType, just store PyObject* directly." << std::endl;
+            pval = new pesapi_value__(value);
+            //exit(false);
+            // return nullptr;
         }
+
+        return pval;
     }
 
-    
-    inline pesapi_env__ PesapiEnvFromPyLocalState(PyThreadState* ths)
+    inline pesapi_env PesapiEnvFromPyLocalState(PyThreadState * ths)
     {
         if (!ths)
         {
@@ -251,19 +267,18 @@ namespace pyimpl
             local = ths->frame->f_locals;
         }
 
-        return pesapi_env__(ths,global,local);
+        return new pesapi_env__(ths, global, local);
     }
-
 
     pesapi_env pesapi_create_env()
     {
         // Python实现为线程级别的实现，不同于V8的进程级别实现，设计哲学不同
-        PyThreadState* subinterpreter=Py_NewInterpreter();
+        PyThreadState* subinterpreter = Py_NewInterpreter();
         if (!subinterpreter)
         {
             std::cerr << "Failed to create subinterpreter." << std::endl;
             exit(false);
-            //return nullptr;
+            // return nullptr;
         }
         // 获取全局字典与局部字典，不会被C++函数回收
         PyObject* global = subinterpreter->interp->modules;
@@ -275,7 +290,6 @@ namespace pyimpl
 
         return new pesapi_env__(subinterpreter, global, local);
     }
-
 
     // 特殊：传入结构体指针而非结构体
     void pesapi_destroy_env(pesapi_env env)
@@ -296,41 +310,41 @@ namespace pyimpl
         std::cout << "Env destroyed successfully." << std::endl;
     }
 
-
     // question1:为什么需要传入len这个变量，可否在函数内部使用sizeof(code)赋值给局部变量len？
     // question2:参数1和参数4为什么不可以合并为参数4（见文档）？Kimi给出的答案，考虑到多沙箱（V8，isolate）或者多字典、多子解释器（Python等），同样的path可以有不同的env环境对象并存
     // 目前的异常处理包括对象读取失败、PyRun_String函数调用失败
-    pesapi_value__ pesapi_eval(pesapi_env env, const uint8_t* code, size_t len, const char* path)
+    pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t len, const char* path)
     {
         if (!env)
         {
             std::cerr << "Null subinterpreter encountered." << std::endl;
             exit(false);
-            //return NULL;
+            // return NULL;
         }
         // 此处不需要初始化和回收解释器，因为env充当传入解释器
         // Py_Initialize();
-        //PyObject* main = PyImport_AddModule("__main__");
-        //PyObject* dict = PyModule_GetDict(main);
-        //假设env是dict类型数据，调用内联函数之一
+        // PyObject* main = PyImport_AddModule("__main__");
+        // PyObject* dict = PyModule_GetDict(main);
+        // 假设env是dict类型数据，调用内联函数之一
         PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
         PyThreadState_Swap(state);
         std::cout << "Change to subinterpreter." << std::endl;
         // 多线程调用措施
-        //PyGILState_STATE gstate = PyGILState_Ensure();
-        PyObject* dict = PyThreadState_GetDict();
-
-        if (!dict) {
+        // PyGILState_STATE gstate = PyGILState_Ensure();
+        // PyObject* dict = PyThreadState_GetDict();
+        PyObject* gdict = env->global;
+        PyObject* ldict = env->local;
+        /* if (!ldict)
+        {
             PyErr_Print();
-            fprintf(stderr, "Failed to load environment module.");
+            fprintf(stderr, "Failed to load local environment module.");
             exit(false);
             //return NULL;
-        }
-        //make use of path,作用据AI说应该是调试断点（默认__main__）
-        PyDict_SetItemString(dict, "__file__", PyUnicode_FromString(path ? path : ""));
+        }*/
+        // make use of path,作用据AI说应该是调试断点（默认__main__）
+        // PyDict_SetItemString(dict, "__file__", PyUnicode_FromString(path ? path : ""));
 
-
-        char* buf = (char*)malloc(len + 1);
+        char* buf = (char*) malloc(len + 1);
         memcpy(buf, code, len);
         buf[len] = '\0';
         std::cout << buf << std::endl;
@@ -346,9 +360,9 @@ namespace pyimpl
         globals	全局命名空间字典；代码里出现的全局变量都查这个 dict。通常传 PyModule_GetDict(module) 或自建 PyDict_New()。
         locals	局部命名空间字典；如果与 globals 相同，则代码在模块级作用域执行；若想模拟函数局部作用域，可传另一 dict。*/
 
-        PyObject* result = PyRun_String(buf, Py_eval_input, dict, dict);
+        PyObject* result = PyRun_String(buf, Py_eval_input, gdict, ldict);
 
-        //异常处理(NULL是异常，None是无返回值的正常）
+        // 异常处理(NULL是异常，None是无返回值的正常）
         if (!result)
         {
             // 1. 异常接收
@@ -359,9 +373,10 @@ namespace pyimpl
             PyObject* str_exc = PyObject_Repr(pvalue);
             const char* exc_str = PyUnicode_AsUTF8(str_exc);
             fprintf(stderr, "Python exception: %s\n", exc_str);
+            std::cout << "Loc: " << (path ? path : "") << std::endl;
 
             // 3. 清理 -->引用计数减少
-            //Py_XDECREF(result);
+            // Py_XDECREF(result);
             Py_XDECREF(ptype);
             Py_XDECREF(pvalue);
             Py_XDECREF(ptraceback);
@@ -371,45 +386,112 @@ namespace pyimpl
             PyErr_Clear();
             // 异常退出处理
             exit(false);
-            //return NULL;
+            // return NULL;
         }
 
         free(buf);
 
         std::cout << PyLong_AsLong(result) << std::endl;
         /* 调用内联函数之一*/
-        pesapi_value__ ret = pyimpl::PesapiValueFromPyLocalValue(result);
+        pesapi_value ret = pyimpl::PesapiValueFromPyLocalValue(result);
 
         Py_DECREF(result);
 
-        //PyGILState_Release(gstate);
-        // 切换回主解释器
-        //PyThreadState_Swap(PyInterpreterState_Main()->tstate_head);
+        // 只有单解释器多线程才需要手动管理GIL线程锁，多解释器场景通过New和End、引用计数控制多线程安全
+        // PyGILState_Release(gstate);
+        //  切换回主解释器
+        // PyThreadState_Swap(PyInterpreterState_Main()->tstate_head);
         // Py_Finalize();
 
         return ret;
     }
 
-
-    // 说明：可能用不到env，但是形式要统一
-    // 不能进行异常处理（见文档）
-    // question1:Why not using Context->Env setting?
-    pesapi_value__ pesapi_global(pesapi_env env)
+    void pesapi_set_data(PyObject* dict, const char* name, PyObject* obj)
     {
-        // PyObject* context = PyImport_AddModule("__main__");
+        PyDict_SetItemString(dict, name, obj);
+    }
+
+    PyObject* pesapi_get_data(PyObject* dict, const char* name)
+    {
+        if (!PyDict_GetItemString(dict, name))
+        {
+            std::cerr << "Error: No such variable existent." << std::endl;
+            exit(false);
+            //return nullptr;
+        }
+        return PyDict_GetItemString(dict, name);
+    }
+
+    // question1:Why not using Context->Env setting?
+    pesapi_value pesapi_global(pesapi_env env)
+    {
         PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
-        //PyThreadState_Swap(state);
-        // 多线程锁机制
-        //PyGILState_STATE gstate = PyGILState_Ensure();
+        //  多线程锁机制
+        // PyGILState_STATE gstate = PyGILState_Ensure();
         PyObject* dict = state->interp->modules;
-        //PyGILState_Release(gstate);
-        //PyThreadState_Swap(NULL);
+        // PyGILState_Release(gstate);
         return pyimpl::PesapiValueFromPyLocalValue(dict);
+    }
+
+    
+    /* 创建全局变量
+    name参数和C++中参数名称最好一致*/
+    pesapi_value pesapi_create_null(pesapi_env env,const char* name)
+    {
+        PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
+        PyObject* dict = state->interp->modules;
+        pesapi_value ret = new pesapi_value__(Py_None);
+        pesapi_set_data(dict, name, ret->py_obj);
+        return ret;
+    }
+
+    pesapi_value pesapi_create_boolean(pesapi_env env, const char* name,bool value)
+    {
+        PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
+        PyObject* dict = state->interp->modules;
+        pesapi_value ret = new pesapi_value__(value);
+        pesapi_set_data(dict, name, PyBool_FromLong(std::get<bool>(ret->value)));
+        return ret;
+    }
+
+    pesapi_value pesapi_create_int32(pesapi_env env, const char* name,int32_t value)
+    {
+        PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
+        PyObject* dict = state->interp->modules;
+        pesapi_value ret = new pesapi_value__(value);
+        pesapi_set_data(dict, name, PyLong_FromLong(std::get<int32_t>(ret->value)));
+        return ret;
+    }
+
+    pesapi_value pesapi_create_uint32(pesapi_env env, const char* name, uint32_t value)
+    {
+        PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
+        PyObject* dict = state->interp->modules;
+        pesapi_value ret = new pesapi_value__(value);
+        pesapi_set_data(dict, name, PyLong_FromLong(std::get<uint32_t>(ret->value)));
+        return ret;
+    }
+
+   pesapi_value pesapi_create_int64(pesapi_env env, const char* name, int64_t value)
+    {
+        PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
+        PyObject* dict = state->interp->modules;
+        pesapi_value ret = new pesapi_value__(value);
+        pesapi_set_data(dict, name, PyLong_FromLong(std::get<int64_t>(ret->value)));
+        return ret;
+    }
+
+   pesapi_value pesapi_create_uint64(pesapi_env env, const char* name, uint64_t value)
+    {
+        PyThreadState* state = pyimpl::PyLocalStateFromPesapiEnv(env);
+        PyObject* dict = state->interp->modules;
+        pesapi_value ret = new pesapi_value__(value);
+        pesapi_set_data(dict, name, PyLong_FromLong(std::get<uint64_t>(ret->value)));
+        return ret;
     }
 
 
 }
-
 
 
 

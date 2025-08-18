@@ -40,11 +40,11 @@ TEST(Evaltest, helloworld)
     // unicode-utf8 对于ASCII码，一个字符对应一个字节，sizeof统计字节数，返回int
     size_t len = (size_t) code.length();
     cout << "len: " << len << endl;
-    pesapi_value__ result = pyimpl::pesapi_eval(env_test, u8code, len, TEST_DIR);
+    pesapi_value result = pyimpl::pesapi_eval(env_test, u8code, len, TEST_DIR);
     cout << "Debugging point1..." << endl;
-    cout << get<long int>(result.value) << endl;
+    cout << get<int64_t>(result->value) << endl;
     // cout << typeid(result->value).name() << endl;
-    EXPECT_EQ(get<long int>(result.value), 18);
+    EXPECT_EQ(get<int64_t>(result->value), 18);
     pyimpl::pesapi_destroy_env(env_test);
     Py_Finalize();
     cout << "Test terminated..." << endl;

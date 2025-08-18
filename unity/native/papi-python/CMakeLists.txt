@@ -15,7 +15,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)  # 确保编译器支持 C++17
 include(FetchContent)
 FetchContent_Declare(
   googletest
-  # GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_REPOSITORY git@github.com:google/googletest.git
   GIT_TAG        v1.15.0   # 2025-05 最新 tag
 )
@@ -24,12 +23,16 @@ FetchContent_MakeAvailable(googletest)
 
 
 # 2.  创建库(含被测代码与其所需外部静态编译库）
-# 收集 extra/src 下的所有 .cpp
-file(GLOB EXTRA_SRC "puerts/source/*.cpp")
+# 收集 puerts_core和eastl 下的所有 .cpp
+file(GLOB puerts_sources "../puerts/source/*.cpp")
+file(GLOB eastl_sources "../EASTL/source/*.cpp")
+file(GLOB papi_src "source/*.cpp")
+
 
 add_library(mylib STATIC
-    source/PyImpl.cpp
-    ${EXTRA_SRC}
+    ${papi_src}
+    ${eastl_sources}
+    ${puerts_sources}
 )
 
 # 3. Python-C接口配置（手动定义）
@@ -37,19 +40,31 @@ add_library(mylib STATIC
 # PYTHON_INCLUDE_DIRS：包含 Python 头文件的路径。
 # PYTHON_LIBRARIES：Python 库的路径。
 # find_package(PythonLibs 3.9 REQUIRED)
-set(PYTHON_INCLUDE_DIRS "D:/software/program files/python-3.9.5/include")
-set(PYTHON_LIBRARIES "D:/software/program files/python-3.9.5/libs/python39_d.lib")
 
-# 把头文件目录挂到库上
-# 编译器会在给定路径下自动递归查找.h文件（可多级嵌套）
+if (NOT PYTHON_VERSION)
+    set(PYTHON_VERSION "3.9.5")
+    set(PYTHON_DEBUG_LIB_V "39")
+endif()
+set(PYTHON_INCLUDE_DIRS "D:/software/program files/python-${PYTHON_VERSION}/include")
+set(PYTHON_LIBRARIES "D:/software/program files/python-${PYTHON_VERSION}/libs/python${PYTHON_DEBUG_LIB_V}_d.lib")
+
+
+# 4.把头文件目录挂到库上
+# 编译器可在给定路径下递归查找.h文件（可多级嵌套）
+set(eastl_hpath "../EASTL/include")
+set(puerts_hpath "../puerts/include")
+
 target_include_directories(mylib PUBLIC
     include
-    puerts/include
-    EASTL/include
+    ${puerts_hpath}
+    ${eastl_hpath}
     ${PYTHON_INCLUDE_DIRS}
 )
+add_definitions(-DEASTL_OPENSOURCE=1)
 
-# 4. 测试可执行文件
+
+
+# 5. 测试可执行文件
 add_executable(unit_tests gtest.cpp)
 target_link_libraries(unit_tests PRIVATE
                       mylib
@@ -57,7 +72,7 @@ target_link_libraries(unit_tests PRIVATE
                       gtest_main)   # 自带 main
 
 
-# 5. 自动发现测试(ctest命令运行测试)
+# 6. 自动发现测试(ctest命令运行测试)
 enable_testing()
 include(GoogleTest)
 gtest_discover_tests(unit_tests)
