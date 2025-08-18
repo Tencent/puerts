@@ -41,6 +41,7 @@ struct AutoRegisterForFIntVector
             .Variable("ZeroValue", MakeReadonlyVariable(&FIntVector::ZeroValue))
             .Variable("NoneValue", MakeReadonlyVariable(&FIntVector::NoneValue))
             .Register();
+        puerts::DefineClass<FIntVector4>().Register();
     }
 };
 
