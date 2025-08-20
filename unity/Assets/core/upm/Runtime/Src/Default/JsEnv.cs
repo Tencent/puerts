@@ -946,6 +946,7 @@ namespace Puerts
         }
 
         Dictionary<IntPtr, int> funcRefCount = new Dictionary<IntPtr, int>();
+        HashSet<IntPtr> funcZeroRefCount = new HashSet<IntPtr>();
         Dictionary<IntPtr, int> JSObjRefCount = new Dictionary<IntPtr, int>();
 
         internal void IncFuncRef(IntPtr nativeJsFuncPtr)
@@ -960,6 +961,7 @@ namespace Puerts
                 }
                 else
                 {
+                    funcZeroRefCount.Remove(nativeJsFuncPtr);
                     refCount = 1;
                 }
                 funcRefCount[nativeJsFuncPtr] = refCount;
@@ -972,7 +974,24 @@ namespace Puerts
 
             lock (funcRefCount)
             {
-                funcRefCount[nativeJsFuncPtr] = funcRefCount[nativeJsFuncPtr] - 1;
+                int refCount;
+                if (funcRefCount.TryGetValue(nativeJsFuncPtr, out refCount))
+                {
+                    --refCount;
+                }
+                else
+                {
+                    refCount = 0;
+                }
+                if (refCount == 0)
+                {
+                    funcRefCount.Remove(nativeJsFuncPtr);
+                    funcZeroRefCount.Add(nativeJsFuncPtr);
+                }
+                else
+                {
+                    funcRefCount[nativeJsFuncPtr] = refCount;
+                }
             }
         }
 
@@ -1004,29 +1023,22 @@ namespace Puerts
             }
         }
 
-        List<IntPtr> pendingRemovedList = new List<IntPtr>();
-
         internal void ReleasePendingJSFunctions()
         {
             lock (funcRefCount)
             {
-                pendingRemovedList.Clear();
-                var enumerator = funcRefCount.GetEnumerator();
+                if (funcZeroRefCount.Count == 0) return;
+                var enumerator = funcZeroRefCount.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    if (enumerator.Current.Value <= 0) pendingRemovedList.Add(enumerator.Current.Key);
-                }
-                for(int i = 0; i  < pendingRemovedList.Count; ++i)
-                {
-                    var nativeJsFuncPtr = pendingRemovedList[i];
-                    funcRefCount.Remove(nativeJsFuncPtr);
+                    var nativeJsFuncPtr = enumerator.Current;
                     if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
                     {
                         genericDelegateFactory.RemoveGenericDelegate(nativeJsFuncPtr);
                         PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
                     }
                 }
-                pendingRemovedList.Clear();
+                funcZeroRefCount.Clear();
             }
         }
 
