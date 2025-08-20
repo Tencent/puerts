@@ -1011,7 +1011,7 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         const value = obj[key];
         jsValueToPapiValue(engine.unityApi, value, pvalue);
     }
-    function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): void {
+    function pesapi_set_property(env: pesapi_env, pobject: pesapi_value, pkey: CSString, pvalue: pesapi_value): int {
         const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_set_property: target is not an object");
@@ -1019,6 +1019,7 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         const key = engine.unityApi.UTF8ToString(pkey);
         const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
         obj[key] = value;
+        return 1;
     }
     function pesapi_get_private(env: pesapi_env, pobject: pesapi_value, out_ptr: number): boolean { 
         const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
@@ -1045,13 +1046,14 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         const value = obj[key];
         jsValueToPapiValue(engine.unityApi, value, pvalue);
     }
-    function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
+    function pesapi_set_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): int {
         const obj = Scope.getCurrent().toJs(engine.unityApi, objMapper, pobject);
         if (typeof obj != 'object') {
             throw new Error("pesapi_set_property_uint32: target is not an object");
         }
         const value = Scope.getCurrent().toJs(engine.unityApi, objMapper, pvalue);
         obj[key] = value;
+        return 1;
     }
 
     // --------------- 函数调用/执行 ---------------

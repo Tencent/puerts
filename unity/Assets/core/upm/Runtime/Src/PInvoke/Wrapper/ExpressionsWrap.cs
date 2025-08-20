@@ -235,13 +235,21 @@ namespace Puerts
                 {
                     return NativeToScript_ArrayBuffer(apis, env, arrayBuffer);
                 }
-                else if (!t.GetType().IsValueType)
+                Type type = t.GetType();
+                if (!type.IsValueType)
                 {
                     return NativeToScript_T<object>(apis, env, t);
                 }
-                else if(t.GetType().IsValueType && !t.GetType().IsPrimitive)
+                else if(type.IsValueType && !type.IsPrimitive)
                 {
-                    return NativeToScript_ValueType_Boxed(apis, env, t);
+                    if (type.IsEnum)
+                    {
+                        return NativeToScript_Object(apis, env, Convert.ChangeType(t, Enum.GetUnderlyingType(type)));
+                    }
+                    else
+                    {
+                        return NativeToScript_ValueType_Boxed(apis, env, t);
+                    }
                 }
                 throw new NotSupportedException($"NativeToScript_Object does not support type: {t.GetType()}");
             }

@@ -213,11 +213,11 @@ typedef pesapi_env_ref (*pesapi_get_ref_associated_env_func)(pesapi_value_ref va
 typedef void** (*pesapi_get_ref_internal_fields_func)(pesapi_value_ref value_ref, uint32_t* pinternal_field_count);
 
 typedef pesapi_value (*pesapi_get_property_func)(pesapi_env env, pesapi_value object, const char* key);
-typedef void (*pesapi_set_property_func)(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
+typedef int (*pesapi_set_property_func)(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
 typedef int (*pesapi_get_private_func)(pesapi_env env, pesapi_value object, void** out_ptr);
 typedef int (*pesapi_set_private_func)(pesapi_env env, pesapi_value object, void* ptr);
 typedef pesapi_value (*pesapi_get_property_uint32_func)(pesapi_env env, pesapi_value object, uint32_t key);
-typedef void (*pesapi_set_property_uint32_func)(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
+typedef int (*pesapi_set_property_uint32_func)(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
 
 typedef pesapi_value (*pesapi_call_function_func)(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
 typedef pesapi_value (*pesapi_eval_func)(pesapi_env env, const uint8_t* code, size_t code_size, const char* path);

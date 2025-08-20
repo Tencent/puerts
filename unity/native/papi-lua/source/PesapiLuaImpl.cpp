@@ -748,12 +748,13 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const cha
     return pesapiValueFromLuaValue(lua_gettop(L));
 }
 
-void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
+int pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     int obj = luaValueFromPesapiValue(pobject);
     lua_pushvalue(L, luaValueFromPesapiValue(pvalue));
     lua_setfield(L, obj, key);
+    return 1;
 }
 
 int pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
@@ -792,7 +793,7 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, ui
     return pesapiValueFromLuaValue(lua_gettop(L));
 }
 
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
 {
     lua_State* L = luaStateFromPesapiEnv(env);
     if (pvalue == 0)
@@ -804,6 +805,7 @@ void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t k
         lua_pushvalue(L, luaValueFromPesapiValue(pvalue));
     }
     lua_rawseti(L, luaValueFromPesapiValue(pobject), key);
+    return 1;
 }
 
 static int error_func(lua_State* L)

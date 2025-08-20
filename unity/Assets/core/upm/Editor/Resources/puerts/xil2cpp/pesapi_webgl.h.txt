@@ -79,7 +79,7 @@ namespace webglimpl
     inline void** pesapi_get_ref_internal_fields(pesapi_value_ref pvalue_ref, uint32_t* pinternal_field_count);
     inline pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const char* key);
     inline pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key);
-    inline void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue);
+    inline int pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue);
     inline pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[]);
     inline pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path);
     inline pesapi_value pesapi_global(pesapi_env env);

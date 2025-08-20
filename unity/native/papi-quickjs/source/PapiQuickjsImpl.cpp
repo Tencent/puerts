@@ -777,7 +777,7 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const cha
     return pesapiValueFromQjsValue(ret);
 }
 
-void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
+int pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, pesapi_value pvalue)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     JSValue* obj = qjsValueFromPesapiValue(pobject);
@@ -786,6 +786,7 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
         JS_DupValue(ctx, *val);
     }
     JS_SetPropertyStr(ctx, *obj, key, *val);
+    return 1;
 }
 
 int pesapi_get_private(pesapi_env env, pesapi_value pobject, void** out_ptr)
@@ -813,7 +814,7 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, ui
     return pesapiValueFromQjsValue(ret);
 }
 
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
     JSValue* obj = qjsValueFromPesapiValue(pobject);
@@ -822,6 +823,7 @@ void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t k
         JS_DupValue(ctx, *val);
     }
     JS_SetPropertyUint32(ctx, *obj, key, *val);
+    return 1;
 }
 
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])

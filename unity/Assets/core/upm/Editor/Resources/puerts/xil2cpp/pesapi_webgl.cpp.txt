@@ -32,11 +32,11 @@ PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref_js(pesapi_env env, pesapi
 PESAPI_EXTERN void pesapi_release_value_ref_js(pesapi_value_ref value_ref);
 PESAPI_EXTERN void pesapi_get_value_from_ref_js(pesapi_env env, void* ptr, pesapi::webglimpl::JSValue* pvalue);
 PESAPI_EXTERN void pesapi_get_property_js(pesapi_env env, pesapi_value object, const char* key, pesapi::webglimpl::JSValue* pvalue);
-PESAPI_EXTERN void pesapi_set_property_js(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
+PESAPI_EXTERN int pesapi_set_property_js(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
 PESAPI_EXTERN int pesapi_get_private_js(pesapi_env env, pesapi_value object, void** out_ptr);
 PESAPI_EXTERN int pesapi_set_private_js(pesapi_env env, pesapi_value object, void* ptr);
 PESAPI_EXTERN void pesapi_get_property_uint32_js(pesapi_env env, pesapi_value object, uint32_t key, pesapi::webglimpl::JSValue* pvalue);
-PESAPI_EXTERN void pesapi_set_property_uint32_js(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
+PESAPI_EXTERN int pesapi_set_property_uint32_js(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
 PESAPI_EXTERN void pesapi_call_function_js(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[], pesapi::webglimpl::JSValue* presult);
 PESAPI_EXTERN void pesapi_eval_js(pesapi_env env, const uint8_t* code, size_t code_size, const char* path, pesapi::webglimpl::JSValue* result);
 PESAPI_EXTERN pesapi_value pesapi_global_js(pesapi_env env);
@@ -833,7 +833,7 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pval
 }
 
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key);
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue);
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue);
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value pvalue)
 {
@@ -1079,9 +1079,9 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, ui
 }
 
 // 由js实现，但其它api需要调用
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
 {
-    pesapi_set_property_uint32_js(env, pobject, key, pvalue);
+    return pesapi_set_property_uint32_js(env, pobject, key, pvalue);
 }
 
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])

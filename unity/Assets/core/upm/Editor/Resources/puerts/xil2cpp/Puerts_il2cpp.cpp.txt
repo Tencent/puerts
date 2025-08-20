@@ -346,13 +346,8 @@ static bool HasParamArray(const MethodInfo* method)
         methodWithParameterAttributeInformation = method->genericMethod->methodDefinition;
 
 #if defined(UNITY_2022_1_OR_NEWER)
-    auto reader = il2cpp::vm::MetadataCache::GetCustomAttributeDataReader(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1));
-
-    auto ctorIter = reader.GetCtorIterator([](const MethodInfo* ctor) {
-        return ctor->klass == s_ParamArrayAttribute;
-    });
-    const MethodInfo* ctor;
-    return (reader.IterateAttributeCtors(&ctor, &ctorIter));
+    Il2CppMetadataCustomAttributeHandle attributeHandle = MetadataCache::GetCustomAttributeTypeToken(methodWithParameterAttributeInformation->klass->image, il2cpp::vm::Method::GetParameterToken(method, method->parameters_count - 1));
+    return Reflection::HasAttribute(attributeHandle, s_ParamArrayAttribute);
 #else
     return (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1), s_ParamArrayAttribute));
 #endif
@@ -1380,7 +1375,11 @@ pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass
         targetClass = il2cpp_defaults.object_class;
     }
     
-    if (Class::IsEnum(targetClass))
+    if ((targetClass == il2cpp_defaults.object_class) && Class::IsEnum(obj->klass))
+    {
+        targetClass = Class::GetElementClass(obj->klass);
+    }
+    else if (Class::IsEnum(targetClass))
     {
         targetClass = Class::GetElementClass(targetClass);
     }
@@ -1700,7 +1699,10 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
             }
             int t;
             if (isLastArgument && hasParamArray)
+            {
                 t = (int) parameterKlass->element_class->byval_arg.type;
+                parameterKlass = parameterKlass->element_class;
+            }
             else
                 t = parameterType->type; 
 handle_underlying:
