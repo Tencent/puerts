@@ -224,12 +224,17 @@ pesapi_env_ref create_py_env()
 {
     Py_Initialize();
 
-    // For debugg
     PyRun_SimpleString(
-        "import tracemalloc\n"
-        "import faulthandler\n"
-        "faulthandler.enable()\n"
-        "tracemalloc.start()");
+        "import sys, traceback, faulthandler, tracemalloc, signal, logging, gc\n"
+        //"logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')\n"
+        //"faulthandler.enable()\n"
+        //"tracemalloc.start()\n"
+        //"def tracefunc(frame, event, arg):\n"
+        //"    co = frame.f_code\n"
+        //"    print(f'TRACE {event} {co.co_filename}:{frame.f_lineno} {co.co_name}')\n"
+        //"    return tracefunc\n"
+        //"sys.settrace(tracefunc)\n"
+        "gc.set_debug(gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_SAVEALL | gc.DEBUG_STATS)\n");
 
     auto* mapper = reinterpret_cast<pesapi::pythonimpl::CppObjectMapper*>(malloc(sizeof(pesapi::pythonimpl::CppObjectMapper)));
     if (mapper)
@@ -253,6 +258,11 @@ void destroy_py_env(pesapi_env_ref env_ref)
         mapper->Cleanup();
         free(mapper);
     }
+    PyRun_SimpleString(
+        "import gc\n"
+        "gc.collect()\n"
+        "print(gc.garbage)");
+    
     Py_Finalize();    // Finalize Python interpreter
 }
 

@@ -84,7 +84,7 @@ static pesapi_scope__* getCurrentScope(PyInterpreterState* state)
     auto dict = PyInterpreterState_GetDict(state);
     if (PyDict_Contains(dict, PyUnicode_FromString("__papi_scope__")))
     {
-        auto ret = PyDict_GetItem(dict, PyUnicode_FromString("__papi_scope__"));
+        auto ret = PyDict_GetItemOpaqueString(dict, "__papi_scope__");
         if (ret)
         {
             return reinterpret_cast<pesapi_scope__*>(ret);

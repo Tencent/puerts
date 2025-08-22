@@ -126,7 +126,7 @@ pesapi_value pesapi_create_array(pesapi_env env)    // TODO: JS 的 Array 和 Py
 
 pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 {
-    auto state = PyInterpreterState_Get();
+    auto state = pyStateFromPesapiEnv(env);
     auto mapper = CppObjectMapper::Get(state);
     auto ret = allocValueInCurrentScope(state);
     *ret = mapper->FindOrCreateClassByID(type_id);
@@ -135,7 +135,7 @@ pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
-    auto state = PyInterpreterState_Get();
+    auto state = pyStateFromPesapiEnv(env);
     auto mapper = CppObjectMapper::Get(state);
     auto ret = allocValueInCurrentScope(state);
     *ret = mapper->CreateFunction(native_impl, data, finalize);
@@ -322,7 +322,7 @@ int pesapi_is_array(pesapi_env env, pesapi_value value)
 // TODO
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize)
 {
-    auto state = PyInterpreterState_Get();
+    auto state = pyStateFromPesapiEnv(env);
     auto mapper = CppObjectMapper::Get(state);
     auto ret = mapper->PushNativeObject(type_id, object_ptr, call_finalize);
     return pesapiValueFromPyObject(ret);

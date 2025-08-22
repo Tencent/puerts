@@ -6,7 +6,7 @@
  * which is part of this source code package.
  */
 
-#pragma onece
+#pragma once
 
 #include <Python.h>
 
