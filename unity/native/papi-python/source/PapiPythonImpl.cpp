@@ -607,11 +607,16 @@ void** pesapi_get_ref_internal_fields(pesapi_value_ref value_ref, uint32_t* pint
     return ref->internal_fields;
 }
 
-void pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value)
+int pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value)
 {
     PyObject* obj = pyObjectFromPesapiValue(object);
     PyObject* val = pyObjectFromPesapiValue(value);
-    PyDict_SetItemString(obj, key, val);
+    if (PyDict_Check(obj))
+    {
+        return PyDict_SetItemString(obj, key, val);
+    }
+    return false;
+
 }
 
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key)
@@ -642,11 +647,15 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uin
     return pesapiValueFromPyObject(PyDict_GetItem(obj, PyLong_FromUnsignedLong(key)));
 }
 
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
 {
     auto obj = pyObjectFromPesapiValue(object);
     PyObject* val = pyObjectFromPesapiValue(value);
-    PyDict_SetItem(obj, PyLong_FromUnsignedLong(key), val);
+    if (PyDict_Check(val))
+    {
+        return PyDict_SetItem(obj, PyLong_FromUnsignedLong(key), val);
+    }
+    return false;
 }
 
 pesapi_value pesapi_create_object(pesapi_env env)
