@@ -80,7 +80,7 @@ public:
 
     inline bool GetPrivateData(PyObject* val, void** outPtr) const
     {
-        if (!PyDict_ContainsString(val, privateDataKey))
+        if (!PyDict_Contains(val, PyUnicode_FromString(privateDataKey)))
         {
             *outPtr = nullptr;
             return false;
