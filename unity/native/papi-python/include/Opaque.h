@@ -17,7 +17,11 @@ namespace pythonimpl
 
 static bool PyDict_SetItemOpaqueString(PyObject* dp, const char* key, void* opaque)
 {
-    return PyDict_SetItemString(dp, key, PyCapsule_New(opaque, nullptr, nullptr));
+    if (opaque != nullptr)
+    {
+        return PyDict_SetItemString(dp, key, PyCapsule_New(opaque, nullptr, nullptr));
+    }
+    return false;
 }
 static void* PyDict_GetItemOpaqueString(PyObject* dp, const char* key)
 {

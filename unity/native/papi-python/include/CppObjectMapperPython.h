@@ -14,7 +14,6 @@
 #include <EASTL/hash_set.h>
 #include <EASTL/allocator_malloc.h>
 #include <EASTL/shared_ptr.h>
-#include <EASTL/string.h>
 
 #include "ObjectCacheNodePython.h"
 #include "ScriptClassRegistry.h"
@@ -52,7 +51,7 @@ public:
     inline static CppObjectMapper* Get(PyInterpreterState* state)
     {
         auto dict = PyInterpreterState_GetDict(state);
-        PyObject* pmapper = PyDict_GetItemString(dict, "CppObjectMapper");
+        PyObject* pmapper = PyDict_GetItem(dict, PyUnicode_FromString("CppObjectMapper"));
         auto mapper = static_cast<CppObjectMapper*>(PyCapsule_GetPointer(pmapper, nullptr));
         return mapper;
     }
@@ -76,17 +75,17 @@ public:
 
     inline bool SetPrivateData(PyObject* val, void* ptr) const
     {
-        return PyObject_SetAttrString(val, privateDataKey, PyCapsule_New(ptr, nullptr, nullptr));
+        return PyDict_SetItemString(val, privateDataKey, PyCapsule_New(ptr, nullptr, nullptr));
     }
 
     inline bool GetPrivateData(PyObject* val, void** outPtr) const
     {
-        if (!PyObject_HasAttrString(val, privateDataKey))
+        if (!PyDict_ContainsString(val, privateDataKey))
         {
             *outPtr = nullptr;
             return false;
         }
-        PyObject* capsule = PyObject_GetAttrString(val, privateDataKey);
+        PyObject* capsule = PyDict_GetItemString(val, privateDataKey);
         if (PyCapsule_CheckExact(capsule))
         {
             *outPtr = PyCapsule_GetPointer(capsule, nullptr);

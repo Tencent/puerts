@@ -12,7 +12,6 @@
 #include <EASTL/allocator_malloc.h>
 
 #include "CppObjectMapperPython.h"
-
 #include "Opaque.h"
 
 namespace pesapi
@@ -29,9 +28,9 @@ struct pesapi_env_ref__
     ~pesapi_env_ref__()
     {
         auto dict = PyInterpreterState_GetDict(state_persistent);
-        if (PyObject_HasAttrString(dict, "CppObjectMapper"))
+        if (PyDict_Contains(dict, PyUnicode_FromString("CppObjectMapper")))
         {
-            PyObject* capsule = PyObject_GetAttrString(dict, "CppObjectMapper");
+            PyObject* capsule = PyDict_GetItemString(dict, "CppObjectMapper");
             if (PyCapsule_CheckExact(capsule))
             {
                 auto* mapper = static_cast<CppObjectMapper*>(PyCapsule_GetPointer(capsule, nullptr));
@@ -41,7 +40,6 @@ struct pesapi_env_ref__
                 }
             }
             Py_XDECREF(capsule);
-            PyObject_DelAttrString(dict, "CppObjectMapper");
         }
     }
 
@@ -84,7 +82,15 @@ struct pesapi_scope__;
 static pesapi_scope__* getCurrentScope(PyInterpreterState* state)
 {
     auto dict = PyInterpreterState_GetDict(state);
-    return (pesapi_scope__*) PyDict_GetItemOpaqueString(dict, "__papi_scope__");
+    if (PyDict_ContainsString(dict,"__papi_scope__"))
+    {
+        auto ret = PyDict_GetItem(dict, PyUnicode_FromString("__papi_scope__"));
+        if (ret)
+        {
+            return reinterpret_cast<pesapi_scope__*>(ret);
+        }
+    }
+    return nullptr;
 }
 
 static void setCurrentScope(PyInterpreterState* state, pesapi_scope__* scope)
@@ -154,7 +160,7 @@ struct pesapi_scope__
         }
         for (size_t i = 0; i < values_used; i++)
         {
-            PyObject_GC_Del((void*) values[i]);
+            PyObject_Free(values[i]);
         }
 
         if (dynamic_alloc_values)
@@ -163,7 +169,7 @@ struct pesapi_scope__
             for (size_t i = 0; i < size; i++)
             {
                 PyObject** dynamicValue = (*dynamic_alloc_values)[i];
-                PyObject_Free((void*) *dynamicValue);
+                PyObject_Free(*dynamicValue);
                 PyMem_Free(dynamicValue);
             }
             dynamic_alloc_values->~vector();
