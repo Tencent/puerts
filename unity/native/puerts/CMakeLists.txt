@@ -34,6 +34,7 @@ include_directories(../EASTL/include)
 set(eastl_sources 
     ../EASTL/source/red_black_tree.cpp
     ../EASTL/source/hashtable.cpp
+    ../EASTL/source/assert.cpp
 )
 file(GLOB_RECURSE eastl_headers "../EASTL/include/EASTL/**.h")
 
