@@ -88,10 +88,7 @@ export default async function downloadBackend(cwd, name, url = "") {
 
     } else {
         const cfg = readBackendsConfig(cwd);
-        if (!(name in cfg)) {
-            throw new Error(`invalid backend: ${name}, available backends:${Object.keys(cfg).join(', ')}`);
-        }
-        url = cfg[name].url;
+        url = cfg[name]?.url;
         if (url) {
             console.log(`[Puer] downloading ${name} from ${url}`);
             await downloadAndExtractTarGz(url, backendDir, name, cfg[name]['tar-output']);
