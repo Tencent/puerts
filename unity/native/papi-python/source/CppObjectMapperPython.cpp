@@ -1,6 +1,5 @@
 #include"CppObjectMapperPython.h"
 
-// ¾²Ì¬·½·¨£º»ñÈ¡Ä£¿é¶ÔÓ¦µÄÓ³ÉäÆ÷ÊµÀı
 CppObjectMapper* CppObjectMapper::Get(PyObject* module)
 {
     std::lock_guard<std::mutex> lock(s_mapper_mutex);
@@ -15,7 +14,6 @@ CppObjectMapper* CppObjectMapper::Get(PyObject* module)
     return mapper;
 }
 
-// ´´½¨Pythonº¯Êı°ü×°C++»Øµ÷
 PyObject* CppObjectMapper::CreateFunction(pesapi_callback callback, void* data, pesapi_function_finalize finalize)
 {
     struct CallbackData
@@ -36,7 +34,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback callback, void* data, 
             CallbackData* data = reinterpret_cast<CallbackData*>(PyCapsule_GetPointer(capsule, "pesapi_callback"));
             if (data && data->finalize)
             {
-                data->finalize(&g_pesapi_ffi, data->data, nullptr);
+                data->finalize(pesapi::pythonimpl::GetPythonFFIApi(), data->data, nullptr);
             }
             delete data;
         });
@@ -56,20 +54,20 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback callback, void* data, 
                 return nullptr;
             }
 
-            // ¹¹Ôì pesapi_callback_info__
-            pesapi_callback_info__ info = {.L = PyEval_GetBuiltins(),    // »ò PyImport_AddModule("__main__")
+            // æ„é€  pesapi_callback_info__
+            pesapi_callback_info__ info = {.L = PyEval_GetBuiltins(),
                 .ArgStart = 0,
                 .RetNum = 1,
                 .Data = data->data,
                 .args = args,
-                .self = nullptr,    // Èç¹ûÄãĞèÒª self£¬¿ÉÒÔ´Ó self ²ÎÊı´«½øÀ´
+                .self = nullptr,
                 .result = nullptr,
                 .exception = nullptr};
 
-            // µ÷ÓÃ C++ »Øµ÷
-            data->callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&info));
+            // è°ƒç”¨ C++ å›è°ƒ
+            data->callback(pesapi::pythonimpl::GetPythonFFIApi(), reinterpret_cast<pesapi_callback_info>(&info));
 
-            // ´¦Àí·µ»ØÖµ
+            // å¤„ç†è¿”å›å€¼
             if (info.exception)
             {
                 PyErr_SetString(PyExc_RuntimeError, "C++ callback threw exception");
@@ -89,7 +87,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback callback, void* data, 
     return PyCFunction_New(&callback_method, capsule);
 }
 
-// ¸ù¾İC++ÀàĞÍID²éÕÒ»ò´´½¨¶ÔÓ¦µÄPythonÀà
+// æ ¹æ®C++ç±»å‹IDæŸ¥æ‰¾æˆ–åˆ›å»ºå¯¹åº”çš„Pythonç±»
 PyObject* CppObjectMapper::FindOrCreateClassByID(const void* type_id)
 {
     auto it = type_cache_.find(type_id);
@@ -121,7 +119,7 @@ PyObject* CppObjectMapper::FindOrCreateClassByID(const void* type_id)
     return new_class;
 }
 
-// ½«C++¶ÔÏó°ü×°ÎªPython¶ÔÏó²¢·µ»Ø
+// å°†C++å¯¹è±¡åŒ…è£…ä¸ºPythonå¯¹è±¡å¹¶è¿”å›
 PyObject* CppObjectMapper::PushNativeObject(const void* type_id, void* object_ptr, bool call_finalize)
 {
     auto key = std::make_pair(type_id, object_ptr);
@@ -156,7 +154,7 @@ PyObject* CppObjectMapper::PushNativeObject(const void* type_id, void* object_pt
     return (PyObject*) native_obj;
 }
 
-// ½«C++¶ÔÏóÓëPython¶ÔÏó°ó¶¨²¢¼ÓÈë»º´æ
+// å°†C++å¯¹è±¡ä¸Pythonå¯¹è±¡ç»‘å®šå¹¶åŠ å…¥ç¼“å­˜
 void CppObjectMapper::BindAndAddToCache(const void* type_info, const void* ptr, PyObject* value, bool call_finalize)
 {
     auto key = std::make_pair(type_info, ptr);
@@ -168,7 +166,7 @@ void CppObjectMapper::BindAndAddToCache(const void* type_info, const void* ptr, 
     Py_INCREF(value);
 }
 
-// ´Ó»º´æÖĞÒÆ³ıC++¶ÔÏóµÄÓ³Éä
+// ä»ç¼“å­˜ä¸­ç§»é™¤C++å¯¹è±¡çš„æ˜ å°„
 void CppObjectMapper::RemoveFromCache(const void* type_info, const void* ptr)
 {
     auto key = std::make_pair(type_info, ptr);

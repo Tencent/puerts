@@ -1,63 +1,39 @@
-#pragma once
+ï»¿#pragma once
 #include "pesapi.h"
-#include "TypeRegistry.h"
+#include "papi_python.h"
+#include "PythonEnv.h"
 #include <Python.h>
 #include <map>
 #include <mutex>
-extern pesapi_ffi g_pesapi_ffi;
-
+extern const pesapi_registry_api* g_pesapi_registry_api;
 struct ScopeData
 {
-    PyObject* exception;    // ´æ´¢×÷ÓÃÓòÄÚµÄÒì³£
+    PyObject* exception;
 };
 
 
 struct NativeObject
 {
-    PyObject_HEAD const void* type_id;    // C++ÀàĞÍID
-    void* object_ptr;                     // C++¶ÔÏóÖ¸Õë
-    bool call_finalize;                   // ÊÇ·ñĞèÒªÔÚÊÍ·ÅÊ±µ÷ÓÃC++Îö¹¹Âß¼­
+    PyObject_HEAD const void* type_id;
+    void* object_ptr;
+    bool call_finalize;
 };
-
-// ×Ô¶¨ÒåÀàĞÍµÄÎö¹¹º¯Êı£ºÊÍ·ÅC++¶ÔÏó
-static void NativeObject_dealloc(NativeObject* self)
-{
-    if (self->call_finalize && self->object_ptr && self->type_id)
-    {
-        // ´ÓÈ«¾Ö×¢²á±í»ñÈ¡ÀàĞÍĞÅÏ¢
-        TypeInfo* type_info = g_type_registry.GetTypeInfo(self->type_id);
-        if (type_info && type_info->finalizer)
-        {
-            // µ÷ÓÃ×¢²áµÄÎö¹¹º¯ÊıÊÍ·ÅC++¶ÔÏó
-            type_info->finalizer(&g_pesapi_ffi, self->object_ptr, type_info->class_data, nullptr);
-        }
-        self->object_ptr = nullptr;    // ±ÜÃâÖØ¸´ÊÍ·Å
-    }
-    Py_TYPE(self)->tp_free((PyObject*) self);    // ÊÍ·ÅPython¶ÔÏó±¾Éí
-}
 struct ValueRef
 {
     pesapi_value value;
     void** internal_fields;
-    uint32_t internal_field_count;    // ¼ÇÂ¼ÄÚ²¿×Ö¶ÎÊıÁ¿£¬ÓÃÓÚ¸´ÖÆºÍÊÍ·Å
+    uint32_t internal_field_count;
 };
 struct pesapi_callback_info__
 {
-    PyObject* L;            // Python µ±Ç°Ä£¿éÃüÃû¿Õ¼ä£¨»òÏß³Ì×´Ì¬£©
-    int ArgStart;           // ²ÎÊıÆğÊ¼Ë÷Òı£¨¹Ì¶¨Îª 0£©
-    int RetNum;             // ·µ»ØÖµÊıÁ¿£¨¹Ì¶¨Îª 1£©
-    void* Data;             // ÓÃ»§Êı¾İ
-    PyObject* args;         // Python ²ÎÊıÔª×é
-    PyObject* self;         // Python µÄ this£¨¼´ self£©
-    PyObject* result;       // ·µ»ØÖµ
-    PyObject* exception;    // Òì³£¶ÔÏó
-};
-// ×Ô¶¨ÒåÀàĞÍµÄÀàĞÍ¶¨Òå
-static PyTypeObject NativeObjectType = {
-    PyVarObject_HEAD_INIT(nullptr, 0).tp_name = "puerts.NativeObject",
-    .tp_basicsize = sizeof(NativeObject),
-    .tp_dealloc = (destructor) NativeObject_dealloc,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
+    PyObject* L;
+    int ArgStart;
+    int RetNum;
+    void* Data;
+    PyObject* args;
+    PyObject* self;
+    PyObject* result;
+    PyObject* exception;
 };
 
 struct CppObjectMapper
@@ -76,7 +52,84 @@ private:
     std::map<std::pair<const void*, const void*>, PyObject*> object_cache_;
 };
 
-// È«¾ÖÓ³ÉäÆ÷»º´æ£ºÄ£¿é -> Ó³ÉäÆ÷ÊµÀı
+
 static std::map<PyObject*, CppObjectMapper*> s_mappers;
 static std::mutex s_mapper_mutex;
+
+
+static void NativeObject_dealloc(NativeObject* self)
+{
+    if (self->call_finalize && self->object_ptr && self->type_id)
+    {
+
+        PyThreadState* ts = PyThreadState_Get();
+        if (ts)
+        {
+
+            PythonEnv* py_env = PythonEnv::FromThreadState(ts);
+            if (py_env && py_env->registry_api && py_env->registry_api->trace_native_object_lifecycle)
+            {
+
+                pesapi_on_native_object_exit on_exit = [](void* env, void* type_id, void* obj_ptr, void* data)
+                {
+
+                    pesapi_env env_var = reinterpret_cast<pesapi_env>(env);
+                    // TODO:
+                };
+
+                pesapi_on_native_object_enter on_enter = nullptr;
+
+                py_env->registry_api->trace_native_object_lifecycle(py_env->registry,
+                    self->type_id, 
+                    on_enter,
+                    on_exit
+                );
+            }
+        }
+
+
+        PyObject* main_module = PyImport_AddModule("__main__");
+        if (main_module)
+        {
+            CppObjectMapper* mapper = CppObjectMapper::Get(main_module);
+            if (mapper)
+            {
+                mapper->RemoveFromCache(self->type_id, self->object_ptr);
+            }
+            Py_DECREF(main_module);
+        }
+    }
+
+    self->object_ptr = nullptr;
+    self->type_id = nullptr;
+
+    Py_TYPE(self)->tp_free((PyObject*) self);
+}
+// ä¿®æ”¹ CppObjectMapperPython.h ä¸­çš„ NativeObjectType å®šä¹‰
+static PyTypeObject NativeObjectType = 
+{
+    PyVarObject_HEAD_INIT(nullptr, 0)  // ç¬¬ä¸€ä¸ªæˆå‘˜ï¼šob_baseï¼ˆPyVarObjectï¼‰
+    "puerts.NativeObject",              // tp_nameï¼šç±»å‹åç§°
+    sizeof(NativeObject),               // tp_basicsizeï¼šåŸºç¡€å¤§å°
+    0,                                  // tp_itemsizeï¼šå…ƒç´ å¤§å°ï¼ˆæœªä½¿ç”¨ï¼Œå¡«0ï¼‰
+    (destructor)NativeObject_dealloc,   // tp_deallocï¼šææ„å‡½æ•°
+    0,                                  // tp_printï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_getattrï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_setattrï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_reservedï¼ˆä¿ç•™å­—æ®µï¼‰
+    0,                                  // tp_reprï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_as_numberï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_as_sequenceï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_as_mappingï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_hashï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_callï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_strï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_getattroï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_setattroï¼ˆæœªä½¿ç”¨ï¼‰
+    0,                                  // tp_as_bufferï¼ˆæœªä½¿ç”¨ï¼‰
+    Py_TPFLAGS_DEFAULT,                 // tp_flagsï¼šé»˜è®¤æ ‡å¿—
+    0,                                  // tp_docï¼ˆæ–‡æ¡£å­—ç¬¦ä¸²ï¼Œæœªä½¿ç”¨ï¼‰
+    // åç»­æœªä½¿ç”¨çš„æˆå‘˜å¯å…¨éƒ¨å¡«0ï¼ˆæŒ‰ç»“æ„ä½“å®šä¹‰é¡ºåºï¼‰
+};
+
 

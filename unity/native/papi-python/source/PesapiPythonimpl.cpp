@@ -1,4 +1,4 @@
-#include "papi_python.h"
+﻿#include "papi_python.h"
 #include <cstring>
 #include <stdexcept>
 #include <mutex>
@@ -22,136 +22,6 @@ inline PythonEnv* pythonEnvFromPesapiEnv(pesapi_env env)
 {
     return reinterpret_cast<PythonEnv*>(env);
 }
-
-struct pesapi_registry_api g_registry_api = {
-    // 1. 创建注册表（返回全局注册表指针）
-    .create_registry = []() -> pesapi_registry { return reinterpret_cast<pesapi_registry>(&g_type_registry); },
-
-    // 2. 分配类型信息数组（返回pesapi_type_info__数组）
-    .alloc_type_infos = [](size_t count) -> pesapi_type_info
-    {
-        if (count == 0)
-            return nullptr;
-        // 分配实际的类型信息结构体数组
-        auto* infos = new pesapi_type_info__[count];
-        return reinterpret_cast<pesapi_type_info>(infos);
-    },
-
-    // 3. 设置类型信息（填充pesapi_type_info__的字段）
-    .set_type_info =
-        [](pesapi_type_info type_infos, size_t index, const char* name, int is_pointer, int is_const, int is_ref, int is_primitive)
-    {
-        if (!type_infos)
-            return;
-        auto* infos = reinterpret_cast<pesapi_type_info__*>(type_infos);
-        infos[index].name = name ? name : "";
-        infos[index].is_pointer = is_pointer != 0;
-        infos[index].is_const = is_const != 0;
-        infos[index].is_ref = is_ref != 0;
-        infos[index].is_primitive = is_primitive != 0;
-    },
-
-    // 4. 创建函数签名信息（存储返回类型和参数类型）
-    .create_signature_info = [](pesapi_type_info return_type, size_t parameter_count,
-                                 pesapi_type_info parameter_types) -> pesapi_signature_info
-    {
-        auto* sig = new pesapi_signature_info__();
-        sig->return_type = return_type;
-        sig->param_count = parameter_count;
-        if (parameter_count > 0 && parameter_types)
-        {
-            auto* params = reinterpret_cast<pesapi_type_info__*>(parameter_types);
-            sig->param_types = new pesapi_type_info[parameter_count];
-            for (size_t i = 0; i < parameter_count; ++i)
-            {
-                sig->param_types[i] = &params[i];
-            }
-        }
-        else
-        {
-            sig->param_types = nullptr;
-        }
-        return reinterpret_cast<pesapi_signature_info>(sig);
-    },
-
-    .define_class =
-        [](pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name,
-            pesapi_constructor constructor, pesapi_finalize finalize, void* data, int copy_str)
-    {
-        // 调用TypeRegistry的DefineClass，补充构造函数
-        g_type_registry.DefineClass(type_id, super_type_id, module_name, type_name, finalize, data);
-        // 额外存储构造函数
-        if (auto* info = g_type_registry.GetTypeInfo(type_id))
-        {
-            info->constructor = constructor;
-        }
-    },
-
-    // 6. 设置类成员数量（方法/函数/属性/变量）
-    .set_property_info_size = [](pesapi_registry registry, const void* type_id, int method_count, int function_count,
-                                  int property_count, int variable_count)
-    { g_type_registry.SetPropertyInfoSize(type_id, method_count, function_count, property_count, variable_count); },
-
-    // 7. 注册方法信息
-    .set_method_info =
-        [](pesapi_registry registry, const void* type_id, int index, const char* name, int is_static, pesapi_callback method,
-            void* data, int copy_str)
-    {
-        MethodInfo method_info;
-        method_info.name = name ? name : "";
-        method_info.is_static = is_static != 0;
-        method_info.method = method;
-        method_info.data = data;
-        g_type_registry.AddMethodInfo(type_id, method_info);
-    },
-
-    // 8. 注册属性信息
-    .set_property_info =
-        [](pesapi_registry registry, const void* type_id, int index, const char* name, int is_static, pesapi_callback getter,
-            pesapi_callback setter, void* getter_data, void* setter_data, int copy_str)
-    {
-        PropertyInfo prop_info;
-        prop_info.name = name ? name : "";
-        prop_info.is_static = is_static != 0;
-        prop_info.getter = getter;
-        prop_info.setter = setter;
-        prop_info.getter_data = getter_data;
-        prop_info.setter_data = setter_data;
-        g_type_registry.AddPropertyInfo(type_id, prop_info);
-    },
-
-    // 9. 获取类关联数据
-    .get_class_data = [](pesapi_registry registry, const void* type_id, int force_load) -> void*
-    {
-        TypeInfo* info = g_type_registry.GetTypeInfo(type_id);
-        return info ? info->class_data : nullptr;
-    },
-
-    // 10. 设置类未找到回调
-    .on_class_not_found = [](pesapi_registry registry, pesapi_class_not_found_callback callback)
-    { g_type_registry.SetClassNotFoundCallback(registry, callback); },
-
-    // 11. 存储类的类型信息（原型ID、各种元数据指针）
-    .class_type_info =
-        [](pesapi_registry registry, const char* proto_magic_id, const void* type_id, const void* constructor_info,
-            const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info)
-    {
-        // 简化实现：将这些信息存储到TypeInfo（实际可扩展字段）
-        if (auto* info = g_type_registry.GetTypeInfo(type_id))
-        {
-        }
-    },
-
-    // 12. 通过模块名和类型名查找type_id
-    .find_type_id = [](pesapi_registry registry, const char* module_name, const char* type_name) -> const void*
-    { return g_type_registry.FindTypeId(module_name, type_name); },
-
-    // 13. 跟踪原生对象生命周期（注册enter/exit回调）
-    .trace_native_object_lifecycle = [](pesapi_registry registry, const void* type_id, pesapi_on_native_object_enter on_enter,
-                                         pesapi_on_native_object_exit on_exit) -> int
-    { return g_type_registry.TraceNativeObjectLifecycle(type_id, on_enter, on_exit); }
-};
-
 
 pesapi_env_ref CreatePythonEnvRef()
 {
@@ -537,16 +407,30 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char
     return pesapiValueFromPyObject(val);
 }
 
-void pesapi_set_property(pesapi_env env, pesapi_value object, const char* name, pesapi_value value)
+int pesapi_set_property(pesapi_env env, pesapi_value object, const char* name, pesapi_value value)
 {
+    // 检查输入有效性
+    if (!object || !name || !value)
+        return 0;
+
     PyObject* obj = pyObjectFromPesapiValue(object);
     PyObject* val = pyObjectFromPesapiValue(value);
+
+    // 检查对象是否为字典类型（Python中默认用字典存储属性）
+    if (!PyDict_Check(obj))
+        return 0;
+
+    // 创建Python字符串类型的键
     PyObject* key = PyUnicode_FromString(name);
     if (!key)
-        return;
+        return 0;    // 键创建失败
 
-    PyDict_SetItem(obj, key, val);
+    // 设置字典项，PyDict_SetItem成功返回0，失败返回-1
+    int result = PyDict_SetItem(obj, key, val) == 0 ? 1 : 0;
+
+    // 释放临时对象
     Py_DECREF(key);
+    return result;    // 成功返回1，失败返回0
 }
 
 // 数组操作
@@ -644,13 +528,15 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value valu
     if (!mapper)
         return 0;
 
+    // 获取值对应的C++对象
+    NativeObject* native_obj = nullptr;
+    // 检查是否为原生对象类型
     PyObject* native_class = mapper->FindOrCreateClassByID(nullptr);
-    if (!PyObject_TypeCheck(obj, (PyTypeObject*) native_class))
-        return 0;
-
-    NativeObject* native_obj = reinterpret_cast<NativeObject*>(obj);
-    // 利用全局注册表检查类型继承链
-    return g_type_registry.IsInstanceOf(type_id, native_obj->type_id) ? 1 : 0;
+    if (PyObject_TypeCheck(obj, (PyTypeObject*) native_class))
+    {
+        native_obj = reinterpret_cast<NativeObject*>(obj);
+    }
+    return (native_obj && native_obj->type_id == type_id) ? 1 : 0;
 }
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
@@ -1048,19 +934,26 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uin
     return pesapiValueFromPyObject(val);
 }
 
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
 {
     if (!object || !value)
-        return;
+        return 0;    // 失败返回0
 
     PyObject* obj = pyObjectFromPesapiValue(object);
+    // 检查是否为字典类型（Python中对象的属性存储）
+    if (!PyDict_Check(obj))
+        return 0;    // 非字典类型返回失败
+
     PyObject* key_obj = PyLong_FromUnsignedLong(key);
     PyObject* val_obj = pyObjectFromPesapiValue(value);
     Py_INCREF(val_obj);
 
-    PyDict_SetItem(obj, key_obj, val_obj);
+    // 调用PyDict_SetItem设置属性，成功返回1，失败返回0
+    int result = PyDict_SetItem(obj, key_obj, val_obj) == 0 ? 1 : 0;
+
     Py_DECREF(key_obj);
     Py_DECREF(val_obj);
+    return result;    // 返回操作结果
 }
 
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
@@ -1088,9 +981,9 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     }
 
     // 3. 准备执行参数
-    const char* filename = path ? path : "<pesapi_eval>";    // 代码来源标识（用于错误提示）
-    PyObject* globals = py_env->main_namespace;              // 使用__main__模块的全局命名空间
-    PyObject* locals = py_env->main_namespace;               // 局部命名空间复用全局
+    const char* filename = path ? path : "<pesapi_eval>";
+    PyObject* globals = py_env->main_namespace;
+    PyObject* locals = py_env->main_namespace;
     PyObject* result = nullptr;
     PyObject* code_obj = nullptr;
 
@@ -1101,9 +994,9 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         return pesapi_create_null(env);
     }
 
-    code_obj = Py_CompileStringExFlags(PyBytes_AS_STRING(code_str),    // 从字节对象获取字符串
+    code_obj = Py_CompileStringExFlags(PyBytes_AS_STRING(code_str),
         filename, Py_eval_input, nullptr,
-        -1    // 自动计算长度（由PyBytes保证）
+        -1
     );
     Py_DECREF(code_str);
 
@@ -1271,7 +1164,6 @@ pesapi_ffi g_pesapi_ffi = {
     pesapi_set_registry                 // set_registry
 };
 
-    // 导出函数
 PESAPI_MODULE_EXPORT int GetPythonPapiVersion()
 {
     return PESAPI_VERSION;

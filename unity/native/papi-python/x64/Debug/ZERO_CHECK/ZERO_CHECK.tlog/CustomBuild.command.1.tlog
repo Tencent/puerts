@@ -1,0 +1,10 @@
+^D:\PUERTSMY\PUERTS\UNITY\NATIVE\PAPI-PYTHON\CMAKEFILES\67CEA8C24B9F7B9BC2E8151BB294E7E0\GENERATE.STAMP.RULE
+setlocal
+E:\bin\cmake.exe -SD:/PuerTsMy/puerts/unity/native/papi-python -BD:/PuerTsMy/puerts/unity/native/papi-python --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/PuerTsMy/puerts/unity/native/papi-python/papi-python.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

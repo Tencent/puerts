@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "pesapi.h"
 #include <Python.h>
 #include <map>
@@ -10,15 +10,22 @@ struct PythonEnv
     PyObject* main_namespace;
     std::map<const void*, PyObject*> object_cache;
     std::map<std::string, PyObject*> modules_cache;
-    // Òì³£´æ´¢×Ö¶Î
-    PyObject* exc_type;         // Òì³£ÀàĞÍ
-    PyObject* exc_value;        // Òì³£Öµ
-    PyObject* exc_traceback;    // Òì³£¶ÑÕ»
+    // å¼‚å¸¸å­˜å‚¨å­—æ®µ
+    PyObject* exc_type;         // å¼‚å¸¸ç±»å‹
+    PyObject* exc_value;        // å¼‚å¸¸å€¼
+    PyObject* exc_traceback;    // å¼‚å¸¸å †æ ˆ
 
-    int ref_count;               // ÒÑÔÚÒıÓÃ¼ÆÊıÏà¹Øº¯ÊıÖĞÊ¹ÓÃ
-    const void* private_data;    // »·¾³Ë½ÓĞÊı¾İ
+    int ref_count;               // å·²åœ¨å¼•ç”¨è®¡æ•°ç›¸å…³å‡½æ•°ä¸­ä½¿ç”¨
+    const void* private_data;    // ç¯å¢ƒç§æœ‰æ•°æ®
     const pesapi_registry_api* registry_api;
-    pesapi_registry registry;    // ×¢²á±í
+    pesapi_registry registry;    // æ³¨å†Œè¡¨
+
+    static std::map<PyThreadState*, PythonEnv*> thread_state_map;    // æ–°å¢
+    static PythonEnv* FromThreadState(PyThreadState* ts)
+    {    // æ–°å¢
+        auto it = thread_state_map.find(ts);
+        return it != thread_state_map.end() ? it->second : nullptr;
+    }
 
     PythonEnv()
         : thread_state(nullptr)

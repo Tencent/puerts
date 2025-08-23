@@ -1,6 +1,7 @@
-#include "PythonEnv.h"
+ï»¿#include "PythonEnv.h"
 
-// »·¾³¹ÜÀíÊµÏÖ
+std::map<PyThreadState*, PythonEnv*> PythonEnv::thread_state_map;
+// ç¯å¢ƒç®¡ç†å®ç°
 PythonEnv::~PythonEnv()
 {
     if (main_namespace)
@@ -15,19 +16,19 @@ PythonEnv::~PythonEnv()
     }
     if (thread_state)
     {
-        // Êµ¼ÊÊµÏÖ£ºÕıÈ·Ïú»Ù×Ó½âÊÍÆ÷
-        PyThreadState_Swap(thread_state);    // ÇĞ»»µ½µ±Ç°Ïß³Ì×´Ì¬
-        Py_EndInterpreter(thread_state);     // ½áÊø×Ó½âÊÍÆ÷
+        // å®é™…å®ç°ï¼šæ­£ç¡®é”€æ¯å­è§£é‡Šå™¨
+        PyThreadState_Swap(thread_state);    // åˆ‡æ¢åˆ°å½“å‰çº¿ç¨‹çŠ¶æ€
+        Py_EndInterpreter(thread_state);     // ç»“æŸå­è§£é‡Šå™¨
         thread_state = nullptr;
     }
-
-    // ÊÍ·ÅÒì³£Ïà¹Ø¶ÔÏó
+    thread_state_map.erase(thread_state);
+    // é‡Šæ”¾å¼‚å¸¸ç›¸å…³å¯¹è±¡
     Py_XDECREF(exc_type);
     Py_XDECREF(exc_value);
     Py_XDECREF(exc_traceback);
     exc_type = exc_value = exc_traceback = nullptr;
 
-    // ÇåÀí»º´æµÄ¶ÔÏóºÍÄ£¿é
+    // æ¸…ç†ç¼“å­˜çš„å¯¹è±¡å’Œæ¨¡å—
     for (auto& entry : object_cache)
     {
         Py_DECREF(entry.second);
@@ -39,7 +40,7 @@ PythonEnv::~PythonEnv()
     }
     modules_cache.clear();
 
-    // Èç¹ûÊÇ×îºóÒ»¸ö»·¾³£¬ÇåÀíPythonÈ«¾Ö×´Ì¬
+    // å¦‚æœæ˜¯æœ€åä¸€ä¸ªç¯å¢ƒï¼Œæ¸…ç†Pythonå…¨å±€çŠ¶æ€
     if (Py_IsInitialized() && PyThreadState_Get() == nullptr)
     {
         Py_Finalize();
