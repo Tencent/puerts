@@ -1,0 +1,324 @@
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineSystem.cmake:205 (message)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      The system is: Windows - 10.0.26100 - AMD64
+  -
+    kind: "message-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCCompiler.cmake:123 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler:  
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      閫傜敤浜?.NET Framework MSBuild 鐗堟湰 17.10.4+10fbfbf2e
+      鐢熸垚鍚姩鏃堕棿涓?2025/8/23 22:10:31銆?
+      
+      鑺傜偣 1 涓婄殑椤圭洰鈥淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdC\\CompilerIdC.vcxproj鈥?榛樿鐩爣)銆?
+      PrepareForBuild:
+        姝ｅ湪鍒涘缓鐩綍鈥淒ebug\\鈥濄€?
+        宸插惎鐢ㄧ粨鏋勫寲杈撳嚭銆傜紪璇戝櫒璇婃柇鐨勬牸寮忚缃皢鍙嶆槧閿欒灞傛缁撴瀯銆傛湁鍏宠缁嗕俊鎭紝璇峰弬闃?https://aka.ms/cpp/structured-output銆?
+        姝ｅ湪鍒涘缓鐩綍鈥淒ebug\\CompilerIdC.tlog\\鈥濄€?
+      InitializeBuildStatus:
+        姝ｅ湪鍒涘缓鈥淒ebug\\CompilerIdC.tlog\\unsuccessfulbuild鈥濓紝鍥犱负宸叉寚瀹氣€淎lwaysCreate鈥濄€?
+        姝ｅ湪瀵光€淒ebug\\CompilerIdC.tlog\\unsuccessfulbuild鈥濇墽琛?Touch 浠诲姟銆?
+      VcpkgTripletSelection:
+        Using triplet "x64-windows" from "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\"
+        Using normalized configuration "Release"
+      ClCompile:
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /I"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\include" /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc143.pdb" /external:W0 /Gd /TC /FC /errorReport:queue CMakeCCompilerId.c
+        CMakeCCompilerId.c
+      Link:
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdC.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\lib" /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdC.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdC.lib" /MACHINE:X64 Debug\\CMakeCCompilerId.obj
+        CompilerIdC.vcxproj -> D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdC\\CompilerIdC.exe
+      AppLocalFromInstalled:
+        pwsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdC\\CompilerIdC.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\bin" "Debug\\CompilerIdC.tlog\\CompilerIdC.write.1u.tlog" "Debug\\vcpkg.applocal.log"
+        'pwsh.exe' 涓嶆槸鍐呴儴鎴栧閮ㄥ懡浠わ紝涔熶笉鏄彲杩愯鐨勭▼搴?
+        鎴栨壒澶勭悊鏂囦欢銆?
+        鍛戒护鈥減wsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdC\\CompilerIdC.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\bin" "Debug\\CompilerIdC.tlog\\CompilerIdC.write.1u.tlog" "Debug\\vcpkg.applocal.log"鈥濆凡閫€鍑猴紝浠ｇ爜涓?9009銆?
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdC\\CompilerIdC.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\bin" "Debug\\CompilerIdC.tlog\\CompilerIdC.write.1u.tlog" "Debug\\vcpkg.applocal.log"
+      PostBuildEvent:
+        for %%i in (cl.exe) do @echo CMAKE_C_COMPILER=%%~$PATH:i
+        :VCEnd
+        CMAKE_C_COMPILER=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe
+      FinalizeBuildStatus:
+        姝ｅ湪鍒犻櫎鏂囦欢鈥淒ebug\\CompilerIdC.tlog\\unsuccessfulbuild鈥濄€?
+        姝ｅ湪瀵光€淒ebug\\CompilerIdC.tlog\\CompilerIdC.lastbuildstate鈥濇墽琛?Touch 浠诲姟銆?
+      宸插畬鎴愮敓鎴愰」鐩€淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdC\\CompilerIdC.vcxproj鈥?榛樿鐩爣)鐨勬搷浣溿€?
+      
+      宸叉垚鍔熺敓鎴愩€?
+          0 涓鍛?
+          0 涓敊璇?
+      
+      宸茬敤鏃堕棿 00:00:01.45
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.vcxproj"
+      
+      The C compiler identification is MSVC, found in:
+        D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/3.31.0/CompilerIdC/CompilerIdC.exe
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler:  
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      閫傜敤浜?.NET Framework MSBuild 鐗堟湰 17.10.4+10fbfbf2e
+      鐢熸垚鍚姩鏃堕棿涓?2025/8/23 22:10:32銆?
+      
+      鑺傜偣 1 涓婄殑椤圭洰鈥淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj鈥?榛樿鐩爣)銆?
+      PrepareForBuild:
+        姝ｅ湪鍒涘缓鐩綍鈥淒ebug\\鈥濄€?
+        宸插惎鐢ㄧ粨鏋勫寲杈撳嚭銆傜紪璇戝櫒璇婃柇鐨勬牸寮忚缃皢鍙嶆槧閿欒灞傛缁撴瀯銆傛湁鍏宠缁嗕俊鎭紝璇峰弬闃?https://aka.ms/cpp/structured-output銆?
+        姝ｅ湪鍒涘缓鐩綍鈥淒ebug\\CompilerIdCXX.tlog\\鈥濄€?
+      InitializeBuildStatus:
+        姝ｅ湪鍒涘缓鈥淒ebug\\CompilerIdCXX.tlog\\unsuccessfulbuild鈥濓紝鍥犱负宸叉寚瀹氣€淎lwaysCreate鈥濄€?
+        姝ｅ湪瀵光€淒ebug\\CompilerIdCXX.tlog\\unsuccessfulbuild鈥濇墽琛?Touch 浠诲姟銆?
+      VcpkgTripletSelection:
+        Using triplet "x64-windows" from "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\"
+        Using normalized configuration "Release"
+      ClCompile:
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /I"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\include" /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc143.pdb" /external:W0 /Gd /TP /FC /errorReport:queue CMakeCXXCompilerId.cpp
+        CMakeCXXCompilerId.cpp
+      Link:
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCXX.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\lib" /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCXX.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCXX.lib" /MACHINE:X64 Debug\\CMakeCXXCompilerId.obj
+        CompilerIdCXX.vcxproj -> D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdCXX\\CompilerIdCXX.exe
+      AppLocalFromInstalled:
+        pwsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdCXX\\CompilerIdCXX.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\bin" "Debug\\CompilerIdCXX.tlog\\CompilerIdCXX.write.1u.tlog" "Debug\\vcpkg.applocal.log"
+        'pwsh.exe' 涓嶆槸鍐呴儴鎴栧閮ㄥ懡浠わ紝涔熶笉鏄彲杩愯鐨勭▼搴?
+        鎴栨壒澶勭悊鏂囦欢銆?
+        鍛戒护鈥減wsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdCXX\\CompilerIdCXX.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\bin" "Debug\\CompilerIdCXX.tlog\\CompilerIdCXX.write.1u.tlog" "Debug\\vcpkg.applocal.log"鈥濆凡閫€鍑猴紝浠ｇ爜涓?9009銆?
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdCXX\\CompilerIdCXX.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\bin" "Debug\\CompilerIdCXX.tlog\\CompilerIdCXX.write.1u.tlog" "Debug\\vcpkg.applocal.log"
+      PostBuildEvent:
+        for %%i in (cl.exe) do @echo CMAKE_CXX_COMPILER=%%~$PATH:i
+        :VCEnd
+        CMAKE_CXX_COMPILER=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe
+      FinalizeBuildStatus:
+        姝ｅ湪鍒犻櫎鏂囦欢鈥淒ebug\\CompilerIdCXX.tlog\\unsuccessfulbuild鈥濄€?
+        姝ｅ湪瀵光€淒ebug\\CompilerIdCXX.tlog\\CompilerIdCXX.lastbuildstate鈥濇墽琛?Touch 浠诲姟銆?
+      宸插畬鎴愮敓鎴愰」鐩€淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\3.31.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj鈥?榛樿鐩爣)鐨勬搷浣溿€?
+      
+      宸叉垚鍔熺敓鎴愩€?
+          0 涓鍛?
+          0 涓敊璇?
+      
+      宸茬敤鏃堕棿 00:00:01.48
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.vcxproj"
+      
+      The CXX compiler identification is MSVC, found in:
+        D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/3.31.0/CompilerIdCXX/CompilerIdCXX.exe
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:74 (try_compile)"
+      - "E:/share/cmake-3.31/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-iz2vds"
+      binary: "D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-iz2vds"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-iz2vds'
+        
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_e2a5d.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        閫傜敤浜?.NET Framework MSBuild 鐗堟湰 17.10.4+10fbfbf2e
+        鐢熸垚鍚姩鏃堕棿涓?2025/8/23 22:10:34銆?
+        
+        鑺傜偣 1 涓婄殑椤圭洰鈥淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\cmTC_e2a5d.vcxproj鈥?榛樿鐩爣)銆?
+        PrepareForBuild:
+          姝ｅ湪鍒涘缓鐩綍鈥渃mTC_e2a5d.dir\\Debug\\鈥濄€?
+          宸插惎鐢ㄧ粨鏋勫寲杈撳嚭銆傜紪璇戝櫒璇婃柇鐨勬牸寮忚缃皢鍙嶆槧閿欒灞傛缁撴瀯銆傛湁鍏宠缁嗕俊鎭紝璇峰弬闃?https://aka.ms/cpp/structured-output銆?
+          姝ｅ湪鍒涘缓鐩綍鈥淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\Debug\\鈥濄€?
+          姝ｅ湪鍒涘缓鐩綍鈥渃mTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\鈥濄€?
+        InitializeBuildStatus:
+          姝ｅ湪鍒涘缓鈥渃mTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\unsuccessfulbuild鈥濓紝鍥犱负宸叉寚瀹氣€淎lwaysCreate鈥濄€?
+          姝ｅ湪瀵光€渃mTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\unsuccessfulbuild鈥濇墽琛?Touch 浠诲姟銆?
+        VcpkgTripletSelection:
+          Using triplet "x64-windows" from "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\"
+          Using normalized configuration "Debug"
+        ClCompile:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /I"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_e2a5d.dir\\Debug\\\\" /Fd"cmTC_e2a5d.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "E:\\share\\cmake-3.31\\Modules\\CMakeCCompilerABI.c"
+          鐢ㄤ簬 x64 鐨?Microsoft (R) C/C++ 浼樺寲缂栬瘧鍣?19.38.33139 鐗?
+          鐗堟潈鎵€鏈?C) Microsoft Corporation銆備繚鐣欐墍鏈夋潈鍒┿€?
+          cl /c /I"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_e2a5d.dir\\Debug\\\\" /Fd"cmTC_e2a5d.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "E:\\share\\cmake-3.31\\Modules\\CMakeCCompilerABI.c"
+          CMakeCCompilerABI.c
+        Link:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\Debug\\cmTC_e2a5d.exe" /INCREMENTAL /ILK:"cmTC_e2a5d.dir\\Debug\\cmTC_e2a5d.ilk" /NOLOGO /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\lib" /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-iz2vds/Debug/cmTC_e2a5d.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-iz2vds/Debug/cmTC_e2a5d.lib" /MACHINE:X64  /machine:x64 cmTC_e2a5d.dir\\Debug\\CMakeCCompilerABI.obj
+          cmTC_e2a5d.vcxproj -> D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\Debug\\cmTC_e2a5d.exe
+        AppLocalFromInstalled:
+          pwsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\Debug\\cmTC_e2a5d.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\bin" "cmTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\cmTC_e2a5d.write.1u.tlog" "cmTC_e2a5d.dir\\Debug\\vcpkg.applocal.log"
+          'pwsh.exe' 涓嶆槸鍐呴儴鎴栧閮ㄥ懡浠わ紝涔熶笉鏄彲杩愯鐨勭▼搴?
+          鎴栨壒澶勭悊鏂囦欢銆?
+          鍛戒护鈥減wsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\Debug\\cmTC_e2a5d.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\bin" "cmTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\cmTC_e2a5d.write.1u.tlog" "cmTC_e2a5d.dir\\Debug\\vcpkg.applocal.log"鈥濆凡閫€鍑猴紝浠ｇ爜涓?9009銆?
+          "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\Debug\\cmTC_e2a5d.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\bin" "cmTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\cmTC_e2a5d.write.1u.tlog" "cmTC_e2a5d.dir\\Debug\\vcpkg.applocal.log"
+        FinalizeBuildStatus:
+          姝ｅ湪鍒犻櫎鏂囦欢鈥渃mTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\unsuccessfulbuild鈥濄€?
+          姝ｅ湪瀵光€渃mTC_e2a5d.dir\\Debug\\cmTC_e2a5d.tlog\\cmTC_e2a5d.lastbuildstate鈥濇墽琛?Touch 浠诲姟銆?
+        宸插畬鎴愮敓鎴愰」鐩€淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-iz2vds\\cmTC_e2a5d.vcxproj鈥?榛樿鐩爣)鐨勬搷浣溿€?
+        
+        宸叉垚鍔熺敓鎴愩€?
+            0 涓鍛?
+            0 涓敊璇?
+        
+        宸茬敤鏃堕棿 00:00:01.40
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:218 (message)"
+      - "E:/share/cmake-3.31/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed C implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
+        linker tool for 'C': C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64/link.exe
+        implicit libs: []
+        implicit objs: []
+        implicit dirs: []
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/Internal/CMakeDetermineLinkerId.cmake:40 (message)"
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:255 (cmake_determine_linker_id)"
+      - "E:/share/cmake-3.31/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Running the C compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64/link.exe" "-v"
+      Microsoft (R) Incremental Linker Version 14.38.33139.0
+      Copyright (C) Microsoft Corporation.  All rights reserved.
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:74 (try_compile)"
+      - "E:/share/cmake-3.31/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-2nqh51"
+      binary: "D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-2nqh51"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /GR /EHsc"
+      CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_CXX_SCAN_FOR_MODULES: "OFF"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-2nqh51'
+        
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_da3e8.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        閫傜敤浜?.NET Framework MSBuild 鐗堟湰 17.10.4+10fbfbf2e
+        鐢熸垚鍚姩鏃堕棿涓?2025/8/23 22:10:36銆?
+        
+        鑺傜偣 1 涓婄殑椤圭洰鈥淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\cmTC_da3e8.vcxproj鈥?榛樿鐩爣)銆?
+        PrepareForBuild:
+          姝ｅ湪鍒涘缓鐩綍鈥渃mTC_da3e8.dir\\Debug\\鈥濄€?
+          宸插惎鐢ㄧ粨鏋勫寲杈撳嚭銆傜紪璇戝櫒璇婃柇鐨勬牸寮忚缃皢鍙嶆槧閿欒灞傛缁撴瀯銆傛湁鍏宠缁嗕俊鎭紝璇峰弬闃?https://aka.ms/cpp/structured-output銆?
+          姝ｅ湪鍒涘缓鐩綍鈥淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\Debug\\鈥濄€?
+          姝ｅ湪鍒涘缓鐩綍鈥渃mTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\鈥濄€?
+        InitializeBuildStatus:
+          姝ｅ湪鍒涘缓鈥渃mTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\unsuccessfulbuild鈥濓紝鍥犱负宸叉寚瀹氣€淎lwaysCreate鈥濄€?
+          姝ｅ湪瀵光€渃mTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\unsuccessfulbuild鈥濇墽琛?Touch 浠诲姟銆?
+        VcpkgTripletSelection:
+          Using triplet "x64-windows" from "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\"
+          Using normalized configuration "Debug"
+        ClCompile:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\CL.exe /c /I"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_da3e8.dir\\Debug\\\\" /Fd"cmTC_da3e8.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "E:\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
+          鐢ㄤ簬 x64 鐨?Microsoft (R) C/C++ 浼樺寲缂栬瘧鍣?19.38.33139 鐗?
+          鐗堟潈鎵€鏈?C) Microsoft Corporation銆備繚鐣欐墍鏈夋潈鍒┿€?
+          cl /c /I"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_da3e8.dir\\Debug\\\\" /Fd"cmTC_da3e8.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "E:\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
+          CMakeCXXCompilerABI.cpp
+        Link:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\Debug\\cmTC_da3e8.exe" /INCREMENTAL /ILK:"cmTC_da3e8.dir\\Debug\\cmTC_da3e8.ilk" /NOLOGO /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\lib" /LIBPATH:"D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-2nqh51/Debug/cmTC_da3e8.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:/PuerTsMy/puerts/unity/native/papi-python/build/CMakeFiles/CMakeScratch/TryCompile-2nqh51/Debug/cmTC_da3e8.lib" /MACHINE:X64  /machine:x64 cmTC_da3e8.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_da3e8.vcxproj -> D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\Debug\\cmTC_da3e8.exe
+        AppLocalFromInstalled:
+          pwsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\Debug\\cmTC_da3e8.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\bin" "cmTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\cmTC_da3e8.write.1u.tlog" "cmTC_da3e8.dir\\Debug\\vcpkg.applocal.log"
+          'pwsh.exe' 涓嶆槸鍐呴儴鎴栧閮ㄥ懡浠わ紝涔熶笉鏄彲杩愯鐨勭▼搴?
+          鎴栨壒澶勭悊鏂囦欢銆?
+          鍛戒护鈥減wsh.exe -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\Debug\\cmTC_da3e8.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\bin" "cmTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\cmTC_da3e8.write.1u.tlog" "cmTC_da3e8.dir\\Debug\\vcpkg.applocal.log"鈥濆凡閫€鍑猴紝浠ｇ爜涓?9009銆?
+          "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Bypass -noprofile -File "D:\\src\\vcpkg\\vcpkg-master\\scripts\\buildsystems\\msbuild\\applocal.ps1" "D:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\Debug\\cmTC_da3e8.exe" "D:\\src\\vcpkg\\vcpkg-master\\installed\\x64-windows\\debug\\bin" "cmTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\cmTC_da3e8.write.1u.tlog" "cmTC_da3e8.dir\\Debug\\vcpkg.applocal.log"
+        FinalizeBuildStatus:
+          姝ｅ湪鍒犻櫎鏂囦欢鈥渃mTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\unsuccessfulbuild鈥濄€?
+          姝ｅ湪瀵光€渃mTC_da3e8.dir\\Debug\\cmTC_da3e8.tlog\\cmTC_da3e8.lastbuildstate鈥濇墽琛?Touch 浠诲姟銆?
+        宸插畬鎴愮敓鎴愰」鐩€淒:\\PuerTsMy\\puerts\\unity\\native\\papi-python\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2nqh51\\cmTC_da3e8.vcxproj鈥?榛樿鐩爣)鐨勬搷浣溿€?
+        
+        宸叉垚鍔熺敓鎴愩€?
+            0 涓鍛?
+            0 涓敊璇?
+        
+        宸茬敤鏃堕棿 00:00:01.40
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:218 (message)"
+      - "E:/share/cmake-3.31/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
+        linker tool for 'CXX': C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64/link.exe
+        implicit libs: []
+        implicit objs: []
+        implicit dirs: []
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "E:/share/cmake-3.31/Modules/Internal/CMakeDetermineLinkerId.cmake:40 (message)"
+      - "E:/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:255 (cmake_determine_linker_id)"
+      - "E:/share/cmake-3.31/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Running the CXX compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64/link.exe" "-v"
+      Microsoft (R) Incremental Linker Version 14.38.33139.0
+      Copyright (C) Microsoft Corporation.  All rights reserved.
+...

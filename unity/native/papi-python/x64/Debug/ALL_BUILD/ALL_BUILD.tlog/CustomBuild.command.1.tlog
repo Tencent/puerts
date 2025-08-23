@@ -1,0 +1,10 @@
+^D:\PUERTSMY\PUERTS\UNITY\NATIVE\PAPI-PYTHON\CMAKELISTS.TXT
+setlocal
+E:\bin\cmake.exe -SD:/PuerTsMy/puerts/unity/native/papi-python -BD:/PuerTsMy/puerts/unity/native/papi-python --check-stamp-file D:/PuerTsMy/puerts/unity/native/papi-python/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
