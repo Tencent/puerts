@@ -326,7 +326,7 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding Python3
-FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/libs/python312.lib][C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/include][cfound components: Development Development.Module Development.Embed ][v3.12.0()]
+FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[optimized;C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/libs/python312.lib;debug;C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/libs/python312_d.lib][C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/include][cfound components: Development Development.Module Development.Embed ][v3.12.0()]
 //Path to a program.
 _Python3_CONFIG:INTERNAL=_Python3_CONFIG-NOTFOUND
 //Compiler reason failure
@@ -340,11 +340,13 @@ _Python3_INCLUDE_DIR:INTERNAL=C:/Users/HIBIKI/AppData/Local/Programs/Python/Pyth
 //Interpreter reason failure
 _Python3_Interpreter_REASON_FAILURE:INTERNAL=
 //Path to a library.
-_Python3_LIBRARY_DEBUG:INTERNAL=_Python3_LIBRARY_DEBUG-NOTFOUND
+_Python3_LIBRARY_DEBUG:INTERNAL=C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/libs/python312_d.lib
 //Path to a library.
 _Python3_LIBRARY_RELEASE:INTERNAL=C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/libs/python312.lib
 //NumPy reason failure
 _Python3_NumPy_REASON_FAILURE:INTERNAL=
+//Path to a library.
+_Python3_RUNTIME_LIBRARY_DEBUG:INTERNAL=_Python3_RUNTIME_LIBRARY_DEBUG-NOTFOUND
 //Path to a library.
 _Python3_RUNTIME_LIBRARY_RELEASE:INTERNAL=C:/Users/HIBIKI/AppData/Local/Programs/Python/Python312/python312.dll
 
