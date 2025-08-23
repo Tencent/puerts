@@ -12,8 +12,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-
-// Portable Embedded Scripting API
+#include <string>
 
 #define PESAPI_VERSION 11
 
@@ -349,5 +348,12 @@ struct pesapi_registry_api
 };
 
 EXTERN_C_END
+
+// Define the complete structure for pesapi_scope__
+struct pesapi_scope__ {
+    pesapi_env_ref env_ref;
+    bool has_exception;
+    std::string exception_message;
+};
 
 #endif
