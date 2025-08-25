@@ -458,11 +458,15 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     v8::Context::Scope ContextScope(Context);
 
+    v8::Local<v8::Object> Global = Context->Global();
 #if defined(WITH_NODEJS)
+    auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
+    v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
     // kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681
     // CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
     NodeEnv = CreateEnvironment(NodeIsolateData, Context, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
 
+     Global->Set(Context, strConsole, Console).Check();
     v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(NodeEnv,
         "const publicRequire ="
         "  require('module').createRequire(process.cwd() + '/');"
@@ -479,7 +483,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     StartPolling();
 #endif
 
-    v8::Local<v8::Object> Global = Context->Global();
 
     v8::Local<v8::Object> PuertsObj = v8::Object::New(Isolate);
     Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), PuertsObj).Check();
