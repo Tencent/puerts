@@ -395,16 +395,16 @@ TEST_F(PApiBaseTest, RegApi)
 {
     const void* typeId = "Test";
     int dummyTypeId = 0;
-    regimpl::pesapi_set_property_info_size(registry, &dummyTypeId, 1, 0, 0, 0);
-    regimpl::pesapi_set_method_info(registry, &dummyTypeId, 0, "Foo", true, nullptr, nullptr, false);
     regimpl::pesapi_define_class(registry, &dummyTypeId, nullptr, nullptr, "Test", nullptr, nullptr, nullptr, false);
+    regimpl::pesapi_set_property_info_size(registry, &dummyTypeId, 0, 1, 0, 0);
+    regimpl::pesapi_set_method_info(registry, &dummyTypeId, 0, "Foo", true, Foo, nullptr, false);
 
-    auto clsDef = (puerts::ScriptClassDefinition) regimpl::pesapi_find_type_id(registry, nullptr, "Test");
-    // ASSERT_TRUE(clsDef != nullptr);
+    auto clsDef = puerts::FindClassByID((puerts::ScriptClassRegistry*)registry, &dummyTypeId);
+    ASSERT_TRUE(clsDef != nullptr);
 
-    ASSERT_TRUE(strcmp(clsDef.Functions[0].Name, "Foo") == 0);
+    ASSERT_TRUE(strcmp(clsDef->Functions[0].Name, "Foo") == 0);
 
-    ASSERT_TRUE(clsDef.Functions[0].Callback == Foo);
+    ASSERT_TRUE(clsDef->Functions[0].Callback == Foo);
 }
 
 TEST_F(PApiBaseTest, EvalJavaScript)
