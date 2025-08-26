@@ -178,14 +178,27 @@ double pesapi_get_value_double(pesapi_env env, pesapi_value value)
     return PyFloat_AsDouble(obj);
 }
 
-const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value value, char* buf, size_t* bufsize)
+const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, char* buf, size_t* bufsize)
 {
-    PyObject* obj = pyObjectFromPesapiValue(value);
-    Py_ssize_t length;
-    const char* str = PyUnicode_AsUTF8AndSize(obj, &length);
-    if (bufsize)
-        *bufsize = static_cast<size_t>(length);
-    return str;
+    PyObject* obj = pyObjectFromPesapiValue(pvalue);
+    if (buf == nullptr)
+    {
+        auto ret = PyUnicode_AsUTF8AndSize(obj, reinterpret_cast<Py_ssize_t*>(bufsize));
+        if (ret)
+        {
+            *bufsize = strlen(ret);
+        }
+    }
+    else
+    {
+        auto ret = PyUnicode_AsUTF8AndSize(obj, reinterpret_cast<Py_ssize_t*>(bufsize));
+        if (ret)
+        {
+            strcpy(buf, ret);
+        }
+    }
+
+    return buf;
 }
 
 const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value value, uint16_t* buf, size_t* bufsize)
@@ -299,8 +312,7 @@ int pesapi_is_string(pesapi_env env, pesapi_value value)
 
 int pesapi_is_object(pesapi_env env, pesapi_value value)
 {
-    PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyDict_Check(obj);
+    return PyDict_Check(pyObjectFromPesapiValue(value));
 }
 
 int pesapi_is_function(pesapi_env env, pesapi_value value)
@@ -319,13 +331,13 @@ int pesapi_is_array(pesapi_env env, pesapi_value value)
     return PyList_Check(obj);
 }
 
-// TODO
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize)
 {
     auto state = pyStateFromPesapiEnv(env);
     auto mapper = CppObjectMapper::Get(state);
-    auto ret = mapper->PushNativeObject(type_id, object_ptr, call_finalize);
-    return pesapiValueFromPyObject(ret);
+    auto ret = allocValueInCurrentScope(state);
+    *ret = mapper->PushNativeObject(type_id, object_ptr, call_finalize);
+    return pesapiValueFromPyObject(*ret);
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value value)
@@ -431,7 +443,7 @@ void pesapi_add_return(pesapi_callback_info info, pesapi_value value)
     auto* callback_info = reinterpret_cast<pesapi_callback_info__*>(info);
     callback_info->res = pyObjectFromPesapiValue(value);
     if (callback_info->res != nullptr)
-    {    // TODO
+    {
         Py_INCREF(callback_info->res);
     }
 }
@@ -506,6 +518,7 @@ pesapi_scope pesapi_open_scope_placement(pesapi_env_ref env_ref, struct pesapi_s
     return pesapi_open_scope(env_ref);
 }
 
+// TODO
 void pesapi_close_scope(pesapi_scope pscope)
 {
     auto scope = reinterpret_cast<pesapi_scope__*>(pscope);
@@ -518,7 +531,7 @@ void pesapi_close_scope(pesapi_scope pscope)
 
     }
     scope->~pesapi_scope__();
-    //free(scope); // TODO: 错误
+    free(scope);
 }
 
 void pesapi_close_scope_placement(pesapi_scope scope)
@@ -539,7 +552,26 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
     {
         return nullptr;
     }
-    return scope->caught->message;
+    auto ex = scope->caught->ex;
+    auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
+    PyDict_SetItem(globals, PyUnicode_FromString("__pesapi_last_exception"), ex);
+    const char* ret;
+    if (with_stack)
+    {
+        PyRun_SimpleString(
+            "import traceback\n"
+            "try:\n"
+            "    raise __pesapi_last_exception\n"
+            "except Exception as e:\n"
+            "    __pesapi_last_exception_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))\n");
+        ret = PyUnicode_AsUTF8(PyDict_GetItem(globals, PyUnicode_FromString("__pesapi_last_exception_str")));
+    }
+    else
+    {
+        ret = PyUnicode_AsUTF8(PyObject_Str(ex));
+    }
+    PyDict_DelItemString(globals, "__pesapi_last_exception");
+    return ret;
 }
 
 pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value, uint32_t internal_field_count)
@@ -622,7 +654,9 @@ int pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pe
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key)
 {
     PyObject* obj = pyObjectFromPesapiValue(object);
-    return pesapiValueFromPyObject(PyDict_GetItemString(obj, key));
+    auto ret = PyDict_GetItemWithError(obj, PyUnicode_FromString(key));
+    Py_XINCREF(ret);
+    return pesapiValueFromPyObject(ret);
 }
 
 int pesapi_get_private(pesapi_env penv, pesapi_value pobject, void** out_ptr)
@@ -644,7 +678,9 @@ int pesapi_set_private(pesapi_env penv, pesapi_value object, void* ptr)
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uint32_t key)
 {
     auto obj = pyObjectFromPesapiValue(object);
-    return pesapiValueFromPyObject(PyDict_GetItem(obj, PyLong_FromUnsignedLong(key)));
+    auto ret = PyDict_GetItemWithError(obj, PyLong_FromUnsignedLong(key));
+    Py_XINCREF(ret);
+    return pesapiValueFromPyObject(ret);
 }
 
 int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
@@ -667,7 +703,27 @@ pesapi_value pesapi_create_object(pesapi_env env)
 pesapi_value pesapi_call_function(
     pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value pargv[])
 {
-    return nullptr;
+    auto state = pyStateFromPesapiEnv(env);
+    PyObject* func = pyObjectFromPesapiValue(pfunc);
+    PyObject* args = PyTuple_New(argc);
+    for (int i = 0; i < argc; ++i)
+    {
+        PyObject* arg = pyObjectFromPesapiValue(pargv[i]);
+        PyTuple_SetItem(args, i, arg);
+        Py_INCREF(arg);
+    }
+    PyObject* result = PyObject_Call(func, args, nullptr);
+    Py_DECREF(args);
+    if (result)
+    {
+        return pesapiValueFromPyObject(result);
+    }
+    else
+    {
+        auto scope = getCurrentScope(state);
+        scope->setCaughtException(PyErr_GetRaisedException());
+        return nullptr;
+    }
 }
 
 // TODO
@@ -684,11 +740,9 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         {
             return pesapiValueFromPyObject(result);
         }
-
     }
-    PyErr_Print();
     auto scope = getCurrentScope(state);
-    scope->setCaughtException(PyErr_Occurred());
+    scope->setCaughtException(PyErr_GetRaisedException());
     return nullptr;
 }
 

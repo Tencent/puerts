@@ -51,7 +51,7 @@ public:
     inline static CppObjectMapper* Get(PyInterpreterState* state)
     {
         auto dict = PyInterpreterState_GetDict(state);
-        PyObject* pmapper = PyDict_GetItem(dict, PyUnicode_FromString("CppObjectMapper"));
+        PyObject* pmapper = PyDict_GetItemWithError(dict, PyUnicode_FromString("CppObjectMapper"));
         auto mapper = static_cast<CppObjectMapper*>(PyCapsule_GetPointer(pmapper, nullptr));
         return mapper;
     }
@@ -75,17 +75,26 @@ public:
 
     inline bool SetPrivateData(PyObject* val, void* ptr) const
     {
-        return PyDict_SetItemString(val, privateDataKey, PyCapsule_New(ptr, nullptr, nullptr));
+        if (!PyDict_Check(val))
+        {
+            return false;
+        }
+        PyDict_SetItem(val, PyUnicode_FromString(privateDataKey), PyCapsule_New(ptr, nullptr, nullptr));
+        return true;
     }
 
     inline bool GetPrivateData(PyObject* val, void** outPtr) const
     {
+        if (!PyDict_Check(val))
+        {
+            return false;
+        }
         if (!PyDict_Contains(val, PyUnicode_FromString(privateDataKey)))
         {
             *outPtr = nullptr;
             return false;
         }
-        PyObject* capsule = PyDict_GetItemString(val, privateDataKey);
+        PyObject* capsule = PyDict_GetItemWithError(val, PyUnicode_FromString(privateDataKey));
         if (PyCapsule_CheckExact(capsule))
         {
             *outPtr = PyCapsule_GetPointer(capsule, nullptr);
@@ -158,7 +167,7 @@ public:
         t.tp_basicsize = sizeof(__papi_obj);
         t.tp_flags = Py_TPFLAGS_DEFAULT;
         t.tp_new = PyType_GenericNew;
-        t.tp_is_gc = nullptr;
+        //t.tp_is_gc = nullptr;
         t.tp_finalize = [](PyObject* self)
         {
             auto mapper = Get(PyInterpreterState_Get());
@@ -197,7 +206,7 @@ public:
         t.tp_basicsize = sizeof(__papi_func_tracer);
         t.tp_flags = Py_TPFLAGS_DEFAULT;
         t.tp_new = PyType_GenericNew;
-        t.tp_is_gc = nullptr;
+        //t.tp_is_gc = nullptr;
         t.tp_finalize = [](PyObject* self)
         {
             auto mapper = Get(PyInterpreterState_Get());

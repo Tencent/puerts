@@ -161,16 +161,12 @@ void CppObjectMapper::Initialize(PyInterpreterState* State)
 {
     this->state = State;
     auto dict = PyInterpreterState_GetDict(state);
-    auto mapper = PyCapsule_New(this, nullptr, nullptr);
-    PyDict_SetItemString(dict, "CppObjectMapper", mapper);
-
-    PyObject_New(__papi_obj, &papi_obj_cls_def);
-    PyObject_New(__papi_func_tracer, &papi_func_tracer_cls_def);
+    PyDict_SetItemOpaqueString(dict, "CppObjectMapper", this);
 
     PtrClassDef.TypeId = &PtrClassDef;
     PtrClassDef.ScriptName = "__Pointer";
 
-    auto mapperSelf = PyCapsule_New(this, nullptr, nullptr);
+    /*auto mapperSelf = PyCapsule_New(this, nullptr, nullptr);
 
     PyMethodDef methods_def = {"findClassByName",
         [](PyObject* self, PyObject* args) -> PyObject*
@@ -198,7 +194,7 @@ void CppObjectMapper::Initialize(PyInterpreterState* State)
     auto M = PyImport_AddModule("__main__");
     auto G = PyModule_GetDict(M);
 
-    PyDict_SetItemString(G, "findClassByName", Func);
+    PyDict_SetItemString(G, "findClassByName", Func);*/
 }
 
 void CppObjectMapper::Cleanup()
@@ -224,7 +220,8 @@ pesapi_env_ref create_py_env()
 {
     Py_Initialize();
 
-    PyRun_SimpleString(
+    // For debug
+    /*PyRun_SimpleString(
         "import sys, traceback, faulthandler, tracemalloc, signal, logging, gc\n"
         //"logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')\n"
         //"faulthandler.enable()\n"
@@ -234,7 +231,7 @@ pesapi_env_ref create_py_env()
         //"    print(f'TRACE {event} {co.co_filename}:{frame.f_lineno} {co.co_name}')\n"
         //"    return tracefunc\n"
         //"sys.settrace(tracefunc)\n"
-        "gc.set_debug(gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_SAVEALL | gc.DEBUG_STATS)\n");
+        "gc.set_debug(gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_SAVEALL | gc.DEBUG_STATS)\n");*/
 
     auto* mapper = reinterpret_cast<pesapi::pythonimpl::CppObjectMapper*>(malloc(sizeof(pesapi::pythonimpl::CppObjectMapper)));
     if (mapper)
@@ -258,11 +255,6 @@ void destroy_py_env(pesapi_env_ref env_ref)
         mapper->Cleanup();
         free(mapper);
     }
-    PyRun_SimpleString(
-        "import gc\n"
-        "gc.collect()\n"
-        "print(gc.garbage)");
-    
     Py_Finalize();    // Finalize Python interpreter
 }
 

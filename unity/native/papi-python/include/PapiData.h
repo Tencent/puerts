@@ -27,20 +27,6 @@ struct pesapi_env_ref__
 
     ~pesapi_env_ref__()
     {
-        auto dict = PyInterpreterState_GetDict(state_persistent);
-        if (PyDict_Contains(dict, PyUnicode_FromString("CppObjectMapper")))
-        {
-            PyObject* capsule = PyDict_GetItemString(dict, "CppObjectMapper");
-            if (PyCapsule_CheckExact(capsule))
-            {
-                auto* mapper = static_cast<CppObjectMapper*>(PyCapsule_GetPointer(capsule, nullptr));
-                if (mapper)
-                {
-                    mapper->Cleanup();
-                }
-            }
-            Py_XDECREF(capsule);
-        }
     }
 
     int ref_count;
@@ -73,8 +59,7 @@ struct pesapi_value_ref__ : pesapi_env_ref__
 
 struct caught_exception_info
 {
-    PyObject* exception;    // The caught exception
-    const char* message;
+    PyObject* ex;
 };
 
 struct pesapi_scope__;
@@ -147,14 +132,14 @@ struct pesapi_scope__
         {
             caught = (caught_exception_info*) PyMem_Malloc(sizeof(caught_exception_info));
         }
-        caught->exception = ex;
+        caught->ex = ex;
     }
 
     ~pesapi_scope__()
     {
         if (caught)
         {
-            Py_XDECREF(caught->exception);
+            Py_XDECREF(caught->ex);
             caught->~caught_exception_info();
             PyMem_Free(caught);
         }

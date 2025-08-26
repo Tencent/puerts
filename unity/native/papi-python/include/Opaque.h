@@ -25,7 +25,7 @@ static bool PyDict_SetItemOpaqueString(PyObject* dp, const char* key, void* opaq
 }
 static void* PyDict_GetItemOpaqueString(PyObject* dp, const char* key)
 {
-    PyObject* capsule = PyDict_GetItemString(dp, key);
+    PyObject* capsule = PyDict_GetItemWithError(dp, PyUnicode_FromString(key));
     if (PyCapsule_CheckExact(capsule))
     {
         void* data = PyCapsule_GetPointer(capsule, nullptr);
