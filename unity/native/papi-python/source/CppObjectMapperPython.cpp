@@ -1,4 +1,4 @@
-#include"CppObjectMapperPython.h"
+﻿#include"CppObjectMapperPython.h"
 
 CppObjectMapper* CppObjectMapper::Get(PyObject* module)
 {
@@ -118,7 +118,6 @@ PyObject* CppObjectMapper::FindOrCreateClassByID(const void* type_id)
     Py_DECREF(class_name);
     return new_class;
 }
-
 // 将C++对象包装为Python对象并返回
 PyObject* CppObjectMapper::PushNativeObject(const void* type_id, void* object_ptr, bool call_finalize)
 {
@@ -153,7 +152,6 @@ PyObject* CppObjectMapper::PushNativeObject(const void* type_id, void* object_pt
     Py_DECREF(py_class);
     return (PyObject*) native_obj;
 }
-
 // 将C++对象与Python对象绑定并加入缓存
 void CppObjectMapper::BindAndAddToCache(const void* type_info, const void* ptr, PyObject* value, bool call_finalize)
 {
@@ -165,7 +163,6 @@ void CppObjectMapper::BindAndAddToCache(const void* type_info, const void* ptr, 
     object_cache_[key] = value;
     Py_INCREF(value);
 }
-
 // 从缓存中移除C++对象的映射
 void CppObjectMapper::RemoveFromCache(const void* type_info, const void* ptr)
 {

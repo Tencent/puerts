@@ -87,7 +87,6 @@ static void NativeObject_dealloc(NativeObject* self)
             }
         }
 
-
         PyObject* main_module = PyImport_AddModule("__main__");
         if (main_module)
         {

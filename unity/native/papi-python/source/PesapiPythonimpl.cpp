@@ -407,30 +407,24 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char
     return pesapiValueFromPyObject(val);
 }
 
-int pesapi_set_property(pesapi_env env, pesapi_value object, const char* name, pesapi_value value)
+void pesapi_set_property(pesapi_env env, pesapi_value object, const char* name, pesapi_value value)
 {
-    // 检查输入有效性
+    // 原逻辑不变，将返回值改为直接返回（忽略成功/失败）
     if (!object || !name || !value)
-        return 0;
+        return;
 
     PyObject* obj = pyObjectFromPesapiValue(object);
     PyObject* val = pyObjectFromPesapiValue(value);
 
-    // 检查对象是否为字典类型（Python中默认用字典存储属性）
     if (!PyDict_Check(obj))
-        return 0;
+        return;
 
-    // 创建Python字符串类型的键
     PyObject* key = PyUnicode_FromString(name);
     if (!key)
-        return 0;    // 键创建失败
+        return;
 
-    // 设置字典项，PyDict_SetItem成功返回0，失败返回-1
-    int result = PyDict_SetItem(obj, key, val) == 0 ? 1 : 0;
-
-    // 释放临时对象
+    PyDict_SetItem(obj, key, val);    // 忽略返回值
     Py_DECREF(key);
-    return result;    // 成功返回1，失败返回0
 }
 
 // 数组操作
@@ -934,26 +928,23 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uin
     return pesapiValueFromPyObject(val);
 }
 
-int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
+void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
 {
+    // 原逻辑不变，将返回值改为直接返回
     if (!object || !value)
-        return 0;    // 失败返回0
+        return;
 
     PyObject* obj = pyObjectFromPesapiValue(object);
-    // 检查是否为字典类型（Python中对象的属性存储）
     if (!PyDict_Check(obj))
-        return 0;    // 非字典类型返回失败
+        return;
 
     PyObject* key_obj = PyLong_FromUnsignedLong(key);
     PyObject* val_obj = pyObjectFromPesapiValue(value);
     Py_INCREF(val_obj);
 
-    // 调用PyDict_SetItem设置属性，成功返回1，失败返回0
-    int result = PyDict_SetItem(obj, key_obj, val_obj) == 0 ? 1 : 0;
-
+    PyDict_SetItem(obj, key_obj, val_obj);    // 忽略返回值
     Py_DECREF(key_obj);
     Py_DECREF(val_obj);
-    return result;    // 返回操作结果
 }
 
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)

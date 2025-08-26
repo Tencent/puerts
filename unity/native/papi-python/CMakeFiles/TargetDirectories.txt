@@ -1,3 +1,0 @@
-D:/PuerTsMy/puerts/unity/native/papi-python/CMakeFiles/papi-python.dir
-D:/PuerTsMy/puerts/unity/native/papi-python/CMakeFiles/ALL_BUILD.dir
-D:/PuerTsMy/puerts/unity/native/papi-python/CMakeFiles/ZERO_CHECK.dir

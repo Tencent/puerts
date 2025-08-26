@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 # Find Python
-set(Python3_USE_DEBUG_LIBS OFF)
 set(Python3_FIND_STRATEGY LOCATION)
 
 find_package(Python3 COMPONENTS Development REQUIRED)
@@ -58,3 +57,6 @@ if(MSVC)
 else()
     target_compile_options(papi-python PRIVATE -Wall -Wextra)
 endif()
+
+message("Found Python version: ${Python3_VERSION}")
+message("Python library: ${Python3_LIBRARIES}")

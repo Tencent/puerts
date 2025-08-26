@@ -4,7 +4,6 @@
 #include <cassert>
 #include <cstdint>
 
-// 正确的函数声明
 extern void pesapi_release_value_ref(pesapi_value_ref value_ref);
 extern pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value, uint32_t internal_field_count);
 extern pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref value_ref);
@@ -125,6 +124,48 @@ int main()
         ffi->release_value_ref(bin_ref);
     }
     TEST_RESULT(BinaryOperationsWithRef);
+
+    TEST_CASE(ScopeAndExceptionHandling);
+    {
+        // 测试正常执行时的作用域
+        pesapi_scope normal_scope = ffi->open_scope(env_ref);
+        ASSERT_TRUE(normal_scope != nullptr, ScopeAndExceptionHandling);
+
+        const char* normal_code = R"(100 / 2)";
+        pesapi_value normal_ret = ffi->eval(env, (const uint8_t*) normal_code, strlen(normal_code), "<normal>");
+        ASSERT_TRUE(normal_ret != nullptr, ScopeAndExceptionHandling);
+        ASSERT_EQUAL(ffi->get_value_int32(env, normal_ret), 50, ScopeAndExceptionHandling);
+        ASSERT_EQUAL(ffi->has_caught(normal_scope), 0, ScopeAndExceptionHandling);    // 未捕获异常
+
+        ffi->close_scope(normal_scope);
+
+        // 测试异常场景下的作用域
+        pesapi_scope exception_scope = ffi->open_scope(env_ref);
+        ASSERT_TRUE(exception_scope != nullptr, ScopeAndExceptionHandling);
+
+        const char* error_code = R"(1 / 0)";    // 会触发除零异常
+        pesapi_value error_ret = ffi->eval(env, (const uint8_t*) error_code, strlen(error_code), "<error>");
+        ASSERT_TRUE(error_ret != nullptr, ScopeAndExceptionHandling);
+        ASSERT_EQUAL(ffi->has_caught(exception_scope), 1, ScopeAndExceptionHandling);    // 已捕获异常
+
+        // 测试异常信息提取
+        const char* err_str = ffi->get_exception_as_string(exception_scope, 0);
+        ASSERT_TRUE(err_str != nullptr && strlen(err_str) > 0, ScopeAndExceptionHandling);
+
+        ffi->close_scope(exception_scope);
+
+        // 测试placement版本的作用域（预分配内存）
+        pesapi_scope_memory scope_mem;
+        pesapi_scope placement_scope = ffi->open_scope_placement(env_ref, &scope_mem);
+        ASSERT_TRUE(placement_scope != nullptr, ScopeAndExceptionHandling);
+
+        const char* type_error_code = R"(int("not_a_number"))";    // 会触发类型转换异常
+        ffi->eval(env, (const uint8_t*) type_error_code, strlen(type_error_code), "<type_error>");
+        ASSERT_EQUAL(ffi->has_caught(placement_scope), 1, ScopeAndExceptionHandling);
+
+        ffi->close_scope_placement(placement_scope);    // 使用placement版本关闭
+    }
+    TEST_RESULT(ScopeAndExceptionHandling);
 
     // 测试总结
     std::cout << "\n\nTest Summary: " << passed_count << "/" << total_count << " passed" << std::endl;
