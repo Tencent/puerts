@@ -496,6 +496,7 @@ TEST_F(PApiBaseTest, PropertyGetSet)
 
     apis->set_property_uint32(env, g, 5, apis->create_string_utf8(env, "888", 3));
     str = apis->get_property_uint32(env, g, 5);
+    ASSERT_TRUE(str != nullptr);
     ASSERT_TRUE(apis->is_string(env, str));
     len = 0;
     apis->get_value_string_utf8(env, str, nullptr, &len);
