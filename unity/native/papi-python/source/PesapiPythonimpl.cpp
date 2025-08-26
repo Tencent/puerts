@@ -407,24 +407,26 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char
     return pesapiValueFromPyObject(val);
 }
 
-void pesapi_set_property(pesapi_env env, pesapi_value object, const char* name, pesapi_value value)
+int pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value)
 {
-    // 原逻辑不变，将返回值改为直接返回（忽略成功/失败）
-    if (!object || !name || !value)
-        return;
+    if (!object || !value || !key)
+        return -1;
 
     PyObject* obj = pyObjectFromPesapiValue(object);
-    PyObject* val = pyObjectFromPesapiValue(value);
-
     if (!PyDict_Check(obj))
-        return;
+        return -2;
 
-    PyObject* key = PyUnicode_FromString(name);
-    if (!key)
-        return;
+    PyObject* key_obj = PyUnicode_FromString(key);
+    PyObject* val_obj = pyObjectFromPesapiValue(value);
+    Py_INCREF(val_obj);
 
-    PyDict_SetItem(obj, key, val);    // 忽略返回值
-    Py_DECREF(key);
+    int result = PyDict_SetItem(obj, key_obj, val_obj) == 0 ? 0 : -3;
+
+    // 清理引用
+    Py_DECREF(key_obj);
+    Py_DECREF(val_obj);
+
+    return result;
 }
 
 // 数组操作
@@ -928,23 +930,26 @@ pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uin
     return pesapiValueFromPyObject(val);
 }
 
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
 {
-    // 原逻辑不变，将返回值改为直接返回
     if (!object || !value)
-        return;
+        return -1;
 
     PyObject* obj = pyObjectFromPesapiValue(object);
     if (!PyDict_Check(obj))
-        return;
+        return -2;
 
-    PyObject* key_obj = PyLong_FromUnsignedLong(key);
+    PyObject* key_obj = PyLong_FromLong((int32_t) key);
     PyObject* val_obj = pyObjectFromPesapiValue(value);
     Py_INCREF(val_obj);
 
-    PyDict_SetItem(obj, key_obj, val_obj);    // 忽略返回值
+    int result = PyDict_SetItem(obj, key_obj, val_obj) == 0 ? 0 : -3;
+
+    // 清理引用
     Py_DECREF(key_obj);
     Py_DECREF(val_obj);
+
+    return result;
 }
 
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)

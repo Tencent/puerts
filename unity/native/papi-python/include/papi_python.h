@@ -61,7 +61,7 @@ int pesapi_is_array(pesapi_env env, pesapi_value value);
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
 
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* name);
-void pesapi_set_property(pesapi_env env, pesapi_value object, const char* name, pesapi_value value);
+int pesapi_set_property(pesapi_env env, pesapi_value object, const char* name, pesapi_value value);
 
 void pesapi_set_array_element(pesapi_env env, pesapi_value array, uint32_t index, pesapi_value value);
 pesapi_value pesapi_get_array_element(pesapi_env env, pesapi_value array, uint32_t index);
@@ -104,7 +104,7 @@ void** pesapi_get_ref_internal_fields(pesapi_value_ref value_ref, uint32_t* pint
 int pesapi_get_private(pesapi_env env, pesapi_value object, void** out_ptr);
 int pesapi_set_private(pesapi_env env, pesapi_value object, void* ptr);
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uint32_t key);
-void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
+int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path);
 pesapi_value pesapi_global(pesapi_env env);
 const void* pesapi_get_env_private(pesapi_env env);

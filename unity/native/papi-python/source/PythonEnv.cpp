@@ -16,7 +16,6 @@ PythonEnv::~PythonEnv()
     }
     if (thread_state)
     {
-        // 实际实现：正确销毁子解释器
         PyThreadState_Swap(thread_state);    // 切换到当前线程状态
         Py_EndInterpreter(thread_state);     // 结束子解释器
         thread_state = nullptr;
