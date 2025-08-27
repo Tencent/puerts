@@ -687,7 +687,7 @@ int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key
 {
     auto obj = pyObjectFromPesapiValue(object);
     PyObject* val = pyObjectFromPesapiValue(value);
-    if (PyDict_Check(val))
+    if (PyDict_Check(obj))
     {
         return PyDict_SetItem(obj, PyLong_FromUnsignedLong(key), val);
     }

@@ -19,7 +19,7 @@ static bool PyDict_SetItemOpaqueString(PyObject* dp, const char* key, void* opaq
 {
     if (opaque != nullptr)
     {
-        return PyDict_SetItemString(dp, key, PyCapsule_New(opaque, nullptr, nullptr));
+        return PyDict_SetItem(dp, PyUnicode_FromString(key), PyCapsule_New(opaque, nullptr, nullptr));
     }
     return false;
 }
@@ -29,7 +29,6 @@ static void* PyDict_GetItemOpaqueString(PyObject* dp, const char* key)
     if (PyCapsule_CheckExact(capsule))
     {
         void* data = PyCapsule_GetPointer(capsule, nullptr);
-        Py_DECREF(capsule);
         return data;
     }
     return nullptr;
