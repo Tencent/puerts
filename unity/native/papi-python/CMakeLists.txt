@@ -100,4 +100,9 @@ target_include_directories(papi_py_test PRIVATE
         ${googletest_SOURCE_DIR}/googletest/include
 )
 include(GoogleTest)
-gtest_discover_tests(papi_py_test)
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.17")
+  gtest_discover_tests(papi_py_test DISCOVERY_MODE PRE_TEST)
+else()
+  gtest_add_tests(TARGET papi_py_test)
+endif()
