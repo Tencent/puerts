@@ -33,9 +33,8 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
             FuncInfo* data = reinterpret_cast<FuncInfo*>(PyCapsule_GetPointer(capsule, "FuncInfo"));
             if (data && data->finalize)
             {
-                data->finalize(&pesapi::pythonimpl::g_pesapi_ffi, data->data, nullptr);
+                data->finalize(&pesapi::pythonimpl::g_pesapi_ffi, data->data, const_cast<void*>(data->mapper->GetEnvPrivate()));
             }
-            delete data;
         });
     if (!capsule)
     {
@@ -71,7 +70,9 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
         },
         METH_VARARGS, "Puerts C++ callback wrapper"};
 
-    return PyCFunction_New(methodDef, capsule);
+    auto ret = PyCFunction_New(methodDef, capsule);
+    Py_DECREF(capsule);
+    return ret;
 }
 
 // TODO
