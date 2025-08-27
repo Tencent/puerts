@@ -95,7 +95,7 @@ struct pesapi_scope__
     const static size_t SCOPE_FIX_SIZE_VALUES_SIZE = 5;
     PyObject* values[SCOPE_FIX_SIZE_VALUES_SIZE];
     uint32_t values_used;
-    eastl::vector<PyObject**, eastl::allocator_malloc>* dynamic_alloc_values = nullptr;
+    eastl::vector<PyObject*, eastl::allocator_malloc>* dynamic_alloc_values = nullptr;
 
     explicit pesapi_scope__(PyInterpreterState* state)
     {
@@ -117,10 +117,11 @@ struct pesapi_scope__
         {
             if (!dynamic_alloc_values)
             {
-                dynamic_alloc_values = new eastl::vector<PyObject**, eastl::allocator_malloc>();
+                dynamic_alloc_values = (eastl::vector<PyObject*, eastl::allocator_malloc>*)PyMem_Malloc(sizeof(eastl::vector<PyObject*, eastl::allocator_malloc>));
             }
             ret = (PyObject**) PyMem_Malloc(sizeof(PyObject*));
-            dynamic_alloc_values->push_back(ret);
+            dynamic_alloc_values->push_back(Py_None);
+            ret = &dynamic_alloc_values->back();
         }
         *ret = Py_None;    // Initialize to None
         return ret;
@@ -145,7 +146,7 @@ struct pesapi_scope__
         }
         for (size_t i = 0; i < values_used; i++)
         {
-            PyObject_Free(values[i]);
+            Py_XDECREF(values[i]);
         }
 
         if (dynamic_alloc_values)
@@ -153,11 +154,11 @@ struct pesapi_scope__
             size_t size = dynamic_alloc_values->size();
             for (size_t i = 0; i < size; i++)
             {
-                PyObject** dynamicValue = (*dynamic_alloc_values)[i];
-                PyObject_Free(*dynamicValue);
-                PyMem_Free(dynamicValue);
+                PyObject* dynamicValue = (*dynamic_alloc_values)[i];
+                Py_XDECREF(dynamicValue);
             }
             dynamic_alloc_values->~vector();
+            PyMem_Free(dynamic_alloc_values);
             dynamic_alloc_values = nullptr;
         }
         setCurrentScope(state, prev_scope);
