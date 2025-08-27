@@ -456,7 +456,7 @@ TEST_F(PApiBaseTest, CreatePyFunction)
     apis->set_property(env, g, "Bar__", apis->create_function(env, Bar, this, JsFuncFinalizer));
     auto code = "Bar__(3344)";
     bar_data = 100;
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -464,10 +464,14 @@ TEST_F(PApiBaseTest, CreatePyFunction)
     ASSERT_FALSE(apis->has_caught(scope));
     EXPECT_EQ(bar_data, 3344);
 
-    code = "globalThis.Bar__ = undefined;";
+    code = "exec(\"Bar__ = None\")";
     finalizer_env_private = nullptr;
     apis->set_env_private(env, &bar_data);
-    ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test2.js");
+    ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test2.py");
+    if (apis->has_caught(scope))
+    {
+        printf("%s\n", apis->get_exception_as_string(scope, true));
+    }
     ASSERT_FALSE(apis->has_caught(scope));
 
     apis->close_scope(scope);

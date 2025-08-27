@@ -192,14 +192,15 @@ public:
         PyObject_HEAD PyObject* func_tracer_udata;
     } __papi_func_tracer;
 
-    struct FuncFinalizeData
+    struct FuncInfo
     {
+        pesapi_callback callback;
         pesapi_function_finalize finalize;
         void* data;
         CppObjectMapper* mapper;
     };
 
-    PyTypeObject papi_func_tracer_cls_def = []() -> PyTypeObject
+    /*PyTypeObject papi_func_tracer_cls_def = []() -> PyTypeObject
     {
         PyTypeObject t{};
         t.ob_base = PyVarObject_HEAD_INIT(&PyType_Type, 0) t.tp_name = "__papi_func_tracer";
@@ -219,6 +220,7 @@ public:
         };
         return t;
     }();
+    */
 
 private:
     eastl::shared_ptr<int> ref = eastl::allocate_shared<int>(eastl::allocator_malloc("shared_ptr"), 0);

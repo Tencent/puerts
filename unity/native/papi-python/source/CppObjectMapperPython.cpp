@@ -17,45 +17,61 @@ namespace pesapi
 {
 namespace pythonimpl
 {
+
 // TODO
 PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize)
 {
-    auto* data = (FuncFinalizeData*) PyMem_Malloc(sizeof(FuncFinalizeData));
+    auto* data = (FuncInfo*) PyMem_Malloc(sizeof(FuncInfo));
+    data->callback = Callback;
     data->finalize = Finalize;
     data->data = Data;
     data->mapper = this;
 
-    auto* traceObj = PyObject_New(__papi_func_tracer, &papi_func_tracer_cls_def);
-    traceObj->func_tracer_udata = PyCapsule_New(data, nullptr, nullptr);
+    PyObject* capsule = PyCapsule_New(data, "FuncInfo",
+        [](PyObject* capsule)
+        {
+            FuncInfo* data = reinterpret_cast<FuncInfo*>(PyCapsule_GetPointer(capsule, "FuncInfo"));
+            if (data && data->finalize)
+            {
+                data->finalize(&pesapi::pythonimpl::g_pesapi_ffi, data->data, nullptr);
+            }
+            delete data;
+        });
+    if (!capsule)
+    {
+        PyMem_Free(data);
+        return nullptr;
+    }
 
-    PyObject* func_data = PyTuple_New(3);
-    PyTuple_SetItem(func_data, 0, PyCapsule_New((void*) Callback, nullptr, nullptr));
-    PyTuple_SetItem(func_data, 1, PyCapsule_New(Data, nullptr, nullptr));
-    PyTuple_SetItem(func_data, 2, (PyObject*) traceObj);
+    // 不能用栈变量
+    PyMethodDef* methodDef = new PyMethodDef {"PapiCallback",
+        [](PyObject* self, PyObject* args) -> PyObject*
+        {
+            FuncInfo* data = reinterpret_cast<FuncInfo*>(PyCapsule_GetPointer(self, "FuncInfo"));
+            if (!data || !data->callback)
+            {
+                PyErr_SetString(PyExc_RuntimeError, "Invalid callback data");
+                return nullptr;
+            }
+            pesapi_callback_info__ callbackInfo  { nullptr, args, PyTuple_Size(args), data->data, nullptr, nullptr };
+            data->callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+            if (callbackInfo.ex)
+            {
+                PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+                return nullptr;
+            }
 
-    PyMethodDef meh[] = {{"__papi_func_tracer",
-                             [](PyObject* self, PyObject* args) -> PyObject*
-                             {
-                                 pesapi_scope__ scope(PyInterpreterState_Get());
-                                 auto callback = (pesapi_callback) PyCapsule_GetPointer(PyTuple_GetItem(args, 0), nullptr);
-                                 void* data = PyCapsule_GetPointer(PyTuple_GetItem(args, 1), nullptr);
-                                 pesapi_callback_info__ info = {self, args, (int) PyTuple_Size(args), data, nullptr, nullptr};
-                                 callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&info));
-                                 if (PyExceptionClass_Check(info.res))
-                                 {
-                                     PyErr_SetString(PyExc_RuntimeError, info.ex);
-                                     return nullptr;
-                                 }
-                                 else
-                                 {
-                                     return info.res;
-                                 }
-                                 return nullptr;
-                             },
-                             METH_VARARGS},
-        {NULL, NULL, 0, NULL}};
+            if (callbackInfo.res)
+            {
+                Py_INCREF(callbackInfo.res);
+                return callbackInfo.res;
+            }
 
-    return PyCFunction_New(&meh[0], func_data);
+            Py_RETURN_NONE;
+        },
+        METH_VARARGS, "Puerts C++ callback wrapper"};
+
+    return PyCFunction_New(methodDef, capsule);
 }
 
 // TODO
