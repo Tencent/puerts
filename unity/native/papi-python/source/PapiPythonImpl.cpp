@@ -721,7 +721,18 @@ pesapi_value pesapi_call_function(
     else
     {
         auto scope = getCurrentScope(state);
+#if PY_VERSION_HEX >= 0x030B0000
         scope->setCaughtException(PyErr_GetRaisedException());
+#else
+        {
+            PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
+            PyErr_Fetch(&type, &value, &tb);
+            PyObject *exc = value ? value : type;
+            if (exc) Py_XINCREF(exc);
+            PyErr_Restore(type, value, tb);
+            scope->setCaughtException(exc);
+        }
+#endif
         return nullptr;
     }
 }
@@ -742,7 +753,18 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         }
     }
     auto scope = getCurrentScope(state);
+#if PY_VERSION_HEX >= 0x030B0000
     scope->setCaughtException(PyErr_GetRaisedException());
+#else
+    {
+        PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
+        PyErr_Fetch(&type, &value, &tb);
+        PyObject *exc = value ? value : type;
+        if (exc) Py_XINCREF(exc);
+        PyErr_Restore(type, value, tb);
+        scope->setCaughtException(exc);
+    }
+#endif
     return nullptr;
 }
 
