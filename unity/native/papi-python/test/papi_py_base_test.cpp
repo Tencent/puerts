@@ -238,7 +238,6 @@ public:
     {
         // 封装TestStructBase
         const int base_properties_count = 2;
-
         registry = regimpl::pesapi_create_registry();
         regimpl::pesapi_set_property_info_size(registry, &g_dummy_base_type_id, 1, 0, base_properties_count, 0);
         regimpl::pesapi_set_property_info(registry, &g_dummy_base_type_id, 0, "b", false, BGetterWrap, BSetterWrap, NULL, NULL, 1);
@@ -520,12 +519,46 @@ TEST_F(PApiBaseTest, ClassCtorFinalize)
     TestStruct::lastDtorObject = nullptr;
 
     auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                })();
-              )";
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+class Cat:
+    def __init__(self, name):
+        self.name = name
+
+ob=TestStruct("Test")
+cat=Cat("Meow")
+print(cat.name)
+)";
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
+    
+    // 使用原生 Python C API 获取全局命名空间并输出其中定义的类
+    {
+        PyGILState_STATE gil = PyGILState_Ensure();
+        PyObject* main_mod = PyImport_AddModule("__main__"); // borrowed
+        if (main_mod) {
+            PyObject* globals = PyModule_GetDict(main_mod); // borrowed
+            PyObject* key = nullptr;
+            PyObject* value = nullptr;
+            Py_ssize_t pos = 0;
+            bool first = true;
+            printf("Python 全局中的类: ");
+            while (PyDict_Next(globals, &pos, &key, &value)) {
+                if (PyType_Check(value)) {
+                    const char* name = (PyUnicode_Check(key) ? PyUnicode_AsUTF8(key) : nullptr);
+                    if (!first) printf(", ");
+                    printf("%s", name ? name : "<non-str>");
+                    first = false;
+                }
+            }
+            printf("\n");
+            // 可选：检查特定类是否存在
+            PyObject* cat = PyDict_GetItemString(globals, "Cat");
+            PyObject* ts  = PyDict_GetItemString(globals, "TestStruct");
+            printf("Has Cat: %s, Has TestStruct: %s\n",
+                   (cat && PyType_Check(cat)) ? "true" : "false",
+                   (ts && PyType_Check(ts))  ? "true" : "false");
+        }
+        PyGILState_Release(gil);
+    }
+
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
