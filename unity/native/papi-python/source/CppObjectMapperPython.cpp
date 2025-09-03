@@ -35,6 +35,10 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
             {
                 data->finalize(&pesapi::pythonimpl::g_pesapi_ffi, data->data, const_cast<void*>(data->mapper->GetEnvPrivate()));
             }
+            if (data && data->methodDef)
+            {
+                PyMem_Free(data->methodDef);
+            }
         });
     if (!capsule)
     {
@@ -43,8 +47,9 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
     }
 
     // 不能用栈变量
-    PyMethodDef* methodDef = new PyMethodDef {"PapiCallback",
-        [](PyObject* self, PyObject* args) -> PyObject*
+    PyMethodDef* methodDef = (PyMethodDef*) PyMem_Malloc(sizeof(PyMethodDef));
+    methodDef->ml_name ="PapiCallback";
+    methodDef->ml_meth = [](PyObject* self, PyObject* args) -> PyObject*
         {
             FuncInfo* data = reinterpret_cast<FuncInfo*>(PyCapsule_GetPointer(self, "FuncInfo"));
             if (!data || !data->callback)
@@ -67,8 +72,10 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
             }
 
             Py_RETURN_NONE;
-        },
-        METH_VARARGS, "Puerts C++ callback wrapper"};
+        };
+    methodDef->ml_flags= METH_VARARGS;
+    methodDef->ml_doc= "Puerts C++ callback wrapper";
+    data->methodDef = methodDef;
 
     auto ret = PyCFunction_New(methodDef, capsule);
     Py_DECREF(capsule);
