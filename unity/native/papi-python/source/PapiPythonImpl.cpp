@@ -13,6 +13,8 @@
 #include "CppObjectMapperPython.h"
 #include "PapiData.h"
 
+#include <iostream>
+
 namespace pesapi
 {
 namespace pythonimpl
@@ -412,13 +414,20 @@ pesapi_value pesapi_get_arg(pesapi_callback_info pinfo, int index)
     }
 }
 
+
 pesapi_env pesapi_get_env(pesapi_callback_info info)
 {
     auto state = PyInterpreterState_Get();
     return pesapiEnvFromPyState(state);
 }
+/* pesapi_env pesapi_get_env(pesapi_callback_info info)
+{
+    auto state = info->state_persistent;
+    return pesapiEnvFromPyState(state);
+}*/
 
-void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
+
+    void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<pesapi_callback_info__*>(pinfo);
     auto mapper = CppObjectMapper::Get(PyInterpreterState_Get());
@@ -459,9 +468,22 @@ pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
 {
     auto state = pyStateFromPesapiEnv(env);
     auto ret = static_cast<pesapi_env_ref>(malloc(sizeof(pesapi_env_ref__)));
-    memset(ret, 0, sizeof(pesapi_env_ref__));
-    new (ret) pesapi_env_ref__(state);
-    return ret;
+    if (!state)
+    {
+        //内部接口不宜使用标准库函数（诸如std::cerr)
+        return nullptr;
+    }
+
+    if (ret)
+    {
+        memset(ret, 0, sizeof(pesapi_env_ref__));
+        new (ret) pesapi_env_ref__(state);
+        return ret;
+    }
+    //异常处理 
+    auto scope = getCurrentScope(state);
+    scope->setCaughtException(PyErr_Occurred());
+    return nullptr;
 }
 
 int pesapi_env_ref_is_valid(pesapi_env_ref penv_ref)
@@ -472,6 +494,7 @@ int pesapi_env_ref_is_valid(pesapi_env_ref penv_ref)
 
 pesapi_env pesapi_get_env_from_ref(pesapi_env_ref penv_ref)
 {
+    //下一行代码应该无效?
     auto env_ref = reinterpret_cast<pesapi_env_ref__*>(penv_ref);
     if (!env_ref || env_ref->env_life_cycle_tracker.expired())
     {
@@ -489,11 +512,13 @@ pesapi_env_ref pesapi_duplicate_env_ref(pesapi_env_ref env_ref)
 
 void pesapi_release_env_ref(pesapi_env_ref env_ref)
 {
+    //作用？
     auto ref = reinterpret_cast<pesapi_env_ref__*>(env_ref);
     if (--ref->ref_count == 0)
     {
         if (!ref->env_life_cycle_tracker.expired())
         {
+            //析构函数为空函数实现
             ref->~pesapi_env_ref__();
         }
         free(ref);
@@ -553,11 +578,12 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
         return nullptr;
     }
     auto ex = scope->caught->ex;
-    auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
-    PyDict_SetItem(globals, PyUnicode_FromString("__pesapi_last_exception"), ex);
+
     const char* ret;
     if (with_stack)
-    {
+    { 
+        auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
+        PyDict_SetItem(globals, PyUnicode_FromString("__pesapi_last_exception"), ex);
         PyRun_SimpleString(
             "import traceback\n"
             "try:\n"
@@ -565,12 +591,14 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
             "except Exception as e:\n"
             "    __pesapi_last_exception_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))\n");
         ret = PyUnicode_AsUTF8(PyDict_GetItem(globals, PyUnicode_FromString("__pesapi_last_exception_str")));
+        PyDict_DelItemString(globals, "__pesapi_last_exception");
+        PyDict_DelItemString(globals, "__pesapi_last_exception_str");
     }
     else
     {
         ret = PyUnicode_AsUTF8(PyObject_Str(ex));
     }
-    PyDict_DelItemString(globals, "__pesapi_last_exception");
+    
     return ret;
 }
 
@@ -721,14 +749,17 @@ pesapi_value pesapi_call_function(
     else
     {
         auto scope = getCurrentScope(state);
-#if PY_VERSION_HEX >= 0x030B0000
+
+#if PY_VERSION_HEX >= 0x030C0000
         scope->setCaughtException(PyErr_GetRaisedException());
 #else
         {
-            PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
+            PyObject* type = nullptr, *value = nullptr, *tb = nullptr;
             PyErr_Fetch(&type, &value, &tb);
+            //PyObject* exc=value;
             PyObject *exc = value ? value : type;
             if (exc) Py_XINCREF(exc);
+            //内部DECREF
             PyErr_Restore(type, value, tb);
             scope->setCaughtException(exc);
         }
@@ -753,16 +784,29 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         }
     }
     auto scope = getCurrentScope(state);
+
+
 #if PY_VERSION_HEX >= 0x030B0000
-    scope->setCaughtException(PyErr_GetRaisedException());
+    {
+        scope->setCaughtException(PyErr_GetRaisedException());
+        PyErr_Clear();
+    }
+
+
 #else
     {
         PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
         PyErr_Fetch(&type, &value, &tb);
-        PyObject *exc = value ? value : type;
-        if (exc) Py_XINCREF(exc);
-        PyErr_Restore(type, value, tb);
-        scope->setCaughtException(exc);
+        //PyObject* exc=value;
+        //PyObject *exc = value ? value : type;
+        //PyErr_Restore(type, value, tb);
+        Py_XDECREF(type);
+        Py_XDECREF(tb);
+        if (value)
+        {
+            //std::cout << PyUnicode_AsUTF8(PyObject_Str(value)) << std::endl;
+            scope->setCaughtException(value);
+        }
     }
 #endif
     return nullptr;
