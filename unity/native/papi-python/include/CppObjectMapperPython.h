@@ -198,6 +198,7 @@ public:
         pesapi_function_finalize finalize;
         void* data;
         CppObjectMapper* mapper;
+        PyMethodDef* methodDef;
     };
 
     /*PyTypeObject papi_func_tracer_cls_def = []() -> PyTypeObject
