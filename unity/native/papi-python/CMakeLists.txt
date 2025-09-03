@@ -17,9 +17,19 @@ if (IOS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fembed-bitcode")
 endif ()
 
+#构建PuertsCore静态库
 add_subdirectory(../puerts ${CMAKE_CURRENT_BINARY_DIR}/puerts)
 
+set(Python3_EXECUTABLE "C:/Users/wf200/AppData/Local/Programs/Python/Python39/python.exe")
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(Python3_LIBRARIES "C:/Users/wf200/AppData/Local/Programs/Python/Python39/libs/python39_d.lib")
+else()
+    set(Python3_LIBRARIES "C:/Users/wf200/AppData/Local/Programs/Python/Python39/libs/python39.lib")
+endif()
+message(STATUS "Found Python3: ${Python3_EXECUTABLE} (found version \"${Python3_VERSION}\")")
+message(STATUS "Python3_LIBRARIES: ${Python3_LIBRARIES}")
+message(STATUS "Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
 
 include_directories(
         ${CMAKE_SOURCE_DIR}
@@ -28,11 +38,13 @@ include_directories(
         ${Python3_INCLUDE_DIRS}
 )
 
+#第二个include引入头文件，PuertsCore只包含EASTL和puerts的源文件（cpp）
 include_directories(../EASTL/include)
 include_directories(${PROJECT_SOURCE_DIR}/../puerts/include)
 
 add_definitions(-DEASTL_OPENSOURCE=1)
 
+#EASTL_HEADS用不到，EASTL_SRC用不到
 file(GLOB EASTL_SRC "../EASTL/source/*.cpp")
 file(GLOB_RECURSE EASTL_HEADS "../EASTL/include/EASTL/**.h")
 
@@ -41,14 +53,19 @@ set(PAPI_SRC
         source/CppObjectMapperPython.cpp
 )
 
-add_library(PapiPython SHARED ${PAPI_SRC})
+add_library(PapiPython SHARED 
+	${PAPI_SRC})
 
 target_link_libraries(PapiPython
         ${Python3_LIBRARIES}
         PuertsCore
+	Ws2_32.lib
+	Version.lib
+	Pathcch.lib
 )
 
 target_compile_definitions(PapiPython PRIVATE EASTL_DLL USING_EASTL)
+target_compile_definitions(PapiPython PRIVATE Py_NO_ENABLE_SHARED)
 target_compile_definitions(PapiPython PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
 target_compile_definitions(PapiPython PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
 target_compile_definitions(PapiPython PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
@@ -61,8 +78,10 @@ target_compile_options(PapiPython PRIVATE
         -fno-rtti
         >
         $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:
-        /EHa-  # 禁用异常处理
-        /GR-   # 禁用RTTI
+		$<$<CONFIG:DEBUG>:/MTd>
+        	$<$<CONFIG:RELEASE>:/MT>
+        	/EHa-  # 禁用异常处理
+        	/GR-   # 禁用RTTI
         >
 )
 
@@ -89,6 +108,15 @@ target_link_libraries(papi_py_test
         PuertsCore
         PapiPython
         GTest::gtest_main
+)
+
+# 添加 post_build 脚本
+# 在构建完成后自动将 PuertsCore.dll 复制到 papi_py_test.exe 所在的目录中
+message(STATUS "binary dir:${CMAKE_CURRENT_BINARY_DIR}")
+add_custom_command(TARGET papi_py_test POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_BINARY_DIR}/puerts/Debug/PuertsCore.dll
+        $<TARGET_FILE_DIR:papi_py_test>
 )
 
 target_include_directories(papi_py_test PRIVATE

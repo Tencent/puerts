@@ -235,8 +235,15 @@ void CppObjectMapper::Cleanup()
 
 pesapi_env_ref create_py_env()
 {
-    Py_Initialize();
+    //Py_Initialize();
+    PyThreadState* subinterpt=Py_NewInterpreter();
 
+    if (!subinterpt)
+    {
+        return nullptr;
+    }
+
+    PyThreadState_Swap(subinterpt);
     // For debug
     /*PyRun_SimpleString(
         "import sys, traceback, faulthandler, tracemalloc, signal, logging, gc\n"
@@ -255,24 +262,39 @@ pesapi_env_ref create_py_env()
     {
         memset(mapper, 0, sizeof(pesapi::pythonimpl::CppObjectMapper));
         new (mapper) pesapi::pythonimpl::CppObjectMapper();
-        mapper->Initialize(PyInterpreterState_Get());
-        return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(PyInterpreterState_Get()));
+        //PyInterpreterState_Get()仅3.9以上版本支持，或者使用PyThreadState* demo->interp代替
+        PyInterpreterState* subinterp = PyInterpreterState_Get();
+        mapper->Initialize(subinterp);
+        //切换回全局主解释器主线程
+        PyThreadState_Swap(PyInterpreterState_ThreadHead(PyInterpreterState_Head()));
+        return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(subinterp));
     }
+    PyThreadState_Swap(PyInterpreterState_ThreadHead(PyInterpreterState_Head()));
     return nullptr;
 }
 
 void destroy_py_env(pesapi_env_ref env_ref)
 {
     auto state = reinterpret_cast<PyInterpreterState*>(pesapi::pythonimpl::g_pesapi_ffi.get_env_from_ref(env_ref));
+    if (!state)
+    {
+        return;
+    }
+
+
     auto mapper = pesapi::pythonimpl::CppObjectMapper::Get(state);
     get_papi_ffi()->release_env_ref(env_ref);
-    mapper->Cleanup();
+    //mapper->Cleanup();
     if (mapper)
     {
         mapper->Cleanup();
         free(mapper);
     }
-    Py_Finalize();    // Finalize Python interpreter
+    //Py_Finalize();    // Finalize Python interpreter
+    PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    Py_EndInterpreter(PyInterpreterState_ThreadHead(state));   // Finalize Python subinterpreter(with GIL) and auto switch to main interpreter
+    //销毁子解释器后会自动切换回主解释器
+    //PyThreadState_Swap(PyInterpreterState_ThreadHead(PyInterpreterState_Head()));
 }
 
 pesapi_ffi* get_papi_ffi()

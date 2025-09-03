@@ -4,6 +4,9 @@
 #include "pesapi.h"
 #include "TypeInfo.hpp"
 #include "PString.h"
+#include <stdlib.h>
+#include <iostream>
+
 
 namespace pesapi
 {
@@ -118,6 +121,7 @@ int TestStruct::dtor_count = 0;
 TestStruct* TestStruct::lastCtorObject = nullptr;
 TestStruct* TestStruct::lastDtorObject = nullptr;
 
+//测试类对象的创建
 static void* TestStructCtor(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -126,11 +130,14 @@ static void* TestStructCtor(struct pesapi_ffi* apis, pesapi_callback_info info)
     return new TestStruct(a);
 }
 
+//测试类对象的销毁
+//是否可以参考TestStructCtor()的设计方法？
 static void TestStructFinalize(struct pesapi_ffi* apis, void* ptr, void* class_data, void* env_private)
 {
     delete (TestStruct*) ptr;
 }
 
+//测试从C++到Python的写入
 static void BGetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -139,6 +146,7 @@ static void BGetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     apis->add_return(info, apis->create_int32(env, obj->b));
 }
 
+//测试从Python到C++的写入
 static void BSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -148,6 +156,7 @@ static void BSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     obj->b = apis->get_value_int32(env, p0);
 }
 
+//测试传入参数和成员函数
 static void BaseFooWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -158,6 +167,7 @@ static void BaseFooWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     apis->add_return(info, apis->create_int32(env, obj->Foo(a)));
 }
 
+// 测试传入参数和无对象的静态方法
 static void AddWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -168,6 +178,7 @@ static void AddWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     apis->add_return(info, apis->create_int32(env, TestStruct::Add(a, b)));
 }
 
+//测试传入参数和有对象的静态方法
 static void CalcWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -180,6 +191,7 @@ static void CalcWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     apis->add_return(info, apis->create_int32(env, obj->Calc(a, b)));
 }
 
+//测试类数据成员的读取
 static void AGetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -188,6 +200,7 @@ static void AGetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     apis->add_return(info, apis->create_int32(env, obj->a));
 }
 
+//测试类数据成员的写入
 static void ASetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -197,12 +210,14 @@ static void ASetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     obj->a = apis->get_value_int32(env, p0);
 }
 
+//测试类静态属性的读取
 static void CtorCountGetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
     apis->add_return(info, apis->create_int32(env, TestStruct::ctor_count));
 }
 
+//测试类静态属性的写入
 static void CtorCountSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -210,14 +225,17 @@ static void CtorCountSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info in
     TestStruct::ctor_count = apis->get_value_int32(env, p0);
 }
 
+//测试类对象的获取（非创建）
 static void GetSelfWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
     auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
     auto obj = (TestStruct*) apis->get_native_object_ptr(env, self);
+    //typeName???
     apis->add_return(info, apis->native_object_to_value(env, typeName, obj, false));
 }
 
+//测试引用传参（修改）
 static void IncWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
@@ -302,6 +320,7 @@ public:
     {
     }
 
+    //简易实现，返回输入参数，临时存储
     static void Bar(struct pesapi_ffi* apis, pesapi_callback_info info)
     {
         auto env = apis->get_env(info);
@@ -334,7 +353,7 @@ protected:
         auto env = apis->get_env_from_ref(env_ref);
 
         auto g = apis->global(env);
-        // apis->set_property(env, g, "loadClass", apis->create_function(env, LoadClass, this, nullptr));
+        // apis->set_property(env, g, "LoadClass", apis->create_function(env, LoadClass, this, nullptr));
         apis->close_scope(scope);
         scope = apis->open_scope(env_ref);
     }
@@ -441,12 +460,13 @@ TEST_F(PApiBaseTest, SetToGlobal)
     apis->set_property(env, g, "SetToGlobal", apis->create_int32(env, 123));
 
     auto code = "SetToGlobal";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_TRUE(ret != nullptr);
     ASSERT_TRUE(apis->is_int32(env, ret));
     EXPECT_EQ(123, apis->get_value_int32(env, ret));
 }
 
+//this指针是否可以测试到data参数？
 TEST_F(PApiBaseTest, CreatePyFunction)
 {
     auto scope = apis->open_scope(env_ref);    // 为了可以提前释放
@@ -464,6 +484,7 @@ TEST_F(PApiBaseTest, CreatePyFunction)
     ASSERT_FALSE(apis->has_caught(scope));
     EXPECT_EQ(bar_data, 3344);
 
+    //测试env上下文private变量的读写访问（读取可以get也可以原参数，因为传引用）
     code = "exec(\"Bar__ = None\")";
     finalizer_env_private = nullptr;
     apis->set_env_private(env, &bar_data);
@@ -510,6 +531,7 @@ TEST_F(PApiBaseTest, PropertyGetSet)
     EXPECT_STREQ("888", buff);
 }
 
+//类对象创建/销毁引用计数
 TEST_F(PApiBaseTest, ClassCtorFinalize)
 {
     auto env = apis->get_env_from_ref(env_ref);
@@ -521,11 +543,11 @@ TEST_F(PApiBaseTest, ClassCtorFinalize)
 
     auto code = R"(
                 (function() {
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     const obj = new TestStruct(123);
                 })();
               )";
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -543,7 +565,7 @@ TEST_F(PApiBaseTest, StaticFunctionCall)
 
     auto code = R"(
                 (function() {
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     return TestStruct.Add(123, 456);
                 })();
               )";
@@ -563,7 +585,7 @@ TEST_F(PApiBaseTest, InstanceMethodCall)
 
     auto code = R"(
                 (function() {
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     const obj = new TestStruct(123);
                     return obj.Calc(123, 456);
                 })();
@@ -584,7 +606,7 @@ TEST_F(PApiBaseTest, PropertyAccess)
 
     auto code = R"(
                 (function() {
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     const obj = new TestStruct(123);
                     let ret = "" + obj.a + ":";
                     obj.a = 0;
@@ -612,7 +634,7 @@ TEST_F(PApiBaseTest, VariableAccess)
 
     auto code = R"(
                 (function() {
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     const obj = new TestStruct(123);
                     const ret = TestStruct.ctor_count
                     TestStruct.ctor_count = 999;
@@ -637,7 +659,7 @@ TEST_F(PApiBaseTest, ReturnAObject)
 
     auto code = R"(
                 (function() {
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     const obj = new TestStruct(123);
                     const self = obj.GetSelf();
                     return obj == self;
@@ -659,7 +681,7 @@ TEST_F(PApiBaseTest, MutiObject)
 
     auto code = R"(
 def test_func():
-    TestStruct = loadClass('TestStruct')
+    TestStruct = LoadClass('TestStruct')
     for i in range(1000):
         obj = TestStruct(123)
         self_obj = obj.GetSelf()
@@ -677,7 +699,7 @@ TEST_F(PApiBaseTest, RefArgument)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = "(lambda lst=[3]: (loadClass('TestStruct')(2).Inc(lst), lst[0])[1])()";
+    auto code = "(lambda lst=[3]: (LoadClass('TestStruct')(2).Inc(lst), lst[0])[1])()";
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
     if (apis->has_caught(scope))
     {
@@ -711,7 +733,7 @@ TEST_F(PApiBaseTest, SuperAccess)
     auto env = apis->get_env_from_ref(env_ref);
     auto code = R"(
                 (function() {
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     const obj = new TestStruct(123);
                     let ret = "" + obj.b + ":"; // 122
                     obj.b = 5
@@ -753,7 +775,7 @@ TEST_F(PApiBaseTest, LifecycleTrace)
     BindData = &p2;
 
     auto code = R"(
-                    const TestStruct = loadClass('TestStruct');
+                    const TestStruct = LoadClass('TestStruct');
                     obj = new TestStruct(123);
               )";
 
@@ -852,6 +874,41 @@ TEST_F(PApiBaseTest, ObjectPrivate)
 
 int main(int argc, char** argv)
 {
+    // 设置 PYTHONHOME 和 PYTHONPATH
+     _putenv("PYTHONHOME=C:/Users/wf200/AppData/Local/Programs/Python/Python39");
+    _putenv("PYTHONPATH=C:/Users/wf200/AppData/Local/Programs/Python/Python39/Lib;C:/Users/wf200/AppData/Local/Programs/Python/Python39/DLLs");
+    char* s1 = NULL;
+    char* s2 = NULL;
+    _dupenv_s(&s1, NULL, "PYTHONHOME");
+    _dupenv_s(&s2, NULL, "PYTHONPATH");
+    std::cout << "PYTHONHOME: "<< s1 << std::endl;
+    std::cout << "PYTHONPATH: " << s2 << std::endl;
+    //Py_SetPythonHome(L"C:/Users/wf200/AppData/Local/Programs/Python/Python310");
+
+    //std::cout << "Python interpreter is initialized: " << Py_IsInitialized() << std::endl;
+    Py_Initialize();
+    if (!Py_IsInitialized())
+    {
+        std::cerr << "Python initialization failed" << std::endl;
+        return -1;
+    }
+
+        // 验证 sys.winver 是否存在
+    PyRun_SimpleString("import sys");
+    PyRun_SimpleString("print(sys.winver)");
+
+
+    // 初始化GoogleTest
     ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    // 设置测试结果输出路径
+    //::testing::GTEST_FLAG(output) = "xml:test_results.xml";
+    // 输出测试用例数量
+    std::cout << "Number of tests: " << ::testing::UnitTest::GetInstance()->total_test_count() << std::endl;
+    int result = RUN_ALL_TESTS();
+    Py_Finalize();
+    return result;
 }
+
+
+
+
