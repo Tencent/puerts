@@ -6,7 +6,7 @@
  * which is part of this source code package.
  */
 
-#include "Python.h"
+#include <Python.h>
 #include "pesapi.h"
 #include "ScriptClassRegistry.h"
 #include "CppObjectMapperPython.h"

@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.11)
 
 project(PapiPython LANGUAGES C CXX)
 
@@ -20,12 +20,12 @@ endif ()
 #构建PuertsCore静态库
 add_subdirectory(../puerts ${CMAKE_CURRENT_BINARY_DIR}/puerts)
 
-#set(Python3_EXECUTABLE "C:/Users/wf200/AppData/Local/Programs/Python/Python310/python.exe")
+set(Python3_EXECUTABLE "C:/Users/wf200/AppData/Local/Programs/Python/Python39/python.exe")
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(Python3_LIBRARIES "C:/Users/wf200/AppData/Local/Programs/Python/Python310/libs/python310_d.lib")
+    set(Python3_LIBRARIES "C:/Users/wf200/AppData/Local/Programs/Python/Python39/libs/python39_d.lib")
 else()
-    set(Python3_LIBRARIES "C:/Users/wf200/AppData/Local/Programs/Python/Python310/libs/python310.lib")
+    set(Python3_LIBRARIES "C:/Users/wf200/AppData/Local/Programs/Python/Python39/libs/python39.lib")
 endif()
 message(STATUS "Found Python3: ${Python3_EXECUTABLE} (found version \"${Python3_VERSION}\")")
 message(STATUS "Python3_LIBRARIES: ${Python3_LIBRARIES}")

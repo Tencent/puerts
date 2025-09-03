@@ -13,6 +13,8 @@
 #include "CppObjectMapperPython.h"
 #include "PapiData.h"
 
+#include <iostream>
+
 namespace pesapi
 {
 namespace pythonimpl
@@ -576,11 +578,12 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
         return nullptr;
     }
     auto ex = scope->caught->ex;
-    auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
-    PyDict_SetItem(globals, PyUnicode_FromString("__pesapi_last_exception"), ex);
+
     const char* ret;
     if (with_stack)
-    {
+    { 
+        auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
+        PyDict_SetItem(globals, PyUnicode_FromString("__pesapi_last_exception"), ex);
         PyRun_SimpleString(
             "import traceback\n"
             "try:\n"
@@ -588,12 +591,14 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
             "except Exception as e:\n"
             "    __pesapi_last_exception_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))\n");
         ret = PyUnicode_AsUTF8(PyDict_GetItem(globals, PyUnicode_FromString("__pesapi_last_exception_str")));
+        PyDict_DelItemString(globals, "__pesapi_last_exception");
+        PyDict_DelItemString(globals, "__pesapi_last_exception_str");
     }
     else
     {
         ret = PyUnicode_AsUTF8(PyObject_Str(ex));
     }
-    PyDict_DelItemString(globals, "__pesapi_last_exception");
+    
     return ret;
 }
 
@@ -745,17 +750,18 @@ pesapi_value pesapi_call_function(
     {
         auto scope = getCurrentScope(state);
 
-#if PY_VERSION_HEX >= 0x030B0000
+#if PY_VERSION_HEX >= 0x030C0000
         scope->setCaughtException(PyErr_GetRaisedException());
 #else
         {
-            /* PyObject* type = nullptr, *value = nullptr, *tb = nullptr;
+            PyObject* type = nullptr, *value = nullptr, *tb = nullptr;
             PyErr_Fetch(&type, &value, &tb);
+            //PyObject* exc=value;
             PyObject *exc = value ? value : type;
             if (exc) Py_XINCREF(exc);
+            //内部DECREF
             PyErr_Restore(type, value, tb);
-            scope->setCaughtException(exc);*/
-            scope->setCaughtException(PyErr_Occurred());
+            scope->setCaughtException(exc);
         }
 #endif
         return nullptr;
@@ -781,16 +787,26 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
 
 
 #if PY_VERSION_HEX >= 0x030B0000
-    scope->setCaughtException(PyErr_GetRaisedException());
+    {
+        scope->setCaughtException(PyErr_GetRaisedException());
+        PyErr_Clear();
+    }
+
+
 #else
     {
-        /* PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
+        PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
         PyErr_Fetch(&type, &value, &tb);
-        PyObject *exc = value ? value : type;
-        if (exc) Py_XINCREF(exc);
-        PyErr_Restore(type, value, tb);
-        scope->setCaughtException(exc);*/
-        scope->setCaughtException(PyErr_Occurred());
+        //PyObject* exc=value;
+        //PyObject *exc = value ? value : type;
+        //PyErr_Restore(type, value, tb);
+        Py_XDECREF(type);
+        Py_XDECREF(tb);
+        if (value)
+        {
+            //std::cout << PyUnicode_AsUTF8(PyObject_Str(value)) << std::endl;
+            scope->setCaughtException(value);
+        }
     }
 #endif
     return nullptr;
