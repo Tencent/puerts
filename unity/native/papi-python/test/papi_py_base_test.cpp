@@ -5,34 +5,15 @@
 #include "TypeInfo.hpp"
 #include "PString.h"
 
-namespace pesapi
-{
-namespace regimpl
-{
-pesapi_registry pesapi_create_registry();
-pesapi_type_info pesapi_alloc_type_infos(size_t count);
-void pesapi_set_type_info(
-    pesapi_type_info type_infos, size_t index, const char* name, int is_pointer, int is_const, int is_ref, int is_primitive);
-pesapi_signature_info pesapi_create_signature_info(
-    pesapi_type_info return_type, size_t parameter_count, pesapi_type_info parameter_types);
-const char* str_dup(const char* str);
-void pesapi_define_class(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name,
-    const char* type_name, pesapi_constructor constructor, pesapi_finalize finalize, void* data, int copy_str);
-void pesapi_set_property_info_size(
-    pesapi_registry registry, const void* type_id, int method_count, int function_count, int property_count, int variable_count);
-void pesapi_set_method_info(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static,
-    pesapi_callback method, void* data, int copy_str);
-void pesapi_set_property_info(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static,
-    pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, int copy_str);
-void* pesapi_get_class_data(pesapi_registry _registry, const void* type_id, int force_load);
-void pesapi_on_class_not_found(pesapi_registry registry, pesapi_class_not_found_callback callback);
-void pesapi_class_type_info(pesapi_registry registry, const char* proto_magic_id, const void* type_id, const void* constructor_info,
-    const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info);
-const void* pesapi_find_type_id(pesapi_registry registry, const char* module_name, const char* type_name);
-int pesapi_trace_native_object_lifecycle(
-    pesapi_registry registry, const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
-}    // namespace regimpl
-}    // namespace pesapi
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+pesapi_registry_api* GetRegisterApi();
+
+#ifdef __cplusplus
+}
+#endif
 
 namespace pesapi
 {
@@ -239,11 +220,11 @@ public:
         // 封装TestStructBase
         const int base_properties_count = 2;
 
-        registry = regimpl::pesapi_create_registry();
-        regimpl::pesapi_set_property_info_size(registry, &g_dummy_base_type_id, 1, 0, base_properties_count, 0);
-        regimpl::pesapi_set_property_info(registry, &g_dummy_base_type_id, 0, "b", false, BGetterWrap, BSetterWrap, NULL, NULL, 1);
-        regimpl::pesapi_set_method_info(registry, &g_dummy_base_type_id, 1, "Foo", false, BaseFooWrap, NULL, false);
-        regimpl::pesapi_define_class(registry,&g_dummy_base_type_id, nullptr,nullptr ,baseTypeName,
+        registry = GetRegisterApi()->create_registry();
+        GetRegisterApi()->set_property_info_size(registry, &g_dummy_base_type_id, 1, 0, base_properties_count, 0);
+        GetRegisterApi()->set_property_info(registry, &g_dummy_base_type_id, 0, "b", false, BGetterWrap, BSetterWrap, NULL, NULL, 1);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_base_type_id, 1, "Foo", false, BaseFooWrap, NULL, false);
+        GetRegisterApi()->define_class(registry,&g_dummy_base_type_id, nullptr,nullptr ,baseTypeName,
             [](struct pesapi_ffi* apis, pesapi_callback_info info) -> void* { // Ctor
                 auto env = apis->get_env(info);
                 auto p0 = apis->get_arg(info, 0);
@@ -256,19 +237,19 @@ public:
 
         // 封装TestStruct
         const int properties_count = 6;
-        regimpl::pesapi_set_property_info_size(registry, typeName, 3, 0, properties_count, 0);
-        regimpl::pesapi_set_method_info(registry, &g_dummy_type_id, 0, "Add", true, AddWrap, NULL, NULL);
-        regimpl::pesapi_set_method_info(registry, &g_dummy_type_id, 1, "Calc", false, CalcWrap, NULL, NULL);
-        regimpl::pesapi_set_property_info(registry, &g_dummy_type_id, 2, "a", false, AGetterWrap, ASetterWrap, NULL, NULL, NULL);
-        regimpl::pesapi_set_property_info(
+        GetRegisterApi()->set_property_info_size(registry, typeName, 3, 0, properties_count, 0);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Add", true, AddWrap, NULL, NULL);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 1, "Calc", false, CalcWrap, NULL, NULL);
+        GetRegisterApi()->set_property_info(registry, &g_dummy_type_id, 2, "a", false, AGetterWrap, ASetterWrap, NULL, NULL, NULL);
+        GetRegisterApi()->set_property_info(
             registry, &g_dummy_type_id, 3, "ctor_count", true, CtorCountGetterWrap, CtorCountSetterWrap, NULL, NULL, NULL);
-        regimpl::pesapi_set_method_info(registry, &g_dummy_type_id, 4, "GetSelf", false, GetSelfWrap, NULL, NULL);
-        regimpl::pesapi_set_method_info(registry, &g_dummy_type_id, 5, "Inc", false, IncWrap, NULL, NULL);
-        regimpl::pesapi_define_class(registry, &g_dummy_type_id, &g_dummy_base_type_id, nullptr, typeName, TestStructCtor,
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 4, "GetSelf", false, GetSelfWrap, NULL, NULL);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 5, "Inc", false, IncWrap, NULL, NULL);
+        GetRegisterApi()->define_class(registry, &g_dummy_type_id, &g_dummy_base_type_id, nullptr, typeName, TestStructCtor,
             TestStructFinalize, nullptr, false);
 
-        regimpl::pesapi_trace_native_object_lifecycle(registry, baseTypeName, OnObjEnter, OnObjExit);
-        regimpl::pesapi_trace_native_object_lifecycle(registry, typeName, OnObjEnter, OnObjExit);
+        GetRegisterApi()->trace_native_object_lifecycle(registry, baseTypeName, OnObjEnter, OnObjExit);
+        GetRegisterApi()->trace_native_object_lifecycle(registry, typeName, OnObjEnter, OnObjExit);
     }
 
     static void* BindData;
@@ -348,10 +329,10 @@ protected:
             char buff[1024];
             size_t len = sizeof(buff);
             const char* className = apis->get_value_string_utf8(env, arg0, buff, &len);
-            auto clsDef = (puerts::ScriptClassDefinition) regimpl::pesapi_find_type_id(registry, nullptr, className);
-            if (clsDef.TypeId != nullptr)
+            auto typeId = GetRegisterApi()->find_type_id(registry, nullptr, className);
+            if (typeId != nullptr)
             {
-                auto ret = apis->create_class(env, clsDef.TypeId);
+                auto ret = apis->create_class(env, typeId);
                 apis->add_return(info, ret);
             }
             else
@@ -395,9 +376,9 @@ TEST_F(PApiBaseTest, RegApi)
 {
     const void* typeId = "Test";
     int dummyTypeId = 0;
-    regimpl::pesapi_define_class(registry, &dummyTypeId, nullptr, nullptr, "Test", nullptr, nullptr, nullptr, false);
-    regimpl::pesapi_set_property_info_size(registry, &dummyTypeId, 0, 1, 0, 0);
-    regimpl::pesapi_set_method_info(registry, &dummyTypeId, 0, "Foo", true, Foo, nullptr, false);
+    GetRegisterApi()->define_class(registry, &dummyTypeId, nullptr, nullptr, "Test", nullptr, nullptr, nullptr, false);
+    GetRegisterApi()->set_property_info_size(registry, &dummyTypeId, 0, 1, 0, 0);
+    GetRegisterApi()->set_method_info(registry, &dummyTypeId, 0, "Foo", true, Foo, nullptr, false);
 
     auto clsDef = puerts::FindClassByID((puerts::ScriptClassRegistry*)registry, &dummyTypeId);
     ASSERT_TRUE(clsDef != nullptr);
