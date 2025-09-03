@@ -778,22 +778,21 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         }
     }
     auto scope = getCurrentScope(state);
-<<<<<<< HEAD
-    scope->setCaughtException(PyErr_Occurred());
-=======
+
+
 #if PY_VERSION_HEX >= 0x030B0000
     scope->setCaughtException(PyErr_GetRaisedException());
 #else
     {
-        PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
+        /* PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
         PyErr_Fetch(&type, &value, &tb);
         PyObject *exc = value ? value : type;
         if (exc) Py_XINCREF(exc);
         PyErr_Restore(type, value, tb);
-        scope->setCaughtException(exc);
+        scope->setCaughtException(exc);*/
+        scope->setCaughtException(PyErr_Occurred());
     }
 #endif
->>>>>>> d42219dd211b39614c8089dfc80c9850773dcdce
     return nullptr;
 }
 
