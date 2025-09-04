@@ -112,7 +112,7 @@ public:
 
     static PyObject* CreateError(const char* message);
 
-    PyObject* MakeMethod(pesapi_callback Callback, void* Data);
+    PyObject* MakeMethod(puerts::ScriptFunctionInfo* FuncInfo);
 
     void InitMethod(puerts::ScriptFunctionInfo* FuncInfo, PyObject* Obj);
 

@@ -189,13 +189,7 @@ class PApiBaseTest : public ::testing::Test
 public:
     static void SetUpTestCase()
     {
-        // 封装TestStructBase
-        const int base_properties_count = 2;
-
         registry = GetRegisterApi()->create_registry();
-        GetRegisterApi()->set_property_info_size(registry, &g_dummy_base_type_id, 1, 0, base_properties_count, 0);
-        GetRegisterApi()->set_property_info(registry, &g_dummy_base_type_id, 0, "b", false, BGetterWrap, BSetterWrap, NULL, NULL, 1);
-        GetRegisterApi()->set_method_info(registry, &g_dummy_base_type_id, 1, "Foo", false, BaseFooWrap, NULL, false);
         GetRegisterApi()->define_class(registry,&g_dummy_base_type_id, nullptr,nullptr ,baseTypeName,
             [](struct pesapi_ffi* apis, pesapi_callback_info info) -> void* { // Ctor
                 auto env = apis->get_env(info);
@@ -206,22 +200,24 @@ public:
         [](struct pesapi_ffi* apis, void* ptr, void* class_data, void* env_private) { // Finalize
             delete static_cast<TestStructBase*>(ptr);
         },nullptr, false);
+        GetRegisterApi()->set_property_info_size(registry, &g_dummy_base_type_id, 1, 0, 1, 0);
+        GetRegisterApi()->set_property_info(registry, &g_dummy_base_type_id, 0, "b", false, BGetterWrap, BSetterWrap, NULL, NULL, 1);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_base_type_id, 0, "Foo", false, BaseFooWrap, NULL, false);
 
         // 封装TestStruct
-        const int properties_count = 6;
-        GetRegisterApi()->set_property_info_size(registry, typeName, 3, 0, properties_count, 0);
-        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Add", true, AddWrap, NULL, NULL);
-        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 1, "Calc", false, CalcWrap, NULL, NULL);
-        GetRegisterApi()->set_property_info(registry, &g_dummy_type_id, 2, "a", false, AGetterWrap, ASetterWrap, NULL, NULL, NULL);
-        GetRegisterApi()->set_property_info(
-            registry, &g_dummy_type_id, 3, "ctor_count", true, CtorCountGetterWrap, CtorCountSetterWrap, NULL, NULL, NULL);
-        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 4, "GetSelf", false, GetSelfWrap, NULL, NULL);
-        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 5, "Inc", false, IncWrap, NULL, NULL);
         GetRegisterApi()->define_class(registry, &g_dummy_type_id, &g_dummy_base_type_id, nullptr, typeName, TestStructCtor,
             TestStructFinalize, nullptr, false);
+        GetRegisterApi()->set_property_info_size(registry, &g_dummy_type_id, 3, 1, 1, 0);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Add", true, AddWrap, NULL, NULL);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Calc", false, CalcWrap, NULL, NULL);
+        GetRegisterApi()->set_property_info(registry, &g_dummy_type_id, 0, "a", false, AGetterWrap, ASetterWrap, NULL, NULL, NULL);
+        GetRegisterApi()->set_property_info(
+            registry, &g_dummy_type_id, 0, "ctor_count", true, CtorCountGetterWrap, CtorCountSetterWrap, NULL, NULL, NULL);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 1, "GetSelf", false, GetSelfWrap, NULL, NULL);
+        GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 2, "Inc", false, IncWrap, NULL, NULL);
 
-        GetRegisterApi()->trace_native_object_lifecycle(registry, baseTypeName, OnObjEnter, OnObjExit);
-        GetRegisterApi()->trace_native_object_lifecycle(registry, typeName, OnObjEnter, OnObjExit);
+        GetRegisterApi()->trace_native_object_lifecycle(registry, &g_dummy_base_type_id, OnObjEnter, OnObjExit);
+        GetRegisterApi()->trace_native_object_lifecycle(registry, &g_dummy_type_id, OnObjEnter, OnObjExit);
     }
 
     static void* BindData;
@@ -285,9 +281,10 @@ protected:
 
         scope = apis->open_scope(env_ref);
         auto env = apis->get_env_from_ref(env_ref);
+        apis->set_registry(env, registry);
 
         auto g = apis->global(env);
-        // apis->set_property(env, g, "loadClass", apis->create_function(env, LoadClass, this, nullptr));
+        apis->set_property(env, g, "loadClass", apis->create_function(env, LoadClass, this, nullptr));
         apis->close_scope(scope);
         scope = apis->open_scope(env_ref);
     }
@@ -494,13 +491,8 @@ TEST_F(PApiBaseTest, StaticFunctionCall)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    return TestStruct.Add(123, 456);
-                })();
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = "(lambda: loadClass('TestStruct').Add(123,456))()";
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
