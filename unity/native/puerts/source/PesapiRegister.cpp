@@ -200,7 +200,7 @@ void pesapi_class_type_info(pesapi_registry registry, const char* proto_magic_id
 const void* pesapi_find_type_id(pesapi_registry registry, const char* module_name, const char* type_name)
 {
     puerts::PString fullname = module_name;
-    fullname += ".";
+    fullname += module_name ? "." : "";
     fullname += type_name;
     const auto class_def = puerts::FindCppTypeClassByName(reinterpret_cast<puerts::ScriptClassRegistry*>(registry), fullname);
     return class_def ? class_def->TypeId : nullptr;
