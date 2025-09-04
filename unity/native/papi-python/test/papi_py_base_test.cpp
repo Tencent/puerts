@@ -20,26 +20,6 @@ namespace pesapi
 namespace pythonimpl
 {
 
-inline pesapi_value pesapiValueFromPyObject(PyObject* v)
-{
-    return reinterpret_cast<pesapi_value>(v);
-}
-
-inline PyObject* pyObjectFromPesapiValue(pesapi_value v)
-{
-    return reinterpret_cast<PyObject*>(v);
-}
-
-struct pesapi_callback_info__
-{
-    PyObject* self;    // self object in Python
-    PyObject* args;    // arguments passed to the callback
-    int argc;          // number of arguments
-    void* data;        // user data passed to the callback
-    PyObject* res;     // result of the callback
-    const char* ex;    // exception if any occurred during the callback
-};
-
 struct TestStructBase
 {
     TestStructBase(int b)
@@ -115,16 +95,14 @@ static void TestStructFinalize(struct pesapi_ffi* apis, void* ptr, void* class_d
 static void BGetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStructBase*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStructBase*) apis->get_native_holder_ptr(info);
     apis->add_return(info, apis->create_int32(env, obj->b));
 }
 
 static void BSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStructBase*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStructBase*) apis->get_native_holder_ptr(info);
     auto p0 = apis->get_arg(info, 0);
     obj->b = apis->get_value_int32(env, p0);
 }
@@ -132,8 +110,7 @@ static void BSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 static void BaseFooWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStructBase*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStructBase*) apis->get_native_holder_ptr(info);
     auto p0 = apis->get_arg(info, 0);
     int a = apis->get_value_int32(env, p0);
     apis->add_return(info, apis->create_int32(env, obj->Foo(a)));
@@ -152,8 +129,7 @@ static void AddWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 static void CalcWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStruct*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);
     auto p0 = apis->get_arg(info, 0);
     auto p1 = apis->get_arg(info, 1);
     int a = apis->get_value_int32(env, p0);
@@ -164,16 +140,14 @@ static void CalcWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 static void AGetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStruct*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);
     apis->add_return(info, apis->create_int32(env, obj->a));
 }
 
 static void ASetterWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStruct*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);
     auto p0 = apis->get_arg(info, 0);
     obj->a = apis->get_value_int32(env, p0);
 }
@@ -194,16 +168,14 @@ static void CtorCountSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info in
 static void GetSelfWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStruct*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);;
     apis->add_return(info, apis->native_object_to_value(env, typeName, obj, false));
 }
 
 static void IncWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto self = reinterpret_cast<pesapi_value>(reinterpret_cast<pesapi_callback_info__*>(info)->self);
-    auto obj = (TestStruct*) apis->get_native_object_ptr(env, self);
+    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);
     auto p0 = apis->get_arg(info, 0);
     auto unboxed = apis->unboxing(env, p0);
     int p = apis->get_value_int32(env, unboxed);
