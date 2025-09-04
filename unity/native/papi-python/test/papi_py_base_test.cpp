@@ -3,6 +3,7 @@
 #include <Python.h>
 #include "pesapi.h"
 #include "TypeInfo.hpp"
+#include "code_loader.h"
 #include "PString.h"
 
 #ifdef __cplusplus
@@ -184,6 +185,7 @@ static void IncWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 }
 int g_dummy_base_type_id = 0;
 int g_dummy_type_id = 0;
+
 class PApiBaseTest : public ::testing::Test
 {
 public:
@@ -335,6 +337,43 @@ protected:
     pesapi_scope scope;
 };
 
+inline void BypassClassDefination(pesapi_ffi* apis, pesapi_env env){
+    auto bypassCode=bypass_class_defination_code;
+    apis->eval(env, (const uint8_t*) (bypassCode), strlen(bypassCode), "test.py");
+}
+
+void PrintGlobalClasses(){
+    // 使用原生 Python C API 获取全局命名空间并输出其中定义的类
+    {
+        PyGILState_STATE gil = PyGILState_Ensure();
+        PyObject* main_mod = PyImport_AddModule("__main__"); // borrowed
+        if (main_mod) {
+            PyObject* globals = PyModule_GetDict(main_mod); // borrowed
+            PyObject* key = nullptr;
+            PyObject* value = nullptr;
+            Py_ssize_t pos = 0;
+            bool first = true;
+            printf("Python 全局中的类: ");
+            while (PyDict_Next(globals, &pos, &key, &value)) {
+                if (PyType_Check(value)) {
+                    const char* name = (PyUnicode_Check(key) ? PyUnicode_AsUTF8(key) : nullptr);
+                    if (!first) printf(", ");
+                    printf("%s", name ? name : "<non-str>");
+                    first = false;
+                }
+            }
+            printf("\n");
+            // 可选：检查特定类是否存在
+            PyObject* cat = PyDict_GetItemString(globals, "Cat");
+            PyObject* ts  = PyDict_GetItemString(globals, "TestStruct");
+            printf("Has Cat: %s, Has TestStruct: %s\n",
+                   (cat && PyType_Check(cat)) ? "true" : "false",
+                   (ts && PyType_Check(ts))  ? "true" : "false");
+        }
+        PyGILState_Release(gil);
+    }
+}
+
 TEST_F(PApiBaseTest, CreateAndDestroyMultQjsEnv)
 {
     for (int i = 0; i < 5; i++)
@@ -365,7 +404,7 @@ TEST_F(PApiBaseTest, EvalJavaScript)
     auto env = apis->get_env_from_ref(env_ref);
 
     auto code = "123+789";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "simple_eval.py");
     ASSERT_TRUE(ret != nullptr);
     ASSERT_TRUE(apis->is_int32(env, ret));
     ASSERT_TRUE(apis->get_value_int32(env, ret) == 912);
@@ -394,7 +433,7 @@ TEST_F(PApiBaseTest, SetToGlobal)
     apis->set_property(env, g, "SetToGlobal", apis->create_int32(env, 123));
 
     auto code = "SetToGlobal";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "set_global.py");
     ASSERT_TRUE(ret != nullptr);
     ASSERT_TRUE(apis->is_int32(env, ret));
     EXPECT_EQ(123, apis->get_value_int32(env, ret));
@@ -409,7 +448,7 @@ TEST_F(PApiBaseTest, CreatePyFunction)
     apis->set_property(env, g, "Bar__", apis->create_function(env, Bar, this, JsFuncFinalizer));
     auto code = "Bar__(3344)";
     bar_data = 100;
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "use_function.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -420,7 +459,7 @@ TEST_F(PApiBaseTest, CreatePyFunction)
     code = "exec(\"Bar__ = None\")";
     finalizer_env_private = nullptr;
     apis->set_env_private(env, &bar_data);
-    ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test2.py");
+    ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "set_func_none.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -472,13 +511,13 @@ TEST_F(PApiBaseTest, ClassCtorFinalize)
     TestStruct::lastCtorObject = nullptr;
     TestStruct::lastDtorObject = nullptr;
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                })();
-              )";
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    BypassClassDefination(apis, env);
+
+    auto code = class_ctor_finalizer_code;
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "class_ctor.py");
+
+    PrintGlobalClasses();
+
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -494,13 +533,8 @@ TEST_F(PApiBaseTest, StaticFunctionCall)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    return TestStruct.Add(123, 456);
-                })();
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = static_function_call_code;
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "static_func.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -514,14 +548,8 @@ TEST_F(PApiBaseTest, InstanceMethodCall)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    return obj.Calc(123, 456);
-                })();
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = instance_method_call_code;
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "normal_method.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -535,17 +563,8 @@ TEST_F(PApiBaseTest, PropertyAccess)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    let ret = "" + obj.a + ":";
-                    obj.a = 0;
-                    ret += obj.Calc(123, 456);
-                    return ret;
-                })();
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = property_access_code;
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "get_class_property.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -563,17 +582,9 @@ TEST_F(PApiBaseTest, VariableAccess)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    const ret = TestStruct.ctor_count
-                    TestStruct.ctor_count = 999;
-                    return ret;
-                })();
-              )";
+    auto code = variable_access_code;
     TestStruct::ctor_count = 100;
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "static_property.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -588,15 +599,8 @@ TEST_F(PApiBaseTest, ReturnAObject)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    const self = obj.GetSelf();
-                    return obj == self;
-                })();
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = return_a_object_code;
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "return_object.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -606,19 +610,12 @@ TEST_F(PApiBaseTest, ReturnAObject)
     ASSERT_TRUE(apis->get_value_bool(env, ret));
 }
 
-TEST_F(PApiBaseTest, MutiObject)
+TEST_F(PApiBaseTest, MultiObject)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-def test_func():
-    TestStruct = loadClass('TestStruct')
-    for i in range(1000):
-        obj = TestStruct(123)
-        self_obj = obj.GetSelf()
-test_func()
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = multi_object_code;
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "multi_object.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -631,7 +628,7 @@ TEST_F(PApiBaseTest, RefArgument)
     auto env = apis->get_env_from_ref(env_ref);
 
     auto code = "(lambda lst=[3]: (loadClass('TestStruct')(2).Inc(lst), lst[0])[1])()";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "ref_argument.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -646,7 +643,7 @@ TEST_F(PApiBaseTest, CallFunction)
     auto env = apis->get_env_from_ref(env_ref);
 
     auto code = "(lambda x, y: x - y)";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "call_function.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -662,17 +659,8 @@ TEST_F(PApiBaseTest, CallFunction)
 TEST_F(PApiBaseTest, SuperAccess)
 {
     auto env = apis->get_env_from_ref(env_ref);
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    let ret = "" + obj.b + ":"; // 122
-                    obj.b = 5
-                    ret += obj.Foo(6); // 11
-                    return ret;
-                })();
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = super_access_code;
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "super_access.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -710,7 +698,7 @@ TEST_F(PApiBaseTest, LifecycleTrace)
                     obj = new TestStruct(123);
               )";
 
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "define_obj.py");
     ASSERT_FALSE(apis->has_caught(scopeInner));
     EXPECT_EQ(&p, EnvPrivate);
     EXPECT_EQ((void*) typeName, ClassData);
@@ -727,7 +715,7 @@ TEST_F(PApiBaseTest, LifecycleTrace)
                     obj = undefined;
               )";
 
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "destroy_obj.py");
 
     ASSERT_FALSE(apis->has_caught(scopeInner));
 
@@ -739,6 +727,7 @@ TEST_F(PApiBaseTest, LifecycleTrace)
     EXPECT_EQ(&p2, BindData);
 }
 
+//TODO: this pycode not correct
 TEST_F(PApiBaseTest, ObjectPrivate)
 {
     auto env = apis->get_env_from_ref(env_ref);

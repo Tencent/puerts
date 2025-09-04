@@ -148,6 +148,92 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     }
 
     return nullptr;
+
+    // 1) 组装类名与字典
+    const char* scriptName = (ClassDefinition->ScriptName && ClassDefinition->ScriptName[0])
+                                 ? ClassDefinition->ScriptName
+                                 : "NativeClass";
+
+    PyObject* name  = PyUnicode_FromString(scriptName);
+    PyObject* bases = PyTuple_New(0);           // 先不指定基类
+    PyObject* dict  = PyDict_New();             // 类属性字典
+    if (!name || !bases || !dict)
+    {
+        Py_XDECREF(name);
+        Py_XDECREF(bases);
+        Py_XDECREF(dict);
+        return CreateError("FindOrCreateClass: failed to allocate name/bases/dict");
+    }
+
+    // 设置 __module__ = "__main__"，确保类在全局命名空间展示正确
+    PyObject* moduleStr = PyUnicode_FromString("__main__");
+    if (!moduleStr || PyDict_SetItemString(dict, "__module__", moduleStr) != 0)
+    {
+        Py_XDECREF(moduleStr);
+        Py_DECREF(name);
+        Py_DECREF(bases);
+        Py_DECREF(dict);
+        return CreateError("FindOrCreateClass: failed to set __module__");
+    }
+    Py_DECREF(moduleStr);
+
+    // TODO: 若需要，可在此处为静态方法/静态属性预先填充（Functions/Variables）
+    // 说明：实例方法/属性需要描述符/绑定，建议在后续 MakeMethod/InitMethod/InitProperty 中补齐
+    if (ClassDefinition->Functions)
+    {
+        for (auto fi = ClassDefinition->Functions; fi && fi->Name; ++fi)
+        {
+            PyObject* fn = CreateFunction(fi->Callback, fi->Data, nullptr);
+            if (!fn)
+            {
+                Py_DECREF(name);
+                Py_DECREF(bases);
+                Py_DECREF(dict);
+                return CreateError("FindOrCreateClass: failed to create static function");
+            }
+            // 以函数名作为键放入类字典（静态方法）
+            if (PyDict_SetItemString(dict, fi->Name, fn) != 0)
+            {
+                Py_DECREF(fn);
+                Py_DECREF(name);
+                Py_DECREF(bases);
+                Py_DECREF(dict);
+                return CreateError("FindOrCreateClass: failed to set static function to dict");
+            }
+            Py_DECREF(fn);
+        }
+    }
+
+    // 2) 通过 type(name, bases, dict) 创建类对象
+    PyObject* cls = PyObject_CallFunctionObjArgs((PyObject*) &PyType_Type, name, bases, dict, NULL);
+    Py_DECREF(name);
+    Py_DECREF(bases);
+    Py_DECREF(dict);
+
+    if (!cls)
+    {
+        return CreateError("FindOrCreateClass: failed to create Python type");
+    }
+
+    // 3) 注册到 __main__ 全局命名空间
+    PyObject* mainMod = PyImport_AddModule("__main__"); // borrowed
+    if (!mainMod)
+    {
+        Py_DECREF(cls);
+        return CreateError("FindOrCreateClass: cannot import __main__");
+    }
+    PyObject* globals = PyModule_GetDict(mainMod); // borrowed
+    if (!globals || PyDict_SetItemString(globals, scriptName, cls) != 0)
+    {
+        Py_DECREF(cls);
+        return CreateError("FindOrCreateClass: failed to add class to __main__");
+    }
+
+    // 4) 写入缓存，保持强引用
+    TypeIdToFunctionMap[ClassDefinition->TypeId] = cls;
+    Py_INCREF(cls); // 缓存持有引用
+
+    return cls;
 }
 
 PyObject* CppObjectMapper::FindOrCreateClassByID(const void* typeId)
