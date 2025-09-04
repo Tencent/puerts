@@ -234,13 +234,13 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
     DynObj* self = (DynObj*)type->tp_alloc(type, 0);
     if (!self) return NULL;
 
-    PyObject* capsule = PyObject_GetAttrString((PyObject*)type, "_meta_ptr");
+    PyObject* capsule = PyObject_GetAttrString((PyObject*)type, "_type_info_ptr");
     if (!capsule) {
         Py_DECREF(self);
         return NULL;
     }
 
-    puerts::ScriptClassDefinition* classDefinition = (puerts::ScriptClassDefinition*)PyCapsule_GetPointer(capsule, "myext.Meta");
+    puerts::ScriptClassDefinition* classDefinition = (puerts::ScriptClassDefinition*)PyCapsule_GetPointer(capsule, "meta.TypeInfo");
     Py_DECREF(capsule);
     if (!classDefinition) {
         Py_DECREF(self);
@@ -255,9 +255,9 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
 
 static PyObject* DynObj_show_meta(PyObject* self_obj, PyObject* Py_UNUSED(ignored)) {
     PyTypeObject* type = Py_TYPE(self_obj);
-    PyObject* capsule = PyObject_GetAttrString((PyObject*)type, "_meta_ptr");
+    PyObject* capsule = PyObject_GetAttrString((PyObject*)type, "_type_info_ptr");
     if (!capsule) return NULL;
-    void* meta = PyCapsule_GetPointer(capsule, "myext.Meta");
+    void* meta = PyCapsule_GetPointer(capsule, "meta.TypeInfo");
     Py_DECREF(capsule);
     if (!meta) return NULL;
 
@@ -312,12 +312,12 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     PyObject* type_obj = PyType_FromSpec(&spec);
     if (!type_obj) return NULL;
 
-    PyObject* capsule = PyCapsule_New((void*)ClassDefinition, "myext.Meta", NULL);
+    PyObject* capsule = PyCapsule_New((void*)ClassDefinition, "meta.TypeInfo", NULL);
     if (!capsule) {
         Py_DECREF(type_obj);
         return NULL;
     }
-    if (PyObject_SetAttrString(type_obj, "_meta_ptr", capsule) < 0) {
+    if (PyObject_SetAttrString(type_obj, "_type_info_ptr", capsule) < 0) {
         Py_DECREF(capsule);
         Py_DECREF(type_obj);
         return NULL;
