@@ -91,6 +91,13 @@ target_link_libraries(papi_py_test
         GTest::gtest_main
 )
 
+add_custom_command(TARGET papi_py_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:PuertsCore>
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMENT "Copying PuertsCore.dll to output directory"
+)
+
 target_include_directories(papi_py_test PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/source
