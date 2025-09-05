@@ -305,7 +305,9 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     spec.name = ClassDefinition->ScriptName;
     spec.flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE;
 
-    PyObject* type_obj = ClassDefinition->SuperTypeId ? PyType_FromSpecWithBases(&spec, FindOrCreateClass(puerts::LoadClassByID(registry, ClassDefinition->SuperTypeId))) : PyType_FromSpec(&spec);
+    PyObject* bases = ClassDefinition->SuperTypeId ? PyTuple_Pack(1, FindOrCreateClass(puerts::LoadClassByID(registry, ClassDefinition->SuperTypeId))) : NULL;
+
+    PyObject* type_obj = ClassDefinition->SuperTypeId ? PyType_FromSpecWithBases(&spec, bases) : PyType_FromSpec(&spec);
     if (!type_obj) return NULL;
 
     PyObject* capsule = PyCapsule_New((void*)ClassDefinition, "meta.TypeInfo", NULL);
