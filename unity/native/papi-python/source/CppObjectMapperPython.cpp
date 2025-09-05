@@ -131,6 +131,10 @@ typedef struct
 
 static void PyMethodObject_dealloc(PyMethodObject* self)
 {
+    // Release reference to dynObj when method object is deallocated
+    if (self->dynObj) {
+        Py_DECREF((PyObject*)self->dynObj);
+    }
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -207,6 +211,10 @@ PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, Dy
     PyMethodObject *methodObj = (PyMethodObject *)PyObject_New(PyMethodObject, &PyMethodObject_Type);
     methodObj->funcInfo = FuncInfo;
     methodObj->dynObj = Obj;
+    // Increase reference count to keep dynObj alive while method exists
+    if (Obj) {
+        Py_INCREF((PyObject*)Obj);
+    }
     return (PyObject *)methodObj;
 }
 
