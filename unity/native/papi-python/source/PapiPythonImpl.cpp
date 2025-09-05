@@ -367,17 +367,16 @@ pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
     PyObject* tuple = PyTuple_New(1);
     PyObject* item = pyObjectFromPesapiValue(value);
     PyTuple_SetItem(tuple, 0, item);
-    Py_INCREF(item);
     return pesapiValueFromPyObject(tuple);
 }
 
 pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value value)
 {
+    auto state = pyStateFromPesapiEnv(env);
     PyObject* tuple = pyObjectFromPesapiValue(value);
-    PyObject* item = PyTuple_GetItem(tuple, 0);
-    Py_DECREF(tuple);
-    Py_DECREF(item);
-    return pesapiValueFromPyObject(item);
+    auto ret = allocValueInCurrentScope(state);
+    *ret = PyTuple_GetItem(tuple, 0);
+    return pesapiValueFromPyObject(*ret);
 }
 
 void pesapi_update_boxed_value(pesapi_env env, pesapi_value boxed_value, pesapi_value value)
