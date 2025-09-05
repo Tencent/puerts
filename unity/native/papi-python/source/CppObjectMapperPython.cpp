@@ -140,6 +140,11 @@ static void PyMethodObject_dealloc(PyMethodObject* self)
 
 static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObject* kwargs)
 {
+    if (!self->funcInfo || !self->funcInfo->Callback) {
+        PyErr_SetString(PyExc_RuntimeError, "Invalid function info or callback");
+        return nullptr;
+    }
+    
     pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr };
     self->funcInfo->Callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
@@ -159,11 +164,17 @@ static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObj
 
 static PyObject* PyMethodObject_repr(PyMethodObject* self) 
 {
+    if (!self->funcInfo || !self->funcInfo->Name) {
+        return PyUnicode_FromString("<foreign method (invalid)>");
+    }
     return PyUnicode_FromFormat("<foreign method %s>", self->funcInfo->Name);
 }
 
 static PyObject* PyMethodObject_get_name(PyMethodObject* self, void* c) 
 {
+    if (!self->funcInfo || !self->funcInfo->Name) {
+        return PyUnicode_FromString("(invalid)");
+    }
     return PyUnicode_FromString(self->funcInfo->Name);
 }
 
@@ -208,7 +219,16 @@ static PyTypeObject PyMethodObject_Type = {
 
 PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, DynObj* Obj)
 {
+    if (!FuncInfo) {
+        PyErr_SetString(PyExc_RuntimeError, "FuncInfo cannot be null");
+        return nullptr;
+    }
+    
     PyMethodObject *methodObj = (PyMethodObject *)PyObject_New(PyMethodObject, &PyMethodObject_Type);
+    if (!methodObj) {
+        return nullptr;
+    }
+    
     methodObj->funcInfo = FuncInfo;
     methodObj->dynObj = Obj;
     // Increase reference count to keep dynObj alive while method exists
@@ -283,7 +303,9 @@ static ContextObj* GetContextObj(PyTypeObject* type) {
 
 static void DynObj_dealloc(DynObj* self) {
     //TODO: self->mapper->RemoveFromCache(ctx->classDefinition, self->objectPtr);
-    self->classDefinition->Finalize(&g_pesapi_ffi, (void*)self->objectPtr, self->classDefinition->Data, (void*)(self->mapper->GetEnvPrivate()));
+    if (self->classDefinition && self->classDefinition->Finalize && self->objectPtr && self->mapper) {
+        self->classDefinition->Finalize(&g_pesapi_ffi, (void*)self->objectPtr, self->classDefinition->Data, (void*)(self->mapper->GetEnvPrivate()));
+    }
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -294,19 +316,26 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
     ContextObj* ctx = GetContextObj(type);
     if (!ctx) {
         Py_DECREF(self);
-        return Py_None;
+        return NULL;
     }
 
     self->classDefinition = ctx->classDefinition;
     self->mapper = ctx->mapper;
     Py_DECREF(ctx);
+    
+    if (!self->classDefinition || !self->classDefinition->Initialize) {
+        PyErr_SetString(PyExc_RuntimeError, "Invalid class definition or Initialize function");
+        Py_DECREF(self);
+        return NULL;
+    }
+    
     pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, PyTuple_Size(args), self->classDefinition->Data, nullptr, nullptr };
     void* ptr = self->classDefinition->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
         PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
         Py_DECREF(self);
-        return Py_None;
+        return NULL;
     }
     //TODO: 缓存到mapper
 
@@ -338,19 +367,7 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
             puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
             while (funcInfo && funcInfo->Name) {
                 if (strcmp(funcInfo->Name, attrName) == 0) {
-                    // Create method object and cache it to the type dictionary
-                    PyObject* methodObj = dynObj->mapper->MakeFunction(funcInfo, dynObj);
-                    if (methodObj) {
-                        // Cache the method in the type's dictionary to avoid future lookups
-                        if (PyObject_SetAttr((PyObject*)Py_TYPE(self), name, methodObj) == 0) {
-                            // Return the method object (caller will get a new reference)
-                            return methodObj;
-                        } else {
-                            // If caching failed, still return the method object
-                            return methodObj;
-                        }
-                    }
-                    return Py_None;
+                    return dynObj->mapper->MakeFunction(funcInfo, dynObj);
                 }
                 ++funcInfo;
             }
@@ -479,6 +496,11 @@ PyObject* CppObjectMapper::findClassByName(PyObject* this_val, int argc, PyObjec
 void CppObjectMapper::Initialize(PyInterpreterState* State)
 {
     if (PyType_Ready(&Context_Type) < 0) 
+    {
+        return;
+    }
+    
+    if (PyType_Ready(&PyMethodObject_Type) < 0) 
     {
         return;
     }
