@@ -469,13 +469,9 @@ TEST_F(PApiBaseTest, ClassCtorFinalize)
     TestStruct::lastCtorObject = nullptr;
     TestStruct::lastDtorObject = nullptr;
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                })();
-              )";
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = "(lambda: (loadClass('TestStruct')(123), None)[1])()";
+    
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));

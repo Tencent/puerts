@@ -421,15 +421,13 @@ pesapi_env pesapi_get_env(pesapi_callback_info info)
 void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<pesapi_callback_info__*>(pinfo);
-    auto mapper = CppObjectMapper::Get(PyInterpreterState_Get());
-    return (void*) mapper->GetNativeObjectPtr(info->self);
+    return info->self;
 }
 
 const void* pesapi_get_native_holder_typeid(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<pesapi_callback_info__*>(pinfo);
-    auto mapper = CppObjectMapper::Get(PyInterpreterState_Get());
-    return mapper->GetNativeObjectTypeId(info->self);
+    return info->selfTypeId;
 }
 
 void* pesapi_get_userdata(pesapi_callback_info info)

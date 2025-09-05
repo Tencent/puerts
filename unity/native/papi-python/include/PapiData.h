@@ -169,7 +169,8 @@ static_assert(sizeof(pesapi_scope_memory) >= sizeof(pesapi_scope__), "sizeof(pes
 
 struct pesapi_callback_info__
 {
-    PyObject* self;    // self object in Python
+    void* self;    // self object in Python
+    const void* selfTypeId;    // typeId of self object
     PyObject* args;    // arguments passed to the callback
     int argc;          // number of arguments
     void* data;        // user data passed to the callback
