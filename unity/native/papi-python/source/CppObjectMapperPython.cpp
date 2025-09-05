@@ -199,16 +199,11 @@ static PyTypeObject PyMethodObject_Type = {
     PyMethodObject_getset,         /* tp_getset */
 };
 
-PyObject* CppObjectMapper::MakeMethod(puerts::ScriptFunctionInfo* FuncInfo)
+PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo)
 {
     PyMethodObject *methodObj = (PyMethodObject *)PyObject_New(PyMethodObject, &PyMethodObject_Type);
     methodObj->funcInfo = FuncInfo;
     return (PyObject *)methodObj;
-}
-
-// TODO
-void CppObjectMapper::InitMethod(puerts::ScriptFunctionInfo* FuncInfo, PyObject* Obj)
-{
 }
 
 // TODO
@@ -328,7 +323,7 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     puerts::ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
     while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
     {
-        PyObject_SetAttrString(type_obj, FunctionInfo->Name, MakeMethod(FunctionInfo));
+        PyObject_SetAttrString(type_obj, FunctionInfo->Name, MakeFunction(FunctionInfo));
         ++FunctionInfo;
     }
 

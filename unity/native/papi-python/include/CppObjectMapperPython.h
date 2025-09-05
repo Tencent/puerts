@@ -112,9 +112,7 @@ public:
 
     static PyObject* CreateError(const char* message);
 
-    PyObject* MakeMethod(puerts::ScriptFunctionInfo* FuncInfo);
-
-    void InitMethod(puerts::ScriptFunctionInfo* FuncInfo, PyObject* Obj);
+    PyObject* MakeFunction(puerts::ScriptFunctionInfo* FuncInfo);
 
     void InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj);
 
