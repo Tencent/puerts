@@ -31,6 +31,13 @@ struct ObjectUserData
     bool callFinalize;
 };
 
+typedef struct {
+    PyObject_HEAD
+    const puerts::ScriptClassDefinition* classDefinition;
+    class CppObjectMapper* mapper;
+    void* objectPtr;
+} DynObj;
+
 class CppObjectMapper
 {
 public:
@@ -112,7 +119,7 @@ public:
 
     static PyObject* CreateError(const char* message);
 
-    PyObject* MakeFunction(puerts::ScriptFunctionInfo* FuncInfo);
+    PyObject* MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, DynObj* Obj = nullptr);
 
     void InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj);
 

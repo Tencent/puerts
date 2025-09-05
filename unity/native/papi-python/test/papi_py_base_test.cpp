@@ -502,13 +502,8 @@ TEST_F(PApiBaseTest, InstanceMethodCall)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    return obj.Calc(123, 456);
-                })();
-              )";
+    //auto code = "(lambda obj: (obj.Calc, obj.Calc))(loadClass('TestStruct')(123))";
+    auto code = "(lambda obj: obj.Calc(123, 456))(loadClass('TestStruct')(123))";
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
     if (apis->has_caught(scope))
     {

@@ -126,6 +126,7 @@ typedef struct
 {
     PyObject_HEAD
     puerts::ScriptFunctionInfo* funcInfo;
+    DynObj* dynObj;
 } PyMethodObject;
 
 static void PyMethodObject_dealloc(PyMethodObject* self)
@@ -135,7 +136,7 @@ static void PyMethodObject_dealloc(PyMethodObject* self)
 
 static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObject* kwargs)
 {
-    pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr };
+    pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr };
     self->funcInfo->Callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -201,10 +202,11 @@ static PyTypeObject PyMethodObject_Type = {
     PyMethodObject_getset,         /* tp_getset */
 };
 
-PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo)
+PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, DynObj* Obj)
 {
     PyMethodObject *methodObj = (PyMethodObject *)PyObject_New(PyMethodObject, &PyMethodObject_Type);
     methodObj->funcInfo = FuncInfo;
+    methodObj->dynObj = Obj;
     return (PyObject *)methodObj;
 }
 
@@ -256,13 +258,6 @@ static PyTypeObject Context_Type = {
     0,                             /* tp_getset */
 };
 
-typedef struct {
-    PyObject_HEAD
-    const puerts::ScriptClassDefinition* classDefinition;
-    CppObjectMapper* mapper;
-    void* objectPtr;
-} DynObj;
-
 static int DynObj_init(DynObj* self, PyObject* args, PyObject* kwargs) {
     return 0;
 }
@@ -312,12 +307,56 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
     return (PyObject*)self;
 }
 
-static PyObject* DynObj_call_method(PyObject* self, PyObject* Py_UNUSED(ignored)) {
-    return Py_None;
+//static PyObject* DynObj_call_method(PyObject* self, PyObject* Py_UNUSED(ignored)) {
+//    return Py_None;
+//}
+
+static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
+    DynObj* dynObj = (DynObj*)self;
+    
+    // First try to get attribute from the type's dictionary
+    PyObject* result = PyObject_GenericGetAttr(self, name);
+    if (result != NULL) {
+        return result;
+    }
+    
+    // Clear the AttributeError from PyObject_GenericGetAttr
+    PyErr_Clear();
+    
+    // If not found in type dict, try to handle property access
+    if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
+        const char* attrName = PyUnicode_AsUTF8(name);
+        if (attrName) {
+            puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
+            while (funcInfo && funcInfo->Name) {
+                if (strcmp(funcInfo->Name, attrName) == 0) {
+                    // Create method object and cache it to the type dictionary
+                    PyObject* methodObj = dynObj->mapper->MakeFunction(funcInfo, dynObj);
+                    if (methodObj) {
+                        // Cache the method in the type's dictionary to avoid future lookups
+                        if (PyObject_SetAttr((PyObject*)Py_TYPE(self), name, methodObj) == 0) {
+                            // Return the method object (caller will get a new reference)
+                            return methodObj;
+                        } else {
+                            // If caching failed, still return the method object
+                            return methodObj;
+                        }
+                    }
+                    return Py_None;
+                }
+                ++funcInfo;
+            }
+        }
+    }
+    
+    // If still not found, raise AttributeError
+    PyErr_Format(PyExc_AttributeError, "'%.50s' object has no attribute '%.400s'",
+                 Py_TYPE(self)->tp_name, PyUnicode_AsUTF8(name));
+    return nullptr;
 }
 
 static PyMethodDef DynObj_methods[] = {
-    {"call_method", (PyCFunction)DynObj_call_method, METH_NOARGS, "call_method"},
+//    {"call_method", (PyCFunction)DynObj_call_method, METH_NOARGS, "call_method"},
     {NULL, NULL, 0, NULL}
 };
 
@@ -330,6 +369,7 @@ static PyType_Slot DynType_slots[] = {
     {Py_tp_new,      (void*)DynObj_new},
     {Py_tp_dealloc,  (void*)DynObj_dealloc},
     {Py_tp_init,     (void*)DynObj_init},
+    {Py_tp_getattro, (void*)DynObj_getattro},
     {Py_tp_methods,  (void*)DynObj_methods},
     {Py_tp_members,  (void*)DynObj_members},
     {0, 0}
