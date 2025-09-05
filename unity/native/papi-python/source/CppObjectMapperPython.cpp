@@ -13,6 +13,8 @@
 
 #include "PapiData.h"
 
+#define CTX_ATTR_NAME "__context_puerts__"
+
 namespace pesapi
 {
 namespace pythonimpl
@@ -266,7 +268,7 @@ static int DynObj_init(DynObj* self, PyObject* args, PyObject* kwargs) {
 }
 
 static ContextObj* GetContextObj(PyTypeObject* type) {
-    PyObject* ctx = PyObject_GetAttrString((PyObject*)type, "_type_info_ptr");
+    PyObject* ctx = PyObject_GetAttrString((PyObject*)type, CTX_ATTR_NAME);
     if (!ctx) return nullptr;
     if (!PyObject_TypeCheck(ctx, &Context_Type)) {
         Py_DECREF(ctx);
@@ -377,7 +379,7 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
 
     ctx->classDefinition = ClassDefinition;
     ctx->mapper = this;
-    if (PyObject_SetAttrString(type_obj, "_type_info_ptr", (PyObject*)ctx) < 0) {
+    if (PyObject_SetAttrString(type_obj, CTX_ATTR_NAME, (PyObject*)ctx) < 0) {
         Py_DECREF(ctx);
         Py_DECREF(type_obj);
         return NULL;
