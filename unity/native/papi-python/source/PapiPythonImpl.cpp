@@ -364,32 +364,41 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value valu
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
 {
-    PyObject* tuple = PyTuple_New(1);
+    auto state = pyStateFromPesapiEnv(env);
+    auto ret = allocValueInCurrentScope(state);
+    PyObject* list = PyList_New(1);
+    *ret = list;
     PyObject* item = pyObjectFromPesapiValue(value);
-    PyTuple_SetItem(tuple, 0, item);
-    return pesapiValueFromPyObject(tuple);
+    Py_INCREF(item);
+    PyList_SetItem(list, 0, item);  // PyList_SetItem steals reference, no refcount requirement
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value value)
 {
     auto state = pyStateFromPesapiEnv(env);
-    PyObject* tuple = pyObjectFromPesapiValue(value);
+    PyObject* list = pyObjectFromPesapiValue(value);
+    
     auto ret = allocValueInCurrentScope(state);
-    *ret = PyTuple_GetItem(tuple, 0);
+    *ret = PyList_GetItem(list, 0);
+    if (*ret) {
+        Py_INCREF(*ret);
+    }
     return pesapiValueFromPyObject(*ret);
 }
 
 void pesapi_update_boxed_value(pesapi_env env, pesapi_value boxed_value, pesapi_value value)
 {
-    PyObject* box = pyObjectFromPesapiValue(boxed_value);
+    PyObject* list = pyObjectFromPesapiValue(boxed_value);
     PyObject* val = pyObjectFromPesapiValue(value);
-    PyTuple_SetItem(box, 0, val);
+    Py_INCREF(val);
+    PyList_SetItem(list, 0, val);
 }
 
 int pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyTuple_Check(obj) && PyTuple_Size(obj) == 1;
+    return PyList_Check(obj) && PyList_Size(obj) == 1;
 }
 
 int pesapi_get_args_len(pesapi_callback_info info)
