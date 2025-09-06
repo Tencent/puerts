@@ -176,6 +176,7 @@ struct pesapi_callback_info__
     void* data;        // user data passed to the callback
     PyObject* res;     // result of the callback
     const char* ex;    // exception if any occurred during the callback
+    PyInterpreterState* state_persistent;
 };
 }    // namespace pythonimpl
 }    // namespace pesapi

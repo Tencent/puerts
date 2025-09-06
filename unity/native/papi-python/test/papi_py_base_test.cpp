@@ -391,7 +391,7 @@ TEST_F(PApiBaseTest, SetToGlobal)
     apis->set_property(env, g, "SetToGlobal", apis->create_int32(env, 123));
 
     auto code = "SetToGlobal";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_TRUE(ret != nullptr);
     ASSERT_TRUE(apis->is_int32(env, ret));
     EXPECT_EQ(123, apis->get_value_int32(env, ret));
@@ -482,6 +482,7 @@ TEST_F(PApiBaseTest, ClassCtorFinalize)
     ASSERT_EQ(TestStruct::dtor_count, 1);
     ASSERT_EQ(TestStruct::lastCtorObject, TestStruct::lastDtorObject);
 }
+
 
 TEST_F(PApiBaseTest, StaticFunctionCall)
 {
@@ -788,6 +789,9 @@ TEST_F(PApiBaseTest, ObjectPrivate)
 
 int main(int argc, char** argv)
 {
+    Py_Initialize();
     ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int res=RUN_ALL_TESTS();
+    Py_Finalize();
+    return res;
 }

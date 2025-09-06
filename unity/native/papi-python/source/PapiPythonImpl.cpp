@@ -55,33 +55,44 @@ pesapi_value pesapi_create_undefined(pesapi_env env)
 
 pesapi_value pesapi_create_boolean(pesapi_env env, int value)
 {
-    return pesapiValueFromPyObject(PyBool_FromLong(value));
+    return pesapiValueFromPyObject(value != 0 ? Py_True : Py_False);
 }
 
 pesapi_value pesapi_create_int32(pesapi_env env, int32_t value)
 {
-    return pesapiValueFromPyObject(PyLong_FromLong(value));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyLong_FromLong(value);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_uint32(pesapi_env env, uint32_t value)
 {
-    return pesapiValueFromPyObject(PyLong_FromUnsignedLong(value));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyLong_FromUnsignedLong(value);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_int64(pesapi_env env, int64_t value)
 {
-    return pesapiValueFromPyObject(PyLong_FromLongLong(value));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyLong_FromLongLong(value);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_uint64(pesapi_env env, uint64_t value)
 {
-    return pesapiValueFromPyObject(PyLong_FromUnsignedLongLong(value));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyLong_FromUnsignedLongLong(value);
+    return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_double(pesapi_env env, double value)
 {
-    return pesapiValueFromPyObject(PyFloat_FromDouble(value));
+    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    *ret = PyFloat_FromDouble(value);
+    return pesapiValueFromPyObject(*ret);
 }
+
 
 pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t len)
 {
@@ -127,59 +138,92 @@ pesapi_value pesapi_create_array(pesapi_env env)    // TODO: JS 的 Array 和 Py
 pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto mapper = CppObjectMapper::Get(state);
     auto ret = allocValueInCurrentScope(state);
     *ret = mapper->FindOrCreateClassByID(type_id);
-    return pesapiValueFromPyObject(*ret);
+    auto* res = pesapiValueFromPyObject(*ret);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto mapper = CppObjectMapper::Get(state);
     auto ret = allocValueInCurrentScope(state);
     *ret = mapper->CreateFunction(native_impl, data, finalize);
-    return pesapiValueFromPyObject(*ret);
+    auto* res = pesapiValueFromPyObject(*ret);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_get_value_bool(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyObject_IsTrue(obj) == 1;
+    int res = PyObject_IsTrue(obj) == 1;
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return (int32_t) PyLong_AsLong(obj);
+    int32_t res = (int32_t) PyLong_AsLong(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 uint32_t pesapi_get_value_uint32(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return (uint32_t) PyLong_AsUnsignedLong(obj);
+    uint32_t res = (uint32_t) PyLong_AsUnsignedLong(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int64_t pesapi_get_value_int64(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyLong_AsLongLong(obj);
+    int64_t res = PyLong_AsLongLong(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 uint64_t pesapi_get_value_uint64(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyLong_AsUnsignedLongLong(obj);
+    uint64_t res = PyLong_AsUnsignedLongLong(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 double pesapi_get_value_double(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyFloat_AsDouble(obj);
+    double res = PyFloat_AsDouble(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
+
 
 const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, char* buf, size_t* bufsize)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(pvalue);
     if (buf == nullptr)
     {
@@ -197,12 +241,14 @@ const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, ch
             strcpy(buf, ret);
         }
     }
-
+    PyThreadState_Swap(old);
     return buf;
 }
 
 const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value value, uint16_t* buf, size_t* bufsize)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
 
     PyObject* utf16Str = PyUnicode_AsUTF16String(obj);
@@ -210,6 +256,7 @@ const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value value
     {
         if (bufsize)
             *bufsize = 0;
+        PyThreadState_Swap(old);
         return nullptr;
     }
 
@@ -224,12 +271,15 @@ const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value value
     }
 
     Py_DECREF(utf16Str);
+    PyThreadState_Swap(old);
 
     return utf16Buffer;
 }
 
 void* pesapi_get_value_binary(pesapi_env env, pesapi_value value, size_t* length)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
     Py_ssize_t len;
     char* data;
@@ -237,20 +287,26 @@ void* pesapi_get_value_binary(pesapi_env env, pesapi_value value, size_t* length
     {
         if (length)
             *length = 0;
+        PyThreadState_Swap(old);
         return nullptr;
     }
     if (length)
         *length = (size_t) len;
+    PyThreadState_Swap(old);
     return data;
 }
 
 uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value value)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
     if (PyList_Check(obj))
     {
+        PyThreadState_Swap(old);
         return PyList_Size(obj);
     }
+    PyThreadState_Swap(old);
     return 0;
 }
 
@@ -271,89 +327,150 @@ int pesapi_is_boolean(pesapi_env env, pesapi_value value)
 
 int pesapi_is_int32(pesapi_env env, pesapi_value value)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
     if (!PyLong_Check(obj))
+    {
+        PyThreadState_Swap(old);
         return false;
+    }
+
     auto num = PyLong_AsLong(obj);
+    PyThreadState_Swap(old);
     return num >= INT32_MIN && num <= INT32_MAX;
 }
 
 int pesapi_is_uint32(pesapi_env env, pesapi_value value)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
     if (!PyLong_Check(obj))
+    {
+        PyThreadState_Swap(old);
         return false;
+    }
+
     auto num = PyLong_AsLong(obj);
+    PyThreadState_Swap(old);
     return num >= 0 && num <= UINT32_MAX;
 }
 
 int pesapi_is_int64(pesapi_env env, pesapi_value value)
 {
-    return PyLong_Check(pyObjectFromPesapiValue(value));
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    PyObject* obj = pyObjectFromPesapiValue(value);
+
+    int res= PyLong_Check(pyObjectFromPesapiValue(value));
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_uint64(pesapi_env env, pesapi_value value)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
     if (!PyLong_Check(obj))
+    {
+        PyThreadState_Swap(old);
         return false;
-    return PyLong_AsLongLong(obj) >= 0;
+    }
+
+    int res= PyLong_AsLongLong(obj) >= 0;
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_double(pesapi_env env, pesapi_value value)
 {
-    return PyFloat_Check(pyObjectFromPesapiValue(value));
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    int res = PyFloat_Check(pyObjectFromPesapiValue(value));
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_string(pesapi_env env, pesapi_value value)
 {
-    return PyUnicode_Check(pyObjectFromPesapiValue(value));
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    int res = PyUnicode_Check(pyObjectFromPesapiValue(value));
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_object(pesapi_env env, pesapi_value value)
 {
-    return PyDict_Check(pyObjectFromPesapiValue(value));
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    int res = PyDict_Check(pyObjectFromPesapiValue(value));
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_function(pesapi_env env, pesapi_value value)
 {
-    return PyCallable_Check(pyObjectFromPesapiValue(value));
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    int res = PyCallable_Check(pyObjectFromPesapiValue(value));
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_binary(pesapi_env env, pesapi_value value)
 {
-    return PyBytes_Check(pyObjectFromPesapiValue(value));
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    int res = PyBytes_Check(pyObjectFromPesapiValue(value));
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_array(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyList_Check(obj);
+    int res = PyList_Check(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto mapper = CppObjectMapper::Get(state);
     auto ret = allocValueInCurrentScope(state);
     *ret = mapper->PushNativeObject(type_id, object_ptr, call_finalize);
-    return pesapiValueFromPyObject(*ret);
+    auto* res = pesapiValueFromPyObject(*ret);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value value)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto obj = pyObjectFromPesapiValue(value);
     auto mapper = CppObjectMapper::Get(state);
-    return (void*) mapper->GetNativeObjectPtr(obj);
+    void* res = (void*) mapper->GetNativeObjectPtr(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value value)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto obj = pyObjectFromPesapiValue(value);
     auto mapper = CppObjectMapper::Get(state);
-    return mapper->GetNativeObjectTypeId(obj);
+    const void* res = mapper->GetNativeObjectTypeId(obj);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value value)
@@ -365,18 +482,22 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value valu
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto ret = allocValueInCurrentScope(state);
     PyObject* list = PyList_New(1);
     *ret = list;
     PyObject* item = pyObjectFromPesapiValue(value);
     Py_INCREF(item);
     PyList_SetItem(list, 0, item);  // PyList_SetItem steals reference, no refcount requirement
-    return pesapiValueFromPyObject(*ret);
+    auto* res = pesapiValueFromPyObject(list);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value value)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* list = pyObjectFromPesapiValue(value);
     
     auto ret = allocValueInCurrentScope(state);
@@ -384,21 +505,30 @@ pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value value)
     if (*ret) {
         Py_INCREF(*ret);
     }
-    return pesapiValueFromPyObject(*ret);
+    auto* res= pesapiValueFromPyObject(*ret);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 void pesapi_update_boxed_value(pesapi_env env, pesapi_value boxed_value, pesapi_value value)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* list = pyObjectFromPesapiValue(boxed_value);
     PyObject* val = pyObjectFromPesapiValue(value);
     Py_INCREF(val);
     PyList_SetItem(list, 0, val);
+    PyThreadState_Swap(old);
 }
 
 int pesapi_is_boxed_value(pesapi_env env, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(value);
-    return PyList_Check(obj) && PyList_Size(obj) == 1;
+    int res = PyList_Check(obj) && PyList_Size(obj) == 1;
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_get_args_len(pesapi_callback_info info)
@@ -422,7 +552,8 @@ pesapi_value pesapi_get_arg(pesapi_callback_info pinfo, int index)
 
 pesapi_env pesapi_get_env(pesapi_callback_info info)
 {
-    auto state = PyInterpreterState_Get();
+    auto callback_info = reinterpret_cast<pesapi_callback_info__*>(info);
+    auto* state = callback_info->state_persistent;
     return pesapiEnvFromPyState(state);
 }
 
@@ -447,11 +578,13 @@ void* pesapi_get_userdata(pesapi_callback_info info)
 void pesapi_add_return(pesapi_callback_info info, pesapi_value value)
 {
     auto* callback_info = reinterpret_cast<pesapi_callback_info__*>(info);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(callback_info->state_persistent));
     callback_info->res = pyObjectFromPesapiValue(value);
     if (callback_info->res != nullptr)
     {
         Py_INCREF(callback_info->res);
     }
+    PyThreadState_Swap(old);
 }
 
 void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
@@ -554,6 +687,7 @@ int pesapi_has_caught(pesapi_scope pscope)
 const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
 {
     auto scope = reinterpret_cast<pesapi_scope__*>(pscope);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(scope->state));
     if (!scope->caught)
     {
         return nullptr;
@@ -577,6 +711,7 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
         ret = PyUnicode_AsUTF8(PyObject_Str(ex));
     }
     PyDict_DelItemString(globals, "__pesapi_last_exception");
+    PyThreadState_Swap(old);
     return ret;
 }
 
@@ -585,10 +720,15 @@ pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value, uin
     size_t totalSize = sizeof(pesapi_value_ref__) + sizeof(void*) * internal_field_count;
     auto ret = reinterpret_cast<pesapi_value_ref>(malloc(totalSize));
     memset(ret, 0, totalSize);
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* v = pyObjectFromPesapiValue(value);
+    Py_XINCREF(v);
     new (ret) pesapi_value_ref__(PyInterpreterState_Get(), v, internal_field_count);
+    PyThreadState_Swap(old);
     return ret;
 }
+
 
 pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref pref)
 {
@@ -612,16 +752,23 @@ void pesapi_release_value_ref(pesapi_value_ref ref)
 
 pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref pref)
 {
-    auto value_ref = reinterpret_cast<pesapi_value_ref__*>(pref);
-    auto v = value_ref->value_persistent;
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    auto* value_ref = reinterpret_cast<pesapi_value_ref__*>(pref);
+    auto* v = value_ref->value_persistent;
     Py_INCREF(v);
-    return pesapiValueFromPyObject(v);
+    auto* obj = pesapiValueFromPyObject(v);
+    PyThreadState_Swap(old);
+    return obj;
 }
 
 void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref pvalue_ref)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto value_ref = reinterpret_cast<pesapi_value_ref__*>(pvalue_ref);
     PyObject_GC_Del(value_ref->value_persistent);
+    PyThreadState_Swap(old);
 }
 
 int pesapi_set_owner(pesapi_env env, pesapi_value value, pesapi_value owner)
@@ -647,82 +794,123 @@ void** pesapi_get_ref_internal_fields(pesapi_value_ref value_ref, uint32_t* pint
 
 int pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(object);
     PyObject* val = pyObjectFromPesapiValue(value);
     if (PyDict_Check(obj))
     {
-        return PyDict_SetItemString(obj, key, val);
+        int res = PyDict_SetItemString(obj, key, val);
+        PyThreadState_Swap(old);
+        return res;
     }
-    return false;
-
+    PyThreadState_Swap(old);
+    return -1;
 }
 
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* obj = pyObjectFromPesapiValue(object);
-    auto ret = PyDict_GetItemWithError(obj, PyUnicode_FromString(key));
-    Py_XINCREF(ret);
-    return pesapiValueFromPyObject(ret);
+    if (PyDict_Check(obj))
+    {
+        auto ret = PyDict_GetItemWithError(obj, PyUnicode_FromString(key));
+        Py_XINCREF(ret);
+        auto* res = pesapiValueFromPyObject(ret);
+        PyThreadState_Swap(old);
+        return res;
+    }
+    PyThreadState_Swap(old);
+    return nullptr;
 }
 
 int pesapi_get_private(pesapi_env penv, pesapi_value pobject, void** out_ptr)
 {
-    auto env = pyStateFromPesapiEnv(penv);
+    auto* env = pyStateFromPesapiEnv(penv);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(env));
     auto mapper = CppObjectMapper::Get(env);
     auto obj = pyObjectFromPesapiValue(pobject);
-    return mapper->GetPrivateData(obj, out_ptr);
+    int res = mapper->GetPrivateData(obj, out_ptr);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 int pesapi_set_private(pesapi_env penv, pesapi_value object, void* ptr)
 {
-    auto env = pyStateFromPesapiEnv(penv);
+    auto* env = pyStateFromPesapiEnv(penv);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(env));
     auto mapper = CppObjectMapper::Get(env);
     auto obj = pyObjectFromPesapiValue(object);
-    return mapper->SetPrivateData(obj, ptr);
+    int res = mapper->SetPrivateData(obj, ptr);
+    PyThreadState_Swap(old);
+    return res;
 }
 
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uint32_t key)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto obj = pyObjectFromPesapiValue(object);
-    auto ret = PyDict_GetItemWithError(obj, PyLong_FromUnsignedLong(key));
-    Py_XINCREF(ret);
-    return pesapiValueFromPyObject(ret);
+    if (PyDict_Check(obj))
+    {
+        auto ret = PyDict_GetItemWithError(obj, PyLong_FromUnsignedLong(key));
+        Py_XINCREF(ret);
+        auto* res = pesapiValueFromPyObject(ret);
+        PyThreadState_Swap(old);
+        return res;
+    }
+    PyThreadState_Swap(old);
+    return nullptr;
 }
 
 int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
 {
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto obj = pyObjectFromPesapiValue(object);
     PyObject* val = pyObjectFromPesapiValue(value);
     if (PyDict_Check(obj))
     {
-        return PyDict_SetItem(obj, PyLong_FromUnsignedLong(key), val);
+        int res = PyDict_SetItem(obj, PyLong_FromUnsignedLong(key), val);
+        PyThreadState_Swap(old);
+        return res;
     }
+    PyThreadState_Swap(old);
     return false;
 }
 
 pesapi_value pesapi_create_object(pesapi_env env)
 {
-    return pesapiValueFromPyObject(PyDict_New());
+    auto* state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    auto* ret = allocValueInCurrentScope(state);
+    *ret = PyDict_New();
+    auto* obj = pesapiValueFromPyObject(*ret);
+    PyThreadState_Swap(old);
+    return obj;
 }
-
 // TODO
 pesapi_value pesapi_call_function(
     pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value pargv[])
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* func = pyObjectFromPesapiValue(pfunc);
     PyObject* args = PyTuple_New(argc);
     for (int i = 0; i < argc; ++i)
     {
         PyObject* arg = pyObjectFromPesapiValue(pargv[i]);
-        PyTuple_SetItem(args, i, arg);
         Py_INCREF(arg);
+        PyTuple_SetItem(args, i, arg);
     }
     PyObject* result = PyObject_Call(func, args, nullptr);
     Py_DECREF(args);
     if (result)
     {
-        return pesapiValueFromPyObject(result);
+        auto* res= pesapiValueFromPyObject(result);
+        PyThreadState_Swap(old);
+        return res;
     }
     else
     {
@@ -739,6 +927,7 @@ pesapi_value pesapi_call_function(
             scope->setCaughtException(exc);
         }
 #endif
+        PyThreadState_Swap(old);
         return nullptr;
     }
 }
@@ -747,6 +936,7 @@ pesapi_value pesapi_call_function(
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     PyObject* compiled_code = Py_CompileString(reinterpret_cast<const char*>(code), path, Py_eval_input);
     if (compiled_code)
     {
@@ -755,7 +945,9 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         Py_DECREF(compiled_code);
         if (result)
         {
-            return pesapiValueFromPyObject(result);
+            auto* res=pesapiValueFromPyObject(result);
+            PyThreadState_Swap(old);
+            return res;
         }
     }
     auto scope = getCurrentScope(state);
@@ -771,31 +963,43 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         scope->setCaughtException(exc);
     }
 #endif
+    PyThreadState_Swap(old);
     return nullptr;
 }
 
 pesapi_value pesapi_global(pesapi_env env)
 {
+    auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
-    return pesapiValueFromPyObject(globals);
+    auto* g= pesapiValueFromPyObject(globals);
+    PyThreadState_Swap(old);
+    return g;
 }
 
 const void* pesapi_get_env_private(pesapi_env env)
 {
     auto state = pyStateFromPesapiEnv(env);
-    return CppObjectMapper::Get(state)->GetEnvPrivate();
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
+    auto res= CppObjectMapper::Get(state)->GetEnvPrivate();
+    PyThreadState_Swap(old);
+    return res;
 }
 
 void pesapi_set_env_private(pesapi_env env, const void* ptr)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     CppObjectMapper::Get(state)->SetEnvPrivate(ptr);
+    PyThreadState_Swap(old);
 }
 
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
     auto state = pyStateFromPesapiEnv(env);
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     CppObjectMapper::Get(state)->SetRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(registry));
+    PyThreadState_Swap(old);
 }
 
 pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_create_boolean, &pesapi_create_int32,
