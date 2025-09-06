@@ -397,7 +397,7 @@ TEST_F(PApiBaseTest, SetToGlobal)
     EXPECT_EQ(123, apis->get_value_int32(env, ret));
 }
 
- TEST_F(PApiBaseTest, CreatePyFunction)
+TEST_F(PApiBaseTest, CreatePyFunction)
 {
     auto scope = apis->open_scope(env_ref);    // 为了可以提前释放
     auto env = apis->get_env_from_ref(env_ref);
