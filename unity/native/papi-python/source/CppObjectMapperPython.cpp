@@ -28,7 +28,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
     data->finalize = Finalize;
     data->data = Data;
     data->mapper = this;
-
+    
     PyObject* capsule = PyCapsule_New(data, "FuncInfo",
         [](PyObject* capsule)
         {
@@ -59,7 +59,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
                 PyErr_SetString(PyExc_RuntimeError, "Invalid callback data");
                 return nullptr;
             }
-            pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, PyTuple_Size(args), data->data, nullptr, nullptr };
+            pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, PyTuple_Size(args), data->data, nullptr, nullptr, data->mapper->state };
             data->callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
             if (callbackInfo.ex)
             {
@@ -145,7 +145,7 @@ static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObj
         return nullptr;
     }
     
-    pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr };
+    pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr,nullptr };
     self->funcInfo->Callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -329,7 +329,7 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
         return NULL;
     }
     
-    pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, PyTuple_Size(args), self->classDefinition->Data, nullptr, nullptr };
+    pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, PyTuple_Size(args), self->classDefinition->Data, nullptr, nullptr, nullptr };
     void* ptr = self->classDefinition->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -564,7 +564,8 @@ void CppObjectMapper::Cleanup()
 
 pesapi_env_ref create_py_env()
 {
-    Py_Initialize();
+    PyThreadState* old = PyThreadState_Get();
+    PyThreadState* subinterpt = Py_NewInterpreter();
 
     // For debug
     /*PyRun_SimpleString(
@@ -585,14 +586,18 @@ pesapi_env_ref create_py_env()
         memset(mapper, 0, sizeof(pesapi::pythonimpl::CppObjectMapper));
         new (mapper) pesapi::pythonimpl::CppObjectMapper();
         mapper->Initialize(PyInterpreterState_Get());
-        return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(PyInterpreterState_Get()));
+        auto* res= pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(PyInterpreterState_Get()));
+        PyThreadState_Swap(old);
+        return res;
     }
+    PyThreadState_Swap(old);
     return nullptr;
 }
 
 void destroy_py_env(pesapi_env_ref env_ref)
 {
     auto state = reinterpret_cast<PyInterpreterState*>(pesapi::pythonimpl::g_pesapi_ffi.get_env_from_ref(env_ref));
+    PyThreadState* old = PyThreadState_Swap(PyInterpreterState_ThreadHead(state));
     auto mapper = pesapi::pythonimpl::CppObjectMapper::Get(state);
     get_papi_ffi()->release_env_ref(env_ref);
     if (mapper)
@@ -600,7 +605,8 @@ void destroy_py_env(pesapi_env_ref env_ref)
         mapper->Cleanup();
         free(mapper);
     }
-    Py_Finalize();    // Finalize Python interpreter
+    Py_EndInterpreter(PyThreadState_Get());    // Finalize Python interpreter
+    PyThreadState_Swap(old);
 }
 
 pesapi_ffi* get_papi_ffi()
