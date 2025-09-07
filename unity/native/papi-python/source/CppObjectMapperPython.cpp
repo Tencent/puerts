@@ -389,7 +389,6 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
 static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
 {
     //思路是从 Python 传入的方法名和方法参数，找到对应的C++方法并调用，最终返回结果给Python
-    //还未测试
     DynObj* dynObj = (DynObj*)self;
     const char* methodName;
     PyObject* pyArgs;
