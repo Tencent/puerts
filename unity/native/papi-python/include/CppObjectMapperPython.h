@@ -14,7 +14,6 @@
 #include <EASTL/hash_set.h>
 #include <EASTL/allocator_malloc.h>
 #include <EASTL/shared_ptr.h>
-#include <EASTL/string.h>
 
 #include "ObjectCacheNodePython.h"
 #include "ScriptClassRegistry.h"
@@ -71,10 +70,6 @@ public:
         CDataCache;
     eastl::unordered_map<const void*, PyObject*, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc>
         TypeIdToFunctionMap;
-     //新增一个哈希表，缓存方法
-    eastl::unordered_map<eastl::string, puerts::ScriptFunctionInfo*, eastl::hash<eastl::string>, eastl::equal_to<eastl::string>,
-        eastl::allocator_malloc>
-        MethodCache;
 
     inline void AddStrongRefObject(PyObject* obj)
     {

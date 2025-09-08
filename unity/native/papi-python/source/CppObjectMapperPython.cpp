@@ -359,22 +359,45 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     
     // Clear the AttributeError from PyObject_GenericGetAttr
     PyErr_Clear();
+
+    PyObject* type_obj  = (PyObject*)Py_TYPE(self);
+    PyObject* cache_dict = PyObject_GetAttrString(type_obj, "__method_cache");
+    if (!cache_dict) 
+    {
+        PyErr_Clear();
+        goto not_found;
+    }
+
+    const char* attrName = PyUnicode_AsUTF8(name);
+    if (!attrName) {
+        Py_DECREF(cache_dict);
+        goto not_found;
+    }
+
+    PyObject* cached_method = PyDict_GetItemString(cache_dict, attrName);
+    if (cached_method) {
+        Py_INCREF(cached_method);
+        Py_DECREF(cache_dict);
+        return cached_method;
+    }
     
     // If not found in type dict, try to handle property access
     if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
         const char* attrName = PyUnicode_AsUTF8(name);
         if (attrName) {
             puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
-             /*while (funcInfo && funcInfo->Name) {
+             while (funcInfo && funcInfo->Name) {
                 if (strcmp(funcInfo->Name, attrName) == 0) {
-                    return dynObj->mapper->MakeFunction(funcInfo, dynObj);
+                    //return dynObj->mapper->MakeFunction(funcInfo, dynObj);
+                    PyObject* bound = dynObj->mapper->MakeFunction(funcInfo, dynObj);
+                    if (bound) {
+                        // 填到字典里，这样下次就是O(1)
+                        PyDict_SetItemString(cache_dict, attrName, bound);
+                    }
+                    Py_DECREF(cache_dict);
+                    return bound;
                 }
                 ++funcInfo;
-            }*/
-            //查表
-            auto it = dynObj->mapper->MethodCache.find(attrName);
-            if (it != dynObj->mapper->MethodCache.end()) {
-                return dynObj->mapper->MakeFunction(it->second, dynObj);
             }
         }
     }
@@ -400,18 +423,42 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
         return nullptr;
     }
 
-    auto it = dynObj->mapper->MethodCache.find(methodName);
-    if (it == dynObj->mapper->MethodCache.end()) {
-        PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
+    PyObject* type_obj  = (PyObject*)Py_TYPE(self);
+    PyObject* cache_dict = PyObject_GetAttrString(type_obj, "__method_cache");
+    if (!cache_dict) {
+        PyErr_Format(PyExc_RuntimeError, "missing __method_cache on type");
         return nullptr;
     }
 
-    PyObject* method = dynObj->mapper->MakeFunction(it->second, dynObj);
-    if (!method) return nullptr;
+    PyObject* cached = PyDict_GetItemString(cache_dict, methodName);
+    if (cached) {
+        Py_INCREF(cached);
+        Py_DECREF(cache_dict);
+        PyObject* ret = PyObject_Call(cached, pyArgs, nullptr);
+        Py_DECREF(cached);
+        return ret;
+    }
 
-    PyObject* ret = PyObject_Call(method, pyArgs, nullptr);
-    Py_DECREF(method);
-    return ret;
+    if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
+        puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
+        while (funcInfo && funcInfo->Name) {
+            if (strcmp(funcInfo->Name, methodName) == 0) {
+                PyObject* bound = dynObj->mapper->MakeFunction(funcInfo, dynObj);
+                if (bound) {
+                    PyDict_SetItemString(cache_dict, methodName, bound);
+                }
+                Py_DECREF(cache_dict);
+                PyObject* ret = PyObject_Call(bound, pyArgs, nullptr);
+                Py_DECREF(bound);
+                return ret;
+            }
+            ++funcInfo;
+        }
+    }
+
+    Py_DECREF(cache_dict);
+    PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
+    return nullptr;
 }
 
 static PyMethodDef DynObj_methods[] = {
@@ -419,7 +466,7 @@ static PyMethodDef DynObj_methods[] = {
     {"call_method", (PyCFunction)DynObj_call_method, METH_VARARGS,
     "call_method(name, args_tuple) -> result"},
     {NULL, NULL, 0, NULL}
-};
+};  
 
 static PyMemberDef DynObj_members[] = {
     // 如需将实例级指针只读暴露给 Python，可用 capsule/整数方式封装再写 getter
@@ -471,6 +518,15 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
         type_obj = PyType_FromSpec(&spec);
     }
     if (!type_obj) return NULL;
+
+    //改为给每个对象都都创建字典
+    PyObject* method_cache = PyDict_New();
+    if (!method_cache || PyObject_SetAttrString(type_obj, "__method_cache", method_cache) < 0) {
+        Py_XDECREF(method_cache);
+        Py_DECREF(type_obj);
+        return NULL;
+    }
+    Py_DECREF(method_cache);
 
     ContextObj* ctx = (ContextObj*)PyObject_New(ContextObj, &Context_Type);
     if (!ctx) {
