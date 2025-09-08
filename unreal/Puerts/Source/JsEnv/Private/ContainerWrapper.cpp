@@ -123,7 +123,7 @@ void FScriptArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
     uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index);
-    Inner->Property->InitializeValue(DataPtr);
+    // Inner->Property->InitializeValue(DataPtr);
     Inner->JsToUE(Isolate, Context, Info[1], DataPtr, false);
 }
 
