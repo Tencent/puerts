@@ -365,16 +365,11 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
         const char* attrName = PyUnicode_AsUTF8(name);
         if (attrName) {
             puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
-            /*while (funcInfo && funcInfo->Name) {
+            while (funcInfo && funcInfo->Name) {
                 if (strcmp(funcInfo->Name, attrName) == 0) {
                     return dynObj->mapper->MakeFunction(funcInfo, dynObj);
                 }
                 ++funcInfo;
-            }*/
-            //查表
-            auto it = dynObj->mapper->MethodCache.find(attrName);
-            if (it != dynObj->mapper->MethodCache.end()) {
-                return dynObj->mapper->MakeFunction(it->second, dynObj);
             }
         }
     }
@@ -385,39 +380,8 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     return nullptr;
 }
 
-//新增CallMethod
-static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
-{
-    //思路是从 Python 传入的方法名和方法参数，找到对应的C++方法并调用，最终返回结果给Python 
-    DynObj* dynObj = (DynObj*)self;
-    const char* methodName;
-    PyObject* pyArgs;
-
-    if (!PyArg_ParseTuple(args, "sO", &methodName, &pyArgs))
-        return nullptr;
-    if (!PyTuple_Check(pyArgs)) {
-        PyErr_SetString(PyExc_TypeError, "2nd arg must be tuple");
-        return nullptr;
-    }
-
-    auto it = dynObj->mapper->MethodCache.find(methodName);
-    if (it == dynObj->mapper->MethodCache.end()) {
-        PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
-        return nullptr;
-    }
-
-    PyObject* method = dynObj->mapper->MakeFunction(it->second, dynObj);
-    if (!method) return nullptr;
-
-    PyObject* ret = PyObject_Call(method, pyArgs, nullptr);
-    Py_DECREF(method);
-    return ret;
-}
-
 static PyMethodDef DynObj_methods[] = {
 //    {"call_method", (PyCFunction)DynObj_call_method, METH_NOARGS, "call_method"},
-    {"call_method", (PyCFunction)DynObj_call_method, METH_VARARGS,
-     "call_method(name, args_tuple) -> result"},
     {NULL, NULL, 0, NULL}
 };
 
@@ -454,16 +418,7 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
         Py_INCREF(cls);
         return cls;
     }
-    // 构建方法缓存
-    if (ClassDefinition->Methods) 
-    {
-        puerts::ScriptFunctionInfo* funcInfo = ClassDefinition->Methods;
-        while (funcInfo && funcInfo->Name) 
-        {
-            MethodCache[funcInfo->Name] = funcInfo;
-            ++funcInfo;
-        }
-    }
+
     PyType_Spec spec = DynType_spec;
     spec.name = ClassDefinition->ScriptName;
     spec.flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE;
