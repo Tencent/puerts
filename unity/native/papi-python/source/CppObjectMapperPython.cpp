@@ -238,92 +238,84 @@ PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, Dy
     return (PyObject *)methodObj;
 }
 
+static PyObject* propGetter(PyObject* self, void* closure)
+{
+    auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer((PyObject*) closure, nullptr);
+    pesapi_callback callback = info->getter;
+
+    pesapi_scope__ scope(PyInterpreterState_Get());
+    pesapi_callback_info__ callbackInfo{((DynObj*) self)->objectPtr, ((DynObj*) self)->classDefinition->TypeId, nullptr, 0,
+        info->getterData, nullptr, nullptr};
+    callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+    if (callbackInfo.ex)
+    {
+        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        return nullptr;
+    }
+    if (callbackInfo.res)
+    {
+        Py_INCREF(callbackInfo.res);
+        return callbackInfo.res;
+    }
+    Py_RETURN_NONE;
+};
+
+static int propSetter(PyObject* self, PyObject* value, void* closure)
+{
+    if (!value)
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Native property value cannot be null and cannot be deleted");
+        return -1;
+    }
+
+    auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer((PyObject*) closure, nullptr);
+    pesapi_callback callback = info->setter;
+
+    pesapi_scope__ scope(PyInterpreterState_Get());
+    pesapi_callback_info__ callbackInfo{((DynObj*) self)->objectPtr, ((DynObj*) self)->classDefinition->TypeId,
+        PyTuple_Pack(1, value), 1, info->setterData, nullptr, nullptr};
+    callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+    if (callbackInfo.ex)
+    {
+        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        return -1;
+    }
+    return 0;
+};
+
 // TODO
 void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj)
 {
-    // 成员属性：用 Python 内置 property 描述符包装 Getter / Setter
-    if (!PropInfo || !PropInfo->Name) return;
-    if (!PropInfo->Getter && !PropInfo->Setter) return;
+    auto info = (GetterSetterInfo*) PyMem_Malloc(sizeof(GetterSetterInfo));
+    info->getter = PropInfo->Getter;
+    info->setter = PropInfo->Setter;
+    info->getterData = PropInfo->GetterData;
+    info->setterData = PropInfo->SetterData;
 
-    PyObject* builtins = PyEval_GetBuiltins();
-    if (!builtins) return;
-    PyObject* propertyType = PyDict_GetItemString(builtins, "property");
-    if (!propertyType) return;
+    auto* def = (PyGetSetDef*) PyMem_Malloc(sizeof(PyGetSetDef));
+    def->name = PropInfo->Name;
+    def->get = nullptr;
+    def->set = nullptr;
+    def->doc = nullptr;
+    def->closure = PyCapsule_New(info, nullptr,
+        [](PyObject* capsule)
+        {
+            auto* data = (GetterSetterInfo*) PyCapsule_GetPointer(capsule,  nullptr);
+            PyMem_Free(data);
+        });
 
-    // 创建 getter 包装
-    PyObject* getterFunc = nullptr;
     if (PropInfo->Getter)
     {
-        struct GetterWrap { static PyObject* Call(PyObject* selfCapsule, PyObject* args) {
-            auto* info = (puerts::ScriptPropertyInfo*)PyCapsule_GetPointer(selfCapsule, "PropGetter");
-            if (!info || !info->Getter) { PyErr_SetString(PyExc_RuntimeError, "invalid getter"); return nullptr; }
-            if (PyTuple_Size(args) != 1) { PyErr_SetString(PyExc_TypeError, "getter expects (self)"); return nullptr; }
-            PyObject* inst = PyTuple_GetItem(args, 0);
-            void* nativePtr = nullptr; const void* typeId = nullptr;
-            if (inst && PyObject_TypeCheck(inst, (PyTypeObject*)Py_TYPE(inst)))
-            {
-                // 简单判定：我们只在 DynObj 实例时填写 self/typeId
-                if (PyObject_HasAttrString((PyObject*)Py_TYPE(inst), CTX_ATTR_NAME))
-                {
-                    nativePtr = ((DynObj*)inst)->objectPtr;
-                    typeId = ((DynObj*)inst)->classDefinition ? ((DynObj*)inst)->classDefinition->TypeId : nullptr;
-                }
-            }
-            pesapi_callback_info__ cb { nativePtr, typeId, nullptr, 0, info->GetterData, nullptr, nullptr };
-            info->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cb));
-            if (cb.ex) { PyErr_SetString(PyExc_RuntimeError, cb.ex); return nullptr; }
-            if (cb.res) { Py_INCREF(cb.res); return cb.res; }
-            Py_RETURN_NONE; } };
-        PyObject* cap = PyCapsule_New((void*)PropInfo, "PropGetter", nullptr);
-        static PyMethodDef md_get = {"__p_get", (PyCFunction)GetterWrap::Call, METH_VARARGS, nullptr};
-        getterFunc = PyCFunction_New(&md_get, cap);
-        Py_DECREF(cap);
+        def->get = propGetter;
     }
-
-    // 创建 setter 包装
-    PyObject* setterFunc = nullptr;
     if (PropInfo->Setter)
     {
-        struct SetterWrap { static PyObject* Call(PyObject* selfCapsule, PyObject* args) {
-            auto* info = (puerts::ScriptPropertyInfo*)PyCapsule_GetPointer(selfCapsule, "PropSetter");
-            if (!info || !info->Setter) { PyErr_SetString(PyExc_RuntimeError, "invalid setter"); return nullptr; }
-            if (PyTuple_Size(args) != 2) { PyErr_SetString(PyExc_TypeError, "setter expects (self,value)"); return nullptr; }
-            PyObject* inst = PyTuple_GetItem(args, 0);
-            PyObject* value = PyTuple_GetItem(args, 1);
-            void* nativePtr = nullptr; const void* typeId = nullptr;
-            if (inst && PyObject_HasAttrString((PyObject*)Py_TYPE(inst), CTX_ATTR_NAME))
-            {
-                nativePtr = ((DynObj*)inst)->objectPtr;
-                typeId = ((DynObj*)inst)->classDefinition ? ((DynObj*)inst)->classDefinition->TypeId : nullptr;
-            }
-            PyObject* callArgs = PyTuple_Pack(1, value);
-            pesapi_callback_info__ cb { nativePtr, typeId, callArgs, 1, info->SetterData, nullptr, nullptr };
-                info->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cb));
-            Py_DECREF(callArgs);
-            if (cb.ex) { PyErr_SetString(PyExc_RuntimeError, cb.ex); return nullptr; }
-            Py_RETURN_NONE; } };
-        PyObject* cap = PyCapsule_New((void*)PropInfo, "PropSetter", nullptr);
-        static PyMethodDef md_set = {"__p_set", (PyCFunction)SetterWrap::Call, METH_VARARGS, nullptr};
-        setterFunc = PyCFunction_New(&md_set, cap);
-        Py_DECREF(cap);
+        def->set = propSetter;
     }
 
-    PyObject* propObj = PyObject_CallFunctionObjArgs(propertyType,
-        getterFunc ? getterFunc : Py_None,
-        setterFunc ? setterFunc : Py_None,
-        Py_None, nullptr);
-    Py_XDECREF(getterFunc);
-    Py_XDECREF(setterFunc);
-    if (!propObj) return;
-
-    if (PyObject_SetAttrString(Obj, PropInfo->Name, propObj) == 0)
-    {
-        Py_DECREF(propObj);
-    }
-    else
-    {
-        Py_DECREF(propObj);
-    }
+    auto prop = PyDescr_NewGetSet((PyTypeObject*)Obj, def);
+    PyObject_SetAttrString(Obj, PropInfo->Name, prop);
+    Py_DECREF(prop);
 }
 
 typedef struct {

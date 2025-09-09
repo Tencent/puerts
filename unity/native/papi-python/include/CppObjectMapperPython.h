@@ -206,6 +206,14 @@ public:
         PyMethodDef* methodDef;
     };
 
+    struct GetterSetterInfo
+    {
+        pesapi_callback getter;
+        pesapi_callback setter;
+        void* getterData;
+        void* setterData;
+    };
+
     /*PyTypeObject papi_func_tracer_cls_def = []() -> PyTypeObject
     {
         PyTypeObject t{};
