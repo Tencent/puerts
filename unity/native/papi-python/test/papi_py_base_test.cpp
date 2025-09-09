@@ -543,7 +543,7 @@ TEST_F(PApiBaseTest, VariableAccess)
 
     auto code = R"((lambda TestStruct: (
         TestStruct.ctor_count,
-        exec('TestStruct.ctor_count=999'
+        exec('TestStruct.ctor_count=999')
     ))(loadClass('TestStruct'))[0])";
     TestStruct::ctor_count = 100;
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
