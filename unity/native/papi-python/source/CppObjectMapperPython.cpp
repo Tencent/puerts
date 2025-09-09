@@ -241,6 +241,89 @@ PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, Dy
 // TODO
 void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj)
 {
+    // 成员属性：用 Python 内置 property 描述符包装 Getter / Setter
+    if (!PropInfo || !PropInfo->Name) return;
+    if (!PropInfo->Getter && !PropInfo->Setter) return;
+
+    PyObject* builtins = PyEval_GetBuiltins();
+    if (!builtins) return;
+    PyObject* propertyType = PyDict_GetItemString(builtins, "property");
+    if (!propertyType) return;
+
+    // 创建 getter 包装
+    PyObject* getterFunc = nullptr;
+    if (PropInfo->Getter)
+    {
+        struct GetterWrap { static PyObject* Call(PyObject* selfCapsule, PyObject* args) {
+            auto* info = (puerts::ScriptPropertyInfo*)PyCapsule_GetPointer(selfCapsule, "PropGetter");
+            if (!info || !info->Getter) { PyErr_SetString(PyExc_RuntimeError, "invalid getter"); return nullptr; }
+            if (PyTuple_Size(args) != 1) { PyErr_SetString(PyExc_TypeError, "getter expects (self)"); return nullptr; }
+            PyObject* inst = PyTuple_GetItem(args, 0);
+            void* nativePtr = nullptr; const void* typeId = nullptr;
+            if (inst && PyObject_TypeCheck(inst, (PyTypeObject*)Py_TYPE(inst)))
+            {
+                // 简单判定：我们只在 DynObj 实例时填写 self/typeId
+                if (PyObject_HasAttrString((PyObject*)Py_TYPE(inst), CTX_ATTR_NAME))
+                {
+                    nativePtr = ((DynObj*)inst)->objectPtr;
+                    typeId = ((DynObj*)inst)->classDefinition ? ((DynObj*)inst)->classDefinition->TypeId : nullptr;
+                }
+            }
+            pesapi_callback_info__ cb { nativePtr, typeId, nullptr, 0, info->GetterData, nullptr, nullptr };
+            info->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cb));
+            if (cb.ex) { PyErr_SetString(PyExc_RuntimeError, cb.ex); return nullptr; }
+            if (cb.res) { Py_INCREF(cb.res); return cb.res; }
+            Py_RETURN_NONE; } };
+        PyObject* cap = PyCapsule_New((void*)PropInfo, "PropGetter", nullptr);
+        static PyMethodDef md_get = {"__p_get", (PyCFunction)GetterWrap::Call, METH_VARARGS, nullptr};
+        getterFunc = PyCFunction_New(&md_get, cap);
+        Py_DECREF(cap);
+    }
+
+    // 创建 setter 包装
+    PyObject* setterFunc = nullptr;
+    if (PropInfo->Setter)
+    {
+        struct SetterWrap { static PyObject* Call(PyObject* selfCapsule, PyObject* args) {
+            auto* info = (puerts::ScriptPropertyInfo*)PyCapsule_GetPointer(selfCapsule, "PropSetter");
+            if (!info || !info->Setter) { PyErr_SetString(PyExc_RuntimeError, "invalid setter"); return nullptr; }
+            if (PyTuple_Size(args) != 2) { PyErr_SetString(PyExc_TypeError, "setter expects (self,value)"); return nullptr; }
+            PyObject* inst = PyTuple_GetItem(args, 0);
+            PyObject* value = PyTuple_GetItem(args, 1);
+            void* nativePtr = nullptr; const void* typeId = nullptr;
+            if (inst && PyObject_HasAttrString((PyObject*)Py_TYPE(inst), CTX_ATTR_NAME))
+            {
+                nativePtr = ((DynObj*)inst)->objectPtr;
+                typeId = ((DynObj*)inst)->classDefinition ? ((DynObj*)inst)->classDefinition->TypeId : nullptr;
+            }
+            PyObject* callArgs = PyTuple_Pack(1, value);
+            pesapi_callback_info__ cb { nativePtr, typeId, callArgs, 1, info->SetterData, nullptr, nullptr };
+                info->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cb));
+            Py_DECREF(callArgs);
+            if (cb.ex) { PyErr_SetString(PyExc_RuntimeError, cb.ex); return nullptr; }
+            Py_RETURN_NONE; } };
+        PyObject* cap = PyCapsule_New((void*)PropInfo, "PropSetter", nullptr);
+        static PyMethodDef md_set = {"__p_set", (PyCFunction)SetterWrap::Call, METH_VARARGS, nullptr};
+        setterFunc = PyCFunction_New(&md_set, cap);
+        Py_DECREF(cap);
+    }
+
+    PyObject* propObj = PyObject_CallFunctionObjArgs(propertyType,
+        getterFunc ? getterFunc : Py_None,
+        setterFunc ? setterFunc : Py_None,
+        Py_None, nullptr);
+    Py_XDECREF(getterFunc);
+    Py_XDECREF(setterFunc);
+    if (!propObj) return;
+
+    if (PyObject_SetAttrString(Obj, PropInfo->Name, propObj) == 0)
+    {
+        Py_DECREF(propObj);
+    }
+    else
+    {
+        Py_DECREF(propObj);
+    }
 }
 
 typedef struct {
@@ -450,6 +533,20 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
         return NULL;
     }
     Py_DECREF(ctx);
+
+    puerts::ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
+    while (PropertyInfo && PropertyInfo->Name)
+    {
+        InitProperty(PropertyInfo, type_obj);
+        ++PropertyInfo;
+    }
+
+    PropertyInfo = ClassDefinition->Variables;
+    while (PropertyInfo && PropertyInfo->Name)
+    {
+        InitProperty(PropertyInfo, type_obj);
+        ++PropertyInfo;
+    }
 
     puerts::ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
     while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)

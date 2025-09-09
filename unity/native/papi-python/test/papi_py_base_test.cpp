@@ -207,7 +207,7 @@ public:
         // 封装TestStruct
         GetRegisterApi()->define_class(registry, &g_dummy_type_id, &g_dummy_base_type_id, nullptr, typeName, TestStructCtor,
             TestStructFinalize, nullptr, false);
-        GetRegisterApi()->set_property_info_size(registry, &g_dummy_type_id, 3, 1, 1, 0);
+        GetRegisterApi()->set_property_info_size(registry, &g_dummy_type_id, 3, 1, 1, 1);
         GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Add", true, AddWrap, NULL, NULL);
         GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Calc", false, CalcWrap, NULL, NULL);
         GetRegisterApi()->set_property_info(registry, &g_dummy_type_id, 0, "a", false, AGetterWrap, ASetterWrap, NULL, NULL, NULL);
@@ -518,16 +518,11 @@ TEST_F(PApiBaseTest, PropertyAccess)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    let ret = "" + obj.a + ":";
-                    obj.a = 0;
-                    ret += obj.Calc(123, 456);
-                    return ret;
-                })();
-              )";
+    auto code = R"((lambda obj: (
+        ret:=str(obj.a)+':',
+        exec('obj.a=0'),
+        ret+str(obj.Calc(123,456))
+    ))( loadClass('TestStruct')(123) )[-1])";
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
     if (apis->has_caught(scope))
     {
@@ -546,15 +541,10 @@ TEST_F(PApiBaseTest, VariableAccess)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    const ret = TestStruct.ctor_count
-                    TestStruct.ctor_count = 999;
-                    return ret;
-                })();
-              )";
+    auto code = R"((lambda TestStruct: (
+        TestStruct.ctor_count,
+        exec('TestStruct.ctor_count=999'
+    ))(loadClass('TestStruct'))[0])";
     TestStruct::ctor_count = 100;
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
     if (apis->has_caught(scope))
