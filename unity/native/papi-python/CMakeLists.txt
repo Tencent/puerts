@@ -19,6 +19,7 @@ endif ()
 
 add_subdirectory(../puerts ${CMAKE_CURRENT_BINARY_DIR}/puerts)
 
+set(Python3_EXECUTABLE "/usr/bin/python3.13" CACHE FILEPATH "Python3 executable")
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
 include_directories(
