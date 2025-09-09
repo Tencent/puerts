@@ -360,29 +360,15 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     // Clear the AttributeError from PyObject_GenericGetAttr
     PyErr_Clear();
 
-    PyObject* type_obj  = (PyObject*)Py_TYPE(self);
-    PyObject* cache_dict = PyObject_GetAttrString(type_obj, "__method_cache");
-    if (!cache_dict) 
-    {
-        PyErr_Clear();
-        goto not_found;
-    }
-
     const char* attrName = PyUnicode_AsUTF8(name);
-    if (!attrName) {
-        Py_DECREF(cache_dict);
-        goto not_found;
-    }
-
-    PyObject* cached_method = PyDict_GetItemString(cache_dict, attrName);
-    if (cached_method) {
-        Py_INCREF(cached_method);
-        Py_DECREF(cache_dict);
-        return cached_method;
+    if (attrName) {
+        auto* funcInfo = dynObj->mapper->FindFuncInfo(dynObj->classDefinition, attrName);
+        if (funcInfo) return dynObj->mapper->MakeFunction(funcInfo, dynObj);
     }
     
+    
     // If not found in type dict, try to handle property access
-    if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
+    /*if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
         const char* attrName = PyUnicode_AsUTF8(name);
         if (attrName) {
             puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
@@ -400,7 +386,7 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
                 ++funcInfo;
             }
         }
-    }
+    }*/
     
     // If still not found, raise AttributeError
     PyErr_Format(PyExc_AttributeError, "'%.50s' object has no attribute '%.400s'",
@@ -423,23 +409,34 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
         return nullptr;
     }
 
-    PyObject* type_obj  = (PyObject*)Py_TYPE(self);
-    PyObject* cache_dict = PyObject_GetAttrString(type_obj, "__method_cache");
-    if (!cache_dict) {
-        PyErr_Format(PyExc_RuntimeError, "missing __method_cache on type");
+    auto* funcInfo = dynObj->mapper->FindFuncInfo(dynObj->classDefinition, methodName);
+    if (!funcInfo) {
+        PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
         return nullptr;
     }
 
-    PyObject* cached = PyDict_GetItemString(cache_dict, methodName);
-    if (cached) {
-        Py_INCREF(cached);
-        Py_DECREF(cache_dict);
-        PyObject* ret = PyObject_Call(cached, pyArgs, nullptr);
-        Py_DECREF(cached);
-        return ret;
-    }
+     pesapi_callback_info__ cbinfo{
+        dynObj->objectPtr,
+        dynObj->classDefinition->TypeId,
+        pyArgs,
+        (int)PyTuple_Size(pyArgs),
+        funcInfo->Data,
+        nullptr,
+        nullptr
+    };
 
-    if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
+    funcInfo->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cbinfo));
+
+    if (cbinfo.ex) {
+    PyErr_SetString(PyExc_RuntimeError, cbinfo.ex);
+    return nullptr;
+    }
+    if (cbinfo.res) {
+        Py_INCREF(cbinfo.res);
+        return cbinfo.res;
+    }
+    Py_RETURN_NONE;
+    /*if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
         puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
         while (funcInfo && funcInfo->Name) {
             if (strcmp(funcInfo->Name, methodName) == 0) {
@@ -454,11 +451,11 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
             }
             ++funcInfo;
         }
-    }
+    }*/
 
-    Py_DECREF(cache_dict);
-    PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
-    return nullptr;
+    //Py_DECREF(cache_dict);
+    //PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
+    //return nullptr;
 }
 
 static PyMethodDef DynObj_methods[] = {
@@ -491,6 +488,23 @@ static PyType_Spec DynType_spec = {
     .slots = DynType_slots
 };
 
+puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::string& name)
+{
+    auto& cache = MethodMetaCache[cls];
+    auto  it    = cache.find(name);
+    if (it != cache.end()) return it->second;
+
+    if (cls && cls->Methods) {
+        puerts::ScriptFunctionInfo* info = cls->Methods;
+        while (info && info->Name) {
+            cache[info->Name] = info;
+            if (name == info->Name) return info;
+            ++info;
+        }
+    }
+    return nullptr;
+}
+
 
 PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition* ClassDefinition)
 {
@@ -519,14 +533,6 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     }
     if (!type_obj) return NULL;
 
-    //改为给每个对象都都创建字典
-    PyObject* method_cache = PyDict_New();
-    if (!method_cache || PyObject_SetAttrString(type_obj, "__method_cache", method_cache) < 0) {
-        Py_XDECREF(method_cache);
-        Py_DECREF(type_obj);
-        return NULL;
-    }
-    Py_DECREF(method_cache);
 
     ContextObj* ctx = (ContextObj*)PyObject_New(ContextObj, &Context_Type);
     if (!ctx) {
