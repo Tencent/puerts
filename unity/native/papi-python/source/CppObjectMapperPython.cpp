@@ -366,28 +366,6 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
         if (funcInfo) return dynObj->mapper->MakeFunction(funcInfo, dynObj);
     }
     
-    
-    // If not found in type dict, try to handle property access
-    /*if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
-        const char* attrName = PyUnicode_AsUTF8(name);
-        if (attrName) {
-            puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
-             while (funcInfo && funcInfo->Name) {
-                if (strcmp(funcInfo->Name, attrName) == 0) {
-                    //return dynObj->mapper->MakeFunction(funcInfo, dynObj);
-                    PyObject* bound = dynObj->mapper->MakeFunction(funcInfo, dynObj);
-                    if (bound) {
-                        // 填到字典里，这样下次就是O(1)
-                        PyDict_SetItemString(cache_dict, attrName, bound);
-                    }
-                    Py_DECREF(cache_dict);
-                    return bound;
-                }
-                ++funcInfo;
-            }
-        }
-    }*/
-    
     // If still not found, raise AttributeError
     PyErr_Format(PyExc_AttributeError, "'%.50s' object has no attribute '%.400s'",
                  Py_TYPE(self)->tp_name, PyUnicode_AsUTF8(name));
@@ -436,26 +414,6 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
         return cbinfo.res;
     }
     Py_RETURN_NONE;
-    /*if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
-        puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
-        while (funcInfo && funcInfo->Name) {
-            if (strcmp(funcInfo->Name, methodName) == 0) {
-                PyObject* bound = dynObj->mapper->MakeFunction(funcInfo, dynObj);
-                if (bound) {
-                    PyDict_SetItemString(cache_dict, methodName, bound);
-                }
-                Py_DECREF(cache_dict);
-                PyObject* ret = PyObject_Call(bound, pyArgs, nullptr);
-                Py_DECREF(bound);
-                return ret;
-            }
-            ++funcInfo;
-        }
-    }*/
-
-    //Py_DECREF(cache_dict);
-    //PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
-    //return nullptr;
 }
 
 static PyMethodDef DynObj_methods[] = {
