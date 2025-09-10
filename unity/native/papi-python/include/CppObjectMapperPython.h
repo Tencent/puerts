@@ -19,6 +19,8 @@
 #include "ObjectCacheNodePython.h"
 #include "ScriptClassRegistry.h"
 
+struct pesapi_scope__;
+
 namespace pesapi
 {
 namespace pythonimpl
@@ -42,9 +44,7 @@ typedef struct {
 class CppObjectMapper
 {
 public:
-    PyInterpreterState* state = nullptr;
-
-    void Initialize(PyInterpreterState* State);
+    void Initialize();
 
     inline eastl::weak_ptr<int> GetEnvLifeCycleTracker()
     {
@@ -56,12 +56,19 @@ public:
         registry = InRegistry;
     }
 
-    inline static CppObjectMapper* Get(PyInterpreterState* state)
+    inline static CppObjectMapper* GetFromEnv(pesapi_env* mapper)
     {
-        auto dict = PyInterpreterState_GetDict(state);
-        PyObject* pmapper = PyDict_GetItemWithError(dict, PyUnicode_FromString("CppObjectMapper"));
-        auto mapper = static_cast<CppObjectMapper*>(PyCapsule_GetPointer(pmapper, nullptr));
-        return mapper;
+        return reinterpret_cast<CppObjectMapper*>(mapper);
+    }
+
+    void* getCurrentScope()
+    {
+        return currentScope;
+    }
+
+    void setCurrentScope(void* scope)
+    {
+        currentScope = scope;
     }
 
     void Cleanup();
@@ -151,11 +158,6 @@ public:
         envPrivate = envPrivate_;
     }
 
-    inline static eastl::weak_ptr<int> GetEnvLifeCycleTracker(PyInterpreterState* state)
-    {
-        return Get(state)->GetEnvLifeCycleTracker();
-    }
-
     inline const void* GetNativeObjectPtr(PyObject* val)
     {
         // TODO
@@ -167,38 +169,6 @@ public:
         // TODO
         return nullptr;
     }
-
-    typedef struct
-    {
-        PyObject_HEAD PyObject* object_udata;
-    } __papi_obj;
-
-    PyTypeObject papi_obj_cls_def = []() -> PyTypeObject
-    {
-        PyTypeObject t{};
-        t.ob_base = PyVarObject_HEAD_INIT(&PyType_Type, 0) t.tp_name = "__papi_obj";
-        t.tp_basicsize = sizeof(__papi_obj);
-        t.tp_flags = Py_TPFLAGS_DEFAULT;
-        t.tp_new = PyType_GenericNew;
-        //t.tp_is_gc = nullptr;
-        t.tp_finalize = [](PyObject* self)
-        {
-            auto mapper = Get(PyInterpreterState_Get());
-            auto* object_udata = (ObjectUserData*) ((__papi_obj*) self)->object_udata;
-
-            if (object_udata && object_udata->ptr)
-            {
-                if (object_udata->callFinalize && object_udata->typeInfo->Finalize)
-                {
-                    object_udata->typeInfo->Finalize(
-                        &g_pesapi_ffi, (void*) object_udata->ptr, object_udata->typeInfo->Data, (void*) (mapper->GetEnvPrivate()));
-                }
-                mapper->RemoveFromCache(object_udata->typeInfo, object_udata->ptr);
-            }
-            PyMem_Free(object_udata);
-        };
-        return t;
-    }();
 
     typedef struct
     {
@@ -220,37 +190,14 @@ public:
         pesapi_callback setter;
         void* getterData;
         void* setterData;
+        CppObjectMapper* mapper;
     };
-
-    /*PyTypeObject papi_func_tracer_cls_def = []() -> PyTypeObject
-    {
-        PyTypeObject t{};
-        t.ob_base = PyVarObject_HEAD_INIT(&PyType_Type, 0) t.tp_name = "__papi_func_tracer";
-        t.tp_basicsize = sizeof(__papi_func_tracer);
-        t.tp_flags = Py_TPFLAGS_DEFAULT;
-        t.tp_new = PyType_GenericNew;
-        //t.tp_is_gc = nullptr;
-        t.tp_finalize = [](PyObject* self)
-        {
-            auto mapper = Get(PyInterpreterState_Get());
-            FuncFinalizeData* data = (FuncFinalizeData*) ((__papi_func_tracer*) self)->func_tracer_udata;
-            if (data->finalize)
-            {
-                data->finalize(&g_pesapi_ffi, data->data, (void*) mapper->GetEnvPrivate());
-            }
-            PyMem_Free(data);
-        };
-        return t;
-    }();
-    */
 
 private:
     eastl::shared_ptr<int> ref = eastl::allocate_shared<int>(eastl::allocator_malloc("shared_ptr"), 0);
     eastl::hash_set<PyObject*, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc> StrongRefObjects;
 
     const char* object_udataKey = "__papi_udata";
-
-    const char* func_tracer_udataKey = "__papi_func_tracer_udata";
 
     const char* privateDataKey = "__papi_private_data";
 
@@ -262,6 +209,8 @@ private:
     const char* funcTracerClassId = nullptr;
 
     puerts::ScriptClassDefinition PtrClassDef = ScriptClassEmptyDefinition;
+
+    void* currentScope = nullptr;
 };
 }    // namespace pythonimpl
 }    // namespace pesapi
