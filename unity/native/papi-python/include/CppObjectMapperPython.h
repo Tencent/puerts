@@ -14,6 +14,7 @@
 #include <EASTL/hash_set.h>
 #include <EASTL/allocator_malloc.h>
 #include <EASTL/shared_ptr.h>
+#include <EASTL/string.h>
 
 #include "ObjectCacheNodePython.h"
 #include "ScriptClassRegistry.h"
@@ -70,6 +71,11 @@ public:
         CDataCache;
     eastl::unordered_map<const void*, PyObject*, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc>
         TypeIdToFunctionMap;
+    eastl::unordered_map<const puerts::ScriptClassDefinition*,
+        eastl::unordered_map<eastl::string, puerts::ScriptFunctionInfo*,
+        eastl::hash<eastl::string>, eastl::equal_to<eastl::string>,eastl::allocator_malloc>,
+    eastl::hash<const void*>, eastl::equal_to<const void*>,eastl::allocator_malloc>
+        MethodMetaCache;
 
     inline void AddStrongRefObject(PyObject* obj)
     {
@@ -114,6 +120,8 @@ public:
     }
 
     PyObject* CreateFunction(pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize);
+
+    puerts::ScriptFunctionInfo* FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::string& name);
 
     PyObject* FindOrCreateClassByID(const void* typeId);
 

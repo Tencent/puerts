@@ -734,6 +734,24 @@ TEST_F(PApiBaseTest, ObjectPrivate)
     EXPECT_EQ(&t, p);
 }
 
+TEST_F(PApiBaseTest, CallMethodDirectly)
+{
+    auto env = apis->get_env_from_ref(env_ref);
+
+    auto code = R"((lambda obj: obj.call_method('Calc', (123, 456)))(loadClass('TestStruct')(123)))";
+
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    if (apis->has_caught(scope))
+    {
+        printf("%s\n", apis->get_exception_as_string(scope, true));
+        FAIL();
+    }
+
+    ASSERT_FALSE(apis->has_caught(scope));
+    ASSERT_TRUE(apis->is_int32(env, ret));
+    EXPECT_EQ(702, apis->get_value_int32(env, ret));
+}
+
 /*TEST_F(PApiBaseTest, EvalStrlenPlusOne)
 {
     auto env = apis->get_env_from_ref(env_ref);

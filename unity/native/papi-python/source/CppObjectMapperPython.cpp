@@ -434,19 +434,11 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     
     // Clear the AttributeError from PyObject_GenericGetAttr
     PyErr_Clear();
-    
-    // If not found in type dict, try to handle property access
-    if (dynObj->classDefinition && dynObj->classDefinition->Methods) {
-        const char* attrName = PyUnicode_AsUTF8(name);
-        if (attrName) {
-            puerts::ScriptFunctionInfo* funcInfo = dynObj->classDefinition->Methods;
-            while (funcInfo && funcInfo->Name) {
-                if (strcmp(funcInfo->Name, attrName) == 0) {
-                    return dynObj->mapper->MakeFunction(funcInfo, dynObj);
-                }
-                ++funcInfo;
-            }
-        }
+
+    const char* attrName = PyUnicode_AsUTF8(name);
+    if (attrName) {
+        auto* funcInfo = dynObj->mapper->FindFuncInfo(dynObj->classDefinition, attrName);
+        if (funcInfo) return dynObj->mapper->MakeFunction(funcInfo, dynObj);
     }
     
     // If still not found, raise AttributeError
@@ -455,10 +447,56 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     return nullptr;
 }
 
+//新增CallMethod
+static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
+{
+    //思路是从 Python 传入的方法名和方法参数，找到对应的C++方法并调用，最终返回结果给Python 
+    DynObj* dynObj = (DynObj*)self;
+    const char* methodName;
+    PyObject* pyArgs;
+
+    if (!PyArg_ParseTuple(args, "sO", &methodName, &pyArgs))
+        return nullptr;
+    if (!PyTuple_Check(pyArgs)) {
+        PyErr_SetString(PyExc_TypeError, "2nd arg must be tuple");
+        return nullptr;
+    }
+
+    auto* funcInfo = dynObj->mapper->FindFuncInfo(dynObj->classDefinition, methodName);
+    if (!funcInfo) {
+        PyErr_Format(PyExc_AttributeError, "method '%s' not found", methodName);
+        return nullptr;
+    }
+
+     pesapi_callback_info__ cbinfo{
+        dynObj->objectPtr,
+        dynObj->classDefinition->TypeId,
+        pyArgs,
+        (int)PyTuple_Size(pyArgs),
+        funcInfo->Data,
+        nullptr,
+        nullptr
+    };
+
+    funcInfo->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cbinfo));
+
+    if (cbinfo.ex) {
+    PyErr_SetString(PyExc_RuntimeError, cbinfo.ex);
+    return nullptr;
+    }
+    if (cbinfo.res) {
+        Py_INCREF(cbinfo.res);
+        return cbinfo.res;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef DynObj_methods[] = {
 //    {"call_method", (PyCFunction)DynObj_call_method, METH_NOARGS, "call_method"},
+    {"call_method", (PyCFunction)DynObj_call_method, METH_VARARGS,
+    "call_method(name, args_tuple) -> result"},
     {NULL, NULL, 0, NULL}
-};
+};  
 
 static PyMemberDef DynObj_members[] = {
     // 如需将实例级指针只读暴露给 Python，可用 capsule/整数方式封装再写 getter
@@ -482,6 +520,23 @@ static PyType_Spec DynType_spec = {
     .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE,
     .slots = DynType_slots
 };
+
+puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::string& name)
+{
+    auto& cache = MethodMetaCache[cls];
+    auto  it    = cache.find(name);
+    if (it != cache.end()) return it->second;
+
+    if (cls && cls->Methods) {
+        puerts::ScriptFunctionInfo* info = cls->Methods;
+        while (info && info->Name) {
+            cache[info->Name] = info;
+            if (name == info->Name) return info;
+            ++info;
+        }
+    }
+    return nullptr;
+}
 
 
 PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition* ClassDefinition)
@@ -510,6 +565,7 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
         type_obj = PyType_FromSpec(&spec);
     }
     if (!type_obj) return NULL;
+
 
     ContextObj* ctx = (ContextObj*)PyObject_New(ContextObj, &Context_Type);
     if (!ctx) {
