@@ -12,7 +12,6 @@
 #include <EASTL/allocator_malloc.h>
 
 #include "CppObjectMapperPython.h"
-#include "Opaque.h"
 
 namespace pesapi
 {
@@ -20,8 +19,8 @@ namespace pythonimpl
 {
 struct pesapi_env_ref__
 {
-    explicit pesapi_env_ref__(PyInterpreterState* state)
-        : ref_count(1), state_persistent(state), env_life_cycle_tracker(CppObjectMapper::GetEnvLifeCycleTracker(state))
+    explicit pesapi_env_ref__(CppObjectMapper* mapper)
+        : ref_count(1), mapper_persistent(mapper), env_life_cycle_tracker(mapper->GetEnvLifeCycleTracker())
     {
     }
 
@@ -31,24 +30,22 @@ struct pesapi_env_ref__
 
     int ref_count;
 
-    PyInterpreterState* state_persistent;
+    CppObjectMapper* mapper_persistent;
     eastl::weak_ptr<int> env_life_cycle_tracker;
 };
 
 struct pesapi_value_ref__ : pesapi_env_ref__
 {
-    explicit pesapi_value_ref__(PyInterpreterState* state, PyObject* v, uint32_t field_count)
-        : pesapi_env_ref__(state), value_persistent(v), internal_field_count(field_count)
+    explicit pesapi_value_ref__(CppObjectMapper* mapper, PyObject* v, uint32_t field_count)
+        : pesapi_env_ref__(mapper), value_persistent(v), internal_field_count(field_count)
     {
         Py_XINCREF(v);
-        auto mapper = CppObjectMapper::Get(state);
         mapper->AddStrongRefObject(value_persistent);
     }
 
     ~pesapi_value_ref__()
     {
-        auto mapper = CppObjectMapper::Get(state_persistent);
-        mapper->RemoveStrongRefObject(value_persistent);
+        mapper_persistent->RemoveStrongRefObject(value_persistent);
         PyObject_GC_Del(value_persistent);
     }
 
@@ -64,29 +61,10 @@ struct caught_exception_info
 
 struct pesapi_scope__;
 
-static pesapi_scope__* getCurrentScope(PyInterpreterState* state)
-{
-    auto dict = PyInterpreterState_GetDict(state);
-    if (PyDict_Contains(dict, PyUnicode_FromString("__papi_scope__")))
-    {
-        auto ret = PyDict_GetItemOpaqueString(dict, "__papi_scope__");
-        if (ret)
-        {
-            return reinterpret_cast<pesapi_scope__*>(ret);
-        }
-    }
-    return nullptr;
-}
-
-static void setCurrentScope(PyInterpreterState* state, pesapi_scope__* scope)
-{
-    auto dict = PyInterpreterState_GetDict(state);
-    PyDict_SetItemOpaqueString(dict, "__papi_scope__", scope);
-}
 
 struct pesapi_scope__
 {
-    PyInterpreterState* state;
+    CppObjectMapper* mapper;
     pesapi_env_ref__* env_ref = nullptr;
     caught_exception_info* caught = nullptr;
 
@@ -97,11 +75,11 @@ struct pesapi_scope__
     uint32_t values_used;
     eastl::vector<PyObject*, eastl::allocator_malloc>* dynamic_alloc_values = nullptr;
 
-    explicit pesapi_scope__(PyInterpreterState* state)
+    explicit pesapi_scope__(CppObjectMapper* mapper)
     {
-        this->state = state;
-        prev_scope = getCurrentScope(state);
-        setCurrentScope(state, this);
+        this->mapper = mapper;
+        prev_scope = (pesapi_scope__*)(mapper->getCurrentScope());
+        mapper->setCurrentScope(this);
         values_used = 0;
         caught = nullptr;
     }
@@ -161,7 +139,7 @@ struct pesapi_scope__
             PyMem_Free(dynamic_alloc_values);
             dynamic_alloc_values = nullptr;
         }
-        setCurrentScope(state, prev_scope);
+        mapper->setCurrentScope(prev_scope);
     }
 };
 
@@ -176,6 +154,7 @@ struct pesapi_callback_info__
     void* data;        // user data passed to the callback
     PyObject* res;     // result of the callback
     const char* ex;    // exception if any occurred during the callback
+    CppObjectMapper* mapper; // mapper instance
 };
 }    // namespace pythonimpl
 }    // namespace pesapi

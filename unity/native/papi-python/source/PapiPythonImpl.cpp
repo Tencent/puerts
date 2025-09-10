@@ -27,19 +27,19 @@ inline PyObject* pyObjectFromPesapiValue(pesapi_value v)
     return reinterpret_cast<PyObject*>(v);
 }
 
-inline pesapi_env pesapiEnvFromPyState(PyInterpreterState* state)
+inline pesapi_env pesapiEnvFromMapper(CppObjectMapper* mapper)
 {
-    return reinterpret_cast<pesapi_env>(state);
+    return reinterpret_cast<pesapi_env>(mapper);
 }
 
-inline PyInterpreterState* pyStateFromPesapiEnv(pesapi_env v)
+inline CppObjectMapper* mapperFromPesapiEnv(pesapi_env v)
 {
-    return reinterpret_cast<PyInterpreterState*>(v);
+    return reinterpret_cast<CppObjectMapper*>(v);
 }
 
-inline PyObject** allocValueInCurrentScope(PyInterpreterState* state)
+inline PyObject** allocValueInCurrentScope(CppObjectMapper* mapper)
 {
-    auto scope = getCurrentScope(state);
+    auto scope = (pesapi_scope__*)mapper->getCurrentScope();
     return scope->allocValue();
 }
 
@@ -85,14 +85,14 @@ pesapi_value pesapi_create_double(pesapi_env env, double value)
 
 pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t len)
 {
-    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    auto ret = allocValueInCurrentScope(mapperFromPesapiEnv(env));
     *ret = PyUnicode_DecodeUTF8(str, len, nullptr);
     return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t* str, size_t length)
 {
-    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    auto ret = allocValueInCurrentScope(mapperFromPesapiEnv(env));
     *ret = PyUnicode_DecodeUTF16(reinterpret_cast<const char*>(str), length * 2, nullptr, nullptr);
     return pesapiValueFromPyObject(*ret);
 }
@@ -101,7 +101,7 @@ pesapi_value pesapi_create_binary(pesapi_env env, void* str, size_t length)
 {
     auto* copy = static_cast<char*>(malloc(length));
     memcpy(copy, str, length);
-    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    auto ret = allocValueInCurrentScope(mapperFromPesapiEnv(env));
     *ret = PyBytes_FromStringAndSize(copy, length);
     free(copy);
     return pesapiValueFromPyObject(*ret);
@@ -111,7 +111,7 @@ pesapi_value pesapi_create_binary_by_value(pesapi_env env, void* str, size_t len
 {
     void* copy = malloc(length);
     memcpy(copy, str, length);
-    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    auto ret = allocValueInCurrentScope(mapperFromPesapiEnv(env));
     *ret = PyBytes_FromStringAndSize(static_cast<const char*>(copy), length);
     free(copy);
     return pesapiValueFromPyObject(*ret);
@@ -119,25 +119,23 @@ pesapi_value pesapi_create_binary_by_value(pesapi_env env, void* str, size_t len
 
 pesapi_value pesapi_create_array(pesapi_env env)    // TODO: JS 的 Array 和 Python 的 list 有区别
 {
-    auto ret = allocValueInCurrentScope(pyStateFromPesapiEnv(env));
+    auto ret = allocValueInCurrentScope(mapperFromPesapiEnv(env));
     *ret = PyList_New(0);
     return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_class(pesapi_env env, const void* type_id)
 {
-    auto state = pyStateFromPesapiEnv(env);
-    auto mapper = CppObjectMapper::Get(state);
-    auto ret = allocValueInCurrentScope(state);
+    auto mapper = mapperFromPesapiEnv(env);
+    auto ret = allocValueInCurrentScope(mapper);
     *ret = mapper->FindOrCreateClassByID(type_id);
     return pesapiValueFromPyObject(*ret);
 }
 
 pesapi_value pesapi_create_function(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize)
 {
-    auto state = pyStateFromPesapiEnv(env);
-    auto mapper = CppObjectMapper::Get(state);
-    auto ret = allocValueInCurrentScope(state);
+    auto mapper = mapperFromPesapiEnv(env);
+    auto ret = allocValueInCurrentScope(mapper);
     *ret = mapper->CreateFunction(native_impl, data, finalize);
     return pesapiValueFromPyObject(*ret);
 }
@@ -333,26 +331,23 @@ int pesapi_is_array(pesapi_env env, pesapi_value value)
 
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize)
 {
-    auto state = pyStateFromPesapiEnv(env);
-    auto mapper = CppObjectMapper::Get(state);
-    auto ret = allocValueInCurrentScope(state);
+    auto mapper = mapperFromPesapiEnv(env);
+    auto ret = allocValueInCurrentScope(mapper);
     *ret = mapper->PushNativeObject(type_id, object_ptr, call_finalize);
     return pesapiValueFromPyObject(*ret);
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value value)
 {
-    auto state = pyStateFromPesapiEnv(env);
     auto obj = pyObjectFromPesapiValue(value);
-    auto mapper = CppObjectMapper::Get(state);
+    auto mapper = mapperFromPesapiEnv(env);
     return (void*) mapper->GetNativeObjectPtr(obj);
 }
 
 const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value value)
 {
-    auto state = pyStateFromPesapiEnv(env);
     auto obj = pyObjectFromPesapiValue(value);
-    auto mapper = CppObjectMapper::Get(state);
+    auto mapper = mapperFromPesapiEnv(env);
     return mapper->GetNativeObjectTypeId(obj);
 }
 
@@ -364,8 +359,8 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value valu
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
 {
-    auto state = pyStateFromPesapiEnv(env);
-    auto ret = allocValueInCurrentScope(state);
+    auto mapper = mapperFromPesapiEnv(env);
+    auto ret = allocValueInCurrentScope(mapper);
     PyObject* list = PyList_New(1);
     *ret = list;
     PyObject* item = pyObjectFromPesapiValue(value);
@@ -376,10 +371,10 @@ pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
 
 pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value value)
 {
-    auto state = pyStateFromPesapiEnv(env);
+    auto mapper = mapperFromPesapiEnv(env);
     PyObject* list = pyObjectFromPesapiValue(value);
     
-    auto ret = allocValueInCurrentScope(state);
+    auto ret = allocValueInCurrentScope(mapper);
     *ret = PyList_GetItem(list, 0);
     if (*ret) {
         Py_INCREF(*ret);
@@ -422,8 +417,7 @@ pesapi_value pesapi_get_arg(pesapi_callback_info pinfo, int index)
 
 pesapi_env pesapi_get_env(pesapi_callback_info info)
 {
-    auto state = PyInterpreterState_Get();
-    return pesapiEnvFromPyState(state);
+    return (pesapi_env) ((pesapi_callback_info__*) info)->mapper;
 }
 
 void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
@@ -463,10 +457,10 @@ void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 
 pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
 {
-    auto state = pyStateFromPesapiEnv(env);
+    auto mapper = mapperFromPesapiEnv(env);
     auto ret = static_cast<pesapi_env_ref>(malloc(sizeof(pesapi_env_ref__)));
     memset(ret, 0, sizeof(pesapi_env_ref__));
-    new (ret) pesapi_env_ref__(state);
+    new (ret) pesapi_env_ref__(mapper);
     return ret;
 }
 
@@ -483,7 +477,7 @@ pesapi_env pesapi_get_env_from_ref(pesapi_env_ref penv_ref)
     {
         return nullptr;
     }
-    return pesapiEnvFromPyState(env_ref->state_persistent);
+    return pesapiEnvFromMapper(env_ref->mapper_persistent);
 }
 
 pesapi_env_ref pesapi_duplicate_env_ref(pesapi_env_ref env_ref)
@@ -515,7 +509,7 @@ pesapi_scope pesapi_open_scope(pesapi_env_ref penv_ref)
     }
     pesapi_scope ret = static_cast<pesapi_scope>(malloc(sizeof(pesapi_scope__)));
     memset(ret, 0, sizeof(pesapi_scope__));
-    new (ret) pesapi_scope__(ref->state_persistent);
+    new (ret) pesapi_scope__(ref->mapper_persistent);
     return ret;
 }
 
@@ -586,7 +580,7 @@ pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value, uin
     auto ret = reinterpret_cast<pesapi_value_ref>(malloc(totalSize));
     memset(ret, 0, totalSize);
     PyObject* v = pyObjectFromPesapiValue(value);
-    new (ret) pesapi_value_ref__(PyInterpreterState_Get(), v, internal_field_count);
+    new (ret) pesapi_value_ref__( mapperFromPesapiEnv(env), v, internal_field_count);
     return ret;
 }
 
@@ -667,16 +661,14 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char
 
 int pesapi_get_private(pesapi_env penv, pesapi_value pobject, void** out_ptr)
 {
-    auto env = pyStateFromPesapiEnv(penv);
-    auto mapper = CppObjectMapper::Get(env);
+    auto mapper = mapperFromPesapiEnv(penv);
     auto obj = pyObjectFromPesapiValue(pobject);
     return mapper->GetPrivateData(obj, out_ptr);
 }
 
 int pesapi_set_private(pesapi_env penv, pesapi_value object, void* ptr)
 {
-    auto env = pyStateFromPesapiEnv(penv);
-    auto mapper = CppObjectMapper::Get(env);
+    auto mapper = mapperFromPesapiEnv(penv);
     auto obj = pyObjectFromPesapiValue(object);
     return mapper->SetPrivateData(obj, ptr);
 }
@@ -709,7 +701,7 @@ pesapi_value pesapi_create_object(pesapi_env env)
 pesapi_value pesapi_call_function(
     pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value pargv[])
 {
-    auto state = pyStateFromPesapiEnv(env);
+    auto mapper = mapperFromPesapiEnv(env);
     PyObject* func = pyObjectFromPesapiValue(pfunc);
     PyObject* args = PyTuple_New(argc);
     for (int i = 0; i < argc; ++i)
@@ -726,7 +718,7 @@ pesapi_value pesapi_call_function(
     }
     else
     {
-        auto scope = getCurrentScope(state);
+        auto scope = (pesapi_scope__*)mapper->getCurrentScope();
 #if PY_VERSION_HEX >= 0x030B0000
         scope->setCaughtException(PyErr_GetRaisedException());
 #else
@@ -746,7 +738,7 @@ pesapi_value pesapi_call_function(
 // TODO
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
 {
-    auto state = pyStateFromPesapiEnv(env);
+    auto mapper = mapperFromPesapiEnv(env);
     PyObject* compiled_code = Py_CompileString(reinterpret_cast<const char*>(code), path, Py_eval_input);
     if (compiled_code)
     {
@@ -758,7 +750,7 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
             return pesapiValueFromPyObject(result);
         }
     }
-    auto scope = getCurrentScope(state);
+    auto scope = (pesapi_scope__*)mapper->getCurrentScope();
 #if PY_VERSION_HEX >= 0x030B0000
     scope->setCaughtException(PyErr_GetRaisedException());
 #else
@@ -782,20 +774,20 @@ pesapi_value pesapi_global(pesapi_env env)
 
 const void* pesapi_get_env_private(pesapi_env env)
 {
-    auto state = pyStateFromPesapiEnv(env);
-    return CppObjectMapper::Get(state)->GetEnvPrivate();
+    auto mapper = mapperFromPesapiEnv(env);
+    return mapper->GetEnvPrivate();
 }
 
 void pesapi_set_env_private(pesapi_env env, const void* ptr)
 {
-    auto state = pyStateFromPesapiEnv(env);
-    CppObjectMapper::Get(state)->SetEnvPrivate(ptr);
+    auto mapper = mapperFromPesapiEnv(env);
+    return mapper->SetEnvPrivate(ptr);
 }
 
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
-    auto state = pyStateFromPesapiEnv(env);
-    CppObjectMapper::Get(state)->SetRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(registry));
+    auto mapper = mapperFromPesapiEnv(env);
+    return mapper->SetRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(registry));
 }
 
 pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_create_boolean, &pesapi_create_int32,

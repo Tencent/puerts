@@ -59,7 +59,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
                 PyErr_SetString(PyExc_RuntimeError, "Invalid callback data");
                 return nullptr;
             }
-            pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, PyTuple_Size(args), data->data, nullptr, nullptr };
+            pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, PyTuple_Size(args), data->data, nullptr, nullptr, data->mapper };
             data->callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
             if (callbackInfo.ex)
             {
@@ -127,6 +127,7 @@ typedef struct
     PyObject_HEAD
     puerts::ScriptFunctionInfo* funcInfo;
     DynObj* dynObj;
+    CppObjectMapper* mapper;
 } PyMethodObject;
 
 static void PyMethodObject_dealloc(PyMethodObject* self)
@@ -145,7 +146,7 @@ static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObj
         return nullptr;
     }
     
-    pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr };
+    pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr,self->mapper };
     self->funcInfo->Callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -231,6 +232,7 @@ PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, Dy
     
     methodObj->funcInfo = FuncInfo;
     methodObj->dynObj = Obj;
+    methodObj->mapper = this;
     // Increase reference count to keep dynObj alive while method exists
     if (Obj) {
         Py_INCREF((PyObject*)Obj);
@@ -243,9 +245,9 @@ static PyObject* propGetter(PyObject* self, void* closure)
     auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer((PyObject*) closure, nullptr);
     pesapi_callback callback = info->getter;
 
-    pesapi_scope__ scope(PyInterpreterState_Get());
+    pesapi_scope__ scope(info->mapper);
     pesapi_callback_info__ callbackInfo{((DynObj*) self)->objectPtr, ((DynObj*) self)->classDefinition->TypeId, nullptr, 0,
-        info->getterData, nullptr, nullptr};
+        info->getterData, nullptr, nullptr, info->mapper};
     callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -271,9 +273,9 @@ static int propSetter(PyObject* self, PyObject* value, void* closure)
     auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer((PyObject*) closure, nullptr);
     pesapi_callback callback = info->setter;
 
-    pesapi_scope__ scope(PyInterpreterState_Get());
+    pesapi_scope__ scope(info->mapper);
     pesapi_callback_info__ callbackInfo{((DynObj*) self)->objectPtr, ((DynObj*) self)->classDefinition->TypeId,
-        PyTuple_Pack(1, value), 1, info->setterData, nullptr, nullptr};
+        PyTuple_Pack(1, value), 1, info->setterData, nullptr, nullptr, info->mapper};
     callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -291,6 +293,7 @@ void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObjec
     info->setter = PropInfo->Setter;
     info->getterData = PropInfo->GetterData;
     info->setterData = PropInfo->SetterData;
+    info->mapper = this;
 
     auto* def = (PyGetSetDef*) PyMem_Malloc(sizeof(PyGetSetDef));
     def->name = PropInfo->Name;
@@ -404,7 +407,7 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
         return NULL;
     }
     
-    pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, PyTuple_Size(args), self->classDefinition->Data, nullptr, nullptr };
+    pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, PyTuple_Size(args), self->classDefinition->Data, nullptr, nullptr, self->mapper };
     void* ptr = self->classDefinition->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -475,7 +478,8 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
         (int)PyTuple_Size(pyArgs),
         funcInfo->Data,
         nullptr,
-        nullptr
+        nullptr,
+        dynObj->mapper
     };
 
     funcInfo->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cbinfo));
@@ -638,7 +642,7 @@ PyObject* CppObjectMapper::findClassByName(PyObject* this_val, int argc, PyObjec
     }
 }
 
-void CppObjectMapper::Initialize(PyInterpreterState* State)
+void CppObjectMapper::Initialize()
 {
     if (PyType_Ready(&Context_Type) < 0) 
     {
@@ -650,42 +654,8 @@ void CppObjectMapper::Initialize(PyInterpreterState* State)
         return;
     }
 
-    this->state = State;
-    auto dict = PyInterpreterState_GetDict(state);
-    PyDict_SetItemOpaqueString(dict, "CppObjectMapper", this);
-
     PtrClassDef.TypeId = &PtrClassDef;
     PtrClassDef.ScriptName = "__Pointer";
-
-    /*auto mapperSelf = PyCapsule_New(this, nullptr, nullptr);
-
-    PyMethodDef methods_def = {"findClassByName",
-        [](PyObject* self, PyObject* args) -> PyObject*
-        {
-            auto _mapper = static_cast<CppObjectMapper*>(PyCapsule_GetPointer(self, nullptr));
-            PyObject* this_val = self;
-            Py_ssize_t argc_ssize = PyTuple_Size(args);
-            if (argc_ssize < 0)
-            {
-                return nullptr;
-            }
-            auto** argv = (PyObject**) PyMem_Malloc(sizeof(PyObject*) * (size_t) argc_ssize);
-            for (Py_ssize_t i = 0; i < argc_ssize; ++i)
-            {
-                argv[i] = PyTuple_GetItem(args, i);
-            }
-            PyObject* ret = _mapper->findClassByName(this_val, (int) argc_ssize, argv);
-            PyMem_Free(argv);
-            return ret;
-        },
-        METH_VARARGS};
-
-    auto Func = PyCFunction_New(&methods_def, mapperSelf);
-
-    auto M = PyImport_AddModule("__main__");
-    auto G = PyModule_GetDict(M);
-
-    PyDict_SetItemString(G, "findClassByName", Func);*/
 }
 
 void CppObjectMapper::Cleanup()
@@ -729,16 +699,15 @@ pesapi_env_ref create_py_env()
     {
         memset(mapper, 0, sizeof(pesapi::pythonimpl::CppObjectMapper));
         new (mapper) pesapi::pythonimpl::CppObjectMapper();
-        mapper->Initialize(PyInterpreterState_Get());
-        return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(PyInterpreterState_Get()));
+        mapper->Initialize();
+        return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(mapper));
     }
     return nullptr;
 }
 
 void destroy_py_env(pesapi_env_ref env_ref)
 {
-    auto state = reinterpret_cast<PyInterpreterState*>(pesapi::pythonimpl::g_pesapi_ffi.get_env_from_ref(env_ref));
-    auto mapper = pesapi::pythonimpl::CppObjectMapper::Get(state);
+    auto mapper = reinterpret_cast<pesapi::pythonimpl::CppObjectMapper*>(pesapi::pythonimpl::g_pesapi_ffi.get_env_from_ref(env_ref));
     get_papi_ffi()->release_env_ref(env_ref);
     if (mapper)
     {
