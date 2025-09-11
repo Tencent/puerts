@@ -189,6 +189,8 @@ class PApiBaseTest : public ::testing::Test
 public:
     static void SetUpTestCase()
     {
+        printf("SetUpTestCase\n");
+        Py_Initialize();
         registry = GetRegisterApi()->create_registry();
         GetRegisterApi()->define_class(registry,&g_dummy_base_type_id, nullptr,nullptr ,baseTypeName,
             [](struct pesapi_ffi* apis, pesapi_callback_info info) -> void* { // Ctor
@@ -245,6 +247,8 @@ public:
 
     static void TearDownTestCase()
     {
+        printf("TearDownTestCase\n");
+        Py_Finalize();
     }
 
     static void Foo(struct pesapi_ffi* apis, pesapi_callback_info info)
@@ -332,12 +336,46 @@ protected:
     pesapi_scope scope;
 };
 
-TEST_F(PApiBaseTest, CreateAndDestroyMultQjsEnv)
+TEST_F(PApiBaseTest, CreateAndDestroyMultEnv)
 {
     for (int i = 0; i < 5; i++)
     {
         pesapi_env_ref env_ref = create_py_env();
         destroy_py_env(env_ref);
+    }
+}
+
+TEST_F(PApiBaseTest, MultEnv)
+{
+    const int count = 5;
+    pesapi_env_ref env_refs[count];
+    for (int i = 0; i < count; i++)
+    {
+        pesapi_env_ref env_ref = create_py_env();
+        env_refs[i] = env_ref;
+        auto localScope = apis->open_scope(env_ref);
+        auto env = apis->get_env_from_ref(env_ref);
+        apis->set_registry(env, registry);
+        char buf[128];
+        snprintf(buf, sizeof(buf), "exec(\"gv = %d\")", i + 1);
+        apis->eval(env, (const uint8_t*) (buf), strlen(buf), "test.py");
+        apis->close_scope(localScope);
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        auto env_ref = env_refs[i];
+        auto localScope = apis->open_scope(env_ref);
+        auto env = apis->get_env_from_ref(env_ref);
+        auto gv = apis->get_property(env, apis->global(env), "gv");
+        ASSERT_TRUE(apis->is_int32(env, gv));
+        ASSERT_TRUE(apis->get_value_int32(env, gv) == i + 1);
+        apis->close_scope(localScope);
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        destroy_py_env(env_refs[i]);
     }
 }
 

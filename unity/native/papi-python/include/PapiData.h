@@ -74,9 +74,11 @@ struct pesapi_scope__
     PyObject* values[SCOPE_FIX_SIZE_VALUES_SIZE];
     uint32_t values_used;
     eastl::vector<PyObject*, eastl::allocator_malloc>* dynamic_alloc_values = nullptr;
+    PyThreadState *prevThreadState = nullptr;
 
     explicit pesapi_scope__(CppObjectMapper* mapper)
     {
+        prevThreadState = PyThreadState_Swap(mapper->threadState);
         this->mapper = mapper;
         prev_scope = (pesapi_scope__*)(mapper->getCurrentScope());
         mapper->setCurrentScope(this);
@@ -140,6 +142,7 @@ struct pesapi_scope__
             dynamic_alloc_values = nullptr;
         }
         mapper->setCurrentScope(prev_scope);
+        PyThreadState_Swap(prevThreadState);
     }
 };
 

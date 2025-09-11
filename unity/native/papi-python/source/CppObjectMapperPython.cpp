@@ -637,8 +637,10 @@ PyObject* CppObjectMapper::findClassByName(PyObject* this_val, int argc, PyObjec
     }
 }
 
-void CppObjectMapper::Initialize()
+void CppObjectMapper::Initialize(PyThreadState *InThreadState)
 {
+    threadState = InThreadState;
+    PyThreadState_Swap(threadState);
     if (PyType_Ready(&Context_Type) < 0) 
     {
         return;
@@ -655,6 +657,7 @@ void CppObjectMapper::Initialize()
 
 void CppObjectMapper::Cleanup()
 {
+    PyThreadState_Swap(threadState);
     for (auto& kv : TypeIdToFunctionMap)
     {
         Py_DecRef(kv.second);
@@ -674,27 +677,15 @@ void CppObjectMapper::Cleanup()
 
 pesapi_env_ref create_py_env()
 {
-    Py_Initialize();
-
-    // For debug
-    /*PyRun_SimpleString(
-        "import sys, traceback, faulthandler, tracemalloc, signal, logging, gc\n"
-        //"logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')\n"
-        //"faulthandler.enable()\n"
-        //"tracemalloc.start()\n"
-        //"def tracefunc(frame, event, arg):\n"
-        //"    co = frame.f_code\n"
-        //"    print(f'TRACE {event} {co.co_filename}:{frame.f_lineno} {co.co_name}')\n"
-        //"    return tracefunc\n"
-        //"sys.settrace(tracefunc)\n"
-        "gc.set_debug(gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_SAVEALL | gc.DEBUG_STATS)\n");*/
-
     auto* mapper = reinterpret_cast<pesapi::pythonimpl::CppObjectMapper*>(malloc(sizeof(pesapi::pythonimpl::CppObjectMapper)));
     if (mapper)
     {
         memset(mapper, 0, sizeof(pesapi::pythonimpl::CppObjectMapper));
-        new (mapper) pesapi::pythonimpl::CppObjectMapper();
-        mapper->Initialize();
+        PyThreadState *threadState = Py_NewInterpreter();
+        if (threadState) {
+            new (mapper) pesapi::pythonimpl::CppObjectMapper();
+            mapper->Initialize(threadState);
+        }
         return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(mapper));
     }
     return nullptr;
@@ -709,7 +700,6 @@ void destroy_py_env(pesapi_env_ref env_ref)
         mapper->Cleanup();
         free(mapper);
     }
-    Py_Finalize();    // Finalize Python interpreter
 }
 
 pesapi_ffi* get_papi_ffi()

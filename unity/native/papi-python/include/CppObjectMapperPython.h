@@ -44,7 +44,7 @@ typedef struct {
 class CppObjectMapper
 {
 public:
-    void Initialize();
+    void Initialize(PyThreadState *InThreadState);
 
     inline eastl::weak_ptr<int> GetEnvLifeCycleTracker()
     {
@@ -205,6 +205,8 @@ public:
         void* setterData;
         CppObjectMapper* mapper;
     };
+
+    PyThreadState *threadState = nullptr;
 
 private:
     eastl::shared_ptr<int> ref = eastl::allocate_shared<int>(eastl::allocator_malloc("shared_ptr"), 0);
