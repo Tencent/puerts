@@ -522,14 +522,26 @@ static PyType_Spec DynType_spec = {
 
 puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::basic_string<char,eastl::allocator_malloc>& name)
 {
-    auto& cache = MethodMetaCache[cls];
-    auto  it    = cache.find(name);
-    if (it != cache.end()) return it->second;
+    auto it_cache = MethodMetaCache.find(cls);
+    MethodMap* cache = nullptr;
+    
+    if (it_cache != MethodMetaCache.end()) {
+        cache = it_cache->second;
+    } else {
+        // Use malloc + placement new to construct the inner map
+        void* memory = malloc(sizeof(MethodMap));
+        if (!memory) return nullptr;
+        cache = new(memory) MethodMap();
+        MethodMetaCache[cls] = cache;
+    }
+    
+    auto it = cache->find(name);
+    if (it != cache->end()) return it->second;
 
     if (cls && cls->Methods) {
         puerts::ScriptFunctionInfo* info = cls->Methods;
         while (info && info->Name) {
-            cache[info->Name] = info;
+            (*cache)[info->Name] = info;
             if (name == info->Name) return info;
             ++info;
         }
@@ -668,9 +680,19 @@ void CppObjectMapper::Cleanup()
         Py_DecRef(obj);
     }
 
+    // Clean up MethodMetaCache - call destructor and free memory for each inner map
+    for (auto& kv : MethodMetaCache)
+    {
+        if (kv.second) {
+            kv.second->~MethodMap();  // Call destructor
+            free(kv.second);          // Free memory
+        }
+    }
+
     StrongRefObjects.clear();
     CDataCache.clear();
     TypeIdToFunctionMap.clear();
+    MethodMetaCache.clear();
 }
 }    // namespace pythonimpl
 }    // namespace pesapi

@@ -91,9 +91,12 @@ public:
             return (size_t)result;
         }
     };
-    eastl::unordered_map<const puerts::ScriptClassDefinition*,
-        eastl::unordered_map<eastl::basic_string<char,eastl::allocator_malloc>, puerts::ScriptFunctionInfo*,
-        string_hash, eastl::equal_to<eastl::basic_string<char,eastl::allocator_malloc>>,eastl::allocator_malloc>,
+    
+    // Type alias for the inner map type
+    using MethodMap = eastl::unordered_map<eastl::basic_string<char,eastl::allocator_malloc>, puerts::ScriptFunctionInfo*,
+        string_hash, eastl::equal_to<eastl::basic_string<char,eastl::allocator_malloc>>,eastl::allocator_malloc>;
+    
+    eastl::unordered_map<const puerts::ScriptClassDefinition*, MethodMap*,
     eastl::hash<const void*>, eastl::equal_to<const void*>,eastl::allocator_malloc>
         MethodMetaCache;
 
