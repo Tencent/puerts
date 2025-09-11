@@ -422,10 +422,6 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
     return (PyObject*)self;
 }
 
-//static PyObject* DynObj_call_method(PyObject* self, PyObject* Py_UNUSED(ignored)) {
-//    return Py_None;
-//}
-
 static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     DynObj* dynObj = (DynObj*)self;
     
@@ -496,7 +492,6 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
 }
 
 static PyMethodDef DynObj_methods[] = {
-//    {"call_method", (PyCFunction)DynObj_call_method, METH_NOARGS, "call_method"},
     {"call_method", (PyCFunction)DynObj_call_method, METH_VARARGS,
     "call_method(name, args_tuple) -> result"},
     {NULL, NULL, 0, NULL}
