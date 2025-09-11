@@ -673,17 +673,12 @@ TEST_F(PApiBaseTest, CallFunction)
 TEST_F(PApiBaseTest, SuperAccess)
 {
     auto env = apis->get_env_from_ref(env_ref);
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    let ret = "" + obj.b + ":"; // 122
-                    obj.b = 5
-                    ret += obj.Foo(6); // 11
-                    return ret;
-                })();
-              )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto code = R"((lambda obj: (
+        ret:=str(obj.b)+':',
+        exec('obj.b=5'),
+        ret+str(obj.Foo(6))
+    ))( loadClass('TestStruct')(123) )[-1])";
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));

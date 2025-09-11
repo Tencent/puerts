@@ -546,6 +546,9 @@ puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptCl
             ++info;
         }
     }
+    if (cls && cls->SuperTypeId) {
+        return FindFuncInfo(puerts::LoadClassByID(registry, cls->SuperTypeId), name);
+    }
     return nullptr;
 }
 
