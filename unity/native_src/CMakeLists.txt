@@ -597,6 +597,7 @@ elseif ( ANDROID )
     else()
         target_link_options(puerts PRIVATE -s)
     endif()
+	target_link_options(puerts PRIVATE -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384) # android 16K Pagesize
 elseif ( APPLE )
 
     if ( IOS )
