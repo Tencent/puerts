@@ -525,7 +525,7 @@ static PyType_Spec DynType_spec = {
     .slots = DynType_slots
 };
 
-puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::string& name)
+puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::basic_string<char,eastl::allocator_malloc>& name)
 {
     auto& cache = MethodMetaCache[cls];
     auto  it    = cache.find(name);

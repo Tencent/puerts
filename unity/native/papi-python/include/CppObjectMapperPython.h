@@ -78,9 +78,22 @@ public:
         CDataCache;
     eastl::unordered_map<const void*, PyObject*, eastl::hash<const void*>, eastl::equal_to<const void*>, eastl::allocator_malloc>
         TypeIdToFunctionMap;
+
+    // coped from STL\string.h
+    struct string_hash
+    {
+        size_t operator()(const eastl::basic_string<char,eastl::allocator_malloc>& x) const
+        {
+            const unsigned char* p = (const unsigned char*)x.c_str(); // To consider: limit p to at most 256 chars.
+            unsigned int c, result = 2166136261U; // We implement an FNV-like string hash.
+            while((c = *p++) != 0) // Using '!=' disables compiler warnings.
+                result = (result * 16777619) ^ c;
+            return (size_t)result;
+        }
+    };
     eastl::unordered_map<const puerts::ScriptClassDefinition*,
-        eastl::unordered_map<eastl::string, puerts::ScriptFunctionInfo*,
-        eastl::hash<eastl::string>, eastl::equal_to<eastl::string>,eastl::allocator_malloc>,
+        eastl::unordered_map<eastl::basic_string<char,eastl::allocator_malloc>, puerts::ScriptFunctionInfo*,
+        string_hash, eastl::equal_to<eastl::basic_string<char,eastl::allocator_malloc>>,eastl::allocator_malloc>,
     eastl::hash<const void*>, eastl::equal_to<const void*>,eastl::allocator_malloc>
         MethodMetaCache;
 
@@ -128,7 +141,7 @@ public:
 
     PyObject* CreateFunction(pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize);
 
-    puerts::ScriptFunctionInfo* FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::string& name);
+    puerts::ScriptFunctionInfo* FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::basic_string<char,eastl::allocator_malloc>& name);
 
     PyObject* FindOrCreateClassByID(const void* typeId);
 
