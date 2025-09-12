@@ -431,7 +431,7 @@ TEST_F(PApiBaseTest, SetToGlobal)
     apis->set_property(env, g, "SetToGlobal", apis->create_int32(env, 123));
 
     auto code = "SetToGlobal";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_TRUE(ret != nullptr);
     ASSERT_TRUE(apis->is_int32(env, ret));
     EXPECT_EQ(123, apis->get_value_int32(env, ret));
@@ -544,7 +544,7 @@ TEST_F(PApiBaseTest, InstanceMethodCall)
 
     //auto code = "(lambda obj: (obj.Calc, obj.Calc))(loadClass('TestStruct')(123))";
     auto code = "(lambda obj: obj.Calc(123, 456))(loadClass('TestStruct')(123))";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -563,7 +563,7 @@ TEST_F(PApiBaseTest, PropertyAccess)
         exec('obj.a=0'),
         ret+str(obj.Calc(123,456))
     ))( loadClass('TestStruct')(123) )[-1])";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -586,7 +586,7 @@ TEST_F(PApiBaseTest, VariableAccess)
         TestStruct.set_ctor_count(999)
     ))(loadClass('TestStruct'))[0])";
     TestStruct::ctor_count = 100;
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -609,7 +609,7 @@ auto code = R"(
     obj == self
 )[-1])()
 )";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -624,7 +624,7 @@ TEST_F(PApiBaseTest, MutiObject)
     auto env = apis->get_env_from_ref(env_ref);
 
     auto code = R"((lambda: [(TestStruct := loadClass('TestStruct')),[ (obj := TestStruct(123), self_obj := obj.GetSelf()) for i in range(1000) ]])())";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
@@ -707,7 +707,7 @@ TEST_F(PApiBaseTest, LifecycleTrace)
     BindData = &p2;
 
     auto code = "(lambda: globals().__setitem__('obj', loadClass('TestStruct')(123)))()";
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_FALSE(apis->has_caught(scopeInner));
     EXPECT_EQ(&p, EnvPrivate);
     EXPECT_EQ((void*) typeName, ClassData);
@@ -721,7 +721,7 @@ TEST_F(PApiBaseTest, LifecycleTrace)
     BindData = nullptr;
     code = R"(exec("obj = None"))";
 
-    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_FALSE(apis->has_caught(scopeInner));
 
     apis->close_scope(scopeInner);    // 还存放引用在scope里，通过close_scope释放
@@ -746,7 +746,7 @@ TEST_F(PApiBaseTest, ObjectPrivate)
     EXPECT_EQ(&t, p);
     // pycode
     auto code = R"(lambda: print("Hello from func"))";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_FALSE(apis->has_caught(scope));
     ASSERT_TRUE(apis->is_function(env, ret));
     // EXPECT_EQ(true, apis->set_private(env, ret, &t));
@@ -760,7 +760,7 @@ TEST_F(PApiBaseTest, CallMethodDirectly)
 
     auto code = R"((lambda obj: obj.call_method('Calc', (123, 456)))(loadClass('TestStruct')(123)))";
 
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
+    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     if (apis->has_caught(scope))
     {
         printf("%s\n", apis->get_exception_as_string(scope, true));
