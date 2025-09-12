@@ -458,7 +458,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     v8::Context::Scope ContextScope(Context);
 
-   v8::Local<v8::Object> Global = Context->Global();
+    v8::Local<v8::Object> Global = Context->Global();
 #if defined(WITH_NODEJS)
     auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
     v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
