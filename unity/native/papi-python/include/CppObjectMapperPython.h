@@ -27,13 +27,6 @@ namespace pythonimpl
 {
 extern pesapi_ffi g_pesapi_ffi;
 
-struct ObjectUserData
-{
-    const puerts::ScriptClassDefinition* typeInfo;
-    const void* ptr;
-    bool callFinalize;
-};
-
 typedef struct {
     PyObject_HEAD
     const puerts::ScriptClassDefinition* classDefinition;
@@ -54,11 +47,6 @@ public:
     void SetRegistry(puerts::ScriptClassRegistry* InRegistry)
     {
         registry = InRegistry;
-    }
-
-    inline static CppObjectMapper* GetFromEnv(pesapi_env* mapper)
-    {
-        return reinterpret_cast<CppObjectMapper*>(mapper);
     }
 
     void* getCurrentScope()
