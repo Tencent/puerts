@@ -580,8 +580,8 @@ TEST_F(PApiBaseTest, VariableAccess)
     auto env = apis->get_env_from_ref(env_ref);
 
     auto code = R"((lambda TestStruct: (
-        TestStruct.ctor_count,
-        exec('TestStruct.ctor_count=999')
+        TestStruct.get_ctor_count(),
+        TestStruct.set_ctor_count(999)
     ))(loadClass('TestStruct'))[0])";
     TestStruct::ctor_count = 100;
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
@@ -592,7 +592,7 @@ TEST_F(PApiBaseTest, VariableAccess)
     ASSERT_FALSE(apis->has_caught(scope));
     EXPECT_EQ(999, TestStruct::ctor_count);
     ASSERT_TRUE(apis->is_int32(env, ret));
-    EXPECT_EQ(101, apis->get_value_int32(env, ret));
+    EXPECT_EQ(100, apis->get_value_int32(env, ret));
 }
 
 TEST_F(PApiBaseTest, ReturnAObject)

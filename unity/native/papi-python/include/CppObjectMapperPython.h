@@ -154,6 +154,8 @@ public:
 
     void InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj);
 
+    void InitVariable(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj);
+
     PyObject* FindOrCreateClass(const puerts::ScriptClassDefinition* ClassDefinition);
 
     void BindAndAddToCache(const puerts::ScriptClassDefinition* typeInfo, const void* ptr, PyObject* value, bool callFinalize);

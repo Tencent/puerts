@@ -316,6 +316,158 @@ void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObjec
     Py_DECREF(prop);
 }
 
+static PyObject* staticPropGetter(PyObject* self, void* closure)
+{
+    auto* info = (CppObjectMapper::GetterSetterInfo*) closure;
+    pesapi_callback callback = info->getter;
+
+    pesapi_scope__ scope(info->mapper);
+    // For static properties, we don't have an object instance, so objectPtr is nullptr
+    pesapi_callback_info__ callbackInfo{nullptr, nullptr, nullptr, 0,
+        info->getterData, nullptr, nullptr, info->mapper};
+    callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+    if (callbackInfo.ex)
+    {
+        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        return nullptr;
+    }
+    if (callbackInfo.res)
+    {
+        Py_INCREF(callbackInfo.res);
+        return callbackInfo.res;
+    }
+    Py_RETURN_NONE;
+};
+
+static int staticPropSetter(PyObject* self, PyObject* value, void* closure)
+{
+    if (!value)
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Native static property value cannot be null and cannot be deleted");
+        return -1;
+    }
+
+    auto* info = (CppObjectMapper::GetterSetterInfo*) closure;
+    pesapi_callback callback = info->setter;
+
+    pesapi_scope__ scope(info->mapper);
+    // For static properties, we don't have an object instance, so objectPtr is nullptr
+    pesapi_callback_info__ callbackInfo{nullptr, nullptr,
+        PyTuple_Pack(1, value), 1, info->setterData, nullptr, nullptr, info->mapper};
+    callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+    if (callbackInfo.ex)
+    {
+        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        return -1;
+    }
+    return 0;
+};
+
+// Static method implementation for variables
+static PyObject* staticVariableGetter(PyObject* self, PyObject* args) {
+    auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer(self, "GetterSetterInfo");
+    if (!info || !info->getter) {
+        PyErr_SetString(PyExc_RuntimeError, "Invalid getter info");
+        return nullptr;
+    }
+    
+    pesapi_scope__ scope(info->mapper);
+    pesapi_callback_info__ callbackInfo{nullptr, nullptr, nullptr, 0,
+        info->getterData, nullptr, nullptr, info->mapper};
+    info->getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+    
+    if (callbackInfo.ex) {
+        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        return nullptr;
+    }
+    if (callbackInfo.res) {
+        Py_INCREF(callbackInfo.res);
+        return callbackInfo.res;
+    }
+    Py_RETURN_NONE;
+}
+
+static PyObject* staticVariableSetter(PyObject* self, PyObject* args) {
+    auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer(self, "GetterSetterInfo");
+    if (!info || !info->setter) {
+        PyErr_SetString(PyExc_RuntimeError, "Invalid setter info");
+        return nullptr;
+    }
+    
+    pesapi_scope__ scope(info->mapper);
+    pesapi_callback_info__ callbackInfo{nullptr, nullptr, args, PyTuple_Size(args),
+        info->setterData, nullptr, nullptr, info->mapper};
+    info->setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+    
+    if (callbackInfo.ex) {
+        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        return nullptr;
+    }
+    
+    Py_RETURN_NONE;
+}
+
+void CppObjectMapper::InitVariable(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj)
+{
+    auto info = (GetterSetterInfo*) PyMem_Malloc(sizeof(GetterSetterInfo));
+    info->getter = PropInfo->Getter;
+    info->setter = PropInfo->Setter;
+    info->getterData = PropInfo->GetterData;
+    info->setterData = PropInfo->SetterData;
+    info->mapper = this;
+
+    PyObject* capsule = PyCapsule_New(info, "GetterSetterInfo",
+        [](PyObject* capsule) {
+            GetterSetterInfo* info = reinterpret_cast<GetterSetterInfo*>(PyCapsule_GetPointer(capsule, "GetterSetterInfo"));
+            if (info) {
+                PyMem_Free(info);
+            }
+        });
+    
+    if (!capsule) {
+        PyMem_Free(info);
+        return;
+    }
+
+    // Create getter method if getter exists
+    if (PropInfo->Getter) {
+        PyMethodDef* getterMethodDef = (PyMethodDef*) PyMem_Malloc(sizeof(PyMethodDef));
+        char* getterName = (char*) PyMem_Malloc(strlen(PropInfo->Name) + 5); // "get_" + name + '\0'
+        sprintf(getterName, "get_%s", PropInfo->Name);
+        
+        getterMethodDef->ml_name = getterName;
+        getterMethodDef->ml_meth = staticVariableGetter;
+        getterMethodDef->ml_flags = METH_NOARGS;
+        getterMethodDef->ml_doc = "Static variable getter";
+        
+        PyObject* getterFunc = PyCFunction_New(getterMethodDef, capsule);
+        if (getterFunc) {
+            PyObject_SetAttrString(Obj, getterName, getterFunc);
+            Py_DECREF(getterFunc);
+        }
+    }
+
+    // Create setter method if setter exists
+    if (PropInfo->Setter) {
+        PyMethodDef* setterMethodDef = (PyMethodDef*) PyMem_Malloc(sizeof(PyMethodDef));
+        char* setterName = (char*) PyMem_Malloc(strlen(PropInfo->Name) + 5); // "set_" + name + '\0'
+        sprintf(setterName, "set_%s", PropInfo->Name);
+        
+        setterMethodDef->ml_name = setterName;
+        setterMethodDef->ml_meth = staticVariableSetter;
+        setterMethodDef->ml_flags = METH_VARARGS;
+        setterMethodDef->ml_doc = "Static variable setter";
+        
+        PyObject* setterFunc = PyCFunction_New(setterMethodDef, capsule);
+        if (setterFunc) {
+            PyObject_SetAttrString(Obj, setterName, setterFunc);
+            Py_DECREF(setterFunc);
+        }
+    }
+    
+    Py_DECREF(capsule);
+}
+
 typedef struct {
     PyObject_HEAD
     const puerts::ScriptClassDefinition* classDefinition;
@@ -602,7 +754,7 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     PropertyInfo = ClassDefinition->Variables;
     while (PropertyInfo && PropertyInfo->Name)
     {
-        InitProperty(PropertyInfo, type_obj);
+        InitVariable(PropertyInfo, type_obj);
         ++PropertyInfo;
     }
 
@@ -651,16 +803,32 @@ PyObject* CppObjectMapper::findClassByName(PyObject* this_val, int argc, PyObjec
 void CppObjectMapper::Initialize(PyThreadState *InThreadState)
 {
     threadState = InThreadState;
+    if (!threadState) {
+        return;
+    }
+    
     PyThreadState_Swap(threadState);
+    
+    // Ensure __main__ module exists
+    PyObject* main_module = PyImport_AddModule("__main__");
+    if (!main_module) {
+        PyErr_Clear();
+        return;
+    }
+    
     if (PyType_Ready(&Context_Type) < 0) 
     {
+        PyErr_Clear();
         return;
     }
     
     if (PyType_Ready(&PyMethodObject_Type) < 0) 
     {
+        PyErr_Clear();
         return;
     }
+    
+
 
     PtrClassDef.TypeId = &PtrClassDef;
     PtrClassDef.ScriptName = "__Pointer";
@@ -699,17 +867,22 @@ void CppObjectMapper::Cleanup()
 pesapi_env_ref create_py_env()
 {
     auto* mapper = reinterpret_cast<pesapi::pythonimpl::CppObjectMapper*>(malloc(sizeof(pesapi::pythonimpl::CppObjectMapper)));
-    if (mapper)
+    if (!mapper)
     {
-        memset(mapper, 0, sizeof(pesapi::pythonimpl::CppObjectMapper));
-        PyThreadState *threadState = Py_NewInterpreter();
-        if (threadState) {
-            new (mapper) pesapi::pythonimpl::CppObjectMapper();
-            mapper->Initialize(threadState);
-        }
-        return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(mapper));
+        return nullptr;
     }
-    return nullptr;
+    
+    memset(mapper, 0, sizeof(pesapi::pythonimpl::CppObjectMapper));
+    PyThreadState *threadState = Py_NewInterpreter();
+    if (!threadState) {
+        free(mapper);
+        return nullptr;
+    }
+    
+    new (mapper) pesapi::pythonimpl::CppObjectMapper();
+    mapper->Initialize(threadState);
+    
+    return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(mapper));
 }
 
 void destroy_py_env(pesapi_env_ref env_ref)
