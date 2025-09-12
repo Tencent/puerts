@@ -242,7 +242,7 @@ PyObject* CppObjectMapper::MakeFunction(puerts::ScriptFunctionInfo* FuncInfo, Dy
 
 static PyObject* propGetter(PyObject* self, void* closure)
 {
-    auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer((PyObject*) closure, nullptr);
+    auto* info = (CppObjectMapper::GetterSetterInfo*) closure;
     pesapi_callback callback = info->getter;
 
     pesapi_scope__ scope(info->mapper);
@@ -270,7 +270,7 @@ static int propSetter(PyObject* self, PyObject* value, void* closure)
         return -1;
     }
 
-    auto* info = (CppObjectMapper::GetterSetterInfo*) PyCapsule_GetPointer((PyObject*) closure, nullptr);
+    auto* info = (CppObjectMapper::GetterSetterInfo*) closure;
     pesapi_callback callback = info->setter;
 
     pesapi_scope__ scope(info->mapper);
@@ -300,12 +300,7 @@ void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObjec
     def->get = nullptr;
     def->set = nullptr;
     def->doc = nullptr;
-    def->closure = PyCapsule_New(info, nullptr,
-        [](PyObject* capsule)
-        {
-            auto* data = (GetterSetterInfo*) PyCapsule_GetPointer(capsule,  nullptr);
-            PyMem_Free(data);
-        });
+    def->closure = info;
 
     if (PropInfo->Getter)
     {
@@ -578,6 +573,7 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     {
         type_obj = PyType_FromSpec(&spec);
     }
+    PyHeapTypeObject* type = (PyHeapTypeObject*)type_obj;
     if (!type_obj) return NULL;
 
 
