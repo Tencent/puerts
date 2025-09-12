@@ -20,6 +20,9 @@ namespace pesapi
 namespace pythonimpl
 {
 
+int g_dummy_base_type_id = 0;
+int g_dummy_type_id = 0;
+
 struct TestStructBase
 {
     TestStructBase(int b)
@@ -169,7 +172,7 @@ static void GetSelfWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
     auto obj = (TestStruct*) apis->get_native_holder_ptr(info);;
-    apis->add_return(info, apis->native_object_to_value(env, typeName, obj, false));
+    apis->add_return(info, apis->native_object_to_value(env, &g_dummy_type_id , obj, false));
 }
 
 static void IncWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
@@ -182,8 +185,7 @@ static void IncWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
     obj->Inc(p);
     apis->update_boxed_value(env, p0, apis->create_int32(env, p));
 }
-int g_dummy_base_type_id = 0;
-int g_dummy_type_id = 0;
+
 class PApiBaseTest : public ::testing::Test
 {
 public:
@@ -208,7 +210,7 @@ public:
 
         // 封装TestStruct
         GetRegisterApi()->define_class(registry, &g_dummy_type_id, &g_dummy_base_type_id, nullptr, typeName, TestStructCtor,
-            TestStructFinalize, nullptr, false);
+            TestStructFinalize, (void*)typeName, false);
         GetRegisterApi()->set_property_info_size(registry, &g_dummy_type_id, 3, 1, 1, 1);
         GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Add", true, AddWrap, NULL, NULL);
         GetRegisterApi()->set_method_info(registry, &g_dummy_type_id, 0, "Calc", false, CalcWrap, NULL, NULL);
@@ -229,7 +231,7 @@ public:
     static pesapi_registry registry;
     static void* OnObjEnter(void* ptr, void* class_data, void* env_private)
     {
-        // printf("OnObjEnter:%p, %p, %p\n", ptr, class_data, env_private);
+        /// printf("OnObjEnter:%p, %p, %p\n", ptr, class_data, env_private);
         ObjPtr = ptr;
         ClassData = class_data;
         EnvPrivate = env_private;
@@ -599,14 +601,14 @@ TEST_F(PApiBaseTest, ReturnAObject)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-                (function() {
-                    const TestStruct = loadClass('TestStruct');
-                    const obj = new TestStruct(123);
-                    const self = obj.GetSelf();
-                    return obj == self;
-                })();
-              )";
+auto code = R"(
+(lambda: (
+    TestStruct := loadClass('TestStruct'),
+    obj := TestStruct(123),
+    self := obj.GetSelf(),
+    obj == self
+)[-1])()
+)";
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
     if (apis->has_caught(scope))
     {
@@ -621,14 +623,7 @@ TEST_F(PApiBaseTest, MutiObject)
 {
     auto env = apis->get_env_from_ref(env_ref);
 
-    auto code = R"(
-def test_func():
-    TestStruct = loadClass('TestStruct')
-    for i in range(1000):
-        obj = TestStruct(123)
-        self_obj = obj.GetSelf()
-test_func()
-              )";
+    auto code = R"((lambda: [(TestStruct := loadClass('TestStruct')),[ (obj := TestStruct(123), self_obj := obj.GetSelf()) for i in range(1000) ]])())";
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
     if (apis->has_caught(scope))
     {
@@ -711,11 +706,7 @@ TEST_F(PApiBaseTest, LifecycleTrace)
     int p2;
     BindData = &p2;
 
-    auto code = R"(
-                    const TestStruct = loadClass('TestStruct');
-                    obj = new TestStruct(123);
-              )";
-
+    auto code = "(lambda: globals().__setitem__('obj', loadClass('TestStruct')(123)))()";
     apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
     ASSERT_FALSE(apis->has_caught(scopeInner));
     EXPECT_EQ(&p, EnvPrivate);
@@ -728,13 +719,9 @@ TEST_F(PApiBaseTest, LifecycleTrace)
     ClassData = nullptr;
     EnvPrivate = nullptr;
     BindData = nullptr;
-
-    code = R"(
-                    obj = undefined;
-              )";
+    code = R"(exec("obj = None"))";
 
     apis->eval(env, (const uint8_t*) (code), strlen(code), "test.js");
-
     ASSERT_FALSE(apis->has_caught(scopeInner));
 
     apis->close_scope(scopeInner);    // 还存放引用在scope里，通过close_scope释放

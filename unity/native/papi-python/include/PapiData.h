@@ -98,6 +98,7 @@ struct pesapi_scope__
             if (!dynamic_alloc_values)
             {
                 dynamic_alloc_values = (eastl::vector<PyObject*, eastl::allocator_malloc>*)PyMem_Malloc(sizeof(eastl::vector<PyObject*, eastl::allocator_malloc>));
+                new (dynamic_alloc_values) eastl::vector<PyObject*, eastl::allocator_malloc>(eastl::allocator_malloc("pesapi_scope__ dynamic_alloc_values") );
             }
             ret = (PyObject**) PyMem_Malloc(sizeof(PyObject*));
             dynamic_alloc_values->push_back(Py_None);

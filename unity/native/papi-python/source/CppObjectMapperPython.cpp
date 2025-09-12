@@ -91,13 +91,34 @@ PyObject* CppObjectMapper::CreateError(const char* message)
     return nullptr;
 }
 
-// TODO
 void CppObjectMapper::BindAndAddToCache(
     const puerts::ScriptClassDefinition* typeInfo, const void* ptr, PyObject* value, bool callFinalize)
 {
+    DynObj* dynObj = (DynObj*)value;
+    dynObj->objectPtr = (void*)(ptr);
+    dynObj->classDefinition = typeInfo;
+    dynObj->mapper = this;
+
+    auto Iter = CDataCache.find(ptr);
+    FObjectCacheNode* CacheNodePtr;
+    if (Iter != CDataCache.end())
+    {
+        CacheNodePtr = Iter->second.Add(typeInfo->TypeId);
+    }
+    else
+    {
+        auto Ret = CDataCache.insert({ptr, FObjectCacheNode(typeInfo->TypeId)});
+        CacheNodePtr = &Ret.first->second;
+    }
+    CacheNodePtr->MustCallFinalize = callFinalize;
+    CacheNodePtr->Value = value;
+
+    if (typeInfo->OnEnter)
+    {
+        CacheNodePtr->UserData = typeInfo->OnEnter((void*)ptr, typeInfo->Data, (void*)GetEnvPrivate());
+    }
 }
 
-// TODO
 void CppObjectMapper::RemoveFromCache(const puerts::ScriptClassDefinition* typeInfo, const void* ptr)
 {
     auto Iter = CDataCache.find(ptr);
@@ -116,10 +137,48 @@ void CppObjectMapper::RemoveFromCache(const puerts::ScriptClassDefinition* typeI
     }
 }
 
-// TODO
 PyObject* CppObjectMapper::PushNativeObject(const void* TypeId, void* ObjectPtr, bool callFinalize)
 {
-    return nullptr;
+    if (!ObjectPtr)
+    {
+        Py_RETURN_NONE;
+    }
+
+    if (!callFinalize)
+    {
+        auto Iter = CDataCache.find(ObjectPtr);
+        if (Iter != CDataCache.end())
+        {
+            auto CacheNodePtr = Iter->second.Find(TypeId);
+            if (CacheNodePtr)
+            {
+                Py_INCREF(CacheNodePtr->Value);
+                return CacheNodePtr->Value;
+            }
+        }
+    }
+
+    auto ClassDefinition = puerts::LoadClassByID(registry, TypeId);
+    if (!ClassDefinition)
+    {
+        ClassDefinition = &PtrClassDef;
+    }
+    PyObject* cls = FindOrCreateClass(ClassDefinition);
+    if (!cls)
+    {
+        return nullptr;
+    }
+
+    auto* obj = PyObject_New(PyObject, (PyTypeObject*) cls);
+    Py_DECREF(cls);
+    if (!obj)
+    {
+        return nullptr;
+    }
+
+    BindAndAddToCache(ClassDefinition, ObjectPtr, obj, callFinalize);
+
+    return obj;
 }
 
 typedef struct
@@ -527,7 +586,7 @@ static ContextObj* GetContextObj(PyTypeObject* type) {
 }
 
 static void DynObj_dealloc(DynObj* self) {
-    //TODO: self->mapper->RemoveFromCache(ctx->classDefinition, self->objectPtr);
+    self->mapper->RemoveFromCache(self->classDefinition, self->objectPtr);
     if (self->classDefinition && self->classDefinition->Finalize && self->objectPtr && self->mapper) {
         self->classDefinition->Finalize(&g_pesapi_ffi, (void*)self->objectPtr, self->classDefinition->Data, (void*)(self->mapper->GetEnvPrivate()));
     }
@@ -562,8 +621,7 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
         Py_DECREF(self);
         return NULL;
     }
-    //TODO: 缓存到mapper
-
+    self->mapper->BindAndAddToCache(self->classDefinition, ptr, (PyObject*)self, true);
     self->objectPtr = ptr;
 
     return (PyObject*)self;
