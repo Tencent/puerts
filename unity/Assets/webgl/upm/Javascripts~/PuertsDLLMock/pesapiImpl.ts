@@ -383,9 +383,25 @@ class ObjectPool {
     private gcIntervalMs = 50;
 
     private cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void = undefined;
+    
+    // FinalizationRegistry as a backup mechanism for iOS
+    private finalizationRegistry: FinalizationRegistry<number> | null = null;
 
     constructor(cleanupCallback: (objId: number, typeId:number, callFinalize: boolean) => void) {
         this.cleanupCallback = cleanupCallback;
+        
+        // Initialize FinalizationRegistry if available (modern browsers support)
+        if (typeof FinalizationRegistry !== 'undefined') {
+            this.finalizationRegistry = new FinalizationRegistry((objId) => {
+                // Check if object still exists in storage (not cleaned up by WeakRef yet)
+                const entry = this.storage.get(objId);
+                if (entry) {
+                    const [, typeId, callFinalize] = entry;
+                    this.storage.delete(objId);
+                    this.cleanupCallback(objId, typeId, callFinalize);
+                }
+            });
+        }
     }
 
     add(objId: number, obj: object, typeId:number, callFinalize: boolean): this {
@@ -393,6 +409,12 @@ class ObjectPool {
         this.storage.set(objId, [ref, typeId, callFinalize]);
         (obj as any).$ObjId__ = objId;
         (obj as any).$TypeId__ = typeId;
+        
+        // Register with FinalizationRegistry as backup mechanism
+        if (this.finalizationRegistry) {
+            this.finalizationRegistry.register(obj, objId);
+        }
+        
         return this;
     }
 
