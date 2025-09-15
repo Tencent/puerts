@@ -203,6 +203,13 @@ const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value value
 {
     PyObject* obj = pyObjectFromPesapiValue(value);
 
+    if (!PyUnicode_Check(obj))
+    {
+        if (bufsize)
+            *bufsize = 0;
+        return nullptr;
+    }
+
     PyObject* utf16Str = PyUnicode_AsUTF16String(obj);
     if (!utf16Str)
     {
@@ -211,19 +218,50 @@ const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value value
         return nullptr;
     }
 
-    Py_ssize_t rawLength;
-    char* rawBuffer;
-    PyBytes_AsStringAndSize(utf16Str, &rawBuffer, &rawLength);
+    Py_ssize_t byteLen = PyBytes_Size(utf16Str);
 
-    const auto* utf16Buffer = reinterpret_cast<const uint16_t*>(rawBuffer + 2);
-    if (bufsize)
+    if (byteLen < 2)
     {
-        *bufsize = (rawLength - 2) / sizeof(uint16_t);
+        if (bufsize)
+            *bufsize = 0;
+        Py_DECREF(utf16Str);
+        return nullptr;
     }
 
-    Py_DECREF(utf16Str);
+    char* data = PyBytes_AsString(utf16Str);
 
-    return utf16Buffer;
+    if (!data)
+    {
+        if (bufsize)
+            *bufsize = 0;
+        Py_DECREF(utf16Str);
+        return nullptr;
+    }
+
+    size_t charCount = (byteLen - 2) / sizeof(uint16_t);
+
+    if (buf == nullptr)
+    {
+        if (bufsize)
+            *bufsize = charCount;
+        Py_DECREF(utf16Str);
+        return nullptr;
+    }
+    else
+    {
+        if (bufsize && *bufsize < charCount)
+        {
+            *bufsize = charCount;
+            Py_DECREF(utf16Str);
+            return nullptr;
+        }
+
+        memcpy(buf, data + 2, (byteLen - 2));
+        if (bufsize)
+            *bufsize = charCount;
+        Py_DECREF(utf16Str);
+        return buf;
+    }
 }
 
 void* pesapi_get_value_binary(pesapi_env env, pesapi_value value, size_t* length)
