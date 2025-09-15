@@ -52,6 +52,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Lua.NativeAssets.Win
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Lua.NativeAssets.macOS", "Puerts.Lua.NativeAssets.macOS\Puerts.Lua.NativeAssets.macOS.csproj", "{30B39597-7955-4973-BAD5-2DCE5629A982}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python", "Puerts.Python\Puerts.Python.csproj", "{BA29F745-2C79-46D7-9C76-D8FFA5C8C81A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -142,6 +144,10 @@ Global
 		{30B39597-7955-4973-BAD5-2DCE5629A982}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30B39597-7955-4973-BAD5-2DCE5629A982}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30B39597-7955-4973-BAD5-2DCE5629A982}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA29F745-2C79-46D7-9C76-D8FFA5C8C81A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA29F745-2C79-46D7-9C76-D8FFA5C8C81A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA29F745-2C79-46D7-9C76-D8FFA5C8C81A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA29F745-2C79-46D7-9C76-D8FFA5C8C81A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

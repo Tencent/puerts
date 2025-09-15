@@ -258,6 +258,7 @@ public class BuildContext : FrostingContext
                 "Puerts.Core",
                 "Puerts.Lua",
                 "Puerts.NodeJS",
+                "Puerts.Python",
                 "Puerts.QuickJS",
                 "Puerts.V8"
             };
@@ -329,6 +330,7 @@ public class BuildContext : FrostingContext
                         "Core" => "puerts",
                         "Lua" => "papi-lua",
                         "NodeJS" => "papi-nodejs",
+                        "Python" => "papi-python",
                         "QuickJS" => "papi-quickjs",
                         "V8" => "papi-v8",
                         _ => throw new NotSupportedException($"NativeName '{DotNetNativeName}' is not supported.")

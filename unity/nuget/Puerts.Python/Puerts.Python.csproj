@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsQuickJSVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiPythonNative.cs">
+            <Link>Native\PapiPythonNative.cs</Link>
+        </Compile>
+        <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendPython.cs">
+            <Link>Backends\BackendPython.cs</Link>
+        </Compile>
+        <Compile Include="..\..\Assets\core\upm\Runtime\Src\Loaders\PythonLoader.cs">
+            <Link>Loaders\PythonLoader.cs</Link>
+        </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+</Project>
