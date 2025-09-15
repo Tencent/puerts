@@ -166,14 +166,22 @@ public:
 
     inline const void* GetNativeObjectPtr(PyObject* val)
     {
-        // TODO
-        return nullptr;
+        if (Py_IsNone(val))
+        {
+            return nullptr;
+        }
+        auto obj = (DynObj*) val;
+        return obj->objectPtr ? obj->objectPtr : nullptr;
     }
 
     inline const void* GetNativeObjectTypeId(PyObject* val)
     {
-        // TODO
-        return nullptr;
+        if (Py_IsNone(val))
+        {
+            return nullptr;
+        }
+        auto obj = (DynObj*) val;
+        return obj->classDefinition ? obj->classDefinition->TypeId : nullptr;
     }
 
     typedef struct
