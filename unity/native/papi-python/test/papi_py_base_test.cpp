@@ -772,6 +772,22 @@ TEST_F(PApiBaseTest, CallMethodDirectly)
     EXPECT_EQ(702, apis->get_value_int32(env, ret));
 }
 
+TEST_F(PApiBaseTest, UTF16Test)
+{
+    auto env = apis->get_env_from_ref(env_ref);
+    char16_t str[] = u"Hello";
+    auto val = apis->create_string_utf16(env, (uint16_t*)str, 5);
+    ASSERT_TRUE(val != nullptr);
+    ASSERT_TRUE(apis->is_string(env, val));
+    size_t len = 0;
+    apis->get_value_string_utf16(env, val, nullptr, &len);
+    ASSERT_EQ(len, 5);
+    char16_t buff[6] = {0};
+    apis->get_value_string_utf16(env, val, (uint16_t*)buff, &len);
+    buff[5] = 0;
+    EXPECT_EQ(0, std::u16string(buff).compare(u"Hello"));
+}
+
 /*TEST_F(PApiBaseTest, EvalStrlenPlusOne)
 {
     auto env = apis->get_env_from_ref(env_ref);
