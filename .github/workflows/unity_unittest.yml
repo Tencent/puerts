@@ -76,10 +76,10 @@ jobs:
           modules: mac-il2cpp
       - uses: RageAgainstThePixel/activate-unity-license@v1
         with:
-          license: 'Professional'
+          license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-          serial: ${{ secrets.UNITY_SERIAL }}
+          #serial: ${{ secrets.UNITY_SERIAL }}
       - name: UnitTest
         run: |
           cd unity
