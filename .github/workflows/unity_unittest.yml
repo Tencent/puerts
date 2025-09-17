@@ -85,7 +85,7 @@ jobs:
           cd unity
           npm i
           cd test/unity
-          node ../../cli unity-test --unity ${{ UNITY_EDITOR_PATH }}
+          node ../../cli unity-test --unity ${{ env.UNITY_EDITOR_PATH }}
       - name: TestResult
 #        if: always()
         shell: bash
