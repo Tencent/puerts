@@ -69,24 +69,23 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Unity
-        uses: ./.github/workflows/composites/unity-setup/
+      - uses: RageAgainstThePixel/unity-setup@v1
         with:
-          os: 'osx'
-          version: '2022.3.59f1'
-          cachekey: 'unity2022arm64'
-          install_path: /Applications/UNITY
-          unity_modules: mac-il2cpp
-          architecture: arm64
-          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
+          build-targets: StandaloneOSX
+          modules: mac-il2cpp
+      - uses: RageAgainstThePixel/activate-unity-license@v1
+        with:
+          license: 'Professional'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+          serial: ${{ secrets.UNITY_SERIAL }}
       - name: UnitTest
         run: |
           cd unity
           npm i
           cd test/unity
-          node ../../cli unity-test --unity /Applications/UNITY/2022.3.59f1/Unity.app/Contents/MacOS/Unity
+          node ../../cli unity-test --unity ${{UNITY_EDITOR_PATH}}
       - name: TestResult
 #        if: always()
         shell: bash
