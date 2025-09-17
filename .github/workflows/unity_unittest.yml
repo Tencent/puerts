@@ -71,9 +71,10 @@ jobs:
       - uses: actions/checkout@v3
       - uses: RageAgainstThePixel/unity-setup@v1
         with:
-          version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
+          unity-version: 2022.3.59f1
           build-targets: StandaloneOSX
           modules: mac-il2cpp
+          #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
       - uses: RageAgainstThePixel/activate-unity-license@v1
         with:
           license: 'Personal'
