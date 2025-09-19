@@ -7,21 +7,22 @@
 
 using System;
 
-namespace Puerts;
-
-public class PythonLoader : ILoader
+namespace Puerts
 {
-    public bool FileExists(string filepath)
+    public class PythonLoader : ILoader
     {
-        throw new NotImplementedException();
+        public bool FileExists(string filepath)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string ReadFile(string filepath, out string debugpath)
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public string ReadFile(string filepath, out string debugpath)
+    public class PythonDefaultLoader : PythonLoader
     {
-        throw new NotImplementedException();
     }
-}
-
-public class PythonDefaultLoader : PythonLoader
-{
 }

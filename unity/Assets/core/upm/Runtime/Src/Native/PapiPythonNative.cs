@@ -8,27 +8,28 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Puerts;
-
-public class PapiPythonNative
+namespace Puerts
 {
+    public class PapiPythonNative
+    {
 #if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
         const string PAPIDLLNAME = "__Internal";
 #else
-    const string PAPIDLLNAME = "PapiPython";
+        const string PAPIDLLNAME = "PapiPython";
 #endif
-    [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetPythonPapiVersion();
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetPythonPapiVersion();
 
-    [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr GetPythonFFIApi();
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetPythonFFIApi();
 
-    [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr CreatePythonPapiEnvRef();
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr CreatePythonPapiEnvRef();
 
-    [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void DestroyPythonPapiEnvRef(IntPtr envRef);
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void DestroyPythonPapiEnvRef(IntPtr envRef);
     
-    [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RunGC(IntPtr envRef);
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RunGC(IntPtr envRef);
+    }
 }
