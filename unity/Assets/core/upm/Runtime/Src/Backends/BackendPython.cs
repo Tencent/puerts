@@ -7,61 +7,61 @@
 
 using System;
 
-namespace Puerts;
-
-public class BackendPython : Backend
+namespace Puerts
 {
-    private IntPtr envRef;
-    private PythonLoader pythonLoader;
-    public BackendPython(PythonLoader loader)
+    public class BackendPython : Backend
     {
-        pythonLoader = loader;
-    }
-    public BackendPython()
-    {
-        pythonLoader = new PythonDefaultLoader();
-    }
-    public override int GetApiVersion()
-    {
-        return PapiPythonNative.GetPythonPapiVersion();
-    }
+        private IntPtr envRef;
+        private PythonLoader pythonLoader;
+        public BackendPython(PythonLoader loader)
+        {
+            pythonLoader = loader;
+        }
+        public BackendPython()
+        {
+            pythonLoader = new PythonDefaultLoader();
+        }
+        public override int GetApiVersion()
+        {
+            return PapiPythonNative.GetPythonPapiVersion();
+        }
 
-    public override IntPtr CreateEnvRef()
-    {
-        envRef = PapiPythonNative.CreatePythonPapiEnvRef();
-        return envRef;
-    }
+        public override IntPtr CreateEnvRef()
+        {
+            envRef = PapiPythonNative.CreatePythonPapiEnvRef();
+            return envRef;
+        }
 
-    public override IntPtr GetApi()
-    {
-        return PapiPythonNative.GetPythonFFIApi();
-    }
+        public override IntPtr GetApi()
+        {
+            return PapiPythonNative.GetPythonFFIApi();
+        }
 
-    public override void DestroyEnvRef(IntPtr penvRef)
-    {
-        PapiPythonNative.DestroyPythonPapiEnvRef(envRef);
-    }
+        public override void DestroyEnvRef(IntPtr penvRef)
+        {
+            PapiPythonNative.DestroyPythonPapiEnvRef(envRef);
+        }
 
-    public override IntPtr GetModuleExecutor(IntPtr env)
-    {
-        var papis = GetApi();
-        return PuertsNative.pesapi_create_null(papis, env);
-    }
+        public override IntPtr GetModuleExecutor(IntPtr env)
+        {
+            var papis = GetApi();
+            return PuertsNative.pesapi_create_null(papis, env);
+        }
 
-    public override object GetLoader()
-    {
-        return pythonLoader;
-    }
+        public override object GetLoader()
+        {
+            return pythonLoader;
+        }
 
-    public override void LowMemoryNotification()
-    {
+        public override void LowMemoryNotification()
+        {
 
-    }
+        }
 
-    public override void OnEnter(ScriptEnv scriptEnv)
-    {
-        scriptEnv.Eval(
-@"exec(
+        public override void OnEnter(ScriptEnv scriptEnv)
+        {
+            scriptEnv.Eval(
+                @"exec(
 '''
 class CSharp:
     def __init__(self):
@@ -134,5 +134,6 @@ class CSharp:
     def set_ref(ref_obj, value):
         ref_obj[0] = value
 ''')");
+        }
     }
 }
