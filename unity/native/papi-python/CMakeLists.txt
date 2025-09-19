@@ -39,6 +39,7 @@ file(GLOB_RECURSE EASTL_HEADS "../EASTL/include/EASTL/**.h")
 set(PAPI_SRC
         source/PapiPythonImpl.cpp
         source/CppObjectMapperPython.cpp
+        source/PapiExport.cpp
 )
 
 add_library(PapiPython SHARED ${PAPI_SRC})
