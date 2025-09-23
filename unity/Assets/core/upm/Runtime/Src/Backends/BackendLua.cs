@@ -68,6 +68,8 @@ namespace Puerts
             // override print
             scriptEnv.Eval(@"
             local tudb = scriptEnv:GetTypeByString('UnityEngine.Debug')
+            local loadType = loadType
+            local scriptEnv = scriptEnv
             
             local outputStr
             if tudb then
@@ -91,12 +93,34 @@ namespace Puerts
             local rawget = rawget
             local setmetatable = setmetatable
             local loadType = loadType
-            local function import_type(full_name)
-                local type = scriptEnv:GetTypeByString(full_name)
+            local scriptEnv = scriptEnv
+            local GET_MEMBER_FLAGS = nil
+            local function get_nested_types(type, cls)
+                if not GET_MEMBER_FLAGS then
+                    local BindingFlags = loadType(scriptEnv:GetTypeByString('System.Reflection.BindingFlags'))
+                    GET_MEMBER_FLAGS = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+                end
+                local nts = type:GetNestedTypes(GET_MEMBER_FLAGS)
+                if nts and nts.Length > 0 then
+                    for i = 0, nts.Length -1 do
+                        local nt = nts:get_Item(i)
+                        local nc = loadType(nt)
+                        rawset(nc, '__p_innerType', nt)
+                        rawset(cls, nt.Name, nc)
+                    end
+                end
+            end
+            local function cs_type_to_lua(type)
                 if not type then return nil end
                 local cls = loadType(type)
+                if not cls then return nil end
                 rawset(cls, '__p_innerType', type)
+                get_nested_types(type, cls)
                 return cls
+            end
+            local function import_type(full_name)
+                local type = scriptEnv:GetTypeByString(full_name)
+                return cs_type_to_lua(type)
             end
             local function import_generic_type(full_name)
                 local type = scriptEnv:GetTypeByString(full_name)
@@ -172,6 +196,7 @@ namespace Puerts
 
             scriptEnv.Eval(@"
             local loadType = loadType
+            local scriptEnv = scriptEnv
             local puerts = require('puerts')
             local CS = require('csharp')
             local unpack = unpack or table.unpack
@@ -233,6 +258,12 @@ namespace Puerts
             function puerts.unref(r) return r[1] end
             function puerts.setref(r, x) r[1] = x end
             
+            ");
+
+            // clear global
+            scriptEnv.Eval(@"
+            loadType = nil
+            scriptEnv = nil
             ");
         }
     }
