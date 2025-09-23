@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Puerts.UnitTest
 {
@@ -568,6 +569,65 @@ namespace Puerts.UnitTest
             var cb = luaEnv.Eval<Func<long, string>>("return __NGTF");
             var ret = cb(9999);
             Assert.AreEqual("9999", ret);
+            luaEnv.Dispose();
+        }
+
+        [Test]
+        public void BigIntInstanceLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            luaEnv.Eval(@"
+                local CS = require('csharp')
+                local TestHelper = CS.Puerts.UnitTest.TestHelper
+                local assertAndPrint = TestHelper.AssertAndPrint
+                local testHelper = TestHelper.GetInstance()
+
+                local outRef = {}
+                local oBigint = 9007199254740992
+                outRef[1] = oBigint
+
+                local rBigint = testHelper:BigIntTestPipeLine(oBigint, outRef, function(bigint)
+                    assertAndPrint('LuaGetBigintArgFromCS', bigint, oBigint + 1)
+                    return oBigint + 2
+                end)
+                
+                assertAndPrint('LuaGetBigintOutArgFromCS', outRef[1], oBigint + 3)
+                assertAndPrint('LuaGetBigintReturnFromCS', rBigint, oBigint + 4)
+                
+                testHelper.bigintTestField =  9007199254740987
+                testHelper.bigintTestProp =  9007199254740987
+                TestHelper.bigintTestFieldStatic =  9007199254740987
+                TestHelper.bigintTestPropStatic =  9007199254740987
+                testHelper:BigintTestCheckMemberValue()
+            ");
+            luaEnv.Dispose();
+        }
+
+        [Test]
+        public void EnumArrayLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            var ret = luaEnv.Eval<string>(@"
+                local CS = require('csharp')
+                local helper = CS.Puerts.UnitTest.CrossLangTestHelper()
+                return type(helper.EnumArray:get_Item(0))
+            ");
+            Assert.AreEqual("number", ret);
+            luaEnv.Dispose();
+        }
+
+        [Test]
+        public void BigULongLuaTest()
+        {
+            var luaEnv = new ScriptEnv(new BackendLua());
+            var res = luaEnv.Eval<string>(@"
+                local CS = require('csharp')
+                local TestHelper = CS.Puerts.UnitTest.TestHelper
+                local assertAndPrint = TestHelper.AssertAndPrint
+                local testHelper = TestHelper.GetInstance()
+                return testHelper:GetBigULong()
+            ");
+            Assert.AreEqual((long.MinValue).ToString(), res);
             luaEnv.Dispose();
         }
     }
