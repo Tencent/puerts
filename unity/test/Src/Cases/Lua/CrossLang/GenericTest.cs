@@ -148,7 +148,7 @@ namespace Puerts.UnitTest
             Assert.AreEqual(result, "world_Int32");
             luaEnv.Dispose();
         }
-        /*
+
         [Test]
         public void GenericAccessLuaTest()
         {
@@ -164,7 +164,7 @@ namespace Puerts.UnitTest
             Assert.AreEqual(result, "hello");
             luaEnv.Dispose();
         }
-        */
+
         // web平台没有gc的api
 #if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
