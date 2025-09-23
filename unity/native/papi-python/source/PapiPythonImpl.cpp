@@ -389,10 +389,9 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value value)
     return mapper->GetNativeObjectTypeId(obj);
 }
 
-int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value value)
+int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
 {
-    // TODO
-    return false;
+    return pesapi_get_native_object_typeid(env, pvalue) == type_id;
 }
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
