@@ -788,6 +788,34 @@ TEST_F(PApiBaseTest, UTF16Test)
     EXPECT_EQ(0, std::u16string(buff).compare(u"Hello"));
 }
 
+TEST_F(PApiBaseTest, IsInstanceOf)
+{
+    auto env = apis->get_env_from_ref(env_ref);
+    // Python 继承 Native
+    auto code = R"(exec(
+'''
+TestStruct = loadClass('TestStruct')
+print(TestStruct)
+class PyTestStruct(TestStruct):
+    def __init__(self,a):
+        super().__init__(a)
+
+obj = PyTestStruct(123)
+print(PyTestStruct)
+''')
+)";
+    apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
+    if (apis->has_caught(scope))
+    {
+        printf("%s\n", apis->get_exception_as_string(scope, true));
+        FAIL();
+    }
+    auto g = apis->global(env);
+    auto obj = apis->get_property(env, g, "obj");
+    ASSERT_TRUE(apis->is_instance_of(env, &g_dummy_type_id, obj));
+    ASSERT_FALSE(apis->is_instance_of(env, &g_dummy_base_type_id, obj));
+}
+
 /*TEST_F(PApiBaseTest, EvalStrlenPlusOne)
 {
     auto env = apis->get_env_from_ref(env_ref);
