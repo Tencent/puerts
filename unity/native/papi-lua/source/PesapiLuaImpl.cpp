@@ -413,9 +413,8 @@ int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pval
     lua_State* L = luaStateFromPesapiEnv(env);
     int idx = luaValueFromPesapiValue(pvalue);
     auto mapper = CppObjectMapper::Get(L);
-    CppObject* cppObject = mapper->GetCppObject(L, idx);
-    // TODO: check inheritance
-    return cppObject && (cppObject->TypeId == type_id);
+    
+    return mapper->IsInstanceOfCppObject(L, type_id, idx);
 }
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value pvalue)

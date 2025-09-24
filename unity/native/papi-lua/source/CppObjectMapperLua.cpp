@@ -310,10 +310,41 @@ namespace luaimpl
         return (CppObject*)lua_touserdata(L, index);
     }
 
+    // Helper function to check inheritance chain
+    static bool IsInstanceOfWithInheritance(puerts::ScriptClassRegistry* registry, const void* objectTypeId, const void* targetTypeId)
+    {
+        if (objectTypeId == targetTypeId)
+        {
+            return true;
+        }
+        
+        // Load the class definition for the object's type
+        const puerts::ScriptClassDefinition* classDef = puerts::LoadClassByID(registry, objectTypeId);
+        if (!classDef)
+        {
+            return false;
+        }
+        
+        // Check if the object's class has a super class
+        if (classDef->SuperTypeId)
+        {
+            // Recursively check the inheritance chain
+            return IsInstanceOfWithInheritance(registry, classDef->SuperTypeId, targetTypeId);
+        }
+        
+        return false;
+    }
+
     bool CppObjectMapper::IsInstanceOfCppObject(lua_State* L, const void* TypeId, int ObjectIndex)
     {
         CppObject* cppObject = (CppObject*)lua_touserdata(L, ObjectIndex);
-        return cppObject && cppObject->TypeId == TypeId;
+        if (!cppObject)
+        {
+            return false;
+        }
+        
+        // Check inheritance chain
+        return IsInstanceOfWithInheritance(registry, cppObject->TypeId, TypeId);
     }
 
     int CppObjectMapper::FindOrAddCppObject(lua_State* L, const void* typeId, void* ptr, bool passByPointer)
