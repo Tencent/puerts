@@ -940,6 +940,23 @@ pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2Cpp
         if (obj->klass == g_typeofPersistentObjectInfo)
         {
             PObjectRefInfo* objectInfo = GetPObjectRefInfo(obj);
+			if (apis != objectInfo->Apis)
+			{
+                Exception::Raise(Exception::GetInvalidOperationException("ScriptObject form other papi provider!"));
+			}
+            pesapi_env_ref envRef = apis->get_ref_associated_env(objectInfo->ValueRef);
+            auto scope = apis->open_scope(envRef);
+            auto objEnv = apis->get_env_from_ref(envRef);
+            bool invalidObj = (objEnv == nullptr) || apis->get_env_private(objEnv) != apis->get_env_private(env);
+            apis->close_scope(scope);
+			if (!envRef || !objEnv)
+			{
+				Exception::Raise(Exception::GetInvalidOperationException("ScriptObject env is invalid!"));
+			}
+            if (invalidObj)
+			{
+				Exception::Raise(Exception::GetInvalidOperationException("ScriptObject own by anther env!"));
+			}
             return GetPObjectRefInfoValue(apis, env, objectInfo);
         }
         if (obj->klass == g_typeofArrayBuffer)

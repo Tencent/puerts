@@ -1427,5 +1427,28 @@ __PDUOTF;");
             Assert.AreEqual(true, is_null(tex2D));
         }
 #endif
+        delegate bool PassScriptObject(ScriptObject obj);
+
+        [Test]
+        public void JsObjectCrossJsEnvs()
+        {
+            var jsEnv1 = new JsEnv(UnitTestEnv.GetLoader());
+            jsEnv1.UsingFunc<ScriptObject, bool>();
+            var jsEnv2 = new JsEnv(UnitTestEnv.GetLoader());
+            jsEnv2.UsingFunc<ScriptObject, bool>();
+            var jsObj1 = jsEnv1.Eval<ScriptObject>("Object.create(null)");
+            var test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
+            var test2 = jsEnv2.Eval<PassScriptObject>("(obj) => !!obj");
+            Assert.True(test1(jsObj1));
+			Assert.Catch(() =>
+            {
+                test2(jsObj1);
+			});
+            jsEnv1.Dispose();
+			Assert.Catch(() =>
+            {
+                Assert.False(test2(jsObj1));
+			});
+        }
     }
 }

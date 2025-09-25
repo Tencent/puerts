@@ -158,7 +158,7 @@ namespace Puerts
 
                 // apis is the same, using apis
                 var objEnvRef = PuertsNative.pesapi_get_ref_associated_env(apis, obj.objRef);
-                if (!PuertsNative.pesapi_env_ref_is_valid(apis, objEnvRef))
+                if (objEnvRef == IntPtr.Zero || !PuertsNative.pesapi_env_ref_is_valid(apis, objEnvRef))
                 {
                     throw new InvalidCastException("ScriptObject env is invalid!");
                 }
@@ -170,7 +170,7 @@ namespace Puerts
                 PuertsNative.pesapi_close_scope(apis, scope);
                 if (!isEnvEq)
                 {
-                    throw new InvalidCastException("ScriptObject own by anther env");
+                    throw new InvalidCastException("ScriptObject own by anther env!");
                 }
                 return PuertsNative.pesapi_get_value_from_ref(apis, env, obj.objRef);
             }
