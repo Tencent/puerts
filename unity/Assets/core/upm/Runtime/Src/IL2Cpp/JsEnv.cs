@@ -373,6 +373,13 @@ namespace Puerts
             lock (this)
             {
                 if (disposed) return;
+				
+#if UNITY_WEBGL
+                if (!(Backend is BackendQuickJS))
+				{
+                    throw new InvalidOperationException("can not dispose webgl backend");
+				}
+#endif
                 
                 // void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)" failed in android
                 TickHandler = null;
