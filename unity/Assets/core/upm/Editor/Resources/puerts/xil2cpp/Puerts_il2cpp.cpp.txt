@@ -1315,14 +1315,6 @@ handle_underlying:
             {
                 return il2cpp::vm::Class::IsValuetype(objClass) ? Object::Box(objClass, ptr) : (Il2CppObject*)ptr;
             }
-			else if(objClass)
-			{
-				std::string message = "expect ";
-				message += klass->name;
-				message += ", by got ";
-				message += objClass->name;
-				Exception::Raise(Exception::GetInvalidOperationException(message.c_str()));
-			}
             return nullptr;
         }
         case IL2CPP_TYPE_VALUETYPE:
