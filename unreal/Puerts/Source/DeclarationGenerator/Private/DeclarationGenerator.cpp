@@ -60,7 +60,7 @@ bool bSearchAllPluginBP = true;
 static FAutoConsoleVariableRef CVarSearchAllPluginBP(TEXT("bSearchAllPluginBP"), bSearchAllPluginBP, TEXT(".\n"), ECVF_Default);
 
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 5
-#define GET_VERSION_ID(PD) LexToString(PD->CookedHash)
+#define GET_VERSION_ID(PD) LexToString(PD->GetPackageSavedHash())
 #else
 #define GET_VERSION_ID(PD) PD->PackageGuid.ToString()
 #endif
