@@ -249,6 +249,14 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         thread_safe: thread_safe
     });
     dlls = dlls.concat(nodedlls);
+	
+	const pydlls = await runPuertsMake(join(cwd, '../../native/papi-python'), {
+        platform: getPlatform(),
+        config: "Debug",
+        arch: process.arch,
+        thread_safe: thread_safe
+    });
+    dlls = dlls.concat(pydlls);
 
     const wsppaddondlls = await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
         platform: getPlatform(),
