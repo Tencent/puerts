@@ -389,10 +389,13 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value value)
     return mapper->GetNativeObjectTypeId(obj);
 }
 
-int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value value)
+int pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
 {
-    // TODO
-    return false;
+    auto mapper = mapperFromPesapiEnv(env);
+    PyObject* obj = pyObjectFromPesapiValue(pvalue);
+    PyObject* cls = mapper->FindOrCreateClassByID(type_id);
+    int ret = PyObject_IsInstance(obj, cls);
+    return ret == 1 && obj->ob_type->tp_base == reinterpret_cast<PyTypeObject*>(cls);
 }
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value value)
