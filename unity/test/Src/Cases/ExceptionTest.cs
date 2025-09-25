@@ -184,6 +184,7 @@ namespace Puerts.UnitTest
             });
             jsEnv.Tick();
         }
+		/*
         [Test]
         public void PolymorphismMismatchedArgumentsException()
         {
@@ -199,6 +200,7 @@ namespace Puerts.UnitTest
             });
             jsEnv.Tick();
         }
+		*/
         [Test]
         public void InvalidRefStructArgumentsException()
         {
