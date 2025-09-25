@@ -47,7 +47,7 @@ namespace Puerts
 
     public class JSObject
     {
-        private readonly JsEnv jsEnv;
+        internal readonly JsEnv jsEnv;
 
         private IntPtr nativeJsObjectPtr;
 
