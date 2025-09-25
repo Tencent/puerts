@@ -166,7 +166,7 @@ public:
 
     inline const void* GetNativeObjectPtr(PyObject* val)
     {
-        if (Py_IsNone(val))
+        if (val == Py_None)
         {
             return nullptr;
         }
@@ -176,7 +176,7 @@ public:
 
     inline const void* GetNativeObjectTypeId(PyObject* val)
     {
-        if (Py_IsNone(val))
+        if (val == Py_None)
         {
             return nullptr;
         }

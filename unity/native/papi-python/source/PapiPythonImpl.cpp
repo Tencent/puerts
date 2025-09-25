@@ -285,7 +285,7 @@ uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value value)
     PyObject* obj = pyObjectFromPesapiValue(value);
     if (PyList_Check(obj))
     {
-        return PyList_Size(obj);
+        return static_cast<uint32_t>(PyList_Size(obj));
     }
     return 0;
 }

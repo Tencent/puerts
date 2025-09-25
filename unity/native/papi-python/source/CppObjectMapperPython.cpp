@@ -7,6 +7,7 @@
  */
 
 #include "Python.h"
+#include "structmember.h"
 #include "pesapi.h"
 #include "ScriptClassRegistry.h"
 #include "CppObjectMapperPython.h"
@@ -59,7 +60,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
                 PyErr_SetString(PyExc_RuntimeError, "Invalid callback data");
                 return nullptr;
             }
-            pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, PyTuple_Size(args), data->data, nullptr, nullptr, data->mapper };
+            pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, static_cast<int>(PyTuple_Size(args)), data->data, nullptr, nullptr, data->mapper };
             data->callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
             if (callbackInfo.ex)
             {
@@ -205,7 +206,7 @@ static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObj
         return nullptr;
     }
     
-    pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, PyTuple_Size(args), self->funcInfo->Data, nullptr, nullptr,self->mapper };
+            pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, static_cast<int>(PyTuple_Size(args)), self->funcInfo->Data, nullptr, nullptr,self->mapper };
     self->funcInfo->Callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -454,7 +455,7 @@ static PyObject* staticVariableSetter(PyObject* self, PyObject* args) {
     }
     
     pesapi_scope__ scope(info->mapper);
-    pesapi_callback_info__ callbackInfo{nullptr, nullptr, args, PyTuple_Size(args),
+    pesapi_callback_info__ callbackInfo{nullptr, nullptr, args, static_cast<int>(PyTuple_Size(args)),
         info->setterData, nullptr, nullptr, info->mapper};
     info->setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     
@@ -613,7 +614,7 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
         return NULL;
     }
     
-    pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, PyTuple_Size(args), self->classDefinition->Data, nullptr, nullptr, self->mapper };
+    pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, static_cast<int>(PyTuple_Size(args)), self->classDefinition->Data, nullptr, nullptr, self->mapper };
     void* ptr = self->classDefinition->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -676,7 +677,7 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
         dynObj->objectPtr,
         dynObj->classDefinition->TypeId,
         pyArgs,
-        (int)PyTuple_Size(pyArgs),
+        static_cast<int>(PyTuple_Size(pyArgs)),
         funcInfo->Data,
         nullptr,
         nullptr,
