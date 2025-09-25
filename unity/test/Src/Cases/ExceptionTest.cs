@@ -192,7 +192,8 @@ namespace Puerts.UnitTest
                 jsEnv.Eval(@"
                     (function() {
                         let tbc = new CS.Puerts.UnitTest.ExceptionTestHelper.TestBaseClass();
-                        return CS.Puerts.UnitTest.ExceptionTestHelper.ArgDerivedClass(tbc, 1, 'gloria')
+                        let helper = new CS.Puerts.UnitTest.ExceptionTestHelper();
+                        helper.ArgDerivedClass(tbc, 1, 'gloria')
                     })()
                 ");
             });
