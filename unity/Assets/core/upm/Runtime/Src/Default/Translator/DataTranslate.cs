@@ -501,7 +501,7 @@ namespace Puerts
 
         private static void JSObjectTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            var jsObj = (JSObject)obj;
+            var jsObj = obj as JSObject;
             if (jsObj == null || jsObj.jsEnv == null || jsObj.jsEnv.Idx != jsEnvIdx)
             {
                 setValueApi.SetNull(isolate, holder);
