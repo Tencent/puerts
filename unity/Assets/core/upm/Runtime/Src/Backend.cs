@@ -102,9 +102,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-#if PUERTS_DISABLE_IL2CPP_OPTIMIZATION || (!PUERTS_IL2CPP_OPTIMIZATION && UNITY_IPHONE) || !ENABLE_IL2CPP
             PuertsDLL.LowMemoryNotification(env.isolate);
-#endif
 #if THREAD_SAFE
             }
 #endif
