@@ -8,6 +8,15 @@
 
 #include "DynamicDelegateProxy.h"
 
+UWorld* UDynamicDelegateProxy::GetWorld() const
+{
+    if (Owner.IsValid())
+    {
+        return Owner->GetWorld();
+    }
+    return UObject::GetWorld();
+}
+
 void UDynamicDelegateProxy::Fire()
 {
     // Do Nothing

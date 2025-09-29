@@ -31,6 +31,8 @@ class UDynamicDelegateProxy : public UObject
 {
     GENERATED_BODY()
 public:
+    virtual UWorld* GetWorld() const override;
+
     UFUNCTION(BlueprintCallable, Category = "TGameJS")
     void Fire();
 
