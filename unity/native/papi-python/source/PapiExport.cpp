@@ -57,8 +57,6 @@ extern "C" {
             mapper->Cleanup();
             free(mapper);
         }
-
-        Py_Finalize();
     }
 
     PESAPI_MODULE_EXPORT void RunGC(pesapi_env_ref env_ref)
