@@ -1409,5 +1409,20 @@ __PDUOTF;");
             jsEnv1.Dispose();
             Assert.False(test2(jsObj1));
         }
+		
+		[Test]
+        public void DisposeJsEnvJsObject()
+        {
+            var jsEnv1 = new JsEnv(UnitTestEnv.GetLoader());
+            jsEnv1.UsingFunc<JSObject, bool>();
+            var jsObj1 = jsEnv1.Eval<JSObject>("Object.create(null)");
+            var test1 = jsEnv1.Eval<PassJsObject>("(obj) => !!obj");
+            Assert.True(test1(jsObj1));
+            jsEnv1.Dispose();
+            jsEnv1 = new JsEnv(UnitTestEnv.GetLoader());
+            jsEnv1.UsingFunc<JSObject, bool>();
+            test1 = jsEnv1.Eval<PassJsObject>("(obj) => !!obj");
+            Assert.False(test1(jsObj1));
+        }
     }
 }
