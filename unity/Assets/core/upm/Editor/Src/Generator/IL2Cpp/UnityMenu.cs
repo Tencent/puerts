@@ -27,7 +27,6 @@ namespace PuertsIl2cpp.Editor
                 GenerateExtensionMethodInfos();
                 GenerateLinkXML();
                 GenerateCppPlugin();
-                Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (all in one with full wrapper)", false, 3)]
@@ -36,7 +35,6 @@ namespace PuertsIl2cpp.Editor
                 GenerateExtensionMethodInfos();
                 GenerateLinkXML();
                 GenerateCppPlugin();
-                Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (minimum bridge and without wrapper)", false, 4)]
@@ -46,7 +44,6 @@ namespace PuertsIl2cpp.Editor
                 GenerateExtensionMethodInfos();
                 GenerateLinkXML();
                 GenerateCppPlugin();
-                Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
             }
 
 

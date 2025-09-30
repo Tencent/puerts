@@ -4,6 +4,12 @@ export default function unityenv_for_puerts(definesList) {
     var defines = il2cpp_snippets.listToJsArray(definesList);
     return defines.map(d => `#ifndef ${d}
     #define ${d}
-#endif`).join('\n');
+#endif`).join('\n') + `
+#ifndef PUERTS_SHARED
+#if !defined(IL2CPP_TARGET_IOS) && !defined(__EMSCRIPTEN__) && !defined(IL2CPP_TARGET_SWITCH)
+    #define PUERTS_SHARED
+#endif
+#endif
+`;
 
 }
