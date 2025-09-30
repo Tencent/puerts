@@ -29,46 +29,9 @@ env:
   RUNID: 613573412
 
 jobs:
-#  unittest-win-unity:
-#    runs-on: windows-2022
-#
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Setup Unity
-#        uses: ./.github/workflows/composites/unity-setup/
-#        with:
-#          os: 'win'
-#          version: '2022.3.59f1'
-#          cachekey: 'unity2022x64master'
-#          install_path: C:/UNITY
-#          unity_modules: windows-il2cpp
-#          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
-#          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-#          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-#      - name: UnitTest
-#        run: |
-#          cd unity
-#          npm i
-#          cd test/unity
-#          node ../../cli unity-test --unity C:/UNITY/2022.3.59f1/Editor/Unity.exe
-#      - name: TestResult
-#        if: always()
-#        shell: bash
-#        run: |
-#          cd unity/test/unity
-#          echo "testresult in v1"
-#          cat log1.txt | grep "Failed\|Passed" 
-#          echo "testresult in v2(reflection)"
-#          cat log2.txt | grep "Failed\|Passed" 
-#          echo "testresult in v2"
-#          cat log3.txt | grep "Failed\|Passed" 
-#          echo "testresult in v2(quickjs)"
-#          cat log4.txt | grep "Failed\|Passed" 
-#          echo "testresult in v2(mult)"
-#          cat log5.txt | grep "Failed\|Passed" 
-      
-  unittest-osx-unity:
-    runs-on: macos-latest
+  unittest-win-unity:
+    runs-on: windows-2022
+
     steps:
       - uses: actions/checkout@v3
       - uses: RageAgainstThePixel/unity-setup@v1
@@ -104,6 +67,44 @@ jobs:
           cat log4.txt | grep "Failed\|Passed" 
           echo "testresult in v2(mult)"
           cat log5.txt | grep "Failed\|Passed" 
+      
+#  unittest-osx-unity:
+#    runs-on: macos-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: RageAgainstThePixel/unity-setup@v1
+#        with:
+#          unity-version: 2022.3.59f1
+#          build-targets: StandaloneOSX
+#          modules: mac-il2cpp
+#          #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
+#      - uses: RageAgainstThePixel/activate-unity-license@v1
+#        with:
+#          license: 'Personal'
+#          username: ${{ secrets.UNITY_USERNAME }}
+#          password: ${{ secrets.UNITY_PASSWORD }}
+#          #serial: ${{ secrets.UNITY_SERIAL }}
+#      - name: UnitTest
+#        run: |
+#          cd unity
+#          npm i
+#          cd test/unity
+#          node ../../cli unity-test --unity ${{ env.UNITY_EDITOR_PATH }}
+#      - name: TestResult
+#        if: always()
+#        shell: bash
+#        run: |
+#          cd unity/test/unity
+#          echo "testresult in v1"
+#          cat log1.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2(reflection)"
+#          cat log2.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2"
+#          cat log3.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2(quickjs)"
+#          cat log4.txt | grep "Failed\|Passed" 
+#          echo "testresult in v2(mult)"
+#          cat log5.txt | grep "Failed\|Passed" 
 
   unittest-win-dotnet:
     runs-on: windows-2022
