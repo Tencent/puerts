@@ -44,7 +44,13 @@ extern "C" {
 
         new (mapper) pesapi::pythonimpl::CppObjectMapper();
         mapper->Initialize(threadState);
-
+        PyUnstable_AtExit(PyInterpreterState_Get(), [](void* data) {
+            if (auto mapper = static_cast<pesapi::pythonimpl::CppObjectMapper*>(data))
+            {
+                mapper->Cleanup();
+                free(mapper);
+            }
+        }, mapper);
         return pesapi::pythonimpl::g_pesapi_ffi.create_env_ref(reinterpret_cast<pesapi_env>(mapper));
     }
 
@@ -54,11 +60,8 @@ extern "C" {
         get_papi_ffi()->release_env_ref(env_ref);
         if (mapper)
         {
-            mapper->Cleanup();
-            free(mapper);
+            Py_EndInterpreter(mapper->threadState);
         }
-
-        Py_Finalize();
     }
 
     PESAPI_MODULE_EXPORT void RunGC(pesapi_env_ref env_ref)
