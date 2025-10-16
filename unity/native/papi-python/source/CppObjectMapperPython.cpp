@@ -60,19 +60,36 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
                 PyErr_SetString(PyExc_RuntimeError, "Invalid callback data");
                 return nullptr;
             }
-            pesapi_callback_info__ callbackInfo  { nullptr, nullptr, args, static_cast<int>(PyTuple_Size(args)), data->data, nullptr, nullptr, data->mapper };
+            pesapi_callback_info__ callbackInfo;
+            callbackInfo.self = nullptr;
+            callbackInfo.selfTypeId = nullptr;
+            callbackInfo.args = args;
+            callbackInfo.argc = static_cast<int>(PyTuple_Size(args));
+            callbackInfo.data = data->data;
+            callbackInfo.res = nullptr;
+            callbackInfo.ex = nullptr;
+            callbackInfo.ex_owned = nullptr;
+            callbackInfo.mapper = data->mapper;
+            
             data->callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+            
+            PyObject* result = nullptr;
             if (callbackInfo.ex)
             {
                 PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
-                return nullptr;
             }
-
-            if (callbackInfo.res)
+            else if (callbackInfo.res)
             {
                 Py_INCREF(callbackInfo.res);
-                return callbackInfo.res;
+                result = callbackInfo.res;
             }
+            else
+            {
+                Py_INCREF(Py_None);
+                result = Py_None;
+            }
+            
+            return result;
 
             Py_RETURN_NONE;
         };
@@ -206,21 +223,37 @@ static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObj
         return nullptr;
     }
     
-            pesapi_callback_info__ callbackInfo  { self->dynObj ? self->dynObj->objectPtr : nullptr, self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr, args, static_cast<int>(PyTuple_Size(args)), self->funcInfo->Data, nullptr, nullptr,self->mapper };
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = self->dynObj ? self->dynObj->objectPtr : nullptr;
+    callbackInfo.selfTypeId = self->dynObj ? self->dynObj->classDefinition->TypeId : nullptr;
+    callbackInfo.args = args;
+    callbackInfo.argc = static_cast<int>(PyTuple_Size(args));
+    callbackInfo.data = self->funcInfo->Data;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = self->mapper;
+    
     self->funcInfo->Callback(&pesapi::pythonimpl::g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+    
+    PyObject* result = nullptr;
     if (callbackInfo.ex)
     {
         PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
-        return nullptr;
     }
-
-    if (callbackInfo.res)
+    else if (callbackInfo.res)
     {
         Py_INCREF(callbackInfo.res);
-        return callbackInfo.res;
+        result = callbackInfo.res;
     }
-
-    Py_RETURN_NONE;
+    else
+    {
+        Py_INCREF(Py_None);
+        result = Py_None;
+    }
+    
+    // Destructor will be called automatically when callbackInfo goes out of scope
+    return result;
 }
 
 static PyObject* PyMethodObject_repr(PyMethodObject* self) 
@@ -306,8 +339,17 @@ static PyObject* propGetter(PyObject* self, void* closure)
     pesapi_callback callback = info->getter;
 
     pesapi_scope__ scope(info->mapper);
-    pesapi_callback_info__ callbackInfo{((DynObj*) self)->objectPtr, ((DynObj*) self)->classDefinition->TypeId, nullptr, 0,
-        info->getterData, nullptr, nullptr, info->mapper};
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = ((DynObj*) self)->objectPtr;
+    callbackInfo.selfTypeId = ((DynObj*) self)->classDefinition->TypeId;
+    callbackInfo.args = nullptr;
+    callbackInfo.argc = 0;
+    callbackInfo.data = info->getterData;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = info->mapper;
+    
     callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -334,14 +376,25 @@ static int propSetter(PyObject* self, PyObject* value, void* closure)
     pesapi_callback callback = info->setter;
 
     pesapi_scope__ scope(info->mapper);
-    pesapi_callback_info__ callbackInfo{((DynObj*) self)->objectPtr, ((DynObj*) self)->classDefinition->TypeId,
-        PyTuple_Pack(1, value), 1, info->setterData, nullptr, nullptr, info->mapper};
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = ((DynObj*) self)->objectPtr;
+    callbackInfo.selfTypeId = ((DynObj*) self)->classDefinition->TypeId;
+    callbackInfo.args = PyTuple_Pack(1, value);
+    callbackInfo.argc = 1;
+    callbackInfo.data = info->setterData;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = info->mapper;
+    
     callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
         PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        Py_DECREF(callbackInfo.args);  // Clean up the tuple we created
         return -1;
     }
+    Py_DECREF(callbackInfo.args);  // Clean up the tuple we created
     return 0;
 };
 
@@ -383,8 +436,17 @@ static PyObject* staticPropGetter(PyObject* self, void* closure)
 
     pesapi_scope__ scope(info->mapper);
     // For static properties, we don't have an object instance, so objectPtr is nullptr
-    pesapi_callback_info__ callbackInfo{nullptr, nullptr, nullptr, 0,
-        info->getterData, nullptr, nullptr, info->mapper};
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = nullptr;
+    callbackInfo.selfTypeId = nullptr;
+    callbackInfo.args = nullptr;
+    callbackInfo.argc = 0;
+    callbackInfo.data = info->getterData;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = info->mapper;
+    
     callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -412,14 +474,25 @@ static int staticPropSetter(PyObject* self, PyObject* value, void* closure)
 
     pesapi_scope__ scope(info->mapper);
     // For static properties, we don't have an object instance, so objectPtr is nullptr
-    pesapi_callback_info__ callbackInfo{nullptr, nullptr,
-        PyTuple_Pack(1, value), 1, info->setterData, nullptr, nullptr, info->mapper};
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = nullptr;
+    callbackInfo.selfTypeId = nullptr;
+    callbackInfo.args = PyTuple_Pack(1, value);
+    callbackInfo.argc = 1;
+    callbackInfo.data = info->setterData;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = info->mapper;
+    
     callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
         PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+        Py_DECREF(callbackInfo.args);  // Clean up the tuple we created
         return -1;
     }
+    Py_DECREF(callbackInfo.args);  // Clean up the tuple we created
     return 0;
 };
 
@@ -432,8 +505,17 @@ static PyObject* staticVariableGetter(PyObject* self, PyObject* args) {
     }
     
     pesapi_scope__ scope(info->mapper);
-    pesapi_callback_info__ callbackInfo{nullptr, nullptr, nullptr, 0,
-        info->getterData, nullptr, nullptr, info->mapper};
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = nullptr;
+    callbackInfo.selfTypeId = nullptr;
+    callbackInfo.args = nullptr;
+    callbackInfo.argc = 0;
+    callbackInfo.data = info->getterData;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = info->mapper;
+    
     info->getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     
     if (callbackInfo.ex) {
@@ -455,8 +537,17 @@ static PyObject* staticVariableSetter(PyObject* self, PyObject* args) {
     }
     
     pesapi_scope__ scope(info->mapper);
-    pesapi_callback_info__ callbackInfo{nullptr, nullptr, args, static_cast<int>(PyTuple_Size(args)),
-        info->setterData, nullptr, nullptr, info->mapper};
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = nullptr;
+    callbackInfo.selfTypeId = nullptr;
+    callbackInfo.args = args;
+    callbackInfo.argc = static_cast<int>(PyTuple_Size(args));
+    callbackInfo.data = info->setterData;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = info->mapper;
+    
     info->setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     
     if (callbackInfo.ex) {
@@ -614,7 +705,17 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
         return NULL;
     }
     
-    pesapi_callback_info__ callbackInfo  { nullptr, self->classDefinition->TypeId, args, static_cast<int>(PyTuple_Size(args)), self->classDefinition->Data, nullptr, nullptr, self->mapper };
+    pesapi_callback_info__ callbackInfo;
+    callbackInfo.self = nullptr;
+    callbackInfo.selfTypeId = self->classDefinition->TypeId;
+    callbackInfo.args = args;
+    callbackInfo.argc = static_cast<int>(PyTuple_Size(args));
+    callbackInfo.data = self->classDefinition->Data;
+    callbackInfo.res = nullptr;
+    callbackInfo.ex = nullptr;
+    callbackInfo.ex_owned = nullptr;
+    callbackInfo.mapper = self->mapper;
+    
     void* ptr = self->classDefinition->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
     if (callbackInfo.ex)
     {
@@ -673,22 +774,22 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
         return nullptr;
     }
 
-     pesapi_callback_info__ cbinfo{
-        dynObj->objectPtr,
-        dynObj->classDefinition->TypeId,
-        pyArgs,
-        static_cast<int>(PyTuple_Size(pyArgs)),
-        funcInfo->Data,
-        nullptr,
-        nullptr,
-        dynObj->mapper
-    };
+    pesapi_callback_info__ cbinfo;
+    cbinfo.self = dynObj->objectPtr;
+    cbinfo.selfTypeId = dynObj->classDefinition->TypeId;
+    cbinfo.args = pyArgs;
+    cbinfo.argc = static_cast<int>(PyTuple_Size(pyArgs));
+    cbinfo.data = funcInfo->Data;
+    cbinfo.res = nullptr;
+    cbinfo.ex = nullptr;
+    cbinfo.ex_owned = nullptr;
+    cbinfo.mapper = dynObj->mapper;
 
     funcInfo->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&cbinfo));
 
     if (cbinfo.ex) {
-    PyErr_SetString(PyExc_RuntimeError, cbinfo.ex);
-    return nullptr;
+        PyErr_SetString(PyExc_RuntimeError, cbinfo.ex);
+        return nullptr;
     }
     if (cbinfo.res) {
         Py_INCREF(cbinfo.res);

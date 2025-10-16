@@ -10,6 +10,8 @@
 
 #include <EASTL/vector.h>
 #include <EASTL/allocator_malloc.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "CppObjectMapperPython.h"
 
@@ -158,7 +160,36 @@ struct pesapi_callback_info__
     void* data;        // user data passed to the callback
     PyObject* res;     // result of the callback
     const char* ex;    // exception if any occurred during the callback
+    char* ex_owned;    // owned copy of exception string for memory safety
     CppObjectMapper* mapper; // mapper instance
+    
+    pesapi_callback_info__() : self(nullptr), selfTypeId(nullptr), args(nullptr), argc(0), 
+                               data(nullptr), res(nullptr), ex(nullptr), ex_owned(nullptr), mapper(nullptr) {}
+    
+    ~pesapi_callback_info__() {
+        if (ex_owned) {
+            free(ex_owned);
+            ex_owned = nullptr;
+            ex = nullptr;
+        }
+    }
+    
+    void setException(const char* msg) {
+        if (ex_owned) {
+            free(ex_owned);
+            ex_owned = nullptr;
+        }
+        if (msg) {
+            size_t len = strlen(msg);
+            ex_owned = (char*)malloc(len + 1);
+            if (ex_owned) {
+                strcpy(ex_owned, msg);
+                ex = ex_owned;
+            }
+        } else {
+            ex = nullptr;
+        }
+    }
 };
 }    // namespace pythonimpl
 }    // namespace pesapi

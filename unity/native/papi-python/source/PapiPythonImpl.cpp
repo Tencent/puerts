@@ -493,7 +493,7 @@ void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 {
     auto info = reinterpret_cast<pesapi_callback_info__*>(pinfo);
     info->res = PyExc_RuntimeError;
-    info->ex = msg;
+    info->setException(msg);
 }
 
 pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
