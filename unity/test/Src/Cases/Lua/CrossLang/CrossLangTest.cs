@@ -89,6 +89,7 @@ namespace Puerts.UnitTest
                 assertAndPrint('LuaGetNumberOutArgFromCS', outRef[1], oNum + 3)
                 assertAndPrint('LuaGetNumberReturnFromCS', rNum, oNum + 4)
                 
+                testHelper:ClearNumberTestMemberValue()
                 testHelper.numberTestField = 3
                 testHelper.numberTestProp = 3
                 TestHelper.numberTestFieldStatic = 3
@@ -120,6 +121,7 @@ namespace Puerts.UnitTest
                 assertAndPrint('LuaGetStringOutArgFromCS', outRef[1], 'abcdef')
                 assertAndPrint('LuaGetStringReturnFromCS', rStr, 'abcdefg')
 
+                testHelper:ClearStringTestMemberValue()
                 testHelper.stringTestField = 'Puer'
                 testHelper.stringTestProp = 'Puer'
                 TestHelper.stringTestFieldStatic = 'Puer'
@@ -154,6 +156,7 @@ namespace Puerts.UnitTest
                 assertAndPrint('LuaGetBoolOutArgFromCS', outRef[1], false)
                 assertAndPrint('LuaGetBoolReturnFromCS', rBool, false)
                 
+                testHelper:ClearBoolTestMemberValue()
                 testHelper.boolTestField = true
                 testHelper.boolTestProp = true
                 TestHelper.boolTestFieldStatic = true
@@ -594,6 +597,7 @@ namespace Puerts.UnitTest
                 assertAndPrint('LuaGetBigintOutArgFromCS', outRef[1], oBigint + 3)
                 assertAndPrint('LuaGetBigintReturnFromCS', rBigint, oBigint + 4)
                 
+                testHelper:ClearBigintTestMemberValue()
                 testHelper.bigintTestField =  9007199254740987
                 testHelper.bigintTestProp =  9007199254740987
                 TestHelper.bigintTestFieldStatic =  9007199254740987

@@ -310,6 +310,14 @@ namespace Puerts.UnitTest
             set { _numberTestPropStatic = value; }
         }
 
+        public void ClearNumberTestMemberValue()
+        {
+            numberTestField = 0;
+            numberTestProp = 0;
+            numberTestFieldStatic = 0;
+            numberTestPropStatic = 0;
+        }
+
         public void NumberTestCheckMemberValue()
         {
             AssertAndPrint("CSNumberTestField", numberTestField, 3);
@@ -369,6 +377,14 @@ namespace Puerts.UnitTest
             set { _stringTestPropStatic = value; }
         }
 
+        public void ClearStringTestMemberValue()
+        {
+            stringTestField = null;
+            stringTestProp = null;
+            stringTestFieldStatic = null;
+            stringTestPropStatic = null;
+        }
+
         public void StringTestCheckMemberValue()
         {
             AssertAndPrint("CSStringTestField", stringTestField, "Puer");
@@ -399,6 +415,14 @@ namespace Puerts.UnitTest
         {
             get { return _boolTestPropStatic; }
             set { _boolTestPropStatic = value; }
+        }
+
+        public void ClearBoolTestMemberValue()
+        {
+            boolTestField = false;
+            boolTestProp = false;
+            boolTestFieldStatic = false;
+            boolTestPropStatic = false;
         }
 
         public void BoolTestCheckMemberValue()
@@ -432,6 +456,14 @@ namespace Puerts.UnitTest
         {
             get { return _bigintTestPropStatic; }
             set { _bigintTestPropStatic = value; }
+        }
+
+        public void ClearBigintTestMemberValue()
+        {
+            bigintTestField = 0;
+            bigintTestProp = 0;
+            bigintTestFieldStatic = 0;
+            bigintTestPropStatic = 0;
         }
 
         public ulong GetBigULong()
@@ -780,6 +812,7 @@ namespace Puerts.UnitTest
                     });
                     assertAndPrint('JSGetNumberOutArgFromCS', outRef[0], oNum + 3);
                     assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
+                    testHelper.ClearNumberTestMemberValue();
                     testHelper.numberTestField = 3
                     testHelper.numberTestProp = 3
                     TestHelper.numberTestFieldStatic = 3
@@ -810,6 +843,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetStringOutArgFromCS', outRef[0], oStr + 'def');
                     assertAndPrint('JSGetStringReturnFromCS', rStr, oStr + 'defg');
 
+                    testHelper.ClearStringTestMemberValue();
                     testHelper.stringTestField = 'Puer'
                     testHelper.stringTestProp = 'Puer'
                     TestHelper.stringTestFieldStatic = 'Puer'
@@ -841,6 +875,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBoolOutArgFromCS', outRef[0], false);
                     assertAndPrint('JSGetBoolReturnFromCS', rBool, false);
                     
+                    testHelper.ClearBoolTestMemberValue();
                     testHelper.boolTestField = true
                     testHelper.boolTestProp = true
                     TestHelper.boolTestFieldStatic = true
@@ -872,6 +907,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBigIntOutArgFromCS', outRef[0] == oBigInt + 3n);
                     assertAndPrint('JSGetBigIntReturnFromCS', rBigInt == oBigInt + 4n);
                     
+                    testHelper.ClearBigintTestMemberValue();
                     testHelper.bigintTestField = 9007199254740987n
                     testHelper.bigintTestProp = 9007199254740987n
                     TestHelper.bigintTestFieldStatic = 9007199254740987n
