@@ -840,7 +840,7 @@ namespace Puerts
             }
             else if (tranType.IsByRef)
             {
-                ret = scriptToNative(context, type.GetElementType(), callPApi(context.Apis, "get_property_uint32", context.Env, value, Expression.Constant((uint)0)));
+                ret = scriptToNative(context, type.GetElementType(), callPApi(context.Apis, "unboxing", context.Env, value));
             }
             else if (!tranType.IsValueType)
             {
