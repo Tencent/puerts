@@ -310,7 +310,11 @@ int pesapi_is_int32(pesapi_env env, pesapi_value value)
     PyObject* obj = pyObjectFromPesapiValue(value);
     if (!PyLong_Check(obj))
         return false;
-    auto num = PyLong_AsLong(obj);
+    int overflow = 0;
+    auto num = PyLong_AsLongLongAndOverflow(obj, &overflow);
+    if (overflow != 0) {
+        return false;
+    }
     return num >= INT32_MIN && num <= INT32_MAX;
 }
 
@@ -319,7 +323,11 @@ int pesapi_is_uint32(pesapi_env env, pesapi_value value)
     PyObject* obj = pyObjectFromPesapiValue(value);
     if (!PyLong_Check(obj))
         return false;
-    auto num = PyLong_AsLong(obj);
+    int overflow = 0;
+    auto num = PyLong_AsLongLongAndOverflow(obj, &overflow);
+    if (overflow != 0) {
+        return false;
+    }
     return num >= 0 && num <= UINT32_MAX;
 }
 
