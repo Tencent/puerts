@@ -1003,10 +1003,7 @@ void CppObjectMapper::Cleanup()
     // Release type objects stored in TypeIdToFunctionMap
     for (auto& kv : TypeIdToFunctionMap)
     {
-        if (kv.second && Py_REFCNT(kv.second) > 0)
-        {
-            Py_DECREF(kv.second);
-        }
+        Py_DECREF(kv.second);
     }
 
     for (auto& obj : StrongRefObjects)
