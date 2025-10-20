@@ -927,6 +927,7 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
         ++FunctionInfo;
     }
 
+    Py_INCREF(type_obj);
     TypeIdToFunctionMap[ClassDefinition->TypeId] = type_obj;
     return type_obj;
 }
@@ -999,9 +1000,13 @@ void CppObjectMapper::Initialize(PyThreadState *InThreadState)
 void CppObjectMapper::Cleanup()
 {
     PyThreadState_Swap(threadState);
+    // Release type objects stored in TypeIdToFunctionMap
     for (auto& kv : TypeIdToFunctionMap)
     {
-        Py_DecRef(kv.second);
+        if (kv.second && Py_REFCNT(kv.second) > 0)
+        {
+            Py_DECREF(kv.second);
+        }
     }
 
     for (auto& obj : StrongRefObjects)
