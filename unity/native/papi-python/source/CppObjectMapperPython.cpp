@@ -1053,7 +1053,9 @@ void destroy_py_env(pesapi_env_ref env_ref)
     get_papi_ffi()->release_env_ref(env_ref);
     if (mapper)
     {
+		PyThreadState *threadState = mapper->threadState;
         mapper->Cleanup();
+		Py_EndInterpreter(threadState);
         free(mapper);
     }
 }
