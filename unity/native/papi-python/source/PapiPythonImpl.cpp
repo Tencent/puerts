@@ -655,10 +655,12 @@ void pesapi_release_value_ref(pesapi_value_ref ref)
 
 pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref pref)
 {
+    auto mapper = mapperFromPesapiEnv(env);
     auto value_ref = reinterpret_cast<pesapi_value_ref__*>(pref);
-    auto v = value_ref->value_persistent;
-    Py_INCREF(v);
-    return pesapiValueFromPyObject(v);
+    auto ret = allocValueInCurrentScope(mapper);
+    *ret = value_ref->value_persistent;
+    Py_INCREF(*ret);
+    return pesapiValueFromPyObject(*ret);
 }
 
 void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref pvalue_ref)
@@ -702,10 +704,12 @@ int pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pe
 
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key)
 {
+    auto mapper = mapperFromPesapiEnv(env);
     PyObject* obj = pyObjectFromPesapiValue(object);
-    auto ret = PyDict_GetItemWithError(obj, PyUnicode_FromString(key));
-    Py_XINCREF(ret);
-    return pesapiValueFromPyObject(ret);
+    auto ret = allocValueInCurrentScope(mapper);
+    *ret = PyDict_GetItemWithError(obj, PyUnicode_FromString(key));
+    Py_XINCREF(*ret);
+    return pesapiValueFromPyObject(*ret);
 }
 
 int pesapi_get_private(pesapi_env penv, pesapi_value pobject, void** out_ptr)
@@ -724,10 +728,12 @@ int pesapi_set_private(pesapi_env penv, pesapi_value object, void* ptr)
 
 pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uint32_t key)
 {
+    auto mapper = mapperFromPesapiEnv(env);
     auto obj = pyObjectFromPesapiValue(object);
-    auto ret = PyDict_GetItemWithError(obj, PyLong_FromUnsignedLong(key));
-    Py_XINCREF(ret);
-    return pesapiValueFromPyObject(ret);
+    auto ret = allocValueInCurrentScope(mapper);
+    *ret = PyDict_GetItemWithError(obj, PyLong_FromUnsignedLong(key));
+    Py_XINCREF(*ret);
+    return pesapiValueFromPyObject(*ret);
 }
 
 int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value)
@@ -743,7 +749,10 @@ int pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key
 
 pesapi_value pesapi_create_object(pesapi_env env)
 {
-    return pesapiValueFromPyObject(PyDict_New());
+    auto mapper = mapperFromPesapiEnv(env);
+    auto ret = allocValueInCurrentScope(mapper);
+    *ret = PyDict_New();
+    return pesapiValueFromPyObject(*ret);
 }
 
 // TODO
@@ -763,7 +772,9 @@ pesapi_value pesapi_call_function(
     Py_DECREF(args);
     if (result)
     {
-        return pesapiValueFromPyObject(result);
+        auto ret = allocValueInCurrentScope(mapper);
+        *ret = result;
+        return pesapiValueFromPyObject(*ret);
     }
     else
     {
@@ -796,7 +807,9 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         Py_DECREF(compiled_code);
         if (result)
         {
-            return pesapiValueFromPyObject(result);
+            auto ret = allocValueInCurrentScope(mapper);
+            *ret = result;
+            return pesapiValueFromPyObject(*ret);
         }
     }
     auto scope = (pesapi_scope__*)mapper->getCurrentScope();
