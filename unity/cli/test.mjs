@@ -366,7 +366,14 @@ export async function unityTest(cwd, unityPath) {
         arch: process.arch
     });
 
-    await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
+    await runPuertsMake(join(cwd, '../../native/papi-python'), {
+        platform: platform,
+        config: "Debug",
+        websocket: 1,
+        arch: process.arch
+    });
+	
+	await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
         platform: platform,
         config: "Debug",
         websocket: 1,
