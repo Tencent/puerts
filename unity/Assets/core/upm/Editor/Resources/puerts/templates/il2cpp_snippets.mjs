@@ -446,6 +446,7 @@ export function CSValToJSVal(signature, CSName) {
 export function genArgsLenCheck(parameterSignatures) {
     var requireNum = 0;
     for (; requireNum < parameterSignatures.length && parameterSignatures[requireNum][0] != 'V' && parameterSignatures[requireNum][0] != 'D'; ++requireNum) { }
-    return requireNum != parameterSignatures.length ? `js_args_len < ${requireNum}` : `js_args_len != ${parameterSignatures.length}`;
+    var hasParams = parameterSignatures.length > 0 && (parameterSignatures[parameterSignatures.length - 1][0] == 'V')
+    return requireNum != parameterSignatures.length ? (hasParams ? `js_args_len < ${requireNum}` : `js_args_len < ${requireNum} || js_args_len > ${parameterSignatures.length}`) : `js_args_len != ${parameterSignatures.length}`;
 }
 

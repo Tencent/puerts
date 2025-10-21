@@ -173,6 +173,44 @@ namespace Puerts.UnitTest
 
         }
     }
+
+    public enum ConstructorParam
+    {
+        A, B, C, D, E, F, G, H
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class ConstructorOverload
+    {
+        public int selected;
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A, bool ignoreRegisterSale = false)
+        {
+            selected = 1;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, uint skinID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
+        {
+            selected = 2;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, uint skinID, uint avatarCfgId, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
+        {
+            selected = 3;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(ConstructorOverload product, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
+        {
+            selected = 4;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(ConstructorParam resItemType, uint resId, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
+        {
+            selected = 5;
+        }
+    }
+
     public unsafe class TestHelper
     {
         protected static TestHelper instance;
@@ -1423,6 +1461,20 @@ __PDUOTF;");
             jsEnv1.UsingFunc<JSObject, bool>();
             test1 = jsEnv1.Eval<PassJsObject>("(obj) => !!obj");
             Assert.False(test1(jsObj1));
+        }
+
+        [Test]
+        public void TestConstructorOverload()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverload = CS.Puerts.UnitTest.ConstructorOverload;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const obj = new ConstructorOverload(1, 1, 1, 0, 0);
+                    AssertAndPrint(`TestConstructorOverload obj.selected: ${obj.selected} expected 3`, obj.selected == 3);
+                })()
+            ");
         }
     }
 }
