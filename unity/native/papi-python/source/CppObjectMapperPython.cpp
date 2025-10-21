@@ -970,7 +970,7 @@ void CppObjectMapper::Initialize(PyThreadState *InThreadState)
         return;
     }
     
-    PyThreadState_Swap(threadState);
+    auto prevThreadState = PyThreadState_Swap(threadState);
     
     // Ensure __main__ module exists
     PyObject* main_module = PyImport_AddModule("__main__");
@@ -991,15 +991,13 @@ void CppObjectMapper::Initialize(PyThreadState *InThreadState)
         return;
     }
     
-
-
     PtrClassDef.TypeId = &PtrClassDef;
     PtrClassDef.ScriptName = "__Pointer";
+    PyThreadState_Swap(prevThreadState);
 }
 
 void CppObjectMapper::Cleanup()
 {
-    PyThreadState_Swap(threadState);
     // Release type objects stored in TypeIdToFunctionMap
     for (auto& kv : TypeIdToFunctionMap)
     {
@@ -1055,9 +1053,23 @@ void destroy_py_env(pesapi_env_ref env_ref)
     get_papi_ffi()->release_env_ref(env_ref);
     if (mapper)
     {
-		PyThreadState *threadState = mapper->threadState;
-        mapper->Cleanup();
-		Py_EndInterpreter(threadState);
+        PyThreadState *threadState = mapper->threadState;
+        if (threadState)
+        {
+            PyThreadState* prevThreadState = PyThreadState_Swap(threadState);
+            
+            mapper->Cleanup();
+            
+            Py_EndInterpreter(threadState);
+            
+            if (prevThreadState && prevThreadState != threadState) {
+                PyThreadState_Swap(prevThreadState);
+            }
+        }
+        else
+        {
+            mapper->Cleanup();
+        }
         free(mapper);
     }
 }

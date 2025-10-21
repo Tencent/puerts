@@ -55,8 +55,22 @@ extern "C" {
         if (mapper)
         {
             PyThreadState *threadState = mapper->threadState;
-            mapper->Cleanup();
-            Py_EndInterpreter(threadState);
+            if (threadState)
+            {
+                PyThreadState* prevThreadState = PyThreadState_Swap(threadState);
+                
+                mapper->Cleanup();
+                
+                Py_EndInterpreter(threadState);
+                
+                if (prevThreadState && prevThreadState != threadState) {
+                    PyThreadState_Swap(prevThreadState);
+                }
+            }
+            else
+            {
+                mapper->Cleanup();
+            }
             free(mapper);
         }
     }
