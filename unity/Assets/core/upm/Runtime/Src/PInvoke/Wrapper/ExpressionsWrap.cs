@@ -312,6 +312,11 @@ namespace Puerts
                 return typeId != 0 && typeof(TValueType).IsAssignableFrom(TypeRegister.Instance.FindTypeById(typeId));
             }
 
+            public static ScriptObject ScriptToNative_ScriptObject_CheckObject(IntPtr apis, IntPtr env, IntPtr value)
+            {
+                return PuertsNative.pesapi_is_object(apis, env, value) ? ScriptToNative_ScriptObject(apis, env, value) : null;
+            }
+
             public static ScriptObject ScriptToNative_ScriptObject(IntPtr apis, IntPtr env, IntPtr value)
             {
                 IntPtr valueRef;
@@ -811,7 +816,7 @@ namespace Puerts
             }
             else if (typeof(ScriptObject) == tranType)
             {
-                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_ScriptObject));
+                var scriptToNativeMethod = Helpper.GetMethod(nameof(Helpper.ScriptToNative_ScriptObject_CheckObject));
                 ret = Expression.Call(scriptToNativeMethod, context.Apis, context.Env, value);
             }
             else if (typeof(Delegate).IsAssignableFrom(tranType) && tranType != typeof(Delegate) && tranType != typeof(MulticastDelegate))
