@@ -140,7 +140,29 @@ public:
             return false;
         }
         
-        int result = PyDict_SetItem(dict, PyUnicode_FromString(privateDataKey), PyCapsule_New(ptr, nullptr, nullptr));
+        PyObject* keyObj = PyUnicode_FromString(privateDataKey);
+        PyObject* capsule = nullptr;
+        
+        if (ptr == nullptr)
+        {
+            // For nullptr, store Py_None instead of creating a capsule
+            capsule = Py_None;
+            Py_INCREF(Py_None);
+        }
+        else
+        {
+            capsule = PyCapsule_New(ptr, nullptr, nullptr);
+            if (!capsule)
+            {
+                if (dict != val) Py_DECREF(dict);
+                Py_DECREF(keyObj);
+                return false;
+            }
+        }
+        
+        int result = PyDict_SetItem(dict, keyObj, capsule);
+        Py_DECREF(keyObj);
+        Py_DECREF(capsule);
         if (dict != val) Py_DECREF(dict);
         return result == 0;
     }
@@ -193,12 +215,19 @@ public:
             return false;
         }
         
-        PyObject* capsule = PyDict_GetItem(dict, keyObj);  // Borrowed reference
+        PyObject* value = PyDict_GetItem(dict, keyObj);  // Borrowed reference
         Py_DECREF(keyObj);
         
-        if (PyCapsule_CheckExact(capsule))
+        if (value == Py_None)
         {
-            *outPtr = PyCapsule_GetPointer(capsule, nullptr);
+            // Handle the case where nullptr was stored as Py_None
+            *outPtr = nullptr;
+            if (dict != val) Py_DECREF(dict);
+            return true;
+        }
+        else if (PyCapsule_CheckExact(value))
+        {
+            *outPtr = PyCapsule_GetPointer(value, nullptr);
             if (dict != val) Py_DECREF(dict);
             return true;
         }

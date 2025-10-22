@@ -765,6 +765,9 @@ TEST_F(PApiBaseTest, ObjectPrivate)
     EXPECT_EQ(true, apis->get_private(env, func, &p));
     EXPECT_EQ(&t, p);
 
+    EXPECT_EQ(true, apis->set_private(env, func, nullptr));
+    EXPECT_EQ(true, apis->get_private(env, func, &p));
+    EXPECT_EQ(nullptr, p);
 }
 
 TEST_F(PApiBaseTest, CallMethodDirectly)
