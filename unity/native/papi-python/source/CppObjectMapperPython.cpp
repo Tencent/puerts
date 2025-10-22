@@ -1070,6 +1070,7 @@ void destroy_py_env(pesapi_env_ref env_ref)
         {
             mapper->Cleanup();
         }
+        mapper->~CppObjectMapper();
         free(mapper);
     }
 }

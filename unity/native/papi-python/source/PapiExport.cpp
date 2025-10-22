@@ -71,6 +71,7 @@ extern "C" {
             {
                 mapper->Cleanup();
             }
+            mapper->~CppObjectMapper();
             free(mapper);
         }
     }
