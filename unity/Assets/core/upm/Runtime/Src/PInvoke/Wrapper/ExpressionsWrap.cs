@@ -1107,6 +1107,11 @@ namespace Puerts
                 Expression.AndAlso(left, right));
         }
 
+        private static Expression buildAndExpression(params Expression[] conditions)
+        {
+            return buildAndExpression((IEnumerable<Expression>)conditions);
+        }
+
         private static Expression buildArgumentsLengthCheck(MethodBase methodBase, bool isExtensionMethod, ParameterExpression jsArgc)
         {
             bool hasDefault = false;
@@ -1133,7 +1138,18 @@ namespace Puerts
 
             expectArgc -=  isExtensionMethod ? 1 : 0;
 
-            return (!hasDefault && !hasParams) ? Expression.Equal(jsArgc, Expression.Constant(expectArgc)) : Expression.GreaterThanOrEqual(jsArgc, Expression.Constant(expectArgc));
+            if (hasParams)
+            {
+                return Expression.GreaterThanOrEqual(jsArgc, Expression.Constant(expectArgc));
+            }
+            else if (hasDefault)
+            {
+                return buildAndExpression(Expression.GreaterThanOrEqual(jsArgc, Expression.Constant(expectArgc)), Expression.LessThanOrEqual(jsArgc, Expression.Constant(ps.Length)));
+            }
+            else
+            {
+                return Expression.Equal(jsArgc, Expression.Constant(expectArgc));
+            }
 
         }
 

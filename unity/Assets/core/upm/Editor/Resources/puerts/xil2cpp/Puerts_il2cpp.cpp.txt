@@ -1689,6 +1689,13 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
                 return false;
             }
         }
+        else if(!hasParamArray && wrapData->OptionalNum > 0)
+        {
+            if (js_args_len > method->parameters_count - csArgStart)
+            {
+                return false;
+            }
+        }
         else
         {
             auto requireNum = method->parameters_count - csArgStart - wrapData->OptionalNum - (hasParamArray ? 1 : 0);
