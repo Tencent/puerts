@@ -29,16 +29,6 @@
 
 ## 编译 Typescript
 
-### 使用 PuerTS.TSLoader
-
-PuerTS 提供了一个扩展模块 `puerts-ts-loader`，它基于 PuerTS 的 Loader 机制，专门处理 Typescript。安装后可在 C# 直接加载 Typescript。
-
-它还内置了 debugpath、sourcemap、consoleredirect 等处理，非常方便。易于新手使用。
-
-我们强烈推荐你使用它来使用 Typescript。如果你决定采用它，直接点开项目看 readme 即可。
-
-如果你还是决定自行接管 Typescript 编译流程，或是使用`ts-loader`时遇到疑难杂症，可以继续往下看。
-
 ### 使用 tsc/swc 编译 Typescript 并加载
 
 有了 tsconfig 文件后，我们可以简单地通过 tsc 命令将 ts 编译为 js。或者你也可以使用速度更快的 swc：

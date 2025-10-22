@@ -29,16 +29,6 @@ After obtaining the C# API declaration file, you can write tsconfig and compile 
 
 ## Compiling Typescript
 
-### Using PuerTS.TSLoader
-
-PuerTS provides a third-party module called [puerts-ts-loader](https://github.com/zombieyang/puerts-ts-loader), which is based on PuerTS's Loader mechanism and specializes in handling Typescript. 
-
-It also includes built-in features such as debugpath, sourcemap, and consoleredirect. 
-
-We recommend using it to work with Typescript. If you decide to use it, you can simply refer to the readme file in that repo.
-
-But if you want to compile Typescript yourself, you can go on.  
-
 ### Compiling Typescript with tsc/swc and loading it
 
 After obtaining tsconfig, you can easily compile ts into js using the tsc command. Alternatively, you can use the faster swc:
