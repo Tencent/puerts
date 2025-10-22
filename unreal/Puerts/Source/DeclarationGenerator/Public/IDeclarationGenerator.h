@@ -27,6 +27,7 @@ public:
     }
 
     virtual void GenTypeScriptDeclaration(bool InGenFull, FName InSearchPath) = 0;
+    virtual void GenTypeScriptCppDeclaration() = 0;
 
     virtual void GenReactDeclaration() = 0;
 };
