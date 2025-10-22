@@ -210,7 +210,7 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 #elif ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
         Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient);
         static_cast<FStructProperty*>(Ret)->Struct = ScriptStruct;
-        Ret->ElementSize = ScriptStruct->PropertiesSize;
+        Ret->SetElementSize(ScriptStruct->PropertiesSize);
         Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
 #else
         Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, ScriptStruct);
@@ -236,7 +236,7 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 #endif
             FNumericProperty* UnderlyingProp = new FByteProperty(EnumProp, TEXT("UnderlyingType"), RF_Transient);
             EnumProp->AddCppProperty(UnderlyingProp);
-            EnumProp->ElementSize = UnderlyingProp->ElementSize;
+            EnumProp->SetElementSize(UnderlyingProp->GetElementSize());
             EnumProp->PropertyFlags |= CPF_IsPlainOldData | CPF_NoDestructor | CPF_ZeroConstructor;
 
             Ret = EnumProp;

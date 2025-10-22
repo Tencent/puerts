@@ -50,7 +50,7 @@ public:
 #endif
 
 private:
-    TSet<UObject*> RetainedObjects;
+    TSet<TObjectPtr<UObject>> RetainedObjects;
 
     FString Name = TEXT("FObjectRetainer");
 };

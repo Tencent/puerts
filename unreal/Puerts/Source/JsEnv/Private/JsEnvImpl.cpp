@@ -2176,7 +2176,7 @@ static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
     if (ReturnProp != NULL)
     {
         ReturnProp->DestroyValue(RESULT_PARAM);
-        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->ElementSize);
+        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->GetElementSize());
     }
 }
 
