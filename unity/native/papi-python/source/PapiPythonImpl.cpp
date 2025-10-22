@@ -8,6 +8,7 @@
 
 #include <Python.h>
 #include <EASTL/memory.h>
+#include <EASTL/string.h>
 
 #include "pesapi.h"
 #include "CppObjectMapperPython.h"
@@ -795,11 +796,13 @@ pesapi_value pesapi_call_function(
     }
 }
 
-// TODO
 pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
 {
     auto mapper = mapperFromPesapiEnv(env);
-    PyObject* compiled_code = Py_CompileString(reinterpret_cast<const char*>(code), path, Py_eval_input);
+    
+    // Create a null-terminated string from the code buffer
+    eastl::basic_string<char, eastl::allocator_malloc> code_str(reinterpret_cast<const char*>(code), code_size);
+    PyObject* compiled_code = Py_CompileString(code_str.c_str(), path, Py_eval_input);
     if (compiled_code)
     {
         PyObject* globals = PyModule_GetDict(PyImport_AddModule("__main__"));
