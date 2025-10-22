@@ -111,6 +111,7 @@ public:
     {
         if (!PyDict_Check(val))
         {
+            *outPtr = nullptr;
             return false;
         }
         if (!PyDict_Contains(val, PyUnicode_FromString(privateDataKey)))
