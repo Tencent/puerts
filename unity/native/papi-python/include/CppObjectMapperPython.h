@@ -99,35 +99,112 @@ public:
 
     inline bool SetPrivateData(PyObject* val, void* ptr) const
     {
-        if (!PyDict_Check(val))
+        PyObject* dict = nullptr;
+        
+        if (PyDict_Check(val))
         {
+            // Direct dictionary object
+            dict = val;
+        }
+        else if (PyFunction_Check(val) || PyMethod_Check(val) || PyCFunction_Check(val))
+        {
+            // Function objects - use their __dict__ attribute
+            dict = PyObject_GetAttrString(val, "__dict__");
+            if (!dict)
+            {
+                // If __dict__ doesn't exist, create it
+                PyErr_Clear();
+                dict = PyDict_New();
+                if (!dict) return false;
+                if (PyObject_SetAttrString(val, "__dict__", dict) < 0)
+                {
+                    Py_DECREF(dict);
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            // Try to get __dict__ attribute for other objects
+            dict = PyObject_GetAttrString(val, "__dict__");
+            if (!dict)
+            {
+                PyErr_Clear();
+                return false;
+            }
+        }
+        
+        if (!PyDict_Check(dict))
+        {
+            if (dict != val) Py_DECREF(dict);
             return false;
         }
-        PyDict_SetItem(val, PyUnicode_FromString(privateDataKey), PyCapsule_New(ptr, nullptr, nullptr));
-        return true;
+        
+        int result = PyDict_SetItem(dict, PyUnicode_FromString(privateDataKey), PyCapsule_New(ptr, nullptr, nullptr));
+        if (dict != val) Py_DECREF(dict);
+        return result == 0;
     }
 
     inline bool GetPrivateData(PyObject* val, void** outPtr) const
     {
-        if (!PyDict_Check(val))
+        PyObject* dict = nullptr;
+        
+        if (PyDict_Check(val))
         {
+            // Direct dictionary object
+            dict = val;
+        }
+        else if (PyFunction_Check(val) || PyMethod_Check(val) || PyCFunction_Check(val))
+        {
+            // Function objects - use their __dict__ attribute
+            dict = PyObject_GetAttrString(val, "__dict__");
+            if (!dict)
+            {
+                PyErr_Clear();
+                *outPtr = nullptr;
+                return false;
+            }
+        }
+        else
+        {
+            // Try to get __dict__ attribute for other objects
+            dict = PyObject_GetAttrString(val, "__dict__");
+            if (!dict)
+            {
+                PyErr_Clear();
+                *outPtr = nullptr;
+                return false;
+            }
+        }
+        
+        if (!PyDict_Check(dict))
+        {
+            if (dict != val) Py_DECREF(dict);
             *outPtr = nullptr;
             return false;
         }
-        if (!PyDict_Contains(val, PyUnicode_FromString(privateDataKey)))
+        
+        PyObject* keyObj = PyUnicode_FromString(privateDataKey);
+        if (!PyDict_Contains(dict, keyObj))
         {
+            if (dict != val) Py_DECREF(dict);
+            Py_DECREF(keyObj);
             *outPtr = nullptr;
             return false;
         }
-        PyObject* capsule = PyDict_GetItemWithError(val, PyUnicode_FromString(privateDataKey));
+        
+        PyObject* capsule = PyDict_GetItem(dict, keyObj);  // Borrowed reference
+        Py_DECREF(keyObj);
+        
         if (PyCapsule_CheckExact(capsule))
         {
             *outPtr = PyCapsule_GetPointer(capsule, nullptr);
-            Py_DECREF(capsule);
+            if (dict != val) Py_DECREF(dict);
             return true;
         }
+        
+        if (dict != val) Py_DECREF(dict);
         *outPtr = nullptr;
-        Py_DECREF(capsule);
         return false;
     }
 

@@ -250,7 +250,16 @@ public:
     static void TearDownTestCase()
     {
         printf("TearDownTestCase\n");
-        Py_Finalize();
+        // 确保当前线程状态是主解释器的线程状态
+        PyThreadState* mainThreadState = PyInterpreterState_ThreadHead(PyInterpreterState_Main());
+        if (mainThreadState) {
+            PyThreadState_Swap(mainThreadState);
+        }
+        // 使用 Py_FinalizeEx 而不是 Py_Finalize，它会返回错误码而不是直接崩溃
+        int result = Py_FinalizeEx();
+        if (result != 0) {
+            printf("Warning: Py_FinalizeEx returned error code: %d\n", result);
+        }
     }
 
     static void Foo(struct pesapi_ffi* apis, pesapi_callback_info info)
@@ -746,12 +755,16 @@ TEST_F(PApiBaseTest, ObjectPrivate)
     EXPECT_EQ(&t, p);
     // pycode
     auto code = R"(lambda: print("Hello from func"))";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
+    auto func = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_FALSE(apis->has_caught(scope));
-    ASSERT_TRUE(apis->is_function(env, ret));
-    // EXPECT_EQ(true, apis->set_private(env, ret, &t));
-    // EXPECT_EQ(true, apis->get_private(env, ret, &p));
+    ASSERT_TRUE(apis->is_function(env, func));
+    
+    EXPECT_EQ(false, apis->get_private(env, func, &p));
+    EXPECT_EQ(nullptr, p);
+    EXPECT_EQ(true, apis->set_private(env, func, &t));
+    EXPECT_EQ(true, apis->get_private(env, func, &p));
     EXPECT_EQ(&t, p);
+
 }
 
 TEST_F(PApiBaseTest, CallMethodDirectly)
