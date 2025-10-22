@@ -170,6 +170,17 @@ public:
         {
             return nullptr;
         }
+        // Check if val is a DynObj type by verifying the object structure
+        // DynObj objects are created with basicsize = sizeof(DynObj)
+        if (!val || Py_TYPE(val)->tp_basicsize != sizeof(DynObj))
+        {
+            return nullptr;
+        }
+        // Additional safety check: verify the object has the expected context attribute
+        if (!PyObject_HasAttrString((PyObject*)Py_TYPE(val), "__context_puerts__"))
+        {
+            return nullptr;
+        }
         auto obj = (DynObj*) val;
         return obj->objectPtr ? obj->objectPtr : nullptr;
     }
@@ -177,6 +188,17 @@ public:
     inline const void* GetNativeObjectTypeId(PyObject* val)
     {
         if (val == Py_None)
+        {
+            return nullptr;
+        }
+        // Check if val is a DynObj type by verifying the object structure
+        // DynObj objects are created with basicsize = sizeof(DynObj)
+        if (!val || Py_TYPE(val)->tp_basicsize != sizeof(DynObj))
+        {
+            return nullptr;
+        }
+        // Additional safety check: verify the object has the expected context attribute
+        if (!PyObject_HasAttrString((PyObject*)Py_TYPE(val), "__context_puerts__"))
         {
             return nullptr;
         }
