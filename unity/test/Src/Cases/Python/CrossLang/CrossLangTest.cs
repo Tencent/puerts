@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using NUnit.Framework;
 using System;
 using System.Runtime.InteropServices;
@@ -118,7 +119,7 @@ TestHelper.set_stringTestPropStatic('Puer')
 testHelper.StringTestCheckMemberValue()
 
 ustr = testHelper.UnicodeStr('你好')
-assertAndPrint('UnicodeStr', ustr, '小马哥')
+assertAndPrint('UnicodeStr', ustr, '小马�?)
 ''')
 ");
             pythonEnv.Dispose();
@@ -540,3 +541,4 @@ testHelper = TestHelper.GetInstance()
         }
     }
 }
+#endif

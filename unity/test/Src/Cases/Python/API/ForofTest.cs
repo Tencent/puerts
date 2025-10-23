@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -85,3 +86,5 @@ lambda list: (
         
     }
 }
+
+#endif

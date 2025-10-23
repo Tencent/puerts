@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -39,3 +40,5 @@ deleteobj.Callback.Invoke('js_msg')
         }
     }
 }
+
+#endif

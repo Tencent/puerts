@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using NUnit.Framework;
 using System;
 using System.Reflection;
@@ -141,3 +142,5 @@ for i in range(methods.Length):
         */
     }
 }
+
+#endif

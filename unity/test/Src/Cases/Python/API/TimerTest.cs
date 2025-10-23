@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 Tencent.  All rights reserved.
@@ -78,3 +79,5 @@ namespace Puerts.UnitTest
         
     }
 }
+
+#endif

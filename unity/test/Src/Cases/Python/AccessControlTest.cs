@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using NUnit.Framework;
 using System;
 using System.Reflection;
@@ -161,3 +162,5 @@ result
 #endif
     */
 }
+
+#endif

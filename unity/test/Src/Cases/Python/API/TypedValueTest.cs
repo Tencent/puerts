@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using NUnit.Framework;
 using Puerts.UnitTest.JSTypeTest;
 using System;
@@ -47,3 +48,5 @@ CS.load_type('Puerts.UnitTest.JSTypeTest.TypedValueTestHelper').Callback(value)
         }
     }
 }
+
+#endif

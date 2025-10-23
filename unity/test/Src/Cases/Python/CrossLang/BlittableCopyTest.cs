@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -42,3 +43,5 @@ result
     }
 #endif
 }
+
+#endif

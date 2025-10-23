@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using NUnit.Framework;
 using System;
 
@@ -151,3 +152,5 @@ foo
         }
     }
 }
+
+#endif
