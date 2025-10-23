@@ -188,7 +188,6 @@ PyObject* CppObjectMapper::PushNativeObject(const void* TypeId, void* ObjectPtr,
     }
 
     auto* obj = PyObject_New(PyObject, (PyTypeObject*) cls);
-    Py_DECREF(cls);
     if (!obj)
     {
         return nullptr;
@@ -927,7 +926,6 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
         ++FunctionInfo;
     }
 
-    Py_INCREF(type_obj);
     TypeIdToFunctionMap[ClassDefinition->TypeId] = type_obj;
     return type_obj;
 }
