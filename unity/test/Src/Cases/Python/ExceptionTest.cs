@@ -144,7 +144,7 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgMulticastDelegate(l
     CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgLong({})
 )[-1])()
 ");
-            }, "invalid arguments");
+            }, "'dict' object cannot be interpreted as an integer");
             pythonEnv.Dispose();
         }
 

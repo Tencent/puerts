@@ -119,7 +119,7 @@ TestHelper.set_stringTestPropStatic('Puer')
 testHelper.StringTestCheckMemberValue()
 
 ustr = testHelper.UnicodeStr('你好')
-assertAndPrint('UnicodeStr', ustr, '小马�?)
+assertAndPrint('UnicodeStr', ustr, '小马哥')
 ''')
 ");
             pythonEnv.Dispose();

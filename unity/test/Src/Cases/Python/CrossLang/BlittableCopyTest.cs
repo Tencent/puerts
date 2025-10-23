@@ -15,24 +15,15 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
 
             int sumRed = pythonEnv.Eval<int>(@"
-exec('''
-CS = CSharp()
-Color = CS.load_type('UnityEngine.Color')
-colors = []
-
-for i in range(1, 9):
-    colors.append(Color(i, 1, 1, 1))
-
-a = Color(100, 1, 1, 1)
-colors.append(a)
-
-sumRed = 0
-for color in colors:
-    sumRed = sumRed + color.r
-
-result = int(sumRed)
-''')
-result
+(lambda: (
+    CS := CSharp(),
+    Color := CS.load_type('UnityEngine.Color'),
+    colors := [Color(float(i), 1.0, 1.0, 1.0) for i in range(1, 9)],
+    a := Color(100.0, 1.0, 1.0, 1.0),
+    colors.append(a),
+    sumRed := sum(color.r for color in colors),
+    int(sumRed)
+)[-1])()
 ");
             UnityEngine.Debug.Log(sumRed);
             Assert.True(sumRed < 200);

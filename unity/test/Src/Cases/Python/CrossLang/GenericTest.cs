@@ -141,7 +141,6 @@ result
             }
             pythonEnv.Dispose();
         }
-        */
 
         [Test]
         public void StaticGenericMethodInvalidCallArgumentsPythonTest()
@@ -150,32 +149,31 @@ result
             Assert.Catch(() =>
             {
                 string genericTypeName1 = pythonEnv.Eval<string>(@"
-exec('''
-CS = CSharp()
-GenericTestClass = CS.load_type('Puerts.UnitTest.GenericTestClass')
-Int32 = CS.load_type('System.Int32')
-Utils = CS.load_type('Puerts.Utils')
-TypeExtensions = CS.load_type('Puerts.TypeExtensions')
-methods = Utils.GetMethodAndOverrideMethodByName($1, 'StaticGenericMethod')
-
-# Find the StaticGenericMethod<T>(T arg) method
-for i in range(methods.Length):
-    method = methods.GetValue(i)
-    params = method.GetParameters()
-    if params.Length == 1 and method.GetGenericArguments().Length == 1:
-        generic_method = method.MakeGenericMethod(Int32)
-        Array = CS.load_type('System.Array')
-        args = Array.CreateInstance(CS.load_type('System.Object'), 1)
-        args.SetValue('hello', 0)
-        result = generic_method.Invoke(None, args)
-        break
-''')
-result
+(lambda: (
+    CS := CSharp(),
+    GenericTestClass := CS.load_type('Puerts.UnitTest.GenericTestClass'),
+    Int32 := CS.load_type('System.Int32'),
+    Utils := CS.load_type('Puerts.Utils'),
+    TypeExtensions := CS.load_type('Puerts.TypeExtensions'),
+    methods := Utils.GetMethodAndOverrideMethodByName(GenericTestClass, 'StaticGenericMethod'),
+    result := [
+        (
+            generic_method := methods.GetValue(i).MakeGenericMethod(Int32),
+            Array := CS.load_type('System.Array'),
+            args := Array.CreateInstance(CS.load_type('System.Object'), 1),
+            args.SetValue('hello', 0),
+            generic_method.Invoke(None, args)
+        )[-1]
+        for i in range(methods.Length)
+        if methods.GetValue(i).GetParameters().Length == 1 and methods.GetValue(i).GetGenericArguments().Length == 1
+    ],
+    ''
+)[-1])()
 ");
             }, "invalid arguments to StaticGenericMethod");
             pythonEnv.Dispose();
         }
-        /*
+
         [Test]
         public void StaticGenericMethodTestOverloadPythonTest()
         {
