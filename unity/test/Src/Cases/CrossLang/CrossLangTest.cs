@@ -183,31 +183,47 @@ namespace Puerts.UnitTest
     public class ConstructorOverload
     {
         public int selected;
+        public uint heroID;
+
         [UnityEngine.Scripting.Preserve]
         public ConstructorOverload(uint heroID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A, bool ignoreRegisterSale = false)
         {
             selected = 1;
+            this.heroID = heroID;
         }
 
         [UnityEngine.Scripting.Preserve]
         public ConstructorOverload(uint heroID, uint skinID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
         {
             selected = 2;
+            this.heroID = heroID;
         }
         [UnityEngine.Scripting.Preserve]
         public ConstructorOverload(uint heroID, uint skinID, uint avatarCfgId, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
         {
             selected = 3;
+            this.heroID = heroID;
         }
         [UnityEngine.Scripting.Preserve]
         public ConstructorOverload(ConstructorOverload product, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
         {
             selected = 4;
+            this.heroID = 123;
         }
         [UnityEngine.Scripting.Preserve]
         public ConstructorOverload(ConstructorParam resItemType, uint resId, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
         {
             selected = 5;
+            this.heroID = 456;
+        }
+    }
+
+    public class ConstructorOverloadFactory
+    {
+        [UnityEngine.Scripting.Preserve]
+        public static ConstructorOverload Create(ConstructorParam type, int cnt, uint heroID)
+        {
+            return new ConstructorOverload(heroID);
         }
     }
 
@@ -1461,6 +1477,21 @@ __PDUOTF;");
             jsEnv1.UsingFunc<JSObject, bool>();
             test1 = jsEnv1.Eval<PassJsObject>("(obj) => !!obj");
             Assert.False(test1(jsObj1));
+        }
+
+        [Test]
+        public void TestConstructorOverloadFactory()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<uint>(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const obj = ConstructorOverloadFactory.Create(1, 1, 3001385);
+                    console.log('>>>>>>>>>>>>>>>>>>>>>>>>> obj.heroID: ' + obj.heroID)
+                    return obj.heroID
+                })()
+            ");
+            Assert.AreEqual(3001385u, res);
         }
 
         [Test]
