@@ -225,6 +225,14 @@ namespace Puerts.UnitTest
         {
             return new ConstructorOverload(heroID);
         }
+        [UnityEngine.Scripting.Preserve]
+        public static void LogAppEvent(string logEvent, float? valueToSum = null, System.Collections.Generic.Dictionary<string, object> parameters = null)
+        {
+            Value = valueToSum.HasValue ? valueToSum.Value : 0f;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static float Value;
     }
 
     public unsafe class TestHelper
@@ -1506,6 +1514,20 @@ __PDUOTF;");
                     AssertAndPrint(`TestConstructorOverload obj.selected: ${obj.selected} expected 3`, obj.selected == 3);
                 })()
             ");
+        }
+
+        [Test]
+        public void TestNullablbeFloat()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<float>(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    ConstructorOverloadFactory.LogAppEvent('11', 113);
+                    return ConstructorOverloadFactory.Value
+                })()
+            ");
+            Assert.AreEqual(113f, res);
         }
     }
 }
