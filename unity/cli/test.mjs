@@ -2,8 +2,9 @@ import { cp, exec, mkdir, rm } from "@puerts/shell-util";
 import assert from "assert";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import glob from "glob";
-import { basename, extname, join, relative } from "path";
+import { basename, extname, join, relative, dirname } from "path";
 import runPuertsMake from "./make.mjs";
+import { execFileSync, spawnSync } from "child_process";
 
 ////////////// dotnet-test
 function collectCSFilesAndMakeCompileConfig(dir, workdir, excludeGenerator) {
@@ -209,6 +210,14 @@ function getExeSuffix() {
     return "";
 }
 
+function tryGetPythonFromPath() {
+    try {
+      const out = execFileSync('python', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' }).trim();
+      if (out && existsSync(out)) return { exe: out, home: dirname(out) };
+    } catch {}
+    return null;
+}
+
 export async function dotnetTest(cwd, backend, filter = '', thread_safe = false) {
     // 编译binary
     let dlls = await runPuertsMake(join(cwd, '../../native/puerts'), {
@@ -250,11 +259,14 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
     });
     dlls = dlls.concat(nodedlls);
 	
+	const pyInfo = tryGetPythonFromPath();
+	
 	const pydlls = await runPuertsMake(join(cwd, '../../native/papi-python'), {
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+		cmake_args: (pyInfo && pyInfo.exe) ? `-DPython3_EXECUTABLE="${pyInfo.exe}"` : undefined
     });
     dlls = dlls.concat(pydlls);
 

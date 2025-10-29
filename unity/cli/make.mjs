@@ -406,6 +406,10 @@ async function runPuertsMake(cwd, options) {
     for(let opt in BackendConfig?.cmake_options){
         CmakeDArgs = CmakeDArgs.concat(` ${BackendConfig?.cmake_options[opt]}`)
     }
+	
+	if (options.cmake_args) {
+		CmakeDArgs += ` ${options.cmake_args}`;
+	}
 
     var outputFile = BuildConfig.hook(
         CMAKE_BUILD_PATH,
