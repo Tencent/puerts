@@ -19,7 +19,7 @@ endif ()
 
 add_subdirectory(../puerts ${CMAKE_CURRENT_BINARY_DIR}/puerts)
 
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
 include_directories(
         ${CMAKE_SOURCE_DIR}
