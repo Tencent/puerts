@@ -259,14 +259,14 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
     });
     dlls = dlls.concat(nodedlls);
 	
-	//const pyInfo = tryGetPythonFromPath();
+	const pyInfo = tryGetPythonFromPath();
 	
 	const pydlls = await runPuertsMake(join(cwd, '../../native/papi-python'), {
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
-		//cmake_args: (pyInfo && pyInfo.exe) ? `-DPython3_EXECUTABLE="${pyInfo.exe}"` : undefined
+        thread_safe: thread_safe,
+		cmake_args: (pyInfo && pyInfo.exe) ? `-DPython3_EXECUTABLE="${pyInfo.exe}"` : undefined
     });
     dlls = dlls.concat(pydlls);
 
