@@ -4,6 +4,8 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.4" />
+    <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.15.4" />
     <PackageVersion Include="Cake.CMake" Version="1.4.0" />
     <PackageVersion Include="Cake.Frosting" Version="5.0.0" />
     <PackageVersion Include="Cake.Http" Version="5.0.0" />
