@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageVersion>$(PuertsV8Version)</PackageVersion>
-    <TargetFramework>$(PuertsNativeAssetsmacOSTargetFramework)</TargetFramework>
+    <TargetFrameworks>$(PuertsNativeAssetsmacOSTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <Import Project="..\NativeAssets.Common.props" />
