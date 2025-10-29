@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageVersion>$(PuertsQuickJsVersion)</PackageVersion>
-    <TargetFramework>$(PuertsNativeAssetsmacOSTargetFramework)</TargetFramework>
+    <TargetFrameworks>$(PuertsNativeAssetsmacOSTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <Import Project="..\NativeAssets.Common.props" />
