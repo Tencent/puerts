@@ -937,7 +937,7 @@ pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2Cpp
         if (obj->klass == g_typeofPersistentObjectInfo)
         {
             PObjectRefInfo* objectInfo = GetPObjectRefInfo(obj);
-			if (apis != objectInfo->Apis)
+            if (apis != objectInfo->Apis)
                 return apis->create_null(env);
             pesapi_env_ref envRef = apis->get_ref_associated_env(objectInfo->ValueRef);
             auto scope = apis->open_scope(envRef);
@@ -1928,7 +1928,7 @@ handle_underlying:
                 uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
                 
 #ifndef UNITY_2021_1_OR_NEWER
-				uint8_t* dataPtr = static_cast<uint8_t*>(storage);
+                uint8_t* dataPtr = static_cast<uint8_t*>(storage);
 #else
                 int32_t nullableShift = parameterKlass->fields[1].offset - sizeof(Il2CppObject);
                 uint8_t* dataPtr = static_cast<uint8_t*>(storage) + nullableShift;
