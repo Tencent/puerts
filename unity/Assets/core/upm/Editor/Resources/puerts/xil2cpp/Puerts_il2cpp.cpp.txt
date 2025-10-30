@@ -350,7 +350,7 @@ static bool HasParamArray(const MethodInfo* method)
 #endif
 }
 
-static std::string GetParameterSignature(const MethodInfo* method, int index)
+static std::string GetParameterSignature(const MethodInfo* method, int index, bool isBridge)
 {
     if (kInvalidIl2CppMethodSlot != method->slot) {
         il2cpp::vm::Class::Init(method->klass);
@@ -359,7 +359,7 @@ static std::string GetParameterSignature(const MethodInfo* method, int index)
     
     if (type)
     {
-        if (type->attrs & PARAM_ATTRIBUTE_OPTIONAL) {
+        if (!isBridge && (type->attrs & PARAM_ATTRIBUTE_OPTIONAL)) {
             return "D" + GetTypeSignature(type);
         }
 
@@ -407,7 +407,7 @@ static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, b
         signature += "vt";
         for(uint32_t i = 0; i < method->parameters_count; ++i)
         {
-            signature += GetParameterSignature(method, i);
+            signature += GetParameterSignature(method, i, isBridge);
         }
     }
     else
@@ -422,7 +422,7 @@ static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, b
             }
             else
             {
-                signature += GetParameterSignature(method, i);
+                signature += GetParameterSignature(method, i, isBridge);
             }
         }
 
@@ -1217,9 +1217,18 @@ handle_underlying:
                 if (IsDelegate(klass))
                 {
                     JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)pesapi_get_class_data(klass, true);
-                    if (!jsClassInfo || !jsClassInfo->DelegateBridge)
+                    if (!jsClassInfo)
                     {
-                        Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
+                        Exception::Raise(Exception::GetInvalidOperationException("can't find type info for delegate"));
+                    }
+                    else if (!jsClassInfo->DelegateBridge)
+                    {
+                        std::string err_info = "can't find DelegateBridge for delegate, sig:";
+                        
+                        MethodInfo* invoke = (MethodInfo*)il2cpp::vm::Class::GetMethodFromName(jsClassInfo->TypeId, "Invoke", -1);
+                        err_info +=  GetMethodSignature(invoke, true, false);
+                        
+                        Exception::Raise(Exception::GetInvalidOperationException(err_info.c_str()));
                     }
                     return FunctionToDelegate(apis, env, jsval, jsClassInfo);
                 }

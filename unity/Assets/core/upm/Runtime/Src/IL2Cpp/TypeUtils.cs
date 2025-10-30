@@ -275,7 +275,7 @@ namespace PuertsIl2cpp
             throw new NotSupportedException("no support type: " + type);
         }
 
-        public static string GetParameterSignature(ParameterInfo parameterInfo)
+        public static string GetParameterSignature(ParameterInfo parameterInfo, bool isBridge)
         {
             bool isParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false) && parameterInfo.ParameterType.IsArray;
             if (isParams)
@@ -283,7 +283,7 @@ namespace PuertsIl2cpp
                 return "V" + GetTypeSignature(parameterInfo.ParameterType.GetElementType());
             }
 
-            if (parameterInfo.IsOptional)
+            if (!isBridge && parameterInfo.IsOptional)
             {
                 return "D" + GetTypeSignature(parameterInfo.ParameterType);
             }
@@ -317,7 +317,7 @@ namespace PuertsIl2cpp
                 var constructorInfo = methodBase as ConstructorInfo;
                 foreach (var p in constructorInfo.GetParameters())
                 {
-                    signature += GetParameterSignature(p);
+                    signature += GetParameterSignature(p, isBridge);
                 }
             }
             else if (methodBase is MethodInfo)
@@ -334,7 +334,7 @@ namespace PuertsIl2cpp
                     }
                     else
                     {
-                        signature += GetParameterSignature(parameterInfos[i]);
+                        signature += GetParameterSignature(parameterInfos[i], isBridge);
                     }
                 }
 

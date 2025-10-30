@@ -382,7 +382,7 @@ namespace PuertsIl2cpp.Editor
                         CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = null,
-                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
+                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, true)).ToList()
                     })
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
@@ -567,7 +567,7 @@ namespace PuertsIl2cpp.Editor
                             CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
                             ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                             ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m, isExtensionMethod),
-                            ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
+                            ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, false)).ToList()
                         };
                     })
                     .Concat(
@@ -581,7 +581,7 @@ namespace PuertsIl2cpp.Editor
                                     CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
                                     ReturnSignature = "v",
                                     ThisSignature = "t",
-                                    ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
+                                    ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, false)).ToList()
                                 };
                             })
                     )

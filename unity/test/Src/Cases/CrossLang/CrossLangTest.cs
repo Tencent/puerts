@@ -1535,5 +1535,21 @@ __PDUOTF;");
             ");
             Assert.AreEqual(113f, res);
         }
+
+        public delegate void DelegateWithDefaultValue(uint callSeq, ulong resourceKey, double a , int param = 0);
+
+        [Test]
+        public void DelegateWithDefaultValueTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.UsingAction<uint, ulong, double, int>();
+            var cb1 = jsEnv.Eval<DelegateWithDefaultValue>(@"
+            function __DWDV(a) {
+            }
+            __DWDV;
+            ");
+            cb1(1, 2, 6, 3);
+        }
+
     }
 }
