@@ -427,7 +427,7 @@ TEST_F(PApiBaseTest, EvalJavaScriptEx)
 
     EXPECT_STREQ("abc", apis->get_exception_as_string(scope, false));
     EXPECT_STREQ(
-        "Traceback (most recent call last):\n  File \"<string>\", line 3, in <module>\n  File \"test.py\", line 1, in <module>\n  "
+        "Traceback (most recent call last):\n  File \"test.py\", line 1, in <module>\n  "
         "File \"test.py\", line 1, in <lambda>\n  File \"test.py\", line 1, in <genexpr>\nException: abc\n",
         apis->get_exception_as_string(scope, true));
 }

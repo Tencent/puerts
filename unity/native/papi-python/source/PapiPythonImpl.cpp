@@ -602,25 +602,79 @@ const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_stack)
     {
         return nullptr;
     }
-    auto ex = scope->caught->ex;
-    auto globals = PyModule_GetDict(PyImport_AddModule("__main__"));
-    PyDict_SetItem(globals, PyUnicode_FromString("__pesapi_last_exception"), ex);
-    const char* ret;
+
+    const char* ret = nullptr;
     if (with_stack)
     {
-        PyRun_SimpleString(
-            "import traceback\n"
-            "try:\n"
-            "    raise __pesapi_last_exception\n"
-            "except Exception as e:\n"
-            "    __pesapi_last_exception_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))\n");
-        ret = PyUnicode_AsUTF8(PyDict_GetItem(globals, PyUnicode_FromString("__pesapi_last_exception_str")));
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 12
+        auto tracebackModule = PyImport_ImportModule("traceback");
+        auto value = scope->caught->value;
+        auto type = Py_TYPE(value);
+        auto traceback = PyObject_GetAttrString(value, "__traceback__");
+        if (traceback && traceback != Py_None)
+        {
+            if (PyObject* formatExceptionFunc = PyObject_GetAttrString(tracebackModule, "format_exception");
+                formatExceptionFunc && PyCallable_Check(formatExceptionFunc))
+            {
+                PyObject* formattedList = PyObject_CallFunctionObjArgs(formatExceptionFunc, type, value, traceback, nullptr);
+                auto formattedStr = PyUnicode_Join(PyUnicode_FromString(""), formattedList);
+                ret = strdup(PyUnicode_AsUTF8(formattedStr));
+                Py_DECREF(formattedStr);
+                Py_DECREF(formattedList);
+                Py_DECREF(formatExceptionFunc);
+            }
+        }
+        else
+        {
+            if (PyObject* formatExceptionOnlyFunc = PyObject_GetAttrString(tracebackModule, "format_exception_only");
+                formatExceptionOnlyFunc && PyCallable_Check(formatExceptionOnlyFunc))
+            {
+                PyObject* formattedList = PyObject_CallFunctionObjArgs(formatExceptionOnlyFunc, type, value, nullptr);
+                auto formattedStr = PyUnicode_Join(PyUnicode_FromString(""), formattedList);
+                ret = strdup(PyUnicode_AsUTF8(formattedStr));
+                Py_DECREF(formattedStr);
+                Py_DECREF(formattedList);
+                Py_DECREF(formatExceptionOnlyFunc);
+            }
+        }
+#else
+        auto tracebackModule = PyImport_ImportModule("traceback");
+        PyErr_NormalizeException(&scope->caught->type, &scope->caught->value, &scope->caught->traceback);
+        auto traceback = scope->caught->traceback;
+        auto type = scope->caught->type;
+        auto value = scope->caught->value;
+        if (traceback)
+        {
+            if (PyObject* formatExceptionFunc = PyObject_GetAttrString(tracebackModule, "format_exception");
+                formatExceptionFunc && PyCallable_Check(formatExceptionFunc))
+            {
+                PyObject* formattedList = PyObject_CallFunctionObjArgs(formatExceptionFunc, type, value, traceback, nullptr);
+                auto formattedStr = PyUnicode_Join(PyUnicode_FromString(""), formattedList);
+                ret = strdup(PyUnicode_AsUTF8(formattedStr));
+                Py_DECREF(formattedStr);
+                Py_DECREF(formattedList);
+                Py_DECREF(formatExceptionFunc);
+            }
+        }
+        else
+        {
+            if (PyObject* formatExceptionOnlyFunc = PyObject_GetAttrString(tracebackModule, "format_exception_only");
+                formatExceptionOnlyFunc && PyCallable_Check(formatExceptionOnlyFunc))
+            {
+                PyObject* formattedList = PyObject_CallFunctionObjArgs(formatExceptionOnlyFunc, type, value, nullptr);
+                auto formattedStr = PyUnicode_Join(PyUnicode_FromString(""), formattedList);
+                ret = strdup(PyUnicode_AsUTF8(formattedStr));
+                Py_DECREF(formattedStr);
+                Py_DECREF(formattedList);
+                Py_DECREF(formatExceptionOnlyFunc);
+            }
+        }
+#endif
     }
     else
     {
-        ret = PyUnicode_AsUTF8(PyObject_Str(ex));
+        ret = PyUnicode_AsUTF8(PyObject_Str(scope->caught->value));
     }
-    PyDict_DelItemString(globals, "__pesapi_last_exception");
     return ret;
 }
 
@@ -780,16 +834,13 @@ pesapi_value pesapi_call_function(
     else
     {
         auto scope = (pesapi_scope__*)mapper->getCurrentScope();
-#if PY_VERSION_HEX >= 0x030B0000
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 12
         scope->setCaughtException(PyErr_GetRaisedException());
 #else
         {
-            PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
-            PyErr_Fetch(&type, &value, &tb);
-            PyObject *exc = value ? value : type;
-            if (exc) Py_XINCREF(exc);
-            PyErr_Restore(type, value, tb);
-            scope->setCaughtException(exc);
+            PyObject *type = nullptr, *value = nullptr, *traceback = nullptr;
+            PyErr_Fetch(&type, &value, &traceback);
+            scope->setCaughtException(type, value, traceback);
         }
 #endif
         return nullptr;
@@ -816,16 +867,13 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
         }
     }
     auto scope = (pesapi_scope__*)mapper->getCurrentScope();
-#if PY_VERSION_HEX >= 0x030B0000
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 12
     scope->setCaughtException(PyErr_GetRaisedException());
 #else
     {
-        PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
-        PyErr_Fetch(&type, &value, &tb);
-        PyObject *exc = value ? value : type;
-        if (exc) Py_XINCREF(exc);
-        PyErr_Restore(type, value, tb);
-        scope->setCaughtException(exc);
+        PyObject *type = nullptr, *value = nullptr, *traceback = nullptr;
+        PyErr_Fetch(&type, &value, &traceback);
+        scope->setCaughtException(type, value, traceback);
     }
 #endif
     return nullptr;
