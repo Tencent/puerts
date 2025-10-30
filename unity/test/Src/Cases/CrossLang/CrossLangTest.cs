@@ -226,9 +226,12 @@ namespace Puerts.UnitTest
             return new ConstructorOverload(heroID);
         }
         [UnityEngine.Scripting.Preserve]
-        public static void LogAppEvent(string logEvent, float? valueToSum = null, System.Collections.Generic.Dictionary<string, object> parameters = null)
+        public static float? LogAppEvent(string logEvent, float? valueToSum = null, System.Collections.Generic.Dictionary<string, object> parameters = null)
         {
             Value = valueToSum.HasValue ? valueToSum.Value : 0f;
+            var res = (logEvent == null ? (float?)null : valueToSum);
+            //UnityEngine.Debug.Log($"LogAppEvent: {logEvent}, valueToSum: {valueToSum}, res: {res}");
+            return res;
         }
 
         [UnityEngine.Scripting.Preserve]
@@ -1523,7 +1526,10 @@ __PDUOTF;");
             var res = jsEnv.Eval<float>(@"
                 (function() {
                     const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
-                    ConstructorOverloadFactory.LogAppEvent('11', 113);
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('check 1',  ConstructorOverloadFactory.LogAppEvent(null, 113) == null);
+                    AssertAndPrint('check 2', ConstructorOverloadFactory.LogAppEvent('11', null) == null);
+                    AssertAndPrint('check 3', ConstructorOverloadFactory.LogAppEvent('11', 113) == 113);
                     return ConstructorOverloadFactory.Value
                 })()
             ");

@@ -1185,6 +1185,10 @@ handle_underlying:
         }
         case IL2CPP_TYPE_STRING:
         {
+            if (${invokePapi('is_null')}(env, jsval) || ${invokePapi('is_undefined')}(env, jsval))
+            {
+                return nullptr;
+            }
             size_t bufsize = 0;
             auto str = ${invokePapi('get_value_string_utf16')}(env, jsval, nullptr, &bufsize);
             if (str)
@@ -1455,6 +1459,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
         int32_t nullableShift = targetClass->fields[1].offset - sizeof(Il2CppObject);
         valueStart += nullableShift;
         ptr = valueStart;
+        targetClass = il2cpp::vm::Class::GetNullableArgument(targetClass);
     }
 
     if (il2cpp::vm::Class::IsEnum(targetClass))
@@ -1481,7 +1486,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
     return ${invokePapi('native_object_to_value')}(env, targetClass, buff, true);
 }
 
-static bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
 {
     bool hasValue = false;
     uint32_t valueSize = klass->instance_size - sizeof(Il2CppObject);
@@ -1844,6 +1849,10 @@ handle_underlying:
                 case IL2CPP_TYPE_GENERICINST:
                     if (il2cpp::vm::Class::IsNullable(parameterKlass))
                     {
+                        if (${invokePapi('is_null')}(env, jsValue) || ${invokePapi('is_undefined')}(env, jsValue))
+                        {
+                            continue;
+                        }
                         parameterKlass = il2cpp::vm::Class::GetNullableArgument(parameterKlass);
                         parameterType = &parameterKlass->byval_arg;
                         t = parameterType->type;
