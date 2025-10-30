@@ -249,7 +249,7 @@ export function checkJSArg(signature, index) {
     } else {
         ret += `if (`
     }
-
+    
     if (signature in PrimitiveSignatureCppTypeMap) {
         ret += `!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'p' || signature == 'Pv' || signature == 'a') { // IntPtr, void*, ArrayBuffer
@@ -262,7 +262,14 @@ export function checkJSArg(signature, index) {
         ret += `!DataTransfer::IsAssignable(apis, env, _sv${index}, ${typeInfoVar}, false)) return false;`
     } else if (signature == 'O') {//System.Object
         return '';
-    } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
+    } else if (signature.startsWith(sigs.NullableStructPrefix)) { // Nullbale element type is ValueType
+        const si = signature.slice(3, -1);
+        if (si in PrimitiveSignatureCppTypeMap) {
+            ret += `!${invokePapi('is_null')}(env, _sv${index}) && !converter::Converter<${PrimitiveSignatureCppTypeMap[si]}>::accept(apis, env, _sv${index})) return false;`
+        } else {
+            ret += `!${invokePapi('is_null')}(env, _sv${index}) && !DataTransfer::IsAssignable(apis, env, _sv${index}, il2cpp::vm::Class::GetNullableArgument(${typeInfoVar}), true)) return false;`
+        }
+    } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
         ret += `!DataTransfer::IsAssignable(apis, env, _sv${index}, ${typeInfoVar}, true)) return false;`
     } else { // TODO: 适配所有类型，根据!!true去查找没处理的
         ret += '!!true) return false;';
@@ -380,6 +387,11 @@ export function JSValToCSVal(signature, JSName, CSName) {
     Il2CppArray* ${CSName} = nullptr;
                 `
         }
+    } else if (signature.startsWith(sigs.NullableStructPrefix) || signature.startsWith('DN_')) {
+        const si = signature[0] == 'D' ? signature.substring(1) : signature;
+        return `    // JSValToCSVal Nullable 
+    ${si} ${CSName};
+    NullableConverter<${si}>::toCpp(apis, env, ${JSName}, TI${CSName}, &${CSName});`
     } else if (signature[0] == 'D') {
         const si = signature.substring(1);
         const start = parseInt(JSName.match(/_sv(\d+)/)[1]);
@@ -395,7 +407,7 @@ export function JSValToCSVal(signature, JSName, CSName) {
             return `    // JSValToCSVal ref  with default
     Il2CppObject* ${CSName} = OptionalParameter<Il2CppObject*>::GetRefType(apis, env, info, method, wrapData, js_args_len, ${start}, TI${CSName});
                 `
-        } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
+        } else if ((si.startsWith(sigs.StructPrefix)) && si.endsWith('_')) { 
             return `    // JSValToCSVal valuetype  with default
     ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(apis, env, info, method, wrapData, js_args_len, ${start});
                 `
@@ -421,7 +433,7 @@ export function CSValToJSVal(signature, CSName) {
     } else if (signature == 'a') { // ArrayBuffer
         return `CSRefToJsValue(apis, env, ${TIName}, ${CSName})`;
     } else if (signature.startsWith(sigs.NullableStructPrefix) && signature.endsWith('_')) {
-        return `DataTransfer::CopyNullableValueType(apis, env, ${CSName}, ${TIName})`
+        return `NullableConverter<${signature}>::toScript(apis, env, ${TIName}, &${CSName})`
     } else if (signature == 's') { // string
         return `converter::Converter<Il2CppString*>::toScript(apis, env, ${CSName})`;
     } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
