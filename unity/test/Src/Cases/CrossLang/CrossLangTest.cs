@@ -1491,13 +1491,13 @@ __PDUOTF;");
         }
 
         [Test]
-        public void TestConstructorOverloadFactory()
+        public void AutoConvertStringToNumber()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             var res = jsEnv.Eval<uint>(@"
                 (function() {
                     const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
-                    const obj = ConstructorOverloadFactory.Create(1, 1, 3001385);
+                    const obj = ConstructorOverloadFactory.Create(1, 1, '3001385');
                     console.log('>>>>>>>>>>>>>>>>>>>>>>>>> obj.heroID: ' + obj.heroID)
                     return obj.heroID
                 })()

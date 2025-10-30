@@ -1486,7 +1486,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
     return ${invokePapi('native_object_to_value')}(env, targetClass, buff, true);
 }
 
-bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+static bool GetValueTypeFromJsInternal(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage, bool forceConvert)
 {
     bool hasValue = false;
     uint32_t valueSize = klass->instance_size - sizeof(Il2CppObject);
@@ -1511,7 +1511,7 @@ handle_underlying:
         {
             case IL2CPP_TYPE_I1:
             {
-                if (${invokePapi('is_int32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int32')}(env, jsValue))
                 {
                     data.i1 = (int8_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
@@ -1520,7 +1520,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_BOOLEAN:
             {
-                if (${invokePapi('is_boolean')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_boolean')}(env, jsValue))
                 {
                     data.u1 = (uint8_t)${invokePapi('get_value_bool')}(env, jsValue);
                     hasValue = true;
@@ -1528,7 +1528,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_U1:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.u1 = (uint8_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1537,7 +1537,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_I2:
             {
-                if (${invokePapi('is_int32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int32')}(env, jsValue))
                 {
                     data.i2 = (int16_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
@@ -1546,7 +1546,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_U2:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.u2 = (uint16_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1555,7 +1555,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_CHAR:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.c = (Il2CppChar)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1567,7 +1567,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_I4:
             {
-                if (${invokePapi('is_int32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int32')}(env, jsValue))
                 {
                     data.i4 = (int32_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
@@ -1579,7 +1579,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_U4:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.u4 = (uint32_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1591,7 +1591,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_I8:
             {
-                if (${invokePapi('is_int64')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int64')}(env, jsValue))
                 {
                     data.i8 = ${invokePapi('get_value_int64')}(env, jsValue);
                     hasValue = true;
@@ -1603,7 +1603,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_U8:
             {
-                if (${invokePapi('is_uint64')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint64')}(env, jsValue))
                 {
                     data.u8 = ${invokePapi('get_value_uint64')}(env, jsValue);
                     hasValue = true;
@@ -1612,7 +1612,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_R4:
             {
-                if (${invokePapi('is_double')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_double')}(env, jsValue))
                 {
                     data.r4 = (float)${invokePapi('get_value_double')}(env, jsValue);
                     hasValue = true;
@@ -1621,7 +1621,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_R8:
             {
-                if (${invokePapi('is_double')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_double')}(env, jsValue))
                 {
                     data.r8 = ${invokePapi('get_value_double')}(env, jsValue);
                     hasValue = true;
@@ -1643,6 +1643,16 @@ handle_underlying:
         }
     }
     return hasValue;
+}
+
+bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+{
+    return GetValueTypeFromJsInternal(apis, env, jsValue, klass, storage, false);
+}
+
+bool GetValueTypeFromJsForceConvert(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+{
+    return GetValueTypeFromJsInternal(apis, env, jsValue, klass, storage, true);
 }
 
 static pesapi_value JsObjectUnRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue)
@@ -1965,7 +1975,7 @@ handle_underlying:
             {
                 auto valueSize = parameterKlass->instance_size - sizeof(Il2CppObject);
                 void* storage = alloca(valueSize);
-                bool hasValue = GetValueTypeFromJs(apis, env, jsValue, parameterKlass, storage);
+                bool hasValue = GetValueTypeFromJsForceConvert(apis, env, jsValue, parameterKlass, storage);
                 if (!hasValue)
                 {
                     memset(storage, 0, valueSize);
