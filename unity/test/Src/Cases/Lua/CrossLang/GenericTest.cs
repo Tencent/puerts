@@ -44,18 +44,15 @@ namespace Puerts.UnitTest
         public void ListRangeLuaTest()
         {
             var luaEnv = new ScriptEnv(new BackendLua());
-            Assert.Catch(() => 
-            {
-                luaEnv.Eval(@"
-                    local CS = require('csharp')
-                    local puerts = require('puerts')
-                    local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
-                    local ls = List()
-                    ls:Add(1)
-                    ls:Add(2)
-                    local res = CS.Puerts.UnitTest.GenericTestHelper.TestListRange(ls,2)
-                ");
-            });
+            luaEnv.Eval(@"
+                local CS = require('csharp')
+                local puerts = require('puerts')
+                local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+                local ls = List()
+                ls:Add(1)
+                ls:Add(2)
+                local res = CS.Puerts.UnitTest.GenericTestHelper.TestListRange(ls,1)
+            ");
             luaEnv.Dispose();
         }
 

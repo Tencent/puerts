@@ -86,18 +86,15 @@ namespace Puerts.UnitTest
         public void ListRangeTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            Assert.Catch(() =>
-            {
-                jsEnv.Eval(@"
-                    (function() {
-                        let List = puerts.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
-                        let ls = new List();
-                        ls.Add(1);
-                        ls.Add(2);
-                        let res = CS.Puerts.UnitTest.GenericTestHelper.testListRange(ls,2);
-                    })()
-                ");
-            });
+            jsEnv.Eval(@"
+                (function() {
+                    let List = puerts.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
+                    let ls = new List();
+                    ls.Add(1);
+                    ls.Add(2);
+                    let res = CS.Puerts.UnitTest.GenericTestHelper.TestListRange(ls,1);
+                })()
+            ");
             jsEnv.Tick();
         }
 

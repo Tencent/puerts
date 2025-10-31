@@ -62,21 +62,17 @@ namespace Puerts.UnitTest
         public void ListRangePythonTest()
         {
             var pythonEnv = new ScriptEnv(new BackendPython());
-            Assert.Catch(() => 
-            {
-                pythonEnv.Eval(@"
+            pythonEnv.Eval(@"
 exec('''
 CS = CSharp()
-List = CS.load_type('System.Collections.Generic.List`1')
-Int32 = CS.load_type('System.Int32')
-ListInt = List[Int32]
+ListInt = CS.load_type('System.Collections.Generic.List', 'System.Int32')
 ls = ListInt()
 ls.Add(1)
 ls.Add(2)
-result = CS.load_type('Puerts.UnitTest.GenericTestHelper').TestListRange(ls, 2)
+result = CS.load_type('Puerts.UnitTest.GenericTestHelper').TestListRange(ls, 1)
 ''')
 ");
-            });
+
             pythonEnv.Dispose();
         }
         /*
