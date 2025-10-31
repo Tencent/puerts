@@ -749,6 +749,11 @@ namespace Puerts
 
         private static Expression scriptToNative(CompileContext context, Type type, Expression value)
         {
+            Type underlyingType = Nullable.GetUnderlyingType(type);
+            if (underlyingType != null)
+            {
+                return Expression.Condition(callPApi(context.Apis, "is_null", context.Env, value), Expression.Constant(null, type), Expression.Convert(scriptToNative(context, underlyingType, value), type));
+            }
             Type tranType = type.IsEnum ? Enum.GetUnderlyingType(type) : type;
             Expression ret = null;
             if (tranType == typeof(int))

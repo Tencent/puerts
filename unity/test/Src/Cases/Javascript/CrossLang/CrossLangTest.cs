@@ -152,43 +152,6 @@ namespace Puerts.UnitTest
 
     }
 	
-	public enum ConstructorParam
-    {
-        A, B, C, D, E, F, G, H
-    }
-
-    [UnityEngine.Scripting.Preserve]
-    public class ConstructorOverload
-    {
-        public int selected;
-        [UnityEngine.Scripting.Preserve]
-        public ConstructorOverload(uint heroID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A, bool ignoreRegisterSale = false)
-        {
-            selected = 1;
-        }
-
-        [UnityEngine.Scripting.Preserve]
-        public ConstructorOverload(uint heroID, uint skinID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
-        {
-            selected = 2;
-        }
-        [UnityEngine.Scripting.Preserve]
-        public ConstructorOverload(uint heroID, uint skinID, uint avatarCfgId, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
-        {
-            selected = 3;
-        }
-        [UnityEngine.Scripting.Preserve]
-        public ConstructorOverload(ConstructorOverload product, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
-        {
-            selected = 4;
-        }
-        [UnityEngine.Scripting.Preserve]
-        public ConstructorOverload(ConstructorParam resItemType, uint resId, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
-        {
-            selected = 5;
-        }
-    }
-   
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
     {
@@ -221,6 +184,71 @@ namespace Puerts.UnitTest
             return new NewObject();
         }
     }
+	
+	public enum ConstructorParam
+    {
+        A, B, C, D, E, F, G, H
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class ConstructorOverload
+    {
+        public int selected;
+        public uint heroID;
+
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A, bool ignoreRegisterSale = false)
+        {
+            selected = 1;
+            this.heroID = heroID;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, uint skinID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
+        {
+            selected = 2;
+            this.heroID = heroID;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, uint skinID, uint avatarCfgId, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
+        {
+            selected = 3;
+            this.heroID = heroID;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(ConstructorOverload product, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
+        {
+            selected = 4;
+            this.heroID = 123;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(ConstructorParam resItemType, uint resId, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
+        {
+            selected = 5;
+            this.heroID = 456;
+        }
+    }
+
+    public class ConstructorOverloadFactory
+    {
+        [UnityEngine.Scripting.Preserve]
+        public static ConstructorOverload Create(ConstructorParam type, int cnt, uint heroID)
+        {
+            return new ConstructorOverload(heroID);
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static float? LogAppEvent(string logEvent, float? valueToSum = null, System.Collections.Generic.Dictionary<string, object> parameters = null)
+        {
+            Value = valueToSum.HasValue ? valueToSum.Value : 0f;
+            var res = (logEvent == null ? (float?)null : valueToSum);
+            //UnityEngine.Debug.Log($"LogAppEvent: {logEvent}, valueToSum: {valueToSum}, res: {res}");
+            return res;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static float Value;
+    }
+
     public unsafe class TestHelper
     {
         protected static TestHelper instance;
@@ -1537,5 +1565,38 @@ __PDUOTF;");
                 })()
             ");
         }
+
+        [Test]
+        public void TestNullablbeFloat()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<float>(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('check 1',  ConstructorOverloadFactory.LogAppEvent(null, 113) == null);
+                    AssertAndPrint('check 2', ConstructorOverloadFactory.LogAppEvent('11', null) == null);
+                    AssertAndPrint('check 3', ConstructorOverloadFactory.LogAppEvent('11', 113) == 113);
+                    return ConstructorOverloadFactory.Value
+                })()
+            ");
+            Assert.AreEqual(113f, res);
+        }
+
+        public delegate void DelegateWithDefaultValue(uint callSeq, ulong resourceKey, double a , int param = 0);
+
+        [Test]
+        public void DelegateWithDefaultValueTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.UsingAction<uint, ulong, double, int>();
+            var cb1 = jsEnv.Eval<DelegateWithDefaultValue>(@"
+            function __DWDV(a) {
+            }
+            __DWDV;
+            ");
+            cb1(1, 2, 6, 3);
+        }
+
     }
 }

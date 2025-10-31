@@ -353,7 +353,7 @@ static bool HasParamArray(const MethodInfo* method)
 #endif
 }
 
-static std::string GetParameterSignature(const MethodInfo* method, int index)
+static std::string GetParameterSignature(const MethodInfo* method, int index, bool isBridge)
 {
     if (kInvalidIl2CppMethodSlot != method->slot) {
         Class::Init(method->klass);
@@ -362,7 +362,7 @@ static std::string GetParameterSignature(const MethodInfo* method, int index)
     
     if (type)
     {
-        if (type->attrs & PARAM_ATTRIBUTE_OPTIONAL) {
+        if (!isBridge && (type->attrs & PARAM_ATTRIBUTE_OPTIONAL)) {
             return "D" + GetTypeSignature(type);
         }
 
@@ -410,7 +410,7 @@ static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, b
         signature += "vt";
         for(uint32_t i = 0; i < method->parameters_count; ++i)
         {
-            signature += GetParameterSignature(method, i);
+            signature += GetParameterSignature(method, i, isBridge);
         }
     }
     else
@@ -425,7 +425,7 @@ static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, b
             }
             else
             {
-                signature += GetParameterSignature(method, i);
+                signature += GetParameterSignature(method, i, isBridge);
             }
         }
 
@@ -1196,6 +1196,10 @@ handle_underlying:
         }
         case IL2CPP_TYPE_STRING:
         {
+            if (${invokePapi('is_null')}(env, jsval) || ${invokePapi('is_undefined')}(env, jsval))
+            {
+                return nullptr;
+            }
             size_t bufsize = 0;
             auto str = ${invokePapi('get_value_string_utf16')}(env, jsval, nullptr, &bufsize);
             if (str)
@@ -1224,9 +1228,18 @@ handle_underlying:
                 if (IsDelegate(klass))
                 {
                     JsClassInfoHeader* jsClassInfo = (JsClassInfoHeader*)g_registry_api->get_class_data(g_registry, klass, true);
-                    if (!jsClassInfo || !jsClassInfo->DelegateBridge)
+                    if (!jsClassInfo)
                     {
-                        Exception::Raise(Exception::GetInvalidOperationException("call not load type of delegate"));
+                        Exception::Raise(Exception::GetInvalidOperationException("can't find type info for delegate"));
+                    }
+                    else if (!jsClassInfo->DelegateBridge)
+                    {
+                        std::string err_info = "can't find DelegateBridge for delegate, sig:";
+                        
+                        MethodInfo* invoke = (MethodInfo*)il2cpp::vm::Class::GetMethodFromName(jsClassInfo->TypeId, "Invoke", -1);
+                        err_info +=  GetMethodSignature(invoke, true, false);
+                        
+                        Exception::Raise(Exception::GetInvalidOperationException(err_info.c_str()));
                     }
                     return FunctionToDelegate(apis, env, jsval, jsClassInfo);
                 }
@@ -1475,6 +1488,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
         int32_t nullableShift = targetClass->fields[1].offset - sizeof(Il2CppObject);
         valueStart += nullableShift;
         ptr = valueStart;
+        targetClass = il2cpp::vm::Class::GetNullableArgument(targetClass);
     }
 
     if (Class::IsEnum(targetClass))
@@ -1501,7 +1515,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
     return ${invokePapi('native_object_to_value')}(env, targetClass, buff, true);
 }
 
-static bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+static bool GetValueTypeFromJsInternal(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage, bool forceConvert)
 {
     bool hasValue = false;
     uint32_t valueSize = klass->instance_size - sizeof(Il2CppObject);
@@ -1526,7 +1540,7 @@ handle_underlying:
         {
             case IL2CPP_TYPE_I1:
             {
-                if (${invokePapi('is_int32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int32')}(env, jsValue))
                 {
                     data.i1 = (int8_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
@@ -1535,7 +1549,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_BOOLEAN:
             {
-                if (${invokePapi('is_boolean')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_boolean')}(env, jsValue))
                 {
                     data.u1 = (uint8_t)${invokePapi('get_value_bool')}(env, jsValue);
                     hasValue = true;
@@ -1543,7 +1557,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_U1:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.u1 = (uint8_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1552,7 +1566,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_I2:
             {
-                if (${invokePapi('is_int32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int32')}(env, jsValue))
                 {
                     data.i2 = (int16_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
@@ -1561,7 +1575,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_U2:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.u2 = (uint16_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1570,7 +1584,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_CHAR:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.c = (Il2CppChar)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1582,7 +1596,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_I4:
             {
-                if (${invokePapi('is_int32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int32')}(env, jsValue))
                 {
                     data.i4 = (int32_t)${invokePapi('get_value_int32')}(env, jsValue);
                     hasValue = true;
@@ -1594,7 +1608,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_U4:
             {
-                if (${invokePapi('is_uint32')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint32')}(env, jsValue))
                 {
                     data.u4 = (uint32_t)${invokePapi('get_value_uint32')}(env, jsValue);
                     hasValue = true;
@@ -1606,7 +1620,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_I8:
             {
-                if (${invokePapi('is_int64')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_int64')}(env, jsValue))
                 {
                     data.i8 = ${invokePapi('get_value_int64')}(env, jsValue);
                     hasValue = true;
@@ -1618,7 +1632,7 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_U8:
             {
-                if (${invokePapi('is_uint64')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_uint64')}(env, jsValue))
                 {
                     data.u8 = ${invokePapi('get_value_uint64')}(env, jsValue);
                     hasValue = true;
@@ -1627,7 +1641,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_R4:
             {
-                if (${invokePapi('is_double')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_double')}(env, jsValue))
                 {
                     data.r4 = (float)${invokePapi('get_value_double')}(env, jsValue);
                     hasValue = true;
@@ -1636,7 +1650,7 @@ handle_underlying:
             }
             case IL2CPP_TYPE_R8:
             {
-                if (${invokePapi('is_double')}(env, jsValue))
+                if (forceConvert || ${invokePapi('is_double')}(env, jsValue))
                 {
                     data.r8 = ${invokePapi('get_value_double')}(env, jsValue);
                     hasValue = true;
@@ -1658,6 +1672,16 @@ handle_underlying:
         }
     }
     return hasValue;
+}
+
+bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+{
+    return GetValueTypeFromJsInternal(apis, env, jsValue, klass, storage, false);
+}
+
+bool GetValueTypeFromJsForceConvert(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+{
+    return GetValueTypeFromJsInternal(apis, env, jsValue, klass, storage, true);
 }
 
 static pesapi_value JsObjectUnRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue)
@@ -1862,6 +1886,17 @@ handle_underlying:
                     }
                     break;
                 case IL2CPP_TYPE_GENERICINST:
+                    if (il2cpp::vm::Class::IsNullable(parameterKlass))
+                    {
+                        if (${invokePapi('is_null')}(env, jsValue) || ${invokePapi('is_undefined')}(env, jsValue))
+                        {
+                            continue;
+                        }
+                        parameterKlass = il2cpp::vm::Class::GetNullableArgument(parameterKlass);
+                        parameterType = &parameterKlass->byval_arg;
+                        t = parameterType->type;
+                        goto handle_underlying;
+                    }
                     t = GenericClass::GetTypeDefinition(parameterType->data.generic_class)->byval_arg.type;
                     goto handle_underlying;
                 default:
@@ -1940,7 +1975,14 @@ handle_underlying:
                 void* storage = alloca(parameterKlass->instance_size - sizeof(Il2CppObject));
                 auto underlyClass = Class::GetNullableArgument(parameterKlass);
                 uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
-                bool hasValue = GetValueTypeFromJs(apis, env, jsValue, underlyClass, storage);
+                
+#ifndef UNITY_2021_1_OR_NEWER
+                uint8_t* dataPtr = static_cast<uint8_t*>(storage);
+#else
+                int32_t nullableShift = parameterKlass->fields[1].offset - sizeof(Il2CppObject);
+                uint8_t* dataPtr = static_cast<uint8_t*>(storage) + nullableShift;
+#endif
+                bool hasValue = GetValueTypeFromJs(apis, env, jsValue, underlyClass, dataPtr);
 #ifndef UNITY_2021_1_OR_NEWER
                 *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
 #else

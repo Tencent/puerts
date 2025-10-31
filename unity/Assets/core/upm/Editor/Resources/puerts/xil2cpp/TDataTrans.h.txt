@@ -72,6 +72,9 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value);
 
 void PLog(const char* Fmt, ...);
 
+bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage);
+pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass* targetClass, void* ptr);
+
 // end function in Puerts_il2cpp.cpp
 
 #define GetPObjectRefInfo(Value) ((PObjectRefInfo*)(((uint8_t*)Value) + sizeof(Il2CppObject)))
@@ -563,6 +566,27 @@ struct Params
         }
     }
     
+};
+
+template <typename T>
+struct NullableConverter
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass* typeId, T* ptr)
+    {
+        if (ptr->hasValue)
+        {
+            return CSValueTypePtrToJsValue(apis, env, il2cpp::vm::Class::GetNullableArgument(typeId), std::addressof(ptr->p1));
+        }
+        else
+        {
+            return ${invokePapi('create_null')}(env);
+        }
+    }
+
+    static void toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, Il2CppClass* typeId, T* ptr)
+    {
+        ptr->hasValue = GetValueTypeFromJs(apis, env, value, il2cpp::vm::Class::GetNullableArgument(typeId), std::addressof(ptr->p1));
+    }
 };
 
 template <class T>
