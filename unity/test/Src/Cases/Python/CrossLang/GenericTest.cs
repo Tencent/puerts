@@ -8,16 +8,14 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class GenericUnitPythonTest
     {
-        /*[Test]
+        [Test]
         public void ListGenericPythonTest()
         {
             var pythonEnv = new ScriptEnv(new BackendPython());
             var res = pythonEnv.Eval<int>(@"
 (lambda: (
     CS := CSharp(),
-    List := CS.load_type('System.Collections.Generic.List`1'),
-    Int32 := CS.load_type('System.Int32'),
-    ListInt := List[Int32],
+    ListInt := CS.load_type('System.Collections.Generic.List', 'System.Int32'),
     ls := ListInt(),
     ls.Add(1),
     ls.Add(2),
@@ -29,7 +27,7 @@ namespace Puerts.UnitTest
             pythonEnv.Dispose();
         }
         
-        [Test]
+        /*[Test]
         public void StaticGenericMethodPythonTest()
         {
             var pythonEnv = new ScriptEnv(new BackendPython());
