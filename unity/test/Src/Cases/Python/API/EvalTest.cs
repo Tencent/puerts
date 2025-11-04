@@ -139,13 +139,7 @@ raise Exception('test error message')
             var pythonEnv = new ScriptEnv(new BackendPython());
             Assert.Catch(() =>
             {
-                var foo = pythonEnv.Eval<Action>(@"
-exec('''
-def foo():
-    raise Exception('test error in function')
-''')
-foo
-");
+                var foo = pythonEnv.Eval<Action>(@"lambda: (lambda: raise Exception('test error in function'))");
                 foo();
             });
             pythonEnv.Dispose();
