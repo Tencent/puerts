@@ -1506,6 +1506,18 @@ __PDUOTF;");
         }
 
         [Test]
+        public void PassBigIntToUInt()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    ConstructorOverloadFactory.Create(1, 1, 3001385n);
+                })()
+            ");
+        }
+
+        [Test]
         public void TestConstructorOverload()
         {
             var jsEnv = UnitTestEnv.GetEnv();
