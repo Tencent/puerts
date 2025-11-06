@@ -377,10 +377,15 @@ double V8Plugin::GetNumberFromValue(void* pValue, int IsOut)
     else
     {
         auto Context = Isolate->GetCurrentContext();
+        v8::TryCatch trycatch(Context->GetIsolate());
         auto maybeNumber = Value->NumberValue(Context);
-        if (maybeNumber.IsNothing())
-            return 0;
-        return maybeNumber.ToChecked();
+        if (maybeNumber.IsNothing() || trycatch.HasCaught()) {
+        if (trycatch.HasCaught()) {
+                trycatch.Reset();
+            }
+            return 0.0;
+        }
+        return maybeNumber.FromJust();
     }
 }
 
