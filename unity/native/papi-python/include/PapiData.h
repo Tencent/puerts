@@ -58,7 +58,25 @@ struct pesapi_value_ref__ : pesapi_env_ref__
 
 struct caught_exception_info
 {
-    PyObject* ex;
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 12
+    PyObject* value;
+#else
+    PyObject* type;
+    PyObject* value;
+    PyObject* traceback;
+#endif
+    ~caught_exception_info()
+    {
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 12
+        // From PyErr_GetRaisedException
+        Py_XDECREF(value);
+#else
+        // From PyErr_Fetch
+        Py_XDECREF(type);
+        Py_XDECREF(value);
+        Py_XDECREF(traceback);
+#endif
+    }
 };
 
 struct pesapi_scope__;
@@ -110,20 +128,34 @@ struct pesapi_scope__
         return ret;
     }
 
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 12
+    // From PyErr_GetRaisedException
     void setCaughtException(PyObject* ex)
     {
         if (caught == nullptr)
         {
             caught = (caught_exception_info*) PyMem_Malloc(sizeof(caught_exception_info));
         }
-        caught->ex = ex;
+        caught->value = ex;
     }
+#else
+    // From PyErr_Fetch
+    void setCaughtException(PyObject * type, PyObject * value, PyObject * traceback)
+    {
+        if (caught == nullptr)
+        {
+            caught = (caught_exception_info*) PyMem_Malloc(sizeof(caught_exception_info));
+        }
+        caught->type = type;
+        caught->value = value;
+        caught->traceback = traceback;
+    }
+#endif
 
     ~pesapi_scope__()
     {
         if (caught)
         {
-            Py_XDECREF(caught->ex);
             caught->~caught_exception_info();
             PyMem_Free(caught);
         }
