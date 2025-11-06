@@ -1594,5 +1594,21 @@ __PDUOTF;");
             ");
         }
 
+        [Test]
+        public void TestVirtualCall()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<string>(@"
+                (function() {
+                    const StringBuilder = CS.System.Text.StringBuilder;
+                    const sb = new StringBuilder();
+                    sb.Append('ToStringOverrideTest: 123');
+                    const res = CS.System.Object.prototype.ToString.call(sb);
+                    return res;
+                })()
+            ");
+            Assert.AreEqual("ToStringOverrideTest: 123", res);
+        }
+
     }
 }

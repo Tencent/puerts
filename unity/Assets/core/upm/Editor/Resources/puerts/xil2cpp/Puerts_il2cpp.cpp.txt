@@ -582,7 +582,20 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap(apis, (*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, env, self, checkArgument, *wrapDatas))
+            Il2CppMethodPointer methodPointer = (*wrapDatas)->MethodPointer;
+            const MethodInfo* method = (*wrapDatas)->Method;
+            if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && self)
+            {
+                Il2CppClass* thisType = method->klass;
+                Il2CppObject* obj = (Il2CppObject*)self;
+
+                if (!il2cpp::vm::Class::IsValuetype(thisType))
+                {
+                    method = il2cpp::vm::Object::GetVirtualMethod(obj, method);
+                    methodPointer = method->methodPointer;
+                }
+            }
+            if ((*wrapDatas)->Wrap(apis, (MethodInfo*)method, methodPointer, info, env, self, checkArgument, *wrapDatas))
             {
                 return;
             }
