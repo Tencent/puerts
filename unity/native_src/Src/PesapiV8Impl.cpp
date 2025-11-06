@@ -348,13 +348,13 @@ bool pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
 bool pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
 {
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->IsInt32();
+    return value->IsNumber();
 }
 
 bool pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
 {
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->IsUint32();
+    return value->IsNumber();
 }
 
 bool pesapi_is_int64(pesapi_env env, pesapi_value pvalue)

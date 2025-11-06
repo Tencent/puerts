@@ -234,6 +234,11 @@ namespace Puerts.UnitTest
             return res;
         }
 
+        public static uint FloatAsUInt(uint rewardId, bool needBackup = true)
+        {
+            return rewardId;
+        }
+
         [UnityEngine.Scripting.Preserve]
         public static float Value;
     }
@@ -1561,6 +1566,32 @@ __PDUOTF;");
             __DWDV;
             ");
             cb1(1, 2, 6, 3);
+        }
+
+        [Test]
+        public void TestFloatAsUInt()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('TestFloatAsUInt check 1',  ConstructorOverloadFactory.FloatAsUInt(113.123, false) == 113);
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestNegativeAsUInt()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint(`TestNegativeAsUInt got ${ConstructorOverloadFactory.FloatAsUInt(-1, false)}`,  ConstructorOverloadFactory.FloatAsUInt(-1, false) == 4294967295);
+                })()
+            ");
         }
 
     }
