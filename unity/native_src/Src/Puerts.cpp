@@ -321,10 +321,14 @@ V8_EXPORT double GetNumberFromValue(v8::Isolate* Isolate, v8::Value *Value, int 
         auto Context = Isolate->GetCurrentContext();
         v8::TryCatch trycatch(Context->GetIsolate());
         auto maybeNumber = Value->NumberValue(Context);
-        if (maybeNumber.IsNothing() || trycatch.HasCaught()) {
-        if (trycatch.HasCaught()) {
+        if (maybeNumber.IsNothing() || trycatch.HasCaught())
+        {
+#ifndef WITH_QUICKJS
+            if (trycatch.HasCaught())
+            {
                 trycatch.Reset();
             }
+#endif
             return 0.0;
         }
         return maybeNumber.FromJust();
