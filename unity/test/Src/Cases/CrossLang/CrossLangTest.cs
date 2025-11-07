@@ -1589,7 +1589,8 @@ __PDUOTF;");
                 (function() {
                     const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
                     const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
-                    AssertAndPrint(`TestNegativeAsUInt got ${ConstructorOverloadFactory.FloatAsUInt(-1, false)}`,  ConstructorOverloadFactory.FloatAsUInt(-1, false) == 4294967295);
+                    const res = ConstructorOverloadFactory.FloatAsUInt(-1, false);
+                    AssertAndPrint(`TestNegativeAsUInt got ${ConstructorOverloadFactory.FloatAsUInt(-1, false)}`,   res == 4294967295 || res == 0); // depending on .net runtime
                 })()
             ");
         }
