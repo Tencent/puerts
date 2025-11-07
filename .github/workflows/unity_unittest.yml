@@ -30,8 +30,7 @@ env:
 
 jobs:
   unittest-win-unity:
-    runs-on: windows-2022
-
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - uses: RageAgainstThePixel/unity-setup@v1
@@ -51,12 +50,7 @@ jobs:
           cd unity
           npm i
           cd test/unity
-          node ../../cli unity-test --unity "${{ env.UNITY_EDITOR_PATH }}"
-      - name: PrintTree
-        if: always()
-        run: |
-          cd unity\test\unity
-          tree
+          node ../../cli unity-test --unity ${{ env.UNITY_EDITOR_PATH }}
       - name: TestResult
         if: always()
         shell: bash

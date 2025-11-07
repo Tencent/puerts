@@ -278,9 +278,9 @@ export async function unityTest(cwd, unityPath) {
 	*/
     
 	rm("-rf", join(cwd, 'Assets/csc.rsp'));
-	writeFileSync(`${cwd}/Assets/csc.rsp`, `
-		-unsafe
-    `);
+	//writeFileSync(`${cwd}/Assets/csc.rsp`, `
+	//	-unsafe
+    //`);
     console.log('-------------------------Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
