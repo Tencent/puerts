@@ -115,7 +115,7 @@ jobs:
 #          done
 
   unittest-android-unity:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Build Plugin
@@ -166,7 +166,7 @@ jobs:
       - name: Upload apk
         uses: actions/upload-artifact@v4
         with:
-          name: android-run-logs
+          name: puerts_test.apk
           path: |
             unity/test/unity/build/puerts_test.apk
       - name: Setup Java
@@ -184,7 +184,6 @@ jobs:
           api-level: 30
           target: default
           arch: x86_64
-          profile: Pixel_4
           script: |
             adb devices
 
@@ -244,7 +243,7 @@ jobs:
       - name: Upload logs
         uses: actions/upload-artifact@v4
         with:
-          name: android-run-logs
+          name: logcat.txt
           path: |
             logcat.txt
 
