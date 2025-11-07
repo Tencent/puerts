@@ -241,9 +241,6 @@ export async function unityTest(cwd, unityPath) {
     rm("-rf", `${cwd}/build`);
     rm("-rf", `${cwd}/Assets/Gen.meta`);
     rm("-rf", join(cwd, 'Assets/csc.rsp'));
-    writeFileSync(`${cwd}/Assets/csc.rsp`, `
-        -define:PUERTS_DISABLE_IL2CPP_OPTIMIZATION
-    `);
     rm("-rf", join(cwd, '../../Assets/core/upm/Plugins/puerts_il2cpp'));
     console.log("[Puer] Building puerts v1");
     await runPuertsMake(join(cwd, '../../native_src'), {
@@ -255,6 +252,11 @@ export async function unityTest(cwd, unityPath) {
     });
 
     /*
+	rm("-rf", join(cwd, 'Assets/csc.rsp'));
+    writeFileSync(`${cwd}/Assets/csc.rsp`, `
+        -define:PUERTS_DISABLE_IL2CPP_OPTIMIZATION
+		-unsafe
+    `);
 	console.log("[Puer] Generating wrapper");
     execUnityEditor(`-executeMethod TestBuilder.GenV1`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
@@ -275,6 +277,10 @@ export async function unityTest(cwd, unityPath) {
     `);
 	*/
     
+	rm("-rf", join(cwd, 'Assets/csc.rsp'));
+	writeFileSync(`${cwd}/Assets/csc.rsp`, `
+		-unsafe
+    `);
     console.log('-------------------------Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
