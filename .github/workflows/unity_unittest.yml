@@ -114,7 +114,7 @@ jobs:
 #            echo
 #          done
 
-  unittest-android-unity-linux:
+  unittest-android-unity-in-mac:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -128,11 +128,11 @@ jobs:
           node ../../cli make --platform android
           cd ../papi-v8
           node ../../cli make --platform android
-          cd ../papi-quickjs             android
+          cd ../papi-quickjs
           node ../../cli make --platform android
-          cd ../papi-lua                 android
+          cd ../papi-lua 
           node ../../cli make --platform android
-          cd ../wsppaddon                android
+          cd ../wsppaddon
           node ../../cli make --platform android --websocket 2
           cd ../puerts
           node ../../cli make --platform osx --arch arm64
@@ -247,7 +247,7 @@ jobs:
           path: |
             logcat.txt
 
-  unittest-android-unity-mac:
+  unittest-android-unity-in-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -269,11 +269,11 @@ jobs:
           ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --arch arm64
           cd ../papi-v8
           ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --arch arm64
-          cd ../papi-quickjs             android
+          cd ../papi-quickjs
           ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --arch arm64
-          cd ../papi-lua                 android
+          cd ../papi-lua
           ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --arch arm64
-          cd ../wsppaddon                android
+          cd ../wsppaddon
           ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --arch arm64 --websocket 2
           cd ../puerts
           node ../../cli make --platform linux
