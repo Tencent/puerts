@@ -163,7 +163,90 @@ jobs:
           cd unity/test/unity
           ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
           ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
+      - name: Upload apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-run-logs
+          path: |
+            unity/test/unity/build/puerts_test.apk
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Start emulator and run commands
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          profile: Pixel_4
+          script: |
+            adb devices
+
+            # 安装 APK
+            adb install -r unity/test/unity/build/puerts_test.apk
+
+            # 清空并开始抓 logcat（后台运行），可以按需过滤 Unity 或你关心的 TAG
+            adb logcat -c
+            # 抓取全量：adb logcat -v time > logcat.txt &
+            # 只抓指定包的 PID（更干净）：
+            adb shell logcat -G 16M
+            adb shell setprop log.tag.Unity I
+            adb shell setprop log.tag.TestRunner I
+            # 先启动应用
+            adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActivity
+
+            # 等待进程出现并用 --pid 过滤
+            for i in $(seq 1 60); do
+              PID=$(adb shell pidof com.tencent.puerts_test | tr -d '\r')
+              if [ -n "$PID" ]; then
+                echo "App PID: $PID"
+                break
+              fi
+              sleep 1
+            done
+            if [ -z "$PID" ]; then
+              echo "App did not start in time"; exit 1
+            fi
+
+            # 开始按 PID 抓日志（后台）
+            adb logcat --pid=$PID -v time > logcat.txt &
+            LOGCAT_BG_PID=$!
+
+            # 如果是 Unity 测试 APK，通常会自启动用例并在结束时退出进程。
+            # 这里等待应用退出或设置超时（例如 5 分钟）
+            TIMEOUT=300
+            ELAPSED=0
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              if ! adb shell ps -A | grep -q com.tencent.puerts_test; then
+                echo "App exited"
+                break
+              fi
+              sleep 2
+              ELAPSED=$((ELAPSED+2))
+            done
+
+            # 如果还没退出，可以尝试结束它（可选）
+            if adb shell ps -A | grep -q com.tencent.puerts_test; then
+              echo "App did not exit in time, killing..."
+              adb shell am force-stop com.tencent.puerts_test
+            fi
+
+            # 停止后台 logcat
+            kill $LOGCAT_BG_PID || true
+            sleep 1
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-run-logs
+          path: |
+            logcat.txt
 
   unittest-win-dotnet:
     runs-on: windows-2022
