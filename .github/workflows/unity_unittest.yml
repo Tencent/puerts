@@ -118,14 +118,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install NDK
-        shell: bash
-        run: |
-          cd ~
-          rm -rf ~/android-ndk-r21b
-          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
-          brew install unzip
-          unzip -q NDK
       - name: Build Plugin
         shell: bash
         run: |
@@ -133,6 +125,16 @@ jobs:
           npm i
           cd native
           cd puerts
+          node ../../cli make --platform android
+          cd ../papi-v8
+          node ../../cli make --platform android
+          cd ../papi-quickjs             android
+          node ../../cli make --platform android
+          cd ../papi-lua                 android
+          node ../../cli make --platform android
+          cd ../wsppaddon                android
+          node ../../cli make --platform android --websocket 2
+          cd ../puerts
           node ../../cli make --platform osx --arch arm64
           cd ../papi-v8
           node ../../cli make --platform osx --arch arm64
@@ -142,16 +144,7 @@ jobs:
           node ../../cli make --platform osx --arch arm64
           cd ../wsppaddon
           node ../../cli make --platform osx --arch arm64 --websocket 2
-          cd ../puerts
-          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
-          cd ../papi-v8
-          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
-          cd ../papi-quickjs             android
-          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
-          cd ../papi-lua                 android
-          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
-          cd ../wsppaddon                android
-          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --websocket 2
+          
       - uses: RageAgainstThePixel/unity-setup@v1
         with:
           unity-version: 2022.3.59f1
