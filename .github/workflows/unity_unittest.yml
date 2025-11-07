@@ -65,15 +65,98 @@ jobs:
 #          echo "testresult in v2"
 #          cat log3.txt | grep "Failed\|Passed" 
 
-  unittest-osx-unity:
+#  unittest-osx-unity:
+#    runs-on: macos-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: RageAgainstThePixel/unity-setup@v1
+#        with:
+#          unity-version: 2022.3.59f1
+#          build-targets: StandaloneOSX
+#          modules: mac-il2cpp
+#          #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
+#      - uses: RageAgainstThePixel/activate-unity-license@v1
+#        with:
+#          license: 'Personal'
+#          username: ${{ secrets.UNITY_USERNAME }}
+#          password: ${{ secrets.UNITY_PASSWORD }}
+#          #serial: ${{ secrets.UNITY_SERIAL }}
+#      - name: UnitTest
+#        run: |
+#          cd unity
+#          npm i
+#          cd test/unity
+#          node ../../cli unity-test --unity ${{ env.UNITY_EDITOR_PATH }}
+#      - name: TestResult
+##        if: always()
+#        shell: bash
+#        run: |
+#          cd unity/test/unity
+#          log_files=(
+#            "log_reflection.txt"
+#            "log_qjs_reflection.txt"
+#            "log_nodejs_reflection.txt"
+#            "log_minimum_reflection.txt"
+#            "log_qjs_minimum_reflection.txt"
+#            "log_nodejs_minimum_reflection.txt"
+#            "log_full_wrapper.txt"
+#            "log_qjs_full_wrapper.txt"
+#            "log_nodejs_full_wrapper.txt"
+#          )
+#          for log_file in "${log_files[@]}"; do
+#            echo "Processing $log_file"
+#            grep "ENV_BACKEND" "$log_file" || true
+#            passed_count=$(grep -c "Passed" "$log_file" || true)
+#            echo "Passed: $passed_count"
+#            failed_count=$(grep -c "Failed" "$log_file" || true)
+#            echo "Failed: $failed_count"
+#            grep "Failed" "$log_file" || true
+#            echo
+#          done
+
+  unittest-android-unity:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install NDK
+        shell: bash
+        run: |
+          cd ~
+          rm -rf ~/android-ndk-r21b
+          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
+          sudo apt install unzip -y
+          unzip -q NDK
+      - name: Build Plugin
+        shell: bash
+        run: |
+          cd unity
+          npm i
+          cd native
+          cd puerts
+          node ../../cli make --platform osx --arch arm64
+          cd ../papi-v8
+          node ../../cli make --platform osx --arch arm64
+          cd ../papi-quickjs
+          node ../../cli make --platform osx --arch arm64
+          cd ../papi-lua
+          node ../../cli make --platform osx --arch arm64
+          cd ../wsppaddon
+          node ../../cli make --platform osx --arch arm64 --websocket 2
+          cd ../puerts
+          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
+          cd ../papi-v8
+          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
+          cd ../papi-quickjs             android
+          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
+          cd ../papi-lua                 android
+          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android
+          cd ../wsppaddon                android
+          ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --websocket 2
       - uses: RageAgainstThePixel/unity-setup@v1
         with:
           unity-version: 2022.3.59f1
-          build-targets: StandaloneOSX
-          modules: mac-il2cpp
+          build-targets: Android 
+          modules: android-il2cpp
           #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
       - uses: RageAgainstThePixel/activate-unity-license@v1
         with:
@@ -81,39 +164,13 @@ jobs:
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
           #serial: ${{ secrets.UNITY_SERIAL }}
-      - name: UnitTest
-        run: |
-          cd unity
-          npm i
-          cd test/unity
-          node ../../cli unity-test --unity ${{ env.UNITY_EDITOR_PATH }}
-      - name: TestResult
-#        if: always()
+      - name: Build Android
         shell: bash
         run: |
           cd unity/test/unity
-          log_files=(
-            "log_reflection.txt"
-            "log_qjs_reflection.txt"
-            "log_nodejs_reflection.txt"
-            "log_minimum_reflection.txt"
-            "log_qjs_minimum_reflection.txt"
-            "log_nodejs_minimum_reflection.txt"
-            "log_full_wrapper.txt"
-            "log_qjs_full_wrapper.txt"
-            "log_nodejs_full_wrapper.txt"
-          )
-          for log_file in "${log_files[@]}"; do
-            echo "Processing $log_file"
-            grep "ENV_BACKEND" "$log_file" || true
-            passed_count=$(grep -c "Passed" "$log_file" || true)
-            echo "Passed: $passed_count"
-            failed_count=$(grep -c "Failed" "$log_file" || true)
-            echo "Failed: $failed_count"
-            grep "Failed" "$log_file" || true
-            echo
-          done
-          
+          ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
+          ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
+
 
   unittest-win-dotnet:
     runs-on: windows-2022
