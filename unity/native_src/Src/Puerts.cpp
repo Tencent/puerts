@@ -319,19 +319,24 @@ V8_EXPORT double GetNumberFromValue(v8::Isolate* Isolate, v8::Value *Value, int 
     else
     {
         auto Context = Isolate->GetCurrentContext();
+#ifdef WITH_QUICKJS
+        auto maybeNumber = Value->NumberValue(Context);
+        if (maybeNumber.IsNothing())
+            return 0;
+#else
         v8::TryCatch trycatch(Context->GetIsolate());
         auto maybeNumber = Value->NumberValue(Context);
         if (maybeNumber.IsNothing() || trycatch.HasCaught())
         {
-#ifndef WITH_QUICKJS
             if (trycatch.HasCaught())
             {
                 trycatch.Reset();
             }
-#endif
-            return 0.0;
+
+            return 0;
         }
-        return maybeNumber.FromJust();
+#endif
+        return maybeNumber.ToChecked();
     }
 }
 
