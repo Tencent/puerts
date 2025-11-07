@@ -254,7 +254,8 @@ export async function unityTest(cwd, unityPath) {
         websocket: 1
     });
 
-    console.log("[Puer] Generating wrapper");
+    /*
+	console.log("[Puer] Generating wrapper");
     execUnityEditor(`-executeMethod TestBuilder.GenV1`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
     
@@ -272,6 +273,7 @@ export async function unityTest(cwd, unityPath) {
         -define:PUERTS_CPP_OUTPUT_TO_UPM
         -define:PUERTS_IL2CPP_OPTIMIZATION
     `);
+	*/
     
     console.log('-------------------------Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
