@@ -283,15 +283,15 @@ jobs:
           cd ../wsppaddon
           ANDROID_NDK=~/android-ndk-r21b node ../../cli make --platform android --arch arm64 --websocket 2
           cd ../puerts
-          node ../../cli make --platform linux
+          node ../../cli make --platform linux --arch x64
           cd ../papi-v8
-          node ../../cli make --platform linux
+          node ../../cli make --platform linux --arch x64
           cd ../papi-quickjs
-          node ../../cli make --platform linux
+          node ../../cli make --platform linux --arch x64
           cd ../papi-lua
-          node ../../cli make --platform linux
+          node ../../cli make --platform linux --arch x64
           cd ../wsppaddon
-          node ../../cli make --platform linux --websocket 2
+          node ../../cli make --platform linux --arch x64 --websocket 2
           
       - uses: RageAgainstThePixel/unity-setup@v1
         with:
