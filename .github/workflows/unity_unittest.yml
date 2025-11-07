@@ -166,7 +166,7 @@ jobs:
       - name: Upload apk
         uses: actions/upload-artifact@v4
         with:
-          name: puerts_test.apk
+          name: puerts_test1.apk
           path: |
             unity/test/unity/build/puerts_test.apk
       - name: Setup Java
@@ -245,7 +245,7 @@ jobs:
         with:
           name: logcat.txt
           path: |
-            logcat.txt
+            logcat1.txt
 
   unittest-android-unity-in-linux:
     runs-on: ubuntu-latest
@@ -307,7 +307,7 @@ jobs:
       - name: Upload apk
         uses: actions/upload-artifact@v4
         with:
-          name: puerts_test.apk
+          name: puerts_test2.apk
           path: |
             unity/test/unity/build/puerts_test.apk
       - name: Setup Java
@@ -386,7 +386,7 @@ jobs:
         with:
           name: logcat.txt
           path: |
-            logcat.txt
+            logcat2.txt
 
   unittest-win-dotnet:
     runs-on: windows-2022
