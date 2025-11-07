@@ -52,6 +52,11 @@ jobs:
           npm i
           cd test/unity
           node ../../cli unity-test --unity "${{ env.UNITY_EDITOR_PATH }}"
+      - name: PrintTree
+        if: always()
+        run: |
+          cd unity\test\unity
+          tree
       - name: TestResult
         if: always()
         shell: bash
