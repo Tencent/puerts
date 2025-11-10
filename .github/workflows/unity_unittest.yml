@@ -170,7 +170,7 @@ jobs:
           path: unity/test/unity/build/puerts_test.apk
 
   unittest-run-android-in-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     #needs: [unittest-build-android-in-mac]
     steps:
       #- uses: actions/download-artifact@v4
