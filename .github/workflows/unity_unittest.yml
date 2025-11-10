@@ -196,6 +196,7 @@ jobs:
           arch: arm64-v8a
           profile: Nexus 4
           emulator-options: -no-window -no-boot-anim -no-audio -no-snapshot-load
+          disable-linux-hw-accel: true
           script: |
             adb devices
 
