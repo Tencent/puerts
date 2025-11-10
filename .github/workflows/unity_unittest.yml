@@ -171,7 +171,7 @@ jobs:
 
   unittest-run-android-in-linux:
     runs-on: ubuntu-latest
-    needs: [unittest-build-android-in-mac]
+    #needs: [unittest-build-android-in-mac]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -186,12 +186,12 @@ jobs:
         with:
           java-version: 17
           distribution: 'adopt'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      #- name: Setup Android SDK
+      #  uses: android-actions/setup-android@v3
       - name: Start emulator and run commands
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 26
+          api-level: 30
           target: default
           arch: arm64-v8a
           profile: Nexus 4
