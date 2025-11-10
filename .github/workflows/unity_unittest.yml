@@ -193,7 +193,7 @@ jobs:
         with:
           api-level: 26
           target: default
-          arch: x86_64
+          arch: arm64-v8a
           profile: Nexus 4
           emulator-options: -no-window -no-boot-anim -no-audio -no-snapshot-load
           script: |
