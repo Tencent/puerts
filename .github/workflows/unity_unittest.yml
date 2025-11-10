@@ -168,7 +168,7 @@ jobs:
 #        with:
 #          name: puerts_test
 #          path: unity/test/unity/build/puerts_test.apk
-#           - name: Set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
