@@ -215,9 +215,10 @@ jobs:
             adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActivity
 
             # 等待进程出现并用 --pid 过滤
+            bash -c '
             COUNTER=0
             while [ $COUNTER -lt 60 ]; do
-              PID=$(adb shell pidof com.tencent.puerts_test | tr -d '\r')
+              PID=$(adb shell pidof com.tencent.puerts_test | tr -d "\r")
               if [ -n "$PID" ]; then
                 echo "App PID: $PID"
                 break
@@ -255,6 +256,7 @@ jobs:
             # 停止后台 logcat
             kill $LOGCAT_BG_PID || true
             sleep 1
+            '
 
       - name: Upload logs
         uses: actions/upload-artifact@v4
