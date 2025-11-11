@@ -92,6 +92,39 @@ public class TestBuilder
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.tencent.puerts_test");
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
 
+        // Fix x86_64 plugin import settings - auto discover all .so files
+        string pluginDir = "Packages/com.tencent.puerts.core/Plugins/Android/libs/x86_64";
+        string[] guids = AssetDatabase.FindAssets("t:PluginImporter", new[] { pluginDir });
+        
+        int fixedCount = 0;
+        foreach (string guid in guids)
+        {
+            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+            if (assetPath.EndsWith(".so"))
+            {
+                PluginImporter pluginImporter = AssetImporter.GetAtPath(assetPath) as PluginImporter;
+                if (pluginImporter != null)
+                {
+                    pluginImporter.SetCompatibleWithAnyPlatform(false);
+                    pluginImporter.SetCompatibleWithEditor(false);
+                    pluginImporter.SetCompatibleWithPlatform(BuildTarget.Android, true);
+                    pluginImporter.SetPlatformData(BuildTarget.Android, "CPU", "x86_64");
+                    pluginImporter.SaveAndReimport();
+                    Debug.Log($"Fixed plugin import settings for {assetPath}");
+                    fixedCount++;
+                }
+            }
+        }
+        
+        if (fixedCount == 0)
+        {
+            Debug.LogWarning($"No plugins found in directory: {pluginDir}");
+        }
+        else
+        {
+            Debug.Log($"Successfully configured {fixedCount} x86_64 plugin(s)");
+        }
+
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
         buildPlayerOptions.target = BuildTarget.Android;
