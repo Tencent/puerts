@@ -16,10 +16,9 @@ namespace Puerts.UnitTest.PythonTypeTest
 
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
 # In Python, we use Int64Value to explicitly create int64 values
-value = CS.load_type('Puerts.Int64Value')(512)
-CS.load_type('Puerts.UnitTest.JSTypeTest.TypedValueTestHelper').Callback(value)
+value = puerts.load_type('Puerts.Int64Value')(512)
+puerts.load_type('Puerts.UnitTest.JSTypeTest.TypedValueTestHelper').Callback(value)
 ''')
 ");
 
@@ -35,10 +34,9 @@ CS.load_type('Puerts.UnitTest.JSTypeTest.TypedValueTestHelper').Callback(value)
 
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-# In Python, we need to explicitly cast to float
-value = CS.load_type('Puerts.FloatValue')(512.256)
-CS.load_type('Puerts.UnitTest.JSTypeTest.TypedValueTestHelper').Callback(value)
+import Puerts
+value = Puerts.FloatValue(512.256)
+Puerts.UnitTest.JSTypeTest.TypedValueTestHelper.Callback(value)
 ''')
 ");
 

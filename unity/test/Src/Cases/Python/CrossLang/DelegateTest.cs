@@ -15,8 +15,7 @@ namespace Puerts.UnitTest
 
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-deleteobj = CS.load_type('Puerts.UnitTest.DelegateTestClass')()
+deleteobj = puerts.load_type('Puerts.UnitTest.DelegateTestClass')()
 def callback(msg):
     global info
     info = msg

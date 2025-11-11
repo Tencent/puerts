@@ -94,8 +94,8 @@ testHelper.remove_functionEvent(evfn)
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestHelper = CS.load_type('Puerts.UnitTest.TestHelper')
+import Puerts.UnitTest.TestHelper
+TestHelper = Puerts.UnitTest.TestHelper
 assertAndPrint = TestHelper.AssertAndPrint
 testHelper = TestHelper.GetInstance()
 outRef = ['abc']
@@ -131,9 +131,8 @@ assertAndPrint('UnicodeStr', ustr, '小马哥')
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestHelper = CS.load_type('Puerts.UnitTest.TestHelper')
-TestObject = CS.load_type('Puerts.UnitTest.TestObject')
+import Puerts.UnitTest.TestHelper as TestHelper
+import Puerts.UnitTest.TestObject as TestObject
 assertAndPrint = TestHelper.AssertAndPrint
 testHelper = TestHelper.GetInstance()
 
@@ -167,7 +166,7 @@ testHelper.NativeObjectTestCheckMemberValue()
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
+import Puerts
 TestHelper = CS.load_type('Puerts.UnitTest.TestHelper')
 assertAndPrint = TestHelper.AssertAndPrint
 testHelper = TestHelper.GetInstance()
@@ -199,14 +198,13 @@ testHelper.JSObjectTestCheckMemberValue()
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-CrossLangTestHelper = CS.load_type('Puerts.UnitTest.CrossLangTestHelper')
-DateTime = CS.load_type('System.DateTime')
+import Puerts.UnitTest.CrossLangTestHelper as CrossLangTestHelper
+import System.DateTime as DateTime
 
 helper = CrossLangTestHelper()
 val = helper.GetDateTime()
 
-result = val.GetType() == CSharp.typeof(DateTime)
+result = val.GetType() == puerts.typeof(DateTime)
 ''')
 ");
             var ret = pythonEnv.Eval<string>("str(result).lower()");
@@ -220,10 +218,11 @@ result = val.GetType() == CSharp.typeof(DateTime)
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-helper = CS.load_type('Puerts.UnitTest.CrossLangTestHelper')()
+import Puerts.UnitTest.CrossLangTestHelper as CrossLangTestHelper
+import Puerts.UnitTest.TestEnum as TestEnum
+helper = CrossLangTestHelper()
 fstart = helper.EnumField
-helper.EnumField = CS.load_type('Puerts.UnitTest.TestEnum').get_A()
+helper.EnumField = TestEnum.get_A()
 fend = helper.EnumField
 ret = helper.GetEnum()
 ''')
@@ -237,7 +236,7 @@ ret = helper.GetEnum()
         public void AccessExplicitInterfaceImplementationPythonTest()
         {
             var pythonEnv = new ScriptEnv(new BackendPython());
-            var ret = pythonEnv.Eval<float>(@"CSharp().load_type('Puerts.UnitTest.FooVE').Instance().foo.width");
+            var ret = pythonEnv.Eval<float>(@"puerts.load_type('Puerts.UnitTest.FooVE').Instance().foo.width");
             Assert.AreEqual(125f, ret);
             pythonEnv.Dispose();
         }
@@ -248,15 +247,14 @@ ret = helper.GetEnum()
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-OverloadTestObject = CS.load_type('Puerts.UnitTest.OverloadTestObject')
+import Puerts.UnitTest.OverloadTestObject as OverloadTestObject
 o = OverloadTestObject()
 o.WithObjectParam('tt')
 ''')");
             Assert.AreEqual(1, OverloadTestObject.LastCall);
             pythonEnv.Eval(@"
 exec('''
-OverloadTestObject = CS.load_type('Puerts.UnitTest.OverloadTestObject')
+import Puerts.UnitTest.OverloadTestObject as OverloadTestObject
 o = OverloadTestObject()
 o.WithObjectParam(888)
 ''')");
@@ -286,7 +284,7 @@ def foo():
         public void EnumParamCheckPythonTest()
         {
             var pythonEnv = new ScriptEnv(new BackendPython());
-            pythonEnv.Eval(@"CSharp().load_type('Puerts.UnitTest.CrossLangTestHelper').TestEnumCheck('a', 1, 2)");
+            pythonEnv.Eval(@"puerts.load_type('Puerts.UnitTest.CrossLangTestHelper').TestEnumCheck('a', 1, 2)");
             pythonEnv.Dispose();
         }
 
@@ -296,8 +294,7 @@ def foo():
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestHelper = CS.load_type('Puerts.UnitTest.TestHelper')
+import Puerts.UnitTest.TestHelper as TestHelper
 testHelper = TestHelper.GetInstance()
 testHelper.PassStr(None)
 testHelper.PassObj(None)
@@ -311,8 +308,7 @@ testHelper.PassObj(None)
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestObject = CS.load_type('Puerts.UnitTest.TestObject')
+import Puerts.UnitTest.TestObject as TestObject
 o = TestObject(1)
 o.WriteOnly = 2
 TestObject.set_StaticWriteOnly(3)
@@ -334,7 +330,7 @@ TestObject.set_StaticWriteOnly(3)
         public void TestStructAccessPythonTest()
         {
             var pythonEnv = new ScriptEnv(new BackendPython());
-            var ret = pythonEnv.Eval<string>(@"CSharp().load_type('Puerts.UnitTest.TestStruct2')(5345, 3214, 'fqpziq').ToString()");
+            var ret = pythonEnv.Eval<string>(@"puerts.load_type('Puerts.UnitTest.TestStruct2')(5345, 3214, 'fqpziq').ToString()");
             Assert.AreEqual("5345:3214:fqpziq", ret);
             pythonEnv.Dispose();
         }
@@ -363,8 +359,7 @@ exec('''
 import random
 objs = []
 def func():
-    CS = CSharp()
-    TestGC = CS.load_type('Puerts.UnitTest.TestGC')
+    import Puerts.UnitTest.TestGC as TestGC
     random_count = random.randint(1, 51)
     for i in range(random_count):
         objs.append(TestGC())
@@ -404,8 +399,7 @@ exec('''
 import random
 objs = []
 def func():
-    CS = CSharp()
-    TakeTestGC = CS.load_type('Puerts.UnitTest.TakeTestGC')
+    import Puerts.UnitTest.TakeTestGC as TakeTestGC
     random_count = random.randint(1, 51)
     for i in range(random_count):
         objs.append(TakeTestGC(1))
@@ -486,8 +480,7 @@ def __NGTF(a):
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestHelper = CS.load_type('Puerts.UnitTest.TestHelper')
+import Puerts.UnitTest.TestHelper as TestHelper
 assertAndPrint = TestHelper.AssertAndPrint
 testHelper = TestHelper.GetInstance()
 testHelper.ClearNumberTestMemberValue()
@@ -529,8 +522,7 @@ testHelper.BigintTestCheckMemberValue()
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestHelper = CS.load_type('Puerts.UnitTest.TestHelper')
+import Puerts.UnitTest.TestHelper as TestHelper
 assertAndPrint = TestHelper.AssertAndPrint
 testHelper = TestHelper.GetInstance()
 ''')

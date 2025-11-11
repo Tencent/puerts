@@ -7,7 +7,7 @@ using Puerts.TypeMapping;
 namespace Puerts.UnitTest
 {
     /*
-    // xIl2cpp模式暂无法让每个JsEnv使用单独的DefaultBinding�?
+    // xIl2cpp模式暂无法让每个JsEnv使用单独的DefaultBinding值
 #if !UNITY_WEBGL && (PUERTS_DISABLE_IL2CPP_OPTIMIZATION || !ENABLE_IL2CPP)
     public class AccessControlHelperPython {
         public static string StaticField = "StaticField";
@@ -69,8 +69,7 @@ namespace Puerts.UnitTest
         {
             string ret = DefaultDontBindingEnv.Eval<string>(@"
 exec('''
-CS = CSharp()
-helper = CS.load_type('Puerts.UnitTest.AccessControlHelperPython')
+helper = puerts.load_type('Puerts.UnitTest.AccessControlHelperPython')
 result = str(getattr(helper, 'StaticMethod', None)) + str(getattr(helper, 'StaticMethodField', None))
 ''')
 result
@@ -84,8 +83,7 @@ result
             Assert.Catch(()=> {
                 DefaultDontBindingEnv.Eval(@"
 exec('''
-CS = CSharp()
-CS.load_type('Puerts.UnitTest.AccessControlHelperPython')()
+puerts.load_type('Puerts.UnitTest.AccessControlHelperPython')()
 ''')
 ");
             });
@@ -113,8 +111,7 @@ CS.load_type('Puerts.UnitTest.AccessControlHelperPython')()
             });
             string ret = DefaultDontBindingEnv.Eval<string>(@"
 exec('''
-CS = CSharp()
-result = str(getattr(CS.load_type('Puerts.UnitTest.AnotherAccessControlHelperPython'), 'StaticMethod', None))
+result = str(getattr(puerts.load_type('Puerts.UnitTest.AnotherAccessControlHelperPython'), 'StaticMethod', None))
 ''')
 result
 ");
@@ -144,8 +141,7 @@ result
             });
             string ret = pythonEnv.Eval<string>(@"
 exec('''
-CS = CSharp()
-result = str(getattr(CS.load_type('Puerts.UnitTest.AccessControlHelperPython'), 'StaticMethod', None))
+result = str(getattr(puerts.load_type('Puerts.UnitTest.AccessControlHelperPython'), 'StaticMethod', None))
 ''')
 result
 ");

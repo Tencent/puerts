@@ -50,7 +50,6 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
 print('Hello from Python console')
 ''')
 ");
@@ -81,8 +80,7 @@ empty = {}
             var pythonEnv = new ScriptEnv(new BackendPython());
             var result = pythonEnv.Eval<int>(@"
 (lambda: (
-    CS := CSharp(),
-    inner := CS.load_type('Puerts.UnitTest.CSharpModuleTestPython+Inner'),
+    inner := puerts.load_type('Puerts.UnitTest.CSharpModuleTestPython+Inner'),
     inner.get_i()
 )[-1])()
 ");

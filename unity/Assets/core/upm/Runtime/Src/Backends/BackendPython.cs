@@ -78,7 +78,7 @@ class PesapiLoader(importlib.abc.Loader):
 
     def create_module(self, spec: machinery.ModuleSpec):
         type_name = spec.name
-        return Puerts.load_type(type_name)
+        return puerts.load_type(type_name)
 
 
 class PesapiFinder(importlib.abc.MetaPathFinder):
@@ -87,19 +87,17 @@ class PesapiFinder(importlib.abc.MetaPathFinder):
 
 
 class NameSpaceProxy(types.ModuleType):
-    _banned_attrs = ['__name__', '__loader__', '__package__']
 
     def __init__(self, namespace_name: str):
+        super().__init__(namespace_name)
         self.__path__ = [namespace_name]
-        self._p_namespace_name = namespace_name
+        self.__p_namespace_name = namespace_name
 
     def __getattr__(self, attr: str):
-        if attr in NameSpaceProxy._banned_attrs:
-            return None
-        return Puerts.load_type(self._p_namespace_name + '.' + attr)
+        return puerts.load_type(self.__p_namespace_name + '.' + attr)
 
 
-class Puerts:
+class puerts:
     @staticmethod
     def load_type(type_name: str):
         """"""
@@ -132,7 +130,7 @@ class Puerts:
 
     @staticmethod
     def get_nested_types(cs_type):
-        BindingFlags = Puerts.load_type('System.Reflection.BindingFlags')
+        BindingFlags = puerts.load_type('System.Reflection.BindingFlags')
         GET_MEMBER_FLAGS = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public
         return cs_type.GetNestedTypes(GET_MEMBER_FLAGS)
 
@@ -172,18 +170,18 @@ class Puerts:
 
     @staticmethod
     def generic(cs_type, *args):
-        if Puerts.typeof(cs_type) is not None or len(args) == 0 or not cs_type.IsGenericTypeDefinition:
+        if puerts.typeof(cs_type) is not None or len(args) == 0 or not cs_type.IsGenericTypeDefinition:
             return None
 
         generic_args = []
         for ga in args:
-            generic_args.append(Puerts.typeof(ga))
+            generic_args.append(puerts.typeof(ga))
         cs_type = cs_type.MakeGenericType(*generic_args)
         cs_class = loadType(cs_type)
         cs_class._p_innerType = cs_type
 
-        if Puerts.typeof(Puerts.load_type('System.Collections.IEnumerable')).IsAssignableFrom(cs_type):
-            cs_class.__iter__ = Puerts.gen_iterator
+        if puerts.typeof(puerts.load_type('System.Collections.IEnumerable')).IsAssignableFrom(cs_type):
+            cs_class.__iter__ = puerts.gen_iterator
         _csTypeCache_[cs_type.FullName] = cs_class
         return cs_class
 

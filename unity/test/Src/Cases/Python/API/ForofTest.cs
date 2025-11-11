@@ -49,8 +49,7 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-helper = CS.load_type('Puerts.UnitTest.ForofTestHelperPython')
+helper = puerts.load_type('Puerts.UnitTest.ForofTestHelperPython')
 list = helper.GetAStringList()
 
 # Test list iteration

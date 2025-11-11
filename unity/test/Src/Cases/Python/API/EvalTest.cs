@@ -93,8 +93,7 @@ obj['nonexistent']()
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestHelper = CS.load_type('Puerts.UnitTest.TestHelper')
+import Puerts.UnitTest.TestHelper as TestHelper
 testHelper = TestHelper.GetInstance()
 testHelper.PassStr(None)
 testHelper.PassObj(None)

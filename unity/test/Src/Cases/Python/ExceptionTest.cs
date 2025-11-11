@@ -96,8 +96,7 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgAction(lambda: None)
+puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgAction(lambda: None)
 ''')
 ");
             pythonEnv.Dispose();
@@ -110,8 +109,7 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgAction(lambda: None
             Assert.Catch(()=> {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgDelegate(lambda: None)
+puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgDelegate(lambda: None)
 ''')
 ");
             }, "invalid arguments");
@@ -125,8 +123,7 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgDelegate(lambda: No
             Assert.Catch(()=> {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgMulticastDelegate(lambda: None)
+puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgMulticastDelegate(lambda: None)
 ''')
 ");
             }, "invalid arguments");
@@ -142,8 +139,7 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgMulticastDelegate(l
             Assert.Catch(()=> {
             pythonEnv.Eval(@"
 (lambda: (
-    CS := CSharp(),
-    CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgLong({})
+    puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgLong({})
 )[-1])()
 ");
             }, "'dict' object cannot be interpreted as an integer");
@@ -158,8 +154,7 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgMulticastDelegate(l
             Assert.Catch(()=> {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-obj = CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython')()
+obj = puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython')()
 obj.adds(1, 2)
 ''')
 ");
@@ -174,8 +169,7 @@ obj.adds(1, 2)
             Assert.Catch(()=> {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgInt('gloria')
+puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgInt('gloria')
 ''')
 ");
             });
@@ -189,10 +183,9 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgInt('gloria')
             Assert.Catch(()=> {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestStruct = CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestStruct')
+TestStruct = puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestStruct')
 s = TestStruct(1)
-CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgStruct('gloria')
+puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgStruct('gloria')
 ''')
 ");
             });
@@ -206,10 +199,9 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgStruct('gloria')
             Assert.Catch(()=> {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestBaseClass = CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestBaseClass')
+TestBaseClass = puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestBaseClass')
 tbc = TestBaseClass()
-helper = CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython')()
+helper = puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython')()
 helper.ArgDerivedClass(tbc, 1, 'gloria')
 ''')
 ");
@@ -225,10 +217,9 @@ helper.ArgDerivedClass(tbc, 1, 'gloria')
             {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestStruct = CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestStruct')
+TestStruct = puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestStruct')
 ts = TestStruct(1)
-CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgRefStruct(ts)
+puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgRefStruct(ts)
 ''')
 ");
             });
@@ -243,8 +234,7 @@ CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython').ArgRefStruct(ts)
             {
                 pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-TestStruct = CS.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestStruct')
+TestStruct = puerts.load_type('Puerts.UnitTest.ExceptionTestHelperPython+TestStruct')
 TestStruct('expect to be a int')
 ''')
 ");
