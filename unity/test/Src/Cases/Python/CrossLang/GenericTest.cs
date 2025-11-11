@@ -14,13 +14,12 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             var res = pythonEnv.Eval<int>(@"
 (lambda: (
-    CS := CSharp(),
-    ListInt := CS.load_type('System.Collections.Generic.List', 'System.Int32'),
+    ListInt := puerts.generic(puerts.load_type('System.Collections.Generic.List`1'), puerts.load_type('System.Int32')),
     ls := ListInt(),
     ls.Add(1),
     ls.Add(2),
     ls.Add(3),
-    CS.load_type('Puerts.UnitTest.GenericTestHelper').TestList(ls)
+    puerts.load_type('Puerts.UnitTest.GenericTestHelper').TestList(ls)
 )[-1])()
 ");
             Assert.AreEqual(res, 6);
@@ -62,12 +61,13 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
-ListInt = CS.load_type('System.Collections.Generic.List', 'System.Int32')
+import System.Collections.Generic.List__T1 as List
+import System
+ListInt = puerts.generic(List, System.Int32)
 ls = ListInt()
 ls.Add(1)
 ls.Add(2)
-result = CS.load_type('Puerts.UnitTest.GenericTestHelper').TestListRange(ls, 1)
+result = puerts.load_type('Puerts.UnitTest.GenericTestHelper').TestListRange(ls, 1)
 ''')
 ");
 

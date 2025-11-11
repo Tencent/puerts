@@ -45,9 +45,8 @@ namespace Puerts.UnitTest
 
             var timer = pythonEnv.Eval<TimerPython>(@"
 (lambda: (
-    CS := CSharp(),
-    timer := CS.load_type('Puerts.UnitTest.TimerPython')(0),
-    TimerTestPython := CS.load_type('Puerts.UnitTest.TimerTestPython'),
+    timer := puerts.load_type('Puerts.UnitTest.TimerPython')(0),
+    TimerTestPython := puerts.load_type('Puerts.UnitTest.TimerTestPython'),
     TimerTestPython.set_TestNum(TimerTestPython.get_TestNum() + 1),
     timer
 )[-1])()
@@ -64,8 +63,7 @@ namespace Puerts.UnitTest
 
             var result = pythonEnv.Eval<double>(@"
 (lambda: (
-    CS := CSharp(),
-    timer := CS.load_type('Puerts.UnitTest.TimerPython')(1000),
+    timer := puerts.load_type('Puerts.UnitTest.TimerPython')(1000),
     initialTime := timer.Now(),
     [timer.Tick() for i in range(5)],
     finalTime := timer.Now(),

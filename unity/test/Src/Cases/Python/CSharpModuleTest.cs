@@ -50,7 +50,6 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-CS = CSharp()
 print('Hello from Python console')
 ''')
 ");
@@ -81,12 +80,79 @@ empty = {}
             var pythonEnv = new ScriptEnv(new BackendPython());
             var result = pythonEnv.Eval<int>(@"
 (lambda: (
-    CS := CSharp(),
-    inner := CS.load_type('Puerts.UnitTest.CSharpModuleTestPython+Inner'),
+    inner := puerts.load_type('Puerts.UnitTest.CSharpModuleTestPython+Inner'),
     inner.get_i()
 )[-1])()
 ");
             Assert.AreEqual(3, result);
+            pythonEnv.Dispose();
+        }
+
+        [Test]
+        public void NameSpaceAccessTest()
+        {
+            var pythonEnv = new ScriptEnv(new BackendPython());
+            // 1 level namespace
+            pythonEnv.Eval(@"
+exec('''
+import System.Console
+''')
+");
+            // 2 level namespace
+            pythonEnv.Eval(@"
+exec('''
+import System.Diagnostics
+''')
+");
+            // 2 level namespace with class
+            pythonEnv.Eval(@"
+exec('''
+import System.Diagnostics.Debug
+''')
+");
+            // 2 level namespace with NameSpaceProxy Access
+            pythonEnv.Eval(@"
+exec('''
+import System.Diagnostics
+System.Diagnostics.Debug.WriteLine('Test')
+''')
+");
+
+            // 2 level namespace with NameSpaceProxy Access
+            pythonEnv.Eval(@"
+exec('''
+import System.Diagnostics as Diagnostics
+Diagnostics.Debug.WriteLine('Test')
+''')
+");
+
+            try
+            {
+                pythonEnv.Eval(@"
+exec('''
+import System.Diagnostics
+System.Diagnostics.Hello
+''')
+");
+            }
+            catch (Exception e)
+            {
+                Assert.True(e.Message.Contains("ModuleNotFoundError: No namespace or type named System.Diagnostics.Hello"), "Unexpected error message" + e.Message);
+            }
+
+            try
+            {
+                pythonEnv.Eval(@"
+exec('''
+import System.Diagnostics as Diagnostics
+Diagnostics.Hello
+''')
+");
+            }
+            catch (Exception e)
+            {
+                Assert.True(e.Message.Contains("ModuleNotFoundError: No namespace or type named System.Diagnostics.Hello"), "Unexpected error message" + e.Message);
+            }
             pythonEnv.Dispose();
         }
         /*

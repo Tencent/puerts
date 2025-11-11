@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 Tencent.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -63,64 +63,114 @@ namespace Puerts
             scriptEnv.Eval(
                 @"exec(
 '''
-class CSharp:
-    def __init__(self):
-        self.__csTypeCache__ = {}
+import importlib.abc
+import sys
+import types
+from importlib import machinery
 
-    def load_type(self, type_name: str, *generic_cs_name_args: str):
-        if generic_cs_name_args and len(generic_cs_name_args) > 0:
-            key = (type_name, tuple(generic_cs_name_args))
+_csTypeCache_ = dict()
+_p_loader = scriptEnv.GetLoader()
+
+class PesapiLoader(importlib.abc.Loader):
+
+    def exec_module(self, mod):
+        pass
+
+    def create_module(self, spec: machinery.ModuleSpec):
+        type_name = spec.name
+        if _p_loader.get_NamespaceManager().IsValidNamespace(type_name):
+            return NameSpaceProxy(type_name)
         else:
-            key = type_name
+            result = puerts.load_type(type_name)
+            if result is not None:
+                return result
+            else:
+                raise ModuleNotFoundError(f'No namespace or type named {type_name}')
 
-        if key in self.__csTypeCache__:
-            return self.__csTypeCache__[key]
 
-        if generic_cs_name_args and len(generic_cs_name_args) > 0:
-            cs_type = scriptEnv.GetTypeByString(type_name+""`""+str(len(generic_cs_name_args)))
-            generic_args = [self.typeof(self.load_type(t)) for t in generic_cs_name_args]
-            cs_type = cs_type.MakeGenericType(*generic_args)
-            cs_class = loadType(cs_type)
-            if not cs_class:
-                print(""can not find type:"", type_name)
-                return None
-            cs_class.__p_innerType = cs_type
-            if (self.typeof(self.load_type(""System.Collections.IEnumerable""))).IsAssignableFrom(self.typeof(cs_class)):
-                cs_class.__iter__ = self.gen_iterator
+class PesapiFinder(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, paths=None, target=None):
+        return importlib.machinery.ModuleSpec(fullname, PesapiLoader(), is_package=True)
 
+
+class NameSpaceProxy(types.ModuleType):
+
+    def __init__(self, namespace_name: str):
+        super().__init__(namespace_name)
+        self.__path__ = [namespace_name]
+        self.__p_namespace_name = namespace_name
+
+    def __getattr__(self, attr: str):
+        full_name = self.__p_namespace_name + '.' + attr
+        result = puerts.load_type(full_name)
+        if result is not None:
+            return result
         else:
-            cs_type = scriptEnv.GetTypeByString(type_name)
-            cs_class = loadType(cs_type)
-            if not cs_class:
-                print(""can not find type:"", type_name)
-                return None
-            cs_class.__p_innerType = cs_type
+            if _p_loader.get_NamespaceManager().IsValidNamespace(full_name):
+                return NameSpaceProxy(full_name)
+            else:
+                raise ModuleNotFoundError(f'No namespace or type named {full_name}')
 
-        self.__csTypeCache__[key] = cs_class
+
+class puerts:
+    @staticmethod
+    def load_type(type_name: str):
+        """"""
+        Load a C# class or generic type definition, or return None if the type is not found.
+        :param type_name: The full name of the C# type to load. If the type is generic, use the format 'TypeName__Tn' where n is the number of generic parameters.
+        :return: The loaded C# class or generic type definition, or None if the type is not found.
+        """"""
+        generic_tick_index = type_name.find('__T')
+        if generic_tick_index != -1:
+            suffix = type_name[generic_tick_index + 3:]
+            if suffix and suffix.isdigit():
+                type_name = type_name[:generic_tick_index] + '`' + suffix
+        if type_name in _csTypeCache_:
+            return _csTypeCache_[type_name]
+        cs_type = scriptEnv.GetTypeByString(type_name)
+        if cs_type is None:
+            print('Type not found: ' + type_name)
+            return None
+        if cs_type.IsGenericTypeDefinition:
+            # cache generic type definitions directly
+            _csTypeCache_[type_name] = cs_type
+            # skip loadType for generic type definitions
+            return cs_type
+        cs_class = loadType(cs_type)
+        if cs_class is None:
+            print('Failed to load type: ' + type_name)
+            return None
+        cs_class._p_innerType = cs_type
+        _csTypeCache_[type_name] = cs_class
         return cs_class
 
-    def __getattr__(self, name):
-        if name in self.__dict__:
-            return self.__dict__[name]
-        else:
-            return self.load_type(name)
+    @staticmethod
+    def get_nested_types(cs_type):
+        BindingFlags = puerts.load_type('System.Reflection.BindingFlags')
+        GET_MEMBER_FLAGS = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public
+        return cs_type.GetNestedTypes(GET_MEMBER_FLAGS)
 
     @staticmethod
     def gen_iterator(obj):
         it = obj.GetEnumerator()
+
         class Iterator:
             def __iter__(self):
                 return self
+
             def __next__(self):
                 if it.MoveNext():
                     return it.Current
                 it.Dispose()
                 raise StopIteration
+
         return Iterator()
 
     @staticmethod
     def typeof(cls):
-        return cls.__p_innerType
+        if hasattr(cls, '_p_innerType'):
+            return cls._p_innerType
+        return None
 
     @staticmethod
     def ref(obj):
@@ -133,6 +183,26 @@ class CSharp:
     @staticmethod
     def set_ref(ref_obj, value):
         ref_obj[0] = value
+
+    @staticmethod
+    def generic(cs_type, *args):
+        if puerts.typeof(cs_type) is not None or len(args) == 0 or not cs_type.IsGenericTypeDefinition:
+            return None
+
+        generic_args = []
+        for ga in args:
+            generic_args.append(puerts.typeof(ga))
+        cs_type = cs_type.MakeGenericType(*generic_args)
+        cs_class = loadType(cs_type)
+        cs_class._p_innerType = cs_type
+
+        if puerts.typeof(puerts.load_type('System.Collections.IEnumerable')).IsAssignableFrom(cs_type):
+            cs_class.__iter__ = puerts.gen_iterator
+        _csTypeCache_[cs_type.FullName] = cs_class
+        return cs_class
+
+
+sys.meta_path.append(PesapiFinder())
 ''')");
         }
     }

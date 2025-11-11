@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnostics.Windows.Configs;
 using BenchmarkDotNet.Running;
-using Iced.Intel;
 using Puerts;
 using System.Diagnostics;
 
@@ -12,12 +11,8 @@ public class ScriptEnvBenchmark
 {
     const string code = """
                       exec('''
-                      CS = CSharp()
-                      Debug = CS.load_type('System.Diagnostics.Debug')
-                      TestClass = CS.load_type('TestClass')
-                      TestClass2 = CS.load_type('TestClass2')
-                      TestClass3 = CS.load_type('TestClass3')
-                      TestClass4 = CS.load_type('TestClass4')
+                      import System.Diagnostics.Debug as Debug
+                      import TestClass, TestClass2, TestClass3, TestClass4
                       ''')
                       """;
 

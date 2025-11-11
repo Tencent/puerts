@@ -16,8 +16,7 @@ namespace Puerts.UnitTest
 
             int sumRed = pythonEnv.Eval<int>(@"
 (lambda: (
-    CS := CSharp(),
-    Color := CS.load_type('UnityEngine.Color'),
+    Color := puerts.load_type('UnityEngine.Color'),
     colors := [Color(float(i), 1.0, 1.0, 1.0) for i in range(1, 9)],
     a := Color(100.0, 1.0, 1.0, 1.0),
     colors.append(a),
