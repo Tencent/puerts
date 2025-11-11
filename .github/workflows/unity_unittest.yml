@@ -56,6 +56,8 @@ jobs:
         shell: bash
         run: |
           cd unity/test/unity
+          echo "testresult in v1"
+          cat log1.txt | grep "Failed\|Passed" 
           echo "testresult in v2(reflection)"
           cat log2.txt | grep "Failed\|Passed" 
           echo "testresult in v2"
