@@ -125,15 +125,15 @@ jobs:
           npm i
           cd native
           cd puerts
-          node ../../cli make --platform android
+          node ../../cli make --platform android --arch x64
           cd ../papi-v8
-          node ../../cli make --platform android
+          node ../../cli make --platform android --arch x64
           cd ../papi-quickjs
-          node ../../cli make --platform android
+          node ../../cli make --platform android --arch x64
           cd ../papi-lua 
-          node ../../cli make --platform android
+          node ../../cli make --platform android --arch x64
           cd ../wsppaddon
-          node ../../cli make --platform android --websocket 2
+          node ../../cli make --platform android --arch x64 --websocket 2
           cd ../puerts
           node ../../cli make --platform osx --arch arm64
           cd ../papi-v8
