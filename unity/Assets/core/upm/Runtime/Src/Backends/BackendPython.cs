@@ -69,7 +69,7 @@ import types
 from importlib import machinery
 
 _csTypeCache_ = dict()
-
+_p_loader = scriptEnv.GetLoader()
 
 class PesapiLoader(importlib.abc.Loader):
 
@@ -78,7 +78,14 @@ class PesapiLoader(importlib.abc.Loader):
 
     def create_module(self, spec: machinery.ModuleSpec):
         type_name = spec.name
-        return puerts.load_type(type_name)
+        if _p_loader.get_NamespaceManager().IsValidNamespace(type_name):
+            return NameSpaceProxy(type_name)
+        else:
+            result = puerts.load_type(type_name)
+            if result is not None:
+                return result
+            else:
+                raise ModuleNotFoundError(f'No namespace or type named {type_name}')
 
 
 class PesapiFinder(importlib.abc.MetaPathFinder):
@@ -94,16 +101,24 @@ class NameSpaceProxy(types.ModuleType):
         self.__p_namespace_name = namespace_name
 
     def __getattr__(self, attr: str):
-        return puerts.load_type(self.__p_namespace_name + '.' + attr)
+        full_name = self.__p_namespace_name + '.' + attr
+        result = puerts.load_type(full_name)
+        if result is not None:
+            return result
+        else:
+            if _p_loader.get_NamespaceManager().IsValidNamespace(full_name):
+                return NameSpaceProxy(full_name)
+            else:
+                raise ModuleNotFoundError(f'No namespace or type named {full_name}')
 
 
 class puerts:
     @staticmethod
     def load_type(type_name: str):
         """"""
-        Load a C# class or generic type definition, or return a namespace proxy if the type is not found.
+        Load a C# class or generic type definition, or return None if the type is not found.
         :param type_name: The full name of the C# type to load. If the type is generic, use the format 'TypeName__Tn' where n is the number of generic parameters.
-        :return: The loaded C# class or generic type definition, or a namespace proxy if the type is not found.
+        :return: The loaded C# class or generic type definition, or None if the type is not found.
         """"""
         generic_tick_index = type_name.find('__T')
         if generic_tick_index != -1:
@@ -114,7 +129,8 @@ class puerts:
             return _csTypeCache_[type_name]
         cs_type = scriptEnv.GetTypeByString(type_name)
         if cs_type is None:
-            return NameSpaceProxy(type_name)
+            print('Type not found: ' + type_name)
+            return None
         if cs_type.IsGenericTypeDefinition:
             # cache generic type definitions directly
             _csTypeCache_[type_name] = cs_type
