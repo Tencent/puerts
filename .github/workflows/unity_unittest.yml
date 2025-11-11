@@ -215,13 +215,13 @@ jobs:
             adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActivity
 
             # 等待进程出现并用 --pid 过滤
-            for i in $(seq 1 60); do
-              PID=$(adb shell pidof com.tencent.puerts_test | tr -d '\r')
-              if [ -n "$PID" ]; then
-                echo "App PID: $PID"
-                break
-              fi
-              sleep 1
+            for i in $(seq 1 60); do \
+              PID=$(adb shell pidof com.tencent.puerts_test | tr -d '\r'); \
+              if [ -n "$PID" ]; then \
+                echo "App PID: $PID"; \
+                break; \
+              fi; \
+              sleep 1; \
             done
             if [ -z "$PID" ]; then
               echo "App did not start in time"; exit 1
