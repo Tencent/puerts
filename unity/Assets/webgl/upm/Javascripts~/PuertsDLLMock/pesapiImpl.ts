@@ -1036,7 +1036,12 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
         if (typeof obj != 'object' && typeof obj != 'function') {
             return false;
         }
-        obj['__p_private_data'] = ptr;
+        Object.defineProperty(obj, "__p_private_data", {
+            value: ptr,
+            writable: true,
+            enumerable: false,
+            configurable: true,
+        });
         return true;
     }
     function pesapi_get_property_uint32(env: pesapi_env, pobject: pesapi_value, key: number, pvalue: pesapi_value): void {
