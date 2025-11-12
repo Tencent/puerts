@@ -137,7 +137,7 @@ System.Diagnostics.Hello
             }
             catch (Exception e)
             {
-                Assert.True(e.Message.Contains("ModuleNotFoundError: No namespace or type named System.Diagnostics.Hello"), "Unexpected error message" + e.Message);
+                Assert.True(e.Message.Contains("ModuleNotFoundError: No namespace or type named System.Diagnostics.Hello"));
             }
 
             try
@@ -151,7 +151,7 @@ Diagnostics.Hello
             }
             catch (Exception e)
             {
-                Assert.True(e.Message.Contains("ModuleNotFoundError: No namespace or type named System.Diagnostics.Hello"), "Unexpected error message" + e.Message);
+                Assert.True(e.Message.Contains("ModuleNotFoundError: No namespace or type named System.Diagnostics.Hello"));
             }
             pythonEnv.Dispose();
         }
