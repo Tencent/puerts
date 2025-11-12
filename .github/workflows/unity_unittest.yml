@@ -152,7 +152,7 @@ jobs:
           key: unity-mac-202203-59f1-sp
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
-        if: steps.cache-unity.outputs.cache-hit != 'true'
+        if: steps.cache-unity-restore.outputs.cache-hit != 'true'
         with:
           unity-version: 2022.3.59f1
           build-targets: StandaloneOSX, Android 
