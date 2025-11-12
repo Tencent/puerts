@@ -16,7 +16,7 @@ adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActi
 echo "Waiting for app to start..."
 COUNTER=0
 while [ $COUNTER -lt 60 ]; do
-  PID=$(adb shell pidof com.tencent.puerts_test | tr -d '\r')
+  PID=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep | awk '{print \$2}'" | tr -d '\r')
   if [ -n "$PID" ]; then
     echo "App PID: $PID"
     break
@@ -38,7 +38,7 @@ echo "Waiting for app to complete (timeout: 300s)..."
 TIMEOUT=300
 ELAPSED=0
 while [ $ELAPSED -lt $TIMEOUT ]; do
-  if ! adb shell ps -A | grep -q com.tencent.puerts_test; then
+  if ! adb shell "ps | grep com.tencent.puerts_test | grep -v grep" > /dev/null 2>&1; then
     echo "App exited"
     break
   fi
@@ -46,7 +46,7 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
   ELAPSED=$((ELAPSED+2))
 done
 
-if adb shell ps -A | grep -q com.tencent.puerts_test; then
+if adb shell "ps | grep com.tencent.puerts_test | grep -v grep" > /dev/null 2>&1; then
   echo "App did not exit in time, killing..."
   adb shell am force-stop com.tencent.puerts_test
 fi
