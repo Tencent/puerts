@@ -212,7 +212,7 @@ jobs:
           emulator-options: -no-window -no-boot-anim -no-audio -no-snapshot-load
           disable-linux-hw-accel: true
           script: |
-            set -euo pipefail
+            set -eu
 
             adb devices
             adb install -r puerts_test.apk
