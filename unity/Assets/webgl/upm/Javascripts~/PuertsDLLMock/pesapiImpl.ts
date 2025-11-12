@@ -1027,7 +1027,8 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
             Buffer.writeInt32(engine.unityApi.HEAPU8, 0, out_ptr);
             return false;
         }
-        Buffer.writeInt32(engine.unityApi.HEAPU8, obj['__p_private_data'], out_ptr);
+        let privateData = obj.hasOwnProperty('__p_private_data') ? obj['__p_private_data'] : 0;
+        Buffer.writeInt32(engine.unityApi.HEAPU8, privateData, out_ptr);
         return true;
     }
     function pesapi_set_private(env: pesapi_env, pobject: pesapi_value, ptr: number): boolean { 
