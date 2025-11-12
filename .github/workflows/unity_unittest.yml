@@ -144,26 +144,13 @@ jobs:
           node ../../cli make --platform osx --arch arm64
           cd ../wsppaddon
           node ../../cli make --platform osx --arch arm64 --websocket 2
-      - name: Cache Unity Restore
-        id: cache-unity-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: /Applications/Unity
-          key: unity-mac-202203-59f1-sp
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
-        if: steps.cache-unity-restore.outputs.cache-hit != 'true'
         with:
           unity-version: 2022.3.59f1
           build-targets: StandaloneOSX, Android 
           modules: android-il2cpp, mac-il2cpp
           #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
-      - name: Cache Unity Save
-        id: cache-unity-save
-        uses: actions/cache/save@v4
-        with:
-          path: /Applications/Unity
-          key: unity-mac-202203-59f1-sp
       - uses: RageAgainstThePixel/activate-unity-license@v1
         with:
           license: 'Personal'
