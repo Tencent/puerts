@@ -25,6 +25,7 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
+      - .github/workflows/run_android_test.sh
       - .github/workflows/composites/**
 #    branches-ignore:
 #      - 'unity-3.0.0'
