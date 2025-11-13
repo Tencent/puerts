@@ -20,5 +20,18 @@ namespace Puerts.UnitTest
             ");
             Assert.AreNotEqual(b, d);
         }
+
+        [Test]
+        public void PassObjectAffect()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var keys1 = jsEnv.Eval<string>(@"
+                __PassObjectAffect = Object.create(null);
+                Object.keys(__PassObjectAffect).join(',');
+            ");
+            jsEnv.Eval<ScriptObject>("__PassObjectAffect");
+            var keys2 = jsEnv.Eval<string>(@"Object.keys(__PassObjectAffect).join(',');");
+            Assert.AreNotEqual(keys1, keys2);
+        }
     }
 }

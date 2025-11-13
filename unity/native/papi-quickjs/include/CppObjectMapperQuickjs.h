@@ -112,6 +112,15 @@ struct CppObjectMapper
             return false;
         }
    
+        // Use JS_GetOwnProperty to only check the current object, not the prototype chain
+        int ret = JS_GetOwnProperty(ctx, nullptr, val, privateDataKey);
+        if (ret <= 0)
+        {
+            // Property doesn't exist on this object or error occurred
+            *outPrr = nullptr;
+            return true;
+        }
+        
         JSValue data = JS_GetProperty(ctx, val, privateDataKey);
         if (JS_VALUE_GET_TAG(data) == JS_TAG_EXTERNAL)
         {
