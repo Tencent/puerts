@@ -1,4 +1,4 @@
-#if !UNITY_WEBGL
+#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;

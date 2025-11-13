@@ -1,4 +1,4 @@
-#if !UNITY_WEBGL
+#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID
 using NUnit.Framework;
 using System;
 // python不支持把class传递给C#，所以这个测试用例先注释

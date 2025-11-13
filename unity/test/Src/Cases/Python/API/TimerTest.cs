@@ -1,4 +1,4 @@
-#if !UNITY_WEBGL
+#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 Tencent.  All rights reserved.

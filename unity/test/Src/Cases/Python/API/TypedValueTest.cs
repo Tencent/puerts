@@ -1,4 +1,4 @@
-#if !UNITY_WEBGL
+#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID
 using NUnit.Framework;
 using Puerts.UnitTest.JSTypeTest;
 using System;
