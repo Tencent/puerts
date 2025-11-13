@@ -115,11 +115,56 @@ jobs:
 #            echo
 #          done
 
-  unittest-build-android-in-mac:
+  unittest-run-testcase-and-build-android:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build Plugin
+      - name: Setup Unity
+        uses: RageAgainstThePixel/unity-setup@v1
+        with:
+          unity-version: 2022.3.59f1
+          build-targets: StandaloneOSX, Android 
+          modules: android-il2cpp, mac-il2cpp
+          #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
+      - uses: RageAgainstThePixel/activate-unity-license@v1
+        with:
+          license: 'Personal'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+          #serial: ${{ secrets.UNITY_SERIAL }}
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          cd test/unity
+          node ../../cli unity-test --unity ${{ env.UNITY_EDITOR_PATH }}
+      - name: TestResult
+#        if: always()
+        shell: bash
+        run: |
+          cd unity/test/unity
+          log_files=(
+            "log_reflection.txt"
+            "log_qjs_reflection.txt"
+            "log_nodejs_reflection.txt"
+            "log_minimum_reflection.txt"
+            "log_qjs_minimum_reflection.txt"
+            "log_nodejs_minimum_reflection.txt"
+            "log_full_wrapper.txt"
+            "log_qjs_full_wrapper.txt"
+            "log_nodejs_full_wrapper.txt"
+          )
+          for log_file in "${log_files[@]}"; do
+            echo "Processing $log_file"
+            grep "ENV_BACKEND" "$log_file" || true
+            passed_count=$(grep -c "Passed" "$log_file" || true)
+            echo "Passed: $passed_count"
+            failed_count=$(grep -c "Failed" "$log_file" || true)
+            echo "Failed: $failed_count"
+            grep "Failed" "$log_file" || true
+            echo
+          done
+      - name: Build Android Plugin
         shell: bash
         run: |
           cd unity
@@ -135,30 +180,7 @@ jobs:
           node ../../cli make --platform android --arch x64 --config Debug
           cd ../wsppaddon
           node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
-          cd ../puerts
-          node ../../cli make --platform osx --arch arm64 --config Debug
-          cd ../papi-v8
-          node ../../cli make --platform osx --arch arm64 --config Debug
-          cd ../papi-quickjs
-          node ../../cli make --platform osx --arch arm64 --config Debug
-          cd ../papi-lua
-          node ../../cli make --platform osx --arch arm64 --config Debug
-          cd ../wsppaddon
-          node ../../cli make --platform osx --arch arm64 --websocket 2 --config Debug
-      - name: Setup Unity
-        uses: RageAgainstThePixel/unity-setup@v1
-        with:
-          unity-version: 2022.3.59f1
-          build-targets: StandaloneOSX, Android 
-          modules: android-il2cpp, mac-il2cpp
-          #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
-      - uses: RageAgainstThePixel/activate-unity-license@v1
-        with:
-          license: 'Personal'
-          username: ${{ secrets.UNITY_USERNAME }}
-          password: ${{ secrets.UNITY_PASSWORD }}
-          #serial: ${{ secrets.UNITY_SERIAL }}
-      - name: Build Android
+      - name: Build Android APK
         shell: bash
         run: |
           cd unity/test/unity
