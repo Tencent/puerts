@@ -140,7 +140,10 @@ struct CppObjectMapper
         {
             return false;
         }
-        JS_SetProperty(ctx, val, privateDataKey, JS_MKPTR(JS_TAG_EXTERNAL, ptr));
+        // Use JS_DefinePropertyValue with non-enumerable flag to prevent for...in enumeration
+        // JS_PROP_CONFIGURABLE | JS_PROP_WRITABLE (without JS_PROP_ENUMERABLE)
+        JS_DefinePropertyValue(ctx, val, privateDataKey, JS_MKPTR(JS_TAG_EXTERNAL, ptr), 
+                               JS_PROP_CONFIGURABLE | JS_PROP_WRITABLE);
         return true;
     }
 
