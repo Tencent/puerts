@@ -19,6 +19,7 @@ while [ $COUNTER -lt 60 ]; do
   PID=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep | awk '{print \$2}'" | tr -d '\r')
   if [ -n "$PID" ]; then
     echo "App PID: $PID"
+    echo "App started in $COUNTER seconds"
     break
   fi
   sleep 1
@@ -26,12 +27,12 @@ while [ $COUNTER -lt 60 ]; do
 done
 
 if [ -z "$PID" ]; then
-  echo "App did not start in time"
+  echo "App did not start in time (waited $COUNTER seconds)"
   exit 1
 fi
 
 echo "Starting logcat capture..."
-adb logcat --pid=$PID -v time > logcat.txt &
+adb logcat -v time > logcat.txt &
 LOGCAT_BG_PID=$!
 
 echo "Waiting for app to complete (timeout: 300s)..."
