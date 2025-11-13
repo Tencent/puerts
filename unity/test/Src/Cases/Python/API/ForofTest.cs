@@ -52,7 +52,6 @@ exec('''
 helper = puerts.load_type('Puerts.UnitTest.ForofTestHelperPython')
 list = helper.GetAStringList()
 
-# Test list iteration
 result = ''
 for i in range(list.Count):
     result = result + list.get_Item(i)

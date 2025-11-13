@@ -117,7 +117,6 @@ Utils = CS.load_type('Puerts.Utils')
 TypeExtensions = CS.load_type('Puerts.TypeExtensions')
 methods = Utils.GetMethodAndOverrideMethodByName($1, 'StaticGenericMethod')
 
-# Try to use invalid type argument (number instead of Type)
 for i in range(methods.Length):
     method = methods.GetValue(i)
     if method.GetParameters().Length == 0 and method.GetGenericArguments().Length == 1:
@@ -264,13 +263,11 @@ TypeExtensions = CS.load_type('Puerts.TypeExtensions')
 cls = TypeExtensions.GetType(GenericTestClass)
 methods = Utils.GetMethodAndOverrideMethodByName($1, 'StaticGenericMethod')
 
-# Collect all overloads
 overloads = []
 for i in range(methods.Length):
     method = methods.GetValue(i)
     overloads.append(method.MakeGenericMethod(Int32))
 
-# Test both overloads
 result1 = ''''
 result2 = ''''
 for method in overloads:

@@ -68,8 +68,6 @@ def oFunc():
 def callback(func):
     return oFunc
 
-#rFunc = testHelper.JSFunctionTestPipeLine(oFunc, callback)
-
 def evfn():
     return 30
 

@@ -62,7 +62,6 @@ print('Hello from Python console')
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-# Empty Python module test
 empty = {}
 ''')
 ");
@@ -176,15 +175,12 @@ exec('''
 CS = CSharp()
 obj = CS.load_type('Puerts.UnitTest.GenericMethodTestPython')()
 
-# Test generic method calls
 Int32 = CS.load_type('System.Int32')
 String = CS.load_type('System.String')
 
-# Get generic method and call it
 cls = CS.load_type('Puerts.UnitTest.GenericMethodTestPython')
 methods = CS.load_type('Puerts.Utils').GetMethodAndOverrideMethodByName($1, 'Foo')
 
-# Find the Foo<A>() method
 for i in range(methods.Length):
     method = methods.GetValue(i)
     if method.GetParameters().Length == 0 and method.GetGenericArguments().Length == 1:
@@ -193,7 +189,6 @@ for i in range(methods.Length):
         assert result1 == 1, 'Generic method Foo<int>() should return 1'
         break
 
-# Find the Foo<A, B>() method
 for i in range(methods.Length):
     method = methods.GetValue(i)
     if method.GetParameters().Length == 0 and method.GetGenericArguments().Length == 2:

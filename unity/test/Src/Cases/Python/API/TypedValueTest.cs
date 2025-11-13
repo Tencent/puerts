@@ -16,7 +16,6 @@ namespace Puerts.UnitTest.PythonTypeTest
 
             pythonEnv.Eval(@"
 exec('''
-# In Python, we use Int64Value to explicitly create int64 values
 value = puerts.load_type('Puerts.Int64Value')(512)
 puerts.load_type('Puerts.UnitTest.JSTypeTest.TypedValueTestHelper').Callback(value)
 ''')
