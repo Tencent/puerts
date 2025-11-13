@@ -37,7 +37,9 @@ public class Tester : MonoBehaviour {
                     hasFail = true;
                 },
                 () => {
+					UnityEngine.Debug.Log("End RunTest");
 #if !UNITY_EDITOR && !UNITY_WEBGL
+                    UnityEngine.Debug.Log("Application.Quit");
                     UnityEngine.Application.Quit(hasFail ? 1 : 0);
 #endif
                 }
