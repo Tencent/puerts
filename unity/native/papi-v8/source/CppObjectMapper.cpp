@@ -407,6 +407,11 @@ void FCppObjectMapper::BindCppObject(
 void* FCppObjectMapper::GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject)
 {
     auto Key = PrivateKey.Get(Context->GetIsolate());
+    auto hasOwn = JSObject->HasOwnProperty(Context, Key);
+    if (hasOwn.IsNothing() || !hasOwn.FromJust())
+    {
+        return nullptr;
+    }
     v8::MaybeLocal<v8::Value> maybeValue = JSObject->Get(Context, Key);
     if (maybeValue.IsEmpty())
     {
