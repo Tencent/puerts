@@ -16,8 +16,10 @@ adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActi
 echo "Waiting for app to start..."
 COUNTER=0
 while [ $COUNTER -lt 60 ]; do
-  PID=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep | awk '{print \$2}'" | tr -d '\r')
-  if [ -n "$PID" ]; then
+  PS_LINE=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
+  if [ -n "$PS_LINE" ]; then
+    # Extract PID (second column) using sed
+    PID=$(echo "$PS_LINE" | sed 's/^[^ ]* *\([^ ]*\).*/\1/')
     echo "App PID: $PID"
     echo "App started in $COUNTER seconds"
     break
@@ -55,5 +57,27 @@ fi
 echo "Stopping logcat capture..."
 kill $LOGCAT_BG_PID || true
 sleep 1
+
+echo "Analyzing test results..."
+
+# Count passed and failed test cases
+PASSED_COUNT=$(grep -c "Passed: TestCase" logcat.txt || true)
+FAILED_COUNT=$(grep -c "Failed: TestCase" logcat.txt || true)
+
+echo "=========================================="
+echo "Test Results Summary:"
+echo "Passed: $PASSED_COUNT"
+echo "Failed: $FAILED_COUNT"
+echo "=========================================="
+
+# Print failed test cases if any
+if [ $FAILED_COUNT -gt 0 ]; then
+  echo ""
+  echo "Failed Test Cases:"
+  grep "Failed: TestCase" logcat.txt || true
+  echo ""
+  echo "Test execution failed with $FAILED_COUNT failed test case(s)"
+  exit 1
+fi
 
 echo "Test completed successfully"

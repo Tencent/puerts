@@ -126,25 +126,25 @@ jobs:
           npm i
           cd native
           cd puerts
-          node ../../cli make --platform android --arch x64
+          node ../../cli make --platform android --arch x64 --config Debug
           cd ../papi-v8
-          node ../../cli make --platform android --arch x64
+          node ../../cli make --platform android --arch x64 --config Debug
           cd ../papi-quickjs
-          node ../../cli make --platform android --arch x64
+          node ../../cli make --platform android --arch x64 --config Debug
           cd ../papi-lua 
-          node ../../cli make --platform android --arch x64
+          node ../../cli make --platform android --arch x64 --config Debug
           cd ../wsppaddon
-          node ../../cli make --platform android --arch x64 --websocket 2
+          node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
           cd ../puerts
-          node ../../cli make --platform osx --arch arm64
+          node ../../cli make --platform osx --arch arm64 --config Debug
           cd ../papi-v8
-          node ../../cli make --platform osx --arch arm64
+          node ../../cli make --platform osx --arch arm64 --config Debug
           cd ../papi-quickjs
-          node ../../cli make --platform osx --arch arm64
+          node ../../cli make --platform osx --arch arm64 --config Debug
           cd ../papi-lua
-          node ../../cli make --platform osx --arch arm64
+          node ../../cli make --platform osx --arch arm64 --config Debug
           cd ../wsppaddon
-          node ../../cli make --platform osx --arch arm64 --websocket 2
+          node ../../cli make --platform osx --arch arm64 --websocket 2 --config Debug
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
         with:
@@ -202,6 +202,7 @@ jobs:
           script: bash .github/workflows/run_android_test.sh
 
       - name: Upload logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: logcat
