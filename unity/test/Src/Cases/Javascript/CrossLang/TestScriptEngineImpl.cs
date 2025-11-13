@@ -27,11 +27,13 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             var keys1 = jsEnv.Eval<string>(@"
                 __PassObjectAffect = Object.create(null);
+                __PassObjectAffect.a = 1;
+                __PassObjectAffect.b = 2;
                 Object.keys(__PassObjectAffect).join(',');
             ");
             jsEnv.Eval<ScriptObject>("__PassObjectAffect");
             var keys2 = jsEnv.Eval<string>(@"Object.keys(__PassObjectAffect).join(',');");
-            Assert.AreNotEqual(keys1, keys2);
+            Assert.AreEqual(keys1, keys2);
         }
     }
 }
