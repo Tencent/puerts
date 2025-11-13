@@ -132,6 +132,22 @@ jobs:
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
           #serial: ${{ secrets.UNITY_SERIAL }}
+      - name: Build Android Plugin # 得先构建Android插件，如果先运行UT会导致meta被Editor删除
+        shell: bash
+        run: |
+          cd unity
+          npm i
+          cd native
+          cd puerts
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../papi-v8
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../papi-quickjs
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../papi-lua 
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../wsppaddon
+          node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
       - name: UnitTest
         run: |
           cd unity
@@ -164,22 +180,6 @@ jobs:
             grep "Failed" "$log_file" || true
             echo
           done
-      - name: Build Android Plugin
-        shell: bash
-        run: |
-          cd unity
-          npm i
-          cd native
-          cd puerts
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../papi-v8
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../papi-quickjs
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../papi-lua 
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../wsppaddon
-          node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
       - name: Build Android APK
         shell: bash
         run: |
