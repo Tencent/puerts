@@ -234,6 +234,12 @@ jobs:
   unittest-linux-unity:
     runs-on: ubuntu-latest
     steps:
+      - name: Install libc++-dev
+        shell: bash
+        run: |
+          sudo apt-get install clang
+          sudo apt-get install libc++-dev
+          sudo apt-get install libc++abi-dev
       - uses: actions/checkout@v3
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
