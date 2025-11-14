@@ -19,7 +19,48 @@ endif ()
 
 add_subdirectory(../puerts ${CMAKE_CURRENT_BINARY_DIR}/puerts)
 
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+# Android Python configuration
+if(ANDROID)
+    # Determine Python package directory based on Android ABI
+    if(ANDROID_ABI STREQUAL "arm64-v8a")
+        set(PYTHON_ANDROID_PACKAGE "python-3.14.0-aarch64-linux-android")
+    elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
+        set(PYTHON_ANDROID_PACKAGE "python-3.14.0-armv7a-linux-androideabi")
+    elseif(ANDROID_ABI STREQUAL "x86")
+        set(PYTHON_ANDROID_PACKAGE "python-3.14.0-i686-linux-android")
+    else() # x86_64 or default
+        set(PYTHON_ANDROID_PACKAGE "python-3.14.0-x86_64-linux-android")
+    endif()
+    
+    # Set the path to your Android Python package
+    set(PYTHON_ANDROID_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/${PYTHON_ANDROID_PACKAGE}/prefix")
+    
+    # Set Python include directories
+    set(Python3_INCLUDE_DIRS "${PYTHON_ANDROID_ROOT}/include/python3.14")
+    
+    # Set Python library
+    set(Python3_LIBRARIES "${PYTHON_ANDROID_ROOT}/lib/libpython3.14.so")
+    
+    # Verify the paths exist
+    if(NOT EXISTS ${Python3_INCLUDE_DIRS})
+        message(FATAL_ERROR "Python include directory not found: ${Python3_INCLUDE_DIRS}\n"
+                "Please download the Python Android package for ${ANDROID_ABI} from:\n"
+                "https://www.python.org/downloads/")
+    endif()
+    
+    if(NOT EXISTS ${Python3_LIBRARIES})
+        message(FATAL_ERROR "Python library not found: ${Python3_LIBRARIES}")
+    endif()
+    
+    message(STATUS "Building for Android ABI: ${ANDROID_ABI}")
+    message(STATUS "Using Android Python package: ${PYTHON_ANDROID_PACKAGE}")
+    message(STATUS "Python root: ${PYTHON_ANDROID_ROOT}")
+    message(STATUS "Python include dir: ${Python3_INCLUDE_DIRS}")
+    message(STATUS "Python library: ${Python3_LIBRARIES}")
+else()
+    # For other platforms, use find_package
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+endif()
 
 include_directories(
         ${CMAKE_SOURCE_DIR}

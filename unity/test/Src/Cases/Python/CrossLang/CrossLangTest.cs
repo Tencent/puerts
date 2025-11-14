@@ -1,4 +1,4 @@
-﻿#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID
+﻿#if !UNITY_WEBGL && !UNITY_IOS
 using NUnit.Framework;
 using System;
 using System.Runtime.InteropServices;
