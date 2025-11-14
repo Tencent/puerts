@@ -138,7 +138,8 @@ jobs:
           node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
           cd ../papi-python
           wget -O python-3.14.0-x86_64-linux-android.tar.gz -q https://www.python.org/ftp/python/3.14.0/python-3.14.0-x86_64-linux-android.tar.gz
-          tar -xvf python-3.14.0-x86_64-linux-android.tar.gz
+          mkdir -p python-3.14.0-x86_64-linux-android
+          tar -xvf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android
           node ../../cli make --platform android --arch x64 --config Debug
           cp python-3.14.0-x86_64-linux-android/prefix/lib/libpython3.14.so ../../Assets/core/upm/Plugins/Android/libs/x86_64
       - name: Setup Unity
