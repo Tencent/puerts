@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+adb shell setprop log.tag.linker DEBUG
+
 echo "Installing APK..."
 adb install -r puerts_test.apk
 
