@@ -41,15 +41,19 @@ echo "Waiting for app to complete (timeout: 300s)..."
 TIMEOUT=300
 ELAPSED=0
 while [ $ELAPSED -lt $TIMEOUT ]; do
-  if ! adb shell "ps | grep com.tencent.puerts_test | grep -v grep" > /dev/null 2>&1; then
-    echo "App exited"
+  # Check if process still exists by looking for the PID
+  PS_CHECK=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
+  if [ -z "$PS_CHECK" ]; then
+    echo "App exited after $ELAPSED seconds"
     break
   fi
   sleep 2
   ELAPSED=$((ELAPSED+2))
 done
 
-if adb shell "ps | grep com.tencent.puerts_test | grep -v grep" > /dev/null 2>&1; then
+# Double check if app is still running
+PS_FINAL=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
+if [ -n "$PS_FINAL" ]; then
   echo "App did not exit in time, killing..."
   adb shell am force-stop com.tencent.puerts_test
 fi
