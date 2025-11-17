@@ -75,7 +75,12 @@ public class JsEnv : ModuleRules
             PublicDependencyModuleNames.Add("OpenSSL");
         }
 
+
+#if UE_5_6_OR_LATER
+        CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Warning;
+#else
         ShadowVariableWarningLevel = WarningLevel.Warning;
+#endif
 
         if (!FTextAsString)
         {
@@ -520,20 +525,20 @@ public class JsEnv : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
             /*
-            #if UE_4_19_OR_LATER
+#if UE_4_19_OR_LATER
                         AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Libnode_APL.xml"));
-            #else
+#else
                         AdditionalPropertiesForReceipt.Add(new ReceiptProperty("AndroidPlugin", Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Libnode_APL.xml")));
-            #endif
-            #if UE_4_24_OR_LATER
+#endif
+#if UE_4_24_OR_LATER
                         PublicSystemLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "armeabi-v7a"));
                         PublicSystemLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "arm64-v8a"));
                         PublicSystemLibraries.Add("node");
-            #else
+#else
                         PublicLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "armeabi-v7a"));
                         PublicLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "arm64-v8a"));
                         PublicAdditionalLibraries.Add("node");
-            #endif  //UE_4_24_OR_LATER
+#endif  //UE_4_24_OR_LATER
             */
             
             string[] Archs = new string[] { "armeabi-v7a", "arm64-v8a" };

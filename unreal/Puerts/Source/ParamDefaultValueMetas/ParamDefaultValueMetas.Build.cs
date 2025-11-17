@@ -14,7 +14,9 @@ namespace UnrealBuildTool.Rules
     {
         public ParamDefaultValueMetas(ReadOnlyTargetRules Target) : base(Target)
         {
+#if !UE_5_7_OR_LATER
             bEnforceIWYU = false;
+#endif
 
             PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 

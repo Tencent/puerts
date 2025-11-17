@@ -275,7 +275,9 @@ void UJSGeneratedClass::Restore(UClass* Class)
     OrphanedClass->ClassGeneratedBy = Class->ClassGeneratedBy;
 #endif
 
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 7
+    TObjectPtr<UField>* PP = &Class->Children;
+#elif ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
     UField** PP = nullptr;
     UField* ChildrenPtr = Class->Children.Get();
     PP = &ChildrenPtr;
@@ -303,7 +305,7 @@ void UJSGeneratedClass::Restore(UClass* Class)
             JGF->JsFunction.Reset();
 
             *PP = JGF->Next;
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2 && ENGINE_MINOR_VERSION < 7
             if (PP == &ChildrenPtr)
             {
                 Class->Children = ChildrenPtr;
@@ -323,7 +325,7 @@ void UJSGeneratedClass::Restore(UClass* Class)
             PP = &(*PP)->Next;
         }
     }
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2 && ENGINE_MINOR_VERSION < 7
     PP = &ChildrenPtr;
 #else
     PP = &Class->Children;
