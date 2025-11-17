@@ -747,6 +747,31 @@ namespace Puerts.UnitTest
         float IFoo.width => 125f; // Note the explicit interface `IFoo.`
     }
 
+    public class BoxValueContainer
+    {
+        public object BoxedValue;
+
+        public BoxValueContainer()
+        {
+            BoxedValue = 123;
+        }
+    }
+
+    public struct StaticFieldStruct
+    {
+        public float instanceField;
+    }
+
+    public static class OnlyStaticFieldClass
+    {
+        public static StaticFieldStruct staticFieldStruct;
+
+        static OnlyStaticFieldClass()
+        {
+            staticFieldStruct = new StaticFieldStruct { instanceField = 3 };
+        }
+    }
+
     [TestFixture]
     public class CrossLangTest
     {
@@ -1609,6 +1634,40 @@ __PDUOTF;");
                 })()
             ");
             Assert.AreEqual("ToStringOverrideTest: 123", res);
+        }
+
+        [Test]
+        public void BoxValueTest()
+        {
+            
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const BoxValueContainer = CS.Puerts.UnitTest.BoxValueContainer;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const obj = new BoxValueContainer();
+                    AssertAndPrint(`BoxValueTest value`,   obj.BoxedValue == 123);
+                    AssertAndPrint(`BoxValueTest type`,   typeof obj.BoxedValue == 'number');
+
+                    obj.BoxedValue = 999
+                    AssertAndPrint(`BoxValueTest changed value`,   obj.BoxedValue == 999);
+                    AssertAndPrint(`BoxValueTest changed type`,   typeof obj.BoxedValue == 'number');
+                })()
+            ");
+        }
+
+        [Test]
+        public void AccessOnlyStaticFieldClass()
+        {
+
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const OnlyStaticFieldClass = CS.Puerts.UnitTest.OnlyStaticFieldClass;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint(`OnlyStaticFieldClass.staticFieldStruct.instanceField`,  OnlyStaticFieldClass.staticFieldStruct.instanceField == 3);
+                })()
+            ");
         }
 
     }

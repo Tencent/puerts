@@ -711,6 +711,7 @@ void* GetValueTypeFieldPtr(void *obj, FieldInfo *field, size_t offset)
     }
     else
     {
+	    il2cpp::vm::Runtime::ClassInit(field->parent);
         il2cpp::vm::Class::SetupFields(field->parent);
 
         void* threadStaticData = NULL;
