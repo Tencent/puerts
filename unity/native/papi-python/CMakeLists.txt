@@ -103,8 +103,9 @@ if(ANDROID)
             dl         # For dynamic loading
     )
     
-    # Set linker flags to handle versioned symbols
+    # Set linker flags to handle versioned symbols and hash style
     target_link_options(PapiPython PRIVATE
+            -Wl,--hash-style=both    # Support both sysv and gnu hash for compatibility
             -Wl,--no-undefined
             -Wl,--as-needed
     )
