@@ -90,6 +90,26 @@ target_link_libraries(PapiPython
         PuertsCore
 )
 
+# Link Android system libraries when building for Android
+if(ANDROID)
+    # Ensure minimum API level for required symbols
+    if(NOT ANDROID_PLATFORM)
+        set(ANDROID_PLATFORM android-24)
+    endif()
+    
+    target_link_libraries(PapiPython
+            log        # For __android_log_write
+            c          # For libc functions (stdin, stdout, stderr, etc.)
+            dl         # For dynamic loading
+    )
+    
+    # Set linker flags to handle versioned symbols
+    target_link_options(PapiPython PRIVATE
+            -Wl,--no-undefined
+            -Wl,--as-needed
+    )
+endif()
+
 target_compile_definitions(PapiPython PRIVATE EASTL_DLL USING_EASTL)
 target_compile_definitions(PapiPython PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
 target_compile_definitions(PapiPython PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
