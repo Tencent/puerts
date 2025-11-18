@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <DotNet8Path>$([System.IO.Directory]::GetDirectories('$(EngineDir)\Binaries\ThirdParty\DotNet', '8.0.*'))</DotNet8Path>
+    <TargetFramework Condition="'$(DotNet8Path)' != ''">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(DotNet8Path)' == ''">net6.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>

@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="CSharpParamDefaultValueMetas.ubtplugin.csproj.props" Condition="Exists('CSharpParamDefaultValueMetas.ubtplugin.csproj.props')" />
   <Import Project="$(EngineDir)\Source\Programs\Shared\UnrealEngine.csproj.props" />
+  <Import Project="DotNetTarget.csproj.props" />
 
   <PropertyGroup>
     
@@ -8,9 +9,6 @@
     <EngineVersionFileContent >$([System.IO.File]::ReadAllText($(EngineVersionPath)))</EngineVersionFileContent >
     <TargetFramework Condition="$(EngineVersionFileContent.Contains('++UE5+Release-5.5'))">net8.0</TargetFramework>
     <TargetFramework Condition="!$(EngineVersionFileContent.Contains('++UE5+Release-5.5'))">net6.0</TargetFramework-->
-    <DotNetDir>$(EngineDir)\Binaries\ThirdParty\DotNet</DotNetDir>
-    <TargetFramework Condition="Exists('$(DotNetDir)\8.0.412') Or Exists('$(DotNetDir)\8.0.300')">net8.0</TargetFramework>
-    <TargetFramework Condition="!Exists('$(DotNetDir)\8.0.412') And !Exists('$(DotNetDir)\8.0.300')">net6.0</TargetFramework>
     
     <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
     <OutputType>Library</OutputType>
