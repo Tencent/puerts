@@ -202,7 +202,7 @@ jobs:
         run: |
           cd unity/test/unity
           ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
-          ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
+          ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroidX64
       - name: Upload apk
         uses: actions/upload-artifact@v4
         with:
