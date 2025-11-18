@@ -772,6 +772,24 @@ namespace Puerts.UnitTest
         }
     }
 
+    public struct Struct2Field
+    {
+        public int X;
+        public int Y;
+    }
+
+    public class ClassHasNullableField
+    {
+        public ClassHasNullableField()
+        {
+            struct2Filed = new Struct2Field() { X = 10, Y = 20 };
+            nullableIntField = 100;
+        }
+        public Struct2Field? struct2Filed;
+        public int? nullableIntField;
+    }
+	
+	
     [TestFixture]
     public class CrossLangTest
     {
@@ -1666,6 +1684,31 @@ __PDUOTF;");
                     const OnlyStaticFieldClass = CS.Puerts.UnitTest.OnlyStaticFieldClass;
                     const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
                     AssertAndPrint(`OnlyStaticFieldClass.staticFieldStruct.instanceField`,  OnlyStaticFieldClass.staticFieldStruct.instanceField == 3);
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestClassHasNullableField()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ClassHasNullableField = CS.Puerts.UnitTest.ClassHasNullableField;
+                    const obj = new ClassHasNullableField();
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('check obj.struct2Filed.X', obj.struct2Filed.X == 10);
+                    AssertAndPrint('check obj.struct2Filed.Y', obj.struct2Filed.Y == 20);
+                    AssertAndPrint('check obj.nullableIntField', obj.nullableIntField == 100);
+                    const s = obj.struct2Filed;
+                    s.X = 100;
+                    s.Y = 200;
+                    obj.struct2Filed = s;
+                    obj.nullableIntField = 500;
+                    console.log('after set ', obj.struct2Filed.X, obj.struct2Filed.Y, obj.nullableIntField);
+                    AssertAndPrint(`after set check obj.struct2Filed.X ${ obj.struct2Filed.X }`, obj.struct2Filed.X == 100);
+                    AssertAndPrint(`after set check obj.struct2Filed.Y ${ obj.struct2Filed.Y }`, obj.struct2Filed.Y == 200);
+                    AssertAndPrint(`after set check obj.nullableIntField ${ obj.nullableIntField }`, obj.nullableIntField == 500);
                 })()
             ");
         }

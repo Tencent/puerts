@@ -711,7 +711,7 @@ void* GetValueTypeFieldPtr(void *obj, FieldInfo *field, size_t offset)
     }
     else
     {
-	    il2cpp::vm::Runtime::ClassInit(field->parent);
+        il2cpp::vm::Runtime::ClassInit(field->parent);
         il2cpp::vm::Class::SetupFields(field->parent);
 
         void* threadStaticData = NULL;
@@ -2144,12 +2144,8 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
     if (il2cpp::vm::Class::IsValuetype(fieldType))
     {
         void* storage = nullptr;
-        bool isFieldPtr = true;
         auto expectType = fieldType;
-        if (il2cpp::vm::Class::IsNullable(fieldType))
-        {
-            expectType = il2cpp::vm::Class::GetNullableArgument(fieldType);
-        }
+        
         if (il2cpp::vm::Class::IsEnum(fieldType))
         {
             expectType = il2cpp::vm::Class::GetElementClass(fieldType);
@@ -2163,7 +2159,6 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
             {
                 storage = alloca(expectType->instance_size - sizeof(Il2CppObject));
                 GetFieldValue(csThis, field, offset, storage);
-                isFieldPtr = false;
             }
             else
             {
@@ -2178,7 +2173,18 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
         {
             storage = alloca(expectType->instance_size - sizeof(Il2CppObject));
             GetFieldValue(csThis, field, offset, storage);
-            isFieldPtr = false;
+        }
+        
+        if (il2cpp::vm::Class::IsNullable(fieldType)) // nullable先用nullable类型获取字段内容后，再偏移
+        {
+            if (!NullableHasValue(fieldType, storage))
+            {
+                ${invokePapi('add_return')}(info, ${invokePapi('create_null')}(env));
+                return;
+            }
+            expectType = il2cpp::vm::Class::GetNullableArgument(fieldType);
+            int32_t nullableShift = fieldType->fields[1].offset - sizeof(Il2CppObject);
+            storage = ((char*)storage) + nullableShift;
         }
 
         Il2CppObject* obj = (Il2CppObject*) storage - 1;
@@ -2186,17 +2192,10 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
     
         if (!jsVal) 
         {
-            if (isFieldPtr)
-            {
-                jsVal = ${invokePapi('native_object_to_value')}(env, expectType, storage, false);
-            }
-            else
-            {
-                auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
-                auto buff = new uint8_t[valueSize];
-                memcpy(buff, storage, valueSize);
-                jsVal = ${invokePapi('native_object_to_value')}(env, expectType, buff, true);
-            }
+            auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
+            auto buff = new uint8_t[valueSize];
+            memcpy(buff, storage, valueSize);
+            jsVal = ${invokePapi('native_object_to_value')}(env, expectType, buff, true);
         }
         
         if (jsVal)
@@ -2228,7 +2227,8 @@ static void ReflectionSetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
             void* storage = alloca(fieldType->instance_size - sizeof(Il2CppObject));
             auto underlyClass = il2cpp::vm::Class::GetNullableArgument(fieldType);
             uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
-            bool hasValue = GetValueTypeFromJs(apis, env, jsValue, underlyClass, storage);
+            int32_t nullableShift = fieldType->fields[1].offset - sizeof(Il2CppObject);
+            bool hasValue = GetValueTypeFromJs(apis, env, jsValue, underlyClass, ((char*)storage) + nullableShift);
 #ifndef UNITY_2021_1_OR_NEWER
             *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
 #else

@@ -11,15 +11,27 @@ import * as il2cpp_snippets from "./il2cpp_snippets.mjs"
 function genGetField(fieldWrapperInfo) {
     const signature = fieldWrapperInfo.ReturnSignature;
     if (il2cpp_snippets.isStructOrNullableStruct(signature)) { //valuetype
-        if (il2cpp_snippets.needThis(fieldWrapperInfo)) {
-            return `auto ret = (char*)self + offset;
-
-    ${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, TIret, ret, false));`
-        } else {
-            return `auto ret = GetValueTypeFieldPtr(nullptr, fieldInfo, offset);
-
-    ${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, TIret, ret, false));`
-        }
+	    let code = "";
+		if (il2cpp_snippets.isNullableStruct(signature))
+		{
+			code += "offset += (TIret->fields[1].offset - sizeof(Il2CppObject));\n"
+		}
+	    code += il2cpp_snippets.needThis(fieldWrapperInfo) ? "    auto _src = (char*)self + offset;\n" : "    auto _src = GetValueTypeFieldPtr(nullptr, fieldInfo, offset);\n";
+		if (il2cpp_snippets.isNullableStruct(signature))
+		{
+			code += "    auto _typeOfField = il2cpp::vm::Class::GetNullableArgument(TIret);"
+		}
+		else
+		{
+			code += "    auto _typeOfField = TIret;"
+		}
+		
+		return `${code}
+    auto _valueSize = _typeOfField->instance_size - sizeof(Il2CppObject);
+    auto _buff = new uint8_t[_valueSize];
+    memcpy(_buff, _src, _valueSize);
+	${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, _typeOfField, _buff, true));
+    `;
     } else {
         return `${il2cpp_snippets.SToCPPType(fieldWrapperInfo.ReturnSignature)} ret;
 
@@ -52,6 +64,7 @@ static void ifs_${fieldWrapperInfo.Signature}(struct pesapi_ffi* apis, pesapi_ca
     ${il2cpp_snippets.getThis(fieldWrapperInfo.ThisSignature)}
 
     ${ENDIF()}    
+	// ${fieldWrapperInfo.ReturnSignature}
     ${il2cpp_snippets.JSValToCSVal(fieldWrapperInfo.ReturnSignature, `${invokePapi('get_arg')}(info, 0)`, "p")}
     SetFieldValue(${il2cpp_snippets.needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${['o', 's', 'p', 'a'].indexOf(fieldWrapperInfo.Signature) != -1 ? 'p' : '&p'});
 }`;
