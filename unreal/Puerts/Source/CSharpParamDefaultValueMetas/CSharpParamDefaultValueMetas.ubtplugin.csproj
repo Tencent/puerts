@@ -8,9 +8,9 @@
     <EngineVersionFileContent >$([System.IO.File]::ReadAllText($(EngineVersionPath)))</EngineVersionFileContent >
     <TargetFramework Condition="$(EngineVersionFileContent.Contains('++UE5+Release-5.5'))">net8.0</TargetFramework>
     <TargetFramework Condition="!$(EngineVersionFileContent.Contains('++UE5+Release-5.5'))">net6.0</TargetFramework-->
-    <DotNet8Path>$([System.IO.Directory]::GetDirectories('$(EngineDir)\Binaries\ThirdParty\DotNet', '8.0.*'))</DotNet8Path>
-    <TargetFramework Condition="'$(DotNet8Path)' != ''">net8.0</TargetFramework>
-    <TargetFramework Condition="'$(DotNet8Path)' == ''">net6.0</TargetFramework>
+    <DotNetDir>$(EngineDir)\Binaries\ThirdParty\DotNet</DotNetDir>
+    <TargetFramework Condition="Exists('$(DotNetDir)\8.0.412') Or Exists('$(DotNetDir)\8.0.300')">net8.0</TargetFramework>
+    <TargetFramework Condition="!Exists('$(DotNetDir)\8.0.412') And !Exists('$(DotNetDir)\8.0.300')">net6.0</TargetFramework>
     
     <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
     <OutputType>Library</OutputType>
