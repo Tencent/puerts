@@ -225,7 +225,7 @@ jobs:
           api-level: 24
           target: default
           arch: x86_64
-          profile: Galaxy Nexus
+          profile: Nexus 6
           emulator-options: -no-window -no-boot-anim -no-audio -no-snapshot-load
           disable-linux-hw-accel: true
           script: bash .github/workflows/run_android_test.sh
