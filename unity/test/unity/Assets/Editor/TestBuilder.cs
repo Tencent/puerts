@@ -90,7 +90,7 @@ public class TestBuilder
     {
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.tencent.puerts_test");
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64 | AndroidArchitecture.ARM64;
 
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
