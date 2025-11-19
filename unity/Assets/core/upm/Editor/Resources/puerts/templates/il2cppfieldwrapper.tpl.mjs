@@ -11,27 +11,23 @@ import * as il2cpp_snippets from "./il2cpp_snippets.mjs"
 function genGetField(fieldWrapperInfo) {
     const signature = fieldWrapperInfo.ReturnSignature;
     if (il2cpp_snippets.isStructOrNullableStruct(signature)) { //valuetype
-	    let code = "";
+	    let code = il2cpp_snippets.needThis(fieldWrapperInfo) ? `auto _src = (${signature}*)((char*)self + offset);\n` : `auto _src = (${signature}*)GetValueTypeFieldPtr(nullptr, fieldInfo, offset);\n`;
 		if (il2cpp_snippets.isNullableStruct(signature))
 		{
-			code += "offset += (TIret->fields[1].offset - sizeof(Il2CppObject));\n"
-		}
-	    code += il2cpp_snippets.needThis(fieldWrapperInfo) ? "    auto _src = (char*)self + offset;\n" : "    auto _src = GetValueTypeFieldPtr(nullptr, fieldInfo, offset);\n";
-		if (il2cpp_snippets.isNullableStruct(signature))
-		{
-			code += "    auto _typeOfField = il2cpp::vm::Class::GetNullableArgument(TIret);"
+			return `${code}
+	${invokePapi('add_return')}(info, NullableConverter<${signature}>::toScript(apis, env, TIret, _src));
+    `;
 		}
 		else
 		{
-			code += "    auto _typeOfField = TIret;"
-		}
-		
-		return `${code}
-    auto _valueSize = _typeOfField->instance_size - sizeof(Il2CppObject);
+			return `${code}
+    auto _valueSize = sizeof(${signature});
     auto _buff = new uint8_t[_valueSize];
     memcpy(_buff, _src, _valueSize);
-	${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, _typeOfField, _buff, true));
+	${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, TIret, _buff, true));
     `;
+		}
+		
     } else {
         return `${il2cpp_snippets.SToCPPType(fieldWrapperInfo.ReturnSignature)} ret;
 
