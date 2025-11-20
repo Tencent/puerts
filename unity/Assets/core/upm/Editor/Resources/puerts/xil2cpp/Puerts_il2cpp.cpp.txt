@@ -2802,7 +2802,7 @@ static bool RegisterType(Il2CppClass* klass)
                 if (!IsCCtor(method) && !il2cpp::vm::Method::IsGeneric(method))
                 {
                     const char* name = method->name;
-                    if (!(method->flags & METHOD_ATTRIBUTE_PUBLIC))
+                    if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PUBLIC)
                     {
                         name = strrchr(name, '.'); // if Explicit Interface Implementation
                         if (!name) continue;
@@ -2824,6 +2824,7 @@ static bool RegisterType(Il2CppClass* klass)
             for (uint16_t i = 0; i < klass->field_count; i++)
             {
                 FieldInfo* field = &klass->fields[i];
+				if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PUBLIC) continue;
                 bool isStatic = (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
                 std::string signature = (isStatic ? "" : "t");
                 try
