@@ -1548,6 +1548,7 @@ handle_underlying:
                     data.u1 = (uint8_t)${invokePapi('get_value_bool')}(env, jsValue);
                     hasValue = true;
                 }
+				break;
             }
             case IL2CPP_TYPE_U1:
             {
@@ -2824,7 +2825,7 @@ static bool RegisterType(Il2CppClass* klass)
             for (uint16_t i = 0; i < klass->field_count; i++)
             {
                 FieldInfo* field = &klass->fields[i];
-				if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PUBLIC) continue;
+                if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PUBLIC) continue;
                 bool isStatic = (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
                 std::string signature = (isStatic ? "" : "t");
                 try
