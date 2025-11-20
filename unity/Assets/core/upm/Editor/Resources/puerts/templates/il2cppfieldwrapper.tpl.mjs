@@ -11,15 +11,23 @@ import * as il2cpp_snippets from "./il2cpp_snippets.mjs"
 function genGetField(fieldWrapperInfo) {
     const signature = fieldWrapperInfo.ReturnSignature;
     if (il2cpp_snippets.isStructOrNullableStruct(signature)) { //valuetype
-        if (il2cpp_snippets.needThis(fieldWrapperInfo)) {
-            return `auto ret = (char*)self + offset;
-
-    ${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, TIret, ret, false));`
-        } else {
-            return `auto ret = GetValueTypeFieldPtr(nullptr, fieldInfo, offset);
-
-    ${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, TIret, ret, false));`
-        }
+	    let code = il2cpp_snippets.needThis(fieldWrapperInfo) ? `auto _src = (${signature}*)((char*)self + offset);\n` : `auto _src = (${signature}*)GetValueTypeFieldPtr(nullptr, fieldInfo, offset);\n`;
+		if (il2cpp_snippets.isNullableStruct(signature))
+		{
+			return `${code}
+	${invokePapi('add_return')}(info, NullableConverter<${signature}>::toScript(apis, env, TIret, _src));
+    `;
+		}
+		else
+		{
+			return `${code}
+    auto _valueSize = sizeof(${signature});
+    auto _buff = new uint8_t[_valueSize];
+    memcpy(_buff, _src, _valueSize);
+	${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, TIret, _buff, true));
+    `;
+		}
+		
     } else {
         return `${il2cpp_snippets.SToCPPType(fieldWrapperInfo.ReturnSignature)} ret;
 
@@ -52,6 +60,7 @@ static void ifs_${fieldWrapperInfo.Signature}(struct pesapi_ffi* apis, pesapi_ca
     ${il2cpp_snippets.getThis(fieldWrapperInfo.ThisSignature)}
 
     ${ENDIF()}    
+	// ${fieldWrapperInfo.ReturnSignature}
     ${il2cpp_snippets.JSValToCSVal(fieldWrapperInfo.ReturnSignature, `${invokePapi('get_arg')}(info, 0)`, "p")}
     SetFieldValue(${il2cpp_snippets.needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${['o', 's', 'p', 'a'].indexOf(fieldWrapperInfo.Signature) != -1 ? 'p' : '&p'});
 }`;

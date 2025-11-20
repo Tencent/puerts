@@ -585,7 +585,20 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap(apis, (*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, env, self, checkArgument, *wrapDatas))
+            Il2CppMethodPointer methodPointer = (*wrapDatas)->MethodPointer;
+            const MethodInfo* method = (*wrapDatas)->Method;
+            if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && self)
+            {
+                Il2CppClass* thisType = method->klass;
+                Il2CppObject* obj = (Il2CppObject*)self;
+
+                if (!il2cpp::vm::Class::IsValuetype(thisType))
+                {
+                    method = il2cpp::vm::Object::GetVirtualMethod(obj, method);
+                    methodPointer = method->methodPointer;
+                }
+            }
+            if ((*wrapDatas)->Wrap(apis, (MethodInfo*)method, methodPointer, info, env, self, checkArgument, *wrapDatas))
             {
                 return;
             }
@@ -701,7 +714,8 @@ void* GetValueTypeFieldPtr(void *obj, FieldInfo *field, size_t offset)
     }
     else
     {
-        Class::SetupFields(field->parent);
+        il2cpp::vm::Runtime::ClassInit(field->parent);
+        il2cpp::vm::Class::SetupFields(field->parent);
 
         void* threadStaticData = NULL;
         if (field->offset == THREAD_STATIC_FIELD_OFFSET)
@@ -940,23 +954,23 @@ pesapi_value TryTranslateBuiltin(struct pesapi_ffi* apis, pesapi_env env, Il2Cpp
         if (obj->klass == g_typeofPersistentObjectInfo)
         {
             PObjectRefInfo* objectInfo = GetPObjectRefInfo(obj);
-			if (apis != objectInfo->Apis)
-			{
+            if (apis != objectInfo->Apis)
+            {
                 Exception::Raise(Exception::GetInvalidOperationException("ScriptObject form other papi provider!"));
-			}
+            }
             pesapi_env_ref envRef = apis->get_ref_associated_env(objectInfo->ValueRef);
             auto scope = apis->open_scope(envRef);
             auto objEnv = apis->get_env_from_ref(envRef);
             bool invalidObj = (objEnv == nullptr) || apis->get_env_private(objEnv) != apis->get_env_private(env);
             apis->close_scope(scope);
-			if (!envRef || !objEnv)
-			{
-				Exception::Raise(Exception::GetInvalidOperationException("ScriptObject env is invalid!"));
-			}
+            if (!envRef || !objEnv)
+            {
+                Exception::Raise(Exception::GetInvalidOperationException("ScriptObject env is invalid!"));
+            }
             if (invalidObj)
-			{
-				Exception::Raise(Exception::GetInvalidOperationException("ScriptObject own by anther env!"));
-			}
+            {
+                Exception::Raise(Exception::GetInvalidOperationException("ScriptObject own by anther env!"));
+            }
             return GetPObjectRefInfoValue(apis, env, objectInfo);
         }
         if (obj->klass == g_typeofArrayBuffer)
@@ -1348,14 +1362,14 @@ handle_underlying:
             {
                 return Class::IsValuetype(objClass) ? Object::Box(objClass, ptr) : (Il2CppObject*)ptr;
             }
-			else if(objClass)
-			{
-				std::string message = "expect ";
-				message += klass->name;
-				message += ", by got ";
-				message += objClass->name;
-				Exception::Raise(Exception::GetInvalidOperationException(message.c_str()));
-			}
+            else if(objClass)
+            {
+                std::string message = "expect ";
+                message += klass->name;
+                message += ", by got ";
+                message += objClass->name;
+                Exception::Raise(Exception::GetInvalidOperationException(message.c_str()));
+            }
             return nullptr;
         }
         case IL2CPP_TYPE_VALUETYPE:
@@ -2157,18 +2171,14 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
         csThis = ${invokePapi('get_native_holder_ptr')}(info);
     }
     
-    if (Class::IsValuetype(fieldType))
+    if (il2cpp::vm::Class::IsValuetype(fieldType))
     {
         void* storage = nullptr;
-        bool isFieldPtr = true;
         auto expectType = fieldType;
-        if (Class::IsNullable(fieldType))
+        
+        if (il2cpp::vm::Class::IsEnum(fieldType))
         {
-            expectType = Class::GetNullableArgument(fieldType);
-        }
-        if (Class::IsEnum(fieldType))
-        {
-            expectType = Class::GetElementClass(fieldType);
+            expectType = il2cpp::vm::Class::GetElementClass(fieldType);
         }
         
         if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -2179,7 +2189,6 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
             {
                 storage = alloca(expectType->instance_size - sizeof(Il2CppObject));
                 GetFieldValue(csThis, field, offset, storage);
-                isFieldPtr = false;
             }
             else
             {
@@ -2194,7 +2203,18 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
         {
             storage = alloca(expectType->instance_size - sizeof(Il2CppObject));
             GetFieldValue(csThis, field, offset, storage);
-            isFieldPtr = false;
+        }
+        
+        if (il2cpp::vm::Class::IsNullable(fieldType)) // nullable先用nullable类型获取字段内容后，再偏移
+        {
+            if (!NullableHasValue(fieldType, storage))
+            {
+                ${invokePapi('add_return')}(info, ${invokePapi('create_null')}(env));
+                return;
+            }
+            expectType = il2cpp::vm::Class::GetNullableArgument(fieldType);
+            int32_t nullableShift = fieldType->fields[1].offset - sizeof(Il2CppObject);
+            storage = ((char*)storage) + nullableShift;
         }
 
         Il2CppObject* obj = (Il2CppObject*) storage - 1;
@@ -2202,17 +2222,10 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
     
         if (!jsVal) 
         {
-            if (isFieldPtr)
-            {
-                jsVal = ${invokePapi('native_object_to_value')}(env, expectType, storage, false);
-            }
-            else
-            {
-                auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
-                auto buff = new uint8_t[valueSize];
-                memcpy(buff, storage, valueSize);
-                jsVal = ${invokePapi('native_object_to_value')}(env, expectType, buff, true);
-            }
+            auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
+            auto buff = new uint8_t[valueSize];
+            memcpy(buff, storage, valueSize);
+            jsVal = ${invokePapi('native_object_to_value')}(env, expectType, buff, true);
         }
         
         if (jsVal)
@@ -2237,14 +2250,15 @@ static void ReflectionSetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
         csThis = ${invokePapi('get_native_holder_ptr')}(info);
     }
     pesapi_value jsValue = ${invokePapi('get_arg')}(info, 0);
-    if (Class::IsValuetype(fieldType))
+    if (il2cpp::vm::Class::IsValuetype(fieldType))
     {
         if (Class::IsNullable(fieldType))
         {
             void* storage = alloca(fieldType->instance_size - sizeof(Il2CppObject));
-            auto underlyClass = Class::GetNullableArgument(fieldType);
+            auto underlyClass = il2cpp::vm::Class::GetNullableArgument(fieldType);
             uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
-            bool hasValue = GetValueTypeFromJs(apis, env, jsValue, underlyClass, storage);
+            int32_t nullableShift = fieldType->fields[1].offset - sizeof(Il2CppObject);
+            bool hasValue = GetValueTypeFromJs(apis, env, jsValue, underlyClass, ((char*)storage) + nullableShift);
 #ifndef UNITY_2021_1_OR_NEWER
             *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
 #else
@@ -2801,7 +2815,7 @@ static bool RegisterType(Il2CppClass* klass)
                 if (!IsCCtor(method) && !Method::IsGeneric(method))
                 {
                     const char* name = method->name;
-                    if (!(method->flags & METHOD_ATTRIBUTE_PUBLIC))
+                    if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PUBLIC)
                     {
                         name = strrchr(name, '.'); // if Explicit Interface Implementation
                         if (!name) continue;
@@ -2823,6 +2837,7 @@ static bool RegisterType(Il2CppClass* klass)
             for (uint16_t i = 0; i < klass->field_count; i++)
             {
                 FieldInfo* field = &klass->fields[i];
+                if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PUBLIC) continue;
                 bool isStatic = (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
                 std::string signature = (isStatic ? "" : "t");
                 try

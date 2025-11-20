@@ -338,7 +338,7 @@ export function JSValToCSVal(signature, JSName, CSName) {
     Il2CppObject* u${CSName} = DataTransfer::GetPointer<Il2CppObject>(apis, env, ${invokePapi('unboxing')}(env, ${JSName})); // object ref
     Il2CppObject** ${CSName} = &u${CSName};
         `
-    } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype
+    } else if ((signature.startsWith(sigs.StructPrefix)) && signature.endsWith('_')) { //valuetype
         return `    // JSValToCSVal struct
     ${signature}* p${CSName} = DataTransfer::GetPointer<${signature}>(apis, env, ${JSName});
     ${signature} ${CSName} = p${CSName} ? *p${CSName} : ${signature} {};`
