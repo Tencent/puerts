@@ -213,14 +213,32 @@ int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->Int32Value(context).ToChecked();
+    
+    v8::TryCatch trycatch(context->GetIsolate());
+    auto maybe_result = value->Int32Value(context);
+    if (maybe_result.IsNothing() || trycatch.HasCaught()) {
+        if (trycatch.HasCaught()) {
+            trycatch.Reset();
+        }
+        return 0;
+    }
+    return maybe_result.FromJust();
 }
 
 uint32_t pesapi_get_value_uint32(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->Uint32Value(context).ToChecked();
+    
+    v8::TryCatch trycatch(context->GetIsolate());
+    auto maybe_result = value->Uint32Value(context);
+    if (maybe_result.IsNothing() || trycatch.HasCaught()) {
+        if (trycatch.HasCaught()) {
+            trycatch.Reset();
+        }
+        return 0;
+    }
+    return maybe_result.FromJust();
 }
 
 int64_t pesapi_get_value_int64(pesapi_env env, pesapi_value pvalue)
@@ -241,7 +259,16 @@ double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->NumberValue(context).ToChecked();
+    
+    v8::TryCatch trycatch(context->GetIsolate());
+    auto maybe_result = value->NumberValue(context);
+    if (maybe_result.IsNothing() || trycatch.HasCaught()) {
+        if (trycatch.HasCaught()) {
+            trycatch.Reset();
+        }
+        return 0.0;
+    }
+    return maybe_result.FromJust();
 }
 
 const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, char* buf, size_t* bufsize)
@@ -332,13 +359,13 @@ int pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
 int pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
 {
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->IsInt32();
+    return value->IsNumber();
 }
 
 int pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
 {
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->IsUint32();
+    return value->IsNumber();
 }
 
 int pesapi_is_int64(pesapi_env env, pesapi_value pvalue)

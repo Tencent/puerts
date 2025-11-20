@@ -1640,7 +1640,7 @@ __PDUOTF;");
                 Assert.False(test1(jsObj1));
 			});
         }
-/*
+
         [Test]
         public void AutoConvertStringToNumber()
         {
@@ -1655,7 +1655,7 @@ __PDUOTF;");
             ");
             Assert.AreEqual(3001385u, res);
         }
-*/
+
         [Test]
         public void PassBigIntToUInt()
         {

@@ -1568,6 +1568,7 @@ handle_underlying:
                     data.u1 = (uint8_t)${invokePapi('get_value_bool')}(env, jsValue);
                     hasValue = true;
                 }
+                break;
             }
             case IL2CPP_TYPE_U1:
             {
@@ -2028,7 +2029,7 @@ handle_underlying:
             {
                 auto valueSize = parameterKlass->instance_size - sizeof(Il2CppObject);
                 void* storage = alloca(valueSize);
-                bool hasValue = GetValueTypeFromJs(apis, env, jsValue, parameterKlass, storage);
+                bool hasValue = GetValueTypeFromJsForceConvert(apis, env, jsValue, parameterKlass, storage);
                 if (!hasValue)
                 {
                     memset(storage, 0, valueSize);
