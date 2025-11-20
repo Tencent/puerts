@@ -789,7 +789,30 @@ namespace Puerts.UnitTest
         public int? nullableIntField;
     }
 	
-	
+
+    public class BaseWithVirtual
+    {
+        protected virtual bool VirtualMethod(bool f)
+        {
+            return f;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public bool VirtualMethod()
+        {
+            return VirtualMethod(true);
+        }
+    }
+
+    public class DerivedOverrideVirtual : BaseWithVirtual
+    {
+        [UnityEngine.Scripting.Preserve]
+        protected override bool VirtualMethod(bool f)
+        {
+            return f;
+        }
+    }
+
     [TestFixture]
     public class CrossLangTest
     {
@@ -1711,6 +1734,18 @@ __PDUOTF;");
                     AssertAndPrint(`after set check obj.nullableIntField ${ obj.nullableIntField }`, obj.nullableIntField == 500);
                 })()
             ");
+        }
+
+        [Test]
+        public void TestDerivedOverrideVirtual()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<bool>(@"
+                (function() {
+                    return new CS.Puerts.UnitTest.DerivedOverrideVirtual().VirtualMethod();
+                })()
+            ");
+            Assert.AreEqual(true, res);
         }
 
     }
