@@ -110,7 +110,7 @@ function ExecuteModule(fileName: string) {
         return {};
     }
     if (!loader) {
-        loader = (globalThis as any).jsEnv.loader;
+        loader = (globalThis as any).jsEnv.GetLoader();
         loaderResolve = loader.Resolve ? (function(fileName: string, to: string = "") {
             const resolvedName = loader.Resolve(fileName, to);
             if (!resolvedName) {
