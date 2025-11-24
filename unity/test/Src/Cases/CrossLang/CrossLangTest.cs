@@ -1812,7 +1812,6 @@ __PDUOTF;");
             FieldClass2.ObjCount = 0;
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval("CS.Puerts.UnitTest.StructWithObjectField, CS.Puerts.UnitTest.FieldStruct, CS.Puerts.UnitTest.FieldClass");
-            UnityEngine.Debug.Log("TestObjectFieldRefAStruct 1");
             var res = jsEnv.Eval<int>(@"
                 globalThis.__TestObjectFieldRefAStruct = new CS.Puerts.UnitTest.StructWithObjectField();
                 globalThis.__StructWithObjectFieldNested = new CS.Puerts.UnitTest.StructWithObjectFieldNested();
@@ -1826,7 +1825,6 @@ __PDUOTF;");
                 })()
                 __TestObjectFieldRefAStruct.obj.a;
             ");
-            UnityEngine.Debug.Log("TestObjectFieldRefAStruct 2");
 
             jsEnv.Backend.LowMemoryNotification();
             Assert.AreEqual(8766, res);
