@@ -1844,7 +1844,6 @@ __PDUOTF;");
             
 
             res = jsEnv.Eval<int>("__TestObjectFieldRefAStruct.obj.a;");
-            UnityEngine.Debug.Log("TestObjectFieldRefAStruct 3");
             Assert.AreEqual(8766, res);
 
             jsEnv.Eval("__TestObjectFieldRefAStruct.obj = new CS.Puerts.UnitTest.FieldClass()");
