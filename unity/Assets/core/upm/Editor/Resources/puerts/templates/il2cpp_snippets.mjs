@@ -186,7 +186,7 @@ export function getThis(signature) {
     auto ptrType = (Il2CppClass*) ${invokePapi('get_native_holder_typeid')}(info);
     if (il2cpp::vm::Class::IsValuetype(ptrType))
     {
-        self = il2cpp::vm::Object::Box(ptrType, self);
+        self = DataTransfer::GetValueTypeForCSharp(ptrType, self);
     }
 `;
     } else {

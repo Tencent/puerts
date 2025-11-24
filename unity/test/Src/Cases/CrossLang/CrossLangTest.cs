@@ -813,6 +813,42 @@ namespace Puerts.UnitTest
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
+    public struct FieldStruct
+    {
+        public int b;
+        public int a;
+        public object obj;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class FieldClass
+    {
+        public static int ObjCount = 0;
+        public FieldClass()
+        {
+            UnityEngine.Debug.Log("FieldClass Constructor>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            ObjCount++;
+        }
+        ~FieldClass()
+        {
+            UnityEngine.Debug.Log("FieldClass Destructor>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            ObjCount--;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct StructWithObjectField
+    {
+        public TestEnum testEnum;
+        public byte TabEnum;
+        public uint eqrdeq;
+        public int vaq;
+        public object obj;
+        public TestEnum gdfaqw;
+        public TestEnum ggdasq;
+    }
+
     [TestFixture]
     public class CrossLangTest
     {
@@ -1746,6 +1782,53 @@ __PDUOTF;");
                 })()
             ");
             Assert.AreEqual(true, res);
+        }
+
+
+        [Test]
+        public void TestObjectFieldRefAStruct()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval("CS.Puerts.UnitTest.StructWithObjectField, CS.Puerts.UnitTest.FieldStruct, CS.Puerts.UnitTest.FieldClass");
+            UnityEngine.Debug.Log("TestObjectFieldRefAStruct 1");
+            var res = jsEnv.Eval<int>(@"
+                globalThis.__TestObjectFieldRefAStruct = new CS.Puerts.UnitTest.StructWithObjectField();
+                (function() {
+                    const o = new CS.Puerts.UnitTest.FieldStruct();
+                    o.a = 8766
+                    __TestObjectFieldRefAStruct.obj = o;
+                })()
+                __TestObjectFieldRefAStruct.obj.a;
+            ");
+            UnityEngine.Debug.Log("TestObjectFieldRefAStruct 2");
+
+            jsEnv.Backend.LowMemoryNotification();
+            Assert.AreEqual(8766, res);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            jsEnv.Eval(@"
+                 (function() {
+                    for (let i = 0; i < 1000; i++) {
+                        const o = new CS.Puerts.UnitTest.FieldStruct();
+                        o.a = i
+                    }
+                 })()
+             ");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            
+
+            res = jsEnv.Eval<int>("__TestObjectFieldRefAStruct.obj.a;");
+            UnityEngine.Debug.Log("TestObjectFieldRefAStruct 3");
+            Assert.AreEqual(8766, res);
+
+            FieldClass.ObjCount = 0;
+            jsEnv.Eval("__TestObjectFieldRefAStruct.obj = new CS.Puerts.UnitTest.FieldClass()");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            Assert.AreEqual(1, FieldClass.ObjCount);
         }
 
     }
