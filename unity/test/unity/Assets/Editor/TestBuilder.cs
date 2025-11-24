@@ -85,23 +85,12 @@ public class TestBuilder
             Debug.Log("Build failed: " + summary.outputPath);
         }
     }
-	
-	public static void BuildAndroidX64()
-    {
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
-		BuildAndroid();
-	}
-	
-	public static void BuildAndroidArm64()
-    {
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-		BuildAndroid();
-	}
     
-    private static void BuildAndroid()
+    public static void BuildAndroid()
     {
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.tencent.puerts_test");
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
 
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
