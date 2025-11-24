@@ -827,12 +827,10 @@ namespace Puerts.UnitTest
         public static int ObjCount = 0;
         public FieldClass()
         {
-            UnityEngine.Debug.Log("FieldClass Constructor>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
             ObjCount++;
         }
         ~FieldClass()
         {
-            UnityEngine.Debug.Log("FieldClass Destructor>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
             ObjCount--;
         }
     }
@@ -848,6 +846,28 @@ namespace Puerts.UnitTest
         public TestEnum gdfaqw;
         public TestEnum ggdasq;
     }
+
+    [UnityEngine.Scripting.Preserve]
+    public class FieldClass2
+    {
+        public static int ObjCount = 0;
+        public FieldClass2()
+        {
+            ObjCount++;
+        }
+        ~FieldClass2()
+        {
+            ObjCount--;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct StructWithObjectFieldNested
+    {
+        public int abc;
+        public StructWithObjectField nested;
+    }
+
 
     [TestFixture]
     public class CrossLangTest
@@ -1788,15 +1808,21 @@ __PDUOTF;");
         [Test]
         public void TestObjectFieldRefAStruct()
         {
+            FieldClass.ObjCount = 0;
+            FieldClass2.ObjCount = 0;
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval("CS.Puerts.UnitTest.StructWithObjectField, CS.Puerts.UnitTest.FieldStruct, CS.Puerts.UnitTest.FieldClass");
             UnityEngine.Debug.Log("TestObjectFieldRefAStruct 1");
             var res = jsEnv.Eval<int>(@"
                 globalThis.__TestObjectFieldRefAStruct = new CS.Puerts.UnitTest.StructWithObjectField();
+                globalThis.__StructWithObjectFieldNested = new CS.Puerts.UnitTest.StructWithObjectFieldNested();
                 (function() {
                     const o = new CS.Puerts.UnitTest.FieldStruct();
                     o.a = 8766
                     __TestObjectFieldRefAStruct.obj = o;
+                    const n =  __StructWithObjectFieldNested.nested; // valuetype is copy by value
+                    n.obj =  new CS.Puerts.UnitTest.FieldClass2();
+                    __StructWithObjectFieldNested.nested = n;
                 })()
                 __TestObjectFieldRefAStruct.obj.a;
             ");
@@ -1823,12 +1849,26 @@ __PDUOTF;");
             UnityEngine.Debug.Log("TestObjectFieldRefAStruct 3");
             Assert.AreEqual(8766, res);
 
-            FieldClass.ObjCount = 0;
             jsEnv.Eval("__TestObjectFieldRefAStruct.obj = new CS.Puerts.UnitTest.FieldClass()");
             jsEnv.Backend.LowMemoryNotification();
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            Assert.AreEqual(1, FieldClass.ObjCount);
+            TestHelper.AssertAndPrint("FieldClass", 1, FieldClass.ObjCount);
+            TestHelper.AssertAndPrint("FieldClass2", 1, FieldClass2.ObjCount);
+
+            jsEnv.Eval(@"
+                (function() {
+                    __TestObjectFieldRefAStruct.obj = null
+                    const n =  __StructWithObjectFieldNested.nested; // valuetype is copy by value
+                    n.obj =  null;
+                    __StructWithObjectFieldNested.nested = n;
+                })()
+            ");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            TestHelper.AssertAndPrint("FieldClass", 0, FieldClass.ObjCount);
+            TestHelper.AssertAndPrint("FieldClass2", 0, FieldClass2.ObjCount);
         }
 
     }
