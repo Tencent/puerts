@@ -308,7 +308,7 @@ namespace Puerts
                     var ctors = type.GetConstructors()
                         .Where(ctorInfo => !ctorInfo.GetParameters().Any(pi => parameterTypeNotAcceptable(pi.ParameterType)))
                         .ToArray();
-                    if (ctors.Length > 0)
+                    if (ctors.Length > 0 || type.IsValueType)
                     {
                         ctorWrap = ExpressionsWrap.BuildConstructorWrap(type, ctors, false);
                     }
