@@ -94,12 +94,20 @@ const Il2CppClass* CSharpTypeToTypeId(Il2CppObject *type)
 
 static void* ObjectAllocate(Il2CppClass *klass)
 {
-    if (Class::IsValuetype(klass))
+    if (il2cpp::vm::Class::IsValuetype(klass))
     {
-        auto size = klass->native_size > 0 ? klass->native_size : (klass->instance_size - sizeof(Il2CppObject));
-        auto buff = (void*)(new uint8_t[size]);
-        memset(buff, 0, size);
-        return buff;
+        if (klass->has_references)
+        {
+            auto obj = il2cpp::vm::Object::New(klass);
+            return il2cpp::vm::Object::Unbox(obj);
+        }
+        else
+        {
+            auto size = klass->native_size > 0 ? klass->native_size : (klass->instance_size - sizeof(Il2CppObject));
+            auto buff = (void*)(new uint8_t[size]);
+            memset(buff, 0, size);
+            return buff;
+        }
     } else {
         auto obj = il2cpp::vm::Object::New(klass);
         return obj;
@@ -577,7 +585,7 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
                 auto ptrType = (Il2CppClass*) ${invokePapi('get_native_holder_typeid')}(info);
                 if (Class::IsValuetype(ptrType))
                 {
-                    self = Object::Box(ptrType, self);
+                    self = DataTransfer::GetValueTypeForCSharp(ptrType, self);
                 }
             }
         }
@@ -843,7 +851,7 @@ static void* CtorCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         }
     }
     
-    if (isValueType)
+    if (isValueType && !classInfo->TypeId->has_references)
     {
         ValueTypeFree(self);
     }
@@ -1083,9 +1091,7 @@ pesapi_value TranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppC
         len = targetClass->instance_size - sizeof(Il2CppObject);
     }
 
-    auto buff = new uint8_t[len];
-    memcpy(buff, Object::Unbox(obj), len);
-    return ${invokePapi('native_object_to_value')}(env, targetClass, buff, true);
+    return DataTransfer::CopyValueType(apis, env, targetClass, Object::Unbox(obj), len);
 }
 
 pesapi_value TryTranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj)
@@ -1360,7 +1366,7 @@ handle_underlying:
             }
             if (Class::IsAssignableFrom(klass, objClass))
             {
-                return Class::IsValuetype(objClass) ? Object::Box(objClass, ptr) : (Il2CppObject*)ptr;
+                return Class::IsValuetype(objClass) ? DataTransfer::GetValueTypeForCSharp(objClass, ptr) : (Il2CppObject*)ptr;
             }
             else if(objClass)
             {
@@ -1403,7 +1409,7 @@ handle_underlying:
         default:
             IL2CPP_ASSERT(0);
     }
-    return Object::Box(klass, toBox);
+    return DataTransfer::GetValueTypeForCSharp(klass, toBox);
 }
 
 static bool IsDeadUnityEngineObject(Il2CppObject *obj)
@@ -1524,9 +1530,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
         len = targetClass->instance_size - sizeof(Il2CppObject);
     }
 
-    auto buff = new uint8_t[len];
-    memcpy(buff, ptr, len);
-    return ${invokePapi('native_object_to_value')}(env, targetClass, buff, true);
+    return DataTransfer::CopyValueType(apis, env, targetClass, ptr, len);
 }
 
 static bool GetValueTypeFromJsInternal(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage, bool forceConvert)
@@ -2224,9 +2228,7 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
         if (!jsVal) 
         {
             auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
-            auto buff = new uint8_t[valueSize];
-            memcpy(buff, storage, valueSize);
-            jsVal = ${invokePapi('native_object_to_value')}(env, expectType, buff, true);
+            jsVal = DataTransfer::CopyValueType(apis, env, expectType, storage, valueSize);
         }
         
         if (jsVal)
@@ -2457,7 +2459,7 @@ static void* OnCsObjectEnter(void* ptr, JsClassInfo* classInfo, JsEnvPrivate* js
     {
         if (classInfo->TypeId->has_references)
         {
-            return reinterpret_cast<void*>(jsEnvPrivate->RefCSObject(Object::Box(classInfo->TypeId, ptr)));
+            return reinterpret_cast<void*>(jsEnvPrivate->RefCSObject(((Il2CppObject*)ptr) - 1));
         }
         return nullptr;
     }
@@ -2923,7 +2925,7 @@ static bool RegisterType(Il2CppClass* klass)
     }
     
     g_registry_api->define_class(g_registry, classInfo->TypeId, classInfo->SuperTypeId, nullptr, classInfo->TypeId->name,
-        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType ? &PApiFree : (pesapi_finalize)nullptr, classInfo, false);
+        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType && !classInfo->TypeId->has_references ? &PApiFree : (pesapi_finalize)nullptr, classInfo, false);
 
     size_t propertiesCount = gseters.size() + methods.size() + classInfo->Fields.size();
     int staticPropertyCount = 0;

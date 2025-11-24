@@ -21,10 +21,7 @@ function genGetField(fieldWrapperInfo) {
 		else
 		{
 			return `${code}
-    auto _valueSize = sizeof(${signature});
-    auto _buff = new uint8_t[_valueSize];
-    memcpy(_buff, _src, _valueSize);
-	${invokePapi('add_return')}(info, ${invokePapi('native_object_to_value')}(env, TIret, _buff, true));
+	${invokePapi('add_return')}(info, DataTransfer::CopyValueType<${signature}>(apis, env, *_src, TIret));
     `;
 		}
 		

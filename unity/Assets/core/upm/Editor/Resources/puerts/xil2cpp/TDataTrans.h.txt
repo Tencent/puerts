@@ -137,23 +137,41 @@ struct DataTransfer
         }
         return static_cast<T*>(${invokePapi('get_native_object_ptr')}(env, value));
     }
-    
-    template <typename T>
-    static pesapi_value CopyValueType(struct pesapi_ffi* apis, pesapi_env env, const T &v, const void* type_id)
+	
+    static pesapi_value CopyValueType(struct pesapi_ffi* apis, pesapi_env env, const Il2CppClass* type_id, const void* ptr, size_t size)
     {
-        T* ret = new T;
-        memcpy(ret, &v, sizeof(T));
-        return ${invokePapi('native_object_to_value')}(env, type_id, ret, true);
+        if (type_id->has_references)
+        {
+            Il2CppObject* obj = il2cpp::vm::Object::Box(const_cast<Il2CppClass *>(type_id), const_cast<void*>(ptr));
+            return ${invokePapi('native_object_to_value')}(env, type_id, obj + 1, true);
+        }
+        else
+        {
+            uint8_t* buff = new uint8_t[size];
+            memcpy(buff, ptr, size);
+            return ${invokePapi('native_object_to_value')}(env, type_id, buff, true);
+        }
+    }
+	
+    static Il2CppObject* GetValueTypeForCSharp(const Il2CppClass* type_id, const void* jsPtr)
+    {
+        return (type_id->has_references) ? (Il2CppObject*)((((char*)jsPtr) - sizeof(Il2CppObject))) : il2cpp::vm::Object::Box(const_cast<Il2CppClass*>(type_id), const_cast<void*>(jsPtr));
     }
     
     template <typename T>
-    static pesapi_value CopyNullableValueType(struct pesapi_ffi* apis, pesapi_env env, const T &v, const void* type_id)
+    static pesapi_value CopyValueType(struct pesapi_ffi* apis, pesapi_env env, const T &v, const Il2CppClass* type_id)
+    {
+        return CopyValueType(apis, env, type_id, &v, sizeof(T));
+    }
+    
+    template <typename T>
+    static pesapi_value CopyNullableValueType(struct pesapi_ffi* apis, pesapi_env env, const T &v, const Il2CppClass* type_id)
     {
         if (!v.hasValue) 
         {
             return ${invokePapi('create_null')}(env);
         }
-        return CopyValueType(apis, env, v.p1, type_id);
+        return CopyValueType(apis, env, v.p1, il2cpp::vm::Class::GetNullableArgument(type_id));
     }
 };
 

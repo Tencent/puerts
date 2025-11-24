@@ -861,6 +861,62 @@ namespace Puerts.UnitTest
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
+    public struct FieldStruct
+    {
+        public int b;
+        public int a;
+        public object obj;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class FieldClass
+    {
+        public static int ObjCount = 0;
+        public FieldClass()
+        {
+            ObjCount++;
+        }
+        ~FieldClass()
+        {
+            ObjCount--;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct StructWithObjectField
+    {
+        public TestEnum testEnum;
+        public byte TabEnum;
+        public uint eqrdeq;
+        public int vaq;
+        public object obj;
+        public TestEnum gdfaqw;
+        public TestEnum ggdasq;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class FieldClass2
+    {
+        public static int ObjCount = 0;
+        public FieldClass2()
+        {
+            ObjCount++;
+        }
+        ~FieldClass2()
+        {
+            ObjCount--;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct StructWithObjectFieldNested
+    {
+        public int abc;
+        public StructWithObjectField nested;
+    }
+
+
     [TestFixture]
     public class CrossLangTest
     {
@@ -1826,6 +1882,70 @@ __PDUOTF;");
                 })()
             ");
             Assert.AreEqual(true, res);
+        }
+
+
+        [Test]
+        public void TestObjectFieldRefAStruct()
+        {
+            FieldClass.ObjCount = 0;
+            FieldClass2.ObjCount = 0;
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval("CS.Puerts.UnitTest.StructWithObjectField, CS.Puerts.UnitTest.FieldStruct, CS.Puerts.UnitTest.FieldClass");
+            var res = jsEnv.Eval<int>(@"
+                globalThis.__TestObjectFieldRefAStruct = new CS.Puerts.UnitTest.StructWithObjectField();
+                globalThis.__StructWithObjectFieldNested = new CS.Puerts.UnitTest.StructWithObjectFieldNested();
+                (function() {
+                    const o = new CS.Puerts.UnitTest.FieldStruct();
+                    o.a = 8766
+                    __TestObjectFieldRefAStruct.obj = o;
+                    const n =  __StructWithObjectFieldNested.nested; // valuetype is copy by value
+                    n.obj =  new CS.Puerts.UnitTest.FieldClass2();
+                    __StructWithObjectFieldNested.nested = n;
+                })()
+                __TestObjectFieldRefAStruct.obj.a;
+            ");
+
+            jsEnv.Backend.LowMemoryNotification();
+            Assert.AreEqual(8766, res);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            jsEnv.Eval(@"
+                 (function() {
+                    for (let i = 0; i < 1000; i++) {
+                        const o = new CS.Puerts.UnitTest.FieldStruct();
+                        o.a = i
+                    }
+                 })()
+             ");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            
+
+            res = jsEnv.Eval<int>("__TestObjectFieldRefAStruct.obj.a;");
+            Assert.AreEqual(8766, res);
+
+            jsEnv.Eval("__TestObjectFieldRefAStruct.obj = new CS.Puerts.UnitTest.FieldClass()");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            TestHelper.AssertAndPrint("FieldClass", 1, FieldClass.ObjCount);
+            TestHelper.AssertAndPrint("FieldClass2", 1, FieldClass2.ObjCount);
+
+            jsEnv.Eval(@"
+                (function() {
+                    __TestObjectFieldRefAStruct.obj = null
+                    const n =  __StructWithObjectFieldNested.nested; // valuetype is copy by value
+                    n.obj =  null;
+                    __StructWithObjectFieldNested.nested = n;
+                })()
+            ");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            TestHelper.AssertAndPrint("FieldClass", 0, FieldClass.ObjCount);
+            TestHelper.AssertAndPrint("FieldClass2", 0, FieldClass2.ObjCount);
         }
 
     }
