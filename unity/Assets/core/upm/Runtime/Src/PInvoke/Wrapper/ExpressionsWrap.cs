@@ -1475,9 +1475,22 @@ namespace Puerts
             
         }
 
+        class DefaultStructConstructor
+        {
+            public DefaultStructConstructor()
+            {
+            }
+        }
+
         public static pesapi_constructor BuildConstructorWrap(Type type, ConstructorInfo[] constructorInfos, bool forceCheckArgs)
         {
-            return BuildMethodBaseWrap<pesapi_constructor>(type, constructorInfos, forceCheckArgs, (contextOutside, methodBase, info, self, getJsArg) =>
+            var methodBases = constructorInfos.ToList<MethodBase>();
+            if (type.IsValueType && !constructorInfos.Any(ctorInfo => ctorInfo.GetParameters().Length == 0))
+            {
+                methodBases.Add(typeof(DefaultStructConstructor).GetConstructor(Type.EmptyTypes)); // default constructor
+            }
+
+            return BuildMethodBaseWrap<pesapi_constructor>(type, methodBases.ToArray(), forceCheckArgs, (contextOutside, methodBase, info, self, getJsArg) =>
             {
                 var constructorInfo = methodBase as ConstructorInfo;
 
@@ -1491,27 +1504,41 @@ namespace Puerts
                     Env = contextOutside.Env
                 };
 
-                var tempVariables = constructorInfo.GetParameters().Select(pi => Expression.Variable(pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType)).ToArray();
-                variables.AddRange(tempVariables);
-                var assignments = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => Expression.Assign(tempVariables[index], scriptToNative(context, pi, index, info, getJsArg(index))));
-                blockExpressions.AddRange(assignments);
+                ParameterExpression[] tempVariables = null;
+                Expression callNew = null;
+                bool isStructDefaultCtor = constructorInfo.DeclaringType == typeof(DefaultStructConstructor);
 
-                var callNew = Expression.New(constructorInfo, tempVariables);
+                if (!isStructDefaultCtor)
+                {
+                    tempVariables = constructorInfo.GetParameters().Select(pi => Expression.Variable(pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType)).ToArray();
+                    variables.AddRange(tempVariables);
+                    var assignments = constructorInfo.GetParameters().Select((ParameterInfo pi, int index) => Expression.Assign(tempVariables[index], scriptToNative(context, pi, index, info, getJsArg(index))));
+                    blockExpressions.AddRange(assignments);
+
+                    callNew = Expression.New(constructorInfo, tempVariables);
+                }
+                else
+                {
+                    callNew = Expression.Default(type);
+                }
 
                 var result = Expression.Variable(typeof(IntPtr));
                 variables.Add(result);
-                var isValueType = constructorInfo.DeclaringType.IsValueType;
-                var addToObjectPoolMethod = isValueType ? Helpper.MakeGenericMethod(nameof(Helpper.AddValueType), constructorInfo.DeclaringType) : Helpper.GetMethod(nameof(Helpper.FindOrAddObject));
+                var isValueType = type.IsValueType;
+                var addToObjectPoolMethod = isValueType ? Helpper.MakeGenericMethod(nameof(Helpper.AddValueType), type) : Helpper.GetMethod(nameof(Helpper.FindOrAddObject));
                 var addToObjectPool = Expression.Call(addToObjectPoolMethod, context.Apis, context.Env, callNew);
                 blockExpressions.Add(Expression.Assign(result, addToObjectPool));
 
-                var parameters = methodBase.GetParameters();
-                for (int i = 0; i < parameters.Length; ++i)
+                if (!isStructDefaultCtor)
                 {
-                    var parameter = parameters[i];
-                    if (parameter.ParameterType.IsByRef)
+                    var parameters = methodBase.GetParameters();
+                    for (int i = 0; i < parameters.Length; ++i)
                     {
-                        blockExpressions.Add(callPApi(context.Apis, "update_boxed_value", context.Env, getJsArg(i), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
+                        var parameter = parameters[i];
+                        if (parameter.ParameterType.IsByRef)
+                        {
+                            blockExpressions.Add(callPApi(context.Apis, "update_boxed_value", context.Env, getJsArg(i), nativeToScript(context, parameter.ParameterType.GetElementType(), tempVariables[i])));
+                        }
                     }
                 }
 
