@@ -154,6 +154,7 @@ jobs:
           cp python-3.14.0-aarch64-linux-android/prefix/lib/lib*.so ../../Assets/core/upm/Plugins/Android/libs/arm64-v8a
           mkdir -p ../../test/unity/Assets/StreamingAssets/python/lib
           cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 ../../test/unity/Assets/StreamingAssets/python/lib/
+          rm -rf ../../test/unity/Assets/StreamingAssets/python/lib/python3.14/lib-dynload/
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
         with:
