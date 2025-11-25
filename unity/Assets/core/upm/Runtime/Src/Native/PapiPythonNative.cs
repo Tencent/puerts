@@ -31,5 +31,8 @@ namespace Puerts
     
         [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void RunGC(IntPtr envRef);
+
+        [DllImport(PAPIDLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int InitPythonByHome([MarshalAs(UnmanagedType.LPUTF8Str)] string home);
     }
 }

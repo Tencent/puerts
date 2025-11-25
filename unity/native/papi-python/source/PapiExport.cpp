@@ -23,6 +23,27 @@ extern "C" {
         return &pesapi::pythonimpl::g_pesapi_ffi;
     }
 
+    PESAPI_MODULE_EXPORT int InitPythonByHome(const char* home)
+    {
+        if (Py_IsInitialized()) {
+            return 0;
+        }
+        PyConfig config;
+        PyStatus status;
+        PyConfig_InitPythonConfig(&config);
+        status = PyConfig_SetBytesString(&config, &config.home, home);
+        if (PyStatus_Exception(status))
+        {
+            return -1;
+        }
+        status = Py_InitializeFromConfig(&config);
+        if(PyStatus_Exception(status))
+        {
+            return -2;
+        }
+        return 0;
+    }
+
     PESAPI_MODULE_EXPORT pesapi_env_ref CreatePythonPapiEnvRef()
     {
         if (!Py_IsInitialized()) {
