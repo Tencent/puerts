@@ -58,6 +58,7 @@ PS_FINAL=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d 
 if [ -n "$PS_FINAL" ]; then
   echo "App did not exit in time, killing..."
   adb shell am force-stop com.tencent.puerts_test
+  exit 1
 fi
 
 echo "Stopping logcat capture..."
