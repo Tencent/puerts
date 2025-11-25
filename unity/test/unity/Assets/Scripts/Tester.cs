@@ -91,9 +91,27 @@ public class Tester : MonoBehaviour {
         return fileList;
     }
 
-    private IEnumerator CopyPythonDir()
+    // 获取Python目录路径（Android使用内部存储，其他平台使用persistentDataPath）
+    private string GetPythonDir()
     {
-        string _destDir = Path.Combine(Application.persistentDataPath, "python");
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // 在Android上使用getFilesDir()，这个路径在permitted_paths中，允许加载.so文件
+        using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        using (AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+        using (AndroidJavaObject filesDir = currentActivity.Call<AndroidJavaObject>("getFilesDir"))
+        {
+            string filesDirPath = filesDir.Call<string>("getAbsolutePath");
+            string pythonDir = Path.Combine(filesDirPath, "python");
+            Debug.Log($"Using Android internal storage: {pythonDir}");
+            return pythonDir;
+        }
+#else
+        return Path.Combine(Application.persistentDataPath, "python");
+#endif
+    }
+
+    private IEnumerator CopyPythonDir(string _destDir)
+    {
         // 先删除旧目录（防止脏数据）
         if (Directory.Exists(_destDir))
             Directory.Delete(_destDir, true);
@@ -178,15 +196,19 @@ public class Tester : MonoBehaviour {
         Action OnEnd
     )
     {
-        if (Application.platform == RuntimePlatform.Android)
+        /*
+		if (Application.platform == RuntimePlatform.Android)
         {
+            string pythonDir = GetPythonDir();
             if (PlayerPrefs.GetInt("PythonInstalled", 0) != 1)
             {
-                yield return StartCoroutine(CopyPythonDir());
+                yield return StartCoroutine(CopyPythonDir(pythonDir));
             }
-            int res = Puerts.PapiPythonNative.InitPythonByHome(Path.Combine(Application.persistentDataPath, "python"));
-            UnityEngine.Debug.Log("InitPythonByHome res: " + res);
+            
+            int res = Puerts.PapiPythonNative.InitPythonByHome(pythonDir);
+            UnityEngine.Debug.Log($"InitPythonByHome with path: {pythonDir}, result: {res}");
         }
+		*/
 
         UnityEngine.Debug.Log("Start RunTest");
         var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
