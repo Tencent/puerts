@@ -155,7 +155,7 @@ jobs:
           mkdir -p python/lib
           cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
           zip -r -q python.zip python/
-          echo "python.zip ready"
+          mkdir -p ../../test/unity/Assets/StreamingAssets/
           cp python.zip ../../test/unity/Assets/StreamingAssets/
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
