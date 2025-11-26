@@ -1,4 +1,4 @@
-#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID
+#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID || FORCE_TEST_PYTHON
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 Tencent.  All rights reserved.

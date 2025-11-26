@@ -196,7 +196,7 @@ public class Tester : MonoBehaviour {
         Action OnEnd
     )
     {
-        /*
+#if FORCE_TEST_PYTHON
 		if (Application.platform == RuntimePlatform.Android)
         {
             string pythonDir = GetPythonDir();
@@ -208,7 +208,7 @@ public class Tester : MonoBehaviour {
             int res = Puerts.PapiPythonNative.InitPythonByHome(pythonDir);
             UnityEngine.Debug.Log($"InitPythonByHome with path: {pythonDir}, result: {res}");
         }
-		*/
+#endif
 
         UnityEngine.Debug.Log("Start RunTest");
         var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
