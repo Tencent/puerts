@@ -152,9 +152,10 @@ jobs:
           tar -xvf python-3.14.0-aarch64-linux-android.tar.gz -C python-3.14.0-aarch64-linux-android
           node ../../cli make --platform android --arch arm64 --config Debug
           cp python-3.14.0-aarch64-linux-android/prefix/lib/lib*.so ../../Assets/core/upm/Plugins/Android/libs/arm64-v8a
-#          mkdir -p ../../test/unity/Assets/StreamingAssets/python/lib
-#          cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 ../../test/unity/Assets/StreamingAssets/python/lib/
-#          rm -rf ../../test/unity/Assets/StreamingAssets/python/lib/python3.14/lib-dynload/
+          mkdir -p python/lib
+          cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
+          zip -r python.zip python/
+          cp python.zip ../../test/unity/Assets/StreamingAssets/
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
         with:
@@ -204,6 +205,7 @@ jobs:
         shell: bash
         run: |
           cd unity/test/unity
+          echo "-define:FORCE_TEST_PYTHON" > Assets/csc.rsp
           ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
           ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
       - name: Upload apk
