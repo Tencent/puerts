@@ -1552,7 +1552,7 @@ handle_underlying:
                     data.u1 = (uint8_t)${invokePapi('get_value_bool')}(env, jsValue);
                     hasValue = true;
                 }
-				break;
+                break;
             }
             case IL2CPP_TYPE_U1:
             {
