@@ -144,17 +144,18 @@ jobs:
           cd ../papi-python
           wget -O python-3.14.0-x86_64-linux-android.tar.gz -q https://www.python.org/ftp/python/3.14.0/python-3.14.0-x86_64-linux-android.tar.gz
           mkdir -p python-3.14.0-x86_64-linux-android
-          tar -xvf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android
+          tar -xzf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android
           node ../../cli make --platform android --arch x64 --config Debug
           cp python-3.14.0-x86_64-linux-android/prefix/lib/lib*.so ../../Assets/core/upm/Plugins/Android/libs/x86_64
           wget -O python-3.14.0-aarch64-linux-android.tar.gz -q https://www.python.org/ftp/python/3.14.0/python-3.14.0-aarch64-linux-android.tar.gz
           mkdir -p python-3.14.0-aarch64-linux-android
-          tar -xvf python-3.14.0-aarch64-linux-android.tar.gz -C python-3.14.0-aarch64-linux-android
+          tar -xzf python-3.14.0-aarch64-linux-android.tar.gz -C python-3.14.0-aarch64-linux-android
           node ../../cli make --platform android --arch arm64 --config Debug
           cp python-3.14.0-aarch64-linux-android/prefix/lib/lib*.so ../../Assets/core/upm/Plugins/Android/libs/arm64-v8a
           mkdir -p python/lib
           cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
-          zip -r python.zip python/
+          zip -r -q python.zip python/
+          echo "python.zip ready"
           cp python.zip ../../test/unity/Assets/StreamingAssets/
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
