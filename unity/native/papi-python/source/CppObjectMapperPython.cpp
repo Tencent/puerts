@@ -80,12 +80,10 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
             }
             else if (callbackInfo.res)
             {
-                Py_INCREF(callbackInfo.res);
                 result = callbackInfo.res;
             }
             else
             {
-                Py_INCREF(Py_None);
                 result = Py_None;
             }
             
@@ -242,12 +240,10 @@ static PyObject* PyMethodObject_call(PyMethodObject* self, PyObject* args, PyObj
     }
     else if (callbackInfo.res)
     {
-        Py_INCREF(callbackInfo.res);
         result = callbackInfo.res;
     }
     else
     {
-        Py_INCREF(Py_None);
         result = Py_None;
     }
     
@@ -357,7 +353,7 @@ static PyObject* propGetter(PyObject* self, void* closure)
     }
     if (callbackInfo.res)
     {
-        Py_INCREF(callbackInfo.res);
+
         return callbackInfo.res;
     }
     Py_RETURN_NONE;
@@ -454,7 +450,6 @@ static PyObject* staticPropGetter(PyObject* self, void* closure)
     }
     if (callbackInfo.res)
     {
-        Py_INCREF(callbackInfo.res);
         return callbackInfo.res;
     }
     Py_RETURN_NONE;
@@ -522,7 +517,6 @@ static PyObject* staticVariableGetter(PyObject* self, PyObject* args) {
         return nullptr;
     }
     if (callbackInfo.res) {
-        Py_INCREF(callbackInfo.res);
         return callbackInfo.res;
     }
     Py_RETURN_NONE;
@@ -681,7 +675,12 @@ static void DynObj_dealloc(DynObj* self) {
     if (self->classDefinition && self->classDefinition->Finalize && self->objectPtr && self->mapper) {
         self->classDefinition->Finalize(&g_pesapi_ffi, (void*)self->objectPtr, self->classDefinition->Data, (void*)(self->mapper->GetEnvPrivate()));
     }
-    Py_TYPE(self)->tp_free((PyObject*)self);
+    
+    // Must get type before calling tp_free, as tp_free may invalidate self
+    PyTypeObject* type = Py_TYPE(self);
+    type->tp_free((PyObject*)self);
+    // For heap types, decrement the type's reference count to match the increment done by tp_alloc
+    Py_DECREF(type);
 }
 
 static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
@@ -791,7 +790,6 @@ static PyObject* DynObj_call_method(PyObject* self, PyObject* args)
         return nullptr;
     }
     if (cbinfo.res) {
-        Py_INCREF(cbinfo.res);
         return cbinfo.res;
     }
     Py_RETURN_NONE;
@@ -865,7 +863,6 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     if (it != TypeIdToFunctionMap.end())
     {
         PyObject* cls = it->second;
-        Py_INCREF(cls);
         return cls;
     }
 

@@ -171,7 +171,7 @@ static void CtorCountSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info in
 static void GetSelfWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);;
+    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);
     apis->add_return(info, apis->native_object_to_value(env, &g_dummy_type_id , obj, false));
 }
 
@@ -630,15 +630,21 @@ auto code = R"(
 
 TEST_F(PApiBaseTest, MutiObject)
 {
+    TestStruct::ctor_count = 0;
+    TestStruct::dtor_count = 0;
     auto env = apis->get_env_from_ref(env_ref);
-
-    auto code = R"((lambda: [(TestStruct := loadClass('TestStruct')),[ (obj := TestStruct(123), self_obj := obj.GetSelf()) for i in range(1000) ]])())";
+    auto code = R"((lambda: (TestStruct := loadClass('TestStruct'), [TestStruct(123).GetSelf() for i in range(1000)], None)[-1])())";
+    auto scopeInner = apis->open_scope(env_ref);
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
-    if (apis->has_caught(scope))
+    apis->close_scope(scopeInner);
+    EXPECT_EQ(1000, TestStruct::ctor_count);
+    EXPECT_EQ(1000, TestStruct::dtor_count);
+    
+    if (apis->has_caught(scopeInner))
     {
-        printf("%s\n", apis->get_exception_as_string(scope, true));
+        printf("%s\n", apis->get_exception_as_string(scopeInner, true));
     }
-    ASSERT_FALSE(apis->has_caught(scope));
+    ASSERT_FALSE(apis->has_caught(scopeInner));
 }
 
 TEST_F(PApiBaseTest, RefArgument)
