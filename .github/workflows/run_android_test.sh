@@ -63,46 +63,67 @@ if [ -n "$PS_FINAL" ]; then
   exit 1
 fi
 
-# If app exited, check for crashes using system services
+# If app exited, check for abnormal exit
 if [ "$APP_EXITED" = true ]; then
-  echo "Checking for crash records..."
-  sleep 2  # Wait for system to record crash info
+  echo "Checking exit status..."
+  sleep 2  # Wait for system to flush logs
   
-  # Method 1: Check dropbox for crash records (most reliable)
-  CRASH_RECORDS=$(adb shell dumpsys dropbox --print | grep -A 5 "com.tencent.puerts_test" | grep -E "crash|native_crash|anr" || true)
+  # Check if app sent SIGKILL signal (normal exit pattern)
+  # Normal exit: app calls Process.killProcess() which sends SIG: 9
+  NORMAL_EXIT_SIGNAL=$(grep "Sending signal.*PID.*SIG: 9" logcat.txt | grep -v grep || true)
   
-  # Method 2: Check if app is in crashed state
-  APP_ERROR=$(adb shell dumpsys activity processes | grep -A 20 "com.tencent.puerts_test" | grep -E "crashing=true|notResponding=true" || true)
+  # Check Zygote exit code (non-zero means abnormal)
+  # Format: "Process <pid> exited cleanly (<exit_code>)"
+  ZYGOTE_EXIT=$(grep "Zygote.*Process.*exited" logcat.txt | tail -1 || true)
   
-  # Method 3: Check exit reason via ActivityManager
-  EXIT_INFO=$(adb shell dumpsys activity exit-info com.tencent.puerts_test 2>/dev/null || true)
-  ABNORMAL_EXIT=$(echo "$EXIT_INFO" | grep -E "reason: (CRASH|CRASH_NATIVE|ANR|SIGNALED)" || true)
-  
-  if [ -n "$CRASH_RECORDS" ] || [ -n "$APP_ERROR" ] || [ -n "$ABNORMAL_EXIT" ]; then
-    echo "=========================================="
-    echo "ERROR: App crashed or exited abnormally!"
-    echo "=========================================="
+  if [ -n "$ZYGOTE_EXIT" ]; then
+    # Extract exit code from Zygote message
+    EXIT_CODE=$(echo "$ZYGOTE_EXIT" | sed -n 's/.*exited cleanly (\([0-9]*\)).*/\1/p')
+    echo "Process exit code: $EXIT_CODE"
     
-    if [ -n "$CRASH_RECORDS" ]; then
-      echo "Crash records found in dropbox:"
-      echo "$CRASH_RECORDS"
+    # Exit code 0 = normal, non-zero = abnormal
+    if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" != "0" ]; then
+      echo "=========================================="
+      echo "ERROR: App exited abnormally!"
+      echo "Exit code: $EXIT_CODE (non-zero indicates error)"
+      echo "=========================================="
+      
+      # Show relevant crash logs
+      echo ""
+      echo "Recent activity before crash:"
+      grep -B 5 "Process com.tencent.puerts_test.*has died" logcat.txt | tail -20 || true
+      echo ""
+      
+      exit 1
     fi
-    
-    if [ -n "$APP_ERROR" ]; then
-      echo "App error state:"
-      echo "$APP_ERROR"
-    fi
-    
-    if [ -n "$ABNORMAL_EXIT" ]; then
-      echo "Abnormal exit info:"
-      echo "$ABNORMAL_EXIT"
-    fi
-    
-    echo "=========================================="
-    exit 1
   fi
   
-  echo "No crash detected, app exited normally"
+  # Additional check: if no normal exit signal found, it might be abnormal
+  if [ -z "$NORMAL_EXIT_SIGNAL" ]; then
+    echo "Warning: No normal exit signal (SIG: 9) detected"
+    
+    # Check for "has died" message which indicates unexpected termination
+    HAS_DIED=$(grep "ActivityManager.*Process com.tencent.puerts_test.*has died" logcat.txt || true)
+    
+    if [ -n "$HAS_DIED" ]; then
+      # Check if it was preceded by a normal signal
+      DIED_CONTEXT=$(grep -B 3 "Process com.tencent.puerts_test.*has died" logcat.txt | tail -4)
+      
+      # If no "Sending signal" in the context, it's abnormal
+      if ! echo "$DIED_CONTEXT" | grep -q "Sending signal"; then
+        echo "=========================================="
+        echo "ERROR: App died unexpectedly without sending exit signal!"
+        echo "=========================================="
+        echo ""
+        echo "Context around process death:"
+        echo "$DIED_CONTEXT"
+        echo ""
+        exit 1
+      fi
+    fi
+  fi
+  
+  echo "App exited normally (exit code 0 or normal signal detected)"
 fi
 
 echo "Stopping logcat capture..."
