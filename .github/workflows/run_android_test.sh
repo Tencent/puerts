@@ -1,6 +1,72 @@
 #!/bin/bash
 set -e
 
+echo "==========================================="
+echo "Checking emulator readiness..."
+echo "==========================================="
+
+# Wait for device to be connected
+echo "Waiting for device connection..."
+adb wait-for-device
+echo "Device connected"
+
+# Wait for boot to complete (using POSIX-compatible syntax)
+echo "Waiting for boot to complete..."
+BOOT_COMPLETED=""
+COUNTER=0
+while [ -z "$BOOT_COMPLETED" ] && [ $COUNTER -lt 120 ]; do
+  BOOT_COMPLETED=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+  if [ -z "$BOOT_COMPLETED" ]; then
+    if [ $((COUNTER % 10)) -eq 0 ]; then
+      echo "Still waiting for boot... ($COUNTER/120)"
+    fi
+    sleep 2
+    COUNTER=$((COUNTER + 1))
+  fi
+done
+
+if [ -z "$BOOT_COMPLETED" ]; then
+  echo "ERROR: Emulator boot did not complete in time (waited 240 seconds)"
+  exit 1
+fi
+echo "Boot completed successfully"
+
+# Wait for package manager to be ready
+echo "Verifying package manager..."
+PM_READY=false
+for i in 1 2 3 4 5; do
+  if adb shell pm list packages > /dev/null 2>&1; then
+    PM_READY=true
+    break
+  fi
+  echo "Package manager not ready, retrying ($i/5)..."
+  sleep 2
+done
+
+if [ "$PM_READY" = false ]; then
+  echo "ERROR: Package manager is not ready"
+  exit 1
+fi
+echo "Package manager ready"
+
+# Give system services extra time to stabilize (GPU, OpenGL, etc.)
+echo "Waiting for system services to stabilize..."
+sleep 10
+
+# Check available memory
+MEM_AVAILABLE=$(adb shell cat /proc/meminfo | grep MemAvailable | awk '{print $2}')
+echo "Available memory: ${MEM_AVAILABLE}KB"
+
+# Check if we have enough memory (at least 500MB)
+if [ -n "$MEM_AVAILABLE" ] && [ "$MEM_AVAILABLE" -lt 512000 ]; then
+  echo "WARNING: Low memory available (${MEM_AVAILABLE}KB < 500MB)"
+fi
+
+echo "==========================================="
+echo "Emulator is ready, starting test..."
+echo "==========================================="
+echo ""
+
 adb shell setprop log.tag.linker DEBUG
 
 echo "Installing APK..."
