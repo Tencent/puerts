@@ -29,7 +29,7 @@ public class TxtLoader : IResolvableLoader,  ILoader, IModuleChecker
     {
         if (nullFiles.Contains(specifier))
         {
-            Console.WriteLine("FileExists return null for " + specifier);
+            System.Console.WriteLine("FileExists return null for " + specifier);
             return true;
         }
         var res = !System.String.IsNullOrEmpty(Resolve(specifier, "."));
