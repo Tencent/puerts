@@ -228,6 +228,10 @@ namespace Puerts
                         else
                         {
                             args[i] = argsTranslateFuncs[i](jsEnv.Idx, callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], paramIsByRef[i]);
+                            if (paramTypes[i].IsEnum)
+                            {
+                                args[i] = Enum.ToObject(paramTypes[i], args[i]);
+                            }
                         }
                     }
                 }

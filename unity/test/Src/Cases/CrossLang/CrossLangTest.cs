@@ -869,6 +869,21 @@ namespace Puerts.UnitTest
     }
 
 
+    [UnityEngine.Scripting.Preserve]
+    public class InOutParamClass
+    {
+        public static void IntRefParam(ref int a)
+        {
+            a = a + 10;
+        }
+
+        public static void EnumRefParam(ref TestEnum e)
+        {
+            e = TestEnum.B;
+        }
+    }
+
+
     [TestFixture]
     public class CrossLangTest
     {
@@ -1866,6 +1881,26 @@ __PDUOTF;");
             GC.WaitForPendingFinalizers();
             TestHelper.AssertAndPrint("FieldClass", 0, FieldClass.ObjCount);
             TestHelper.AssertAndPrint("FieldClass2", 0, FieldClass2.ObjCount);
+        }
+
+        [Test]
+        public void TestInOutParam()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const { $ref, $unref } = puer;
+                    const InOutParamClass = CS.Puerts.UnitTest.InOutParamClass;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    //AssertAndPrint('check obj.struct2Filed.X', obj.struct2Filed.X == 10);
+                    const p1 = $ref(10);
+                    InOutParamClass.IntRefParam(p1);
+                    AssertAndPrint('IntRefParam', $unref(p1) == 20);
+                    const p2 = $ref(1);
+                    InOutParamClass.EnumRefParam(p2);
+                    AssertAndPrint('EnumRefParam', $unref(p2) == 213);
+                })()
+            ");
         }
 
     }
