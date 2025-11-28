@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.2.3] - 2025-11-28
+1. WebGL adopts a dual mechanism of FinalizationRegistry + WeakRef to ensure object collection fix #2199
+2. Fixed a crash caused by passing a JSObject from a destroyed JS env into a normal JS env
+3. In the il2cpp-optimized build, LowMemoryNotification is also available
+4. Fixed a series of parameter validation mismatches between the il2cpp-optimized and P/Invoke versions
+5. Improved support for nullable types in the il2cpp-optimized version
+6. Fixed a crash when passing a BigInt to a uint parameter
+7. Fixed an issue where virtual method calls did not invoke subclass implementations
+8. Fixed non-public methods and properties being exported to JS fix #2241
+9. Fixed an issue in the il2cpp-optimized version where reference fields in structs containing reference types could be garbage collected after being set fix #2243
+10. Reflection now supports enum by ref
+
 ## [2.2.2] - 2025-05-13
 1. Fixed the issue where the WebGL build tool would repeatedly execute npm install on Windows.
 2. Added support for One-Click Export for WeChat Mini Games.

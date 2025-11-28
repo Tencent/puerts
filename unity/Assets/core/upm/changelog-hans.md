@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.2.3] - 2025-11-28
+1. webgl采用FinalizationRegistry+weakref双重机制保障对象回收 fix #2199
+2. 修复传一个已经销毁的jsenv的jsobject到一个正常jsenv会导致崩溃的问题
+3. il2cpp优化下LowMemoryNotification也是可用的
+4. il2cpp优化和pinvoke版本一系列参数校验不对齐的问题修正
+5. il2cpp优化版本对于nulable更好的支持
+6. 解决传bigint给uint参数会崩溃的问题
+7. 解决虚方法调用没有调用到子类的问题
+8. 解决非public方法及属性也会导出到js的问题 fix #2241
+9. il2cpp优化含引用类型的结构体，其引用字段设置后可能被gc的问题 fix #2243
+10. 反射支持枚举的ref
+
 ## [2.2.2] - 2025-5-13
 1. 解决webgl打包工具windows下会重复npm i安装的问题
 2. 微信小游戏一键导出的支持
