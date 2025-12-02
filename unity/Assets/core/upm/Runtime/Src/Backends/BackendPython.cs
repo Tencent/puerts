@@ -71,6 +71,9 @@ from importlib import machinery
 _csTypeCache_ = dict()
 _p_loader = scriptEnv.GetLoader()
 
+_p_BindingFlags = loadType(scriptEnv.GetTypeByString('System.Reflection.BindingFlags'))
+_csTypeCache_['System.Reflection.BindingFlags'] = _p_BindingFlags
+_p_GET_MEMBER_FLAGS = _p_BindingFlags.get_Public() | _p_BindingFlags.get_NonPublic() | _p_BindingFlags.get_Instance() | _p_BindingFlags.get_Static()
 class PesapiLoader(importlib.abc.Loader):
 
     def exec_module(self, mod):
@@ -141,14 +144,28 @@ class puerts:
             print('Failed to load type: ' + type_name)
             return None
         cs_class._p_innerType = cs_type
+        nestedTypes = puerts.get_nested_types(cs_type)
+        if nestedTypes:
+            for i in range(nestedTypes.Length):
+                ntype = nestedTypes.get_Item(i)
+                if ntype.IsGenericTypeDefinition:
+                    # convert name (T`1) to (T__T1) for sytax compatibility
+                    nName = ntype.Name
+                    tick_index = nName.find('`')
+                    nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
+                    setattr(cs_class, nName, puerts.load_type(ntype.FullName))
+                    pass # skip generic type definitions, use puerts.generic to instantiate them
+                else:
+                    try:
+                        setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
+                    except Exception as e:
+                        print(f'load nestedtype [{ntype.Name or ntype}] of {cs_type.Name or cs_type} fail: {e}')
         _csTypeCache_[type_name] = cs_class
         return cs_class
 
     @staticmethod
     def get_nested_types(cs_type):
-        BindingFlags = puerts.load_type('System.Reflection.BindingFlags')
-        GET_MEMBER_FLAGS = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public
-        return cs_type.GetNestedTypes(GET_MEMBER_FLAGS)
+        return cs_type.GetNestedTypes(_p_GET_MEMBER_FLAGS)
 
     @staticmethod
     def gen_iterator(obj):
@@ -198,9 +215,25 @@ class puerts:
 
         if puerts.typeof(puerts.load_type('System.Collections.IEnumerable')).IsAssignableFrom(cs_type):
             cs_class.__iter__ = puerts.gen_iterator
+
+        nestedTypes = puerts.get_nested_types(cs_type)
+        if nestedTypes:
+            for i in range(nestedTypes.Length):
+                ntype = nestedTypes.get_Item(i)
+                if ntype.IsGenericTypeDefinition:
+                    # convert name (T`1) to (T__T1) for sytax compatibility
+                    nName = ntype.Name
+                    tick_index = nName.find('`')
+                    nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
+                    setattr(cs_class, nName, puerts.load_type(ntype.FullName))
+                    pass # skip generic type definitions, use puerts.generic to instantiate them
+                else:
+                    try:
+                        setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
+                    except Exception as e:
+                        print(f'load nestedtype [{ntype.Name or ntype}] of {cs_type.Name or cs_type} fail: {e}')
         _csTypeCache_[cs_type.FullName] = cs_class
         return cs_class
-
 
 sys.meta_path.append(PesapiFinder())
 ''')");
