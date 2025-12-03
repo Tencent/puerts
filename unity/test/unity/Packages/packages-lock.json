@@ -1,22 +1,62 @@
 {
   "dependencies": {
     "com.tencent.puerts.commonjs": {
-      "version": "file:../../../Assets/commonjs/upm",
+      "version": "file:../../../upms/commonjs",
       "depth": 0,
       "source": "local",
       "dependencies": {}
     },
     "com.tencent.puerts.core": {
-      "version": "file:../../../Assets/core/upm",
+      "version": "file:../../../upms/core",
       "depth": 0,
       "source": "local",
       "dependencies": {}
+    },
+    "com.tencent.puerts.lua": {
+      "version": "file:../../../upms/lua",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.tencent.puerts.core": "3.0.0"
+      }
+    },
+    "com.tencent.puerts.nodejs": {
+      "version": "file:../../../upms/nodejs",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.tencent.puerts.core": "3.0.0"
+      }
+    },
+    "com.tencent.puerts.python": {
+      "version": "file:../../../upms/python",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.tencent.puerts.core": "3.0.0"
+      }
+    },
+    "com.tencent.puerts.quickjs": {
+      "version": "file:../../../upms/quickjs",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.tencent.puerts.core": "3.0.0"
+      }
     },
     "com.tencent.puerts.unittest": {
       "version": "file:../../Src",
       "depth": 0,
       "source": "local",
       "dependencies": {}
+    },
+    "com.tencent.puerts.v8": {
+      "version": "file:../../../upms/v8",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.tencent.puerts.core": "3.0.0"
+      }
     },
     "com.unity.2d.sprite": {
       "version": "1.0.0",

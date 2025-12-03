@@ -1,7 +1,12 @@
 {
   "dependencies": {
-    "com.tencent.puerts.commonjs": "file:../../../Assets/commonjs/upm",
-    "com.tencent.puerts.core": "file:../../../Assets/core/upm",
+    "com.tencent.puerts.commonjs": "file:../../../upms/commonjs",
+    "com.tencent.puerts.core": "file:../../../upms/core",
+    "com.tencent.puerts.lua": "file:../../../upms/lua",
+    "com.tencent.puerts.nodejs": "file:../../../upms/nodejs",
+    "com.tencent.puerts.python": "file:../../../upms/python",
+    "com.tencent.puerts.quickjs": "file:../../../upms/quickjs",
+	"com.tencent.puerts.v8": "file:../../../upms/v8",
     "com.tencent.puerts.unittest": "file:../../Src",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.tilemap": "1.0.0",
