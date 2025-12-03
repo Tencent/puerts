@@ -1,5 +1,6 @@
 ﻿#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID || FORCE_TEST_PYTHON
 using System;
+using NUnit.Framework;
 
 namespace Puerts.UnitTest
 {
