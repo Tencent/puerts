@@ -155,11 +155,11 @@ inline void JS_FreeValue(JSValue v)
     {
         if (v.tag == JS_TAG_STRING || v.tag == JS_TAG_EXCEPTION || v.tag == JS_TAG_STRING16)
         {
-            delete v.u.str.ptr;
+            free(v.u.str.ptr);
         }
         if (v.tag == JS_TAG_BUFFER)
         {
-            delete (uint8_t *)v.u.buf.ptr;
+            free(v.u.buf.ptr);
         }
     }
     v.u.ptr = nullptr;
