@@ -36,7 +36,7 @@ function genBridgeArgs(parameterSignatures) {
     }
 }
 
-function genBridge(bridgeInfo, isOptimizeSize) {
+function genBridge(bridgeInfo) {
     var parameterSignatures = il2cpp_snippets.listToJsArray(bridgeInfo.ParameterSignatures);
     let hasVarArgs = parameterSignatures.length > 0 && parameterSignatures[parameterSignatures.length -1][0] == 'V'
     return t`
@@ -83,15 +83,15 @@ static ${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.
     ${il2cpp_snippets.returnToCS(bridgeInfo.ReturnSignature)}
     ${ENDIF()}
 }
-${IF(isOptimizeSize)}
 
-static void b_${bridgeInfo.Signature}_Shared(void* target, ${parameterSignatures.map((S, i) => `Il2CppFullySharedGenericAny p${i}`).map(s => `${s}, `).join('')}${bridgeInfo.ReturnSignature != 'v' ? `Il2CppFullySharedGenericAny * il2ppRetVal,` : ''}MethodInfo* method) {
-    ${IF(bridgeInfo.ReturnSignature != 'v')}
+static void b_${bridgeInfo.Signature}_Invoker(Il2CppMethodPointer func, const MethodInfo* method, void* thisPtr, void** args, void* il2ppRetVal)
+{
+	${IF(bridgeInfo.ReturnSignature != 'v')}
     *((${il2cpp_snippets.SToCPPType(bridgeInfo.ReturnSignature)} *)il2ppRetVal) =
     ${ENDIF()}
-    b_${bridgeInfo.Signature}(target, ${parameterSignatures.map((S, i) => `${il2cpp_snippets.FromAny(S)}p${i}`).map(s => `${s}, `).join('')}method);
+    b_${bridgeInfo.Signature}(thisPtr, ${parameterSignatures.map((S, i) => `${il2cpp_snippets.FromAny(S)}args[${i}], `).join('')}(MethodInfo*)method);
 }
-${ENDIF()}
+
 `;
 }
 
@@ -124,32 +124,23 @@ export default function Gen(genInfos) {
 namespace puerts
 {
 
-${bridgeInfos.map(bridgeInfo => genBridge(bridgeInfo, genInfos.IsOptimizeSize)).join('\n')}
+${bridgeInfos.map(bridgeInfo => genBridge(bridgeInfo)).join('\n')}
 
 static BridgeFuncInfo g_bridgeFuncInfos[] = {
     ${FOR(bridgeInfos, info => t`
-    {"${info.Signature}", (Il2CppMethodPointer)b_${info.Signature}},
+    {"${info.Signature}", (Il2CppMethodPointer)b_${info.Signature}, b_${info.Signature}_Invoker},
     `)}
-    {nullptr, nullptr}
+    {nullptr, nullptr, nullptr}
 };
 
-${genInfos.IsOptimizeSize ? `
-static Il2CppMethodPointer g_bridgeSharedFuncs[] = {
-    ${FOR(bridgeInfos, info => t`
-    (Il2CppMethodPointer)b_${info.Signature}_Shared,
-    `)}
-    nullptr
-};` : ''
-}
 
-
-Il2CppMethodPointer FindBridgeFunc(const char* signature, bool IsShared)
+BridgeFuncInfo* FindBridgeFunc(const char* signature)
 {
     auto begin = &g_bridgeFuncInfos[0];
     auto end = &g_bridgeFuncInfos[sizeof(g_bridgeFuncInfos) / sizeof(BridgeFuncInfo) - 1];
     auto first = std::lower_bound(begin, end, signature, [](const BridgeFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});
     if (first != end && strcmp(first->Signature, signature) == 0) {
-        ${genInfos.IsOptimizeSize ? 'return IsShared ? g_bridgeSharedFuncs[first - begin] : first->Method' : 'return first->Method'};
+        return first;
     }
     return nullptr;
 }
