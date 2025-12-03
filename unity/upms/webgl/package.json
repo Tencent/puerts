@@ -13,6 +13,6 @@
     },
     "category": "Libraries",
     "dependencies": {
-        "com.tencent.puerts.core": "3.0.0-alpha"
+        "com.tencent.puerts.core": "3.0.0"
     }
 }

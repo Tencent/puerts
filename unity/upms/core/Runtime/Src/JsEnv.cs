@@ -68,22 +68,22 @@ namespace Puerts
 #if !UNITY_EDITOR && UNITY_WEBGL
             if (backendExpect == BackendType.WebGL)
             {
-                Backend = Activator.CreateInstance(Type.GetType("Puerts.BackendWebGL"), loader) as Backend;
+                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendWebGL"), loader) as Backend;
             }
 #else
             if (backendExpect == BackendType.V8)
             {
-                Backend = Activator.CreateInstance(Type.GetType("Puerts.BackendV8"), loader) as Backend;
+                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), loader) as Backend;
             }
 
             if (backendExpect == BackendType.Node)
             {
-                Backend = Activator.CreateInstance(Type.GetType("Puerts.BackendNodeJS"), loader) as Backend;
+                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendNodeJS"), loader) as Backend;
             }
 #endif
             if (backendExpect == BackendType.QuickJS)
             {
-                Backend = Activator.CreateInstance(Type.GetType("Puerts.BackendQuickJS"), loader) as Backend;
+                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendQuickJS"), loader) as Backend;
             }
             if (Backend == null)
             {
