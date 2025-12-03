@@ -363,7 +363,17 @@ async function runPuertsMake(cwd, options) {
 
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`;
-    const OUTPUT_PATH = join(cwd, '../../Assets/core/upm/Plugins/', BuildConfig.outputPluginPath);
+	const backendUPMNames = {
+		'puerts': 'core',
+		'papi-v8': 'v8',
+		'v8_9.4.146.24': 'v8',
+		'papi-lua': 'lua',
+		'papi-nodejs': 'nodejs',
+		'papi-python': 'python',
+		'papi-quickjs': 'quickjs',
+		'wsppaddon': 'core'
+	}
+    const OUTPUT_PATH = join(cwd, `../../upms/${backendUPMNames[options.backend]}/Plugins/`, BuildConfig.outputPluginPath);
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const BackendConfig = JSON.parse(readFileSync(join(__dirname, 'backends.json'), 'utf-8'))[options.backend]?.config || {};
 
