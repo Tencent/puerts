@@ -363,16 +363,16 @@ async function runPuertsMake(cwd, options) {
 
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`;
-	const backendUPMNames = {
-		'puerts': 'core',
-		'papi-v8': 'v8',
-		'v8_9.4.146.24': 'v8',
-		'papi-lua': 'lua',
-		'papi-nodejs': 'nodejs',
-		'papi-python': 'python',
-		'papi-quickjs': 'quickjs',
-		'wsppaddon': 'core'
-	}
+    const backendUPMNames = {
+        'puerts': 'core',
+        'papi-v8': 'v8',
+        'v8_9.4.146.24': 'v8',
+        'papi-lua': 'lua',
+        'papi-nodejs': 'nodejs',
+        'papi-python': 'python',
+        'papi-quickjs': 'quickjs',
+        'wsppaddon': 'core'
+    };
     const OUTPUT_PATH = join(cwd, `../../upms/${backendUPMNames[options.backend]}/Plugins/`, BuildConfig.outputPluginPath);
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const BackendConfig = JSON.parse(readFileSync(join(__dirname, 'backends.json'), 'utf-8'))[options.backend]?.config || {};
@@ -448,22 +448,22 @@ async function runPuertsMake(cwd, options) {
 }
 
 async function makeOSXUniveralBinary(cwd, copyConfig) {
-	const backendUPMNames = {
-		'puerts': 'core',
-		'papi-v8': 'v8',
-		'v8_9.4.146.24': 'v8',
-		'papi-lua': 'lua',
-		'papi-nodejs': 'nodejs',
-		'papi-python': 'python',
-		'papi-quickjs': 'quickjs',
-		'wsppaddon': 'core'
-	}
-	const bn = basename(cwd);
+    const backendUPMNames = {
+        'puerts': 'core',
+        'papi-v8': 'v8',
+        'v8_9.4.146.24': 'v8',
+        'papi-lua': 'lua',
+        'papi-nodejs': 'nodejs',
+        'papi-python': 'python',
+        'papi-quickjs': 'quickjs',
+        'wsppaddon': 'core'
+    };
+    const bn = basename(cwd);
     const OUTPUT_PATH = join(cwd, `../../upms/${backendUPMNames[bn]}/Plugins/macOS`);
     const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
 
-    const arm64binary = join(cwd, '../../upms/${backendUPMNames[bn]}/Plugins/', platformCompileConfig.osx.arm64.outputPluginPath, `lib${cmakeAddedLibraryName}.dylib`);
-    const x64binary = join(cwd, '../../upms/${backendUPMNames[bn]}/Plugins/', platformCompileConfig.osx.x64.outputPluginPath, `${cmakeAddedLibraryName}.bundle`);
+    const arm64binary = join(cwd, `../../upms/${backendUPMNames[bn]}/Plugins/`, platformCompileConfig.osx.arm64.outputPluginPath, `lib${cmakeAddedLibraryName}.dylib`);
+    const x64binary = join(cwd, `../../upms/${backendUPMNames[bn]}/Plugins/`, platformCompileConfig.osx.x64.outputPluginPath, `${cmakeAddedLibraryName}.bundle`);
     assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${arm64binary} ${x64binary}`).code);
     assert.equal(0, exec(`codesign --sign - --options linker-signed --force ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')}`).code);
 
