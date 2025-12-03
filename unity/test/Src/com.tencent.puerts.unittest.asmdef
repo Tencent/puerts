@@ -4,7 +4,12 @@
     "references": [
         "com.tencent.puerts.core",
         "com.tencent.puerts.webgl",
-        "com.tencent.puerts.commonjs"
+        "com.tencent.puerts.commonjs",
+		"com.tencent.puerts.v8",
+		"com.tencent.puerts.lua",
+		"com.tencent.puerts.python",
+		"com.tencent.puerts.nodejs",
+		"com.tencent.puerts.quickjs"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
