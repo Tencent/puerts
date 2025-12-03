@@ -1,5 +1,5 @@
 {
-    "name": "com.tencent.puerts.node",
+    "name": "com.tencent.puerts.nodejs",
     "rootNamespace": "",
     "references": [],
     "includePlatforms": [],
