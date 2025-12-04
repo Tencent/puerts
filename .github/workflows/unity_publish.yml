@@ -48,6 +48,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+      - name: wsppaddon
+        uses: ./.github/workflows/composites/unity-build-plugins/android/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: wsppaddon
+          websocket: 2
           
   ohos:
     runs-on: ubuntu-latest
@@ -81,6 +87,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-lua
+      - name: wsppaddon
+        uses: ./.github/workflows/composites/unity-build-plugins/ohos/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: wsppaddon
+          websocket: 2
 
   ios:
     runs-on: macos-13
@@ -111,6 +123,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+      - name: wsppaddon
+        uses: ./.github/workflows/composites/unity-build-plugins/ios/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: wsppaddon
+          websocket: 2
 
   osx:
     runs-on: macos-13
@@ -141,6 +159,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+      - name: wsppaddon
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: wsppaddon
+          websocket: 2
 
   windows:
     runs-on: windows-2022
@@ -151,31 +175,50 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: puerts
+          arch: x64
       - name: papi-v8
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-v8
+          arch: x64
       - name: papi-quickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-quickjs
+          arch: x64
       - name: papi-lua
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-lua
+          arch: x64
       - name: papi-nodejs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+          arch: x64
+      - name: wsppaddon
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: wsppaddon
+          arch: x64
+          websocket: 2
 
   linux64:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install LibC++
+        run: |
+          sudo apt-get update
+          sudo apt-get install clang
+          sudo apt-get install build-essential
+          sudo apt-get install libc++-dev
+          sudo apt-get install libc++abi-dev
       - name: puerts
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
@@ -201,6 +244,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+      - name: wsppaddon
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: wsppaddon
+          websocket: 2
 
   wasm:
     runs-on: ubuntu-latest
@@ -254,6 +303,7 @@ jobs:
           tar cvfz ../../PuerTS_Lua_${{ github.event.inputs.tag_name }}.tar.gz lua
           tar cvfz ../../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tar.gz nodejs
           tar cvfz ../../PuerTS_Python_${{ github.event.inputs.tag_name }}.tar.gz python
+          tar cvfz ../../PuerTS_Webgl_${{ github.event.inputs.tag_name }}.tar.gz webgl
           
       - name: Create Release
         id: create_release
@@ -333,6 +383,16 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./PuerTS_Python_${{ github.event.inputs.tag_name }}.tar.gz
           asset_name: "PuerTS_Python_${{ github.event.inputs.tag_name }}.tar.gz"
+          asset_content_type: application/tgz
+      - name: Upload Webgl Backend
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PuerTS_Webgl_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_name: "PuerTS_Webgl_${{ github.event.inputs.tag_name }}.tar.gz"
           asset_content_type: application/tgz
 
       # - name: Trigger demo/upm repository update

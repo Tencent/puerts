@@ -204,31 +204,37 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: puerts
+          arch: x64
       - name: papi-v8
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-v8
+          arch: x64
       - name: papi-quickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-quickjs
+          arch: x64
       - name: papi-lua
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-lua
+          arch: x64
       - name: papi-nodejs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+          arch: x64
       - name: wsppaddon
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
+          arch: x64
           websocket: 2
 
   linux64:
