@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     env:
-      NATIVE_BACKENDS: puerts papi-lua papi-quickjs papi-v8 papi-nodejs
+      NATIVE_BACKENDS: puerts papi-lua papi-quickjs papi-v8 papi-nodejs papi-python
     strategy:
       matrix:
         include:
@@ -125,6 +125,7 @@ jobs:
             unity/upms/lua/Plugins/macOS/*.dylib
             unity/upms/python/Plugins/macOS/*.dylib
             unity/upms/quickjs/Plugins/macOS/*.dylib
+            unity/upms/python/Plugins/macOS/*.dylib
             
             unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
