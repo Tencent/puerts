@@ -214,6 +214,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-python
+          arch: x64
       - name: wsppaddon
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
