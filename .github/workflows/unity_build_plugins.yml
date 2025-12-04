@@ -235,7 +235,7 @@ jobs:
           backend: papi-nodejs
           arch: x64
       - name: papi-python
-        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-python
@@ -284,7 +284,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
       - name: papi-python
-        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-python
