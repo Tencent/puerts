@@ -6,6 +6,7 @@ import downloadBackend from "./backend.mjs";
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
 import * as process from "process";
+import { execFileSync, spawnSync } from "child_process";
 
 const glob = createRequire(fileURLToPath(import.meta.url))('glob');
 
