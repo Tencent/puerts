@@ -16,11 +16,12 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Icon128.png</PackageIcon>
 
-    <PackageTags>puerts;typescript;v8;nodejs;dotnet;quickjs;lua</PackageTags>
+    <PackageTags>puerts;typescript;v8;nodejs;dotnet;quickjs;lua;python</PackageTags>
 
     <PuertsCoreVersion>$(BuildPackageVersion)</PuertsCoreVersion>
     <PuertsLuaVersion>$(BuildPackageVersion)</PuertsLuaVersion>
     <PuertsNodeJsVersion>$(BuildPackageVersion)</PuertsNodeJsVersion>
+    <PuertsPythonVersion>$(BuildPackageVersion)</PuertsPythonVersion>
     <PuertsQuickJsVersion>$(BuildPackageVersion)</PuertsQuickJsVersion>
     <PuertsV8Version>$(BuildPackageVersion)</PuertsV8Version>
   </PropertyGroup>

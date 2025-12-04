@@ -288,6 +288,10 @@ public class BuildContext : FrostingContext
                 new() { Name = "Puerts.NodeJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "NodeJS" },
                 new() { Name = "Puerts.NodeJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "NodeJS" },
 
+                new() { Name = "Puerts.Python.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "Python" },
+                new() { Name = "Puerts.Python.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Python" },
+                new() { Name = "Puerts.Python.NativeAssets.macOS", DotNetRid = "osx-arm64", DotNetNativeName = "Python" },
+                
                 new() { Name = "Puerts.QuickJS.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "QuickJS" },
                 new() { Name = "Puerts.QuickJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "QuickJS" },
                 new() { Name = "Puerts.QuickJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "QuickJS" },
@@ -317,6 +321,7 @@ public class BuildContext : FrostingContext
                         "win-x64" => "win-x64",
                         "linux-x64" => "linux-x64",
                         "osx" => "osx",
+                        "osx-arm64" => "osx-arm64",
                         _ => throw new NotSupportedException($"RID '{DotNetRid}' is not supported.")
                     };
                 }

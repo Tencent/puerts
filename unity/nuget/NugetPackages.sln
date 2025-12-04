@@ -56,6 +56,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python", "Puerts.Pyt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_MemTest", "_MemTest\_MemTest.csproj", "{56181A21-7E8E-42D5-98A8-D7F56645A8FB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python.NativeAssets.Win32", "Puerts.Python.NativeAssets.Win32\Puerts.Python.NativeAssets.Win32.csproj", "{F99153D2-466A-4DE8-9047-8DA5E8D30A97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python.NativeAssets.macOS", "Puerts.Python.NativeAssets.macOS\Puerts.Python.NativeAssets.macOS.csproj", "{8F7ADCEE-555D-4FEE-9003-91055B072B89}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python.NativeAssets.Linux", "Puerts.Python.NativeAssets.Linux\Puerts.Python.NativeAssets.Linux.csproj", "{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -154,6 +160,18 @@ Global
 		{56181A21-7E8E-42D5-98A8-D7F56645A8FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{56181A21-7E8E-42D5-98A8-D7F56645A8FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{56181A21-7E8E-42D5-98A8-D7F56645A8FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F99153D2-466A-4DE8-9047-8DA5E8D30A97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F99153D2-466A-4DE8-9047-8DA5E8D30A97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F99153D2-466A-4DE8-9047-8DA5E8D30A97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F99153D2-466A-4DE8-9047-8DA5E8D30A97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F7ADCEE-555D-4FEE-9003-91055B072B89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F7ADCEE-555D-4FEE-9003-91055B072B89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F7ADCEE-555D-4FEE-9003-91055B072B89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F7ADCEE-555D-4FEE-9003-91055B072B89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
