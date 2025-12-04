@@ -1,0 +1,672 @@
+﻿/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 Tencent.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
+#pragma once
+
+#include "pesapi.h"
+#include <stdarg.h>
+#include "vm/Class.h"
+#include "vm/String.h"
+#include "vm/Array.h"
+#if defined(__EMSCRIPTEN__)
+#include "pesapi_webgl.h"
+using namespace pesapi::webglimpl;
+#endif
+
+namespace puerts
+{
+typedef void (*FieldWrapFuncPtr)(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType);
+typedef bool (*WrapFuncPtr)(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkArgument, struct WrapData* wrapData);
+
+struct FieldWrapData
+{
+    FieldWrapFuncPtr Getter;
+    FieldWrapFuncPtr Setter;
+    FieldInfo *FieldInfo;
+    size_t Offset;
+    Il2CppClass* TypeInfo;
+};
+
+struct WrapData 
+{
+    WrapFuncPtr Wrap;
+    MethodInfo* Method;
+    Il2CppMethodPointer MethodPointer;
+    bool IsStatic;
+    bool IsExtensionMethod;
+    bool HasParamArray;
+    int OptionalNum;
+    Il2CppClass* TypeInfos[0];
+};
+
+struct PObjectRefInfo
+{
+    struct pesapi_ffi* Apis;
+    pesapi_value_ref ValueRef;
+    void* EnvPrivate;
+};
+
+// sizeof(PObjectRefInfo) do exceed C# sizeof(JSObject)
+static_assert(sizeof(PObjectRefInfo) <= sizeof(void*) * 3, "PObjectRefInfo Size invalid");
+
+// begin function in Puerts_il2cpp.cpp
+Il2CppObject* JsValueToCSRef(struct pesapi_ffi* apis, Il2CppClass *klass, pesapi_env env, pesapi_value jsval);
+
+pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj);
+
+void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index);
+
+Il2CppClass* GetReturnType(const MethodInfo* method);
+
+Il2CppClass* GetParameterType(const MethodInfo* method, int index);
+
+void GetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value);
+
+void* GetValueTypeFieldPtr(void *obj, FieldInfo *field, size_t offset);
+
+void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value);
+
+void PLog(const char* Fmt, ...);
+
+bool GetValueTypeFromJs(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage);
+pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass* targetClass, void* ptr);
+
+// end function in Puerts_il2cpp.cpp
+
+#define GetPObjectRefInfo(Value) ((PObjectRefInfo*)(((uint8_t*)Value) + sizeof(Il2CppObject)))
+
+class AutoValueScope
+{
+public:
+    AutoValueScope(struct pesapi_ffi* apis, pesapi_env_ref envRef)
+    {
+        _apis = apis;
+        _scope = ${invokePapi('open_scope_placement')}(envRef, &_mem);
+    }
+
+    ~AutoValueScope()
+    {
+        if (_scope)
+        {
+            auto apis = _apis;
+            ${invokePapi('close_scope_placement')}(_scope);
+        }
+    }
+    
+    inline pesapi_scope scope()
+    {
+        return _scope;
+    }
+    
+    struct pesapi_ffi* _apis;
+    pesapi_scope_memory _mem;
+    pesapi_scope _scope;
+};
+
+struct DataTransfer
+{
+    static bool IsDelegate(Il2CppClass *klass)
+    {
+        return il2cpp::vm::Class::IsAssignableFrom(il2cpp_defaults.delegate_class, klass) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
+    }
+    
+    static bool IsAssignable(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, Il2CppClass *klass, bool isvaluetype)
+    {
+        if (!isvaluetype && (${invokePapi('is_null')}(env, value) || ${invokePapi('is_undefined')}(env, value)))
+        {
+            return true;
+        }
+        if (IsDelegate(klass) && ${invokePapi('is_function')}(env, value))
+        {
+            return true;
+        }
+        auto objClass = (Il2CppClass*) ${invokePapi('get_native_object_typeid')}(env, value);
+        return objClass && il2cpp::vm::Class::IsAssignableFrom(klass, objClass);
+    }
+    
+    template <typename T>
+    static T* GetPointer(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        if (${invokePapi('is_null')}(env, value) || ${invokePapi('is_undefined')}(env, value))
+        {
+            return nullptr;
+        }
+        return static_cast<T*>(${invokePapi('get_native_object_ptr')}(env, value));
+    }
+	
+    static pesapi_value CopyValueType(struct pesapi_ffi* apis, pesapi_env env, const Il2CppClass* type_id, const void* ptr, size_t size)
+    {
+        if (type_id->has_references)
+        {
+            Il2CppObject* obj = il2cpp::vm::Object::Box(const_cast<Il2CppClass *>(type_id), const_cast<void*>(ptr));
+            return ${invokePapi('native_object_to_value')}(env, type_id, obj + 1, true);
+        }
+        else
+        {
+            uint8_t* buff = new uint8_t[size];
+            memcpy(buff, ptr, size);
+            return ${invokePapi('native_object_to_value')}(env, type_id, buff, true);
+        }
+    }
+	
+    static Il2CppObject* GetValueTypeForCSharp(const Il2CppClass* type_id, const void* jsPtr)
+    {
+        return (type_id->has_references) ? (Il2CppObject*)((((char*)jsPtr) - sizeof(Il2CppObject))) : il2cpp::vm::Object::Box(const_cast<Il2CppClass*>(type_id), const_cast<void*>(jsPtr));
+    }
+    
+    template <typename T>
+    static pesapi_value CopyValueType(struct pesapi_ffi* apis, pesapi_env env, const T &v, const Il2CppClass* type_id)
+    {
+        return CopyValueType(apis, env, type_id, &v, sizeof(T));
+    }
+    
+    template <typename T>
+    static pesapi_value CopyNullableValueType(struct pesapi_ffi* apis, pesapi_env env, const T &v, const Il2CppClass* type_id)
+    {
+        if (!v.hasValue) 
+        {
+            return ${invokePapi('create_null')}(env);
+        }
+        return CopyValueType(apis, env, v.p1, il2cpp::vm::Class::GetNullableArgument(type_id));
+    }
+};
+
+struct WrapFuncInfo
+{
+    const char* Signature;
+    WrapFuncPtr Method;
+};
+
+struct BridgeFuncInfo
+{
+    const char* Signature;
+    Il2CppMethodPointer Method;
+};
+
+struct FieldWrapFuncInfo
+{
+    const char* Signature;
+    FieldWrapFuncPtr Getter;
+    FieldWrapFuncPtr Setter;
+};
+
+namespace converter
+{
+
+template <typename T, typename Enable = void>
+struct Converter;
+
+
+template <typename T>
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8 && std::is_signed<T>::value>::type>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
+    {
+        return ${invokePapi('create_int64')}(env, value);
+    }
+
+    static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return static_cast<T>(${invokePapi('get_value_int64')}(env, value));
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_int64')}(env, value);
+    }
+};
+
+template <typename T>
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8 && !std::is_signed<T>::value>::type>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
+    {
+        return ${invokePapi('create_uint64')}(env, value);
+    }
+
+    static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return static_cast<T>(${invokePapi('get_value_uint64')}(env, value));
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_uint64')}(env, value);
+    }
+};
+
+template <typename T>
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) != 8 && std::is_signed<T>::value>::type>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
+    {
+        return ${invokePapi('create_int32')}(env, value);
+    }
+
+    static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return static_cast<T>(${invokePapi('get_value_int32')}(env, value));
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_int32')}(env, value);
+    }
+};
+
+template <typename T>
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) != 8 && !std::is_signed<T>::value>::type>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
+    {
+        return ${invokePapi('create_uint32')}(env, value);
+    }
+
+    static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return static_cast<T>(${invokePapi('get_value_uint32')}(env, value));
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_uint32')}(env, value);
+    }
+};
+
+template <typename T>
+struct Converter<T, typename std::enable_if<std::is_enum<T>::value>::type>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
+    {
+        return ${invokePapi('create_int32')}(env, static_cast<int>(value));
+    }
+
+    static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return static_cast<T>(${invokePapi('get_value_int32')}(env, value));
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_int32')}(env, value);
+    }
+};
+
+template <typename T>
+struct Converter<T, typename std::enable_if<std::is_floating_point<T>::value>::type>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, T value)
+    {
+        return  ${invokePapi('create_double')}(env, value);
+    }
+
+    static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return static_cast<T>( ${invokePapi('get_value_double')}(env, value));
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return  ${invokePapi('is_double')}(env, value);
+    }
+};
+
+template <>
+struct Converter<void*>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, void* value)
+    {
+        return ${invokePapi('create_binary')}(env, value, 0);
+    }
+
+    static void* toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        size_t bufsize;
+        return ${invokePapi('get_value_binary')}(env, value, &bufsize);
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_binary')}(env, value);
+    }
+};
+
+template <>
+struct Converter<bool>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, bool value)
+    {
+        return ${invokePapi('create_boolean')}(env, value);
+    }
+
+    static bool toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('get_value_bool')}(env, value);
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_boolean')}(env, value);
+    }
+};
+
+template <>
+struct Converter<Il2CppString*>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, Il2CppString* value)
+    {
+        if (value == nullptr)
+        {
+            return ${invokePapi('create_null')}(env);
+        }
+        const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(value);
+        int32_t utf16len = il2cpp::utils::StringUtils::GetLength(value);
+        return ${invokePapi('create_string_utf16')}(env, reinterpret_cast<const uint16_t *>(utf16), utf16len);
+    }
+
+    static Il2CppString* toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        if (${invokePapi('is_null')}(env, value) || ${invokePapi('is_undefined')}(env, value))
+        {
+            return nullptr;
+        }
+        size_t bufsize = 0;
+        auto str = ${invokePapi('get_value_string_utf16')}(env, value, nullptr, &bufsize);
+        if (str)
+        {
+            return il2cpp::vm::String::NewUtf16(reinterpret_cast<const Il2CppChar *>(str), bufsize);
+        }
+        std::vector<uint16_t> buff;
+        buff.resize(bufsize + 1);
+        str = ${invokePapi('get_value_string_utf16')}(env, value, buff.data(), &bufsize);
+        if (str)
+        {
+            buff[bufsize] = '\0';
+            return il2cpp::vm::String::NewUtf16(reinterpret_cast<const Il2CppChar *>(str), bufsize);
+        }
+        return nullptr;
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_string')}(env, value) || ${invokePapi('is_null')}(env, value) || ${invokePapi('is_undefined')}(env, value);
+    }
+};
+
+template <typename T>
+struct Converter<std::reference_wrapper<T>>
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, const T& value)
+    {
+        return ${invokePapi('boxing')}(env, Converter<T>::toScript(apis, env, value));
+    }
+
+    static T toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return Converter<T>::toCpp(apis, env, ${invokePapi('unboxing')}(env, value));
+    }
+
+    static bool accept(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value)
+    {
+        return ${invokePapi('is_boxed_value')}(env, value);    // do not checked inner
+    }
+};
+
+}
+
+template <typename T>
+struct OptionalParameter
+{
+    static T GetPrimitive(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, MethodInfo* methodInfo, puerts::WrapData* wrapData, int length, int index)
+    {
+        if (index < length)
+        {
+            return converter::Converter<T>::toCpp(apis, env, ${invokePapi('get_arg')}(info, index));
+        }
+        else
+        {
+            if (wrapData->IsExtensionMethod) ++index;
+            auto pret = (T*)GetDefaultValuePtr(methodInfo, index);
+            if (pret) 
+            {
+                return *pret;
+            }
+            return {};
+        }
+    }
+    
+    static T GetValueType(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, MethodInfo* methodInfo, puerts::WrapData* wrapData, int length, int index)
+    {
+        if (index < length)
+        {
+            return (*DataTransfer::GetPointer<T>(apis, env, ${invokePapi('get_arg')}(info, index)));
+        }
+        else
+        {
+            if (wrapData->IsExtensionMethod) ++index;
+            auto pret = (T*)GetDefaultValuePtr(methodInfo, index);
+            if (pret) 
+            {
+                return *pret;
+            }
+            T ret;
+            memset(&ret, 0, sizeof(T));
+            return ret;
+        }
+    }
+    
+    static Il2CppString* GetString(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, MethodInfo* methodInfo, puerts::WrapData* wrapData, int length, int index)
+    {
+        if (index < length)
+        {
+            return converter::Converter<Il2CppString*>::toCpp(apis, env,  ${invokePapi('get_arg')}(info, index));
+        }
+        else
+        {
+            if (wrapData->IsExtensionMethod) ++index;
+            return (Il2CppString*)GetDefaultValuePtr(methodInfo, index);
+        }
+    }
+    
+    static Il2CppObject* GetRefType(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, MethodInfo* methodInfo, puerts::WrapData* wrapData, int length, int index, Il2CppClass* typeId)
+    {
+        if (index < length)
+        {
+            return JsValueToCSRef(apis, typeId, env, ${invokePapi('get_arg')}(info, index));
+        }
+        else
+        {
+            if (wrapData->IsExtensionMethod) ++index;
+            return (Il2CppObject*)GetDefaultValuePtr(methodInfo, index);
+        }
+    }
+};
+
+
+template <typename T>
+struct Params
+{
+    static Il2CppArray* PackPrimitive(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
+    {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
+        Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
+        T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(ret));
+        for(int i = start; i < length;++i)
+        {
+            arr[i - start] = converter::Converter<T>::toCpp(apis, env, ${invokePapi('get_arg')}(info, i));
+        }
+        return ret;
+    }
+    
+    static Il2CppArray* PackString(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
+    {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
+        Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
+        for(int i = start; i < length;++i)
+        {
+            il2cpp_array_setref(ret, i - start, converter::Converter<Il2CppString*>::toCpp(apis, env, ${invokePapi('get_arg')}(info, i)));
+        }
+        return ret;
+    }
+    
+    static Il2CppArray* PackRef(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
+    {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
+        Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
+        auto elemTypeId = il2cpp::vm::Class::GetElementClass(typeId);
+        for(int i = start; i < length;++i)
+        {
+            il2cpp_array_setref(ret, i - start, JsValueToCSRef(apis, elemTypeId, env, ${invokePapi('get_arg')}(info, i)));
+        }
+        return ret;
+    }
+    
+    static Il2CppArray* PackValueType(struct pesapi_ffi* apis, pesapi_env env, pesapi_callback_info info, Il2CppClass* typeId, int length, int start)
+    {
+        auto firstVal = ${invokePapi('get_arg')}(info, start);
+        if (DataTransfer::IsAssignable(apis, env, firstVal, typeId, false))
+        {
+            return DataTransfer::GetPointer<Il2CppArray>(apis, env, firstVal);
+        }
+        Il2CppArray* ret = il2cpp::vm::Array::NewSpecific(typeId, length - start > 0 ? length - start : 0);
+        T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(ret));
+        for(int i = start; i < length;++i)
+        {
+            T* e = DataTransfer::GetPointer<T>(apis, env, ${invokePapi('get_arg')}(info, i));
+            if (!e) continue;
+            arr[i - start] = *e;
+        }
+        return ret;
+    }
+    
+    
+    static void UnPackPrimitive(struct pesapi_ffi* apis, pesapi_env env, Il2CppArray* array, uint32_t arrayLength, Il2CppClass* typeId, pesapi_value* argv)
+    {
+        T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(array));
+        for (uint32_t i = 0; i < arrayLength; ++i)
+        {
+            argv[i] = converter::Converter<T>::toScript(apis, env, arr[i]);
+        }
+    }
+    
+    static void UnPackRefOrBoxedValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppArray* array, uint32_t arrayLength, Il2CppClass* typeId, pesapi_value* argv)
+    {
+        Il2CppObject** arr = reinterpret_cast<Il2CppObject**>(il2cpp::vm::Array::GetFirstElementAddress(array));
+        for (uint32_t i = 0; i < arrayLength; ++i)
+        {
+            argv[i] = CSRefToJsValue(apis, env, typeId, arr[i]);
+        }
+    }
+    
+    static void UnPackValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppArray* array, uint32_t arrayLength, Il2CppClass* typeId, pesapi_value* argv)
+    {
+        T* arr = reinterpret_cast<T*>(il2cpp::vm::Array::GetFirstElementAddress(array));
+        auto elemTypeId = il2cpp::vm::Class::GetElementClass(typeId);
+        for (uint32_t i = 0; i < arrayLength; ++i)
+        {
+            argv[i] = DataTransfer::CopyValueType(apis, env, &arr[i], elemTypeId);
+        }
+    }
+    
+};
+
+template <typename T>
+struct NullableConverter
+{
+    static pesapi_value toScript(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass* typeId, T* ptr)
+    {
+        if (ptr->hasValue)
+        {
+            return CSValueTypePtrToJsValue(apis, env, il2cpp::vm::Class::GetNullableArgument(typeId), std::addressof(ptr->p1));
+        }
+        else
+        {
+            return ${invokePapi('create_null')}(env);
+        }
+    }
+
+    static void toCpp(struct pesapi_ffi* apis, pesapi_env env, pesapi_value value, Il2CppClass* typeId, T* ptr)
+    {
+        ptr->hasValue = GetValueTypeFromJs(apis, env, value, il2cpp::vm::Class::GetNullableArgument(typeId), std::addressof(ptr->p1));
+    }
+};
+
+template <class T>
+struct MethodInfoHelper
+{
+};
+
+static Il2CppMethodPointer GetMethodPointer(const MethodInfo* method);
+
+template <class _Ret, class... _Args>
+struct MethodInfoHelper<_Ret (_Args...)>
+{
+    Il2CppMethodPointer func;
+    const MethodInfo* methodInfo;
+    Il2CppObject* instance;
+
+    MethodInfoHelper(const MethodInfo* method, Il2CppObject* instance = nullptr)
+        : instance(instance)
+    {
+        func = GetMethodPointer(method);
+        methodInfo = method;
+    }
+
+    MethodInfoHelper()
+        : func(0), methodInfo(0), instance(nullptr)
+    {
+    }
+
+    typedef _Ret(*FuncType)(_Args..., const MethodInfo*);
+    typedef _Ret(*FuncTypeWithInstance)(Il2CppObject*, _Args..., const MethodInfo*);
+
+    template <typename T = _Ret>
+    typename std::enable_if<std::is_same<T, void>::value>::type
+        Call(_Args... args)
+    {
+        FuncType funcPtr = (FuncType)func;
+        funcPtr(args..., methodInfo);
+    }
+
+    template <typename T = _Ret>
+    typename std::enable_if<!std::is_same<T, void>::value, T>::type
+        Call(_Args... args)
+    {
+        FuncType funcPtr = (FuncType)func;
+        return funcPtr(args..., methodInfo);
+    }
+
+    template <typename T = _Ret>
+    typename std::enable_if<std::is_same<T, void>::value>::type
+        CallWithInstance(_Args... args)
+    {
+        FuncTypeWithInstance funcPtr = (FuncTypeWithInstance)func;
+        funcPtr(instance, args..., methodInfo);
+    }
+
+    template <typename T = _Ret>
+    typename std::enable_if<!std::is_same<T, void>::value, T>::type
+        CallWithInstance(_Args... args)
+    {
+        FuncTypeWithInstance funcPtr = (FuncTypeWithInstance)func;
+        return funcPtr(instance, args..., methodInfo);
+    }
+};
+
+}

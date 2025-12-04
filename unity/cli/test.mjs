@@ -19,10 +19,50 @@ function collectCSFilesAndMakeCompileConfig(dir, workdir, excludeGenerator) {
     
     const linkPuerTS = `
     <ItemGroup>
-        ${glob.sync(join(dir, '../../Assets/core/upm/**/*.cs').replace(/\\/g, '/'))
+        ${glob.sync(join(dir, '../../upms/core/**/*.cs').replace(/\\/g, '/'))
             .map(pathname =>
 `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-            <Link>${relative(join(dir, '../../Assets/core/upm/'), pathname).replace(/\//, '\\')}</Link>
+            <Link>${relative(join(dir, '../../upms/core/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/v8/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/v8/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/lua/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/lua/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/python/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/python/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/nodejs/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/nodejs/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/quickjs/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/quickjs/'), pathname).replace(/\//, '\\')}</Link>
         </Compile>`
             ).join('\n')}
     </ItemGroup>
@@ -30,10 +70,10 @@ function collectCSFilesAndMakeCompileConfig(dir, workdir, excludeGenerator) {
     
     const linkPuerTSCommonJS = `
     <ItemGroup>
-        ${glob.sync(join(dir, '../../Assets/commonjs/upm/Runtime/**/*.cs').replace(/\\/g, '/'))
+        ${glob.sync(join(dir, '../../upms/commonjs/Runtime/**/*.cs').replace(/\\/g, '/'))
             .map(pathname =>
 `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-            <Link>${relative(join(dir, '../../Assets/commonjs/upm/Runtime/'), pathname).replace(/\//, '\\')}</Link>
+            <Link>${relative(join(dir, '../../upms/commonjs/Runtime/'), pathname).replace(/\//, '\\')}</Link>
         </Compile>`
             ).join('\n')}
     </ItemGroup>

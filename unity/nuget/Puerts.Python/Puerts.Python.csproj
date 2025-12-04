@@ -10,13 +10,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiPythonNative.cs">
+        <Compile Include="..\..\upms\python\Runtime\Src\Native\PapiPythonNative.cs">
             <Link>Native\PapiPythonNative.cs</Link>
         </Compile>
-        <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendPython.cs">
+        <Compile Include="..\..\upms\python\Runtime\Src\Backends\BackendPython.cs">
             <Link>Backends\BackendPython.cs</Link>
         </Compile>
-        <Compile Include="..\..\Assets\core\upm\Runtime\Src\Loaders\PythonLoader.cs">
+        <Compile Include="..\..\upms\python\Runtime\Src\Loaders\PythonLoader.cs">
             <Link>Loaders\PythonLoader.cs</Link>
         </Compile>
     </ItemGroup>

@@ -10,13 +10,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiLuaNative.cs">
+    <Compile Include="..\..\upms\lua\Runtime\Src\Native\PapiLuaNative.cs">
         <Link>Native\PapiLuaNative.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendLua.cs">
+    <Compile Include="..\..\upms\lua\Runtime\Src\Backends\BackendLua.cs">
         <Link>Backends\BackendLua.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Loaders\LuaLoader.cs">
+    <Compile Include="..\..\upms\lua\Runtime\Src\Loaders\LuaLoader.cs">
         <Link>Loaders\LuaLoader.cs</Link>
     </Compile>
   </ItemGroup>

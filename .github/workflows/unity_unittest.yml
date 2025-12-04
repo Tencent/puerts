@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths: 
-      - unity/Assets/**
+      - unity/upms/**
       - unity/test/**
       - unity/native/**
       - unity/cli/**
@@ -17,7 +17,7 @@ on:
       - .github/workflows/composites/**
   pull_request:
     paths: 
-      - unity/Assets/**
+      - unity/upms/**
       - unity/test/**
       - unity/native/**
       - unity/cli/**
@@ -140,7 +140,7 @@ jobs:
           mkdir -p python-3.14.0-x86_64-linux-android
           tar -xzf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android
           node ../../cli make --platform android --arch x64 --config Debug
-          cp python-3.14.0-x86_64-linux-android/prefix/lib/lib*.so ../../Assets/core/upm/Plugins/Android/libs/x86_64
+          cp python-3.14.0-x86_64-linux-android/prefix/lib/lib*.so ../../upms/python/Plugins/Android/libs/x86_64
           mkdir -p python/lib
           cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
           zip -r -q python.zip python/

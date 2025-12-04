@@ -10,10 +10,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiQjsNative.cs">
+    <Compile Include="..\..\upms\quickjs\Runtime\Src\Native\PapiQjsNative.cs">
         <Link>Native\PapiQjsNative.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendQuickJS.cs">
+    <Compile Include="..\..\upms\quickjs\Runtime\Src\Backends\BackendQuickJS.cs">
         <Link>Backends\BackendQuickJS.cs</Link>
     </Compile>
   </ItemGroup>

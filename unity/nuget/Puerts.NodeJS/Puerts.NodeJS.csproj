@@ -10,10 +10,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiNodejsNative.cs">
+    <Compile Include="..\..\upms\nodejs\Runtime\Src\Native\PapiNodejsNative.cs">
         <Link>Native\PapiNodejsNative.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendNodeJS.cs">
+    <Compile Include="..\..\upms\nodejs\Runtime\Src\Backends\BackendNodeJS.cs">
         <Link>Backends\BackendNodeJS.cs</Link>
     </Compile>
   </ItemGroup>
