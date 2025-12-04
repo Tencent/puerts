@@ -188,6 +188,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+      - name: papi-python
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-python
       - name: wsppaddon
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -229,6 +234,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
           arch: x64
+      - name: papi-python
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-python
       - name: wsppaddon
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -273,6 +283,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
+      - name: papi-python
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: papi-python
       - name: wsppaddon
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:
