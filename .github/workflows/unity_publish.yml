@@ -131,7 +131,7 @@ jobs:
           websocket: 2
 
   osx:
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - name: puerts
