@@ -11,6 +11,14 @@ inputs:
     options:
     - Release
     - Debug
+  arch:
+    type: choice
+    description: building arch
+    default: 'auto'
+    options:
+      - auto
+      - arm64
+      - x64
   websocket:
     description: enable websocket
     default: '0'
