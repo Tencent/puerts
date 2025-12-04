@@ -250,14 +250,6 @@ function getExeSuffix() {
     return "";
 }
 
-function tryGetPythonFromPath() {
-    try {
-      const out = execFileSync('python', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' }).trim();
-      if (out && existsSync(out)) return { exe: out, home: dirname(out) };
-    } catch {}
-    return null;
-}
-
 export async function dotnetTest(cwd, backend, filter = '', thread_safe = false) {
     // 编译binary
     let dlls = await runPuertsMake(join(cwd, '../../native/puerts'), {
@@ -299,14 +291,11 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
     });
     dlls = dlls.concat(nodedlls);
 	
-	const pyInfo = tryGetPythonFromPath();
-	
 	const pydlls = await runPuertsMake(join(cwd, '../../native/papi-python'), {
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe,
-		cmake_args: (pyInfo && pyInfo.exe) ? `-DPython3_EXECUTABLE="${pyInfo.exe}"` : undefined
+        thread_safe: thread_safe
     });
     dlls = dlls.concat(pydlls);
 

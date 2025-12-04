@@ -53,6 +53,14 @@ function selectVisualStudioGenerator() {
    }
 }
 
+function tryGetPythonFromPath() {
+    try {
+      const out = execFileSync('python', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' }).trim();
+      if (out && existsSync(out)) return { exe: out, home: dirname(out) };
+    } catch {}
+    return null;
+}
+
 const platformCompileConfig = {
     'android': {
         'armv7': {
@@ -419,6 +427,12 @@ async function runPuertsMake(cwd, options) {
 	
 	if (options.cmake_args) {
 		CmakeDArgs += ` ${options.cmake_args}`;
+	}
+	if (options.backend == 'papi-python' && options.platform == "win") {
+		const pyInfo = tryGetPythonFromPath();
+		if (pyInfo && pyInfo.exe) {
+	        CmakeDArgs +=  ` -DPython3_EXECUTABLE="${pyInfo.exe}"`;
+		}
 	}
 
     var outputFile = BuildConfig.hook(
