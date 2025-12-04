@@ -235,6 +235,9 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: papi-nodejs
           arch: x64
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13' 
       - name: papi-python
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
