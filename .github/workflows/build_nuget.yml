@@ -119,12 +119,12 @@ jobs:
         with:
           name: natives-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            unity/upms/core/Plugins/**/*.dylib
-            unity/upms/v8/Plugins/**/*.dylib
-            unity/upms/nodejs/Plugins/**/*.dylib
-            unity/upms/lua/Plugins/**/*.dylib
-            unity/upms/python/Plugins/**/*.dylib
-            unity/upms/quickjs/Plugins/**/*.dylib
+            unity/upms/core/Plugins/macOS/*.dylib
+            unity/upms/v8/Plugins/macOS/*.dylib
+            unity/upms/nodejs/Plugins/macOS/*.dylib
+            unity/upms/lua/Plugins/macOS/*.dylib
+            unity/upms/python/Plugins/macOS/*.dylib
+            unity/upms/quickjs/Plugins/macOS/*.dylib
             
             unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so

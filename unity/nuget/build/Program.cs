@@ -95,14 +95,15 @@ public class BuildContext : FrostingContext
             {
                 if (projectItem.CmakeRid == "osx")
                 {
-                    // natives-osx-auto\Assets\core\upm\Plugins\macOS\*.dylib
+                    /* natives-osx-auto\upms\core\Plugins\macOS\*.dylib
+                     * natives-osx-auto\upms\lua\Plugins\macOS\*.dylib
+                     * natives-osx-auto\upms\nodejs\Plugins\macOS\*.dylib
+                     * natives-osx-auto\upms\quickjs\Plugins\macOS\*.dylib
+                     * natives-osx-auto\upms\v8\Plugins\macOS\*.dylib
+                     */
                     var nativeAssetsPathmacOS = nativeAssetsDirectory.Path
                         .Combine("natives-osx-auto")
-                        .Combine("Assets")
-                        .Combine("core")
-                        .Combine("upm")
-                        .Combine("Plugins")
-                        .Combine("macOS");
+                        .Combine("upms");
 
                     var targetDirectorymacOS = context.ProjectsRoot.Path
                         .Combine(projectItem.Name)
@@ -111,7 +112,7 @@ public class BuildContext : FrostingContext
 
                     Directory.CreateDirectory(targetDirectorymacOS.FullPath);
 
-                    var filesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/*{projectItem.DotNetNativeName}*dylib"), new GlobberSettings() { IsCaseSensitive = false });
+                    var filesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/*/Plugins/macOS/*{projectItem.DotNetNativeName}*dylib"), new GlobberSettings() { IsCaseSensitive = false });
                     if (filesmacOS.Count == 0)
                     {
                         throw new CakeException($"No native assets found in '{nativeAssetsPathmacOS.FullPath}' for project '{projectItem.Name}'.");
@@ -125,7 +126,11 @@ public class BuildContext : FrostingContext
                     // Copy libnode dependencies for NodeJS
                     if (projectItem.DotNetNativeName == "NodeJS")
                     {
-                        var libnodeFilesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/libnode*"), new GlobberSettings() { IsCaseSensitive = false });
+                        var libnodeFilesmacOS = context.GetFiles(new GlobPattern($"{nativeAssetsPathmacOS.FullPath}/nodejs/Plugins/macOS/libnode*"), new GlobberSettings() { IsCaseSensitive = false });
+                        if (libnodeFilesmacOS.Count == 0)
+                        {
+                            throw new CakeException($"No libnode dependencies found in '{nativeAssetsPathmacOS.FullPath}' for project '{projectItem.Name}'.");
+                        }
                         context.CopyFiles(libnodeFilesmacOS, targetDirectorymacOS.FullPath);
                     }
 
