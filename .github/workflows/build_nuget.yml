@@ -60,7 +60,12 @@ jobs:
           for backend in $backends; do
             echo "Building $backend for ${{ matrix.platform }}"
             cd "$repo_root/unity/native/$backend"
-            node ../../cli make --platform ${{ matrix.platform }}
+            # if python backend, specify arch to arm64
+            if [ "$backend" = "papi-python" ] && [ "${{ matrix.arch }}" = "auto" ]; then
+              node ../../cli make --platform ${{ matrix.platform }} --arch arm64
+            else
+              node ../../cli make --platform ${{ matrix.platform }}
+            fi
             cd "$repo_root"
           done
 
@@ -119,13 +124,12 @@ jobs:
         with:
           name: natives-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            unity/upms/core/Plugins/macOS/*.dylib
-            unity/upms/v8/Plugins/macOS/*.dylib
-            unity/upms/nodejs/Plugins/macOS/*.dylib
-            unity/upms/lua/Plugins/macOS/*.dylib
-            unity/upms/python/Plugins/macOS/*.dylib
-            unity/upms/quickjs/Plugins/macOS/*.dylib
-            unity/upms/python/Plugins/macOS/*.dylib
+            unity/upms/core/Plugins/**/*.dylib
+            unity/upms/v8/Plugins/**/*.dylib
+            unity/upms/nodejs/Plugins/**/*.dylib
+            unity/upms/lua/Plugins/**/*.dylib
+            unity/upms/python/Plugins/**/*.dylib
+            unity/upms/quickjs/Plugins/**/*.dylib
             
             unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/papi-lua/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
@@ -139,6 +143,9 @@ jobs:
 
             unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            
+            unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
             
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
