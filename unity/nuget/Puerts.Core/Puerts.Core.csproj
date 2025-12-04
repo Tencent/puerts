@@ -9,34 +9,34 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\*.cs">
+    <Compile Include="..\..\upms\core\Runtime\Src\*.cs">
         <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\PInvoke\**\*.cs">
+    <Compile Include="..\..\upms\core\Runtime\Src\PInvoke\**\*.cs">
         <Link>PInvoke\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PuertsNative.cs">
+    <Compile Include="..\..\upms\core\Runtime\Src\Native\PuertsNative.cs">
         <Link>Native\PuertsNative.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendJs.cs">
+    <Compile Include="..\..\upms\core\Runtime\Src\Backends\BackendJs.cs">
         <Link>Backends\BackendJs.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\IL2Cpp\TypeUtils.cs">
+    <Compile Include="..\..\upms\core\Runtime\Src\IL2Cpp\TypeUtils.cs">
         <Link>IL2Cpp\TypeUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\IL2Cpp\ExtensionMethodInfos_Gen_Internal.cs">
+    <Compile Include="..\..\upms\core\Runtime\Src\IL2Cpp\ExtensionMethodInfos_Gen_Internal.cs">
         <Link>IL2Cpp\ExtensionMethodInfos_Gen_Internal.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\IL2Cpp\ArrayExtension.cs">
+    <Compile Include="..\..\upms\core\Runtime\Src\IL2Cpp\ArrayExtension.cs">
         <Link>IL2Cpp\ArrayExtension.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\Assets\core\upm\Runtime\Resources\puerts\*.*" PackagePath="contentFiles\puerts">
+    <Content Include="..\..\upms\core\Runtime\Resources\puerts\*.*" PackagePath="contentFiles\puerts">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>

@@ -50,8 +50,20 @@ runs:
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        path: ./unity/Assets/core/upm/Plugins/**/*
+        path: |
+          ./unity/upms/core/Plugins/**/*
+          ./unity/upms/v8/Plugins/**/*
+          ./unity/upms/nodejs/Plugins/**/*
+          ./unity/upms/lua/Plugins/**/*
+          ./unity/upms/python/Plugins/**/*
+          ./unity/upms/quickjs/Plugins/**/*
         name: Unity_Plugins_${{ inputs.backend }}_${{ inputs.config }}_wasm
     - name: Clean
       shell: bash
-      run: rm -rf ./unity/Assets/core/upm/Plugins/**/*
+      run: |
+        rm -rf ./unity/upms/core/Plugins/**/*
+        rm -rf ./unity/upms/v8/Plugins/**/*
+        rm -rf ./unity/upms/nodejs/Plugins/**/*
+        rm -rf ./unity/upms/lua/Plugins/**/*
+        rm -rf ./unity/upms/python/Plugins/**/*
+        rm -rf ./unity/upms/quickjs/Plugins/**/*

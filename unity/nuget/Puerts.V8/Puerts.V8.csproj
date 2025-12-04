@@ -11,10 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Native\PapiV8Native.cs">
+    <Compile Include="..\..\upms\v8\Runtime\Src\Native\PapiV8Native.cs">
         <Link>Native\PapiV8Native.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\core\upm\Runtime\Src\Backends\BackendV8.cs">
+    <Compile Include="..\..\upms\v8\Runtime\Src\Backends\BackendV8.cs">
         <Link>Backends\BackendV8.cs</Link>
     </Compile>
   </ItemGroup>

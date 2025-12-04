@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths: 
-      - unity/Assets/**
+      - unity/upms/**
       - unity/test/**
       - unity/native/**
       - unity/cli/**
@@ -17,7 +17,7 @@ on:
       - .github/workflows/composites/**
   pull_request:
     paths: 
-      - unity/Assets/**
+      - unity/upms/**
       - unity/test/**
       - unity/native/**
       - unity/cli/**
