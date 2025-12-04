@@ -232,40 +232,11 @@ jobs:
         run: |
           echo "PESAPI_VERSION=$(cat unity/native/puerts/include/pesapi.h | grep -Po '(?<=PESAPI_VERSION\s)(\d+)')" >> $GITHUB_ENV
 #          node -e "const pjson = JSON.parse(fs.readFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', 'utf-8')); pjson.version = '${{ github.event.inputs.tag_name }}' ; fs.writeFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', JSON.stringify(pjson))"
-            
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: Unity_Plugins_puerts_Release_*
-          path: unity/upms/core/Plugins/
-          merge-multiple: true
 
       - uses: actions/download-artifact@v4
         with:
-          pattern: Unity_Plugins_papi-v8_Release_*
-          path: unity/upms/v8/Plugins/
-          merge-multiple: true
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: Unity_Plugins_papi-quickjs_Release_*
-          path: unity/upms/quickjs/Plugins/
-          merge-multiple: true
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: Unity_Plugins_papi-lua_Release_*
-          path: unity/upms/lua/Plugins/
-          merge-multiple: true
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: Unity_Plugins_papi-nodejs_Release_*
-          path: unity/upms/nodejs/Plugins/
-          merge-multiple: true
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: Unity_Plugins_papi-python_Release_*
-          path: unity/upms/python/Plugins/
+          pattern: Unity_Plugins_*
+          path: unity/upms/
           merge-multiple: true
 
       - name: Create Release Asset
