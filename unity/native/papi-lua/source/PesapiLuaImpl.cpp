@@ -1,5 +1,4 @@
-﻿#include "lua.hpp"
-#include "pesapi.h"
+﻿#include "pesapi.h"
 #include "CppObjectMapperLua.h"
 
 namespace pesapi

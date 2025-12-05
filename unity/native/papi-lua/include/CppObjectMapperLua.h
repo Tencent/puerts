@@ -1,7 +1,13 @@
 #pragma once
 
 #include "pesapi.h"
+#if defined(__EMSCRIPTEN__)
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+#else
 #include "lua.hpp"
+#endif
 #include <EASTL/unordered_map.h>
 #include <EASTL/vector.h>
 #include <EASTL/allocator_malloc.h>
