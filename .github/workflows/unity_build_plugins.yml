@@ -82,7 +82,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
-          websocket: 2
+          websocket: 1
           
   ohos:
     runs-on: ubuntu-latest
@@ -121,7 +121,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
-          websocket: 2
+          websocket: 1
 
   ios:
     runs-on: macos-13
@@ -157,7 +157,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
-          websocket: 2
+          websocket: 1
 
   osx:
     runs-on: macos-latest
@@ -199,7 +199,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
-          websocket: 2
+          websocket: 1
 
   windows:
     runs-on: windows-2022
@@ -250,7 +250,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
           arch: x64
-          websocket: 2
+          websocket: 1
 
   linux64:
     runs-on: ubuntu-latest
@@ -298,7 +298,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: wsppaddon
-          websocket: 2
+          websocket: 1
 
   wasm:
     runs-on: ubuntu-latest
