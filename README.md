@@ -5,7 +5,8 @@
 
 [![unreal](https://img.shields.io/badge/unreal-v1.0.8-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.8)
 
-[![unity](https://img.shields.io/badge/unity(stable)-v2.2.2-blue.svg)](doc/unity/zhcn/install.md)
+[![unity](https://img.shields.io/badge/unity-v3.0.0(latest)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v3.0.0)
+[![unity](https://img.shields.io/badge/unity-v2.2.3(lts)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v2.2.3)
 ![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
 
 [跳转中文](#what---普洱ts是什么)
