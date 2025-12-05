@@ -12,6 +12,7 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             var b = jsEnv.Eval<ScriptObject>(@"
                 class __BaseClassToPass {}
+                globalThis.__BaseClassToPass = __BaseClassToPass;
                 __BaseClassToPass;
             ");
             var d = jsEnv.Eval<ScriptObject>(@"

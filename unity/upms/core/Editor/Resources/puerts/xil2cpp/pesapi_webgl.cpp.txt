@@ -440,7 +440,7 @@ typedef union JSFloat64Union {
 
 static int JS_ToInt32(int32_t *pres, JSValue val)
 {
-    uint32_t tag;
+    int32_t tag;
     int32_t ret;
 
     tag = JS_VALUE_GET_TAG(val);
@@ -475,6 +475,40 @@ static int JS_ToInt32(int32_t *pres, JSValue val)
                         ret = -ret;
             } else {
                 ret = 0; /* also handles NaN and +inf */
+            }
+        }
+        break;
+        
+    case JS_TAG_STRING:
+        {
+            /* convert UTF8 string to int32 */
+            if (val.u.str.ptr && val.u.str.len > 0) {
+                ret = (int32_t)atoi(val.u.str.ptr);
+            } else {
+                ret = 0;
+            }
+        }
+        break;
+        
+    case JS_TAG_STRING16:
+        {
+            /* convert UTF16 string to int32 */
+            if (val.u.str.ptr && val.u.str.len > 0) {
+                /* simple conversion: extract ASCII characters and convert */
+                std::string utf8_str;
+                utf8_str.reserve(val.u.str.len);
+                const uint16_t* str16 = (const uint16_t*)val.u.str.ptr;
+                for (uint32_t i = 0; i < val.u.str.len; i++) {
+                    if (str16[i] < 128) {
+                        utf8_str.push_back((char)str16[i]);
+                    } else {
+                        /* non-ASCII character, stop conversion */
+                        break;
+                    }
+                }
+                ret = (int32_t)atoi(utf8_str.c_str());
+            } else {
+                ret = 0;
             }
         }
         break;

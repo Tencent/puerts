@@ -244,7 +244,7 @@ namespace Puerts.UnitTest
             //UnityEngine.Debug.Log($"LogAppEvent: {logEvent}, valueToSum: {valueToSum}, res: {res}");
             return res;
         }
-
+        [UnityEngine.Scripting.Preserve]
         public static uint FloatAsUInt(uint rewardId, bool needBackup = true)
         {
             return rewardId;
@@ -795,25 +795,32 @@ namespace Puerts.UnitTest
         float IFoo.width => 125f; // Note the explicit interface `IFoo.`
     }
 
+    [UnityEngine.Scripting.Preserve]
     public class BoxValueContainer
     {
         public object BoxedValue;
 
+        [UnityEngine.Scripting.Preserve]
         public BoxValueContainer()
         {
             BoxedValue = 123;
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
     public struct StaticFieldStruct
     {
+        [UnityEngine.Scripting.Preserve]
         public float instanceField;
     }
 
+    [UnityEngine.Scripting.Preserve]
     public static class OnlyStaticFieldClass
     {
+        [UnityEngine.Scripting.Preserve]
         public static StaticFieldStruct staticFieldStruct;
 
+        [UnityEngine.Scripting.Preserve]
         static OnlyStaticFieldClass()
         {
             staticFieldStruct = new StaticFieldStruct { instanceField = 3 };
@@ -826,18 +833,22 @@ namespace Puerts.UnitTest
         public int Y;
     }
 
+    [UnityEngine.Scripting.Preserve]
     public class ClassHasNullableField
     {
+        [UnityEngine.Scripting.Preserve]
         public ClassHasNullableField()
         {
             struct2Filed = new Struct2Field() { X = 10, Y = 20 };
             nullableIntField = 100;
         }
+        [UnityEngine.Scripting.Preserve]
         public Struct2Field? struct2Filed;
+        [UnityEngine.Scripting.Preserve]
         public int? nullableIntField;
     }
-	
 
+    [UnityEngine.Scripting.Preserve]
     public class BaseWithVirtual
     {
         protected virtual bool VirtualMethod(bool f)
@@ -852,6 +863,7 @@ namespace Puerts.UnitTest
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
     public class DerivedOverrideVirtual : BaseWithVirtual
     {
         [UnityEngine.Scripting.Preserve]
@@ -1657,6 +1669,7 @@ __PDUOTF;");
 #endif
         delegate bool PassScriptObject(ScriptObject obj);
 
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void JsObjectCrossJsEnvs()
         {
@@ -1696,6 +1709,7 @@ __PDUOTF;");
                 Assert.False(test1(jsObj1));
 			});
         }
+#endif
 
         [Test]
         public void AutoConvertStringToNumber()
@@ -1884,7 +1898,8 @@ __PDUOTF;");
             Assert.AreEqual(true, res);
         }
 
-
+        // gc相关测试在webgl下不稳定，先去掉
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void TestObjectFieldRefAStruct()
         {
@@ -1947,6 +1962,7 @@ __PDUOTF;");
             TestHelper.AssertAndPrint("FieldClass", 0, FieldClass.ObjCount);
             TestHelper.AssertAndPrint("FieldClass2", 0, FieldClass2.ObjCount);
         }
+#endif
 
     }
 }

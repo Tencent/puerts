@@ -1027,7 +1027,7 @@ export function WebGLFFIApi(engine: PuertsJSEngine) {
             Buffer.writeInt32(engine.unityApi.HEAPU8, 0, out_ptr);
             return false;
         }
-        let privateData = obj.hasOwnProperty('__p_private_data') ? obj['__p_private_data'] : 0;
+        let privateData = Object.hasOwn(obj, '__p_private_data') ? obj['__p_private_data'] : 0;
         Buffer.writeInt32(engine.unityApi.HEAPU8, privateData, out_ptr);
         return true;
     }
