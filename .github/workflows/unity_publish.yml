@@ -308,7 +308,7 @@ jobs:
           path: unity/upms/
           merge-multiple: true
 
-      - name: Create Release Asset
+      - name: Extract versions and create release assets
         run: |
           cp LICENSE unity/upms/core/
           cp LICENSE unity/upms/v8/
@@ -317,13 +317,27 @@ jobs:
           cp LICENSE unity/upms/python/
           cp LICENSE unity/upms/quickjs/
           cd unity/upms
-          tar cvfz ../../PuerTS_Core_${{ github.event.inputs.tag_name }}.tar.gz core
-          tar cvfz ../../PuerTS_V8_${{ github.event.inputs.tag_name }}.tar.gz v8
-          tar cvfz ../../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tar.gz quickjs
-          tar cvfz ../../PuerTS_Lua_${{ github.event.inputs.tag_name }}.tar.gz lua
-          tar cvfz ../../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tar.gz nodejs
-          tar cvfz ../../PuerTS_Python_${{ github.event.inputs.tag_name }}.tar.gz python
-          tar cvfz ../../PuerTS_Webgl_${{ github.event.inputs.tag_name }}.tar.gz webgl
+          CORE_VERSION=$(node -p "require('./core/package.json').version")
+          V8_VERSION=$(node -p "require('./v8/package.json').version")
+          QUICKJS_VERSION=$(node -p "require('./quickjs/package.json').version")
+          LUA_VERSION=$(node -p "require('./lua/package.json').version")
+          NODEJS_VERSION=$(node -p "require('./nodejs/package.json').version")
+          PYTHON_VERSION=$(node -p "require('./python/package.json').version")
+          WEBGL_VERSION=$(node -p "require('./webgl/package.json').version")
+          echo "CORE_VERSION=${CORE_VERSION}" >> $GITHUB_ENV
+          echo "V8_VERSION=${V8_VERSION}" >> $GITHUB_ENV
+          echo "QUICKJS_VERSION=${QUICKJS_VERSION}" >> $GITHUB_ENV
+          echo "LUA_VERSION=${LUA_VERSION}" >> $GITHUB_ENV
+          echo "NODEJS_VERSION=${NODEJS_VERSION}" >> $GITHUB_ENV
+          echo "PYTHON_VERSION=${PYTHON_VERSION}" >> $GITHUB_ENV
+          echo "WEBGL_VERSION=${WEBGL_VERSION}" >> $GITHUB_ENV
+          tar cvfz ../../PuerTS_Core_${CORE_VERSION}.tar.gz core
+          tar cvfz ../../PuerTS_V8_${V8_VERSION}.tar.gz v8
+          tar cvfz ../../PuerTS_Quickjs_${QUICKJS_VERSION}.tar.gz quickjs
+          tar cvfz ../../PuerTS_Lua_${LUA_VERSION}.tar.gz lua
+          tar cvfz ../../PuerTS_Nodejs_${NODEJS_VERSION}.tar.gz nodejs
+          tar cvfz ../../PuerTS_Python_${PYTHON_VERSION}.tar.gz python
+          tar cvfz ../../PuerTS_Webgl_${WEBGL_VERSION}.tar.gz webgl
           
       - name: Create Release
         id: create_release
@@ -347,8 +361,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Core_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: PuerTS_Core_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_path: ./PuerTS_Core_${{ env.CORE_VERSION }}.tar.gz
+          asset_name: PuerTS_Core_${{ env.CORE_VERSION }}.tar.gz
           asset_content_type: application/tgz
 
       - name: Upload V8 Backend
@@ -358,8 +372,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_V8_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: PuerTS_V8_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_path: ./PuerTS_V8_${{ env.V8_VERSION }}.tar.gz
+          asset_name: PuerTS_V8_${{ env.V8_VERSION }}.tar.gz
           asset_content_type: application/tgz
 
       - name: Upload Quickjs Backend
@@ -369,8 +383,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tar.gz
+          asset_path: ./PuerTS_Quickjs_${{ env.QUICKJS_VERSION }}.tar.gz
+          asset_name: PuerTS_Quickjs_${{ env.QUICKJS_VERSION }}.tar.gz
           asset_content_type: application/tgz
 
       - name: Upload Lua Backend
@@ -380,8 +394,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Lua_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: "PuerTS_Lua_${{ github.event.inputs.tag_name }}.tar.gz"
+          asset_path: ./PuerTS_Lua_${{ env.LUA_VERSION }}.tar.gz
+          asset_name: "PuerTS_Lua_${{ env.LUA_VERSION }}.tar.gz"
           asset_content_type: application/tgz
 
       - name: Upload Nodejs Backend
@@ -391,8 +405,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: "PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tar.gz"
+          asset_path: ./PuerTS_Nodejs_${{ env.NODEJS_VERSION }}.tar.gz
+          asset_name: "PuerTS_Nodejs_${{ env.NODEJS_VERSION }}.tar.gz"
           asset_content_type: application/tgz
       - name: Upload Python Backend
         #id: upload-release-asset
@@ -401,8 +415,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Python_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: "PuerTS_Python_${{ github.event.inputs.tag_name }}.tar.gz"
+          asset_path: ./PuerTS_Python_${{ env.PYTHON_VERSION }}.tar.gz
+          asset_name: "PuerTS_Python_${{ env.PYTHON_VERSION }}.tar.gz"
           asset_content_type: application/tgz
       - name: Upload Webgl Backend
         #id: upload-release-asset
@@ -411,8 +425,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Webgl_${{ github.event.inputs.tag_name }}.tar.gz
-          asset_name: "PuerTS_Webgl_${{ github.event.inputs.tag_name }}.tar.gz"
+          asset_path: ./PuerTS_Webgl_${{ env.WEBGL_VERSION }}.tar.gz
+          asset_name: "PuerTS_Webgl_${{ env.WEBGL_VERSION }}.tar.gz"
           asset_content_type: application/tgz
 
       # - name: Trigger demo/upm repository update
