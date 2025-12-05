@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <PackageVersion>$(PuertsQuickJSVersion)</PackageVersion>
+        <PackageVersion>$(PuertsPythonVersion)</PackageVersion>
         <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
     </PropertyGroup>
 

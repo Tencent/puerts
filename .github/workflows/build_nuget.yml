@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     env:
-      NATIVE_BACKENDS: puerts papi-lua papi-quickjs papi-v8 papi-nodejs
+      NATIVE_BACKENDS: puerts papi-lua papi-quickjs papi-v8 papi-nodejs papi-python
     strategy:
       matrix:
         include:
@@ -60,7 +60,12 @@ jobs:
           for backend in $backends; do
             echo "Building $backend for ${{ matrix.platform }}"
             cd "$repo_root/unity/native/$backend"
-            node ../../cli make --platform ${{ matrix.platform }}
+            # if python backend, specify arch to arm64
+            if [ "$backend" = "papi-python" ] && [ "${{ matrix.arch }}" = "auto" ]; then
+              node ../../cli make --platform ${{ matrix.platform }} --arch arm64
+            else
+              node ../../cli make --platform ${{ matrix.platform }}
+            fi
             cd "$repo_root"
           done
 
@@ -138,6 +143,9 @@ jobs:
 
             unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/papi-v8/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            
+            unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
+            unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
             
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so

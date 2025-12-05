@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsPythonVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsNativeAssetsmacOSTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <Import Project="..\NativeAssets.Common.props" />
+
+    <ItemGroup>
+        <None Include="lib\**\*.dylib" Pack="True" PackagePath="runtimes\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="lib\osx\native\" />
+    </ItemGroup>
+
+</Project>
