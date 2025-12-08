@@ -4,7 +4,7 @@
 
     <NoWarn>NU5128</NoWarn>
 
-    <BuildPackageVersion>3.0.0-alpha4</BuildPackageVersion>
+    <BuildPackageVersion>3.0.0</BuildPackageVersion>
 
     <PackageProjectUrl>https://github.com/Tencent/puerts</PackageProjectUrl>
 
@@ -19,9 +19,9 @@
     <PackageTags>puerts;typescript;v8;nodejs;dotnet;quickjs;lua;python</PackageTags>
 
     <PuertsCoreVersion>$(BuildPackageVersion)</PuertsCoreVersion>
-    <PuertsLuaVersion>$(BuildPackageVersion)</PuertsLuaVersion>
+    <PuertsLuaVersion>3.0.0-beta1</PuertsLuaVersion>
     <PuertsNodeJsVersion>$(BuildPackageVersion)</PuertsNodeJsVersion>
-    <PuertsPythonVersion>$(BuildPackageVersion)</PuertsPythonVersion>
+    <PuertsPythonVersion>3.0.0-beta1</PuertsPythonVersion>
     <PuertsQuickJsVersion>$(BuildPackageVersion)</PuertsQuickJsVersion>
     <PuertsV8Version>$(BuildPackageVersion)</PuertsV8Version>
   </PropertyGroup>
