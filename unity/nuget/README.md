@@ -2,7 +2,9 @@
 
 ## 使用
 
-可用的平台 `.net8.0`, `win-x64`, `linux-x64`, `osx-x64`, `osx-arm64`
+可用的平台 `.net8.0`, `win-x64`, `linux-x64`, `osx` ([universal binary](https://developer.apple.com/documentation/apple-silicon/building-a-universal-macos-binary))
+
+Python 的 `osx` 版本目前仅支持 `osx-arm64`
 
 目前不支持`AOT`
 
@@ -18,8 +20,9 @@
 引入需要的扩展，以下是支持的扩展，同样的，也需要引入对应的 `NativeAssets`
 
 * `Puerts.Lua`
-* `Puerts.QuickJS`
 * `Puerts.NodeJS`
+* `Puerts.Python`
+* `Puerts.QuickJS`
 * `Puerts.V8`
 
 简单用例，已引入 `Puerts.Core`、 `Puerts.V8` 以及对应的 `NativeAssets` 包
@@ -27,30 +30,27 @@
 ```csharp
 using Puerts;
 
-var jsEnv = new ScriptEnv(
-    new BackendV8());
-    jsEnv.Eval(@"
-            CS.System.Console.WriteLine('hello world');
-        ");
-    jsEnv.Dispose();
-
-    Console.WriteLine("Press any key to exit...");
+var jsEnv = new ScriptEnv(new BackendV8()); 
+jsEnv.Eval(@"CS.System.Console.WriteLine('hello world');");
+jsEnv.Dispose();
+Console.WriteLine("Press any key to exit...");
 ```
 
 ## 包版本定义
 
 [Directory.Build.props](Directory.Build.props)
 
-构建包的版本
+构建包的版本可以通过设置 `Directory.Build.props` 中的各个版本号来定义
+
+版本是从各个upm包的 [package.json](../upms/core/package.json) 中读取的
 
 ```xml
-<BuildPackageVersion>0.0.1</BuildPackageVersion>
-
-<PuertsCoreVersion>$(BuildPackageVersion)</PuertsCoreVersion>
-<PuertsQuickJsVersion>$(BuildPackageVersion)</PuertsQuickJsVersion>
-<PuertsNodeJsVersion>$(BuildPackageVersion)</PuertsNodeJsVersion>
-<PuertsV8Version>$(BuildPackageVersion)</PuertsV8Version>
-<PuertsLuaVersion>$(BuildPackageVersion)</PuertsLuaVersion>
+<PuertsCoreVersion></PuertsCoreVersion>
+<PuertsLuaVersion></PuertsLuaVersion>
+<PuertsNodeJsVersion></PuertsNodeJsVersion>
+<PuertsPythonVersion></PuertsPythonVersion>
+<PuertsQuickJsVersion></PuertsQuickJsVersion>
+<PuertsV8Version></PuertsV8Version>
 ```
 
 设置目标的框架
