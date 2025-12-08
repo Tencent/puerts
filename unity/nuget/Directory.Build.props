@@ -17,14 +17,28 @@
     <PackageIcon>Icon128.png</PackageIcon>
 
     <PackageTags>puerts;typescript;v8;nodejs;dotnet;quickjs;lua;python</PackageTags>
-
-    <PuertsCoreVersion>$(BuildPackageVersion)</PuertsCoreVersion>
-    <PuertsLuaVersion>3.0.0-beta1</PuertsLuaVersion>
-    <PuertsNodeJsVersion>$(BuildPackageVersion)</PuertsNodeJsVersion>
-    <PuertsPythonVersion>3.0.0-beta1</PuertsPythonVersion>
-    <PuertsQuickJsVersion>$(BuildPackageVersion)</PuertsQuickJsVersion>
-    <PuertsV8Version>$(BuildPackageVersion)</PuertsV8Version>
   </PropertyGroup>
+
+  <!-- Read version from package.json files -->
+  <Target Name="ReadPackageVersions" BeforeTargets="BeforeBuild;BeforeRebuild;CoreCompile">
+    <PropertyGroup>
+      <PuertsCorePackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\core\package.json'))</PuertsCorePackageJson>
+      <PuertsLuaPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\lua\package.json'))</PuertsLuaPackageJson>
+      <PuertsNodeJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\nodejs\package.json'))</PuertsNodeJsPackageJson>
+      <PuertsPythonPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\python\package.json'))</PuertsPythonPackageJson>
+      <PuertsQuickJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\quickjs\package.json'))</PuertsQuickJsPackageJson>
+      <PuertsV8PackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\v8\package.json'))</PuertsV8PackageJson>
+
+      <PuertsCoreVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsCorePackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsCoreVersion>
+      <PuertsLuaVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsLuaPackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsLuaVersion>
+      <PuertsNodeJsVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsNodeJsPackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsNodeJsVersion>
+      <PuertsPythonVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsPythonPackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsPythonVersion>
+      <PuertsQuickJsVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsQuickJsPackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsQuickJsVersion>
+      <PuertsV8Version>$([System.Text.RegularExpressions.Regex]::Match($(PuertsV8PackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsV8Version>
+    </PropertyGroup>
+  </Target>
+
+  <PropertyGroup>
 
   <ItemGroup>
     <None Include="..\..\..\LICENSE" Pack="true" PackagePath="\" Link="Properties\LICENSE"/>
