@@ -38,8 +38,6 @@
     </PropertyGroup>
   </Target>
 
-  <PropertyGroup>
-
   <ItemGroup>
     <None Include="..\..\..\LICENSE" Pack="true" PackagePath="\" Link="Properties\LICENSE"/>
     <None Include="..\..\..\unreal\Puerts\Resources\Icon128.png" Pack="true" PackagePath="\" Link="Properties\Icon128.png" />
