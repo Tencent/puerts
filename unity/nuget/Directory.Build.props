@@ -22,12 +22,12 @@
   <!-- Read version from package.json files -->
   <Target Name="ReadPackageVersions" BeforeTargets="BeforeBuild;BeforeRebuild;CoreCompile">
     <PropertyGroup>
-      <PuertsCorePackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\core\package.json'))</PuertsCorePackageJson>
-      <PuertsLuaPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\lua\package.json'))</PuertsLuaPackageJson>
-      <PuertsNodeJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\nodejs\package.json'))</PuertsNodeJsPackageJson>
-      <PuertsPythonPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\python\package.json'))</PuertsPythonPackageJson>
-      <PuertsQuickJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\quickjs\package.json'))</PuertsQuickJsPackageJson>
-      <PuertsV8PackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\upms\v8\package.json'))</PuertsV8PackageJson>
+      <PuertsCorePackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\upms\core\package.json'))</PuertsCorePackageJson>
+      <PuertsLuaPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\upms\lua\package.json'))</PuertsLuaPackageJson>
+      <PuertsNodeJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\upms\nodejs\package.json'))</PuertsNodeJsPackageJson>
+      <PuertsPythonPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\upms\python\package.json'))</PuertsPythonPackageJson>
+      <PuertsQuickJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\upms\quickjs\package.json'))</PuertsQuickJsPackageJson>
+      <PuertsV8PackageJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\upms\v8\package.json'))</PuertsV8PackageJson>
 
       <PuertsCoreVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsCorePackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsCoreVersion>
       <PuertsLuaVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsLuaPackageJson), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</PuertsLuaVersion>
