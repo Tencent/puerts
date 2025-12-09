@@ -72,13 +72,13 @@ struct JsClassInfoHeader
     Il2CppClass* TypeId;
     Il2CppClass* SuperTypeId;
     bool IsValueType;
-    Il2CppMethodPointer DelegateBridge;
+    BridgeFuncInfo* BridgeFuncs;
     WrapData** CtorWrapDatas;
 };
 
 WrapFuncPtr FindWrapFunc(const char* signature);
 struct FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature);
-Il2CppMethodPointer FindBridgeFunc(const char* signature, bool IsShared);
+BridgeFuncInfo* FindBridgeFunc(const char* signature);
 
 struct JsClassInfo : public JsClassInfoHeader
 {
@@ -471,11 +471,8 @@ Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
 static std::map<const MethodInfo*, const MethodInfo*> WrapFuncPtrToMethodInfo;
 static std::recursive_mutex WrapFuncPtrToMethodInfoMutex;
 
-Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2CppClass* delegateType, Il2CppObject* target)
+const MethodInfo* FindOrCreateMethodInfo(const MethodInfo* invoke, Il2CppMethodPointer methodPointer, InvokerMethod invokerMethod)
 {
-    Il2CppObject* delegate = il2cpp::vm::Object::New(delegateType);
-    const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(delegateType);
-
     const MethodInfo* method = NULL;
     {
         std::lock_guard<std::recursive_mutex> lock(WrapFuncPtrToMethodInfoMutex);
@@ -486,8 +483,9 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
             MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
             newMethod->name = invoke->name;
             newMethod->klass = invoke->klass;
-            newMethod->methodPointer = functionPtr;
-            newMethod->invoker_method = invoke->invoker_method;
+            newMethod->methodPointer = methodPointer;
+            newMethod->virtualMethodPointer = methodPointer;
+            newMethod->invoker_method = invokerMethod;
             newMethod->return_type = invoke->return_type;
             newMethod->parameters_count = invoke->parameters_count;
             newMethod->parameters = invoke->parameters;
@@ -502,38 +500,23 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
             method = iter->second;
         }
     }
-
-#ifdef UNITY_2021_1_OR_NEWER
-    Type::ConstructClosedDelegate((Il2CppDelegate*)delegate, target, functionPtr, method);
-#else
-    Type::ConstructDelegate((Il2CppDelegate*)delegate, target, functionPtr, method);
-#endif
-
-    return (Il2CppDelegate*)delegate;
+    return method;
 }
 
-static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPtr, PObjectRefInfo** outTargetData)
+static void* DelegateAllocate(Il2CppClass *klass, BridgeFuncInfo* bridgeFuncs, PObjectRefInfo** outTargetData)
 {
     Il2CppClass *delegateInfoClass = g_typeofPersistentObjectInfo;
     if (!delegateInfoClass) return nullptr;
     
     auto target = il2cpp::vm::Object::New(delegateInfoClass);
-    
-    Il2CppDelegate* delegate = FunctionPointerToDelegate(functionPtr, klass, target);
+    const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(klass);
+    Il2CppDelegate* delegate = (Il2CppDelegate*)il2cpp::vm::Object::New(klass);
+    const MethodInfo* bridgeMethodInfo = FindOrCreateMethodInfo(invoke, bridgeFuncs->Method, bridgeFuncs->Invoker);
+    Type::ConstructDelegate(delegate, target, bridgeMethodInfo);
 
     if (MethodIsStatic(delegate->method)) return nullptr;
 
-#ifndef UNITY_2021_1_OR_NEWER
-    const MethodInfo* ctor = il2cpp_class_get_method_from_name(delegateInfoClass, ".ctor", 0);
-    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const MethodInfo* method);
-    ((NativeCtorPtr)ctor->methodPointer)(target, ctor);
-
-    IL2CPP_OBJECT_SETREF(delegate, target, target);
-#endif
-
     *outTargetData = GetPObjectRefInfo(target);
-
-    delegate->method_ptr = functionPtr;
 
     return delegate;
 }
@@ -929,7 +912,7 @@ static Il2CppObject* FunctionToDelegate(struct pesapi_ffi* apis, pesapi_env env,
     if (ret == nullptr || (Object::GetClass(ret) != classInfo->TypeId))
     {
         PObjectRefInfo* delegateInfo;
-        ret = (Il2CppObject *)DelegateAllocate(classInfo->TypeId, classInfo->DelegateBridge, &delegateInfo);
+        ret = (Il2CppObject *)DelegateAllocate(classInfo->TypeId, classInfo->BridgeFuncs, &delegateInfo);
         auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
         il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
         *handle_store = targetHandle.Get();
@@ -1241,7 +1224,7 @@ handle_underlying:
                     {
                         Exception::Raise(Exception::GetInvalidOperationException("can't find type info for delegate"));
                     }
-                    else if (!jsClassInfo->DelegateBridge)
+                    else if (!jsClassInfo->BridgeFuncs)
                     {
                         std::string err_info = "can't find DelegateBridge for delegate, sig:";
                         
@@ -2752,8 +2735,8 @@ static bool RegisterType(Il2CppClass* klass)
         try
         {
             std::string signature = GetMethodSignature(invoke, true, false);
-            classInfo->DelegateBridge = FindBridgeFunc(signature.c_str(), il2cpp::vm::Class::IsInflated(klass));
-            if (!classInfo->DelegateBridge)
+            classInfo->BridgeFuncs = FindBridgeFunc(signature.c_str());
+            if (!classInfo->BridgeFuncs)
             {
                 signature = "";
                 auto IsSharedable = [](const Il2CppType* type) -> bool
@@ -2782,7 +2765,7 @@ static bool RegisterType(Il2CppClass* klass)
                     }
                     if (isParamsSharedable && signature.size() <= 10)
                     {
-                        classInfo->DelegateBridge = FindBridgeFunc(signature.c_str(), il2cpp::vm::Class::IsInflated(klass));
+                        classInfo->BridgeFuncs = FindBridgeFunc(signature.c_str());
                     }
                 }
             }
@@ -2795,7 +2778,7 @@ static bool RegisterType(Il2CppClass* klass)
     }
     else
     {
-        classInfo->DelegateBridge = nullptr;
+        classInfo->BridgeFuncs = nullptr;
         auto etype = klass->byval_arg.type;
         if (etype != IL2CPP_TYPE_SZARRAY && etype != IL2CPP_TYPE_ARRAY)
         {
@@ -2939,7 +2922,7 @@ static bool RegisterType(Il2CppClass* klass)
     }
 
     pesapi_define_class(classInfo->TypeId, classInfo->SuperTypeId, classInfo->TypeId->name,
-        classInfo->DelegateBridge ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType && !classInfo->TypeId->has_references ? &PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
+        classInfo->BridgeFuncs ? &DelegateCtorCallback : &CtorCallback, classInfo->IsValueType && !classInfo->TypeId->has_references ? &PApiFree : (pesapi_finalize)nullptr, propertiesCount, properties, classInfo);
 
     pesapi_trace_native_object_lifecycle(classInfo->TypeId, (pesapi_on_native_object_enter)&OnCsObjectEnter, (pesapi_on_native_object_exit)&OnCsObjectExit);
 
