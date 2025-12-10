@@ -80,7 +80,10 @@ static void FText_Format(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Info.GetReturnValue().Set(::PUERTS_NAMESPACE::v8_impl::Converter<FText>::toScript(Context, FText::Format(Fmt, Args)));
 }
 
-static FText FromStringTable(const FName InTableId, const FString& InKey, const EStringTableLoadingPolicy InLoadingPolicy = EStringTableLoadingPolicy::FindOrLoad)
+static FText FromStringTable(
+    const FName InTableId,
+    const FString& InKey,
+    const EStringTableLoadingPolicy InLoadingPolicy = EStringTableLoadingPolicy::FindOrLoad)
 {
     // 这块代码主要是为了兼容 UE5.5 版本之后，FText::FromStringTable 函数的参数从 FString 改为 FTextKey 类型
     return FText::FromStringTable(InTableId, InKey, InLoadingPolicy);
