@@ -79,6 +79,14 @@ static void FText_Format(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     Info.GetReturnValue().Set(::PUERTS_NAMESPACE::v8_impl::Converter<FText>::toScript(Context, FText::Format(Fmt, Args)));
 }
+
+static FText FromStringTable(const FName InTableId, const FString& InKey,
+    const EStringTableLoadingPolicy InLoadingPolicy = EStringTableLoadingPolicy::FindOrLoad)
+{
+    // 这块代码主要是为了兼容 UE5.5 版本之后，FText::FromStringTable 函数的参数从 FString 改为 FTextKey 类型
+    return FText::FromStringTable(InTableId, InKey, InLoadingPolicy);
+}
+
 #endif
 
 #if ENGINE_MAJOR_VERSION > 4
@@ -130,7 +138,7 @@ UsingUStruct(FHitResult)
         PUERTS_NAMESPACE::DefineClass<FText>()
             .Constructor<>()    // make destructor available
             .Method("ToString", MakeFunction(&FText::ToString))
-            .Function("FromStringTable", MakeFunction(&FText::FromStringTable))
+            .Function("FromStringTable", MakeFunction(&FromStringTable))
             .Function("FromString", SelectFunction(FText(*)(const FString&), &FText::FromString))
             .Function("Format", FText_Format, &FormatSignature)
             .Register();
