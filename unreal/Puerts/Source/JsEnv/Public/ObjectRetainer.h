@@ -50,7 +50,11 @@ public:
 #endif
 
 private:
+#if ENGINE_MAJOR_VERSION >= 5
+    TSet<TObjectPtr<UObject>> RetainedObjects;
+#else
     TSet<UObject*> RetainedObjects;
+#endif
 
     FString Name = TEXT("FObjectRetainer");
 };
