@@ -593,7 +593,7 @@ namespace Puerts
             }
             else if (tranType.IsByRef)
             {
-                throw new Exception("nativeToScript: byref type " + tranType + " not support yet!");
+                return callPApi(context.Apis, "boxing", context.Env, nativeToScript(context, tranType.GetElementType(), value));
             }
             else if (!tranType.IsValueType)
             {
