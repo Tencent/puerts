@@ -2,9 +2,19 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <DotNet8Path>$([System.IO.Directory]::GetDirectories('$(EngineDir)\Binaries\ThirdParty\DotNet', '8.0.*'))</DotNet8Path>
-    <TargetFramework Condition="'$(DotNet8Path)' != ''">net8.0</TargetFramework>
-    <TargetFramework Condition="'$(DotNet8Path)' == ''">net6.0</TargetFramework>
+    <!-- 读取引擎的配置 -->
+    <UbtPath>$(EngineDir)\Source\Programs\UnrealBuildTool\UnrealBuildTool.csproj</UbtPath>
+    <UbtContent Condition="Exists('$(UbtPath)')">$([System.IO.File]::ReadAllText('$(UbtPath)'))</UbtContent>
+
+    <!-- 正则提取 -->
+    <!-- 原文逻辑: <TargetFramework>net6.0</TargetFramework> -->
+    <!-- 转义后: &lt;TargetFramework&gt;(.*?)&lt;/TargetFramework&gt; -->
+    <!-- Groups[1].Value 取的是括号里匹配到的内容 -->
+    <UbtFrameworkRaw>$([System.Text.RegularExpressions.Regex]::Match('$(UbtContent)', '&lt;TargetFramework&gt;\s*(.+?)\s*&lt;/TargetFramework&gt;').Groups[1].Value)</UbtFrameworkRaw>
+
+    <!-- 设置版本 (如果没读到，默认兜底 net8.0) -->
+    <TargetFramework Condition="'$(UbtFrameworkRaw)' != ''">$(UbtFrameworkRaw)</TargetFramework>
+    <TargetFramework Condition="'$(UbtFrameworkRaw)' == ''">net8.0</TargetFramework>
   </PropertyGroup>
 
 </Project>
