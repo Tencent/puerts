@@ -2,19 +2,25 @@
 
 [![license](https://img.shields.io/badge/license-BSD_3_Clause-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
+![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
+
+## Unreal Releases
 
 [![unreal](https://img.shields.io/badge/unreal-v1.0.9-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.9)
 
+## Unity Releases
+
 [![unity](https://img.shields.io/badge/unity-v3.0.0(latest)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v3.0.0)
 [![unity](https://img.shields.io/badge/unity-v2.2.3(lts)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v2.2.3)
-![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
+
+## Nuget Releases
 
 [![Puerts.Core](https://img.shields.io/nuget/v/Puerts.Core.svg?label=Puerts.Core)](https://www.nuget.org/packages/Puerts.Core)
-[![Nuget_V8](https://img.shields.io/nuget/v/Puerts.V8.svg?label=Puerts.V8)](https://www.nuget.org/packages/Puerts.V8)
-[![Nuget_NodeJS](https://img.shields.io/nuget/v/Puerts.NodeJS.svg?label=Puerts.NodeJS)](https://www.nuget.org/packages/Puerts.NodeJS)
-[![Nuget_QuickJS](https://img.shields.io/nuget/v/Puerts.QuickJS.svg?label=Puerts.QuickJS)](https://www.nuget.org/packages/Puerts.QuickJS)
-[![Nuget_Lua](https://img.shields.io/nuget/v/Puerts.Lua.svg?label=Puerts.Lua)](https://www.nuget.org/packages/Puerts.Lua)
-[![Nuget_Python](https://img.shields.io/nuget/v/Puerts.Python.svg?label=Puerts.Python)](https://www.nuget.org/packages/Puerts.Python)
+[![Puerts.V8](https://img.shields.io/nuget/v/Puerts.V8.svg?label=Puerts.V8)](https://www.nuget.org/packages/Puerts.V8)
+[![Puerts.NodeJS](https://img.shields.io/nuget/v/Puerts.NodeJS.svg?label=Puerts.NodeJS)](https://www.nuget.org/packages/Puerts.NodeJS)
+[![Puerts.QuickJS](https://img.shields.io/nuget/v/Puerts.QuickJS.svg?label=Puerts.QuickJS)](https://www.nuget.org/packages/Puerts.QuickJS)
+[![Puerts.Lua](https://img.shields.io/nuget/v/Puerts.Lua.svg?label=Puerts.Lua)](https://www.nuget.org/packages/Puerts.Lua)
+[![Puerts.Python](https://img.shields.io/nuget/v/Puerts.Python.svg?label=Puerts.Python)](https://www.nuget.org/packages/Puerts.Python)
 
 [跳转中文](#what---普洱ts是什么)
 
