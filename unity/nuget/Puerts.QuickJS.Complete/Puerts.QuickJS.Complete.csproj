@@ -5,6 +5,8 @@
         <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
     </PropertyGroup>
 
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
+    
     <ItemGroup>
       <ProjectReference Include="..\Puerts.Core.Complete\Puerts.Core.Complete.csproj" />
       <ProjectReference Include="..\Puerts.QuickJS.NativeAssets.Linux\Puerts.QuickJS.NativeAssets.Linux.csproj" />

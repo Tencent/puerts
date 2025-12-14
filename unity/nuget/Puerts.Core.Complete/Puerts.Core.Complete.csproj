@@ -5,6 +5,8 @@
         <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
     </PropertyGroup>
 
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
+    
     <ItemGroup>
       <ProjectReference Include="..\Puerts.Core.NativeAssets.Linux\Puerts.Core.NativeAssets.Linux.csproj" />
       <ProjectReference Include="..\Puerts.Core.NativeAssets.macOS\Puerts.Core.NativeAssets.macOS.csproj" />
