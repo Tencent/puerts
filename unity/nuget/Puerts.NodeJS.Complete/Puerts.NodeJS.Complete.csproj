@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsNodeJSVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Puerts.Core.Complete\Puerts.Core.Complete.csproj" />
+      <ProjectReference Include="..\Puerts.NodeJS.NativeAssets.Linux\Puerts.NodeJS.NativeAssets.Linux.csproj" />
+      <ProjectReference Include="..\Puerts.NodeJS.NativeAssets.macOS\Puerts.NodeJS.NativeAssets.macOS.csproj" />
+      <ProjectReference Include="..\Puerts.NodeJS.NativeAssets.Win32\Puerts.NodeJS.NativeAssets.Win32.csproj" />
+      <ProjectReference Include="..\Puerts.NodeJS\Puerts.NodeJS.csproj" />
+    </ItemGroup>
+
+</Project>

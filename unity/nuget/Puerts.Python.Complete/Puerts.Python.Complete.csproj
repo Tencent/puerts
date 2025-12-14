@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsPythonVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Puerts.Core.Complete\Puerts.Core.Complete.csproj" />
+      <ProjectReference Include="..\Puerts.Python.NativeAssets.Linux\Puerts.Python.NativeAssets.Linux.csproj" />
+      <ProjectReference Include="..\Puerts.Python.NativeAssets.macOS\Puerts.Python.NativeAssets.macOS.csproj" />
+      <ProjectReference Include="..\Puerts.Python.NativeAssets.Win32\Puerts.Python.NativeAssets.Win32.csproj" />
+      <ProjectReference Include="..\Puerts.Python\Puerts.Python.csproj" />
+    </ItemGroup>
+
+</Project>
