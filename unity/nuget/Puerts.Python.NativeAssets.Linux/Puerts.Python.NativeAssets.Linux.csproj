@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <PackageVersion>$(PuertsPythonVersion)</PackageVersion>
-        <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+        <TargetFrameworks>$(PuertsNativeAssetsLinuxTargetFrameworks)</TargetFrameworks>
     </PropertyGroup>
 
     <Import Project="..\NativeAssets.Common.props" />

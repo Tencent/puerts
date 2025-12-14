@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageVersion>$(PuertsV8Version)</PackageVersion>
-    <TargetFrameworks>$(PuertsNativeAssetsWin32TargetFrameworks)</TargetFrameworks>
+    <TargetFrameworks>$(PuertsNativeAssetsLinuxTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <Import Project="..\NativeAssets.Common.props" />
