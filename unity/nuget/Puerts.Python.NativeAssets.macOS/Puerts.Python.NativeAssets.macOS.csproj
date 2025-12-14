@@ -11,8 +11,4 @@
         <None Include="lib\**\*.dylib" Pack="True" PackagePath="runtimes\" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="lib\osx\native\" />
-    </ItemGroup>
-
 </Project>
