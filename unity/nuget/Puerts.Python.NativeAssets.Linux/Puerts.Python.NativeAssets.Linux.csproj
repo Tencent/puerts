@@ -5,7 +5,7 @@
         <TargetFrameworks>$(PuertsNativeAssetsLinuxTargetFrameworks)</TargetFrameworks>
     </PropertyGroup>
 
-    <Import Project="..\NativeAssets.Common.props" />
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
 
     <ItemGroup>
         <None Include="lib\**\*.so*" Pack="True" PackagePath="runtimes\" />
