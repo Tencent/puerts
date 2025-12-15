@@ -4,8 +4,6 @@
 
     <NoWarn>NU5128</NoWarn>
 
-    <BuildPackageVersion>3.0.0</BuildPackageVersion>
-
     <PackageProjectUrl>https://github.com/Tencent/puerts</PackageProjectUrl>
 
     <Description>Puerts is a library that makes it easy to add scripting to your .NET applications. It currently supports JavaScript (via V8/Nodejs/Quickjs) and Lua.</Description>

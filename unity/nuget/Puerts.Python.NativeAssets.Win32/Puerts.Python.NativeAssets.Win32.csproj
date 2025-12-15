@@ -5,7 +5,7 @@
         <TargetFrameworks>$(PuertsNativeAssetsWin32TargetFrameworks)</TargetFrameworks>
     </PropertyGroup>
 
-    <Import Project="..\NativeAssets.Common.props" />
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
 
     <ItemGroup>
         <None Include="lib\**\*.dll" Pack="True" PackagePath="runtimes\" />

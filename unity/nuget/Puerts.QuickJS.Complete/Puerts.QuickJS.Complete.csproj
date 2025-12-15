@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsQuickJSVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
+    
+    <ItemGroup>
+      <ProjectReference Include="..\Puerts.Core.Complete\Puerts.Core.Complete.csproj" />
+      <ProjectReference Include="..\Puerts.QuickJS.NativeAssets.Linux\Puerts.QuickJS.NativeAssets.Linux.csproj" />
+      <ProjectReference Include="..\Puerts.QuickJS.NativeAssets.macOS\Puerts.QuickJS.NativeAssets.macOS.csproj" />
+      <ProjectReference Include="..\Puerts.QuickJS.NativeAssets.Win32\Puerts.QuickJS.NativeAssets.Win32.csproj" />
+      <ProjectReference Include="..\Puerts.QuickJS\Puerts.QuickJS.csproj" />
+    </ItemGroup>
+
+</Project>

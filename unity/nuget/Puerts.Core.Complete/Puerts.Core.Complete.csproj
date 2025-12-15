@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsCoreVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
+    
+    <ItemGroup>
+      <ProjectReference Include="..\Puerts.Core.NativeAssets.Linux\Puerts.Core.NativeAssets.Linux.csproj" />
+      <ProjectReference Include="..\Puerts.Core.NativeAssets.macOS\Puerts.Core.NativeAssets.macOS.csproj" />
+      <ProjectReference Include="..\Puerts.Core.NativeAssets.Win32\Puerts.Core.NativeAssets.Win32.csproj" />
+      <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+    </ItemGroup>
+
+</Project>

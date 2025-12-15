@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
 		Directory.Packages.props = Directory.Packages.props
-		NativeAssets.Common.props = NativeAssets.Common.props
+		NoAssemblyOutputs.Common.props = NoAssemblyOutputs.Common.props
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.V8.NativeAssets.Linux", "Puerts.V8.NativeAssets.Linux\Puerts.V8.NativeAssets.Linux.csproj", "{1C136067-7008-4A6C-ABE4-AD307DBBC480}"
@@ -61,6 +61,18 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python.NativeAssets.macOS", "Puerts.Python.NativeAssets.macOS\Puerts.Python.NativeAssets.macOS.csproj", "{8F7ADCEE-555D-4FEE-9003-91055B072B89}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python.NativeAssets.Linux", "Puerts.Python.NativeAssets.Linux\Puerts.Python.NativeAssets.Linux.csproj", "{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Core.Complete", "Puerts.Core.Complete\Puerts.Core.Complete.csproj", "{0833659D-3AFA-4B0F-825C-DA41A3F6CD0A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Lua.Complete", "Puerts.Lua.Complete\Puerts.Lua.Complete.csproj", "{4B924D31-24AE-42ED-9C80-9F8406D35C52}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.NodeJS.Complete", "Puerts.NodeJS.Complete\Puerts.NodeJS.Complete.csproj", "{F7A9A87E-9BD5-4E04-91F6-A33176B54F51}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Python.Complete", "Puerts.Python.Complete\Puerts.Python.Complete.csproj", "{6C4C1E2D-B5DD-4F55-8D23-1BC438651733}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.QuickJS.Complete", "Puerts.QuickJS.Complete\Puerts.QuickJS.Complete.csproj", "{45CF190E-A2A2-4781-AD77-8C4BE6A05684}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.V8.Complete", "Puerts.V8.Complete\Puerts.V8.Complete.csproj", "{7F398021-BD69-4037-8E5F-C329CAE3F3BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -172,6 +184,30 @@ Global
 		{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B7125B3-DB23-499C-BEA4-BB7921BC3B68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0833659D-3AFA-4B0F-825C-DA41A3F6CD0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0833659D-3AFA-4B0F-825C-DA41A3F6CD0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0833659D-3AFA-4B0F-825C-DA41A3F6CD0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0833659D-3AFA-4B0F-825C-DA41A3F6CD0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B924D31-24AE-42ED-9C80-9F8406D35C52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B924D31-24AE-42ED-9C80-9F8406D35C52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B924D31-24AE-42ED-9C80-9F8406D35C52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B924D31-24AE-42ED-9C80-9F8406D35C52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7A9A87E-9BD5-4E04-91F6-A33176B54F51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7A9A87E-9BD5-4E04-91F6-A33176B54F51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7A9A87E-9BD5-4E04-91F6-A33176B54F51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7A9A87E-9BD5-4E04-91F6-A33176B54F51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C4C1E2D-B5DD-4F55-8D23-1BC438651733}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C4C1E2D-B5DD-4F55-8D23-1BC438651733}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C4C1E2D-B5DD-4F55-8D23-1BC438651733}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C4C1E2D-B5DD-4F55-8D23-1BC438651733}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45CF190E-A2A2-4781-AD77-8C4BE6A05684}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45CF190E-A2A2-4781-AD77-8C4BE6A05684}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45CF190E-A2A2-4781-AD77-8C4BE6A05684}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45CF190E-A2A2-4781-AD77-8C4BE6A05684}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F398021-BD69-4037-8E5F-C329CAE3F3BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F398021-BD69-4037-8E5F-C329CAE3F3BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F398021-BD69-4037-8E5F-C329CAE3F3BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F398021-BD69-4037-8E5F-C329CAE3F3BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -360,11 +360,17 @@ public static class WellKnownProjects
     public static readonly string[] CoreProjects =
     [
         "Puerts.Core",
+        "Puerts.Core.Complete",
         "Puerts.Lua",
+        "Puerts.Lua.Complete",
         "Puerts.NodeJS",
+        "Puerts.NodeJS.Complete",
         "Puerts.Python",
+        "Puerts.Python.Complete",
         "Puerts.QuickJS",
-        "Puerts.V8"
+        "Puerts.QuickJS.Complete",
+        "Puerts.V8",
+        "Puerts.V8.Complete"
     ];
 
     /// <summary>

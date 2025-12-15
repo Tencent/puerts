@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsLuaVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsCurrentTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
+
+    <ItemGroup>
+      <ProjectReference Include="..\Puerts.Core.Complete\Puerts.Core.Complete.csproj" />
+      <ProjectReference Include="..\Puerts.Lua.NativeAssets.Linux\Puerts.Lua.NativeAssets.Linux.csproj" />
+      <ProjectReference Include="..\Puerts.Lua.NativeAssets.macOS\Puerts.Lua.NativeAssets.macOS.csproj" />
+      <ProjectReference Include="..\Puerts.Lua.NativeAssets.Win32\Puerts.Lua.NativeAssets.Win32.csproj" />
+      <ProjectReference Include="..\Puerts.Lua\Puerts.Lua.csproj" />
+    </ItemGroup>
+
+</Project>
