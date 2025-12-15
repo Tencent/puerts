@@ -15,12 +15,11 @@
 
 ## Nuget Releases
 
-[![Puerts.Core](https://img.shields.io/nuget/v/Puerts.Core.svg?label=Puerts.Core)](https://www.nuget.org/packages/Puerts.Core)
-[![Puerts.V8](https://img.shields.io/nuget/v/Puerts.V8.svg?label=Puerts.V8)](https://www.nuget.org/packages/Puerts.V8)
-[![Puerts.NodeJS](https://img.shields.io/nuget/v/Puerts.NodeJS.svg?label=Puerts.NodeJS)](https://www.nuget.org/packages/Puerts.NodeJS)
-[![Puerts.QuickJS](https://img.shields.io/nuget/v/Puerts.QuickJS.svg?label=Puerts.QuickJS)](https://www.nuget.org/packages/Puerts.QuickJS)
-[![Puerts.Lua](https://img.shields.io/nuget/v/Puerts.Lua.svg?label=Puerts.Lua)](https://www.nuget.org/packages/Puerts.Lua)
-[![Puerts.Python](https://img.shields.io/nuget/v/Puerts.Python.svg?label=Puerts.Python)](https://www.nuget.org/packages/Puerts.Python)
+[![Puerts.V8.Complete](https://img.shields.io/nuget/v/Puerts.V8.Complete.svg?label=Puerts.V8)](https://www.nuget.org/packages/Puerts.V8.Complete)
+[![Puerts.NodeJS.Complete](https://img.shields.io/nuget/v/Puerts.NodeJS.Complete.svg?label=Puerts.NodeJS)](https://www.nuget.org/packages/Puerts.NodeJS.Complete)
+[![Puerts.QuickJS.Complete](https://img.shields.io/nuget/v/Puerts.QuickJS.Complete.svg?label=Puerts.QuickJS)](https://www.nuget.org/packages/Puerts.QuickJS.Complete)
+[![Puerts.Lua.Complete](https://img.shields.io/nuget/v/Puerts.Lua.Complete.svg?label=Puerts.Lua)](https://www.nuget.org/packages/Puerts.Complete.Lua)
+[![Puerts.Python.Complete](https://img.shields.io/nuget/v/Puerts.Python.Complete.svg?label=Puerts.Python)](https://www.nuget.org/packages/Puerts.Python.Complete)
 
 [跳转中文](#what---普洱ts是什么)
 
