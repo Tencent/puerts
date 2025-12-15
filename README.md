@@ -18,7 +18,7 @@
 [![Puerts.V8.Complete](https://img.shields.io/nuget/v/Puerts.V8.Complete.svg?label=Puerts.V8)](https://www.nuget.org/packages/Puerts.V8.Complete)
 [![Puerts.NodeJS.Complete](https://img.shields.io/nuget/v/Puerts.NodeJS.Complete.svg?label=Puerts.NodeJS)](https://www.nuget.org/packages/Puerts.NodeJS.Complete)
 [![Puerts.QuickJS.Complete](https://img.shields.io/nuget/v/Puerts.QuickJS.Complete.svg?label=Puerts.QuickJS)](https://www.nuget.org/packages/Puerts.QuickJS.Complete)
-[![Puerts.Lua.Complete](https://img.shields.io/nuget/v/Puerts.Lua.Complete.svg?label=Puerts.Lua)](https://www.nuget.org/packages/Puerts.Complete.Lua)
+[![Puerts.Lua.Complete](https://img.shields.io/nuget/v/Puerts.Lua.Complete.svg?label=Puerts.Lua)](https://www.nuget.org/packages/Puerts.Lua.Complete)
 [![Puerts.Python.Complete](https://img.shields.io/nuget/v/Puerts.Python.Complete.svg?label=Puerts.Python)](https://www.nuget.org/packages/Puerts.Python.Complete)
 
 [跳转中文](#what---普洱ts是什么)
