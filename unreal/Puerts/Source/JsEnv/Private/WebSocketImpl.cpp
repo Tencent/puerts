@@ -332,6 +332,8 @@ void V8WebSocketClientImpl::CloseImmediately(websocketpp::close::status::value c
         websocketpp::lib::error_code ec;
         Client.close(Handle, code, reason, ec);
     }
+
+    Client.stop();
     Cleanup();
 }
 
