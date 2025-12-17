@@ -346,7 +346,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body: |
-            中文版本请查看 [`doc/unity/zhcn/changelog.md`](https://github.com/Tencent/puerts/blob/master/doc/unity/zhcn/changelog.md)
+            [`changelog.md`](https://github.com/Tencent/puerts/blob/master/unity/upms/core/changelog.md) [`changelog-hans.md`](https://github.com/Tencent/puerts/blob/master/unity/upms/core/changelog-hans.md)
             
             > difference between Node.js/Quickjs/V8: [wiki](https://github.com/Tencent/puerts/wiki/%5BUnity%5D-Release%E9%87%8C%E5%90%84%E4%B8%AAPlugin%E7%9A%84%E5%8C%BA%E5%88%AB)
           tag_name: Unity_v${{ github.event.inputs.tag_name }}
