@@ -182,7 +182,7 @@ public:
             InterruptStackCallback cb = (InterruptStackCallback)data;
             std::string str = JsEngine->GetJSStackTrace();
             cb(str.c_str(), static_cast<int>(str.length()));
-        }, Callback);
+        }, (void*)Callback);
 #endif
     }
     
