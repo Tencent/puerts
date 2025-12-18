@@ -93,6 +93,12 @@ V8_EXPORT void TerminateExecution(v8::Isolate *Isolate)
     JsEngine->TerminateExecution();
 }
 
+V8_EXPORT void InterruptWithStackCallback(v8::Isolate *Isolate, puerts::InterruptStackCallback Callback)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->InterruptWithStackCallback(Callback);
+}
+
 #ifdef WITH_IL2CPP_OPTIMIZATION
 
 #if WITH_V8

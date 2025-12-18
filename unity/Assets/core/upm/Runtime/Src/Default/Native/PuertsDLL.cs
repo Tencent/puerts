@@ -47,6 +47,12 @@ namespace Puerts
 #endif
     public delegate void LogCallback(string content);
 
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
+    public delegate void InterruptCallback(IntPtr info, int len);
+
     [Flags]
     public enum JsValueType
     {
@@ -112,6 +118,18 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void TerminateExecution(IntPtr isolate);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void InterruptWithStackCallback(IntPtr isolate, IntPtr interruptCallback);
+
+        public static void InterruptWithStackCallback(IntPtr isolate, InterruptCallback interruptCallback)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(interruptCallback);
+#endif
+            IntPtr fn = interruptCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(interruptCallback);
+            InterruptWithStackCallback(isolate, fn);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetGlobalFunction(IntPtr isolate, string name, IntPtr v8FunctionCallback, long data);

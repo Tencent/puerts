@@ -199,6 +199,8 @@ public:
     
     virtual void TerminateExecution() = 0;
     
+    virtual void InterruptWithStackCallback(FuncPtr Callback) = 0;
+    
     virtual ~IPuertsPlugin()
     {
     }

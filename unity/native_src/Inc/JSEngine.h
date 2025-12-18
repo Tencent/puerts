@@ -60,6 +60,8 @@ typedef void (*JsFunctionFinalizeCallback)(v8::Isolate* Isolate, int64_t UserDat
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 
+typedef void(*InterruptStackCallback)(const char*, int len);
+
 struct FCallbackInfo
 {
     FCallbackInfo(bool InIsStatic, CSharpFunctionCallback InCallback, int64_t InData) : IsStatic(InIsStatic), Callback(InCallback), Data(InData) {}
@@ -167,6 +169,20 @@ public:
     {
 #if !WITH_QUICKJS
         MainIsolate->TerminateExecution();
+#endif
+    }
+    
+
+    void InterruptWithStackCallback(InterruptStackCallback Callback)
+    {
+#if !WITH_QUICKJS
+        MainIsolate->RequestInterrupt([](v8::Isolate* isolate, void* data)->void
+        {
+            auto JsEngine = FV8Utils::IsolateData<JSEngine>(isolate);
+            InterruptStackCallback cb = (InterruptStackCallback)data;
+            std::string str = JsEngine->GetJSStackTrace();
+            cb(str.c_str(), static_cast<int>(str.length()));
+        }, Callback);
 #endif
     }
     

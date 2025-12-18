@@ -209,6 +209,11 @@ public:
         jsEngine.TerminateExecution();
     }
     
+    virtual void InterruptWithStackCallback(puerts::FuncPtr Callback) override
+    {
+        jsEngine.InterruptWithStackCallback((PUERTS_NAMESPACE::InterruptStackCallback)Callback);
+    }
+    
     PUERTS_NAMESPACE::JSEngine jsEngine;
 };
 
