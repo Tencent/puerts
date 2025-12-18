@@ -87,7 +87,7 @@ namespace Puerts
 #endif
         public bool FileExists(string filepath)
         {
-#if UNITY_WEBGL && !UNTIY_EDITOR
+#if UNITY_WEBGL && !UNITY_EDITOR
             return true;
 #elif PUERTS_GENERAL
             return File.Exists(Path.Combine(root, filepath));
