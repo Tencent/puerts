@@ -104,6 +104,12 @@ PUERTS_EXPORT void TerminateExecution(puerts::IPuertsPlugin* plugin)
     plugin->TerminateExecution();
 }
 
+
+PUERTS_EXPORT void InterruptWithStackCallback(puerts::IPuertsPlugin* plugin, puerts::FuncPtr Callback)
+{
+    plugin->InterruptWithStackCallback(Callback);
+}
+
 #ifdef WITH_IL2CPP_OPTIMIZATION
 PUERTS_EXPORT pesapi_func_ptr* GetRegsterApi()
 {
