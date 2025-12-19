@@ -429,5 +429,50 @@ namespace Puerts.UnitTest
                 ");
             }
         }
+
+        static string anrStackTrace = null;
+
+        [MonoPInvokeCallback(typeof(InterruptCallback))]
+        internal static void OnStackCallback(IntPtr str, int strlen)
+        {
+            byte[] buffer = new byte[strlen + 1];
+            System.Runtime.InteropServices.Marshal.Copy(str, buffer, 0, strlen);
+            anrStackTrace = System.Text.Encoding.UTF8.GetString(buffer, 0, strlen);
+        }
+
+        [Test]
+        public void ANRTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            if (!(jsEnv.Backend is BackendV8)) return;
+            var t = new System.Threading.Thread(() =>
+            {
+                System.Threading.Thread.Sleep(500);
+                PuertsDLL.InterruptWithStackCallback(jsEnv.Isolate, OnStackCallback);
+                PuertsDLL.TerminateExecution(jsEnv.Isolate);
+            });
+            t.Start();
+            Assert.Catch(() =>
+            {
+                jsEnv.Eval(@"
+                    function func1() {
+                        while(true) {
+                        }
+                    }
+                    function func2() {
+                        func1();
+                    }
+                    function func3() {
+                        func2();
+                    }
+                    function main() {
+                        func3();
+                    }
+                    main();
+                ");
+            });
+
+            Assert.True(System.Text.RegularExpressions.Regex.IsMatch(anrStackTrace, @"\s+at func1\(.*\)\s+at func2\(.*\)\s+at func3\(.*\)\s+at main\(.*\)", System.Text.RegularExpressions.RegexOptions.Multiline));
+        }
     }
 }
