@@ -610,22 +610,25 @@ const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack)
         v8::Local<v8::Context> context(isolate->GetCurrentContext());
         v8::Local<v8::Message> message = scope->trycatch.Message();
 
-        // 输出 (filename):(line number): (message).
-        std::ostringstream stm;
-        v8::String::Utf8Value fileName(isolate, message->GetScriptResourceName());
-        int lineNum = message->GetLineNumber(context).FromJust();
-        stm << *fileName << ":" << lineNum << ": " << scope->errinfo.c_str();
-
-        stm << std::endl;
-
-        // 输出调用栈信息
-        v8::Local<v8::Value> stackTrace;
-        if (scope->trycatch.StackTrace(context).ToLocal(&stackTrace))
+        if (!message.IsEmpty())
         {
-            v8::String::Utf8Value stackTraceVal(isolate, stackTrace);
-            stm << std::endl << *stackTraceVal;
+            // 输出 (filename):(line number): (message).
+            std::ostringstream stm;
+            v8::String::Utf8Value fileName(isolate, message->GetScriptResourceName());
+            int lineNum = message->GetLineNumber(context).FromJust();
+            stm << *fileName << ":" << lineNum << ": " << scope->errinfo.c_str();
+
+            stm << std::endl;
+
+            // 输出调用栈信息
+            v8::Local<v8::Value> stackTrace;
+            if (scope->trycatch.StackTrace(context).ToLocal(&stackTrace))
+            {
+                v8::String::Utf8Value stackTraceVal(isolate, stackTrace);
+                stm << std::endl << *stackTraceVal;
+            }
+            scope->errinfo = stm.str().c_str();
         }
-        scope->errinfo = stm.str().c_str();
     }
     return scope->errinfo.c_str();
 }
