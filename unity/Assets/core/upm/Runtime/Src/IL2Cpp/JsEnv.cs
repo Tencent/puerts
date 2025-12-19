@@ -38,6 +38,12 @@ namespace Puerts
             }
         }
 
+        public IntPtr Isolate {
+            get {
+                return nativeJsEnv;
+            }
+        }
+
         private Func<string, JSObject> moduleExecutor;
 
         ILoader loader;
