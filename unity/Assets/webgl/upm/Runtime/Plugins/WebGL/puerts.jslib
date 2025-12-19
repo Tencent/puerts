@@ -146,6 +146,7 @@ var exportDLL = {
     "LogicTick",
     "SetLogCallback",
     "TerminateExecution",
+	"InterruptWithStackCallback",
     "GetWebGLFFIApi",
     "GetWebGLPapiEnvRef",
     "GetQjsFFIApi", // declare for compile
