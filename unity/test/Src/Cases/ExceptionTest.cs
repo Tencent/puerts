@@ -435,9 +435,16 @@ namespace Puerts.UnitTest
         [MonoPInvokeCallback(typeof(InterruptCallback))]
         internal static void OnStackCallback(IntPtr str, int strlen)
         {
-            byte[] buffer = new byte[strlen + 1];
-            System.Runtime.InteropServices.Marshal.Copy(str, buffer, 0, strlen);
-            anrStackTrace = System.Text.Encoding.UTF8.GetString(buffer, 0, strlen);
+            try
+            {
+                byte[] buffer = new byte[strlen + 1];
+                System.Runtime.InteropServices.Marshal.Copy(str, buffer, 0, strlen);
+                anrStackTrace = System.Text.Encoding.UTF8.GetString(buffer, 0, strlen);
+            }
+            catch (Exception e)
+            {
+                anrStackTrace = e.StackTrace;
+            }
         }
 
         [Test]
@@ -447,7 +454,7 @@ namespace Puerts.UnitTest
             if (!(jsEnv.Backend is BackendV8)) return;
             var t = new System.Threading.Thread(() =>
             {
-                System.Threading.Thread.Sleep(500);
+                System.Threading.Thread.Sleep(300);
                 PuertsDLL.InterruptWithStackCallback(jsEnv.Isolate, OnStackCallback);
                 PuertsDLL.TerminateExecution(jsEnv.Isolate);
             });
@@ -471,6 +478,7 @@ namespace Puerts.UnitTest
                     main();
                 ");
             });
+            System.Threading.Thread.Sleep(50);
 
             Assert.True(System.Text.RegularExpressions.Regex.IsMatch(anrStackTrace, @"\s+at func1\(.*\)\s+at func2\(.*\)\s+at func3\(.*\)\s+at main\(.*\)", System.Text.RegularExpressions.RegexOptions.Multiline));
         }
