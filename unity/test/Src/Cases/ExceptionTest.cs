@@ -456,6 +456,7 @@ namespace Puerts.UnitTest
             {
                 System.Threading.Thread.Sleep(300);
                 PuertsDLL.InterruptWithStackCallback(jsEnv.Isolate, OnStackCallback);
+                System.Threading.Thread.Sleep(200); // wait for stack trace to be captured
                 PuertsDLL.TerminateExecution(jsEnv.Isolate);
             });
             t.Start();
@@ -478,7 +479,6 @@ namespace Puerts.UnitTest
                     main();
                 ");
             });
-            System.Threading.Thread.Sleep(200);
 
             Assert.True(System.Text.RegularExpressions.Regex.IsMatch(anrStackTrace, @"\s+at func1\(.*\)\s+at func2\(.*\)\s+at func3\(.*\)\s+at main\(.*\)", System.Text.RegularExpressions.RegexOptions.Multiline));
         }
