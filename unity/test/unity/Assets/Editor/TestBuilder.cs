@@ -64,7 +64,33 @@ public class TestBuilder
         }
         buildPlayerOptions.locationPathName = "build/" + (withV2 ? "v2" : "v1") + "/Tester" + extension;
         buildPlayerOptions.options = BuildOptions.None;
-        
+
+        BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
+        BuildSummary summary = report.summary;
+
+        if (summary.result == BuildResult.Succeeded)
+        {
+            Debug.Log("Build succeeded: " + summary.outputPath + " with " + summary.totalSize + " bytes");
+        }
+
+        if (summary.result == BuildResult.Failed)
+        {
+            Debug.Log("Build failed: " + summary.outputPath);
+        }
+    }
+    
+    public static void BuildAndroid()
+    {
+        PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.tencent.puerts_test");
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
+
+        BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
+        buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
+        buildPlayerOptions.target = BuildTarget.Android;
+        buildPlayerOptions.locationPathName = "build/puerts_test.apk";
+        buildPlayerOptions.options = BuildOptions.None;
+
         BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
         BuildSummary summary = report.summary;
 
