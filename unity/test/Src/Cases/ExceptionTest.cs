@@ -435,6 +435,7 @@ namespace Puerts.UnitTest
         [MonoPInvokeCallback(typeof(InterruptCallback))]
         internal static void OnStackCallback(IntPtr str, int strlen)
         {
+            //关键点2：切记回调不能抛C#异常
             try
             {
                 byte[] buffer = new byte[strlen + 1];
@@ -443,6 +444,7 @@ namespace Puerts.UnitTest
             }
             catch (Exception e)
             {
+                //用例需要，业务可以选择直接忽略异常
                 anrStackTrace = e.StackTrace;
             }
         }
@@ -456,6 +458,7 @@ namespace Puerts.UnitTest
             {
                 System.Threading.Thread.Sleep(300);
                 PuertsDLL.InterruptWithStackCallback(jsEnv.Isolate, OnStackCallback);
+                // 关键点1：徐等待OnStackCallback回调，如果马上调用TerminateExecution，可能拿不到堆栈信息
                 System.Threading.Thread.Sleep(200); // wait for stack trace to be captured
                 PuertsDLL.TerminateExecution(jsEnv.Isolate);
             });
