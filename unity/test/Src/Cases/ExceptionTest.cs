@@ -478,7 +478,7 @@ namespace Puerts.UnitTest
                     main();
                 ");
             });
-            System.Threading.Thread.Sleep(50);
+            System.Threading.Thread.Sleep(200);
 
             Assert.True(System.Text.RegularExpressions.Regex.IsMatch(anrStackTrace, @"\s+at func1\(.*\)\s+at func2\(.*\)\s+at func3\(.*\)\s+at main\(.*\)", System.Text.RegularExpressions.RegexOptions.Multiline));
         }
