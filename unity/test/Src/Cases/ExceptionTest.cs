@@ -449,6 +449,7 @@ namespace Puerts.UnitTest
             }
         }
 
+#if !UNITY_WEBGL
         [Test]
         public void ANRTest()
         {
@@ -485,5 +486,6 @@ namespace Puerts.UnitTest
 
             Assert.True(System.Text.RegularExpressions.Regex.IsMatch(anrStackTrace, @"\s+at func1\(.*\)\s+at func2\(.*\)\s+at func3\(.*\)\s+at main\(.*\)", System.Text.RegularExpressions.RegexOptions.Multiline));
         }
+#endif
     }
 }
