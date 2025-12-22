@@ -52,44 +52,6 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 namespace PUERTS_NAMESPACE
 {
 
-class V8WebSocketClientImpl;
-
-namespace
-{
-std::mutex GWSDeleteMutex;
-std::condition_variable GWSDeleteCV;
-std::queue<V8WebSocketClientImpl*> GWSDeleteQueue;
-std::once_flag GWSDeleteThreadOnce;
-
-void WebSocketDeleteThreadFunc()
-{
-    for (;;)
-    {
-        V8WebSocketClientImpl* client = nullptr;
-        {
-            std::unique_lock<std::mutex> lock(GWSDeleteMutex);
-            GWSDeleteCV.wait(lock, [] { return !GWSDeleteQueue.empty(); });
-
-            client = GWSDeleteQueue.front();
-            GWSDeleteQueue.pop();
-        }
-
-        delete client;
-    }
-}
-
-void EnqueueWebSocketForDelete(V8WebSocketClientImpl* client)
-{
-    std::call_once(GWSDeleteThreadOnce, [] { std::thread(WebSocketDeleteThreadFunc).detach(); });
-
-    {
-        std::lock_guard<std::mutex> lock(GWSDeleteMutex);
-        GWSDeleteQueue.push(client);
-    }
-    GWSDeleteCV.notify_one();
-}
-}    // anonymous namespace
-
 #if !defined(USING_IN_UNREAL_ENGINE)
 class DataTransfer
 {
@@ -169,6 +131,8 @@ private:
 
     void Cleanup();
 
+    static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<V8WebSocketClientImpl>& Data);
+
 private:
     v8::Isolate* Isolate;
 
@@ -185,7 +149,43 @@ private:
     v8::Global<v8::Function> Handles[HANDLE_TYPE_END];
 };
 
-static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<V8WebSocketClientImpl>& Data)
+namespace
+{
+std::mutex GWSDeleteMutex;
+std::condition_variable GWSDeleteCV;
+std::queue<V8WebSocketClientImpl*> GWSDeleteQueue;
+std::once_flag GWSDeleteThreadOnce;
+
+void WebSocketDeleteThreadFunc()
+{
+    for (;;)
+    {
+        V8WebSocketClientImpl* client = nullptr;
+        {
+            std::unique_lock<std::mutex> lock(GWSDeleteMutex);
+            GWSDeleteCV.wait(lock, [] { return !GWSDeleteQueue.empty(); });
+
+            client = GWSDeleteQueue.front();
+            GWSDeleteQueue.pop();
+        }
+
+        delete client;
+    }
+}
+
+void EnqueueWebSocketForDelete(V8WebSocketClientImpl* client)
+{
+    std::call_once(GWSDeleteThreadOnce, [] { std::thread(WebSocketDeleteThreadFunc).detach(); });
+
+    {
+        std::lock_guard<std::mutex> lock(GWSDeleteMutex);
+        GWSDeleteQueue.push(client);
+    }
+    GWSDeleteCV.notify_one();
+}
+}    // anonymous namespace
+
+void V8WebSocketClientImpl::OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<V8WebSocketClientImpl>& Data)
 {
     auto client = Data.GetParameter();
     client->CloseImmediately(websocketpp::close::status::normal, "");
