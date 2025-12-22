@@ -118,8 +118,8 @@ jobs:
           if ("${{ matrix.platform }}" -eq "osx" -and (Test-Path "unity/upms/nodejs/Plugins/macOS")) {
             Move-Item -Path "unity/native/papi-nodejs/.backends/papi-nodejs/lib/macOS/libnode.93.dylib" -Destination "unity/upms/nodejs/Plugins/macOS/libnode.93.dylib" -Force
           }
-          # Remove python's PuertsCore.dll on Windows
           if ("${{ matrix.platform }}" -eq "win") {
+            # Remove python's PuertsCore.dll on Windows
             $puertsCorePath = "unity/native/papi-python/build_win_x64_papi-python/Release/PuertsCore.dll"
             if (Test-Path $puertsCorePath) {
               Remove-Item $puertsCorePath -Force
@@ -127,8 +127,6 @@ jobs:
             }
           }
         shell: pwsh
-
-      
       
       - name: Upload all native artifacts
         uses: actions/upload-artifact@v4
@@ -175,6 +173,14 @@ jobs:
         run: |
           ls unity/nuget/downloaded_natives
           tree unity/nuget/downloaded_natives /F
+        shell: pwsh
+      - name: Download Python
+        run: |
+          $destPath = "unity\nuget\downloaded_natives\natives-win-x64\papi-python\build_win_x64_papi-python\Release"
+          $downloadedEmbedZip = "$env:TEMP\python-3.14.2-embed-amd64.zip"
+          $downloadUrl = "https://www.python.org/ftp/python/3.14.2/python-3.14.2-embed-amd64.zip"
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadedEmbedZip
+          Expand-Archive -Path $downloadedEmbedZip -DestinationPath $destPath -Force
         shell: pwsh
       - name: Run NuGet Packaging and Publishing
         if: ${{ github.event.inputs.publish == 'true' }}

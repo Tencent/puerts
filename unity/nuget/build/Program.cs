@@ -80,9 +80,10 @@ public sealed class TransformNativeAssetsTask : FrostingTask<BuildContext>
         // Transform
         var nativeAssetsDirectory = context.NativeAssetsDirectory;
 
+        // Handle macOS natives
         foreach (var projectItem in WellKnownProjects.NativeAssetsProjects)
         {
-            if (projectItem.CmakeRid != "osx" && projectItem.CmakeRid != "osx-arm64")
+            if (!projectItem.CmakeRid.Contains("osx"))
             {
                 continue;
             }
