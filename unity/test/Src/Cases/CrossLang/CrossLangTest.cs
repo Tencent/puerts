@@ -172,6 +172,18 @@ namespace Puerts.UnitTest
         {
 
         }
+
+        [UnityEngine.Scripting.Preserve]
+        public static byte[] CreateBytes(int length)
+        {
+            return new byte[length];
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static ArrayBuffer BytesToArrayBuffer(byte[] bytes)
+        {
+            return new ArrayBuffer(bytes);
+        }
     }
 
     public enum ConstructorParam
@@ -1901,6 +1913,20 @@ __PDUOTF;");
                     AssertAndPrint('EnumRefParam', $unref(p2) == 213);
                 })()
             ");
+        }
+
+        [Test]
+        public void TestBytesToArrayBuffer()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var len = jsEnv.Eval<int>(@"
+                (function() {
+                    const bytes = CS.Puerts.UnitTest.CrossLangTestHelper.CreateBytes(200306)
+                    const ab = CS.Puerts.UnitTest.CrossLangTestHelper.BytesToArrayBuffer(bytes)
+                    return ab.byteLength
+                })()
+            ");
+            Assert.AreEqual(200306, len);
         }
 
     }
