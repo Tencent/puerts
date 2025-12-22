@@ -44,9 +44,52 @@ THIRD_PARTY_INCLUDES_END
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include <sstream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
 
 namespace PUERTS_NAMESPACE
 {
+
+class V8WebSocketClientImpl;
+
+namespace
+{
+std::mutex GWSDeleteMutex;
+std::condition_variable GWSDeleteCV;
+std::queue<V8WebSocketClientImpl*> GWSDeleteQueue;
+std::once_flag GWSDeleteThreadOnce;
+
+void WebSocketDeleteThreadFunc()
+{
+    for (;;)
+    {
+        V8WebSocketClientImpl* client = nullptr;
+        {
+            std::unique_lock<std::mutex> lock(GWSDeleteMutex);
+            GWSDeleteCV.wait(lock, [] { return !GWSDeleteQueue.empty(); });
+
+            client = GWSDeleteQueue.front();
+            GWSDeleteQueue.pop();
+        }
+
+        delete client;
+    }
+}
+
+void EnqueueWebSocketForDelete(V8WebSocketClientImpl* client)
+{
+    std::call_once(GWSDeleteThreadOnce, [] { std::thread(WebSocketDeleteThreadFunc).detach(); });
+
+    {
+        std::lock_guard<std::mutex> lock(GWSDeleteMutex);
+        GWSDeleteQueue.push(client);
+    }
+    GWSDeleteCV.notify_one();
+}
+}    // anonymous namespace
+
 #if !defined(USING_IN_UNREAL_ENGINE)
 class DataTransfer
 {
@@ -144,9 +187,18 @@ private:
 
 static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<V8WebSocketClientImpl>& Data)
 {
-    // UE_LOG(LogTemp, Warning, TEXT(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> auto gc %p"), Data.GetParameter());
-    Data.GetParameter()->CloseImmediately(websocketpp::close::status::normal, "");
-    delete Data.GetParameter();
+    auto client = Data.GetParameter();
+    client->CloseImmediately(websocketpp::close::status::normal, "");
+
+    // delete client step1
+    client->GContext.Reset();
+    client->GSelf.Reset();
+    for (auto i = 0; i < V8WebSocketClientImpl::HANDLE_TYPE_END; ++i)
+    {
+        client->Handles[i].Reset();
+    }
+    // delete client step2
+    EnqueueWebSocketForDelete(client);
 }
 
 V8WebSocketClientImpl::V8WebSocketClientImpl(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InSelf)
@@ -333,7 +385,6 @@ void V8WebSocketClientImpl::CloseImmediately(websocketpp::close::status::value c
         Client.close(Handle, code, reason, ec);
     }
 
-    Client.stop();
     Cleanup();
 }
 
