@@ -174,6 +174,24 @@ namespace Puerts.UnitTest
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
+    public static class ConstEnumFieldTest
+    {
+        [Flags]
+        public enum MyEnum
+        {
+            [UnityEngine.Scripting.Preserve] OptionA = 1 << 0,
+            [UnityEngine.Scripting.Preserve] OptionB = 1 << 1,
+            [UnityEngine.Scripting.Preserve] OptionC = 1 << 2,
+            [UnityEngine.Scripting.Preserve] OptionD = 1 << 3,
+            [UnityEngine.Scripting.Preserve] OptionE = 1 << 4,
+            [UnityEngine.Scripting.Preserve] OptionF = 1 << 5
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public const MyEnum ConstEnumField = MyEnum.OptionB;
+    }
+
     public enum ConstructorParam
     {
         A, B, C, D, E, F, G, H
@@ -1297,6 +1315,17 @@ namespace Puerts.UnitTest
             ");
             Assert.AreEqual("213 1 213", ret);
             jsEnv.Tick();
+        }
+        [Test]
+        public void ConsEnumFieldTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var ret = jsEnv.Eval<int>(@"
+                (function() {
+                    return CS.Puerts.UnitTest.ConstEnumFieldTest.ConstEnumField
+                })()
+            ");
+            Assert.AreEqual(2, ret);
         }
         [Test]
         public void EnumArrayTest()
