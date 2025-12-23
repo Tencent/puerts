@@ -174,13 +174,44 @@ jobs:
           ls unity/nuget/downloaded_natives
           tree unity/nuget/downloaded_natives /F
         shell: pwsh
-      - name: Download Python
+      - name: Download Python (Windows)
         run: |
           $destPath = "unity\nuget\downloaded_natives\natives-win-x64\native\papi-python\build_win_x64_papi-python\Release"
+          New-Item -ItemType Directory -Force -Path $destPath
           $downloadedEmbedZip = "$env:TEMP\python-3.14.2-embed-amd64.zip"
           $downloadUrl = "https://www.python.org/ftp/python/3.14.2/python-3.14.2-embed-amd64.zip"
           Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadedEmbedZip
           Expand-Archive -Path $downloadedEmbedZip -DestinationPath $destPath -Force
+        shell: pwsh
+      
+      - name: Download Python Standalone (Linux)
+        run: |
+          $destPath = "unity/nuget/downloaded_natives/natives-linux-x64/native/papi-python/build_linux_x64_papi-python"
+          New-Item -ItemType Directory -Force -Path $destPath
+          
+          # Download from python-build-standalone
+          $pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-x86_64-unknown-linux-gnu-install_only.tar.gz"
+          $downloadedTar = "$env:TEMP/python-linux.tar.gz"
+          Invoke-WebRequest -Uri $pythonUrl -OutFile $downloadedTar
+          
+          # Extract (requires tar command available on Windows)
+          tar -xzf $downloadedTar -C $destPath --strip-components=1
+        shell: pwsh
+      
+      - name: Download Python Standalone (macOS)
+        run: |
+          # For macOS, we need to put files in the upms structure first
+          # The TransformNativeAssetsTask will handle moving them to the correct location
+          $destPath = "unity/nuget/downloaded_natives/natives-osx-auto/upms/python/Plugins/macOS/arm64"
+          New-Item -ItemType Directory -Force -Path $destPath
+          
+          # Download macOS arm64 version from python-build-standalone
+          $pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-aarch64-apple-darwin-install_only.tar.gz"
+          $downloadedTar = "$env:TEMP/python-macos.tar.gz"
+          Invoke-WebRequest -Uri $pythonUrl -OutFile $downloadedTar
+          
+          # Extract
+          tar -xzf $downloadedTar -C $destPath --strip-components=1
         shell: pwsh
       - name: Run NuGet Packaging and Publishing
         if: ${{ github.event.inputs.publish == 'true' }}

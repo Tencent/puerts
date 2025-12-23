@@ -163,6 +163,27 @@ public sealed class TransformNativeAssetsTask : FrostingTask<BuildContext>
 
             context.CopyFiles(dylibFiles, targetBuildDir.FullPath);
 
+            // for Python, also copy the entire Python runtime (lib, include, etc.)
+            if (projectItem.DotNetNativeName == "Python")
+            {
+                // Copy all Python runtime files and directories
+                var pythonRuntimePattern = $"{backendPluginsRoot.FullPath}/**/*";
+                var allPythonFiles = context.GetFiles(
+                    new GlobPattern(pythonRuntimePattern),
+                    new GlobberSettings { IsCaseSensitive = false });
+
+                foreach (var file in allPythonFiles)
+                {
+                    var relativePath = file.FullPath.Substring(backendPluginsRoot.FullPath.Length + 1);
+                    var targetFile = System.IO.Path.Combine(targetBuildDir.FullPath, relativePath);
+                    var targetFileDir = System.IO.Path.GetDirectoryName(targetFile);
+                    Directory.CreateDirectory(targetFileDir);
+                    context.CopyFile(file, targetFile);
+                }
+                
+                context.Log.Information($"Copied Python runtime files from '{backendPluginsRoot.FullPath}' to '{targetBuildDir.FullPath}'");
+            }
+
             // for NodeJS, also copy libnode*.dylib
             if (projectItem.DotNetNativeName == "NodeJS")
             {
@@ -251,7 +272,24 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
             Directory.CreateDirectory(targetDirectory.FullPath);
 
             var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*"));
-            context.CopyFiles(files, targetDirectory.FullPath);
+            
+            // For Python, we need to preserve directory structure
+            if (projectItem.DotNetNativeName == "Python")
+            {
+                foreach (var file in files)
+                {
+                    var relativePath = file.FullPath.Substring(nativeAssetsPath.FullPath.Length + 1);
+                    var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, relativePath);
+                    var targetFileDir = System.IO.Path.GetDirectoryName(targetFile);
+                    Directory.CreateDirectory(targetFileDir);
+                    context.CopyFile(file, targetFile);
+                }
+                context.Log.Information($"Copied Python runtime with directory structure preserved to '{targetDirectory.FullPath}'");
+            }
+            else
+            {
+                context.CopyFiles(files, targetDirectory.FullPath);
+            }
         }
     }
 }
