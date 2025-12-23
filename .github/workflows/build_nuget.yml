@@ -201,7 +201,8 @@ jobs:
           
           # Copy only necessary runtime files (exclude dev files, tests, etc.)
           # Copy shared libraries
-          Copy-Item -Path "$tempExtract/lib/libpython3.14.so*" -Destination "$destPath/lib/" -Force -Recurse
+          New-Item -ItemType Directory -Force -Path "$destPath/lib"
+          Copy-Item -Path "$tempExtract/lib/libpython3.14.so*" -Destination "$destPath/lib/" -Force
           Copy-Item -Path "$tempExtract/lib/lib*.so*" -Destination "$destPath/lib/" -Force -ErrorAction SilentlyContinue
           
           # Copy Python standard library (exclude tests and unnecessary modules)
@@ -248,6 +249,7 @@ jobs:
           
           # Copy only necessary runtime files
           # Copy shared libraries
+          New-Item -ItemType Directory -Force -Path "$destPath/lib"
           Copy-Item -Path "$tempExtract/lib/libpython3.14.dylib" -Destination "$destPath/lib/" -Force
           Copy-Item -Path "$tempExtract/lib/lib*.dylib" -Destination "$destPath/lib/" -Force -ErrorAction SilentlyContinue
           
