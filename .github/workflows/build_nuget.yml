@@ -187,15 +187,46 @@ jobs:
       - name: Download Python Standalone (Linux)
         run: |
           $destPath = "unity/nuget/downloaded_natives/natives-linux-x64/native/papi-python/build_linux_x64_papi-python"
+          $tempExtract = "$env:TEMP/python-linux-extract"
           New-Item -ItemType Directory -Force -Path $destPath
+          New-Item -ItemType Directory -Force -Path $tempExtract
           
-          # Download from python-build-standalone
-          $pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-x86_64-unknown-linux-gnu-install_only.tar.gz"
+          # Download from python-build-standalone (install_only_stripped for smaller size)
+          $pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
           $downloadedTar = "$env:TEMP/python-linux.tar.gz"
           Invoke-WebRequest -Uri $pythonUrl -OutFile $downloadedTar
           
-          # Extract (requires tar command available on Windows)
-          tar -xzf $downloadedTar -C $destPath --strip-components=1
+          # Extract to temp directory
+          tar -xzf $downloadedTar -C $tempExtract --strip-components=1
+          
+          # Copy only necessary runtime files (exclude dev files, tests, etc.)
+          # Copy shared libraries
+          Copy-Item -Path "$tempExtract/lib/libpython3.14.so*" -Destination "$destPath/lib/" -Force -Recurse
+          Copy-Item -Path "$tempExtract/lib/lib*.so*" -Destination "$destPath/lib/" -Force -ErrorAction SilentlyContinue
+          
+          # Copy Python standard library (exclude tests and unnecessary modules)
+          $stdlibPath = "$destPath/lib/python3.14"
+          New-Item -ItemType Directory -Force -Path $stdlibPath
+          
+          # Copy essential stdlib directories
+          $essentialDirs = @(
+            "collections", "encodings", "importlib", "json", "logging", 
+            "email", "urllib", "http", "xml", "html", "ctypes", "sqlite3",
+            "asyncio", "concurrent", "multiprocessing", "threading"
+          )
+          
+          foreach ($dir in $essentialDirs) {
+            $srcDir = "$tempExtract/lib/python3.14/$dir"
+            if (Test-Path $srcDir) {
+              Copy-Item -Path $srcDir -Destination $stdlibPath -Recurse -Force
+            }
+          }
+          
+          # Copy essential .py files from root
+          Copy-Item -Path "$tempExtract/lib/python3.14/*.py" -Destination $stdlibPath -Force -ErrorAction SilentlyContinue
+          
+          # Copy lib-dynload (compiled extension modules)
+          Copy-Item -Path "$tempExtract/lib/python3.14/lib-dynload" -Destination $stdlibPath -Recurse -Force -ErrorAction SilentlyContinue
         shell: pwsh
       
       - name: Download Python Standalone (macOS)
@@ -203,15 +234,46 @@ jobs:
           # For macOS, we need to put files in the upms structure first
           # The TransformNativeAssetsTask will handle moving them to the correct location
           $destPath = "unity/nuget/downloaded_natives/natives-osx-auto/upms/python/Plugins/macOS/arm64"
+          $tempExtract = "$env:TEMP/python-macos-extract"
           New-Item -ItemType Directory -Force -Path $destPath
+          New-Item -ItemType Directory -Force -Path $tempExtract
           
-          # Download macOS arm64 version from python-build-standalone
-          $pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-aarch64-apple-darwin-install_only.tar.gz"
+          # Download macOS arm64 version from python-build-standalone (install_only_stripped)
+          $pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-aarch64-apple-darwin-install_only_stripped.tar.gz"
           $downloadedTar = "$env:TEMP/python-macos.tar.gz"
           Invoke-WebRequest -Uri $pythonUrl -OutFile $downloadedTar
           
-          # Extract
-          tar -xzf $downloadedTar -C $destPath --strip-components=1
+          # Extract to temp directory
+          tar -xzf $downloadedTar -C $tempExtract --strip-components=1
+          
+          # Copy only necessary runtime files
+          # Copy shared libraries
+          Copy-Item -Path "$tempExtract/lib/libpython3.14.dylib" -Destination "$destPath/lib/" -Force
+          Copy-Item -Path "$tempExtract/lib/lib*.dylib" -Destination "$destPath/lib/" -Force -ErrorAction SilentlyContinue
+          
+          # Copy Python standard library (exclude tests and unnecessary modules)
+          $stdlibPath = "$destPath/lib/python3.14"
+          New-Item -ItemType Directory -Force -Path $stdlibPath
+          
+          # Copy essential stdlib directories
+          $essentialDirs = @(
+            "collections", "encodings", "importlib", "json", "logging", 
+            "email", "urllib", "http", "xml", "html", "ctypes", "sqlite3",
+            "asyncio", "concurrent", "multiprocessing", "threading"
+          )
+          
+          foreach ($dir in $essentialDirs) {
+            $srcDir = "$tempExtract/lib/python3.14/$dir"
+            if (Test-Path $srcDir) {
+              Copy-Item -Path $srcDir -Destination $stdlibPath -Recurse -Force
+            }
+          }
+          
+          # Copy essential .py files from root
+          Copy-Item -Path "$tempExtract/lib/python3.14/*.py" -Destination $stdlibPath -Force -ErrorAction SilentlyContinue
+          
+          # Copy lib-dynload (compiled extension modules)
+          Copy-Item -Path "$tempExtract/lib/python3.14/lib-dynload" -Destination $stdlibPath -Recurse -Force -ErrorAction SilentlyContinue
         shell: pwsh
       - name: Run NuGet Packaging and Publishing
         if: ${{ github.event.inputs.publish == 'true' }}

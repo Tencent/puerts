@@ -288,27 +288,47 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
                     // Normalize path separators for comparison
                     var normalizedRelativePath = relativePath.Replace('\\', '/');
                     
-                    // Check if file is in any lib/ subdirectory (e.g., build_xxx/lib/)
+                    // Check if file is in lib/ subdirectory (but not lib/pythonX.Y/)
                     var isInLibDir = normalizedRelativePath.Contains("/lib/") && 
                                      !normalizedRelativePath.Contains("/lib/python");
                     
-                    context.Log.Information($"File: {relativePath}, Extension: {fileExtension}, InLibDir: {isInLibDir}");
+                    // Check if file is in lib/pythonX.Y/ (Python standard library)
+                    var isInPythonStdLib = normalizedRelativePath.Contains("/lib/python");
                     
-                    // Flatten: move .so/.dylib files from lib/ to root, keep python3.x/ structure
-                    if (isInLibDir && (fileExtension == ".so" || fileExtension == ".dylib"))
+                    context.Log.Information($"File: {relativePath}, Ext: {fileExtension}, InLibDir: {isInLibDir}, InStdLib: {isInPythonStdLib}");
+                    
+                    if (isInLibDir)
                     {
-                        // Move shared libraries to root directory
-                        var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, fileName);
-                        context.CopyFile(file, targetFile);
-                        context.Log.Information($"✓ Flattened: {relativePath} -> {fileName}");
+                        // Files in lib/ (but not lib/pythonX.Y/): only copy .so/.dylib to root, skip others
+                        if (fileExtension == ".so" || fileExtension == ".dylib")
+                        {
+                            var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, fileName);
+                            context.CopyFile(file, targetFile);
+                            context.Log.Information($"✓ Flattened: {relativePath} -> {fileName}");
+                        }
+                        else
+                        {
+                            context.Log.Information($"✗ Skipped (non-shared lib in lib/): {relativePath}");
+                        }
+                    }
+                    else if (isInPythonStdLib)
+                    {
+                        // Python standard library: extract lib/pythonX.Y/ to root as pythonX.Y/
+                        var pythonLibMatch = System.Text.RegularExpressions.Regex.Match(normalizedRelativePath, @"lib/(python[\d.]+/.*)");
+                        if (pythonLibMatch.Success)
+                        {
+                            var newRelativePath = pythonLibMatch.Groups[1].Value;
+                            var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, newRelativePath);
+                            var targetFileDir = System.IO.Path.GetDirectoryName(targetFile);
+                            Directory.CreateDirectory(targetFileDir);
+                            context.CopyFile(file, targetFile);
+                            context.Log.Information($"✓ Stdlib: {relativePath} -> {newRelativePath}");
+                        }
                     }
                     else
                     {
-                        // Keep directory structure for Python standard library (python3.x/)
-                        var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, relativePath);
-                        var targetFileDir = System.IO.Path.GetDirectoryName(targetFile);
-                        Directory.CreateDirectory(targetFileDir);
-                        context.CopyFile(file, targetFile);
+                        // Other files: skip (we don't need build_xxx directories)
+                        context.Log.Information($"✗ Skipped (not needed): {relativePath}");
                     }
                 }
                 context.Log.Information($"Copied Python runtime with flattened structure to '{targetDirectory.FullPath}'");
