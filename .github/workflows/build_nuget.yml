@@ -176,7 +176,7 @@ jobs:
         shell: pwsh
       - name: Download Python
         run: |
-          $destPath = "unity\nuget\downloaded_natives\natives-win-x64\papi-python\build_win_x64_papi-python\Release"
+          $destPath = "unity\nuget\downloaded_natives\natives-win-x64\native\papi-python\build_win_x64_papi-python\Release"
           $downloadedEmbedZip = "$env:TEMP\python-3.14.2-embed-amd64.zip"
           $downloadUrl = "https://www.python.org/ftp/python/3.14.2/python-3.14.2-embed-amd64.zip"
           Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadedEmbedZip

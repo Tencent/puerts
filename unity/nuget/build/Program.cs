@@ -251,8 +251,6 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
             Directory.CreateDirectory(targetDirectory.FullPath);
 
             var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*"));
-            Console.WriteLine($"Copying files from {nativeAssetsPath.FullPath} to {targetDirectory.FullPath}");
-            Console.WriteLine($"Files is {string.Join(", ", files.Select(f => f.FullPath))}");
             context.CopyFiles(files, targetDirectory.FullPath);
         }
     }
