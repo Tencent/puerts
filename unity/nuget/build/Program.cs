@@ -288,8 +288,9 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
                     // Normalize path separators for comparison
                     var normalizedRelativePath = relativePath.Replace('\\', '/');
                     
-                    // Check if file is in lib/ subdirectory
-                    var isInLibDir = normalizedRelativePath.StartsWith("lib/");
+                    // Check if file is in any lib/ subdirectory (e.g., build_xxx/lib/)
+                    var isInLibDir = normalizedRelativePath.Contains("/lib/") && 
+                                     !normalizedRelativePath.Contains("/lib/python");
                     
                     context.Log.Information($"File: {relativePath}, Extension: {fileExtension}, InLibDir: {isInLibDir}");
                     
