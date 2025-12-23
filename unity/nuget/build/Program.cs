@@ -276,15 +276,22 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
             // For Python, we need to flatten the directory structure
             if (projectItem.DotNetNativeName == "Python")
             {
+                context.Log.Information($"Processing Python files from: {nativeAssetsPath.FullPath}");
+                context.Log.Information($"Total files found: {files.Count()}");
+                
                 foreach (var file in files)
                 {
                     var relativePath = file.FullPath.Substring(nativeAssetsPath.FullPath.Length + 1);
                     var fileName = System.IO.Path.GetFileName(file.FullPath);
                     var fileExtension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
                     
+                    // Normalize path separators for comparison
+                    var normalizedRelativePath = relativePath.Replace('\\', '/');
+                    
                     // Check if file is in lib/ subdirectory
-                    var isInLibDir = relativePath.StartsWith("lib" + System.IO.Path.DirectorySeparatorChar) ||
-                                     relativePath.StartsWith("lib/");
+                    var isInLibDir = normalizedRelativePath.StartsWith("lib/");
+                    
+                    context.Log.Information($"File: {relativePath}, Extension: {fileExtension}, InLibDir: {isInLibDir}");
                     
                     // Flatten: move .so/.dylib files from lib/ to root, keep python3.x/ structure
                     if (isInLibDir && (fileExtension == ".so" || fileExtension == ".dylib"))
@@ -292,7 +299,7 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
                         // Move shared libraries to root directory
                         var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, fileName);
                         context.CopyFile(file, targetFile);
-                        context.Log.Information($"Flattened: {relativePath} -> {fileName}");
+                        context.Log.Information($"✓ Flattened: {relativePath} -> {fileName}");
                     }
                     else
                     {
