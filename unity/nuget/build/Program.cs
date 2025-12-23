@@ -250,8 +250,22 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
 
             Directory.CreateDirectory(targetDirectory.FullPath);
 
-            var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*"));
-            context.CopyFiles(files, targetDirectory.FullPath);
+            var output = context.GetSubDirectories(nativeAssetsPath.FullPath);
+            if (output.Count == 0) 
+            {
+                throw new CakeException($"No build output directories found in '{nativeAssetsPath.FullPath}'.");
+            }
+            if (projectItem.DotNetRid.Contains("win"))
+            {
+                // output = natives-win-x64\native\papi-lua\build_win_x64_papi-lua\Release\
+                // Windows builds are typically in Release subfolder
+                output = context.GetSubDirectories(output.First().FullPath);
+                if (output.Count == 0) 
+                {
+                    throw new CakeException($"No Release build output directory found in '{nativeAssetsPath.FullPath}'.");
+                }
+            }
+            context.CopyDirectory(output.First().FullPath, targetDirectory.FullPath);
         }
     }
 }
