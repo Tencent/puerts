@@ -273,18 +273,37 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
 
             var files = context.GetFiles(new GlobPattern($"{nativeAssetsPath.FullPath}/**/*"));
             
-            // For Python, we need to preserve directory structure
+            // For Python, we need to flatten the directory structure
             if (projectItem.DotNetNativeName == "Python")
             {
                 foreach (var file in files)
                 {
                     var relativePath = file.FullPath.Substring(nativeAssetsPath.FullPath.Length + 1);
-                    var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, relativePath);
-                    var targetFileDir = System.IO.Path.GetDirectoryName(targetFile);
-                    Directory.CreateDirectory(targetFileDir);
-                    context.CopyFile(file, targetFile);
+                    var fileName = System.IO.Path.GetFileName(file.FullPath);
+                    var fileExtension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
+                    
+                    // Check if file is in lib/ subdirectory
+                    var isInLibDir = relativePath.StartsWith("lib" + System.IO.Path.DirectorySeparatorChar) ||
+                                     relativePath.StartsWith("lib/");
+                    
+                    // Flatten: move .so/.dylib files from lib/ to root, keep python3.x/ structure
+                    if (isInLibDir && (fileExtension == ".so" || fileExtension == ".dylib"))
+                    {
+                        // Move shared libraries to root directory
+                        var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, fileName);
+                        context.CopyFile(file, targetFile);
+                        context.Log.Information($"Flattened: {relativePath} -> {fileName}");
+                    }
+                    else
+                    {
+                        // Keep directory structure for Python standard library (python3.x/)
+                        var targetFile = System.IO.Path.Combine(targetDirectory.FullPath, relativePath);
+                        var targetFileDir = System.IO.Path.GetDirectoryName(targetFile);
+                        Directory.CreateDirectory(targetFileDir);
+                        context.CopyFile(file, targetFile);
+                    }
                 }
-                context.Log.Information($"Copied Python runtime with directory structure preserved to '{targetDirectory.FullPath}'");
+                context.Log.Information($"Copied Python runtime with flattened structure to '{targetDirectory.FullPath}'");
             }
             else
             {
