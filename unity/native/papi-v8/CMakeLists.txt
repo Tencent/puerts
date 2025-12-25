@@ -15,7 +15,7 @@ option ( USING_V8 "using v8" ON )
 option ( USING_QJS "using quickjs" ON )
 option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
 
-if("${JS_ENGINE}" MATCHES "^v8_10.6.194")
+if("${BACKEND_DEFINITIONS}" MATCHES "V8_118_OR_NEWER")
     set(CMAKE_CXX_STANDARD 17)
 else ()
     set(CMAKE_CXX_STANDARD 14)

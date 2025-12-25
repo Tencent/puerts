@@ -64,7 +64,8 @@
         "tar-output" : "v8_11.8.172",
         "config": {
             "definition": [
-                "V8_94_OR_NEWER"
+                "V8_94_OR_NEWER",
+				"V8_118_OR_NEWER"
             ],
             "include": [
                 "/Inc"
