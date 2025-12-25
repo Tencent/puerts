@@ -61,7 +61,7 @@
     },
     "papi-v8": {
         "url": "https://github.com/puerts/backend-v8/releases/download/V8_11.8.172__251225/v8_bin_11.8.172.tar.gz",
-        "tar-output" : "v8_9.4.146.24",
+        "tar-output" : "v8_11.8.172",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
