@@ -199,7 +199,7 @@
         }
     },
     "v8_9.4.146.24": {
-        "url": "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__241009/v8_bin_9.4.146.24.tgz",
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__251219/v8_bin_9.4.146.24.tar.gz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
@@ -325,7 +325,7 @@
         }
     },
     "v8_11.8.172": {
-        "url": "https://github.com/puerts/backend-v8/releases/download/V8_11.8.172__241009/v8_bin_11.8.172.tgz",
+        "url": "https://github.com/puerts/backend-v8/releases/download/V8_11.8.172__251218/v8_bin_11.8.172.tar.gz",
         "config": {
             "definition": [
                 "V8_94_OR_NEWER"
