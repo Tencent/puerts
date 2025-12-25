@@ -67,7 +67,7 @@ const platformCompileConfig = {
         'armv7': {
             outputPluginPath: 'Android/libs/armeabi-v7a/',
             hook: function (CMAKE_BUILD_PATH, options, cmakeAddedLibraryName, cmakeDArgs) {
-                const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
+                const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r23c';
                 const API = ((options.backend.indexOf('node') !== -1) || (options.backend.indexOf('python') !== -1) || cmakeDArgs.indexOf('V8_118_OR_NEWER') !== -1) ? 'android-24' : (options.backend.indexOf('10.6.194') !== -1 ? 'android-23' : 'android-21');
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
