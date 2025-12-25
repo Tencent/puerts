@@ -257,7 +257,7 @@ elseif ( ANDROID )
         ${log-lib}
     )
 
-    set(BACKEND_LIB_NAMES "-Wl,--whole-archive$<SEMICOLON>${BACKEND_LIB_NAMES}$<SEMICOLON>-Wl,--no-whole-archive$<SEMICOLON>c")
+    set(BACKEND_LIB_NAMES "-Wl,--whole-archive$<SEMICOLON>${BACKEND_LIB_NAMES}$<SEMICOLON>-Wl,--no-whole-archive")
     if ( ANDROID_ABI STREQUAL "armeabi-v7a")
         # definition
         list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_ANDROID_ARM)
