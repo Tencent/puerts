@@ -121,7 +121,7 @@ namespace Puerts
                         InitInnerEnv((BackendType)i, libVersionExpect, loader, debugPort);
                         found = true;
                         break;
-                    } catch (Exception e){ }
+                    } catch (DllNotFoundException e){ }
                 }
                 if (!found)
                 {
