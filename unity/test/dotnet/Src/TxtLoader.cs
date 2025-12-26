@@ -162,9 +162,6 @@ namespace Puerts.UnitTest
                 env = new JsEnv(loader);
                 
                 CommonJS.InjectSupportForCJS(env);
-#if PUERTS_GENERAL && !TESTING_REFLECTION
-                PuertsStaticWrap.PuerRegisterInfo_Gen.AddRegisterInfoGetterIntoJsEnv(env);
-#endif
             }
         }
 

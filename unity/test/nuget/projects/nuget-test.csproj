@@ -1,0 +1,181 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>nuget_test</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    
+    <!-- Puerts NuGet Packages -->
+    <PackageReference Include="Puerts.V8.Complete" Version="3.0.0" />
+    <PackageReference Include="Puerts.Lua.Complete" Version="3.0.0" />
+    <PackageReference Include="Puerts.Quickjs.Complete" Version="3.0.0" />
+    <PackageReference Include="Puerts.Python.Complete" Version="3.0.0-beta1" />
+    <PackageReference Include="Puerts.NodeJS.Complete" Version="3.0.0" />
+  </ItemGroup>
+
+
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <DefineConstants>PUER_CONSOLE_TEST;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;PUERTS_REFLECT_ALL_EXTENSION;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <WarningLevel>0</WarningLevel>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+    
+
+    <ItemGroup>
+            <Compile Include="../../Src/Cases/Javascript/AccessControlTest.cs">
+            <Link>Javascript\AccessControlTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/API/EvalTest.cs">
+            <Link>Javascript\API\EvalTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/API/ForofTest.cs">
+            <Link>Javascript\API\ForofTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/API/NodeJSTest.cs">
+            <Link>Javascript\API\NodeJSTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/API/TimerTest.cs">
+            <Link>Javascript\API\TimerTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/API/TypedValueTest.cs">
+            <Link>Javascript\API\TypedValueTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CrossLang/BlittableCopyTest.cs">
+            <Link>Javascript\CrossLang\BlittableCopyTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CrossLang/CrossLangTest.cs">
+            <Link>Javascript\CrossLang\CrossLangTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CrossLang/DelegateTest.cs">
+            <Link>Javascript\CrossLang\DelegateTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CrossLang/ExtensionTest.cs">
+            <Link>Javascript\CrossLang\ExtensionTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CrossLang/GenericTest.cs">
+            <Link>Javascript\CrossLang\GenericTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CrossLang/OptionalParametersTest.cs">
+            <Link>Javascript\CrossLang\OptionalParametersTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CrossLang/TestScriptEngineImpl.cs">
+            <Link>Javascript\CrossLang\TestScriptEngineImpl.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/CSharpModuleTest.cs">
+            <Link>Javascript\CSharpModuleTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/ExceptionTest.cs">
+            <Link>Javascript\ExceptionTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/LazyWeakCJSTest.cs">
+            <Link>Javascript\LazyWeakCJSTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/MultiTest.cs">
+            <Link>Javascript\MultiTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Javascript/WebsocketTest.cs">
+            <Link>Javascript\WebsocketTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/AccessControlTest.cs">
+            <Link>Lua\AccessControlTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/API/EvalTest.cs">
+            <Link>Lua\API\EvalTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/API/ForofTest.cs">
+            <Link>Lua\API\ForofTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/API/TimerTest.cs">
+            <Link>Lua\API\TimerTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/API/TypedValueTest.cs">
+            <Link>Lua\API\TypedValueTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/CrossLang/BlittableCopyTest.cs">
+            <Link>Lua\CrossLang\BlittableCopyTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/CrossLang/CrossLangTest.cs">
+            <Link>Lua\CrossLang\CrossLangTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/CrossLang/DelegateTest.cs">
+            <Link>Lua\CrossLang\DelegateTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/CrossLang/GenericTest.cs">
+            <Link>Lua\CrossLang\GenericTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/CrossLang/TestScriptEngineImpl.cs">
+            <Link>Lua\CrossLang\TestScriptEngineImpl.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/CSharpModuleTest.cs">
+            <Link>Lua\CSharpModuleTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Lua/ExceptionTest.cs">
+            <Link>Lua\ExceptionTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/AccessControlTest.cs">
+            <Link>Python\AccessControlTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/API/EvalTest.cs">
+            <Link>Python\API\EvalTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/API/ForofTest.cs">
+            <Link>Python\API\ForofTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/API/TimerTest.cs">
+            <Link>Python\API\TimerTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/API/TypedValueTest.cs">
+            <Link>Python\API\TypedValueTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/CrossLang/BlittableCopyTest.cs">
+            <Link>Python\CrossLang\BlittableCopyTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/CrossLang/CrossLangTest.cs">
+            <Link>Python\CrossLang\CrossLangTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/CrossLang/DelegateTest.cs">
+            <Link>Python\CrossLang\DelegateTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/CrossLang/GenericTest.cs">
+            <Link>Python\CrossLang\GenericTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/CrossLang/TestScriptEngineImpl.cs">
+            <Link>Python\CrossLang\TestScriptEngineImpl.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/CSharpModuleTest.cs">
+            <Link>Python\CSharpModuleTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/ExceptionTest.cs">
+            <Link>Python\ExceptionTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/NestedTypesTest.cs">
+            <Link>Python\NestedTypesTest.cs</Link>
+        </Compile>
+    </ItemGroup>
+	
+	<ItemGroup>
+            <Compile Include="../../../upms/commonjs/Runtime/CommonJS.cs">
+            <Link>CommonJS.cs</Link>
+        </Compile>
+    </ItemGroup>
+    
+	<ItemGroup>
+    <Compile Include="../../dotnet/Src/TxtLoader.cs">
+            <Link>TxtLoader.cs</Link>
+        </Compile>
+    </ItemGroup>
+    
+</Project>
