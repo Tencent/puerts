@@ -408,7 +408,7 @@ jobs:
           node ../../cli dotnet-test -ts
           
   unittest-linux-dotnet:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/setup-dotnet@v3
