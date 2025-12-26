@@ -41,8 +41,8 @@
         <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <None Include="build\package.targets" Pack="true" PackagePath="\build\$(PackageId).targets" />
+    <None Include="buildTransitive\package.targets" Pack="true" PackagePath="\buildTransitive\$(PackageId).targets" />
   </ItemGroup>
-
 
 
   <ItemGroup>
