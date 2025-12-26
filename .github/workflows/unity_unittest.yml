@@ -120,6 +120,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14' 
       - name: Build Android Plugin # 得先构建Android插件，如果先运行UT会导致meta被Editor删除
         shell: bash
         run: |
@@ -411,6 +414,9 @@ jobs:
       - uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '6.x.x'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14' 
       - uses: actions/checkout@v3
       - name: Install LibC++
         run: |
