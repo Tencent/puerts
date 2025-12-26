@@ -59,7 +59,13 @@ if(ANDROID)
     message(STATUS "Python library: ${Python3_LIBRARIES}")
 else()
     # For other platforms, use find_package
-    find_package(Python3 3.14 COMPONENTS Interpreter Development REQUIRED)
+	if("${Python3_VERSION}" MATCHES "3.14")
+	    message(STATUS "Python VERSION == 3.14")
+        find_package(Python3 3.14 COMPONENTS Interpreter Development REQUIRED)
+    else ()
+	    message(STATUS "Python VERSION != 3.14")
+	    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+	endif()
 endif()
 
 include_directories(

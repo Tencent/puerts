@@ -62,6 +62,15 @@ function tryGetPythonFromPath() {
     return null;
 }
 
+function getPythonVersion() {
+    try {
+      const out = execFileSync('python', ['-c', 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")'], { encoding: 'utf8' }).trim();
+      return out;
+    } catch {
+      return null;
+    }
+}
+
 const platformCompileConfig = {
     'android': {
         'armv7': {
@@ -434,6 +443,10 @@ async function runPuertsMake(cwd, options) {
 		if (pyInfo && pyInfo.exe) {
 	        CmakeDArgs +=  ` -DPython3_EXECUTABLE="${pyInfo.exe}"`;
 		}
+        const pyVer = getPythonVersion();
+        if (pyVer) {
+            CmakeDArgs += ` -DPython3_VERSION=${pyVer}`;
+        }
 	}
 
     var outputFile = BuildConfig.hook(
