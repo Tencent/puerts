@@ -109,6 +109,11 @@ if(ANDROID)
             -Wl,--no-undefined
             -Wl,--as-needed
     )
+elseif(UNIX AND NOT APPLE)
+    # On Linux, export Python symbols so that dynamically loaded extension modules can find them
+    target_link_options(PapiPython PRIVATE
+            -Wl,--export-dynamic
+    )
 endif()
 
 target_compile_definitions(PapiPython PRIVATE EASTL_DLL USING_EASTL)
