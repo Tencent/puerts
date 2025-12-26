@@ -9,6 +9,36 @@
 #include "CppObjectMapperPython.h"
 #include "pesapi.h"
 
+#if defined(__linux__) && !defined(__APPLE__) && !defined(__ANDROID__)
+#include <dlfcn.h>
+#include <stdio.h>
+
+// Ensure libpython is loaded with RTLD_GLOBAL so that Python extension modules
+// (e.g. math, random) can resolve symbols like PyFloat_Type when embedded.
+static void EnsureLibPythonGlobal()
+{
+    static int s_inited = 0;
+    if (s_inited)
+    {
+        return;
+    }
+    s_inited = 1;
+
+    char soname[64];
+    snprintf(soname, sizeof(soname), "libpython%d.%d.so", PY_MAJOR_VERSION, PY_MINOR_VERSION);
+
+    void* handle = dlopen(soname, RTLD_NOW | RTLD_GLOBAL);
+    if (!handle)
+    {
+        // Fallback: try a more generic name; if this also fails, Python
+        // initialization will likely fail later and report an error.
+        handle = dlopen("libpython3.so", RTLD_NOW | RTLD_GLOBAL);
+    }
+}
+#else
+static void EnsureLibPythonGlobal() {}
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -28,6 +58,7 @@ extern "C" {
         if (Py_IsInitialized()) {
             return 0;
         }
+        EnsureLibPythonGlobal();
         PyConfig config;
         PyStatus status;
         PyConfig_InitPythonConfig(&config);
@@ -47,6 +78,7 @@ extern "C" {
     PESAPI_MODULE_EXPORT pesapi_env_ref CreatePythonPapiEnvRef()
     {
         if (!Py_IsInitialized()) {
+            EnsureLibPythonGlobal();
             Py_Initialize();
         }
 

@@ -111,6 +111,10 @@ if(ANDROID)
     )
 endif()
 
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+    target_link_libraries(PapiPython dl)
+endif()
+
 target_compile_definitions(PapiPython PRIVATE EASTL_DLL USING_EASTL)
 target_compile_definitions(PapiPython PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISABLED)
 target_compile_definitions(PapiPython PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
