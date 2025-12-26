@@ -253,7 +253,7 @@ jobs:
           websocket: 1
 
   linux64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Install LibC++
