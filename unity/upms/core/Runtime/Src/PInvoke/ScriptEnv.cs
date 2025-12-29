@@ -26,6 +26,8 @@ namespace Puerts
 
         private Backend backend;
 
+        public Backend Backend => backend;
+
         IntPtr papis;
         IntPtr envRef;
 

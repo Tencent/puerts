@@ -309,16 +309,15 @@ namespace Puerts.UnitTest
         public TestHelper()
         {
 #if UNITY_EDITOR || PUERTS_DISABLE_IL2CPP_OPTIMIZATION
-            var env = UnitTestEnv.GetEnv();
-            env.UsingFunc<int>();
-            env.UsingFunc<int, int>();
-            env.UsingFunc<DateTime, DateTime>();
-            env.UsingFunc<string, string>();
-            env.UsingFunc<bool, bool>();
-            env.UsingFunc<long, long>();
-            env.UsingFunc<TestStruct, TestStruct>();
-            env.UsingFunc<TestStruct?, TestStruct?>();
-            env.UsingFunc<TestUnsafeStruct, TestUnsafeStruct>();
+            JsEnv.LegacyBridageConfig.UsingFunc<int>();
+            JsEnv.LegacyBridageConfig.UsingFunc<int, int>();
+            JsEnv.LegacyBridageConfig.UsingFunc<DateTime, DateTime>();
+            JsEnv.LegacyBridageConfig.UsingFunc<string, string>();
+            JsEnv.LegacyBridageConfig.UsingFunc<bool, bool>();
+            JsEnv.LegacyBridageConfig.UsingFunc<long, long>();
+            JsEnv.LegacyBridageConfig.UsingFunc<TestStruct, TestStruct>();
+            JsEnv.LegacyBridageConfig.UsingFunc<TestStruct?, TestStruct?>();
+            JsEnv.LegacyBridageConfig.UsingFunc<TestUnsafeStruct, TestUnsafeStruct>();
 #endif
         }
 
@@ -1395,9 +1394,11 @@ namespace Puerts.UnitTest
         public void CallDelegateAfterJsEnvDisposed()
         {
 #if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #else
-            var jsEnv = new JsEnv(new DefaultLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #endif
             var callback = jsEnv.Eval<Action>("() => console.log('hello')");
             callback();
@@ -1413,9 +1414,11 @@ namespace Puerts.UnitTest
         public void TestJsGC()
         {
 #if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #else
-            var jsEnv = new JsEnv(new DefaultLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #endif
             TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
@@ -1428,7 +1431,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1442,7 +1445,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1460,9 +1463,11 @@ namespace Puerts.UnitTest
         public void TestJsStructGC()
         {
 #if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #else
-            var jsEnv = new JsEnv(new DefaultLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #endif
             TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
@@ -1475,7 +1480,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1489,7 +1494,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend is BackendNodeJS)
             {
                 jsEnv.Eval("gc()");
             }
@@ -1591,8 +1596,8 @@ namespace Puerts.UnitTest
         public void CastJsFunctionAsTwoDiffDelegate()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingAction<int>();
-            jsEnv.UsingAction<string, long>();
+            JsEnv.LegacyBridageConfig.UsingAction<int>();
+            JsEnv.LegacyBridageConfig.UsingAction<string, long>();
             var cb1 = jsEnv.Eval<Action<int>>(@"
             function __GCB(a, b) {
               __GMSG = `${a}${b}`
@@ -1612,7 +1617,7 @@ namespace Puerts.UnitTest
         public void NotGenericTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingFunc<long, string>();
+            JsEnv.LegacyBridageConfig.UsingFunc<long, string>();
             var cb1 = jsEnv.Eval<NotGenericTestFunc>(@"
             function __NGTF(a) {
               return `${a}`
@@ -1647,7 +1652,7 @@ namespace Puerts.UnitTest
         public void PassDestroyedUnityObjectTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingFunc<UnityEngine.Object, bool>();
+            JsEnv.LegacyBridageConfig.UsingFunc<UnityEngine.Object, bool>();
             // 无效的UnityEninge.Object会以null的形式传入脚本
             var is_null = jsEnv.Eval<Func<UnityEngine.Object, bool>>(@"
 function __PDUOTF(o){
@@ -1673,10 +1678,10 @@ __PDUOTF;");
         [Test]
         public void JsObjectCrossJsEnvs()
         {
-            var jsEnv1 = new JsEnv(UnitTestEnv.GetLoader());
-            jsEnv1.UsingFunc<ScriptObject, bool>();
-            var jsEnv2 = new JsEnv(UnitTestEnv.GetLoader());
-            jsEnv2.UsingFunc<ScriptObject, bool>();
+            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            var jsEnv1 = new ScriptEnv(backend1);
+            var backend2 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            var jsEnv2 = new ScriptEnv(backend2);
             var jsObj1 = jsEnv1.Eval<ScriptObject>("Object.create(null)");
             var test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
             var test2 = jsEnv2.Eval<PassScriptObject>("(obj) => !!obj");
@@ -1695,14 +1700,14 @@ __PDUOTF;");
 		[Test]
         public void DisposeJsEnvJsObject()
         {
-            var jsEnv1 = new JsEnv(UnitTestEnv.GetLoader());
-            jsEnv1.UsingFunc<ScriptObject, bool>();
+            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            var jsEnv1 = new ScriptEnv(backend1);
             var jsObj1 = jsEnv1.Eval<ScriptObject>("Object.create(null)");
             var test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
             Assert.True(test1(jsObj1));
             jsEnv1.Dispose();
-            jsEnv1 = new JsEnv(UnitTestEnv.GetLoader());
-            jsEnv1.UsingFunc<ScriptObject, bool>();
+            backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            jsEnv1 = new ScriptEnv(backend1);
             test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
 			Assert.Catch(() =>
             {
@@ -1775,7 +1780,7 @@ __PDUOTF;");
         public void DelegateWithDefaultValueTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingAction<uint, ulong, double, int>();
+            JsEnv.LegacyBridageConfig.UsingAction<uint, ulong, double, int>();
             var cb1 = jsEnv.Eval<DelegateWithDefaultValue>(@"
             function __DWDV(a) {
             }

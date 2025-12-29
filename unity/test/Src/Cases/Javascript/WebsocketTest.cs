@@ -89,9 +89,11 @@ namespace Puerts.UnitTest
         public async Task SmokeTest()
         {
 #if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #else
-            var jsEnv = new JsEnv(new DefaultLoader());
+            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var jsEnv = new ScriptEnv(backend);
 #endif
             WebSocketServer wss = new WebSocketServer("http://localhost:5123/");
             Action waitJsEnv = () =>

@@ -140,7 +140,7 @@ namespace Puerts.UnitTest
 {
     public class UnitTestEnv
     {
-        private static JsEnv env;
+        private static ScriptEnv env;
         private static TxtLoader loader;
 
         UnitTestEnv() { }
@@ -150,22 +150,27 @@ namespace Puerts.UnitTest
             if (env == null) 
             {
                 loader = new TxtLoader();
+                Backend backend = null;
                 if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
                 {
-                    JsEnv.DefaultBackendType = BackendType.QuickJS;
+                    backend = new Puerts.BackendQuickJS(loader);
                 }
                 else if (System.Environment.GetEnvironmentVariable("SwitchToNJS") == "1")
                 {
-                    JsEnv.DefaultBackendType = BackendType.Node;
+                    backend = new Puerts.BackendNodeJS(loader);
                 }
-                System.Console.WriteLine($"---------------------DefaultBackendType: {JsEnv.DefaultBackendType}------------------------\n");
-                env = new JsEnv(loader);
+                if (backend == null)
+                {
+                    backend = new Puerts.BackendV8(loader);
+                }
+                System.Console.WriteLine($"---------------------Backend: {backend.GetType().Name}------------------------\n");
+                env = new ScriptEnv(backend);
                 
                 CommonJS.InjectSupportForCJS(env);
             }
         }
 
-        public static JsEnv GetEnv() 
+        public static ScriptEnv GetEnv() 
         {
             if (env == null) Init();
             return env;

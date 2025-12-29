@@ -12,7 +12,7 @@ namespace Puerts.UnitTest
 {
     public class UnitTestEnv
     {
-        private static JsEnv env;
+        private static ScriptEnv env;
         // private static UnitTestLoader loader;
         private static UnitTestLoader2 loader2;
 
@@ -24,18 +24,27 @@ namespace Puerts.UnitTest
             {
                 // loader = new UnitTestLoader();
                 loader2 = new UnitTestLoader2();
+                Backend backend = null;
                 if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
                 {
-                    JsEnv.DefaultBackendType = BackendType.QuickJS;
+                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendQuickJS"), loader2) as Backend;
                 }
 #if !UNITY_WEBGL || UNITY_EDITOR
                 else if (System.Environment.GetEnvironmentVariable("SwitchToNJS") == "1")
                 {
-                    JsEnv.DefaultBackendType = BackendType.Node;
+                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendNodeJS"), loader2) as Backend;
                 }
 #endif
+                if (backend == null)
+                {
 #if !UNITY_WEBGL || UNITY_EDITOR
-                env = new JsEnv(loader2);
+                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), loader2) as Backend;
+#else
+                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendWebGL"), loader2) as Backend;
+#endif
+                }
+#if !UNITY_WEBGL || UNITY_EDITOR
+                env = new ScriptEnv(backend);
                 CommonJS.InjectSupportForCJS(env);
 #else 
                 env = Puerts.WebGL.MainEnv.Get(loader2);
@@ -47,7 +56,7 @@ namespace Puerts.UnitTest
             }
         }
 
-        public static JsEnv GetEnv() 
+        public static ScriptEnv GetEnv() 
         {
             if (env == null) Init();
             return env;

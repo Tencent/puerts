@@ -138,11 +138,15 @@ namespace Puerts.UnitTest
         [Test]
         public void MultiEnv() {
 #if PUERTS_GENERAL
-            var jsEnv1 = new JsEnv(new TxtLoader());
-            var jsEnv2 = new JsEnv(new TxtLoader());
+            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var jsEnv1 = new ScriptEnv(backend1);
+            var backend2 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var jsEnv2 = new ScriptEnv(backend2);
 #else
-            var jsEnv1 = new JsEnv(new UnitTestLoader());
-            var jsEnv2 = new JsEnv(new UnitTestLoader());
+            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new UnitTestLoader()) as Backend;
+            var jsEnv1 = new ScriptEnv(backend1);
+            var backend2 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new UnitTestLoader()) as Backend;
+            var jsEnv2 = new ScriptEnv(backend2);
 #endif
 
             jsEnv1.Eval(@"
@@ -207,10 +211,12 @@ namespace Puerts.UnitTest
                 UnityEngine.Debug.Log(msg);
 #endif
             };
-            JsEnv jsEnv = null;
+            ScriptEnv jsEnv = null;
+            Backend backend = null;
             try
             {
-                jsEnv = new JsEnv(UnitTestEnv.GetLoader(), -1, BackendType.V8, IntPtr.Zero, IntPtr.Zero);
+                backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+                jsEnv = new ScriptEnv(backend);
                 backendStr = jsEnv.Eval<string>(@"((typeof gc) != 'undefined' || (typeof v8) != 'undefined') ? 'v8': 'quickjs';");
                 jsEnv.Dispose();
                 createEnvSucess = true;
@@ -223,21 +229,23 @@ namespace Puerts.UnitTest
             {
                 Log("create v8 backend success");
                 Assert.AreEqual("v8", backendStr);
-                Assert.True(jsEnv.Backend is BackendV8 || jsEnv.Backend.GetType().Name == "BackendNodeJS");
+                Assert.True(backend is BackendV8 || backend.GetType().Name == "BackendNodeJS");
             }
             else
             {
                 Log("create v8 backend fail: " + errMsg);
-                Assert.True(errMsg.Contains("create jsengine fail for V8"));
+                Assert.True(errMsg.Contains("BackendV8"));
             }
 
             backendStr = null;
             errMsg = null;
             createEnvSucess = false;
             jsEnv = null;
+            backend = null;
             try
             {
-                jsEnv = new JsEnv(UnitTestEnv.GetLoader(), -1, BackendType.QuickJS, IntPtr.Zero, IntPtr.Zero);
+                backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendQuickJS"), UnitTestEnv.GetLoader()) as Backend;
+                jsEnv = new ScriptEnv(backend);
                 backendStr = jsEnv.Eval<string>(@"((typeof gc) != 'undefined' || (typeof v8) != 'undefined') ? 'v8': 'quickjs';");
                 jsEnv.Dispose();
                 createEnvSucess = true;
@@ -250,12 +258,12 @@ namespace Puerts.UnitTest
             {
                 Log("create quickjs backend success");
                 Assert.AreEqual("quickjs", backendStr);
-                Assert.True(jsEnv.Backend is BackendQuickJS);
+                Assert.True(backend is BackendQuickJS);
             }
             else
             {
                 Log("create quickjs backend fail: " + errMsg);
-                Assert.True(errMsg.Contains("create jsengine fail for QuickJS"));
+                Assert.True(errMsg.Contains("BackendQuickJS"));
             }
         }
 #endif

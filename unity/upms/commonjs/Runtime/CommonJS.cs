@@ -6,6 +6,12 @@ namespace Puerts.ThirdParty
         {
             env.ExecuteModule("puer-commonjs/load.mjs");
             env.ExecuteModule("puer-commonjs/modular.mjs");
-        }        
+        }
+
+        public static void InjectSupportForCJS(Puerts.ScriptEnv env)
+        {
+            env.ExecuteModule("puer-commonjs/load.mjs");
+            env.ExecuteModule("puer-commonjs/modular.mjs");
+        }
     }
 }

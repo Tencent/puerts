@@ -268,7 +268,7 @@ export default DModule;");
             // ");
             // loader.AddMockFileContent("import-relative/b/whatever.mjs", @"export const str = 'hello'");
             var jsEnv = UnitTestEnv.GetEnv();
-            string ret = jsEnv.ExecuteModule<string>("import-relative/a/entry.mjs", "str");
+            string ret = jsEnv.ExecuteModule("import-relative/a/entry.mjs").Get<string>("str");
 
             Assert.AreEqual(ret, "hello");
             jsEnv.Tick();
@@ -344,7 +344,7 @@ export default DModule;");
             // ");
             var jsEnv = UnitTestEnv.GetEnv();
 
-            string res = jsEnv.ExecuteModule<string>("import-not-relative/main.mjs", "default");
+            string res = jsEnv.ExecuteModule("import-not-relative/main.mjs").Get<string>("default");
             Assert.AreEqual(res, "M2Test M2");
             jsEnv.Tick();
         }
@@ -358,7 +358,7 @@ export default DModule;");
             ");
             var jsEnv = UnitTestEnv.GetEnv();
 
-            string res = jsEnv.ExecuteModule<string>("import-meta/entry.mjs", "default");
+            string res = jsEnv.ExecuteModule("import-meta/entry.mjs").Get<string>("default");
             Assert.AreEqual(res, "puer:import-meta/entry.mjs");
             jsEnv.Tick();
         }
@@ -376,7 +376,7 @@ export default DModule;");
             // ");
             var jsEnv = UnitTestEnv.GetEnv();
 
-            string res = jsEnv.ExecuteModule<string>("import-package", "default");
+            string res = jsEnv.ExecuteModule("import-package").Get<string>("default");
             Assert.AreEqual(res, "lib in package");
             jsEnv.Tick();
         }
@@ -393,7 +393,7 @@ export default DModule;");
             //     export default str;
             // ");
             var jsEnv = UnitTestEnv.GetEnv();
-            string str = jsEnv.ExecuteModule<string>("a_mjs.mjs", "default");
+            string str = jsEnv.ExecuteModule("a_mjs.mjs").Get<string>("default");
 
             Assert.True(str == "hello world");
             jsEnv.Tick();
@@ -412,7 +412,7 @@ export default DModule;");
             //     export default str;
             // ");
             var jsEnv = UnitTestEnv.GetEnv();
-            string str = jsEnv.ExecuteModule<string>("mjs/whatever.mjs", "default");
+            string str = jsEnv.ExecuteModule("mjs/whatever.mjs").Get<string>("default");
 
             Assert.True(str == "hello world");
             jsEnv.Tick();

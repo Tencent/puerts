@@ -36,6 +36,8 @@ namespace Puerts
         protected int debugPort;
 
         public Backend backend;
+
+        public Backend Backend => backend;
         
         PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 

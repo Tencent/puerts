@@ -413,7 +413,7 @@ namespace Puerts.UnitTest
             ConsumeStackAndCallJs(8 * 1024, jsEnv);
         }
 
-        void ConsumeStackAndCallJs(int loop, JsEnv jsEnv)
+        void ConsumeStackAndCallJs(int loop, ScriptEnv jsEnv)
         {
             if (loop > 0)
             {
