@@ -311,22 +311,24 @@ private:
             std::decay_t<T>, T>;
     };
 
+    template <std::size_t I, typename OriginalTuple, typename Tuple>
+    static void applyWriteBackOne(v8::Local<v8::Context>& context, Tuple&& argsTuple, v8::Local<v8::Value>* Argv)
+    {
+        using OrigArgT = typename std::tuple_element<I, OriginalTuple>::type;
+        using OrigArgTRaw = std::remove_cv_t<std::remove_reference_t<OrigArgT>>;
+
+        if constexpr (std::is_lvalue_reference_v<OrigArgT> && !std::is_const_v<std::remove_reference_t<OrigArgT>> &&
+                      !is_objecttype<OrigArgTRaw>::value)
+        {
+            std::get<I>(argsTuple) = v8_impl::Converter<OrigArgT>::toCpp(context, Argv[I]);
+        }
+    }
+
     template <typename OriginalTuple, typename Tuple, std::size_t... I>
     void applyWriteBack(
         v8::Local<v8::Context>& context, Tuple&& argsTuple, v8::Local<v8::Value>* Argv, std::index_sequence<I...>) const
     {
-        ((
-             [&]
-             {
-                 using OrigArgT = typename std::tuple_element<I, OriginalTuple>::type;
-                 using OrigArgTRaw = std::remove_cv_t<std::remove_reference_t<OrigArgT>>;
-                 if constexpr (std::is_lvalue_reference_v<OrigArgT> && !std::is_const_v<std::remove_reference_t<OrigArgT>> &&
-                               !is_objecttype<OrigArgTRaw>::value)
-                 {
-                     std::get<I>(argsTuple) = v8_impl::Converter<OrigArgT>::toCpp(context, Argv[I]);
-                 }
-             }()),
-            ...);
+        (applyWriteBackOne<I, OriginalTuple>(context, argsTuple, Argv), ...);
     }
 
     template <typename... Args>
