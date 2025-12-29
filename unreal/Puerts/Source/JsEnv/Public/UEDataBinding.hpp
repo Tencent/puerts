@@ -99,7 +99,7 @@
 
 #define UsingUStruct(CLS) UsingUClass(CLS)
 
-#define UsingContainer(CLS) __DefObjectType(CLS) __DefCDataPointerConverter(CLS)
+#define UsingContainer(CLS) __DefObjectType(CLS) __DefCDataPointerConverter(CLS) __DefCDataRefConverter(CLS)
 
 #define UsingTSharedPtr(ITEMCLS) __DefObjectType(TSharedPtr<ITEMCLS>) __DefCDataPointerConverter(TSharedPtr<ITEMCLS>)
 

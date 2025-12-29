@@ -49,6 +49,46 @@
     }                                                                                                \
     }
 
+#define __DefCDataRefConverter_pesapi_impl(CLS)                                                               \
+    namespace PUERTS_NAMESPACE                                                                                \
+    {                                                                                                         \
+    namespace pesapi_impl                                                                                     \
+    {                                                                                                         \
+    template <>                                                                                               \
+    struct Converter<CLS&>                                                                                    \
+    {                                                                                                         \
+        static pesapi_value toScript(pesapi_env env, CLS& value)                                              \
+        {                                                                                                     \
+            return pesapi_native_object_to_value(env, DynamicTypeId<CLS>::get(&value), &value, false);        \
+        }                                                                                                     \
+        static CLS& toCpp(pesapi_env env, pesapi_value value)                                                 \
+        {                                                                                                     \
+            return *(static_cast<CLS*>(pesapi_get_native_object_ptr(env, value)));                            \
+        }                                                                                                     \
+        static bool accept(pesapi_env env, pesapi_value value)                                                \
+        {                                                                                                     \
+            return pesapi_is_instance_of(env, StaticTypeId<CLS>::get(), value);                               \
+        }                                                                                                     \
+    };                                                                                                        \
+    template <>                                                                                               \
+    struct Converter<const CLS&>                                                                              \
+    {                                                                                                         \
+        static pesapi_value toScript(pesapi_env env, const CLS& value)                                        \
+        {                                                                                                     \
+            return pesapi_native_object_to_value(env, DynamicTypeId<CLS>::get((CLS*) &value), &value, false); \
+        }                                                                                                     \
+        static const CLS& toCpp(pesapi_env env, pesapi_value value)                                           \
+        {                                                                                                     \
+            return *(static_cast<CLS*>(pesapi_get_native_object_ptr(env, value)));                            \
+        }                                                                                                     \
+        static bool accept(pesapi_env env, pesapi_value value)                                                \
+        {                                                                                                     \
+            return pesapi_is_instance_of(env, StaticTypeId<CLS>::get(), value);                               \
+        }                                                                                                     \
+    };                                                                                                        \
+    }                                                                                                         \
+    }
+
 #define __DefCDataConverter_pesapi_impl(CLS)                                                                  \
     namespace PUERTS_NAMESPACE                                                                                \
     {                                                                                                         \
@@ -501,7 +541,7 @@ struct Converter<bool>
 };
 
 template <typename T>
-struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objecttype<T>::value>::type>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objecttype<std::decay_t<T>>::value>::type>
 {
     static pesapi_value toScript(pesapi_env env, const T& value)
     {
@@ -520,7 +560,7 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objectty
 };
 
 template <typename T>
-struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttype<T>::value>::type>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttype<std::decay_t<T>>::value>::type>
 {
     static pesapi_value toScript(pesapi_env env, const T& value)
     {
@@ -580,7 +620,7 @@ struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !s
 
 template <class T>
 struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value &&
-                                            is_objecttype<T>::value && !is_uetype<T>::value>::type>
+                                            is_objecttype<std::decay_t<T>>::value && !is_uetype<std::decay_t<T>>::value>::type>
 {
     static pesapi_value toScript(pesapi_env env, T value)
     {
