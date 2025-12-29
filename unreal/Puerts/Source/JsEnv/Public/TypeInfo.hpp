@@ -274,7 +274,7 @@ struct ScriptTypeName<T&,
 {
     static constexpr auto value()
     {
-        return internal::Literal("$Ref<") + ScriptTypeName<std::decay<T>::type>::value() + internal::Literal(">");
+        return internal::Literal("$Ref<") + ScriptTypeName<typename std::decay<T>::type>::value() + internal::Literal(">");
     }
 };
 
