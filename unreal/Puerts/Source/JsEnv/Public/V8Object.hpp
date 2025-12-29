@@ -328,7 +328,8 @@ private:
     void applyWriteBack(
         v8::Local<v8::Context>& context, Tuple&& argsTuple, v8::Local<v8::Value>* Argv, std::index_sequence<I...>) const
     {
-        (applyWriteBackOne<I, OriginalTuple>(context, argsTuple, Argv), ...);
+        using expander = int[];
+        (void) expander{0, (applyWriteBackOne<I, OriginalTuple>(context, argsTuple, Argv), 0)...};
     }
 
     template <typename... Args>
