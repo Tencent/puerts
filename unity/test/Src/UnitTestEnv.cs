@@ -27,20 +27,20 @@ namespace Puerts.UnitTest
                 Backend backend = null;
                 if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
                 {
-                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendQuickJS"), loader2) as Backend;
+                    backend = new Puerts.BackendQuickJS(loader2);
                 }
 #if !UNITY_WEBGL || UNITY_EDITOR
                 else if (System.Environment.GetEnvironmentVariable("SwitchToNJS") == "1")
                 {
-                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendNodeJS"), loader2) as Backend;
+                    backend = new Puerts.BackendNodeJS(loader2);
                 }
 #endif
                 if (backend == null)
                 {
 #if !UNITY_WEBGL || UNITY_EDITOR
-                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), loader2) as Backend;
+                    backend = new Puerts.BackendV8(loader2);
 #else
-                    backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendWebGL"), loader2) as Backend;
+                    backend = new Puerts.BackendWebGL(loader2);
 #endif
                 }
 #if !UNITY_WEBGL || UNITY_EDITOR
