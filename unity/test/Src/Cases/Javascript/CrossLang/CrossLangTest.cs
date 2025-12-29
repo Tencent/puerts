@@ -1394,10 +1394,10 @@ namespace Puerts.UnitTest
         public void CallDelegateAfterJsEnvDisposed()
         {
 #if PUERTS_GENERAL
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new TxtLoader());
             var jsEnv = new ScriptEnv(backend);
 #else
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new DefaultLoader());
             var jsEnv = new ScriptEnv(backend);
 #endif
             var callback = jsEnv.Eval<Action>("() => console.log('hello')");
@@ -1414,10 +1414,10 @@ namespace Puerts.UnitTest
         public void TestJsGC()
         {
 #if PUERTS_GENERAL
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new TxtLoader());
             var jsEnv = new ScriptEnv(backend);
 #else
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new DefaultLoader());
             var jsEnv = new ScriptEnv(backend);
 #endif
             TestGC.ObjCount = 0;
@@ -1463,10 +1463,10 @@ namespace Puerts.UnitTest
         public void TestJsStructGC()
         {
 #if PUERTS_GENERAL
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new TxtLoader());
             var jsEnv = new ScriptEnv(backend);
 #else
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new DefaultLoader());
             var jsEnv = new ScriptEnv(backend);
 #endif
             TestGC.ObjCount = 0;
@@ -1678,9 +1678,9 @@ __PDUOTF;");
         [Test]
         public void JsObjectCrossJsEnvs()
         {
-            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            var backend1 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
             var jsEnv1 = new ScriptEnv(backend1);
-            var backend2 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            var backend2 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
             var jsEnv2 = new ScriptEnv(backend2);
             var jsObj1 = jsEnv1.Eval<ScriptObject>("Object.create(null)");
             var test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
@@ -1700,13 +1700,13 @@ __PDUOTF;");
 		[Test]
         public void DisposeJsEnvJsObject()
         {
-            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            var backend1 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
             var jsEnv1 = new ScriptEnv(backend1);
             var jsObj1 = jsEnv1.Eval<ScriptObject>("Object.create(null)");
             var test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
             Assert.True(test1(jsObj1));
             jsEnv1.Dispose();
-            backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+            backend1 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
             jsEnv1 = new ScriptEnv(backend1);
             test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
 			Assert.Catch(() =>

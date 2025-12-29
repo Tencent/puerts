@@ -89,10 +89,10 @@ namespace Puerts.UnitTest
         public async Task SmokeTest()
         {
 #if PUERTS_GENERAL
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new TxtLoader());
             var jsEnv = new ScriptEnv(backend);
 #else
-            var backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new DefaultLoader()) as Backend;
+            var backend = new Puerts.BackendV8(new DefaultLoader());
             var jsEnv = new ScriptEnv(backend);
 #endif
             WebSocketServer wss = new WebSocketServer("http://localhost:5123/");

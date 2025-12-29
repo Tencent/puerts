@@ -138,14 +138,14 @@ namespace Puerts.UnitTest
         [Test]
         public void MultiEnv() {
 #if PUERTS_GENERAL
-            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var backend1 = new Puerts.BackendV8(new TxtLoader());
             var jsEnv1 = new ScriptEnv(backend1);
-            var backend2 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new TxtLoader()) as Backend;
+            var backend2 = new Puerts.BackendV8(new TxtLoader());
             var jsEnv2 = new ScriptEnv(backend2);
 #else
-            var backend1 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new UnitTestLoader()) as Backend;
+            var backend1 = new Puerts.BackendV8(new UnitTestLoader());
             var jsEnv1 = new ScriptEnv(backend1);
-            var backend2 = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), new UnitTestLoader()) as Backend;
+            var backend2 = new Puerts.BackendV8(new UnitTestLoader());
             var jsEnv2 = new ScriptEnv(backend2);
 #endif
 
@@ -215,7 +215,7 @@ namespace Puerts.UnitTest
             Backend backend = null;
             try
             {
-                backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), UnitTestEnv.GetLoader()) as Backend;
+                backend = new Puerts.BackendV8(UnitTestEnv.GetLoader());
                 jsEnv = new ScriptEnv(backend);
                 backendStr = jsEnv.Eval<string>(@"((typeof gc) != 'undefined' || (typeof v8) != 'undefined') ? 'v8': 'quickjs';");
                 jsEnv.Dispose();
@@ -244,7 +244,7 @@ namespace Puerts.UnitTest
             backend = null;
             try
             {
-                backend = System.Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendQuickJS"), UnitTestEnv.GetLoader()) as Backend;
+                backend = new Puerts.BackendQuickJS(UnitTestEnv.GetLoader());
                 jsEnv = new ScriptEnv(backend);
                 backendStr = jsEnv.Eval<string>(@"((typeof gc) != 'undefined' || (typeof v8) != 'undefined') ? 'v8': 'quickjs';");
                 jsEnv.Dispose();
