@@ -65,7 +65,7 @@ jobs:
             cd "$repo_root/unity/native/$backend"
             # if python backend, specify arch to arm64
             if [ "$backend" = "papi-python" ] && [ "${{ matrix.arch }}" = "auto" ]; then
-              node ../../cli make --platform ${{ matrix.platform }} --arch arm64
+              node ../../cli make --platform ${{ matrix.platform }} --arch arm64 --expose_gc
             else
               node ../../cli make --platform ${{ matrix.platform }}
             fi
@@ -81,7 +81,7 @@ jobs:
           foreach ($backend in $backends) {
             Write-Host "Building $backend for ${{ matrix.platform }}-${{ matrix.arch }}"
             Set-Location "$repoRoot/unity/native/$backend"
-            node ../../cli make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+            node ../../cli make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --expose_gc
             Set-Location $repoRoot
           }
         shell: pwsh
