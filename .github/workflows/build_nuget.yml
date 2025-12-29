@@ -49,7 +49,7 @@ jobs:
           for backend in $backends; do
             echo "Building $backend for ${{ matrix.platform }}-${{ matrix.arch }}"
             cd "$repo_root/unity/native/$backend"
-            node ../../cli make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+            node ../../cli make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --expose_gc
             cd "$repo_root"
           done
 

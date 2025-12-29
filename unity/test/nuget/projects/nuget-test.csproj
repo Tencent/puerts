@@ -86,9 +86,6 @@
     <Compile Include="../../Src/Cases/Javascript/MultiTest.cs">
             <Link>Javascript\MultiTest.cs</Link>
         </Compile>
-    <Compile Include="../../Src/Cases/Javascript/WebsocketTest.cs">
-            <Link>Javascript\WebsocketTest.cs</Link>
-        </Compile>
     <Compile Include="../../Src/Cases/Lua/AccessControlTest.cs">
             <Link>Lua\AccessControlTest.cs</Link>
         </Compile>

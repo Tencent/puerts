@@ -213,7 +213,7 @@ void FBackendEnv::GlobalPrepare()
     if (!GPlatform)
     {
         std::string Flags = "--stack_size=856";
-#if PUERTS_DEBUG
+#if PUERTS_DEBUG || EXPOSE_GC
         Flags += " --expose-gc";
 #endif
 #if defined(PLATFORM_IOS) || defined(PLATFORM_OHOS) || defined(JITLESS)
