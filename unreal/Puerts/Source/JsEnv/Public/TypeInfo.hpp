@@ -136,24 +136,6 @@ struct ScriptTypeName<T*>
 };
 
 template <typename T>
-struct ScriptTypeName<T&>
-{
-    static constexpr auto value()
-    {
-        return ScriptTypeName<typename std::remove_cv<T>::type>::value();
-    }
-};
-
-template <typename T>
-struct ScriptTypeName<T&&>
-{
-    static constexpr auto value()
-    {
-        return ScriptTypeName<typename std::remove_cv<T>::type>::value();
-    }
-};
-
-template <typename T>
 struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8>::type>
 {
     static constexpr auto value()
@@ -270,6 +252,39 @@ struct is_char : std::false_type
 template <>
 struct is_char<char> : std::true_type
 {
+};
+
+template <typename T>
+struct ScriptTypeName<T&,
+    typename std::enable_if<std::is_const<typename std::remove_reference<T>::type>::value ||
+                            is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value ||
+                            is_uetype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value>::type>
+{
+    static constexpr auto value()
+    {
+        return ScriptTypeName<typename std::remove_cv<T>::type>::value();
+    }
+};
+
+template <typename T>
+struct ScriptTypeName<T&,
+    typename std::enable_if<!std::is_const<typename std::remove_reference<T>::type>::value &&
+                            !is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value &&
+                            !is_uetype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value>::type>
+{
+    static constexpr auto value()
+    {
+        return internal::Literal("$Ref<") + ScriptTypeName<std::decay<T>::type>::value() + internal::Literal(">");
+    }
+};
+
+template <typename T>
+struct ScriptTypeName<T&&>
+{
+    static constexpr auto value()
+    {
+        return ScriptTypeName<typename std::remove_cv<T>::type>::value();
+    }
 };
 
 template <typename T, size_t Size>
