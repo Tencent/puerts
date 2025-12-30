@@ -308,4 +308,22 @@ jobs:
           cd unity/test/nuget/projects
           dotnet test
         shell: pwsh
+
+  linux_test:
+    name: linux unit test
+    needs: pack_nuget
+    runs-on: ubuntu-22.04
+    if: ${{ github.event.inputs.publish != 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download nuget-packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages 
+          path: unity/test/nuget/nuget-packages
+      - name: Run dotnet test
+        run: |
+          cd unity/test/nuget/projects
+          dotnet test
       
