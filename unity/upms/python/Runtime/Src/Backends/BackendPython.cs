@@ -7,6 +7,10 @@
 
 using System;
 
+#if PUERTS_NUGET
+using System.Runtime.InteropServices;
+#endif
+
 namespace Puerts
 {
     public class BackendPython : Backend
@@ -28,7 +32,11 @@ namespace Puerts
 
         public override IntPtr CreateEnvRef()
         {
-            envRef = PapiPythonNative.CreatePythonPapiEnvRef();
+#if PUERTS_NUGET
+            var pythonPrefix = System.IO.Path.Combine(AppContext.BaseDirectory, "runtimes", GetRuntimeIdentifier(), "native");
+            PapiPythonNative.InitPythonByHome(pythonPrefix);
+#endif
+            envRef = PapiPythonNative.CreatePythonPapiEnvRef();  
             return envRef;
         }
 
@@ -238,5 +246,57 @@ class puerts:
 sys.meta_path.append(PesapiFinder())
 ''')");
         }
+#if PUERTS_NUGET
+        private static string GetRuntimeIdentifier()
+        {
+            
+            string os; 
+#if NET5_0_OR_GREATER
+            os = OperatingSystem.IsWindows() ? "win" :
+                 OperatingSystem.IsLinux() ? "linux" :
+                 OperatingSystem.IsMacOS() ? "osx" :
+                 throw new PlatformNotSupportedException("Unsupported OS platform");
+#else 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                os = "win";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                os = "linux";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                os = "osx";
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("Unsupported OS platform");
+            }
+#endif
+            
+            var arch = RuntimeInformation.OSArchitecture switch
+            {
+                Architecture.X64 => "x64",
+                Architecture.X86 => "x86",
+                Architecture.Arm => throw new PlatformNotSupportedException("Unsupported architecture"),
+                Architecture.Arm64 => "arm64",
+#if NET5_0_OR_GREATER
+                Architecture.Wasm => throw new PlatformNotSupportedException("Unsupported architecture"),      
+#endif
+#if NET6_0_OR_GREATER
+                Architecture.S390x => throw new PlatformNotSupportedException("Unsupported architecture"),
+#endif
+#if NET7_0_OR_GREATER
+                Architecture.LoongArch64 => throw new PlatformNotSupportedException("Unsupported architecture"),
+                Architecture.Armv6 =>throw new PlatformNotSupportedException("Unsupported architecture"),
+                Architecture.Ppc64le => throw new PlatformNotSupportedException("Unsupported architecture"),
+#endif
+                _ => throw new PlatformNotSupportedException("Unsupported architecture")
+            };
+            
+            return  $"{os}-{arch}";
+        }
+#endif
     }
 }

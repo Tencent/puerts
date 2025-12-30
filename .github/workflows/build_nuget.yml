@@ -1,6 +1,28 @@
 name: Build Nuget
 
 on:
+  push:
+    paths: 
+      - unity/upms/**
+      - unity/test/**
+      - unity/native/**
+      - unity/cli/**
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+      - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+      - .github/workflows/build_nuget.yml
+  pull_request:
+    paths: 
+      - unity/upms/**
+      - unity/test/**
+      - unity/native/**
+      - unity/cli/**
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+      - unreal/Puerts/Source/JsEnv/Private/WebSocketImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+      - .github/workflows/build_nuget.yml
   workflow_dispatch:
     inputs:
       publish:
