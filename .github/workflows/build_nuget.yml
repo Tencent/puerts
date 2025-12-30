@@ -75,6 +75,24 @@ jobs:
             cd "$repo_root"
           done
 
+          # Copy system Python's lib-dynload directory
+          python_version=$(python3 --version | awk '{print $2}' | cut -d. -f1,2)
+          echo "Python version: $python_version"
+          
+          # Find lib-dynload directory using sysconfig
+          lib_dynload_path=$(python3 -c "import sysconfig; import os; stdlib = sysconfig.get_path('stdlib'); print(os.path.join(stdlib, 'lib-dynload'))")
+          echo "lib-dynload path: $lib_dynload_path"
+          
+          if [ -d "$lib_dynload_path" ]; then
+            dest_path="$repo_root/unity/native/papi-python/build_linux_x64_papi-python/lib-dynload"
+            mkdir -p "$dest_path"
+            cp -r "$lib_dynload_path"/* "$dest_path/"
+            echo "Copied lib-dynload to $dest_path"
+            ls -la "$dest_path"
+          else
+            echo "Warning: lib-dynload directory not found at $lib_dynload_path"
+          fi
+
       - name: Build all native backends (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -183,6 +201,7 @@ jobs:
             
             unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
+            unity/native/papi-python/build_linux_x64_papi-python/lib-dynload/**
             
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
@@ -223,6 +242,33 @@ jobs:
           mkdir "$destPath/lib"
           Move-Item -Path "$destPath/python3.14" -Destination "$destPath/lib" -Force
           Remove-Item -Path "$destPath/python" -Recurse -Force
+
+          # Copy system lib-dynload files to extracted Python directory
+          $systemLibDynloadPath = "$destPath/lib-dynload"
+          $targetLibDynloadPath = "$destPath/lib/python3.14/lib-dynload"
+          
+          if (Test-Path $systemLibDynloadPath) {
+            Write-Host "Copying system lib-dynload files to $targetLibDynloadPath"
+            if (-not (Test-Path $targetLibDynloadPath)) {
+              New-Item -ItemType Directory -Path $targetLibDynloadPath -Force | Out-Null
+            }
+            
+            Get-ChildItem -Path $systemLibDynloadPath -File | ForEach-Object {
+              $targetFile = Join-Path $targetLibDynloadPath $_.Name
+              if (-not (Test-Path $targetFile)) {
+                Copy-Item -Path $_.FullName -Destination $targetFile -Force
+                Write-Host "Copied $($_.Name)"
+              } else {
+                Write-Host "Skipped $($_.Name) (already exists)"
+              }
+            }
+            
+            # Remove the temporary lib-dynload directory
+            Remove-Item -Path $systemLibDynloadPath -Recurse -Force
+            Write-Host "Removed temporary lib-dynload directory"
+          } else {
+            Write-Host "Warning: System lib-dynload directory not found at $systemLibDynloadPath"
+          }
           
         shell: pwsh
       - name: Run NuGet Packaging and Publishing
