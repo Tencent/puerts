@@ -7,7 +7,7 @@
 
 using System;
 
-#if PUERTS_GENERAL
+#if PUERTS_NUGET
 using System.Runtime.InteropServices;
 #endif
 
@@ -32,7 +32,7 @@ namespace Puerts
 
         public override IntPtr CreateEnvRef()
         {
-#if PUERTS_GENERAL
+#if PUERTS_NUGET
             var pythonPrefix = System.IO.Path.Combine(AppContext.BaseDirectory, "runtimes", GetRuntimeIdentifier(), "native");
             PapiPythonNative.InitPythonByHome(pythonPrefix);
 #endif
@@ -246,7 +246,7 @@ class puerts:
 sys.meta_path.append(PesapiFinder())
 ''')");
         }
-#if PUERTS_GENERAL
+#if PUERTS_NUGET
         private static string GetRuntimeIdentifier()
         {
             

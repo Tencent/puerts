@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <DefineConstants>PUERTS_GENERAL;DISABLE_AUTO_REGISTER;PUERTS_REFLECT_ALL_EXTENSION</DefineConstants>
+    <DefineConstants>PUERTS_GENERAL;DISABLE_AUTO_REGISTER;PUERTS_REFLECT_ALL_EXTENSION;PUERTS_NUGET</DefineConstants>
 
     <NoWarn>NU5128</NoWarn>
 
