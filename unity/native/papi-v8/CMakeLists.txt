@@ -15,7 +15,9 @@ option ( USING_V8 "using v8" ON )
 option ( USING_QJS "using quickjs" ON )
 option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
 
-if("${BACKEND_DEFINITIONS}" MATCHES "V8_118_OR_NEWER")
+if("${BACKEND_DEFINITIONS}" MATCHES "V8_129_OR_NEWER")
+    set(CMAKE_CXX_STANDARD 20)
+elseif ("${BACKEND_DEFINITIONS}" MATCHES "V8_118_OR_NEWER")
     set(CMAKE_CXX_STANDARD 17)
 else ()
     set(CMAKE_CXX_STANDARD 14)
@@ -122,6 +124,14 @@ else ()
         )
    endif ()
 endif ()
+
+if("${BACKEND_DEFINITIONS}" MATCHES "V8_129_OR_NEWER")
+  set_target_properties(PapiV8 PROPERTIES
+      CXX_STANDARD ${CMAKE_CXX_STANDARD}
+      CXX_STANDARD_REQUIRED ON
+      CXX_EXTENSIONS OFF
+  )
+endif()
 
 if ( WITH_WEBSOCKET EQUAL 3 )
     set(OPENSSL_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl-src) # default path by CMake
@@ -232,6 +242,10 @@ if ( MSYS OR WIN32 )
             dbghelp.lib
             shlwapi.lib
         )
+
+        # MSVC keeps __cplusplus at 199711L unless /Zc:__cplusplus is enabled.
+        # v8config.h checks __cplusplus directly, so we must enable this.
+        target_compile_options(PapiV8 PRIVATE /Zc:__cplusplus)
     endif ()
 
     # definition

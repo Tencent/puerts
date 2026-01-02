@@ -76,7 +76,13 @@ namespace PUERTS_NAMESPACE
 
     bool JSEngine::IdleNotificationDeadline(double DeadlineInSeconds)
     {
+#if defined(V8_129_OR_NEWER)
+        // V8 12.9+ removed/changed IdleNotificationDeadline. Keep behavior best-effort.
+        MainIsolate->MemoryPressureNotification(v8::MemoryPressureLevel::kModerate);
+        return true;
+#else
         return MainIsolate->IdleNotificationDeadline(DeadlineInSeconds);
+#endif
     }
 
     void JSEngine::RequestMinorGarbageCollectionForTesting()
