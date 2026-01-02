@@ -82,6 +82,16 @@ set ( PUERTS_SRC
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
+# Build this translation unit without RTTI to match V8 builds that disable RTTI.
+# This prevents emitting `typeinfo for puerts::V8InspectorClientImpl`, which would otherwise reference
+# `typeinfo for v8_inspector::V8InspectorClient` and fail to link when V8 is built with -fno-rtti.
+if(APPLE OR UNIX)
+    set_source_files_properties(
+        ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+        PROPERTIES COMPILE_OPTIONS "-fno-rtti"
+    )
+endif()
+
 set(PUERTS_COMPILE_DEFINITIONS)
 
 list(APPEND PUERTS_COMPILE_DEFINITIONS USING_PUERTS_API_SHARED)
