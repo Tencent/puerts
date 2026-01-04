@@ -19,8 +19,8 @@ jobs:
         shell: bash
         run: |
           cd ~
-          rm -rf ~/android-ndk-r23c
-          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r23c-linux.zip
+          rm -rf ~/android-ndk-r27d
+          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r27d-linux.zip
           sudo apt install unzip -y
           unzip -q NDK
       - name: puerts
