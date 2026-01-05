@@ -329,6 +329,13 @@ elseif ( APPLE )
             list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_MAC_ARM64)
         endif()
         list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_MAC)
+        
+        if ("${BACKEND_DEFINITIONS}" MATCHES "V8_136_OR_NEWER")
+            find_library(CORE_FOUNDATION_LIB CoreFoundation)
+            if(CORE_FOUNDATION_LIB)
+                target_link_libraries(YourTargetName ${CORE_FOUNDATION_LIB})
+            endif()
+        endif()
     endif ()
 
 elseif (UNIX)
