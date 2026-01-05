@@ -506,13 +506,23 @@ PESAPI_EXTERN pesapi_env pesapi_get_env(pesapi_callback_info pinfo)
 void* pesapi_get_native_holder_ptr(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+#if V8_MAJOR_VERSION >= 13 && V8_MINOR_VERSION >= 6
+    // V8 13.6+: FunctionCallbackInfo::Holder() was removed.
+    // Use `This()` (the receiver) as the closest equivalent holder object.
+    return puerts::DataTransfer::GetPointerFast<void>((*info).This());
+#else
     return puerts::DataTransfer::GetPointerFast<void>((*info).Holder());
+#endif
 }
 
 const void* pesapi_get_native_holder_typeid(pesapi_callback_info pinfo)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+#if V8_MAJOR_VERSION >= 13 && V8_MINOR_VERSION >= 6
+    return puerts::DataTransfer::GetPointerFast<void>((*info).This(), 1);
+#else
     return puerts::DataTransfer::GetPointerFast<void>((*info).Holder(), 1);
+#endif
 }
 
 void* pesapi_get_userdata(pesapi_callback_info pinfo)
