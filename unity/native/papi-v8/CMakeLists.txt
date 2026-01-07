@@ -108,7 +108,7 @@ if ( APPLE )
         add_library(PapiV8 STATIC
            ${PUERTS_SRC} ${PUERTS_INC}
         )
-		set_xcode_property (PapiV8 IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
+        set_xcode_property (PapiV8 IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
         add_library(PapiV8 SHARED
             ${PUERTS_SRC} ${PUERTS_INC}
@@ -231,7 +231,7 @@ if ( WITH_WEBSOCKET EQUAL 2 )
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL OPENSSL_EXTRA OPENSSL_ALL WOLFSSL_OPENSSH PUERTS_USE_WOLFSSL)
     
     if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
-	    set_property(TARGET wolfssl PROPERTY
+        set_property(TARGET wolfssl PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif ()
 endif ()
@@ -349,6 +349,13 @@ elseif (UNIX)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
     endif ()
+    if ("${BACKEND_DEFINITIONS}" MATCHES "V8_136_OR_NEWER")
+        target_link_libraries(PapiV8
+              "-Wl,--no-as-needed"
+              atomic
+              "-Wl,--as-needed"
+            )
+    endif()
 endif ()
 
 
@@ -362,7 +369,7 @@ list(APPEND PUERTS_COMPILE_DEFINITIONS ${BACKEND_DEFINITIONS})
 target_compile_definitions (PapiV8 PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
-	set_property(TARGET PapiV8 PROPERTY
+    set_property(TARGET PapiV8 PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
 
