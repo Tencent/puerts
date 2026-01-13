@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: e3a9cd9cf370e92438177cf92560f5e1
+guid: WnlOvHn5Wij4alHCnyePn2gzWcJPk/V+zuqZM8zWUVUFpUHhfbXKMSs=
 PluginImporter:
   externalObjects: {}
   serializedVersion: 2
@@ -20,7 +20,9 @@ PluginImporter:
         Exclude Editor: 1
         Exclude Linux64: 1
         Exclude OSXUniversal: 1
+        Exclude OpenHarmony: 0
         Exclude WebGL: 1
+        Exclude WeixinMiniGame: 1
         Exclude Win: 1
         Exclude Win64: 1
   - first:
@@ -43,6 +45,13 @@ PluginImporter:
         CPU: AnyCPU
         DefaultValueInitialized: true
         OS: AnyOS
+  - first:
+      OpenHarmony: OpenHarmony
+    second:
+      enabled: 1
+      settings:
+        CPU: ARM64
+        OpenHarmonySharedLibraryType: Executable
   - first:
       Standalone: Linux64
     second:

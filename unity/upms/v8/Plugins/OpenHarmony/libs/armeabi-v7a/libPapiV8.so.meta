@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2d06c223975f5aa488212db557a2c9bd
+guid: BnMdsy74AHtEe6xxoANcApPMLSHB8+y1waCxxMO1Vsm7ipdXd1Dti0I=
 PluginImporter:
   externalObjects: {}
   serializedVersion: 2
@@ -16,11 +16,12 @@ PluginImporter:
     second:
       enabled: 0
       settings:
-        Exclude Android: 1
         Exclude Editor: 1
         Exclude Linux64: 1
         Exclude OSXUniversal: 1
+        Exclude OpenHarmony: 0
         Exclude WebGL: 1
+        Exclude WeixinMiniGame: 1
         Exclude Win: 1
         Exclude Win64: 1
   - first:
@@ -28,8 +29,7 @@ PluginImporter:
     second:
       enabled: 0
       settings:
-        AndroidSharedLibraryType: Executable
-        CPU: ARMv7
+        Is16KbAligned: false
   - first:
       Any: 
     second:
@@ -43,6 +43,19 @@ PluginImporter:
         CPU: AnyCPU
         DefaultValueInitialized: true
         OS: AnyOS
+  - first:
+      HMIAndroid: HMIAndroid
+    second:
+      enabled: 0
+      settings:
+        Is16KbAligned: false
+  - first:
+      OpenHarmony: OpenHarmony
+    second:
+      enabled: 1
+      settings:
+        CPU: ARMv7
+        OpenHarmonySharedLibraryType: Executable
   - first:
       Standalone: Linux64
     second:
