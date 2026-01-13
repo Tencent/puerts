@@ -847,7 +847,10 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     memcpy(buff.data(), code, code_size);
     buff.data()[code_size] = '\0';
     v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, buff.data(), v8::NewStringType::kNormal).ToLocalChecked();
-#if V8_MAJOR_VERSION > 8
+#if defined(V8_129_OR_NEWER)
+    // V8 >= 12.9: ScriptOrigin does not take Isolate*.
+    v8::ScriptOrigin origin(url);
+#elif V8_MAJOR_VERSION > 8
     v8::ScriptOrigin origin(isolate, url);
 #else
     v8::ScriptOrigin origin(url);

@@ -31,7 +31,7 @@ runs:
         npm i
         cd ${{ inputs.build_proj_dir }}
         cd ${{ inputs.backend }}
-        ANDROID_NDK=~/android-ndk-r23c node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
+        ANDROID_NDK=~/android-ndk-r27d node ../../cli make --platform android --config ${{ inputs.config }} --websocket ${{ inputs.websocket }}
         cd ..
     - name: Upload
       uses: actions/upload-artifact@v4

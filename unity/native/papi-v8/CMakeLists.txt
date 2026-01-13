@@ -15,7 +15,9 @@ option ( USING_V8 "using v8" ON )
 option ( USING_QJS "using quickjs" ON )
 option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
 
-if("${BACKEND_DEFINITIONS}" MATCHES "V8_118_OR_NEWER")
+if("${BACKEND_DEFINITIONS}" MATCHES "V8_129_OR_NEWER")
+    set(CMAKE_CXX_STANDARD 20)
+elseif ("${BACKEND_DEFINITIONS}" MATCHES "V8_118_OR_NEWER")
     set(CMAKE_CXX_STANDARD 17)
 else ()
     set(CMAKE_CXX_STANDARD 14)
@@ -80,6 +82,16 @@ set ( PUERTS_SRC
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
+# Build this translation unit without RTTI to match V8 builds that disable RTTI.
+# This prevents emitting `typeinfo for puerts::V8InspectorClientImpl`, which would otherwise reference
+# `typeinfo for v8_inspector::V8InspectorClient` and fail to link when V8 is built with -fno-rtti.
+if(APPLE OR UNIX)
+    set_source_files_properties(
+        ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+        PROPERTIES COMPILE_OPTIONS "-fno-rtti"
+    )
+endif()
+
 set(PUERTS_COMPILE_DEFINITIONS)
 
 list(APPEND PUERTS_COMPILE_DEFINITIONS USING_PUERTS_API_SHARED)
@@ -96,7 +108,7 @@ if ( APPLE )
         add_library(PapiV8 STATIC
            ${PUERTS_SRC} ${PUERTS_INC}
         )
-		set_xcode_property (PapiV8 IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
+        set_xcode_property (PapiV8 IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
         add_library(PapiV8 SHARED
             ${PUERTS_SRC} ${PUERTS_INC}
@@ -122,6 +134,14 @@ else ()
         )
    endif ()
 endif ()
+
+if("${BACKEND_DEFINITIONS}" MATCHES "V8_129_OR_NEWER")
+  set_target_properties(PapiV8 PROPERTIES
+      CXX_STANDARD ${CMAKE_CXX_STANDARD}
+      CXX_STANDARD_REQUIRED ON
+      CXX_EXTENSIONS OFF
+  )
+endif()
 
 if ( WITH_WEBSOCKET EQUAL 3 )
     set(OPENSSL_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl-src) # default path by CMake
@@ -211,7 +231,7 @@ if ( WITH_WEBSOCKET EQUAL 2 )
     list(APPEND PUERTS_COMPILE_DEFINITIONS WITH_WEBSOCKET_SSL OPENSSL_EXTRA OPENSSL_ALL WOLFSSL_OPENSSH PUERTS_USE_WOLFSSL)
     
     if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
-	    set_property(TARGET wolfssl PROPERTY
+        set_property(TARGET wolfssl PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif ()
 endif ()
@@ -232,6 +252,10 @@ if ( MSYS OR WIN32 )
             dbghelp.lib
             shlwapi.lib
         )
+
+        # MSVC keeps __cplusplus at 199711L unless /Zc:__cplusplus is enabled.
+        # v8config.h checks __cplusplus directly, so we must enable this.
+        target_compile_options(PapiV8 PRIVATE /Zc:__cplusplus)
     endif ()
 
     # definition
@@ -305,6 +329,13 @@ elseif ( APPLE )
             list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_MAC_ARM64)
         endif()
         list(APPEND PUERTS_COMPILE_DEFINITIONS PLATFORM_MAC)
+        
+        if ("${BACKEND_DEFINITIONS}" MATCHES "V8_136_OR_NEWER")
+            find_library(CORE_FOUNDATION_LIB CoreFoundation)
+            if(CORE_FOUNDATION_LIB)
+                target_link_libraries(PapiV8 ${CORE_FOUNDATION_LIB})
+            endif()
+        endif()
     endif ()
 
 elseif (UNIX)
@@ -318,6 +349,13 @@ elseif (UNIX)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
     endif ()
+    if ("${BACKEND_DEFINITIONS}" MATCHES "V8_136_OR_NEWER")
+        target_link_libraries(PapiV8
+              "-Wl,--no-as-needed"
+              atomic
+              "-Wl,--as-needed"
+            )
+    endif()
 endif ()
 
 
@@ -331,7 +369,7 @@ list(APPEND PUERTS_COMPILE_DEFINITIONS ${BACKEND_DEFINITIONS})
 target_compile_definitions (PapiV8 PUBLIC ${PUERTS_COMPILE_DEFINITIONS})
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
-	set_property(TARGET PapiV8 PROPERTY
+    set_property(TARGET PapiV8 PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
 
