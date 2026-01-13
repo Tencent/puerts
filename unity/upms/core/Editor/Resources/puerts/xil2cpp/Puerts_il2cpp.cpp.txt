@@ -486,7 +486,11 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
         auto iter = WrapFuncPtrToMethodInfo.find(invoke);
         if (iter == WrapFuncPtrToMethodInfo.end())
         {
+#ifdef TUANJIE_1_1_OR_NEWER
+            MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo), IL2CPP_MEM_il2cpp_alloc);
+#else
             MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
+#endif
             newMethod->name = invoke->name;
             newMethod->klass = invoke->klass;
             newMethod->methodPointer = functionPtr;

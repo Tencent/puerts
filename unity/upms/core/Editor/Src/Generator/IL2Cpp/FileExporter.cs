@@ -792,6 +792,9 @@ namespace PuertsIl2cpp.Editor
 #if !UNITY_IPHONE && !UNITY_WEBGL && !UNITY_SWITCH
                         "PUERTS_SHARED",
 #endif
+#if TUANJIE_1_1_OR_NEWER
+                        "TUANJIE_1_1_OR_NEWER",
+#endif
                     };
                     string macroHeaderContent = macroHeaderRender(defines);
 
