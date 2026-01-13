@@ -54,13 +54,7 @@ namespace PuertsIl2cpp.Editor
             public static void GenerateCppPlugin()
             {
                 var start = DateTime.Now;
-#if CPP_OUTPUT_TO_NATIVE_SRC
-                var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_UPM
-                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
-#else
-                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
-#endif
+                var saveTo = PathHelper.GetIl2cppPluginPath();
                 Directory.CreateDirectory(saveTo);
                 FileExporter.CopyXIl2cppCPlugin(saveTo);
                 FileExporter.GenMarcoHeader(saveTo);
@@ -70,13 +64,7 @@ namespace PuertsIl2cpp.Editor
             public static void GenerateCppWrappers()
             {   
                 var start = DateTime.Now;
-#if CPP_OUTPUT_TO_NATIVE_SRC
-                var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_UPM
-                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
-#else
-                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
-#endif
+                var saveTo = PathHelper.GetIl2cppPluginPath();
 
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo);
@@ -86,13 +74,7 @@ namespace PuertsIl2cpp.Editor
             public static void GenerateCppWrappersInConfigure()
             {
                 var start = DateTime.Now;
-#if CPP_OUTPUT_TO_NATIVE_SRC
-                var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_UPM
-                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
-#else
-                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
-#endif
+                var saveTo = PathHelper.GetIl2cppPluginPath();
 
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo, true);
@@ -102,13 +84,7 @@ namespace PuertsIl2cpp.Editor
             public static void GenerateEmptyCppWrappers()
             {
                 var start = DateTime.Now;
-#if CPP_OUTPUT_TO_NATIVE_SRC
-                var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_UPM
-                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
-#else
-                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
-#endif
+                var saveTo = PathHelper.GetIl2cppPluginPath();
 
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo, false, true);
@@ -118,13 +94,7 @@ namespace PuertsIl2cpp.Editor
             public static void GenerateMinimumWrappersAndBridge()
             {
                 var start = DateTime.Now;
-#if CPP_OUTPUT_TO_NATIVE_SRC
-                var saveTo = Path.Combine(Application.dataPath, "core/upm/Plugins/puerts_il2cpp/");
-#elif PUERTS_CPP_OUTPUT_TO_UPM
-                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
-#else
-                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/puerts_il2cpp/");
-#endif
+                var saveTo = PathHelper.GetIl2cppPluginPath();
 
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo, true, true);
