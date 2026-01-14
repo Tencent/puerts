@@ -39,42 +39,6 @@ public class InstructionsFilter
         return false;
     }
 
-    static Dictionary<System.Type, bool> filterValueTypeCache = new Dictionary<System.Type, bool>();
-
-    public static int FieldCount(System.Type type)
-    {
-        int count = 0;
-        foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-        {
-            var fieldType = field.FieldType;
-            count += (fieldType.IsValueType && !fieldType.IsPrimitive && !fieldType.IsPointer && !fieldType.IsByRef ? FieldCount(fieldType) : 1);
-        }
-        return count;
-    }
-
-    public static bool IsBigValueType(System.Type type)
-    {
-        if (!type.IsValueType || type.IsPrimitive) return false;
-        if (filterValueTypeCache.ContainsKey(type))
-        {
-            return filterValueTypeCache[type];
-        }
-
-        bool res = false;
-
-        if (type.Name == "FixedBytes4094")
-        {
-            res = true;
-        }
-        else
-        {
-            res = FieldCount(type) > 1024;
-        }
-
-        filterValueTypeCache.Add(type, res);
-        return res;
-    }
-
     public static bool IsPointerOfPointer(System.Type type)
     {
         if (!type.IsByRef && !type.IsPointer) return false;
@@ -95,7 +59,7 @@ public class InstructionsFilter
                 {
                     var ptype = pinfo.ParameterType;
                     ptype = (ptype.IsByRef || ptype.IsPointer) ? ptype.GetElementType() : ptype;
-                    if (IsBigValueType(ptype))
+                    if (Puerts.Editor.Generator.Utils.IsBigValueType(ptype))
                     {
                         return BindingMode.DontBinding;
                     }
@@ -117,7 +81,7 @@ public class InstructionsFilter
             MethodInfo methodInfo = memberInfo as MethodInfo;
             if (methodInfo != null)
             {
-                if (IsBigValueType(methodInfo.ReturnType) || IsPointerOfPointer(methodInfo.ReturnType) || Puerts.Editor.Generator.Utils.isDisallowedType(methodInfo.ReturnType))
+                if (Puerts.Editor.Generator.Utils.IsBigValueType(methodInfo.ReturnType) || IsPointerOfPointer(methodInfo.ReturnType) || Puerts.Editor.Generator.Utils.isDisallowedType(methodInfo.ReturnType))
                 {
                     return BindingMode.DontBinding;
                 }
@@ -126,7 +90,7 @@ public class InstructionsFilter
             FieldInfo fieldInfo = memberInfo as FieldInfo;
             if (fieldInfo != null)
             {
-                if (IsBigValueType(fieldInfo.FieldType) || IsPointerOfPointer(fieldInfo.FieldType) || Puerts.Editor.Generator.Utils.isDisallowedType(fieldInfo.FieldType))
+                if (Puerts.Editor.Generator.Utils.IsBigValueType(fieldInfo.FieldType) || IsPointerOfPointer(fieldInfo.FieldType) || Puerts.Editor.Generator.Utils.isDisallowedType(fieldInfo.FieldType))
                 {
                     return BindingMode.DontBinding;
                 }
