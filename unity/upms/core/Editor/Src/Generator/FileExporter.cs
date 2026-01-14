@@ -85,14 +85,9 @@ namespace Puerts.Editor
                     .Concat(new Type[] { typeof(System.Type) }) // System.Type will be use in puerts.d.ts, so always generate it 
                     .Distinct();
 
-                if (loader == null)
+                using (var jsEnv = PuertsIl2cpp.Editor.Generator.FileExporter.CreateJsEnv(loader))
                 {
-                    loader = new DefaultLoader();
-                }
-                using (var jsEnv = new JsEnv(loader))
-                {
-                    jsEnv.UsingFunc<DTS.TypingGenInfo, bool, string>();
-                    var typingRender = jsEnv.ExecuteModule<Func<DTS.TypingGenInfo, bool, string>>("puerts/templates/dts.tpl.mjs", "default");
+                    var typingRender = jsEnv.ExecuteModule("puerts/templates/dts.tpl.mjs").Get<Func<DTS.TypingGenInfo, bool, string>>("default");
                     using (StreamWriter textWriter = new StreamWriter(saveTo + "Typing/csharp/index.d.ts", false, Encoding.UTF8))
                     {
                         string fileContext = typingRender(DTS.TypingGenInfo.FromTypes(tsTypes), csharpModuleWillGen);

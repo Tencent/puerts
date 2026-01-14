@@ -26,6 +26,21 @@ namespace PuertsIl2cpp.Editor
     {
         public class FileExporter
         {
+            public static Puerts.ScriptEnv CreateJsEnv(Puerts.ILoader loader = null)
+            {
+                if (loader == null)
+                {
+                    loader = new Puerts.DefaultLoader();
+                }
+                var backend = Activator.CreateInstance(TypeUtils.GetType("Puerts.BackendV8"), loader) as Puerts.Backend;
+
+                if (backend == null)
+                {
+                    throw new InvalidProgramException("Can not load Puerts.BackendV8");
+                }
+                return new Puerts.ScriptEnv(backend);
+            }
+
 #if !PUERTS_GENERAL
             public static List<string> GetValueTypeFieldSignatures(Type type)
             {
@@ -475,7 +490,7 @@ namespace PuertsIl2cpp.Editor
                                                  from type in assembly.GetTypes()
                                                  where !type.IsGenericTypeDefinition
                                                  select type;
-
+#pragma warning disable CS0618
                     var usingDecls = allTypeMayContainUsing.SelectMany(t =>
                         {
                             var flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
@@ -499,7 +514,7 @@ namespace PuertsIl2cpp.Editor
                             return new List<Instruction>();
                         }).Select(i => i.Operand).Where(o => o is MethodInfo)
                         .Cast<MethodInfo>().Where(mb => mb.IsGenericMethod && (mb.DeclaringType == typeof(Puerts.JsEnv) || mb.DeclaringType == typeof(Puerts.LegacyBridageConfig)) && (mb.Name == "UsingAction" || mb.Name == "UsingFunc"));
-
+#pragma warning restore CS0618
                     bridgeInfos = new List<SignatureInfo>();
                     foreach (var decl in usingDecls)
                     {
@@ -604,10 +619,8 @@ namespace PuertsIl2cpp.Editor
                     .ToList();
                 fieldWrapperInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
-                using (var jsEnv = new Puerts.JsEnv())
+                using (var jsEnv = CreateJsEnv())
                 {
-                    jsEnv.UsingFunc<CppWrappersInfo, string>();
-
 #if UNITY_WEBGL
                     //打开这个会导致支持不了WebGL和QuickJs并存，因为生成代码的papid都调用WebGL的静态实现了
 //                    jsEnv.Eval("globalThis.USE_STATIC_PAPI = true");
@@ -624,7 +637,7 @@ namespace PuertsIl2cpp.Editor
 
                     using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppWrapper.cpp"), false, Encoding.UTF8))
                     {
-                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapper.tpl.mjs", "default");
+                        var render = jsEnv.ExecuteModule("puerts/templates/il2cppwrapper.tpl.mjs").Get<Func<CppWrappersInfo, string>>("default");
                         string fileContext = render(cppWrapInfo);
                         textWriter.Write(fileContext);
                         textWriter.Flush();
@@ -632,7 +645,7 @@ namespace PuertsIl2cpp.Editor
 
                     using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsValueType.h"), false, Encoding.UTF8))
                     {
-                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppvaluetype.tpl.mjs", "default");
+                        var render = jsEnv.ExecuteModule("puerts/templates/il2cppvaluetype.tpl.mjs").Get<Func<CppWrappersInfo, string>>("default");
                         string fileContext = render(cppWrapInfo);
                         textWriter.Write(fileContext);
                         textWriter.Flush();
@@ -640,7 +653,7 @@ namespace PuertsIl2cpp.Editor
 
                     using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppFieldWrapper.cpp"), false, Encoding.UTF8))
                     {
-                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppfieldwrapper.tpl.mjs", "default");
+                        var render = jsEnv.ExecuteModule("puerts/templates/il2cppfieldwrapper.tpl.mjs").Get<Func<CppWrappersInfo, string>>("default");
                         string fileContext = render(cppWrapInfo);
                         textWriter.Write(fileContext);
                         textWriter.Flush();
@@ -648,7 +661,7 @@ namespace PuertsIl2cpp.Editor
 
                     using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "PuertsIl2cppBridge.cpp"), false, Encoding.UTF8))
                     {
-                        var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppbridge.tpl.mjs", "default");
+                        var render = jsEnv.ExecuteModule("puerts/templates/il2cppbridge.tpl.mjs").Get<Func<CppWrappersInfo, string>>("default");
                         string fileContext = render(cppWrapInfo);
                         textWriter.Write(fileContext);
                         textWriter.Flush();
@@ -687,7 +700,7 @@ namespace PuertsIl2cpp.Editor
                         {
                             cppWrapInfo.WrapperInfos = wrapperInfos.GetRange(i, Math.Min(MAX_WRAPPER_PER_FILE, wrapperInfos.Count - i));
                             Debug.Log("PuertsIl2cppWrapperDef" + saveFileName + " with " + cppWrapInfo.WrapperInfos.Count + " wrappers!");
-                            var render = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/il2cppwrapperdef.tpl.mjs", "default");
+                            var render = jsEnv.ExecuteModule("puerts/templates/il2cppwrapperdef.tpl.mjs").Get<Func<CppWrappersInfo, string>>("default");
                             string fileContext = render(cppWrapInfo);
                             textWriter.Write(fileContext);
                             textWriter.Flush();
@@ -727,7 +740,7 @@ namespace PuertsIl2cpp.Editor
                                                   where method.IsDefined(typeof(ExtensionAttribute), false)
                                                   group type by getExtendedTypeOf(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
 
-                using (var jsEnv = (loader == null ?  new Puerts.JsEnv() : new Puerts.JsEnv(loader)))
+                using (var jsEnv = CreateJsEnv(loader))
                 {
                     var filePath = outDir + "ExtensionMethodInfos_Gen.cs";
                     using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
@@ -737,10 +750,10 @@ namespace PuertsIl2cpp.Editor
                 }
             }
 
-            static void renderExtensionMethods(Puerts.JsEnv jsEnv, List<KeyValuePair<Type, List<Type>>> extendedType2extensionType, StreamWriter textWriter)
+            static void renderExtensionMethods(Puerts.ScriptEnv jsEnv, List<KeyValuePair<Type, List<Type>>> extendedType2extensionType, StreamWriter textWriter)
             {
-                var wrapRender = jsEnv.ExecuteModule<Func<List<KeyValuePair<Type, List<Type>>>, string>>(
-                        "puerts/templates/extension_methods_gen.tpl.mjs", "default");
+                var wrapRender = jsEnv.ExecuteModule("puerts/templates/extension_methods_gen.tpl.mjs")
+                    .Get<Func<List<KeyValuePair<Type, List<Type>>>, string>>("default");
                 string fileContent = wrapRender(extendedType2extensionType);
                 
                 textWriter.Write(fileContent);
@@ -758,9 +771,10 @@ namespace PuertsIl2cpp.Editor
                     .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
                     .Distinct()
                     .ToList();
-                using (var jsEnv = new Puerts.JsEnv())
+
+                using (var jsEnv = CreateJsEnv())
                 {
-                    var linkXMLRender = jsEnv.ExecuteModule<Func<List<Type>, string>>("puerts/templates/linkxmlgen.tpl.mjs", "LinkXMLTemplate");
+                    var linkXMLRender = jsEnv.ExecuteModule("puerts/templates/linkxmlgen.tpl.mjs").Get<Func<List<Type>, string>>("LinkXMLTemplate");
                     string linkXMLContent = linkXMLRender(genTypes);
                     var linkXMLPath = outDir + "link.xml";
                     using (StreamWriter textWriter = new StreamWriter(linkXMLPath, false, Encoding.UTF8))
@@ -775,9 +789,9 @@ namespace PuertsIl2cpp.Editor
             {
                 var filePath = outDir + "unityenv_for_puerts.h";
 
-                using (var jsEnv = new Puerts.JsEnv())
+                using (var jsEnv = CreateJsEnv())
                 {
-                    var macroHeaderRender = jsEnv.ExecuteModule<Func<List<string>, string>>("puerts/xil2cpp/unityenv_for_puerts.h.tpl.mjs", "default");
+                    var macroHeaderRender = jsEnv.ExecuteModule("puerts/xil2cpp/unityenv_for_puerts.h.tpl.mjs").Get<Func<List<string>, string>>("default");
                     var defines = new List<string>()
                     {
 #if UNITY_2021_1_OR_NEWER
@@ -830,7 +844,7 @@ namespace PuertsIl2cpp.Editor
             {
                 GenPapi(outDir);
 
-                using (var jsEnv = new Puerts.JsEnv())
+                using (var jsEnv = CreateJsEnv())
                 {
                     jsEnv.ExecuteModule("puerts/templates/il2cpp_snippets.mjs");
 
