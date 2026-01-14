@@ -205,47 +205,6 @@ namespace Puerts
         {
         }
 
-
-        public static class LegacyBridageConfig
-        {
-            public static void UsingAction<T1>()
-            {
-            }
-
-            public static void UsingAction<T1, T2>()
-            {
-            }
-
-            public static void UsingAction<T1, T2, T3>()
-            {
-            }
-
-            public static void UsingAction<T1, T2, T3, T4>()
-            {
-            }
-
-            public static void UsingFunc<TResult>()
-            {
-            }
-
-            public static void UsingFunc<T1, TResult>()
-            {
-            }
-
-            public static void UsingFunc<T1, T2, TResult>()
-            {
-            }
-
-            public static void UsingFunc<T1, T2, T3, TResult>()
-            {
-            }
-
-            public static void UsingFunc<T1, T2, T3, T4, TResult>()
-            {
-            }
-
-        }
-
         public void SetDefaultBindingMode(BindingMode bindingMode)
         {
 #if THREAD_SAFE
@@ -347,5 +306,45 @@ namespace Puerts
             env.Dispose();
             disposed = true;
         }
+    }
+
+    public static class LegacyBridageConfig
+    {
+        public static void UsingAction<T1>()
+        {
+        }
+
+        public static void UsingAction<T1, T2>()
+        {
+        }
+
+        public static void UsingAction<T1, T2, T3>()
+        {
+        }
+
+        public static void UsingAction<T1, T2, T3, T4>()
+        {
+        }
+
+        public static void UsingFunc<TResult>()
+        {
+        }
+
+        public static void UsingFunc<T1, TResult>()
+        {
+        }
+
+        public static void UsingFunc<T1, T2, TResult>()
+        {
+        }
+
+        public static void UsingFunc<T1, T2, T3, TResult>()
+        {
+        }
+
+        public static void UsingFunc<T1, T2, T3, T4, TResult>()
+        {
+        }
+
     }
 }

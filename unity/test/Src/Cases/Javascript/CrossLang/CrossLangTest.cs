@@ -309,15 +309,15 @@ namespace Puerts.UnitTest
         public TestHelper()
         {
 #if UNITY_EDITOR || PUERTS_DISABLE_IL2CPP_OPTIMIZATION
-            JsEnv.LegacyBridageConfig.UsingFunc<int>();
-            JsEnv.LegacyBridageConfig.UsingFunc<int, int>();
-            JsEnv.LegacyBridageConfig.UsingFunc<DateTime, DateTime>();
-            JsEnv.LegacyBridageConfig.UsingFunc<string, string>();
-            JsEnv.LegacyBridageConfig.UsingFunc<bool, bool>();
-            JsEnv.LegacyBridageConfig.UsingFunc<long, long>();
-            JsEnv.LegacyBridageConfig.UsingFunc<TestStruct, TestStruct>();
-            JsEnv.LegacyBridageConfig.UsingFunc<TestStruct?, TestStruct?>();
-            JsEnv.LegacyBridageConfig.UsingFunc<TestUnsafeStruct, TestUnsafeStruct>();
+            LegacyBridageConfig.UsingFunc<int>();
+            LegacyBridageConfig.UsingFunc<int, int>();
+            LegacyBridageConfig.UsingFunc<DateTime, DateTime>();
+            LegacyBridageConfig.UsingFunc<string, string>();
+            LegacyBridageConfig.UsingFunc<bool, bool>();
+            LegacyBridageConfig.UsingFunc<long, long>();
+            LegacyBridageConfig.UsingFunc<TestStruct, TestStruct>();
+            LegacyBridageConfig.UsingFunc<TestStruct?, TestStruct?>();
+            LegacyBridageConfig.UsingFunc<TestUnsafeStruct, TestUnsafeStruct>();
 #endif
         }
 
@@ -1596,8 +1596,8 @@ namespace Puerts.UnitTest
         public void CastJsFunctionAsTwoDiffDelegate()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            JsEnv.LegacyBridageConfig.UsingAction<int>();
-            JsEnv.LegacyBridageConfig.UsingAction<string, long>();
+            LegacyBridageConfig.UsingAction<int>();
+            LegacyBridageConfig.UsingAction<string, long>();
             var cb1 = jsEnv.Eval<Action<int>>(@"
             function __GCB(a, b) {
               __GMSG = `${a}${b}`
@@ -1617,7 +1617,7 @@ namespace Puerts.UnitTest
         public void NotGenericTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            JsEnv.LegacyBridageConfig.UsingFunc<long, string>();
+            LegacyBridageConfig.UsingFunc<long, string>();
             var cb1 = jsEnv.Eval<NotGenericTestFunc>(@"
             function __NGTF(a) {
               return `${a}`
@@ -1652,7 +1652,7 @@ namespace Puerts.UnitTest
         public void PassDestroyedUnityObjectTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            JsEnv.LegacyBridageConfig.UsingFunc<UnityEngine.Object, bool>();
+            LegacyBridageConfig.UsingFunc<UnityEngine.Object, bool>();
             // 无效的UnityEninge.Object会以null的形式传入脚本
             var is_null = jsEnv.Eval<Func<UnityEngine.Object, bool>>(@"
 function __PDUOTF(o){
@@ -1780,7 +1780,7 @@ __PDUOTF;");
         public void DelegateWithDefaultValueTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            JsEnv.LegacyBridageConfig.UsingAction<uint, ulong, double, int>();
+            LegacyBridageConfig.UsingAction<uint, ulong, double, int>();
             var cb1 = jsEnv.Eval<DelegateWithDefaultValue>(@"
             function __DWDV(a) {
             }

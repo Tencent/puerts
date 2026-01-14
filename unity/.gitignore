@@ -1,4 +1,4 @@
-# *.meta
+*.meta
 /test/dotnet/vsauto*
 /test/dotnet/Src/StaticWrapper
 /test/unity/Assets/Resources/*.meta

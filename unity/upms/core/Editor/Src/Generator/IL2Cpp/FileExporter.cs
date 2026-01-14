@@ -498,7 +498,7 @@ namespace PuertsIl2cpp.Editor
                             catch { }
                             return new List<Instruction>();
                         }).Select(i => i.Operand).Where(o => o is MethodInfo)
-                        .Cast<MethodInfo>().Where(mb => mb.IsGenericMethod && (mb.DeclaringType == typeof(Puerts.JsEnv) || mb.DeclaringType == typeof(Puerts.JsEnv.LegacyBridageConfig)) && (mb.Name == "UsingAction" || mb.Name == "UsingFunc"));
+                        .Cast<MethodInfo>().Where(mb => mb.IsGenericMethod && (mb.DeclaringType == typeof(Puerts.JsEnv) || mb.DeclaringType == typeof(Puerts.LegacyBridageConfig)) && (mb.Name == "UsingAction" || mb.Name == "UsingFunc"));
 
                     bridgeInfos = new List<SignatureInfo>();
                     foreach (var decl in usingDecls)
