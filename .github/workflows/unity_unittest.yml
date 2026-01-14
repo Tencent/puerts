@@ -31,12 +31,14 @@ on:
 #    branches-ignore:
 #      - 'unity-3.0.0'
   
-env:
-  RUNID: 613573412
+concurrency:
+  group: unity-ci-global
+  cancel-in-progress: false
 
 jobs:
   unittest-run-testcase-and-build-android:
     runs-on: macos-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
       - name: Build Android Plugin # 得先构建Android插件，如果先运行UT会导致meta被Editor删除
