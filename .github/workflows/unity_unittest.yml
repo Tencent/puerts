@@ -30,9 +30,10 @@ on:
       - .github/workflows/composites/**
 #    branches-ignore:
 #      - 'unity-3.0.0'
-  
-env:
-  RUNID: 613573412
+
+concurrency:
+  group: unity-ci-global
+  cancel-in-progress: false
 
 jobs:
 #  unittest-win-unity:
@@ -118,6 +119,7 @@ jobs:
           
   unittest-run-testcase-and-build-android:
     runs-on: macos-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v6
