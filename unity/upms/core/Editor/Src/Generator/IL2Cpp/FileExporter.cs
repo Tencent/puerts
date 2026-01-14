@@ -241,6 +241,9 @@ namespace PuertsIl2cpp.Editor
                     NamedBuildTarget namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
 #endif
                     bool unityIsOptimizeSize = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget) == Il2CppCodeGeneration.OptimizeSize;
+#elif UNITY_2018_1_OR_NEWER
+                    // Unity 2018 compatibility: il2CppCodeGeneration is not available, default to false
+                    bool unityIsOptimizeSize = false;
 #else
                     bool unityIsOptimizeSize = EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize;
 #endif
@@ -295,7 +298,7 @@ namespace PuertsIl2cpp.Editor
                                 // where assembly.FullName.Contains("puerts") || assembly.FullName.Contains("Assembly-CSharp") || assembly.FullName.Contains("Unity")
                             where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                             from type in assembly.GetTypes()
-                            where type.IsPublic && !InstructionsFilter.IsBigValueType(type) && !type.IsGenericTypeDefinition
+                            where type.IsPublic && !Utils.IsBigValueType(type) && !type.IsGenericTypeDefinition
                             select type;
 
                 const BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
@@ -374,7 +377,8 @@ namespace PuertsIl2cpp.Editor
 
                 var delegateInvokes = delegateToBridge
                     .Select(t => t.GetMethod("Invoke"))
-                    .Where(m => m != null);
+                    .Where(m => m != null)
+                    .ToList();
 
                 var delegateUsedTypes = delegateInvokes.SelectMany(m => m.GetParameters()).Select(pi => GetUnrefParameterType(pi))
                     .Concat(delegateInvokes.Select(m => m.ReturnType));
@@ -394,7 +398,7 @@ namespace PuertsIl2cpp.Editor
                     .Select(m => new SignatureInfo
                     {
                         Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, true),
-                        CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
+                        CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType.ToString() : "unknow class"),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = null,
                         ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, true)).ToList()
@@ -485,16 +489,16 @@ namespace PuertsIl2cpp.Editor
                     }
 
 
-                    var allTypeMayContainUsing = from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                    var allTypeMayContainUsing = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
                                                  where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                                                  from type in assembly.GetTypes()
                                                  where !type.IsGenericTypeDefinition
-                                                 select type;
+                                                 select type).ToList();
 #pragma warning disable CS0618
                     var usingDecls = allTypeMayContainUsing.SelectMany(t =>
                         {
-                            var flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-                            return t.GetMethods(flag).Cast<MethodBase>().Concat(t.GetConstructors(flag));
+                            var methodFlag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                            return t.GetMethods(methodFlag).Cast<MethodBase>().Concat(t.GetConstructors(methodFlag));
                         })
                         .Where(m =>
                         {
@@ -579,7 +583,7 @@ namespace PuertsIl2cpp.Editor
                         return new SignatureInfo
                         {
                             Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
-                            CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
+                            CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType.ToString() : "unknow class"),
                             ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                             ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m, isExtensionMethod),
                             ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, false)).ToList()
@@ -593,7 +597,7 @@ namespace PuertsIl2cpp.Editor
                                 return new SignatureInfo
                                 {
                                     Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
-                                    CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType : "unknow class"),
+                                    CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType.ToString() : "unknow class"),
                                     ReturnSignature = "v",
                                     ThisSignature = "t",
                                     ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, false)).ToList()
@@ -609,7 +613,7 @@ namespace PuertsIl2cpp.Editor
                     .Select(f => new SignatureInfo
                     {
                         Signature = (f.IsStatic ? "" : "t") + PuertsIl2cpp.TypeUtils.GetTypeSignature(f.FieldType),
-                        CsName = f.ToString() + " declare in " + (f.DeclaringType != null ? f.DeclaringType : "unknow class"),
+                        CsName = f.ToString() + " declare in " + (f.DeclaringType != null ? f.DeclaringType.ToString() : "unknow class"),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(f.FieldType),
                         ThisSignature = (f.IsStatic ? "" : "t"),
                         ParameterSignatures = null
@@ -700,8 +704,8 @@ namespace PuertsIl2cpp.Editor
                         {
                             cppWrapInfo.WrapperInfos = wrapperInfos.GetRange(i, Math.Min(MAX_WRAPPER_PER_FILE, wrapperInfos.Count - i));
                             Debug.Log("PuertsIl2cppWrapperDef" + saveFileName + " with " + cppWrapInfo.WrapperInfos.Count + " wrappers!");
-                            var render = jsEnv.ExecuteModule("puerts/templates/il2cppwrapperdef.tpl.mjs").Get<Func<CppWrappersInfo, string>>("default");
-                            string fileContext = render(cppWrapInfo);
+                            var wrapperRender = jsEnv.ExecuteModule("puerts/templates/il2cppwrapperdef.tpl.mjs").Get<Func<CppWrappersInfo, string>>("default");
+                            string fileContext = wrapperRender(cppWrapInfo);
                             textWriter.Write(fileContext);
                             textWriter.Flush();
                         }

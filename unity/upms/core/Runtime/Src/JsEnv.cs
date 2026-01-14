@@ -247,7 +247,7 @@ namespace Puerts
         [MonoPInvokeCallback(typeof(LogCallback))]
         public static void LogCallback(IntPtr msg)
         {
-            var msgStr = Marshal.PtrToStringUTF8(msg) ?? string.Empty;
+            var msgStr = MarshalExtensions.PtrToStringUTF8(msg);
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
             Console.WriteLine(msgStr);
 #else
@@ -258,7 +258,7 @@ namespace Puerts
         [MonoPInvokeCallback(typeof(LogCallback))]
         public static void LogWarningCallback(IntPtr msg)
         {
-            var msgStr = Marshal.PtrToStringUTF8(msg) ?? string.Empty;
+            var msgStr = MarshalExtensions.PtrToStringUTF8(msg);
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
             Console.WriteLine(msgStr);
 #else
@@ -269,7 +269,7 @@ namespace Puerts
         [MonoPInvokeCallback(typeof(LogCallback))]
         public static void LogErrorCallback(IntPtr msg)
         {
-            var msgStr = Marshal.PtrToStringUTF8(msg) ?? string.Empty;
+            var msgStr = MarshalExtensions.PtrToStringUTF8(msg);
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
             Console.WriteLine(msgStr);
 #else

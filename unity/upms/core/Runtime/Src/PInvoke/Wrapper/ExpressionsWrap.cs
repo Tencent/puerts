@@ -129,7 +129,7 @@ namespace Puerts
             {
                 if (PuertsNative.pesapi_has_caught(apis, scope))
                 {
-                    string msg = Marshal.PtrToStringUTF8(PuertsNative.pesapi_get_exception_as_string(apis, scope, true));
+                    string msg = MarshalExtensions.PtrToStringUTF8(PuertsNative.pesapi_get_exception_as_string(apis, scope, true));
                     throw new InvalidOperationException(msg);
                 }
             }

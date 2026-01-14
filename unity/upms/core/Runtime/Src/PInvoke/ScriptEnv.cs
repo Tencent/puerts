@@ -178,7 +178,7 @@ namespace Puerts
                 var wrap = ExpressionsWrap.BuildMethodWrap(methods[0].DeclaringType, methods.ToArray(), true);
                 TypeRegister.Instance.callbacksCache.Add(wrap);
                 pesapi_function_finalize functionFinalize = null;
-                functionFinalize = (IntPtr apis, IntPtr data, IntPtr env_private) =>
+                functionFinalize = (IntPtr innerApis, IntPtr data, IntPtr env_private) =>
                 {
                     TypeRegister.Instance.callbacksCache.Remove(wrap);
                     TypeRegister.Instance.callbacksCache.Remove(functionFinalize);
@@ -226,7 +226,7 @@ namespace Puerts
                 if (PuertsNative.pesapi_has_caught(papis, scope))
                 {
                     IntPtr ptr = PuertsNative.pesapi_get_exception_as_string(papis, scope, true);
-                    string msg = Marshal.PtrToStringUTF8(ptr);
+                    string msg = MarshalExtensions.PtrToStringUTF8(ptr);
                     throw new InvalidOperationException(msg);
                 }
                 return typeof(__NOTHING) == typeof(TResult) ? default(TResult) : ExpressionsWrap.GetNativeTranlator<TResult>()(papis, env, res);

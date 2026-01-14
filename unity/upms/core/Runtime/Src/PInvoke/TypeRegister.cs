@@ -138,8 +138,8 @@ namespace Puerts
 
         private bool parameterTypeNotAcceptable(Type type)
         {
-            if (type.IsByRef && type.GetElementType().IsByRefLike) return true;
-            return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer || (type.IsValueType && !type.IsPrimitive && type.IsByRefLike);
+            if (type.IsByRef && type.GetElementType().IsByRefLike()) return true;
+            return type == typeof(IntPtr) || type == typeof(TypedReference) || type.IsPointer || (type.IsValueType && !type.IsPrimitive && type.IsByRefLike());
         }
 
         private bool returnTypeNotAcceptable(Type type)

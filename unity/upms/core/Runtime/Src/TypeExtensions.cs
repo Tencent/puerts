@@ -231,6 +231,18 @@ namespace Puerts
             else
                 return type.FullName;
         }
+
+        public static bool IsByRefLike(this Type type)
+        {
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER || UNITY_2021_1_OR_NEWER
+            return type.IsByRefLike;
+#else
+            // Fallback for older .NET versions (Unity 2018, etc.)
+            // IsByRefLike types have the IsByRefLikeAttribute
+            return type.GetCustomAttributes(false)
+                .Any(attr => attr.GetType().Name == "IsByRefLikeAttribute");
+#endif
+        }
     }
 }
 
