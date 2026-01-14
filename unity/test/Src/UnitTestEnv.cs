@@ -29,7 +29,7 @@ namespace Puerts.UnitTest
                 {
                     backend = new Puerts.BackendQuickJS(loader2);
                 }
-#if !UNITY_WEBGL || UNITY_EDITOR
+#if !UNITY_WEBGL && !UNITY_IPHONE
                 else if (System.Environment.GetEnvironmentVariable("SwitchToNJS") == "1")
                 {
                     backend = new Puerts.BackendNodeJS(loader2);

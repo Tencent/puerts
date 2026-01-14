@@ -1431,7 +1431,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (backend is BackendV8 || backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
@@ -1445,7 +1445,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (backend is BackendV8 || backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
@@ -1480,7 +1480,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (backend is BackendV8 || backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
@@ -1494,7 +1494,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (backend is BackendV8 || backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
