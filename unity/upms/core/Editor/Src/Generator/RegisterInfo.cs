@@ -21,13 +21,13 @@ namespace Puerts.Editor
 
             new public string UseBindingMode;
 
-            new public string Constructor;
+            public string Constructor;
 
-            new public string Method;
+            public string Method;
 
-            new public string PropertyGetter;
+            public string PropertyGetter;
 
-            new public string PropertySetter;
+            public string PropertySetter;
 
         }
         internal class RegisterInfoForGenerate : RegisterInfo
