@@ -13,16 +13,20 @@ using UnityEditor.AssetImporters;
 using UnityEditor.Experimental.AssetImporters;
 #endif
 using UnityEngine;
- 
-[ScriptedImporter(1, "lua")]
-public class LuaImporter : ScriptedImporter
+
+namespace Puerts.Editor
 {
-    public override void OnImportAsset(AssetImportContext ctx)
+    [ScriptedImporter(1, "lua")]
+    public class LuaImporter : ScriptedImporter
     {
-        TextAsset subAsset = new TextAsset(File.ReadAllText(ctx.assetPath));
-        ctx.AddObjectToAsset("text", subAsset);
-        ctx.SetMainObject(subAsset);
+        public override void OnImportAsset(AssetImportContext ctx)
+        {
+            TextAsset subAsset = new TextAsset(File.ReadAllText(ctx.assetPath));
+            ctx.AddObjectToAsset("text", subAsset);
+            ctx.SetMainObject(subAsset);
+        }
     }
+
 }
 
 #endif

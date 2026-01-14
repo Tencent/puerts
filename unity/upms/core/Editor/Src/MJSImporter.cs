@@ -13,20 +13,24 @@ using UnityEditor.AssetImporters;
 using UnityEditor.Experimental.AssetImporters;
 #endif
 using UnityEngine;
- 
-[ScriptedImporter(1, "mjs")]
-public class MJSImporter : ScriptedImporter
+
+namespace Puerts.Editor
 {
-    public override void OnImportAsset(AssetImportContext ctx)
+    [ScriptedImporter(1, "mjs")]
+    public class MJSImporter : ScriptedImporter
     {
-        TextAsset subAsset = new TextAsset(File.ReadAllText(ctx.assetPath));
-        ctx.AddObjectToAsset("text", subAsset);
-        ctx.SetMainObject(subAsset);
+        public override void OnImportAsset(AssetImportContext ctx)
+        {
+            TextAsset subAsset = new TextAsset(File.ReadAllText(ctx.assetPath));
+            ctx.AddObjectToAsset("text", subAsset);
+            ctx.SetMainObject(subAsset);
 
 #if ENABLE_CJS_AUTO_RELOAD
-        Puerts.JsEnv.ClearAllModuleCaches();
+            Puerts.JsEnv.ClearAllModuleCaches();
 #endif
+        }
     }
+
 }
 
 #endif
