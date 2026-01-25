@@ -88,6 +88,13 @@ public:
     eastl::hash<const void*>, eastl::equal_to<const void*>,eastl::allocator_malloc>
         MethodMetaCache;
 
+    using VariableMap = eastl::unordered_map<eastl::basic_string<char,eastl::allocator_malloc>, puerts::ScriptPropertyInfo*,
+    string_hash, eastl::equal_to<eastl::basic_string<char,eastl::allocator_malloc>>,eastl::allocator_malloc>;
+
+    eastl::unordered_map<const puerts::ScriptClassDefinition*, VariableMap*,
+    eastl::hash<const void*>, eastl::equal_to<const void*>,eastl::allocator_malloc>
+        VariableMetaCache;
+
     inline void AddStrongRefObject(PyObject* obj)
     {
         StrongRefObjects.insert(obj);
@@ -240,6 +247,8 @@ public:
     PyObject* CreateFunction(pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize);
 
     puerts::ScriptFunctionInfo* FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::basic_string<char,eastl::allocator_malloc>& name);
+    puerts::ScriptPropertyInfo* FindVariableInfo(
+        const puerts::ScriptClassDefinition* cls, const eastl::basic_string<char, eastl::allocator_malloc>& name);
 
     PyObject* FindOrCreateClassByID(const void* typeId);
 
