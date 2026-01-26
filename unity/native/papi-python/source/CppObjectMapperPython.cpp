@@ -650,6 +650,11 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
                 }
                 Py_RETURN_NONE;
             }
+            else
+            {
+                PyErr_Format(PyExc_AttributeError, "property '%.400s' of '%.50s' object has no getter", attrName, Py_TYPE(self)->tp_name);
+                return nullptr;
+            }
         }
     }
 
