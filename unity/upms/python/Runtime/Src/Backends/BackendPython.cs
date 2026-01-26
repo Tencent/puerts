@@ -117,7 +117,7 @@ class NameSpaceProxy(types.ModuleType):
         if result is not None:
             return result
         else:
-            if _p_loader.get_NamespaceManager().IsValidNamespace(full_name):
+            if _p_loader.NamespaceManager.IsValidNamespace(full_name):
                 return NameSpaceProxy(full_name)
             else:
                 raise ModuleNotFoundError(f'No namespace or type named {full_name}')
