@@ -1,4 +1,4 @@
-#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID || FORCE_TEST_PYTHON
+﻿#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID || FORCE_TEST_PYTHON
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 Tencent.  All rights reserved.
@@ -47,7 +47,7 @@ namespace Puerts.UnitTest
 (lambda: (
     timer := puerts.load_type('Puerts.UnitTest.TimerPython')(0),
     TimerTestPython := puerts.load_type('Puerts.UnitTest.TimerTestPython'),
-    TimerTestPython.set_TestNum(TimerTestPython.get_TestNum() + 1),
+    setattr(TimerTestPython, 'TestNum', TimerTestPython.TestNum + 1),
     timer
 )[-1])()
 ");

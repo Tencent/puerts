@@ -1,4 +1,4 @@
-#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID || FORCE_TEST_PYTHON
+﻿#if !UNITY_WEBGL && !UNITY_IOS && !UNITY_ANDROID || FORCE_TEST_PYTHON
 using NUnit.Framework;
 using System;
 using System.Reflection;
@@ -80,7 +80,7 @@ empty = {}
             var result = pythonEnv.Eval<int>(@"
 (lambda: (
     inner := puerts.load_type('Puerts.UnitTest.CSharpModuleTestPython+Inner'),
-    inner.get_i()
+    inner.i
 )[-1])()
 ");
             Assert.AreEqual(3, result);
