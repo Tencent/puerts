@@ -425,73 +425,6 @@ void CppObjectMapper::InitProperty(puerts::ScriptPropertyInfo* PropInfo, PyObjec
     auto prop = PyDescr_NewGetSet((PyTypeObject*)Obj, def);
     PyObject_SetAttrString(Obj, PropInfo->Name, prop);
     Py_DECREF(prop);
-}
-
-static PyObject* staticPropGetter(PyObject* self, void* closure)
-{
-    auto* info = (CppObjectMapper::GetterSetterInfo*) closure;
-    pesapi_callback callback = info->getter;
-
-    pesapi_scope__ scope(info->mapper);
-    // For static properties, we don't have an object instance, so objectPtr is nullptr
-    pesapi_callback_info__ callbackInfo;
-    callbackInfo.self = nullptr;
-    callbackInfo.selfTypeId = nullptr;
-    callbackInfo.args = nullptr;
-    callbackInfo.argc = 0;
-    callbackInfo.data = info->getterData;
-    callbackInfo.res = nullptr;
-    callbackInfo.ex = nullptr;
-    callbackInfo.ex_owned = nullptr;
-    callbackInfo.mapper = info->mapper;
-    
-    callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
-    if (callbackInfo.ex)
-    {
-        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
-        return nullptr;
-    }
-    if (callbackInfo.res)
-    {
-        Py_INCREF(callbackInfo.res);
-        return callbackInfo.res;
-    }
-    Py_RETURN_NONE;
-};
-
-static int staticPropSetter(PyObject* self, PyObject* value, void* closure)
-{
-    if (!value)
-    {
-        PyErr_SetString(PyExc_RuntimeError, "Native static property value cannot be null and cannot be deleted");
-        return -1;
-    }
-
-    auto* info = (CppObjectMapper::GetterSetterInfo*) closure;
-    pesapi_callback callback = info->setter;
-
-    pesapi_scope__ scope(info->mapper);
-    // For static properties, we don't have an object instance, so objectPtr is nullptr
-    pesapi_callback_info__ callbackInfo;
-    callbackInfo.self = nullptr;
-    callbackInfo.selfTypeId = nullptr;
-    callbackInfo.args = PyTuple_Pack(1, value);
-    callbackInfo.argc = 1;
-    callbackInfo.data = info->setterData;
-    callbackInfo.res = nullptr;
-    callbackInfo.ex = nullptr;
-    callbackInfo.ex_owned = nullptr;
-    callbackInfo.mapper = info->mapper;
-    
-    callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
-    if (callbackInfo.ex)
-    {
-        PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
-        Py_DECREF(callbackInfo.args);  // Clean up the tuple we created
-        return -1;
-    }
-    Py_DECREF(callbackInfo.args);  // Clean up the tuple we created
-    return 0;
 };
 
 // Static method implementation for variables
@@ -554,67 +487,6 @@ static PyObject* staticVariableSetter(PyObject* self, PyObject* args) {
     }
     
     Py_RETURN_NONE;
-}
-
-void CppObjectMapper::InitVariable(puerts::ScriptPropertyInfo* PropInfo, PyObject* Obj)
-{
-    auto info = (GetterSetterInfo*) PyMem_Malloc(sizeof(GetterSetterInfo));
-    info->getter = PropInfo->Getter;
-    info->setter = PropInfo->Setter;
-    info->getterData = PropInfo->GetterData;
-    info->setterData = PropInfo->SetterData;
-    info->mapper = this;
-
-    PyObject* capsule = PyCapsule_New(info, "GetterSetterInfo",
-        [](PyObject* capsule) {
-            GetterSetterInfo* info = reinterpret_cast<GetterSetterInfo*>(PyCapsule_GetPointer(capsule, "GetterSetterInfo"));
-            if (info) {
-                PyMem_Free(info);
-            }
-        });
-    
-    if (!capsule) {
-        PyMem_Free(info);
-        return;
-    }
-
-    // Create getter method if getter exists
-    if (PropInfo->Getter) {
-        PyMethodDef* getterMethodDef = (PyMethodDef*) PyMem_Malloc(sizeof(PyMethodDef));
-        char* getterName = (char*) PyMem_Malloc(strlen(PropInfo->Name) + 5); // "get_" + name + '\0'
-        sprintf(getterName, "get_%s", PropInfo->Name);
-        
-        getterMethodDef->ml_name = getterName;
-        getterMethodDef->ml_meth = staticVariableGetter;
-        getterMethodDef->ml_flags = METH_NOARGS;
-        getterMethodDef->ml_doc = "Static variable getter";
-        
-        PyObject* getterFunc = PyCFunction_New(getterMethodDef, capsule);
-        if (getterFunc) {
-            PyObject_SetAttrString(Obj, getterName, getterFunc);
-            Py_DECREF(getterFunc);
-        }
-    }
-
-    // Create setter method if setter exists
-    if (PropInfo->Setter) {
-        PyMethodDef* setterMethodDef = (PyMethodDef*) PyMem_Malloc(sizeof(PyMethodDef));
-        char* setterName = (char*) PyMem_Malloc(strlen(PropInfo->Name) + 5); // "set_" + name + '\0'
-        sprintf(setterName, "set_%s", PropInfo->Name);
-        
-        setterMethodDef->ml_name = setterName;
-        setterMethodDef->ml_meth = staticVariableSetter;
-        setterMethodDef->ml_flags = METH_VARARGS;
-        setterMethodDef->ml_doc = "Static variable setter";
-        
-        PyObject* setterFunc = PyCFunction_New(setterMethodDef, capsule);
-        if (setterFunc) {
-            PyObject_SetAttrString(Obj, setterName, setterFunc);
-            Py_DECREF(setterFunc);
-        }
-    }
-    
-    Py_DECREF(capsule);
 }
 
 typedef struct {
@@ -694,7 +566,7 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
 
     ContextObj* ctx = GetContextObj(type);
     if (!ctx) {
-        Py_DECREF(self);
+        Py_DECREF(self); // will crash if not bind and add to cache
         return NULL;
     }
 
@@ -734,7 +606,7 @@ static PyObject* DynObj_new(PyTypeObject* type, PyObject* args, PyObject* kwargs
 
 static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     DynObj* dynObj = (DynObj*)self;
-    
+
     // First try to get attribute from the type's dictionary
     PyObject* result = PyObject_GenericGetAttr(self, name);
     if (result != NULL) {
@@ -748,12 +620,90 @@ static PyObject* DynObj_getattro(PyObject* self, PyObject* name) {
     if (attrName) {
         auto* funcInfo = dynObj->mapper->FindFuncInfo(dynObj->classDefinition, attrName);
         if (funcInfo) return dynObj->mapper->MakeFunction(funcInfo, dynObj);
+        auto* varInfo = dynObj->mapper->FindVariableInfo(dynObj->classDefinition, attrName);
+        if (varInfo)
+        {
+            // check if have getter, then get the value as the res
+            if (varInfo->Getter)
+            {
+                pesapi_scope__ scope(dynObj->mapper);
+                pesapi_callback_info__ callbackInfo;
+                callbackInfo.self = dynObj->objectPtr;
+                callbackInfo.selfTypeId = dynObj->classDefinition->TypeId;
+                callbackInfo.args = nullptr;
+                callbackInfo.argc = 0;
+                callbackInfo.data = varInfo->GetterData;
+                callbackInfo.res = nullptr;
+                callbackInfo.ex = nullptr;
+                callbackInfo.ex_owned = nullptr;
+                callbackInfo.mapper = dynObj->mapper;
+                varInfo->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+                if (callbackInfo.ex)
+                {
+                    PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+                    return nullptr;
+                }
+                if (callbackInfo.res)
+                {
+                    Py_INCREF(callbackInfo.res);
+                    return callbackInfo.res;
+                }
+                Py_RETURN_NONE;
+            }
+            else
+            {
+                PyErr_Format(PyExc_AttributeError, "property '%.400s' of '%.50s' object has no getter", attrName, Py_TYPE(self)->tp_name);
+                return nullptr;
+            }
+        }
     }
-    
-    // If still not found, raise AttributeError
+
     PyErr_Format(PyExc_AttributeError, "'%.50s' object has no attribute '%.400s'",
                  Py_TYPE(self)->tp_name, PyUnicode_AsUTF8(name));
     return nullptr;
+}
+
+static int DynObj_setattro(PyObject* self, PyObject* name, PyObject* value) {
+    DynObj* dynObj = (DynObj*)self;
+
+    const char* attrName = PyUnicode_AsUTF8(name);
+    if (attrName) {
+        if (auto* varInfo = dynObj->mapper->FindVariableInfo(dynObj->classDefinition, attrName))
+        {
+            // check if have setter, then set the value
+            if (varInfo->Setter)
+            {
+                pesapi_scope__ scope(dynObj->mapper);
+                pesapi_callback_info__ callbackInfo;
+                callbackInfo.self = dynObj->objectPtr;
+                callbackInfo.selfTypeId = dynObj->classDefinition->TypeId;
+                callbackInfo.args = PyTuple_Pack(1, value);
+                callbackInfo.argc = 1;
+                callbackInfo.data = varInfo->SetterData;
+                callbackInfo.res = nullptr;
+                callbackInfo.ex = nullptr;
+                callbackInfo.ex_owned = nullptr;
+                callbackInfo.mapper = dynObj->mapper;
+                varInfo->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+                Py_DECREF(callbackInfo.args);
+                if (callbackInfo.ex)
+                {
+                    PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+                    return -1;
+                }
+                return 0;
+            }
+            else
+            {
+                PyErr_Format(PyExc_AttributeError, "property '%.400s' of '%.50s' object has no setter",
+                             attrName, Py_TYPE(self)->tp_name);
+                return -1;
+            }
+        }
+    }
+
+    // Fallback to generic setattr
+    return PyObject_GenericSetAttr(self, name, value);
 }
 
 //新增CallMethod
@@ -817,6 +767,7 @@ static PyType_Slot DynType_slots[] = {
     {Py_tp_dealloc,  (void*)DynObj_dealloc},
     {Py_tp_init,     (void*)DynObj_init},
     {Py_tp_getattro, (void*)DynObj_getattro},
+    {Py_tp_setattro, (void*)DynObj_setattro},
     {Py_tp_methods,  (void*)DynObj_methods},
     {Py_tp_members,  (void*)DynObj_members},
     {0, 0}
@@ -828,6 +779,146 @@ static PyType_Spec DynType_spec = {
     .itemsize = 0,
     .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE,
     .slots = DynType_slots
+};
+
+static PyObject* MetaObj_getattro(PyObject* /*caller, the object which use it as metaclass */self, PyObject* name)
+{
+    // printf("Getting Attribute in MetaObj_getattro for name: %s\n", PyUnicode_AsUTF8(name));
+    PyObject* result = PyObject_GenericGetAttr(self, name);
+    PyErr_Clear(); // Clear any error from the generic getattro
+    if (result) {
+        return result;
+    }
+
+    auto ctx = GetContextObj(Py_TYPE(self));
+    if (!ctx) {
+        char* error_msg = (char*) PyMem_Malloc(100);
+        sprintf(error_msg, "'%.50s' metaclass has no puerts context object", Py_TYPE(self)->tp_name);
+        PyErr_SetString(PyExc_AttributeError, error_msg);
+        return nullptr;
+    }
+
+    const char* attrName = PyUnicode_AsUTF8(name);
+    if (attrName)
+    {
+        auto* varInfo =
+            ((GetContextObj(Py_TYPE(self)))->mapper)->FindVariableInfo(((GetContextObj(Py_TYPE(self)))->classDefinition), attrName);
+        if (varInfo)
+        {
+            // check if have getter, then get the value as the res
+            if (varInfo->Getter)
+            {
+                pesapi_scope__ scope(ctx->mapper);
+                pesapi_callback_info__ callbackInfo;
+                callbackInfo.self = nullptr;
+                callbackInfo.selfTypeId = nullptr;
+                callbackInfo.args = nullptr;
+                callbackInfo.argc = 0;
+                callbackInfo.data = varInfo->GetterData;
+                callbackInfo.res = nullptr;
+                callbackInfo.ex = nullptr;
+                callbackInfo.ex_owned = nullptr;
+                callbackInfo.mapper = ctx->mapper;
+
+                varInfo->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+
+                if (callbackInfo.ex)
+                {
+                    PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+                    return nullptr;
+                }
+                if (callbackInfo.res)
+                {
+                    Py_INCREF(callbackInfo.res);
+                    return callbackInfo.res;
+                }
+                Py_RETURN_NONE;
+            }
+            else
+            {
+                PyErr_Format(PyExc_AttributeError, "property '%.400s' of '%.50s' object has no getter", attrName, Py_TYPE(self)->tp_name);
+                return nullptr;
+            }
+        }
+    }
+    if (attrName && strcmp(attrName, "__bases__") == 0)
+        return (PyObject*) &PyType_Type;
+    char* error_msg = (char*) PyMem_Malloc(100 + strlen(attrName));
+    sprintf(error_msg, "'%.50s' metaclass has no attribute '%.400s'", Py_TYPE(self)->tp_name, attrName);
+
+    PyErr_SetString(PyExc_AttributeError, error_msg);
+    return nullptr;
+
+}
+
+static int MetaObj_setattro(PyObject* self, PyObject* name, PyObject* value)
+{
+    //printf("Setting Attribute in MetaObj_setattro for name: %s\n", PyUnicode_AsUTF8(name));
+    const char *attrName = PyUnicode_AsUTF8(name);
+
+    ContextObj* ctx = nullptr;
+    ctx = GetContextObj((PyTypeObject*) self);
+    if (ctx)
+    {
+        auto* varInfo =
+        (ctx->mapper)->FindVariableInfo(ctx->classDefinition, attrName);
+        if (varInfo)
+        {
+            // check if have setter, then set the value
+            if (varInfo->Setter)
+            {
+                pesapi_scope__ scope(ctx->mapper);
+                pesapi_callback_info__ callbackInfo;
+                callbackInfo.self = nullptr;
+                callbackInfo.selfTypeId = nullptr;
+                callbackInfo.args = PyTuple_Pack(1, value);
+                callbackInfo.argc = 1;
+                callbackInfo.data = varInfo->SetterData;
+                callbackInfo.res = nullptr;
+                callbackInfo.ex = nullptr;
+                callbackInfo.ex_owned = nullptr;
+                callbackInfo.mapper = ctx->mapper;
+
+                varInfo->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callbackInfo));
+                Py_DECREF(callbackInfo.args);  // Clean up the tuple we created
+                if (callbackInfo.ex)
+                {
+                    PyErr_SetString(PyExc_RuntimeError, callbackInfo.ex);
+                    return -1;
+                }
+                return 0;
+            }
+            else
+            {
+                PyErr_Format(PyExc_AttributeError, "property '%.400s' of '%.50s' object has no setter", attrName, Py_TYPE(self)->tp_name);
+                return -1;
+            }
+        }
+    }
+
+    auto result = PyObject_GenericSetAttr(self, name, value);
+    PyErr_Clear();
+    if (result == 0)
+    {
+        return 0;
+    }
+    PyErr_Format(PyExc_AttributeError, "'%.50s' metaclass has no attribute '%.400s'", Py_TYPE(self)->tp_name, attrName);
+    return -1;
+}
+
+static PyType_Slot MetaType_slots[] = {
+    {Py_tp_base, &PyType_Type },
+    {Py_tp_getattro, (void*)MetaObj_getattro},
+    {Py_tp_setattro, (void*)MetaObj_setattro},
+    {0, nullptr}
+};
+
+static PyType_Spec MetaClassType_spec = {
+    .name = "Meta",
+    .basicsize = sizeof(PyHeapTypeObject),
+    .itemsize = 0,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE,
+    .slots = MetaType_slots
 };
 
 puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptClassDefinition* cls,const eastl::basic_string<char,eastl::allocator_malloc>& name)
@@ -862,6 +953,36 @@ puerts::ScriptFunctionInfo* CppObjectMapper::FindFuncInfo(const puerts::ScriptCl
     return nullptr;
 }
 
+puerts::ScriptPropertyInfo* CppObjectMapper::FindVariableInfo(const puerts::ScriptClassDefinition* cls,const eastl::basic_string<char,eastl::allocator_malloc>& name)
+{
+    auto it_cache = VariableMetaCache.find(cls);
+    VariableMap* cache = nullptr;
+
+    if (it_cache != VariableMetaCache.end()) {
+        cache = it_cache->second;
+    } else {
+        // Use malloc + placement new to construct the inner map
+        void* memory = malloc(sizeof(VariableMap));
+        if (!memory) return nullptr;
+        cache = new(memory) VariableMap();
+        VariableMetaCache[cls] = cache;
+    }
+    auto it = cache->find(name);
+    if (it != cache->end()) return it->second;
+    if (cls && cls->Variables) {
+        puerts::ScriptPropertyInfo* info = cls->Variables;
+        while (info && info->Name) {
+            (*cache)[info->Name] = info;
+            if (name == info->Name) return info;
+            ++info;
+        }
+    }
+    if (cls && cls->SuperTypeId) {
+        return FindVariableInfo(puerts::LoadClassByID(registry, cls->SuperTypeId), name);
+    }
+    return nullptr;
+}
+
 
 PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition* ClassDefinition)
 {
@@ -878,22 +999,47 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
     spec.name = typeName;
     spec.flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE | Py_TPFLAGS_BASETYPE;
 
+    PyType_Spec metaSpec = MetaClassType_spec;
+    char* metaTypeName = (char*) PyMem_Malloc(strlen(ClassDefinition->ScriptName) + 15); // "Meta." + name + '\0'
+    sprintf(metaTypeName, "Meta.%s", ClassDefinition->ScriptName);
+    metaSpec.name = metaTypeName;
+
+    // printf("Creating class: %s\n", spec.name);
+
     PyObject* type_obj = nullptr;
+    PyObject* meta_type_obj = nullptr;
     if (ClassDefinition->SuperTypeId)
     {
-        PyObject* bases = PyTuple_Pack(1, FindOrCreateClass(puerts::LoadClassByID(registry, ClassDefinition->SuperTypeId)));
-        type_obj = PyType_FromSpecWithBases(&spec, bases);
+        auto super_type_obj = FindOrCreateClass(puerts::LoadClassByID(registry, ClassDefinition->SuperTypeId));
+        auto meta_super = PyObject_GetAttrString(super_type_obj, "__p_m__");
+        auto meta_base = PyTuple_Pack(1, meta_super);
+        meta_type_obj = PyType_FromSpecWithBases(&metaSpec, meta_base);
+        PyObject* bases = PyTuple_Pack(1, super_type_obj);
+        type_obj = PyType_FromMetaclass((PyTypeObject*)meta_type_obj, nullptr, &spec, bases);
         Py_DECREF(bases);
+        Py_DECREF(meta_base);
     }
     else 
     {
-        type_obj = PyType_FromSpec(&spec);
+        auto bases = PyTuple_Pack(1, (PyObject*)&PyType_Type);
+        meta_type_obj = PyType_FromSpecWithBases(&metaSpec, bases);
+        type_obj = PyType_FromMetaclass((PyTypeObject*)meta_type_obj, nullptr, &spec, nullptr/*bases*/);
+        Py_DECREF(bases);
     }
-    PyHeapTypeObject* type = (PyHeapTypeObject*)type_obj;
-    if (!type_obj) return NULL;
 
+    PyMem_Free(typeName);
+    PyMem_Free(metaTypeName);
 
-    ContextObj* ctx = (ContextObj*)PyObject_New(ContextObj, &Context_Type);
+    if (!type_obj || !meta_type_obj) {
+
+        if (type_obj) Py_DECREF(type_obj);
+        if (meta_type_obj) Py_DECREF(meta_type_obj);
+        return NULL;
+    }
+
+    PyObject_SetAttrString(type_obj, "__p_m__", meta_type_obj);
+
+    ContextObj* ctx = PyObject_New(ContextObj, &Context_Type);
     if (!ctx) {
         Py_DECREF(type_obj);
         return NULL;
@@ -901,24 +1047,18 @@ PyObject* CppObjectMapper::FindOrCreateClass(const puerts::ScriptClassDefinition
 
     ctx->classDefinition = ClassDefinition;
     ctx->mapper = this;
-    if (PyObject_SetAttrString(type_obj, CTX_ATTR_NAME, (PyObject*)ctx) < 0) {
+    if (PyObject_SetAttrString(type_obj, CTX_ATTR_NAME, (PyObject*)ctx) < 0 ||
+        PyObject_SetAttrString(meta_type_obj, CTX_ATTR_NAME, (PyObject*)ctx) < 0) {
         Py_DECREF(ctx);
         Py_DECREF(type_obj);
+        Py_DECREF(meta_type_obj);
         return NULL;
     }
-    Py_DECREF(ctx);
 
     puerts::ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
     while (PropertyInfo && PropertyInfo->Name)
     {
         InitProperty(PropertyInfo, type_obj);
-        ++PropertyInfo;
-    }
-
-    PropertyInfo = ClassDefinition->Variables;
-    while (PropertyInfo && PropertyInfo->Name)
-    {
-        InitVariable(PropertyInfo, type_obj);
         ++PropertyInfo;
     }
 

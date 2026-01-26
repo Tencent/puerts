@@ -38,10 +38,10 @@ assertAndPrint('PythonGetArrayBufferReturnFromCS', rAB[0], 5)
 
 testHelper.arrayBufferTestField = bytes([192])
 testHelper.arrayBufferTestProp = bytes([192])
-TestHelper.set_arrayBufferTestFieldStatic(bytes([192]))
-TestHelper.set_arrayBufferTestPropStatic(bytes([192]))
+TestHelper.arrayBufferTestFieldStatic = bytes([192])
+TestHelper.arrayBufferTestPropStatic = bytes([192])
 
-tmp = TestHelper.get_arrayBufferTestPropStatic
+tmp = TestHelper.arrayBufferTestPropStatic
 
 testHelper.ArrayBufferTestCheckMemberValue()
 
@@ -75,8 +75,8 @@ testHelper.add_functionEvent(evfn)
 
 testHelper.functionTestField = lambda: 3
 testHelper.functionTestProp = lambda: 3
-TestHelper.set_functionTestFieldStatic(lambda: 3)
-TestHelper.set_functionTestPropStatic(lambda: 3)
+TestHelper.functionTestFieldStatic = lambda: 3
+TestHelper.functionTestPropStatic = lambda: 3
 
 testHelper.JSFunctionTestCheckMemberValue()
 
@@ -111,8 +111,8 @@ assertAndPrint('PyGetStringReturnFromCS', rStr, oStr + 'defg')
 testHelper.ClearStringTestMemberValue()
 testHelper.stringTestField = 'Puer'
 testHelper.stringTestProp = 'Puer'
-TestHelper.set_stringTestFieldStatic('Puer')
-TestHelper.set_stringTestPropStatic('Puer')
+TestHelper.stringTestFieldStatic = 'Puer'
+TestHelper.stringTestPropStatic = 'Puer'
 
 testHelper.StringTestCheckMemberValue()
 
@@ -149,8 +149,8 @@ assertAndPrint('PythonGetNativeObjectReturnFromCS', rNativeObject.value, oNative
 testHelper.ClearStringTestMemberValue()
 testHelper.nativeObjectTestField = TestObject(678)
 testHelper.nativeObjectTestProp = TestObject(678)
-TestHelper.set_nativeObjectTestFieldStatic(TestObject(678))
-TestHelper.set_nativeObjectTestPropStatic(TestObject(678))
+TestHelper.nativeObjectTestFieldStatic = TestObject(678)
+TestHelper.nativeObjectTestPropStatic = TestObject(678)
 
 testHelper.NativeObjectTestCheckMemberValue()
 ''')
@@ -181,8 +181,8 @@ assertAndPrint('PythonGetJSObjectReturnFromCS', rJSObject == oJSObject)
 
 testHelper.jsObjectTestField = {'puerts': 'niubi'}
 testHelper.jsObjectTestProp = {'puerts': 'niubi'}
-TestHelper.set_jsObjectTestFieldStatic({'puerts': 'niubi'})
-TestHelper.set_jsObjectTestPropStatic({'puerts': 'niubi'})
+TestHelper.jsObjectTestFieldStatic = {'puerts': 'niubi'}
+TestHelper.jsObjectTestPropStatic = {'puerts': 'niubi'}
 
 testHelper.JSObjectTestCheckMemberValue()
 ''')
@@ -220,7 +220,7 @@ import Puerts.UnitTest.CrossLangTestHelper as CrossLangTestHelper
 import Puerts.UnitTest.TestEnum as TestEnum
 helper = CrossLangTestHelper()
 fstart = helper.EnumField
-helper.EnumField = TestEnum.get_A()
+helper.EnumField = TestEnum.A
 fend = helper.EnumField
 ret = helper.GetEnum()
 ''')
@@ -309,7 +309,7 @@ exec('''
 import Puerts.UnitTest.TestObject as TestObject
 o = TestObject(1)
 o.WriteOnly = 2
-TestObject.set_StaticWriteOnly(3)
+TestObject.StaticWriteOnly = 3
 ''')");
             Assert.Catch(() =>
             {
@@ -318,7 +318,7 @@ TestObject.set_StaticWriteOnly(3)
 
             Assert.Catch(() =>
             {
-                pythonEnv.Eval("TestObject.get_StaticWriteOnly");
+                pythonEnv.Eval("TestObject.StaticWriteOnly");
             });
 
             pythonEnv.Dispose();
@@ -497,8 +497,8 @@ assertAndPrint('PythonGetBigintReturnFromCS', rBigint, oBigint + 4)
 testHelper.ClearBigintTestMemberValue();
 testHelper.bigintTestField = 9007199254740987
 testHelper.bigintTestProp = 9007199254740987
-TestHelper.set_bigintTestFieldStatic(9007199254740987)
-TestHelper.set_bigintTestPropStatic(9007199254740987)
+TestHelper.bigintTestFieldStatic = 9007199254740987
+TestHelper.bigintTestPropStatic = 9007199254740987
 testHelper.BigintTestCheckMemberValue()
 ''')
 ");

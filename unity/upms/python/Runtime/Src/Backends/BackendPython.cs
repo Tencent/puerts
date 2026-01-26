@@ -81,7 +81,7 @@ _p_loader = scriptEnv.GetLoader()
 
 _p_BindingFlags = loadType(scriptEnv.GetTypeByString('System.Reflection.BindingFlags'))
 _csTypeCache_['System.Reflection.BindingFlags'] = _p_BindingFlags
-_p_GET_MEMBER_FLAGS = _p_BindingFlags.get_Public() | _p_BindingFlags.get_NonPublic() | _p_BindingFlags.get_Instance() | _p_BindingFlags.get_Static()
+_p_GET_MEMBER_FLAGS = _p_BindingFlags.Public | _p_BindingFlags.NonPublic | _p_BindingFlags.Instance | _p_BindingFlags.Static
 class PesapiLoader(importlib.abc.Loader):
 
     def exec_module(self, mod):
@@ -89,7 +89,7 @@ class PesapiLoader(importlib.abc.Loader):
 
     def create_module(self, spec: machinery.ModuleSpec):
         type_name = spec.name
-        if _p_loader.get_NamespaceManager().IsValidNamespace(type_name):
+        if _p_loader.NamespaceManager.IsValidNamespace(type_name):
             return NameSpaceProxy(type_name)
         else:
             result = puerts.load_type(type_name)
@@ -117,7 +117,7 @@ class NameSpaceProxy(types.ModuleType):
         if result is not None:
             return result
         else:
-            if _p_loader.get_NamespaceManager().IsValidNamespace(full_name):
+            if _p_loader.NamespaceManager.IsValidNamespace(full_name):
                 return NameSpaceProxy(full_name)
             else:
                 raise ModuleNotFoundError(f'No namespace or type named {full_name}')
