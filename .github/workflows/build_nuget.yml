@@ -47,7 +47,7 @@ jobs:
             arch: x64
           - os: macos-15
             platform: osx
-            arch: auto
+            arch: arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -103,12 +103,7 @@ jobs:
           for backend in $backends; do
             echo "Building $backend for ${{ matrix.platform }}"
             cd "$repo_root/unity/native/$backend"
-            # if python backend, specify arch to arm64
-            if [ "$backend" = "papi-python" ] && [ "${{ matrix.arch }}" = "auto" ]; then
-              node ../../cli make --platform ${{ matrix.platform }} --arch arm64 --expose_gc
-            else
-              node ../../cli make --platform ${{ matrix.platform }}
-            fi
+            node ../../cli make --platform ${{ matrix.platform }} --arch arm64 --expose_gc
             cd "$repo_root"
           done
 
@@ -131,7 +126,7 @@ jobs:
         # generated builds unity/upms/*/Plugins/macOS/*.bundle
         # Rename macOS bundle format to dylib files to ensure upload-artifact works correctly
       - name: Process macOS native artifacts
-        if: runner.os == 'macOS' && matrix.arch == 'auto'
+        if: runner.os == 'macOS'
         run: |
           set -ex
           for dir in unity/upms/*/Plugins/macOS; do
@@ -163,6 +158,11 @@ jobs:
           }
           if ("${{ matrix.platform }}" -eq "osx" -and (Test-Path "unity/upms/nodejs/Plugins/macOS")) {
             Move-Item -Path "unity/native/papi-nodejs/.backends/papi-nodejs/lib/macOS/libnode.93.dylib" -Destination "unity/upms/nodejs/Plugins/macOS/libnode.93.dylib" -Force
+            
+            $oldPath = "/Library/Frameworks/Python.framework/Versions/3.14/Python"
+            $newPath = "@loader_path/libpython3.14.dylib"
+            $plugin = "unity/upms/python/Plugins/macOS/arm64/libPapiPython.dylib"
+            install_name_tool -change $oldPath $newPath $plugin
           }
           if ("${{ matrix.platform }}" -eq "win") {
             # Remove python's PuertsCore.dll on Windows
@@ -270,6 +270,22 @@ jobs:
             Write-Host "Warning: System lib-dynload directory not found at $systemLibDynloadPath"
           }
           
+        shell: pwsh
+      - name: Download Python (macOS)
+        run: |
+          $destPath = "unity/nuget/downloaded_natives/natives-osx-arm64/upms/python/Plugins/macOS/arm64"
+          $downloadedEmbedZip = "$env:TEMP/cpython-3.14.2+20260127-aarch64-apple-darwin-install_only.tar.gz"
+          $downloadUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20260127/cpython-3.14.2+20260127-aarch64-apple-darwin-install_only.tar.gz"
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadedEmbedZip
+          tree unity/nuget/downloaded_natives
+          tar -xzf $downloadedEmbedZip -C $destPath
+
+          # Move $destPath/python3.14 to $destPath/lib
+          Move-Item -Path "$destPath/python/lib/*" -Destination $destPath -Force
+          mkdir "$destPath/lib"
+          Move-Item -Path "$destPath/python3.14" -Destination "$destPath/lib" -Force
+          Remove-Item -Path "$destPath/python" -Recurse -Force
+
         shell: pwsh
       - name: Run NuGet Packaging and Publishing
         if: ${{ github.event.inputs.publish == 'true' }}
