@@ -343,3 +343,20 @@ jobs:
           cd unity/test/nuget/projects
           dotnet test
       
+  osx_test:
+    name: macOS unit test
+    needs: pack_nuget
+    runs-on: macos-15
+    if: ${{ github.event.inputs.publish != 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download nuget-packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: unity/test/nuget/nuget-packages
+      - name: Run dotnet test
+        run: |
+          cd unity/test/nuget/projects
+          dotnet test
