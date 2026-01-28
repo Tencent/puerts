@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -73,9 +73,9 @@ public sealed class TransformNativeAssetsTask : FrostingTask<BuildContext>
 {
     public override void Run(BuildContext context)
     {
-        // For osx-auto, we need to transform or copy files differently.
-        // natives-osx-auto\upms\core\Plugins\macOS\*.dylib -> natives-osx-auto\native\puerts\build_osx_auto_puerts\*.dylib
-        // For osx's python, we need to copy files from arm64 subfolder to natives-osx-arm64\native\puerts\build_arm64_papi-python\*.dylib
+        // For osx-arm64, we need to transform or copy files differently.
+        // natives-arm64-arm64\upms\core\Plugins\macOS\* -> natives-osx-arm64\native\puerts\build_osx_arm64_puerts\*
+        // natives-arm64-arm64\upms\lua\Plugins\macOS\* -> natives-osx-arm64\native\papi-lua\build_osx_arm64_papi-lua\*
 
         // Transform
         var nativeAssetsDirectory = context.NativeAssetsDirectory;
@@ -83,14 +83,14 @@ public sealed class TransformNativeAssetsTask : FrostingTask<BuildContext>
         // Handle macOS natives
         foreach (var projectItem in WellKnownProjects.NativeAssetsProjects)
         {
-            if (!projectItem.CmakeRid.Contains("osx"))
+            if (!projectItem.CmakeRid.Contains("osx-arm64"))
             {
                 continue;
             }
 
-            // natives-osx-auto\upms\...\Plugins\macOS\...\*.dylib
-            var osxAutoRoot = nativeAssetsDirectory.Path
-                .Combine("natives-osx-auto")
+            // natives-osx-arm64\upms\[backend-name]\Plugins\macOS\arm64\*.dylib
+            var osxarm64Root = nativeAssetsDirectory.Path
+                .Combine("natives-osx-arm64")
                 .Combine("upms");
 
             var backendName = projectItem.DotNetNativeName switch
@@ -106,20 +106,15 @@ public sealed class TransformNativeAssetsTask : FrostingTask<BuildContext>
 
             if (backendName == null)
             {
-                continue;
+                throw new NotSupportedException(
+                    $"Backend name '{projectItem.DotNetNativeName}' is not supported for project '{projectItem.Name}'.");
             }
 
-            var backendPluginsRoot = osxAutoRoot
+            var backendPluginsRoot = osxarm64Root
                 .Combine(backendName)
                 .Combine("Plugins")
-                .Combine("macOS");
-
-            // for Python on arm64
-            var isPythonArm64 = projectItem.DotNetNativeName == "Python" && projectItem.CmakeRid == "osx-arm64";
-            if (isPythonArm64)
-            {
-                backendPluginsRoot = backendPluginsRoot.Combine("arm64");
-            }
+                .Combine("macOS")
+                .Combine("arm64");
 
             if (!Directory.Exists(backendPluginsRoot.FullPath))
             {
@@ -133,35 +128,12 @@ public sealed class TransformNativeAssetsTask : FrostingTask<BuildContext>
                 .Combine("native")
                 .Combine(projectItem.CmakeNativeName);
 
-            string buildFolderName;
-            if (isPythonArm64)
-            {
-                // build_arm64_papi-python
-                buildFolderName = "build_arm64_" + projectItem.CmakeNativeName;
-            }
-            else
-            {
-                // build_osx_papi-lua
-                var ridPart = projectItem.CmakeRid == "osx-arm64" ? "osx_arm64" : "osx_auto";
-                buildFolderName = $"build_{ridPart}_{projectItem.CmakeNativeName}";
-            }
+            string buildFolderName = "build_arm64_" + projectItem.CmakeNativeName;
 
             var targetBuildDir = targetNativeRoot.Combine(buildFolderName);
             Directory.CreateDirectory(targetBuildDir.FullPath);
 
-            var pattern = $"{backendPluginsRoot.FullPath}/*{projectItem.DotNetNativeName}*.dylib";
-
-            var dylibFiles = context.GetFiles(
-                new GlobPattern(pattern),
-                new GlobberSettings { IsCaseSensitive = false });
-
-            if (dylibFiles.Count == 0)
-            {
-                throw new CakeException(
-                    $"No native assets found to transform from '{backendPluginsRoot.FullPath}' for project '{projectItem.Name}'.");
-            }
-
-            context.CopyFiles(dylibFiles, targetBuildDir.FullPath);
+            context.CopyDirectory(backendPluginsRoot.FullPath, targetBuildDir.FullPath);
 
             // for NodeJS, also copy libnode*.dylib
             if (projectItem.DotNetNativeName == "NodeJS")
@@ -178,26 +150,6 @@ public sealed class TransformNativeAssetsTask : FrostingTask<BuildContext>
                 }
 
                 context.CopyFiles(libnodeFiles, targetBuildDir.FullPath);
-            }
-        }
-
-        // Print the file tree for verification
-        context.Log.Information("Transformed Native Assets Directory Structure:");
-
-        PrintDirectoryTree(new DirectoryInfo(nativeAssetsDirectory.Path.FullPath));
-        return;
-
-        void PrintDirectoryTree(DirectoryInfo dir, string indent = "")
-        {
-            foreach (var subDir in dir.GetDirectories())
-            {
-                context.Log.Information($"{indent}- {subDir.Name}/");
-                PrintDirectoryTree(subDir, indent + "  ");
-            }
-
-            foreach (var file in dir.GetFiles())
-            {
-                context.Log.Information($"{indent}- {file.Name}");
             }
         }
     }
@@ -217,7 +169,6 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
          *  ...
          *  natives-win-x64\native\papi-lua\build_win_x64_papi-lua\*.dll
          *  ...
-         *  natives-osx-x64\native\papi-lua\build_osx_x64_papi-lua\*.dylib
          *  natives-osx-arm64\native\papi-lua\build_osx_arm64_papi-lua\*.dylib
          *  ...
          *  natives-[cmake-rid]\native\[backend-name]\build_[cmake-rid]_*\Release\*.[dll|so|dylib]
@@ -251,7 +202,7 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
             Directory.CreateDirectory(targetDirectory.FullPath);
 
             var output = context.GetSubDirectories(nativeAssetsPath.FullPath);
-            if (output.Count == 0) 
+            if (output.Count == 0)
             {
                 throw new CakeException($"No build output directories found in '{nativeAssetsPath.FullPath}'.");
             }
@@ -260,7 +211,7 @@ public sealed class CollectNativeAssetsTask : FrostingTask<BuildContext>
                 // output = natives-win-x64\native\papi-lua\build_win_x64_papi-lua\Release\
                 // Windows builds are typically in Release subfolder
                 output = context.GetSubDirectories(output.First().FullPath);
-                if (output.Count == 0) 
+                if (output.Count == 0)
                 {
                     throw new CakeException($"No Release build output directory found in '{nativeAssetsPath.FullPath}'.");
                 }
@@ -398,15 +349,15 @@ public static class WellKnownProjects
     [
         new() { Name = "Puerts.Core.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "Core" },
         new() { Name = "Puerts.Core.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Core" },
-        new() { Name = "Puerts.Core.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "Core" },
+        new() { Name = "Puerts.Core.NativeAssets.macOS", DotNetRid = "osx-arm64", DotNetNativeName = "Core" },
 
         new() { Name = "Puerts.Lua.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "Lua" },
         new() { Name = "Puerts.Lua.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Lua" },
-        new() { Name = "Puerts.Lua.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "Lua" },
+        new() { Name = "Puerts.Lua.NativeAssets.macOS", DotNetRid = "osx-arm64", DotNetNativeName = "Lua" },
 
         new() { Name = "Puerts.NodeJS.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "NodeJS" },
         new() { Name = "Puerts.NodeJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "NodeJS" },
-        new() { Name = "Puerts.NodeJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "NodeJS" },
+        new() { Name = "Puerts.NodeJS.NativeAssets.macOS", DotNetRid = "osx-arm64", DotNetNativeName = "NodeJS" },
 
         new() { Name = "Puerts.Python.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "Python" },
         new() { Name = "Puerts.Python.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "Python" },
@@ -414,11 +365,11 @@ public static class WellKnownProjects
 
         new() { Name = "Puerts.QuickJS.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "QuickJS" },
         new() { Name = "Puerts.QuickJS.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "QuickJS" },
-        new() { Name = "Puerts.QuickJS.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "QuickJS" },
+        new() { Name = "Puerts.QuickJS.NativeAssets.macOS", DotNetRid = "osx-arm64", DotNetNativeName = "QuickJS" },
 
         new() { Name = "Puerts.V8.NativeAssets.Win32", DotNetRid = "win-x64", DotNetNativeName = "V8" },
         new() { Name = "Puerts.V8.NativeAssets.Linux", DotNetRid = "linux-x64", DotNetNativeName = "V8" },
-        new() { Name = "Puerts.V8.NativeAssets.macOS", DotNetRid = "osx", DotNetNativeName = "V8" },
+        new() { Name = "Puerts.V8.NativeAssets.macOS", DotNetRid = "osx-arm64", DotNetNativeName = "V8" },
     ];
 }
 
@@ -442,7 +393,6 @@ public class ProjectAndRidWithNativeName
             {
                 "win-x64" => "win-x64",
                 "linux-x64" => "linux-x64",
-                "osx" => "osx",
                 "osx-arm64" => "osx-arm64",
                 _ => throw new NotSupportedException($"RID '{DotNetRid}' is not supported.")
             };
