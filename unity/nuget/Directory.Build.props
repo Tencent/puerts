@@ -54,10 +54,10 @@
   </PropertyGroup> 
 
   <PropertyGroup>
-      <PuertsCurrentTargetFrameworks>netstandard2.1;net8.0</PuertsCurrentTargetFrameworks>
-      <PuertsNativeAssetsLinuxTargetFrameworks>netstandard2.1;net8.0</PuertsNativeAssetsLinuxTargetFrameworks>
-      <PuertsNativeAssetsWin32TargetFrameworks>netstandard2.1;net8.0</PuertsNativeAssetsWin32TargetFrameworks>
-      <PuertsNativeAssetsmacOSTargetFrameworks>netstandard2.1;net8.0</PuertsNativeAssetsmacOSTargetFrameworks>
+      <PuertsCurrentTargetFrameworks>netstandard2.1;net8.0;net9.0;net10.0</PuertsCurrentTargetFrameworks>
+      <PuertsNativeAssetsLinuxTargetFrameworks>netstandard2.1;net8.0;net9.0;net10.0</PuertsNativeAssetsLinuxTargetFrameworks>
+      <PuertsNativeAssetsWin32TargetFrameworks>netstandard2.1;net8.0;net9.0;net10.0</PuertsNativeAssetsWin32TargetFrameworks>
+      <PuertsNativeAssetsmacOSTargetFrameworks>netstandard2.1;net8.0;net9.0;net10.0</PuertsNativeAssetsmacOSTargetFrameworks>
   </PropertyGroup>
 
 </Project>
