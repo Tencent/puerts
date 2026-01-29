@@ -61,7 +61,7 @@ extern "C" {
         EnsureLibPythonGlobal();
         PyConfig config;
         PyStatus status;
-        PyConfig_InitPythonConfig(&config);
+        PyConfig_InitIsolatedConfig(&config);
         status = PyConfig_SetBytesString(&config, &config.home, home);
         if (PyStatus_Exception(status))
         {
