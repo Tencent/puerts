@@ -8,7 +8,7 @@
     <Import Project="..\NoAssemblyOutputs.Common.props" />
 
     <ItemGroup>
-        <None Include="lib\**\*.dylib" Pack="True" PackagePath="runtimes\" />
+        <None Include="lib\**\*.*" Pack="True" PackagePath="runtimes\" />
     </ItemGroup>
 
 </Project>
