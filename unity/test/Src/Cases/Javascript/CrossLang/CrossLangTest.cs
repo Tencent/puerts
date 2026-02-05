@@ -184,10 +184,13 @@ namespace Puerts.UnitTest
             return new NewObject();
         }
 
+        [UnityEngine.Scripting.Preserve]
         public static string AddPackage(string descFilePath)
         {
             return descFilePath;
         }
+
+        [UnityEngine.Scripting.Preserve]
         public static string AddPackage(string assetPath, LoadResource loadFunc)
         {
             return assetPath;

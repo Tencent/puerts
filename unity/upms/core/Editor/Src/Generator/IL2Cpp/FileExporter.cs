@@ -443,37 +443,45 @@ namespace PuertsIl2cpp.Editor
                 if (onlyConfigure)
                 {
                     var configureTypes = new List<Type>();
-                    if (!noWrapper)
-                    {
-                        var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
+                    var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
                             "Puerts.BindingAttribute",
                         });
 
-                        configureTypes = configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
-                            .Where(o => o is Type)
-                            .Cast<Type>()
-                            .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t))
-                            .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
-                            .Distinct()
-                            .ToList();
+                    configureTypes = configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
+                        .Where(o => o is Type)
+                        .Cast<Type>()
+                        //.Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t))
+                        .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
+                        .Distinct()
+                        .ToList();
+
+                    if (!noWrapper)
+                    {
+                        var configureTypesExcludeDelegate = configureTypes
+                            .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t));
 
                         // configureTypes.Clear();
 
-                        genWrapperCtor = configureTypes
+                        genWrapperCtor = configureTypesExcludeDelegate
                             .SelectMany(t => t.GetConstructors(flag))
                             .Where(m => !Utils.IsNotSupportedMember(m, true))
                             .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
-                        genWrapperMethod = configureTypes
+                        genWrapperMethod = configureTypesExcludeDelegate
                             .SelectMany(t => t.GetMethods(flag))
                             .Where(m => !Utils.IsNotSupportedMember(m, true))
                             .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
-                        genWrapperField = configureTypes
+                        genWrapperField = configureTypesExcludeDelegate
                             .SelectMany(t => t.GetFields(flag))
                             .Where(m => !Utils.IsNotSupportedMember(m, true))
                             .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
                     }
+
+                    delegateInvokes = configureTypes.Where(t => typeof(MulticastDelegate).IsAssignableFrom(t)) //把 BindingAttribute 标记的delegate 也生成桥接函数
+                            .Select(t => t.GetMethod("Invoke"))
+                            .Where(m => m != null)
+                            .ToList();
 
                     var configureUsedTypes = configureTypes
                         .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
@@ -550,8 +558,11 @@ namespace PuertsIl2cpp.Editor
                         {
                             IterateAllValueType(ga, valueTypeInfos);
                         }
-
                         addBridgeInfo(returnSignature, decl.ToString(), parameterSignatureList);
+                    }
+                    foreach(var d in delegateInvokes)
+                    {
+                        addBridgeInfo(TypeUtils.GetTypeSignature(d.ReturnType), d.DeclaringType.ToString(), d.GetParameters().Select(p => TypeUtils.GetTypeSignature(p.ParameterType)).ToList());
                     }
 
                     valueTypeInfos = valueTypeInfos
