@@ -183,6 +183,17 @@ namespace Puerts.UnitTest
         {
             return new NewObject();
         }
+
+        public static string AddPackage(string descFilePath)
+        {
+            return descFilePath;
+        }
+        public static string AddPackage(string assetPath, LoadResource loadFunc)
+        {
+            return assetPath;
+        }
+
+        public delegate object LoadResource(string name, string extension, System.Type type, out TestEnum destroyMethod);
     }
 	
 	public enum ConstructorParam
@@ -1557,6 +1568,41 @@ namespace Puerts.UnitTest
                 CS.Puerts.UnitTest.CrossLangTestHelper.TestEnumCheck('a', 1, 2);
             }) ();
             ");
+        }
+
+        [Test]
+        public void AddPackageTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            // Test AddPackage with single string parameter
+            var result1 = jsEnv.Eval<string>(@"
+                (function() {
+                    const CrossLangTestHelper = CS.Puerts.UnitTest.CrossLangTestHelper;
+                    const result = CrossLangTestHelper.AddPackage('test/path/to/desc.json');
+                    return result;
+                })()
+            ");
+            Assert.AreEqual("test/path/to/desc.json", result1);
+
+            // Test AddPackage with string and delegate parameters
+            var result2 = jsEnv.Eval<string>(@"
+                (function() {
+                    const CrossLangTestHelper = CS.Puerts.UnitTest.CrossLangTestHelper;
+                    const TestEnum = CS.Puerts.UnitTest.TestEnum;
+                    
+                    // Create a load function delegate
+                    const loadFunc = function(name, extension, type, outDestroyMethod) {
+                        // outDestroyMethod is an out parameter, set it to TestEnum.A
+                        outDestroyMethod.value = TestEnum.A;
+                        return { name: name, ext: extension };
+                    };
+                    
+                    const result = CrossLangTestHelper.AddPackage('test/asset/path', loadFunc);
+                    return result;
+                })()
+            ");
+            Assert.AreEqual("test/asset/path", result2);
+            jsEnv.Tick();
         }
 
         [Test]
