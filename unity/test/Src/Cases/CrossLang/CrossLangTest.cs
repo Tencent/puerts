@@ -1568,8 +1568,8 @@ namespace Puerts.UnitTest
         {
             var cb2 = jsEnv.Eval<Action<string, long>>("__GCB22");
             var cb1 = jsEnv.Eval<Action<int>>("__GCB22");
-            UnityEngine.Debug.Log("obj1: " + cb2.Target.GetHashCode());
-            UnityEngine.Debug.Log("obj2: " + cb1.Target.GetHashCode());
+            //UnityEngine.Debug.Log("obj1: " + cb2.Target.GetHashCode());
+            //UnityEngine.Debug.Log("obj2: " + cb1.Target.GetHashCode());
             cb1 = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();
