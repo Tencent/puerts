@@ -507,12 +507,8 @@ const MethodInfo* FindOrCreateMethodInfo(const MethodInfo* invoke, Il2CppMethodP
     return method;
 }
 
-static void* DelegateAllocate(Il2CppClass *klass, BridgeFuncInfo* bridgeFuncs, PObjectRefInfo** outTargetData)
+static void* DelegateAllocate(Il2CppClass *klass, BridgeFuncInfo* bridgeFuncs, PObjectRefInfo** outTargetData, Il2CppObject* target)
 {
-    Il2CppClass *delegateInfoClass = g_typeofPersistentObjectInfo;
-    if (!delegateInfoClass) return nullptr;
-    
-    auto target = il2cpp::vm::Object::New(delegateInfoClass);
     const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(klass);
     Il2CppDelegate* delegate = (Il2CppDelegate*)il2cpp::vm::Object::New(klass);
     const MethodInfo* bridgeMethodInfo = FindOrCreateMethodInfo(invoke, bridgeFuncs->Method, bridgeFuncs->Invoker);
@@ -896,7 +892,7 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
     {
         *out_object = il2cpp::gc::GCHandle::GetTarget(*res);
         //PLog("found existed jsobject:%p", *out_object);
-        if (out_object == nullptr)
+        if (*out_object == nullptr) // gc了，但还没经过CleanupPendingKillScriptObjects释放
         {
             value_ref = ${invokePapi('duplicate_value_ref')}(value_ref);
         }
@@ -909,19 +905,25 @@ static Il2CppGCHandle* FindOrCreateHandleStoreOfValue(struct pesapi_ffi* apis, p
 static Il2CppObject* FunctionToDelegate(struct pesapi_ffi* apis, pesapi_env env, pesapi_value jsval, JsClassInfoHeader* classInfo)
 {
     pesapi_value_ref value_ref;
-    Il2CppObject* ret = nullptr;
-    Il2CppGCHandle* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &ret);
+    Il2CppObject* target = nullptr;
+    Il2CppGCHandle* handle_store = FindOrCreateHandleStoreOfValue(apis, env, jsval, &value_ref, &target);
     if (!handle_store) return nullptr;
 
-    if (ret == nullptr || (Object::GetClass(ret) != classInfo->TypeId))
+    if (target == nullptr)
     {
-        PObjectRefInfo* delegateInfo;
-        ret = (Il2CppObject *)DelegateAllocate(classInfo->TypeId, classInfo->BridgeFuncs, &delegateInfo);
-        auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(ret, 0, il2cpp::gc::HANDLE_WEAK);
-        il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
-        *handle_store = targetHandle.Get();
-        SetPObjectRefInfoValue(apis, env, delegateInfo, value_ref);
+        Il2CppClass* delegateInfoClass = g_typeofPersistentObjectInfo;
+        if (!delegateInfoClass) return nullptr;
+
+        target = il2cpp::vm::Object::New(delegateInfoClass);
     }
+
+    PObjectRefInfo* delegateInfo;
+    Il2CppObject* ret = (Il2CppObject *)DelegateAllocate(classInfo->TypeId, classInfo->BridgeFuncs, &delegateInfo, target);
+    auto targetHandle = il2cpp::gc::GCHandle::GetTargetHandle(target, 0, il2cpp::gc::HANDLE_WEAK);
+    il2cpp::vm::Exception::RaiseIfError(targetHandle.GetError());
+    *handle_store = targetHandle.Get();
+    SetPObjectRefInfoValue(apis, env, delegateInfo, value_ref);
+    
     return ret;
 }
 
