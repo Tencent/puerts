@@ -89,7 +89,7 @@ struct JsClassInfo : public JsClassInfoHeader
 
 const Il2CppClass* CSharpTypeToTypeId(Il2CppObject *type)
 {
-    return (type && Class::IsAssignableFrom(il2cpp_defaults.systemtype_class, type->klass)) ? il2cpp_codegen_class_from_type(((Il2CppReflectionType *)type)->type) : nullptr;
+    return (type && il2cpp::vm::Class::IsAssignableFrom(il2cpp_defaults.systemtype_class, type->klass)) ? il2cpp_codegen_class_from_type(((Il2CppReflectionType *)type)->type) : nullptr;
 }
 
 static void* ObjectAllocate(Il2CppClass *klass)
@@ -157,14 +157,14 @@ static bool IsPtrToSelf(const Il2CppType* type, const Il2CppClass* selfClass)
 {
     if (type->byref && (type->type == IL2CPP_TYPE_VALUETYPE || type->type == IL2CPP_TYPE_TYPEDBYREF))
     {
-        Il2CppClass* klass = Class::FromIl2CppType(type, false);
-        Class::Init(klass);
-        return Class::FromIl2CppType(&(klass->byval_arg)) == selfClass;
+        Il2CppClass* klass = il2cpp::vm::Class::FromIl2CppType(type, false);
+        il2cpp::vm::Class::Init(klass);
+        return il2cpp::vm::Class::FromIl2CppType(&(klass->byval_arg)) == selfClass;
     }
     if (type->type == IL2CPP_TYPE_PTR)
     {
-        Il2CppClass* klass = Class::FromIl2CppType(type, false);
-        Class::Init(klass);
+        Il2CppClass* klass = il2cpp::vm::Class::FromIl2CppType(type, false);
+        il2cpp::vm::Class::Init(klass);
         return klass->element_class == selfClass;
     }
     return false;
@@ -172,8 +172,8 @@ static bool IsPtrToSelf(const Il2CppType* type, const Il2CppClass* selfClass)
 
 static std::string GetValueTypeFieldsSignature(const Il2CppType* type)
 {
-    Il2CppClass* klass = Class::FromIl2CppType(type, false);
-    Class::Init(klass);
+    Il2CppClass* klass = il2cpp::vm::Class::FromIl2CppType(type, false);
+    il2cpp::vm::Class::Init(klass);
     std::string ret = "";
     for (uint16_t index = 0; index < klass->field_count; index++)
     {
@@ -292,15 +292,15 @@ static std::string GetTypeSignature(const Il2CppType* type)
     case IL2CPP_TYPE_SZARRAY:
     case IL2CPP_TYPE_CLASS:
     {
-        Il2CppClass* klass = Class::FromIl2CppType(type, false);
-        Class::Init(klass);
+        Il2CppClass* klass = il2cpp::vm::Class::FromIl2CppType(type, false);
+        il2cpp::vm::Class::Init(klass);
         ret = (klass == g_typeofArrayBuffer) ? "a" : "o";
         break;
     }
     case IL2CPP_TYPE_GENERICINST:
     {
-        Il2CppClass* klass = Class::FromIl2CppType(type, false);
-        Class::Init(klass);
+        Il2CppClass* klass = il2cpp::vm::Class::FromIl2CppType(type, false);
+        il2cpp::vm::Class::Init(klass);
         if (!klass->byval_arg.valuetype)
         {
             ret = "o";
@@ -311,15 +311,15 @@ static std::string GetTypeSignature(const Il2CppType* type)
     case IL2CPP_TYPE_VALUETYPE:
     case IL2CPP_TYPE_TYPEDBYREF://public ref struct TypedReference {}
     {
-        Il2CppClass* klass = Class::FromIl2CppType(type, false);
-        Class::Init(klass);
+        Il2CppClass* klass = il2cpp::vm::Class::FromIl2CppType(type, false);
+        il2cpp::vm::Class::Init(klass);
 
-        if (Type::IsEnum(type) || Class::GetParent(klass) == il2cpp_defaults.enum_class)
+        if (Type::IsEnum(type) || il2cpp::vm::Class::GetParent(klass) == il2cpp_defaults.enum_class)
         {
             auto baseType = Type::GetUnderlyingType(type);
             if (baseType == type)
             {
-                Il2CppClass* klass = Class::FromIl2CppType(type, false);
+                Il2CppClass* klass = il2cpp::vm::Class::FromIl2CppType(type, false);
                 ret = GetTypeSignature(klass->fields[0].type);
                 break;
             }
@@ -357,16 +357,16 @@ static bool HasParamArray(const MethodInfo* method)
     Il2CppMetadataCustomAttributeHandle attributeHandle = MetadataCache::GetCustomAttributeTypeToken(methodWithParameterAttributeInformation->klass->image, il2cpp::vm::Method::GetParameterToken(method, method->parameters_count - 1));
     return Reflection::HasAttribute(attributeHandle, s_ParamArrayAttribute);
 #else
-    return (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, Method::GetParameterToken(method, method->parameters_count - 1), s_ParamArrayAttribute));
+    return (MetadataCache::HasAttribute(methodWithParameterAttributeInformation->klass->image, il2cpp::vm::Method::GetParameterToken(method, method->parameters_count - 1), s_ParamArrayAttribute));
 #endif
 }
 
 static std::string GetParameterSignature(const MethodInfo* method, int index, bool isBridge)
 {
     if (kInvalidIl2CppMethodSlot != method->slot) {
-        Class::Init(method->klass);
+        il2cpp::vm::Class::Init(method->klass);
     }
-    const Il2CppType* type = Method::GetParam(method, index);
+    const Il2CppType* type = il2cpp::vm::Method::GetParam(method, index);
     
     if (type)
     {
@@ -376,7 +376,7 @@ static std::string GetParameterSignature(const MethodInfo* method, int index, bo
 
         if ((index == method->parameters_count - 1) && HasParamArray(method))
         {
-            Il2CppClass* parameterKlass = Class::FromIl2CppType(type, false);
+            Il2CppClass* parameterKlass = il2cpp::vm::Class::FromIl2CppType(type, false);
             return "V" + GetTypeSignature(&parameterKlass->element_class->byval_arg);
         }
         else
@@ -392,7 +392,7 @@ static std::string GetParameterSignature(const MethodInfo* method, int index, bo
 
 static bool IsDelegate(Il2CppClass *klass)
 {
-    return Class::HasParent(klass, il2cpp_defaults.delegate_class) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
+    return il2cpp::vm::Class::HasParent(klass, il2cpp_defaults.delegate_class) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
 }
 
 static bool IsCtor(const MethodInfo* method)
@@ -407,7 +407,7 @@ static bool IsCCtor(const MethodInfo* method)
 
 static bool IsExtensionMethod(const MethodInfo* method)
 {
-    return Method::HasAttribute(method, s_ExtensionAttribute);
+    return il2cpp::vm::Method::HasAttribute(method, s_ExtensionAttribute);
 }
 
 static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, bool isExtensionMethod)
@@ -424,7 +424,7 @@ static std::string GetMethodSignature(const MethodInfo* method, bool isBridge, b
     else
     {
         signature += GetTypeSignature(method->return_type);
-        if (!isBridge && Method::IsInstance(method)) signature += (il2cpp_defaults.object_class == method->klass) ? "T" : "t";
+        if (!isBridge && il2cpp::vm::Method::IsInstance(method)) signature += (il2cpp_defaults.object_class == method->klass) ? "T" : "t";
         for (uint32_t i = 0; i < method->parameters_count; ++i)
         {
             if (i == 0 && isExtensionMethod)
@@ -454,18 +454,18 @@ static Il2CppMethodPointer GetMethodPointer(const MethodInfo* method)
 
 Il2CppClass* GetReturnType(const MethodInfo* method) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
-        Class::Init(method->klass);
+        il2cpp::vm::Class::Init(method->klass);
     }
-    return Class::FromIl2CppType(Method::GetReturnType(method), false);
+    return il2cpp::vm::Class::FromIl2CppType(il2cpp::vm::Method::GetReturnType(method), false);
 }
 
 Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
-        Class::Init(method->klass);
+        il2cpp::vm::Class::Init(method->klass);
     }
-    const Il2CppType* type = Method::GetParam(method, index);
+    const Il2CppType* type = il2cpp::vm::Method::GetParam(method, index);
     if (type) {
-        return Class::FromIl2CppType(type, false);
+        return il2cpp::vm::Class::FromIl2CppType(type, false);
     } else {
         return nullptr;
     }
@@ -587,7 +587,7 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
             if (csharpMethodInfo->NeedBoxing)
             {
                 auto ptrType = (Il2CppClass*) ${invokePapi('get_native_holder_typeid')}(info);
-                if (Class::IsValuetype(ptrType))
+                if (il2cpp::vm::Class::IsValuetype(ptrType))
                 {
                     self = DataTransfer::GetValueTypeForCSharp(ptrType, self);
                 }
@@ -708,12 +708,12 @@ void GetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
     {
         IL2CPP_ASSERT(ptr);
         src = (char*)ptr + offset;
-        Field::SetValueRaw(field->type, value, src, true);
+        il2cpp::vm::Field::SetValueRaw(field->type, value, src, true);
     }
     else
     {
         il2cpp::vm::Runtime::ClassInit(field->parent);
-        Field::StaticGetValue(field, value);
+        il2cpp::vm::Field::StaticGetValue(field, value);
     }
 }
 
@@ -758,11 +758,11 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
     {
         IL2CPP_ASSERT(ptr);
         dest = (char*)ptr + offset;
-        Field::SetValueRaw(field->type, dest, value, true);
+        il2cpp::vm::Field::SetValueRaw(field->type, dest, value, true);
     }
     else
     {
-        Field::StaticSetValue(field, value);
+        il2cpp::vm::Field::StaticSetValue(field, value);
     }
 }
 
@@ -774,7 +774,7 @@ void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
 #else
     Il2CppObject* defaultValue = Parameter::GetDefaultParameterValueObject(method, &method->parameters[index], &isExplicitySetNullDefaultValue);
 #endif
-    return (defaultValue && Class::IsValuetype(Class::FromIl2CppType(Method::GetParam(method, index), false))) ? Object::Unbox(defaultValue) : defaultValue;
+    return (defaultValue && il2cpp::vm::Class::IsValuetype(il2cpp::vm::Class::FromIl2CppType(il2cpp::vm::Method::GetParam(method, index), false))) ? Object::Unbox(defaultValue) : defaultValue;
 }
 
 typedef void(*LogCallbackFunc)(const char* value);
@@ -1103,7 +1103,7 @@ pesapi_value TryTranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2C
     if (obj && obj->klass)
     {
         auto objClass = obj->klass;
-        if (Class::IsValuetype(objClass))
+        if (il2cpp::vm::Class::IsValuetype(objClass))
         {
             return TranslateValueType(apis, env, objClass, obj);
         }
@@ -1135,7 +1135,7 @@ Il2CppObject* JsValueToCSRef(struct pesapi_ffi* apis, Il2CppClass *klass, pesapi
         klass = il2cpp_defaults.object_class;
     }        
     
-    const Il2CppType *type = Class::GetType(klass);
+    const Il2CppType *type = il2cpp::vm::Class::GetType(klass);
     int t = type->type;
     
     PrimitiveValueType data;
@@ -1359,7 +1359,7 @@ handle_underlying:
                 return nullptr;
             }
             auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsval);
-            if (klass == il2cpp_defaults.object_class && g_typeofTypedValue && Class::IsAssignableFrom(g_typeofTypedValue, objClass))
+            if (klass == il2cpp_defaults.object_class && g_typeofTypedValue && il2cpp::vm::Class::IsAssignableFrom(g_typeofTypedValue, objClass))
             {
                 const MethodInfo* get_Target = il2cpp_class_get_method_from_name(objClass, "get_Target", 0);
                 if (get_Target)
@@ -1368,9 +1368,9 @@ handle_underlying:
                     return ((NativeFuncPtr)get_Target->methodPointer)(ptr, get_Target);
                 }
             }
-            if (Class::IsAssignableFrom(klass, objClass))
+            if (il2cpp::vm::Class::IsAssignableFrom(klass, objClass))
             {
-                return Class::IsValuetype(objClass) ? DataTransfer::GetValueTypeForCSharp(objClass, ptr) : (Il2CppObject*)ptr;
+                return il2cpp::vm::Class::IsValuetype(objClass) ? DataTransfer::GetValueTypeForCSharp(objClass, ptr) : (Il2CppObject*)ptr;
             }
             else if(objClass)
             {
@@ -1386,13 +1386,13 @@ handle_underlying:
             /* note that 't' and 'type->type' can be different */
             if (type->type == IL2CPP_TYPE_VALUETYPE && Type::IsEnum(type))
             {
-                t = Class::GetEnumBaseType(Type::GetClass(type))->type;
+                t = il2cpp::vm::Class::GetEnumBaseType(Type::GetClass(type))->type;
                 goto handle_underlying;
             }
             else
             {
                 auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsval);
-                if (!Class::IsAssignableFrom(klass, objClass))
+                if (!il2cpp::vm::Class::IsAssignableFrom(klass, objClass))
                 {
                     return nullptr;
                 }
@@ -1408,7 +1408,7 @@ handle_underlying:
             }
             break;
         case IL2CPP_TYPE_GENERICINST:
-            t = GenericClass::GetTypeDefinition(type->data.generic_class)->byval_arg.type;
+            t = il2cpp::vm::GenericClass::GetTypeDefinition(type->data.generic_class)->byval_arg.type;
             goto handle_underlying;
         default:
             IL2CPP_ASSERT(0);
@@ -1418,7 +1418,7 @@ handle_underlying:
 
 static bool IsDeadUnityEngineObject(Il2CppObject *obj)
 {
-    if (!Class::IsAssignableFrom(s_UnityEngineObjectClass, obj->klass))
+    if (!il2cpp::vm::Class::IsAssignableFrom(s_UnityEngineObjectClass, obj->klass))
     {
         return false;
     }
@@ -1437,13 +1437,13 @@ pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass
         targetClass = il2cpp_defaults.object_class;
     }
     
-    if ((targetClass == il2cpp_defaults.object_class) && Class::IsEnum(obj->klass))
+    if ((targetClass == il2cpp_defaults.object_class) && il2cpp::vm::Class::IsEnum(obj->klass))
     {
-        targetClass = Class::GetElementClass(obj->klass);
+        targetClass = il2cpp::vm::Class::GetElementClass(obj->klass);
     }
-    else if (Class::IsEnum(targetClass))
+    else if (il2cpp::vm::Class::IsEnum(targetClass))
     {
-        targetClass = Class::GetElementClass(targetClass);
+        targetClass = il2cpp::vm::Class::GetElementClass(targetClass);
     }
     
     pesapi_value jsVal = TryTranslatePrimitiveWithClass(apis, env, obj, targetClass != il2cpp_defaults.object_class ? targetClass : nullptr);
@@ -1453,7 +1453,7 @@ pesapi_value CSRefToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il2CppClass
         return jsVal;
     }
 
-    if (Class::IsValuetype(targetClass))
+    if (il2cpp::vm::Class::IsValuetype(targetClass))
     {
         jsVal = TranslateValueType(apis, env, targetClass, obj);
         if (jsVal)
@@ -1500,7 +1500,7 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
         targetClass = il2cpp_defaults.object_class;
     }
 
-    bool isNullable = Class::IsNullable(targetClass);
+    bool isNullable = il2cpp::vm::Class::IsNullable(targetClass);
 
     if (isNullable)
     {
@@ -1515,11 +1515,11 @@ pesapi_value CSValueTypePtrToJsValue(struct pesapi_ffi* apis, pesapi_env env, Il
         targetClass = il2cpp::vm::Class::GetNullableArgument(targetClass);
     }
 
-    if (Class::IsEnum(targetClass))
+    if (il2cpp::vm::Class::IsEnum(targetClass))
     {
-        targetClass = Class::GetElementClass(targetClass);
+        targetClass = il2cpp::vm::Class::GetElementClass(targetClass);
     }
-    const Il2CppType* type = Class::GetType(targetClass);
+    const Il2CppType* type = il2cpp::vm::Class::GetType(targetClass);
 
     pesapi_value jsVal = TryTranslatePrimitivePtr(apis, env, type->type, ptr);
 
@@ -1546,14 +1546,14 @@ static bool GetValueTypeFromJsInternal(struct pesapi_ffi* apis, pesapi_env env, 
     if (ptr)
     {
         auto objClass = (Il2CppClass*) ${invokePapi('get_native_object_typeid')}(env, jsValue);
-        if (Class::IsAssignableFrom(klass, objClass))
+        if (il2cpp::vm::Class::IsAssignableFrom(klass, objClass))
         {
             hasValue = true;
             memcpy(storage, ptr, valueSize);
         }
 
     } else {
-        const Il2CppType *type = Class::GetType(klass);
+        const Il2CppType *type = il2cpp::vm::Class::GetType(klass);
         PrimitiveValueType data;
         data.i8 = 0;
         int t = type->type;
@@ -1684,7 +1684,7 @@ handle_underlying:
             /* note that 't' and 'type->type' can be different */
             if (type->type == IL2CPP_TYPE_VALUETYPE && Type::IsEnum(type))
             {
-                t = Class::GetEnumBaseType(Type::GetClass(type))->type;
+                t = il2cpp::vm::Class::GetEnumBaseType(Type::GetClass(type))->type;
                 goto handle_underlying;
             }
         }
@@ -1753,12 +1753,12 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
         }
         for (int i = csArgStart; i < method->parameters_count; ++i)
         {
-            auto parameterType = Method::GetParam(method, i);
+            auto parameterType = il2cpp::vm::Method::GetParam(method, i);
             bool passedByReference = parameterType->byref;
             bool hasDefault = parameterType->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
             bool isLastArgument = i == (method->parameters_count - 1);
-            Il2CppClass* parameterKlass = Class::FromIl2CppType(parameterType);
-            Class::Init(parameterKlass);
+            Il2CppClass* parameterKlass = il2cpp::vm::Class::FromIl2CppType(parameterType);
+            il2cpp::vm::Class::Init(parameterKlass);
             pesapi_value jsValue = ${invokePapi('get_arg')}(info, i - csArgStart);
             
             if ((hasDefault || (isLastArgument && hasParamArray)) && ${invokePapi('is_undefined')}(env, jsValue))
@@ -1880,7 +1880,7 @@ handle_underlying:
                     if (ptr)
                     {
                         auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsValue);
-                        if (!Class::IsAssignableFrom(parameterKlass, objClass))
+                        if (!il2cpp::vm::Class::IsAssignableFrom(parameterKlass, objClass))
                         {
                             return false;
                         }
@@ -1896,13 +1896,13 @@ handle_underlying:
                     /* note that 't' and 'type->type' can be different */
                     if (parameterType->type == IL2CPP_TYPE_VALUETYPE && Type::IsEnum(parameterType))
                     {
-                        t = Class::GetEnumBaseType(Type::GetClass(parameterType))->type;
+                        t = il2cpp::vm::Class::GetEnumBaseType(Type::GetClass(parameterType))->type;
                         goto handle_underlying;
                     }
                     else
                     {
                         auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsValue);
-                        if (!objClass || !Class::IsAssignableFrom(parameterKlass, objClass))
+                        if (!objClass || !il2cpp::vm::Class::IsAssignableFrom(parameterKlass, objClass))
                         {
                             return false;
                         }
@@ -1920,7 +1920,7 @@ handle_underlying:
                         t = parameterType->type;
                         goto handle_underlying;
                     }
-                    t = GenericClass::GetTypeDefinition(parameterType->data.generic_class)->byval_arg.type;
+                    t = il2cpp::vm::GenericClass::GetTypeDefinition(parameterType->data.generic_class)->byval_arg.type;
                     goto handle_underlying;
                 default:
                     IL2CPP_ASSERT(0);
@@ -1933,7 +1933,7 @@ handle_underlying:
     {
         Il2CppClass* thisType = method->klass;
 
-        if (Class::IsValuetype(thisType))
+        if (il2cpp::vm::Class::IsValuetype(thisType))
         {
             self = ((uint8_t*)self) - sizeof(Il2CppObject);
         }
@@ -1946,12 +1946,12 @@ handle_underlying:
     
     for (int i = csArgStart; i < method->parameters_count; ++i) 
     {
-        auto parameterType = Method::GetParam(method, i);
+        auto parameterType = il2cpp::vm::Method::GetParam(method, i);
         bool passedByReference = parameterType->byref;
         bool hasDefault = parameterType->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
         bool isLastArgument = i == (method->parameters_count - 1);
-        Il2CppClass* parameterKlass = Class::FromIl2CppType(parameterType);
-        Class::Init(parameterKlass);
+        Il2CppClass* parameterKlass = il2cpp::vm::Class::FromIl2CppType(parameterType);
+        il2cpp::vm::Class::Init(parameterKlass);
         
         if (isLastArgument && hasParamArray)
         {
@@ -1966,10 +1966,10 @@ handle_underlying:
                     continue;
                 }
             }
-            auto elementType = Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
+            auto elementType = il2cpp::vm::Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
             auto arrayLen = js_args_len - jsParamStart > 0 ? js_args_len - jsParamStart : 0;
             auto array = Array::NewSpecific(parameterKlass, arrayLen);
-            if (Class::IsValuetype(elementType))
+            if (il2cpp::vm::Class::IsValuetype(elementType))
             {
                 auto valueSize = elementType->instance_size - sizeof(Il2CppObject);
                 char* addr = Array::GetFirstElementAddress(array);
@@ -1991,12 +1991,12 @@ handle_underlying:
         
         pesapi_value jsValue = ${invokePapi('get_arg')}(info, i - csArgStart);
         
-        if (Class::IsValuetype(parameterKlass))
+        if (il2cpp::vm::Class::IsValuetype(parameterKlass))
         {
-            if (Class::IsNullable(parameterKlass))
+            if (il2cpp::vm::Class::IsNullable(parameterKlass))
             {
                 void* storage = alloca(parameterKlass->instance_size - sizeof(Il2CppObject));
-                auto underlyClass = Class::GetNullableArgument(parameterKlass);
+                auto underlyClass = il2cpp::vm::Class::GetNullableArgument(parameterKlass);
                 uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
                 
 #ifndef UNITY_2021_1_OR_NEWER
@@ -2016,7 +2016,7 @@ handle_underlying:
             }
             else if (passedByReference)
             {
-                auto underlyClass = Class::FromIl2CppType(&parameterKlass->byval_arg);
+                auto underlyClass = il2cpp::vm::Class::FromIl2CppType(&parameterKlass->byval_arg);
                 void* storage = alloca(underlyClass->instance_size - sizeof(Il2CppObject));
                 jsValue = JsObjectUnRef(apis, env, jsValue);
                 GetValueTypeFromJs(apis, env, jsValue, underlyClass, storage);
@@ -2050,7 +2050,7 @@ handle_underlying:
             //convertedParameters[i] = &parameters[i]; // Reference type passed by reference
             void** arg = (void**)alloca(sizeof(void*));
             *arg = nullptr;
-            auto underlyClass = Class::FromIl2CppType(&parameterKlass->byval_arg);
+            auto underlyClass = il2cpp::vm::Class::FromIl2CppType(&parameterKlass->byval_arg);
             jsValue = JsObjectUnRef(apis, env, jsValue);
             if (jsValue)
             {
@@ -2058,7 +2058,7 @@ handle_underlying:
                 if (ptr)
                 {
                     auto objClass = (Il2CppClass *)${invokePapi('get_native_object_typeid')}(env, jsValue);
-                    if (Class::IsAssignableFrom(underlyClass, objClass))
+                    if (il2cpp::vm::Class::IsAssignableFrom(underlyClass, objClass))
                     {
                         *arg = ptr;
                     }
@@ -2072,7 +2072,7 @@ handle_underlying:
         }
         else if (parameterKlass->byval_arg.type == IL2CPP_TYPE_PTR)
         {
-            auto underlyClass = Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
+            auto underlyClass = il2cpp::vm::Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
             void* storage = alloca(underlyClass->instance_size - sizeof(Il2CppObject));
             jsValue = JsObjectUnRef(apis, env, jsValue);
             args[i] = GetValueTypeFromJs(apis, env, jsValue, underlyClass, storage) ? storage : nullptr;
@@ -2086,7 +2086,7 @@ handle_underlying:
     //Il2CppObject* ret = Runtime::InvokeWithThrow(method, self, args); //返回ValueType有boxing
     void* returnValue = NULL;
     bool returnIsValueType = false;
-    Il2CppClass* returnType = Class::FromIl2CppType(method->return_type);
+    Il2CppClass* returnType = il2cpp::vm::Class::FromIl2CppType(method->return_type);
     if (method->return_type->type == IL2CPP_TYPE_VOID)
     {
         method->invoker_method(method->methodPointer, method, self, args, NULL);
@@ -2095,7 +2095,7 @@ handle_underlying:
     {
         if (method->return_type->valuetype)
         {
-            Class::Init(returnType);
+            il2cpp::vm::Class::Init(returnType);
             returnValue = alloca(returnType->instance_size - sizeof(Il2CppObject));
             method->invoker_method(method->methodPointer, method, self, args, returnValue);
             returnIsValueType = true;
@@ -2105,7 +2105,7 @@ handle_underlying:
             method->invoker_method(method->methodPointer, method, self, args, &returnValue);
             if (method->return_type->byref)
             {
-                if (Class::IsValuetype(returnType))
+                if (il2cpp::vm::Class::IsValuetype(returnType))
                 {
                     returnIsValueType = true;
                 }
@@ -2119,15 +2119,15 @@ handle_underlying:
     
     for (int i = csArgStart; i < method->parameters_count; ++i)
     {
-        auto parameterType = Method::GetParam(method, i);
+        auto parameterType = il2cpp::vm::Method::GetParam(method, i);
         bool passedByReference = parameterType->byref;
-        Il2CppClass* parameterKlass = Class::FromIl2CppType(parameterType);
+        Il2CppClass* parameterKlass = il2cpp::vm::Class::FromIl2CppType(parameterType);
         
         pesapi_value jsValue = ${invokePapi('get_arg')}(info, i - csArgStart);
         
-        if (Class::IsValuetype(parameterKlass) && passedByReference)
+        if (il2cpp::vm::Class::IsValuetype(parameterKlass) && passedByReference)
         {
-            if (Class::IsNullable(parameterKlass))
+            if (il2cpp::vm::Class::IsNullable(parameterKlass))
             {
 #ifndef UNITY_2021_1_OR_NEWER
                 bool hasValue = !!*(static_cast<uint8_t*>(args[i]) + parameterKlass->instance_size - sizeof(Il2CppObject));
@@ -2140,18 +2140,18 @@ handle_underlying:
                     continue;
                 }
             }
-            auto underlyClass = Class::FromIl2CppType(&parameterKlass->byval_arg);
+            auto underlyClass = il2cpp::vm::Class::FromIl2CppType(&parameterKlass->byval_arg);
             JsObjectSetRef(apis, env, jsValue, CSRefToJsValue(apis, env, underlyClass, (Il2CppObject*)(((uint8_t*)args[i]) - sizeof(Il2CppObject))));
         }
         else if (passedByReference)
         {
             Il2CppObject** arg = (Il2CppObject**)args[i];
-            auto underlyClass = Class::FromIl2CppType(&parameterKlass->byval_arg);
+            auto underlyClass = il2cpp::vm::Class::FromIl2CppType(&parameterKlass->byval_arg);
             JsObjectSetRef(apis, env, jsValue, CSRefToJsValue(apis, env, underlyClass, *arg));
         }
         else if (parameterKlass->byval_arg.type == IL2CPP_TYPE_PTR)
         {
-            auto underlyClass = Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
+            auto underlyClass = il2cpp::vm::Class::FromIl2CppType(&parameterKlass->element_class->byval_arg);
             JsObjectSetRef(apis, env, jsValue, CSRefToJsValue(apis, env, underlyClass, (Il2CppObject*)(((uint8_t*)args[i]) - sizeof(Il2CppObject))));
         }
     }
@@ -2192,7 +2192,7 @@ static void ReflectionGetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
         
         if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
         {
-            int t = Class::GetType(fieldType)->type;
+            int t = il2cpp::vm::Class::GetType(fieldType)->type;
             //il2cpp-blob.h
             if (t >= IL2CPP_TYPE_BOOLEAN && t <= IL2CPP_TYPE_R8 || t == IL2CPP_TYPE_I || t == IL2CPP_TYPE_U)
             {
@@ -2259,7 +2259,7 @@ static void ReflectionSetFieldWrapper(struct pesapi_ffi* apis, pesapi_callback_i
     pesapi_value jsValue = ${invokePapi('get_arg')}(info, 0);
     if (il2cpp::vm::Class::IsValuetype(fieldType))
     {
-        if (Class::IsNullable(fieldType))
+        if (il2cpp::vm::Class::IsNullable(fieldType))
         {
             void* storage = alloca(fieldType->instance_size - sizeof(Il2CppObject));
             auto underlyClass = il2cpp::vm::Class::GetNullableArgument(fieldType);
@@ -2507,7 +2507,7 @@ static bool IsPrimitive(Il2CppTypeEnum type)
 
 static bool TypeInfoPassToJsFilter(const Il2CppType* type, Il2CppClass* klass)
 {
-    return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type && !Type::IsEnum(type) && Class::GetParent(klass) != il2cpp_defaults.enum_class;
+    return klass != il2cpp_defaults.void_class && !IsPrimitive(type->type) && IL2CPP_TYPE_ENUM != type->type && !Type::IsEnum(type) && il2cpp::vm::Class::GetParent(klass) != il2cpp_defaults.enum_class;
 }
 
 static void SetParamArrayFlagAndOptionalNum(WrapData* data, const MethodInfo* method)
@@ -2526,18 +2526,18 @@ static void SetParamArrayFlagAndOptionalNum(WrapData* data, const MethodInfo* me
 
 static WrapData* CreateOverloadData(const MethodInfo* method, bool isExtensionMethod)
 {
-    bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
+    bool isStatic = !il2cpp::vm::Method::IsInstance(method) && !isExtensionMethod; 
     std::vector<Il2CppClass*> usedTypes;
-    const Il2CppType* type = Method::GetReturnType(method);
+    const Il2CppType* type = il2cpp::vm::Method::GetReturnType(method);
     Il2CppClass* klass = il2cpp_codegen_class_from_type(type);
     if (TypeInfoPassToJsFilter(type, klass))
     {
         usedTypes.push_back(klass);
     }
-    size_t paramCount = Method::GetParamCount(method);
+    size_t paramCount = il2cpp::vm::Method::GetParamCount(method);
     for (size_t index = isExtensionMethod ? 1 : 0; index < paramCount; ++index)
     {
-        type = Method::GetParam(method, index);
+        type = il2cpp::vm::Method::GetParam(method, index);
         klass = il2cpp_codegen_class_from_type(type);
         if (TypeInfoPassToJsFilter(type, klass))
         {
@@ -2663,7 +2663,7 @@ void DestroyJSEnvPrivate(JsEnvPrivate* jsEnvPrivate)
 
 Il2CppClass* GenericParamGetBaseType(Il2CppMetadataGenericParameterHandle gparam)
 {
-    Il2CppClass** constraints = Class::GetOrCreateMonoGenericParameterInfo(gparam)->constraints;
+    Il2CppClass** constraints = il2cpp::vm::Class::GetOrCreateMonoGenericParameterInfo(gparam)->constraints;
 
     Il2CppClass* base_class = il2cpp_defaults.object_class;
 
@@ -2673,7 +2673,7 @@ Il2CppClass* GenericParamGetBaseType(Il2CppMetadataGenericParameterHandle gparam
         {
             Il2CppClass* constraint = constraints[i];
 
-            if (Class::IsInterface(constraint))
+            if (il2cpp::vm::Class::IsInterface(constraint))
                 continue;
 
             Il2CppType* constraint_type = &constraint->byval_arg;
@@ -2725,7 +2725,8 @@ static const MethodInfo* MakeGenericMethodByConstraintedArguments(const MethodIn
 
 static bool RegisterType(Il2CppClass* klass)
 {
-    Class::Init(klass);
+    il2cpp::vm::Class::Init(klass);
+    il2cpp::vm::Class::SetupMethods(klass);
 
     if (g_registry_api->get_class_data(g_registry, klass, false))
     {
@@ -2736,14 +2737,14 @@ static bool RegisterType(Il2CppClass* klass)
 
     JsClassInfo* classInfo = new JsClassInfo();
     classInfo->TypeId = klass;
-    classInfo->SuperTypeId = Class::GetParent(klass);
-    classInfo->IsValueType = Class::IsValuetype(klass);
+    classInfo->SuperTypeId = il2cpp::vm::Class::GetParent(klass);
+    classInfo->IsValueType = il2cpp::vm::Class::IsValuetype(klass);
 
     auto AddMethod = [&](const MethodInfo* method, bool isGetter, bool isSetter, const char* name) -> bool
     {
         //const char* methodName = (isGetter || isSetter) ? name + 4 : name;
         bool isExtensionMethod = method->klass != klass && IsExtensionMethod(method);
-        bool isStatic = !Method::IsInstance(method) && !isExtensionMethod; 
+        bool isStatic = !il2cpp::vm::Method::IsInstance(method) && !isExtensionMethod; 
         for (int i = 0; i < classInfo->Methods.size(); ++i)
         {
             if (classInfo->Methods[i].IsStatic == isStatic && classInfo->Methods[i].IsGetter == isGetter && classInfo->Methods[i].IsSetter == isSetter && strcmp(classInfo->Methods[i].Name, name) == 0)
@@ -2777,9 +2778,9 @@ static bool RegisterType(Il2CppClass* klass)
                     {
                         if (type->byref) return false;
                         if (type->type == IL2CPP_TYPE_VOID) return true;
-                        Il2CppClass* paramClass = Class::FromIl2CppType(type, false);
-                        Class::Init(paramClass);
-                        if (Class::IsValuetype(paramClass)) return false;
+                        Il2CppClass* paramClass = il2cpp::vm::Class::FromIl2CppType(type, false);
+                        il2cpp::vm::Class::Init(paramClass);
+                        if (il2cpp::vm::Class::IsValuetype(paramClass)) return false;
                         return true;
                     };
 
@@ -2789,7 +2790,7 @@ static bool RegisterType(Il2CppClass* klass)
                     bool isParamsSharedable = true;
                     for (uint32_t i = 0; i < invoke->parameters_count; ++i)
                     {
-                        const Il2CppType* type = Method::GetParam(invoke, i);
+                        const Il2CppType* type = il2cpp::vm::Method::GetParam(invoke, i);
                         if (!IsSharedable(type))
                         {
                             isParamsSharedable = false;
@@ -2869,8 +2870,8 @@ static bool RegisterType(Il2CppClass* klass)
                 fieldData->Getter = getter;
                 fieldData->Setter = setter;
                 fieldData->FieldInfo = field;
-                fieldData->Offset = (int32_t)Field::GetOffset(field) - (Class::IsValuetype(Field::GetParent(field)) ? sizeof(Il2CppObject) : 0);;
-                fieldData->TypeInfo = Class::FromIl2CppType(field->type, false);;
+                fieldData->Offset = (int32_t)il2cpp::vm::Field::GetOffset(field) - (il2cpp::vm::Class::IsValuetype(il2cpp::vm::Field::GetParent(field)) ? sizeof(Il2CppObject) : 0);;
+                fieldData->TypeInfo = il2cpp::vm::Class::FromIl2CppType(field->type, false);;
 
                 classInfo->Fields.push_back({ isStatic, fieldData });
             }
