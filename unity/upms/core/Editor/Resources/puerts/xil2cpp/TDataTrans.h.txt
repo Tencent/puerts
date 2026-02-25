@@ -185,6 +185,7 @@ struct BridgeFuncInfo
 {
     const char* Signature;
     Il2CppMethodPointer Method;
+    InvokerMethod Invoker; //typedef void (*InvokerMethod)(Il2CppMethodPointer, const MethodInfo*, void*, void**, void*);
 };
 
 struct FieldWrapFuncInfo
