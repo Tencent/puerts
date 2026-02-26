@@ -173,6 +173,7 @@ PuerTS supports multiple script backends. For **JavaScript/TypeScript**, choose 
 * OpenHarmony
 * Windows
 * Macos
+* WebGL(H5)
 
 
 ## Ask for help
@@ -333,6 +334,7 @@ PuerTS 支持多种脚本后端。**JavaScript/TypeScript** 可选 V8、QuickJS�
 * 鸿蒙（OpenHarmony）
 * Windows
 * Macos
+* WebGL(H5/小游戏)
 
 
 ## 技术支持
