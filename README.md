@@ -168,13 +168,20 @@ PuerTS supports multiple script backends. For **JavaScript/TypeScript**, choose 
 
 ## Available on these Platform
 
-* iOS
-* Android
-* OpenHarmony
-* Windows
-* Macos
-* WebGL(H5)
+PuerTS's core code supports all platforms supported by the game engines, but each script backend has its own platform requirements:
 
+|  | Windows | Mac | Linux | Android | iOS | H5/Mini Games |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8 | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Nodejs | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Quickjs | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Webgl | ❌ | ❌ | ❌ | ❌ | ❌ | ✔️ |
+| Lua | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Python | ✔️ | ✔️ | ✔️ | ❌ | ❌ | ❌ |
+
+Note 1: Only V8, Nodejs, and Quickjs backends are available for Unreal. Unity supports all backends listed above.
+Note 2: Although the Webgl backend only supports H5/Mini Games, its scripts run in the native JS VM of the web environment, which typically delivers higher performance (e.g., JIT support in iOS Mini Games). It also provides first-class language benefits such as convenient debugging and profiling.
+Note 3: For JavaScript, different platforms can use different JS backends — e.g., V8 for mobile apps and Webgl for H5 — achieving full platform coverage with optimal performance.
 
 ## Ask for help
 
@@ -329,13 +336,20 @@ PuerTS 支持多种脚本后端。**JavaScript/TypeScript** 可选 V8、QuickJS�
 
 ## 可用平台
 
-* iOS
-* Android
-* 鸿蒙（OpenHarmony）
-* Windows
-* Macos
-* WebGL(H5/小游戏)
+PuerTS的核心代码支持游戏引擎支持的所有平台，但每个脚本后端有其特有的平台要求：
 
+|  | Window | Mac | Linux | Android | IOS | H5/小游戏|
+| --- | --- | --- | --- | --- | --- |--- |
+| V8 | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Nodejs  | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Quickjs  | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Webgl  | ❌ | ❌ | ❌ | ❌ | ❌  | ✔️ |
+| Lua   | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Python  | ✔️ | ✔️ | ✔️ | ❌ | ❌ | ❌ |
+
+注1： Unreal下只有V8、Nodejs、Quickjs三种后端，Unity支持以上所有脚本后端
+注2： Webgl后端虽然只支持H5/小游戏，但它的脚本是运行在web环境的原生js虚拟机里，通常性能更高（比如在ios小游戏环境里支持jit），也能享受first class语言诸如方便调试，profiler等好处
+注3： 对于js，不同平台可以选不同的js脚本后端，比如app选v8，H5平台选Webgl实现全平台支持且性能最优
 
 ## 技术支持
 
