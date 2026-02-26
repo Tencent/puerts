@@ -7,33 +7,44 @@
 
 #include "Log.h"
 #include <stdarg.h>
+#include <atomic>
 
-extern LogCallback GLogCallback;
-extern LogCallback GLogWarningCallback;
-extern LogCallback GLogErrorCallback;
+extern std::atomic<LogCallback> GLogCallback;
+extern std::atomic<LogCallback> GLogWarningCallback;
+extern std::atomic<LogCallback> GLogErrorCallback;
 
 namespace puerts
 {
 
 void PLog(LogLevel Level, const char* Fmt, ...)
 {
-    static char SLogBuffer[1024];
+    // Use thread_local instead of static to avoid data race on the buffer
+    // when multiple threads call PLog concurrently
+    thread_local char SLogBuffer[1024];
     va_list list;
     va_start(list, Fmt);
     vsnprintf(SLogBuffer, sizeof(SLogBuffer), Fmt, list);
     va_end(list);
 
-    if (Level == Log && GLogCallback)
+    // Atomically load the callback pointer to prevent torn reads on ARM64
+    // (weakly-ordered architecture) when SetLogCallback races with PLog
+    LogCallback Cb = nullptr;
+    if (Level == Log)
     {
-        GLogCallback(SLogBuffer);
+        Cb = GLogCallback.load(std::memory_order_acquire);
     }
-    else if (Level == Warning && GLogWarningCallback)
+    else if (Level == Warning)
     {
-        GLogWarningCallback(SLogBuffer);
+        Cb = GLogWarningCallback.load(std::memory_order_acquire);
     }
-    else if (Level == Error && GLogErrorCallback)
+    else if (Level == Error)
     {
-        GLogErrorCallback(SLogBuffer);
+        Cb = GLogErrorCallback.load(std::memory_order_acquire);
+    }
+
+    if (Cb)
+    {
+        Cb(SLogBuffer);
     }
 }
 
@@ -43,15 +54,16 @@ extern "C"
 {
     void puerts_log(const char* fmt, ...)
     {
-        static char SLogBuffer[1024];
+        thread_local char SLogBuffer[1024];
         va_list list;
         va_start(list, fmt);
         vsnprintf(SLogBuffer, sizeof(SLogBuffer), fmt, list);
         va_end(list);
 
-        if (GLogCallback)
+        LogCallback Cb = GLogCallback.load(std::memory_order_acquire);
+        if (Cb)
         {
-            GLogCallback(SLogBuffer);
+            Cb(SLogBuffer);
         }
     }
 }

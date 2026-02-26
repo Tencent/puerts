@@ -8,12 +8,13 @@
 #include <cstring>
 #include "Log.h"
 #include "pesapi.h"
+#include <atomic>
 
 #define API_LEVEL 36
 
-LogCallback GLogCallback = nullptr;
-LogCallback GLogWarningCallback = nullptr;
-LogCallback GLogErrorCallback = nullptr;
+std::atomic<LogCallback> GLogCallback{nullptr};
+std::atomic<LogCallback> GLogWarningCallback{nullptr};
+std::atomic<LogCallback> GLogErrorCallback{nullptr};
 
 namespace pesapi
 {
@@ -40,9 +41,9 @@ PESAPI_MODULE_EXPORT pesapi_registry_api* GetRegisterApi()
 
 PESAPI_MODULE_EXPORT void SetLogCallback(LogCallback Log, LogCallback LogWarning, LogCallback LogError)
 {
-    GLogCallback = Log;
-    GLogWarningCallback = LogWarning;
-    GLogErrorCallback = LogError;
+    GLogCallback.store(Log, std::memory_order_release);
+    GLogWarningCallback.store(LogWarning, std::memory_order_release);
+    GLogErrorCallback.store(LogError, std::memory_order_release);
 }
 
 #ifdef __cplusplus
