@@ -1,6 +1,9 @@
-# Invoking JavaScript in C#
+# Invoking JavaScript from C#
+
+> 💡 PuerTS 3.0 also supports invoking [Lua](./cs2lua.md) and [Python](./cs2python.md) from C#, each with different syntax. Click the links to view the corresponding tutorials.
+
 ### Invoking via Delegate
-Puerts provides a crucial ability to convert JavaScript functions into C# delegates. With this ability, you can invoke JavaScript from the C# side.
+PuerTS provides a crucial ability to convert JavaScript functions into C# delegates. With this ability, you can invoke JavaScript from the C# side.
 
 ```csharp
 public class TestClass
@@ -23,7 +26,7 @@ public class TestClass
 }
 
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         const obj = new CS.TestClass();
         obj.AddEventCallback1(i => console.log(i));
@@ -31,6 +34,7 @@ void Start() {
         // Printed the obj variable
         // Although triggered from JS, it is actually calling JS functions from C#, completing the console.log
     ");
+    env.Dispose();
 }
 ```
 
@@ -41,7 +45,7 @@ When converting a JS function to a delegate, you can also convert it to a delega
 
 ```csharp
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     // Here, you can directly get the delegate from the result of Eval
     System.Action<int> LogInt = env.Eval<System.Action<int>>(@"
         const func = function(a) {
@@ -51,6 +55,7 @@ void Start() {
     ");
 
     LogInt(3); // 3
+    env.Dispose();
 }
 ```
 > Note that if the delegate you generated has value type parameters, you need to add a UsingAction or UsingFunc declaration. See FAQ for details.
@@ -60,7 +65,7 @@ Similar to the previous section, just need to convert the Action delegate to a F
 
 ```csharp
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     // Here, you can directly get the delegate from the result of Eval
     System.Func<int, int> Add3 = env.Eval<System.Func<int, int>>(@"
         const func = function(a) {
@@ -70,6 +75,7 @@ void Start() {
     ");
 
     System.Console.WriteLine(Add3(1)); // 4
+    env.Dispose();
 }
 ```
 > Note that if the delegate you generated has value type parameters, you need to add a UsingAction or UsingFunc declaration. See FAQ for details.
@@ -88,13 +94,13 @@ public class JsBehaviour : MonoBehaviour
     public Action JsUpdate;
     public Action JsOnDestroy;
 
-    static JsEnv jsEnv;
+    static ScriptEnv jsEnv;
 
     void Awake()
     {
-        if (jsEnv == null) jsEnv = new JsEnv(new DefaultLoader(), 9229);
+        if (jsEnv == null) jsEnv = new ScriptEnv(new BackendV8());
 
-        var init = jsEnv.Eval<ModuleInit>(@"const m = 
+        var init = jsEnv.Eval<Action<MonoBehaviour>>(@"
             class Rotate {
                 constructor(bindTo) {
                     this.bindTo = bindTo;
@@ -141,4 +147,8 @@ public class JsBehaviour : MonoBehaviour
 ```
 This feature has been implemented by many enthusiastic members of the community, and you can happily choose from their implementations.
 
-it is a good time to discuss the **module**. As your code gets longer or you need to import it into someone else's code, the concept of modules becomes essential. The next section will introduce the usage of JS modules in PuerTS.
+----------------
+
+It is a good time to discuss the **module** system. As your code gets longer or you need to import it into someone else's code, the concept of modules becomes essential. The next section will introduce the usage of JS modules in PuerTS.
+
+> 📖 Tutorials for invoking other languages from C#: [Invoking Lua from C#](./cs2lua.md) | [Invoking Python from C#](./cs2python.md) | [Multi-Language Comparison Cheat Sheet](./lang-comparison.md)

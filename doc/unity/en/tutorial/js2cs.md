@@ -1,29 +1,44 @@
 # Calling C# from JavaScript
+
+> 💡 PuerTS 3.0 also supports calling C# from [Lua](./lua2cs.md) and [Python](./python2cs.md), each with different syntax. Click the links to view the corresponding tutorials.
+
 In the previous example, we briefly tried Hello World:
 
 ```csharp
-//1. Hello World
+// Hello World (3.0 Recommended syntax)
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
+    env.Eval(@"
+        console.log('hello world');
+    ");
+    env.Dispose();
+}
+
+// Hello World (Legacy syntax, JsEnv is marked [Obsolete] in 3.0)
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
         console.log('hello world');
     ");
+    env.Dispose();
 }
 ```
+
 In fact, the `console.log` here is not quite the same as the one in the browser. This `console.log` is intercepted by PuerTS and will actually call `UnityEngine.Debug.Log` to print the string content.
 
-With the help of Puerts, the integration between JavaScript and C# can be even more exciting. See below for more:
+With the help of PuerTS, the integration between JavaScript and C# can be even more exciting. See below for more:
 
 ------------------
 ### Object creating
 ```csharp
 //2. Creating a C# object
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         console.log(new CS.UnityEngine.Vector3(1, 2, 3));
         // (1.0, 2.0, 3.0)
     ");
+    env.Dispose();
 }
 ```
 In this example, we directly created a C# Vector in JavaScript!
@@ -37,13 +52,13 @@ Of course, it is still cumbersome to write out the full namespace, but you can a
     console.log(Vector2.one)
 ```
 ------------------------------------
-### properties accessing
+### Properties accessing
 Once the object is created, calling its methods or accessing its properties is also very easy.
 
 ```csharp
 //3. Calling C# functions or object methods
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         CS.UnityEngine.Debug.Log('Hello World');
         const rect = new CS.UnityEngine.Rect(0, 0, 2, 2);
@@ -51,12 +66,13 @@ void Start() {
         rect.width = 0.1
         CS.UnityEngine.Debug.Log(rect.Contains(CS.UnityEngine.Vector2.one)); // False
     ");
+    env.Dispose();
 }
 ```
 As you can see, whether it's function calls or property access/assignment, the usage is exactly the same as in C#.
 ---------------------
-### special calls
-However, there are still some usage in C# that are not commonly seen in JS, such as **ref**, **out**, and **generics**. We need to use the API provided by PuerTS to implement them.
+### Special calls
+However, there are still some usages in C# that are not commonly seen in JS, such as **ref**, **out**, and **generics**. We need to use the API provided by PuerTS to implement them.
 
 ```csharp
 //4. out/ref/generics
@@ -70,7 +86,7 @@ class Example4 {
     }
 }
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         // create a variable that can be used for out/ref parameters through puer.$ref
         let p1 = puer.$ref();
@@ -87,11 +103,12 @@ void Start() {
         lst.Add(2);
         lst.Add(4);
     ");
+    env.Dispose();
 }
 ```
-done easily!
+Done easily!
 
-> It should be noted that you may think, "Typescript supports generics, why not use them?" Unfortunately, TypeScript generics are only a compile-time concept. At runtime, JavaScript is still running, so puer.$generic is still needed to handle them.
+> It should be noted that you may think, "TypeScript supports generics, why not use them?" Unfortunately, TypeScript generics are only a compile-time concept. At runtime, JavaScript is still running, so puer.$generic is still needed to handle them.
 
 
 ----------------------------
@@ -101,7 +118,7 @@ In addition to these special usages, there are two more situations to introduce:
 ```csharp
 //5. typeof/operator overload
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         let go = new CS.UnityEngine.GameObject('testObject');
         go.AddComponent(puer.$typeof(CS.UnityEngine.ParticleSystem));
@@ -111,6 +128,7 @@ void Start() {
         
         console.log(ret) // (0.0, 1600.0, 0.0)
     ");
+    env.Dispose();
 }
 ```
 Because C#'s `typeof` cannot be accessed through C# namespaces and plays a role similar to keywords, PuerTS provides the built-in method `$typeof` for access.
@@ -118,7 +136,7 @@ Because C#'s `typeof` cannot be accessed through C# namespaces and plays a role 
 Furthermore, because JS has not fully supported operator overload yet (TC39 is still in the proposal stage), op_xxxx needs to be used instead of the operator.
 
 ----------------
-### async
+### Async
 Let's look at the last case of JS calling C#: async.
 
 ```csharp
@@ -137,7 +155,7 @@ class Example6 {
 }
 
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         (async function() {
             let task = obj.GetFileLength('xxxx');
@@ -148,8 +166,11 @@ void Start() {
             console.error(err)
         })
     ");
+    env.Dispose();
 }
 ```
-For C#'s async function, on the JS side, by wrapping the task returned by C# with puer.$promise, we can use await to call it.
+For C#'s async function, on the JS side, by wrapping the task returned by C# with `puer.$promise`, we can use await to call it.
 -------------
-This section is about calling C# from JS. In the next section, we will reverse the process and introduce calling JS from C#.
+This section is about calling C# from JS. In the next section, we will reverse the process and introduce [Invoking JS from C#](./cs2js.md).
+
+> 📖 Tutorials for other languages calling C#: [Lua calling C#](./lua2cs.md) | [Python calling C#](./python2cs.md) | [Multi-Language Comparison Cheat Sheet](./lang-comparison.md)

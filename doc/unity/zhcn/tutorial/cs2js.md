@@ -1,5 +1,7 @@
 # 在C#中调用Javascript
 
+> 💡 PuerTS 3.0 同时支持 C# 调用 [Lua](./cs2lua.md) 和 [Python](./cs2python.md)，语法各有不同，可点击链接查看对应教程。
+
 ### 通过 Delegate 调用
 PuerTS 提供了一个关键能力：将 Javascript 函数转换为 C# 的 delegate。依靠这个能力，你就可以在 C# 侧调用 Javascript。
 
@@ -24,7 +26,7 @@ public class TestClass
 }
 
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         const obj = new CS.TestClass();
         obj.AddEventCallback1(i => console.log(i));
@@ -32,6 +34,7 @@ void Start() {
         // 打印了obj变量
         // 虽然是JS触发的，但实际上是C#调用JS函数，完成了console.log
     ");
+    env.Dispose();
 }
 ```
 
@@ -41,7 +44,7 @@ void Start() {
 把 JS 函数转换成 delegate 的时候，你也可以将其转换成带参数的delegate、这样你就可以把任意 C# 变量传递给 Javascript。传参时，类型转换的规则和把变量从 C# 返回值到 Javascript 是一致的。
 ```csharp
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     // 这里可以直接通过 Eval 的结果获得 delegate
     System.Action<int> LogInt = env.Eval<System.Action<int>>(@"
         const func = function(a) {
@@ -51,6 +54,7 @@ void Start() {
     ");
 
     LogInt(3); // 3
+    env.Dispose();
 }
 ```
 
@@ -61,7 +65,7 @@ void Start() {
 与上一部分类似。只需要将 Action delegate 变成 Func delegate 就可以了。
 ```csharp
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     // 这里可以直接通过 Eval 的结果获得 delegate
     System.Func<int, int> Add3 = env.Eval<System.Func<int, int>>(@"
         const func = function(a) {
@@ -71,6 +75,7 @@ void Start() {
     ");
 
     System.Console.WriteLine(Add3(1)); // 4
+    env.Dispose();
 }
 ```
 
@@ -91,11 +96,11 @@ public class JsBehaviour : MonoBehaviour
     public Action JsUpdate;
     public Action JsOnDestroy;
 
-    static JsEnv jsEnv;
+    static ScriptEnv jsEnv;
 
     void Awake()
     {
-        if (jsEnv == null) jsEnv = new JsEnv(new DefaultLoader(), 9229);
+        if (jsEnv == null) jsEnv = new ScriptEnv(new BackendV8());
 
         var init = jsEnv.Eval<Action<MonoBehaviour>>(@"
             class Rotate {
@@ -147,3 +152,5 @@ public class JsBehaviour : MonoBehaviour
 ----------------
 
 说到这，正好让我们来讨论一下**模块机制**。当你写的代码越来越长，或是需要引入到别人的代码时，就很需要模块这个概念。下一部分就会介绍 PuerTS 里，JS 模块的用法。
+
+> 📖 其他语言的 C# 调用教程：[C# 调用 Lua](./cs2lua.md) | [C# 调用 Python](./cs2python.md) | [三语言对比速查表](./lang-comparison.md)

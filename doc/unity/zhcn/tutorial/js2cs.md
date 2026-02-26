@@ -1,14 +1,26 @@
 # 在Javascript调用C#
 
+> 💡 PuerTS 3.0 同时支持 [Lua](./lua2cs.md) 和 [Python](./python2cs.md) 调用 C#，语法各有不同，可点击链接查看对应教程。
+
 在上一篇中，我们简单试了一下Hello world
 
 ```csharp
-//1. Hello World
+// Hello World（3.0 推荐写法）
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
+    env.Eval(@"
+        console.log('hello world');
+    ");
+    env.Dispose();
+}
+
+// Hello World（兼容写法，JsEnv 在 3.0 中已标记为 [Obsolete]）
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
         console.log('hello world');
     ");
+    env.Dispose();
 }
 ```
 
@@ -21,11 +33,12 @@ void Start() {
 ```csharp
 //2. 创建C#对象
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         console.log(new CS.UnityEngine.Vector3(1, 2, 3));
         // (1.0, 2.0, 3.0)
     ");
+    env.Dispose();
 }
 ```
 在本例中，我们直接在 Javascript 中创建了一个 C# 的Vector!
@@ -45,7 +58,7 @@ void Start() {
 ```csharp
 //3. 调用C#函数或对象方法
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         CS.UnityEngine.Debug.Log('Hello World');
         const rect = new CS.UnityEngine.Rect(0, 0, 2, 2);
@@ -53,6 +66,7 @@ void Start() {
         rect.width = 0.1
         CS.UnityEngine.Debug.Log(rect.Contains(CS.UnityEngine.Vector2.one)); // False
     ");
+    env.Dispose();
 }
 ```
 可以看出，不管是函数调用还是属性访问/赋值，用法上都和 C# 一模一样。
@@ -73,7 +87,7 @@ class Example4 {
     }
 }
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         // 通过puer.$ref创建一个可以用于使用out/ref参数的变量
         let p1 = puer.$ref();
@@ -90,6 +104,7 @@ void Start() {
         lst.Add(2);
         lst.Add(4);
     ");
+    env.Dispose();
 }
 ```
 也并没有非常复杂，就可以完成了！
@@ -103,7 +118,7 @@ void Start() {
 ```csharp
 //5. typeof/运算符重载
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         let go = new CS.UnityEngine.GameObject('testObject');
         go.AddComponent(puer.$typeof(CS.UnityEngine.ParticleSystem));
@@ -113,6 +128,7 @@ void Start() {
         
         console.log(ret) // (0.0, 1600.0, 0.0)
     ");
+    env.Dispose();
 }
 ```
 因为 C# 的`typeof`无法通过 C# 命名空间的方式访问，有点类似关键字的角色，因此PuerTS 提供内置方法`$typeof`访问
@@ -139,7 +155,7 @@ class Example6 {
 }
 
 void Start() {
-    Puerts.JsEnv env = new Puerts.JsEnv();
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
     env.Eval(@"
         (async function() {
             let task = obj.GetFileLength('xxxx');
@@ -150,9 +166,12 @@ void Start() {
             console.error(err)
         })
     ");
+    env.Dispose();
 }
 ```
 对于 C# 的`async`函数，JS 侧通过`puer.$promise`包装一下 C# 返回的 task，即可 await 调用了
 
 -------------
-这一部分是有关 JS 调用 C# 的。下一部分我们反过来，介绍 C# 调用 JS
+这一部分是有关 JS 调用 C# 的。下一部分我们反过来，介绍 [C# 调用 JS](./cs2js.md)。
+
+> 📖 其他语言调用 C# 的教程：[Lua 调用 C#](./lua2cs.md) | [Python 调用 C#](./python2cs.md) | [三语言对比速查表](./lang-comparison.md)
