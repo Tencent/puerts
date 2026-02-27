@@ -64,15 +64,6 @@ add_definitions(-DEASTL_OPENSOURCE=1)
 aux_source_directory(${LUA_SRC_PATH} LUA_CORE)
 list(REMOVE_ITEM LUA_CORE ${LUA_SRC_PATH}/lua.c ${LUA_SRC_PATH}/luac.c)
 
-# Set .c files to compile as C++ only for WASM/Emscripten platform
-if ( CMAKE_SYSTEM_NAME MATCHES "Emscripten" )
-    foreach(source_file ${LUA_CORE})
-        if(source_file MATCHES "\\.c$")
-            set_source_files_properties(${source_file} PROPERTIES LANGUAGE CXX)
-        endif()
-    endforeach()
-endif()
-
 set(PAPI_SRC
     source/PesapiLuaImpl.cpp
     source/CppObjectMapperLua.cpp
@@ -135,7 +126,6 @@ target_compile_definitions(PapiLua PUBLIC EA_DEPRECATIONS_FOR_2024_APRIL=EA_DISA
 target_compile_definitions(PapiLua PUBLIC EA_DEPRECATIONS_FOR_2024_SEPT=EA_DISABLED)
 target_compile_definitions(PapiLua PUBLIC EA_DEPRECATIONS_FOR_2025_APRIL=EA_DISABLED)
 
-if (NOT ( CMAKE_SYSTEM_NAME MATCHES "Emscripten" ))
 target_compile_options(PapiLua PRIVATE
     $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:
         -fno-exceptions
@@ -148,4 +138,3 @@ target_compile_options(PapiLua PRIVATE
         /GR-   # 禁用RTTI
     >
 )
-endif ( )

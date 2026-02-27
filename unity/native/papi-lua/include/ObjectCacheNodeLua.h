@@ -9,13 +9,7 @@
 #pragma once
 
 #include "NamespaceDef.h"
-#if defined(__EMSCRIPTEN__)
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
-#else
 #include "lua.hpp"
-#endif
 #include <memory>
 namespace pesapi
 {
