@@ -145,14 +145,8 @@ class puerts:
             print('Type not found: ' + type_name)
             return None
         if cs_type.IsGenericTypeDefinition:
-            '''
-            cache generic type definitions directly
-            '''
-            _csTypeCache_[type_name] = cs_type
-            '''
-            skip loadType for generic type definitions
-            '''
-            return cs_type
+            _csTypeCache_[type_name] = cs_type  ## cache generic type definitions directly
+            return cs_type  ## skip loadType for generic type definitions
         cs_class = loadType(cs_type)
         if cs_class is None:
             print('Failed to load type: ' + type_name)
@@ -163,17 +157,11 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    '''
-                    convert name (T`1) to (T__T1) for sytax compatibility
-                    '''
-                    nName = ntype.Name
+                    nName = ntype.Name  ## convert name (T`1) to (T__T1) for syntax compatibility
                     tick_index = nName.find('`')
                     nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
                     setattr(cs_class, nName, puerts.load_type(ntype.FullName))
-                    pass 
-                    '''
-                    skip generic type definitions, use puerts.generic to instantiate them 
-                    '''
+                    pass  ## skip generic type definitions, use puerts.generic to instantiate them
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
@@ -240,17 +228,11 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    '''
-                    convert name (T`1) to (T__T1) for sytax compatibility
-                    '''
-                    nName = ntype.Name
+                    nName = ntype.Name  ## convert name (T`1) to (T__T1) for syntax compatibility
                     tick_index = nName.find('`')
                     nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
                     setattr(cs_class, nName, puerts.load_type(ntype.FullName))
-                    pass
-                    '''
-                    skip generic type definitions, use puerts.generic to instantiate them
-                    '''
+                    pass  ## skip generic type definitions, use puerts.generic to instantiate them
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
