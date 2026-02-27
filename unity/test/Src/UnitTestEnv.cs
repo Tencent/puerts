@@ -24,6 +24,7 @@ namespace Puerts.UnitTest
             {
                 // loader = new UnitTestLoader();
                 loader2 = new UnitTestLoader2();
+#if !UNITY_WEBGL || UNITY_EDITOR
                 Backend backend = null;
                 if (System.Environment.GetEnvironmentVariable("SwitchToQJS") == "1")
                 {
@@ -43,7 +44,6 @@ namespace Puerts.UnitTest
                     backend = new Puerts.BackendWebGL(loader2);
 #endif
                 }
-#if !UNITY_WEBGL || UNITY_EDITOR
                 env = new ScriptEnv(backend);
                 CommonJS.InjectSupportForCJS(env);
 #else 

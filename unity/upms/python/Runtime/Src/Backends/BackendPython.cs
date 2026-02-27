@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if UNITY_EDITOR || UNITY_STANDALONE
+
 using System;
 
 #if PUERTS_NUGET
@@ -143,9 +145,13 @@ class puerts:
             print('Type not found: ' + type_name)
             return None
         if cs_type.IsGenericTypeDefinition:
-            # cache generic type definitions directly
+            '''
+            cache generic type definitions directly
+            '''
             _csTypeCache_[type_name] = cs_type
-            # skip loadType for generic type definitions
+            '''
+            skip loadType for generic type definitions
+            '''
             return cs_type
         cs_class = loadType(cs_type)
         if cs_class is None:
@@ -157,12 +163,17 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    # convert name (T`1) to (T__T1) for sytax compatibility
+                    '''
+                    convert name (T`1) to (T__T1) for sytax compatibility
+                    '''
                     nName = ntype.Name
                     tick_index = nName.find('`')
                     nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
                     setattr(cs_class, nName, puerts.load_type(ntype.FullName))
-                    pass # skip generic type definitions, use puerts.generic to instantiate them
+                    pass 
+                    '''
+                    skip generic type definitions, use puerts.generic to instantiate them 
+                    '''
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
@@ -229,12 +240,17 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    # convert name (T`1) to (T__T1) for sytax compatibility
+                    '''
+                    convert name (T`1) to (T__T1) for sytax compatibility
+                    '''
                     nName = ntype.Name
                     tick_index = nName.find('`')
                     nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
                     setattr(cs_class, nName, puerts.load_type(ntype.FullName))
-                    pass # skip generic type definitions, use puerts.generic to instantiate them
+                    pass
+                    '''
+                    skip generic type definitions, use puerts.generic to instantiate them
+                    '''
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
@@ -300,3 +316,5 @@ sys.meta_path.append(PesapiFinder())
 #endif
     }
 }
+
+#endif

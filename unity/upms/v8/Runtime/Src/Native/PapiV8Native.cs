@@ -5,9 +5,10 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if !UNITY_WEBGL || UNITY_EDITOR
+
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Puerts
 {
@@ -61,3 +62,5 @@ namespace Puerts
         public static extern void TerminateExecution(IntPtr isolate);
     }
 }
+
+#endif

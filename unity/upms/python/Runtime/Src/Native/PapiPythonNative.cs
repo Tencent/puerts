@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if UNITY_EDITOR || UNITY_STANDALONE
+
 using System;
 using System.Runtime.InteropServices;
 
@@ -36,3 +38,5 @@ namespace Puerts
         public static extern int InitPythonByHome([MarshalAs(UnmanagedType.LPUTF8Str)] string home);
     }
 }
+
+#endif

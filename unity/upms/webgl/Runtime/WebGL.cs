@@ -8,9 +8,9 @@ namespace Puerts
     {
         public class MainEnv
         {
-            private static JsEnv jsEnvInstance;
+            private static ScriptEnv jsEnvInstance;
 
-            public static JsEnv Get()
+            public static ScriptEnv Get()
             {
                 if (jsEnvInstance != null) 
                 {
@@ -19,14 +19,18 @@ namespace Puerts
                 return Get(new Puerts.DefaultLoader());
             }
             
-            public static JsEnv Get(Puerts.ILoader loader, int debugPort = -1)
+            public static ScriptEnv Get(Puerts.ILoader loader, int debugPort = -1)
             {
                 if (jsEnvInstance != null) 
                 {
                     return jsEnvInstance;
                 }
 
-                jsEnvInstance = new JsEnv(loader, debugPort);
+#if !UNITY_EDITOR
+                jsEnvInstance = new ScriptEnv(new BackendWebGL(loader), debugPort);
+#else
+                jsEnvInstance = new ScriptEnv(Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), loader) as Backend, debugPort);
+#endif
                 return jsEnvInstance;
             }
         }

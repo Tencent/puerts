@@ -85,6 +85,7 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class WebsocketTest
     {
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public async Task SmokeTest()
         {
@@ -172,6 +173,7 @@ namespace Puerts.UnitTest
 
             wss.Stop();
         }
+#endif
     }
 }
 //#endif

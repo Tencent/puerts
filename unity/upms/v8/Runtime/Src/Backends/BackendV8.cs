@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if !UNITY_WEBGL || UNITY_EDITOR
+
 using System;
 
 
@@ -88,3 +90,5 @@ namespace Puerts
         }
     }
 }
+
+#endif
