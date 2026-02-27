@@ -5,7 +5,7 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if UNITY_EDITOR || UNITY_STANDALONE || PUERTS_GENERAL || PUERTS_NUGET
+#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_ANDROID || PUERTS_GENERAL || PUERTS_NUGET
 
 using System;
 using System.Collections.Generic;
