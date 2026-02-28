@@ -56,6 +56,9 @@ namespace Puerts.UnitTest
             }
         }
 
+        // Unity对应没引用的字段也可能剪裁
+        // 不加这个在unity2022 webgl默认设置下lua用例会报"no static field v"，js由于没有这检查不会报错
+        [UnityEngine.Scripting.Preserve]
         public static T v;
     }
 
