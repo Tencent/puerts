@@ -223,7 +223,7 @@ public:
     }
 
     template <typename... Args>
-    void Action(Args... cppArgs) const
+    void Action(Args&&... cppArgs) const
     {
         if (JsEnvLifeCycleTracker.expired())
         {
@@ -241,7 +241,7 @@ public:
 
         v8::TryCatch TryCatch(Isolate);
 
-        auto _UnUsed = InvokeHelper(Context, Object, cppArgs...);
+        auto _UnUsed = InvokeHelper(Context, Object, std::forward<Args>(cppArgs)...);
 
         if (TryCatch.HasCaught())
         {
@@ -250,7 +250,7 @@ public:
     }
 
     template <typename Ret, typename... Args>
-    Ret Func(Args... cppArgs) const
+    Ret Func(Args&&... cppArgs) const
     {
         if (JsEnvLifeCycleTracker.expired())
         {
@@ -268,7 +268,7 @@ public:
 
         v8::TryCatch TryCatch(Isolate);
 
-        auto MaybeRet = InvokeHelper(Context, Object, cppArgs...);
+        auto MaybeRet = InvokeHelper(Context, Object, std::forward<Args>(cppArgs)...);
 
         if (TryCatch.HasCaught())
         {
@@ -298,11 +298,62 @@ public:
     }
 
 private:
-    template <typename... Args>
-    auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
+    template <typename T>
+    struct SelectConverterType
     {
-        v8::Local<v8::Value> Argv[sizeof...(Args)]{v8_impl::Converter<Args>::toScript(Context, CppArgs)...};
-        return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
+    private:
+        using BaseType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+
+        static constexpr bool NeedDecay =
+            (std::is_reference<T>::value && std::is_const<typename std::remove_reference<T>::type>::value &&
+                !is_objecttype<typename std::decay<T>::type>::value) ||
+            std::is_enum<BaseType>::value;
+
+    public:
+        using type = typename std::conditional<NeedDecay, typename std::decay<T>::type, T>::type;
+    };
+
+    template <std::size_t I, typename OriginalTuple, typename Tuple,
+        typename OrigArgT = typename std::tuple_element<I, OriginalTuple>::type,
+        typename OrigArgTRaw = typename std::remove_cv<typename std::remove_reference<OrigArgT>::type>::type>
+    static typename std::enable_if<std::is_lvalue_reference<OrigArgT>::value &&
+                                       !std::is_const<typename std::remove_reference<OrigArgT>::type>::value &&
+                                       !is_objecttype<OrigArgTRaw>::value,
+        void>::type
+    applyWriteBackOne(v8::Local<v8::Context>& context, Tuple&& argsTuple, v8::Local<v8::Value>* Argv)
+    {
+        std::get<I>(argsTuple) = v8_impl::Converter<OrigArgT>::toCpp(context, Argv[I]);
+    }
+
+    template <std::size_t I, typename OriginalTuple, typename Tuple,
+        typename OrigArgT = typename std::tuple_element<I, OriginalTuple>::type,
+        typename OrigArgTRaw = typename std::remove_cv<typename std::remove_reference<OrigArgT>::type>::type>
+    static typename std::enable_if<!(std::is_lvalue_reference<OrigArgT>::value &&
+                                       !std::is_const<typename std::remove_reference<OrigArgT>::type>::value &&
+                                       !is_objecttype<OrigArgTRaw>::value),
+        void>::type
+    applyWriteBackOne(v8::Local<v8::Context>&, Tuple&&, v8::Local<v8::Value>*)
+    {
+    }
+
+    template <typename OriginalTuple, typename Tuple, std::size_t... I>
+    void applyWriteBack(
+        v8::Local<v8::Context>& context, Tuple&& argsTuple, v8::Local<v8::Value>* Argv, std::index_sequence<I...>) const
+    {
+        using expander = int[];
+        (void) expander{0, (applyWriteBackOne<I, OriginalTuple>(context, argsTuple, Argv), 0)...};
+    }
+
+    template <typename... Args>
+    auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args&&... CppArgs) const
+    {
+        v8::Local<v8::Value> Argv[sizeof...(Args)]{
+            v8_impl::Converter<typename SelectConverterType<Args>::type>::toScript(Context, std::forward<Args>(CppArgs))...};
+        auto&& result = Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
+        auto argsRefTuple = std::forward_as_tuple(CppArgs...);
+        applyWriteBack<std::tuple<Args...>>(Context, argsRefTuple, Argv,
+            std::make_index_sequence<std::tuple_size<std::remove_reference_t<decltype(argsRefTuple)>>::value>{});
+        return result;
     }
 
     auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object) const
