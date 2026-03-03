@@ -29,6 +29,8 @@ struct pesapi_callback_info__
     int ArgStart; // 0 or 1
     int RetNum;
     void* Data;
+    int HasError; // deferred error flag, similar to xlua's csharp_function_wrap pattern
+    int ErrorMsgIdx; // absolute stack index of the error message
 };
 
 struct PesapiCallbackData

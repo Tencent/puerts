@@ -508,7 +508,11 @@ void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
 void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 {
     auto info = reinterpret_cast<pesapi::luaimpl::pesapi_callback_info__*>(pinfo);
-    luaL_error(info->L, "%s", msg);
+    // Deferred error: do not call luaL_error directly here to avoid longjmp
+    // across C++ try-catch blocks. The error will be raised after the callback returns.
+    lua_pushstring(info->L, msg);
+    info->HasError = 1;
+    info->ErrorMsgIdx = lua_absindex(info->L, -1);
 }
 
 struct pesapi_env_ref__

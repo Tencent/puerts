@@ -231,8 +231,13 @@ namespace luaimpl
     static int PesapiFunctionCallback(lua_State* L)
     {
         PesapiCallbackData* FunctionInfo = reinterpret_cast<PesapiCallbackData*>(lua_touserdata(L, lua_upvalueindex(1)));
-        pesapi_callback_info__ info{L, FunctionInfo->ArgStart, 0, FunctionInfo->Data};
+        pesapi_callback_info__ info{L, FunctionInfo->ArgStart, 0, FunctionInfo->Data, 0, 0};
         FunctionInfo->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&info));
+        if (info.HasError)
+        {
+            lua_pushvalue(L, info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return 1;
     }
 
@@ -558,8 +563,13 @@ namespace luaimpl
     int object_new(lua_State* L)
     {
         puerts::ScriptClassDefinition* class_definition = static_cast<puerts::ScriptClassDefinition*>(lua_touserdata(L, lua_upvalueindex(1)));
-        pesapi_callback_info__ callback_info{L, 1, 0, class_definition->Data};
+        pesapi_callback_info__ callback_info{L, 1, 0, class_definition->Data, 0, 0};
         CppObjectMapper::Get(L)->BindCppObject(L, class_definition, class_definition->Initialize(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info)), false);
+        if (callback_info.HasError)
+        {
+            lua_pushvalue(L, callback_info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return 1;
     }
 
@@ -654,16 +664,26 @@ namespace luaimpl
     int property_getter_wrap(lua_State* L)
     {
         puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
-        pesapi_callback_info__ callback_info{L, 1, 0, prop_info->GetterData};
+        pesapi_callback_info__ callback_info{L, 1, 0, prop_info->GetterData, 0, 0};
         prop_info->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
+        if (callback_info.HasError)
+        {
+            lua_pushvalue(L, callback_info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return callback_info.RetNum;
     }
 
     static int property_setter_wrap(lua_State* L)
     {
         puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
-        pesapi_callback_info__ callback_info{L, 1, 0, prop_info->SetterData};
+        pesapi_callback_info__ callback_info{L, 1, 0, prop_info->SetterData, 0, 0};
         prop_info->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
+        if (callback_info.HasError)
+        {
+            lua_pushvalue(L, callback_info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return callback_info.RetNum;
     }
 
@@ -671,24 +691,39 @@ namespace luaimpl
     {
 
         puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
-        pesapi_callback_info__ callback_info{L, 0, 0,  prop_info->GetterData};
+        pesapi_callback_info__ callback_info{L, 0, 0,  prop_info->GetterData, 0, 0};
         prop_info->Getter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
+        if (callback_info.HasError)
+        {
+            lua_pushvalue(L, callback_info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return callback_info.RetNum;
     }
 
     static int variable_setter_wrap(lua_State* L)
     {
         puerts::ScriptPropertyInfo* prop_info = (puerts::ScriptPropertyInfo*)lua_touserdata(L, lua_upvalueindex(1));
-        pesapi_callback_info__ callback_info{L, 0, 0, prop_info->SetterData};
+        pesapi_callback_info__ callback_info{L, 0, 0, prop_info->SetterData, 0, 0};
         prop_info->Setter(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
+        if (callback_info.HasError)
+        {
+            lua_pushvalue(L, callback_info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return callback_info.RetNum;
     }
 
     static int method_wrap(lua_State* L)
     {
         puerts::ScriptFunctionInfo* func_info = (puerts::ScriptFunctionInfo*)lua_touserdata(L, lua_upvalueindex(1));
-        pesapi_callback_info__ callback_info{L, 1, 0, func_info->Data};
+        pesapi_callback_info__ callback_info{L, 1, 0, func_info->Data, 0, 0};
         func_info->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
+        if (callback_info.HasError)
+        {
+            lua_pushvalue(L, callback_info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return callback_info.RetNum;
     }
 
@@ -696,8 +731,13 @@ namespace luaimpl
     {
 
         puerts::ScriptFunctionInfo* func_info = (puerts::ScriptFunctionInfo*)lua_touserdata(L, lua_upvalueindex(1));
-        pesapi_callback_info__ callback_info{L, 0, 0, func_info->Data};
+        pesapi_callback_info__ callback_info{L, 0, 0, func_info->Data, 0, 0};
         func_info->Callback(&g_pesapi_ffi, reinterpret_cast<pesapi_callback_info>(&callback_info));
+        if (callback_info.HasError)
+        {
+            lua_pushvalue(L, callback_info.ErrorMsgIdx);
+            return lua_error(L);
+        }
         return callback_info.RetNum;
     }
 
