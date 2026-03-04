@@ -84,26 +84,6 @@ greet('PuerTS')
 env.Dispose();
 ```
 
-### Calling C# from Python
-
-Access .NET types via Python `import`:
-
-```python
-import System.Console as Console
-import System.DateTime as DateTime
-
-# Call static methods
-now = DateTime.Now
-Console.WriteLine('Current time: ' + now.ToString())
-
-# Create generic types
-from System.Collections.Generic import List
-lst = List[str]()
-lst.Add('hello')
-lst.Add('world')
-Console.WriteLine('Count: ' + str(lst.Count))
-```
-
 ### Calling Python from C#
 
 ```csharp
@@ -119,12 +99,12 @@ Console.WriteLine(add(10, 20)); // output: 30
 // Define a function via exec, then retrieve it
 env.Eval(@"
 exec('''
-def greet():
-    print('Hello from Python function!')
+def greet(name):
+    print('Hello,' + name + '!')
 ''')
 ");
-var greet = env.Eval<Action>("greet");
-greet(); // output: Hello from Python function!
+var greet = env.Eval<Action<string>>("greet");
+greet("PuerTS"); // output: Hello,PuerTS!
 
 env.Dispose();
 ```
