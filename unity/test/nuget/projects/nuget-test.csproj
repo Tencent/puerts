@@ -8,6 +8,19 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+
+    <!-- Read version from package.json files -->
+    <PuertsV8PackageJson>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\..\upms\v8\package.json'))</PuertsV8PackageJson>
+    <PuertsLuaPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\..\upms\lua\package.json'))</PuertsLuaPackageJson>
+    <PuertsQuickJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\..\upms\quickjs\package.json'))</PuertsQuickJsPackageJson>
+    <PuertsPythonPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\..\upms\python\package.json'))</PuertsPythonPackageJson>
+    <PuertsNodeJsPackageJson>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\..\upms\nodejs\package.json'))</PuertsNodeJsPackageJson>
+
+    <PuertsV8Version>$([System.Text.RegularExpressions.Regex]::Match($(PuertsV8PackageJson), '\"version\"\s*:\s*\"([^\"]+)\"').Groups[1].Value)</PuertsV8Version>
+    <PuertsLuaVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsLuaPackageJson), '\"version\"\s*:\s*\"([^\"]+)\"').Groups[1].Value)</PuertsLuaVersion>
+    <PuertsQuickJsVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsQuickJsPackageJson), '\"version\"\s*:\s*\"([^\"]+)\"').Groups[1].Value)</PuertsQuickJsVersion>
+    <PuertsPythonVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsPythonPackageJson), '\"version\"\s*:\s*\"([^\"]+)\"').Groups[1].Value)</PuertsPythonVersion>
+    <PuertsNodeJsVersion>$([System.Text.RegularExpressions.Regex]::Match($(PuertsNodeJsPackageJson), '\"version\"\s*:\s*\"([^\"]+)\"').Groups[1].Value)</PuertsNodeJsVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,11 +31,11 @@
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     
     <!-- Puerts NuGet Packages -->
-    <PackageReference Include="Puerts.V8.Complete" Version="3.0.0" />
-    <PackageReference Include="Puerts.Lua.Complete" Version="3.0.0" />
-    <PackageReference Include="Puerts.Quickjs.Complete" Version="3.0.0" />
-    <PackageReference Include="Puerts.Python.Complete" Version="3.0.0-beta1" />
-    <PackageReference Include="Puerts.NodeJS.Complete" Version="3.0.0" />
+    <PackageReference Include="Puerts.V8.Complete" Version="$(PuertsV8Version)" />
+    <PackageReference Include="Puerts.Lua.Complete" Version="$(PuertsLuaVersion)" />
+    <PackageReference Include="Puerts.Quickjs.Complete" Version="$(PuertsQuickJsVersion)" />
+    <PackageReference Include="Puerts.Python.Complete" Version="$(PuertsPythonVersion)" />
+    <PackageReference Include="Puerts.NodeJS.Complete" Version="$(PuertsNodeJsVersion)" />
   </ItemGroup>
 
 
