@@ -1,4 +1,4 @@
-name: Sync to CNB
+name: sync to CNB
 on: [push]
 
 jobs:
