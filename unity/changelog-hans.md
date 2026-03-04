@@ -6,6 +6,46 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [3.0.1] - 2026-03-04
+1. 解决一个js函数绑定不同的delegate可能会导致重复delete崩溃的问题 fix #2290
+2. 尝试增加线程安全代码，解决mac下调试链接时的概率崩溃 fix #2286
+3. 解决同时引入多个backend，打包webgl的一些编译问题
+4. V8 升级到 13.6.233.17，解决字节码下async+箭头函数的崩溃问题 fix #2270 (#2277)
+5. 解决ios下去掉nodejs插件时用例编译不过的问题
+6. 支持delegate的ref参数传入js fix #2257
+7. 解决ws对象gc时会卡住的问题
+8. 团结引擎兼容
+9. Unity 2018兼容修复
+10. lua在webgl上回退回longjmp；不能在c++函数（特别是包含try-catch的）里longjmp
+11. 加上UnityEngine.Scripting.Preserve，解决unity2022 webgl默认设置下lua用例会报"no static field v"的问题
+12. 支持delegate可以配置，解决新增用例找不到桥接代码的问题
+13. python 使用 InitIsolatedConfig 隔离配置 (#2285)
+14. python 类属性访问移除 get_/set_ 前缀 (#2282)
+15. python .NET 下自动设置 home
+16. nuget 添加 net9.0 net10.0 (#2284)
+17. Nuget 添加 Complete 包 (#2263)
+18. 各项nuget对python在macOS/Linux/Windows的打包修复
+
+## [3.0.0] - 2025-12-5
+1. 全新的核心+语言扩展包架构，理论上可以支持任意语言
+2. 首批新增语言：lua、python
+3. 非il2cpp环境完全重写，采用ExpressTree动态生成双向桥接代码，兼顾了性能和易用性
+4. 支持nuget
+5. 一些诸如uint64支持，错误处理方式的调整
+6. 多后端并存能力，不仅不同语言可以并存，同语言比如v8和quickjs，webgl和quickjs也能并存
+
+## [2.2.3] - 2025-11-28
+1. webgl采用FinalizationRegistry+weakref双重机制保障对象回收 fix #2199
+2. 修复传一个已经销毁的jsenv的jsobject到一个正常jsenv会导致崩溃的问题
+3. il2cpp优化下LowMemoryNotification也是可用的
+4. il2cpp优化和pinvoke版本一系列参数校验不对齐的问题修正
+5. il2cpp优化版本对于nulable更好的支持
+6. 解决传bigint给uint参数会崩溃的问题
+7. 解决虚方法调用没有调用到子类的问题
+8. 解决非public方法及属性也会导出到js的问题 fix #2241
+9. il2cpp优化含引用类型的结构体，其引用字段设置后可能被gc的问题 fix #2243
+10. 反射支持枚举的ref
+
 ## [2.2.2] - 2025-5-13
 1. 解决webgl打包工具windows下会重复npm i安装的问题
 2. 微信小游戏一键导出的支持

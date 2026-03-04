@@ -6,6 +6,46 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [3.0.1] - 2026-03-04
+1. Fixed a crash caused by binding a JS function to different delegates, which could lead to duplicate delete crash fix #2290
+2. Added thread-safety code to fix a probabilistic crash when connecting the debugger on macOS fix #2286
+3. Fixed compilation issues when importing multiple backends and building for WebGL
+4. V8 upgraded to 13.6.233.17, fixing a crash with async + arrow functions in bytecode fix #2270 (#2277)
+5. Fixed the issue where removing the Node.js plugin on iOS caused compilation failures
+6. Supported delegate ref parameter passing into JS fix #2257
+7. Fixed the issue where WebSocket object GC would cause a hang
+8. Tuanjieyinqing (Unity China Engine) compatibility
+9. Unity 2018 compatibility fixes
+10. Lua on WebGL reverted to longjmp; cannot longjmp in C++ functions (especially those containing try-catch)
+11. Added `UnityEngine.Scripting.Preserve` to fix "no static field v" error under Unity 2022 WebGL default settings
+12. Supported configurable delegates, fixing the issue where new test cases could not find bridge code
+13. Python uses InitIsolatedConfig for isolated configuration (#2285)
+14. Python class property access removed `get_`/`set_` prefix (#2282)
+15. Python auto-sets home in .NET environment
+16. NuGet added net9.0 and net10.0 support (#2284)
+17. NuGet added Complete package (#2263)
+18. Various NuGet packaging fixes for Python on macOS/Linux/Windows
+
+## [3.0.0] - 2025-12-5
+1. Brand-new core + language extension pack architecture, theoretically supporting any language
+2. First batch of new languages: Lua, Python
+3. Complete rewrite of the non-il2cpp environment, using ExpressionTree to dynamically generate bidirectional bridge code, balancing both performance and usability
+4. NuGet support
+5. Adjustments such as uint64 support and error handling improvements
+6. Multi-backend coexistence capability — not only can different languages coexist, but same-language backends like V8 and QuickJS, or WebGL and QuickJS, can also coexist
+
+## [2.2.3] - 2025-11-28
+1. WebGL adopts a dual mechanism of FinalizationRegistry + WeakRef to ensure object collection fix #2199
+2. Fixed a crash caused by passing a JSObject from a destroyed JS env into a normal JS env
+3. In the il2cpp-optimized build, LowMemoryNotification is also available
+4. Fixed a series of parameter validation mismatches between the il2cpp-optimized and P/Invoke versions
+5. Improved support for nullable types in the il2cpp-optimized version
+6. Fixed a crash when passing a BigInt to a uint parameter
+7. Fixed an issue where virtual method calls did not invoke subclass implementations
+8. Fixed non-public methods and properties being exported to JS fix #2241
+9. Fixed an issue in the il2cpp-optimized version where reference fields in structs containing reference types could be garbage collected after being set fix #2243
+10. Reflection now supports enum by ref
+
 ## [2.2.2] - 2025-05-13
 1. Fixed the issue where the WebGL build tool would repeatedly execute npm install on Windows.
 2. Added support for One-Click Export for WeChat Mini Games.
