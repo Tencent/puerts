@@ -4,7 +4,7 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
+[english version](./changelog.md)
 
 ## [3.0.1] - 2026-03-04
 1. 解决一个js函数绑定不同的delegate可能会导致重复delete崩溃的问题 fix #2290
