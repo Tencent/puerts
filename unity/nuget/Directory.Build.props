@@ -11,7 +11,6 @@
     <Copyright>Copyright (C) 2020 Tencent.</Copyright>
 
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Icon128.png</PackageIcon>
 
     <PackageTags>puerts;typescript;v8;nodejs;dotnet;quickjs;lua;python</PackageTags>
@@ -35,7 +34,27 @@
   <ItemGroup>
     <None Include="..\..\..\LICENSE" Pack="true" PackagePath="\" Link="Properties\LICENSE"/>
     <None Include="..\..\..\unreal\Puerts\Resources\Icon128.png" Pack="true" PackagePath="\" Link="Properties\Icon128.png" />
-    <None Include="..\..\..\README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <!-- Select README per language backend -->
+  <PropertyGroup Condition="$(MSBuildProjectName.Contains('Lua'))">
+    <PackageReadmeFile>README_Lua.md</PackageReadmeFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(MSBuildProjectName.Contains('Python'))">
+    <PackageReadmeFile>README_Python.md</PackageReadmeFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="!$(MSBuildProjectName.Contains('Lua')) AND !$(MSBuildProjectName.Contains('Python'))">
+    <PackageReadmeFile>README_JS.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectName.Contains('Lua'))">
+    <None Include="$(MSBuildThisFileDirectory)README_Lua.md" Pack="true" PackagePath="\" Link="Properties\README_Lua.md" />
+  </ItemGroup>
+  <ItemGroup Condition="$(MSBuildProjectName.Contains('Python'))">
+    <None Include="$(MSBuildThisFileDirectory)README_Python.md" Pack="true" PackagePath="\" Link="Properties\README_Python.md" />
+  </ItemGroup>
+  <ItemGroup Condition="!$(MSBuildProjectName.Contains('Lua')) AND !$(MSBuildProjectName.Contains('Python'))">
+    <None Include="$(MSBuildThisFileDirectory)README_JS.md" Pack="true" PackagePath="\" Link="Properties\README_JS.md" />
   </ItemGroup>
 
 
