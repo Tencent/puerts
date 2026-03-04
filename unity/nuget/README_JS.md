@@ -72,9 +72,21 @@ dotnet add package Puerts.V8.NativeAssets.macOS
 
 ## Quick Start
 
+Create a `ScriptEnv` with the backend matching your installed package:
+
+| Installed Package | Backend Class |
+|---|---|
+| `Puerts.V8` / `Puerts.V8.Complete` | `new BackendV8()` |
+| `Puerts.NodeJS` / `Puerts.NodeJS.Complete` | `new BackendNodeJS()` |
+| `Puerts.QuickJS` / `Puerts.QuickJS.Complete` | `new BackendQuickJS()` |
+
 ```csharp
 using Puerts;
 
+// Use the backend that matches your installed package:
+//   V8      → new BackendV8()
+//   Node.js → new BackendNodeJS()
+//   QuickJS → new BackendQuickJS()
 var env = new ScriptEnv(new BackendV8());
 
 // Execute JavaScript
@@ -116,6 +128,7 @@ Console.WriteLine('Count: ' + list.Count);
 using Puerts;
 using System;
 
+// Use the backend that matches your installed package
 var env = new ScriptEnv(new BackendV8());
 
 // Get a JS function as a C# delegate
