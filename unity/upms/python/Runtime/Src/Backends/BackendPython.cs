@@ -150,7 +150,7 @@ class puerts:
         cs_class = loadType(cs_type)
         if cs_class is None:
             raise ModuleNotFoundError(f'Failed to load type {type_name}')
-        cs_class._p_innerType = cs_type
+        cs_class._p_cs_type = cs_type
         nestedTypes = puerts.get_nested_types(cs_type)
         if nestedTypes:
             for i in range(nestedTypes.Length):
@@ -179,9 +179,11 @@ class puerts:
 
     @staticmethod
     def typeof(cls):
-        if hasattr(cls, '_p_innerType'):
-            return cls._p_innerType
-        return None
+        if hasattr(cls, '_p_cs_type'):
+            return cls._p_cs_type
+        if hasattr(cls, '_p_cs_generic_type'):
+            return cls._p_cs_generic_type
+        raise TypeError(f'object {cls} is not a type loaded by puerts')
 
     @staticmethod
     def ref(obj):
@@ -196,21 +198,29 @@ class puerts:
         ref_obj[0] = value
 
     @staticmethod
-    def generic(cs_type, *args):
-        if puerts.typeof(cs_type) is not None or len(args) == 0 or not cs_type.IsGenericTypeDefinition:
-            return None
+    def generic(cs_generic_type, *args):
+        """"""
+        Make a generic type from a generic type definition and generic arguments, and return the loaded C# class for the made generic type.
+        :param cs_generic_type: The C# generic type definition to make generic type from. It must be a *generic type definition* loaded by puerts (import or puerts.load_type).
+        :param args: The generic arguments to make generic type with. They must be types loaded by puerts (import or puerts.load_type or puerts.generic).
+        :return: The loaded C# class for the made generic type.
+        """"""
+        is_valid_cs_generic_type = hasattr(cs_generic_type, 'IsGenericTypeDefinition') and cs_generic_type.IsGenericTypeDefinition
+
+        if not is_valid_cs_generic_type or len(args) == 0 or len(args) != cs_generic_type.GetGenericArguments().Length:
+            raise TypeError('invalid generic type or arguments for type ' + str(cs_generic_type))
 
         generic_args = []
         for ga in args:
             generic_args.append(puerts.typeof(ga))
-        cs_type = cs_type.MakeGenericType(*generic_args)
-        cs_class = loadType(cs_type)
-        cs_class._p_innerType = cs_type
+        cs_generic_type_made = cs_generic_type.MakeGenericType(*generic_args)
+        cs_class = loadType(cs_generic_type_made)
+        cs_class._p_cs_type = cs_generic_type_made
 
-        if puerts.typeof(puerts.load_type('System.Collections.IEnumerable')).IsAssignableFrom(cs_type):
+        if puerts.typeof(puerts.load_type('System.Collections.IEnumerable')).IsAssignableFrom(cs_generic_type_made):
             pass
 
-        nestedTypes = puerts.get_nested_types(cs_type)
+        nestedTypes = puerts.get_nested_types(cs_generic_type_made)
         if nestedTypes:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
@@ -224,12 +234,19 @@ class puerts:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
                     except Exception as e:
-                        raise ModuleNotFoundError(f'Failed to load nested type {ntype.FullName} of {cs_type.FullName}: {e}')
-        _csTypeCache_[cs_type.FullName] = cs_class
+                        raise ModuleNotFoundError(f'Failed to load nested type {ntype.FullName} of {cs_generic_type_made.FullName}: {e}')
+        _csTypeCache_[cs_generic_type_made.FullName] = cs_class
         return cs_class
 
     @staticmethod
     def generic_method(cls, method_name: str, *args):
+        """"""
+        Make a generic method from a generic method definition and generic arguments, and return a Python function that can call the made generic method.
+        :param cls: The class that the generic method belongs to. It must be a class loaded by puerts (import or puerts.load_type or puerts.generic).
+        :param method_name: The name of the generic method to make generic method from.
+        :param args: The generic arguments to make generic method with. They must be types loaded by puerts (import or puerts.load_type or puerts.generic).
+        :return: A Python function that can call the made generic method.
+        """"""
         cs_type = puerts.typeof(cls)
         if cs_type is None or not hasattr(cs_type, 'GetMember'):
             raise TypeError('the class must be a constructor')
