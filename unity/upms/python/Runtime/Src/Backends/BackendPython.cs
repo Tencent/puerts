@@ -227,11 +227,7 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    nName = ntype.Name  ## convert name (T`1) to (T__T1) for syntax compatibility
-                    tick_index = nName.find('`')
-                    nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
-                    setattr(cs_class, nName, puerts.load_type(ntype.FullName))
-                    pass  ## skip generic type definitions, use puerts.generic to instantiate them
+                    setattr(cs_class, ntype.Name, puerts.generic(ntype, *args))
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
@@ -289,30 +285,32 @@ class puerts:
 
 
     class GenericTypeDefWrapper:
-        def __init__(self, cs_type):
-            self._p_innerType = cs_type
+        def __init__(self, cs_generic_type):
+            self._p_cs_generic_type = cs_generic_type
 
         def __getitem__(self, args):
             if not isinstance(args, tuple):
                 args = (args,)
-            if len(args) != self._p_innerType.GetGenericArguments().Length:
-                raise TypeError(f'Expected {self._p_innerType.GetGenericArguments().Length} generic arguments, got {len(args)}')
-            return puerts.generic(self._p_innerType, *args)
+            if len(args) != self._p_cs_generic_type.GetGenericArguments().Length:
+                raise TypeError(f'Expected {self._p_cs_generic_type.GetGenericArguments().Length} generic arguments, got {len(args)}')
+            return puerts.generic(self._p_cs_generic_type, *args)
 
         def __getattr__(self, attr):
-            return getattr(self._p_innerType, attr)
+            if attr == '_p_cs_generic_type':
+                return super().__getattribute__(attr)
+            return getattr(self._p_cs_generic_type, attr)
 
         def __setattr__(self, key, value):
-            if key == '_p_innerType':
+            if key == '_p_cs_generic_type':
                 super().__setattr__(key, value)
             else:
-                setattr(self._p_innerType, key, value)
+                setattr(self._p_cs_generic_type, key, value)
 
         def __delattr__(self, item):
             raise AttributeError('Cannot delete attributes of GenericTypeDefWrapper')
 
         def __call__(self, *args, **kwargs):
-            return self._p_innerType(*args, **kwargs)
+            return self._p_cs_type(*args, **kwargs)
 
 
 sys.meta_path.append(PesapiFinder())
