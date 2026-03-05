@@ -115,10 +115,12 @@ class NameSpaceProxy(types.ModuleType):
 
     def __getattr__(self, attr: str):
         full_name = self.__p_namespace_name + '.' + attr
-        result = puerts.load_type(full_name)
-        if result is not None:
+        try:
+            result = puerts.load_type(full_name)
             return result
-        else:
+        except ModuleNotFoundError as e:
+            if str(e) != f'No type named {full_name}':
+                raise e
             if _p_loader.NamespaceManager.IsValidNamespace(full_name):
                 return NameSpaceProxy(full_name)
             else:
