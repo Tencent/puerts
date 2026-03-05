@@ -94,11 +94,10 @@ class PesapiLoader(importlib.abc.Loader):
         if _p_loader.NamespaceManager.IsValidNamespace(type_name):
             return NameSpaceProxy(type_name)
         else:
-            result = puerts.load_type(type_name)
-            if result is not None:
-                return result
-            else:
-                raise ModuleNotFoundError(f'No namespace or type named {type_name}')
+            try:
+                return puerts.load_type(type_name)
+            except Exception as e:
+                raise ModuleNotFoundError(f'No namespace or type named {type_name} or error loading type {type_name} in puerts.load_type: {e}')
 
 
 class PesapiFinder(importlib.abc.MetaPathFinder):
@@ -118,7 +117,7 @@ class NameSpaceProxy(types.ModuleType):
         try:
             result = puerts.load_type(full_name)
             return result
-        except ModuleNotFoundError as e:
+        except Exception as e:
             if str(e) != f'No type named {full_name}':
                 raise e
             if _p_loader.NamespaceManager.IsValidNamespace(full_name):
@@ -131,9 +130,9 @@ class puerts:
     @staticmethod
     def load_type(type_name: str):
         """"""
-        Load a C# class or generic type definition, or return None if the type is not found.
+        Load a C# class or generic type definition, raise ModuleNotFoundError if the type cannot be found or loaded.
         :param type_name: The full name of the C# type to load. If the type is generic, use the format 'TypeName__Tn' where n is the number of generic parameters.
-        :return: The loaded C# class or generic type definition, or None if the type is not found.
+        :return: The loaded C# class or generic type definition
         """"""
         generic_tick_index = type_name.find('__T')
         if generic_tick_index != -1:
@@ -151,7 +150,7 @@ class puerts:
             return builder  ## skip loadType for generic type definitions
         cs_class = loadType(cs_type)
         if cs_class is None:
-            raise ModuleNotFoundError(f'Failed to load type {type_name}')
+            raise ModuleNotFoundError(f'Failed to load type {type_name} in loadType')
         cs_class._p_cs_type = cs_type
         nestedTypes = puerts.get_nested_types(cs_type)
         if nestedTypes:
@@ -245,8 +244,13 @@ class puerts:
         :param args: The generic arguments to make generic method with. They must be types loaded by puerts (import or puerts.load_type or puerts.generic).
         :return: A Python function that can call the made generic method.
         """"""
-        cs_type = puerts.typeof(cls)
-        if cs_type is None or not hasattr(cs_type, 'GetMember'):
+        cs_type = None
+        try: 
+            cs_type = puerts.typeof(cls)
+        except Exception as e:
+            raise TypeError(f'object {cls} is not a type loaded by puerts: {e}')
+
+        if not hasattr(cs_type, 'GetMember'):
             raise TypeError('the class must be a constructor')
 
         Utils = puerts.load_type('Puerts.Utils')
@@ -258,9 +262,11 @@ class puerts:
             if method.IsGenericMethodDefinition and method.GetGenericArguments().Length == len(args):
                 generic_args = []
                 for ga in args:
-                    ret = puerts.typeof(ga)
-                    if ret is None:
-                        raise TypeError('invalid Type for generic arguments' + str(ga))
+                    ret = None
+                    try:
+                        ret = puerts.typeof(ga)
+                    except Exception as e:
+                        raise TypeError(f'invalid Type for generic arguments {ga}: {e}')
                     generic_args.append(puerts.typeof(ga))
                 method_impl = method.MakeGenericMethod(*generic_args)
                 overload_functions.append(method_impl)
