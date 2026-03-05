@@ -15,10 +15,10 @@ namespace Puerts.UnitTest
 
             pythonEnv.Eval(@"
 exec('''
-from System.Collections.Generic import List__T1
+from System.Collections.Generic import List_1
 from System import Int32
-List__Int32 = List__T1[Int32]
-myList = List__Int32()
+List_Int32 = List_1[Int32]
+myList = List_Int32()
 myList.Add(1)
 myList.Add(2)
 myList.Add(3)
