@@ -197,6 +197,34 @@ print(ls.Count)  # 3
 }
 ```
 
+**方式二：使用中括号语法（推荐）**
+
+PuerTS 还支持 Python 风格的中括号语法来实例化泛型类型，类似于 Python 标准库中 `list[int]` 的写法：
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
+    env.Eval(@"
+exec('''
+from System.Collections.Generic import List__T1
+from System import Int32
+
+# use square bracket syntax to create generic type: List<int>
+List_Int32 = List__T1[Int32]
+ls = List_Int32()
+ls.Add(1)
+ls.Add(2)
+ls.Add(3)
+
+print(ls.Count)  # 3
+''')
+");
+    env.Dispose();
+}
+```
+
+中括号语法 `List__T1[Int32]` 等价于 `puerts.generic(List__T1, Int32)`，对于多个类型参数，使用逗号分隔：`Dictionary__T2[String, Int32]`。
+
 > ⚠️ **泛型类名的特殊表示**：C# 中泛型类名使用反引号表示类型参数个数（如 `` List`1 ``），而在 Python 的 `import` 语法中，反引号需要替换为 `__T` 加参数个数：
 > - `` List`1 `` → `List__T1`
 > - `` Dictionary`2 `` → `Dictionary__T2`
@@ -399,6 +427,40 @@ void Start() {
     env.Dispose();
 }
 ```
+
+----------------------------
+### 迭代器
+
+使用 `puerts.gen_iterator()` 可以将 C# 的可迭代对象（实现了 `IEnumerable` 接口的对象）转换为 Python 迭代器，从而支持 Python 的 `for ... in` 循环：
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
+    env.Eval(@"
+exec('''
+from System.Collections.Generic import List__T1
+from System import Int32
+
+List_Int32 = List__T1[Int32]
+myList = List_Int32()
+myList.Add(1)
+myList.Add(2)
+myList.Add(3)
+
+# convert C# IEnumerable to Python iterator
+iter = puerts.gen_iterator(myList)
+result = []
+for i in iter:
+    result.append(i)
+
+print(result)  # [1, 2, 3]
+''')
+");
+    env.Dispose();
+}
+```
+
+`puerts.gen_iterator()` 内部会调用对象的 `GetEnumerator()` 方法，并包装为支持 Python 迭代协议（`__iter__` / `__next__`）的迭代器对象。
 
 -------------
 这一部分是有关 Python 调用 C# 的。下一部分我们反过来，介绍 [C# 调用 Python](./cs2python.md)。
