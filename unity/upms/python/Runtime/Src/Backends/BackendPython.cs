@@ -142,16 +142,14 @@ class puerts:
             return _csTypeCache_[type_name]
         cs_type = scriptEnv.GetTypeByString(type_name)
         if cs_type is None:
-            print('Type not found: ' + type_name)
-            return None
+            raise ModuleNotFoundError(f'No type named {type_name}')
         if cs_type.IsGenericTypeDefinition:
             builder = puerts.GenericTypeDefWrapper(cs_type)
             _csTypeCache_[type_name] = builder  ## cache generic type definitions directly
             return builder  ## skip loadType for generic type definitions
         cs_class = loadType(cs_type)
         if cs_class is None:
-            print('Failed to load type: ' + type_name)
-            return None
+            raise ModuleNotFoundError(f'Failed to load type {type_name}')
         cs_class._p_innerType = cs_type
         nestedTypes = puerts.get_nested_types(cs_type)
         if nestedTypes:
@@ -167,7 +165,7 @@ class puerts:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
                     except Exception as e:
-                        print(f'load nestedtype [{ntype.Name or ntype}] of {cs_type.Name or cs_type} fail: {e}')
+                        raise ModuleNotFoundError(f'Failed to load nested type {ntype.FullName} of {cs_type.FullName}: {e}')
         _csTypeCache_[type_name] = cs_class
         return cs_class
 
@@ -226,7 +224,7 @@ class puerts:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
                     except Exception as e:
-                        print(f'load nestedtype [{ntype.Name or ntype}] of {cs_type.Name or cs_type} fail: {e}')
+                        raise ModuleNotFoundError(f'Failed to load nested type {ntype.FullName} of {cs_type.FullName}: {e}')
         _csTypeCache_[cs_type.FullName] = cs_class
         return cs_class
 
