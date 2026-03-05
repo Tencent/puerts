@@ -145,8 +145,9 @@ class puerts:
             print('Type not found: ' + type_name)
             return None
         if cs_type.IsGenericTypeDefinition:
-            _csTypeCache_[type_name] = cs_type  ## cache generic type definitions directly
-            return cs_type  ## skip loadType for generic type definitions
+            builder = puerts.GenericTypeDefWrapper(cs_type)
+            _csTypeCache_[type_name] = builder  ## cache generic type definitions directly
+            return builder  ## skip loadType for generic type definitions
         cs_class = loadType(cs_type)
         if cs_class is None:
             print('Failed to load type: ' + type_name)
@@ -176,19 +177,7 @@ class puerts:
 
     @staticmethod
     def gen_iterator(obj):
-        it = obj.GetEnumerator()
-
-        class Iterator:
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                if it.MoveNext():
-                    return it.Current
-                it.Dispose()
-                raise StopIteration
-
-        return Iterator()
+        return puerts.IteratorWrapper(obj.GetEnumerator())
 
     @staticmethod
     def typeof(cls):
@@ -221,7 +210,7 @@ class puerts:
         cs_class._p_innerType = cs_type
 
         if puerts.typeof(puerts.load_type('System.Collections.IEnumerable')).IsAssignableFrom(cs_type):
-            cs_class.__iter__ = puerts.gen_iterator
+            pass
 
         nestedTypes = puerts.get_nested_types(cs_type)
         if nestedTypes:
@@ -240,6 +229,74 @@ class puerts:
                         print(f'load nestedtype [{ntype.Name or ntype}] of {cs_type.Name or cs_type} fail: {e}')
         _csTypeCache_[cs_type.FullName] = cs_class
         return cs_class
+
+    @staticmethod
+    def generic_method(cls, method_name: str, *args):
+        cs_type = puerts.typeof(cls)
+        if cs_type is None or not hasattr(cs_type, 'GetMember'):
+            raise TypeError('the class must be a constructor')
+
+        Utils = puerts.load_type('Puerts.Utils')
+
+        members = Utils.GetMethodAndOverrideMethodByName(cs_type, method_name);
+        overload_functions = []
+        for i in range(members.Length):
+            method = members.GetValue(i)
+            if method.IsGenericMethodDefinition and method.GetGenericArguments().Length == len(args):
+                generic_args = []
+                for ga in args:
+                    ret = puerts.typeof(ga)
+                    if ret is None:
+                        raise TypeError('invalid Type for generic arguments' + str(ga))
+                    generic_args.append(puerts.typeof(ga))
+                method_impl = method.MakeGenericMethod(*generic_args)
+                overload_functions.append(method_impl)
+        
+        overload_count = len(overload_functions)
+        if overload_count == 0:
+            raise TypeError(f'No generic method named {method_name} with following generic arguments: {"", "".join([str(puerts.typeof(arg).Name) for arg in args])} found in {cs_type.Name}')
+        return createFunction(*overload_functions)
+
+    class IteratorWrapper:
+        def __init__(self, iterator):
+            self.__p_iterator = iterator
+            pass
+        def __iter__(self):
+            return self
+    
+        def __next__(self):
+            if self.__p_iterator.MoveNext():
+                return self.__p_iterator.Current
+            self.__p_iterator.Dispose()
+            raise StopIteration
+
+
+    class GenericTypeDefWrapper:
+        def __init__(self, cs_type):
+            self._p_innerType = cs_type
+
+        def __getitem__(self, args):
+            if not isinstance(args, tuple):
+                args = (args,)
+            if len(args) != self._p_innerType.GetGenericArguments().Length:
+                raise TypeError(f'Expected {self._p_innerType.GetGenericArguments().Length} generic arguments, got {len(args)}')
+            return puerts.generic(self._p_innerType, *args)
+
+        def __getattr__(self, attr):
+            return getattr(self._p_innerType, attr)
+
+        def __setattr__(self, key, value):
+            if key == '_p_innerType':
+                super().__setattr__(key, value)
+            else:
+                setattr(self._p_innerType, key, value)
+
+        def __delattr__(self, item):
+            raise AttributeError('Cannot delete attributes of GenericTypeDefWrapper')
+
+        def __call__(self, *args, **kwargs):
+            return self._p_innerType(*args, **kwargs)
+
 
 sys.meta_path.append(PesapiFinder())
 ''')");
