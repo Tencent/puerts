@@ -48,9 +48,9 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             pythonEnv.Eval(@"
 exec('''
-import System.Collections.Generic.List__T1 as List
+import System.Collections.Generic.List_1 as List_1
 import System
-ListInt = puerts.generic(List, System.Int32)
+ListInt = puerts.generic(List_1, System.Int32)
 ls = ListInt()
 ls.Add(1)
 ls.Add(2)
