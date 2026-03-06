@@ -1,4 +1,4 @@
-# Calling C# from Python
+﻿# Calling C# from Python
 
 > 💡 PuerTS 3.0 also supports [JavaScript](./js2cs.md) and [Lua](./lua2cs.md) calling C#, each with different syntax. Click the links to see the corresponding tutorials.
 
@@ -181,7 +181,7 @@ void Start() {
     env.Eval(@"
 exec('''
 import System
-import System.Collections.Generic.List__T1 as List
+import System.Collections.Generic.List_1 as List
 
 # create generic type: List<int>
 ListInt = puerts.generic(List, System.Int32)
@@ -197,9 +197,9 @@ print(ls.Count)  # 3
 }
 ```
 
-> ⚠️ **Special naming for generic types**: In C#, generic type names use backticks to indicate the number of type parameters (e.g. `` List`1 ``). In Python's `import` syntax, backticks must be replaced with `__T` followed by the count:
-> - `` List`1 `` → `List__T1`
-> - `` Dictionary`2 `` → `Dictionary__T2`
+> ⚠️ **Special naming for generic types**: In C#, generic type names use backticks to indicate the number of type parameters (e.g. `` List`1 ``). In Python's `import` syntax, backticks must be replaced with `_` followed by the count:
+> - `` List`1 `` → `List_1`
+> - `` Dictionary`2 `` → `Dictionary_2`
 >
 > When using `puerts.load_type()`, you can use the original backtick format directly:
 > ```python
@@ -225,12 +225,12 @@ x = InnerClassA()
 print(x.Foo)  # Hello
 
 # access generic nested class
-InnerClassB_T1 = puerts.generic(TestNestedTypes.InnerClassB__T1, Int32)
-y = InnerClassB_T1()
+InnerClassB_1 = puerts.generic(TestNestedTypes.InnerClassB_1, Int32)
+y = InnerClassB_1()
 print(y.Bar)  # Hello
 
-InnerClassB_T2 = puerts.generic(TestNestedTypes.InnerClassB__T2, Int32, String)
-z = InnerClassB_T2()
+InnerClassB_2 = puerts.generic(TestNestedTypes.InnerClassB_2, Int32, String)
+z = InnerClassB_1()
 print(z.Bar)  # Hello
 ''')
 ");

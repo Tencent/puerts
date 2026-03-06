@@ -1,4 +1,4 @@
-# 在 Python 中调用 C#
+﻿# 在 Python 中调用 C#
 
 > 💡 PuerTS 3.0 同时支持 [JavaScript](./js2cs.md) 和 [Lua](./lua2cs.md) 调用 C#，语法各有不同，可点击链接查看对应教程。
 
@@ -181,7 +181,7 @@ void Start() {
     env.Eval(@"
 exec('''
 import System
-import System.Collections.Generic.List__T1 as List
+import System.Collections.Generic.List_1 as List
 
 # create generic type: List<int>
 ListInt = puerts.generic(List, System.Int32)
@@ -206,11 +206,11 @@ void Start() {
     var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
     env.Eval(@"
 exec('''
-from System.Collections.Generic import List__T1
+from System.Collections.Generic import List_1
 from System import Int32
 
 # use square bracket syntax to create generic type: List<int>
-List_Int32 = List__T1[Int32]
+List_Int32 = List_1[Int32]
 ls = List_Int32()
 ls.Add(1)
 ls.Add(2)
@@ -223,11 +223,11 @@ print(ls.Count)  # 3
 }
 ```
 
-中括号语法 `List__T1[Int32]` 等价于 `puerts.generic(List__T1, Int32)`，对于多个类型参数，使用逗号分隔：`Dictionary__T2[String, Int32]`。
+中括号语法 `List_1[Int32]` 等价于 `puerts.generic(List_1, Int32)`，对于多个类型参数，使用逗号分隔：`Dictionary_2[String, Int32]`。
 
-> ⚠️ **泛型类名的特殊表示**：C# 中泛型类名使用反引号表示类型参数个数（如 `` List`1 ``），而在 Python 的 `import` 语法中，反引号需要替换为 `__T` 加参数个数：
-> - `` List`1 `` → `List__T1`
-> - `` Dictionary`2 `` → `Dictionary__T2`
+> ⚠️ **泛型类名的特殊表示**：C# 中泛型类名使用反引号表示类型参数个数（如 `` List`1 ``），而在 Python 的 `import` 语法中，反引号需要替换为 `_` 加参数个数：
+> - `` List`1 `` → `List_1`
+> - `` Dictionary`2 `` → `Dictionary_2`
 >
 > 使用 `puerts.load_type()` 时，可以直接使用反引号原始格式：
 > ```python
@@ -253,12 +253,12 @@ x = InnerClassA()
 print(x.Foo)  # Hello
 
 # access generic nested class
-InnerClassB_T1 = puerts.generic(TestNestedTypes.InnerClassB__T1, Int32)
-y = InnerClassB_T1()
+InnerClassB_1 = puerts.generic(TestNestedTypes.InnerClassB_1, Int32)
+y = InnerClassB_1()
 print(y.Bar)  # Hello
 
-InnerClassB_T2 = puerts.generic(TestNestedTypes.InnerClassB__T2, Int32, String)
-z = InnerClassB_T2()
+InnerClassB_2 = puerts.generic(TestNestedTypes.InnerClassB_2, Int32, String)
+z = InnerClassB_2()
 print(z.Bar)  # Hello
 ''')
 ");
@@ -438,10 +438,10 @@ void Start() {
     var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
     env.Eval(@"
 exec('''
-from System.Collections.Generic import List__T1
+from System.Collections.Generic import List_1
 from System import Int32
 
-List_Int32 = List__T1[Int32]
+List_Int32 = List_1[Int32]
 myList = List_Int32()
 myList.Add(1)
 myList.Add(2)

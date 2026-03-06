@@ -60,12 +60,12 @@ from Puerts.UnitTest import TestNestedTypes
 assertAndPrint = TestHelper.AssertAndPrint
 InnerClassA = TestNestedTypes.InnerClassA
 InnerClassB = TestNestedTypes.InnerClassB
-InnerClassB__T1 = puerts.generic(TestNestedTypes.InnerClassB__T1, Int32)
-InnerClassB__T2 = puerts.generic(TestNestedTypes.InnerClassB__T2, Int32, String)
+InnerClassB_1 = puerts.generic(TestNestedTypes.InnerClassB_1, Int32)
+InnerClassB_2 = puerts.generic(TestNestedTypes.InnerClassB_2, Int32, String)
 x = InnerClassA()
 o = InnerClassB()
-y = InnerClassB__T1()
-z = InnerClassB__T2()
+y = InnerClassB_1()
+z = InnerClassB_2()
 ''')
 ");
             pythonEnv.Dispose();

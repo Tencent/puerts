@@ -131,12 +131,12 @@ class puerts:
     def load_type(type_name: str):
         """"""
         Load a C# class or generic type definition, raise ModuleNotFoundError if the type cannot be found or loaded.
-        :param type_name: The full name of the C# type to load. If the type is generic, use the format 'TypeName__Tn' where n is the number of generic parameters.
+        :param type_name: The full name of the C# type to load. If the type is generic, use the format 'TypeName_n' where n is the number of generic parameters.
         :return: The loaded C# class or generic type definition
         """"""
-        generic_tick_index = type_name.find('__T')
+        generic_tick_index = type_name.find('_')
         if generic_tick_index != -1:
-            suffix = type_name[generic_tick_index + 3:]
+            suffix = type_name[generic_tick_index + 1:]
             if suffix and suffix.isdigit():
                 type_name = type_name[:generic_tick_index] + '`' + suffix
         if type_name in _csTypeCache_:
@@ -157,9 +157,9 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    nName = ntype.Name  ## convert name (T`1) to (T__T1) for syntax compatibility
+                    nName = ntype.Name  ## convert name (T`1) to (T_1) for syntax compatibility
                     tick_index = nName.find('`')
-                    nName = nName[:tick_index] + '__T' + nName[tick_index + 1:]
+                    nName = nName[:tick_index] + '_' + nName[tick_index + 1:]
                     setattr(cs_class, nName, puerts.load_type(ntype.FullName))
                     pass  ## skip generic type definitions, use puerts.generic to instantiate them
                 else:
