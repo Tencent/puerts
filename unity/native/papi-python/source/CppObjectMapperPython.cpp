@@ -52,7 +52,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
     // 不能用栈变量
     PyMethodDef* methodDef = (PyMethodDef*) PyMem_Malloc(sizeof(PyMethodDef));
     methodDef->ml_name ="PapiCallback";
-    methodDef->ml_meth = [](PyObject* self, PyObject* args) -> PyObject*
+    methodDef->ml_meth = (PyCFunction)(PyCFunctionWithKeywords)[](PyObject* self, PyObject* args, PyObject *kwargs) -> PyObject*
         {
             FuncInfo* data = reinterpret_cast<FuncInfo*>(PyCapsule_GetPointer(self, "FuncInfo"));
             if (!data || !data->callback)
@@ -60,8 +60,21 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
                 PyErr_SetString(PyExc_RuntimeError, "Invalid callback data");
                 return nullptr;
             }
+
+            // When we need to call the callback with custom self
+            // foo(.., this: DynObj)
+            void* selfPtr = nullptr;
+            if (kwargs && PyDict_Check(kwargs)) {
+                auto kw_self = PyDict_GetItemString(kwargs, "this");
+                if (kw_self && Py_TYPE(kw_self)->tp_basicsize == sizeof(DynObj) && PyObject_HasAttrString((PyObject*)Py_TYPE(kw_self), CTX_ATTR_NAME))
+                {
+                    auto DynSelf = (DynObj*) kw_self;
+                    selfPtr = DynSelf->objectPtr;
+                }
+            }
+
             pesapi_callback_info__ callbackInfo;
-            callbackInfo.self = nullptr;
+            callbackInfo.self = selfPtr;
             callbackInfo.selfTypeId = nullptr;
             callbackInfo.args = args;
             callbackInfo.argc = static_cast<int>(PyTuple_Size(args));
@@ -93,7 +106,7 @@ PyObject* CppObjectMapper::CreateFunction(pesapi_callback Callback, void* Data, 
 
             Py_RETURN_NONE;
         };
-    methodDef->ml_flags= METH_VARARGS;
+    methodDef->ml_flags= METH_VARARGS | METH_KEYWORDS;
     methodDef->ml_doc= "Puerts C++ callback wrapper";
     data->methodDef = methodDef;
 
