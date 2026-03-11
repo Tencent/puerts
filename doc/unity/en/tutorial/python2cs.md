@@ -249,6 +249,45 @@ print(Inner.i)  # 3
 > 💡 When using `puerts.load_type()` to access nested types, use the C# reflection `+` separator format (e.g. `OuterClass+InnerClass`).
 
 ----------------------------
+### Array & Indexer Access
+
+C#'s `[]` operator (including array indexing, List indexing, Dictionary indexing, and any custom indexer) **cannot** be used directly with `[]` syntax in Python. You must use `get_Item()` / `set_Item()` methods instead:
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
+    env.Eval(@"
+exec('''
+import System
+from System.Collections.Generic import List_1, Dictionary_2
+
+# Create a C# array
+arr = System.Array.CreateInstance(puerts.typeof(System.Int32), 3)
+arr.set_Item(0, 42)            # equivalent to C#: arr[0] = 42
+val = arr.get_Item(0)          # equivalent to C#: val = arr[0]
+print(val)                     # 42
+
+# Same for List<T>
+ListInt = puerts.generic(List_1, System.Int32)
+lst = ListInt()
+lst.Add(10)
+first = lst.get_Item(0)       # equivalent to C#: lst[0]
+lst.set_Item(0, 20)           # equivalent to C#: lst[0] = 20
+
+# Same for Dictionary<TKey, TValue>
+DictStrInt = puerts.generic(Dictionary_2, System.String, System.Int32)
+d = DictStrInt()
+d.set_Item('key', 100)        # equivalent to C#: dict['key'] = 100
+v = d.get_Item('key')         # equivalent to C#: v = dict['key']
+''')
+");
+    env.Dispose();
+}
+```
+
+> ⚠️ **Important**: Although Python's native `[]` operator works on lists and dicts, for indexed access on C# objects, you must use `get_Item()` / `set_Item()` methods. This rule is consistent across JS, Lua, and Python in PuerTS.
+
+----------------------------
 ### typeof
 
 C#'s `typeof` is implemented in Python via `puerts.typeof()`:

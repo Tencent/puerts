@@ -136,7 +136,21 @@ func(obj)
 
 ---
 
-## 10. typeof
+## 10. Array & Indexer Access (`[]` Operator)
+
+C#'s `[]` operator (arrays, Lists, Dictionaries, custom indexers) **cannot** be used directly with `[]` in any of the three languages. You must use `get_Item()` / `set_Item()` methods instead.
+
+| Language | Read (C# `arr[0]`) | Write (C# `arr[0] = val`) |
+|----------|--------------------|-----------------------------|
+| **JavaScript** | `arr.get_Item(0)` | `arr.set_Item(0, val)` |
+| **Lua** | `arr:get_Item(0)` | `arr:set_Item(0, val)` |
+| **Python** | `arr.get_Item(0)` | `arr.set_Item(0, val)` |
+
+> ⚠️ Lua uses colon `:` syntax (instance method), while JS and Python use dot `.` syntax. This rule applies to all C# types with indexers (arrays, List, Dictionary, etc.).
+
+---
+
+## 11. typeof
 
 | Language | Syntax |
 |----------|--------|
@@ -146,7 +160,7 @@ func(obj)
 
 ---
 
-## 11. null Representation
+## 12. null Representation
 
 | Language | Script-side null | Notes |
 |----------|-----------------|-------|
@@ -156,7 +170,7 @@ func(obj)
 
 ---
 
-## 12. Callbacks / Lambda
+## 13. Callbacks / Lambda
 
 | Language | Example |
 |----------|---------|
@@ -174,7 +188,7 @@ fn("hello");
 
 ---
 
-## 13. Throwing Exceptions
+## 14. Throwing Exceptions
 
 | Language | Syntax |
 |----------|--------|
@@ -196,6 +210,8 @@ fn("hello");
 | ref/out create | `puer.$ref()` | `{}` (table) | `[]` (list) |
 | ref/out retrieve | `puer.$unref()` | `[1]` | `[0]` |
 | async/await | `puer.$promise(task)` | — | — |
+| Indexer read `[]` | `obj.get_Item(idx)` | `obj:get_Item(idx)` | `obj.get_Item(idx)` |
+| Indexer write `[]` | `obj.set_Item(idx, val)` | `obj:set_Item(idx, val)` | `obj.set_Item(idx, val)` |
 
 ---
 

@@ -210,6 +210,44 @@ print(GenericTestClass.Inner.stringProp) -- 'hello'
 ```
 
 ----------------------------
+### 数组与索引器访问
+
+C# 中的 `[]` 操作符（包括数组索引、List 索引、Dictionary 索引以及任何自定义索引器）在 Lua 中**不能**直接使用 `[]` 语法访问，必须使用 `get_Item()` / `set_Item()` 方法（注意使用冒号语法）：
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendLua());
+    env.Eval(@"
+        local CS = require('csharp')
+        local puerts = require('puerts')
+        local typeof = puerts.typeof
+
+        -- 创建 C# 数组
+        local arr = CS.System.Array.CreateInstance(typeof(CS.System.Int32), 3)
+        arr:set_Item(0, 42)            -- 等价于 C# 的 arr[0] = 42
+        local val = arr:get_Item(0)    -- 等价于 C# 的 val = arr[0]
+        print(val)                     -- 42
+
+        -- 同样适用于 List<T>
+        local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+        local lst = List()
+        lst:Add(10)
+        local first = lst:get_Item(0)  -- 等价于 C# 的 lst[0]
+        lst:set_Item(0, 20)            -- 等价于 C# 的 lst[0] = 20
+
+        -- 同样适用于 Dictionary<TKey, TValue>
+        local Dict = puerts.generic(CS.System.Collections.Generic.Dictionary_2, CS.System.String, CS.System.Int32)
+        local dict = Dict()
+        dict:set_Item('key', 100)      -- 等价于 C# 的 dict['key'] = 100
+        local v = dict:get_Item('key') -- 等价于 C# 的 v = dict['key']
+    ");
+    env.Dispose();
+}
+```
+
+> ⚠️ **重要**：由于 `get_Item` / `set_Item` 是实例方法，在 Lua 中必须使用**冒号语法** `:` 调用。Lua 原生的 `[]` 只适用于 Lua table，对 C# 对象的索引访问必须通过这两个方法。
+
+----------------------------
 ### typeof
 
 因为 C# 的 `typeof` 无法通过命名空间的方式访问，PuerTS 提供了内置方法 `puerts.typeof()`：

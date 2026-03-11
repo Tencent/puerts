@@ -112,6 +112,40 @@ Done easily!
 
 
 ----------------------------
+### Array & Indexer Access
+
+C#'s `[]` operator (including array indexing, List indexing, Dictionary indexing, and any custom indexer) **cannot** be used directly with `[]` syntax in JS. You must use `get_Item()` / `set_Item()` methods instead:
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
+    env.Eval(@"
+        // Create a C# array
+        let arr = CS.System.Array.CreateInstance(puer.$typeof(CS.System.Int32), 3);
+        arr.set_Item(0, 42);           // equivalent to C#: arr[0] = 42
+        let val = arr.get_Item(0);     // equivalent to C#: val = arr[0]
+        console.log(val);              // 42
+
+        // Same for List<T>
+        let List = puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
+        let lst = new List();
+        lst.Add(10);
+        let first = lst.get_Item(0);   // equivalent to C#: lst[0]
+        lst.set_Item(0, 20);           // equivalent to C#: lst[0] = 20
+
+        // Same for Dictionary<TKey, TValue>
+        let Dict = puer.$generic(CS.System.Collections.Generic.Dictionary$2, CS.System.String, CS.System.Int32);
+        let dict = new Dict();
+        dict.set_Item('key', 100);     // equivalent to C#: dict['key'] = 100
+        let v = dict.get_Item('key');  // equivalent to C#: v = dict['key']
+    ");
+    env.Dispose();
+}
+```
+
+> ⚠️ **Important**: This is a key difference between JS and C#. JS's `[]` operator only works on native JS objects. For C# objects, you must use `get_Item()` / `set_Item()` methods for indexed access.
+
+----------------------------
 ### typeof and operator overload
 In addition to these special usages, there are two more situations to introduce: typeof function and operator overload:
 

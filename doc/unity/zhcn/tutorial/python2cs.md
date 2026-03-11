@@ -277,6 +277,45 @@ print(Inner.i)  # 3
 > 💡 使用 `puerts.load_type()` 访问嵌套类型时，使用 C# 反射的 `+` 分隔符格式（如 `OuterClass+InnerClass`）。
 
 ----------------------------
+### 数组与索引器访问
+
+C# 中的 `[]` 操作符（包括数组索引、List 索引、Dictionary 索引以及任何自定义索引器）在 Python 中**不能**直接使用 `[]` 语法访问，必须使用 `get_Item()` / `set_Item()` 方法：
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
+    env.Eval(@"
+exec('''
+import System
+from System.Collections.Generic import List_1, Dictionary_2
+
+# 创建 C# 数组
+arr = System.Array.CreateInstance(puerts.typeof(System.Int32), 3)
+arr.set_Item(0, 42)            # 等价于 C# 的 arr[0] = 42
+val = arr.get_Item(0)          # 等价于 C# 的 val = arr[0]
+print(val)                     # 42
+
+# 同样适用于 List<T>
+ListInt = puerts.generic(List_1, System.Int32)
+lst = ListInt()
+lst.Add(10)
+first = lst.get_Item(0)       # 等价于 C# 的 lst[0]
+lst.set_Item(0, 20)           # 等价于 C# 的 lst[0] = 20
+
+# 同样适用于 Dictionary<TKey, TValue>
+DictStrInt = puerts.generic(Dictionary_2, System.String, System.Int32)
+d = DictStrInt()
+d.set_Item('key', 100)        # 等价于 C# 的 dict['key'] = 100
+v = d.get_Item('key')         # 等价于 C# 的 v = dict['key']
+''')
+");
+    env.Dispose();
+}
+```
+
+> ⚠️ **重要**：尽管 Python 原生的 `[]` 运算符用于列表和字典，但对于 C# 对象的索引访问，必须通过 `get_Item()` / `set_Item()` 方法。这一点与 JS 和 Lua 中的规则一致。
+
+----------------------------
 ### typeof
 
 C# 的 `typeof` 在 Python 中通过 `puerts.typeof()` 实现：

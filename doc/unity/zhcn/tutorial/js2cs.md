@@ -112,6 +112,40 @@ void Start() {
 > 需要注意的是，可能你会想“Typescript明明支持泛型，为什么不用上呢？“。遗憾的是，Typescript泛型只是一个编译时的概念，在实际运行的时候还是运行的是Javascript，因此还是需要puer.$generic来处理。
 
 ----------------------------
+### 数组与索引器访问
+
+C# 中的 `[]` 操作符（包括数组索引、List 索引、Dictionary 索引以及任何自定义索引器）在 JS 中**不能**直接使用 `[]` 语法访问，必须使用 `get_Item()` / `set_Item()` 方法：
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendV8());
+    env.Eval(@"
+        // 创建 C# 数组
+        let arr = CS.System.Array.CreateInstance(puer.$typeof(CS.System.Int32), 3);
+        arr.set_Item(0, 42);           // 等价于 C# 的 arr[0] = 42
+        let val = arr.get_Item(0);     // 等价于 C# 的 val = arr[0]
+        console.log(val);              // 42
+
+        // 同样适用于 List<T>
+        let List = puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
+        let lst = new List();
+        lst.Add(10);
+        let first = lst.get_Item(0);   // 等价于 C# 的 lst[0]
+        lst.set_Item(0, 20);           // 等价于 C# 的 lst[0] = 20
+
+        // 同样适用于 Dictionary<TKey, TValue>
+        let Dict = puer.$generic(CS.System.Collections.Generic.Dictionary$2, CS.System.String, CS.System.Int32);
+        let dict = new Dict();
+        dict.set_Item('key', 100);     // 等价于 C# 的 dict['key'] = 100
+        let v = dict.get_Item('key');  // 等价于 C# 的 v = dict['key']
+    ");
+    env.Dispose();
+}
+```
+
+> ⚠️ **重要**：这是 JS 和 C# 之间的一个关键差异。JS 的 `[]` 操作符只能用于 JS 原生对象，对于 C# 对象的索引访问必须通过 `get_Item()` / `set_Item()` 方法。
+
+----------------------------
 ### typeof与运算符重载
 除了这上述特殊的用法之外，还要介绍两种情况：typeof函数和运算符重载：
 

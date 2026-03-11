@@ -136,7 +136,21 @@ func(obj)
 
 ---
 
-## 10. typeof
+## 10. 数组与索引器访问（`[]` 操作符）
+
+C# 的 `[]` 操作符（数组、List、Dictionary、自定义索引器）在三种语言中都**不能**直接使用 `[]`，必须使用 `get_Item()` / `set_Item()` 方法。
+
+| 语言 | 读取（C# `arr[0]`） | 写入（C# `arr[0] = val`） |
+|------|---------------------|--------------------------|
+| **JavaScript** | `arr.get_Item(0)` | `arr.set_Item(0, val)` |
+| **Lua** | `arr:get_Item(0)` | `arr:set_Item(0, val)` |
+| **Python** | `arr.get_Item(0)` | `arr.set_Item(0, val)` |
+
+> ⚠️ Lua 使用冒号 `:` 语法（实例方法），JS 和 Python 使用点号 `.` 语法。此规则适用于所有带索引器的 C# 类型（数组、List、Dictionary 等）。
+
+---
+
+## 11. typeof
 
 | 语言 | 语法 |
 |------|------|
@@ -146,7 +160,7 @@ func(obj)
 
 ---
 
-## 11. null 表示
+## 12. null 表示
 
 | 语言 | 脚本侧 null | 说明 |
 |------|-------------|------|
@@ -156,7 +170,7 @@ func(obj)
 
 ---
 
-## 12. 回调函数 / Lambda
+## 13. 回调函数 / Lambda
 
 | 语言 | 示例 |
 |------|------|
@@ -174,7 +188,7 @@ fn("hello");
 
 ---
 
-## 13. 异常抛出
+## 14. 异常抛出
 
 | 语言 | 语法 |
 |------|------|
@@ -196,6 +210,8 @@ fn("hello");
 | ref/out 创建 | `puer.$ref()` | `{}` (table) | `[]` (list) |
 | ref/out 取值 | `puer.$unref()` | `[1]` | `[0]` |
 | async/await | `puer.$promise(task)` | — | — |
+| 索引器读取 `[]` | `obj.get_Item(idx)` | `obj:get_Item(idx)` | `obj.get_Item(idx)` |
+| 索引器写入 `[]` | `obj.set_Item(idx, val)` | `obj:set_Item(idx, val)` | `obj.set_Item(idx, val)` |
 
 ---
 

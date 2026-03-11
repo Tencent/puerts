@@ -210,6 +210,44 @@ print(GenericTestClass.Inner.stringProp) -- 'hello'
 ```
 
 ----------------------------
+### Array & Indexer Access
+
+C#'s `[]` operator (including array indexing, List indexing, Dictionary indexing, and any custom indexer) **cannot** be used directly with `[]` syntax in Lua. You must use `get_Item()` / `set_Item()` methods instead (note the colon syntax):
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendLua());
+    env.Eval(@"
+        local CS = require('csharp')
+        local puerts = require('puerts')
+        local typeof = puerts.typeof
+
+        -- Create a C# array
+        local arr = CS.System.Array.CreateInstance(typeof(CS.System.Int32), 3)
+        arr:set_Item(0, 42)            -- equivalent to C#: arr[0] = 42
+        local val = arr:get_Item(0)    -- equivalent to C#: val = arr[0]
+        print(val)                     -- 42
+
+        -- Same for List<T>
+        local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+        local lst = List()
+        lst:Add(10)
+        local first = lst:get_Item(0)  -- equivalent to C#: lst[0]
+        lst:set_Item(0, 20)            -- equivalent to C#: lst[0] = 20
+
+        -- Same for Dictionary<TKey, TValue>
+        local Dict = puerts.generic(CS.System.Collections.Generic.Dictionary_2, CS.System.String, CS.System.Int32)
+        local dict = Dict()
+        dict:set_Item('key', 100)      -- equivalent to C#: dict['key'] = 100
+        local v = dict:get_Item('key') -- equivalent to C#: v = dict['key']
+    ");
+    env.Dispose();
+}
+```
+
+> ⚠️ **Important**: Since `get_Item` / `set_Item` are instance methods, you must use **colon syntax** `:` in Lua. Lua's native `[]` only works on Lua tables. For indexed access on C# objects, you must use these two methods.
+
+----------------------------
 ### typeof
 
 Since C#'s `typeof` cannot be accessed through the namespace, PuerTS provides the built-in `puerts.typeof()`:
