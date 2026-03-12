@@ -91,7 +91,7 @@ namespace Puerts
         {
             if (disposed) return;
 #if THREAD_SAFE
-            lock(jsEnv) 
+            lock(scripEnv) 
             {
 #endif
             disposed = true;
