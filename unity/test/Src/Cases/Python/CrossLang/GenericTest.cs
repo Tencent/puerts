@@ -117,7 +117,7 @@ result = puerts.load_type('Puerts.UnitTest.GenericTestHelper').TestListRange(ls,
             pythonEnv.Dispose();
         }
 
-        /*[Test]
+        [Test]
         public void InstanceGenericMethodPythonTest()
         {
             var pythonEnv = new ScriptEnv(new BackendPython());
@@ -128,12 +128,12 @@ result = puerts.load_type('Puerts.UnitTest.GenericTestHelper').TestListRange(ls,
     testobj := GenericTestClass(),
     setattr(testobj, 'stringProp', 'world'),
     method := puerts.generic_method(GenericTestClass, 'InstanceGenericMethod', Int32),
-    method(testobj)
+    method(this=testobj)
 )[-1])()
 ");
             Assert.AreEqual(result, "world_Int32");
             pythonEnv.Dispose();
-        }*/
+        }
 
         [Test]
         public void GenericAccessPythonTest()
