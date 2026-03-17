@@ -57,6 +57,12 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
     if (PlatformFile.FileExists(*NormalizedPath))
     {
         AbsolutePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*NormalizedPath);
+        // 将本地绝对路径转换为 File URI 格式（file:///），以兼容高版本 VSCode 调试器的断点匹配
+		AbsolutePath = AbsolutePath.Replace(TEXT("\\"), TEXT("/"));
+		if (!AbsolutePath.StartsWith(TEXT("file:///")))
+		{
+			AbsolutePath = TEXT("file:///") + AbsolutePath;
+		}
         Path = NormalizedPath;
         return true;
     }
