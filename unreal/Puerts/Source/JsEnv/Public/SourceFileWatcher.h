@@ -27,8 +27,6 @@ public:
 
     void OnDirectoryChanged(const TArray<FFileChangeData>& FileChanges);
 
-
-private:
     FString FindCommonParentDir(const FString& PathA, const FString& PathB);
 
 private:

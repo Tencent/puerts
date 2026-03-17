@@ -19,33 +19,17 @@ FSourceFileWatcher::FSourceFileWatcher(std::function<void(const FString&)> InOnW
 {
 }
 
-FString FSourceFileWatcher::FindCommonParentDir(const FString& PathA, const FString& PathB)
+FSourceFileWatcher::~FSourceFileWatcher()
 {
-    TArray<FString> PartsA, PartsB;
-    PathA.ParseIntoArray(PartsA, TEXT("/"), true);
-    PathB.ParseIntoArray(PartsB, TEXT("/"), true);
-
-    FString CommonParent;
-    int32 MinLen = FMath::Min(PartsA.Num(), PartsB.Num());
-    for (int32 i = 0; i < MinLen; ++i)
+    if (WatchedRootDirHandle.IsValid())
     {
-        if (PartsA[i].Equals(PartsB[i], ESearchCase::IgnoreCase))
-        {
-            if (CommonParent.IsEmpty())
-            {
-                CommonParent = PartsA[i];
-            }
-            else
-            {
-                CommonParent = CommonParent / PartsA[i];
-            }
-        }
-        else
-        {
-            break;
-        }
+        FDirectoryWatcherModule& DirectoryWatcherModule =
+            FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
+        IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
+
+        FScopeLock ScopeLock(&SourceFileWatcherCritical);
+        DirectoryWatcher->UnregisterDirectoryChangedCallback_Handle(WatchedRootDir, WatchedRootDirHandle);
     }
-    return CommonParent;
 }
 
 void FSourceFileWatcher::OnSourceLoaded(const FString& InPath)
@@ -78,8 +62,8 @@ void FSourceFileWatcher::OnSourceLoaded(const FString& InPath)
 
             DirectoryWatcher->UnregisterDirectoryChangedCallback_Handle(WatchedRootDir, WatchedRootDirHandle);
             DirectoryWatcher->RegisterDirectoryChangedCallback_Handle(NewRootDir,
-                IDirectoryWatcher::FDirectoryChanged::CreateRaw(this, &FSourceFileWatcher::OnDirectoryChanged), WatchedRootDirHandle,
-                IDirectoryWatcher::IncludeDirectoryChanges);
+                IDirectoryWatcher::FDirectoryChanged::CreateRaw(this, &FSourceFileWatcher::OnDirectoryChanged),
+                WatchedRootDirHandle, IDirectoryWatcher::IncludeDirectoryChanges);
             WatchedRootDir = NewRootDir;
             UE_LOG(Puerts, Log, TEXT("update watched root dir to: %s"), *NewRootDir);
         }
@@ -101,11 +85,15 @@ void FSourceFileWatcher::OnDirectoryChanged(const TArray<FFileChangeData>& FileC
 {
     FScopeLock ScopeLock(&SourceFileWatcherCritical);
     if (!OnWatchedFileChanged)
+    {
         return;
+    }
     for (auto Change : FileChanges)
     {
         if (!Change.Filename.EndsWith(TEXT(".js")))
+        {
             continue;
+        }
 
         FPaths::NormalizeFilename(Change.Filename);
         Change.Filename = FPaths::ConvertRelativePathToFull(Change.Filename);
@@ -162,17 +150,33 @@ void FSourceFileWatcher::OnDirectoryChanged(const TArray<FFileChangeData>& FileC
     }
 }
 
-FSourceFileWatcher::~FSourceFileWatcher()
+FString FSourceFileWatcher::FindCommonParentDir(const FString& PathA, const FString& PathB)
 {
-    if (WatchedRootDirHandle.IsValid())
-    {
-        FDirectoryWatcherModule& DirectoryWatcherModule =
-            FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
-        IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
+    TArray<FString> PartsA, PartsB;
+    PathA.ParseIntoArray(PartsA, TEXT("/"), true);
+    PathB.ParseIntoArray(PartsB, TEXT("/"), true);
 
-        FScopeLock ScopeLock(&SourceFileWatcherCritical);
-        DirectoryWatcher->UnregisterDirectoryChangedCallback_Handle(WatchedRootDir, WatchedRootDirHandle);
+    FString CommonParent;
+    int32 MinLen = FMath::Min(PartsA.Num(), PartsB.Num());
+    for (int32 i = 0; i < MinLen; ++i)
+    {
+        if (PartsA[i].Equals(PartsB[i], ESearchCase::IgnoreCase))
+        {
+            if (CommonParent.IsEmpty())
+            {
+                CommonParent = PartsA[i];
+            }
+            else
+            {
+                CommonParent = CommonParent / PartsA[i];
+            }
+        }
+        else
+        {
+            break;
+        }
     }
+    return CommonParent;
 }
 }    // namespace PUERTS_NAMESPACE
 #endif
