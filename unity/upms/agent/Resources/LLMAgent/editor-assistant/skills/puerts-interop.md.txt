@@ -1,0 +1,160 @@
+---
+name: puerts-interop
+description: "PuerTS JS ↔ C# interop rules: CS/puer globals, out/ref params, generics, operators, Array/List indexer access, async/Task. CRITICAL: Unity edit-mode safety — use sharedMaterial/sharedMesh/DestroyImmediate instead of runtime-only APIs"
+---
+
+## PuerTS: JS ↔ C# Interop Rules
+
+You are running in a PuerTS environment. Below are the rules for interacting between JavaScript/TypeScript and C#.
+
+### JS Calling C#
+
+1. **Access C# classes**: Use the global `CS` object with the full namespace path.
+   ```js
+   const Vector3 = CS.UnityEngine.Vector3;
+   const go = new CS.UnityEngine.GameObject("myObj");
+   ```
+
+2. **Call methods & access properties**: Same syntax as C#.
+   ```js
+   CS.UnityEngine.Debug.Log("Hello World");
+   const rect = new CS.UnityEngine.Rect(0, 0, 2, 2);
+   console.log(rect.Contains(CS.UnityEngine.Vector2.one)); // True
+   rect.width = 0.1;
+   ```
+
+3. **out / ref parameters**: Use `puer.$ref()` to create a ref container, `puer.$unref()` to read the value.
+   ```js
+   let p1 = puer.$ref();       // for out param
+   let p2 = puer.$ref(10);     // for ref param with initial value
+   let ret = CS.Example.InOutArgFunc(100, p1, p2);
+   console.log(puer.$unref(p1), puer.$unref(p2));
+   ```
+
+4. **Generics**: Use `puer.$generic()` to construct generic types. TypeScript generics are compile-time only; runtime requires this helper.
+   ```js
+   let List = puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
+   let lst = new List();
+   lst.Add(1);
+   ```
+
+5. **typeof**: Use `puer.$typeof()` instead of C#'s `typeof` keyword.
+   ```js
+   go.AddComponent(puer.$typeof(CS.UnityEngine.ParticleSystem));
+   ```
+
+6. **Array & Indexer access (C# `[]` operator)**: C#'s `[]` operator does **NOT** map to JS `[]`. You must use `get_Item(index)` / `set_Item(index, value)` methods instead. This applies to C# arrays, Lists, Dictionaries, and any type with an indexer.
+   ```js
+   // Create a C# array
+   let arr = CS.System.Array.CreateInstance(puer.$typeof(CS.System.Int32), 3);
+   arr.set_Item(0, 42);       // arr[0] = 42 in C#
+   let val = arr.get_Item(0); // val = arr[0] in C#
+
+   // Same for List<T>, Dictionary<K,V>, etc.
+   let List = puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
+   let lst = new List();
+   lst.Add(10);
+   let first = lst.get_Item(0); // first = lst[0] in C#
+   lst.set_Item(0, 20);         // lst[0] = 20 in C#
+   ```
+
+7. **Operator overloading**: JS does not support operator overloading; use `op_Xxx` methods instead.
+   ```js
+   let ret = CS.UnityEngine.Vector3.op_Multiply(CS.UnityEngine.Vector3.up, 1600);
+   // (0.0, 1600.0, 0.0)
+   ```
+
+8. **Async / Task**: Wrap C# Task with `puer.$promise()` to await in JS.
+   ```js
+   let task = obj.GetFileLengthAsync("path");
+   let result = await puer.$promise(task);
+   ```
+
+9. **console.log**: In PuerTS, `console.log` is intercepted and internally calls `UnityEngine.Debug.Log`.
+
+### C# Calling JS
+
+1. **Via Delegate**: PuerTS can convert a JS function to a C# delegate (Action / Func / custom delegate). The JS side passes a function, C# stores it as a delegate and invokes it.
+   ```js
+   // JS side — pass a function where C# expects a delegate
+   obj.AddEventCallback1(str => console.log(str));
+   obj.Trigger(); // C# fires the delegate, JS function runs
+   ```
+
+2. **Passing parameters from C# to JS**: Convert JS function to a parameterized delegate. Type conversion follows the same rules as C# return values to JS.
+   ```csharp
+   // C# side
+   System.Action<int> LogInt = env.Eval<System.Action<int>>("(function(a){ console.log(a); })");
+   LogInt(3); // prints 3
+   ```
+
+3. **Getting return values from JS**: Use `Func<>` delegate instead of `Action<>`.
+   ```csharp
+   // C# side
+   System.Func<int, int> Add3 = env.Eval<System.Func<int, int>>("(function(a){ return 3 + a; })");
+   Console.WriteLine(Add3(1)); // 4
+   ```
+
+### Important Notes
+- The `CS` global object is always available in the PuerTS JS environment for accessing any C# type.
+- The `puer` global object provides PuerTS helper APIs: `$ref`, `$unref`, `$generic`, `$typeof`, `$promise`.
+
+### Unity Edit Mode Detection (CRITICAL)
+
+The agent typically runs in **Edit Mode** (`Application.isPlaying == false`). Many Unity APIs behave differently or cause resource leaks in Edit Mode. **Always follow these rules:**
+
+#### Rule 1 — Check Play Mode When Uncertain
+```js
+const isPlaying = CS.UnityEngine.Application.isPlaying;
+```
+Use this to branch logic when an API has different edit/play behavior.
+
+#### Rule 2 — Edit-Mode-Safe API Substitutions
+
+Always use the **edit-mode-safe** column unless you have confirmed `isPlaying == true`:
+
+| ❌ Runtime-only API | ✅ Edit-mode-safe alternative | Reason |
+|---|---|---|
+| `renderer.material` | `renderer.sharedMaterial` | `.material` instantiates a copy that leaks in edit mode |
+| `renderer.materials` | `renderer.sharedMaterials` | Same — creates leaked copies |
+| `meshFilter.mesh` | `meshFilter.sharedMesh` | `.mesh` instantiates a copy that leaks in edit mode |
+| `Object.Destroy(obj)` | `Object.DestroyImmediate(obj)` | `Destroy` is deferred and does not execute in edit mode |
+| `StartCoroutine(...)` | Use `async/await` or `EditorApplication.update` | Coroutines do not run in edit mode |
+| `Instantiate(prefab)` as runtime spawn | `PrefabUtility.InstantiatePrefab(prefab)` | Keeps prefab link in edit mode |
+| `gameObject.SetActive(...)` then rely on `Awake/Start` | Manually initialize | `Awake`/`Start` are not called in edit mode |
+
+#### Rule 3 — Material & Mesh Property Modification
+When you only need to **read** material/mesh properties, always use `shared*` variants:
+```js
+// ✅ Correct — no leak
+let color = renderer.sharedMaterial.color;
+
+// ❌ Wrong — creates a material instance that leaks
+let color = renderer.material.color;
+```
+
+When you need to **modify** a material on a specific object without affecting others, explicitly create and track the instance:
+```js
+// Only in play mode — or accept the leak in edit mode
+if (CS.UnityEngine.Application.isPlaying) {
+    renderer.material.color = new CS.UnityEngine.Color(1, 0, 0, 1);
+} else {
+    // In edit mode, modify the shared material (affects all users)
+    // or create a new material and assign it
+    let mat = CS.UnityEngine.Object.Instantiate(renderer.sharedMaterial);
+    mat.color = new CS.UnityEngine.Color(1, 0, 0, 1);
+    renderer.sharedMaterial = mat;
+}
+```
+
+#### Rule 4 — Destruction
+```js
+// ✅ Works in both edit and play mode
+CS.UnityEngine.Object.DestroyImmediate(go);
+
+// ❌ Only works in play mode
+CS.UnityEngine.Object.Destroy(go);
+```
+
+#### Rule 5 — Default Assumption
+**Unless the user explicitly says they are in Play Mode, always assume Edit Mode and use edit-mode-safe APIs.**

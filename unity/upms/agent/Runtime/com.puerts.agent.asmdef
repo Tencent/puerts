@@ -1,0 +1,17 @@
+{
+    "name": "com.puerts.agent",
+    "rootNamespace": "LLMAgent",
+    "references": [
+        "com.tencent.puerts.core",
+        "com.tencent.puerts.v8"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

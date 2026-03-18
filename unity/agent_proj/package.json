@@ -1,0 +1,21 @@
+{
+  "name": "puerts-agent",
+  "version": "1.0.0",
+  "description": "LLM Agent TypeScript project for PuerTS",
+  "private": true,
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "build:check": "tsc --noEmit && node esbuild.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.41",
+    "ai": "^6.0.116",
+    "web-streams-polyfill": "^4.2.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.4.0"
+  }
+}

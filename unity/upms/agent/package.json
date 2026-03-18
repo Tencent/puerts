@@ -1,0 +1,15 @@
+{
+  "name": "com.puerts.agent",
+  "version": "0.1.0",
+  "displayName": "PuerTS Agent",
+  "description": "AI Agent framework powered by PuerTS for Unity",
+  "unity": "2021.3",
+  "keywords": [
+    "puerts",
+    "agent",
+    "ai"
+  ],
+  "author": {
+    "name": "PuerTS Agent"
+  }
+}

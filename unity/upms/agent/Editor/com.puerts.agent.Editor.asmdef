@@ -1,0 +1,20 @@
+{
+    "name": "com.puerts.agent.Editor",
+    "rootNamespace": "LLMAgent.Editor",
+    "references": [
+        "com.puerts.agent",
+        "com.tencent.puerts.core",
+        "com.tencent.puerts.core.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
