@@ -9,7 +9,7 @@
  * TS runtime itself, not the specific agent persona.
  */
 
-import { getResourceRoot } from '../resource-root.mjs';
+import { getResourceRoot } from '../../../ai_shared_src/resource-root.mjs';
 
 // ---------------------------------------------------------------------------
 // Role definition — loaded from resource root at init time

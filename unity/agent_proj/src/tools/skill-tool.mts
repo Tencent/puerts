@@ -12,7 +12,7 @@
  */
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getResourceRoot } from '../resource-root.mjs';
+import { getResourceRoot } from '../../../ai_shared_src/resource-root.mjs';
 
 // ---------------------------------------------------------------------------
 // Skill registry

@@ -16,7 +16,7 @@ import {
     getHistoryLength,
     getIsConfigured,
 } from './agent/agent-core.mjs';
-import { setResourceRoot } from './resource-root.mjs';
+import { setResourceRoot } from '../../ai_shared_src/resource-root.mjs';
 import { initSystemPrompt } from './agent/prompt.mjs';
 import { initSkills } from './tools/skill-tool.mjs';
 import { initBuiltins } from './tools/eval-tool.mjs';

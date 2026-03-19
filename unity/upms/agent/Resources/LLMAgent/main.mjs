@@ -38801,7 +38801,7 @@ function createOpenAI(options = {}) {
 __name(createOpenAI, "createOpenAI");
 var openai = createOpenAI();
 
-// src/resource-root.mts
+// ../ai_shared_src/resource-root.mts
 var resourceRoot = null;
 function setResourceRoot(root) {
   resourceRoot = root.endsWith("/") ? root.slice(0, -1) : root;
@@ -38813,7 +38813,7 @@ function getResourceRoot() {
 }
 __name(getResourceRoot, "getResourceRoot");
 
-// src/tools/eval-tool.mts
+// ../ai_shared_src/eval-core.mts
 var jsEnv = null;
 var builtinSummariesText = "";
 function getJsEnv() {
@@ -38826,14 +38826,14 @@ __name(getJsEnv, "getJsEnv");
 async function initBuiltins() {
   const root = getResourceRoot();
   if (!root) {
-    console.warn("[EvalTool] Resource root not set, skipping builtins loading.");
+    console.warn("[EvalCore] Resource root not set, skipping builtins loading.");
     return;
   }
   const env = getJsEnv();
   const builtinPath = `${root}/builtins`;
   const assets = CS.UnityEngine.Resources.LoadAll(builtinPath, puer.$typeof(CS.UnityEngine.TextAsset));
   if (!assets || assets.Length === 0) {
-    console.log(`[EvalTool] No builtins assets found at Resources/${builtinPath}/`);
+    console.log(`[EvalCore] No builtins assets found at Resources/${builtinPath}/`);
     return;
   }
   const specifiers = [];
@@ -38861,12 +38861,12 @@ async function initBuiltins() {
   const summaries = [];
   for (const entry of results) {
     if (entry.error) {
-      console.warn(`[EvalTool] Failed to load builtins module '${entry.specifier}': ${entry.error}`);
+      console.warn(`[EvalCore] Failed to load builtins module '${entry.specifier}': ${entry.error}`);
     } else {
       if (entry.summary) {
         summaries.push(entry.summary);
       }
-      console.log(`[EvalTool] Loaded builtins module '${entry.specifier}'.`);
+      console.log(`[EvalCore] Loaded builtins module '${entry.specifier}'.`);
     }
   }
   builtinSummariesText = summaries.length > 0 ? `
@@ -38903,7 +38903,7 @@ async function execute() {
 Available modules:
 
 ` + summaries.join("\n\n") : "";
-  console.log(`[EvalTool] Loaded ${summaries.length} builtins summary(s).`);
+  console.log(`[EvalCore] Loaded ${summaries.length} builtins summary(s).`);
 }
 __name(initBuiltins, "initBuiltins");
 var RUNNER_CODE = `(function(onFinish) {
@@ -38931,6 +38931,52 @@ var RUNNER_CODE = `(function(onFinish) {
         onFinish.Invoke(JSON.stringify({ __error: true, message: String(err.message || err), stack: String(err.stack || '') }));
     });
 })`;
+async function executeCode(code) {
+  const env = getJsEnv();
+  try {
+    console.log(`[EvalCore] Executing code:
+${code}`);
+    try {
+      CS.LLMAgent.ScriptEnvBridge.EvalSync(env, code);
+    } catch (defineError) {
+      return {
+        success: false,
+        error: defineError.message || String(defineError),
+        stack: defineError.stack || ""
+      };
+    }
+    const resultJson = await new Promise((resolve2) => {
+      CS.LLMAgent.ScriptEnvBridge.Eval(env, RUNNER_CODE, resolve2);
+    });
+    const parsed = JSON.parse(resultJson);
+    if (parsed.__error) {
+      return {
+        success: false,
+        error: parsed.message,
+        stack: parsed.stack || ""
+      };
+    }
+    const output = {
+      success: true,
+      result: parsed.result
+    };
+    if (parsed.__image) {
+      output.__image = parsed.__image;
+    }
+    return output;
+  } catch (error48) {
+    const errorMsg = error48.message || String(error48);
+    const stack = error48.stack || "";
+    return {
+      success: false,
+      error: errorMsg,
+      stack
+    };
+  }
+}
+__name(executeCode, "executeCode");
+
+// src/tools/eval-tool.mts
 function createEvalTools() {
   return {
     /**
@@ -38944,47 +38990,7 @@ function createEvalTools() {
         )
       }),
       execute: /* @__PURE__ */ __name(async ({ code }) => {
-        const env = getJsEnv();
-        try {
-          console.log(`[EvalJsTool] Executing code:
-${code}`);
-          try {
-            CS.LLMAgent.ScriptEnvBridge.EvalSync(env, code);
-          } catch (defineError) {
-            return {
-              success: false,
-              error: defineError.message || String(defineError),
-              stack: defineError.stack || ""
-            };
-          }
-          const resultJson = await new Promise((resolve2) => {
-            CS.LLMAgent.ScriptEnvBridge.Eval(env, RUNNER_CODE, resolve2);
-          });
-          const parsed = JSON.parse(resultJson);
-          if (parsed.__error) {
-            return {
-              success: false,
-              error: parsed.message,
-              stack: parsed.stack || ""
-            };
-          }
-          const output = {
-            success: true,
-            result: parsed.result
-          };
-          if (parsed.__image) {
-            output.__image = parsed.__image;
-          }
-          return output;
-        } catch (error48) {
-          const errorMsg = error48.message || String(error48);
-          const stack = error48.stack || "";
-          return {
-            success: false,
-            error: errorMsg,
-            stack
-          };
-        }
+        return await executeCode(code);
       }, "execute"),
       // Convert eval output to model-friendly content.
       // When the executed code returns an object with an __image marker

@@ -1,0 +1,19 @@
+{
+  "name": "puerts-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server TypeScript project for PuerTS (Node.js backend)",
+  "private": true,
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "build:check": "tsc --noEmit && node esbuild.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.4.0"
+  }
+}

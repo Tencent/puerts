@@ -1,0 +1,17 @@
+{
+    "name": "com.puerts.mcp",
+    "rootNamespace": "PuertsMcp",
+    "references": [
+        "com.tencent.puerts.core",
+        "com.tencent.puerts.nodejs"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

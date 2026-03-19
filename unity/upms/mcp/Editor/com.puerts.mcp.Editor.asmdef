@@ -1,0 +1,19 @@
+{
+    "name": "com.puerts.mcp.Editor",
+    "rootNamespace": "PuertsMcp.Editor",
+    "references": [
+        "com.puerts.mcp",
+        "com.tencent.puerts.core"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

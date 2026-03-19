@@ -1,9 +1,9 @@
-﻿{
+{
   "compilerOptions": {
     "target": "esnext",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "outDir": "../upms/agent/Resources",
+    "outDir": "../upms/mcp/Resources",
     "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,

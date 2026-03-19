@@ -1,0 +1,20 @@
+{
+  "name": "com.puerts.mcp",
+  "version": "0.1.0",
+  "displayName": "PuerTS MCP Server",
+  "description": "MCP Server for exposing evalJsCode tool to external Agents, powered by PuerTS Node.js backend",
+  "unity": "2021.3",
+  "keywords": [
+    "puerts",
+    "mcp",
+    "ai",
+    "tool"
+  ],
+  "dependencies": {
+    "com.tencent.puerts.core": "",
+    "com.tencent.puerts.nodejs": ""
+  },
+  "author": {
+    "name": "PuerTS"
+  }
+}
