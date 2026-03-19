@@ -819,7 +819,7 @@ CppObjectMapper 负责将 C# 对象映射为脚本语言中的对象。每个插
 
 #### 关键数据结构：
 
-`cpp
+```cpp
 // 对象缓存：C# 对象指针（以 C++ 指针形式表示）-> 脚本对象的映射
 eastl::unordered_map<void*, FObjectCacheNode, ...> CDataCache;
 
@@ -828,7 +828,7 @@ eastl::unordered_map<const void*, ScriptType, ...> TypeIdToXxxMap;
 
 // 生命周期追踪
 eastl::shared_ptr<int> ref;
-`
+```
 
 #### 各语言实现差异：
 

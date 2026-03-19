@@ -821,7 +821,7 @@ CppObjectMapper is responsible for mapping C# objects to script language objects
 
 #### Key Data Structures:
 
-`cpp
+```cpp
 // Object cache: C# object pointer (as C++ pointer) -> script object mapping
 eastl::unordered_map<void*, FObjectCacheNode, ...> CDataCache;
 
@@ -830,7 +830,7 @@ eastl::unordered_map<const void*, ScriptType, ...> TypeIdToXxxMap;
 
 // Lifecycle tracking
 eastl::shared_ptr<int> ref;
-`
+```
 
 #### Language-Specific Implementation Differences:
 
