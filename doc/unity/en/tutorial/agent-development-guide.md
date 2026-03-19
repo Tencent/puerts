@@ -53,7 +53,7 @@ The following sections describe how to write each of these three types of files.
 
 ### File Location
 
-```
+```text
 <resource-root>/system-prompt.md.txt
 ```
 
@@ -98,7 +98,7 @@ A Skill is a **lazily loaded** Markdown document that provides the LLM with oper
 
 ### File Location
 
-```
+```text
 <resource-root>/skills/<skill-name>.md.txt
 ```
 
@@ -106,7 +106,7 @@ A Skill is a **lazily loaded** Markdown document that provides the LLM with oper
 
 Skill files use **YAML front-matter** to declare metadata, with Markdown content in the body:
 
-```markdown
+```yaml
 ---
 name: <skill-id>
 description: "<one-line description shown to the LLM>"
@@ -124,7 +124,7 @@ description: "<one-line description shown to the LLM>"
 
 `skills/puerts-interop.md.txt`:
 
-```markdown
+```yaml
 ---
 name: puerts-interop
 description: "PuerTS JS ↔ C# interop rules: CS/puer globals, out/ref params, generics, operators, Array/List indexer access, async/Task. CRITICAL: Unity edit-mode safety — use sharedMaterial/sharedMesh/DestroyImmediate instead of runtime-only APIs"
@@ -217,7 +217,7 @@ Using the **Maze Runner** maze AI agent as an example:
 
 ### Step 1: Create the Resource Directory
 
-```
+```text
 Resources/maze-runner/
 ├── system-prompt.md.txt
 ├── skills/
