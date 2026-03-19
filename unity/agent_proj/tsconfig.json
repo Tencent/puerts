@@ -4,7 +4,6 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "outDir": "../upms/agent/Resources",
-    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

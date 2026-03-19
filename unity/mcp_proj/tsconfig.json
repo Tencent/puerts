@@ -4,7 +4,6 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "outDir": "../upms/mcp/Resources",
-    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,7 +11,7 @@
     "declaration": false,
     "sourceMap": false,
     "noEmit": true,
-    "typeRoots": ["../../../Assets/Gen/Typing", "../upms/core/Typing"]
+    "typeRoots": ["node_modules/@types", "../../../Assets/Gen/Typing", "../upms/core/Typing"]
   },
   "include": ["src/**/*.mts", "src/**/*.d.ts", "../ai_shared_src/**/*.mts", "../../../Assets/Gen/Typing/csharp/index.d.ts"],
   "exclude": ["node_modules"]

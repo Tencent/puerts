@@ -29,20 +29,25 @@ const transports: Map<string, SSEServerTransport> = new Map();
 
 function createMcpServer(): InstanceType<typeof McpServer> {
     const server = new McpServer({
-        name: 'unity-puerts-mcp',
+        name: 'puerts-unity-editor-assistant',
         version: '1.0.0',
     });
 
     // Register the evalJsCode tool
     server.tool(
         'evalJsCode',
-        'Execute JavaScript code in a dedicated PuerTS runtime environment inside Unity. ' +
+        'Execute JavaScript code in a dedicated PuerTS runtime environment inside the Unity Editor. ' +
         'This VM is separate from the main agent VM but is **reused across calls** — ' +
         'variables, functions, and state defined in previous calls persist and can be referenced in later calls.\n\n' +
-        'The code runs inside Unity via PuerTS with full access to the `CS` and `puer` globals.\n\n' +
+        'The code runs inside the Unity Editor via PuerTS with full access to the `CS` and `puer` globals. ' +
+        'Through the `CS` namespace you can **call any C# API** to manipulate the Unity Editor — ' +
+        'including `CS.UnityEditor.*` APIs (e.g. `CS.UnityEditor.AssetDatabase`, `CS.UnityEditor.Selection`, ' +
+        '`CS.UnityEditor.EditorApplication`, `CS.UnityEditor.SceneManagement`, etc.) ' +
+        'as well as all `CS.UnityEngine.*` runtime APIs.\n\n' +
         'Use this tool when you need to inspect or modify Unity scene objects, ' +
         'create/destroy GameObjects or Components, query hierarchies, ' +
-        'execute Unity API calls dynamically, or test code snippets in the live environment.\n\n' +
+        'manipulate assets, modify Editor settings, automate Editor workflows, ' +
+        'execute Unity API calls dynamically, or test code snippets in the live Editor environment.\n\n' +
         '**Code format**: Your code MUST be an async function declaration named `execute`, for example:\n' +
         '```\nasync function execute() {\n    // your logic here\n    return someValue;\n}\n```\n' +
         'Use `return <value>` inside the function to pass a result back. ' +
