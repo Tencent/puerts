@@ -160,7 +160,7 @@ Builtin modules are JavaScript modules that provide preset helper functions for 
 
 ### File Location
 
-```
+```text
 <resource-root>/builtins/<module-name>.mjs
 ```
 
