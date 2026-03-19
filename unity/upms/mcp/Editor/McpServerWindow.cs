@@ -11,19 +11,19 @@ namespace PuertsMcp.Editor
     /// </summary>
     public class McpServerWindow : EditorWindow
     {
-        private McpScriptManager scriptManager;
+        // Global singleton state — survives window close and play mode changes
+        private static McpScriptManager s_scriptManager;
+        private static bool s_isStarting;
+        private static string s_statusMessage = "Stopped";
+        private static int s_activePort;
 
-        // Settings
+        // Settings (per-instance for UI editing, synced from EditorPrefs)
         private int port = 3100;
         private string resourceRoot = "LLMAgent/editor-assistant";
 
         // EditorPrefs keys
         private const string PrefKeyPort = "PuertsMcp_Port";
         private const string PrefKeyResourceRoot = "PuertsMcp_ResourceRoot";
-
-        // State
-        private bool isStarting;
-        private string statusMessage = "Stopped";
 
         [MenuItem("PuerTS/MCP Server")]
         public static void ShowWindow()
@@ -36,18 +36,6 @@ namespace PuertsMcp.Editor
         private void OnEnable()
         {
             LoadSettings();
-            // Auto-cleanup on Play Mode change
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-        }
-
-        private void OnDisable()
-        {
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-        }
-
-        private void OnDestroy()
-        {
-            ShutdownServer();
         }
 
         private void LoadSettings()
@@ -62,17 +50,7 @@ namespace PuertsMcp.Editor
             EditorPrefs.SetString(PrefKeyResourceRoot, resourceRoot);
         }
 
-        private void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            // Shutdown when entering or exiting Play Mode to avoid stale ScriptEnv
-            if (state == PlayModeStateChange.ExitingEditMode ||
-                state == PlayModeStateChange.ExitingPlayMode)
-            {
-                ShutdownServer();
-            }
-        }
-
-        private bool IsRunning => scriptManager != null && scriptManager.IsInitialized;
+        private static bool IsRunning => s_scriptManager != null && s_scriptManager.IsInitialized;
 
         private void OnGUI()
         {
@@ -81,7 +59,7 @@ namespace PuertsMcp.Editor
             EditorGUILayout.Space(5);
 
             // --- Settings ---
-            EditorGUI.BeginDisabledGroup(IsRunning || isStarting);
+            EditorGUI.BeginDisabledGroup(IsRunning || s_isStarting);
 
             EditorGUILayout.LabelField("Resource Root", EditorStyles.miniLabel);
             resourceRoot = EditorGUILayout.TextField(resourceRoot);
@@ -98,14 +76,14 @@ namespace PuertsMcp.Editor
             // --- Start / Stop ---
             EditorGUILayout.BeginHorizontal();
 
-            if (!IsRunning && !isStarting)
+            if (!IsRunning && !s_isStarting)
             {
                 if (GUILayout.Button("Start Server", GUILayout.Height(30)))
                 {
                     StartServer();
                 }
             }
-            else if (isStarting)
+            else if (s_isStarting)
             {
                 EditorGUI.BeginDisabledGroup(true);
                 GUILayout.Button("Starting...", GUILayout.Height(30));
@@ -125,47 +103,51 @@ namespace PuertsMcp.Editor
 
             // --- Status ---
             EditorGUILayout.LabelField("Status", EditorStyles.miniLabel);
-            var color = IsRunning ? Color.green : (isStarting ? Color.yellow : Color.gray);
+            var color = IsRunning ? Color.green : (s_isStarting ? Color.yellow : Color.gray);
             var prevColor = GUI.contentColor;
             GUI.contentColor = color;
-            EditorGUILayout.LabelField(statusMessage, EditorStyles.wordWrappedLabel);
+            EditorGUILayout.LabelField(s_statusMessage, EditorStyles.wordWrappedLabel);
             GUI.contentColor = prevColor;
 
             if (IsRunning)
             {
                 EditorGUILayout.Space(5);
                 EditorGUILayout.LabelField("Endpoint", EditorStyles.miniLabel);
-                var endpoint = $"http://127.0.0.1:{port}/sse";
+                var endpoint = $"http://127.0.0.1:{s_activePort}/sse";
                 EditorGUILayout.SelectableLabel(endpoint, EditorStyles.textField, GUILayout.Height(18));
             }
 
             // Show error if any
-            if (scriptManager != null && !string.IsNullOrEmpty(scriptManager.LastError))
+            if (s_scriptManager != null && !string.IsNullOrEmpty(s_scriptManager.LastError))
             {
                 EditorGUILayout.Space(5);
-                EditorGUILayout.HelpBox(scriptManager.LastError, MessageType.Error);
+                EditorGUILayout.HelpBox(s_scriptManager.LastError, MessageType.Error);
             }
         }
 
         private void StartServer()
         {
-            if (IsRunning || isStarting) return;
+            if (IsRunning || s_isStarting) return;
 
             SaveSettings();
-            isStarting = true;
-            statusMessage = "Starting...";
+            s_isStarting = true;
+            s_statusMessage = "Starting...";
+            s_activePort = port;
 
-            scriptManager = new McpScriptManager();
-            scriptManager.Initialize(resourceRoot, port, () =>
+            // Ensure the server keeps running when Unity is in the background
+            Application.runInBackground = true;
+
+            s_scriptManager = new McpScriptManager();
+            s_scriptManager.Initialize(resourceRoot, port, () =>
             {
-                isStarting = false;
-                if (scriptManager != null && scriptManager.IsInitialized)
+                s_isStarting = false;
+                if (s_scriptManager != null && s_scriptManager.IsInitialized)
                 {
-                    statusMessage = $"Running on port {port}";
+                    s_statusMessage = $"Running on port {s_activePort}";
                 }
                 else
                 {
-                    statusMessage = "Failed to start. Check Console for details.";
+                    s_statusMessage = "Failed to start. Check Console for details.";
                 }
                 Repaint();
             });
@@ -175,15 +157,15 @@ namespace PuertsMcp.Editor
 
         private void ShutdownServer()
         {
-            isStarting = false;
+            s_isStarting = false;
 
-            if (scriptManager != null)
+            if (s_scriptManager != null)
             {
-                scriptManager.Shutdown();
-                scriptManager = null;
+                s_scriptManager.Shutdown();
+                s_scriptManager = null;
             }
 
-            statusMessage = "Stopped";
+            s_statusMessage = "Stopped";
             Repaint();
         }
     }
