@@ -192,28 +192,36 @@ function createModel() {
             // Fix for Gemini 3.1 Pro thought_signature error:
             // Gemini rejects history containing tool calls without thought_signatures.
             // We convert past tool calls and tool results into plain text messages.
+            // IMPORTANT: We put the tool call logs into 'user' role instead of 'assistant'
+            // so the model doesn't learn to mimic the plain text format for future tool calls.
             const isGemini = currentConfig.model?.toLowerCase().includes('gemini');
             if (isGemini && body.messages && Array.isArray(body.messages)) {
                 const newMessages: any[] = [];
                 for (const msg of body.messages) {
                     if (msg.role === 'assistant' && msg.tool_calls) {
-                        let text = msg.content || '';
+                        if (msg.content) {
+                            newMessages.push({
+                                role: 'assistant',
+                                content: msg.content
+                            });
+                        }
+                        let tcText = '';
                         for (const tc of msg.tool_calls) {
-                            text += `\n[Action: ${tc.function?.name}, Arguments: ${tc.function?.arguments}]`;
+                            tcText += `[System Log: Assistant called tool '${tc.function?.name}' with arguments: ${tc.function?.arguments}]\n`;
                         }
                         newMessages.push({
-                            role: 'assistant',
-                            content: text.trim()
+                            role: 'user',
+                            content: tcText.trim()
                         });
                     } else if (msg.role === 'tool') {
                         let newContent = msg.content;
                         if (Array.isArray(newContent)) {
                             newContent = [
-                                { type: 'text', text: `[Result of action ${msg.tool_call_id || msg.name || 'unknown'}]:\n` },
+                                { type: 'text', text: `[System Log: Tool '${msg.name || 'unknown'}' returned result]:\n` },
                                 ...newContent
                             ];
                         } else {
-                            newContent = `[Result of action ${msg.tool_call_id || msg.name || 'unknown'}]:\n${newContent}`;
+                            newContent = `[System Log: Tool '${msg.name || 'unknown'}' returned result]:\n${newContent}`;
                         }
                         newMessages.push({
                             role: 'user',
