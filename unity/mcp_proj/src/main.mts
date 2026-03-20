@@ -72,16 +72,47 @@ function createMcpServer(): InstanceType<typeof McpServer> {
                 };
             }
 
+            // Recursively collect all __image markers and strip them from the object.
+            const images: Array<{ base64: string; mimeType: string }> = [];
+            function collectAndStrip(obj: any, visited: Set<any>) {
+                if (!obj || typeof obj !== 'object') return;
+                if (visited.has(obj)) return;
+                visited.add(obj);
+                if (obj.__image && obj.__image.base64) {
+                    images.push({
+                        base64: obj.__image.base64,
+                        mimeType: obj.__image.mediaType || 'image/png',
+                    });
+                    delete obj.__image;
+                }
+                for (const key of Object.keys(obj)) {
+                    collectAndStrip(obj[key], visited);
+                }
+            }
+
+            // Serialize the raw result to text, extracting images from objects.
+            let textContent: string;
+            const raw = result.result;
+            if (raw === undefined) {
+                textContent = '(no return value)';
+            } else if (raw === null) {
+                textContent = 'null';
+            } else if (typeof raw === 'object') {
+                collectAndStrip(raw, new Set());
+                try { textContent = JSON.stringify(raw, null, 2); } catch (_) { textContent = String(raw); }
+            } else {
+                textContent = String(raw);
+            }
+
             // Build content parts
             const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [];
-            content.push({ type: 'text' as const, text: result.result ?? '(no return value)' });
+            content.push({ type: 'text' as const, text: textContent });
 
-            // If the result includes image data, add it as an image content part
-            if (result.__image) {
+            for (const img of images) {
                 content.push({
                     type: 'image' as const,
-                    data: result.__image.base64,
-                    mimeType: result.__image.mediaType || 'image/png',
+                    data: img.base64,
+                    mimeType: img.mimeType,
                 });
             }
 

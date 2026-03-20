@@ -135,31 +135,13 @@ export async function initBuiltins(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 // Fixed runner code that calls the globally defined execute() function,
-// handles async result serialization and error reporting via onFinish callback.
-// If the return value is an object containing an `__image` marker (used by the
-// screenshot builtin), the image data is extracted and sent separately so that
-// the caller can convert it into multi-modal content.
+// handles async result and error reporting via onFinish callback.
+// The raw return value of execute() is passed through as-is in the result
+// field — any __image markers or serialization are handled downstream
+// by toModelOutput in eval-tool.mts.
 const RUNNER_CODE = `(function(onFinish) {
     execute().then(function(result) {
-        var resultStr;
-        var imageData = null;
-        if (result === undefined) {
-            resultStr = '(no return value)';
-        } else if (result === null) {
-            resultStr = 'null';
-        } else if (typeof result === 'object') {
-            if (result.__image && result.__image.base64) {
-                imageData = { base64: result.__image.base64, mediaType: result.__image.mediaType || 'image/png' };
-                var copy = {};
-                for (var k in result) { if (k !== '__image') copy[k] = result[k]; }
-                try { resultStr = JSON.stringify(copy, null, 2); } catch(e) { resultStr = String(result); }
-            } else {
-                try { resultStr = JSON.stringify(result, null, 2); } catch(e) { resultStr = String(result); }
-            }
-        } else {
-            resultStr = String(result);
-        }
-        onFinish.Invoke(JSON.stringify({ __error: false, result: resultStr, __image: imageData }));
+        onFinish.Invoke(JSON.stringify({ __error: false, result: result }));
     }).catch(function(err) {
         onFinish.Invoke(JSON.stringify({ __error: true, message: String(err.message || err), stack: String(err.stack || '') }));
     });
@@ -174,10 +156,9 @@ const RUNNER_CODE = `(function(onFinish) {
  */
 export interface EvalResult {
     success: boolean;
-    result?: string;
+    result?: any;
     error?: string;
     stack?: string;
-    __image?: { base64: string; mediaType: string };
 }
 
 /**
@@ -221,15 +202,10 @@ export async function executeCode(code: string): Promise<EvalResult> {
             };
         }
 
-        // If the runner extracted image data, include it in the output
-        const output: EvalResult = {
+        return {
             success: true,
             result: parsed.result,
         };
-        if (parsed.__image) {
-            output.__image = parsed.__image;
-        }
-        return output;
     } catch (error: any) {
         const errorMsg = error.message || String(error);
         const stack = error.stack || '';

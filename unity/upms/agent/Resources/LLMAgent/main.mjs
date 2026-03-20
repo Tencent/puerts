@@ -32542,6 +32542,2176 @@ var _a20;
 _a20 = symbol20;
 var defaultDownload2 = createDownload();
 
+// node_modules/@ai-sdk/openai-compatible/dist/index.mjs
+var openaiCompatibleErrorDataSchema = external_exports.object({
+  error: external_exports.object({
+    message: external_exports.string(),
+    // The additional information below is handled loosely to support
+    // OpenAI-compatible providers that have slightly different error
+    // responses:
+    type: external_exports.string().nullish(),
+    param: external_exports.any().nullish(),
+    code: external_exports.union([external_exports.string(), external_exports.number()]).nullish()
+  })
+});
+var defaultOpenAICompatibleErrorStructure = {
+  errorSchema: openaiCompatibleErrorDataSchema,
+  errorToMessage: /* @__PURE__ */ __name((data) => data.error.message, "errorToMessage")
+};
+function convertOpenAICompatibleChatUsage(usage) {
+  var _a21, _b17, _c, _d, _e2, _f;
+  if (usage == null) {
+    return {
+      inputTokens: {
+        total: void 0,
+        noCache: void 0,
+        cacheRead: void 0,
+        cacheWrite: void 0
+      },
+      outputTokens: {
+        total: void 0,
+        text: void 0,
+        reasoning: void 0
+      },
+      raw: void 0
+    };
+  }
+  const promptTokens = (_a21 = usage.prompt_tokens) != null ? _a21 : 0;
+  const completionTokens = (_b17 = usage.completion_tokens) != null ? _b17 : 0;
+  const cacheReadTokens = (_d = (_c = usage.prompt_tokens_details) == null ? void 0 : _c.cached_tokens) != null ? _d : 0;
+  const reasoningTokens = (_f = (_e2 = usage.completion_tokens_details) == null ? void 0 : _e2.reasoning_tokens) != null ? _f : 0;
+  return {
+    inputTokens: {
+      total: promptTokens,
+      noCache: promptTokens - cacheReadTokens,
+      cacheRead: cacheReadTokens,
+      cacheWrite: void 0
+    },
+    outputTokens: {
+      total: completionTokens,
+      text: completionTokens - reasoningTokens,
+      reasoning: reasoningTokens
+    },
+    raw: usage
+  };
+}
+__name(convertOpenAICompatibleChatUsage, "convertOpenAICompatibleChatUsage");
+function getOpenAIMetadata(message) {
+  var _a21, _b17;
+  return (_b17 = (_a21 = message == null ? void 0 : message.providerOptions) == null ? void 0 : _a21.openaiCompatible) != null ? _b17 : {};
+}
+__name(getOpenAIMetadata, "getOpenAIMetadata");
+function getAudioFormat(mediaType) {
+  switch (mediaType) {
+    case "audio/wav":
+      return "wav";
+    case "audio/mp3":
+    case "audio/mpeg":
+      return "mp3";
+    default:
+      return null;
+  }
+}
+__name(getAudioFormat, "getAudioFormat");
+function convertToOpenAICompatibleChatMessages(prompt) {
+  var _a21, _b17, _c;
+  const messages = [];
+  for (const { role, content, ...message } of prompt) {
+    const metadata = getOpenAIMetadata({ ...message });
+    switch (role) {
+      case "system": {
+        messages.push({ role: "system", content, ...metadata });
+        break;
+      }
+      case "user": {
+        if (content.length === 1 && content[0].type === "text") {
+          messages.push({
+            role: "user",
+            content: content[0].text,
+            ...getOpenAIMetadata(content[0])
+          });
+          break;
+        }
+        messages.push({
+          role: "user",
+          content: content.map((part) => {
+            var _a24;
+            const partMetadata = getOpenAIMetadata(part);
+            switch (part.type) {
+              case "text": {
+                return { type: "text", text: part.text, ...partMetadata };
+              }
+              case "file": {
+                if (part.mediaType.startsWith("image/")) {
+                  const mediaType = part.mediaType === "image/*" ? "image/jpeg" : part.mediaType;
+                  return {
+                    type: "image_url",
+                    image_url: {
+                      url: part.data instanceof URL ? part.data.toString() : `data:${mediaType};base64,${convertToBase64(part.data)}`
+                    },
+                    ...partMetadata
+                  };
+                }
+                if (part.mediaType.startsWith("audio/")) {
+                  if (part.data instanceof URL) {
+                    throw new UnsupportedFunctionalityError({
+                      functionality: "audio file parts with URLs"
+                    });
+                  }
+                  const format = getAudioFormat(part.mediaType);
+                  if (format === null) {
+                    throw new UnsupportedFunctionalityError({
+                      functionality: `audio media type ${part.mediaType}`
+                    });
+                  }
+                  return {
+                    type: "input_audio",
+                    input_audio: {
+                      data: convertToBase64(part.data),
+                      format
+                    },
+                    ...partMetadata
+                  };
+                }
+                if (part.mediaType === "application/pdf") {
+                  if (part.data instanceof URL) {
+                    throw new UnsupportedFunctionalityError({
+                      functionality: "PDF file parts with URLs"
+                    });
+                  }
+                  return {
+                    type: "file",
+                    file: {
+                      filename: (_a24 = part.filename) != null ? _a24 : "document.pdf",
+                      file_data: `data:application/pdf;base64,${convertToBase64(part.data)}`
+                    },
+                    ...partMetadata
+                  };
+                }
+                if (part.mediaType.startsWith("text/")) {
+                  const textContent = part.data instanceof URL ? part.data.toString() : typeof part.data === "string" ? new TextDecoder().decode(
+                    convertBase64ToUint8Array(part.data)
+                  ) : new TextDecoder().decode(part.data);
+                  return {
+                    type: "text",
+                    text: textContent,
+                    ...partMetadata
+                  };
+                }
+                throw new UnsupportedFunctionalityError({
+                  functionality: `file part media type ${part.mediaType}`
+                });
+              }
+            }
+          }),
+          ...metadata
+        });
+        break;
+      }
+      case "assistant": {
+        let text2 = "";
+        let reasoning = "";
+        const toolCalls = [];
+        for (const part of content) {
+          const partMetadata = getOpenAIMetadata(part);
+          switch (part.type) {
+            case "text": {
+              text2 += part.text;
+              break;
+            }
+            case "reasoning": {
+              reasoning += part.text;
+              break;
+            }
+            case "tool-call": {
+              const thoughtSignature = (_b17 = (_a21 = part.providerOptions) == null ? void 0 : _a21.google) == null ? void 0 : _b17.thoughtSignature;
+              toolCalls.push({
+                id: part.toolCallId,
+                type: "function",
+                function: {
+                  name: part.toolName,
+                  arguments: JSON.stringify(part.input)
+                },
+                ...partMetadata,
+                // Include extra_content for Google Gemini thought signatures
+                ...thoughtSignature ? {
+                  extra_content: {
+                    google: {
+                      thought_signature: String(thoughtSignature)
+                    }
+                  }
+                } : {}
+              });
+              break;
+            }
+          }
+        }
+        messages.push({
+          role: "assistant",
+          content: text2,
+          ...reasoning.length > 0 ? { reasoning_content: reasoning } : {},
+          tool_calls: toolCalls.length > 0 ? toolCalls : void 0,
+          ...metadata
+        });
+        break;
+      }
+      case "tool": {
+        for (const toolResponse of content) {
+          if (toolResponse.type === "tool-approval-response") {
+            continue;
+          }
+          const output = toolResponse.output;
+          let contentValue;
+          switch (output.type) {
+            case "text":
+            case "error-text":
+              contentValue = output.value;
+              break;
+            case "execution-denied":
+              contentValue = (_c = output.reason) != null ? _c : "Tool execution denied.";
+              break;
+            case "content":
+            case "json":
+            case "error-json":
+              contentValue = JSON.stringify(output.value);
+              break;
+          }
+          const toolResponseMetadata = getOpenAIMetadata(toolResponse);
+          messages.push({
+            role: "tool",
+            tool_call_id: toolResponse.toolCallId,
+            content: contentValue,
+            ...toolResponseMetadata
+          });
+        }
+        break;
+      }
+      default: {
+        const _exhaustiveCheck = role;
+        throw new Error(`Unsupported role: ${_exhaustiveCheck}`);
+      }
+    }
+  }
+  return messages;
+}
+__name(convertToOpenAICompatibleChatMessages, "convertToOpenAICompatibleChatMessages");
+function getResponseMetadata({
+  id,
+  model,
+  created
+}) {
+  return {
+    id: id != null ? id : void 0,
+    modelId: model != null ? model : void 0,
+    timestamp: created != null ? new Date(created * 1e3) : void 0
+  };
+}
+__name(getResponseMetadata, "getResponseMetadata");
+function mapOpenAICompatibleFinishReason(finishReason) {
+  switch (finishReason) {
+    case "stop":
+      return "stop";
+    case "length":
+      return "length";
+    case "content_filter":
+      return "content-filter";
+    case "function_call":
+    case "tool_calls":
+      return "tool-calls";
+    default:
+      return "other";
+  }
+}
+__name(mapOpenAICompatibleFinishReason, "mapOpenAICompatibleFinishReason");
+var openaiCompatibleLanguageModelChatOptions = external_exports.object({
+  /**
+   * A unique identifier representing your end-user, which can help the provider to
+   * monitor and detect abuse.
+   */
+  user: external_exports.string().optional(),
+  /**
+   * Reasoning effort for reasoning models. Defaults to `medium`.
+   */
+  reasoningEffort: external_exports.string().optional(),
+  /**
+   * Controls the verbosity of the generated text. Defaults to `medium`.
+   */
+  textVerbosity: external_exports.string().optional(),
+  /**
+   * Whether to use strict JSON schema validation.
+   * When true, the model uses constrained decoding to guarantee schema compliance.
+   * Only used when the provider supports structured outputs and a schema is provided.
+   *
+   * @default true
+   */
+  strictJsonSchema: external_exports.boolean().optional()
+});
+function prepareTools({
+  tools,
+  toolChoice
+}) {
+  tools = (tools == null ? void 0 : tools.length) ? tools : void 0;
+  const toolWarnings = [];
+  if (tools == null) {
+    return { tools: void 0, toolChoice: void 0, toolWarnings };
+  }
+  const openaiCompatTools = [];
+  for (const tool2 of tools) {
+    if (tool2.type === "provider") {
+      toolWarnings.push({
+        type: "unsupported",
+        feature: `provider-defined tool ${tool2.id}`
+      });
+    } else {
+      openaiCompatTools.push({
+        type: "function",
+        function: {
+          name: tool2.name,
+          description: tool2.description,
+          parameters: tool2.inputSchema,
+          ...tool2.strict != null ? { strict: tool2.strict } : {}
+        }
+      });
+    }
+  }
+  if (toolChoice == null) {
+    return { tools: openaiCompatTools, toolChoice: void 0, toolWarnings };
+  }
+  const type = toolChoice.type;
+  switch (type) {
+    case "auto":
+    case "none":
+    case "required":
+      return { tools: openaiCompatTools, toolChoice: type, toolWarnings };
+    case "tool":
+      return {
+        tools: openaiCompatTools,
+        toolChoice: {
+          type: "function",
+          function: { name: toolChoice.toolName }
+        },
+        toolWarnings
+      };
+    default: {
+      const _exhaustiveCheck = type;
+      throw new UnsupportedFunctionalityError({
+        functionality: `tool choice type: ${_exhaustiveCheck}`
+      });
+    }
+  }
+}
+__name(prepareTools, "prepareTools");
+var OpenAICompatibleChatLanguageModel = class {
+  static {
+    __name(this, "OpenAICompatibleChatLanguageModel");
+  }
+  // type inferred via constructor
+  constructor(modelId, config2) {
+    this.specificationVersion = "v3";
+    var _a21, _b17;
+    this.modelId = modelId;
+    this.config = config2;
+    const errorStructure = (_a21 = config2.errorStructure) != null ? _a21 : defaultOpenAICompatibleErrorStructure;
+    this.chunkSchema = createOpenAICompatibleChatChunkSchema(
+      errorStructure.errorSchema
+    );
+    this.failedResponseHandler = createJsonErrorResponseHandler(errorStructure);
+    this.supportsStructuredOutputs = (_b17 = config2.supportsStructuredOutputs) != null ? _b17 : false;
+  }
+  get provider() {
+    return this.config.provider;
+  }
+  get providerOptionsName() {
+    return this.config.provider.split(".")[0].trim();
+  }
+  get supportedUrls() {
+    var _a21, _b17, _c;
+    return (_c = (_b17 = (_a21 = this.config).supportedUrls) == null ? void 0 : _b17.call(_a21)) != null ? _c : {};
+  }
+  transformRequestBody(args) {
+    var _a21, _b17, _c;
+    return (_c = (_b17 = (_a21 = this.config).transformRequestBody) == null ? void 0 : _b17.call(_a21, args)) != null ? _c : args;
+  }
+  async getArgs({
+    prompt,
+    maxOutputTokens,
+    temperature,
+    topP,
+    topK,
+    frequencyPenalty,
+    presencePenalty,
+    providerOptions,
+    stopSequences,
+    responseFormat,
+    seed,
+    toolChoice,
+    tools
+  }) {
+    var _a21, _b17, _c, _d, _e2;
+    const warnings = [];
+    const deprecatedOptions = await parseProviderOptions({
+      provider: "openai-compatible",
+      providerOptions,
+      schema: openaiCompatibleLanguageModelChatOptions
+    });
+    if (deprecatedOptions != null) {
+      warnings.push({
+        type: "other",
+        message: `The 'openai-compatible' key in providerOptions is deprecated. Use 'openaiCompatible' instead.`
+      });
+    }
+    const compatibleOptions = Object.assign(
+      deprecatedOptions != null ? deprecatedOptions : {},
+      (_a21 = await parseProviderOptions({
+        provider: "openaiCompatible",
+        providerOptions,
+        schema: openaiCompatibleLanguageModelChatOptions
+      })) != null ? _a21 : {},
+      (_b17 = await parseProviderOptions({
+        provider: this.providerOptionsName,
+        providerOptions,
+        schema: openaiCompatibleLanguageModelChatOptions
+      })) != null ? _b17 : {}
+    );
+    const strictJsonSchema = (_c = compatibleOptions == null ? void 0 : compatibleOptions.strictJsonSchema) != null ? _c : true;
+    if (topK != null) {
+      warnings.push({ type: "unsupported", feature: "topK" });
+    }
+    if ((responseFormat == null ? void 0 : responseFormat.type) === "json" && responseFormat.schema != null && !this.supportsStructuredOutputs) {
+      warnings.push({
+        type: "unsupported",
+        feature: "responseFormat",
+        details: "JSON response format schema is only supported with structuredOutputs"
+      });
+    }
+    const {
+      tools: openaiTools2,
+      toolChoice: openaiToolChoice,
+      toolWarnings
+    } = prepareTools({
+      tools,
+      toolChoice
+    });
+    return {
+      args: {
+        // model id:
+        model: this.modelId,
+        // model specific settings:
+        user: compatibleOptions.user,
+        // standardized settings:
+        max_tokens: maxOutputTokens,
+        temperature,
+        top_p: topP,
+        frequency_penalty: frequencyPenalty,
+        presence_penalty: presencePenalty,
+        response_format: (responseFormat == null ? void 0 : responseFormat.type) === "json" ? this.supportsStructuredOutputs === true && responseFormat.schema != null ? {
+          type: "json_schema",
+          json_schema: {
+            schema: responseFormat.schema,
+            strict: strictJsonSchema,
+            name: (_d = responseFormat.name) != null ? _d : "response",
+            description: responseFormat.description
+          }
+        } : { type: "json_object" } : void 0,
+        stop: stopSequences,
+        seed,
+        ...Object.fromEntries(
+          Object.entries(
+            (_e2 = providerOptions == null ? void 0 : providerOptions[this.providerOptionsName]) != null ? _e2 : {}
+          ).filter(
+            ([key]) => !Object.keys(
+              openaiCompatibleLanguageModelChatOptions.shape
+            ).includes(key)
+          )
+        ),
+        reasoning_effort: compatibleOptions.reasoningEffort,
+        verbosity: compatibleOptions.textVerbosity,
+        // messages:
+        messages: convertToOpenAICompatibleChatMessages(prompt),
+        // tools:
+        tools: openaiTools2,
+        tool_choice: openaiToolChoice
+      },
+      warnings: [...warnings, ...toolWarnings]
+    };
+  }
+  async doGenerate(options) {
+    var _a21, _b17, _c, _d, _e2, _f, _g, _h;
+    const { args, warnings } = await this.getArgs({ ...options });
+    const transformedBody = this.transformRequestBody(args);
+    const body = JSON.stringify(transformedBody);
+    const {
+      responseHeaders,
+      value: responseBody,
+      rawValue: rawResponse
+    } = await postJsonToApi({
+      url: this.config.url({
+        path: "/chat/completions",
+        modelId: this.modelId
+      }),
+      headers: combineHeaders(this.config.headers(), options.headers),
+      body: transformedBody,
+      failedResponseHandler: this.failedResponseHandler,
+      successfulResponseHandler: createJsonResponseHandler(
+        OpenAICompatibleChatResponseSchema
+      ),
+      abortSignal: options.abortSignal,
+      fetch: this.config.fetch
+    });
+    const choice2 = responseBody.choices[0];
+    const content = [];
+    const text2 = choice2.message.content;
+    if (text2 != null && text2.length > 0) {
+      content.push({ type: "text", text: text2 });
+    }
+    const reasoning = (_a21 = choice2.message.reasoning_content) != null ? _a21 : choice2.message.reasoning;
+    if (reasoning != null && reasoning.length > 0) {
+      content.push({
+        type: "reasoning",
+        text: reasoning
+      });
+    }
+    if (choice2.message.tool_calls != null) {
+      for (const toolCall of choice2.message.tool_calls) {
+        const thoughtSignature = (_c = (_b17 = toolCall.extra_content) == null ? void 0 : _b17.google) == null ? void 0 : _c.thought_signature;
+        content.push({
+          type: "tool-call",
+          toolCallId: (_d = toolCall.id) != null ? _d : generateId(),
+          toolName: toolCall.function.name,
+          input: toolCall.function.arguments,
+          ...thoughtSignature ? {
+            providerMetadata: {
+              [this.providerOptionsName]: { thoughtSignature }
+            }
+          } : {}
+        });
+      }
+    }
+    const providerMetadata = {
+      [this.providerOptionsName]: {},
+      ...await ((_f = (_e2 = this.config.metadataExtractor) == null ? void 0 : _e2.extractMetadata) == null ? void 0 : _f.call(_e2, {
+        parsedBody: rawResponse
+      }))
+    };
+    const completionTokenDetails = (_g = responseBody.usage) == null ? void 0 : _g.completion_tokens_details;
+    if ((completionTokenDetails == null ? void 0 : completionTokenDetails.accepted_prediction_tokens) != null) {
+      providerMetadata[this.providerOptionsName].acceptedPredictionTokens = completionTokenDetails == null ? void 0 : completionTokenDetails.accepted_prediction_tokens;
+    }
+    if ((completionTokenDetails == null ? void 0 : completionTokenDetails.rejected_prediction_tokens) != null) {
+      providerMetadata[this.providerOptionsName].rejectedPredictionTokens = completionTokenDetails == null ? void 0 : completionTokenDetails.rejected_prediction_tokens;
+    }
+    return {
+      content,
+      finishReason: {
+        unified: mapOpenAICompatibleFinishReason(choice2.finish_reason),
+        raw: (_h = choice2.finish_reason) != null ? _h : void 0
+      },
+      usage: convertOpenAICompatibleChatUsage(responseBody.usage),
+      providerMetadata,
+      request: { body },
+      response: {
+        ...getResponseMetadata(responseBody),
+        headers: responseHeaders,
+        body: rawResponse
+      },
+      warnings
+    };
+  }
+  async doStream(options) {
+    var _a21;
+    const { args, warnings } = await this.getArgs({ ...options });
+    const body = this.transformRequestBody({
+      ...args,
+      stream: true,
+      // only include stream_options when in strict compatibility mode:
+      stream_options: this.config.includeUsage ? { include_usage: true } : void 0
+    });
+    const metadataExtractor = (_a21 = this.config.metadataExtractor) == null ? void 0 : _a21.createStreamExtractor();
+    const { responseHeaders, value: response } = await postJsonToApi({
+      url: this.config.url({
+        path: "/chat/completions",
+        modelId: this.modelId
+      }),
+      headers: combineHeaders(this.config.headers(), options.headers),
+      body,
+      failedResponseHandler: this.failedResponseHandler,
+      successfulResponseHandler: createEventSourceResponseHandler(
+        this.chunkSchema
+      ),
+      abortSignal: options.abortSignal,
+      fetch: this.config.fetch
+    });
+    const toolCalls = [];
+    let finishReason = {
+      unified: "other",
+      raw: void 0
+    };
+    let usage = void 0;
+    let isFirstChunk = true;
+    const providerOptionsName = this.providerOptionsName;
+    let isActiveReasoning = false;
+    let isActiveText = false;
+    return {
+      stream: response.pipeThrough(
+        new TransformStream({
+          start(controller) {
+            controller.enqueue({ type: "stream-start", warnings });
+          },
+          transform(chunk, controller) {
+            var _a24, _b17, _c, _d, _e2, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r2;
+            if (options.includeRawChunks) {
+              controller.enqueue({ type: "raw", rawValue: chunk.rawValue });
+            }
+            if (!chunk.success) {
+              finishReason = { unified: "error", raw: void 0 };
+              controller.enqueue({ type: "error", error: chunk.error });
+              return;
+            }
+            metadataExtractor == null ? void 0 : metadataExtractor.processChunk(chunk.rawValue);
+            if ("error" in chunk.value) {
+              finishReason = { unified: "error", raw: void 0 };
+              controller.enqueue({
+                type: "error",
+                error: chunk.value.error.message
+              });
+              return;
+            }
+            const value = chunk.value;
+            if (isFirstChunk) {
+              isFirstChunk = false;
+              controller.enqueue({
+                type: "response-metadata",
+                ...getResponseMetadata(value)
+              });
+            }
+            if (value.usage != null) {
+              usage = value.usage;
+            }
+            const choice2 = value.choices[0];
+            if ((choice2 == null ? void 0 : choice2.finish_reason) != null) {
+              finishReason = {
+                unified: mapOpenAICompatibleFinishReason(choice2.finish_reason),
+                raw: (_a24 = choice2.finish_reason) != null ? _a24 : void 0
+              };
+            }
+            if ((choice2 == null ? void 0 : choice2.delta) == null) {
+              return;
+            }
+            const delta = choice2.delta;
+            const reasoningContent = (_b17 = delta.reasoning_content) != null ? _b17 : delta.reasoning;
+            if (reasoningContent) {
+              if (!isActiveReasoning) {
+                controller.enqueue({
+                  type: "reasoning-start",
+                  id: "reasoning-0"
+                });
+                isActiveReasoning = true;
+              }
+              controller.enqueue({
+                type: "reasoning-delta",
+                id: "reasoning-0",
+                delta: reasoningContent
+              });
+            }
+            if (delta.content) {
+              if (isActiveReasoning) {
+                controller.enqueue({
+                  type: "reasoning-end",
+                  id: "reasoning-0"
+                });
+                isActiveReasoning = false;
+              }
+              if (!isActiveText) {
+                controller.enqueue({ type: "text-start", id: "txt-0" });
+                isActiveText = true;
+              }
+              controller.enqueue({
+                type: "text-delta",
+                id: "txt-0",
+                delta: delta.content
+              });
+            }
+            if (delta.tool_calls != null) {
+              if (isActiveReasoning) {
+                controller.enqueue({
+                  type: "reasoning-end",
+                  id: "reasoning-0"
+                });
+                isActiveReasoning = false;
+              }
+              for (const toolCallDelta of delta.tool_calls) {
+                const index = (_c = toolCallDelta.index) != null ? _c : toolCalls.length;
+                if (toolCalls[index] == null) {
+                  if (toolCallDelta.id == null) {
+                    throw new InvalidResponseDataError({
+                      data: toolCallDelta,
+                      message: `Expected 'id' to be a string.`
+                    });
+                  }
+                  if (((_d = toolCallDelta.function) == null ? void 0 : _d.name) == null) {
+                    throw new InvalidResponseDataError({
+                      data: toolCallDelta,
+                      message: `Expected 'function.name' to be a string.`
+                    });
+                  }
+                  controller.enqueue({
+                    type: "tool-input-start",
+                    id: toolCallDelta.id,
+                    toolName: toolCallDelta.function.name
+                  });
+                  toolCalls[index] = {
+                    id: toolCallDelta.id,
+                    type: "function",
+                    function: {
+                      name: toolCallDelta.function.name,
+                      arguments: (_e2 = toolCallDelta.function.arguments) != null ? _e2 : ""
+                    },
+                    hasFinished: false,
+                    thoughtSignature: (_h = (_g = (_f = toolCallDelta.extra_content) == null ? void 0 : _f.google) == null ? void 0 : _g.thought_signature) != null ? _h : void 0
+                  };
+                  const toolCall2 = toolCalls[index];
+                  if (((_i = toolCall2.function) == null ? void 0 : _i.name) != null && ((_j = toolCall2.function) == null ? void 0 : _j.arguments) != null) {
+                    if (toolCall2.function.arguments.length > 0) {
+                      controller.enqueue({
+                        type: "tool-input-delta",
+                        id: toolCall2.id,
+                        delta: toolCall2.function.arguments
+                      });
+                    }
+                    if (isParsableJson(toolCall2.function.arguments)) {
+                      controller.enqueue({
+                        type: "tool-input-end",
+                        id: toolCall2.id
+                      });
+                      controller.enqueue({
+                        type: "tool-call",
+                        toolCallId: (_k = toolCall2.id) != null ? _k : generateId(),
+                        toolName: toolCall2.function.name,
+                        input: toolCall2.function.arguments,
+                        ...toolCall2.thoughtSignature ? {
+                          providerMetadata: {
+                            [providerOptionsName]: {
+                              thoughtSignature: toolCall2.thoughtSignature
+                            }
+                          }
+                        } : {}
+                      });
+                      toolCall2.hasFinished = true;
+                    }
+                  }
+                  continue;
+                }
+                const toolCall = toolCalls[index];
+                if (toolCall.hasFinished) {
+                  continue;
+                }
+                if (((_l = toolCallDelta.function) == null ? void 0 : _l.arguments) != null) {
+                  toolCall.function.arguments += (_n = (_m = toolCallDelta.function) == null ? void 0 : _m.arguments) != null ? _n : "";
+                }
+                controller.enqueue({
+                  type: "tool-input-delta",
+                  id: toolCall.id,
+                  delta: (_o = toolCallDelta.function.arguments) != null ? _o : ""
+                });
+                if (((_p = toolCall.function) == null ? void 0 : _p.name) != null && ((_q = toolCall.function) == null ? void 0 : _q.arguments) != null && isParsableJson(toolCall.function.arguments)) {
+                  controller.enqueue({
+                    type: "tool-input-end",
+                    id: toolCall.id
+                  });
+                  controller.enqueue({
+                    type: "tool-call",
+                    toolCallId: (_r2 = toolCall.id) != null ? _r2 : generateId(),
+                    toolName: toolCall.function.name,
+                    input: toolCall.function.arguments,
+                    ...toolCall.thoughtSignature ? {
+                      providerMetadata: {
+                        [providerOptionsName]: {
+                          thoughtSignature: toolCall.thoughtSignature
+                        }
+                      }
+                    } : {}
+                  });
+                  toolCall.hasFinished = true;
+                }
+              }
+            }
+          },
+          flush(controller) {
+            var _a24, _b17, _c, _d, _e2;
+            if (isActiveReasoning) {
+              controller.enqueue({ type: "reasoning-end", id: "reasoning-0" });
+            }
+            if (isActiveText) {
+              controller.enqueue({ type: "text-end", id: "txt-0" });
+            }
+            for (const toolCall of toolCalls.filter(
+              (toolCall2) => !toolCall2.hasFinished
+            )) {
+              controller.enqueue({
+                type: "tool-input-end",
+                id: toolCall.id
+              });
+              controller.enqueue({
+                type: "tool-call",
+                toolCallId: (_a24 = toolCall.id) != null ? _a24 : generateId(),
+                toolName: toolCall.function.name,
+                input: toolCall.function.arguments,
+                ...toolCall.thoughtSignature ? {
+                  providerMetadata: {
+                    [providerOptionsName]: {
+                      thoughtSignature: toolCall.thoughtSignature
+                    }
+                  }
+                } : {}
+              });
+            }
+            const providerMetadata = {
+              [providerOptionsName]: {},
+              ...metadataExtractor == null ? void 0 : metadataExtractor.buildMetadata()
+            };
+            if (((_b17 = usage == null ? void 0 : usage.completion_tokens_details) == null ? void 0 : _b17.accepted_prediction_tokens) != null) {
+              providerMetadata[providerOptionsName].acceptedPredictionTokens = (_c = usage == null ? void 0 : usage.completion_tokens_details) == null ? void 0 : _c.accepted_prediction_tokens;
+            }
+            if (((_d = usage == null ? void 0 : usage.completion_tokens_details) == null ? void 0 : _d.rejected_prediction_tokens) != null) {
+              providerMetadata[providerOptionsName].rejectedPredictionTokens = (_e2 = usage == null ? void 0 : usage.completion_tokens_details) == null ? void 0 : _e2.rejected_prediction_tokens;
+            }
+            controller.enqueue({
+              type: "finish",
+              finishReason,
+              usage: convertOpenAICompatibleChatUsage(usage),
+              providerMetadata
+            });
+          }
+        })
+      ),
+      request: { body },
+      response: { headers: responseHeaders }
+    };
+  }
+};
+var openaiCompatibleTokenUsageSchema = external_exports.looseObject({
+  prompt_tokens: external_exports.number().nullish(),
+  completion_tokens: external_exports.number().nullish(),
+  total_tokens: external_exports.number().nullish(),
+  prompt_tokens_details: external_exports.object({
+    cached_tokens: external_exports.number().nullish()
+  }).nullish(),
+  completion_tokens_details: external_exports.object({
+    reasoning_tokens: external_exports.number().nullish(),
+    accepted_prediction_tokens: external_exports.number().nullish(),
+    rejected_prediction_tokens: external_exports.number().nullish()
+  }).nullish()
+}).nullish();
+var OpenAICompatibleChatResponseSchema = external_exports.looseObject({
+  id: external_exports.string().nullish(),
+  created: external_exports.number().nullish(),
+  model: external_exports.string().nullish(),
+  choices: external_exports.array(
+    external_exports.object({
+      message: external_exports.object({
+        role: external_exports.literal("assistant").nullish(),
+        content: external_exports.string().nullish(),
+        reasoning_content: external_exports.string().nullish(),
+        reasoning: external_exports.string().nullish(),
+        tool_calls: external_exports.array(
+          external_exports.object({
+            id: external_exports.string().nullish(),
+            function: external_exports.object({
+              name: external_exports.string(),
+              arguments: external_exports.string()
+            }),
+            // Support for Google Gemini thought signatures via OpenAI compatibility
+            extra_content: external_exports.object({
+              google: external_exports.object({
+                thought_signature: external_exports.string().nullish()
+              }).nullish()
+            }).nullish()
+          })
+        ).nullish()
+      }),
+      finish_reason: external_exports.string().nullish()
+    })
+  ),
+  usage: openaiCompatibleTokenUsageSchema
+});
+var chunkBaseSchema = external_exports.looseObject({
+  id: external_exports.string().nullish(),
+  created: external_exports.number().nullish(),
+  model: external_exports.string().nullish(),
+  choices: external_exports.array(
+    external_exports.object({
+      delta: external_exports.object({
+        role: external_exports.enum(["assistant"]).nullish(),
+        content: external_exports.string().nullish(),
+        // Most openai-compatible models set `reasoning_content`, but some
+        // providers serving `gpt-oss` set `reasoning`. See #7866
+        reasoning_content: external_exports.string().nullish(),
+        reasoning: external_exports.string().nullish(),
+        tool_calls: external_exports.array(
+          external_exports.object({
+            index: external_exports.number().nullish(),
+            //google does not send index
+            id: external_exports.string().nullish(),
+            function: external_exports.object({
+              name: external_exports.string().nullish(),
+              arguments: external_exports.string().nullish()
+            }),
+            // Support for Google Gemini thought signatures via OpenAI compatibility
+            extra_content: external_exports.object({
+              google: external_exports.object({
+                thought_signature: external_exports.string().nullish()
+              }).nullish()
+            }).nullish()
+          })
+        ).nullish()
+      }).nullish(),
+      finish_reason: external_exports.string().nullish()
+    })
+  ),
+  usage: openaiCompatibleTokenUsageSchema
+});
+var createOpenAICompatibleChatChunkSchema = /* @__PURE__ */ __name((errorSchema) => external_exports.union([chunkBaseSchema, errorSchema]), "createOpenAICompatibleChatChunkSchema");
+function convertOpenAICompatibleCompletionUsage(usage) {
+  var _a21, _b17;
+  if (usage == null) {
+    return {
+      inputTokens: {
+        total: void 0,
+        noCache: void 0,
+        cacheRead: void 0,
+        cacheWrite: void 0
+      },
+      outputTokens: {
+        total: void 0,
+        text: void 0,
+        reasoning: void 0
+      },
+      raw: void 0
+    };
+  }
+  const promptTokens = (_a21 = usage.prompt_tokens) != null ? _a21 : 0;
+  const completionTokens = (_b17 = usage.completion_tokens) != null ? _b17 : 0;
+  return {
+    inputTokens: {
+      total: promptTokens,
+      noCache: promptTokens,
+      cacheRead: void 0,
+      cacheWrite: void 0
+    },
+    outputTokens: {
+      total: completionTokens,
+      text: completionTokens,
+      reasoning: void 0
+    },
+    raw: usage
+  };
+}
+__name(convertOpenAICompatibleCompletionUsage, "convertOpenAICompatibleCompletionUsage");
+function convertToOpenAICompatibleCompletionPrompt({
+  prompt,
+  user = "user",
+  assistant = "assistant"
+}) {
+  let text2 = "";
+  if (prompt[0].role === "system") {
+    text2 += `${prompt[0].content}
+
+`;
+    prompt = prompt.slice(1);
+  }
+  for (const { role, content } of prompt) {
+    switch (role) {
+      case "system": {
+        throw new InvalidPromptError({
+          message: "Unexpected system message in prompt: ${content}",
+          prompt
+        });
+      }
+      case "user": {
+        const userMessage = content.map((part) => {
+          switch (part.type) {
+            case "text": {
+              return part.text;
+            }
+          }
+        }).filter(Boolean).join("");
+        text2 += `${user}:
+${userMessage}
+
+`;
+        break;
+      }
+      case "assistant": {
+        const assistantMessage = content.map((part) => {
+          switch (part.type) {
+            case "text": {
+              return part.text;
+            }
+            case "tool-call": {
+              throw new UnsupportedFunctionalityError({
+                functionality: "tool-call messages"
+              });
+            }
+          }
+        }).join("");
+        text2 += `${assistant}:
+${assistantMessage}
+
+`;
+        break;
+      }
+      case "tool": {
+        throw new UnsupportedFunctionalityError({
+          functionality: "tool messages"
+        });
+      }
+      default: {
+        const _exhaustiveCheck = role;
+        throw new Error(`Unsupported role: ${_exhaustiveCheck}`);
+      }
+    }
+  }
+  text2 += `${assistant}:
+`;
+  return {
+    prompt: text2,
+    stopSequences: [`
+${user}:`]
+  };
+}
+__name(convertToOpenAICompatibleCompletionPrompt, "convertToOpenAICompatibleCompletionPrompt");
+function getResponseMetadata2({
+  id,
+  model,
+  created
+}) {
+  return {
+    id: id != null ? id : void 0,
+    modelId: model != null ? model : void 0,
+    timestamp: created != null ? new Date(created * 1e3) : void 0
+  };
+}
+__name(getResponseMetadata2, "getResponseMetadata2");
+function mapOpenAICompatibleFinishReason2(finishReason) {
+  switch (finishReason) {
+    case "stop":
+      return "stop";
+    case "length":
+      return "length";
+    case "content_filter":
+      return "content-filter";
+    case "function_call":
+    case "tool_calls":
+      return "tool-calls";
+    default:
+      return "other";
+  }
+}
+__name(mapOpenAICompatibleFinishReason2, "mapOpenAICompatibleFinishReason2");
+var openaiCompatibleLanguageModelCompletionOptions = external_exports.object({
+  /**
+   * Echo back the prompt in addition to the completion.
+   */
+  echo: external_exports.boolean().optional(),
+  /**
+   * Modify the likelihood of specified tokens appearing in the completion.
+   *
+   * Accepts a JSON object that maps tokens (specified by their token ID in
+   * the GPT tokenizer) to an associated bias value from -100 to 100.
+   */
+  logitBias: external_exports.record(external_exports.string(), external_exports.number()).optional(),
+  /**
+   * The suffix that comes after a completion of inserted text.
+   */
+  suffix: external_exports.string().optional(),
+  /**
+   * A unique identifier representing your end-user, which can help providers to
+   * monitor and detect abuse.
+   */
+  user: external_exports.string().optional()
+});
+var OpenAICompatibleCompletionLanguageModel = class {
+  static {
+    __name(this, "OpenAICompatibleCompletionLanguageModel");
+  }
+  // type inferred via constructor
+  constructor(modelId, config2) {
+    this.specificationVersion = "v3";
+    var _a21;
+    this.modelId = modelId;
+    this.config = config2;
+    const errorStructure = (_a21 = config2.errorStructure) != null ? _a21 : defaultOpenAICompatibleErrorStructure;
+    this.chunkSchema = createOpenAICompatibleCompletionChunkSchema(
+      errorStructure.errorSchema
+    );
+    this.failedResponseHandler = createJsonErrorResponseHandler(errorStructure);
+  }
+  get provider() {
+    return this.config.provider;
+  }
+  get providerOptionsName() {
+    return this.config.provider.split(".")[0].trim();
+  }
+  get supportedUrls() {
+    var _a21, _b17, _c;
+    return (_c = (_b17 = (_a21 = this.config).supportedUrls) == null ? void 0 : _b17.call(_a21)) != null ? _c : {};
+  }
+  async getArgs({
+    prompt,
+    maxOutputTokens,
+    temperature,
+    topP,
+    topK,
+    frequencyPenalty,
+    presencePenalty,
+    stopSequences: userStopSequences,
+    responseFormat,
+    seed,
+    providerOptions,
+    tools,
+    toolChoice
+  }) {
+    var _a21;
+    const warnings = [];
+    const completionOptions = (_a21 = await parseProviderOptions({
+      provider: this.providerOptionsName,
+      providerOptions,
+      schema: openaiCompatibleLanguageModelCompletionOptions
+    })) != null ? _a21 : {};
+    if (topK != null) {
+      warnings.push({ type: "unsupported", feature: "topK" });
+    }
+    if (tools == null ? void 0 : tools.length) {
+      warnings.push({ type: "unsupported", feature: "tools" });
+    }
+    if (toolChoice != null) {
+      warnings.push({ type: "unsupported", feature: "toolChoice" });
+    }
+    if (responseFormat != null && responseFormat.type !== "text") {
+      warnings.push({
+        type: "unsupported",
+        feature: "responseFormat",
+        details: "JSON response format is not supported."
+      });
+    }
+    const { prompt: completionPrompt, stopSequences } = convertToOpenAICompatibleCompletionPrompt({ prompt });
+    const stop = [...stopSequences != null ? stopSequences : [], ...userStopSequences != null ? userStopSequences : []];
+    return {
+      args: {
+        // model id:
+        model: this.modelId,
+        // model specific settings:
+        echo: completionOptions.echo,
+        logit_bias: completionOptions.logitBias,
+        suffix: completionOptions.suffix,
+        user: completionOptions.user,
+        // standardized settings:
+        max_tokens: maxOutputTokens,
+        temperature,
+        top_p: topP,
+        frequency_penalty: frequencyPenalty,
+        presence_penalty: presencePenalty,
+        seed,
+        ...providerOptions == null ? void 0 : providerOptions[this.providerOptionsName],
+        // prompt:
+        prompt: completionPrompt,
+        // stop sequences:
+        stop: stop.length > 0 ? stop : void 0
+      },
+      warnings
+    };
+  }
+  async doGenerate(options) {
+    const { args, warnings } = await this.getArgs(options);
+    const {
+      responseHeaders,
+      value: response,
+      rawValue: rawResponse
+    } = await postJsonToApi({
+      url: this.config.url({
+        path: "/completions",
+        modelId: this.modelId
+      }),
+      headers: combineHeaders(this.config.headers(), options.headers),
+      body: args,
+      failedResponseHandler: this.failedResponseHandler,
+      successfulResponseHandler: createJsonResponseHandler(
+        openaiCompatibleCompletionResponseSchema
+      ),
+      abortSignal: options.abortSignal,
+      fetch: this.config.fetch
+    });
+    const choice2 = response.choices[0];
+    const content = [];
+    if (choice2.text != null && choice2.text.length > 0) {
+      content.push({ type: "text", text: choice2.text });
+    }
+    return {
+      content,
+      usage: convertOpenAICompatibleCompletionUsage(response.usage),
+      finishReason: {
+        unified: mapOpenAICompatibleFinishReason2(choice2.finish_reason),
+        raw: choice2.finish_reason
+      },
+      request: { body: args },
+      response: {
+        ...getResponseMetadata2(response),
+        headers: responseHeaders,
+        body: rawResponse
+      },
+      warnings
+    };
+  }
+  async doStream(options) {
+    const { args, warnings } = await this.getArgs(options);
+    const body = {
+      ...args,
+      stream: true,
+      // only include stream_options when in strict compatibility mode:
+      stream_options: this.config.includeUsage ? { include_usage: true } : void 0
+    };
+    const { responseHeaders, value: response } = await postJsonToApi({
+      url: this.config.url({
+        path: "/completions",
+        modelId: this.modelId
+      }),
+      headers: combineHeaders(this.config.headers(), options.headers),
+      body,
+      failedResponseHandler: this.failedResponseHandler,
+      successfulResponseHandler: createEventSourceResponseHandler(
+        this.chunkSchema
+      ),
+      abortSignal: options.abortSignal,
+      fetch: this.config.fetch
+    });
+    let finishReason = {
+      unified: "other",
+      raw: void 0
+    };
+    let usage = void 0;
+    let isFirstChunk = true;
+    return {
+      stream: response.pipeThrough(
+        new TransformStream({
+          start(controller) {
+            controller.enqueue({ type: "stream-start", warnings });
+          },
+          transform(chunk, controller) {
+            var _a21;
+            if (options.includeRawChunks) {
+              controller.enqueue({ type: "raw", rawValue: chunk.rawValue });
+            }
+            if (!chunk.success) {
+              finishReason = { unified: "error", raw: void 0 };
+              controller.enqueue({ type: "error", error: chunk.error });
+              return;
+            }
+            const value = chunk.value;
+            if ("error" in value) {
+              finishReason = { unified: "error", raw: void 0 };
+              controller.enqueue({ type: "error", error: value.error });
+              return;
+            }
+            if (isFirstChunk) {
+              isFirstChunk = false;
+              controller.enqueue({
+                type: "response-metadata",
+                ...getResponseMetadata2(value)
+              });
+              controller.enqueue({
+                type: "text-start",
+                id: "0"
+              });
+            }
+            if (value.usage != null) {
+              usage = value.usage;
+            }
+            const choice2 = value.choices[0];
+            if ((choice2 == null ? void 0 : choice2.finish_reason) != null) {
+              finishReason = {
+                unified: mapOpenAICompatibleFinishReason2(choice2.finish_reason),
+                raw: (_a21 = choice2.finish_reason) != null ? _a21 : void 0
+              };
+            }
+            if ((choice2 == null ? void 0 : choice2.text) != null) {
+              controller.enqueue({
+                type: "text-delta",
+                id: "0",
+                delta: choice2.text
+              });
+            }
+          },
+          flush(controller) {
+            if (!isFirstChunk) {
+              controller.enqueue({ type: "text-end", id: "0" });
+            }
+            controller.enqueue({
+              type: "finish",
+              finishReason,
+              usage: convertOpenAICompatibleCompletionUsage(usage)
+            });
+          }
+        })
+      ),
+      request: { body },
+      response: { headers: responseHeaders }
+    };
+  }
+};
+var usageSchema = external_exports.object({
+  prompt_tokens: external_exports.number(),
+  completion_tokens: external_exports.number(),
+  total_tokens: external_exports.number()
+});
+var openaiCompatibleCompletionResponseSchema = external_exports.object({
+  id: external_exports.string().nullish(),
+  created: external_exports.number().nullish(),
+  model: external_exports.string().nullish(),
+  choices: external_exports.array(
+    external_exports.object({
+      text: external_exports.string(),
+      finish_reason: external_exports.string()
+    })
+  ),
+  usage: usageSchema.nullish()
+});
+var createOpenAICompatibleCompletionChunkSchema = /* @__PURE__ */ __name((errorSchema) => external_exports.union([
+  external_exports.object({
+    id: external_exports.string().nullish(),
+    created: external_exports.number().nullish(),
+    model: external_exports.string().nullish(),
+    choices: external_exports.array(
+      external_exports.object({
+        text: external_exports.string(),
+        finish_reason: external_exports.string().nullish(),
+        index: external_exports.number()
+      })
+    ),
+    usage: usageSchema.nullish()
+  }),
+  errorSchema
+]), "createOpenAICompatibleCompletionChunkSchema");
+var openaiCompatibleEmbeddingModelOptions = external_exports.object({
+  /**
+   * The number of dimensions the resulting output embeddings should have.
+   * Only supported in text-embedding-3 and later models.
+   */
+  dimensions: external_exports.number().optional(),
+  /**
+   * A unique identifier representing your end-user, which can help providers to
+   * monitor and detect abuse.
+   */
+  user: external_exports.string().optional()
+});
+var OpenAICompatibleEmbeddingModel = class {
+  static {
+    __name(this, "OpenAICompatibleEmbeddingModel");
+  }
+  constructor(modelId, config2) {
+    this.specificationVersion = "v3";
+    this.modelId = modelId;
+    this.config = config2;
+  }
+  get provider() {
+    return this.config.provider;
+  }
+  get maxEmbeddingsPerCall() {
+    var _a21;
+    return (_a21 = this.config.maxEmbeddingsPerCall) != null ? _a21 : 2048;
+  }
+  get supportsParallelCalls() {
+    var _a21;
+    return (_a21 = this.config.supportsParallelCalls) != null ? _a21 : true;
+  }
+  get providerOptionsName() {
+    return this.config.provider.split(".")[0].trim();
+  }
+  async doEmbed({
+    values,
+    headers,
+    abortSignal,
+    providerOptions
+  }) {
+    var _a21, _b17, _c;
+    const warnings = [];
+    const deprecatedOptions = await parseProviderOptions({
+      provider: "openai-compatible",
+      providerOptions,
+      schema: openaiCompatibleEmbeddingModelOptions
+    });
+    if (deprecatedOptions != null) {
+      warnings.push({
+        type: "other",
+        message: `The 'openai-compatible' key in providerOptions is deprecated. Use 'openaiCompatible' instead.`
+      });
+    }
+    const compatibleOptions = Object.assign(
+      deprecatedOptions != null ? deprecatedOptions : {},
+      (_a21 = await parseProviderOptions({
+        provider: "openaiCompatible",
+        providerOptions,
+        schema: openaiCompatibleEmbeddingModelOptions
+      })) != null ? _a21 : {},
+      (_b17 = await parseProviderOptions({
+        provider: this.providerOptionsName,
+        providerOptions,
+        schema: openaiCompatibleEmbeddingModelOptions
+      })) != null ? _b17 : {}
+    );
+    if (values.length > this.maxEmbeddingsPerCall) {
+      throw new TooManyEmbeddingValuesForCallError({
+        provider: this.provider,
+        modelId: this.modelId,
+        maxEmbeddingsPerCall: this.maxEmbeddingsPerCall,
+        values
+      });
+    }
+    const {
+      responseHeaders,
+      value: response,
+      rawValue
+    } = await postJsonToApi({
+      url: this.config.url({
+        path: "/embeddings",
+        modelId: this.modelId
+      }),
+      headers: combineHeaders(this.config.headers(), headers),
+      body: {
+        model: this.modelId,
+        input: values,
+        encoding_format: "float",
+        dimensions: compatibleOptions.dimensions,
+        user: compatibleOptions.user
+      },
+      failedResponseHandler: createJsonErrorResponseHandler(
+        (_c = this.config.errorStructure) != null ? _c : defaultOpenAICompatibleErrorStructure
+      ),
+      successfulResponseHandler: createJsonResponseHandler(
+        openaiTextEmbeddingResponseSchema
+      ),
+      abortSignal,
+      fetch: this.config.fetch
+    });
+    return {
+      warnings,
+      embeddings: response.data.map((item) => item.embedding),
+      usage: response.usage ? { tokens: response.usage.prompt_tokens } : void 0,
+      providerMetadata: response.providerMetadata,
+      response: { headers: responseHeaders, body: rawValue }
+    };
+  }
+};
+var openaiTextEmbeddingResponseSchema = external_exports.object({
+  data: external_exports.array(external_exports.object({ embedding: external_exports.array(external_exports.number()) })),
+  usage: external_exports.object({ prompt_tokens: external_exports.number() }).nullish(),
+  providerMetadata: external_exports.record(external_exports.string(), external_exports.record(external_exports.string(), external_exports.any())).optional()
+});
+var OpenAICompatibleImageModel = class {
+  static {
+    __name(this, "OpenAICompatibleImageModel");
+  }
+  constructor(modelId, config2) {
+    this.modelId = modelId;
+    this.config = config2;
+    this.specificationVersion = "v3";
+    this.maxImagesPerCall = 10;
+  }
+  get provider() {
+    return this.config.provider;
+  }
+  /**
+   * The provider options key used to extract provider-specific options.
+   */
+  get providerOptionsKey() {
+    return this.config.provider.split(".")[0].trim();
+  }
+  // TODO: deprecate non-camelCase keys and remove in future major version
+  getArgs(providerOptions) {
+    return {
+      ...providerOptions[this.providerOptionsKey],
+      ...providerOptions[toCamelCase(this.providerOptionsKey)]
+    };
+  }
+  async doGenerate({
+    prompt,
+    n: n2,
+    size,
+    aspectRatio,
+    seed,
+    providerOptions,
+    headers,
+    abortSignal,
+    files,
+    mask
+  }) {
+    var _a21, _b17, _c, _d, _e2;
+    const warnings = [];
+    if (aspectRatio != null) {
+      warnings.push({
+        type: "unsupported",
+        feature: "aspectRatio",
+        details: "This model does not support aspect ratio. Use `size` instead."
+      });
+    }
+    if (seed != null) {
+      warnings.push({ type: "unsupported", feature: "seed" });
+    }
+    const currentDate = (_c = (_b17 = (_a21 = this.config._internal) == null ? void 0 : _a21.currentDate) == null ? void 0 : _b17.call(_a21)) != null ? _c : /* @__PURE__ */ new Date();
+    const args = this.getArgs(providerOptions);
+    if (files != null && files.length > 0) {
+      const { value: response2, responseHeaders: responseHeaders2 } = await postFormDataToApi({
+        url: this.config.url({
+          path: "/images/edits",
+          modelId: this.modelId
+        }),
+        headers: combineHeaders(this.config.headers(), headers),
+        formData: convertToFormData({
+          model: this.modelId,
+          prompt,
+          image: await Promise.all(files.map((file2) => fileToBlob(file2))),
+          mask: mask != null ? await fileToBlob(mask) : void 0,
+          n: n2,
+          size,
+          ...args
+        }),
+        failedResponseHandler: createJsonErrorResponseHandler(
+          (_d = this.config.errorStructure) != null ? _d : defaultOpenAICompatibleErrorStructure
+        ),
+        successfulResponseHandler: createJsonResponseHandler(
+          openaiCompatibleImageResponseSchema
+        ),
+        abortSignal,
+        fetch: this.config.fetch
+      });
+      return {
+        images: response2.data.map((item) => item.b64_json),
+        warnings,
+        response: {
+          timestamp: currentDate,
+          modelId: this.modelId,
+          headers: responseHeaders2
+        }
+      };
+    }
+    const { value: response, responseHeaders } = await postJsonToApi({
+      url: this.config.url({
+        path: "/images/generations",
+        modelId: this.modelId
+      }),
+      headers: combineHeaders(this.config.headers(), headers),
+      body: {
+        model: this.modelId,
+        prompt,
+        n: n2,
+        size,
+        ...args,
+        response_format: "b64_json"
+      },
+      failedResponseHandler: createJsonErrorResponseHandler(
+        (_e2 = this.config.errorStructure) != null ? _e2 : defaultOpenAICompatibleErrorStructure
+      ),
+      successfulResponseHandler: createJsonResponseHandler(
+        openaiCompatibleImageResponseSchema
+      ),
+      abortSignal,
+      fetch: this.config.fetch
+    });
+    return {
+      images: response.data.map((item) => item.b64_json),
+      warnings,
+      response: {
+        timestamp: currentDate,
+        modelId: this.modelId,
+        headers: responseHeaders
+      }
+    };
+  }
+};
+var openaiCompatibleImageResponseSchema = external_exports.object({
+  data: external_exports.array(external_exports.object({ b64_json: external_exports.string() }))
+});
+async function fileToBlob(file2) {
+  if (file2.type === "url") {
+    return downloadBlob(file2.url);
+  }
+  const data = file2.data instanceof Uint8Array ? file2.data : convertBase64ToUint8Array(file2.data);
+  return new Blob([data], { type: file2.mediaType });
+}
+__name(fileToBlob, "fileToBlob");
+function toCamelCase(str) {
+  return str.replace(/[_-]([a-z])/g, (g2) => g2[1].toUpperCase());
+}
+__name(toCamelCase, "toCamelCase");
+var VERSION4 = true ? "2.0.35" : "0.0.0-test";
+function createOpenAICompatible(options) {
+  const baseURL = withoutTrailingSlash(options.baseURL);
+  const providerName = options.name;
+  const headers = {
+    ...options.apiKey && { Authorization: `Bearer ${options.apiKey}` },
+    ...options.headers
+  };
+  const getHeaders = /* @__PURE__ */ __name(() => withUserAgentSuffix(headers, `ai-sdk/openai-compatible/${VERSION4}`), "getHeaders");
+  const getCommonModelConfig = /* @__PURE__ */ __name((modelType) => ({
+    provider: `${providerName}.${modelType}`,
+    url: /* @__PURE__ */ __name(({ path }) => {
+      const url2 = new URL(`${baseURL}${path}`);
+      if (options.queryParams) {
+        url2.search = new URLSearchParams(options.queryParams).toString();
+      }
+      return url2.toString();
+    }, "url"),
+    headers: getHeaders,
+    fetch: options.fetch
+  }), "getCommonModelConfig");
+  const createLanguageModel = /* @__PURE__ */ __name((modelId) => createChatModel(modelId), "createLanguageModel");
+  const createChatModel = /* @__PURE__ */ __name((modelId) => new OpenAICompatibleChatLanguageModel(modelId, {
+    ...getCommonModelConfig("chat"),
+    includeUsage: options.includeUsage,
+    supportsStructuredOutputs: options.supportsStructuredOutputs,
+    transformRequestBody: options.transformRequestBody,
+    metadataExtractor: options.metadataExtractor
+  }), "createChatModel");
+  const createCompletionModel = /* @__PURE__ */ __name((modelId) => new OpenAICompatibleCompletionLanguageModel(modelId, {
+    ...getCommonModelConfig("completion"),
+    includeUsage: options.includeUsage
+  }), "createCompletionModel");
+  const createEmbeddingModel = /* @__PURE__ */ __name((modelId) => new OpenAICompatibleEmbeddingModel(modelId, {
+    ...getCommonModelConfig("embedding")
+  }), "createEmbeddingModel");
+  const createImageModel = /* @__PURE__ */ __name((modelId) => new OpenAICompatibleImageModel(modelId, getCommonModelConfig("image")), "createImageModel");
+  const provider = /* @__PURE__ */ __name((modelId) => createLanguageModel(modelId), "provider");
+  provider.specificationVersion = "v3";
+  provider.languageModel = createLanguageModel;
+  provider.chatModel = createChatModel;
+  provider.completionModel = createCompletionModel;
+  provider.embeddingModel = createEmbeddingModel;
+  provider.textEmbeddingModel = createEmbeddingModel;
+  provider.imageModel = createImageModel;
+  return provider;
+}
+__name(createOpenAICompatible, "createOpenAICompatible");
+
+// ../ai_shared_src/resource-root.mts
+var resourceRoot = null;
+function setResourceRoot(root) {
+  resourceRoot = root.endsWith("/") ? root.slice(0, -1) : root;
+  console.log(`[ResourceRoot] Set to: ${resourceRoot}`);
+}
+__name(setResourceRoot, "setResourceRoot");
+function getResourceRoot() {
+  return resourceRoot;
+}
+__name(getResourceRoot, "getResourceRoot");
+
+// ../ai_shared_src/eval-core.mts
+var jsEnv = null;
+var builtinSummariesText = "";
+function getJsEnv() {
+  if (!jsEnv) {
+    jsEnv = CS.LLMAgent.ScriptEnvBridge.CreateJavaScriptEnv();
+  }
+  return jsEnv;
+}
+__name(getJsEnv, "getJsEnv");
+async function initBuiltins() {
+  const root = getResourceRoot();
+  if (!root) {
+    console.warn("[EvalCore] Resource root not set, skipping builtins loading.");
+    return;
+  }
+  const env = getJsEnv();
+  const builtinPath = `${root}/builtins`;
+  const assets = CS.UnityEngine.Resources.LoadAll(builtinPath, puer.$typeof(CS.UnityEngine.TextAsset));
+  if (!assets || assets.Length === 0) {
+    console.log(`[EvalCore] No builtins assets found at Resources/${builtinPath}/`);
+    return;
+  }
+  const specifiers = [];
+  for (let i2 = 0; i2 < assets.Length; i2++) {
+    const asset = assets.get_Item(i2);
+    specifiers.push(`${builtinPath}/${asset.name}.mjs`);
+  }
+  const importEntries = specifiers.map((s2, idx) => `import('${s2}').then(function(m) { return { index: ${idx}, specifier: '${s2}', summary: m.summary || '', error: null }; }).catch(function(e) { return { index: ${idx}, specifier: '${s2}', summary: '', error: String(e.message || e) }; })`).join(",\n        ");
+  const batchScript = `(function(onFinish) {
+    Promise.all([
+        ${importEntries}
+    ]).then(function(results) {
+        onFinish.Invoke(JSON.stringify(results));
+    });
+})`;
+  const results = await new Promise((resolve2, reject) => {
+    CS.LLMAgent.ScriptEnvBridge.Eval(env, batchScript, (resultJson) => {
+      try {
+        resolve2(JSON.parse(resultJson));
+      } catch (e2) {
+        reject(e2);
+      }
+    });
+  });
+  const summaries = [];
+  for (const entry of results) {
+    if (entry.error) {
+      console.warn(`[EvalCore] Failed to load builtins module '${entry.specifier}': ${entry.error}`);
+    } else {
+      if (entry.summary) {
+        summaries.push(entry.summary);
+      }
+      console.log(`[EvalCore] Loaded builtins module '${entry.specifier}'.`);
+    }
+  }
+  builtinSummariesText = summaries.length > 0 ? `
+
+### Built-in Helper Modules
+
+Several helper modules are pre-loaded in the evalJsCode VM under the path prefix \`${builtinPath}/\`. Each module exports:
+- **\`description\`** \u2014 a detailed string documenting every function signature and usage.
+- **Named functions** \u2014 the actual helper functions you can call.
+
+To use a module, load it via ESM dynamic \`import()\`.
+
+**IMPORTANT**: On first use of a module, read its \`.description\` export to see detailed function signatures. After that, you already know the API \u2014 just call functions directly without re-reading \`.description\`.
+All functions validate their arguments at runtime and will throw errors if called with wrong parameters.
+
+**Examples below are illustrative only** \u2014 replace \`<module-A>\`, \`<module-B>\`, and function names with the actual modules and APIs listed in "Available modules" below.
+
+First-time usage \u2014 read description:
+\`\`\`
+async function execute() {
+    const mod = await import('${builtinPath}/<module-A>.mjs');
+    return mod.description;
+}
+\`\`\`
+
+After you know the API, call functions directly (you can combine MULTIPLE operations in one script):
+\`\`\`
+async function execute() {
+    const a = await import('${builtinPath}/<module-A>.mjs');
+    const b = await import('${builtinPath}/<module-B>.mjs');
+    a.someFunction('arg');
+    return await b.anotherFunction();
+}
+\`\`\`
+
+Available modules:
+
+` + summaries.join("\n\n") : "";
+  console.log(`[EvalCore] Loaded ${summaries.length} builtins summary(s).`);
+}
+__name(initBuiltins, "initBuiltins");
+var RUNNER_CODE = `(function(onFinish) {
+    execute().then(function(result) {
+        onFinish.Invoke(JSON.stringify({ __error: false, result: result }));
+    }).catch(function(err) {
+        onFinish.Invoke(JSON.stringify({ __error: true, message: String(err.message || err), stack: String(err.stack || '') }));
+    });
+})`;
+async function executeCode(code) {
+  const env = getJsEnv();
+  try {
+    console.log(`[EvalCore] Executing code:
+${code}`);
+    try {
+      CS.LLMAgent.ScriptEnvBridge.EvalSync(env, code);
+    } catch (defineError) {
+      return {
+        success: false,
+        error: defineError.message || String(defineError),
+        stack: defineError.stack || ""
+      };
+    }
+    const resultJson = await new Promise((resolve2) => {
+      CS.LLMAgent.ScriptEnvBridge.Eval(env, RUNNER_CODE, resolve2);
+    });
+    const parsed = JSON.parse(resultJson);
+    if (parsed.__error) {
+      return {
+        success: false,
+        error: parsed.message,
+        stack: parsed.stack || ""
+      };
+    }
+    return {
+      success: true,
+      result: parsed.result
+    };
+  } catch (error48) {
+    const errorMsg = error48.message || String(error48);
+    const stack = error48.stack || "";
+    return {
+      success: false,
+      error: errorMsg,
+      stack
+    };
+  }
+}
+__name(executeCode, "executeCode");
+
+// src/tools/eval-tool.mts
+function createEvalTools() {
+  return {
+    /**
+     * Evaluate JavaScript code in the PuerTS runtime environment.
+     */
+    evalJsCode: tool({
+      description: 'Execute JavaScript code in a dedicated PuerTS runtime environment. This VM is separate from the main agent VM but is **reused across calls** \u2014 variables, functions, and state defined in previous calls persist and can be referenced in later calls.\n\nThe code runs inside Unity via PuerTS with full access to the `CS` and `puer` globals (see PuerTS interop rules and runtime environment notes in the system prompt).\n\nUse this tool when you need to inspect or modify Unity scene objects, create/destroy GameObjects or Components, query hierarchies, execute Unity API calls dynamically, or test code snippets in the live environment.\n\n**Code format**: Your code MUST be an async function declaration named `execute`, for example:\n```\nasync function execute() {\n    // your logic here\n    return someValue;\n}\n```\nUse `return <value>` inside the function to pass a result back \u2014 the returned value will appear in the `result` field of the response. If no `return` statement is used, `result` will be "(no return value)". You can return any value directly \u2014 objects, arrays, strings, numbers, etc. The system automatically serializes return values for you. **Do NOT call JSON.stringify() on your return value** \u2014 just return the object directly.\n\nOn success the response is `{ success: true, result: string }`. On failure the response is `{ success: false, error: string, stack: string }`.\n\nUse console.log() for debug output (it goes to the Unity console).' + builtinSummariesText,
+      inputSchema: external_exports.object({
+        code: external_exports.string().describe(
+          "An async function declaration named `execute`. Example: \"async function execute() {\\n  const go = CS.UnityEngine.GameObject.Find('Main Camera');\\n  return go.transform.position.toString();\\n}\""
+        )
+      }),
+      execute: /* @__PURE__ */ __name(async ({ code }) => {
+        return await executeCode(code);
+      }, "execute"),
+      // Convert eval output to model-friendly content.
+      // When the executed code returns an object with an __image marker
+      // (e.g. from the screenshot builtin), the image is included as
+      // file-data so that handlePrepareStep can extract it and inject
+      // it as a user-message image part for the LLM to see.
+      toModelOutput({ output }) {
+        if (!output.success) {
+          return {
+            type: "text",
+            value: `Error: ${output.error}${output.stack ? "\nStack: " + output.stack : ""}`
+          };
+        }
+        const result = output.result;
+        const images = [];
+        function collectAndStrip(obj, visited) {
+          if (!obj || typeof obj !== "object") return;
+          if (visited.has(obj)) return;
+          visited.add(obj);
+          if (obj.__image && obj.__image.base64) {
+            images.push({
+              base64: obj.__image.base64,
+              mediaType: obj.__image.mediaType || "image/png"
+            });
+            delete obj.__image;
+          }
+          for (const key of Object.keys(obj)) {
+            collectAndStrip(obj[key], visited);
+          }
+        }
+        __name(collectAndStrip, "collectAndStrip");
+        let textContent;
+        if (result === void 0) {
+          textContent = "(no return value)";
+        } else if (result === null) {
+          textContent = "null";
+        } else if (typeof result === "object") {
+          collectAndStrip(result, /* @__PURE__ */ new Set());
+          try {
+            textContent = JSON.stringify(result, null, 2);
+          } catch (_2) {
+            textContent = String(result);
+          }
+        } else {
+          textContent = String(result);
+        }
+        if (images.length > 0) {
+          console.log(`[Eval] toModelOutput: including ${images.length} image(s)`);
+          return {
+            type: "content",
+            value: [
+              { type: "text", text: textContent },
+              ...images.map((img) => ({
+                type: "file-data",
+                data: img.base64,
+                mediaType: img.mediaType
+              }))
+            ]
+          };
+        }
+        return {
+          type: "text",
+          value: textContent
+        };
+      }
+    })
+  };
+}
+__name(createEvalTools, "createEvalTools");
+
+// src/tools/skill-tool.mts
+var skills = /* @__PURE__ */ new Map();
+function listSkills() {
+  return Array.from(skills.values());
+}
+__name(listSkills, "listSkills");
+function parseSkillMarkdown(text2, fileName) {
+  if (!text2 || !text2.trimStart().startsWith("---")) {
+    console.warn(`[Skill] '${fileName}' has no YAML front-matter, skipping.`);
+    return null;
+  }
+  const firstDelim = text2.indexOf("---");
+  const secondDelim = text2.indexOf("---", firstDelim + 3);
+  if (secondDelim < 0) {
+    console.warn(`[Skill] '${fileName}' has unclosed front-matter, skipping.`);
+    return null;
+  }
+  const frontMatter = text2.substring(firstDelim + 3, secondDelim).trim();
+  const body = text2.substring(secondDelim + 3).replace(/^\r?\n/, "");
+  let name21;
+  let description;
+  for (const line of frontMatter.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("name:")) {
+      name21 = trimmed.substring(5).trim().replace(/^["']|["']$/g, "");
+    } else if (trimmed.startsWith("description:")) {
+      description = trimmed.substring(12).trim().replace(/^["']|["']$/g, "");
+    }
+  }
+  if (!name21) {
+    console.warn(`[Skill] '${fileName}' has no 'name' in front-matter, skipping.`);
+    return null;
+  }
+  return { name: name21, description: description ?? "", content: body };
+}
+__name(parseSkillMarkdown, "parseSkillMarkdown");
+function initSkills() {
+  skills.clear();
+  const root = getResourceRoot();
+  if (!root) {
+    console.warn("[Skill] Resource root not set, skipping skill loading.");
+    return;
+  }
+  const skillsPath = `${root}/skills`;
+  const assets = CS.UnityEngine.Resources.LoadAll(skillsPath, puer.$typeof(CS.UnityEngine.TextAsset));
+  if (!assets || assets.Length === 0) {
+    console.log(`[Skill] No skill assets found at Resources/${skillsPath}/`);
+    return;
+  }
+  for (let i2 = 0; i2 < assets.Length; i2++) {
+    const asset = assets.get_Item(i2);
+    try {
+      const text2 = asset.text;
+      const skill = parseSkillMarkdown(text2, asset.name);
+      if (skill) {
+        skills.set(skill.name, skill);
+        console.log(`[Skill] Registered skill: ${skill.name}`);
+      }
+    } catch (e2) {
+      console.warn(`[Skill] Failed to parse '${asset.name}': ${e2.message || e2}`);
+    }
+  }
+  console.log(`[Skill] Loaded ${skills.size} skill(s) from Resources/${skillsPath}/`);
+}
+__name(initSkills, "initSkills");
+function buildSkillListMarkdown() {
+  const list = listSkills();
+  if (list.length === 0) {
+    return "";
+  }
+  return list.map((s2) => `- **${s2.name}**: ${s2.description}`).join("\n");
+}
+__name(buildSkillListMarkdown, "buildSkillListMarkdown");
+function createSkillTools() {
+  const list = listSkills();
+  if (list.length === 0) {
+    return {};
+  }
+  const examples = list.slice(0, 3).map((s2) => `'${s2.name}'`).join(", ");
+  const hint = examples ? ` (e.g. ${examples})` : "";
+  const description = [
+    "Load a specialized skill that provides domain-specific instructions and workflows.",
+    "",
+    "**IMPORTANT**: You MUST call this tool BEFORE performing any task that involves a domain listed below. Do NOT rely on your own knowledge \u2014 always load the skill first to get the authoritative and project-specific rules.",
+    "",
+    "## Available Skills",
+    buildSkillListMarkdown()
+  ].join("\n");
+  return {
+    loadSkill: tool({
+      description,
+      inputSchema: external_exports.object({
+        name: external_exports.string().describe(`The name of the skill to load${hint}`)
+      }),
+      execute: /* @__PURE__ */ __name(async ({ name: name21 }) => {
+        const skill = skills.get(name21);
+        if (!skill) {
+          const available = listSkills().map((s2) => s2.name).join(", ");
+          return {
+            success: false,
+            error: `Skill "${name21}" not found. Available skills: ${available || "none"}`
+          };
+        }
+        return {
+          success: true,
+          result: [
+            `<skill_content name="${skill.name}">`,
+            `# Skill: ${skill.name}`,
+            "",
+            skill.content.trim(),
+            "",
+            "</skill_content>"
+          ].join("\n")
+        };
+      }, "execute")
+    })
+  };
+}
+__name(createSkillTools, "createSkillTools");
+
+// src/agent/prompt.mts
+var roleDefinition = "";
+function initSystemPrompt() {
+  const root = getResourceRoot();
+  if (!root) {
+    console.warn("[Prompt] Resource root not set, skipping system-prompt loading.");
+    return;
+  }
+  const asset = CS.UnityEngine.Resources.Load(
+    `${root}/system-prompt.md`,
+    puer.$typeof(CS.UnityEngine.TextAsset)
+  );
+  if (asset && asset.text) {
+    roleDefinition = asset.text.trim();
+    console.log(`[Prompt] Loaded system-prompt from Resources/${root}/system-prompt.md.txt`);
+  } else {
+    console.warn(`[Prompt] No system-prompt.md.txt found at Resources/${root}/, using empty role definition.`);
+    roleDefinition = "";
+  }
+}
+__name(initSystemPrompt, "initSystemPrompt");
+var FRAMEWORK_PROMPT = `
+## Context Compression \u2014 Image Placeholders
+
+To save context space, base64-encoded image data in **past** tool call results
+is automatically replaced with compact placeholders.
+The placeholder prefix is unique per session:
+
+- \`{IMAGE_PREFIX}(index, length)\` - a base64-encoded image that was replaced.
+  \`index\` is the storage slot, \`length\` is the original character count.
+  **You can retrieve the original content** by calling the \`retrieveImage\` tool with the index.
+  Only retrieve it when you genuinely need the exact base64 data \u2014 in most cases,
+  take a new screenshot via \`captureScreenshot\` instead.
+
+## Skills (IMPORTANT)
+
+If the \`loadSkill\` tool is available, you **MUST** call it to load the relevant skill **before** performing any task that falls within that skill's domain. For example, if a task involves calling C# APIs from JS via PuerTS, you must first load the corresponding skill to get the correct interop rules. **Never assume you know the correct approach \u2014 always load the skill first.**
+
+## evalJsCode Runtime Environment
+
+The evalJsCode tool runs in a **pure V8 engine** \u2014 there is NO \`window\`, \`document\`, \`DOM\`, or any browser/Node.js API. However, \`setTimeout\`, \`setInterval\`, \`clearTimeout\`, and \`clearInterval\` are available (provided by PuerTS). To persist state across calls, use \`globalThis.myVar = ...\` or top-level \`var\` declarations.
+`;
+function buildSystemPrompt(imagePrefix) {
+  const prompt = roleDefinition ? `${roleDefinition}
+${FRAMEWORK_PROMPT}` : FRAMEWORK_PROMPT.trimStart();
+  return prompt.replace(/\{IMAGE_PREFIX\}/g, imagePrefix);
+}
+__name(buildSystemPrompt, "buildSystemPrompt");
+
+// src/agent/image-store.mts
+function randomSuffix(len = 5) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i2 = 0; i2 < len; i2++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
+__name(randomSuffix, "randomSuffix");
+var ImageStore = class {
+  static {
+    __name(this, "ImageStore");
+  }
+  entries = [];
+  /** Unique prefix for image placeholders, e.g. "image_a3f9x". */
+  imagePrefix;
+  constructor() {
+    const suffix = randomSuffix(5);
+    this.imagePrefix = `image_${suffix}`;
+  }
+  /** Store an image string and return its index. */
+  store(content) {
+    const index = this.entries.length;
+    this.entries.push({ content, length: content.length });
+    return index;
+  }
+  /** Build a placeholder string for a stored entry. */
+  placeholder(index, length) {
+    return `${this.imagePrefix}(${index}, ${length})`;
+  }
+  /** Retrieve a stored image string by index. Returns null if not found. */
+  retrieve(index) {
+    if (index < 0 || index >= this.entries.length) return null;
+    return this.entries[index].content;
+  }
+  /** Clear all stored entries and regenerate prefix. */
+  clear() {
+    this.entries = [];
+    const suffix = randomSuffix(5);
+    this.imagePrefix = `image_${suffix}`;
+  }
+  get size() {
+    return this.entries.length;
+  }
+};
+var imageStore = new ImageStore();
+function stripOldUserImages(conversationHistory2) {
+  let lastUserIdx = -1;
+  for (let i2 = conversationHistory2.length - 1; i2 >= 0; i2--) {
+    if (conversationHistory2[i2].role === "user") {
+      lastUserIdx = i2;
+      break;
+    }
+  }
+  const indicesWithImages = [];
+  for (let i2 = 0; i2 < conversationHistory2.length; i2++) {
+    const msg = conversationHistory2[i2];
+    if (msg.role !== "user" || !Array.isArray(msg.content)) continue;
+    if (msg.content.some((p2) => p2.type === "image")) {
+      indicesWithImages.push(i2);
+    }
+  }
+  if (indicesWithImages.length === 0) return;
+  const toStrip = indicesWithImages.filter((idx) => idx !== lastUserIdx);
+  for (const idx of toStrip) {
+    const msg = conversationHistory2[idx];
+    let strippedCount = 0;
+    msg.content = msg.content.map((part) => {
+      if (part.type === "image" && typeof part.image === "string") {
+        strippedCount++;
+        const base64Data = part.image;
+        const storeIdx = imageStore.store(base64Data);
+        const placeholder = imageStore.placeholder(storeIdx, base64Data.length);
+        return {
+          type: "text",
+          text: `[User-attached image was removed to save context space. Placeholder: ${placeholder} \u2013 use retrieveImage tool with index ${storeIdx} if you need to see it again.]`
+        };
+      }
+      return part;
+    });
+    if (strippedCount > 0) {
+      console.log(`[Agent] Stripped ${strippedCount} image(s) from older user message at index ${idx}, stored in imageStore`);
+    }
+  }
+}
+__name(stripOldUserImages, "stripOldUserImages");
+function createRetrieveImageTool() {
+  return {
+    retrieveImage: tool({
+      description: "Retrieve the original base64 content of a compressed image placeholder. In conversation history, base64-encoded image data is automatically replaced with compact placeholders to save context space. Call this tool with the index from the placeholder to get the full base64 string.",
+      inputSchema: external_exports.object({
+        index: external_exports.number().int().min(0).describe("The index from the placeholder, e.g. for image_xxxxx(3, 1200), index is 3.")
+      }),
+      execute: /* @__PURE__ */ __name(async ({ index }) => {
+        const content = imageStore.retrieve(index);
+        if (content === null) {
+          return {
+            success: false,
+            error: `No entry found at index ${index}. Valid range: 0-${imageStore.size - 1}.`
+          };
+        }
+        return {
+          success: true,
+          content
+        };
+      }, "execute")
+    })
+  };
+}
+__name(createRetrieveImageTool, "createRetrieveImageTool");
+
 // node_modules/@ai-sdk/openai/dist/index.mjs
 var openaiErrorDataSchema = external_exports.object({
   error: external_exports.object({
@@ -32793,7 +34963,7 @@ function convertToOpenAIChatMessages({
   return { messages, warnings };
 }
 __name(convertToOpenAIChatMessages, "convertToOpenAIChatMessages");
-function getResponseMetadata({
+function getResponseMetadata3({
   id,
   model,
   created
@@ -32804,7 +34974,7 @@ function getResponseMetadata({
     timestamp: created ? new Date(created * 1e3) : void 0
   };
 }
-__name(getResponseMetadata, "getResponseMetadata");
+__name(getResponseMetadata3, "getResponseMetadata");
 function mapOpenAIFinishReason(finishReason) {
   switch (finishReason) {
     case "stop":
@@ -33395,7 +35565,7 @@ var OpenAIChatLanguageModel = class {
       usage: convertOpenAIChatUsage(response.usage),
       request: { body },
       response: {
-        ...getResponseMetadata(response),
+        ...getResponseMetadata3(response),
         headers: responseHeaders,
         body: rawResponse
       },
@@ -33458,12 +35628,12 @@ var OpenAIChatLanguageModel = class {
               return;
             }
             if (!metadataExtracted) {
-              const metadata = getResponseMetadata(value);
+              const metadata = getResponseMetadata3(value);
               if (Object.values(metadata).some(Boolean)) {
                 metadataExtracted = true;
                 controller.enqueue({
                   type: "response-metadata",
-                  ...getResponseMetadata(value)
+                  ...getResponseMetadata3(value)
                 });
               }
             }
@@ -33728,7 +35898,7 @@ ${user}:`]
   };
 }
 __name(convertToOpenAICompletionPrompt, "convertToOpenAICompletionPrompt");
-function getResponseMetadata2({
+function getResponseMetadata22({
   id,
   model,
   created
@@ -33739,7 +35909,7 @@ function getResponseMetadata2({
     timestamp: created != null ? new Date(created * 1e3) : void 0
   };
 }
-__name(getResponseMetadata2, "getResponseMetadata2");
+__name(getResponseMetadata22, "getResponseMetadata2");
 function mapOpenAIFinishReason2(finishReason) {
   switch (finishReason) {
     case "stop":
@@ -33978,7 +36148,7 @@ var OpenAICompletionLanguageModel = class {
       },
       request: { body: args },
       response: {
-        ...getResponseMetadata2(response),
+        ...getResponseMetadata22(response),
         headers: responseHeaders,
         body: rawResponse
       },
@@ -34041,7 +36211,7 @@ var OpenAICompletionLanguageModel = class {
               isFirstChunk = false;
               controller.enqueue({
                 type: "response-metadata",
-                ...getResponseMetadata2(value)
+                ...getResponseMetadata22(value)
               });
               controller.enqueue({ type: "text-start", id: "0" });
             }
@@ -34100,7 +36270,7 @@ var openaiEmbeddingModelOptions = lazySchema(
     })
   )
 );
-var openaiTextEmbeddingResponseSchema = lazySchema(
+var openaiTextEmbeddingResponseSchema2 = lazySchema(
   () => zodSchema(
     external_exports.object({
       data: external_exports.array(external_exports.object({ embedding: external_exports.array(external_exports.number()) })),
@@ -34161,7 +36331,7 @@ var OpenAIEmbeddingModel = class {
       },
       failedResponseHandler: openaiFailedResponseHandler,
       successfulResponseHandler: createJsonResponseHandler(
-        openaiTextEmbeddingResponseSchema
+        openaiTextEmbeddingResponseSchema2
       ),
       abortSignal,
       fetch: this.config.fetch
@@ -34285,7 +36455,7 @@ var OpenAIImageModel = class {
               ) : downloadBlob(file2.url)
             )
           ),
-          mask: mask != null ? await fileToBlob(mask) : void 0,
+          mask: mask != null ? await fileToBlob2(mask) : void 0,
           n: n2,
           size,
           ...(_d = providerOptions.openai) != null ? _d : {}
@@ -34407,7 +36577,7 @@ function distributeTokenDetails(details, index, total) {
   return result;
 }
 __name(distributeTokenDetails, "distributeTokenDetails");
-async function fileToBlob(file2) {
+async function fileToBlob2(file2) {
   if (!file2) return void 0;
   if (file2.type === "url") {
     return downloadBlob(file2.url);
@@ -34415,7 +36585,7 @@ async function fileToBlob(file2) {
   const data = file2.data instanceof Uint8Array ? file2.data : convertBase64ToUint8Array(file2.data);
   return new Blob([data], { type: file2.mediaType });
 }
-__name(fileToBlob, "fileToBlob");
+__name(fileToBlob2, "fileToBlob");
 var applyPatchInputSchema = lazySchema(
   () => zodSchema(
     external_exports.object({
@@ -38701,7 +40871,7 @@ var OpenAITranscriptionModel = class {
     };
   }
 };
-var VERSION4 = true ? "3.0.41" : "0.0.0-test";
+var VERSION5 = true ? "3.0.41" : "0.0.0-test";
 function createOpenAI(options = {}) {
   var _a21, _b17;
   const baseURL = (_a21 = withoutTrailingSlash(
@@ -38722,7 +40892,7 @@ function createOpenAI(options = {}) {
       "OpenAI-Project": options.project,
       ...options.headers
     },
-    `ai-sdk/openai/${VERSION4}`
+    `ai-sdk/openai/${VERSION5}`
   ), "getHeaders");
   const createChatModel = /* @__PURE__ */ __name((modelId) => new OpenAIChatLanguageModel(modelId, {
     provider: `${providerName}.chat`,
@@ -38800,508 +40970,6 @@ function createOpenAI(options = {}) {
 }
 __name(createOpenAI, "createOpenAI");
 var openai = createOpenAI();
-
-// ../ai_shared_src/resource-root.mts
-var resourceRoot = null;
-function setResourceRoot(root) {
-  resourceRoot = root.endsWith("/") ? root.slice(0, -1) : root;
-  console.log(`[ResourceRoot] Set to: ${resourceRoot}`);
-}
-__name(setResourceRoot, "setResourceRoot");
-function getResourceRoot() {
-  return resourceRoot;
-}
-__name(getResourceRoot, "getResourceRoot");
-
-// ../ai_shared_src/eval-core.mts
-var jsEnv = null;
-var builtinSummariesText = "";
-function getJsEnv() {
-  if (!jsEnv) {
-    jsEnv = CS.LLMAgent.ScriptEnvBridge.CreateJavaScriptEnv();
-  }
-  return jsEnv;
-}
-__name(getJsEnv, "getJsEnv");
-async function initBuiltins() {
-  const root = getResourceRoot();
-  if (!root) {
-    console.warn("[EvalCore] Resource root not set, skipping builtins loading.");
-    return;
-  }
-  const env = getJsEnv();
-  const builtinPath = `${root}/builtins`;
-  const assets = CS.UnityEngine.Resources.LoadAll(builtinPath, puer.$typeof(CS.UnityEngine.TextAsset));
-  if (!assets || assets.Length === 0) {
-    console.log(`[EvalCore] No builtins assets found at Resources/${builtinPath}/`);
-    return;
-  }
-  const specifiers = [];
-  for (let i2 = 0; i2 < assets.Length; i2++) {
-    const asset = assets.get_Item(i2);
-    specifiers.push(`${builtinPath}/${asset.name}.mjs`);
-  }
-  const importEntries = specifiers.map((s2, idx) => `import('${s2}').then(function(m) { return { index: ${idx}, specifier: '${s2}', summary: m.summary || '', error: null }; }).catch(function(e) { return { index: ${idx}, specifier: '${s2}', summary: '', error: String(e.message || e) }; })`).join(",\n        ");
-  const batchScript = `(function(onFinish) {
-    Promise.all([
-        ${importEntries}
-    ]).then(function(results) {
-        onFinish.Invoke(JSON.stringify(results));
-    });
-})`;
-  const results = await new Promise((resolve2, reject) => {
-    CS.LLMAgent.ScriptEnvBridge.Eval(env, batchScript, (resultJson) => {
-      try {
-        resolve2(JSON.parse(resultJson));
-      } catch (e2) {
-        reject(e2);
-      }
-    });
-  });
-  const summaries = [];
-  for (const entry of results) {
-    if (entry.error) {
-      console.warn(`[EvalCore] Failed to load builtins module '${entry.specifier}': ${entry.error}`);
-    } else {
-      if (entry.summary) {
-        summaries.push(entry.summary);
-      }
-      console.log(`[EvalCore] Loaded builtins module '${entry.specifier}'.`);
-    }
-  }
-  builtinSummariesText = summaries.length > 0 ? `
-
-### Built-in Helper Modules
-
-Several helper modules are pre-loaded in the evalJsCode VM under the path prefix \`${builtinPath}/\`. Each module exports:
-- **\`description\`** \u2014 a detailed string documenting every function signature and usage.
-- **Named functions** \u2014 the actual helper functions you can call.
-
-To use a module, load it via ESM dynamic \`import()\`.
-
-**IMPORTANT**: On first use of a module, read its \`.description\` export to see detailed function signatures. After that, you already know the API \u2014 just call functions directly without re-reading \`.description\`.
-All functions validate their arguments at runtime and will throw errors if called with wrong parameters.
-
-First-time usage \u2014 read description:
-\`\`\`
-async function execute() {
-    const sv = await import('${builtinPath}/scene-view.mjs');
-    return sv.description;
-}
-\`\`\`
-
-After you know the API, call functions directly (you can combine MULTIPLE operations in one script):
-\`\`\`
-async function execute() {
-    const sv = await import('${builtinPath}/scene-view.mjs');
-    const ss = await import('${builtinPath}/screenshot.mjs');
-    sv.focusSceneViewOn('Main Camera');
-    return await ss.captureSceneView();
-}
-\`\`\`
-
-Available modules:
-
-` + summaries.join("\n\n") : "";
-  console.log(`[EvalCore] Loaded ${summaries.length} builtins summary(s).`);
-}
-__name(initBuiltins, "initBuiltins");
-var RUNNER_CODE = `(function(onFinish) {
-    execute().then(function(result) {
-        var resultStr;
-        var imageData = null;
-        if (result === undefined) {
-            resultStr = '(no return value)';
-        } else if (result === null) {
-            resultStr = 'null';
-        } else if (typeof result === 'object') {
-            if (result.__image && result.__image.base64) {
-                imageData = { base64: result.__image.base64, mediaType: result.__image.mediaType || 'image/png' };
-                var copy = {};
-                for (var k in result) { if (k !== '__image') copy[k] = result[k]; }
-                try { resultStr = JSON.stringify(copy, null, 2); } catch(e) { resultStr = String(result); }
-            } else {
-                try { resultStr = JSON.stringify(result, null, 2); } catch(e) { resultStr = String(result); }
-            }
-        } else {
-            resultStr = String(result);
-        }
-        onFinish.Invoke(JSON.stringify({ __error: false, result: resultStr, __image: imageData }));
-    }).catch(function(err) {
-        onFinish.Invoke(JSON.stringify({ __error: true, message: String(err.message || err), stack: String(err.stack || '') }));
-    });
-})`;
-async function executeCode(code) {
-  const env = getJsEnv();
-  try {
-    console.log(`[EvalCore] Executing code:
-${code}`);
-    try {
-      CS.LLMAgent.ScriptEnvBridge.EvalSync(env, code);
-    } catch (defineError) {
-      return {
-        success: false,
-        error: defineError.message || String(defineError),
-        stack: defineError.stack || ""
-      };
-    }
-    const resultJson = await new Promise((resolve2) => {
-      CS.LLMAgent.ScriptEnvBridge.Eval(env, RUNNER_CODE, resolve2);
-    });
-    const parsed = JSON.parse(resultJson);
-    if (parsed.__error) {
-      return {
-        success: false,
-        error: parsed.message,
-        stack: parsed.stack || ""
-      };
-    }
-    const output = {
-      success: true,
-      result: parsed.result
-    };
-    if (parsed.__image) {
-      output.__image = parsed.__image;
-    }
-    return output;
-  } catch (error48) {
-    const errorMsg = error48.message || String(error48);
-    const stack = error48.stack || "";
-    return {
-      success: false,
-      error: errorMsg,
-      stack
-    };
-  }
-}
-__name(executeCode, "executeCode");
-
-// src/tools/eval-tool.mts
-function createEvalTools() {
-  return {
-    /**
-     * Evaluate JavaScript code in the PuerTS runtime environment.
-     */
-    evalJsCode: tool({
-      description: 'Execute JavaScript code in a dedicated PuerTS runtime environment. This VM is separate from the main agent VM but is **reused across calls** \u2014 variables, functions, and state defined in previous calls persist and can be referenced in later calls.\n\nThe code runs inside Unity via PuerTS with full access to the `CS` and `puer` globals (see PuerTS interop rules and runtime environment notes in the system prompt).\n\nUse this tool when you need to inspect or modify Unity scene objects, create/destroy GameObjects or Components, query hierarchies, execute Unity API calls dynamically, or test code snippets in the live environment.\n\n**Code format**: Your code MUST be an async function declaration named `execute`, for example:\n```\nasync function execute() {\n    // your logic here\n    return someValue;\n}\n```\nUse `return <value>` inside the function to pass a result back \u2014 the returned value will appear in the `result` field of the response. If no `return` statement is used, `result` will be "(no return value)". Objects are serialized via JSON.stringify; primitives are converted to strings.\n\nOn success the response is `{ success: true, result: string }`. On failure the response is `{ success: false, error: string, stack: string }`.\n\nUse console.log() for debug output (it goes to the Unity console).' + builtinSummariesText,
-      inputSchema: external_exports.object({
-        code: external_exports.string().describe(
-          "An async function declaration named `execute`. Example: \"async function execute() {\\n  const go = CS.UnityEngine.GameObject.Find('Main Camera');\\n  return go.transform.position.toString();\\n}\""
-        )
-      }),
-      execute: /* @__PURE__ */ __name(async ({ code }) => {
-        return await executeCode(code);
-      }, "execute"),
-      // Convert eval output to model-friendly content.
-      // When the executed code returns an object with an __image marker
-      // (e.g. from the screenshot builtin), the image is included as
-      // file-data so that handlePrepareStep can extract it and inject
-      // it as a user-message image part for the LLM to see.
-      toModelOutput({ output }) {
-        const textContent = output.success ? output.result : `Error: ${output.error}${output.stack ? "\nStack: " + output.stack : ""}`;
-        if (output.success && output.__image) {
-          return {
-            type: "content",
-            value: [
-              { type: "text", text: textContent },
-              {
-                type: "file-data",
-                data: output.__image.base64,
-                mediaType: output.__image.mediaType || "image/png"
-              }
-            ]
-          };
-        }
-        return {
-          type: "text",
-          value: textContent
-        };
-      }
-    })
-  };
-}
-__name(createEvalTools, "createEvalTools");
-
-// src/tools/skill-tool.mts
-var skills = /* @__PURE__ */ new Map();
-function listSkills() {
-  return Array.from(skills.values());
-}
-__name(listSkills, "listSkills");
-function parseSkillMarkdown(text2, fileName) {
-  if (!text2 || !text2.trimStart().startsWith("---")) {
-    console.warn(`[Skill] '${fileName}' has no YAML front-matter, skipping.`);
-    return null;
-  }
-  const firstDelim = text2.indexOf("---");
-  const secondDelim = text2.indexOf("---", firstDelim + 3);
-  if (secondDelim < 0) {
-    console.warn(`[Skill] '${fileName}' has unclosed front-matter, skipping.`);
-    return null;
-  }
-  const frontMatter = text2.substring(firstDelim + 3, secondDelim).trim();
-  const body = text2.substring(secondDelim + 3).replace(/^\r?\n/, "");
-  let name21;
-  let description;
-  for (const line of frontMatter.split("\n")) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith("name:")) {
-      name21 = trimmed.substring(5).trim().replace(/^["']|["']$/g, "");
-    } else if (trimmed.startsWith("description:")) {
-      description = trimmed.substring(12).trim().replace(/^["']|["']$/g, "");
-    }
-  }
-  if (!name21) {
-    console.warn(`[Skill] '${fileName}' has no 'name' in front-matter, skipping.`);
-    return null;
-  }
-  return { name: name21, description: description ?? "", content: body };
-}
-__name(parseSkillMarkdown, "parseSkillMarkdown");
-function initSkills() {
-  skills.clear();
-  const root = getResourceRoot();
-  if (!root) {
-    console.warn("[Skill] Resource root not set, skipping skill loading.");
-    return;
-  }
-  const skillsPath = `${root}/skills`;
-  const assets = CS.UnityEngine.Resources.LoadAll(skillsPath, puer.$typeof(CS.UnityEngine.TextAsset));
-  if (!assets || assets.Length === 0) {
-    console.log(`[Skill] No skill assets found at Resources/${skillsPath}/`);
-    return;
-  }
-  for (let i2 = 0; i2 < assets.Length; i2++) {
-    const asset = assets.get_Item(i2);
-    try {
-      const text2 = asset.text;
-      const skill = parseSkillMarkdown(text2, asset.name);
-      if (skill) {
-        skills.set(skill.name, skill);
-        console.log(`[Skill] Registered skill: ${skill.name}`);
-      }
-    } catch (e2) {
-      console.warn(`[Skill] Failed to parse '${asset.name}': ${e2.message || e2}`);
-    }
-  }
-  console.log(`[Skill] Loaded ${skills.size} skill(s) from Resources/${skillsPath}/`);
-}
-__name(initSkills, "initSkills");
-function buildSkillListMarkdown() {
-  const list = listSkills();
-  if (list.length === 0) {
-    return "";
-  }
-  return list.map((s2) => `- **${s2.name}**: ${s2.description}`).join("\n");
-}
-__name(buildSkillListMarkdown, "buildSkillListMarkdown");
-function createSkillTools() {
-  const list = listSkills();
-  if (list.length === 0) {
-    return {};
-  }
-  const examples = list.slice(0, 3).map((s2) => `'${s2.name}'`).join(", ");
-  const hint = examples ? ` (e.g. ${examples})` : "";
-  const description = [
-    "Load a specialized skill that provides domain-specific instructions and workflows.",
-    "",
-    "**IMPORTANT**: You MUST call this tool BEFORE performing any task that involves a domain listed below. Do NOT rely on your own knowledge \u2014 always load the skill first to get the authoritative and project-specific rules.",
-    "",
-    "## Available Skills",
-    buildSkillListMarkdown()
-  ].join("\n");
-  return {
-    loadSkill: tool({
-      description,
-      inputSchema: external_exports.object({
-        name: external_exports.string().describe(`The name of the skill to load${hint}`)
-      }),
-      execute: /* @__PURE__ */ __name(async ({ name: name21 }) => {
-        const skill = skills.get(name21);
-        if (!skill) {
-          const available = listSkills().map((s2) => s2.name).join(", ");
-          return {
-            success: false,
-            error: `Skill "${name21}" not found. Available skills: ${available || "none"}`
-          };
-        }
-        return {
-          success: true,
-          result: [
-            `<skill_content name="${skill.name}">`,
-            `# Skill: ${skill.name}`,
-            "",
-            skill.content.trim(),
-            "",
-            "</skill_content>"
-          ].join("\n")
-        };
-      }, "execute")
-    })
-  };
-}
-__name(createSkillTools, "createSkillTools");
-
-// src/agent/prompt.mts
-var roleDefinition = "";
-function initSystemPrompt() {
-  const root = getResourceRoot();
-  if (!root) {
-    console.warn("[Prompt] Resource root not set, skipping system-prompt loading.");
-    return;
-  }
-  const asset = CS.UnityEngine.Resources.Load(
-    `${root}/system-prompt.md`,
-    puer.$typeof(CS.UnityEngine.TextAsset)
-  );
-  if (asset && asset.text) {
-    roleDefinition = asset.text.trim();
-    console.log(`[Prompt] Loaded system-prompt from Resources/${root}/system-prompt.md.txt`);
-  } else {
-    console.warn(`[Prompt] No system-prompt.md.txt found at Resources/${root}/, using empty role definition.`);
-    roleDefinition = "";
-  }
-}
-__name(initSystemPrompt, "initSystemPrompt");
-var FRAMEWORK_PROMPT = `
-## Context Compression \u2014 Image Placeholders
-
-To save context space, base64-encoded image data in **past** tool call results
-is automatically replaced with compact placeholders.
-The placeholder prefix is unique per session:
-
-- \`{IMAGE_PREFIX}(index, length)\` - a base64-encoded image that was replaced.
-  \`index\` is the storage slot, \`length\` is the original character count.
-  **You can retrieve the original content** by calling the \`retrieveImage\` tool with the index.
-  Only retrieve it when you genuinely need the exact base64 data \u2014 in most cases,
-  take a new screenshot via \`captureScreenshot\` instead.
-
-## Skills (IMPORTANT)
-
-If the \`loadSkill\` tool is available, you **MUST** call it to load the relevant skill **before** performing any task that falls within that skill's domain. For example, if a task involves calling C# APIs from JS via PuerTS, you must first load the corresponding skill to get the correct interop rules. **Never assume you know the correct approach \u2014 always load the skill first.**
-
-## evalJsCode Runtime Environment
-
-The evalJsCode tool runs in a **pure V8 engine** \u2014 there is NO \`window\`, \`document\`, \`DOM\`, or any browser/Node.js API. However, \`setTimeout\`, \`setInterval\`, \`clearTimeout\`, and \`clearInterval\` are available (provided by PuerTS). To persist state across calls, use \`globalThis.myVar = ...\` or top-level \`var\` declarations.
-`;
-function buildSystemPrompt(imagePrefix) {
-  const prompt = roleDefinition ? `${roleDefinition}
-${FRAMEWORK_PROMPT}` : FRAMEWORK_PROMPT.trimStart();
-  return prompt.replace(/\{IMAGE_PREFIX\}/g, imagePrefix);
-}
-__name(buildSystemPrompt, "buildSystemPrompt");
-
-// src/agent/image-store.mts
-function randomSuffix(len = 5) {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i2 = 0; i2 < len; i2++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
-}
-__name(randomSuffix, "randomSuffix");
-var ImageStore = class {
-  static {
-    __name(this, "ImageStore");
-  }
-  entries = [];
-  /** Unique prefix for image placeholders, e.g. "image_a3f9x". */
-  imagePrefix;
-  constructor() {
-    const suffix = randomSuffix(5);
-    this.imagePrefix = `image_${suffix}`;
-  }
-  /** Store an image string and return its index. */
-  store(content) {
-    const index = this.entries.length;
-    this.entries.push({ content, length: content.length });
-    return index;
-  }
-  /** Build a placeholder string for a stored entry. */
-  placeholder(index, length) {
-    return `${this.imagePrefix}(${index}, ${length})`;
-  }
-  /** Retrieve a stored image string by index. Returns null if not found. */
-  retrieve(index) {
-    if (index < 0 || index >= this.entries.length) return null;
-    return this.entries[index].content;
-  }
-  /** Clear all stored entries and regenerate prefix. */
-  clear() {
-    this.entries = [];
-    const suffix = randomSuffix(5);
-    this.imagePrefix = `image_${suffix}`;
-  }
-  get size() {
-    return this.entries.length;
-  }
-};
-var imageStore = new ImageStore();
-function stripOldUserImages(conversationHistory2) {
-  let lastUserIdx = -1;
-  for (let i2 = conversationHistory2.length - 1; i2 >= 0; i2--) {
-    if (conversationHistory2[i2].role === "user") {
-      lastUserIdx = i2;
-      break;
-    }
-  }
-  const indicesWithImages = [];
-  for (let i2 = 0; i2 < conversationHistory2.length; i2++) {
-    const msg = conversationHistory2[i2];
-    if (msg.role !== "user" || !Array.isArray(msg.content)) continue;
-    if (msg.content.some((p2) => p2.type === "image")) {
-      indicesWithImages.push(i2);
-    }
-  }
-  if (indicesWithImages.length === 0) return;
-  const toStrip = indicesWithImages.filter((idx) => idx !== lastUserIdx);
-  for (const idx of toStrip) {
-    const msg = conversationHistory2[idx];
-    let strippedCount = 0;
-    msg.content = msg.content.map((part) => {
-      if (part.type === "image" && typeof part.image === "string") {
-        strippedCount++;
-        const base64Data = part.image;
-        const storeIdx = imageStore.store(base64Data);
-        const placeholder = imageStore.placeholder(storeIdx, base64Data.length);
-        return {
-          type: "text",
-          text: `[User-attached image was removed to save context space. Placeholder: ${placeholder} \u2013 use retrieveImage tool with index ${storeIdx} if you need to see it again.]`
-        };
-      }
-      return part;
-    });
-    if (strippedCount > 0) {
-      console.log(`[Agent] Stripped ${strippedCount} image(s) from older user message at index ${idx}, stored in imageStore`);
-    }
-  }
-}
-__name(stripOldUserImages, "stripOldUserImages");
-function createRetrieveImageTool() {
-  return {
-    retrieveImage: tool({
-      description: "Retrieve the original base64 content of a compressed image placeholder. In conversation history, base64-encoded image data is automatically replaced with compact placeholders to save context space. Call this tool with the index from the placeholder to get the full base64 string.",
-      inputSchema: external_exports.object({
-        index: external_exports.number().int().min(0).describe("The index from the placeholder, e.g. for image_xxxxx(3, 1200), index is 3.")
-      }),
-      execute: /* @__PURE__ */ __name(async ({ index }) => {
-        const content = imageStore.retrieve(index);
-        if (content === null) {
-          return {
-            success: false,
-            error: `No entry found at index ${index}. Valid range: 0-${imageStore.size - 1}.`
-          };
-        }
-        return {
-          success: true,
-          content
-        };
-      }, "execute")
-    })
-  };
-}
-__name(createRetrieveImageTool, "createRetrieveImageTool");
 
 // src/agent/compaction.mts
 var ENABLE_SLIDING_WINDOW = true;
@@ -39598,11 +41266,70 @@ function createToolSet() {
 }
 __name(createToolSet, "createToolSet");
 function createModel() {
-  const provider = createOpenAI({
+  const provider = createOpenAICompatible({
+    name: "llm-provider",
     apiKey: currentConfig.apiKey,
-    baseURL: currentConfig.baseURL
+    baseURL: currentConfig.baseURL || "https://api.openai.com/v1",
+    transformRequestBody: /* @__PURE__ */ __name((body) => {
+      if (body.tools && Array.isArray(body.tools)) {
+        body.tools.forEach((tool2) => {
+          if (tool2.function?.parameters?.$schema) {
+            delete tool2.function.parameters.$schema;
+          }
+        });
+      }
+      const isGemini = currentConfig.model?.toLowerCase().includes("gemini");
+      if (isGemini && body.messages && Array.isArray(body.messages)) {
+        const newMessages = [];
+        for (const msg of body.messages) {
+          if (msg.role === "assistant" && msg.tool_calls) {
+            let text2 = msg.content || "";
+            for (const tc of msg.tool_calls) {
+              text2 += `
+
+[System Log: Assistant called tool '${tc.function?.name}' with arguments: ${tc.function?.arguments}]`;
+            }
+            newMessages.push({
+              role: "assistant",
+              content: text2.trim()
+            });
+          } else if (msg.role === "tool") {
+            let newContent = msg.content;
+            if (Array.isArray(newContent)) {
+              newContent = [
+                { type: "text", text: `[System Log: Tool '${msg.name || "unknown"}' returned result]:
+` },
+                ...newContent
+              ];
+            } else {
+              newContent = `[System Log: Tool '${msg.name || "unknown"}' returned result]:
+${newContent}`;
+            }
+            newMessages.push({
+              role: "user",
+              content: newContent
+            });
+          } else {
+            newMessages.push(msg);
+          }
+        }
+        if (newMessages.length > 0) {
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg.role === "user") {
+            const reminder = "\n\n[System Reminder: In the history above, past tool calls were converted to text logs. For your current turn, you MUST use the native function calling API to execute tools. Do not output tool calls as plain text (e.g., do not output [System Log: ...]).]";
+            if (typeof lastMsg.content === "string") {
+              lastMsg.content += reminder;
+            } else if (Array.isArray(lastMsg.content)) {
+              lastMsg.content.push({ type: "text", text: reminder });
+            }
+          }
+        }
+        body.messages = newMessages;
+      }
+      return body;
+    }, "transformRequestBody")
   });
-  return provider.chat(currentConfig.model || "gpt-4o-mini");
+  return provider.chatModel(currentConfig.model || "gpt-4o-mini");
 }
 __name(createModel, "createModel");
 function handleStepFinish(onProgress, { stepNumber, text: text2, toolCalls, toolResults, finishReason }) {
