@@ -10,7 +10,7 @@
 
 #include <cstdio>
 #include <functional>
-
+#include "JsEnv.h"
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
 
@@ -33,6 +33,8 @@ public:
         return Get().IsInPIE();
     }
 #endif
+
+	virtual TSharedPtr<puerts::FJsEnv> GetJsEnv() = 0;
 
     virtual bool IsEnabled() = 0;
 

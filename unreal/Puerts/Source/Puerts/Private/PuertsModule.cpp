@@ -67,6 +67,11 @@ public:
 
     void Disable();
 
+	virtual TSharedPtr<puerts::FJsEnv> GetJsEnv() override
+	{
+		return JsEnv;
+	}
+
     virtual bool IsEnabled() override
     {
         return Enabled;
