@@ -192,26 +192,18 @@ function createModel() {
             // Fix for Gemini 3.1 Pro thought_signature error:
             // Gemini rejects history containing tool calls without thought_signatures.
             // We convert past tool calls and tool results into plain text messages.
-            // IMPORTANT: We put the tool call logs into 'user' role instead of 'assistant'
-            // so the model doesn't learn to mimic the plain text format for future tool calls.
             const isGemini = currentConfig.model?.toLowerCase().includes('gemini');
             if (isGemini && body.messages && Array.isArray(body.messages)) {
                 const newMessages: any[] = [];
                 for (const msg of body.messages) {
                     if (msg.role === 'assistant' && msg.tool_calls) {
-                        if (msg.content) {
-                            newMessages.push({
-                                role: 'assistant',
-                                content: msg.content
-                            });
-                        }
-                        let tcText = '';
+                        let text = msg.content || '';
                         for (const tc of msg.tool_calls) {
-                            tcText += `[System Log: Assistant called tool '${tc.function?.name}' with arguments: ${tc.function?.arguments}]\n`;
+                            text += `\n\n[System Log: Assistant called tool '${tc.function?.name}' with arguments: ${tc.function?.arguments}]`;
                         }
                         newMessages.push({
-                            role: 'user',
-                            content: tcText.trim()
+                            role: 'assistant',
+                            content: text.trim()
                         });
                     } else if (msg.role === 'tool') {
                         let newContent = msg.content;
@@ -231,6 +223,20 @@ function createModel() {
                         newMessages.push(msg);
                     }
                 }
+
+                // Append a reminder to the last user message to force native tool calling
+                if (newMessages.length > 0) {
+                    const lastMsg = newMessages[newMessages.length - 1];
+                    if (lastMsg.role === 'user') {
+                        const reminder = "\n\n[System Reminder: In the history above, past tool calls were converted to text logs. For your current turn, you MUST use the native function calling API to execute tools. Do not output tool calls as plain text (e.g., do not output [System Log: ...]).]";
+                        if (typeof lastMsg.content === 'string') {
+                            lastMsg.content += reminder;
+                        } else if (Array.isArray(lastMsg.content)) {
+                            lastMsg.content.push({ type: 'text', text: reminder });
+                        }
+                    }
+                }
+
                 body.messages = newMessages;
             }
 
