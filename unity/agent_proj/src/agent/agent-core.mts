@@ -3,7 +3,7 @@
  * Uses Vercel AI SDK to interact with LLM APIs.
  */
 import { generateText, stepCountIs, type ModelMessage } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { createEvalTools } from '../tools/eval-tool.mjs';
 import { createSkillTools } from '../tools/skill-tool.mjs';
@@ -175,11 +175,61 @@ function createToolSet() {
  * Create an OpenAI provider and chat model from the current config.
  */
 function createModel() {
-    const provider = createOpenAI({
+    const provider = createOpenAICompatible({
+        name: 'llm-provider',
         apiKey: currentConfig.apiKey,
-        baseURL: currentConfig.baseURL,
+        baseURL: currentConfig.baseURL || 'https://api.openai.com/v1',
+        transformRequestBody: (body) => {
+            // Gemini (via proxy) rejects the $schema field in tool parameters
+            if (body.tools && Array.isArray(body.tools)) {
+                body.tools.forEach((tool: any) => {
+                    if (tool.function?.parameters?.$schema) {
+                        delete tool.function.parameters.$schema;
+                    }
+                });
+            }
+
+            // Fix for Gemini 3.1 Pro thought_signature error:
+            // Gemini rejects history containing tool calls without thought_signatures.
+            // We convert past tool calls and tool results into plain text messages.
+            const isGemini = currentConfig.model?.toLowerCase().includes('gemini');
+            if (isGemini && body.messages && Array.isArray(body.messages)) {
+                const newMessages: any[] = [];
+                for (const msg of body.messages) {
+                    if (msg.role === 'assistant' && msg.tool_calls) {
+                        let text = msg.content || '';
+                        for (const tc of msg.tool_calls) {
+                            text += `\n[Action: ${tc.function?.name}, Arguments: ${tc.function?.arguments}]`;
+                        }
+                        newMessages.push({
+                            role: 'assistant',
+                            content: text.trim()
+                        });
+                    } else if (msg.role === 'tool') {
+                        let newContent = msg.content;
+                        if (Array.isArray(newContent)) {
+                            newContent = [
+                                { type: 'text', text: `[Result of action ${msg.tool_call_id || msg.name || 'unknown'}]:\n` },
+                                ...newContent
+                            ];
+                        } else {
+                            newContent = `[Result of action ${msg.tool_call_id || msg.name || 'unknown'}]:\n${newContent}`;
+                        }
+                        newMessages.push({
+                            role: 'user',
+                            content: newContent
+                        });
+                    } else {
+                        newMessages.push(msg);
+                    }
+                }
+                body.messages = newMessages;
+            }
+
+            return body;
+        }
     });
-    return provider.chat(currentConfig.model || 'gpt-4o-mini');
+    return provider.chatModel(currentConfig.model || 'gpt-4o-mini');
 }
 
 /**
