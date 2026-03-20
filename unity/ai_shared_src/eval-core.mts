@@ -109,17 +109,19 @@ export async function initBuiltins(): Promise<void> {
           '**IMPORTANT**: On first use of a module, read its `.description` export to see detailed function signatures. ' +
           'After that, you already know the API — just call functions directly without re-reading `.description`.\n' +
           'All functions validate their arguments at runtime and will throw errors if called with wrong parameters.\n\n' +
+          '**Examples below are illustrative only** — replace `<module-A>`, `<module-B>`, and function names ' +
+          'with the actual modules and APIs listed in "Available modules" below.\n\n' +
           'First-time usage — read description:\n' +
           '```\nasync function execute() {\n' +
-          `    const sv = await import('${builtinPath}/scene-view.mjs');\n` +
-          '    return sv.description;\n' +
+          `    const mod = await import('${builtinPath}/<module-A>.mjs');\n` +
+          '    return mod.description;\n' +
           '}\n```\n\n' +
           'After you know the API, call functions directly (you can combine MULTIPLE operations in one script):\n' +
           '```\nasync function execute() {\n' +
-          `    const sv = await import('${builtinPath}/scene-view.mjs');\n` +
-          `    const ss = await import('${builtinPath}/screenshot.mjs');\n` +
-          '    sv.focusSceneViewOn(\'Main Camera\');\n' +
-          '    return await ss.captureSceneView();\n' +
+          `    const a = await import('${builtinPath}/<module-A>.mjs');\n` +
+          `    const b = await import('${builtinPath}/<module-B>.mjs');\n` +
+          '    a.someFunction(\'arg\');\n' +
+          '    return await b.anotherFunction();\n' +
           '}\n```\n\n' +
           'Available modules:\n\n' +
           summaries.join('\n\n')
