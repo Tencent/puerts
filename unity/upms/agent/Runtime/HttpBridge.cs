@@ -21,6 +21,11 @@ namespace LLMAgent
         /// <summary>
         /// Represents a pending HTTP request being polled each frame.
         /// </summary>
+        /// <summary>
+        /// Idle timeout for streaming requests (seconds). Resets every time a new chunk arrives.
+        /// </summary>
+        private const float StreamIdleTimeoutSeconds = 120f;
+
         private class PendingRequest
         {
             public UnityWebRequestAsyncOperation operation;
@@ -43,6 +48,11 @@ namespace LLMAgent
             /// Whether the header callback has already been sent.
             /// </summary>
             public bool headerSent;
+            /// <summary>
+            /// Timestamp of last activity (chunk received or request start).
+            /// Used for idle timeout on streaming requests.
+            /// </summary>
+            public float lastActivityTime;
         }
 
         /// <summary>
@@ -189,7 +199,8 @@ namespace LLMAgent
                     SetRequestHeaders(request, headersJson);
                 }
 
-                request.timeout = 120;
+                // Disable Unity's built-in timeout for streaming; we use our own idle timeout
+                request.timeout = 0;
 
                 var operation = request.SendWebRequest();
 
@@ -203,6 +214,7 @@ namespace LLMAgent
                     streamHandler = streamHandler,
                     onHeader = onHeader,
                     headerSent = false,
+                    lastActivityTime = Time.realtimeSinceStartup,
                 };
 
                 pendingRequests.Add(pending);
@@ -361,6 +373,8 @@ namespace LLMAgent
                     var chunk = pending.streamHandler.DrainChunks();
                     if (chunk != null)
                     {
+                        // Reset idle timer — we received new data
+                        pending.lastActivityTime = Time.realtimeSinceStartup;
                         // Send header on first chunk (responseCode is available once data starts arriving)
                         if (!pending.headerSent)
                         {
@@ -402,7 +416,17 @@ namespace LLMAgent
                     }
 
                     if (!pending.operation.isDone)
+                    {
+                        // Check idle timeout for streaming requests
+                        float elapsed = Time.realtimeSinceStartup - pending.lastActivityTime;
+                        if (elapsed > StreamIdleTimeoutSeconds)
+                        {
+                            Debug.LogWarning($"[HttpBridge] Streaming idle timeout ({StreamIdleTimeoutSeconds}s) for {pending.url}");
+                            pending.operation.webRequest.Abort();
+                            // The next poll will see isDone=true with ConnectionError and handle cleanup
+                        }
                         continue;
+                    }
 
                     // Stream finished — drain any final data
                     var finalChunk = pending.streamHandler.DrainChunks();
