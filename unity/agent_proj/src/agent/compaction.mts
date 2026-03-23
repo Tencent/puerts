@@ -4,7 +4,7 @@
  * structured summarization (compaction), and sliding-window trimming.
  */
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import type { AgentConfig } from './agent-core.mjs';
 
@@ -259,13 +259,14 @@ function buildCompactionInput(messages: any[]): string {
  */
 async function compactMessages(messages: any[], config: AgentConfig): Promise<string | null> {
     try {
-        const provider = createOpenAI({
+        const provider = createOpenAICompatible({
+            name: 'compaction-provider',
             apiKey: config.apiKey,
-            baseURL: config.baseURL,
+            baseURL: config.baseURL || 'https://api.openai.com/v1',
         });
 
         const modelId = config.summaryModel || config.model || 'gpt-4o-mini';
-        const model = provider.chat(modelId);
+        const model = provider.chatModel(modelId);
 
         const conversationText = buildCompactionInput(messages);
 

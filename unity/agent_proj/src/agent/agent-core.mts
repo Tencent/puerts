@@ -3,7 +3,7 @@
  * Uses Vercel AI SDK to interact with LLM APIs.
  */
 import { generateText, stepCountIs, type ModelMessage } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { createEvalTools } from '../tools/eval-tool.mjs';
 import { createSkillTools } from '../tools/skill-tool.mjs';
@@ -175,11 +175,46 @@ function createToolSet() {
  * Create an OpenAI provider and chat model from the current config.
  */
 function createModel() {
-    const provider = createOpenAI({
+    const isGemini = currentConfig.model?.toLowerCase().includes('gemini');
+    const provider = createOpenAICompatible({
+        // When using Gemini, the provider name MUST be 'google' so that
+        // thought_signature round-trips correctly. The SDK stores it under
+        // providerMetadata[providerOptionsName] but the message converter
+        // reads it back from providerOptions.google — they must match.
+        name: isGemini ? 'google' : 'llm-provider',
         apiKey: currentConfig.apiKey,
-        baseURL: currentConfig.baseURL,
+        baseURL: currentConfig.baseURL || 'https://api.openai.com/v1',
+        transformRequestBody: (body) => {
+            if (!isGemini) return body;
+            // Gemini (via proxy) rejects the $schema field in tool parameters
+            if (body.tools && Array.isArray(body.tools)) {
+                body.tools.forEach((tool: any) => {
+                    if (tool.function?.parameters?.$schema) {
+                        delete tool.function.parameters.$schema;
+                    }
+                });
+            }
+
+            // Log thought_signature presence in outgoing tool_calls
+            if (body.messages && Array.isArray(body.messages)) {
+                for (const msg of body.messages) {
+                    if (msg.role === 'assistant' && Array.isArray(msg.tool_calls)) {
+                        for (const tc of msg.tool_calls) {
+                            const sig = tc.extra_content?.google?.thought_signature;
+                            if (sig) {
+                                console.log(`[Gemini] tool_call '${tc.function?.name}' (id=${tc.id}) has thought_signature (${sig.length} chars)`);
+                            } else {
+                                console.log(`[Gemini] tool_call '${tc.function?.name}' (id=${tc.id}) has NO thought_signature`);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return body;
+        }
     });
-    return provider.chat(currentConfig.model || 'gpt-4o-mini');
+    return provider.chatModel(currentConfig.model || 'gpt-4o-mini');
 }
 
 /**

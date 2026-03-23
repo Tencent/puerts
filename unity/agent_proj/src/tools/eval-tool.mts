@@ -37,7 +37,9 @@ export function createEvalTools() {
                 '```\nasync function execute() {\n    // your logic here\n    return someValue;\n}\n```\n' +
                 'Use `return <value>` inside the function to pass a result back — the returned value will appear in the `result` field of the response. ' +
                 'If no `return` statement is used, `result` will be "(no return value)". ' +
-                'Objects are serialized via JSON.stringify; primitives are converted to strings.\n\n' +
+                'You can return any value directly — objects, arrays, strings, numbers, etc. ' +
+                'The system automatically serializes return values for you. ' +
+                '**Do NOT call JSON.stringify() on your return value** — just return the object directly.\n\n' +
                 'On success the response is `{ success: true, result: string }`. ' +
                 'On failure the response is `{ success: false, error: string, stack: string }`.\n\n' +
                 'Use console.log() for debug output (it goes to the Unity console).' +
@@ -59,20 +61,58 @@ export function createEvalTools() {
             // file-data so that handlePrepareStep can extract it and inject
             // it as a user-message image part for the LLM to see.
             toModelOutput({ output }: { output: any }) {
-                const textContent = output.success
-                    ? output.result
-                    : `Error: ${output.error}${output.stack ? '\nStack: ' + output.stack : ''}`;
+                if (!output.success) {
+                    return {
+                        type: 'text' as const,
+                        value: `Error: ${output.error}${output.stack ? '\nStack: ' + output.stack : ''}`,
+                    };
+                }
 
-                if (output.success && output.__image) {
+                const result = output.result;
+
+                // Recursively collect all __image markers from an object and
+                // delete them from the source so they don't appear in the text.
+                const images: Array<{ base64: string; mediaType: string }> = [];
+                function collectAndStrip(obj: any, visited: Set<any>) {
+                    if (!obj || typeof obj !== 'object') return;
+                    if (visited.has(obj)) return;
+                    visited.add(obj);
+                    if (obj.__image && obj.__image.base64) {
+                        images.push({
+                            base64: obj.__image.base64,
+                            mediaType: obj.__image.mediaType || 'image/png',
+                        });
+                        delete obj.__image;
+                    }
+                    for (const key of Object.keys(obj)) {
+                        collectAndStrip(obj[key], visited);
+                    }
+                }
+
+                // Serialize the result to text, extracting images from objects.
+                let textContent: string;
+                if (result === undefined) {
+                    textContent = '(no return value)';
+                } else if (result === null) {
+                    textContent = 'null';
+                } else if (typeof result === 'object') {
+                    collectAndStrip(result, new Set());
+                    try { textContent = JSON.stringify(result, null, 2); } catch (_) { textContent = String(result); }
+                } else {
+                    textContent = String(result);
+                }
+
+                if (images.length > 0) {
+                    console.log(`[Eval] toModelOutput: including ${images.length} image(s)`);
                     return {
                         type: 'content' as const,
                         value: [
                             { type: 'text' as const, text: textContent },
-                            {
+                            ...images.map(img => ({
                                 type: 'file-data' as const,
-                                data: output.__image.base64,
-                                mediaType: output.__image.mediaType || 'image/png',
-                            },
+                                data: img.base64,
+                                mediaType: img.mediaType,
+                            })),
                         ],
                     };
                 }

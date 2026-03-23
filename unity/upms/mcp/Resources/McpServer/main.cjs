@@ -26949,21 +26949,23 @@ To use a module, load it via ESM dynamic \`import()\`.
 **IMPORTANT**: On first use of a module, read its \`.description\` export to see detailed function signatures. After that, you already know the API \u2014 just call functions directly without re-reading \`.description\`.
 All functions validate their arguments at runtime and will throw errors if called with wrong parameters.
 
+**Examples below are illustrative only** \u2014 replace \`<module-A>\`, \`<module-B>\`, and function names with the actual modules and APIs listed in "Available modules" below.
+
 First-time usage \u2014 read description:
 \`\`\`
 async function execute() {
-    const sv = await import('${builtinPath}/scene-view.mjs');
-    return sv.description;
+    const mod = await import('${builtinPath}/<module-A>.mjs');
+    return mod.description;
 }
 \`\`\`
 
 After you know the API, call functions directly (you can combine MULTIPLE operations in one script):
 \`\`\`
 async function execute() {
-    const sv = await import('${builtinPath}/scene-view.mjs');
-    const ss = await import('${builtinPath}/screenshot.mjs');
-    sv.focusSceneViewOn('Main Camera');
-    return await ss.captureSceneView();
+    const a = await import('${builtinPath}/<module-A>.mjs');
+    const b = await import('${builtinPath}/<module-B>.mjs');
+    a.someFunction('arg');
+    return await b.anotherFunction();
 }
 \`\`\`
 
@@ -26975,25 +26977,7 @@ Available modules:
 __name(initBuiltins, "initBuiltins");
 var RUNNER_CODE = `(function(onFinish) {
     execute().then(function(result) {
-        var resultStr;
-        var imageData = null;
-        if (result === undefined) {
-            resultStr = '(no return value)';
-        } else if (result === null) {
-            resultStr = 'null';
-        } else if (typeof result === 'object') {
-            if (result.__image && result.__image.base64) {
-                imageData = { base64: result.__image.base64, mediaType: result.__image.mediaType || 'image/png' };
-                var copy = {};
-                for (var k in result) { if (k !== '__image') copy[k] = result[k]; }
-                try { resultStr = JSON.stringify(copy, null, 2); } catch(e) { resultStr = String(result); }
-            } else {
-                try { resultStr = JSON.stringify(result, null, 2); } catch(e) { resultStr = String(result); }
-            }
-        } else {
-            resultStr = String(result);
-        }
-        onFinish.Invoke(JSON.stringify({ __error: false, result: resultStr, __image: imageData }));
+        onFinish.Invoke(JSON.stringify({ __error: false, result: result }));
     }).catch(function(err) {
         onFinish.Invoke(JSON.stringify({ __error: true, message: String(err.message || err), stack: String(err.stack || '') }));
     });
@@ -27023,14 +27007,10 @@ ${code}`);
         stack: parsed.stack || ""
       };
     }
-    const output = {
+    return {
       success: true,
       result: parsed.result
     };
-    if (parsed.__image) {
-      output.__image = parsed.__image;
-    }
-    return output;
   } catch (error2) {
     const errorMsg = error2.message || String(error2);
     const stack = error2.stack || "";
@@ -27069,13 +27049,46 @@ function createMcpServer() {
           isError: true
         };
       }
+      const images = [];
+      function collectAndStrip(obj, visited) {
+        if (!obj || typeof obj !== "object") return;
+        if (visited.has(obj)) return;
+        visited.add(obj);
+        if (obj.__image && obj.__image.base64) {
+          images.push({
+            base64: obj.__image.base64,
+            mimeType: obj.__image.mediaType || "image/png"
+          });
+          delete obj.__image;
+        }
+        for (const key of Object.keys(obj)) {
+          collectAndStrip(obj[key], visited);
+        }
+      }
+      __name(collectAndStrip, "collectAndStrip");
+      let textContent;
+      const raw = result.result;
+      if (raw === void 0) {
+        textContent = "(no return value)";
+      } else if (raw === null) {
+        textContent = "null";
+      } else if (typeof raw === "object") {
+        collectAndStrip(raw, /* @__PURE__ */ new Set());
+        try {
+          textContent = JSON.stringify(raw, null, 2);
+        } catch (_) {
+          textContent = String(raw);
+        }
+      } else {
+        textContent = String(raw);
+      }
       const content = [];
-      content.push({ type: "text", text: result.result ?? "(no return value)" });
-      if (result.__image) {
+      content.push({ type: "text", text: textContent });
+      for (const img of images) {
         content.push({
           type: "image",
-          data: result.__image.base64,
-          mimeType: result.__image.mediaType || "image/png"
+          data: img.base64,
+          mimeType: img.mimeType
         });
       }
       return { content };
