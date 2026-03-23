@@ -24762,7 +24762,7 @@ var getFromApi = /* @__PURE__ */ __name(async ({
         }
       }
       throw new APICallError({
-        message: "Failed to process successful response: " + (error48 && error48.message ? error48.message : String(error48)),
+        message: "Failed to process successful response",
         cause: error48,
         statusCode: response.status,
         url: url2,
@@ -26356,7 +26356,7 @@ var postToApi = /* @__PURE__ */ __name(async ({
         }
       }
       throw new APICallError({
-        message: "Failed to process successful response: " + (error48 && error48.message ? error48.message : String(error48)),
+        message: "Failed to process successful response",
         cause: error48,
         statusCode: response.status,
         url: url2,
