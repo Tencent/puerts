@@ -102,6 +102,27 @@ namespace LLMAgent
         private static readonly List<PendingRequest> pendingRequests = new List<PendingRequest>();
         private static bool isPolling = false;
 
+        /// <summary>
+        /// Cancel all pending requests and stop polling.
+        /// Should be called when JsEnv is about to be destroyed
+        /// (e.g. when exiting Play Mode) to prevent stale JS callbacks.
+        /// </summary>
+        public static void CancelAllRequests()
+        {
+            for (int i = pendingRequests.Count - 1; i >= 0; i--)
+            {
+                var pending = pendingRequests[i];
+                try
+                {
+                    pending.operation?.webRequest?.Abort();
+                    pending.operation?.webRequest?.Dispose();
+                }
+                catch (Exception) { /* ignore */ }
+            }
+            pendingRequests.Clear();
+            StopPolling();
+        }
+
 #if !UNITY_EDITOR
         /// <summary>
         /// Hidden MonoBehaviour singleton for Runtime coroutine/update driving.
@@ -322,6 +343,17 @@ namespace LLMAgent
             {
                 var pending = pendingRequests[i];
 
+                // Safety check: if the webRequest was already disposed/aborted, skip
+                try
+                {
+                    var _ = pending.operation.webRequest.url;
+                }
+                catch (Exception)
+                {
+                    pendingRequests.RemoveAt(i);
+                    continue;
+                }
+
                 // --- Streaming request: push chunks each frame ---
                 if (pending.streamHandler != null)
                 {
@@ -346,11 +378,27 @@ namespace LLMAgent
                                 sb.Append("}");
                                 pending.onHeader?.Invoke(sb.ToString());
                             }
-                            catch (Exception ex) { Debug.LogError($"[HttpBridge] onHeader error: {ex.Message}"); }
+                            catch (Exception ex)
+                            {
+                                if (IsJsEnvDestroyed(ex))
+                                {
+                                    CancelAllRequests();
+                                    return;
+                                }
+                                Debug.LogError($"[HttpBridge] onHeader error: {ex.Message}");
+                            }
                         }
 
                         try { pending.onChunk?.Invoke(chunk); }
-                        catch (Exception ex) { Debug.LogError($"[HttpBridge] onChunk error: {ex.Message}"); }
+                        catch (Exception ex)
+                        {
+                            if (IsJsEnvDestroyed(ex))
+                            {
+                                CancelAllRequests();
+                                return;
+                            }
+                            Debug.LogError($"[HttpBridge] onChunk error: {ex.Message}");
+                        }
                     }
 
                     if (!pending.operation.isDone)
@@ -361,7 +409,15 @@ namespace LLMAgent
                     if (finalChunk != null)
                     {
                         try { pending.onChunk?.Invoke(finalChunk); }
-                        catch (Exception ex) { Debug.LogError($"[HttpBridge] onChunk final error: {ex.Message}"); }
+                        catch (Exception ex)
+                        {
+                            if (IsJsEnvDestroyed(ex))
+                            {
+                                CancelAllRequests();
+                                return;
+                            }
+                            Debug.LogError($"[HttpBridge] onChunk final error: {ex.Message}");
+                        }
                     }
 
                     pendingRequests.RemoveAt(i);
@@ -399,8 +455,12 @@ namespace LLMAgent
                     }
                     catch (Exception ex)
                     {
+                        if (IsJsEnvDestroyed(ex))
+                        {
+                            CancelAllRequests();
+                            return;
+                        }
                         Debug.LogError($"[HttpBridge] Stream completion error: {ex.Message}");
-                        pending.callback?.Invoke($"{{\"error\":\"{EscapeJsonString(ex.Message)}\"}}");
                     }
                     continue;
                 }
@@ -465,6 +525,11 @@ namespace LLMAgent
                 }
                 catch (Exception ex)
                 {
+                    if (IsJsEnvDestroyed(ex))
+                    {
+                        CancelAllRequests();
+                        return;
+                    }
                     Debug.LogError($"[HttpBridge] Error processing response: {ex.Message}");
                     pending.callback?.Invoke($"{{\"status\":0,\"statusText\":\"{EscapeJsonString(ex.Message)}\",\"headers\":{{}},\"body\":\"\"}}");
                 }
@@ -614,6 +679,17 @@ namespace LLMAgent
                     // Ignore invalid headers
                 }
             }
+        }
+
+        /// <summary>
+        /// Check if an exception indicates the JS environment has been destroyed.
+        /// When this happens, we should stop all pending requests immediately.
+        /// </summary>
+        private static bool IsJsEnvDestroyed(Exception ex)
+        {
+            return ex != null && ex.Message != null &&
+                   (ex.Message.Contains("JsEnv had been destroy") ||
+                    ex.Message.Contains("JsEnv has been disposed"));
         }
 
         private static string EscapeJsonString(string str)
