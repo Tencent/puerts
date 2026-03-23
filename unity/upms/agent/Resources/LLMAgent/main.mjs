@@ -34871,12 +34871,16 @@ function createToolSet() {
 }
 __name(createToolSet, "createToolSet");
 function createModel() {
+  const isGemini = currentConfig.model?.toLowerCase().includes("gemini");
   const provider = createOpenAICompatible({
-    name: "llm-provider",
+    // When using Gemini, the provider name MUST be 'google' so that
+    // thought_signature round-trips correctly. The SDK stores it under
+    // providerMetadata[providerOptionsName] but the message converter
+    // reads it back from providerOptions.google — they must match.
+    name: isGemini ? "google" : "llm-provider",
     apiKey: currentConfig.apiKey,
     baseURL: currentConfig.baseURL || "https://api.openai.com/v1",
     transformRequestBody: /* @__PURE__ */ __name((body) => {
-      const isGemini = currentConfig.model?.toLowerCase().includes("gemini");
       if (!isGemini) return body;
       if (body.tools && Array.isArray(body.tools)) {
         body.tools.forEach((tool2) => {
@@ -34884,6 +34888,20 @@ function createModel() {
             delete tool2.function.parameters.$schema;
           }
         });
+      }
+      if (body.messages && Array.isArray(body.messages)) {
+        for (const msg of body.messages) {
+          if (msg.role === "assistant" && Array.isArray(msg.tool_calls)) {
+            for (const tc of msg.tool_calls) {
+              const sig = tc.extra_content?.google?.thought_signature;
+              if (sig) {
+                console.log(`[Gemini] tool_call '${tc.function?.name}' (id=${tc.id}) has thought_signature (${sig.length} chars)`);
+              } else {
+                console.log(`[Gemini] tool_call '${tc.function?.name}' (id=${tc.id}) has NO thought_signature`);
+              }
+            }
+          }
+        }
       }
       return body;
     }, "transformRequestBody")
