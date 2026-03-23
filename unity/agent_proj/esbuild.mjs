@@ -161,15 +161,7 @@ const patches = [
 // Note: the image data URL roundtrip patch is no longer needed in AI SDK v6+
 // because v6 keeps base64 strings as-is without Uint8Array roundtrip.
 const stringPatches = [
-    // web-streams-polyfill: installStreamsPolyfill() is called at the very end of
-    // the bundle (in our main.mts entry), but libraries like eventsource-parser use
-    // `class extends TransformStream` at module-level much earlier (line ~24050).
-    // Fix: call installStreamsPolyfill() immediately after its definition so streams
-    // are available globally before any downstream code tries to extend them.
-    //[
-    //    `__name(installStreamsPolyfill, "installStreamsPolyfill");`,
-    //    `__name(installStreamsPolyfill, "installStreamsPolyfill");\ninstallStreamsPolyfill();`,
-    //],
+    // (No active string patches at the moment.)
 ];
 let patchCount = 0;
 for (const [pattern, replacement] of patches) {
@@ -179,7 +171,7 @@ for (const [pattern, replacement] of patches) {
 }
 for (const [search, replacement] of stringPatches) {
     if (code.includes(search)) {
-        code = code.replace(search, replacement);
+        code = code.replaceAll(search, replacement);
         patchCount++;
     }
 }

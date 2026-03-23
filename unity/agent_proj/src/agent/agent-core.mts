@@ -2,7 +2,7 @@
  * Agent Core Module
  * Uses Vercel AI SDK to interact with LLM APIs.
  */
-import { generateText, stepCountIs, type ModelMessage } from 'ai';
+import { streamText, stepCountIs, type ModelMessage } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { createEvalTools } from '../tools/eval-tool.mjs';
@@ -21,14 +21,14 @@ import {
  * AbortController for the current generation.
  * Created at the start of each runGeneration() call;
  * calling abortGeneration() triggers the signal so
- * generateText stops as soon as possible.
+ * streamText stops as soon as possible.
  */
 let currentAbortController: AbortController | null = null;
 
 
 
 /**
- * Maximum number of tool-call steps allowed per generateText invocation.
+ * Maximum number of tool-call steps allowed per streamText invocation.
  * When this limit is reached, the agent is forced to produce a text-only
  * summary via an injected assistant message (à la opencode).
  * A value of 0 or negative means unlimited (capped at 9999 internally).
@@ -202,7 +202,7 @@ function createModel() {
 }
 
 /**
- * onStepFinish callback for generateText.
+ * onStepFinish callback for streamText.
  * Reports tool call results, reasoning/thinking content, and intermediate text to the UI via onProgress.
  */
 function handleStepFinish(onProgress: ((text: string) => void) | undefined, stepResult: any): void {
@@ -251,20 +251,13 @@ function handleStepFinish(onProgress: ((text: string) => void) | undefined, step
         }
     }
 
-    // Only include intermediate text when it accompanies tool calls.
-    // If a step is pure text with no tool calls (i.e. the final response),
-    // skip it here — it will be shown via the final assistant message in the chat.
-    if (text && (hasToolResults || hasToolCalls)) {
-        const truncatedText = text.length > 500 ? text.substring(0, 500) + '...' : text;
-        progressText += truncatedText;
-    }
     if (progressText) {
         onProgress(progressText.trim());
     }
 }
 
 /**
- * prepareStep callback for generateText.
+ * prepareStep callback for streamText.
  * Handles big-string compression, sliding-window trimming,
  * and screenshot image extraction.
  */
@@ -436,7 +429,7 @@ async function prepareHistory(): Promise<void> {
 
 /**
  * Core generation logic shared by sendMessage.
- * Calls generateText, appends response messages to history, handles errors.
+ * Calls streamText, appends response messages to history, handles errors.
  *
  * @param onProgress  Optional progress callback for the UI.
  * @returns The assistant's text response.
@@ -450,7 +443,7 @@ async function runGeneration(onProgress?: (text: string) => void): Promise<strin
         const model = createModel();
         const tools = createToolSet();
 
-        const result = await generateText({
+        const result = streamText({
             model,
             system: buildSystemPrompt(imageStore.imagePrefix),
             messages: conversationHistory,
@@ -465,12 +458,21 @@ async function runGeneration(onProgress?: (text: string) => void): Promise<strin
             prepareStep: handlePrepareStep,
         });
 
+        let fullText = '';
+        for await (const textPart of result.textStream) {
+            fullText += textPart;
+            if (onProgress) {
+                onProgress(`[STREAM]${textPart}`);
+            }
+        }
+
         // Append all response messages (assistant + tool) to conversation history
-        for (const msg of result.response.messages) {
+        const response = await result.response;
+        for (const msg of response.messages) {
             conversationHistory.push(msg as ModelMessage);
         }
 
-        return result.text;
+        return fullText;
     } catch (error: any) {
         // Check if the error is an abort
         if (abortSignal.aborted) {

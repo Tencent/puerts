@@ -330,6 +330,10 @@ namespace LLMAgent
         {
             StopTicking();
 
+            // Cancel all pending HTTP requests before disposing ScriptEnv
+            // to prevent callbacks into a destroyed JS environment
+            HttpBridge.CancelAllRequests();
+
             configureAgent = null;
             onMessageReceived = null;
             onAbortGeneration = null;

@@ -101,6 +101,11 @@ namespace LLMAgent.Editor
         /// </summary>
         private readonly List<string> progressFragments = new List<string>();
 
+        /// <summary>
+        /// Accumulated streaming text from [STREAM] chunks, displayed as a single block.
+        /// </summary>
+        private string streamingText = "";
+
         [MenuItem("Puerts Agent/New Chat Window")]
         public static void ShowWindow()
         {
@@ -1147,6 +1152,7 @@ namespace LLMAgent.Editor
         private void BeginProgressBubble()
         {
             progressFragments.Clear();
+            streamingText = "";
             messages.Add(new ChatMessage
             {
                 Text = "\u23F3 Working...",
@@ -1164,11 +1170,55 @@ namespace LLMAgent.Editor
             if (progressBubbleIndex < 0 || progressBubbleIndex >= messages.Count)
                 return;
 
-            progressFragments.Add(progressText);
+            if (progressText.StartsWith("[STREAM]"))
+            {
+                // Append streaming text incrementally (no new fragment per chunk)
+                streamingText += progressText.Substring(8);
+            }
+            else
+            {
+                // A non-stream message arrived (e.g. tool call). If we had accumulated
+                // streaming text from a previous text segment, seal it into progressFragments
+                // so the next [STREAM] round starts a fresh block.
+                if (!string.IsNullOrEmpty(streamingText))
+                {
+                    progressFragments.Add(streamingText);
+                    streamingText = "";
+                }
+                progressFragments.Add(progressText);
+            }
 
-            // Rebuild the bubble text from accumulated fragments
+            RebuildProgressBubble();
+        }
+
+        /// <summary>
+        /// Rebuild the in-progress bubble text from progress fragments + streaming text.
+        /// </summary>
+        private void RebuildProgressBubble()
+        {
+            var parts = new List<string>();
+
+            // Add progress fragments (tool calls, thinking, etc.)
+            if (progressFragments.Count > 0)
+            {
+                parts.Add(string.Join("\n---\n", progressFragments));
+            }
+
+            // Add streaming text as a single block
+            if (!string.IsNullOrEmpty(streamingText))
+            {
+                parts.Add(streamingText);
+            }
+
             var updated = messages[progressBubbleIndex];
-            updated.Text = string.Join("\n---\n", progressFragments) + "\n\n\u23F3 Working...";
+            if (parts.Count > 0)
+            {
+                updated.Text = string.Join("\n---\n", parts) + "\n\n\u23F3 Working...";
+            }
+            else
+            {
+                updated.Text = "\u23F3 Working...";
+            }
             messages[progressBubbleIndex] = updated;
             shouldScrollToBottom = true;
             Repaint();
@@ -1180,24 +1230,28 @@ namespace LLMAgent.Editor
         private void FinalizeProgressBubble(string finalText, bool isError,
             string retryUserMessage, string retryImagePath)
         {
-            // Build the final display: progress fragments + separator + final text
+            // Build the final display: progress fragments + streaming text / final text
             string combinedText;
+            var parts = new List<string>();
+
+            // Add progress fragments (tool calls, thinking, etc.)
             if (progressFragments.Count > 0)
             {
-                string progressPart = string.Join("\n---\n", progressFragments);
-                if (!string.IsNullOrWhiteSpace(finalText))
-                {
-                    combinedText = progressPart + "\n\n" + finalText;
-                }
-                else
-                {
-                    combinedText = progressPart;
-                }
+                parts.Add(string.Join("\n---\n", progressFragments));
             }
-            else
+
+            // Prefer streaming text if available (it's the incrementally-appended response);
+            // fall back to finalText (the full concatenated response from TS).
+            if (!string.IsNullOrEmpty(streamingText))
             {
-                combinedText = finalText;
+                parts.Add(streamingText);
             }
+            else if (!string.IsNullOrWhiteSpace(finalText))
+            {
+                parts.Add(finalText);
+            }
+
+            combinedText = parts.Count > 0 ? string.Join("\n\n", parts) : finalText;
 
             if (progressBubbleIndex >= 0 && progressBubbleIndex < messages.Count)
             {
@@ -1224,6 +1278,7 @@ namespace LLMAgent.Editor
 
             progressBubbleIndex = -1;
             progressFragments.Clear();
+            streamingText = "";
             shouldScrollToBottom = true;
             Repaint();
         }
