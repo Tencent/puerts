@@ -4937,20 +4937,35 @@ var TextDecoderStreamPolyfill = class {
     __name(this, "TextDecoderStreamPolyfill");
   }
   _decoder;
+  // TextDecoder | null – created lazily
+  _decoderLabel;
+  _decoderOptions;
   _transform;
   constructor(label, options) {
-    this._decoder = new TextDecoder(label, options);
+    this._decoderLabel = label;
+    this._decoderOptions = options;
+    this._decoder = null;
+    const self2 = this;
     this._transform = new TransformStream2({
       transform: /* @__PURE__ */ __name((chunk, controller) => {
-        const text2 = this._decoder.decode(chunk, { stream: true });
+        if (typeof chunk === "string") {
+          if (chunk) controller.enqueue(chunk);
+          return;
+        }
+        if (!self2._decoder) {
+          self2._decoder = new TextDecoder(self2._decoderLabel, self2._decoderOptions);
+        }
+        const text2 = self2._decoder.decode(chunk, { stream: true });
         if (text2) {
           controller.enqueue(text2);
         }
       }, "transform"),
       flush: /* @__PURE__ */ __name((controller) => {
-        const text2 = this._decoder.decode();
-        if (text2) {
-          controller.enqueue(text2);
+        if (self2._decoder) {
+          const text2 = self2._decoder.decode();
+          if (text2) {
+            controller.enqueue(text2);
+          }
         }
       }, "flush")
     });
@@ -4967,12 +4982,21 @@ var TextEncoderStreamPolyfill = class {
     __name(this, "TextEncoderStreamPolyfill");
   }
   _encoder;
+  // TextEncoder | null – created lazily
   _transform;
   constructor() {
-    this._encoder = new TextEncoder();
+    this._encoder = null;
+    const self2 = this;
     this._transform = new TransformStream2({
       transform: /* @__PURE__ */ __name((chunk, controller) => {
-        const encoded = this._encoder.encode(chunk);
+        if (chunk instanceof Uint8Array || chunk instanceof ArrayBuffer) {
+          controller.enqueue(chunk instanceof ArrayBuffer ? new Uint8Array(chunk) : chunk);
+          return;
+        }
+        if (!self2._encoder) {
+          self2._encoder = new TextEncoder();
+        }
+        const encoded = self2._encoder.encode(chunk);
         controller.enqueue(encoded);
       }, "transform")
     });
@@ -5044,6 +5068,33 @@ __name(installStreamsPolyfill, "installStreamsPolyfill");
 installStreamsPolyfill();
 
 // src/polyfills/fetch-polyfill.mts
+function encodeUTF8(str) {
+  if (typeof TextEncoder !== "undefined") {
+    return new TextEncoder().encode(str);
+  }
+  const bytes = [];
+  for (let i2 = 0; i2 < str.length; i2++) {
+    let c2 = str.charCodeAt(i2);
+    if (c2 < 128) {
+      bytes.push(c2);
+    } else if (c2 < 2048) {
+      bytes.push(192 | c2 >> 6, 128 | c2 & 63);
+    } else if (c2 >= 55296 && c2 < 56320) {
+      const next = str.charCodeAt(++i2);
+      const cp = (c2 - 55296 << 10) + (next - 56320) + 65536;
+      bytes.push(
+        240 | cp >> 18,
+        128 | cp >> 12 & 63,
+        128 | cp >> 6 & 63,
+        128 | cp & 63
+      );
+    } else {
+      bytes.push(224 | c2 >> 12, 128 | c2 >> 6 & 63, 128 | c2 & 63);
+    }
+  }
+  return new Uint8Array(bytes);
+}
+__name(encodeUTF8, "encodeUTF8");
 var FetchHeaders = class {
   static {
     __name(this, "FetchHeaders");
@@ -5115,17 +5166,31 @@ var FetchResponse = class _FetchResponse {
   }
   /**
    * Returns a ReadableStream of the body content.
-   * AI SDK uses response.body.getReader() and response.pipeThrough().
+   * AI SDK uses response.body.pipeThrough() to process SSE streams.
+   *
+   * The stream enqueues the raw string directly (not Uint8Array) because:
+   *   1. PuerTS V8 has no native TextEncoder / TextDecoder.
+   *   2. Our TextDecoderStreamPolyfill transparently passes strings through,
+   *      so the downstream EventSourceParserStream receives the text it expects.
+   *   3. This avoids a pointless encode → decode round-trip.
+   *
+   * Uses a pull-based ReadableStream so that data is only delivered
+   * when the consumer requests it, which avoids Promise scheduling
+   * issues in web-streams-polyfill when piped through TransformStream
+   * chains (TextDecoderStream → EventSourceParserStream → JSON parse).
    */
   get body() {
     if (this._body === null) {
       const text2 = this._bodyText;
-      const encoder = new TextEncoder();
-      const encoded = encoder.encode(text2);
+      let done = false;
       this._body = new ReadableStream2({
-        start(controller) {
-          controller.enqueue(encoded);
-          controller.close();
+        pull(controller) {
+          if (!done) {
+            done = true;
+            controller.enqueue(text2);
+          } else {
+            controller.close();
+          }
         }
       });
     }
@@ -5147,16 +5212,14 @@ var FetchResponse = class _FetchResponse {
   }
   async arrayBuffer() {
     this._bodyUsed = true;
-    const encoder = new TextEncoder();
-    return encoder.encode(this._bodyText).buffer;
+    return encodeUTF8(this._bodyText).buffer;
   }
   async blob() {
     const text2 = this._bodyText;
     return {
       text: /* @__PURE__ */ __name(async () => text2, "text"),
       arrayBuffer: /* @__PURE__ */ __name(async () => {
-        const encoder = new TextEncoder();
-        return encoder.encode(text2).buffer;
+        return encodeUTF8(text2).buffer;
       }, "arrayBuffer"),
       size: this._bodyText.length,
       type: this.headers.get("content-type") || ""
@@ -5172,6 +5235,91 @@ var FetchResponse = class _FetchResponse {
     );
   }
 };
+var FetchStreamResponse = class {
+  static {
+    __name(this, "FetchStreamResponse");
+  }
+  ok;
+  status;
+  statusText;
+  headers;
+  url;
+  body;
+  // ReadableStream
+  _bodyUsed = false;
+  _controller = null;
+  _fullText = "";
+  constructor(status, statusText, headers, url2) {
+    this.status = status;
+    this.statusText = statusText;
+    this.headers = headers;
+    this.url = url2;
+    this.ok = status >= 200 && status < 300;
+    const self2 = this;
+    this.body = new ReadableStream2({
+      start(controller) {
+        self2._controller = controller;
+      }
+    });
+  }
+  get bodyUsed() {
+    return this._bodyUsed;
+  }
+  /**
+   * Push a chunk of text into the body stream.
+   * Called by the fetch polyfill when C# delivers data.
+   */
+  pushChunk(text2) {
+    if (this._controller && text2) {
+      this._fullText += text2;
+      this._controller.enqueue(text2);
+    }
+  }
+  /**
+   * Signal that the stream is complete.
+   */
+  closeStream() {
+    if (this._controller) {
+      try {
+        this._controller.close();
+      } catch (_2) {
+      }
+      this._controller = null;
+    }
+  }
+  /**
+   * Signal a stream error.
+   */
+  errorStream(err) {
+    if (this._controller) {
+      try {
+        this._controller.error(err);
+      } catch (_2) {
+      }
+      this._controller = null;
+    }
+  }
+  pipeThrough(transform2, _options) {
+    return this.body.pipeThrough(transform2);
+  }
+  async text() {
+    this._bodyUsed = true;
+    return this._fullText;
+  }
+  async json() {
+    this._bodyUsed = true;
+    return JSON.parse(this._fullText);
+  }
+  async arrayBuffer() {
+    this._bodyUsed = true;
+    return encodeUTF8(this._fullText).buffer;
+  }
+};
+function isStreamRequest(body) {
+  if (!body) return false;
+  return body.includes('"stream":true') || body.includes('"stream": true');
+}
+__name(isStreamRequest, "isStreamRequest");
 async function fetchImpl(input, init) {
   let url2;
   let method = "GET";
@@ -5218,9 +5366,60 @@ async function fetchImpl(input, init) {
     throw new DOMException("The operation was aborted.", "AbortError");
   }
   const headersJson = JSON.stringify(headers);
+  const streaming = isStreamRequest(body);
+  if (streaming) {
+    return new Promise((resolve2, reject) => {
+      try {
+        let streamResponse = null;
+        CS.LLMAgent.HttpBridge.SendStreamRequestAsync(
+          url2,
+          method,
+          headersJson,
+          body || "",
+          // onHeader: called once with status/headers JSON
+          (headerJson) => {
+            try {
+              const hdr = JSON.parse(headerJson);
+              const responseHeaders = new FetchHeaders(hdr.headers || {});
+              streamResponse = new FetchStreamResponse(
+                hdr.status || 200,
+                hdr.statusText || "OK",
+                responseHeaders,
+                url2
+              );
+              resolve2(streamResponse);
+            } catch (e2) {
+              reject(new TypeError(`Failed to parse stream headers: ${e2.message || e2}`));
+            }
+          },
+          // onChunk: called for each data chunk
+          (chunk) => {
+            if (streamResponse && chunk) {
+              streamResponse.pushChunk(chunk);
+            }
+          },
+          // onComplete: called when stream ends
+          (completionJson) => {
+            if (completionJson && completionJson.includes('"error"')) {
+              if (streamResponse) {
+                streamResponse.errorStream(new Error(completionJson));
+              } else {
+                reject(new TypeError(`Stream request failed: ${completionJson}`));
+              }
+            } else {
+              if (streamResponse) {
+                streamResponse.closeStream();
+              }
+            }
+          }
+        );
+      } catch (error48) {
+        reject(new TypeError(`Network request failed: ${error48.message || error48}`));
+      }
+    });
+  }
   return new Promise((resolve2, reject) => {
     try {
-      console.log(`[Polyfill] request: ${body}`);
       CS.LLMAgent.HttpBridge.SendRequestAsync(
         url2,
         method,
@@ -5229,7 +5428,6 @@ async function fetchImpl(input, init) {
         (responseJson) => {
           try {
             const responseData = JSON.parse(responseJson);
-            console.log(`[Polyfill] response: ${responseData.body}`);
             const responseHeaders = new FetchHeaders(responseData.headers || {});
             resolve2(new FetchResponse(
               responseData.body || "",
@@ -24564,7 +24762,7 @@ var getFromApi = /* @__PURE__ */ __name(async ({
         }
       }
       throw new APICallError({
-        message: "Failed to process successful response",
+        message: "Failed to process successful response: " + (error48 && error48.message ? error48.message : String(error48)),
         cause: error48,
         statusCode: response.status,
         url: url2,
@@ -26158,7 +26356,7 @@ var postToApi = /* @__PURE__ */ __name(async ({
         }
       }
       throw new APICallError({
-        message: "Failed to process successful response",
+        message: "Failed to process successful response: " + (error48 && error48.message ? error48.message : String(error48)),
         cause: error48,
         statusCode: response.status,
         url: url2,

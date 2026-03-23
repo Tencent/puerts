@@ -94,24 +94,44 @@ class EventPolyfill {
 }
 
 /** * TextDecoderStream polyfill using TransformStream + TextDecoder.
+ * If the incoming chunk is already a string (e.g. from our fetch polyfill),
+ * it is passed through without decoding.
+ * This avoids a hard dependency on the global TextDecoder which
+ * may not exist in PuerTS V8.
  */
 class TextDecoderStreamPolyfill {
-    private _decoder: TextDecoder;
+    private _decoder: any; // TextDecoder | null – created lazily
+    private _decoderLabel: string | undefined;
+    private _decoderOptions: TextDecoderOptions | undefined;
     private _transform: InstanceType<typeof PolyfillTransformStream>;
 
     constructor(label?: string, options?: TextDecoderOptions) {
-        this._decoder = new TextDecoder(label, options);
+        this._decoderLabel = label;
+        this._decoderOptions = options;
+        this._decoder = null; // created on first binary chunk
+        const self = this;
         this._transform = new PolyfillTransformStream({
             transform: (chunk: any, controller: any) => {
-                const text = this._decoder.decode(chunk, { stream: true });
+                // String input: pass through directly
+                if (typeof chunk === 'string') {
+                    if (chunk) controller.enqueue(chunk);
+                    return;
+                }
+                // Binary input: decode with TextDecoder
+                if (!self._decoder) {
+                    self._decoder = new TextDecoder(self._decoderLabel, self._decoderOptions);
+                }
+                const text = self._decoder.decode(chunk, { stream: true });
                 if (text) {
                     controller.enqueue(text);
                 }
             },
             flush: (controller: any) => {
-                const text = this._decoder.decode();
-                if (text) {
-                    controller.enqueue(text);
+                if (self._decoder) {
+                    const text = self._decoder.decode();
+                    if (text) {
+                        controller.enqueue(text);
+                    }
                 }
             },
         });
@@ -123,16 +143,29 @@ class TextDecoderStreamPolyfill {
 
 /**
  * TextEncoderStream polyfill using TransformStream + TextEncoder.
+ * If the incoming chunk is already a Uint8Array / ArrayBuffer, it is
+ * passed through without encoding.
+ * This avoids a hard dependency on the global TextEncoder.
  */
 class TextEncoderStreamPolyfill {
-    private _encoder: TextEncoder;
+    private _encoder: any; // TextEncoder | null – created lazily
     private _transform: InstanceType<typeof PolyfillTransformStream>;
 
     constructor() {
-        this._encoder = new TextEncoder();
+        this._encoder = null;
+        const self = this;
         this._transform = new PolyfillTransformStream({
             transform: (chunk: any, controller: any) => {
-                const encoded = this._encoder.encode(chunk);
+                // Already binary: pass through
+                if (chunk instanceof Uint8Array || chunk instanceof ArrayBuffer) {
+                    controller.enqueue(chunk instanceof ArrayBuffer ? new Uint8Array(chunk) : chunk);
+                    return;
+                }
+                // String input: encode
+                if (!self._encoder) {
+                    self._encoder = new TextEncoder();
+                }
+                const encoded = self._encoder.encode(chunk);
                 controller.enqueue(encoded);
             },
         });

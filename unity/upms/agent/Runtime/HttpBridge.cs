@@ -26,6 +26,77 @@ namespace LLMAgent
             public UnityWebRequestAsyncOperation operation;
             public Action<string> callback;
             public string url;
+            /// <summary>
+            /// Streaming support: called for each chunk of data received.
+            /// If non-null, this is a streaming request.
+            /// </summary>
+            public Action<string> onChunk;
+            /// <summary>
+            /// Streaming support: the download handler for streaming.
+            /// </summary>
+            public StreamingDownloadHandler streamHandler;
+            /// <summary>
+            /// Streaming support: called once with status/headers JSON.
+            /// </summary>
+            public Action<string> onHeader;
+            /// <summary>
+            /// Whether the header callback has already been sent.
+            /// </summary>
+            public bool headerSent;
+        }
+
+        /// <summary>
+        /// Custom DownloadHandler that pushes data chunks as they arrive.
+        /// ReceiveData is called by Unity on the main thread each time
+        /// new bytes are downloaded.
+        /// </summary>
+        private class StreamingDownloadHandler : DownloadHandlerScript
+        {
+            /// <summary>
+            /// Buffer that accumulates newly arrived text between frames.
+            /// PollPendingRequests drains this each frame and calls onChunk.
+            /// </summary>
+            private readonly object _lock = new object();
+            private readonly StringBuilder _pendingChunks = new StringBuilder();
+            public bool IsCompleted { get; private set; }
+
+            public StreamingDownloadHandler() : base(new byte[4096]) { }
+
+            /// <summary>
+            /// Called by Unity when new data arrives. 
+            /// We buffer it; PollPendingRequests flushes the buffer to JS each frame.
+            /// </summary>
+            protected override bool ReceiveData(byte[] data, int dataLength)
+            {
+                if (data == null || dataLength <= 0) return true;
+                var text = Encoding.UTF8.GetString(data, 0, dataLength);
+                lock (_lock)
+                {
+                    _pendingChunks.Append(text);
+                }
+                return true; // return true to keep receiving data
+            }
+
+            protected override void CompleteContent()
+            {
+                IsCompleted = true;
+            }
+
+            /// <summary>
+            /// Drain buffered text. Returns null if nothing new.
+            /// </summary>
+            public string DrainChunks()
+            {
+                lock (_lock)
+                {
+                    if (_pendingChunks.Length == 0) return null;
+                    var result = _pendingChunks.ToString();
+                    _pendingChunks.Clear();
+                    return result;
+                }
+            }
+
+            protected override float GetProgress() => 0f;
         }
 
         private static readonly List<PendingRequest> pendingRequests = new List<PendingRequest>();
@@ -59,6 +130,69 @@ namespace LLMAgent
             }
         }
 #endif
+
+        /// <summary>
+        /// Send a streaming HTTP request.
+        /// <paramref name="onHeader"/> is called once with status/headers JSON when the response starts.
+        /// <paramref name="onChunk"/> is called for each data chunk.
+        /// <paramref name="onComplete"/> is called when the stream ends (empty string) or on error (error JSON).
+        /// </summary>
+        public static void SendStreamRequestAsync(
+            string url, string method, string headersJson, string body,
+            Action<string> onHeader, Action<string> onChunk, Action<string> onComplete)
+        {
+            try
+            {
+                var request = new UnityWebRequest(url, method.ToUpperInvariant());
+
+                if (!string.IsNullOrEmpty(body))
+                {
+                    request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body));
+                }
+
+                var streamHandler = new StreamingDownloadHandler();
+                request.downloadHandler = streamHandler;
+
+                // Set content type
+                string contentType = "application/json";
+                var parsedHeaders = ParseHeadersJson(headersJson);
+                if (parsedHeaders.TryGetValue("content-type", out string ct))
+                {
+                    contentType = ct;
+                }
+                request.SetRequestHeader("Content-Type", contentType);
+
+                // Set custom headers
+                if (!string.IsNullOrEmpty(headersJson) && headersJson != "{}")
+                {
+                    SetRequestHeaders(request, headersJson);
+                }
+
+                request.timeout = 120;
+
+                var operation = request.SendWebRequest();
+
+                // We need a flag to know if we already sent the header callback
+                var pending = new PendingRequest
+                {
+                    operation = operation,
+                    callback = onComplete,
+                    url = url,
+                    onChunk = onChunk,
+                    streamHandler = streamHandler,
+                    onHeader = onHeader,
+                    headerSent = false,
+                };
+
+                pendingRequests.Add(pending);
+                StartPolling();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HttpBridge] Stream request setup failed: {ex.Message}");
+                onComplete?.Invoke($"{{\"error\":\"{EscapeJsonString(ex.Message)}\"}}");
+            }
+        }
 
         /// <summary>
         /// Send an HTTP request asynchronously using UnityWebRequest.
@@ -188,6 +322,90 @@ namespace LLMAgent
             {
                 var pending = pendingRequests[i];
 
+                // --- Streaming request: push chunks each frame ---
+                if (pending.streamHandler != null)
+                {
+                    // Drain any buffered data and push to JS
+                    var chunk = pending.streamHandler.DrainChunks();
+                    if (chunk != null)
+                    {
+                        // Send header on first chunk (responseCode is available once data starts arriving)
+                        if (!pending.headerSent)
+                        {
+                            pending.headerSent = true;
+                            try
+                            {
+                                var request = pending.operation.webRequest;
+                                var responseHeaders = BuildResponseHeaders(request);
+                                var sb = new StringBuilder();
+                                sb.Append("{");
+                                sb.Append($"\"status\":{(int)request.responseCode},");
+                                sb.Append($"\"statusText\":\"{EscapeJsonString(request.error ?? "OK")}\",");
+                                AppendHeaders(sb, responseHeaders);
+                                sb.Remove(sb.Length - 1, 1); // remove trailing comma from AppendHeaders
+                                sb.Append("}");
+                                pending.onHeader?.Invoke(sb.ToString());
+                            }
+                            catch (Exception ex) { Debug.LogError($"[HttpBridge] onHeader error: {ex.Message}"); }
+                        }
+
+                        try { pending.onChunk?.Invoke(chunk); }
+                        catch (Exception ex) { Debug.LogError($"[HttpBridge] onChunk error: {ex.Message}"); }
+                    }
+
+                    if (!pending.operation.isDone)
+                        continue;
+
+                    // Stream finished — drain any final data
+                    var finalChunk = pending.streamHandler.DrainChunks();
+                    if (finalChunk != null)
+                    {
+                        try { pending.onChunk?.Invoke(finalChunk); }
+                        catch (Exception ex) { Debug.LogError($"[HttpBridge] onChunk final error: {ex.Message}"); }
+                    }
+
+                    pendingRequests.RemoveAt(i);
+                    try
+                    {
+                        var request2 = pending.operation.webRequest;
+
+                        // If header was never sent (e.g. no chunks arrived before completion), send now
+                        if (!pending.headerSent)
+                        {
+                            pending.headerSent = true;
+                            var responseHeaders = BuildResponseHeaders(request2);
+                            var sb = new StringBuilder();
+                            sb.Append("{");
+                            sb.Append($"\"status\":{(int)request2.responseCode},");
+                            sb.Append($"\"statusText\":\"{EscapeJsonString(request2.error ?? "OK")}\",");
+                            AppendHeaders(sb, responseHeaders);
+                            sb.Remove(sb.Length - 1, 1);
+                            sb.Append("}");
+                            pending.onHeader?.Invoke(sb.ToString());
+                        }
+
+                        var isError = request2.result == UnityWebRequest.Result.ConnectionError ||
+                                      request2.result == UnityWebRequest.Result.DataProcessingError;
+                        if (isError)
+                        {
+                            pending.callback?.Invoke($"{{\"error\":\"{EscapeJsonString(request2.error ?? "Unknown error")}\"}}");
+                        }
+                        else
+                        {
+                            // Signal normal completion
+                            pending.callback?.Invoke("");
+                        }
+                        request2.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[HttpBridge] Stream completion error: {ex.Message}");
+                        pending.callback?.Invoke($"{{\"error\":\"{EscapeJsonString(ex.Message)}\"}}");
+                    }
+                    continue;
+                }
+
+                // --- Non-streaming request: original logic ---
                 if (!pending.operation.isDone)
                     continue;
 
