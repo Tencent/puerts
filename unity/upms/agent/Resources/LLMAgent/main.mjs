@@ -41271,6 +41271,8 @@ function createModel() {
     apiKey: currentConfig.apiKey,
     baseURL: currentConfig.baseURL || "https://api.openai.com/v1",
     transformRequestBody: /* @__PURE__ */ __name((body) => {
+      const isGemini = currentConfig.model?.toLowerCase().includes("gemini");
+      if (!isGemini) return body;
       if (body.tools && Array.isArray(body.tools)) {
         body.tools.forEach((tool2) => {
           if (tool2.function?.parameters?.$schema) {
@@ -41278,7 +41280,6 @@ function createModel() {
           }
         });
       }
-      const isGemini = currentConfig.model?.toLowerCase().includes("gemini");
       if (isGemini && body.messages && Array.isArray(body.messages)) {
         const newMessages = [];
         for (const msg of body.messages) {

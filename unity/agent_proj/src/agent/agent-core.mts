@@ -180,6 +180,8 @@ function createModel() {
         apiKey: currentConfig.apiKey,
         baseURL: currentConfig.baseURL || 'https://api.openai.com/v1',
         transformRequestBody: (body) => {
+            const isGemini = currentConfig.model?.toLowerCase().includes('gemini');
+            if (!isGemini) return body;
             // Gemini (via proxy) rejects the $schema field in tool parameters
             if (body.tools && Array.isArray(body.tools)) {
                 body.tools.forEach((tool: any) => {
@@ -192,7 +194,6 @@ function createModel() {
             // Fix for Gemini 3.1 Pro thought_signature error:
             // Gemini rejects history containing tool calls without thought_signatures.
             // We convert past tool calls and tool results into plain text messages.
-            const isGemini = currentConfig.model?.toLowerCase().includes('gemini');
             if (isGemini && body.messages && Array.isArray(body.messages)) {
                 const newMessages: any[] = [];
                 for (const msg of body.messages) {
