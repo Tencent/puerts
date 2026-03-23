@@ -195,22 +195,6 @@ function createModel() {
                 });
             }
 
-            // Log thought_signature presence in outgoing tool_calls
-            if (body.messages && Array.isArray(body.messages)) {
-                for (const msg of body.messages) {
-                    if (msg.role === 'assistant' && Array.isArray(msg.tool_calls)) {
-                        for (const tc of msg.tool_calls) {
-                            const sig = tc.extra_content?.google?.thought_signature;
-                            if (sig) {
-                                console.log(`[Gemini] tool_call '${tc.function?.name}' (id=${tc.id}) has thought_signature (${sig.length} chars)`);
-                            } else {
-                                console.log(`[Gemini] tool_call '${tc.function?.name}' (id=${tc.id}) has NO thought_signature`);
-                            }
-                        }
-                    }
-                }
-            }
-
             return body;
         }
     });
