@@ -27027,6 +27027,7 @@ __name(executeCode, "executeCode");
 var mcpServer = null;
 var httpServer = null;
 var transports = /* @__PURE__ */ new Map();
+var trackedSockets = /* @__PURE__ */ new Set();
 function createMcpServer() {
   const server = new McpServer({
     name: "puerts-unity-editor-assistant",
@@ -27144,6 +27145,12 @@ function startHttpServer(port) {
       console.log(`[McpServer] SSE endpoint: http://127.0.0.1:${port}/sse`);
       resolve();
     });
+    httpServer.on("connection", (socket) => {
+      trackedSockets.add(socket);
+      socket.on("close", () => {
+        trackedSockets.delete(socket);
+      });
+    });
     httpServer.on("error", (err) => {
       console.error(`[McpServer] HTTP server error: ${err.message}`);
       reject(err);
@@ -27158,10 +27165,11 @@ function onInitialize(root, port, onReady) {
       await initBuiltins();
       await startHttpServer(port);
       console.log("[McpServer] MCP Server initialization complete.");
+      onReady.Invoke(true, "");
     } catch (e) {
-      console.error(`[McpServer] Initialization error: ${e.message || e}`);
-    } finally {
-      onReady.Invoke();
+      const errMsg = e.message || String(e);
+      console.error(`[McpServer] Initialization error: ${errMsg}`);
+      onReady.Invoke(false, errMsg);
     }
   })();
 }
@@ -27183,6 +27191,13 @@ function onShutdown() {
     mcpServer = null;
   }
   if (httpServer) {
+    for (const socket of trackedSockets) {
+      try {
+        socket.destroy();
+      } catch (_) {
+      }
+    }
+    trackedSockets.clear();
     httpServer.close();
     httpServer = null;
   }

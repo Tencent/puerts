@@ -23,6 +23,10 @@ let httpServer: http.Server | null = null;
 // SSE transport management: one transport per session
 const transports: Map<string, SSEServerTransport> = new Map();
 
+// Track all open sockets so we can forcefully destroy them on shutdown
+import net from 'node:net';
+const trackedSockets: Set<net.Socket> = new Set();
+
 // ---------------------------------------------------------------------------
 // MCP Server setup
 // ---------------------------------------------------------------------------
@@ -191,6 +195,14 @@ function startHttpServer(port: number): Promise<void> {
             resolve();
         });
 
+        // Track connections for forceful shutdown
+        httpServer.on('connection', (socket: net.Socket) => {
+            trackedSockets.add(socket);
+            socket.on('close', () => {
+                trackedSockets.delete(socket);
+            });
+        });
+
         httpServer.on('error', (err) => {
             console.error(`[McpServer] HTTP server error: ${err.message}`);
             reject(err);
@@ -208,19 +220,21 @@ function startHttpServer(port: number): Promise<void> {
  *
  * @param root - Unity Resources path prefix, e.g. "LLMAgent/editor-assistant"
  * @param port - TCP port for the HTTP server (default 3100)
- * @param onReady - C# Action callback invoked when the server is ready
+ * @param onReady - C# Action<bool, string> callback invoked when the server is ready.
+ *                  First arg: success (true/false), second arg: error message (empty on success).
  */
-export function onInitialize(root: string, port: number, onReady: CS.System.Action): void {
+export function onInitialize(root: string, port: number, onReady: CS.System.Action$2<boolean, string>): void {
     (async () => {
         try {
             setResourceRoot(root);
             await initBuiltins();
             await startHttpServer(port);
             console.log('[McpServer] MCP Server initialization complete.');
+            onReady.Invoke!(true, '');
         } catch (e: any) {
-            console.error(`[McpServer] Initialization error: ${e.message || e}`);
-        } finally {
-            onReady.Invoke!();
+            const errMsg = e.message || String(e);
+            console.error(`[McpServer] Initialization error: ${errMsg}`);
+            onReady.Invoke!(false, errMsg);
         }
     })();
 }
@@ -228,11 +242,14 @@ export function onInitialize(root: string, port: number, onReady: CS.System.Acti
 /**
  * Shut down the MCP Server and close the HTTP server.
  * Called from C# McpScriptManager.Shutdown().
+ *
+ * This forcefully destroys all active connections so that remote clients
+ * get an immediate socket close instead of hanging indefinitely.
  */
 export function onShutdown(): void {
     console.log('[McpServer] Shutting down...');
 
-    // Close all SSE transports
+    // Close all SSE transports — this ends any long-lived SSE streams
     for (const [id, transport] of transports) {
         try {
             transport.close?.();
@@ -252,8 +269,19 @@ export function onShutdown(): void {
         mcpServer = null;
     }
 
-    // Close the HTTP server
+    // Close the HTTP server and forcefully destroy all open sockets
+    // so that in-flight requests are terminated immediately.
     if (httpServer) {
+        // Destroy all tracked connections so clients get RST immediately
+        for (const socket of trackedSockets) {
+            try {
+                socket.destroy();
+            } catch (_) {
+                // ignore
+            }
+        }
+        trackedSockets.clear();
+
         httpServer.close();
         httpServer = null;
     }

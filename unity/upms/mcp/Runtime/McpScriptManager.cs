@@ -19,7 +19,7 @@ namespace PuertsMcp
         private string lastError;
 
         // TS function delegates
-        private Action<string, int, Action> onInitialize;
+        private Action<string, int, Action<bool, string>> onInitialize;
         private Action onShutdown;
 
         private const string EntryModule = "McpServer/main.cjs";
@@ -39,8 +39,8 @@ namespace PuertsMcp
         /// </summary>
         /// <param name="resourceRoot">Resource root path passed to TS onInitialize (e.g. "LLMAgent/editor-assistant").</param>
         /// <param name="port">TCP port for the MCP HTTP Server (default 3100).</param>
-        /// <param name="onReady">Optional callback invoked when the MCP Server is ready to accept connections.</param>
-        public void Initialize(string resourceRoot, int port = 3100, Action onReady = null)
+        /// <param name="onReady">Optional callback invoked when the MCP Server startup completes. Bool arg indicates success.</param>
+        public void Initialize(string resourceRoot, int port = 3100, Action<bool> onReady = null)
         {
             if (isInitialized)
             {
@@ -63,7 +63,7 @@ namespace PuertsMcp
                 );
 
                 // Get exported functions from CJS module
-                onInitialize = moduleExports.Get<Action<string, int, Action>>("onInitialize");
+                onInitialize = moduleExports.Get<Action<string, int, Action<bool, string>>>("onInitialize");
                 onShutdown = moduleExports.Get<Action>("onShutdown");
 
                 if (onInitialize == null)
@@ -77,12 +77,21 @@ namespace PuertsMcp
                 StartTicking();
 
                 // Trigger async initialization: load builtins + start HTTP server
-                onInitialize(resourceRoot, port, () =>
+                onInitialize(resourceRoot, port, (bool success, string errorMsg) =>
                 {
-                    isInitialized = true;
-                    lastError = null;
-                    Debug.Log($"[McpScriptManager] MCP Server initialized and listening on port {port}.");
-                    onReady?.Invoke();
+                    if (success)
+                    {
+                        isInitialized = true;
+                        lastError = null;
+                        Debug.Log($"[McpScriptManager] MCP Server initialized and listening on port {port}.");
+                    }
+                    else
+                    {
+                        isInitialized = false;
+                        lastError = $"[McpScriptManager] Server failed to start: {errorMsg}";
+                        Debug.LogError(lastError);
+                    }
+                    onReady?.Invoke(success);
                 });
             }
             catch (Exception ex)
