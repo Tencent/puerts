@@ -219,13 +219,36 @@ function createModel() {
 
 /**
  * onStepFinish callback for generateText.
- * Reports tool call results and intermediate text to the UI via onProgress.
+ * Reports tool call results, reasoning/thinking content, and intermediate text to the UI via onProgress.
  */
-function handleStepFinish(onProgress: ((text: string) => void) | undefined, { stepNumber, text, toolCalls, toolResults, finishReason }: any): void {
+function handleStepFinish(onProgress: ((text: string) => void) | undefined, stepResult: any): void {
     if (!onProgress) return;
+
+    const { stepNumber, text, toolCalls, toolResults, finishReason } = stepResult;
 
     const hasToolResults = toolResults && toolResults.length > 0;
     const hasToolCalls = toolCalls && toolCalls.length > 0;
+
+    // Extract reasoning/thinking content if available
+    // AI SDK may expose it via reasoning, reasoningText, or providerMetadata
+    const rawReasoning = stepResult.reasoning || stepResult.reasoningText;
+    if (rawReasoning) {
+        // reasoning may be a string, an array of {type,text} parts, or an object — normalize to string
+        let reasoningStr: string;
+        if (typeof rawReasoning === 'string') {
+            reasoningStr = rawReasoning;
+        } else if (Array.isArray(rawReasoning)) {
+            reasoningStr = rawReasoning.map((part: any) => (typeof part === 'string' ? part : part?.text ?? '')).join('');
+        } else if (typeof rawReasoning === 'object' && rawReasoning.text) {
+            reasoningStr = rawReasoning.text;
+        } else {
+            reasoningStr = JSON.stringify(rawReasoning);
+        }
+        if (reasoningStr) {
+            const truncated = reasoningStr.length > 800 ? reasoningStr.substring(0, 800) + '...' : reasoningStr;
+            onProgress(`<color=#B39DDB>[THINKING]</color>\n${truncated}`);
+        }
+    }
 
     let progressText = '';
     if (hasToolResults) {
@@ -246,7 +269,7 @@ function handleStepFinish(onProgress: ((text: string) => void) | undefined, { st
 
     // Only include intermediate text when it accompanies tool calls.
     // If a step is pure text with no tool calls (i.e. the final response),
-    // skip it here — it will be shown via FinalizeProgressBubble's finalText.
+    // skip it here — it will be shown via the final assistant message in the chat.
     if (text && (hasToolResults || hasToolCalls)) {
         const truncatedText = text.length > 500 ? text.substring(0, 500) + '...' : text;
         progressText += truncatedText;

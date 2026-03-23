@@ -34909,10 +34909,29 @@ function createModel() {
   return provider.chatModel(currentConfig.model || "gpt-4o-mini");
 }
 __name(createModel, "createModel");
-function handleStepFinish(onProgress, { stepNumber, text: text2, toolCalls, toolResults, finishReason }) {
+function handleStepFinish(onProgress, stepResult) {
   if (!onProgress) return;
+  const { stepNumber, text: text2, toolCalls, toolResults, finishReason } = stepResult;
   const hasToolResults = toolResults && toolResults.length > 0;
   const hasToolCalls = toolCalls && toolCalls.length > 0;
+  const rawReasoning = stepResult.reasoning || stepResult.reasoningText;
+  if (rawReasoning) {
+    let reasoningStr;
+    if (typeof rawReasoning === "string") {
+      reasoningStr = rawReasoning;
+    } else if (Array.isArray(rawReasoning)) {
+      reasoningStr = rawReasoning.map((part) => typeof part === "string" ? part : part?.text ?? "").join("");
+    } else if (typeof rawReasoning === "object" && rawReasoning.text) {
+      reasoningStr = rawReasoning.text;
+    } else {
+      reasoningStr = JSON.stringify(rawReasoning);
+    }
+    if (reasoningStr) {
+      const truncated = reasoningStr.length > 800 ? reasoningStr.substring(0, 800) + "..." : reasoningStr;
+      onProgress(`<color=#B39DDB>[THINKING]</color>
+${truncated}`);
+    }
+  }
   let progressText = "";
   if (hasToolResults) {
     for (const tr2 of toolResults) {
