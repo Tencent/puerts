@@ -31,10 +31,8 @@ function promiseRejectHandler(type, promise, reason) {
             handlerAddedAfterReject(promise);
             break;
         case kPromiseResolveAfterResolved:
-            console.error('kPromiseResolveAfterResolved', promise, reason);
-            break;
         case kPromiseRejectAfterResolved:
-            console.error('kPromiseRejectAfterResolved', promise, reason);
+            // Silently ignored, consistent with browser/Node.js behavior.
             break;
     }
 }
