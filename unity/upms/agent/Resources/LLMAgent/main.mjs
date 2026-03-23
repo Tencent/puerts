@@ -38138,6 +38138,11 @@ __name(createModel, "createModel");
 function handleStepFinish(onProgress, stepResult) {
   if (!onProgress) return;
   const { stepNumber, text: text2, toolCalls, toolResults, finishReason } = stepResult;
+  console.log(`[Agent] Step ${stepNumber} finished: finishReason=${finishReason}, text=${text2?.length ?? 0} chars, toolCalls=${toolCalls?.length ?? 0}`);
+  if (finishReason === "length") {
+    console.warn(`[Agent] Step ${stepNumber} output was truncated (finishReason=length). The model hit max_tokens limit.`);
+    onProgress(`<color=#FF9800>\u26A0 Output truncated \u2014 model reached token limit.</color>`);
+  }
   const hasToolResults = toolResults && toolResults.length > 0;
   const hasToolCalls = toolCalls && toolCalls.length > 0;
   const rawReasoning = stepResult.reasoning || stepResult.reasoningText;
@@ -38312,6 +38317,7 @@ async function runGeneration(onProgress) {
       messages: conversationHistory,
       tools,
       abortSignal,
+      maxOutputTokens: 16384,
       // Use MAX_STEPS + 1 so the SDK does not exit the loop before our
       // prepareStep hook has a chance to inject the stop message on the
       // last allowed tool-call step.  The actual limit is enforced by
@@ -38327,6 +38333,7 @@ async function runGeneration(onProgress) {
         onProgress(`[STREAM]${textPart}`);
       }
     }
+    console.log(`[Agent] textStream ended. fullText length: ${fullText.length}`);
     const response = await result.response;
     for (const msg of response.messages) {
       conversationHistory.push(msg);
