@@ -24059,6 +24059,54 @@ function createAbortError() {
   return new DOMException("Delay was aborted", "AbortError");
 }
 __name(createAbortError, "createAbortError");
+var DelayedPromise = class {
+  static {
+    __name(this, "DelayedPromise");
+  }
+  constructor() {
+    this.status = { type: "pending" };
+    this._resolve = void 0;
+    this._reject = void 0;
+  }
+  get promise() {
+    if (this._promise) {
+      return this._promise;
+    }
+    this._promise = new Promise((resolve2, reject) => {
+      if (this.status.type === "resolved") {
+        resolve2(this.status.value);
+      } else if (this.status.type === "rejected") {
+        reject(this.status.error);
+      }
+      this._resolve = resolve2;
+      this._reject = reject;
+    });
+    return this._promise;
+  }
+  resolve(value) {
+    var _a24;
+    this.status = { type: "resolved", value };
+    if (this._promise) {
+      (_a24 = this._resolve) == null ? void 0 : _a24.call(this, value);
+    }
+  }
+  reject(error48) {
+    var _a24;
+    this.status = { type: "rejected", error: error48 };
+    if (this._promise) {
+      (_a24 = this._reject) == null ? void 0 : _a24.call(this, error48);
+    }
+  }
+  isResolved() {
+    return this.status.type === "resolved";
+  }
+  isRejected() {
+    return this.status.type === "rejected";
+  }
+  isPending() {
+    return this.status.type === "pending";
+  }
+};
 function extractResponseHeaders(response) {
   return Object.fromEntries([...response.headers]);
 }
@@ -27989,6 +28037,24 @@ var name152 = "AI_UIMessageStreamError";
 var marker152 = `vercel.ai.error.${name152}`;
 var symbol152 = Symbol.for(marker152);
 var _a152;
+var UIMessageStreamError = class extends AISDKError {
+  static {
+    __name(this, "UIMessageStreamError");
+  }
+  constructor({
+    chunkType,
+    chunkId,
+    message
+  }) {
+    super({ name: name152, message });
+    this[_a152] = true;
+    this.chunkType = chunkType;
+    this.chunkId = chunkId;
+  }
+  static isInstance(error48) {
+    return AISDKError.hasMarker(error48, marker152);
+  }
+};
 _a152 = symbol152;
 var name162 = "AI_InvalidDataContentError";
 var marker162 = `vercel.ai.error.${name162}`;
@@ -28253,6 +28319,13 @@ function getStepTimeoutMs(timeout) {
   return timeout.stepMs;
 }
 __name(getStepTimeoutMs, "getStepTimeoutMs");
+function getChunkTimeoutMs(timeout) {
+  if (timeout == null || typeof timeout === "number") {
+    return void 0;
+  }
+  return timeout.chunkMs;
+}
+__name(getChunkTimeoutMs, "getChunkTimeoutMs");
 var imageMediaTypeSignatures = [
   {
     mediaType: "image/gif",
@@ -29566,6 +29639,24 @@ function asLanguageModelUsage(usage) {
   };
 }
 __name(asLanguageModelUsage, "asLanguageModelUsage");
+function createNullLanguageModelUsage() {
+  return {
+    inputTokens: void 0,
+    inputTokenDetails: {
+      noCacheTokens: void 0,
+      cacheReadTokens: void 0,
+      cacheWriteTokens: void 0
+    },
+    outputTokens: void 0,
+    outputTokenDetails: {
+      textTokens: void 0,
+      reasoningTokens: void 0
+    },
+    totalTokens: void 0,
+    raw: void 0
+  };
+}
+__name(createNullLanguageModelUsage, "createNullLanguageModelUsage");
 function addLanguageModelUsage(usage1, usage2) {
   var _a21, _b17, _c, _d, _e2, _f, _g, _h, _i, _j;
   return {
@@ -30022,6 +30113,15 @@ var DefaultGeneratedFile = class {
       this.uint8ArrayData = convertBase64ToUint8Array(this.base64Data);
     }
     return this.uint8ArrayData;
+  }
+};
+var DefaultGeneratedFileWithType = class extends DefaultGeneratedFile {
+  static {
+    __name(this, "DefaultGeneratedFileWithType");
+  }
+  constructor(options) {
+    super(options);
+    this.type = "file";
   }
 };
 async function isApprovalNeeded({
@@ -31946,6 +32046,87 @@ function asContent({
   return [...contentParts, ...toolOutputs, ...toolApprovalRequests];
 }
 __name(asContent, "asContent");
+function prepareHeaders(headers, defaultHeaders) {
+  const responseHeaders = new Headers(headers != null ? headers : {});
+  for (const [key, value] of Object.entries(defaultHeaders)) {
+    if (!responseHeaders.has(key)) {
+      responseHeaders.set(key, value);
+    }
+  }
+  return responseHeaders;
+}
+__name(prepareHeaders, "prepareHeaders");
+function createTextStreamResponse({
+  status,
+  statusText,
+  headers,
+  textStream
+}) {
+  return new Response(textStream.pipeThrough(new TextEncoderStream()), {
+    status: status != null ? status : 200,
+    statusText,
+    headers: prepareHeaders(headers, {
+      "content-type": "text/plain; charset=utf-8"
+    })
+  });
+}
+__name(createTextStreamResponse, "createTextStreamResponse");
+function writeToServerResponse({
+  response,
+  status,
+  statusText,
+  headers,
+  stream
+}) {
+  const statusCode = status != null ? status : 200;
+  if (statusText !== void 0) {
+    response.writeHead(statusCode, statusText, headers);
+  } else {
+    response.writeHead(statusCode, headers);
+  }
+  const reader = stream.getReader();
+  const read = /* @__PURE__ */ __name(async () => {
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done)
+          break;
+        const canContinue = response.write(value);
+        if (!canContinue) {
+          await new Promise((resolve3) => {
+            response.once("drain", resolve3);
+          });
+        }
+      }
+    } catch (error48) {
+      throw error48;
+    } finally {
+      response.end();
+    }
+  }, "read");
+  read();
+}
+__name(writeToServerResponse, "writeToServerResponse");
+function pipeTextStreamToResponse({
+  response,
+  status,
+  statusText,
+  headers,
+  textStream
+}) {
+  writeToServerResponse({
+    response,
+    status,
+    statusText,
+    headers: Object.fromEntries(
+      prepareHeaders(headers, {
+        "content-type": "text/plain; charset=utf-8"
+      }).entries()
+    ),
+    stream: textStream.pipeThrough(new TextEncoderStream())
+  });
+}
+__name(pipeTextStreamToResponse, "pipeTextStreamToResponse");
 var JsonToSseTransformStream = class extends TransformStream {
   static {
     __name(this, "JsonToSseTransformStream");
@@ -31963,6 +32144,45 @@ var JsonToSseTransformStream = class extends TransformStream {
     });
   }
 };
+var UI_MESSAGE_STREAM_HEADERS = {
+  "content-type": "text/event-stream",
+  "cache-control": "no-cache",
+  connection: "keep-alive",
+  "x-vercel-ai-ui-message-stream": "v1",
+  "x-accel-buffering": "no"
+  // disable nginx buffering
+};
+function createUIMessageStreamResponse({
+  status,
+  statusText,
+  headers,
+  stream,
+  consumeSseStream
+}) {
+  let sseStream = stream.pipeThrough(new JsonToSseTransformStream());
+  if (consumeSseStream) {
+    const [stream1, stream2] = sseStream.tee();
+    sseStream = stream1;
+    consumeSseStream({ stream: stream2 });
+  }
+  return new Response(sseStream.pipeThrough(new TextEncoderStream()), {
+    status,
+    statusText,
+    headers: prepareHeaders(headers, UI_MESSAGE_STREAM_HEADERS)
+  });
+}
+__name(createUIMessageStreamResponse, "createUIMessageStreamResponse");
+function getResponseUIMessageId({
+  originalMessages,
+  responseMessageId
+}) {
+  if (originalMessages == null) {
+    return void 0;
+  }
+  const lastMessage = originalMessages[originalMessages.length - 1];
+  return (lastMessage == null ? void 0 : lastMessage.role) === "assistant" ? lastMessage.id : typeof responseMessageId === "function" ? responseMessageId() : responseMessageId;
+}
+__name(getResponseUIMessageId, "getResponseUIMessageId");
 var uiMessageChunkSchema = lazySchema(
   () => zodSchema(
     external_exports.union([
@@ -32125,10 +32345,2832 @@ var uiMessageChunkSchema = lazySchema(
     ])
   )
 );
+function isDataUIMessageChunk(chunk) {
+  return chunk.type.startsWith("data-");
+}
+__name(isDataUIMessageChunk, "isDataUIMessageChunk");
+function isStaticToolUIPart(part) {
+  return part.type.startsWith("tool-");
+}
+__name(isStaticToolUIPart, "isStaticToolUIPart");
+function isDynamicToolUIPart(part) {
+  return part.type === "dynamic-tool";
+}
+__name(isDynamicToolUIPart, "isDynamicToolUIPart");
+function isToolUIPart(part) {
+  return isStaticToolUIPart(part) || isDynamicToolUIPart(part);
+}
+__name(isToolUIPart, "isToolUIPart");
+function getStaticToolName(part) {
+  return part.type.split("-").slice(1).join("-");
+}
+__name(getStaticToolName, "getStaticToolName");
+function createStreamingUIMessageState({
+  lastMessage,
+  messageId
+}) {
+  return {
+    message: (lastMessage == null ? void 0 : lastMessage.role) === "assistant" ? lastMessage : {
+      id: messageId,
+      metadata: void 0,
+      role: "assistant",
+      parts: []
+    },
+    activeTextParts: {},
+    activeReasoningParts: {},
+    partialToolCalls: {}
+  };
+}
+__name(createStreamingUIMessageState, "createStreamingUIMessageState");
+function processUIMessageStream({
+  stream,
+  messageMetadataSchema,
+  dataPartSchemas,
+  runUpdateMessageJob,
+  onError,
+  onToolCall,
+  onData
+}) {
+  return stream.pipeThrough(
+    new TransformStream({
+      async transform(chunk, controller) {
+        await runUpdateMessageJob(async ({ state, write }) => {
+          var _a21, _b17, _c, _d;
+          function getToolInvocation(toolCallId) {
+            const toolInvocations = state.message.parts.filter(isToolUIPart);
+            const toolInvocation = toolInvocations.find(
+              (invocation) => invocation.toolCallId === toolCallId
+            );
+            if (toolInvocation == null) {
+              throw new UIMessageStreamError({
+                chunkType: "tool-invocation",
+                chunkId: toolCallId,
+                message: `No tool invocation found for tool call ID "${toolCallId}".`
+              });
+            }
+            return toolInvocation;
+          }
+          __name(getToolInvocation, "getToolInvocation");
+          function updateToolPart(options) {
+            var _a222;
+            const part = state.message.parts.find(
+              (part2) => isStaticToolUIPart(part2) && part2.toolCallId === options.toolCallId
+            );
+            const anyOptions = options;
+            const anyPart = part;
+            if (part != null) {
+              part.state = options.state;
+              anyPart.input = anyOptions.input;
+              anyPart.output = anyOptions.output;
+              anyPart.errorText = anyOptions.errorText;
+              anyPart.rawInput = anyOptions.rawInput;
+              anyPart.preliminary = anyOptions.preliminary;
+              if (options.title !== void 0) {
+                anyPart.title = options.title;
+              }
+              anyPart.providerExecuted = (_a222 = anyOptions.providerExecuted) != null ? _a222 : part.providerExecuted;
+              if (anyOptions.providerMetadata != null) {
+                part.callProviderMetadata = anyOptions.providerMetadata;
+              }
+            } else {
+              state.message.parts.push({
+                type: `tool-${options.toolName}`,
+                toolCallId: options.toolCallId,
+                state: options.state,
+                title: options.title,
+                input: anyOptions.input,
+                output: anyOptions.output,
+                rawInput: anyOptions.rawInput,
+                errorText: anyOptions.errorText,
+                providerExecuted: anyOptions.providerExecuted,
+                preliminary: anyOptions.preliminary,
+                ...anyOptions.providerMetadata != null ? { callProviderMetadata: anyOptions.providerMetadata } : {}
+              });
+            }
+          }
+          __name(updateToolPart, "updateToolPart");
+          function updateDynamicToolPart(options) {
+            var _a222, _b23;
+            const part = state.message.parts.find(
+              (part2) => part2.type === "dynamic-tool" && part2.toolCallId === options.toolCallId
+            );
+            const anyOptions = options;
+            const anyPart = part;
+            if (part != null) {
+              part.state = options.state;
+              anyPart.toolName = options.toolName;
+              anyPart.input = anyOptions.input;
+              anyPart.output = anyOptions.output;
+              anyPart.errorText = anyOptions.errorText;
+              anyPart.rawInput = (_a222 = anyOptions.rawInput) != null ? _a222 : anyPart.rawInput;
+              anyPart.preliminary = anyOptions.preliminary;
+              if (options.title !== void 0) {
+                anyPart.title = options.title;
+              }
+              anyPart.providerExecuted = (_b23 = anyOptions.providerExecuted) != null ? _b23 : part.providerExecuted;
+              if (anyOptions.providerMetadata != null) {
+                part.callProviderMetadata = anyOptions.providerMetadata;
+              }
+            } else {
+              state.message.parts.push({
+                type: "dynamic-tool",
+                toolName: options.toolName,
+                toolCallId: options.toolCallId,
+                state: options.state,
+                input: anyOptions.input,
+                output: anyOptions.output,
+                errorText: anyOptions.errorText,
+                preliminary: anyOptions.preliminary,
+                providerExecuted: anyOptions.providerExecuted,
+                title: options.title,
+                ...anyOptions.providerMetadata != null ? { callProviderMetadata: anyOptions.providerMetadata } : {}
+              });
+            }
+          }
+          __name(updateDynamicToolPart, "updateDynamicToolPart");
+          async function updateMessageMetadata(metadata) {
+            if (metadata != null) {
+              const mergedMetadata = state.message.metadata != null ? mergeObjects(state.message.metadata, metadata) : metadata;
+              if (messageMetadataSchema != null) {
+                await validateTypes({
+                  value: mergedMetadata,
+                  schema: messageMetadataSchema,
+                  context: {
+                    field: "message.metadata",
+                    entityId: state.message.id
+                  }
+                });
+              }
+              state.message.metadata = mergedMetadata;
+            }
+          }
+          __name(updateMessageMetadata, "updateMessageMetadata");
+          switch (chunk.type) {
+            case "text-start": {
+              const textPart = {
+                type: "text",
+                text: "",
+                providerMetadata: chunk.providerMetadata,
+                state: "streaming"
+              };
+              state.activeTextParts[chunk.id] = textPart;
+              state.message.parts.push(textPart);
+              write();
+              break;
+            }
+            case "text-delta": {
+              const textPart = state.activeTextParts[chunk.id];
+              if (textPart == null) {
+                throw new UIMessageStreamError({
+                  chunkType: "text-delta",
+                  chunkId: chunk.id,
+                  message: `Received text-delta for missing text part with ID "${chunk.id}". Ensure a "text-start" chunk is sent before any "text-delta" chunks.`
+                });
+              }
+              textPart.text += chunk.delta;
+              textPart.providerMetadata = (_a21 = chunk.providerMetadata) != null ? _a21 : textPart.providerMetadata;
+              write();
+              break;
+            }
+            case "text-end": {
+              const textPart = state.activeTextParts[chunk.id];
+              if (textPart == null) {
+                throw new UIMessageStreamError({
+                  chunkType: "text-end",
+                  chunkId: chunk.id,
+                  message: `Received text-end for missing text part with ID "${chunk.id}". Ensure a "text-start" chunk is sent before any "text-end" chunks.`
+                });
+              }
+              textPart.state = "done";
+              textPart.providerMetadata = (_b17 = chunk.providerMetadata) != null ? _b17 : textPart.providerMetadata;
+              delete state.activeTextParts[chunk.id];
+              write();
+              break;
+            }
+            case "reasoning-start": {
+              const reasoningPart = {
+                type: "reasoning",
+                text: "",
+                providerMetadata: chunk.providerMetadata,
+                state: "streaming"
+              };
+              state.activeReasoningParts[chunk.id] = reasoningPart;
+              state.message.parts.push(reasoningPart);
+              write();
+              break;
+            }
+            case "reasoning-delta": {
+              const reasoningPart = state.activeReasoningParts[chunk.id];
+              if (reasoningPart == null) {
+                throw new UIMessageStreamError({
+                  chunkType: "reasoning-delta",
+                  chunkId: chunk.id,
+                  message: `Received reasoning-delta for missing reasoning part with ID "${chunk.id}". Ensure a "reasoning-start" chunk is sent before any "reasoning-delta" chunks.`
+                });
+              }
+              reasoningPart.text += chunk.delta;
+              reasoningPart.providerMetadata = (_c = chunk.providerMetadata) != null ? _c : reasoningPart.providerMetadata;
+              write();
+              break;
+            }
+            case "reasoning-end": {
+              const reasoningPart = state.activeReasoningParts[chunk.id];
+              if (reasoningPart == null) {
+                throw new UIMessageStreamError({
+                  chunkType: "reasoning-end",
+                  chunkId: chunk.id,
+                  message: `Received reasoning-end for missing reasoning part with ID "${chunk.id}". Ensure a "reasoning-start" chunk is sent before any "reasoning-end" chunks.`
+                });
+              }
+              reasoningPart.providerMetadata = (_d = chunk.providerMetadata) != null ? _d : reasoningPart.providerMetadata;
+              reasoningPart.state = "done";
+              delete state.activeReasoningParts[chunk.id];
+              write();
+              break;
+            }
+            case "file": {
+              state.message.parts.push({
+                type: "file",
+                mediaType: chunk.mediaType,
+                url: chunk.url,
+                ...chunk.providerMetadata != null ? { providerMetadata: chunk.providerMetadata } : {}
+              });
+              write();
+              break;
+            }
+            case "source-url": {
+              state.message.parts.push({
+                type: "source-url",
+                sourceId: chunk.sourceId,
+                url: chunk.url,
+                title: chunk.title,
+                providerMetadata: chunk.providerMetadata
+              });
+              write();
+              break;
+            }
+            case "source-document": {
+              state.message.parts.push({
+                type: "source-document",
+                sourceId: chunk.sourceId,
+                mediaType: chunk.mediaType,
+                title: chunk.title,
+                filename: chunk.filename,
+                providerMetadata: chunk.providerMetadata
+              });
+              write();
+              break;
+            }
+            case "tool-input-start": {
+              const toolInvocations = state.message.parts.filter(isStaticToolUIPart);
+              state.partialToolCalls[chunk.toolCallId] = {
+                text: "",
+                toolName: chunk.toolName,
+                index: toolInvocations.length,
+                dynamic: chunk.dynamic,
+                title: chunk.title
+              };
+              if (chunk.dynamic) {
+                updateDynamicToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: chunk.toolName,
+                  state: "input-streaming",
+                  input: void 0,
+                  providerExecuted: chunk.providerExecuted,
+                  title: chunk.title,
+                  providerMetadata: chunk.providerMetadata
+                });
+              } else {
+                updateToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: chunk.toolName,
+                  state: "input-streaming",
+                  input: void 0,
+                  providerExecuted: chunk.providerExecuted,
+                  title: chunk.title,
+                  providerMetadata: chunk.providerMetadata
+                });
+              }
+              write();
+              break;
+            }
+            case "tool-input-delta": {
+              const partialToolCall = state.partialToolCalls[chunk.toolCallId];
+              if (partialToolCall == null) {
+                throw new UIMessageStreamError({
+                  chunkType: "tool-input-delta",
+                  chunkId: chunk.toolCallId,
+                  message: `Received tool-input-delta for missing tool call with ID "${chunk.toolCallId}". Ensure a "tool-input-start" chunk is sent before any "tool-input-delta" chunks.`
+                });
+              }
+              partialToolCall.text += chunk.inputTextDelta;
+              const { value: partialArgs } = await parsePartialJson(
+                partialToolCall.text
+              );
+              if (partialToolCall.dynamic) {
+                updateDynamicToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: partialToolCall.toolName,
+                  state: "input-streaming",
+                  input: partialArgs,
+                  title: partialToolCall.title
+                });
+              } else {
+                updateToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: partialToolCall.toolName,
+                  state: "input-streaming",
+                  input: partialArgs,
+                  title: partialToolCall.title
+                });
+              }
+              write();
+              break;
+            }
+            case "tool-input-available": {
+              if (chunk.dynamic) {
+                updateDynamicToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: chunk.toolName,
+                  state: "input-available",
+                  input: chunk.input,
+                  providerExecuted: chunk.providerExecuted,
+                  providerMetadata: chunk.providerMetadata,
+                  title: chunk.title
+                });
+              } else {
+                updateToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: chunk.toolName,
+                  state: "input-available",
+                  input: chunk.input,
+                  providerExecuted: chunk.providerExecuted,
+                  providerMetadata: chunk.providerMetadata,
+                  title: chunk.title
+                });
+              }
+              write();
+              if (onToolCall && !chunk.providerExecuted) {
+                await onToolCall({
+                  toolCall: chunk
+                });
+              }
+              break;
+            }
+            case "tool-input-error": {
+              const existingPart = state.message.parts.filter(isToolUIPart).find((p2) => p2.toolCallId === chunk.toolCallId);
+              const isDynamic = existingPart != null ? existingPart.type === "dynamic-tool" : !!chunk.dynamic;
+              if (isDynamic) {
+                updateDynamicToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: chunk.toolName,
+                  state: "output-error",
+                  input: chunk.input,
+                  errorText: chunk.errorText,
+                  providerExecuted: chunk.providerExecuted,
+                  providerMetadata: chunk.providerMetadata
+                });
+              } else {
+                updateToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: chunk.toolName,
+                  state: "output-error",
+                  input: void 0,
+                  rawInput: chunk.input,
+                  errorText: chunk.errorText,
+                  providerExecuted: chunk.providerExecuted,
+                  providerMetadata: chunk.providerMetadata
+                });
+              }
+              write();
+              break;
+            }
+            case "tool-approval-request": {
+              const toolInvocation = getToolInvocation(chunk.toolCallId);
+              toolInvocation.state = "approval-requested";
+              toolInvocation.approval = { id: chunk.approvalId };
+              write();
+              break;
+            }
+            case "tool-output-denied": {
+              const toolInvocation = getToolInvocation(chunk.toolCallId);
+              toolInvocation.state = "output-denied";
+              write();
+              break;
+            }
+            case "tool-output-available": {
+              const toolInvocation = getToolInvocation(chunk.toolCallId);
+              if (toolInvocation.type === "dynamic-tool") {
+                updateDynamicToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: toolInvocation.toolName,
+                  state: "output-available",
+                  input: toolInvocation.input,
+                  output: chunk.output,
+                  preliminary: chunk.preliminary,
+                  providerExecuted: chunk.providerExecuted,
+                  title: toolInvocation.title
+                });
+              } else {
+                updateToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: getStaticToolName(toolInvocation),
+                  state: "output-available",
+                  input: toolInvocation.input,
+                  output: chunk.output,
+                  providerExecuted: chunk.providerExecuted,
+                  preliminary: chunk.preliminary,
+                  title: toolInvocation.title
+                });
+              }
+              write();
+              break;
+            }
+            case "tool-output-error": {
+              const toolInvocation = getToolInvocation(chunk.toolCallId);
+              if (toolInvocation.type === "dynamic-tool") {
+                updateDynamicToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: toolInvocation.toolName,
+                  state: "output-error",
+                  input: toolInvocation.input,
+                  errorText: chunk.errorText,
+                  providerExecuted: chunk.providerExecuted,
+                  title: toolInvocation.title
+                });
+              } else {
+                updateToolPart({
+                  toolCallId: chunk.toolCallId,
+                  toolName: getStaticToolName(toolInvocation),
+                  state: "output-error",
+                  input: toolInvocation.input,
+                  rawInput: toolInvocation.rawInput,
+                  errorText: chunk.errorText,
+                  providerExecuted: chunk.providerExecuted,
+                  title: toolInvocation.title
+                });
+              }
+              write();
+              break;
+            }
+            case "start-step": {
+              state.message.parts.push({ type: "step-start" });
+              break;
+            }
+            case "finish-step": {
+              state.activeTextParts = {};
+              state.activeReasoningParts = {};
+              break;
+            }
+            case "start": {
+              if (chunk.messageId != null) {
+                state.message.id = chunk.messageId;
+              }
+              await updateMessageMetadata(chunk.messageMetadata);
+              if (chunk.messageId != null || chunk.messageMetadata != null) {
+                write();
+              }
+              break;
+            }
+            case "finish": {
+              if (chunk.finishReason != null) {
+                state.finishReason = chunk.finishReason;
+              }
+              await updateMessageMetadata(chunk.messageMetadata);
+              if (chunk.messageMetadata != null) {
+                write();
+              }
+              break;
+            }
+            case "message-metadata": {
+              await updateMessageMetadata(chunk.messageMetadata);
+              if (chunk.messageMetadata != null) {
+                write();
+              }
+              break;
+            }
+            case "error": {
+              onError == null ? void 0 : onError(new Error(chunk.errorText));
+              break;
+            }
+            default: {
+              if (isDataUIMessageChunk(chunk)) {
+                if ((dataPartSchemas == null ? void 0 : dataPartSchemas[chunk.type]) != null) {
+                  const partIdx = state.message.parts.findIndex(
+                    (p2) => "id" in p2 && "data" in p2 && p2.id === chunk.id && p2.type === chunk.type
+                  );
+                  const actualPartIdx = partIdx >= 0 ? partIdx : state.message.parts.length;
+                  await validateTypes({
+                    value: chunk.data,
+                    schema: dataPartSchemas[chunk.type],
+                    context: {
+                      field: `message.parts[${actualPartIdx}].data`,
+                      entityName: chunk.type,
+                      entityId: chunk.id
+                    }
+                  });
+                }
+                const dataChunk = chunk;
+                if (dataChunk.transient) {
+                  onData == null ? void 0 : onData(dataChunk);
+                  break;
+                }
+                const existingUIPart = dataChunk.id != null ? state.message.parts.find(
+                  (chunkArg) => dataChunk.type === chunkArg.type && dataChunk.id === chunkArg.id
+                ) : void 0;
+                if (existingUIPart != null) {
+                  existingUIPart.data = dataChunk.data;
+                } else {
+                  state.message.parts.push(dataChunk);
+                }
+                onData == null ? void 0 : onData(dataChunk);
+                write();
+              }
+            }
+          }
+          controller.enqueue(chunk);
+        });
+      }
+    })
+  );
+}
+__name(processUIMessageStream, "processUIMessageStream");
+function handleUIMessageStreamFinish({
+  messageId,
+  originalMessages = [],
+  onStepFinish,
+  onFinish,
+  onError,
+  stream
+}) {
+  let lastMessage = originalMessages == null ? void 0 : originalMessages[originalMessages.length - 1];
+  if ((lastMessage == null ? void 0 : lastMessage.role) !== "assistant") {
+    lastMessage = void 0;
+  } else {
+    messageId = lastMessage.id;
+  }
+  let isAborted2 = false;
+  const idInjectedStream = stream.pipeThrough(
+    new TransformStream({
+      transform(chunk, controller) {
+        if (chunk.type === "start") {
+          const startChunk = chunk;
+          if (startChunk.messageId == null && messageId != null) {
+            startChunk.messageId = messageId;
+          }
+        }
+        if (chunk.type === "abort") {
+          isAborted2 = true;
+        }
+        controller.enqueue(chunk);
+      }
+    })
+  );
+  if (onFinish == null && onStepFinish == null) {
+    return idInjectedStream;
+  }
+  const state = createStreamingUIMessageState({
+    lastMessage: lastMessage ? structuredClone(lastMessage) : void 0,
+    messageId: messageId != null ? messageId : ""
+    // will be overridden by the stream
+  });
+  const runUpdateMessageJob = /* @__PURE__ */ __name(async (job) => {
+    await job({ state, write: /* @__PURE__ */ __name(() => {
+    }, "write") });
+  }, "runUpdateMessageJob");
+  let finishCalled = false;
+  const callOnFinish = /* @__PURE__ */ __name(async () => {
+    if (finishCalled || !onFinish) {
+      return;
+    }
+    finishCalled = true;
+    const isContinuation = state.message.id === (lastMessage == null ? void 0 : lastMessage.id);
+    await onFinish({
+      isAborted: isAborted2,
+      isContinuation,
+      responseMessage: state.message,
+      messages: [
+        ...isContinuation ? originalMessages.slice(0, -1) : originalMessages,
+        state.message
+      ],
+      finishReason: state.finishReason
+    });
+  }, "callOnFinish");
+  const callOnStepFinish = /* @__PURE__ */ __name(async () => {
+    if (!onStepFinish) {
+      return;
+    }
+    const isContinuation = state.message.id === (lastMessage == null ? void 0 : lastMessage.id);
+    try {
+      await onStepFinish({
+        isContinuation,
+        responseMessage: structuredClone(state.message),
+        messages: [
+          ...isContinuation ? originalMessages.slice(0, -1) : originalMessages,
+          structuredClone(state.message)
+        ]
+      });
+    } catch (error48) {
+      onError(error48);
+    }
+  }, "callOnStepFinish");
+  return processUIMessageStream({
+    stream: idInjectedStream,
+    runUpdateMessageJob,
+    onError
+  }).pipeThrough(
+    new TransformStream({
+      async transform(chunk, controller) {
+        if (chunk.type === "finish-step") {
+          await callOnStepFinish();
+        }
+        controller.enqueue(chunk);
+      },
+      // @ts-expect-error cancel is still new and missing from types https://developer.mozilla.org/en-US/docs/Web/API/TransformStream#browser_compatibility
+      async cancel() {
+        await callOnFinish();
+      },
+      async flush() {
+        await callOnFinish();
+      }
+    })
+  );
+}
+__name(handleUIMessageStreamFinish, "handleUIMessageStreamFinish");
+function pipeUIMessageStreamToResponse({
+  response,
+  status,
+  statusText,
+  headers,
+  stream,
+  consumeSseStream
+}) {
+  let sseStream = stream.pipeThrough(new JsonToSseTransformStream());
+  if (consumeSseStream) {
+    const [stream1, stream2] = sseStream.tee();
+    sseStream = stream1;
+    consumeSseStream({ stream: stream2 });
+  }
+  writeToServerResponse({
+    response,
+    status,
+    statusText,
+    headers: Object.fromEntries(
+      prepareHeaders(headers, UI_MESSAGE_STREAM_HEADERS).entries()
+    ),
+    stream: sseStream.pipeThrough(new TextEncoderStream())
+  });
+}
+__name(pipeUIMessageStreamToResponse, "pipeUIMessageStreamToResponse");
+function createAsyncIterableStream(source) {
+  const stream = source.pipeThrough(new TransformStream());
+  stream[Symbol.asyncIterator] = function() {
+    const reader = this.getReader();
+    let finished = false;
+    async function cleanup(cancelStream) {
+      var _a21;
+      if (finished)
+        return;
+      finished = true;
+      try {
+        if (cancelStream) {
+          await ((_a21 = reader.cancel) == null ? void 0 : _a21.call(reader));
+        }
+      } finally {
+        try {
+          reader.releaseLock();
+        } catch (e2) {
+        }
+      }
+    }
+    __name(cleanup, "cleanup");
+    return {
+      /**
+       * Reads the next chunk from the stream.
+       * @returns A promise resolving to the next IteratorResult.
+       */
+      async next() {
+        if (finished) {
+          return { done: true, value: void 0 };
+        }
+        const { done, value } = await reader.read();
+        if (done) {
+          await cleanup(true);
+          return { done: true, value: void 0 };
+        }
+        return { done: false, value };
+      },
+      /**
+       * May be called on early exit (e.g., break from for-await) or after completion.
+       * Ensures the stream is cancelled and resources are released.
+       * @returns A promise resolving to a completed IteratorResult.
+       */
+      async return() {
+        await cleanup(true);
+        return { done: true, value: void 0 };
+      },
+      /**
+       * Called on early exit with error.
+       * Ensures the stream is cancelled and resources are released, then rethrows the error.
+       * @param err The error to throw.
+       * @returns A promise that rejects with the provided error.
+       */
+      async throw(err) {
+        await cleanup(true);
+        throw err;
+      }
+    };
+  };
+  return stream;
+}
+__name(createAsyncIterableStream, "createAsyncIterableStream");
+async function consumeStream({
+  stream,
+  onError
+}) {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done } = await reader.read();
+      if (done)
+        break;
+    }
+  } catch (error48) {
+    onError == null ? void 0 : onError(error48);
+  } finally {
+    reader.releaseLock();
+  }
+}
+__name(consumeStream, "consumeStream");
+function createResolvablePromise() {
+  let resolve3;
+  let reject;
+  const promise2 = new Promise((res, rej) => {
+    resolve3 = res;
+    reject = rej;
+  });
+  return {
+    promise: promise2,
+    resolve: resolve3,
+    reject
+  };
+}
+__name(createResolvablePromise, "createResolvablePromise");
+function createStitchableStream() {
+  let innerStreamReaders = [];
+  let controller = null;
+  let isClosed = false;
+  let waitForNewStream = createResolvablePromise();
+  const terminate = /* @__PURE__ */ __name(() => {
+    isClosed = true;
+    waitForNewStream.resolve();
+    innerStreamReaders.forEach((reader) => reader.cancel());
+    innerStreamReaders = [];
+    controller == null ? void 0 : controller.close();
+  }, "terminate");
+  const processPull = /* @__PURE__ */ __name(async () => {
+    if (isClosed && innerStreamReaders.length === 0) {
+      controller == null ? void 0 : controller.close();
+      return;
+    }
+    if (innerStreamReaders.length === 0) {
+      waitForNewStream = createResolvablePromise();
+      await waitForNewStream.promise;
+      return processPull();
+    }
+    try {
+      const { value, done } = await innerStreamReaders[0].read();
+      if (done) {
+        innerStreamReaders.shift();
+        if (innerStreamReaders.length === 0 && isClosed) {
+          controller == null ? void 0 : controller.close();
+        } else {
+          await processPull();
+        }
+      } else {
+        controller == null ? void 0 : controller.enqueue(value);
+      }
+    } catch (error48) {
+      controller == null ? void 0 : controller.error(error48);
+      innerStreamReaders.shift();
+      terminate();
+    }
+  }, "processPull");
+  return {
+    stream: new ReadableStream({
+      start(controllerParam) {
+        controller = controllerParam;
+      },
+      pull: processPull,
+      async cancel() {
+        for (const reader of innerStreamReaders) {
+          await reader.cancel();
+        }
+        innerStreamReaders = [];
+        isClosed = true;
+      }
+    }),
+    addStream: /* @__PURE__ */ __name((innerStream) => {
+      if (isClosed) {
+        throw new Error("Cannot add inner stream: outer stream is closed");
+      }
+      innerStreamReaders.push(innerStream.getReader());
+      waitForNewStream.resolve();
+    }, "addStream"),
+    /**
+     * Gracefully close the outer stream. This will let the inner streams
+     * finish processing and then close the outer stream.
+     */
+    close: /* @__PURE__ */ __name(() => {
+      isClosed = true;
+      waitForNewStream.resolve();
+      if (innerStreamReaders.length === 0) {
+        controller == null ? void 0 : controller.close();
+      }
+    }, "close"),
+    /**
+     * Immediately close the outer stream. This will cancel all inner streams
+     * and close the outer stream.
+     */
+    terminate
+  };
+}
+__name(createStitchableStream, "createStitchableStream");
+function runToolsTransformation({
+  tools,
+  generatorStream,
+  tracer,
+  telemetry,
+  system,
+  messages,
+  abortSignal,
+  repairToolCall,
+  experimental_context,
+  generateId: generateId2,
+  stepNumber,
+  model,
+  onToolCallStart,
+  onToolCallFinish
+}) {
+  let toolResultsStreamController = null;
+  const toolResultsStream = new ReadableStream({
+    start(controller) {
+      toolResultsStreamController = controller;
+    }
+  });
+  const outstandingToolResults = /* @__PURE__ */ new Set();
+  const toolInputs = /* @__PURE__ */ new Map();
+  const toolCallsByToolCallId = /* @__PURE__ */ new Map();
+  let canClose = false;
+  let finishChunk = void 0;
+  function attemptClose() {
+    if (canClose && outstandingToolResults.size === 0) {
+      if (finishChunk != null) {
+        toolResultsStreamController.enqueue(finishChunk);
+      }
+      toolResultsStreamController.close();
+    }
+  }
+  __name(attemptClose, "attemptClose");
+  const forwardStream = new TransformStream({
+    async transform(chunk, controller) {
+      const chunkType = chunk.type;
+      switch (chunkType) {
+        case "stream-start":
+        case "text-start":
+        case "text-delta":
+        case "text-end":
+        case "reasoning-start":
+        case "reasoning-delta":
+        case "reasoning-end":
+        case "tool-input-start":
+        case "tool-input-delta":
+        case "tool-input-end":
+        case "source":
+        case "response-metadata":
+        case "error":
+        case "raw": {
+          controller.enqueue(chunk);
+          break;
+        }
+        case "file": {
+          controller.enqueue({
+            type: "file",
+            file: new DefaultGeneratedFileWithType({
+              data: chunk.data,
+              mediaType: chunk.mediaType
+            }),
+            ...chunk.providerMetadata != null ? { providerMetadata: chunk.providerMetadata } : {}
+          });
+          break;
+        }
+        case "finish": {
+          finishChunk = {
+            type: "finish",
+            finishReason: chunk.finishReason.unified,
+            rawFinishReason: chunk.finishReason.raw,
+            usage: asLanguageModelUsage(chunk.usage),
+            providerMetadata: chunk.providerMetadata
+          };
+          break;
+        }
+        case "tool-approval-request": {
+          const toolCall = toolCallsByToolCallId.get(chunk.toolCallId);
+          if (toolCall == null) {
+            toolResultsStreamController.enqueue({
+              type: "error",
+              error: new ToolCallNotFoundForApprovalError({
+                toolCallId: chunk.toolCallId,
+                approvalId: chunk.approvalId
+              })
+            });
+            break;
+          }
+          controller.enqueue({
+            type: "tool-approval-request",
+            approvalId: chunk.approvalId,
+            toolCall
+          });
+          break;
+        }
+        case "tool-call": {
+          try {
+            const toolCall = await parseToolCall({
+              toolCall: chunk,
+              tools,
+              repairToolCall,
+              system,
+              messages
+            });
+            toolCallsByToolCallId.set(toolCall.toolCallId, toolCall);
+            controller.enqueue(toolCall);
+            if (toolCall.invalid) {
+              toolResultsStreamController.enqueue({
+                type: "tool-error",
+                toolCallId: toolCall.toolCallId,
+                toolName: toolCall.toolName,
+                input: toolCall.input,
+                error: getErrorMessage2(toolCall.error),
+                dynamic: true,
+                title: toolCall.title
+              });
+              break;
+            }
+            const tool2 = tools == null ? void 0 : tools[toolCall.toolName];
+            if (tool2 == null) {
+              break;
+            }
+            if (tool2.onInputAvailable != null) {
+              await tool2.onInputAvailable({
+                input: toolCall.input,
+                toolCallId: toolCall.toolCallId,
+                messages,
+                abortSignal,
+                experimental_context
+              });
+            }
+            if (await isApprovalNeeded({
+              tool: tool2,
+              toolCall,
+              messages,
+              experimental_context
+            })) {
+              toolResultsStreamController.enqueue({
+                type: "tool-approval-request",
+                approvalId: generateId2(),
+                toolCall
+              });
+              break;
+            }
+            toolInputs.set(toolCall.toolCallId, toolCall.input);
+            if (tool2.execute != null && toolCall.providerExecuted !== true) {
+              const toolExecutionId = generateId2();
+              outstandingToolResults.add(toolExecutionId);
+              executeToolCall({
+                toolCall,
+                tools,
+                tracer,
+                telemetry,
+                messages,
+                abortSignal,
+                experimental_context,
+                stepNumber,
+                model,
+                onToolCallStart,
+                onToolCallFinish,
+                onPreliminaryToolResult: /* @__PURE__ */ __name((result) => {
+                  toolResultsStreamController.enqueue(result);
+                }, "onPreliminaryToolResult")
+              }).then((result) => {
+                toolResultsStreamController.enqueue(result);
+              }).catch((error48) => {
+                toolResultsStreamController.enqueue({
+                  type: "error",
+                  error: error48
+                });
+              }).finally(() => {
+                outstandingToolResults.delete(toolExecutionId);
+                attemptClose();
+              });
+            }
+          } catch (error48) {
+            toolResultsStreamController.enqueue({ type: "error", error: error48 });
+          }
+          break;
+        }
+        case "tool-result": {
+          const toolName = chunk.toolName;
+          if (chunk.isError) {
+            toolResultsStreamController.enqueue({
+              type: "tool-error",
+              toolCallId: chunk.toolCallId,
+              toolName,
+              input: toolInputs.get(chunk.toolCallId),
+              providerExecuted: true,
+              error: chunk.result,
+              dynamic: chunk.dynamic
+            });
+          } else {
+            controller.enqueue({
+              type: "tool-result",
+              toolCallId: chunk.toolCallId,
+              toolName,
+              input: toolInputs.get(chunk.toolCallId),
+              output: chunk.result,
+              providerExecuted: true,
+              dynamic: chunk.dynamic
+            });
+          }
+          break;
+        }
+        default: {
+          const _exhaustiveCheck = chunkType;
+          throw new Error(`Unhandled chunk type: ${_exhaustiveCheck}`);
+        }
+      }
+    },
+    flush() {
+      canClose = true;
+      attemptClose();
+    }
+  });
+  return new ReadableStream({
+    async start(controller) {
+      return Promise.all([
+        generatorStream.pipeThrough(forwardStream).pipeTo(
+          new WritableStream({
+            write(chunk) {
+              controller.enqueue(chunk);
+            },
+            close() {
+            }
+          })
+        ),
+        toolResultsStream.pipeTo(
+          new WritableStream({
+            write(chunk) {
+              controller.enqueue(chunk);
+            },
+            close() {
+              controller.close();
+            }
+          })
+        )
+      ]);
+    }
+  });
+}
+__name(runToolsTransformation, "runToolsTransformation");
 var originalGenerateId2 = createIdGenerator({
   prefix: "aitxt",
   size: 24
 });
+function streamText({
+  model,
+  tools,
+  toolChoice,
+  system,
+  prompt,
+  messages,
+  maxRetries,
+  abortSignal,
+  timeout,
+  headers,
+  stopWhen = stepCountIs(1),
+  experimental_output,
+  output = experimental_output,
+  experimental_telemetry: telemetry,
+  prepareStep,
+  providerOptions,
+  experimental_activeTools,
+  activeTools = experimental_activeTools,
+  experimental_repairToolCall: repairToolCall,
+  experimental_transform: transform2,
+  experimental_download: download2,
+  includeRawChunks = false,
+  onChunk,
+  onError = /* @__PURE__ */ __name(({ error: error48 }) => {
+    console.error(error48);
+  }, "onError"),
+  onFinish,
+  onAbort,
+  onStepFinish,
+  experimental_onStart: onStart,
+  experimental_onStepStart: onStepStart,
+  experimental_onToolCallStart: onToolCallStart,
+  experimental_onToolCallFinish: onToolCallFinish,
+  experimental_context,
+  experimental_include: include,
+  _internal: { now: now2 = now, generateId: generateId2 = originalGenerateId2 } = {},
+  ...settings
+}) {
+  const totalTimeoutMs = getTotalTimeoutMs(timeout);
+  const stepTimeoutMs = getStepTimeoutMs(timeout);
+  const chunkTimeoutMs = getChunkTimeoutMs(timeout);
+  const stepAbortController = stepTimeoutMs != null ? new AbortController() : void 0;
+  const chunkAbortController = chunkTimeoutMs != null ? new AbortController() : void 0;
+  return new DefaultStreamTextResult({
+    model: resolveLanguageModel(model),
+    telemetry,
+    headers,
+    settings,
+    maxRetries,
+    abortSignal: mergeAbortSignals(
+      abortSignal,
+      totalTimeoutMs != null ? AbortSignal.timeout(totalTimeoutMs) : void 0,
+      stepAbortController == null ? void 0 : stepAbortController.signal,
+      chunkAbortController == null ? void 0 : chunkAbortController.signal
+    ),
+    stepTimeoutMs,
+    stepAbortController,
+    chunkTimeoutMs,
+    chunkAbortController,
+    system,
+    prompt,
+    messages,
+    tools,
+    toolChoice,
+    transforms: asArray(transform2),
+    activeTools,
+    repairToolCall,
+    stopConditions: asArray(stopWhen),
+    output,
+    providerOptions,
+    prepareStep,
+    includeRawChunks,
+    timeout,
+    stopWhen,
+    originalAbortSignal: abortSignal,
+    onChunk,
+    onError,
+    onFinish,
+    onAbort,
+    onStepFinish,
+    onStart,
+    onStepStart,
+    onToolCallStart,
+    onToolCallFinish,
+    now: now2,
+    generateId: generateId2,
+    experimental_context,
+    download: download2,
+    include
+  });
+}
+__name(streamText, "streamText");
+function createOutputTransformStream(output) {
+  let firstTextChunkId = void 0;
+  let text2 = "";
+  let textChunk = "";
+  let textProviderMetadata = void 0;
+  let lastPublishedJson = "";
+  function publishTextChunk({
+    controller,
+    partialOutput = void 0
+  }) {
+    controller.enqueue({
+      part: {
+        type: "text-delta",
+        id: firstTextChunkId,
+        text: textChunk,
+        providerMetadata: textProviderMetadata
+      },
+      partialOutput
+    });
+    textChunk = "";
+  }
+  __name(publishTextChunk, "publishTextChunk");
+  return new TransformStream({
+    async transform(chunk, controller) {
+      var _a21;
+      if (chunk.type === "finish-step" && textChunk.length > 0) {
+        publishTextChunk({ controller });
+      }
+      if (chunk.type !== "text-delta" && chunk.type !== "text-start" && chunk.type !== "text-end") {
+        controller.enqueue({ part: chunk, partialOutput: void 0 });
+        return;
+      }
+      if (firstTextChunkId == null) {
+        firstTextChunkId = chunk.id;
+      } else if (chunk.id !== firstTextChunkId) {
+        controller.enqueue({ part: chunk, partialOutput: void 0 });
+        return;
+      }
+      if (chunk.type === "text-start") {
+        controller.enqueue({ part: chunk, partialOutput: void 0 });
+        return;
+      }
+      if (chunk.type === "text-end") {
+        if (textChunk.length > 0) {
+          publishTextChunk({ controller });
+        }
+        controller.enqueue({ part: chunk, partialOutput: void 0 });
+        return;
+      }
+      text2 += chunk.text;
+      textChunk += chunk.text;
+      textProviderMetadata = (_a21 = chunk.providerMetadata) != null ? _a21 : textProviderMetadata;
+      const result = await output.parsePartialOutput({ text: text2 });
+      if (result !== void 0) {
+        const currentJson = JSON.stringify(result.partial);
+        if (currentJson !== lastPublishedJson) {
+          publishTextChunk({ controller, partialOutput: result.partial });
+          lastPublishedJson = currentJson;
+        }
+      }
+    }
+  });
+}
+__name(createOutputTransformStream, "createOutputTransformStream");
+var DefaultStreamTextResult = class {
+  static {
+    __name(this, "DefaultStreamTextResult");
+  }
+  constructor({
+    model,
+    telemetry,
+    headers,
+    settings,
+    maxRetries: maxRetriesArg,
+    abortSignal,
+    stepTimeoutMs,
+    stepAbortController,
+    chunkTimeoutMs,
+    chunkAbortController,
+    system,
+    prompt,
+    messages,
+    tools,
+    toolChoice,
+    transforms,
+    activeTools,
+    repairToolCall,
+    stopConditions,
+    output,
+    providerOptions,
+    prepareStep,
+    includeRawChunks,
+    now: now2,
+    generateId: generateId2,
+    timeout,
+    stopWhen,
+    originalAbortSignal,
+    onChunk,
+    onError,
+    onFinish,
+    onAbort,
+    onStepFinish,
+    onStart,
+    onStepStart,
+    onToolCallStart,
+    onToolCallFinish,
+    experimental_context,
+    download: download2,
+    include
+  }) {
+    this._totalUsage = new DelayedPromise();
+    this._finishReason = new DelayedPromise();
+    this._rawFinishReason = new DelayedPromise();
+    this._steps = new DelayedPromise();
+    this.outputSpecification = output;
+    this.includeRawChunks = includeRawChunks;
+    this.tools = tools;
+    const createGlobalTelemetry = getGlobalTelemetryIntegration();
+    const globalTelemetry = createGlobalTelemetry(telemetry == null ? void 0 : telemetry.integrations);
+    let stepFinish;
+    let recordedContent = [];
+    const recordedResponseMessages = [];
+    let recordedFinishReason = void 0;
+    let recordedRawFinishReason = void 0;
+    let recordedTotalUsage = void 0;
+    let recordedRequest = {};
+    let recordedWarnings = [];
+    const recordedSteps = [];
+    const pendingDeferredToolCalls = /* @__PURE__ */ new Map();
+    let rootSpan;
+    let activeTextContent = {};
+    let activeReasoningContent = {};
+    const eventProcessor = new TransformStream({
+      async transform(chunk, controller) {
+        var _a21, _b17, _c, _d;
+        controller.enqueue(chunk);
+        const { part } = chunk;
+        if (part.type === "text-delta" || part.type === "reasoning-delta" || part.type === "source" || part.type === "tool-call" || part.type === "tool-result" || part.type === "tool-input-start" || part.type === "tool-input-delta" || part.type === "raw") {
+          await (onChunk == null ? void 0 : onChunk({ chunk: part }));
+        }
+        if (part.type === "error") {
+          await onError({ error: wrapGatewayError(part.error) });
+        }
+        if (part.type === "text-start") {
+          activeTextContent[part.id] = {
+            type: "text",
+            text: "",
+            providerMetadata: part.providerMetadata
+          };
+          recordedContent.push(activeTextContent[part.id]);
+        }
+        if (part.type === "text-delta") {
+          const activeText = activeTextContent[part.id];
+          if (activeText == null) {
+            controller.enqueue({
+              part: {
+                type: "error",
+                error: `text part ${part.id} not found`
+              },
+              partialOutput: void 0
+            });
+            return;
+          }
+          activeText.text += part.text;
+          activeText.providerMetadata = (_a21 = part.providerMetadata) != null ? _a21 : activeText.providerMetadata;
+        }
+        if (part.type === "text-end") {
+          const activeText = activeTextContent[part.id];
+          if (activeText == null) {
+            controller.enqueue({
+              part: {
+                type: "error",
+                error: `text part ${part.id} not found`
+              },
+              partialOutput: void 0
+            });
+            return;
+          }
+          activeText.providerMetadata = (_b17 = part.providerMetadata) != null ? _b17 : activeText.providerMetadata;
+          delete activeTextContent[part.id];
+        }
+        if (part.type === "reasoning-start") {
+          activeReasoningContent[part.id] = {
+            type: "reasoning",
+            text: "",
+            providerMetadata: part.providerMetadata
+          };
+          recordedContent.push(activeReasoningContent[part.id]);
+        }
+        if (part.type === "reasoning-delta") {
+          const activeReasoning = activeReasoningContent[part.id];
+          if (activeReasoning == null) {
+            controller.enqueue({
+              part: {
+                type: "error",
+                error: `reasoning part ${part.id} not found`
+              },
+              partialOutput: void 0
+            });
+            return;
+          }
+          activeReasoning.text += part.text;
+          activeReasoning.providerMetadata = (_c = part.providerMetadata) != null ? _c : activeReasoning.providerMetadata;
+        }
+        if (part.type === "reasoning-end") {
+          const activeReasoning = activeReasoningContent[part.id];
+          if (activeReasoning == null) {
+            controller.enqueue({
+              part: {
+                type: "error",
+                error: `reasoning part ${part.id} not found`
+              },
+              partialOutput: void 0
+            });
+            return;
+          }
+          activeReasoning.providerMetadata = (_d = part.providerMetadata) != null ? _d : activeReasoning.providerMetadata;
+          delete activeReasoningContent[part.id];
+        }
+        if (part.type === "file") {
+          recordedContent.push({
+            type: "file",
+            file: part.file,
+            ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+          });
+        }
+        if (part.type === "source") {
+          recordedContent.push(part);
+        }
+        if (part.type === "tool-call") {
+          recordedContent.push(part);
+        }
+        if (part.type === "tool-result" && !part.preliminary) {
+          recordedContent.push(part);
+        }
+        if (part.type === "tool-approval-request") {
+          recordedContent.push(part);
+        }
+        if (part.type === "tool-error") {
+          recordedContent.push(part);
+        }
+        if (part.type === "start-step") {
+          recordedContent = [];
+          activeReasoningContent = {};
+          activeTextContent = {};
+          recordedRequest = part.request;
+          recordedWarnings = part.warnings;
+        }
+        if (part.type === "finish-step") {
+          const stepMessages = await toResponseMessages({
+            content: recordedContent,
+            tools
+          });
+          const currentStepResult = new DefaultStepResult({
+            stepNumber: recordedSteps.length,
+            model: modelInfo,
+            ...callbackTelemetryProps,
+            experimental_context,
+            content: recordedContent,
+            finishReason: part.finishReason,
+            rawFinishReason: part.rawFinishReason,
+            usage: part.usage,
+            warnings: recordedWarnings,
+            request: recordedRequest,
+            response: {
+              ...part.response,
+              messages: [...recordedResponseMessages, ...stepMessages]
+            },
+            providerMetadata: part.providerMetadata
+          });
+          await notify({
+            event: currentStepResult,
+            callbacks: [onStepFinish, globalTelemetry.onStepFinish]
+          });
+          logWarnings({
+            warnings: recordedWarnings,
+            provider: modelInfo.provider,
+            model: modelInfo.modelId
+          });
+          recordedSteps.push(currentStepResult);
+          recordedResponseMessages.push(...stepMessages);
+          stepFinish.resolve();
+        }
+        if (part.type === "finish") {
+          recordedTotalUsage = part.totalUsage;
+          recordedFinishReason = part.finishReason;
+          recordedRawFinishReason = part.rawFinishReason;
+        }
+      },
+      async flush(controller) {
+        try {
+          if (recordedSteps.length === 0) {
+            const error48 = (abortSignal == null ? void 0 : abortSignal.aborted) ? abortSignal.reason : new NoOutputGeneratedError({
+              message: "No output generated. Check the stream for errors."
+            });
+            self2._finishReason.reject(error48);
+            self2._rawFinishReason.reject(error48);
+            self2._totalUsage.reject(error48);
+            self2._steps.reject(error48);
+            return;
+          }
+          const finishReason = recordedFinishReason != null ? recordedFinishReason : "other";
+          const totalUsage = recordedTotalUsage != null ? recordedTotalUsage : createNullLanguageModelUsage();
+          self2._finishReason.resolve(finishReason);
+          self2._rawFinishReason.resolve(recordedRawFinishReason);
+          self2._totalUsage.resolve(totalUsage);
+          self2._steps.resolve(recordedSteps);
+          const finalStep = recordedSteps[recordedSteps.length - 1];
+          await notify({
+            event: {
+              stepNumber: finalStep.stepNumber,
+              model: finalStep.model,
+              functionId: finalStep.functionId,
+              metadata: finalStep.metadata,
+              experimental_context: finalStep.experimental_context,
+              finishReason: finalStep.finishReason,
+              rawFinishReason: finalStep.rawFinishReason,
+              totalUsage,
+              usage: finalStep.usage,
+              content: finalStep.content,
+              text: finalStep.text,
+              reasoningText: finalStep.reasoningText,
+              reasoning: finalStep.reasoning,
+              files: finalStep.files,
+              sources: finalStep.sources,
+              toolCalls: finalStep.toolCalls,
+              staticToolCalls: finalStep.staticToolCalls,
+              dynamicToolCalls: finalStep.dynamicToolCalls,
+              toolResults: finalStep.toolResults,
+              staticToolResults: finalStep.staticToolResults,
+              dynamicToolResults: finalStep.dynamicToolResults,
+              request: finalStep.request,
+              response: finalStep.response,
+              warnings: finalStep.warnings,
+              providerMetadata: finalStep.providerMetadata,
+              steps: recordedSteps
+            },
+            callbacks: [
+              onFinish,
+              globalTelemetry.onFinish
+            ]
+          });
+          rootSpan.setAttributes(
+            await selectTelemetryAttributes({
+              telemetry,
+              attributes: {
+                "ai.response.finishReason": finishReason,
+                "ai.response.text": { output: /* @__PURE__ */ __name(() => finalStep.text, "output") },
+                "ai.response.reasoning": {
+                  output: /* @__PURE__ */ __name(() => finalStep.reasoningText, "output")
+                },
+                "ai.response.toolCalls": {
+                  output: /* @__PURE__ */ __name(() => {
+                    var _a21;
+                    return ((_a21 = finalStep.toolCalls) == null ? void 0 : _a21.length) ? JSON.stringify(finalStep.toolCalls) : void 0;
+                  }, "output")
+                },
+                "ai.response.providerMetadata": JSON.stringify(
+                  finalStep.providerMetadata
+                ),
+                "ai.usage.inputTokens": totalUsage.inputTokens,
+                "ai.usage.outputTokens": totalUsage.outputTokens,
+                "ai.usage.totalTokens": totalUsage.totalTokens,
+                "ai.usage.reasoningTokens": totalUsage.reasoningTokens,
+                "ai.usage.cachedInputTokens": totalUsage.cachedInputTokens
+              }
+            })
+          );
+        } catch (error48) {
+          controller.error(error48);
+        } finally {
+          rootSpan.end();
+        }
+      }
+    });
+    const stitchableStream = createStitchableStream();
+    this.addStream = stitchableStream.addStream;
+    this.closeStream = stitchableStream.close;
+    const reader = stitchableStream.stream.getReader();
+    let stream = new ReadableStream({
+      async start(controller) {
+        controller.enqueue({ type: "start" });
+      },
+      async pull(controller) {
+        function abort() {
+          onAbort == null ? void 0 : onAbort({ steps: recordedSteps });
+          controller.enqueue({
+            type: "abort",
+            // The `reason` is usually of type DOMException, but it can also be of any type,
+            // so we use getErrorMessage for serialization because it is already designed to accept values of the unknown type.
+            // See: https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/reason
+            ...(abortSignal == null ? void 0 : abortSignal.reason) !== void 0 ? { reason: getErrorMessage(abortSignal.reason) } : {}
+          });
+          controller.close();
+        }
+        __name(abort, "abort");
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+          if (abortSignal == null ? void 0 : abortSignal.aborted) {
+            abort();
+            return;
+          }
+          controller.enqueue(value);
+        } catch (error48) {
+          if (isAbortError(error48) && (abortSignal == null ? void 0 : abortSignal.aborted)) {
+            abort();
+          } else {
+            controller.error(error48);
+          }
+        }
+      },
+      cancel(reason) {
+        return stitchableStream.stream.cancel(reason);
+      }
+    });
+    for (const transform2 of transforms) {
+      stream = stream.pipeThrough(
+        transform2({
+          tools,
+          stopStream() {
+            stitchableStream.terminate();
+          }
+        })
+      );
+    }
+    this.baseStream = stream.pipeThrough(createOutputTransformStream(output != null ? output : text())).pipeThrough(eventProcessor);
+    const { maxRetries, retry } = prepareRetries({
+      maxRetries: maxRetriesArg,
+      abortSignal
+    });
+    const tracer = getTracer(telemetry);
+    const callSettings = prepareCallSettings(settings);
+    const baseTelemetryAttributes = getBaseTelemetryAttributes({
+      model,
+      telemetry,
+      headers,
+      settings: { ...callSettings, maxRetries }
+    });
+    const self2 = this;
+    const modelInfo = { provider: model.provider, modelId: model.modelId };
+    const callbackTelemetryProps = {
+      functionId: telemetry == null ? void 0 : telemetry.functionId,
+      metadata: telemetry == null ? void 0 : telemetry.metadata
+    };
+    recordSpan({
+      name: "ai.streamText",
+      attributes: selectTelemetryAttributes({
+        telemetry,
+        attributes: {
+          ...assembleOperationName({ operationId: "ai.streamText", telemetry }),
+          ...baseTelemetryAttributes,
+          // specific settings that only make sense on the outer level:
+          "ai.prompt": {
+            input: /* @__PURE__ */ __name(() => JSON.stringify({ system, prompt, messages }), "input")
+          }
+        }
+      }),
+      tracer,
+      endWhenDone: false,
+      fn: /* @__PURE__ */ __name(async (rootSpanArg) => {
+        rootSpan = rootSpanArg;
+        const initialPrompt = await standardizePrompt({
+          system,
+          prompt,
+          messages
+        });
+        await notify({
+          event: {
+            model: modelInfo,
+            system,
+            prompt,
+            messages,
+            tools,
+            toolChoice,
+            activeTools,
+            maxOutputTokens: callSettings.maxOutputTokens,
+            temperature: callSettings.temperature,
+            topP: callSettings.topP,
+            topK: callSettings.topK,
+            presencePenalty: callSettings.presencePenalty,
+            frequencyPenalty: callSettings.frequencyPenalty,
+            stopSequences: callSettings.stopSequences,
+            seed: callSettings.seed,
+            maxRetries,
+            timeout,
+            headers,
+            providerOptions,
+            stopWhen,
+            output,
+            abortSignal: originalAbortSignal,
+            include,
+            ...callbackTelemetryProps,
+            experimental_context
+          },
+          callbacks: [
+            onStart,
+            globalTelemetry.onStart
+          ]
+        });
+        const initialMessages = initialPrompt.messages;
+        const initialResponseMessages = [];
+        const { approvedToolApprovals, deniedToolApprovals } = collectToolApprovals({ messages: initialMessages });
+        if (deniedToolApprovals.length > 0 || approvedToolApprovals.length > 0) {
+          const providerExecutedToolApprovals = [
+            ...approvedToolApprovals,
+            ...deniedToolApprovals
+          ].filter((toolApproval) => toolApproval.toolCall.providerExecuted);
+          const localApprovedToolApprovals = approvedToolApprovals.filter(
+            (toolApproval) => !toolApproval.toolCall.providerExecuted
+          );
+          const localDeniedToolApprovals = deniedToolApprovals.filter(
+            (toolApproval) => !toolApproval.toolCall.providerExecuted
+          );
+          const deniedProviderExecutedToolApprovals = deniedToolApprovals.filter(
+            (toolApproval) => toolApproval.toolCall.providerExecuted
+          );
+          let toolExecutionStepStreamController;
+          const toolExecutionStepStream = new ReadableStream({
+            start(controller) {
+              toolExecutionStepStreamController = controller;
+            }
+          });
+          self2.addStream(toolExecutionStepStream);
+          try {
+            for (const toolApproval of [
+              ...localDeniedToolApprovals,
+              ...deniedProviderExecutedToolApprovals
+            ]) {
+              toolExecutionStepStreamController == null ? void 0 : toolExecutionStepStreamController.enqueue({
+                type: "tool-output-denied",
+                toolCallId: toolApproval.toolCall.toolCallId,
+                toolName: toolApproval.toolCall.toolName
+              });
+            }
+            const toolOutputs = [];
+            await Promise.all(
+              localApprovedToolApprovals.map(async (toolApproval) => {
+                const result = await executeToolCall({
+                  toolCall: toolApproval.toolCall,
+                  tools,
+                  tracer,
+                  telemetry,
+                  messages: initialMessages,
+                  abortSignal,
+                  experimental_context,
+                  stepNumber: recordedSteps.length,
+                  model: modelInfo,
+                  onToolCallStart: [
+                    onToolCallStart,
+                    globalTelemetry.onToolCallStart
+                  ],
+                  onToolCallFinish: [
+                    onToolCallFinish,
+                    globalTelemetry.onToolCallFinish
+                  ],
+                  onPreliminaryToolResult: /* @__PURE__ */ __name((result2) => {
+                    toolExecutionStepStreamController == null ? void 0 : toolExecutionStepStreamController.enqueue(result2);
+                  }, "onPreliminaryToolResult")
+                });
+                if (result != null) {
+                  toolExecutionStepStreamController == null ? void 0 : toolExecutionStepStreamController.enqueue(result);
+                  toolOutputs.push(result);
+                }
+              })
+            );
+            if (providerExecutedToolApprovals.length > 0) {
+              initialResponseMessages.push({
+                role: "tool",
+                content: providerExecutedToolApprovals.map(
+                  (toolApproval) => ({
+                    type: "tool-approval-response",
+                    approvalId: toolApproval.approvalResponse.approvalId,
+                    approved: toolApproval.approvalResponse.approved,
+                    reason: toolApproval.approvalResponse.reason,
+                    providerExecuted: true
+                  })
+                )
+              });
+            }
+            if (toolOutputs.length > 0 || localDeniedToolApprovals.length > 0) {
+              const localToolContent = [];
+              for (const output2 of toolOutputs) {
+                localToolContent.push({
+                  type: "tool-result",
+                  toolCallId: output2.toolCallId,
+                  toolName: output2.toolName,
+                  output: await createToolModelOutput({
+                    toolCallId: output2.toolCallId,
+                    input: output2.input,
+                    tool: tools == null ? void 0 : tools[output2.toolName],
+                    output: output2.type === "tool-result" ? output2.output : output2.error,
+                    errorMode: output2.type === "tool-error" ? "text" : "none"
+                  })
+                });
+              }
+              for (const toolApproval of localDeniedToolApprovals) {
+                localToolContent.push({
+                  type: "tool-result",
+                  toolCallId: toolApproval.toolCall.toolCallId,
+                  toolName: toolApproval.toolCall.toolName,
+                  output: {
+                    type: "execution-denied",
+                    reason: toolApproval.approvalResponse.reason
+                  }
+                });
+              }
+              initialResponseMessages.push({
+                role: "tool",
+                content: localToolContent
+              });
+            }
+          } finally {
+            toolExecutionStepStreamController == null ? void 0 : toolExecutionStepStreamController.close();
+          }
+        }
+        recordedResponseMessages.push(...initialResponseMessages);
+        async function streamStep({
+          currentStep,
+          responseMessages,
+          usage
+        }) {
+          var _a21, _b17, _c, _d, _e2, _f, _g, _h, _i;
+          const includeRawChunks2 = self2.includeRawChunks;
+          const stepTimeoutId = stepTimeoutMs != null ? setTimeout(() => stepAbortController.abort(), stepTimeoutMs) : void 0;
+          let chunkTimeoutId = void 0;
+          function resetChunkTimeout() {
+            if (chunkTimeoutMs != null) {
+              if (chunkTimeoutId != null) {
+                clearTimeout(chunkTimeoutId);
+              }
+              chunkTimeoutId = setTimeout(
+                () => chunkAbortController.abort(),
+                chunkTimeoutMs
+              );
+            }
+          }
+          __name(resetChunkTimeout, "resetChunkTimeout");
+          function clearChunkTimeout() {
+            if (chunkTimeoutId != null) {
+              clearTimeout(chunkTimeoutId);
+              chunkTimeoutId = void 0;
+            }
+          }
+          __name(clearChunkTimeout, "clearChunkTimeout");
+          function clearStepTimeout() {
+            if (stepTimeoutId != null) {
+              clearTimeout(stepTimeoutId);
+            }
+          }
+          __name(clearStepTimeout, "clearStepTimeout");
+          try {
+            stepFinish = new DelayedPromise();
+            const stepInputMessages = [...initialMessages, ...responseMessages];
+            const prepareStepResult = await (prepareStep == null ? void 0 : prepareStep({
+              model,
+              steps: recordedSteps,
+              stepNumber: recordedSteps.length,
+              messages: stepInputMessages,
+              experimental_context
+            }));
+            const stepModel = resolveLanguageModel(
+              (_a21 = prepareStepResult == null ? void 0 : prepareStepResult.model) != null ? _a21 : model
+            );
+            const stepModelInfo = {
+              provider: stepModel.provider,
+              modelId: stepModel.modelId
+            };
+            const promptMessages = await convertToLanguageModelPrompt({
+              prompt: {
+                system: (_b17 = prepareStepResult == null ? void 0 : prepareStepResult.system) != null ? _b17 : initialPrompt.system,
+                messages: (_c = prepareStepResult == null ? void 0 : prepareStepResult.messages) != null ? _c : stepInputMessages
+              },
+              supportedUrls: await stepModel.supportedUrls,
+              download: download2
+            });
+            const stepActiveTools = (_d = prepareStepResult == null ? void 0 : prepareStepResult.activeTools) != null ? _d : activeTools;
+            const { toolChoice: stepToolChoice, tools: stepTools } = await prepareToolsAndToolChoice({
+              tools,
+              toolChoice: (_e2 = prepareStepResult == null ? void 0 : prepareStepResult.toolChoice) != null ? _e2 : toolChoice,
+              activeTools: stepActiveTools
+            });
+            experimental_context = (_f = prepareStepResult == null ? void 0 : prepareStepResult.experimental_context) != null ? _f : experimental_context;
+            const stepMessages = (_g = prepareStepResult == null ? void 0 : prepareStepResult.messages) != null ? _g : stepInputMessages;
+            const stepSystem = (_h = prepareStepResult == null ? void 0 : prepareStepResult.system) != null ? _h : initialPrompt.system;
+            const stepProviderOptions = mergeObjects(
+              providerOptions,
+              prepareStepResult == null ? void 0 : prepareStepResult.providerOptions
+            );
+            await notify({
+              event: {
+                stepNumber: recordedSteps.length,
+                model: stepModelInfo,
+                system: stepSystem,
+                messages: stepMessages,
+                tools,
+                toolChoice: stepToolChoice,
+                activeTools: stepActiveTools,
+                steps: [...recordedSteps],
+                providerOptions: stepProviderOptions,
+                timeout,
+                headers,
+                stopWhen,
+                output,
+                abortSignal: originalAbortSignal,
+                include,
+                ...callbackTelemetryProps,
+                experimental_context
+              },
+              callbacks: [
+                onStepStart,
+                globalTelemetry.onStepStart
+              ]
+            });
+            const {
+              result: { stream: stream2, response, request },
+              doStreamSpan,
+              startTimestampMs
+            } = await retry(
+              () => recordSpan({
+                name: "ai.streamText.doStream",
+                attributes: selectTelemetryAttributes({
+                  telemetry,
+                  attributes: {
+                    ...assembleOperationName({
+                      operationId: "ai.streamText.doStream",
+                      telemetry
+                    }),
+                    ...baseTelemetryAttributes,
+                    // model:
+                    "ai.model.provider": stepModel.provider,
+                    "ai.model.id": stepModel.modelId,
+                    // prompt:
+                    "ai.prompt.messages": {
+                      input: /* @__PURE__ */ __name(() => stringifyForTelemetry(promptMessages), "input")
+                    },
+                    "ai.prompt.tools": {
+                      // convert the language model level tools:
+                      input: /* @__PURE__ */ __name(() => stepTools == null ? void 0 : stepTools.map((tool2) => JSON.stringify(tool2)), "input")
+                    },
+                    "ai.prompt.toolChoice": {
+                      input: /* @__PURE__ */ __name(() => stepToolChoice != null ? JSON.stringify(stepToolChoice) : void 0, "input")
+                    },
+                    // standardized gen-ai llm span attributes:
+                    "gen_ai.system": stepModel.provider,
+                    "gen_ai.request.model": stepModel.modelId,
+                    "gen_ai.request.frequency_penalty": callSettings.frequencyPenalty,
+                    "gen_ai.request.max_tokens": callSettings.maxOutputTokens,
+                    "gen_ai.request.presence_penalty": callSettings.presencePenalty,
+                    "gen_ai.request.stop_sequences": callSettings.stopSequences,
+                    "gen_ai.request.temperature": callSettings.temperature,
+                    "gen_ai.request.top_k": callSettings.topK,
+                    "gen_ai.request.top_p": callSettings.topP
+                  }
+                }),
+                tracer,
+                endWhenDone: false,
+                fn: /* @__PURE__ */ __name(async (doStreamSpan2) => ({
+                  startTimestampMs: now2(),
+                  // get before the call
+                  doStreamSpan: doStreamSpan2,
+                  result: await stepModel.doStream({
+                    ...callSettings,
+                    tools: stepTools,
+                    toolChoice: stepToolChoice,
+                    responseFormat: await (output == null ? void 0 : output.responseFormat),
+                    prompt: promptMessages,
+                    providerOptions: stepProviderOptions,
+                    abortSignal,
+                    headers,
+                    includeRawChunks: includeRawChunks2
+                  })
+                }), "fn")
+              })
+            );
+            const streamWithToolResults = runToolsTransformation({
+              tools,
+              generatorStream: stream2,
+              tracer,
+              telemetry,
+              system,
+              messages: stepInputMessages,
+              repairToolCall,
+              abortSignal,
+              experimental_context,
+              generateId: generateId2,
+              stepNumber: recordedSteps.length,
+              model: stepModelInfo,
+              onToolCallStart: [
+                onToolCallStart,
+                globalTelemetry.onToolCallStart
+              ],
+              onToolCallFinish: [
+                onToolCallFinish,
+                globalTelemetry.onToolCallFinish
+              ]
+            });
+            const stepRequest = ((_i = include == null ? void 0 : include.requestBody) != null ? _i : true) ? request != null ? request : {} : { ...request, body: void 0 };
+            const stepToolCalls = [];
+            const stepToolOutputs = [];
+            let warnings;
+            const activeToolCallToolNames = {};
+            let stepFinishReason = "other";
+            let stepRawFinishReason = void 0;
+            let stepUsage = createNullLanguageModelUsage();
+            let stepProviderMetadata;
+            let stepFirstChunk = true;
+            let stepResponse = {
+              id: generateId2(),
+              timestamp: /* @__PURE__ */ new Date(),
+              modelId: modelInfo.modelId
+            };
+            let activeText = "";
+            self2.addStream(
+              streamWithToolResults.pipeThrough(
+                new TransformStream({
+                  async transform(chunk, controller) {
+                    var _a222, _b23, _c2, _d2, _e22;
+                    resetChunkTimeout();
+                    if (chunk.type === "stream-start") {
+                      warnings = chunk.warnings;
+                      return;
+                    }
+                    if (stepFirstChunk) {
+                      const msToFirstChunk = now2() - startTimestampMs;
+                      stepFirstChunk = false;
+                      doStreamSpan.addEvent("ai.stream.firstChunk", {
+                        "ai.response.msToFirstChunk": msToFirstChunk
+                      });
+                      doStreamSpan.setAttributes({
+                        "ai.response.msToFirstChunk": msToFirstChunk
+                      });
+                      controller.enqueue({
+                        type: "start-step",
+                        request: stepRequest,
+                        warnings: warnings != null ? warnings : []
+                      });
+                    }
+                    const chunkType = chunk.type;
+                    switch (chunkType) {
+                      case "tool-approval-request":
+                      case "text-start":
+                      case "text-end": {
+                        controller.enqueue(chunk);
+                        break;
+                      }
+                      case "text-delta": {
+                        if (chunk.delta.length > 0) {
+                          controller.enqueue({
+                            type: "text-delta",
+                            id: chunk.id,
+                            text: chunk.delta,
+                            providerMetadata: chunk.providerMetadata
+                          });
+                          activeText += chunk.delta;
+                        }
+                        break;
+                      }
+                      case "reasoning-start":
+                      case "reasoning-end": {
+                        controller.enqueue(chunk);
+                        break;
+                      }
+                      case "reasoning-delta": {
+                        controller.enqueue({
+                          type: "reasoning-delta",
+                          id: chunk.id,
+                          text: chunk.delta,
+                          providerMetadata: chunk.providerMetadata
+                        });
+                        break;
+                      }
+                      case "tool-call": {
+                        controller.enqueue(chunk);
+                        stepToolCalls.push(chunk);
+                        break;
+                      }
+                      case "tool-result": {
+                        controller.enqueue(chunk);
+                        if (!chunk.preliminary) {
+                          stepToolOutputs.push(chunk);
+                        }
+                        break;
+                      }
+                      case "tool-error": {
+                        controller.enqueue(chunk);
+                        stepToolOutputs.push(chunk);
+                        break;
+                      }
+                      case "response-metadata": {
+                        stepResponse = {
+                          id: (_a222 = chunk.id) != null ? _a222 : stepResponse.id,
+                          timestamp: (_b23 = chunk.timestamp) != null ? _b23 : stepResponse.timestamp,
+                          modelId: (_c2 = chunk.modelId) != null ? _c2 : stepResponse.modelId
+                        };
+                        break;
+                      }
+                      case "finish": {
+                        stepUsage = chunk.usage;
+                        stepFinishReason = chunk.finishReason;
+                        stepRawFinishReason = chunk.rawFinishReason;
+                        stepProviderMetadata = chunk.providerMetadata;
+                        const msToFinish = now2() - startTimestampMs;
+                        doStreamSpan.addEvent("ai.stream.finish");
+                        doStreamSpan.setAttributes({
+                          "ai.response.msToFinish": msToFinish,
+                          "ai.response.avgOutputTokensPerSecond": 1e3 * ((_d2 = stepUsage.outputTokens) != null ? _d2 : 0) / msToFinish
+                        });
+                        break;
+                      }
+                      case "file": {
+                        controller.enqueue(chunk);
+                        break;
+                      }
+                      case "source": {
+                        controller.enqueue(chunk);
+                        break;
+                      }
+                      case "tool-input-start": {
+                        activeToolCallToolNames[chunk.id] = chunk.toolName;
+                        const tool2 = tools == null ? void 0 : tools[chunk.toolName];
+                        if ((tool2 == null ? void 0 : tool2.onInputStart) != null) {
+                          await tool2.onInputStart({
+                            toolCallId: chunk.id,
+                            messages: stepInputMessages,
+                            abortSignal,
+                            experimental_context
+                          });
+                        }
+                        controller.enqueue({
+                          ...chunk,
+                          dynamic: (_e22 = chunk.dynamic) != null ? _e22 : (tool2 == null ? void 0 : tool2.type) === "dynamic",
+                          title: tool2 == null ? void 0 : tool2.title
+                        });
+                        break;
+                      }
+                      case "tool-input-end": {
+                        delete activeToolCallToolNames[chunk.id];
+                        controller.enqueue(chunk);
+                        break;
+                      }
+                      case "tool-input-delta": {
+                        const toolName = activeToolCallToolNames[chunk.id];
+                        const tool2 = tools == null ? void 0 : tools[toolName];
+                        if ((tool2 == null ? void 0 : tool2.onInputDelta) != null) {
+                          await tool2.onInputDelta({
+                            inputTextDelta: chunk.delta,
+                            toolCallId: chunk.id,
+                            messages: stepInputMessages,
+                            abortSignal,
+                            experimental_context
+                          });
+                        }
+                        controller.enqueue(chunk);
+                        break;
+                      }
+                      case "error": {
+                        controller.enqueue(chunk);
+                        stepFinishReason = "error";
+                        break;
+                      }
+                      case "raw": {
+                        if (includeRawChunks2) {
+                          controller.enqueue(chunk);
+                        }
+                        break;
+                      }
+                      default: {
+                        const exhaustiveCheck = chunkType;
+                        throw new Error(
+                          `Unknown chunk type: ${exhaustiveCheck}`
+                        );
+                      }
+                    }
+                  },
+                  // invoke onFinish callback and resolve toolResults promise when the stream is about to close:
+                  async flush(controller) {
+                    const stepToolCallsJson = stepToolCalls.length > 0 ? JSON.stringify(stepToolCalls) : void 0;
+                    try {
+                      doStreamSpan.setAttributes(
+                        await selectTelemetryAttributes({
+                          telemetry,
+                          attributes: {
+                            "ai.response.finishReason": stepFinishReason,
+                            "ai.response.text": {
+                              output: /* @__PURE__ */ __name(() => activeText, "output")
+                            },
+                            "ai.response.reasoning": {
+                              output: /* @__PURE__ */ __name(() => {
+                                const reasoningParts = recordedContent.filter(
+                                  (c2) => c2.type === "reasoning"
+                                );
+                                return reasoningParts.length > 0 ? reasoningParts.map((r2) => r2.text).join("\n") : void 0;
+                              }, "output")
+                            },
+                            "ai.response.toolCalls": {
+                              output: /* @__PURE__ */ __name(() => stepToolCallsJson, "output")
+                            },
+                            "ai.response.id": stepResponse.id,
+                            "ai.response.model": stepResponse.modelId,
+                            "ai.response.timestamp": stepResponse.timestamp.toISOString(),
+                            "ai.response.providerMetadata": JSON.stringify(stepProviderMetadata),
+                            "ai.usage.inputTokens": stepUsage.inputTokens,
+                            "ai.usage.outputTokens": stepUsage.outputTokens,
+                            "ai.usage.totalTokens": stepUsage.totalTokens,
+                            "ai.usage.reasoningTokens": stepUsage.reasoningTokens,
+                            "ai.usage.cachedInputTokens": stepUsage.cachedInputTokens,
+                            // standardized gen-ai llm span attributes:
+                            "gen_ai.response.finish_reasons": [
+                              stepFinishReason
+                            ],
+                            "gen_ai.response.id": stepResponse.id,
+                            "gen_ai.response.model": stepResponse.modelId,
+                            "gen_ai.usage.input_tokens": stepUsage.inputTokens,
+                            "gen_ai.usage.output_tokens": stepUsage.outputTokens
+                          }
+                        })
+                      );
+                    } catch (error48) {
+                    } finally {
+                      doStreamSpan.end();
+                    }
+                    controller.enqueue({
+                      type: "finish-step",
+                      finishReason: stepFinishReason,
+                      rawFinishReason: stepRawFinishReason,
+                      usage: stepUsage,
+                      providerMetadata: stepProviderMetadata,
+                      response: {
+                        ...stepResponse,
+                        headers: response == null ? void 0 : response.headers
+                      }
+                    });
+                    const combinedUsage = addLanguageModelUsage(
+                      usage,
+                      stepUsage
+                    );
+                    await stepFinish.promise;
+                    const clientToolCalls = stepToolCalls.filter(
+                      (toolCall) => toolCall.providerExecuted !== true
+                    );
+                    const clientToolOutputs = stepToolOutputs.filter(
+                      (toolOutput) => toolOutput.providerExecuted !== true
+                    );
+                    for (const toolCall of stepToolCalls) {
+                      if (toolCall.providerExecuted !== true)
+                        continue;
+                      const tool2 = tools == null ? void 0 : tools[toolCall.toolName];
+                      if ((tool2 == null ? void 0 : tool2.type) === "provider" && tool2.supportsDeferredResults) {
+                        const hasResultInStep = stepToolOutputs.some(
+                          (output2) => (output2.type === "tool-result" || output2.type === "tool-error") && output2.toolCallId === toolCall.toolCallId
+                        );
+                        if (!hasResultInStep) {
+                          pendingDeferredToolCalls.set(toolCall.toolCallId, {
+                            toolName: toolCall.toolName
+                          });
+                        }
+                      }
+                    }
+                    for (const output2 of stepToolOutputs) {
+                      if (output2.type === "tool-result" || output2.type === "tool-error") {
+                        pendingDeferredToolCalls.delete(output2.toolCallId);
+                      }
+                    }
+                    clearStepTimeout();
+                    clearChunkTimeout();
+                    if (
+                      // Continue if:
+                      // 1. There are client tool calls that have all been executed, OR
+                      // 2. There are pending deferred results from provider-executed tools
+                      (clientToolCalls.length > 0 && clientToolOutputs.length === clientToolCalls.length || pendingDeferredToolCalls.size > 0) && // continue until a stop condition is met:
+                      !await isStopConditionMet({
+                        stopConditions,
+                        steps: recordedSteps
+                      })
+                    ) {
+                      responseMessages.push(
+                        ...await toResponseMessages({
+                          content: (
+                            // use transformed content to create the messages for the next step:
+                            recordedSteps[recordedSteps.length - 1].content
+                          ),
+                          tools
+                        })
+                      );
+                      try {
+                        await streamStep({
+                          currentStep: currentStep + 1,
+                          responseMessages,
+                          usage: combinedUsage
+                        });
+                      } catch (error48) {
+                        controller.enqueue({
+                          type: "error",
+                          error: error48
+                        });
+                        self2.closeStream();
+                      }
+                    } else {
+                      controller.enqueue({
+                        type: "finish",
+                        finishReason: stepFinishReason,
+                        rawFinishReason: stepRawFinishReason,
+                        totalUsage: combinedUsage
+                      });
+                      self2.closeStream();
+                    }
+                  }
+                })
+              )
+            );
+          } finally {
+            clearStepTimeout();
+            clearChunkTimeout();
+          }
+        }
+        __name(streamStep, "streamStep");
+        await streamStep({
+          currentStep: 0,
+          responseMessages: initialResponseMessages,
+          usage: createNullLanguageModelUsage()
+        });
+      }, "fn")
+    }).catch((error48) => {
+      self2.addStream(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue({ type: "error", error: error48 });
+            controller.close();
+          }
+        })
+      );
+      self2.closeStream();
+    });
+  }
+  get steps() {
+    this.consumeStream();
+    return this._steps.promise;
+  }
+  get finalStep() {
+    return this.steps.then((steps) => steps[steps.length - 1]);
+  }
+  get content() {
+    return this.finalStep.then((step) => step.content);
+  }
+  get warnings() {
+    return this.finalStep.then((step) => step.warnings);
+  }
+  get providerMetadata() {
+    return this.finalStep.then((step) => step.providerMetadata);
+  }
+  get text() {
+    return this.finalStep.then((step) => step.text);
+  }
+  get reasoningText() {
+    return this.finalStep.then((step) => step.reasoningText);
+  }
+  get reasoning() {
+    return this.finalStep.then((step) => step.reasoning);
+  }
+  get sources() {
+    return this.finalStep.then((step) => step.sources);
+  }
+  get files() {
+    return this.finalStep.then((step) => step.files);
+  }
+  get toolCalls() {
+    return this.finalStep.then((step) => step.toolCalls);
+  }
+  get staticToolCalls() {
+    return this.finalStep.then((step) => step.staticToolCalls);
+  }
+  get dynamicToolCalls() {
+    return this.finalStep.then((step) => step.dynamicToolCalls);
+  }
+  get toolResults() {
+    return this.finalStep.then((step) => step.toolResults);
+  }
+  get staticToolResults() {
+    return this.finalStep.then((step) => step.staticToolResults);
+  }
+  get dynamicToolResults() {
+    return this.finalStep.then((step) => step.dynamicToolResults);
+  }
+  get usage() {
+    return this.finalStep.then((step) => step.usage);
+  }
+  get request() {
+    return this.finalStep.then((step) => step.request);
+  }
+  get response() {
+    return this.finalStep.then((step) => step.response);
+  }
+  get totalUsage() {
+    this.consumeStream();
+    return this._totalUsage.promise;
+  }
+  get finishReason() {
+    this.consumeStream();
+    return this._finishReason.promise;
+  }
+  get rawFinishReason() {
+    this.consumeStream();
+    return this._rawFinishReason.promise;
+  }
+  /**
+   * Split out a new stream from the original stream.
+   * The original stream is replaced to allow for further splitting,
+   * since we do not know how many times the stream will be split.
+   *
+   * Note: this leads to buffering the stream content on the server.
+   * However, the LLM results are expected to be small enough to not cause issues.
+   */
+  teeStream() {
+    const [stream1, stream2] = this.baseStream.tee();
+    this.baseStream = stream2;
+    return stream1;
+  }
+  get textStream() {
+    return createAsyncIterableStream(
+      this.teeStream().pipeThrough(
+        new TransformStream({
+          transform({ part }, controller) {
+            if (part.type === "text-delta") {
+              controller.enqueue(part.text);
+            }
+          }
+        })
+      )
+    );
+  }
+  get fullStream() {
+    return createAsyncIterableStream(
+      this.teeStream().pipeThrough(
+        new TransformStream({
+          transform({ part }, controller) {
+            controller.enqueue(part);
+          }
+        })
+      )
+    );
+  }
+  async consumeStream(options) {
+    var _a21;
+    try {
+      await consumeStream({
+        stream: this.fullStream,
+        onError: options == null ? void 0 : options.onError
+      });
+    } catch (error48) {
+      (_a21 = options == null ? void 0 : options.onError) == null ? void 0 : _a21.call(options, error48);
+    }
+  }
+  get experimental_partialOutputStream() {
+    return this.partialOutputStream;
+  }
+  get partialOutputStream() {
+    return createAsyncIterableStream(
+      this.teeStream().pipeThrough(
+        new TransformStream({
+          transform({ partialOutput }, controller) {
+            if (partialOutput != null) {
+              controller.enqueue(partialOutput);
+            }
+          }
+        })
+      )
+    );
+  }
+  get elementStream() {
+    var _a21, _b17, _c;
+    const transform2 = (_a21 = this.outputSpecification) == null ? void 0 : _a21.createElementStreamTransform();
+    if (transform2 == null) {
+      throw new UnsupportedFunctionalityError({
+        functionality: `element streams in ${(_c = (_b17 = this.outputSpecification) == null ? void 0 : _b17.name) != null ? _c : "text"} mode`
+      });
+    }
+    return createAsyncIterableStream(this.teeStream().pipeThrough(transform2));
+  }
+  get output() {
+    return this.finalStep.then((step) => {
+      var _a21;
+      const output = (_a21 = this.outputSpecification) != null ? _a21 : text();
+      return output.parseCompleteOutput(
+        { text: step.text },
+        {
+          response: step.response,
+          usage: step.usage,
+          finishReason: step.finishReason
+        }
+      );
+    });
+  }
+  toUIMessageStream({
+    originalMessages,
+    generateMessageId,
+    onFinish,
+    messageMetadata,
+    sendReasoning = true,
+    sendSources = false,
+    sendStart = true,
+    sendFinish = true,
+    onError = getErrorMessage
+  } = {}) {
+    const responseMessageId = generateMessageId != null ? getResponseUIMessageId({
+      originalMessages,
+      responseMessageId: generateMessageId
+    }) : void 0;
+    const isDynamic = /* @__PURE__ */ __name((part) => {
+      var _a21;
+      const tool2 = (_a21 = this.tools) == null ? void 0 : _a21[part.toolName];
+      if (tool2 == null) {
+        return part.dynamic;
+      }
+      return (tool2 == null ? void 0 : tool2.type) === "dynamic" ? true : void 0;
+    }, "isDynamic");
+    const baseStream = this.fullStream.pipeThrough(
+      new TransformStream({
+        transform: /* @__PURE__ */ __name(async (part, controller) => {
+          const messageMetadataValue = messageMetadata == null ? void 0 : messageMetadata({ part });
+          const partType = part.type;
+          switch (partType) {
+            case "text-start": {
+              controller.enqueue({
+                type: "text-start",
+                id: part.id,
+                ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+              });
+              break;
+            }
+            case "text-delta": {
+              controller.enqueue({
+                type: "text-delta",
+                id: part.id,
+                delta: part.text,
+                ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+              });
+              break;
+            }
+            case "text-end": {
+              controller.enqueue({
+                type: "text-end",
+                id: part.id,
+                ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+              });
+              break;
+            }
+            case "reasoning-start": {
+              controller.enqueue({
+                type: "reasoning-start",
+                id: part.id,
+                ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+              });
+              break;
+            }
+            case "reasoning-delta": {
+              if (sendReasoning) {
+                controller.enqueue({
+                  type: "reasoning-delta",
+                  id: part.id,
+                  delta: part.text,
+                  ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+                });
+              }
+              break;
+            }
+            case "reasoning-end": {
+              controller.enqueue({
+                type: "reasoning-end",
+                id: part.id,
+                ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+              });
+              break;
+            }
+            case "file": {
+              controller.enqueue({
+                type: "file",
+                mediaType: part.file.mediaType,
+                url: `data:${part.file.mediaType};base64,${part.file.base64}`,
+                ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+              });
+              break;
+            }
+            case "source": {
+              if (sendSources && part.sourceType === "url") {
+                controller.enqueue({
+                  type: "source-url",
+                  sourceId: part.id,
+                  url: part.url,
+                  title: part.title,
+                  ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+                });
+              }
+              if (sendSources && part.sourceType === "document") {
+                controller.enqueue({
+                  type: "source-document",
+                  sourceId: part.id,
+                  mediaType: part.mediaType,
+                  title: part.title,
+                  filename: part.filename,
+                  ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {}
+                });
+              }
+              break;
+            }
+            case "tool-input-start": {
+              const dynamic = isDynamic(part);
+              controller.enqueue({
+                type: "tool-input-start",
+                toolCallId: part.id,
+                toolName: part.toolName,
+                ...part.providerExecuted != null ? { providerExecuted: part.providerExecuted } : {},
+                ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {},
+                ...dynamic != null ? { dynamic } : {},
+                ...part.title != null ? { title: part.title } : {}
+              });
+              break;
+            }
+            case "tool-input-delta": {
+              controller.enqueue({
+                type: "tool-input-delta",
+                toolCallId: part.id,
+                inputTextDelta: part.delta
+              });
+              break;
+            }
+            case "tool-call": {
+              const dynamic = isDynamic(part);
+              if (part.invalid) {
+                controller.enqueue({
+                  type: "tool-input-error",
+                  toolCallId: part.toolCallId,
+                  toolName: part.toolName,
+                  input: part.input,
+                  ...part.providerExecuted != null ? { providerExecuted: part.providerExecuted } : {},
+                  ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {},
+                  ...dynamic != null ? { dynamic } : {},
+                  errorText: onError(part.error),
+                  ...part.title != null ? { title: part.title } : {}
+                });
+              } else {
+                controller.enqueue({
+                  type: "tool-input-available",
+                  toolCallId: part.toolCallId,
+                  toolName: part.toolName,
+                  input: part.input,
+                  ...part.providerExecuted != null ? { providerExecuted: part.providerExecuted } : {},
+                  ...part.providerMetadata != null ? { providerMetadata: part.providerMetadata } : {},
+                  ...dynamic != null ? { dynamic } : {},
+                  ...part.title != null ? { title: part.title } : {}
+                });
+              }
+              break;
+            }
+            case "tool-approval-request": {
+              controller.enqueue({
+                type: "tool-approval-request",
+                approvalId: part.approvalId,
+                toolCallId: part.toolCall.toolCallId
+              });
+              break;
+            }
+            case "tool-result": {
+              const dynamic = isDynamic(part);
+              controller.enqueue({
+                type: "tool-output-available",
+                toolCallId: part.toolCallId,
+                output: part.output,
+                ...part.providerExecuted != null ? { providerExecuted: part.providerExecuted } : {},
+                ...part.preliminary != null ? { preliminary: part.preliminary } : {},
+                ...dynamic != null ? { dynamic } : {}
+              });
+              break;
+            }
+            case "tool-error": {
+              const dynamic = isDynamic(part);
+              controller.enqueue({
+                type: "tool-output-error",
+                toolCallId: part.toolCallId,
+                errorText: onError(part.error),
+                ...part.providerExecuted != null ? { providerExecuted: part.providerExecuted } : {},
+                ...dynamic != null ? { dynamic } : {}
+              });
+              break;
+            }
+            case "tool-output-denied": {
+              controller.enqueue({
+                type: "tool-output-denied",
+                toolCallId: part.toolCallId
+              });
+              break;
+            }
+            case "error": {
+              controller.enqueue({
+                type: "error",
+                errorText: onError(part.error)
+              });
+              break;
+            }
+            case "start-step": {
+              controller.enqueue({ type: "start-step" });
+              break;
+            }
+            case "finish-step": {
+              controller.enqueue({ type: "finish-step" });
+              break;
+            }
+            case "start": {
+              if (sendStart) {
+                controller.enqueue({
+                  type: "start",
+                  ...messageMetadataValue != null ? { messageMetadata: messageMetadataValue } : {},
+                  ...responseMessageId != null ? { messageId: responseMessageId } : {}
+                });
+              }
+              break;
+            }
+            case "finish": {
+              if (sendFinish) {
+                controller.enqueue({
+                  type: "finish",
+                  finishReason: part.finishReason,
+                  ...messageMetadataValue != null ? { messageMetadata: messageMetadataValue } : {}
+                });
+              }
+              break;
+            }
+            case "abort": {
+              controller.enqueue(part);
+              break;
+            }
+            case "tool-input-end": {
+              break;
+            }
+            case "raw": {
+              break;
+            }
+            default: {
+              const exhaustiveCheck = partType;
+              throw new Error(`Unknown chunk type: ${exhaustiveCheck}`);
+            }
+          }
+          if (messageMetadataValue != null && partType !== "start" && partType !== "finish") {
+            controller.enqueue({
+              type: "message-metadata",
+              messageMetadata: messageMetadataValue
+            });
+          }
+        }, "transform")
+      })
+    );
+    return createAsyncIterableStream(
+      handleUIMessageStreamFinish({
+        stream: baseStream,
+        messageId: responseMessageId != null ? responseMessageId : generateMessageId == null ? void 0 : generateMessageId(),
+        originalMessages,
+        onFinish,
+        onError
+      })
+    );
+  }
+  pipeUIMessageStreamToResponse(response, {
+    originalMessages,
+    generateMessageId,
+    onFinish,
+    messageMetadata,
+    sendReasoning,
+    sendSources,
+    sendFinish,
+    sendStart,
+    onError,
+    ...init
+  } = {}) {
+    pipeUIMessageStreamToResponse({
+      response,
+      stream: this.toUIMessageStream({
+        originalMessages,
+        generateMessageId,
+        onFinish,
+        messageMetadata,
+        sendReasoning,
+        sendSources,
+        sendFinish,
+        sendStart,
+        onError
+      }),
+      ...init
+    });
+  }
+  pipeTextStreamToResponse(response, init) {
+    pipeTextStreamToResponse({
+      response,
+      textStream: this.textStream,
+      ...init
+    });
+  }
+  toUIMessageStreamResponse({
+    originalMessages,
+    generateMessageId,
+    onFinish,
+    messageMetadata,
+    sendReasoning,
+    sendSources,
+    sendFinish,
+    sendStart,
+    onError,
+    ...init
+  } = {}) {
+    return createUIMessageStreamResponse({
+      stream: this.toUIMessageStream({
+        originalMessages,
+        generateMessageId,
+        onFinish,
+        messageMetadata,
+        sendReasoning,
+        sendSources,
+        sendFinish,
+        sendStart,
+        onError
+      }),
+      ...init
+    });
+  }
+  toTextStreamResponse(init) {
+    return createTextStreamResponse({
+      textStream: this.textStream,
+      ...init
+    });
+  }
+};
 var uiMessagesSchema = lazySchema(
   () => zodSchema(
     external_exports.array(
@@ -34937,10 +37979,6 @@ ${truncated}`);
 `;
     }
   }
-  if (text2 && (hasToolResults || hasToolCalls)) {
-    const truncatedText = text2.length > 500 ? text2.substring(0, 500) + "..." : text2;
-    progressText += truncatedText;
-  }
   if (progressText) {
     onProgress(progressText.trim());
   }
@@ -35070,7 +38108,7 @@ async function runGeneration(onProgress) {
   try {
     const model = createModel();
     const tools = createToolSet();
-    const result = await generateText({
+    const result = streamText({
       model,
       system: buildSystemPrompt(imageStore.imagePrefix),
       messages: conversationHistory,
@@ -35084,10 +38122,18 @@ async function runGeneration(onProgress) {
       onStepFinish: /* @__PURE__ */ __name((stepResult) => handleStepFinish(onProgress, stepResult), "onStepFinish"),
       prepareStep: handlePrepareStep
     });
-    for (const msg of result.response.messages) {
+    let fullText = "";
+    for await (const textPart of result.textStream) {
+      fullText += textPart;
+      if (onProgress) {
+        onProgress(`[STREAM]${textPart}`);
+      }
+    }
+    const response = await result.response;
+    for (const msg of response.messages) {
       conversationHistory.push(msg);
     }
-    return result.text;
+    return fullText;
   } catch (error48) {
     if (abortSignal.aborted) {
       console.log("[Agent] Generation was aborted by user.");
