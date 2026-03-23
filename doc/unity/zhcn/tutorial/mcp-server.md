@@ -317,9 +317,10 @@ Unity 进入 Play 模式时会执行域重载（Domain Reload），这会导致 
 using PuertsMcp;
 
 var manager = new McpScriptManager();
-manager.Initialize("LLMAgent/editor-assistant", 3100, () =>
+manager.Initialize("LLMAgent/editor-assistant", 3100, (bool success) =>
 {
-    Debug.Log("MCP Server is ready!");
+    if (success) Debug.Log("MCP Server is ready!");
+    else Debug.LogError("MCP Server failed to start!");
 });
 
 // 关闭

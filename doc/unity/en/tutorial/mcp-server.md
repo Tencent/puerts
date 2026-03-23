@@ -317,9 +317,10 @@ Unity performs a Domain Reload when entering Play mode, which destroys and rebui
 using PuertsMcp;
 
 var manager = new McpScriptManager();
-manager.Initialize("LLMAgent/editor-assistant", 3100, () =>
+manager.Initialize("LLMAgent/editor-assistant", 3100, (bool success) =>
 {
-    Debug.Log("MCP Server is ready!");
+    if (success) Debug.Log("MCP Server is ready!");
+    else Debug.LogError("MCP Server failed to start!");
 });
 
 // Shutdown
