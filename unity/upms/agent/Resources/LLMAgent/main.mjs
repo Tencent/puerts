@@ -41280,53 +41280,6 @@ function createModel() {
           }
         });
       }
-      if (isGemini && body.messages && Array.isArray(body.messages)) {
-        const newMessages = [];
-        for (const msg of body.messages) {
-          if (msg.role === "assistant" && msg.tool_calls) {
-            let text2 = msg.content || "";
-            for (const tc of msg.tool_calls) {
-              text2 += `
-
-[System Log: Assistant called tool '${tc.function?.name}' with arguments: ${tc.function?.arguments}]`;
-            }
-            newMessages.push({
-              role: "assistant",
-              content: text2.trim()
-            });
-          } else if (msg.role === "tool") {
-            let newContent = msg.content;
-            if (Array.isArray(newContent)) {
-              newContent = [
-                { type: "text", text: `[System Log: Tool '${msg.name || "unknown"}' returned result]:
-` },
-                ...newContent
-              ];
-            } else {
-              newContent = `[System Log: Tool '${msg.name || "unknown"}' returned result]:
-${newContent}`;
-            }
-            newMessages.push({
-              role: "user",
-              content: newContent
-            });
-          } else {
-            newMessages.push(msg);
-          }
-        }
-        if (newMessages.length > 0) {
-          const lastMsg = newMessages[newMessages.length - 1];
-          if (lastMsg.role === "user") {
-            const reminder = "\n\n[System Reminder: In the history above, past tool calls were converted to text logs. For your current turn, you MUST use the native function calling API to execute tools. Do not output tool calls as plain text (e.g., do not output [System Log: ...]).]";
-            if (typeof lastMsg.content === "string") {
-              lastMsg.content += reminder;
-            } else if (Array.isArray(lastMsg.content)) {
-              lastMsg.content.push({ type: "text", text: reminder });
-            }
-          }
-        }
-        body.messages = newMessages;
-      }
       return body;
     }, "transformRequestBody")
   });
