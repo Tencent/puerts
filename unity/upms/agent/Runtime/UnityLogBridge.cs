@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace LLMAgent
 {
@@ -24,17 +27,55 @@ namespace LLMAgent
 
         private static readonly List<LogEntry> logBuffer = new List<LogEntry>();
         private static int maxBufferSize = 200;
-        private static bool isListening = false;
+
+        /// <summary>
+        /// Whether StartListening() has ever been called during this session.
+        /// Persists across domain reloads so we can auto-restore.
+        /// Uses SessionState (Editor only) to survive domain reload.
+        /// </summary>
+        private static bool ShouldAutoListen
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return SessionState.GetBool("UnityLogBridge_AutoListen", false);
+#else
+                return false;
+#endif
+            }
+            set
+            {
+#if UNITY_EDITOR
+                SessionState.SetBool("UnityLogBridge_AutoListen", value);
+#endif
+            }
+        }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Automatically re-register the log listener after domain reload
+        /// (e.g. script recompilation, enter/exit play mode).
+        /// </summary>
+        [InitializeOnLoadMethod]
+        private static void OnDomainReload()
+        {
+            if (ShouldAutoListen)
+            {
+                StartListening();
+                Debug.Log("[UnityLogBridge] Auto-restored listening after domain reload.");
+            }
+        }
+#endif
 
         /// <summary>
         /// Start listening for Unity log messages.
-        /// Safe to call multiple times; will only register once.
+        /// Safe to call multiple times; uses -= then += to ensure single registration.
         /// </summary>
         public static void StartListening()
         {
-            if (isListening) return;
-            isListening = true;
+            Application.logMessageReceived -= OnLogMessageReceived;
             Application.logMessageReceived += OnLogMessageReceived;
+            ShouldAutoListen = true;
             Debug.Log("[UnityLogBridge] Started listening for Unity logs.");
         }
 
@@ -43,9 +84,8 @@ namespace LLMAgent
         /// </summary>
         public static void StopListening()
         {
-            if (!isListening) return;
-            isListening = false;
             Application.logMessageReceived -= OnLogMessageReceived;
+            ShouldAutoListen = false;
         }
 
         /// <summary>
