@@ -7,6 +7,15 @@
  * multi-modal image content so the LLM can visually analyze the screenshot.
  */
 
+// ---- Dimension constants (single source of truth for description & code) ----
+
+const DEFAULT_WIDTH = 512;
+const DEFAULT_HEIGHT = 512;
+const MIN_WIDTH = 64;
+const MAX_WIDTH = 1920;
+const MIN_HEIGHT = 64;
+const MAX_HEIGHT = 1080;
+
 // ---- Summary for tool description (always in context) ----
 
 export const summary = `**screenshot** — Capture Unity game view and scene view screenshots for visual analysis. Read \`.description\` to see available functions and their signatures.`;
@@ -15,13 +24,13 @@ export const summary = `**screenshot** — Capture Unity game view and scene vie
 
 export const description = `
 - **\`captureScreenshot(maxWidth?, maxHeight?)\`** — Capture the Unity Game view.
-  - \`maxWidth\` (number, default 512): Maximum width in pixels (64-1920).
-  - \`maxHeight\` (number, default 512): Maximum height in pixels (64-1080).
+  - \`maxWidth\` (number, default ${DEFAULT_WIDTH}): Maximum width in pixels (${MIN_WIDTH}-${MAX_WIDTH}).
+  - \`maxHeight\` (number, default ${DEFAULT_HEIGHT}): Maximum height in pixels (${MIN_HEIGHT}-${MAX_HEIGHT}).
   - Returns a result object. On success the image is automatically sent to you for visual analysis.
 
 - **\`captureSceneView(maxWidth?, maxHeight?)\`** — Capture the Unity Scene view (Editor only).
-  - \`maxWidth\` (number, default 512): Maximum width in pixels (64-1920).
-  - \`maxHeight\` (number, default 512): Maximum height in pixels (64-1080).
+  - \`maxWidth\` (number, default ${DEFAULT_WIDTH}): Maximum width in pixels (${MIN_WIDTH}-${MAX_WIDTH}).
+  - \`maxHeight\` (number, default ${DEFAULT_HEIGHT}): Maximum height in pixels (${MIN_HEIGHT}-${MAX_HEIGHT}).
   - Returns a result object. On success the image is automatically sent to you for visual analysis.
 
 **Note**: The captured image is automatically included as visual content in the tool response.
@@ -45,7 +54,7 @@ interface ScreenshotResult {
  * @param maxWidth Maximum width in pixels (default 512, range 64-1920)
  * @param maxHeight Maximum height in pixels (default 512, range 64-1080)
  */
-export async function captureScreenshot(maxWidth: number = 512, maxHeight: number = 512): Promise<ScreenshotResult> {
+export async function captureScreenshot(maxWidth: number = DEFAULT_WIDTH, maxHeight: number = DEFAULT_HEIGHT): Promise<ScreenshotResult> {
     validateDimensions(maxWidth, maxHeight, 'captureScreenshot');
 
     const resultJson = await new Promise<string>((resolve, reject) => {
@@ -84,7 +93,7 @@ export async function captureScreenshot(maxWidth: number = 512, maxHeight: numbe
  * @param maxWidth Maximum width in pixels (default 512, range 64-1920)
  * @param maxHeight Maximum height in pixels (default 512, range 64-1080)
  */
-export async function captureSceneView(maxWidth: number = 512, maxHeight: number = 512): Promise<ScreenshotResult> {
+export async function captureSceneView(maxWidth: number = DEFAULT_WIDTH, maxHeight: number = DEFAULT_HEIGHT): Promise<ScreenshotResult> {
     validateDimensions(maxWidth, maxHeight, 'captureSceneView');
 
     const resultJson = await new Promise<string>((resolve, reject) => {
@@ -121,10 +130,10 @@ export async function captureSceneView(maxWidth: number = 512, maxHeight: number
 // ---- Internal helpers ----
 
 function validateDimensions(maxWidth: number, maxHeight: number, funcName: string): void {
-    if (typeof maxWidth !== 'number' || !Number.isInteger(maxWidth) || maxWidth < 64 || maxWidth > 1920) {
-        throw new Error(`${funcName}: 'maxWidth' must be an integer between 64 and 1920 (got ${JSON.stringify(maxWidth)}). Read module.description for usage.`);
+    if (typeof maxWidth !== 'number' || !Number.isInteger(maxWidth) || maxWidth < MIN_WIDTH || maxWidth > MAX_WIDTH) {
+        throw new Error(`${funcName}: 'maxWidth' must be an integer between ${MIN_WIDTH} and ${MAX_WIDTH} (got ${JSON.stringify(maxWidth)}). Read module.description for usage.`);
     }
-    if (typeof maxHeight !== 'number' || !Number.isInteger(maxHeight) || maxHeight < 64 || maxHeight > 1080) {
-        throw new Error(`${funcName}: 'maxHeight' must be an integer between 64 and 1080 (got ${JSON.stringify(maxHeight)}). Read module.description for usage.`);
+    if (typeof maxHeight !== 'number' || !Number.isInteger(maxHeight) || maxHeight < MIN_HEIGHT || maxHeight > MAX_HEIGHT) {
+        throw new Error(`${funcName}: 'maxHeight' must be an integer between ${MIN_HEIGHT} and ${MAX_HEIGHT} (got ${JSON.stringify(maxHeight)}). Read module.description for usage.`);
     }
 }
