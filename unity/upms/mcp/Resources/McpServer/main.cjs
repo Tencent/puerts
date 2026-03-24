@@ -26982,10 +26982,10 @@ var RUNNER_CODE = `(function(onFinish) {
         onFinish.Invoke(JSON.stringify({ __error: true, message: String(err.message || err), stack: String(err.stack || '') }));
     });
 })`;
-async function executeCode(code) {
+async function executeCode(code, timeoutSeconds = 30) {
   const env = getJsEnv();
   try {
-    console.log(`[EvalCore] Executing code:
+    console.log(`[EvalCore] Executing code (timeout=${timeoutSeconds}s):
 ${code}`);
     try {
       CS.LLMAgent.ScriptEnvBridge.EvalSync(env, code);
@@ -26996,9 +26996,18 @@ ${code}`);
         stack: defineError.stack || ""
       };
     }
-    const resultJson = await new Promise((resolve) => {
+    const executionPromise = new Promise((resolve) => {
       CS.LLMAgent.ScriptEnvBridge.Eval(env, RUNNER_CODE, resolve);
     });
+    const timeoutMs = timeoutSeconds * 1e3;
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          `Execution timed out after ${timeoutSeconds}s. The code may be stuck (e.g. waiting for a resource that never resolves). You can retry with a longer timeout, simplify the code, or try a different approach.`
+        ));
+      }, timeoutMs);
+    });
+    const resultJson = await Promise.race([executionPromise, timeoutPromise]);
     const parsed = JSON.parse(resultJson);
     if (parsed.__error) {
       return {
@@ -27045,23 +27054,7 @@ function createMcpServer() {
       )
     },
     async ({ code, timeout }) => {
-      const timeoutMs = (timeout ?? 30) * 1e3;
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(
-            `Execution timed out after ${timeout ?? 30}s. The code may be stuck (e.g. waiting for a resource that never resolves). You can retry with a longer timeout, simplify the code, or try a different approach.`
-          ));
-        }, timeoutMs);
-      });
-      let result;
-      try {
-        result = await Promise.race([executeCode(code), timeoutPromise]);
-      } catch (error2) {
-        return {
-          content: [{ type: "text", text: `Error: ${error2.message || String(error2)}` }],
-          isError: true
-        };
-      }
+      const result = await executeCode(code, timeout ?? 30);
       if (!result.success) {
         const errorText = `Error: ${result.error}${result.stack ? "\nStack: " + result.stack : ""}`;
         return {

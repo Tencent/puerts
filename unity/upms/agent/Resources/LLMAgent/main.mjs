@@ -37408,10 +37408,10 @@ var RUNNER_CODE = `(function(onFinish) {
         onFinish.Invoke(JSON.stringify({ __error: true, message: String(err.message || err), stack: String(err.stack || '') }));
     });
 })`;
-async function executeCode(code) {
+async function executeCode(code, timeoutSeconds = 30) {
   const env = getJsEnv();
   try {
-    console.log(`[EvalCore] Executing code:
+    console.log(`[EvalCore] Executing code (timeout=${timeoutSeconds}s):
 ${code}`);
     try {
       CS.LLMAgent.ScriptEnvBridge.EvalSync(env, code);
@@ -37422,9 +37422,18 @@ ${code}`);
         stack: defineError.stack || ""
       };
     }
-    const resultJson = await new Promise((resolve2) => {
+    const executionPromise = new Promise((resolve2) => {
       CS.LLMAgent.ScriptEnvBridge.Eval(env, RUNNER_CODE, resolve2);
     });
+    const timeoutMs = timeoutSeconds * 1e3;
+    const timeoutPromise = new Promise((_2, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          `Execution timed out after ${timeoutSeconds}s. The code may be stuck (e.g. waiting for a resource that never resolves). You can retry with a longer timeout, simplify the code, or try a different approach.`
+        ));
+      }, timeoutMs);
+    });
+    const resultJson = await Promise.race([executionPromise, timeoutPromise]);
     const parsed = JSON.parse(resultJson);
     if (parsed.__error) {
       return {
@@ -37466,23 +37475,7 @@ function createEvalTools() {
         )
       }),
       execute: /* @__PURE__ */ __name(async ({ code, timeout }) => {
-        const timeoutMs = (timeout ?? 30) * 1e3;
-        const timeoutPromise = new Promise((_2, reject) => {
-          setTimeout(() => {
-            reject(new Error(
-              `Execution timed out after ${timeout ?? 30}s. The code may be stuck (e.g. waiting for a resource that never resolves). You can retry with a longer timeout, simplify the code, or try a different approach.`
-            ));
-          }, timeoutMs);
-        });
-        try {
-          return await Promise.race([executeCode(code), timeoutPromise]);
-        } catch (error48) {
-          return {
-            success: false,
-            error: error48.message || String(error48),
-            stack: error48.stack || ""
-          };
-        }
+        return await executeCode(code, timeout ?? 30);
       }, "execute"),
       // Convert eval output to model-friendly content.
       // When the executed code returns an object with an __image marker

@@ -71,26 +71,7 @@ function createMcpServer(): InstanceType<typeof McpServer> {
             ),
         },
         async ({ code, timeout }) => {
-            const timeoutMs = (timeout ?? 30) * 1000;
-            const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => {
-                    reject(new Error(
-                        `Execution timed out after ${timeout ?? 30}s. ` +
-                        `The code may be stuck (e.g. waiting for a resource that never resolves). ` +
-                        `You can retry with a longer timeout, simplify the code, or try a different approach.`
-                    ));
-                }, timeoutMs);
-            });
-
-            let result;
-            try {
-                result = await Promise.race([executeCode(code), timeoutPromise]);
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text' as const, text: `Error: ${error.message || String(error)}` }],
-                    isError: true,
-                };
-            }
+            const result = await executeCode(code, timeout ?? 30);
 
             if (!result.success) {
                 const errorText = `Error: ${result.error}${result.stack ? '\nStack: ' + result.stack : ''}`;

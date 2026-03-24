@@ -169,12 +169,15 @@ export interface EvalResult {
  * RUNNER_CODE which calls `execute()` and serialises the result.
  *
  * @param code - An async function declaration named `execute`.
+ * @param timeoutSeconds - Optional execution timeout in seconds (default 30).
+ *                         If the code does not finish within this time, a timeout
+ *                         EvalResult is returned so the caller can decide to retry.
  * @returns EvalResult with success/error info and optional image data.
  */
-export async function executeCode(code: string): Promise<EvalResult> {
+export async function executeCode(code: string, timeoutSeconds: number = 30): Promise<EvalResult> {
     const env = getJsEnv();
     try {
-        console.log(`[EvalCore] Executing code:\n${code}`);
+        console.log(`[EvalCore] Executing code (timeout=${timeoutSeconds}s):\n${code}`);
 
         // Step 1: Define the execute() function via EvalSync.
         try {
@@ -189,9 +192,23 @@ export async function executeCode(code: string): Promise<EvalResult> {
 
         // Step 2: Run the fixed runner that calls execute() and
         // serialises the result / error back through onFinish.
-        const resultJson = await new Promise<string>((resolve) => {
+        const executionPromise = new Promise<string>((resolve) => {
             CS.LLMAgent.ScriptEnvBridge.Eval(env, RUNNER_CODE, resolve);
         });
+
+        // Step 3: Race execution against a timeout.
+        const timeoutMs = timeoutSeconds * 1000;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => {
+                reject(new Error(
+                    `Execution timed out after ${timeoutSeconds}s. ` +
+                    `The code may be stuck (e.g. waiting for a resource that never resolves). ` +
+                    `You can retry with a longer timeout, simplify the code, or try a different approach.`
+                ));
+            }, timeoutMs);
+        });
+
+        const resultJson = await Promise.race([executionPromise, timeoutPromise]);
 
         const parsed = JSON.parse(resultJson);
         if (parsed.__error) {
