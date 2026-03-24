@@ -38317,7 +38317,7 @@ async function runGeneration(onProgress) {
       messages: conversationHistory,
       tools,
       abortSignal,
-      maxOutputTokens: 16384,
+      maxOutputTokens: 32768,
       // Use MAX_STEPS + 1 so the SDK does not exit the loop before our
       // prepareStep hook has a chance to inject the stop message on the
       // last allowed tool-call step.  The actual limit is enforced by
