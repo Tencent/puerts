@@ -143,7 +143,7 @@ namespace LLMAgent.Editor
                 // Auto-configure if API key is available
                 if (!string.IsNullOrEmpty(apiKey))
                 {
-                    scriptManager.ConfigureAgent(apiKey, baseURL, model);
+                    scriptManager.ConfigureAgent(apiKey, baseURL, model, 25);
                 }
                 Repaint();
             });
@@ -606,7 +606,7 @@ namespace LLMAgent.Editor
         {
             if (scriptManager != null && scriptManager.IsInitialized)
             {
-                string result = scriptManager.ConfigureAgent(apiKey, baseURL, model);
+                string result = scriptManager.ConfigureAgent(apiKey, baseURL, model, 25);
                 messages.Add(new ChatMessage
                 {
                     Text = result,
