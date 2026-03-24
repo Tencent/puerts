@@ -30,7 +30,7 @@ namespace PuertsMcp.Editor
         // but resets when the Editor is closed.
         private const string SessionKeyWasRunning = "PuertsMcp_WasRunning";
 
-        [MenuItem("PuerTS/MCP Server")]
+        [MenuItem("Puerts.AI/MCP Server")]
         public static void ShowWindow()
         {
             var window = GetWindow<McpServerWindow>("MCP Server");
