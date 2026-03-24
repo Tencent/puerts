@@ -38141,7 +38141,9 @@ function handleStepFinish(onProgress, stepResult) {
   console.log(`[Agent] Step ${stepNumber} finished: finishReason=${finishReason}, text=${text2?.length ?? 0} chars, toolCalls=${toolCalls?.length ?? 0}`);
   if (finishReason === "length") {
     console.warn(`[Agent] Step ${stepNumber} output was truncated (finishReason=length). The model hit max_tokens limit.`);
-    onProgress(`<color=#FF9800>\u26A0 Output truncated \u2014 model reached token limit.</color>`);
+    onProgress(`
+<color=#FF9800>\u26A0 Output truncated \u2014 model reached token limit.</color>
+`);
   }
   const hasToolResults = toolResults && toolResults.length > 0;
   const hasToolCalls = toolCalls && toolCalls.length > 0;
@@ -38159,8 +38161,10 @@ function handleStepFinish(onProgress, stepResult) {
     }
     if (reasoningStr) {
       const truncated = reasoningStr.length > 800 ? reasoningStr.substring(0, 800) + "..." : reasoningStr;
-      onProgress(`<color=#B39DDB>[THINKING]</color>
-${truncated}`);
+      onProgress(`
+<color=#B39DDB>[THINKING]</color>
+${truncated}
+`);
     }
   }
   let progressText = "";
@@ -38168,22 +38172,25 @@ ${truncated}`);
     for (const tr2 of toolResults) {
       const ok = isToolResultSuccess(tr2.output);
       if (ok) {
-        progressText += `call ${tr2.toolName} <color=#4CAF50>[OK]</color>
+        progressText += `
+<color=#FFA726>[CALL]</color>  ${tr2.toolName} <color=#4CAF50>[OK]</color>
 `;
       } else {
         const errMsg = extractToolErrorMessage(tr2.output);
-        progressText += `call ${tr2.toolName} <color=#F44336>[FAIL]</color>: ${errMsg}
+        progressText += `
+<color=#FFA726>[CALL]</color>  ${tr2.toolName} <color=#F44336>[FAIL]</color>: ${errMsg}
 `;
       }
     }
   } else if (hasToolCalls) {
     for (const tc of toolCalls) {
-      progressText += `<color=#FFA726>[CALL]</color> ${tc.toolName}
+      progressText += `
+<color=#FFA726>[CALL]</color> ${tc.toolName}
 `;
     }
   }
   if (progressText) {
-    onProgress(progressText.trim());
+    onProgress(progressText);
   }
 }
 __name(handleStepFinish, "handleStepFinish");
@@ -38330,7 +38337,7 @@ async function runGeneration(onProgress) {
     for await (const textPart of result.textStream) {
       fullText += textPart;
       if (onProgress) {
-        onProgress(`[STREAM]${textPart}`);
+        onProgress(textPart);
       }
     }
     console.log(`[Agent] textStream ended. fullText length: ${fullText.length}`);

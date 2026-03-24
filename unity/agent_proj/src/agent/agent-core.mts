@@ -215,7 +215,7 @@ function handleStepFinish(onProgress: ((text: string) => void) | undefined, step
     // Warn if the model output was truncated due to token limit
     if (finishReason === 'length') {
         console.warn(`[Agent] Step ${stepNumber} output was truncated (finishReason=length). The model hit max_tokens limit.`);
-        onProgress(`<color=#FF9800>⚠ Output truncated — model reached token limit.</color>`);
+        onProgress(`\n<color=#FF9800>⚠ Output truncated — model reached token limit.</color>\n`);
     }
 
     const hasToolResults = toolResults && toolResults.length > 0;
@@ -238,7 +238,7 @@ function handleStepFinish(onProgress: ((text: string) => void) | undefined, step
         }
         if (reasoningStr) {
             const truncated = reasoningStr.length > 800 ? reasoningStr.substring(0, 800) + '...' : reasoningStr;
-            onProgress(`<color=#B39DDB>[THINKING]</color>\n${truncated}`);
+            onProgress(`\n<color=#B39DDB>[THINKING]</color>\n${truncated}\n`);
         }
     }
 
@@ -247,20 +247,20 @@ function handleStepFinish(onProgress: ((text: string) => void) | undefined, step
         for (const tr of toolResults) {
             const ok = isToolResultSuccess(tr.output);
             if (ok) {
-                progressText += `call ${tr.toolName} <color=#4CAF50>[OK]</color>\n`;
+                progressText += `\n<color=#FFA726>[CALL]</color>  ${tr.toolName} <color=#4CAF50>[OK]</color>\n`;
             } else {
                 const errMsg = extractToolErrorMessage(tr.output);
-                progressText += `call ${tr.toolName} <color=#F44336>[FAIL]</color>: ${errMsg}\n`;
+                progressText += `\n<color=#FFA726>[CALL]</color>  ${tr.toolName} <color=#F44336>[FAIL]</color>: ${errMsg}\n`;
             }
         }
     } else if (hasToolCalls) {
         for (const tc of toolCalls) {
-            progressText += `<color=#FFA726>[CALL]</color> ${tc.toolName}\n`;
+            progressText += `\n<color=#FFA726>[CALL]</color> ${tc.toolName}\n`;
         }
     }
 
     if (progressText) {
-        onProgress(progressText.trim());
+        onProgress(progressText);
     }
 }
 
@@ -471,7 +471,7 @@ async function runGeneration(onProgress?: (text: string) => void): Promise<strin
         for await (const textPart of result.textStream) {
             fullText += textPart;
             if (onProgress) {
-                onProgress(`[STREAM]${textPart}`);
+                onProgress(textPart);
             }
         }
 
