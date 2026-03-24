@@ -388,6 +388,7 @@ async function fetchImpl(
         // ---- Streaming path: resolve as soon as headers arrive ----
         return new Promise<any>((resolve, reject) => {
             try {
+                console.log(`[Polyfill][Stream] request: ${body}`);
                 let streamResponse: FetchStreamResponse | null = null;
 
                 CS.LLMAgent.HttpBridge.SendStreamRequestAsync(
@@ -398,6 +399,7 @@ async function fetchImpl(
                     // onHeader: called once with status/headers JSON
                     (headerJson: string) => {
                         try {
+                            console.log(`[Polyfill][Stream] headers arrived: ${headerJson}`);
                             const hdr = JSON.parse(headerJson);
                             const responseHeaders = new FetchHeaders(hdr.headers || {});
                             streamResponse = new FetchStreamResponse(
@@ -421,6 +423,7 @@ async function fetchImpl(
                     (completionJson: string) => {
                         if (completionJson && completionJson.includes('"error"')) {
                             // Error case
+                            console.log(`[Polyfill][Stream] error: ${completionJson}`);
                             if (streamResponse) {
                                 streamResponse.errorStream(new Error(completionJson));
                             } else {
@@ -428,6 +431,7 @@ async function fetchImpl(
                             }
                         } else {
                             // Normal completion
+                            console.log(`[Polyfill][Stream] complete`);
                             if (streamResponse) {
                                 streamResponse.closeStream();
                             }
@@ -443,6 +447,8 @@ async function fetchImpl(
     // ---- Non-streaming path: original logic ----
     return new Promise<FetchResponse>((resolve, reject) => {
         try {
+            console.log(`[Polyfill] request: ${body}`);
+
             CS.LLMAgent.HttpBridge.SendRequestAsync(
                 url,
                 method,
@@ -451,6 +457,7 @@ async function fetchImpl(
                 (responseJson: string) => {
                     try {
                         const responseData = JSON.parse(responseJson);
+                        console.log(`[Polyfill] response: ${responseData.body}`);
 
                         const responseHeaders = new FetchHeaders(responseData.headers || {});
 

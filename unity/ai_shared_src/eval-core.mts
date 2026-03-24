@@ -19,10 +19,24 @@ export let builtinSummariesText: string = '';
 
 /**
  * Get or create the eval VM.
+ * On first creation, starts a periodic Tick from the main VM to drive
+ * the eval VM's timer queue (setTimeout / setInterval).
  */
 export function getJsEnv(): CS.Puerts.ScriptEnv {
     if (!jsEnv) {
         jsEnv = CS.LLMAgent.ScriptEnvBridge.CreateJavaScriptEnv();
+
+        // Drive the eval VM's timer queue from the main VM.
+        // The main VM's setInterval is powered by EditorApplication.update,
+        // so this keeps the eval VM's setTimeout/setInterval working.
+        const envRef = jsEnv;
+        setInterval(() => {
+            try {
+                CS.LLMAgent.ScriptEnvBridge.Tick(envRef);
+            } catch (_) {
+                // Ignore tick errors to avoid crashing the main VM loop.
+            }
+        }, 20); // ~50 ticks/sec, enough for responsive timers
     }
     return jsEnv;
 }

@@ -23,5 +23,15 @@ namespace LLMAgent
         {
             env.Eval(script);
         }
+
+        /// <summary>
+        /// Tick the eval VM to process pending JS microtasks and timers (setTimeout/setInterval).
+        /// Should be called periodically from the main VM (e.g. via setInterval).
+        /// </summary>
+        [UnityEngine.Scripting.Preserve]
+        public static void Tick(ScriptEnv env)
+        {
+            env.Tick();
+        }
     }
 }

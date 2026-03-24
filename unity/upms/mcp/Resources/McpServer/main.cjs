@@ -26886,6 +26886,13 @@ var builtinSummariesText = "";
 function getJsEnv() {
   if (!jsEnv) {
     jsEnv = CS.LLMAgent.ScriptEnvBridge.CreateJavaScriptEnv();
+    const envRef = jsEnv;
+    setInterval(() => {
+      try {
+        CS.LLMAgent.ScriptEnvBridge.Tick(envRef);
+      } catch (_) {
+      }
+    }, 20);
   }
   return jsEnv;
 }

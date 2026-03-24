@@ -5370,6 +5370,7 @@ async function fetchImpl(input, init) {
   if (streaming) {
     return new Promise((resolve2, reject) => {
       try {
+        console.log(`[Polyfill][Stream] request: ${body}`);
         let streamResponse = null;
         CS.LLMAgent.HttpBridge.SendStreamRequestAsync(
           url2,
@@ -5379,6 +5380,7 @@ async function fetchImpl(input, init) {
           // onHeader: called once with status/headers JSON
           (headerJson) => {
             try {
+              console.log(`[Polyfill][Stream] headers arrived: ${headerJson}`);
               const hdr = JSON.parse(headerJson);
               const responseHeaders = new FetchHeaders(hdr.headers || {});
               streamResponse = new FetchStreamResponse(
@@ -5401,12 +5403,14 @@ async function fetchImpl(input, init) {
           // onComplete: called when stream ends
           (completionJson) => {
             if (completionJson && completionJson.includes('"error"')) {
+              console.log(`[Polyfill][Stream] error: ${completionJson}`);
               if (streamResponse) {
                 streamResponse.errorStream(new Error(completionJson));
               } else {
                 reject(new TypeError(`Stream request failed: ${completionJson}`));
               }
             } else {
+              console.log(`[Polyfill][Stream] complete`);
               if (streamResponse) {
                 streamResponse.closeStream();
               }
@@ -5420,6 +5424,7 @@ async function fetchImpl(input, init) {
   }
   return new Promise((resolve2, reject) => {
     try {
+      console.log(`[Polyfill] request: ${body}`);
       CS.LLMAgent.HttpBridge.SendRequestAsync(
         url2,
         method,
@@ -5428,6 +5433,7 @@ async function fetchImpl(input, init) {
         (responseJson) => {
           try {
             const responseData = JSON.parse(responseJson);
+            console.log(`[Polyfill] response: ${responseData.body}`);
             const responseHeaders = new FetchHeaders(responseData.headers || {});
             resolve2(new FetchResponse(
               responseData.body || "",
@@ -37312,6 +37318,13 @@ var builtinSummariesText = "";
 function getJsEnv() {
   if (!jsEnv) {
     jsEnv = CS.LLMAgent.ScriptEnvBridge.CreateJavaScriptEnv();
+    const envRef = jsEnv;
+    setInterval(() => {
+      try {
+        CS.LLMAgent.ScriptEnvBridge.Tick(envRef);
+      } catch (_2) {
+      }
+    }, 20);
   }
   return jsEnv;
 }
