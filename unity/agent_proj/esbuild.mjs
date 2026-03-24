@@ -154,12 +154,8 @@ await build({
 const outPath = '../upms/agent/Resources/LLMAgent/main.mjs';
 let code = readFileSync(outPath, 'utf-8');
 const patches = [
-    // @ai-sdk/openai: some providers (e.g. Claude) omit `index` in choices; make it optional
-    [/index:\s*(\w+)\.number\(\)(,\s*\n\s*logprobs:)/g, 'index: $1.number().nullish()$2'],
 ];
-// String-based patches (exact text replacement, not regex)
-// Note: the image data URL roundtrip patch is no longer needed in AI SDK v6+
-// because v6 keeps base64 strings as-is without Uint8Array roundtrip.
+
 const stringPatches = [
     // (No active string patches at the moment.)
 ];
