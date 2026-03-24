@@ -33,7 +33,7 @@
 在 Unity 编辑器菜单栏中选择：
 
 ```
-PuerTS → MCP Server
+Puerts.AI → MCP Server
 ```
 
 将打开 MCP Server 管理窗口。
@@ -42,10 +42,9 @@ PuerTS → MCP Server
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| **Resource Root** | `LLMAgent/editor-assistant` | 内置模块的资源根路径 |
 | **Port** | `3100` | HTTP 服务监听端口（范围 1-65535） |
 
-> 配置会自动保存到 `EditorPrefs`，下次打开时自动恢复。
+> 端口配置会自动保存到 `EditorPrefs`，下次打开时自动恢复。
 
 ### 3. 启动服务
 
@@ -301,7 +300,7 @@ async function execute() {
 
 ### Q: 修改端口后需要重启吗？
 
-是的。端口和资源根路径只能在服务停止时修改。修改后需要重新启动服务。
+是的。端口只能在服务停止时修改。修改后需要重新启动服务。
 
 ### Q: 关闭 MCP Server 管理窗口会停止服务吗？
 

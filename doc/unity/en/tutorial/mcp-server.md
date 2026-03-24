@@ -33,7 +33,7 @@ This package requires the following UPM dependencies:
 From the Unity Editor menu bar, select:
 
 ```
-PuerTS → MCP Server
+Puerts.AI → MCP Server
 ```
 
 This opens the MCP Server management window.
@@ -42,10 +42,9 @@ This opens the MCP Server management window.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| **Resource Root** | `LLMAgent/editor-assistant` | Resource root path for builtin modules |
 | **Port** | `3100` | HTTP service listening port (range 1–65535) |
 
-> Settings are automatically saved to `EditorPrefs` and restored on next open.
+> Port setting is automatically saved to `EditorPrefs` and restored on next open.
 
 ### 3. Start the Server
 
@@ -301,7 +300,7 @@ async function execute() {
 
 ### Q: Do I need to restart after changing the port?
 
-Yes. The port and resource root can only be changed while the server is stopped. Restart the server after making changes.
+Yes. The port can only be changed while the server is stopped. Restart the server after making changes.
 
 ### Q: Does closing the MCP Server management window stop the server?
 

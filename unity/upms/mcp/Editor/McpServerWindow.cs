@@ -20,11 +20,12 @@ namespace PuertsMcp.Editor
 
         // Settings (per-instance for UI editing, synced from EditorPrefs)
         private int port = 3100;
-        private string resourceRoot = "LLMAgent/editor-assistant";
+
+        // Resource root is fixed and not user-configurable
+        private const string ResourceRoot = "LLMAgent/editor-assistant";
 
         // EditorPrefs keys
         private const string PrefKeyPort = "PuertsMcp_Port";
-        private const string PrefKeyResourceRoot = "PuertsMcp_ResourceRoot";
 
         // SessionState key — persists across domain reloads within the same Editor session,
         // but resets when the Editor is closed.
@@ -94,7 +95,6 @@ namespace PuertsMcp.Editor
             if (IsRunning || s_isStarting) return;
 
             int port = EditorPrefs.GetInt(PrefKeyPort, 3100);
-            string resourceRoot = EditorPrefs.GetString(PrefKeyResourceRoot, "LLMAgent/editor-assistant");
 
             Debug.Log($"[McpServerWindow] Auto-restarting MCP Server after domain reload (port {port})...");
 
@@ -105,7 +105,7 @@ namespace PuertsMcp.Editor
             Application.runInBackground = true;
 
             s_scriptManager = new McpScriptManager();
-            s_scriptManager.Initialize(resourceRoot, port, (bool success) =>
+            s_scriptManager.Initialize(ResourceRoot, port, (bool success) =>
             {
                 s_isStarting = false;
                 if (success)
@@ -144,13 +144,11 @@ namespace PuertsMcp.Editor
         private void LoadSettings()
         {
             port = EditorPrefs.GetInt(PrefKeyPort, 3100);
-            resourceRoot = EditorPrefs.GetString(PrefKeyResourceRoot, "LLMAgent/editor-assistant");
         }
 
         private void SaveSettings()
         {
             EditorPrefs.SetInt(PrefKeyPort, port);
-            EditorPrefs.SetString(PrefKeyResourceRoot, resourceRoot);
         }
 
         private static bool IsRunning => s_scriptManager != null && s_scriptManager.IsInitialized;
@@ -163,10 +161,6 @@ namespace PuertsMcp.Editor
 
             // --- Settings ---
             EditorGUI.BeginDisabledGroup(IsRunning || s_isStarting);
-
-            EditorGUILayout.LabelField("Resource Root", EditorStyles.miniLabel);
-            resourceRoot = EditorGUILayout.TextField(resourceRoot);
-            EditorGUILayout.Space(3);
 
             EditorGUILayout.LabelField("Port", EditorStyles.miniLabel);
             port = EditorGUILayout.IntField(port);
@@ -241,7 +235,7 @@ namespace PuertsMcp.Editor
             Application.runInBackground = true;
 
             s_scriptManager = new McpScriptManager();
-            s_scriptManager.Initialize(resourceRoot, port, (bool success) =>
+            s_scriptManager.Initialize(ResourceRoot, port, (bool success) =>
             {
                 s_isStarting = false;
                 if (success)
