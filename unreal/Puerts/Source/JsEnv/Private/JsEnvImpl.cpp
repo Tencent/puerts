@@ -557,7 +557,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #endif
 
     MethodBindingHelper<&FJsEnvImpl::DumpStatisticsLog>::Bind(Isolate, Context, Global, "dumpStatisticsLog", This);
-	MethodBindingHelper<&FJsEnvImpl::IsQuickJS>::Bind(Isolate, Context, Global, "isQuickJS", This);
+    MethodBindingHelper<&FJsEnvImpl::IsQuickJS>::Bind(Isolate, Context, Global, "isQuickJS", This);
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFNameToArrayBuffer"),
             v8::FunctionTemplate::New(Isolate, FNameToArrayBuffer)->GetFunction(Context).ToLocalChecked())
