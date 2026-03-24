@@ -64,9 +64,33 @@ function createMcpServer(): InstanceType<typeof McpServer> {
                 'An async function declaration named `execute`. ' +
                 'Example: "async function execute() {\\n  const go = CS.UnityEngine.GameObject.Find(\'Main Camera\');\\n  return go.transform.position.toString();\\n}"'
             ),
+            timeout: z.number().optional().default(30).describe(
+                'Execution timeout in seconds. Default is 30s. ' +
+                'If the code does not finish within this time, the tool returns a timeout error. ' +
+                'You can then decide whether to retry or take a different approach.'
+            ),
         },
-        async ({ code }) => {
-            const result = await executeCode(code);
+        async ({ code, timeout }) => {
+            const timeoutMs = (timeout ?? 30) * 1000;
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => {
+                    reject(new Error(
+                        `Execution timed out after ${timeout ?? 30}s. ` +
+                        `The code may be stuck (e.g. waiting for a resource that never resolves). ` +
+                        `You can retry with a longer timeout, simplify the code, or try a different approach.`
+                    ));
+                }, timeoutMs);
+            });
+
+            let result;
+            try {
+                result = await Promise.race([executeCode(code), timeoutPromise]);
+            } catch (error: any) {
+                return {
+                    content: [{ type: 'text' as const, text: `Error: ${error.message || String(error)}` }],
+                    isError: true,
+                };
+            }
 
             if (!result.success) {
                 const errorText = `Error: ${result.error}${result.stack ? '\nStack: ' + result.stack : ''}`;

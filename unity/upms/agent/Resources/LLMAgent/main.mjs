@@ -37460,10 +37460,29 @@ function createEvalTools() {
       inputSchema: external_exports.object({
         code: external_exports.string().describe(
           "An async function declaration named `execute`. Example: \"async function execute() {\\n  const go = CS.UnityEngine.GameObject.Find('Main Camera');\\n  return go.transform.position.toString();\\n}\""
+        ),
+        timeout: external_exports.number().optional().default(30).describe(
+          "Execution timeout in seconds. Default is 30s. If the code does not finish within this time, the tool returns a timeout error. You can then decide whether to retry or take a different approach."
         )
       }),
-      execute: /* @__PURE__ */ __name(async ({ code }) => {
-        return await executeCode(code);
+      execute: /* @__PURE__ */ __name(async ({ code, timeout }) => {
+        const timeoutMs = (timeout ?? 30) * 1e3;
+        const timeoutPromise = new Promise((_2, reject) => {
+          setTimeout(() => {
+            reject(new Error(
+              `Execution timed out after ${timeout ?? 30}s. The code may be stuck (e.g. waiting for a resource that never resolves). You can retry with a longer timeout, simplify the code, or try a different approach.`
+            ));
+          }, timeoutMs);
+        });
+        try {
+          return await Promise.race([executeCode(code), timeoutPromise]);
+        } catch (error48) {
+          return {
+            success: false,
+            error: error48.message || String(error48),
+            stack: error48.stack || ""
+          };
+        }
       }, "execute"),
       // Convert eval output to model-friendly content.
       // When the executed code returns an object with an __image marker

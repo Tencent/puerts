@@ -51,9 +51,36 @@ export function createEvalTools() {
                         'An async function declaration named `execute`. ' +
                         'Example: "async function execute() {\\n  const go = CS.UnityEngine.GameObject.Find(\'Main Camera\');\\n  return go.transform.position.toString();\\n}"'
                     ),
+                timeout: z
+                    .number()
+                    .optional()
+                    .default(30)
+                    .describe(
+                        'Execution timeout in seconds. Default is 30s. ' +
+                        'If the code does not finish within this time, the tool returns a timeout error. ' +
+                        'You can then decide whether to retry or take a different approach.'
+                    ),
             }),
-            execute: async ({ code }) => {
-                return await executeCode(code);
+            execute: async ({ code, timeout }) => {
+                const timeoutMs = (timeout ?? 30) * 1000;
+                const timeoutPromise = new Promise<never>((_, reject) => {
+                    setTimeout(() => {
+                        reject(new Error(
+                            `Execution timed out after ${timeout ?? 30}s. ` +
+                            `The code may be stuck (e.g. waiting for a resource that never resolves). ` +
+                            `You can retry with a longer timeout, simplify the code, or try a different approach.`
+                        ));
+                    }, timeoutMs);
+                });
+                try {
+                    return await Promise.race([executeCode(code), timeoutPromise]);
+                } catch (error: any) {
+                    return {
+                        success: false,
+                        error: error.message || String(error),
+                        stack: error.stack || '',
+                    };
+                }
             },
             // Convert eval output to model-friendly content.
             // When the executed code returns an object with an __image marker
