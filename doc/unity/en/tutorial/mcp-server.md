@@ -1,8 +1,100 @@
-# MCP Server User Guide
+# Unity Editor Assistant
 
 ## Overview
 
-`com.puerts.mcp` is a Unity Editor plugin (UPM package) that launches an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server inside the Unity Editor, enabling external AI Agents / LLM clients to remotely invoke Unity Editor capabilities through the standard MCP protocol.
+Puerts.AI provides a ready-to-use **Unity Editor Assistant** that lets you control the Unity Editor with natural language. Any C# API is callable — the AI generates scripts that run in the PuerTS environment with full access to `UnityEngine.*` and `UnityEditor.*`.
+
+### What Can It Do?
+
+- **Build scenes with one sentence** — *"Build a medieval castle scene using basic meshes"*, AI creates GameObjects, adjusts Transforms, assigns materials
+- **Smart log analysis** — *"Analyze puerts-related logs"*, AI filters and summarizes logs on the Unity side
+- **Scene health checks** — *"Check for missing scripts in the current scene"*, AI traverses all GameObjects and reports issues
+- **Anything C# can do** — AI calls `UnityEngine.*`, `UnityEditor.*` directly — it's not "simulating" operations, it's **actually doing them**
+
+### Two Modes
+
+The Editor Assistant comes in two modes, each with its own strengths:
+
+| | Agent Version (Built-in) | MCP Version (External) |
+|:---|:---|:---|
+| **UPM Package** | `com.tencent.puerts.agent` | `com.tencent.puerts.mcp` |
+| **How it works** | Chat directly inside a Unity Editor window | Connect from Cursor, Windsurf, Claude Desktop, or any MCP-compatible AI tool |
+| **Speed** | ⚡ Faster — no network round-trips, scripts execute locally | Communicates via HTTP/SSE |
+| **Collaboration** | Independent work, focused on Unity operations | 🤝 Works alongside code editors — AI edits code while controlling Unity to verify results |
+| **Best for** | Scene building, inspections, quick prototyping | Vibe coding workflows — deep integration between code editor and Unity |
+
+Both modes share the same core engine and builtin modules — write an extension once, use it in both.
+
+---
+
+## Agent Version (Built-in Chat Window)
+
+The Agent version embeds AI directly into a Unity Editor window, providing a chat interface for interaction without leaving Unity.
+
+### Dependencies
+
+| Package | Description |
+|---------|-------------|
+| `com.tencent.puerts.core` | PuerTS core runtime |
+| `com.tencent.puerts.v8` | PuerTS V8 backend |
+
+### Quick Start
+
+#### 1. Open the Agent Chat Window
+
+From the Unity Editor menu bar, select:
+
+```
+PuertsEditorAssistant → New Chat
+```
+
+This opens the Puerts Agent Chat window.
+
+#### 2. Configure the LLM
+
+Click the ⚙ gear icon in the top-right corner and configure the following parameters:
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| **API Key** | LLM service API key (required) | `sk-xxxxxxxx` |
+| **Base URL** | API endpoint URL (OpenAI-compatible format) | `https://api.openai.com/v1` |
+| **Model** | Model name | `gpt-4o-mini` |
+
+> Settings are automatically saved to `EditorPrefs` and restored on next open.
+
+#### 3. Start Chatting
+
+Once configured, simply type your request in the input field. For example:
+
+- *"Create a 3x3 grid of Cubes in the scene with 2m spacing"*
+- *"List the names of all GameObjects in the current scene"*
+- *"Check the scene for missing scripts"*
+
+The Agent generates and executes JavaScript code to directly control the Unity Editor. You can see the AI's reasoning process and execution results in the chat.
+
+#### 4. Attach Images
+
+The Agent supports attaching images (such as screenshots) in the conversation. The AI will understand your intent based on the image content and respond accordingly.
+
+### Features
+
+- **Streaming responses**: AI replies are displayed in real-time, no need to wait for full generation
+- **Multi-turn conversation**: Supports continuous dialogue with context memory
+- **New Chat**: Start a fresh conversation session anytime via `PuertsEditorAssistant → New Chat`
+- **Error retry**: When a request fails (e.g. timeout), you can retry directly
+- **VM reuse across calls**: Variables, functions, and state defined in previous calls persist in subsequent calls
+
+---
+
+## MCP Version (External AI Tools)
+
+The MCP version launches an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server inside the Unity Editor, enabling external AI Agents / LLM clients to remotely invoke Unity Editor capabilities through the standard MCP protocol.
+
+**What makes Puerts MCP different from other Unity MCP solutions?**
+
+- **No separate process** — the MCP server runs directly inside the Unity process, no extra services to launch
+- **Single tool, on-demand builtins** — instead of registering dozens of tools upfront, Puerts MCP exposes only one tool; builtin modules are loaded on demand, saving context tokens while remaining equally powerful
+- **Extensible via builtins & skills** — add new capabilities by dropping files into the resource directory, no code changes needed
 
 **Core Capability**: Through the `evalJsCode` tool, an external AI can execute arbitrary JavaScript code inside the Unity Editor, leveraging PuerTS's C# bridging to access the full `UnityEngine.*` and `UnityEditor.*` APIs.
 
@@ -15,7 +107,7 @@
 
 ---
 
-## Dependencies
+### Dependencies
 
 This package requires the following UPM dependencies:
 
@@ -26,9 +118,9 @@ This package requires the following UPM dependencies:
 
 ---
 
-## Quick Start
+### Quick Start
 
-### 1. Open the MCP Server Management Window
+#### 1. Open the MCP Server Management Window
 
 From the Unity Editor menu bar, select:
 
@@ -38,7 +130,7 @@ PuertsEditorAssistant → MCP Server
 
 This opens the MCP Server management window.
 
-### 2. Configure Parameters
+#### 2. Configure Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -46,20 +138,20 @@ This opens the MCP Server management window.
 
 > Port setting is automatically saved to `EditorPrefs` and restored on next open.
 
-### 3. Start the Server
+#### 3. Start the Server
 
 Click the **Start Server** button. Once started successfully:
 
 - Status displays green **Running on port 3100**
 - SSE Endpoint address is shown: `http://127.0.0.1:3100/sse`
 
-### 4. Stop the Server
+#### 4. Stop the Server
 
 Click the **Stop Server** button to shut down the service.
 
 ---
 
-## Server Behavior
+### Server Behavior
 
 - **Global Singleton**: The MCP Server instance is unique across the entire Editor session. Closing the management window does not affect the running server.
 - **Background Execution**: On start, `Application.runInBackground = true` is set automatically, ensuring the service stays alive when Unity loses focus.
@@ -69,7 +161,7 @@ Click the **Stop Server** button to shut down the service.
 
 ---
 
-## API Endpoints
+### API Endpoints
 
 Once started, the MCP Server exposes the following HTTP endpoints (default listener `127.0.0.1:3100`):
 
@@ -83,9 +175,9 @@ All endpoints support CORS (`Access-Control-Allow-Origin: *`).
 
 ---
 
-## Client Configuration
+### Client Configuration
 
-### Cursor / Claude Desktop and Other MCP Clients
+#### Cursor / Claude Desktop and Other MCP Clients
 
 Add the following SSE-type server to your MCP client configuration file:
 
@@ -99,7 +191,7 @@ Add the following SSE-type server to your MCP client configuration file:
 }
 ```
 
-### Manual Connection Testing
+#### Manual Connection Testing
 
 You can use curl to verify the service is running:
 
@@ -113,9 +205,9 @@ curl -N http://127.0.0.1:3100/sse
 
 ---
 
-## Provided MCP Tools
+### Provided MCP Tools
 
-### `evalJsCode`
+#### `evalJsCode`
 
 Executes JavaScript code inside the PuerTS runtime environment within the Unity Editor.
 
@@ -186,7 +278,7 @@ async function execute() {
 
 ---
 
-## Builtin Helper Modules
+### Builtin Helper Modules
 
 The `evalJsCode` runtime environment comes with several preloaded helper modules that encapsulate common Unity Editor operations. Load them via ESM dynamic `import()`.
 
@@ -209,9 +301,9 @@ async function execute() {
 }
 ```
 
-### Module List
+#### Module List
 
-#### 1. `scene-view` — Scene View Camera Control & Hierarchy Operations
+##### 1. `scene-view` — Scene View Camera Control & Hierarchy Operations
 
 **Path**: `LLMAgent/editor-assistant/builtins/scene-view.mjs`
 
@@ -227,7 +319,7 @@ async function execute() {
 | `selectGameObject(name)` | Select a GameObject in the Editor |
 | `saveScene()` | Save the current scene |
 
-#### 2. `screenshot` — Screenshot Capture
+##### 2. `screenshot` — Screenshot Capture
 
 **Path**: `LLMAgent/editor-assistant/builtins/screenshot.mjs`
 
@@ -238,7 +330,7 @@ async function execute() {
 
 > Screenshots are automatically returned to the AI as image content — no manual base64 handling required.
 
-#### 3. `type-reflection` — C# Type Reflection
+##### 3. `type-reflection` — C# Type Reflection
 
 **Path**: `LLMAgent/editor-assistant/builtins/type-reflection.mjs`
 
@@ -248,7 +340,7 @@ async function execute() {
 | `listTypesInNamespace(namespaces)` | List all public types in specified namespaces |
 | `getTypeDetails(typeNames)` | Get detailed type information (properties, methods, fields, etc.) |
 
-#### 4. `unity-log` — Unity Console Logs
+##### 4. `unity-log` — Unity Console Logs
 
 **Path**: `LLMAgent/editor-assistant/builtins/unity-log.mjs`
 
@@ -259,7 +351,7 @@ async function execute() {
 
 ---
 
-## Architecture Overview
+### Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -296,21 +388,21 @@ async function execute() {
 
 ---
 
-## FAQ
+### FAQ
 
-### Q: Do I need to restart after changing the port?
+#### Q: Do I need to restart after changing the port?
 
 Yes. The port can only be changed while the server is stopped. Restart the server after making changes.
 
-### Q: Does closing the MCP Server management window stop the server?
+#### Q: Does closing the MCP Server management window stop the server?
 
 No. The MCP Server instance is a global singleton, independent of the window lifecycle. Reopen the window to see the current running status.
 
-### Q: Does entering Play mode affect the server?
+#### Q: Does entering Play mode affect the server?
 
 Unity performs a Domain Reload when entering Play mode, which destroys and rebuilds the JS engine. You will need to manually restart the server after entering Play mode.
 
-### Q: How do I start the MCP Server from code?
+#### Q: How do I start the MCP Server from code?
 
 ```csharp
 using PuertsMcp;
@@ -326,6 +418,6 @@ manager.Initialize("LLMAgent/editor-assistant", 3100, (bool success) =>
 manager.Shutdown();
 ```
 
-### Q: Does it support multiple simultaneous client connections?
+#### Q: Does it support multiple simultaneous client connections?
 
 Yes. Each SSE connection creates an independent session. Multiple AI clients can connect and interact simultaneously.
