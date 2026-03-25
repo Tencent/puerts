@@ -33,7 +33,7 @@ This package requires the following UPM dependencies:
 From the Unity Editor menu bar, select:
 
 ```
-Puerts.AI → MCP Server
+PuertsEditorAssistant → MCP Server
 ```
 
 This opens the MCP Server management window.

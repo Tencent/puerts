@@ -101,7 +101,7 @@ namespace LLMAgent.Editor
         /// </summary>
         private readonly List<string> progressFragments = new List<string>();
 
-        [MenuItem("Puerts.AI/New Chat")]
+        [MenuItem("PuertsEditorAssistant/New Chat")]
         public static void ShowWindow()
         {
             var window = GetWindow<AgentChatWindow>("Puerts Agent Chat");

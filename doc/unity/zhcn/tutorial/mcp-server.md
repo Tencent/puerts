@@ -33,7 +33,7 @@
 在 Unity 编辑器菜单栏中选择：
 
 ```
-Puerts.AI → MCP Server
+PuertsEditorAssistant → MCP Server
 ```
 
 将打开 MCP Server 管理窗口。
