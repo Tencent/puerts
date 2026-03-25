@@ -103,6 +103,50 @@ Debug.Log('Hello from Python! pos = ' + pos.ToString())
 
 > 💡 Three languages, one API surface. Each example creates a `Vector3`, then calls `Debug.Log` — real C# interop in just a few lines.
 
+## Puerts.AI (Unity Only)
+
+Built on top of PuerTS, **Puerts.AI** brings AI capabilities directly into Unity — both in the Editor and at game runtime.
+
+### Unity Editor Assistant
+
+Puerts.AI includes a ready-to-use **Unity Editor Assistant** that lets you control the Unity Editor with natural language. For example:
+
+- *"Build a medieval castle scene using basic meshes"* — AI creates GameObjects, adjusts Transforms, assigns materials
+- *"Analyze puerts-related logs"* — AI filters and summarizes logs intelligently
+- *"Check for missing scripts in the current scene"* — AI traverses all GameObjects and reports issues
+
+**Any C# API is callable** — the AI generates scripts that run in the PuerTS environment with full access to `UnityEngine.*` and `UnityEditor.*`.
+
+The Editor Assistant comes in two versions:
+
+| | Agent Version (Built-in) | MCP Version (External) |
+|:---|:---|:---|
+| **How it works** | Chat directly inside a Unity Editor window | Connect from Cursor, Windsurf, Claude Desktop, or any MCP-compatible AI tool |
+| **Speed** | ⚡ Faster — no network round-trips | Communicates via HTTP/SSE |
+| **Best for** | Scene building, inspections, quick prototyping | Vibe coding workflows — AI edits code while controlling Unity to verify results |
+
+**What makes Puerts MCP different from other Unity MCP solutions?**
+
+- **No separate process** — the MCP server runs directly inside the Unity process, no extra services to launch
+- **Single tool, on-demand builtins** — instead of registering dozens of tools upfront, it exposes only one tool; builtin modules are loaded on demand, saving context tokens while remaining equally powerful
+- **Extensible via builtins & skills** — add new capabilities by dropping files into the resource directory, no code changes needed
+
+### Puerts.Agent Framework
+
+The Editor Assistant above is built with **Puerts.Agent** — an open, extensible LLM Agent framework. But it's not just for the editor — **agents can also run in game runtime**, opening up gameplay possibilities:
+
+- 🎮 **Smart NPC Demo** — Each NPC has its own LLM Agent instance and personality-driven system-prompt. NPCs generate truly dynamic dialogue based on player behavior and game state, sense their surroundings via C# APIs, and form personalized interactions through conversation memory. ([SmartNPCDemo](https://github.com/chexiongsheng/SmartNPCDemo))
+- 🧩 **Maze Runner Demo** — An AI that autonomously navigates a 3D maze by taking screenshots to observe the environment, reasoning about viable paths, executing movement commands, and verifying results — all powered by just two builtin modules and a system-prompt.([MazeRunnerDemo](https://github.com/chexiongsheng/MazeRunnerDemo))
+
+Build your own agent by creating a simple resource directory:
+
+```
+Resources/my-agent/
+├── system-prompt.md.txt      # Who the AI is and how it behaves
+├── skills/                   # Domain knowledge documents (loaded on demand)
+└── builtins/                 # Executable helper modules
+```
+
 ## HOW can I start to use PuerTS
 [Documentation](https://puerts.github.io/en)
 
@@ -268,6 +312,50 @@ Debug.Log('Hello from Python! pos = ' + pos.ToString())
 ```
 
 > 💡 三种语言，同一套 API。每个示例都创建了一个 `Vector3`，然后调用 `Debug.Log` ——短短几行代码即可实现真正的 C# 互操作。
+
+## Puerts.AI（仅 Unity）
+
+基于 PuerTS 构建的 **Puerts.AI**，将 AI 能力直接带入 Unity——无论是编辑器还是游戏运行时。
+
+### Unity 编辑器助手
+
+Puerts.AI 内置了一个开箱即用的 **Unity 编辑器助手**，让你用自然语言操控 Unity 编辑器。例如：
+
+- *"用基础 Mesh 搭建一座中世纪城堡场景"* —— AI 自动创建 GameObject、调整 Transform、设置材质
+- *"分析下 puerts 相关的日志"* —— AI 智能过滤并总结日志
+- *"检查当前场景有没有脚本丢失"* —— AI 遍历所有 GameObject 并报告问题
+
+**凡是 C# 能调用的，AI 都能做到**——AI 生成的脚本运行在 PuerTS 环境中，可直接访问 `UnityEngine.*` 和 `UnityEditor.*` 的完整 API。
+
+编辑器助手有两个版本：
+
+| | Agent 版（内置） | MCP 版（外接） |
+|:---|:---|:---|
+| **使用方式** | 在 Unity 编辑器窗口内直接对话 | 从 Cursor、Windsurf、Claude Desktop 等支持 MCP 协议的 AI 工具接入 |
+| **速度** | ⚡ 更快——没有网络往返 | 通过 HTTP/SSE 通信 |
+| **适合场景** | 场景搭建、日常检查、快速原型 | Vibe coding 工作流——AI 一边改代码一边操控 Unity 验证效果 |
+
+**Puerts MCP 与市面上其他 Unity MCP 方案有何不同？**
+
+- **无需额外启动进程** —— MCP Server 直接跑在 Unity 进程内，不用另起服务
+- **单工具 + 按需加载 builtin** —— 不像其他方案预注册几十个工具，Puerts MCP 只暴露一个工具，builtin 模块按需加载，更省上下文 token，但功能同样强大
+- **通过 builtin 和 skill 机制拓展** —— 只需往资源目录里放文件就能添加新能力，无需改代码
+
+### Puerts.Agent 框架
+
+上面的编辑器助手就是用 **Puerts.Agent** 开发的——一个开放、可扩展的 LLM Agent 框架。它不仅能用于编辑器，**还能跑在游戏运行时环境中**，为 gameplay 玩法开发打开全新可能：
+
+- 🎮 **智能 NPC Demo** —— 每个 NPC 拥有独立的 LLM Agent 实例和个性化 system-prompt。NPC 能根据玩家行为和游戏状态生成真正动态的对话，通过 C# 接口感知周围环境，并基于对话历史形成个性化的交互体验。（[SmartNPCDemo](https://github.com/chexiongsheng/SmartNPCDemo)）
+- 🧩 **迷宫 AI Demo** —— AI 自主走迷宫的 Demo，展示 Agent 通过截屏观察 + 工具调用来探索 3D 迷宫。AI 截屏观察当前视野、推理可行路径、执行移动指令、再截屏验证结果——完全自主完成，整个实现仅用了两个 builtin 模块和一段 system-prompt。（[MazeRunnerDemo](https://github.com/chexiongsheng/MazeRunnerDemo)）
+
+构建你自己的 Agent，只需创建一个简单的资源目录：
+
+```
+Resources/my-agent/
+├── system-prompt.md.txt      # 告诉 AI 它是谁、该怎么做
+├── skills/                   # 领域知识文档（按需加载）
+└── builtins/                 # 可执行的辅助模块
+```
 
 ## HOW - 我该怎么开始
 
