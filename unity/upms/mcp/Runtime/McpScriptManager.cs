@@ -54,8 +54,9 @@ namespace PuertsMcp
 
                 // Load the CJS bundle via require() — node:xxx built-ins work with require()
                 // but fail with ESM import in PuerTS.
-                // Use the UPM package path to locate the bundled CJS file.
-                var resourcePath = System.IO.Path.GetFullPath("Packages/com.puerts.mcp/Resources/" + EntryModule);
+                // Use the resolved package path to locate the bundled CJS file.
+                // This works for all UPM installation methods (local, Git URL, tarball, etc.).
+                var resourcePath = ResolvePackageResourcePath(EntryModule);
                 // Normalise to forward slashes so Node.js require() can resolve it
                 var fullPath = resourcePath.Replace("\\", "/");
                 ScriptObject moduleExports = scriptEnv.Eval<ScriptObject>(
@@ -200,6 +201,35 @@ namespace PuertsMcp
                 }
                 scriptEnv = null;
             }
+        }
+
+        /// <summary>
+        /// Resolve the physical path of a resource file inside the com.puerts.mcp package.
+        /// Supports all UPM installation methods: local (file:), Git URL, embedded, and tarball.
+        /// In the Editor, uses PackageInfo API for reliable resolution.
+        /// At runtime, falls back to the simple Packages/ virtual path.
+        /// </summary>
+        private static string ResolvePackageResourcePath(string relativeResourcePath)
+        {
+            const string packageName = "com.tencent.puerts.mcp";
+            const string resourceFolder = "Resources";
+
+#if UNITY_EDITOR
+            // PackageInfo.FindForAssetPath resolves the virtual "Packages/..." path
+            // to the actual physical location (works for Git URL, local, embedded, etc.)
+            var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath($"Packages/{packageName}");
+            if (packageInfo != null)
+            {
+                var resolvedPath = System.IO.Path.Combine(packageInfo.resolvedPath, resourceFolder, relativeResourcePath);
+                if (System.IO.File.Exists(resolvedPath))
+                {
+                    return resolvedPath;
+                }
+                Debug.LogWarning($"[McpScriptManager] File not found at resolved path: {resolvedPath}, falling back to virtual path.");
+            }
+#endif
+            // Fallback: use the virtual Packages/ path (works for local/embedded packages)
+            return System.IO.Path.GetFullPath($"Packages/{packageName}/{resourceFolder}/{relativeResourcePath}");
         }
 
 #if !UNITY_EDITOR
