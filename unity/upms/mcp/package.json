@@ -1,5 +1,5 @@
 {
-  "name": "com.puerts.mcp",
+  "name": "com.tencent.puerts.mcp",
   "version": "0.1.0",
   "displayName": "PuerTS MCP Server",
   "description": "MCP Server for exposing evalJsCode tool to external Agents, powered by PuerTS Node.js backend",

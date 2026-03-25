@@ -1,5 +1,5 @@
 {
-  "name": "com.puerts.agent",
+  "name": "com.tencent.puerts.agent",
   "version": "0.1.0",
   "displayName": "PuerTS Agent",
   "description": "AI Agent framework powered by PuerTS for Unity",
