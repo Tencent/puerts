@@ -541,9 +541,17 @@ namespace Puerts
             {
                 return callPApi(context.Apis, "create_int64", context.Env, value);
             }
+            else if (tranType == typeof(IntPtr))
+            {
+                return callPApi(context.Apis, "create_int64", context.Env, Expression.Convert(value, typeof(long)));
+            }
             else if (tranType == typeof(ulong))
             {
                 return callPApi(context.Apis, "create_uint64", context.Env, value);
+            }
+            else if (tranType == typeof(UIntPtr))
+            {
+                return callPApi(context.Apis, "create_uint64", context.Env, Expression.Convert(value, typeof(ulong)));
             }
             else if (tranType == typeof(double))
             {
@@ -768,9 +776,17 @@ namespace Puerts
             {
                 ret = callPApi(context.Apis, "get_value_int64", context.Env, value);
             }
+            else if (tranType == typeof(IntPtr))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_int64", context.Env, value), typeof(IntPtr));
+            }
             else if (tranType == typeof(ulong))
             {
                 ret = callPApi(context.Apis, "get_value_uint64", context.Env, value);
+            }
+            else if (tranType == typeof(UIntPtr))
+            {
+                ret = Expression.Convert(callPApi(context.Apis, "get_value_uint64", context.Env, value), typeof(UIntPtr));
             }
             else if (tranType == typeof(double))
             {
@@ -1012,7 +1028,15 @@ namespace Puerts
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_int64");
             }
+            else if (type == typeof(IntPtr))
+            {
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_int64");
+            }
             else if (type == typeof(ulong))
+            {
+                return directCheckArgumentConditions(context.Apis, context.Env, value, "is_uint64");
+            }
+            else if (type == typeof(UIntPtr))
             {
                 return directCheckArgumentConditions(context.Apis, context.Env, value, "is_uint64");
             }

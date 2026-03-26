@@ -764,6 +764,45 @@ namespace Puerts.UnitTest
         }
 
         /**
+        * IntPtr
+        */
+        public IntPtr intPtrTestField = IntPtr.Zero;
+        protected IntPtr _intPtrTestProp = IntPtr.Zero;
+        public IntPtr intPtrTestProp 
+        {
+            get { return _intPtrTestProp; }
+            set { _intPtrTestProp = value; }
+        }
+        public static IntPtr intPtrTestFieldStatic = IntPtr.Zero;
+        protected static IntPtr _intPtrTestPropStatic = IntPtr.Zero;
+        public static IntPtr intPtrTestPropStatic
+        {
+            get { return _intPtrTestPropStatic; }
+            set { _intPtrTestPropStatic = value; }
+        }
+
+        public IntPtr GetTestIntPtr()
+        {
+            return new IntPtr(12345);
+        }
+
+        public void ClearIntPtrTestMemberValue()
+        {
+            intPtrTestField = IntPtr.Zero;
+            intPtrTestProp = IntPtr.Zero;
+            intPtrTestFieldStatic = IntPtr.Zero;
+            intPtrTestPropStatic = IntPtr.Zero;
+        }
+
+        public void IntPtrTestCheckMemberValue(IntPtr expected)
+        {
+            AssertAndPrint("CSIntPtrTestField", intPtrTestField == expected);
+            AssertAndPrint("CSIntPtrTestProp", intPtrTestProp == expected);
+            AssertAndPrint("CSIntPtrTestFieldStatic", intPtrTestFieldStatic == expected);
+            AssertAndPrint("CSIntPtrTestPropStatic", intPtrTestPropStatic == expected);
+        }
+
+        /**
         * 判断引用即可
         */
         public DateTime DateTestPipeLine(DateTime initialValue, out DateTime outArg, Func<DateTime, DateTime> JSValueHandler)
@@ -1331,6 +1370,29 @@ namespace Puerts.UnitTest
                     TestHelper.jsObjectTestFieldStatic = { 'puerts': 'niubi' }
                     TestHelper.jsObjectTestPropStatic = { 'puerts': 'niubi' }
                     testHelper.JSObjectTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void IntPtrInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const ptr = testHelper.GetTestIntPtr();
+                    console.log(`typeof IntPtr is ${typeof ptr}`);
+                    testHelper.ClearIntPtrTestMemberValue();
+                    testHelper.intPtrTestField = ptr;
+                    testHelper.intPtrTestProp = ptr;
+                    TestHelper.intPtrTestFieldStatic = ptr;
+                    TestHelper.intPtrTestPropStatic = ptr;
+                    testHelper.IntPtrTestCheckMemberValue(ptr);
                 })()
             ");
             jsEnv.Tick();
