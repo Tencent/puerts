@@ -23,32 +23,53 @@ namespace PuertsIl2cpp.Editor
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (all in one without wrapper)", false, 2)]
             public static void GenV2WithoutWrapper()
             {
-                GenerateEmptyCppWrappers();
-                GenerateExtensionMethodInfos();
-                GenerateLinkXML();
-                GenerateCppPlugin();
-                //Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
+                var start = DateTime.Now;
+                var saveTo = PathHelper.GetIl2cppPluginPath();
+                Directory.CreateDirectory(saveTo);
+                CSharpFileExporter.GenAll(saveTo, false, true);
+
+                var codeOutputDir = Puerts.Configure.GetCodeOutputDirectory();
+                Directory.CreateDirectory(codeOutputDir);
+                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
+                CSharpFileExporter.GenLinkXml(codeOutputDir);
+
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (all in one with full wrapper)", false, 3)]
-            public static void GenV2() {
-                GenerateCppWrappers();
-                GenerateExtensionMethodInfos();
-                GenerateLinkXML();
-                GenerateCppPlugin();
-                //Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
+            public static void GenV2()
+            {
+                var start = DateTime.Now;
+                var saveTo = PathHelper.GetIl2cppPluginPath();
+                Directory.CreateDirectory(saveTo);
+                CSharpFileExporter.GenAll(saveTo, false, false);
+
+                var codeOutputDir = Puerts.Configure.GetCodeOutputDirectory();
+                Directory.CreateDirectory(codeOutputDir);
+                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
+                CSharpFileExporter.GenLinkXml(codeOutputDir);
+
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (all in one with minimum bridge and without wrapper)", false, 4)]
             public static void GenMinimumWrappersAndBridge()
             {
-                GenerateMinimumWrappersAndBridge();
-                GenerateExtensionMethodInfos();
-                GenerateLinkXML();
-                GenerateCppPlugin();
-                //Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
-            }
+                var start = DateTime.Now;
+                var saveTo = PathHelper.GetIl2cppPluginPath();
+                Directory.CreateDirectory(saveTo);
+                CSharpFileExporter.GenAll(saveTo, true, true);
 
+                var codeOutputDir = Puerts.Configure.GetCodeOutputDirectory();
+                Directory.CreateDirectory(codeOutputDir);
+                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
+                CSharpFileExporter.GenLinkXml(codeOutputDir);
+
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
+            }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp c file", false, 6)]
             public static void GenerateCppPlugin()
@@ -56,48 +77,8 @@ namespace PuertsIl2cpp.Editor
                 var start = DateTime.Now;
                 var saveTo = PathHelper.GetIl2cppPluginPath();
                 Directory.CreateDirectory(saveTo);
-                FileExporter.CopyXIl2cppCPlugin(saveTo);
-                FileExporter.GenMarcoHeader(saveTo);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-            }
-
-            public static void GenerateCppWrappers()
-            {   
-                var start = DateTime.Now;
-                var saveTo = PathHelper.GetIl2cppPluginPath();
-
-                Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap(saveTo);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-            }
-            
-            public static void GenerateCppWrappersInConfigure()
-            {
-                var start = DateTime.Now;
-                var saveTo = PathHelper.GetIl2cppPluginPath();
-
-                Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap(saveTo, true);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-            }
-
-            public static void GenerateEmptyCppWrappers()
-            {
-                var start = DateTime.Now;
-                var saveTo = PathHelper.GetIl2cppPluginPath();
-
-                Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap(saveTo, false, true);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-            }
-
-            public static void GenerateMinimumWrappersAndBridge()
-            {
-                var start = DateTime.Now;
-                var saveTo = PathHelper.GetIl2cppPluginPath();
-
-                Directory.CreateDirectory(saveTo);
-                FileExporter.GenCPPWrap(saveTo, true, true);
+                CSharpFileExporter.CopyStaticResources(saveTo);
+                CSharpFileExporter.GenMacroHeader(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
@@ -106,9 +87,8 @@ namespace PuertsIl2cpp.Editor
             {
                 var start = DateTime.Now;
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
-
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenExtensionMethodInfos(saveTo);
+                CSharpFileExporter.GenExtensionMethodInfos(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
             }
@@ -119,65 +99,10 @@ namespace PuertsIl2cpp.Editor
                 var start = DateTime.Now;
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
-                FileExporter.GenLinkXml(saveTo);
+                CSharpFileExporter.GenLinkXml(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
             }
-
-            // ============ Pure C# generation (no V8 dependency) ============
-
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp C# Gen (all in one without wrapper)", false, 12)]
-            public static void CSharpGenV2WithoutWrapper()
-            {
-                var start = DateTime.Now;
-                var saveTo = Path.Combine(Application.dataPath, "Gen2/Plugins/puerts_il2cpp/");
-                Directory.CreateDirectory(saveTo);
-                CSharpFileExporter.GenAll(saveTo, false, true);
-
-                var codeOutputDir = Path.Combine(Application.dataPath, "Gen2/");
-                Directory.CreateDirectory(codeOutputDir);
-                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
-                CSharpFileExporter.GenLinkXml(codeOutputDir);
-
-                Debug.Log("[C# Gen] finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-                AssetDatabase.Refresh();
-            }
-
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp C# Gen (all in one with full wrapper)", false, 13)]
-            public static void CSharpGenV2()
-            {
-                var start = DateTime.Now;
-                var saveTo = Path.Combine(Application.dataPath, "Gen2/Plugins/puerts_il2cpp/");
-                Directory.CreateDirectory(saveTo);
-                CSharpFileExporter.GenAll(saveTo, false, false);
-
-                var codeOutputDir = Path.Combine(Application.dataPath, "Gen2/");
-                Directory.CreateDirectory(codeOutputDir);
-                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
-                CSharpFileExporter.GenLinkXml(codeOutputDir);
-
-                Debug.Log("[C# Gen] finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-                AssetDatabase.Refresh();
-            }
-
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp C# Gen (all in one with minimum bridge and without wrapper)", false, 14)]
-            public static void CSharpGenMinimumWrappersAndBridge()
-            {
-                var start = DateTime.Now;
-                var saveTo = Path.Combine(Application.dataPath, "Gen2/Plugins/puerts_il2cpp/");
-                Directory.CreateDirectory(saveTo);
-                CSharpFileExporter.GenAll(saveTo, true, true);
-
-                var codeOutputDir = Path.Combine(Application.dataPath, "Gen2/");
-                Directory.CreateDirectory(codeOutputDir);
-                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
-                CSharpFileExporter.GenLinkXml(codeOutputDir);
-
-                Debug.Log("[C# Gen] finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-                AssetDatabase.Refresh();
-            }
-
-
         }
     }
 }
