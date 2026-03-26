@@ -160,6 +160,23 @@ namespace PuertsIl2cpp.Editor
                 AssetDatabase.Refresh();
             }
 
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp C# Gen (all in one with minimum bridge and without wrapper)", false, 14)]
+            public static void CSharpGenMinimumWrappersAndBridge()
+            {
+                var start = DateTime.Now;
+                var saveTo = Path.Combine(Application.dataPath, "Gen2/Plugins/puerts_il2cpp/");
+                Directory.CreateDirectory(saveTo);
+                CSharpFileExporter.GenAll(saveTo, true, true);
+
+                var codeOutputDir = Path.Combine(Application.dataPath, "Gen2/");
+                Directory.CreateDirectory(codeOutputDir);
+                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
+                CSharpFileExporter.GenLinkXml(codeOutputDir);
+
+                Debug.Log("[C# Gen] finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
+            }
+
 
         }
     }
