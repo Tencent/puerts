@@ -17,29 +17,6 @@ using UnityEngine;
 #if !PUERTS_GENERAL
 namespace Puerts.Editor
 {
-    namespace Generator
-    {
-        public class UnityMenu
-        {
-            public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
-
-            [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 9)]
-            public static void ClearAll()
-            {
-                var saveTo = Configure.GetCodeOutputDirectory();
-                if (Directory.Exists(saveTo))
-                {
-                    Directory.Delete(saveTo, true);
-                    AssetDatabase.DeleteAsset(saveTo.Substring(saveTo.IndexOf("Assets") + "Assets".Length));
-                    AssetDatabase.Refresh();
-                }
-            }
-        }
-    }
-}
-
-namespace PuertsIl2cpp.Editor
-{
     namespace Generator {
 
         public class UnityMenu {
@@ -125,6 +102,20 @@ namespace PuertsIl2cpp.Editor
                 CSharpFileExporter.GenLinkXml(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
+            }
+
+            public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
+
+            [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 9)]
+            public static void ClearAll()
+            {
+                var saveTo = Configure.GetCodeOutputDirectory();
+                if (Directory.Exists(saveTo))
+                {
+                    Directory.Delete(saveTo, true);
+                    AssetDatabase.DeleteAsset(saveTo.Substring(saveTo.IndexOf("Assets") + "Assets".Length));
+                    AssetDatabase.Refresh();
+                }
             }
         }
     }

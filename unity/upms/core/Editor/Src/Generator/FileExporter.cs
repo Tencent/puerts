@@ -38,7 +38,7 @@ namespace Puerts.Editor
                 }
 
 #if UNITY_2020_1_OR_NEWER && !PUERTS_GENERAL
-                PuertsIl2cpp.Editor.Generator.CSharpFileExporter.GenExtensionMethodInfos(outDir);
+                Puerts.Editor.Generator.CSharpFileExporter.GenExtensionMethodInfos(outDir);
 #endif
             }
         }

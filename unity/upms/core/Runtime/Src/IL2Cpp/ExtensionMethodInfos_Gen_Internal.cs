@@ -9,7 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-namespace PuertsIl2cpp
+namespace Puerts
 {
 public static class ExtensionMethodInfos_Gen_Internal
 {
@@ -19,59 +19,59 @@ public static class ExtensionMethodInfos_Gen_Internal
         if (false) {}
         else if (typeof(System.Int32[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Int32[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Int32[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Single[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Single[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Single[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Double[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Double[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Double[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Boolean[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Boolean[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Boolean[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Int64[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Int64[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Int64[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.UInt64[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.UInt64[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.UInt64[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.SByte[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.SByte[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.SByte[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Byte[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Byte[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Byte[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.UInt16[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.UInt16[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.UInt16[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Int16[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Int16[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Int16[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Char[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Char[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Char[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.UInt32[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.UInt32[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.UInt32[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.String[]).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.String[]), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.String[]), typeof(Puerts.ArrayExtension));
         }
         else if (typeof(System.Array).AssemblyQualifiedName == assemblyQualifiedName)
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Array), typeof(PuertsIl2cpp.ArrayExtension));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Array), typeof(Puerts.ArrayExtension));
         }
         return null;
     }

@@ -20,15 +20,15 @@ public class TestBuilder
 #if !PUERTS_DISABLE_IL2CPP_OPTIMIZATION
     public static void GenV2WithoutWrapper() 
     {
-        PuertsIl2cpp.Editor.Generator.UnityMenu.GenV2WithoutWrapper();
+        Puerts.Editor.Generator.UnityMenu.GenV2WithoutWrapper();
     }
     public static void GenV2() 
     {
-        PuertsIl2cpp.Editor.Generator.UnityMenu.GenV2();
+        Puerts.Editor.Generator.UnityMenu.GenV2();
     }
     public static void GenMinimumWrappersAndBridge() 
     {
-        PuertsIl2cpp.Editor.Generator.UnityMenu.GenMinimumWrappersAndBridge();
+        Puerts.Editor.Generator.UnityMenu.GenMinimumWrappersAndBridge();
     }
     [MenuItem("PuerTS/Tester/BuildV2")]
     public static void BuildWindowsV2() { BuildWindows(true); }

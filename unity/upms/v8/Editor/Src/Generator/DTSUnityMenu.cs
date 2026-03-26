@@ -58,7 +58,7 @@ namespace Puerts.V8.Editor.Generator
                 loader = new Puerts.DefaultLoader();
             }
             var backend = Activator.CreateInstance(
-                PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), loader) as Puerts.Backend;
+                Puerts.TypeUtils.GetType("Puerts.BackendV8"), loader) as Puerts.Backend;
 
             if (backend == null)
             {

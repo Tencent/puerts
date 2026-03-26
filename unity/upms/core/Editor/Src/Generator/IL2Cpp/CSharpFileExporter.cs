@@ -20,7 +20,7 @@ using Mono.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace PuertsIl2cpp.Editor.Generator
+namespace Puerts.Editor.Generator
 {
     /// <summary>
     /// Pure C# file exporter for IL2CPP.
@@ -135,11 +135,11 @@ namespace PuertsIl2cpp.Editor.Generator
             var bridgeInfos = delegateInvokes
                 .Select(m => new CSharpCodeGen.SignatureInfo
                 {
-                    Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, true),
+                    Signature = Puerts.TypeUtils.GetMethodSignature(m, true),
                     CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType.ToString() : "unknow class"),
-                    ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
+                    ReturnSignature = Puerts.TypeUtils.GetTypeSignature(m.ReturnType),
                     ThisSignature = null,
-                    ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, true)).ToList()
+                    ParameterSignatures = m.GetParameters().Select(p => Puerts.TypeUtils.GetParameterSignature(p, true)).ToList()
                 })
                 .GroupBy(s => s.Signature)
                 .Select(s => s.FirstOrDefault())
@@ -312,11 +312,11 @@ return new List<Instruction>();
                     var isExtensionMethod = m.IsDefined(typeof(ExtensionAttribute));
                     return new CSharpCodeGen.SignatureInfo
                     {
-                        Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
+                        Signature = Puerts.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
                         CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType.ToString() : "unknow class"),
-                        ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
-                        ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m, isExtensionMethod),
-                        ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, false)).ToList()
+                        ReturnSignature = Puerts.TypeUtils.GetTypeSignature(m.ReturnType),
+                        ThisSignature = Puerts.TypeUtils.GetThisSignature(m, isExtensionMethod),
+                        ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => Puerts.TypeUtils.GetParameterSignature(p, false)).ToList()
                     };
                 })
                 .Concat(
@@ -324,11 +324,11 @@ return new List<Instruction>();
                     {
                         return new CSharpCodeGen.SignatureInfo
                         {
-                            Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, false),
+                            Signature = Puerts.TypeUtils.GetMethodSignature(m, false, false),
                             CsName = m.ToString() + " declare in " + (m.DeclaringType != null ? m.DeclaringType.ToString() : "unknow class"),
                             ReturnSignature = "v",
                             ThisSignature = "t",
-                            ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p, false)).ToList()
+                            ParameterSignatures = m.GetParameters().Select(p => Puerts.TypeUtils.GetParameterSignature(p, false)).ToList()
                         };
                     })
                 )
@@ -340,9 +340,9 @@ return new List<Instruction>();
             var fieldWrapperInfos = genWrapperField
                 .Select(f => new CSharpCodeGen.SignatureInfo
                 {
-                    Signature = (f.IsStatic ? "" : "t") + PuertsIl2cpp.TypeUtils.GetTypeSignature(f.FieldType),
+                    Signature = (f.IsStatic ? "" : "t") + Puerts.TypeUtils.GetTypeSignature(f.FieldType),
                     CsName = f.ToString() + " declare in " + (f.DeclaringType != null ? f.DeclaringType.ToString() : "unknow class"),
-                    ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(f.FieldType),
+                    ReturnSignature = Puerts.TypeUtils.GetTypeSignature(f.FieldType),
                     ThisSignature = (f.IsStatic ? "" : "t"),
                     ParameterSignatures = null
                 })
@@ -406,7 +406,7 @@ return new List<Instruction>();
                 .Distinct()
                 .ToList());
 
-            genTypes.Add(typeof(PuertsIl2cpp.ArrayExtension));
+            genTypes.Add(typeof(Puerts.ArrayExtension));
 
             var extendedType2extensionType = (from type in genTypes
 #if UNITY_EDITOR
@@ -518,10 +518,10 @@ return new List<Instruction>();
         public static List<string> GetValueTypeFieldSignatures(Type type)
         {
             List<string> ret = new List<string>();
-            if (type.BaseType != null && type.BaseType.IsValueType) ret.Add(PuertsIl2cpp.TypeUtils.GetTypeSignature(type.BaseType));
+            if (type.BaseType != null && type.BaseType.IsValueType) ret.Add(Puerts.TypeUtils.GetTypeSignature(type.BaseType));
             foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                ret.Add(PuertsIl2cpp.TypeUtils.GetTypeSignature(field.FieldType));
+                ret.Add(Puerts.TypeUtils.GetTypeSignature(field.FieldType));
             }
             return ret;
         }
@@ -604,7 +604,7 @@ return new List<Instruction>();
 
             list.Add(new CSharpCodeGen.ValueTypeInfo
             {
-                Signature = PuertsIl2cpp.TypeUtils.GetTypeSignature(type),
+                Signature = Puerts.TypeUtils.GetTypeSignature(type),
                 CsName = type.Name,
                 FieldSignatures = GetValueTypeFieldSignatures(type),
                 NullableHasValuePosition = value

@@ -13,7 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace PuertsIl2cpp.Editor.Generator
+namespace Puerts.Editor.Generator
 {
     /// <summary>
     /// Pure C# code generator for IL2CPP C++ files.

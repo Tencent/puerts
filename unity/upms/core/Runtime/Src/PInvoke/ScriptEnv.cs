@@ -103,7 +103,7 @@ namespace Puerts
 
             PuertsNative.pesapi_close_scope(papis, scope);
 
-            PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
+            Puerts.ExtensionMethodInfo.LoadExtensionMethodInfo();
             
             if (debugPort != -1)
             {
@@ -144,7 +144,7 @@ namespace Puerts
         [UnityEngine.Scripting.Preserve]
         public Type GetTypeByString(string className)
         {
-            return PuertsIl2cpp.TypeUtils.GetType(className);
+            return Puerts.TypeUtils.GetType(className);
         }
 
         [UnityEngine.Scripting.Preserve]
@@ -156,7 +156,7 @@ namespace Puerts
         [UnityEngine.Scripting.Preserve]
         public void LoadAddon(string name)
         {
-            Type type = PuertsIl2cpp.TypeUtils.GetType("Puerts." + name + "Native");
+            Type type = Puerts.TypeUtils.GetType("Puerts." + name + "Native");
             type.GetMethod("Register").Invoke(null, new object[] { PuertsNative.GetRegisterApi(), TypeRegister.Instance.Registry });
         }
 

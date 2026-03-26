@@ -231,7 +231,7 @@ namespace Puerts
 #endif
                 }
             }
-            var extensionMethods = PuertsIl2cpp.ExtensionMethodInfo.Get(type.AssemblyQualifiedName);
+            var extensionMethods = Puerts.ExtensionMethodInfo.Get(type.AssemblyQualifiedName);
             if(extensionMethods != null && extensionMethods.Length > 0)
             {
                 foreach (var extensionMethod in extensionMethods)
@@ -278,7 +278,7 @@ namespace Puerts
                     }
                     else
                     {
-                        addOverload(new MemberKey(methodName, methodInfo.IsStatic && PuertsIl2cpp.ExtensionMethodInfo.GetExtendedType(methodInfo) != type), methodInfo);
+                        addOverload(new MemberKey(methodName, methodInfo.IsStatic && Puerts.ExtensionMethodInfo.GetExtendedType(methodInfo) != type), methodInfo);
                     }
                     //UnityEngine.Debug.Log("wrap " + method + " ok");
                 }

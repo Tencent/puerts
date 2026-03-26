@@ -9,7 +9,7 @@
 using System.IO;
 using UnityEngine;
 
-namespace PuertsIl2cpp.Editor.Generator
+namespace Puerts.Editor.Generator
 {
     /// <summary>
     /// Centralized path management for IL2CPP plugin output
