@@ -4,6 +4,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
 ![Unity_Test](https://github.com/Tencent/puerts/actions/workflows/unity_unittest.yml/badge.svg?branch=master)
 ![Unreal_CI](https://github.com/Tencent/puerts/actions/workflows/unreal_ci.yml/badge.svg?branch=master)
+![Nuget_Build](https://github.com/Tencent/puerts/actions/workflows/build_nuget.yml/badge.svg?branch=master)
 
 ## Unreal Releases
 
