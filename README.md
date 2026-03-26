@@ -3,6 +3,7 @@
 [![license](https://img.shields.io/badge/license-BSD_3_Clause-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
 ![Unity_Test](https://github.com/Tencent/puerts/actions/workflows/unity_unittest.yml/badge.svg?branch=master)
+![Unreal_CI](https://github.com/Tencent/puerts/actions/workflows/unreal_ci.yml/badge.svg?branch=master)
 
 ## Unreal Releases
 
