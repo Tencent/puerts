@@ -16,7 +16,7 @@ namespace Puerts.Editor
 {
     namespace Generator {
 
-        class Utils {
+        public class Utils {
 
             public const BindingFlags Flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 

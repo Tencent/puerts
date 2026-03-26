@@ -52,6 +52,11 @@ namespace Puerts.Editor
             }
             */
 
+            // DTS generation has been moved to v8 module (Puerts.V8.Editor.Generator.DTSUnityMenu)
+            // to avoid core→v8 reverse dependency. If v8 package is installed, 
+            // use "Tools/PuerTS/Generate index.d.ts" from the v8 module's menu.
+
+            /*
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate index.d.ts", false, 1)]
             public static void GenerateDTS()
             {
@@ -77,6 +82,7 @@ namespace Puerts.Editor
 
                 Utils.SetFilters(null);
             }
+            */
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 9)]
             public static void ClearAll()

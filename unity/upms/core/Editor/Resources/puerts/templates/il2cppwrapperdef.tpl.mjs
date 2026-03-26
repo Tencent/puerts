@@ -32,7 +32,7 @@ ${parameterSignatures.map((x, i) => `    pesapi_value _sv${i} = ${invokePapi('ge
     
 ${parameterSignatures.map((x, i) => il2cpp_snippets.JSValToCSVal(x, `_sv${i}`, `p${i}`)).join('\n')}
 
-    typedef ${il2cpp_snippets.SToCPPType(wrapperInfo.ReturnSignature)} (*FuncToCall)(${il2cpp_snippets.needThis(wrapperInfo) ? 'void*,' : ''}${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}const void* method);
+    typedef ${il2cpp_snippets.SToCPPType(wrapperInfo.ReturnSignature)} (*FuncToCall)(${il2cpp_snippets.needThis(wrapperInfo) ? 'void*, ' : ''}${parameterSignatures.map((S, i) => `${il2cpp_snippets.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}const void* method);
     ${IF(wrapperInfo.ReturnSignature != 'v')}${il2cpp_snippets.SToCPPType(wrapperInfo.ReturnSignature)} ret = ${ENDIF()}((FuncToCall)methodPointer)(${il2cpp_snippets.needThis(wrapperInfo) ? 'self,' : ''} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} method);
 
     ${FOR(parameterSignatures, (x, i) => t`

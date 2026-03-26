@@ -124,6 +124,42 @@ namespace PuertsIl2cpp.Editor
                 AssetDatabase.Refresh();
             }
 
+            // ============ Pure C# generation (no V8 dependency) ============
+
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp C# Gen (all in one without wrapper)", false, 12)]
+            public static void CSharpGenV2WithoutWrapper()
+            {
+                var start = DateTime.Now;
+                var saveTo = Path.Combine(Application.dataPath, "Gen2/Plugins/puerts_il2cpp/");
+                Directory.CreateDirectory(saveTo);
+                CSharpFileExporter.GenAll(saveTo, false, true);
+
+                var codeOutputDir = Path.Combine(Application.dataPath, "Gen2/");
+                Directory.CreateDirectory(codeOutputDir);
+                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
+                CSharpFileExporter.GenLinkXml(codeOutputDir);
+
+                Debug.Log("[C# Gen] finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
+            }
+
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp C# Gen (all in one with full wrapper)", false, 13)]
+            public static void CSharpGenV2()
+            {
+                var start = DateTime.Now;
+                var saveTo = Path.Combine(Application.dataPath, "Gen2/Plugins/puerts_il2cpp/");
+                Directory.CreateDirectory(saveTo);
+                CSharpFileExporter.GenAll(saveTo, false, false);
+
+                var codeOutputDir = Path.Combine(Application.dataPath, "Gen2/");
+                Directory.CreateDirectory(codeOutputDir);
+                CSharpFileExporter.GenExtensionMethodInfos(codeOutputDir);
+                CSharpFileExporter.GenLinkXml(codeOutputDir);
+
+                Debug.Log("[C# Gen] finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
+            }
+
 
         }
     }

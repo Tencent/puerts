@@ -66,6 +66,9 @@ namespace Puerts.Editor
             }
 
 
+            // ExportDTS has been moved to v8 module (Puerts.V8.Editor.Generator.DTSUnityMenu.ExportDTS)
+            // to avoid core→v8 reverse dependency.
+            /*
             public static void ExportDTS(string saveTo, ILoader loader = null, bool csharpModuleWillGen = false)
             {
                 var configure = getConfigure();
@@ -98,6 +101,7 @@ namespace Puerts.Editor
 
                 Utils.SetFilters(null);
             }
+            */
         }
     }
 

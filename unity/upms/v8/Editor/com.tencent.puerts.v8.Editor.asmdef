@@ -1,0 +1,20 @@
+{
+    "name": "com.tencent.puerts.v8.Editor",
+    "rootNamespace": "",
+    "references": [
+        "com.tencent.puerts.core",
+        "com.tencent.puerts.core.Editor",
+        "com.tencent.puerts.v8"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

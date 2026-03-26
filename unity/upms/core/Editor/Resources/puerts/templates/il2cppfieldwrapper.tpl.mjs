@@ -15,14 +15,12 @@ function genGetField(fieldWrapperInfo) {
 		if (il2cpp_snippets.isNullableStruct(signature))
 		{
 			return `${code}
-	${invokePapi('add_return')}(info, NullableConverter<${signature}>::toScript(apis, env, TIret, _src));
-    `;
+	${invokePapi('add_return')}(info, NullableConverter<${signature}>::toScript(apis, env, TIret, _src));`;
 		}
 		else
 		{
 			return `${code}
-	${invokePapi('add_return')}(info, DataTransfer::CopyValueType<${signature}>(apis, env, *_src, TIret));
-    `;
+	${invokePapi('add_return')}(info, DataTransfer::CopyValueType<${signature}>(apis, env, *_src, TIret));`;
 		}
 		
     } else {
@@ -57,8 +55,8 @@ static void ifs_${fieldWrapperInfo.Signature}(struct pesapi_ffi* apis, pesapi_ca
     ${il2cpp_snippets.getThis(fieldWrapperInfo.ThisSignature)}
 
     ${ENDIF()}    
-	// ${fieldWrapperInfo.ReturnSignature}
-    ${il2cpp_snippets.JSValToCSVal(fieldWrapperInfo.ReturnSignature, `${invokePapi('get_arg')}(info, 0)`, "p")}
+    // ${fieldWrapperInfo.ReturnSignature}
+${il2cpp_snippets.JSValToCSVal(fieldWrapperInfo.ReturnSignature, `${invokePapi('get_arg')}(info, 0)`, "p")}
     SetFieldValue(${il2cpp_snippets.needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${['o', 's', 'p', 'a'].indexOf(fieldWrapperInfo.Signature) != -1 ? 'p' : '&p'});
 }`;
 }
