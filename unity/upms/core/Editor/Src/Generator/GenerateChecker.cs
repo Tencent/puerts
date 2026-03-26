@@ -12,7 +12,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-namespace PuertsIl2cpp.Editor.Generator
+namespace Puerts.Editor.Generator
 {
     /// <summary>
     /// Build preprocessor that checks if required IL2CPP files are generated before building

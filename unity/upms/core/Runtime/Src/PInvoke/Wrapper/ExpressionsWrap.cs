@@ -1244,7 +1244,7 @@ namespace Puerts
 
         private static bool isExtensionOf(MethodInfo methodInfo, Type type)
         {
-            return type != null && methodInfo != null && type == PuertsIl2cpp.ExtensionMethodInfo.GetExtendedType(methodInfo);
+            return type != null && methodInfo != null && type == Puerts.ExtensionMethodInfo.GetExtendedType(methodInfo);
         }
 
         private static T BuildMethodBaseWrap<T>(Type type, MethodBase[] methodBases, bool forceCheckArgs, Func<CompileContext, MethodBase, ParameterExpression, ParameterExpression, Func<int, Expression>, Expression> buildBody)

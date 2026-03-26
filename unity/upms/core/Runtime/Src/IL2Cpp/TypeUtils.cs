@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace PuertsIl2cpp
+namespace Puerts
 {
 	public static class ExtensionMethodInfo
 	{
@@ -170,12 +170,12 @@ namespace PuertsIl2cpp
 
         public static bool LoadExtensionMethodInfo() {
             var ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen")).FirstOrDefault(x => x != null);
+                select assembly.GetType("Puerts.ExtensionMethodInfos_Gen")).FirstOrDefault(x => x != null);
             bool noGen = false;
             if (ExtensionMethodInfos_Gen == null)
             {
                 ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                                            select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen_Internal")).FirstOrDefault(x => x != null);
+                                            select assembly.GetType("Puerts.ExtensionMethodInfos_Gen_Internal")).FirstOrDefault(x => x != null);
                 noGen = true;
             }
             var TryLoadExtensionMethod = ExtensionMethodInfos_Gen.GetMethod("TryLoadExtensionMethod");

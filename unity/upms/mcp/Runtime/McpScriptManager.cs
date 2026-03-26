@@ -97,7 +97,7 @@ namespace PuertsMcp
             }
             catch (Exception ex)
             {
-                lastError = $"[McpScriptManager] Failed to initialize: {ex.Message}";
+                lastError = $"[McpScriptManager] Failed to initialize: {ex.Message} {ex.StackTrace}";
                 Debug.LogError(lastError);
                 isInitialized = false;
             }

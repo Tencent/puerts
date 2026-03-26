@@ -73,17 +73,17 @@ namespace Puerts
 #else
             if (backendExpect == BackendType.V8)
             {
-                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), loader) as Backend;
+                Backend = Activator.CreateInstance(Puerts.TypeUtils.GetType("Puerts.BackendV8"), loader) as Backend;
             }
 
             if (backendExpect == BackendType.Node)
             {
-                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendNodeJS"), loader) as Backend;
+                Backend = Activator.CreateInstance(Puerts.TypeUtils.GetType("Puerts.BackendNodeJS"), loader) as Backend;
             }
 #endif
             if (backendExpect == BackendType.QuickJS)
             {
-                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendQuickJS"), loader) as Backend;
+                Backend = Activator.CreateInstance(Puerts.TypeUtils.GetType("Puerts.BackendQuickJS"), loader) as Backend;
             }
             if (Backend == null)
             {
