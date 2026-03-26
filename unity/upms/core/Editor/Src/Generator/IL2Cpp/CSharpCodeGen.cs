@@ -1100,7 +1100,7 @@ namespace puerts
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-namespace PuertsIl2cpp
+namespace Puerts
 {{
 public static class ExtensionMethodInfos_Gen
 {{
