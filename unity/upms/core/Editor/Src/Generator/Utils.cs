@@ -222,7 +222,7 @@ namespace Puerts.Editor
                 return result;
             }
 
-            internal static BindingMode getBindingMode(MemberInfo mbi) 
+            public static BindingMode getBindingMode(MemberInfo mbi) 
             {
                 BindingMode strictestMode = BindingMode.FastBinding;
                 foreach (var filter in BindingModeFilters)
