@@ -533,38 +533,39 @@ namespace PuertsIl2cpp.Editor.Generator
         #region File Generation: WrapperDef
 
         // Common C++ includes shared across generated files
-        private const string CommonIncludes = @"#include ""il2cpp-api.h""
-#include ""il2cpp-class-internals.h""
-#include ""il2cpp-object-internals.h""
-#include ""vm/InternalCalls.h""
-#include ""vm/Object.h""
-#include ""vm/Array.h""
-#include ""vm/Runtime.h""
-#include ""vm/Reflection.h""
-#include ""vm/MetadataCache.h""
-#include ""vm/Field.h""
-#include ""vm/GenericClass.h""
-#include ""vm/Thread.h""
-#include ""vm/Method.h""
-#include ""vm/Parameter.h""
-#include ""vm/Image.h""
-#include ""utils/StringUtils.h""
-#include ""gc/WriteBarrier.h""
-#include ""pesapi.h""
-#include ""TDataTrans.h""
-#include ""PuertsValueType.h""";
+        private static readonly string CommonIncludes = string.Join("\n", new[] {
+            "#include \"il2cpp-api.h\"",
+            "#include \"il2cpp-class-internals.h\"",
+            "#include \"il2cpp-object-internals.h\"",
+            "#include \"vm/InternalCalls.h\"",
+            "#include \"vm/Object.h\"",
+            "#include \"vm/Array.h\"",
+            "#include \"vm/Runtime.h\"",
+            "#include \"vm/Reflection.h\"",
+            "#include \"vm/MetadataCache.h\"",
+            "#include \"vm/Field.h\"",
+            "#include \"vm/GenericClass.h\"",
+            "#include \"vm/Thread.h\"",
+            "#include \"vm/Method.h\"",
+            "#include \"vm/Parameter.h\"",
+            "#include \"vm/Image.h\"",
+            "#include \"utils/StringUtils.h\"",
+            "#include \"gc/WriteBarrier.h\"",
+            "#include \"pesapi.h\"",
+            "#include \"TDataTrans.h\"",
+            "#include \"PuertsValueType.h\""
+        });
 
         public static string GenWrapperDefFile(List<SignatureInfo> wrapperInfos)
         {
             var wrapperFuncs = string.Join("\n", wrapperInfos.Select(info => GenSingleWrapperFunc(info)));
 
+            var emscriptenBlock = "#if defined(__EMSCRIPTEN__)\n#include \"pesapi_webgl.h\"\nusing namespace pesapi::webglimpl;\n#endif";
+
             return $@"// Auto Gen
 
 {CommonIncludes}
-#if defined(__EMSCRIPTEN__)
-#include ""pesapi_webgl.h""
-using namespace pesapi::webglimpl;
-#endif
+{emscriptenBlock}
 
 namespace puerts
 {{
@@ -670,15 +671,19 @@ bool w_{sig}(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer me
             string tableEntries = string.Join("\n", allWrapperInfos.Select(info =>
                 $"    {{\"{info.Signature}\", w_{info.Signature}}},"));
 
+            var wrapperIncludes = string.Join("\n", new[] {
+                "#include <memory>",
+                "#include \"il2cpp-api.h\"",
+                "#include \"il2cpp-class-internals.h\"",
+                "#include \"il2cpp-object-internals.h\"",
+                "#include \"vm/Object.h\"",
+                "#include \"pesapi.h\"",
+                "#include \"TDataTrans.h\""
+            });
+
             return $@"// Auto Gen
 
-#include <memory>
-#include ""il2cpp-api.h""
-#include ""il2cpp-class-internals.h""
-#include ""il2cpp-object-internals.h""
-#include ""vm/Object.h""
-#include ""pesapi.h""
-#include ""TDataTrans.h""
+{wrapperIncludes}
 
 namespace puerts
 {{
@@ -1035,21 +1040,25 @@ struct {vt.Signature}
 
             string allStructs = string.Join("\n", structDefs);
 
+            var valueTypeHeader = string.Join("\n", new[] {
+                "#if !__SNC__",
+                "#ifndef __has_feature ",
+                "#define __has_feature(x) 0 ",
+                "#endif",
+                "#endif",
+                "",
+                "#if _MSC_VER",
+                "typedef wchar_t Il2CppChar;",
+                "#elif __has_feature(cxx_unicode_literals)",
+                "typedef char16_t Il2CppChar;",
+                "#else",
+                "typedef uint16_t Il2CppChar;",
+                "#endif"
+            });
+
             return $@"// Auto Gen
 
-#if !__SNC__
-#ifndef __has_feature 
-#define __has_feature(x) 0 
-#endif
-#endif
-
-#if _MSC_VER
-typedef wchar_t Il2CppChar;
-#elif __has_feature(cxx_unicode_literals)
-typedef char16_t Il2CppChar;
-#else
-typedef uint16_t Il2CppChar;
-#endif
+{valueTypeHeader}
 
 namespace puerts
 {{
@@ -1066,9 +1075,7 @@ namespace puerts
         public static string GenMacroHeader(List<string> defines)
         {
             return string.Join("\n", defines.Select(d =>
-$@"#ifndef {d}
-    #define {d}
-#endif")) + "\n";
+                $"#ifndef {d}\n    #define {d}\n#endif")) + "\n";
         }
 
         #endregion
