@@ -134,16 +134,16 @@ namespace PuertsIl2cpp.Editor.Generator
         {
             if (thisSignature == "t")
             {
-                return "auto self = " + InvokePapi("get_native_holder_ptr") + "(info);";
+                return $"auto self = {InvokePapi("get_native_holder_ptr")}(info);";
             }
             else if (thisSignature == "T")
             {
-                return "auto self = " + InvokePapi("get_native_holder_ptr") + @"(info);
-    auto ptrType = (Il2CppClass*) " + InvokePapi("get_native_holder_typeid") + @"(info);
+                return $@"auto self = {InvokePapi("get_native_holder_ptr")}(info);
+    auto ptrType = (Il2CppClass*) {InvokePapi("get_native_holder_typeid")}(info);
     if (il2cpp::vm::Class::IsValuetype(ptrType))
-    {
+    {{
         self = DataTransfer::GetValueTypeForCSharp(ptrType, self);
-    }
+    }}
 ";
             }
             return "";
@@ -155,13 +155,13 @@ namespace PuertsIl2cpp.Editor.Generator
             if (PrimitiveSignatureCppTypeMap.TryGetValue(signature, out cppType))
             {
                 if (isRef)
-                    return "converter::Converter<std::reference_wrapper<" + cppType + ">>::toCpp(apis, env, " + jsName + ")";
+                    return $"converter::Converter<std::reference_wrapper<{cppType}>>::toCpp(apis, env, {jsName})";
                 else
-                    return "converter::Converter<" + cppType + ">::toCpp(apis, env, " + jsName + ")";
+                    return $"converter::Converter<{cppType}>::toCpp(apis, env, {jsName})";
             }
             else if ((signature == "Pv" || signature == "p") && !isRef)
             {
-                return "DataTransfer::GetPointer<void>(apis, env, " + jsName + ")";
+                return $"DataTransfer::GetPointer<void>(apis, env, {jsName})";
             }
             else
             {
@@ -178,25 +178,24 @@ namespace PuertsIl2cpp.Editor.Generator
 
         private static string DeclareTypeInfo(string returnSignature, List<string> parameterSignatures)
         {
-            var sb = new StringBuilder();
+            var parts = new List<string>();
             int i = 0;
             bool returnHasTypeInfo = !string.IsNullOrEmpty(returnSignature) &&
                                      !IsPrimitive(GetSignatureWithoutRefAndPrefix(returnSignature));
             if (returnHasTypeInfo)
             {
-                sb.Append("auto TIret = wrapData->TypeInfos[" + i + "];");
+                parts.Add($"auto TIret = wrapData->TypeInfos[{i}];");
                 i++;
             }
             for (int idx = 0; idx < parameterSignatures.Count; idx++)
             {
                 if (!IsPrimitive(GetSignatureWithoutRefAndPrefix(parameterSignatures[idx])))
                 {
-                    if (sb.Length > 0) sb.Append("\n    ");
-                    sb.Append("auto TIp" + idx + " = wrapData->TypeInfos[" + i + "];");
+                    parts.Add($"auto TIp{idx} = wrapData->TypeInfos[{i}];");
                     i++;
                 }
             }
-            return sb.ToString();
+            return string.Join("\n    ", parts);
         }
 
         private static string GenArgsLenCheck(List<string> parameterSignatures)
@@ -222,12 +221,11 @@ namespace PuertsIl2cpp.Editor.Generator
         private static string CheckJSArg(string signature, int index)
         {
             string ret = "";
-            string typeInfoVar = "TIp" + index;
-            string origSig = signature;
+            string typeInfoVar = $"TIp{index}";
 
             if (signature[0] == 'D')
             {
-                ret += "if (js_args_len > " + index + " && ";
+                ret += $"if (js_args_len > {index} && ";
                 signature = signature.Substring(1);
             }
             else if (signature[0] == 'V')
@@ -237,9 +235,9 @@ namespace PuertsIl2cpp.Editor.Generator
                 if (elmSignature == "o" || elmSignature == "O" || elmSignature == "a" ||
                     IsStructOrNullableStruct(elmSignature))
                 {
-                    elmClassDecl = "auto " + typeInfoVar + "_V = il2cpp::vm::Class::GetElementClass(" + typeInfoVar + ");";
+                    elmClassDecl = $"auto {typeInfoVar}_V = il2cpp::vm::Class::GetElementClass({typeInfoVar});";
                 }
-                ret += elmClassDecl + "if (js_args_len > " + index + " && ";
+                ret += $"{elmClassDecl}if (js_args_len > {index} && ";
                 signature = elmSignature;
                 typeInfoVar += "_V";
             }
@@ -250,23 +248,23 @@ namespace PuertsIl2cpp.Editor.Generator
 
             if (IsPrimitive(signature))
             {
-                ret += "!converter::Converter<" + PrimitiveSignatureCppTypeMap[signature] + ">::accept(apis, env, _sv" + index + ")) return false;";
+                ret += $"!converter::Converter<{PrimitiveSignatureCppTypeMap[signature]}>::accept(apis, env, _sv{index})) return false;";
             }
             else if (signature == "p" || signature == "Pv" || signature == "a")
             {
-                ret += "!" + InvokePapi("is_binary") + "(env, _sv" + index + ") && !" + InvokePapi("is_null") + "(env, _sv" + index + ") && !" + InvokePapi("is_undefined") + "(env, _sv" + index + ")) return false;";
+                ret += $"!{InvokePapi("is_binary")}(env, _sv{index}) && !{InvokePapi("is_null")}(env, _sv{index}) && !{InvokePapi("is_undefined")}(env, _sv{index})) return false;";
             }
             else if (signature.Length > 0 && signature[0] == 'P')
             {
-                ret += "!" + InvokePapi("is_boxed_value") + "(env, _sv" + index + ")) return false;";
+                ret += $"!{InvokePapi("is_boxed_value")}(env, _sv{index})) return false;";
             }
             else if (signature == "s")
             {
-                ret += "!converter::Converter<Il2CppString*>::accept(apis, env, _sv" + index + ")) return false;";
+                ret += $"!converter::Converter<Il2CppString*>::accept(apis, env, _sv{index})) return false;";
             }
             else if (signature == "o" || signature == "a")
             {
-                ret += "!DataTransfer::IsAssignable(apis, env, _sv" + index + ", " + typeInfoVar + ", false)) return false;";
+                ret += $"!DataTransfer::IsAssignable(apis, env, _sv{index}, {typeInfoVar}, false)) return false;";
             }
             else if (signature == "O")
             {
@@ -278,16 +276,16 @@ namespace PuertsIl2cpp.Editor.Generator
                 string si = signature.Substring(3, signature.Length - 4); // slice(3, -1)
                 if (IsPrimitive(si))
                 {
-                    ret += "!" + InvokePapi("is_null") + "(env, _sv" + index + ") && !converter::Converter<" + PrimitiveSignatureCppTypeMap[si] + ">::accept(apis, env, _sv" + index + ")) return false;";
+                    ret += $"!{InvokePapi("is_null")}(env, _sv{index}) && !converter::Converter<{PrimitiveSignatureCppTypeMap[si]}>::accept(apis, env, _sv{index})) return false;";
                 }
                 else
                 {
-                    ret += "!" + InvokePapi("is_null") + "(env, _sv" + index + ") && !DataTransfer::IsAssignable(apis, env, _sv" + index + ", il2cpp::vm::Class::GetNullableArgument(" + typeInfoVar + "), true)) return false;";
+                    ret += $"!{InvokePapi("is_null")}(env, _sv{index}) && !DataTransfer::IsAssignable(apis, env, _sv{index}, il2cpp::vm::Class::GetNullableArgument({typeInfoVar}), true)) return false;";
                 }
             }
             else if (IsStruct(signature))
             {
-                ret += "!DataTransfer::IsAssignable(apis, env, _sv" + index + ", " + typeInfoVar + ", true)) return false;";
+                ret += $"!DataTransfer::IsAssignable(apis, env, _sv{index}, {typeInfoVar}, true)) return false;";
             }
             else
             {
@@ -300,39 +298,59 @@ namespace PuertsIl2cpp.Editor.Generator
         {
             if (signature == "s")
             {
-                return "    // JSValToCSVal s\n    Il2CppString* " + csName + " = converter::Converter<Il2CppString*>::toCpp(apis, env, " + jsName + ");";
+                return $@"    // JSValToCSVal s
+    Il2CppString* {csName} = converter::Converter<Il2CppString*>::toCpp(apis, env, {jsName});";
             }
             else if (signature == "Ps")
             {
-                return "    // JSValToCSVal Ps\n    Il2CppString* u" + csName + " = converter::Converter<std::reference_wrapper<Il2CppString*>>::toCpp(apis, env, " + jsName + "); // string ref\n    Il2CppString** " + csName + " = &u" + csName + ";\n        ";
+                return $@"    // JSValToCSVal Ps
+    Il2CppString* u{csName} = converter::Converter<std::reference_wrapper<Il2CppString*>>::toCpp(apis, env, {jsName}); // string ref
+    Il2CppString** {csName} = &u{csName};
+        ";
             }
             else if (signature == "o" || signature == "O" || signature == "a")
             {
-                return "    // JSValToCSVal o/O\n    Il2CppObject* " + csName + " = JsValueToCSRef(apis, TI" + csName + ", env, " + jsName + ");";
+                return $@"    // JSValToCSVal o/O
+    Il2CppObject* {csName} = JsValueToCSRef(apis, TI{csName}, env, {jsName});";
             }
             else if (signature == "Po" || signature == "PO" || signature == "Pa")
             {
-                return "    // JSValToCSVal Po/PO\n    Il2CppObject* u" + csName + " = DataTransfer::GetPointer<Il2CppObject>(apis, env, " + InvokePapi("unboxing") + "(env, " + jsName + ")); // object ref\n    Il2CppObject** " + csName + " = &u" + csName + ";\n        ";
+                return $@"    // JSValToCSVal Po/PO
+    Il2CppObject* u{csName} = DataTransfer::GetPointer<Il2CppObject>(apis, env, {InvokePapi("unboxing")}(env, {jsName})); // object ref
+    Il2CppObject** {csName} = &u{csName};
+        ";
             }
             else if (IsStruct(signature))
             {
-                return "    // JSValToCSVal struct\n    " + signature + "* p" + csName + " = DataTransfer::GetPointer<" + signature + ">(apis, env, " + jsName + ");\n    " + signature + " " + csName + " = p" + csName + " ? *p" + csName + " : " + signature + " {};";
+                return $@"    // JSValToCSVal struct
+    {signature}* p{csName} = DataTransfer::GetPointer<{signature}>(apis, env, {jsName});
+    {signature} {csName} = p{csName} ? *p{csName} : {signature} {{}};";
             }
             else if ((signature.StartsWith("P" + StructPrefix) || signature.StartsWith("P" + NullableStructPrefix)) && signature.EndsWith("_"))
             {
                 string S = signature.Substring(1);
-                return "    // JSValToCSVal Pstruct\n    " + S + "* " + csName + " = DataTransfer::GetPointer<" + S + ">(apis, env, " + InvokePapi("unboxing") + "(env, " + jsName + ")); // valuetype ref\n    " + S + " u" + csName + ";\n    if (!" + csName + ") {\n        memset(&u" + csName + ", 0, sizeof(" + S + "));\n        " + csName + " = &u" + csName + ";\n    }\n        ";
+                return $@"    // JSValToCSVal Pstruct
+    {S}* {csName} = DataTransfer::GetPointer<{S}>(apis, env, {InvokePapi("unboxing")}(env, {jsName})); // valuetype ref
+    {S} u{csName};
+    if (!{csName}) {{
+        memset(&u{csName}, 0, sizeof({S}));
+        {csName} = &u{csName};
+    }}
+        ";
             }
             else if (signature[0] == 'P' && signature != "Pv")
             {
                 string S = signature.Substring(1);
                 if (IsPrimitive(S))
                 {
-                    return "    // JSValToCSVal P primitive\n    " + SToCPPType(S) + " u" + csName + " = " + GetArgValue(S, jsName, true) + ";\n    " + SToCPPType(S) + "* " + csName + " = &u" + csName + ";";
+                    return $@"    // JSValToCSVal P primitive
+    {SToCPPType(S)} u{csName} = {GetArgValue(S, jsName, true)};
+    {SToCPPType(S)}* {csName} = &u{csName};";
                 }
                 else
                 {
-                    return "    // JSValToCSVal P not primitive\n    " + SToCPPType(signature) + " " + csName + " = " + GetArgValue(S, jsName, true) + ";";
+                    return $@"    // JSValToCSVal P not primitive
+    {SToCPPType(signature)} {csName} = {GetArgValue(S, jsName, true)};";
                 }
             }
             else if (signature[0] == 'V')
@@ -342,29 +360,41 @@ namespace PuertsIl2cpp.Editor.Generator
                 int start = int.Parse(System.Text.RegularExpressions.Regex.Match(jsName, @"_sv(\d+)").Groups[1].Value);
                 if (IsPrimitive(si))
                 {
-                    return "    // JSValToCSVal primitive params\n    Il2CppArray* " + csName + " = Params<" + PrimitiveSignatureCppTypeMap[si] + ">::PackPrimitive(apis, env, info, TI" + csName + ", js_args_len, " + start + ");\n                ";
+                    return $@"    // JSValToCSVal primitive params
+    Il2CppArray* {csName} = Params<{PrimitiveSignatureCppTypeMap[si]}>::PackPrimitive(apis, env, info, TI{csName}, js_args_len, {start});
+                ";
                 }
                 else if (si == "s")
                 {
-                    return "    // JSValToCSVal string params\n    Il2CppArray* " + csName + " = Params<void*>::PackString(apis, env, info, TI" + csName + ", js_args_len, " + start + ");\n                ";
+                    return $@"    // JSValToCSVal string params
+    Il2CppArray* {csName} = Params<void*>::PackString(apis, env, info, TI{csName}, js_args_len, {start});
+                ";
                 }
                 else if (si == "o" || si == "O" || si == "a")
                 {
-                    return "    // JSValToCSVal ref params\n    Il2CppArray* " + csName + " = Params<void*>::PackRef(apis, env, info, TI" + csName + ", js_args_len, " + start + ");\n                ";
+                    return $@"    // JSValToCSVal ref params
+    Il2CppArray* {csName} = Params<void*>::PackRef(apis, env, info, TI{csName}, js_args_len, {start});
+                ";
                 }
                 else if (IsStructOrNullableStruct(si))
                 {
-                    return "    // JSValToCSVal valuetype params\n    Il2CppArray* " + csName + " = Params<" + si + ">::PackValueType(apis, env, info, TI" + csName + ", js_args_len, " + start + ");\n                ";
+                    return $@"    // JSValToCSVal valuetype params
+    Il2CppArray* {csName} = Params<{si}>::PackValueType(apis, env, info, TI{csName}, js_args_len, {start});
+                ";
                 }
                 else
                 {
-                    return "    // JSValToCSVal unknow params type\n    Il2CppArray* " + csName + " = nullptr;\n                ";
+                    return $@"    // JSValToCSVal unknow params type
+    Il2CppArray* {csName} = nullptr;
+                ";
                 }
             }
             else if (signature.StartsWith(NullableStructPrefix) || signature.StartsWith("DN_"))
             {
                 string si = signature[0] == 'D' ? signature.Substring(1) : signature;
-                return "    // JSValToCSVal Nullable \n    " + si + " " + csName + ";\n    NullableConverter<" + si + ">::toCpp(apis, env, " + jsName + ", TI" + csName + ", &" + csName + ");";
+                return $@"    // JSValToCSVal Nullable 
+    {si} {csName};
+    NullableConverter<{si}>::toCpp(apis, env, {jsName}, TI{csName}, &{csName});";
             }
             else if (signature[0] == 'D')
             {
@@ -372,28 +402,38 @@ namespace PuertsIl2cpp.Editor.Generator
                 int start = int.Parse(System.Text.RegularExpressions.Regex.Match(jsName, @"_sv(\d+)").Groups[1].Value);
                 if (IsPrimitive(si))
                 {
-                    return "    // JSValToCSVal primitive with default\n    " + PrimitiveSignatureCppTypeMap[si] + " " + csName + " = OptionalParameter<" + PrimitiveSignatureCppTypeMap[si] + ">::GetPrimitive(apis, env, info, method, wrapData, js_args_len, " + start + ");\n                ";
+                    return $@"    // JSValToCSVal primitive with default
+    {PrimitiveSignatureCppTypeMap[si]} {csName} = OptionalParameter<{PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(apis, env, info, method, wrapData, js_args_len, {start});
+                ";
                 }
                 else if (si == "s")
                 {
-                    return "    // JSValToCSVal string  with default\n    Il2CppString* " + csName + " = OptionalParameter<Il2CppString*>::GetString(apis, env, info, method, wrapData, js_args_len, " + start + ");\n                ";
+                    return $@"    // JSValToCSVal string  with default
+    Il2CppString* {csName} = OptionalParameter<Il2CppString*>::GetString(apis, env, info, method, wrapData, js_args_len, {start});
+                ";
                 }
                 else if (si == "o" || si == "O" || si == "a")
                 {
-                    return "    // JSValToCSVal ref  with default\n    Il2CppObject* " + csName + " = OptionalParameter<Il2CppObject*>::GetRefType(apis, env, info, method, wrapData, js_args_len, " + start + ", TI" + csName + ");\n                ";
+                    return $@"    // JSValToCSVal ref  with default
+    Il2CppObject* {csName} = OptionalParameter<Il2CppObject*>::GetRefType(apis, env, info, method, wrapData, js_args_len, {start}, TI{csName});
+                ";
                 }
                 else if (IsStruct(si))
                 {
-                    return "    // JSValToCSVal valuetype  with default\n    " + si + " " + csName + " = OptionalParameter<" + si + ">::GetValueType(apis, env, info, method, wrapData, js_args_len, " + start + ");\n                ";
+                    return $@"    // JSValToCSVal valuetype  with default
+    {si} {csName} = OptionalParameter<{si}>::GetValueType(apis, env, info, method, wrapData, js_args_len, {start});
+                ";
                 }
                 else
                 {
-                    return "    // JSValToCSVal unknow type with default\n    void* " + csName + " = nullptr;\n                ";
+                    return $@"    // JSValToCSVal unknow type with default
+    void* {csName} = nullptr;
+                ";
                 }
             }
             else
             {
-                return "    // JSValToCSVal P any\n    " + SToCPPType(signature) + " " + csName + " = " + GetArgValue(signature, jsName, false) + ";";
+                return $"    // JSValToCSVal P any\n    {SToCPPType(signature)} {csName} = {GetArgValue(signature, jsName, false)};";
             }
         }
 
@@ -403,63 +443,55 @@ namespace PuertsIl2cpp.Editor.Generator
 
             if (IsPrimitive(signature))
             {
-                return "converter::Converter<" + PrimitiveSignatureCppTypeMap[signature] + ">::toScript(apis, env, " + csName + ")";
+                return $"converter::Converter<{PrimitiveSignatureCppTypeMap[signature]}>::toScript(apis, env, {csName})";
             }
-            else if (signature == "O")
+            else if (signature == "O" || signature == "o" || signature == "a")
             {
-                return "CSRefToJsValue(apis, env, " + tiName + ", " + csName + ")";
-            }
-            else if (signature == "o")
-            {
-                return "CSRefToJsValue(apis, env, " + tiName + ", " + csName + ")";
-            }
-            else if (signature == "a")
-            {
-                return "CSRefToJsValue(apis, env, " + tiName + ", " + csName + ")";
+                return $"CSRefToJsValue(apis, env, {tiName}, {csName})";
             }
             else if (IsNullableStruct(signature))
             {
-                return "NullableConverter<" + signature + ">::toScript(apis, env, " + tiName + ", &" + csName + ")";
+                return $"NullableConverter<{signature}>::toScript(apis, env, {tiName}, &{csName})";
             }
             else if (signature == "s")
             {
-                return "converter::Converter<Il2CppString*>::toScript(apis, env, " + csName + ")";
+                return $"converter::Converter<Il2CppString*>::toScript(apis, env, {csName})";
             }
             else if (signature == "p" || signature == "Pv")
             {
-                return InvokePapi("create_binary") + "(env, " + csName + ", 0)";
+                return $"{InvokePapi("create_binary")}(env, {csName}, 0)";
             }
             else if (IsStruct(signature))
             {
-                return "DataTransfer::CopyValueType(apis, env, " + csName + ", " + tiName + ")";
+                return $"DataTransfer::CopyValueType(apis, env, {csName}, {tiName})";
             }
             else if (signature == "Ps")
             {
-                return "converter::Converter<std::reference_wrapper<Il2CppString*>>::toScript(apis, env, *" + csName + ")";
+                return $"converter::Converter<std::reference_wrapper<Il2CppString*>>::toScript(apis, env, *{csName})";
             }
             else if (signature.Length > 0 && signature[0] == 'P' && signature != "Pv")
             {
                 string elemSignature = signature.Substring(1);
                 if (IsPrimitive(elemSignature))
                 {
-                    return "converter::Converter<std::reference_wrapper<" + PrimitiveSignatureCppTypeMap[elemSignature] + ">>::toScript(apis, env, *" + csName + ")";
+                    return $"converter::Converter<std::reference_wrapper<{PrimitiveSignatureCppTypeMap[elemSignature]}>>::toScript(apis, env, *{csName})";
                 }
                 else if (IsStruct(elemSignature) || signature == "Po" || signature == "PO" || signature == "Pa")
                 {
-                    return InvokePapi("boxing") + "(env, " + InvokePapi("native_object_to_value") + "(env, " + tiName + ", " + csName + ", false))";
+                    return $"{InvokePapi("boxing")}(env, {InvokePapi("native_object_to_value")}(env, {tiName}, {csName}, false))";
                 }
             }
-            return "// unknow ret signature: " + signature;
+            return $"// unknow ret signature: {signature}";
         }
 
         private static string ReturnToJS(string signature)
         {
-            return InvokePapi("add_return") + "(info, " + CSValToJSVal(signature, "ret") + ");";
+            return $"{InvokePapi("add_return")}(info, {CSValToJSVal(signature, "ret")});";
         }
 
         private static string ReturnToCS(string signature)
         {
-            return "\n" + JSValToCSVal(signature, "jsret", "ret") + "\n    return ret;\n        ";
+            return $"\n{JSValToCSVal(signature, "jsret", "ret")}\n    return ret;\n        ";
         }
 
         private static string RefSetback(string signature, int index)
@@ -467,20 +499,29 @@ namespace PuertsIl2cpp.Editor.Generator
             if (signature[0] == 'P' && signature != "Pv")
             {
                 string elementSignature = signature.Substring(1);
-                string val = CSValToJSVal(elementSignature, "*p" + index);
+                string val = CSValToJSVal(elementSignature, $"*p{index}");
                 if (val != null && !val.StartsWith("//"))
                 {
                     if (IsStruct(elementSignature))
                     {
-                        return "if (p" + index + " == &up" + index + ")\n    {\n        " + InvokePapi("update_boxed_value") + "(env, _sv" + index + ", " + val + ");\n    }\n            ";
+                        return $@"if (p{index} == &up{index})
+    {{
+        {InvokePapi("update_boxed_value")}(env, _sv{index}, {val});
+    }}
+            ";
                     }
                     else if (IsNullableStruct(elementSignature))
                     {
-                        return "if (p" + index + " == &up" + index + ")\n    {\n        if (!p" + index + "->hasValue) " + InvokePapi("update_boxed_value") + "(env, _sv" + index + ", " + InvokePapi("create_null") + "(env));\n        if (p" + index + " == &up" + index + ") " + InvokePapi("update_boxed_value") + "(env, _sv" + index + ", " + val + ");\n    }\n            ";
+                        return $@"if (p{index} == &up{index})
+    {{
+        if (!p{index}->hasValue) {InvokePapi("update_boxed_value")}(env, _sv{index}, {InvokePapi("create_null")}(env));
+        if (p{index} == &up{index}) {InvokePapi("update_boxed_value")}(env, _sv{index}, {val});
+    }}
+            ";
                     }
                     else
                     {
-                        return InvokePapi("update_boxed_value") + "(env, _sv" + index + ", " + val + ");";
+                        return $"{InvokePapi("update_boxed_value")}(env, _sv{index}, {val});";
                     }
                 }
             }
@@ -491,135 +532,130 @@ namespace PuertsIl2cpp.Editor.Generator
 
         #region File Generation: WrapperDef
 
+        // Common C++ includes shared across generated files
+        private const string CommonIncludes = @"#include ""il2cpp-api.h""
+#include ""il2cpp-class-internals.h""
+#include ""il2cpp-object-internals.h""
+#include ""vm/InternalCalls.h""
+#include ""vm/Object.h""
+#include ""vm/Array.h""
+#include ""vm/Runtime.h""
+#include ""vm/Reflection.h""
+#include ""vm/MetadataCache.h""
+#include ""vm/Field.h""
+#include ""vm/GenericClass.h""
+#include ""vm/Thread.h""
+#include ""vm/Method.h""
+#include ""vm/Parameter.h""
+#include ""vm/Image.h""
+#include ""utils/StringUtils.h""
+#include ""gc/WriteBarrier.h""
+#include ""pesapi.h""
+#include ""TDataTrans.h""
+#include ""PuertsValueType.h""";
+
         public static string GenWrapperDefFile(List<SignatureInfo> wrapperInfos)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("// Auto Gen");
-            sb.AppendLine();
-            sb.AppendLine("#include \"il2cpp-api.h\"");
-            sb.AppendLine("#include \"il2cpp-class-internals.h\"");
-            sb.AppendLine("#include \"il2cpp-object-internals.h\"");
-            sb.AppendLine("#include \"vm/InternalCalls.h\"");
-            sb.AppendLine("#include \"vm/Object.h\"");
-            sb.AppendLine("#include \"vm/Array.h\"");
-            sb.AppendLine("#include \"vm/Runtime.h\"");
-            sb.AppendLine("#include \"vm/Reflection.h\"");
-            sb.AppendLine("#include \"vm/MetadataCache.h\"");
-            sb.AppendLine("#include \"vm/Field.h\"");
-            sb.AppendLine("#include \"vm/GenericClass.h\"");
-            sb.AppendLine("#include \"vm/Thread.h\"");
-            sb.AppendLine("#include \"vm/Method.h\"");
-            sb.AppendLine("#include \"vm/Parameter.h\"");
-            sb.AppendLine("#include \"vm/Image.h\"");
-            sb.AppendLine("#include \"utils/StringUtils.h\"");
-            sb.AppendLine("#include \"gc/WriteBarrier.h\"");
-            sb.AppendLine("#include \"pesapi.h\"");
-            sb.AppendLine("#include \"TDataTrans.h\"");
-            sb.AppendLine("#include \"PuertsValueType.h\"");
-            sb.AppendLine("#if defined(__EMSCRIPTEN__)");
-            sb.AppendLine("#include \"pesapi_webgl.h\"");
-            sb.AppendLine("using namespace pesapi::webglimpl;");
-            sb.AppendLine("#endif");
-            sb.AppendLine();
-            sb.AppendLine("namespace puerts");
-            sb.AppendLine("{");
+            var wrapperFuncs = string.Join("\n", wrapperInfos.Select(info => GenSingleWrapperFunc(info)));
 
-            foreach (var info in wrapperInfos)
-            {
-                sb.AppendLine(GenSingleWrapperFunc(info));
-            }
+            return $@"// Auto Gen
 
-            sb.AppendLine();
-            sb.AppendLine("}");
-            sb.AppendLine();
-            return sb.ToString();
+{CommonIncludes}
+#if defined(__EMSCRIPTEN__)
+#include ""pesapi_webgl.h""
+using namespace pesapi::webglimpl;
+#endif
+
+namespace puerts
+{{
+{wrapperFuncs}
+
+}}
+";
         }
 
         private static string GenSingleWrapperFunc(SignatureInfo wrapperInfo)
         {
             var ps = wrapperInfo.ParameterSignatures ?? new List<string>();
-            var sb = new StringBuilder();
+            string sig = wrapperInfo.Signature;
+            string retSig = wrapperInfo.ReturnSignature;
+            string retType = SToCPPType(retSig);
 
-            //sb.AppendLine();
-            sb.AppendLine("// " + wrapperInfo.CsName);
-            sb.AppendLine("bool w_" + wrapperInfo.Signature + "(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {");
-            sb.AppendLine("    // PLog(\"Running w_" + wrapperInfo.Signature + "\");");
-            sb.AppendLine("    ");
-            var typeInfoDecls = DeclareTypeInfo(wrapperInfo.ReturnSignature, ps);
-            if (!string.IsNullOrEmpty(typeInfoDecls)) sb.AppendLine("    " + typeInfoDecls);
-            sb.AppendLine();
-            sb.AppendLine("    int js_args_len = " + InvokePapi("get_args_len") + "(info);");
-            sb.AppendLine("    ");
+            // Type info declarations
+            var typeInfoDecls = DeclareTypeInfo(retSig, ps);
+            string typeInfoBlock = !string.IsNullOrEmpty(typeInfoDecls) ? $"    {typeInfoDecls}\n" : "";
 
             // Get args
-            for (int i = 0; i < ps.Count; i++)
-            {
-                sb.AppendLine("    pesapi_value _sv" + i + " = " + InvokePapi("get_arg") + "(info, " + i + ");");
-            }
-            sb.AppendLine();
+            string getArgs = string.Join("\n", ps.Select((_, i) =>
+                $"    pesapi_value _sv{i} = {InvokePapi("get_arg")}(info, {i});"));
 
             // CheckJSArgument block
             bool hasOptionalArgs = ps.Any(s => s[0] == 'D');
-            sb.AppendLine("    if (" + (hasOptionalArgs ? "true" : "checkJSArgument") + ") {");
-            sb.AppendLine("        if (" + GenArgsLenCheck(ps) + ") return false;");
+            string checkCondition = hasOptionalArgs ? "true" : "checkJSArgument";
+            var checkLines = new List<string>();
+            checkLines.Add($"    if ({checkCondition}) {{");
+            checkLines.Add($"        if ({GenArgsLenCheck(ps)}) return false;");
             foreach (var (x, i) in ps.Select((x, i) => (x, i)))
             {
                 string check = CheckJSArg(x, i);
                 if (!string.IsNullOrEmpty(check))
-                {
-                    sb.AppendLine("        " + check);
-                }
+                    checkLines.Add($"        {check}");
             }
-            sb.AppendLine("    }");
-            sb.AppendLine("    ");
+            checkLines.Add("    }");
+            string checkBlock = string.Join("\n", checkLines);
 
             // JSValToCSVal for each parameter
-            for (int i = 0; i < ps.Count; i++)
-            {
-                sb.AppendLine(JSValToCSVal(ps[i], "_sv" + i, "p" + i));
-            }
-            sb.AppendLine();
+            string paramConversions = string.Join("\n", ps.Select((p, i) => JSValToCSVal(p, $"_sv{i}", $"p{i}")));
 
-            // Build the typedef and call
-            string retType = SToCPPType(wrapperInfo.ReturnSignature);
-            var funcParams = new List<string>();
-            if (NeedThis(wrapperInfo.ThisSignature)) funcParams.Add("void*");
+            // Build the typedef
+            var funcParamTypes = new List<string>();
+            if (NeedThis(wrapperInfo.ThisSignature)) funcParamTypes.Add("void*");
             for (int i = 0; i < ps.Count; i++)
-            {
-                funcParams.Add(SToCPPType(ps[i]) + " p" + i);
-            }
-            funcParams.Add("const void* method");
-            sb.AppendLine("    typedef " + retType + " (*FuncToCall)(" + string.Join(", ", funcParams) + ");");
+                funcParamTypes.Add($"{SToCPPType(ps[i])} p{i}");
+            funcParamTypes.Add("const void* method");
+            string typedefLine = $"    typedef {retType} (*FuncToCall)({string.Join(", ", funcParamTypes)});";
 
             // Call the function
-            string callArgs = (NeedThis(wrapperInfo.ThisSignature) ? "self, " : " ") +
-                              string.Join("", ps.Select((_, i) => "p" + i + ", ")) + " method";
-            if (wrapperInfo.ReturnSignature != "v")
-                sb.AppendLine("    " + retType + " ret = ((FuncToCall)methodPointer)(" + callArgs + ");");
-            else
-                sb.AppendLine("    ((FuncToCall)methodPointer)(" + callArgs + ");");
-
-            sb.AppendLine();
+            string selfArg = NeedThis(wrapperInfo.ThisSignature) ? "self, " : " ";
+            string paramArgs = string.Join("", ps.Select((_, i) => $"p{i}, "));
+            string callExpr = $"((FuncToCall)methodPointer)({selfArg}{paramArgs} method)";
+            string callLine = retSig != "v"
+                ? $"    {retType} ret = {callExpr};"
+                : $"    {callExpr};";
 
             // RefSetback
+            var setbackLines = new List<string>();
             for (int i = 0; i < ps.Count; i++)
             {
                 string setback = RefSetback(ps[i], i);
                 if (!string.IsNullOrEmpty(setback))
-                {
-                    sb.AppendLine("    " + setback);
-                }
+                    setbackLines.Add($"    {setback}");
             }
-            sb.AppendLine("    ");
+            string setbackBlock = setbackLines.Count > 0 ? string.Join("\n", setbackLines) + "\n" : "";
 
             // Return
-            if (wrapperInfo.ReturnSignature != "v")
-            {
-                sb.AppendLine("    " + ReturnToJS(wrapperInfo.ReturnSignature));
-            }
-            sb.AppendLine("    return true;");
-            sb.AppendLine("}");
-            return sb.ToString();
+            string returnLine = retSig != "v" ? $"    {ReturnToJS(retSig)}\n" : "";
+
+            return $@"// {wrapperInfo.CsName}
+bool w_{sig}(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData) {{
+    // PLog(""Running w_{sig}"");
+    
+{typeInfoBlock}
+    int js_args_len = {InvokePapi("get_args_len")}(info);
+    
+{getArgs}
+
+{checkBlock}
+    
+{paramConversions}
+
+{typedefLine}
+{callLine}
+
+{setbackBlock}    
+{returnLine}    return true;
+}}
+";
         }
 
         #endregion
@@ -628,53 +664,45 @@ namespace PuertsIl2cpp.Editor.Generator
 
         public static string GenWrapperFile(List<SignatureInfo> allWrapperInfos)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("// Auto Gen");
-            sb.AppendLine();
-            sb.AppendLine("#include <memory>");
-            sb.AppendLine("#include \"il2cpp-api.h\"");
-            sb.AppendLine("#include \"il2cpp-class-internals.h\"");
-            sb.AppendLine("#include \"il2cpp-object-internals.h\"");
-            sb.AppendLine("#include \"vm/Object.h\"");
-            sb.AppendLine("#include \"pesapi.h\"");
-            sb.AppendLine("#include \"TDataTrans.h\"");
-            sb.AppendLine();
-            sb.AppendLine("namespace puerts");
-            sb.AppendLine("{");
-            sb.AppendLine();
+            string forwardDecls = string.Join("\n", allWrapperInfos.Select(info =>
+                $"bool w_{info.Signature}(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData);"));
 
-            // Forward declarations
-            foreach (var info in allWrapperInfos)
-            {
-                sb.AppendLine("bool w_" + info.Signature + "(struct pesapi_ffi* apis, MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, pesapi_env env, void* self, bool checkJSArgument, WrapData* wrapData);");
-            }
-            sb.AppendLine();
+            string tableEntries = string.Join("\n", allWrapperInfos.Select(info =>
+                $"    {{\"{info.Signature}\", w_{info.Signature}}},"));
 
-            // Lookup table
-            sb.AppendLine("static WrapFuncInfo g_wrapFuncInfos[] = {");
-            foreach (var info in allWrapperInfos)
-            {
-                sb.AppendLine("    {\"" + info.Signature + "\", w_" + info.Signature + "},");
-            }
-            sb.AppendLine("    {nullptr, nullptr}");
-            sb.AppendLine("};");
-            sb.AppendLine();
+            return $@"// Auto Gen
 
-            // FindWrapFunc
-            sb.AppendLine("WrapFuncPtr FindWrapFunc(const char* signature)");
-            sb.AppendLine("{");
-            sb.AppendLine("    auto begin = &g_wrapFuncInfos[0];");
-            sb.AppendLine("    auto end = &g_wrapFuncInfos[sizeof(g_wrapFuncInfos) / sizeof(WrapFuncInfo) - 1];");
-            sb.AppendLine("    auto first = std::lower_bound(begin, end, signature, [](const WrapFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});");
-            sb.AppendLine("    if (first != end && strcmp(first->Signature, signature) == 0) {");
-            sb.AppendLine("        return first->Method;");
-            sb.AppendLine("    }");
-            sb.AppendLine("    return nullptr;");
-            sb.AppendLine("}");
-            sb.AppendLine();
-            sb.AppendLine("}");
-            sb.AppendLine();
-            return sb.ToString();
+#include <memory>
+#include ""il2cpp-api.h""
+#include ""il2cpp-class-internals.h""
+#include ""il2cpp-object-internals.h""
+#include ""vm/Object.h""
+#include ""pesapi.h""
+#include ""TDataTrans.h""
+
+namespace puerts
+{{
+
+{forwardDecls}
+
+static WrapFuncInfo g_wrapFuncInfos[] = {{
+{tableEntries}
+    {{nullptr, nullptr}}
+}};
+
+WrapFuncPtr FindWrapFunc(const char* signature)
+{{
+    auto begin = &g_wrapFuncInfos[0];
+    auto end = &g_wrapFuncInfos[sizeof(g_wrapFuncInfos) / sizeof(WrapFuncInfo) - 1];
+    auto first = std::lower_bound(begin, end, signature, [](const WrapFuncInfo& x, const char* signature) {{return strcmp(x.Signature, signature) < 0;}});
+    if (first != end && strcmp(first->Signature, signature) == 0) {{
+        return first->Method;
+    }}
+    return nullptr;
+}}
+
+}}
+";
         }
 
         #endregion
@@ -683,162 +711,116 @@ namespace PuertsIl2cpp.Editor.Generator
 
         public static string GenBridgeFile(List<SignatureInfo> bridgeInfos)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("// Auto Gen");
-            sb.AppendLine();
-            sb.AppendLine("#include \"il2cpp-api.h\"");
-            sb.AppendLine("#include \"il2cpp-class-internals.h\"");
-            sb.AppendLine("#include \"il2cpp-object-internals.h\"");
-            sb.AppendLine("#include \"vm/InternalCalls.h\"");
-            sb.AppendLine("#include \"vm/Object.h\"");
-            sb.AppendLine("#include \"vm/Array.h\"");
-            sb.AppendLine("#include \"vm/Runtime.h\"");
-            sb.AppendLine("#include \"vm/Reflection.h\"");
-            sb.AppendLine("#include \"vm/MetadataCache.h\"");
-            sb.AppendLine("#include \"vm/Field.h\"");
-            sb.AppendLine("#include \"vm/GenericClass.h\"");
-            sb.AppendLine("#include \"vm/Thread.h\"");
-            sb.AppendLine("#include \"vm/Method.h\"");
-            sb.AppendLine("#include \"vm/Parameter.h\"");
-            sb.AppendLine("#include \"vm/Image.h\"");
-            sb.AppendLine("#include \"utils/StringUtils.h\"");
-            sb.AppendLine("#include \"gc/WriteBarrier.h\"");
-            sb.AppendLine("#include \"pesapi.h\"");
-            sb.AppendLine("#include \"TDataTrans.h\"");
-            sb.AppendLine("#include \"PuertsValueType.h\"");
-            sb.AppendLine();
-            sb.AppendLine("namespace puerts");
-            sb.AppendLine("{");
+            var bridgeFuncs = string.Join("\n", bridgeInfos.Select(info => GenSingleBridge(info)));
 
-            foreach (var info in bridgeInfos)
-            {
-                sb.AppendLine(GenSingleBridge(info));
-            }
+            string tableEntries = string.Join("\n", bridgeInfos.Select(info =>
+                $"    {{\"{info.Signature}\", (Il2CppMethodPointer)b_{info.Signature}, b_{info.Signature}_Invoker}},"));
 
-            sb.AppendLine();
-            // Lookup table
-            sb.AppendLine("static BridgeFuncInfo g_bridgeFuncInfos[] = {");
-            foreach (var info in bridgeInfos)
-            {
-                sb.AppendLine("    {\"" + info.Signature + "\", (Il2CppMethodPointer)b_" + info.Signature + ", b_" + info.Signature + "_Invoker},");
-            }
-            sb.AppendLine("    {nullptr, nullptr, nullptr}");
-            sb.AppendLine("};");
-            sb.AppendLine();
+            return $@"// Auto Gen
 
-            sb.AppendLine();
-            sb.AppendLine("BridgeFuncInfo* FindBridgeFunc(const char* signature)");
-            sb.AppendLine("{");
-            sb.AppendLine("    auto begin = &g_bridgeFuncInfos[0];");
-            sb.AppendLine("    auto end = &g_bridgeFuncInfos[sizeof(g_bridgeFuncInfos) / sizeof(BridgeFuncInfo) - 1];");
-            sb.AppendLine("    auto first = std::lower_bound(begin, end, signature, [](const BridgeFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});");
-            sb.AppendLine("    if (first != end && strcmp(first->Signature, signature) == 0) {");
-            sb.AppendLine("        return first;");
-            sb.AppendLine("    }");
-            sb.AppendLine("    return nullptr;");
-            sb.AppendLine("}");
-            sb.AppendLine();
-            sb.AppendLine("}");
-            sb.AppendLine();
-            return sb.ToString();
+{CommonIncludes}
+
+namespace puerts
+{{
+{bridgeFuncs}
+
+static BridgeFuncInfo g_bridgeFuncInfos[] = {{
+{tableEntries}
+    {{nullptr, nullptr, nullptr}}
+}};
+
+BridgeFuncInfo* FindBridgeFunc(const char* signature)
+{{
+    auto begin = &g_bridgeFuncInfos[0];
+    auto end = &g_bridgeFuncInfos[sizeof(g_bridgeFuncInfos) / sizeof(BridgeFuncInfo) - 1];
+    auto first = std::lower_bound(begin, end, signature, [](const BridgeFuncInfo& x, const char* signature) {{return strcmp(x.Signature, signature) < 0;}});
+    if (first != end && strcmp(first->Signature, signature) == 0) {{
+        return first;
+    }}
+    return nullptr;
+}}
+
+}}
+";
         }
 
         private static string GenSingleBridge(SignatureInfo bridgeInfo)
         {
             var ps = bridgeInfo.ParameterSignatures ?? new List<string>();
-            var sb = new StringBuilder();
-
+            string sig = bridgeInfo.Signature;
+            string retSig = bridgeInfo.ReturnSignature;
             bool hasVarArgs = ps.Count > 0 && ps[ps.Count - 1][0] == 'V';
 
-            sb.AppendLine();
-            sb.AppendLine("// " + bridgeInfo.CsName);
-
-            // Build function signature
-            var funcParams = new List<string>();
-            funcParams.Add("void* target");
+            // Build function signature params
+            var funcParams = new List<string> { "void* target" };
             for (int i = 0; i < ps.Count; i++)
-            {
-                funcParams.Add(SToCPPType(ps[i]) + " p" + i);
-            }
+                funcParams.Add($"{SToCPPType(ps[i])} p{i}");
             funcParams.Add("MethodInfo* method");
+            string funcParamsStr = string.Join(", ", funcParams);
 
-            sb.AppendLine("static " + SToCPPType(bridgeInfo.ReturnSignature) + " b_" + bridgeInfo.Signature + "(" + string.Join(", ", funcParams) + ") {");
-            sb.AppendLine("    // PLog(\"Running b_" + bridgeInfo.Signature + "\");");
-            sb.AppendLine();
-
-            // TypeInfo declarations for return
-            if (!string.IsNullOrEmpty(bridgeInfo.ReturnSignature) && !IsPrimitive(GetSignatureWithoutRefAndPrefix(bridgeInfo.ReturnSignature)))
-            {
-                sb.AppendLine("    auto TIret = GetReturnType(method);");
-            }
-            // TypeInfo declarations for parameters
+            // TypeInfo declarations
+            string retTypeInfo = !string.IsNullOrEmpty(retSig) && !IsPrimitive(GetSignatureWithoutRefAndPrefix(retSig))
+                ? "    auto TIret = GetReturnType(method);\n" : "";
+            var paramTypeInfoLines = new List<string>();
             for (int i = 0; i < ps.Count; i++)
             {
                 if (!IsPrimitive(GetSignatureWithoutRefAndPrefix(ps[i])))
-                {
-                    sb.AppendLine("    auto TIp" + i + " = GetParameterType(method, " + i + ");");
-                }
+                    paramTypeInfoLines.Add($"    auto TIp{i} = GetParameterType(method, {i});");
             }
-            sb.AppendLine();
+            string paramTypeInfo = paramTypeInfoLines.Count > 0 ? string.Join("\n", paramTypeInfoLines) + "\n" : "";
 
-            sb.AppendLine("    PObjectRefInfo* delegateInfo = GetPObjectRefInfo(target);");
-            sb.AppendLine("    struct pesapi_ffi* apis = delegateInfo->Apis;");
-            sb.AppendLine("    ");
-            sb.AppendLine("    pesapi_env_ref envRef = " + InvokePapi("get_ref_associated_env") + "(delegateInfo->ValueRef);");
-            sb.AppendLine("    AutoValueScope valueScope(apis, envRef);");
-            sb.AppendLine("    auto env = " + InvokePapi("get_env_from_ref") + "(envRef);");
-            sb.AppendLine("    if (!env)");
-            sb.AppendLine("    {");
-            sb.AppendLine("        il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException(\"JsEnv had been destroy\"));");
-            if (bridgeInfo.ReturnSignature != "v")
-            {
-                sb.AppendLine("        return {};");
-            }
-            sb.AppendLine("    }");
-            sb.AppendLine("    auto func = " + InvokePapi("get_value_from_ref") + "(env, delegateInfo->ValueRef);");
-            sb.AppendLine("    ");
+            // Return handling in error/null env blocks
+            string returnEmptyOnError = retSig != "v" ? "\n        return {};" : "";
+            string catchBlock = retSig == "v"
+                ? "    }"
+                : $@"        return {{}};
+    }}
+    {ReturnToCS(retSig)}";
 
-            // Generate bridge args
-            sb.AppendLine("    " + GenBridgeArgs(ps));
-            sb.AppendLine("    auto jsret = " + InvokePapi("call_function") + "(env, func, nullptr, " + ps.Count + (hasVarArgs ? " + arrayLength - 1" : "") + ", argv);");
-            sb.AppendLine("    ");
-            sb.AppendLine("    if (" + InvokePapi("has_caught") + "(valueScope.scope()))");
-            sb.AppendLine("    {");
-            sb.AppendLine("        auto msg = " + InvokePapi("get_exception_as_string") + "(valueScope.scope(), true);");
-            sb.AppendLine("        il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException(msg));");
-            if (bridgeInfo.ReturnSignature == "v")
-            {
-                sb.AppendLine("    }");
-            }
-            else
-            {
-                sb.AppendLine("        return {};");
-                sb.AppendLine("    }");
-                sb.AppendLine("    " + ReturnToCS(bridgeInfo.ReturnSignature));
-            }
-            sb.AppendLine("}");
-            sb.AppendLine();
+            // Invoker return assignment
+            string invokerRetAssign = retSig != "v"
+                ? $"    *(({SToCPPType(retSig)} *)il2ppRetVal) =\n    "
+                : "    ";
 
-            // Invoker function
-            sb.AppendLine("static void b_" + bridgeInfo.Signature + "_Invoker(Il2CppMethodPointer func, const MethodInfo* method, void* thisPtr, void** args, void* il2ppRetVal)");
-            sb.AppendLine("{");
-            if (bridgeInfo.ReturnSignature != "v")
-            {
-                sb.Append("    *((" + SToCPPType(bridgeInfo.ReturnSignature) + " *)il2ppRetVal) =\n    ");
-            }
-            else
-            {
-                sb.Append("    ");
-            }
-            sb.Append("b_" + bridgeInfo.Signature + "(thisPtr, ");
-            for (int i = 0; i < ps.Count; i++)
-            {
-                sb.Append(FromAny(ps[i]) + "args[" + i + "], ");
-            }
-            sb.AppendLine("(MethodInfo*)method);");
-            sb.AppendLine("}");
+            // Invoker args
+            string invokerArgs = string.Join("", ps.Select((s, i) => $"{FromAny(s)}args[{i}], "));
 
-            return sb.ToString();
+            // Bridge args count expression
+            string argsCount = ps.Count + (hasVarArgs ? " + arrayLength - 1" : "").ToString();
+
+            return $@"
+// {bridgeInfo.CsName}
+static {SToCPPType(retSig)} b_{sig}({funcParamsStr}) {{
+    // PLog(""Running b_{sig}"");
+
+{retTypeInfo}{paramTypeInfo}
+    PObjectRefInfo* delegateInfo = GetPObjectRefInfo(target);
+    struct pesapi_ffi* apis = delegateInfo->Apis;
+    
+    pesapi_env_ref envRef = {InvokePapi("get_ref_associated_env")}(delegateInfo->ValueRef);
+    AutoValueScope valueScope(apis, envRef);
+    auto env = {InvokePapi("get_env_from_ref")}(envRef);
+    if (!env)
+    {{
+        il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException(""JsEnv had been destroy""));{returnEmptyOnError}
+    }}
+    auto func = {InvokePapi("get_value_from_ref")}(env, delegateInfo->ValueRef);
+    
+    {GenBridgeArgs(ps)}
+    auto jsret = {InvokePapi("call_function")}(env, func, nullptr, {argsCount}, argv);
+    
+    if ({InvokePapi("has_caught")}(valueScope.scope()))
+    {{
+        auto msg = {InvokePapi("get_exception_as_string")}(valueScope.scope(), true);
+        il2cpp::vm::Exception::Raise(il2cpp::vm::Exception::GetInvalidOperationException(msg));
+{catchBlock}
+}}
+
+static void b_{sig}_Invoker(Il2CppMethodPointer func, const MethodInfo* method, void* thisPtr, void** args, void* il2ppRetVal)
+{{
+{invokerRetAssign}b_{sig}(thisPtr, {invokerArgs}(MethodInfo*)method);
+}}
+";
         }
 
         private static string GenBridgeArgs(List<string> parameterSignatures)
@@ -849,20 +831,20 @@ namespace PuertsIl2cpp.Editor.Generator
             if (parameterSignatures[parameterSignatures.Count - 1][0] != 'V')
             {
                 // Fixed number of args
-                var sb = new StringBuilder();
-                sb.Append("pesapi_value argv[" + parameterSignatures.Count + "]{\n        ");
+                var argValues = new List<string>();
                 for (int i = 0; i < parameterSignatures.Count; i++)
                 {
                     string sig = parameterSignatures[i];
                     if (sig[0] == 'D') sig = sig.Substring(1);
-                    string val = CSValToJSVal(sig, "p" + i);
+                    string val = CSValToJSVal(sig, $"p{i}");
                     if (val.StartsWith("//"))
-                        val = InvokePapi("create_undefined") + "(env)";
-                    if (i > 0) sb.Append(",\n        ");
-                    sb.Append(val);
+                        val = $"{InvokePapi("create_undefined")}(env)";
+                    argValues.Add(val);
                 }
-                sb.Append("\n    };");
-                return sb.ToString();
+                string argList = string.Join(",\n        ", argValues);
+                return $@"pesapi_value argv[{parameterSignatures.Count}]{{
+        {argList}
+    }};";
             }
             else
             {
@@ -871,26 +853,29 @@ namespace PuertsIl2cpp.Editor.Generator
                 string si = lastSig.Substring(1);
                 string unpackMethod;
                 if (IsPrimitive(si))
-                    unpackMethod = "Params<" + PrimitiveSignatureCppTypeMap[si] + ">::UnPackPrimitive";
+                    unpackMethod = $"Params<{PrimitiveSignatureCppTypeMap[si]}>::UnPackPrimitive";
                 else if (IsStructOrNullableStruct(si))
-                    unpackMethod = "Params<" + si + ">::UnPackValueType";
+                    unpackMethod = $"Params<{si}>::UnPackValueType";
                 else
                     unpackMethod = "Params<Il2CppObject*>::UnPackRefOrBoxedValueType";
 
                 int fixedCount = parameterSignatures.Count - 1;
-                var sb = new StringBuilder();
-                sb.AppendLine("auto arrayLength = il2cpp::vm::Array::GetLength(p" + (parameterSignatures.Count - 1) + ");");
-                sb.AppendLine("    pesapi_value *argv = (pesapi_value *)alloca(sizeof(pesapi_value) * (" + fixedCount + " + arrayLength));");
-                sb.AppendLine("    memset(argv, 0, sizeof(pesapi_value) * (" + fixedCount + " + arrayLength));");
+                int lastIdx = parameterSignatures.Count - 1;
+
+                var fixedArgLines = new List<string>();
                 for (int i = 0; i < fixedCount; i++)
                 {
-                    string val = CSValToJSVal(parameterSignatures[i], "p" + i);
+                    string val = CSValToJSVal(parameterSignatures[i], $"p{i}");
                     if (val.StartsWith("//"))
-                        val = InvokePapi("create_undefined") + "(env)";
-                    sb.AppendLine("    argv[" + i + "] = " + val + ";");
+                        val = $"{InvokePapi("create_undefined")}(env)";
+                    fixedArgLines.Add($"    argv[{i}] = {val};");
                 }
-                sb.Append("    " + unpackMethod + "(apis, env, p" + (parameterSignatures.Count - 1) + ", arrayLength, TIp" + (parameterSignatures.Count - 1) + ", argv + " + fixedCount + ");");
-                return sb.ToString();
+                string fixedArgBlock = fixedArgLines.Count > 0 ? string.Join("\n", fixedArgLines) + "\n" : "";
+
+                return $@"auto arrayLength = il2cpp::vm::Array::GetLength(p{lastIdx});
+    pesapi_value *argv = (pesapi_value *)alloca(sizeof(pesapi_value) * ({fixedCount} + arrayLength));
+    memset(argv, 0, sizeof(pesapi_value) * ({fixedCount} + arrayLength));
+{fixedArgBlock}    {unpackMethod}(apis, env, p{lastIdx}, arrayLength, TIp{lastIdx}, argv + {fixedCount});";
             }
         }
 
@@ -900,111 +885,73 @@ namespace PuertsIl2cpp.Editor.Generator
 
         public static string GenFieldWrapperFile(List<SignatureInfo> fieldWrapperInfos)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("// Auto Gen");
-            sb.AppendLine();
-            sb.AppendLine("#include \"il2cpp-api.h\"");
-            sb.AppendLine("#include \"il2cpp-class-internals.h\"");
-            sb.AppendLine("#include \"il2cpp-object-internals.h\"");
-            sb.AppendLine("#include \"vm/InternalCalls.h\"");
-            sb.AppendLine("#include \"vm/Object.h\"");
-            sb.AppendLine("#include \"vm/Array.h\"");
-            sb.AppendLine("#include \"vm/Runtime.h\"");
-            sb.AppendLine("#include \"vm/Reflection.h\"");
-            sb.AppendLine("#include \"vm/MetadataCache.h\"");
-            sb.AppendLine("#include \"vm/Field.h\"");
-            sb.AppendLine("#include \"vm/GenericClass.h\"");
-            sb.AppendLine("#include \"vm/Thread.h\"");
-            sb.AppendLine("#include \"vm/Method.h\"");
-            sb.AppendLine("#include \"vm/Parameter.h\"");
-            sb.AppendLine("#include \"vm/Image.h\"");
-            sb.AppendLine("#include \"utils/StringUtils.h\"");
-            sb.AppendLine("#include \"gc/WriteBarrier.h\"");
-            sb.AppendLine("#include \"pesapi.h\"");
-            sb.AppendLine("#include \"TDataTrans.h\"");
-            sb.AppendLine("#include \"PuertsValueType.h\"");
-            sb.AppendLine();
-            sb.AppendLine();
-            sb.AppendLine("namespace puerts");
-            sb.AppendLine("{");
+            var fieldWrapperFuncs = string.Join("\n", fieldWrapperInfos.Select(info => GenSingleFieldWrapper(info)));
 
-            foreach (var info in fieldWrapperInfos)
-            {
-                sb.AppendLine(GenSingleFieldWrapper(info));
-            }
-            sb.AppendLine();
+            string tableEntries = string.Join("\n", fieldWrapperInfos.Select(info =>
+                $"    {{\"{info.Signature}\", ifg_{info.Signature}, ifs_{info.Signature}}},"));
 
-            // Lookup table
-            sb.AppendLine("static FieldWrapFuncInfo g_fieldWrapFuncInfos[] = {");
-            foreach (var info in fieldWrapperInfos)
-            {
-                sb.AppendLine("    {\"" + info.Signature + "\", ifg_" + info.Signature + ", ifs_" + info.Signature + "},");
-            }
-            sb.AppendLine("    {nullptr, nullptr, nullptr}    ");
-            sb.AppendLine("};");
-            sb.AppendLine();
+            return $@"// Auto Gen
 
-            sb.AppendLine("FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature)");
-            sb.AppendLine("{");
-            sb.AppendLine("    auto begin = &g_fieldWrapFuncInfos[0];");
-            sb.AppendLine("    auto end = &g_fieldWrapFuncInfos[sizeof(g_fieldWrapFuncInfos) / sizeof(FieldWrapFuncInfo) - 1];");
-            sb.AppendLine("    auto first = std::lower_bound(begin, end, signature, [](const FieldWrapFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});");
-            sb.AppendLine("    if (first != end && strcmp(first->Signature, signature) == 0) {");
-            sb.AppendLine("        return first;");
-            sb.AppendLine("    }");
-            sb.AppendLine("    return nullptr;");
-            sb.AppendLine("}");
-            sb.AppendLine();
-            sb.AppendLine("}");
-            sb.AppendLine();
-            return sb.ToString();
+{CommonIncludes}
+
+
+namespace puerts
+{{
+{fieldWrapperFuncs}
+
+static FieldWrapFuncInfo g_fieldWrapFuncInfos[] = {{
+{tableEntries}
+    {{nullptr, nullptr, nullptr}}    
+}};
+
+FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature)
+{{
+    auto begin = &g_fieldWrapFuncInfos[0];
+    auto end = &g_fieldWrapFuncInfos[sizeof(g_fieldWrapFuncInfos) / sizeof(FieldWrapFuncInfo) - 1];
+    auto first = std::lower_bound(begin, end, signature, [](const FieldWrapFuncInfo& x, const char* signature) {{return strcmp(x.Signature, signature) < 0;}});
+    if (first != end && strcmp(first->Signature, signature) == 0) {{
+        return first;
+    }}
+    return nullptr;
+}}
+
+}}
+";
         }
 
         private static string GenSingleFieldWrapper(SignatureInfo fieldWrapperInfo)
         {
-            var sb = new StringBuilder();
             bool needThis = NeedThis(fieldWrapperInfo.ThisSignature);
             string sig = fieldWrapperInfo.ReturnSignature;
-
-            // Getter
-            //sb.AppendLine();
-            sb.AppendLine("static void ifg_" + fieldWrapperInfo.Signature + "(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIret) {");
-            sb.AppendLine("    // PLog(\"Running ifg_" + fieldWrapperInfo.Signature + "\");");
-            sb.AppendLine();
-            sb.AppendLine("    pesapi_env env = " + InvokePapi("get_env") + "(info);");
-            if (needThis)
-            {
-                sb.AppendLine();
-                sb.AppendLine("    " + GetThis(fieldWrapperInfo.ThisSignature));
-                sb.AppendLine();
-            }
-            sb.AppendLine("    " + GenGetField(fieldWrapperInfo));
-            sb.AppendLine("}");
-            sb.AppendLine();
-
-            // Setter
-            sb.AppendLine("static void ifs_" + fieldWrapperInfo.Signature + "(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIp) {");
-            sb.AppendLine("    // PLog(\"Running ifs_" + fieldWrapperInfo.Signature + "\");");
-            sb.AppendLine("    ");
-            sb.AppendLine("    pesapi_env env = " + InvokePapi("get_env") + "(info);");
-            if (needThis)
-            {
-                sb.AppendLine();
-                sb.AppendLine("    " + GetThis(fieldWrapperInfo.ThisSignature));
-                sb.AppendLine();
-            }
-            sb.AppendLine("    // " + sig);
-            sb.AppendLine(JSValToCSVal(sig, InvokePapi("get_arg") + "(info, 0)", "p"));
-
-            // Determine whether to pass &p or p
-            // Note: must use the full Signature (e.g. "to", "ts"), not ReturnSignature (e.g. "o", "s"),
-            // to match the JS template logic: ['o', 's', 'p', 'a'].indexOf(fieldWrapperInfo.Signature) != -1
             string fullSig = fieldWrapperInfo.Signature;
-            bool passByValue = (fullSig == "o" || fullSig == "s" || fullSig == "p" || fullSig == "a");
-            sb.AppendLine("    SetFieldValue(" + (needThis ? "self, " : "nullptr, ") + "fieldInfo, offset, " + (passByValue ? "p" : "&p") + ");");
-            sb.AppendLine("}");
 
-            return sb.ToString();
+            string thisBlock = needThis ? $@"
+
+    {GetThis(fieldWrapperInfo.ThisSignature)}
+
+" : "";
+
+            bool passByValue = (fullSig == "o" || fullSig == "s" || fullSig == "p" || fullSig == "a");
+
+            return $@"
+static void ifg_{fullSig}(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIret) {{
+    // PLog(""Running ifg_{fullSig}"");
+
+    pesapi_env env = {InvokePapi("get_env")}(info);
+{thisBlock}
+    {GenGetField(fieldWrapperInfo)}
+}}
+
+static void ifs_{fullSig}(struct pesapi_ffi* apis, pesapi_callback_info info, FieldInfo* fieldInfo, size_t offset, Il2CppClass* TIp) {{
+    // PLog(""Running ifs_{fullSig}"");
+    
+    pesapi_env env = {InvokePapi("get_env")}(info);
+{thisBlock}
+    // {sig}
+{JSValToCSVal(sig, InvokePapi("get_arg") + "(info, 0)", "p")}
+    SetFieldValue({(needThis ? "self, " : "nullptr, ")}fieldInfo, offset, {(passByValue ? "p" : "&p")});
+}}
+";
         }
 
         private static string GenGetField(SignatureInfo fieldWrapperInfo)
@@ -1015,21 +962,30 @@ namespace PuertsIl2cpp.Editor.Generator
             if (IsStructOrNullableStruct(sig))
             {
                 string src = needThis
-                    ? "auto _src = (" + sig + "*)((char*)self + offset);"
-                    : "auto _src = (" + sig + "*)GetValueTypeFieldPtr(nullptr, fieldInfo, offset);";
+                    ? $"auto _src = ({sig}*)((char*)self + offset);"
+                    : $"auto _src = ({sig}*)GetValueTypeFieldPtr(nullptr, fieldInfo, offset);";
 
                 if (IsNullableStruct(sig))
                 {
-                    return src + "\n\n\t" + InvokePapi("add_return") + "(info, NullableConverter<" + sig + ">::toScript(apis, env, TIret, _src));";
+                    return $@"{src}
+
+	{InvokePapi("add_return")}(info, NullableConverter<{sig}>::toScript(apis, env, TIret, _src));";
                 }
                 else
                 {
-                    return src + "\n\n\t" + InvokePapi("add_return") + "(info, DataTransfer::CopyValueType<" + sig + ">(apis, env, *_src, TIret));";
+                    return $@"{src}
+
+	{InvokePapi("add_return")}(info, DataTransfer::CopyValueType<{sig}>(apis, env, *_src, TIret));";
                 }
             }
             else
             {
-                return SToCPPType(sig) + " ret;\n\n    GetFieldValue(" + (needThis ? "self, " : "nullptr, ") + "fieldInfo, offset, &ret);\n    \n    " + ReturnToJS(sig);
+                string selfArg = needThis ? "self, " : "nullptr, ";
+                return $@"{SToCPPType(sig)} ret;
+
+    GetFieldValue({selfArg}fieldInfo, offset, &ret);
+    
+    {ReturnToJS(sig)}";
             }
         }
 
@@ -1039,68 +995,68 @@ namespace PuertsIl2cpp.Editor.Generator
 
         public static string GenValueTypeFile(List<ValueTypeInfo> valueTypeInfos)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("// Auto Gen");
-            sb.AppendLine();
-            sb.AppendLine("#if !__SNC__");
-            sb.AppendLine("#ifndef __has_feature ");
-            sb.AppendLine("#define __has_feature(x) 0 ");
-            sb.AppendLine("#endif");
-            sb.AppendLine("#endif");
-            sb.AppendLine();
-            sb.AppendLine("#if _MSC_VER");
-            sb.AppendLine("typedef wchar_t Il2CppChar;");
-            sb.AppendLine("#elif __has_feature(cxx_unicode_literals)");
-            sb.AppendLine("typedef char16_t Il2CppChar;");
-            sb.AppendLine("#else");
-            sb.AppendLine("typedef uint16_t Il2CppChar;");
-            sb.AppendLine("#endif");
-            sb.AppendLine();
-            sb.AppendLine("namespace puerts");
-            sb.AppendLine("{");
-            sb.AppendLine();
-
+            var structDefs = new List<string>();
             foreach (var vt in valueTypeInfos)
             {
                 if (string.IsNullOrEmpty(vt.Signature)) continue;
 
-                sb.AppendLine("// " + vt.CsName);
-                sb.AppendLine("struct " + vt.Signature);
-                sb.AppendLine("{");
-
+                string fields;
                 if (vt.FieldSignatures == null || vt.FieldSignatures.Count == 0)
                 {
-                    sb.AppendLine("    union");
-                    sb.AppendLine("    {");
-                    sb.AppendLine("        struct");
-                    sb.AppendLine("        {");
-                    sb.AppendLine("        };");
-                    sb.AppendLine("        uint8_t __padding[1];");
-                    sb.AppendLine("    };");
+                    fields = @"    union
+    {
+        struct
+        {
+        };
+        uint8_t __padding[1];
+    };";
                 }
                 else
                 {
+                    var fieldLines = new List<string>();
                     for (int i = 0; i < vt.FieldSignatures.Count; i++)
                     {
                         string fieldType = SToCPPType(vt.FieldSignatures[i]);
                         if (IsNullableStruct(vt.Signature) && i == vt.NullableHasValuePosition)
-                        {
-                            sb.AppendLine("    " + fieldType + " hasValue;");
-                        }
+                            fieldLines.Add($"    {fieldType} hasValue;");
                         else
-                        {
-                            sb.AppendLine("    " + fieldType + " p" + i + ";");
-                        }
+                            fieldLines.Add($"    {fieldType} p{i};");
                     }
+                    fields = string.Join("\n", fieldLines);
                 }
 
-                sb.AppendLine("};");
-                sb.AppendLine("    ");
+                structDefs.Add($@"// {vt.CsName}
+struct {vt.Signature}
+{{
+{fields}
+}};
+    ");
             }
 
-            sb.AppendLine("}");
-            sb.AppendLine();
-            return sb.ToString();
+            string allStructs = string.Join("\n", structDefs);
+
+            return $@"// Auto Gen
+
+#if !__SNC__
+#ifndef __has_feature 
+#define __has_feature(x) 0 
+#endif
+#endif
+
+#if _MSC_VER
+typedef wchar_t Il2CppChar;
+#elif __has_feature(cxx_unicode_literals)
+typedef char16_t Il2CppChar;
+#else
+typedef uint16_t Il2CppChar;
+#endif
+
+namespace puerts
+{{
+
+{allStructs}
+}}
+";
         }
 
         #endregion
@@ -1109,14 +1065,10 @@ namespace PuertsIl2cpp.Editor.Generator
 
         public static string GenMacroHeader(List<string> defines)
         {
-            var sb = new StringBuilder();
-            foreach (var d in defines)
-            {
-                sb.AppendLine("#ifndef " + d);
-                sb.AppendLine("    #define " + d);
-                sb.AppendLine("#endif");
-            }
-            return sb.ToString();
+            return string.Join("\n", defines.Select(d =>
+$@"#ifndef {d}
+    #define {d}
+#endif")) + "\n";
         }
 
         #endregion
@@ -1125,36 +1077,35 @@ namespace PuertsIl2cpp.Editor.Generator
 
         public static string GenExtensionMethodInfos(List<KeyValuePair<Type, List<Type>>> extendedType2extensionType)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine();
-            sb.AppendLine("using System;");
-            sb.AppendLine("using System.Collections.Generic;");
-            sb.AppendLine("using System.Reflection;");
-            sb.AppendLine("namespace PuertsIl2cpp");
-            sb.AppendLine("{");
-            sb.AppendLine("public static class ExtensionMethodInfos_Gen");
-            sb.AppendLine("{");
-            sb.AppendLine("    [UnityEngine.Scripting.Preserve]");
-            sb.AppendLine("    public static MethodInfo[] TryLoadExtensionMethod(string assemblyQualifiedName)");
-            sb.AppendLine("    {");
-            sb.AppendLine("        if (false) {}");
-
+            var caseClauses = new List<string>();
             foreach (var pair in extendedType2extensionType)
             {
                 string extendedTypeName = Puerts.TypeExtensions.GetFriendlyName(pair.Key);
-                sb.Append("        else if (typeof(" + extendedTypeName + ").AssemblyQualifiedName == assemblyQualifiedName)");
-                sb.AppendLine();
-                sb.AppendLine("        {");
-                var extensionTypeNames = pair.Value.Select(t => "typeof(" + Puerts.TypeExtensions.GetFriendlyName(t) + ")").ToList();
-                sb.AppendLine("            return ExtensionMethodInfo.GetExtensionMethods(typeof(" + extendedTypeName + "), " + string.Join(", ", extensionTypeNames) + ");");
-                sb.AppendLine("        }");
+                var extensionTypeNames = pair.Value.Select(t => $"typeof({Puerts.TypeExtensions.GetFriendlyName(t)})").ToList();
+                caseClauses.Add($@"        else if (typeof({extendedTypeName}).AssemblyQualifiedName == assemblyQualifiedName)
+        {{
+            return ExtensionMethodInfo.GetExtensionMethods(typeof({extendedTypeName}), {string.Join(", ", extensionTypeNames)});
+        }}");
             }
+            string cases = string.Join("\n", caseClauses);
 
-            sb.AppendLine("        return null;");
-            sb.AppendLine("    }");
-            sb.AppendLine("}");
-            sb.AppendLine("}");
-            return sb.ToString().Trim();
+            return $@"
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+namespace PuertsIl2cpp
+{{
+public static class ExtensionMethodInfos_Gen
+{{
+    [UnityEngine.Scripting.Preserve]
+    public static MethodInfo[] TryLoadExtensionMethod(string assemblyQualifiedName)
+    {{
+        if (false) {{}}
+{cases}
+        return null;
+    }}
+}}
+}}";
         }
 
         #endregion
@@ -1182,19 +1133,16 @@ namespace PuertsIl2cpp.Editor.Generator
                 assemblyMap[assemblyName].Add(typeName);
             }
 
-            var sb = new StringBuilder();
-            sb.AppendLine("<linker>");
-            foreach (var kvp in assemblyMap)
+            var assemblies = assemblyMap.Select(kvp =>
             {
-                sb.AppendLine("    <assembly fullname=\"" + kvp.Key + "\">");
-                foreach (var typeName in kvp.Value)
-                {
-                    sb.AppendLine("        <type fullname=\"" + typeName + "\" preserve=\"all\"/>");
-                }
-                sb.AppendLine("    </assembly>");
-            }
-            sb.Append("</linker>");
-            return sb.ToString();
+                string types = string.Join("\n", kvp.Value.Select(t =>
+                    $"        <type fullname=\"{t}\" preserve=\"all\"/>"));
+                return $@"    <assembly fullname=""{kvp.Key}"">
+{types}
+    </assembly>";
+            });
+
+            return $"<linker>\n{string.Join("\n", assemblies)}\n</linker>";
         }
 
         #endregion
