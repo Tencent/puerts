@@ -72,8 +72,8 @@ namespace PuertsIl2cpp.Editor.Generator
                 .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
             var wrapperUsedTypes = types
-                .Concat(ctorToWrapper.SelectMany(c => c.GetParameters()).Select(pi => FileExporter.GetUnrefParameterType(pi)))
-                .Concat(methodToWrap.SelectMany(m => m.GetParameters()).Select(pi => FileExporter.GetUnrefParameterType(pi)))
+                .Concat(ctorToWrapper.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
+                .Concat(methodToWrap.SelectMany(m => m.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
                 .Concat(methodToWrap.Select(m => m.ReturnType))
                 .Concat(fieldToWrapper.Select(f => f.FieldType))
                 .Distinct();
@@ -96,7 +96,7 @@ namespace PuertsIl2cpp.Editor.Generator
             HashSet<MethodBase> processed = new HashSet<MethodBase>();
             foreach (var method in methodToWrap)
             {
-                FileExporter.GenericArgumentInInstructions(method, typeInGenericArgument, processed, mb =>
+                GenericArgumentInInstructions(method, typeInGenericArgument, processed, mb =>
                 {
                     try
                     {
@@ -122,7 +122,7 @@ namespace PuertsIl2cpp.Editor.Generator
 
             var delegateToBridge = allTypes.Distinct().Where(t => typeof(MulticastDelegate).IsAssignableFrom(t));
             var delegateInvokes = delegateToBridge.Select(t => t.GetMethod("Invoke")).Where(m => m != null).ToList();
-            var delegateUsedTypes = delegateInvokes.SelectMany(m => m.GetParameters()).Select(pi => FileExporter.GetUnrefParameterType(pi))
+            var delegateUsedTypes = delegateInvokes.SelectMany(m => m.GetParameters()).Select(pi => GetUnrefParameterType(pi))
                 .Concat(delegateInvokes.Select(m => m.ReturnType));
 
             var valueTypeInfos = new List<CSharpCodeGen.ValueTypeInfo>();
@@ -213,8 +213,8 @@ namespace PuertsIl2cpp.Editor.Generator
                     .ToList();
 
                 var configureUsedTypes = configureTypes
-                    .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => FileExporter.GetUnrefParameterType(pi)))
-                    .Concat(genWrapperMethod.SelectMany(m => m.GetParameters()).Select(pi => FileExporter.GetUnrefParameterType(pi)))
+                    .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
+                    .Concat(genWrapperMethod.SelectMany(m => m.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
                     .Concat(genWrapperMethod.Select(m => m.ReturnType))
                     .Concat(genWrapperField.Select(f => f.FieldType))
                     .Distinct();
@@ -513,7 +513,52 @@ return new List<Instruction>();
             return result;
         }
 
-        #region Helper methods (mirrors FileExporter internal logic)
+        #region Utility methods (moved from FileExporter)
+
+        public static List<string> GetValueTypeFieldSignatures(Type type)
+        {
+            List<string> ret = new List<string>();
+            if (type.BaseType != null && type.BaseType.IsValueType) ret.Add(PuertsIl2cpp.TypeUtils.GetTypeSignature(type.BaseType));
+            foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                ret.Add(PuertsIl2cpp.TypeUtils.GetTypeSignature(field.FieldType));
+            }
+            return ret;
+        }
+
+        public static Type GetUnrefParameterType(ParameterInfo parameterInfo)
+        {
+            return (parameterInfo.ParameterType.IsByRef || parameterInfo.ParameterType.IsPointer) ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType;
+        }
+
+        public static void GenericArgumentInInstructions(MethodBase node, HashSet<Type> result, HashSet<MethodBase> proceed, Func<MethodBase, IEnumerable<MethodBase>> callingMethodsGetter)
+        {
+            var declaringType = node.DeclaringType;
+            if (proceed.Contains(node)) return;
+            if (node.IsGenericMethod && !node.IsGenericMethodDefinition)
+            {
+                foreach (var t in node.GetGenericArguments())
+                {
+                    if (!t.IsDefined(typeof(CompilerGeneratedAttribute)))
+                    {
+                        result.Add(t);
+                    }
+                }
+            }
+            if (declaringType != null && Utils.shouldNotGetArgumentsInInstructions(node)) return;
+
+            proceed.Add(node);
+
+            var callingMethods = callingMethodsGetter(node);
+            foreach (var callingMethod in callingMethods)
+            {
+                GenericArgumentInInstructions(callingMethod, result, proceed, callingMethodsGetter);
+            }
+        }
+
+        #endregion
+
+        #region Helper methods
 
         private static Type GetExtendedTypeOf(MethodInfo method)
         {
@@ -561,7 +606,7 @@ return new List<Instruction>();
             {
                 Signature = PuertsIl2cpp.TypeUtils.GetTypeSignature(type),
                 CsName = type.Name,
-                FieldSignatures = FileExporter.GetValueTypeFieldSignatures(type),
+                FieldSignatures = GetValueTypeFieldSignatures(type),
                 NullableHasValuePosition = value
             });
         }
