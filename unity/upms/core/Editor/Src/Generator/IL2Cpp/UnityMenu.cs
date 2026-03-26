@@ -15,6 +15,40 @@ using UnityEngine;
 #endif
 
 #if !PUERTS_GENERAL
+namespace Puerts.Editor
+{
+    namespace Generator
+    {
+        public class UnityMenu
+        {
+            public const string PUERTS_MENU_PREFIX = "Tools/PuerTS";
+
+            [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 9)]
+            public static void ClearAll()
+            {
+                var saveTo = Configure.GetCodeOutputDirectory();
+                if (Directory.Exists(saveTo))
+                {
+                    Directory.Delete(saveTo, true);
+                    AssetDatabase.DeleteAsset(saveTo.Substring(saveTo.IndexOf("Assets") + "Assets".Length));
+                    AssetDatabase.Refresh();
+                }
+            }
+
+            //[MenuItem(PUERTS_MENU_PREFIX + "/Generate/RegisterInfo", false, 7)]
+            public static void GenRegisterInfo()
+            {
+                var start = DateTime.Now;
+                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                Directory.CreateDirectory(saveTo);
+                //FileExporter.GenRegisterInfo(saveTo);
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
+            }
+        }
+    }
+}
+
 namespace PuertsIl2cpp.Editor
 {
     namespace Generator {
@@ -94,7 +128,7 @@ namespace PuertsIl2cpp.Editor
             }
 
             [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/Link.xml", false, 6)]
-            public static void GenerateLinkXML()
+            public static void GenerateLinkXml()
             {
                 var start = DateTime.Now;
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
