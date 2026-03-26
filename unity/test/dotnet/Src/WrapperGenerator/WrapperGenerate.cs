@@ -8,6 +8,8 @@
 using Puerts;
 using System.Collections.Generic;
 using System;
+using System.IO;
+using System.Text;
 
 [Configure]
 public class WrapperGenConfig
@@ -87,13 +89,24 @@ public class PuerGen
 {
     public static void Main()
     {
-        Puerts.Editor.Generator.FileExporter.ExportWrapper(
-            TxtLoader.PathToBinDir("../../../Src/StaticWrapper/"),
-            new TxtLoader()
-        );
-        Puerts.Editor.Generator.FileExporter.GenRegisterInfo(
-            TxtLoader.PathToBinDir("../../../Src/StaticWrapper/"),
-            new TxtLoader()
-        );
+        var outDir = TxtLoader.PathToBinDir("../../../Src/StaticWrapper/");
+        Directory.CreateDirectory(outDir);
+        using (StreamWriter textWriter = new StreamWriter(Path.Combine(outDir, "RegisterInfo_Gen.cs"), false, Encoding.UTF8))
+        {
+            textWriter.Write(@"namespace PuertsStaticWrap
+{
+#if !PUERTS_GENERAL
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public static class PuerRegisterInfo_Gen
+    {
+        public static void AddRegisterInfoGetterIntoJsEnv(Puerts.JsEnv jsEnv)
+        {
+        }
+    }
+}
+");
+            textWriter.Flush();
+        }
     }
 }

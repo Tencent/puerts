@@ -34,17 +34,6 @@ namespace Puerts.Editor
                     AssetDatabase.Refresh();
                 }
             }
-
-            //[MenuItem(PUERTS_MENU_PREFIX + "/Generate/RegisterInfo", false, 7)]
-            public static void GenRegisterInfo()
-            {
-                var start = DateTime.Now;
-                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
-                Directory.CreateDirectory(saveTo);
-                //FileExporter.GenRegisterInfo(saveTo);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
-                AssetDatabase.Refresh();
-            }
         }
     }
 }
