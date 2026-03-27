@@ -31,6 +31,13 @@ namespace Puerts
         private readonly pesapi_class_not_found_callback onTypeNotFoundDelegate;
         internal readonly List<Delegate> callbacksCache = new List<Delegate>();
 
+        internal TypeMapping.RegisterInfoManager RegisterInfoManager = new TypeMapping.RegisterInfoManager();
+
+        internal void AddRegisterInfoGetter(Type type, Func<TypeMapping.RegisterInfo> getter)
+        {
+            RegisterInfoManager.Add(type, getter);
+        }
+
         private TypeRegister()
         {
             reg_api = Marshal.PtrToStructure<pesapi_reg_api>(PuertsNative.GetRegisterApi());
@@ -152,6 +159,132 @@ namespace Puerts
             int typeId = FindOrAddTypeId(type);
             if (registerFinished.ContainsKey(typeId)) return typeId;
 
+#if !PUERTS_DISABLE_STATIC_WRAPPER
+            // Check if this type has pre-registered static wrapper info
+            Func<TypeMapping.RegisterInfo> registerInfoGetter;
+            if (RegisterInfoManager.TryGetValue(type, out registerInfoGetter))
+            {
+                var registerInfo = registerInfoGetter();
+                if (registerInfo != null && registerInfo.Members != null)
+                {
+                    return RegisterWithStaticWrapper(type, typeId, registerInfo);
+                }
+            }
+#endif
+
+            return RegisterWithExpressionTree(type, typeId);
+        }
+
+#if !PUERTS_DISABLE_STATIC_WRAPPER
+        private int RegisterWithStaticWrapper(Type type, int typeId, TypeMapping.RegisterInfo registerInfo)
+        {
+            int baseTypeId = type.BaseType == null ? 0 : Register(type.BaseType);
+
+            Dictionary<MemberKey, AccessorInfo> propertyCallbacks = new Dictionary<MemberKey, AccessorInfo>();
+            Dictionary<MemberKey, pesapi_callback> methodCallbacksResolved = new Dictionary<MemberKey, pesapi_callback>();
+            pesapi_constructor ctorWrap = null;
+            int staticPropertyCount = 0;
+            int instancePropertyCount = 0;
+            int staticMethodCount = 0;
+            int instanceMethodCount = 0;
+
+            foreach (var kv in registerInfo.Members)
+            {
+                var memberInfo = kv.Value;
+                if (memberInfo.UseBindingMode != BindingMode.FastBinding) continue;
+
+                switch (memberInfo.MemberType)
+                {
+                    case TypeMapping.MemberType.Constructor:
+                        if (memberInfo.ConstructorCallback != null)
+                        {
+                            ctorWrap = memberInfo.ConstructorCallback as pesapi_constructor;
+                        }
+                        break;
+
+                    case TypeMapping.MemberType.Method:
+                        if (memberInfo.Callback != null)
+                        {
+                            var callback = memberInfo.Callback as pesapi_callback;
+                            if (callback != null)
+                            {
+                                var key = new MemberKey(memberInfo.Name, memberInfo.IsStatic);
+                                methodCallbacksResolved[key] = callback;
+                                callbacksCache.Add(callback);
+                                if (memberInfo.IsStatic) ++staticMethodCount;
+                                else ++instanceMethodCount;
+                            }
+                        }
+                        break;
+
+                    case TypeMapping.MemberType.Property:
+                        {
+                            var key = new MemberKey(memberInfo.Name, memberInfo.IsStatic);
+                            AccessorInfo accessorInfo;
+                            if (!propertyCallbacks.TryGetValue(key, out accessorInfo))
+                            {
+                                accessorInfo = new AccessorInfo();
+                                propertyCallbacks[key] = accessorInfo;
+                                if (memberInfo.IsStatic) ++staticPropertyCount;
+                                else ++instancePropertyCount;
+                            }
+                            if (memberInfo.GetterCallback != null)
+                            {
+                                accessorInfo.Getter = memberInfo.GetterCallback as pesapi_callback;
+                                callbacksCache.Add(accessorInfo.Getter);
+                            }
+                            if (memberInfo.SetterCallback != null)
+                            {
+                                accessorInfo.Setter = memberInfo.SetterCallback as pesapi_callback;
+                                callbacksCache.Add(accessorInfo.Setter);
+                            }
+                        }
+                        break;
+                }
+            }
+
+            if (ctorWrap == null)
+            {
+                ctorWrap = (apis, info) =>
+                {
+                    PuertsNative.pesapi_throw_by_string(apis, info, $"no constructor for {type}");
+                    return IntPtr.Zero;
+                };
+            }
+            callbacksCache.Add(ctorWrap);
+            reg_api.define_class(registry, new IntPtr(typeId), new IntPtr(baseTypeId), type.Namespace, type.Name, ctorWrap, null, IntPtr.Zero, true, true);
+            ++staticMethodCount; // for __p_innerType
+            reg_api.set_property_info_size(registry, new IntPtr(typeId), instanceMethodCount, staticMethodCount, instancePropertyCount, staticPropertyCount);
+
+            int ipidx = 0;
+            int spidx = 0;
+            foreach (var kv in propertyCallbacks)
+            {
+                try
+                {
+                    reg_api.set_property_info(registry, new IntPtr(typeId), kv.Key.IsStatic ? spidx++ : ipidx++, kv.Key.Name, kv.Key.IsStatic, kv.Value.Getter, kv.Value.Setter, IntPtr.Zero, IntPtr.Zero, true);
+                }
+                catch { }
+            }
+            int imidx = 0;
+            int smidx = 0;
+            foreach (var kv in methodCallbacksResolved)
+            {
+                try
+                {
+                    reg_api.set_method_info(registry, new IntPtr(typeId), kv.Key.IsStatic ? smidx++ : imidx++, kv.Key.Name, kv.Key.IsStatic, kv.Value, IntPtr.Zero, true);
+                }
+                catch { }
+            }
+
+            reg_api.trace_native_object_lifecycle(registry, new IntPtr(typeId), null, ScriptEnv.OnObjectReleaseRefDelegate);
+            registerFinished[typeId] = true;
+            return typeId;
+        }
+#endif
+
+        private int RegisterWithExpressionTree(Type type, int typeId)
+        {
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
             var methodInfos = type.GetMethods(flag | BindingFlags.NonPublic).ToList();
             FieldInfo[] fieldInfos = type.GetFields(flag);

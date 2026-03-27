@@ -36,6 +36,14 @@ namespace Puerts
             public MemberType MemberType; 
 
             public BindingMode UseBindingMode;
+
+            // Optional: pre-generated static wrapper callbacks (used by static wrapper generator)
+            // These are typed as Delegate for cross-path compatibility.
+            // For PInvoke path: pesapi_callback or pesapi_constructor
+            public Delegate Callback;
+            public Delegate GetterCallback;
+            public Delegate SetterCallback;
+            public Delegate ConstructorCallback;
         }
 
         public class RegisterInfo 

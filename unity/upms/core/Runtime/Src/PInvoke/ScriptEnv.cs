@@ -141,6 +141,17 @@ namespace Puerts
 
         internal static pesapi_on_native_object_exit OnObjectReleaseRefDelegate = OnObjectReleaseRef;
 
+        public void AddRegisterInfoGetter(Type type, Func<TypeMapping.RegisterInfo> getter)
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            TypeRegister.Instance.AddRegisterInfoGetter(type, getter);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
         [UnityEngine.Scripting.Preserve]
         public Type GetTypeByString(string className)
         {
