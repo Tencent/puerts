@@ -122,9 +122,26 @@ class NameSpaceProxy(types.ModuleType):
                 raise e
             if _p_loader.NamespaceManager.IsValidNamespace(full_name):
                 return NameSpaceProxy(full_name)
+            elif _p_loader.NamespaceManager.IsValidGenericTypePrefix(full_name):
+                # full_name: System.Collections.Generic.List, exist types : System.Collections.Generic.List^1 => valid
+                return _p_Import_Generic_Wrapper(full_name)
             else:
                 raise ModuleNotFoundError(f'No namespace or type named {full_name}')
 
+
+class _p_Import_Generic_Wrapper:
+    def __init__(self, type_name_prefix):
+        # System.Collections.Generic.List
+        self.__p_type_name_prefix = type_name_prefix
+    def __getitem__(self, item):
+        # System.Collections.Generic.List^item Count
+        # List[System.String] => System.Collections.Generic.List^1 and make Generic
+        generic_type_name = self.__p_type_name_prefix + '_' + str(len(item) if isinstance(item, tuple) else 1)
+        try:
+            return puerts.load_type(generic_type_name)[item]
+        except Exception as e:
+            raise ModuleNotFoundError(f'Error loading type {generic_type_name} with {item} in _p_Import_Generic_Wrapper: {e}')
+        
 
 class puerts:
     @staticmethod

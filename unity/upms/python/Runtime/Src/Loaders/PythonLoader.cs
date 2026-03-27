@@ -31,7 +31,8 @@ namespace Puerts
 
     public class NamespaceManager
     {
-        private readonly HashSet<string> _namespaces = new HashSet<string>();
+        private readonly HashSet<string> _namespaces = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _genericTypePrefixes = new HashSet<string>(StringComparer.Ordinal);
         private static readonly object _lock = new object();
 
         public NamespaceManager()
@@ -67,25 +68,68 @@ namespace Puerts
                 var types = assembly.GetTypes();
                 foreach (var type in types)
                 {
-                    if (!string.IsNullOrEmpty(type.Namespace))
-                    {
-                        _namespaces.Add(type.Namespace);
-                    }
+                    AddType(type);
                 }
             }
             catch (ReflectionTypeLoadException ex)
             {
                 foreach (var type in ex.Types)
                 {
-                    if (type != null && !string.IsNullOrEmpty(type.Namespace))
+                    if (type != null)
                     {
-                        _namespaces.Add(type.Namespace);
+                        AddType(type);
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error on loading assembly {assembly.FullName}: {ex.Message}");
+            }
+        }
+
+        private void AddType(Type type)
+        {
+            if (!string.IsNullOrEmpty(type.Namespace))
+            {
+                _namespaces.Add(type.Namespace);
+            }
+
+            CacheGenericTypePrefix(type);
+        }
+
+        private void CacheGenericTypePrefix(Type type)
+        {
+            if (!type.IsGenericTypeDefinition)
+                return;
+
+            var names = new Stack<string>();
+            var current = type;
+
+            while (current != null)
+            {
+                var name = current.Name;
+                var tickIndex = name.IndexOf('`');
+                if (tickIndex >= 0)
+                {
+                    name = name[..tickIndex];
+                }
+
+                names.Push(name);
+                current = current.DeclaringType;
+            }
+
+            var joinedByPlus = string.Join("+", names);
+            var joinedByDot = string.Join(".", names);
+
+            if (!string.IsNullOrEmpty(type.Namespace))
+            {
+                _genericTypePrefixes.Add($"{type.Namespace}.{joinedByPlus}");
+                _genericTypePrefixes.Add($"{type.Namespace}.{joinedByDot}");
+            }
+            else
+            {
+                _genericTypePrefixes.Add(joinedByPlus);
+                _genericTypePrefixes.Add(joinedByDot);
             }
         }
 
@@ -104,7 +148,35 @@ namespace Puerts
                 return _namespaces.Contains(namespaceName);
             }
         }
+
+        // typeName: System.Collections.Generic.List
+        // exist types: System.Collections.Generic.List`1 => valid
+        public bool IsValidGenericTypePrefix(string typeName)
+        {
+            if (string.IsNullOrWhiteSpace(typeName))
+                return false;
+
+            var normalized = typeName.Trim();
+
+            var tickIndex = normalized.IndexOf('`');
+            if (tickIndex >= 0)
+            {
+                normalized = normalized[..tickIndex];
+            }
+
+            var genericStartIndex = normalized.IndexOf('<');
+            if (genericStartIndex >= 0)
+            {
+                normalized = normalized[..genericStartIndex];
+            }
+
+            lock (_lock)
+            {
+                return _genericTypePrefixes.Contains(normalized);
+            }
+        }
     }
+
 
     public class PythonDefaultLoader : PythonLoader
     {
