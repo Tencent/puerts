@@ -97,7 +97,11 @@ class PesapiLoader(importlib.abc.Loader):
             try:
                 return puerts.load_type(type_name)
             except Exception as e:
-                raise ModuleNotFoundError(f'No namespace or type named {type_name} or error loading type {type_name} in puerts.load_type: {e}')
+                if _p_loader.NamespaceManager.IsValidGenericTypePrefix(type_name):
+                    # type_name: System.Collections.Generic.List, exist types : System.Collections.Generic.List^1 => valid
+                    return _p_Import_Generic_Wrapper(type_name)
+                else:
+                    raise e
 
 
 class PesapiFinder(importlib.abc.MetaPathFinder):

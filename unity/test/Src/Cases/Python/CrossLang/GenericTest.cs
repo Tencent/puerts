@@ -33,6 +33,7 @@ namespace Puerts.UnitTest
             var res = pythonEnv.Eval<int>(@"
 exec('''
 import System.Collections.Generic.List as List
+from System.Collections.Generic import List
 import System.String as String
 ListString = List[String]
 ls = ListString()
