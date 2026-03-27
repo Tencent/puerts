@@ -57,7 +57,21 @@ function createMcpServer(): InstanceType<typeof McpServer> {
         'Use `return <value>` inside the function to pass a result back. ' +
         'Objects are serialized via JSON.stringify; primitives are converted to strings.\n\n' +
         'On success the response is `{ success: true, result: string }`. ' +
-        'On failure the response is `{ success: false, error: string, stack: string }`.' +
+        'On failure the response is `{ success: false, error: string, stack: string }`.\n\n' +
+        '### Best Practices for Unity Editor Operations\n\n' +
+        '**Domain Reload awareness**: Calling `CS.UnityEditor.AssetDatabase.Refresh()` or any operation that triggers C# compilation ' +
+        'will cause a **Domain Reload**, which disconnects the MCP client. ' +
+        'If this happens, your next call may fail with `client not initialized` — simply **retry** and it will reconnect automatically.\n\n' +
+        '**Split heavy operations into separate calls**: Never combine "trigger compilation" and "wait for result" in one script. Instead:\n' +
+        '1. **Call 1**: Perform the action (e.g. generate files, modify assets).\n' +
+        '2. **Call 2**: `AssetDatabase.Refresh()` — this may cause a disconnect, which is expected.\n' +
+        '3. **Call 3**: Wait for compilation to finish and check results (e.g. read logs for errors).\n\n' +
+        'Each step should be a **separate `evalJsCode` invocation** so that a disconnect in step 2 does not lose the work done in step 1.\n\n' +
+        '**Timeout handling**: Operations that trigger compilation can take a long time. ' +
+        'If a call times out, it does **not** mean the operation failed — it may still be running in Unity. ' +
+        'After a timeout, issue a lightweight follow-up call (e.g. check `EditorApplication.isCompiling`) to verify the current state before retrying.\n\n' +
+        '**Checking compilation errors**: After compilation, use the `unity-log` builtin module to efficiently retrieve and analyze compiler errors, ' +
+        'rather than reading generated files manually.' +
         builtinSummariesText,
         {
             code: z.string().describe(
