@@ -32,6 +32,7 @@ namespace Puerts
             public bool IsStatic;
             public string MemberType; // "Method", "Constructor", "Property", "Field"
             public string WrapperMethodName;
+            public string SetterMethodName; // For Property/Field: the setter wrapper method name
         }
 
         /// <summary>
@@ -112,13 +113,13 @@ namespace Puerts
                         $"Field getter for {ExpressionToCSharpVisitor.GetTypeName(type)}.{fieldInfo.Name}",
                         "pesapi_callback", allStaticFields);
 
-                    result.Members.Add(new WrapperMemberInfo
+                    var fieldMemberInfo = new WrapperMemberInfo
                     {
                         Name = fieldInfo.Name,
                         IsStatic = fieldInfo.IsStatic,
                         MemberType = "Field",
                         WrapperMethodName = getterMethodName
-                    });
+                    };
 
                     // Field setter (if not readonly)
                     if (!fieldInfo.IsInitOnly && !fieldInfo.IsLiteral)
@@ -128,7 +129,10 @@ namespace Puerts
                         EmitWrapperMethod(sb, visitor, setterExpr, setterMethodName,
                             $"Field setter for {ExpressionToCSharpVisitor.GetTypeName(type)}.{fieldInfo.Name}",
                             "pesapi_callback", allStaticFields);
+                        fieldMemberInfo.SetterMethodName = setterMethodName;
                     }
+
+                    result.Members.Add(fieldMemberInfo);
                 }
                 catch (Exception e)
                 {
@@ -237,30 +241,77 @@ namespace Puerts
                             $"Property getter for {ExpressionToCSharpVisitor.GetTypeName(type)}.{propName}",
                             "pesapi_callback", allStaticFields);
 
-                        result.Members.Add(new WrapperMemberInfo
+                        var propMemberInfo = new WrapperMemberInfo
                         {
                             Name = propName,
                             IsStatic = isStatic,
                             MemberType = "Property",
                             WrapperMethodName = getterMethodName
-                        });
+                        };
+
+                        // Try to generate setter inline so we can record SetterMethodName
+                        if (propertySetters.TryGetValue(key, out var setterInline))
+                        {
+                            try
+                            {
+                                var setterExpr = ExpressionsWrap.BuildMethodWrapExpression(type, setterInline, false);
+                                string setterMethodName = SanitizeMethodName($"ps_{propName}" + (isStatic ? "_s" : ""));
+                                EmitWrapperMethod(sb, visitor, setterExpr, setterMethodName,
+                                    $"Property setter for {ExpressionToCSharpVisitor.GetTypeName(type)}.{propName}",
+                                    "pesapi_callback", allStaticFields);
+                                propMemberInfo.SetterMethodName = setterMethodName;
+                            }
+                            catch (Exception e)
+                            {
+                                sb.AppendLine($"        // SKIPPED: Property setter {propName} — {EscapeComment(e.Message)}");
+                                sb.AppendLine();
+                            }
+                        }
+
+                        result.Members.Add(propMemberInfo);
                     }
                     catch (Exception e)
                     {
                         sb.AppendLine($"        // SKIPPED: Property getter {propName} — {EscapeComment(e.Message)}");
                         sb.AppendLine();
+
+                        // Even if getter failed, try setter alone
+                        if (propertySetters.TryGetValue(key, out var setterFallback))
+                        {
+                            try
+                            {
+                                var setterExpr = ExpressionsWrap.BuildMethodWrapExpression(type, setterFallback, false);
+                                string setterMethodName = SanitizeMethodName($"ps_{propName}" + (isStatic ? "_s" : ""));
+                                EmitWrapperMethod(sb, visitor, setterExpr, setterMethodName,
+                                    $"Property setter for {ExpressionToCSharpVisitor.GetTypeName(type)}.{propName}",
+                                    "pesapi_callback", allStaticFields);
+                            }
+                            catch (Exception e2)
+                            {
+                                sb.AppendLine($"        // SKIPPED: Property setter {propName} — {EscapeComment(e2.Message)}");
+                                sb.AppendLine();
+                            }
+                        }
                     }
                 }
-
-                if (propertySetters.TryGetValue(key, out var setter))
+                else if (propertySetters.TryGetValue(key, out var setterOnly))
                 {
+                    // No getter, only setter
                     try
                     {
-                        var setterExpr = ExpressionsWrap.BuildMethodWrapExpression(type, setter, false);
+                        var setterExpr = ExpressionsWrap.BuildMethodWrapExpression(type, setterOnly, false);
                         string setterMethodName = SanitizeMethodName($"ps_{propName}" + (isStatic ? "_s" : ""));
                         EmitWrapperMethod(sb, visitor, setterExpr, setterMethodName,
                             $"Property setter for {ExpressionToCSharpVisitor.GetTypeName(type)}.{propName}",
                             "pesapi_callback", allStaticFields);
+
+                        result.Members.Add(new WrapperMemberInfo
+                        {
+                            Name = propName,
+                            IsStatic = isStatic,
+                            MemberType = "Property",
+                            SetterMethodName = setterMethodName
+                        });
                     }
                     catch (Exception e)
                     {
@@ -450,7 +501,34 @@ namespace Puerts
                     string memberType = member.MemberType == "Constructor" ? "MemberType.Constructor" :
                                         member.MemberType == "Method" ? "MemberType.Method" :
                                         "MemberType.Property";
-                    sb.AppendLine($"                        {{ \"{member.Name}\", new MemberRegisterInfo {{ Name = \"{member.Name}\", IsStatic = {(member.IsStatic ? "true" : "false")}, MemberType = {memberType}, UseBindingMode = BindingMode.FastBinding }} }},");
+
+                    // Static members need a '_static' suffix in the key to avoid collisions
+                    // with instance members of the same name (e.g. Vector3.Scale)
+                    string dictKey = member.IsStatic ? $"{member.Name}_static" : member.Name;
+
+                    // Build callback assignments
+                    var callbackParts = new List<string>();
+                    switch (member.MemberType)
+                    {
+                        case "Constructor":
+                            if (!string.IsNullOrEmpty(member.WrapperMethodName))
+                                callbackParts.Add($"ConstructorCallback = new pesapi_constructor({className}.{member.WrapperMethodName})");
+                            break;
+                        case "Method":
+                            if (!string.IsNullOrEmpty(member.WrapperMethodName))
+                                callbackParts.Add($"Callback = new pesapi_callback({className}.{member.WrapperMethodName})");
+                            break;
+                        case "Property":
+                        case "Field":
+                            if (!string.IsNullOrEmpty(member.WrapperMethodName))
+                                callbackParts.Add($"GetterCallback = new pesapi_callback({className}.{member.WrapperMethodName})");
+                            if (!string.IsNullOrEmpty(member.SetterMethodName))
+                                callbackParts.Add($"SetterCallback = new pesapi_callback({className}.{member.SetterMethodName})");
+                            break;
+                    }
+                    string callbackStr = callbackParts.Count > 0 ? ", " + string.Join(", ", callbackParts) : "";
+
+                    sb.AppendLine($"                        {{ \"{dictKey}\", new MemberRegisterInfo {{ Name = \"{member.Name}\", IsStatic = {(member.IsStatic ? "true" : "false")}, MemberType = {memberType}, UseBindingMode = BindingMode.FastBinding{callbackStr} }} }},");
                 }
 
                 sb.AppendLine("                    }");

@@ -104,6 +104,9 @@ namespace Puerts
             PuertsNative.pesapi_close_scope(papis, scope);
 
             Puerts.ExtensionMethodInfo.LoadExtensionMethodInfo();
+
+            // Auto-discover and call generated static wrapper registration
+            AutoRegisterStaticWrappers();
             
             if (debugPort != -1)
             {
@@ -150,6 +153,25 @@ namespace Puerts
 #if THREAD_SAFE
             }
 #endif
+        }
+
+        /// <summary>
+        /// Auto-discover and call the generated PuerRegisterInfo_Gen class to register static wrappers.
+        /// Looks for PuertsStaticWrap.PuerRegisterInfo_Gen.AddRegisterInfoGetterIntoScriptEnv(ScriptEnv)
+        /// or PuertsStaticWrap.PuerRegisterInfo_Gen.AddRegisterInfoGetterIntoJsEnv(JsEnv) via reflection.
+        /// </summary>
+        private void AutoRegisterStaticWrappers()
+        {
+            var registerType = Puerts.TypeUtils.GetType("PuertsStaticWrap.PuerRegisterInfo_Gen");
+            if (registerType == null) return;
+
+            var method = registerType.GetMethod("AddRegisterInfoGetterIntoScriptEnv",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                null, new Type[] { typeof(ScriptEnv) }, null);
+            if (method != null)
+            {
+                method.Invoke(null, new object[] { this });
+            }
         }
 
         [UnityEngine.Scripting.Preserve]
