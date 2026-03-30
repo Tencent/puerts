@@ -79,6 +79,7 @@ public class WrapperGenConfig
                 typeof(Puerts.UnitTest.OptionalParametersClass),
                 typeof(Puerts.UnitTest.Timer),
                 typeof(Puerts.UnitTest.TimerTest),
+                typeof(Puerts.UnitTest.CrossLangTestHelper.LoadResource),
             };
         }
     }
