@@ -13,39 +13,16 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
-using UnityEditor;
 using UnityEngine;
 using Puerts.TypeMapping;
 
 namespace Puerts.Editor.Generator
 {
     /// <summary>
-    /// Unity Editor menu entries for generating static C# wrapper code
-    /// using the Expression Tree → C# source code translation pipeline.
+    /// Static C# wrapper code generation using the Expression Tree → C# source code translation pipeline.
     /// </summary>
     public static class StaticWrapperMenu
     {
-        [MenuItem(UnityMenu.PUERTS_MENU_PREFIX + "/Generate Static Wrappers (Expression Tree IR)", false, 5)]
-        public static void GenerateStaticWrappers()
-        {
-            var start = DateTime.Now;
-
-            try
-            {
-                var outputDir = Puerts.Configure.GetCodeOutputDirectory();
-                Directory.CreateDirectory(outputDir);
-
-                GenerateStaticWrappersTo(outputDir);
-
-                Debug.Log($"[PuerTS] Static wrapper generation finished! Took {(DateTime.Now - start).TotalMilliseconds:F0} ms. Output: {outputDir}");
-                AssetDatabase.Refresh();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[PuerTS] Static wrapper generation failed: {e.Message}\n{e.StackTrace}");
-            }
-        }
-
         /// <summary>
         /// Core generation logic — can be called from both Unity Editor and command line.
         /// </summary>
