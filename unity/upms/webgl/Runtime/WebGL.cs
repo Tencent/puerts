@@ -26,10 +26,10 @@ namespace Puerts
                     return jsEnvInstance;
                 }
 
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && UNITY_WEBGL
                 jsEnvInstance = new ScriptEnv(new BackendWebGL(loader), debugPort);
 #else
-                jsEnvInstance = new ScriptEnv(Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendV8"), loader) as Backend, debugPort);
+                jsEnvInstance = new ScriptEnv(Activator.CreateInstance(Puerts.TypeUtils.GetType("Puerts.BackendV8"), loader) as Backend, debugPort);
 #endif
                 return jsEnvInstance;
             }
