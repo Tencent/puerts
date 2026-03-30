@@ -25,6 +25,23 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, 6);
             pythonEnv.Dispose();
         }
+        
+        [Test]
+        public void ListGenericWrapperPythonTest()
+        {
+            var pythonEnv = new ScriptEnv(new BackendPython());
+            var res = pythonEnv.Eval<int>(@"
+exec('''
+import System.Collections.Generic.List as List
+from System.Collections.Generic import List
+import System.String as String
+ListString = List[String]
+ls = ListString()
+ls.Add('hello')
+''')
+");
+            pythonEnv.Dispose();
+        }
 
         [Test]
         public void StaticGenericMethodPythonTest()
