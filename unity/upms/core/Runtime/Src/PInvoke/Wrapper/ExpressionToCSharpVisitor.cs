@@ -149,25 +149,36 @@ namespace Puerts
         /// </summary>
         public static string GetTypeName(Type type)
         {
+            return GetTypeNameInternal(type, null);
+        }
+
+        private static string GetTypeNameInternal(Type type, HashSet<Type> visiting)
+        {
             if (type == null) return "void";
+
+            // Handle generic parameters (e.g. T, TKey, TValue) — return just the name
+            if (type.IsGenericParameter)
+            {
+                return type.Name;
+            }
 
             // Handle by-ref types (e.g. ref int, out string)
             if (type.IsByRef)
             {
-                return GetTypeName(type.GetElementType());
+                return GetTypeNameInternal(type.GetElementType(), visiting);
             }
 
             // Handle pointer types
             if (type.IsPointer)
             {
-                return GetTypeName(type.GetElementType()) + "*";
+                return GetTypeNameInternal(type.GetElementType(), visiting) + "*";
             }
 
             // Handle array types
             if (type.IsArray)
             {
                 int rank = type.GetArrayRank();
-                string elementType = GetTypeName(type.GetElementType());
+                string elementType = GetTypeNameInternal(type.GetElementType(), visiting);
                 if (rank == 1)
                     return elementType + "[]";
                 else
@@ -195,17 +206,30 @@ namespace Puerts
             // Handle generic types
             if (type.IsGenericType)
             {
+                // Guard against self-referencing generic types (e.g. Foo<T> where T : Foo<T>)
+                if (visiting == null) visiting = new HashSet<Type>();
+                if (!visiting.Add(type))
+                {
+                    // Already visiting this type — break the cycle by returning the raw name
+                    string fallbackName = type.IsNested
+                        ? type.DeclaringType.Name + "." + type.Name
+                        : (string.IsNullOrEmpty(type.Namespace) ? "" : type.Namespace + ".") + type.Name;
+                    int fbIdx = fallbackName.IndexOf('`');
+                    if (fbIdx >= 0) fallbackName = fallbackName.Substring(0, fbIdx);
+                    return fallbackName + "/* circular */";
+                }
+
                 Type genericDef = type.GetGenericTypeDefinition();
                 // Handle Nullable<T>
                 if (genericDef == typeof(Nullable<>))
                 {
-                    return GetTypeName(type.GetGenericArguments()[0]) + "?";
+                    return GetTypeNameInternal(type.GetGenericArguments()[0], visiting) + "?";
                 }
 
                 string baseName;
                 if (type.IsNested)
                 {
-                    baseName = GetTypeName(type.DeclaringType) + "." + type.Name;
+                    baseName = GetTypeNameInternal(type.DeclaringType, visiting) + "." + type.Name;
                 }
                 else
                 {
@@ -217,14 +241,14 @@ namespace Puerts
                 if (backtickIndex >= 0)
                     baseName = baseName.Substring(0, backtickIndex);
 
-                string[] typeArgs = type.GetGenericArguments().Select(GetTypeName).ToArray();
+                string[] typeArgs = type.GetGenericArguments().Select(t => GetTypeNameInternal(t, visiting)).ToArray();
                 return baseName + "<" + string.Join(", ", typeArgs) + ">";
             }
 
             // Handle nested types
             if (type.IsNested)
             {
-                return GetTypeName(type.DeclaringType) + "." + type.Name;
+                return GetTypeNameInternal(type.DeclaringType, visiting) + "." + type.Name;
             }
 
             // Default: fully qualified name
