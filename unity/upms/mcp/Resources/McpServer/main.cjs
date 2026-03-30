@@ -27131,6 +27131,18 @@ function startHttpServer(port) {
         return;
       }
       if (url.pathname === "/sse" && req.method === "GET") {
+        for (const [id, oldTransport] of transports) {
+          try {
+            oldTransport.close?.();
+          } catch (_) {
+          }
+        }
+        transports.clear();
+        try {
+          mcpServer?.close();
+        } catch (_) {
+        }
+        mcpServer = createMcpServer();
         const transport = new SSEServerTransport("/messages", res);
         const sessionId = transport.sessionId;
         transports.set(sessionId, transport);

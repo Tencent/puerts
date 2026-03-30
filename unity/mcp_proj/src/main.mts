@@ -169,6 +169,25 @@ function startHttpServer(port: number): Promise<void> {
 
             // SSE endpoint — client connects here to get the session
             if (url.pathname === '/sse' && req.method === 'GET') {
+                // Close any existing transports and recreate the McpServer
+                // so we don't hit "Already connected to a transport".
+                // The MCP SDK Server only supports one transport at a time.
+                for (const [id, oldTransport] of transports) {
+                    try {
+                        oldTransport.close?.();
+                    } catch (_) {
+                        // ignore
+                    }
+                }
+                transports.clear();
+
+                try {
+                    mcpServer?.close();
+                } catch (_) {
+                    // ignore
+                }
+                mcpServer = createMcpServer();
+
                 const transport = new SSEServerTransport('/messages', res);
                 const sessionId = transport.sessionId;
                 transports.set(sessionId, transport);
@@ -178,7 +197,7 @@ function startHttpServer(port: number): Promise<void> {
                     transports.delete(sessionId);
                 });
 
-                await mcpServer!.connect(transport);
+                await mcpServer.connect(transport);
                 return;
             }
 
