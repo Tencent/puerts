@@ -1589,6 +1589,35 @@ namespace Puerts
             //    that cannot be expressed as ternary operands
             bool useIfElse = node.Type == typeof(void) || HasComplexBranchRecursive(node);
 
+            // If we need if/else form but we're in an expression context (e.g. method argument),
+            // we must wrap it in an immediately-invoked lambda expression (IIFE).
+            if (useIfElse && !_isStatementContext && node.Type != typeof(void))
+            {
+                // Emit as: ((Func<T>)(() => { if (...) { return ...; } else { return ...; } }))()
+                Append($"((System.Func<{GetTypeName(node.Type)}>)(() =>");
+                AppendLine();
+                Indent();
+                AppendLine("{");
+                _indentLevel++;
+
+                bool oldNeedsReturn = _needsReturnInBranches;
+                bool oldStatementContext = _isStatementContext;
+                _needsReturnInBranches = true;
+                _isStatementContext = true;
+
+                Indent();
+                Visit(node);
+
+                _needsReturnInBranches = oldNeedsReturn;
+                _isStatementContext = oldStatementContext;
+
+                AppendLine();
+                _indentLevel--;
+                Indent();
+                Append("}))()");
+                return node;
+            }
+
             if (useIfElse)
             {
                 bool needsReturn = _needsReturnInBranches && node.Type != typeof(void);
