@@ -497,6 +497,7 @@ namespace Puerts
                 sb.AppendLine("                    Members = new System.Collections.Generic.Dictionary<string, MemberRegisterInfo>");
                 sb.AppendLine("                    {");
 
+                var emittedKeys = new HashSet<string>();
                 foreach (var member in wrapper.Members)
                 {
                     string memberType = member.MemberType == "Constructor" ? "MemberType.Constructor" :
@@ -506,6 +507,9 @@ namespace Puerts
                     // Static members need a '_static' suffix in the key to avoid collisions
                     // with instance members of the same name (e.g. Vector3.Scale)
                     string dictKey = member.IsStatic ? $"{member.Name}_static" : member.Name;
+
+                    // Skip duplicate keys (can happen when a property and extension method have the same name)
+                    if (!emittedKeys.Add(dictKey)) continue;
 
                     // Build callback assignments
                     var callbackParts = new List<string>();
@@ -552,7 +556,24 @@ namespace Puerts
         /// </summary>
         public static string GetWrapperClassName(Type type)
         {
-            string name = type.FullName ?? type.Name;
+            // Use a shorter representation for generic types to avoid extremely long file names.
+            // type.FullName for generic types includes assembly-qualified names of type arguments,
+            // which can exceed Windows path length limits.
+            string name;
+            if (type.IsGenericType)
+            {
+                // Build a short name: Namespace.TypeName`N[Arg1,Arg2,...]
+                // using only the type name (not assembly-qualified) for each argument
+                var genericDef = type.GetGenericTypeDefinition();
+                string baseName = genericDef.FullName ?? genericDef.Name;
+                var args = type.GetGenericArguments();
+                string argStr = string.Join("__", args.Select(a => GetWrapperClassName_TypeShortName(a)));
+                name = baseName + "__" + argStr + "__";
+            }
+            else
+            {
+                name = type.FullName ?? type.Name;
+            }
             var sb = new StringBuilder();
             foreach (char c in name)
             {
@@ -562,6 +583,19 @@ namespace Puerts
                     sb.Append('_');
             }
             return sb.ToString() + "_Wrap";
+        }
+
+        private static string GetWrapperClassName_TypeShortName(Type type)
+        {
+            if (type.IsGenericType)
+            {
+                var genericDef = type.GetGenericTypeDefinition();
+                string baseName = (genericDef.Namespace != null ? genericDef.Namespace + "." : "") + genericDef.Name;
+                var args = type.GetGenericArguments();
+                string argStr = string.Join("__", args.Select(a => GetWrapperClassName_TypeShortName(a)));
+                return baseName + "__" + argStr + "__";
+            }
+            return (type.Namespace != null ? type.Namespace + "." : "") + type.Name;
         }
 
         private static string SanitizeMethodName(string name)

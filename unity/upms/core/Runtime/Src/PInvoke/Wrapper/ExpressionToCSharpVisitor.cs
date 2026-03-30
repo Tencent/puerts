@@ -206,19 +206,6 @@ namespace Puerts
             // Handle generic types
             if (type.IsGenericType)
             {
-                // Guard against self-referencing generic types (e.g. Foo<T> where T : Foo<T>)
-                if (visiting == null) visiting = new HashSet<Type>();
-                if (!visiting.Add(type))
-                {
-                    // Already visiting this type — break the cycle by returning the raw name
-                    string fallbackName = type.IsNested
-                        ? type.DeclaringType.Name + "." + type.Name
-                        : (string.IsNullOrEmpty(type.Namespace) ? "" : type.Namespace + ".") + type.Name;
-                    int fbIdx = fallbackName.IndexOf('`');
-                    if (fbIdx >= 0) fallbackName = fallbackName.Substring(0, fbIdx);
-                    return fallbackName + "/* circular */";
-                }
-
                 Type genericDef = type.GetGenericTypeDefinition();
                 // Handle Nullable<T>
                 if (genericDef == typeof(Nullable<>))
@@ -226,8 +213,50 @@ namespace Puerts
                     return GetTypeNameInternal(type.GetGenericArguments()[0], visiting) + "?";
                 }
 
+                var allGenericArgs = type.GetGenericArguments();
+
                 string baseName;
-                if (type.IsNested)
+                if (type.IsNested && type.DeclaringType != null && type.DeclaringType.IsGenericType)
+                {
+                    // For types nested in generic types (e.g. List<int>.Enumerator),
+                    // the generic arguments include both the declaring type's args and the nested type's own args.
+                    // We need to split them: declaring type's args go to the declaring type,
+                    // and only the nested type's own args (if any) go to the nested type.
+                    var declaringGenericArgs = type.DeclaringType.GetGenericArguments();
+                    int declaringArgCount = declaringGenericArgs.Length;
+
+                    // Construct the declaring type with its concrete generic arguments
+                    var declaringArgs = allGenericArgs.Take(declaringArgCount).ToArray();
+                    Type constructedDeclaringType;
+                    try
+                    {
+                        if (type.DeclaringType.IsGenericTypeDefinition)
+                            constructedDeclaringType = type.DeclaringType.MakeGenericType(declaringArgs);
+                        else
+                            constructedDeclaringType = type.DeclaringType;
+                    }
+                    catch
+                    {
+                        constructedDeclaringType = type.DeclaringType;
+                    }
+
+                    baseName = GetTypeNameInternal(constructedDeclaringType, visiting) + "." + type.Name;
+
+                    // Remove the `N suffix from the nested type name
+                    int backtickIndex = baseName.LastIndexOf('`');
+                    if (backtickIndex >= 0)
+                        baseName = baseName.Substring(0, backtickIndex);
+
+                    // Only include the nested type's own generic arguments (not the declaring type's)
+                    var ownArgs = allGenericArgs.Skip(declaringArgCount).ToArray();
+                    if (ownArgs.Length > 0)
+                    {
+                        string[] typeArgNames = ownArgs.Select(t => GetTypeNameInternal(t, visiting)).ToArray();
+                        return baseName + "<" + string.Join(", ", typeArgNames) + ">";
+                    }
+                    return baseName;
+                }
+                else if (type.IsNested)
                 {
                     baseName = GetTypeNameInternal(type.DeclaringType, visiting) + "." + type.Name;
                 }
@@ -237,18 +266,49 @@ namespace Puerts
                 }
 
                 // Remove the `N suffix from generic type names
-                int backtickIndex = baseName.IndexOf('`');
-                if (backtickIndex >= 0)
-                    baseName = baseName.Substring(0, backtickIndex);
+                int btIdx = baseName.IndexOf('`');
+                if (btIdx >= 0)
+                    baseName = baseName.Substring(0, btIdx);
 
-                string[] typeArgs = type.GetGenericArguments().Select(t => GetTypeNameInternal(t, visiting)).ToArray();
+                string[] typeArgs = allGenericArgs.Select(t => GetTypeNameInternal(t, visiting)).ToArray();
                 return baseName + "<" + string.Join(", ", typeArgs) + ">";
             }
 
             // Handle nested types
             if (type.IsNested)
             {
-                return GetTypeNameInternal(type.DeclaringType, visiting) + "." + type.Name;
+                // For types nested in generic types (e.g. List<int>.Enumerator),
+                // we need to handle the case where DeclaringType is a generic type definition.
+                // In that case, the nested type's generic arguments include the declaring type's
+                // generic arguments, which we need to resolve properly.
+                var declaringType = type.DeclaringType;
+                if (declaringType != null && declaringType.IsGenericTypeDefinition)
+                {
+                    // The type itself may carry the concrete generic arguments from the declaring type.
+                    // For example, for List<int>.Enumerator, type.GetGenericArguments() may return [int].
+                    // We need to construct the declaring type with those arguments.
+                    var typeGenericArgs = type.GetGenericArguments();
+                    var declaringGenericParams = declaringType.GetGenericArguments();
+                    if (typeGenericArgs.Length >= declaringGenericParams.Length && declaringGenericParams.Length > 0)
+                    {
+                        // Take the first N arguments that belong to the declaring type
+                        var declaringArgs = typeGenericArgs.Take(declaringGenericParams.Length).ToArray();
+                        // Only construct if we have concrete types (not generic parameters)
+                        if (declaringArgs.All(a => !a.IsGenericParameter))
+                        {
+                            try
+                            {
+                                var constructedDeclaringType = declaringType.MakeGenericType(declaringArgs);
+                                return GetTypeNameInternal(constructedDeclaringType, visiting) + "." + type.Name;
+                            }
+                            catch
+                            {
+                                // Fall through to default handling
+                            }
+                        }
+                    }
+                }
+                return GetTypeNameInternal(declaringType, visiting) + "." + type.Name;
             }
 
             // Default: fully qualified name
@@ -1152,26 +1212,111 @@ namespace Puerts
                 string interfacePart = method.Name.Substring(0, lastDot);
                 string actualMethodName = method.Name.Substring(lastDot + 1);
 
+                // Try to resolve the actual interface type via reflection to get correct generic arguments.
+                // The method.Name may contain unresolved generic parameter names (e.g. IEnumerable<T>),
+                // but the declaring type's interface list has the concrete types (e.g. IEnumerable<int>).
+                string resolvedInterfaceName = interfacePart;
+                try
+                {
+                    var declaringType = method.DeclaringType;
+                    if (declaringType != null)
+                    {
+                        foreach (var iface in declaringType.GetInterfaces())
+                        {
+                            // Match by checking if the interface's full name (without assembly info)
+                            // corresponds to the interface part in the method name.
+                            // For generic interfaces, we need to match the generic type definition's name.
+                            string ifaceFullName = iface.IsGenericType
+                                ? iface.GetGenericTypeDefinition().FullName
+                                : iface.FullName;
+
+                            // The interfacePart uses C# syntax (e.g. IEnumerable<T>) while FullName uses
+                            // CLR syntax (e.g. IEnumerable`1). We need to strip generic suffixes for comparison.
+                            string interfaceBaseName = interfacePart;
+                            int angleBracket = interfaceBaseName.IndexOf('<');
+                            if (angleBracket >= 0)
+                                interfaceBaseName = interfaceBaseName.Substring(0, angleBracket);
+
+                            string ifaceBaseName = ifaceFullName;
+                            int backtick = ifaceBaseName.IndexOf('`');
+                            if (backtick >= 0)
+                                ifaceBaseName = ifaceBaseName.Substring(0, backtick);
+                            // Also normalize nested type separator
+                            ifaceBaseName = ifaceBaseName.Replace('+', '.');
+
+                            if (interfaceBaseName == ifaceBaseName)
+                            {
+                                // Verify this interface actually declares the method
+                                var ifaceMap = declaringType.GetInterfaceMap(iface);
+                                for (int mi = 0; mi < ifaceMap.TargetMethods.Length; mi++)
+                                {
+                                    if (ifaceMap.TargetMethods[mi] == method)
+                                    {
+                                        resolvedInterfaceName = GetTypeName(iface);
+                                        goto interfaceResolved;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fall back to using the raw interface name from method.Name
+                }
+                interfaceResolved:
+
                 // Check if it's a property getter/setter on the interface
                 if (actualMethodName.StartsWith("get_") && node.Arguments.Count == 0)
                 {
+                    // Property getter: ((IFoo)obj).PropName
                     string propName = actualMethodName.Substring(4);
-                    Append($"(({interfacePart})");
+                    Append($"(({resolvedInterfaceName})");
                     Visit(node.Object);
                     Append($").{propName}");
                     return node;
                 }
                 else if (actualMethodName.StartsWith("set_") && node.Arguments.Count == 1)
                 {
+                    // Property setter: ((IFoo)obj).PropName = value
                     string propName = actualMethodName.Substring(4);
-                    Append($"(({interfacePart})");
+                    Append($"(({resolvedInterfaceName})");
                     Visit(node.Object);
                     Append($").{propName} = ");
                     Visit(node.Arguments[0]);
                     return node;
                 }
+                else if (actualMethodName.StartsWith("get_") && node.Arguments.Count > 0)
+                {
+                    // Indexer getter: ((IList)obj)[index]
+                    Append($"(({resolvedInterfaceName})");
+                    Visit(node.Object);
+                    Append(")[");
+                    for (int i = 0; i < node.Arguments.Count; i++)
+                    {
+                        if (i > 0) Append(", ");
+                        Visit(node.Arguments[i]);
+                    }
+                    Append("]");
+                    return node;
+                }
+                else if (actualMethodName.StartsWith("set_") && node.Arguments.Count > 1)
+                {
+                    // Indexer setter: ((IList)obj)[index] = value
+                    Append($"(({resolvedInterfaceName})");
+                    Visit(node.Object);
+                    Append(")[");
+                    for (int i = 0; i < node.Arguments.Count - 1; i++)
+                    {
+                        if (i > 0) Append(", ");
+                        Visit(node.Arguments[i]);
+                    }
+                    Append("] = ");
+                    Visit(node.Arguments[node.Arguments.Count - 1]);
+                    return node;
+                }
 
-                Append($"(({interfacePart})");
+                Append($"(({resolvedInterfaceName})");
                 Visit(node.Object);
                 Append(").");
                 Append(actualMethodName);
@@ -1405,7 +1550,11 @@ namespace Puerts
             // A block or try-catch with non-void type will handle return internally
             if (expr is BlockExpression) return true;
             if (expr is TryExpression) return true;
-            if (expr is ConditionalExpression) return true;
+            // Only if/else form conditionals handle return internally;
+            // ternary expressions need "return" prepended like normal expressions
+            if (expr is ConditionalExpression cond
+                && (cond.Type == typeof(void) || HasComplexBranchRecursive(cond)))
+                return true;
             return false;
         }
 
@@ -1442,6 +1591,8 @@ namespace Puerts
 
             if (useIfElse)
             {
+                bool needsReturn = _needsReturnInBranches && node.Type != typeof(void);
+
                 // Emit as if/else statement
                 Append("if (");
                 Visit(node.Test);
@@ -1458,6 +1609,10 @@ namespace Puerts
                     AppendLine("{");
                     _indentLevel++;
                     Indent();
+                    if (needsReturn && !IsControlFlowExpression(node.IfTrue))
+                    {
+                        Append("return ");
+                    }
                     Visit(node.IfTrue);
                     AppendLine(";");
                     _indentLevel--;
@@ -1490,6 +1645,10 @@ namespace Puerts
                         AppendLine("{");
                         _indentLevel++;
                         Indent();
+                        if (needsReturn && !IsControlFlowExpression(node.IfFalse))
+                        {
+                            Append("return ");
+                        }
                         Visit(node.IfFalse);
                         AppendLine(";");
                         _indentLevel--;
@@ -1728,9 +1887,106 @@ namespace Puerts
             AppendLine();
 
             Indent();
-            if (node.Body is BlockExpression)
+            if (node.Body is BlockExpression blockBody)
             {
-                Visit(node.Body);
+                // For lambdas with out parameters, we need to wrap the body to add default assignments
+                // before the original block content, since the Expression Tree may read out params before assigning them.
+                var outParams = new List<(ParameterExpression param, int index)>();
+                if (invokeParams != null)
+                {
+                    for (int i = 0; i < node.Parameters.Count; i++)
+                    {
+                        if (i < invokeParams.Length && invokeParams[i].IsOut)
+                        {
+                            outParams.Add((node.Parameters[i], i));
+                        }
+                    }
+                }
+
+                if (outParams.Count > 0)
+                {
+                    // Manually emit the block with out parameter default assignments at the top
+                    AppendLine("{");
+                    _indentLevel++;
+
+                    // Emit out parameter default assignments first
+                    foreach (var (param, _) in outParams)
+                    {
+                        Indent();
+                        Append($"{GetVariableName(param)} = default({GetTypeName(param.Type)})");
+                        AppendLine(";");
+                    }
+
+                    // Declare local variables
+                    foreach (var variable in blockBody.Variables)
+                    {
+                        Indent();
+                        Append($"{GetTypeName(variable.Type)} {GetVariableName(variable)}");
+                        AppendLine(";");
+                    }
+
+                    bool blockHasReturnValue = blockBody.Type != typeof(void) && !_isInsideLoop;
+
+                    int lastEffectiveIndex = -1;
+                    for (int j = blockBody.Expressions.Count - 1; j >= 0; j--)
+                    {
+                        var e = blockBody.Expressions[j];
+                        if (e is DefaultExpression d && d.Type == typeof(void))
+                            continue;
+                        lastEffectiveIndex = j;
+                        break;
+                    }
+
+                    for (int i = 0; i < blockBody.Expressions.Count; i++)
+                    {
+                        var expr = blockBody.Expressions[i];
+                        if (expr is DefaultExpression def && def.Type == typeof(void))
+                            continue;
+
+                        bool isLastEffective = (i == lastEffectiveIndex);
+                        bool needsReturn = blockHasReturnValue && isLastEffective && !IsControlFlowExpression(expr);
+                        bool isComplexConditional = blockHasReturnValue && isLastEffective
+                            && expr is ConditionalExpression condExpr
+                            && condExpr.Type != typeof(void)
+                            && HasComplexBranchRecursive(condExpr);
+
+                        Indent();
+                        if (needsReturn)
+                        {
+                            Append("return ");
+                        }
+
+                        bool oldStatementContext = _isStatementContext;
+                        bool oldNeedsReturn = _needsReturnInBranches;
+                        _isStatementContext = true;
+                        if (isComplexConditional)
+                        {
+                            _needsReturnInBranches = true;
+                        }
+                        Visit(expr);
+                        _isStatementContext = false;
+                        _needsReturnInBranches = oldNeedsReturn;
+
+                        if (needsReturn || NeedsSemicolon(expr))
+                        {
+                            AppendLine(";");
+                        }
+                        else
+                        {
+                            AppendLine();
+                        }
+
+                        _isStatementContext = oldStatementContext;
+                    }
+
+                    _indentLevel--;
+                    Indent();
+                    Append("}");
+                }
+                else
+                {
+                    Visit(node.Body);
+                }
             }
             else
             {

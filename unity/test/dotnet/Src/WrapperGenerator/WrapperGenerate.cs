@@ -91,22 +91,42 @@ public class PuerGen
     {
         var outDir = TxtLoader.PathToBinDir("../../../Src/StaticWrapper/");
         Directory.CreateDirectory(outDir);
-        using (StreamWriter textWriter = new StreamWriter(Path.Combine(outDir, "RegisterInfo_Gen.cs"), false, Encoding.UTF8))
+
+        // Load extension methods
+        Puerts.ExtensionMethodInfo.LoadExtensionMethodInfo();
+
+        // Get binding types from configuration
+        var bindingTypes = new WrapperGenConfig();
+        var bindingsProperty = typeof(WrapperGenConfig).GetProperty("Bindings",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        var types = (IEnumerable<Type>)bindingsProperty.GetValue(null, null);
+
+        var wrapperResults = new List<Puerts.StaticWrapperGenerator.TypeWrapperResult>();
+
+        foreach (var type in types)
         {
-            textWriter.Write(@"namespace PuertsStaticWrap
-{
-#if !PUERTS_GENERAL
-    [UnityEngine.Scripting.Preserve]
-#endif
-    public static class PuerRegisterInfo_Gen
-    {
-        public static void AddRegisterInfoGetterIntoJsEnv(Puerts.JsEnv jsEnv)
-        {
+            try
+            {
+                var result = Puerts.StaticWrapperGenerator.GenerateWrapperForType(type);
+                wrapperResults.Add(result);
+
+                // Write wrapper file
+                string fileName = result.ClassName + ".cs";
+                string filePath = Path.Combine(outDir, fileName);
+                File.WriteAllText(filePath, result.SourceCode, Encoding.UTF8);
+                Console.WriteLine($"Generated: {fileName}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to generate wrapper for {type.FullName}: {e.Message}");
+            }
         }
-    }
-}
-");
-            textWriter.Flush();
-        }
+
+        // Generate RegisterInfo file
+        string registerInfoCode = Puerts.StaticWrapperGenerator.GenerateRegisterInfo(wrapperResults);
+        string registerInfoPath = Path.Combine(outDir, "RegisterInfo_Gen.cs");
+        File.WriteAllText(registerInfoPath, registerInfoCode, Encoding.UTF8);
+
+        Console.WriteLine($"Static wrapper generation complete: {wrapperResults.Count} types processed.");
     }
 }

@@ -308,7 +308,7 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
     });
     dlls = dlls.concat(wsppaddondlls);
 
-    // await runTest(cwd, copyConfig, true, filter);
+    await runTest(cwd, dlls, true, filter);
     await runTest(cwd, dlls, false, filter);
 }
 
