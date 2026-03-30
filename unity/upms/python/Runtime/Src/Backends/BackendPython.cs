@@ -181,8 +181,7 @@ class puerts:
                     nName = ntype.Name  ## convert name (T`1) to (T_1) for syntax compatibility
                     tick_index = nName.find('`')
                     nName = nName[:tick_index] + '_' + nName[tick_index + 1:]
-                    setattr(cs_class, nName, puerts.load_type(ntype.FullName))
-                    pass  ## skip generic type definitions, use puerts.generic to instantiate them
+                    setattr(cs_class, nName, puerts.GenericTypeDefWrapper(puerts.load_type(ntype.FullName)))
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
@@ -220,11 +219,12 @@ class puerts:
         ref_obj[0] = value
 
     @staticmethod
-    def generic(cs_generic_type, *args):
+    def __generic(cs_generic_type, *args):
         """"""
+        Internal use
         Make a generic type from a generic type definition and generic arguments, and return the loaded C# class for the made generic type.
         :param cs_generic_type: The C# generic type definition to make generic type from. It must be a *generic type definition* loaded by puerts (import or puerts.load_type).
-        :param args: The generic arguments to make generic type with. They must be types loaded by puerts (import or puerts.load_type or puerts.generic).
+        :param args: The generic arguments to make generic type with. They must be types loaded by puerts (import or puerts.load_type or puerts.__generic).
         :return: The loaded C# class for the made generic type.
         """"""
         is_valid_cs_generic_type = hasattr(cs_generic_type, 'IsGenericTypeDefinition') and cs_generic_type.IsGenericTypeDefinition
@@ -247,7 +247,7 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    setattr(cs_class, ntype.Name, puerts.generic(ntype, *args))
+                    setattr(cs_class, ntype.Name, puerts._puerts__generic(ntype, *args))
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
@@ -260,9 +260,9 @@ class puerts:
     def generic_method(cls, method_name: str, *args):
         """"""
         Make a generic method from a generic method definition and generic arguments, and return a Python function that can call the made generic method.
-        :param cls: The class that the generic method belongs to. It must be a class loaded by puerts (import or puerts.load_type or puerts.generic).
+        :param cls: The class that the generic method belongs to. It must be a class loaded by puerts (import or puerts.load_type or puerts.__generic).
         :param method_name: The name of the generic method to make generic method from.
-        :param args: The generic arguments to make generic method with. They must be types loaded by puerts (import or puerts.load_type or puerts.generic).
+        :param args: The generic arguments to make generic method with. They must be types loaded by puerts (import or puerts.load_type or puerts.__generic).
         :return: A Python function that can call the made generic method.
         """"""
         cs_type = None
@@ -320,7 +320,7 @@ class puerts:
                 args = (args,)
             if len(args) != self._p_cs_generic_type.GetGenericArguments().Length:
                 raise TypeError(f'Expected {self._p_cs_generic_type.GetGenericArguments().Length} generic arguments, got {len(args)}')
-            return puerts.generic(self._p_cs_generic_type, *args)
+            return puerts._puerts__generic(self._p_cs_generic_type, *args)
 
         def __getattr__(self, attr):
             if attr == '_p_cs_generic_type':

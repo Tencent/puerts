@@ -14,7 +14,7 @@ namespace Puerts.UnitTest
             var pythonEnv = new ScriptEnv(new BackendPython());
             var res = pythonEnv.Eval<int>(@"
 (lambda: (
-    ListInt := puerts.generic(puerts.load_type('System.Collections.Generic.List`1'), puerts.load_type('System.Int32')),
+    ListInt := puerts.load_type('System.Collections.Generic.List`1')[puerts.load_type('System.Int32')],
     ls := ListInt(),
     ls.Add(1),
     ls.Add(2),
@@ -67,7 +67,7 @@ ls.Add('hello')
 exec('''
 import System.Collections.Generic.List_1 as List_1
 import System
-ListInt = puerts.generic(List_1, System.Int32)
+ListInt = List_1[System.Int32]
 ls = ListInt()
 ls.Add(1)
 ls.Add(2)
@@ -160,7 +160,7 @@ result = puerts.load_type('Puerts.UnitTest.GenericTestHelper').TestListRange(ls,
 (lambda: (
     GenericTestClass_T1 := puerts.load_type('Puerts.UnitTest.GenericTestClass`1'),
     String := puerts.load_type('System.String'),
-    GenericTestClass := puerts.generic(GenericTestClass_T1, String),
+    GenericTestClass := GenericTestClass_T1[String],
     setattr(GenericTestClass, 'v', '6'),
     Inner := GenericTestClass.Inner,
     Inner(),
