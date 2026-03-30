@@ -447,11 +447,12 @@ namespace Puerts
 
             // The translated body is a block expression — we need to inline its contents
             // The visitor outputs the block with { }, so we need to adjust indentation
+            // Body content is inside the method's { }, so it needs 3 levels of indentation (12 spaces)
             string[] lines = body.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
             foreach (var line in lines)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                sb.Append("        ");
+                sb.Append("            ");
                 sb.AppendLine(line);
             }
 
