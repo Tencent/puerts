@@ -15,8 +15,8 @@ namespace Puerts
 {
     public class ScriptObject : IDisposable
     {
-        internal IntPtr apis;
-        internal IntPtr objRef;
+        public IntPtr apis;
+        public IntPtr objRef;
         internal Dictionary<Type, Delegate> delegateCache = new Dictionary<Type, Delegate>();
         private ScriptEnv scripEnv;
 

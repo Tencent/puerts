@@ -17,10 +17,12 @@ using UnityEngine;
 #if !PUERTS_GENERAL
 namespace Puerts.Editor
 {
-    namespace Generator {
+    namespace Generator 
+    {
 
-        public class UnityMenu {
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (all in one without wrapper)", false, 2)]
+        public class UnityMenu 
+        {
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate il2cpp/Reflection Mode", false, 2)]
             public static void GenV2WithoutWrapper()
             {
                 var start = DateTime.Now;
@@ -37,7 +39,7 @@ namespace Puerts.Editor
                 AssetDatabase.Refresh();
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (all in one with full wrapper)", false, 3)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate il2cpp/Static Wrapper Mode", false, 3)]
             public static void GenV2()
             {
                 var start = DateTime.Now;
@@ -54,7 +56,7 @@ namespace Puerts.Editor
                 AssetDatabase.Refresh();
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate For Il2cpp (all in one with minimum bridge and without wrapper)", false, 4)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate il2cpp/Minimal Bridge, Reflection Mode", false, 4)]
             public static void GenMinimumWrappersAndBridge()
             {
                 var start = DateTime.Now;
@@ -71,7 +73,28 @@ namespace Puerts.Editor
                 AssetDatabase.Refresh();
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp c file", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate C# Static Wrappers", false, 5)]
+            public static void GenerateStaticWrappers()
+            {
+                var start = DateTime.Now;
+
+                try
+                {
+                    var outputDir = Puerts.Configure.GetCodeOutputDirectory();
+                    Directory.CreateDirectory(outputDir);
+
+                    StaticWrapperMenu.GenerateStaticWrappersTo(outputDir);
+
+                    Debug.Log($"[PuerTS] Static wrapper generation finished! Took {(DateTime.Now - start).TotalMilliseconds:F0} ms. Output: {outputDir}");
+                    AssetDatabase.Refresh();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[PuerTS] Static wrapper generation failed: {e.Message}\n{e.StackTrace}");
+                }
+            }
+
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Advanced/Generate Native Plugin Files", false, 6)]
             public static void GenerateCppPlugin()
             {
                 var start = DateTime.Now;
@@ -82,7 +105,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/il2cpp ExtensionMethodInfos_Gen.cs", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Advanced/Generate Extension Method Infos", false, 6)]
             public static void GenerateExtensionMethodInfos()
             {
                 var start = DateTime.Now;
@@ -93,7 +116,7 @@ namespace Puerts.Editor
                 AssetDatabase.Refresh();
             }
 
-            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Generate/Link.xml", false, 6)]
+            [MenuItem(Puerts.Editor.Generator.UnityMenu.PUERTS_MENU_PREFIX + "/Advanced/Generate Link.xml", false, 6)]
             public static void GenerateLinkXml()
             {
                 var start = DateTime.Now;

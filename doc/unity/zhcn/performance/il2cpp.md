@@ -11,9 +11,11 @@
 
 ## 使用步骤
 
-* 如果你期待更高的性能，生成全量胶水代码：点击Unity的`Tools/PuerTS/Generate For xIl2cpp mode (all in one with full wrapper)`。
+* 如果你期待更高的性能，生成全量胶水代码：点击Unity的`Tools/PuerTS/Generate il2cpp/Static Wrapper Mode`。
 
-* 如果你期待更小的代码量，仅生成基于反射的胶水代码：点击Unity的`Tools/PuerTS/Generate For xIl2cpp mode (all in one without wrapper)`。
+* 如果你期待更小的代码量，仅生成基于反射的胶水代码：点击Unity的`Tools/PuerTS/Generate il2cpp/Reflection Mode`。
+
+* 如果你希望进一步精简生成产物（最小化 Bridge 代码），同时使用反射模式：点击Unity的`Tools/PuerTS/Generate il2cpp/Minimal Bridge, Reflection Mode`。
 
 ### FAQ
 1. ios构建时报hash_map头找不到。
