@@ -101,9 +101,9 @@ namespace Puerts
                 try
                 {
                     if (ReturnTypeNotAcceptable(fieldInfo.FieldType)) continue;
-                    // Skip obsolete fields that would cause compile errors
+                    // Skip obsolete fields (including warning level)
                     var fieldObsolete = fieldInfo.GetCustomAttribute<ObsoleteAttribute>(false);
-                    if (fieldObsolete != null && fieldObsolete.IsError) continue;
+                    if (fieldObsolete != null) continue;
                     if (filter != null && filter(fieldInfo)) continue;
 
                     // Field getter
@@ -179,9 +179,9 @@ namespace Puerts
                 // Skip methods whose declaring type is not publicly accessible (e.g. internal extension methods)
                 if (methodInfo.DeclaringType != null && !methodInfo.DeclaringType.IsPublic && !methodInfo.DeclaringType.IsNestedPublic
                     && methodInfo.DeclaringType != type) continue;
-                // Skip obsolete members that would cause compile errors
+                // Skip obsolete members (including warning level)
                 var obsoleteAttr = methodInfo.GetCustomAttribute<ObsoleteAttribute>(false);
-                if (obsoleteAttr != null && obsoleteAttr.IsError) continue;
+                if (obsoleteAttr != null) continue;
                 if (filter != null && filter(methodInfo)) continue;
 
                 string methodName = methodInfo.Name;
@@ -195,20 +195,20 @@ namespace Puerts
                 if (methodInfo.IsSpecialName && methodName.StartsWith("get_") && methodInfo.GetParameters().Length == 0)
                 {
                     string propName = methodName.Substring(4);
-                    // Check if the property itself is obsolete (error level)
+                    // Check if the property itself is obsolete (including warning level)
                     var propInfo = type.GetProperty(propName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                     var propObsolete = propInfo?.GetCustomAttribute<ObsoleteAttribute>(false);
-                    if (propObsolete != null && propObsolete.IsError) continue;
+                    if (propObsolete != null) continue;
                     string key = (methodInfo.IsStatic ? "s_" : "i_") + propName;
                     propertyGetters[key] = methodInfo;
                 }
                 else if (methodInfo.IsSpecialName && methodName.StartsWith("set_") && methodInfo.GetParameters().Length == 1)
                 {
                     string propName = methodName.Substring(4);
-                    // Check if the property itself is obsolete (error level)
+                    // Check if the property itself is obsolete (including warning level)
                     var propInfo = type.GetProperty(propName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                     var propObsolete = propInfo?.GetCustomAttribute<ObsoleteAttribute>(false);
-                    if (propObsolete != null && propObsolete.IsError) continue;
+                    if (propObsolete != null) continue;
                     string key = (methodInfo.IsStatic ? "s_" : "i_") + propName;
                     propertySetters[key] = methodInfo;
                 }
