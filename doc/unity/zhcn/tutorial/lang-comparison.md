@@ -110,13 +110,16 @@ print(outB[0], refC[0])  # 100, 20
 
 ## 8. 泛型类型创建
 
-| 语言 | 泛型类名写法 | 创建 `List<int>` |
-|------|-------------|-----------------|
-| **JavaScript** | `List$1` | `puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32)` |
-| **Lua** | `List_1` | `puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)` |
-| **Python** | `List__T1`（import 时）或 `` List`1 ``（load_type 时） | `puerts.generic(List, System.Int32)` |
+| 语言 | 泛型类名写法                                         | 创建 `List<int>` |
+|------|------------------------------------------------|-----------------|
+| **JavaScript** | `List$1`                                       | `puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32)` |
+| **Lua** | `List_1`                                       | `puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)` |
+| **Python** | `List_1`、`List`（import 时）或 `` List`1 ``（load_type 时） | `List[System.Int32]` |
 
-> 三种语言中反引号 `` ` `` 的替代符不同：JS 用 `$`，Lua 用 `_`，Python import 时用 `__T`。
+> Python 使用 `import XXX_1` 或 ``load_type['XXX`1']`` 来获取泛型类型时，会导入类型 ``XXX`1``，而使用 `import XXX` 则会导入一个特殊的泛型工厂类型，调用时传入类型参数即可根据掺入的类型参数数量创建泛型类型实例。
+> 两者都可以使用 `List[System.Int32]` 来创建 `List<int>`，但前者需要（也可以用as来调整为`List`）写成 `List_1[System.Int32]`，后者则更简洁。
+
+> 三种语言中反引号 `` ` `` 的替代符不同：JS 用 `$`，Lua 用 `_`，Python import 时用 `_`。
 
 ---
 
@@ -126,7 +129,7 @@ print(outB[0], refC[0])  # 100, 20
 |------|------|
 | **JavaScript** | 直接调用，V8 自动推断类型参数 |
 | **Lua** | `puerts.genericMethod(类型, '方法名', 泛型参数...)` |
-| **Python** | `puerts.genericMethod(类型, '方法名', 泛型参数...)` |
+| **Python** | `puerts.generic_method(类型, '方法名', 泛型参数...)` |
 
 ```lua
 -- Lua 示例
@@ -204,7 +207,7 @@ fn("hello");
 
 | 功能 | JavaScript (`puer.xxx`) | Lua (`require('puerts').xxx`) | Python (`puerts.xxx`) |
 |------|------------------------|------------------------------|----------------------|
-| 泛型类型 | `puer.$generic()` | `puerts.generic()` | `puerts.generic()` |
+| 泛型类型 | `puer.$generic()` | `puerts.generic()` | 使用 import 导入泛型即可 (import List_1/List)，细节参考上文对泛型的解释 |
 | 泛型方法 | — (自动推断) | `puerts.genericMethod()` | `puerts.genericMethod()` |
 | typeof | `puer.$typeof()` | `puerts.typeof()` | `puerts.typeof()` |
 | ref/out 创建 | `puer.$ref()` | `{}` (table) | `[]` (list) |
