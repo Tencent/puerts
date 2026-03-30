@@ -11,13 +11,13 @@ In simple terms, the optimization principle of il2cpp is to bypass PInvoke and d
 ## Usage Steps
 
 * For higher performance (full wrapper glue code generation):
-  Click Unity's `Tools/PuerTS/il2cpp/Generate All (Static Wrapper Mode)`.
+  Click Unity's `Tools/PuerTS/Generate il2cpp/Static Wrapper Mode`.
 
 * For smaller code size (reflection-based glue code only):
-  Click Unity's `Tools/PuerTS/il2cpp/Generate All (Reflection Mode)`.
+  Click Unity's `Tools/PuerTS/Generate il2cpp/Reflection Mode`.
 
 * For minimal generated output (minimal bridge code with reflection mode):
-  Click Unity's `Tools/PuerTS/il2cpp/Generate All (Minimal Bridge, Reflection Mode)`.
+  Click Unity's `Tools/PuerTS/Generate il2cpp/Minimal Bridge, Reflection Mode`.
 
 ### FAQ
 1. "hash_map header not found" error during iOS build.
