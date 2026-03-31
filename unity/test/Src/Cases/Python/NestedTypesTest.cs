@@ -57,11 +57,10 @@ exec('''
 import Puerts.UnitTest.TestHelper as TestHelper
 from System import Console, Int32, String
 from Puerts.UnitTest import TestNestedTypes
-assertAndPrint = TestHelper.AssertAndPrint
 InnerClassA = TestNestedTypes.InnerClassA
 InnerClassB = TestNestedTypes.InnerClassB
-InnerClassB_1 = TestNestedTypes.InnerClassB_1[Int32]
-InnerClassB_2 = TestNestedTypes.InnerClassB_2[Int32, String]
+InnerClassB_1 = TestNestedTypes.InnerClassB[Int32]
+InnerClassB_2 = TestNestedTypes.InnerClassB[Int32, String]
 x = InnerClassA()
 o = InnerClassB()
 y = InnerClassB_1()
