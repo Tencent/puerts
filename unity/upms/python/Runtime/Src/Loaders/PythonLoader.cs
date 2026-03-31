@@ -30,11 +30,11 @@ namespace Puerts
 
     public class NamespaceManager
     {
-        private readonly HashSet<string> namespaces = new(StringComparer.Ordinal);
+        private readonly HashSet<string> namespaces = new HashSet<string>(StringComparer.Ordinal);
 
-        private readonly Dictionary<string, TypeParameterState> typePrefixStates = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, TypeParameterState> typePrefixStates = new Dictionary<string, TypeParameterState>(StringComparer.Ordinal);
 
-        private readonly object @lock = new();
+        private readonly object @lock = new object();
 
         public NamespaceManager()
         {
