@@ -1,6 +1,6 @@
 {
   "name": "com.tencent.puerts.agent",
-  "version": "0.1.0",
+  "version": "3.0.2",
   "displayName": "PuerTS Agent",
   "description": "AI Agent framework powered by PuerTS for Unity",
   "unity": "2021.3",
@@ -10,6 +10,11 @@
     "ai"
   ],
   "author": {
-    "name": "PuerTS Agent"
+    "name": "Tencent Puerts Group",
+    "email": "johnche@tencent.com",
+    "url": "https://github.com/puerts"
+  },
+  "dependencies": {
+    "com.tencent.puerts.v8": "3.0.2"
   }
 }

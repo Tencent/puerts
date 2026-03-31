@@ -7,7 +7,7 @@ description: Guide for downloading and installing PuerTS UPM packages into a Uni
 
 This skill guides you through downloading and installing PuerTS packages into a Unity project.
 
-> **⚠️ Important**: Always ask the user which PuerTS version they want to install if they haven't specified one. The version number follows the **Core** package's version (e.g., `3.0.1`).
+> **⚠️ Important**: Always ask the user which PuerTS version they want to install if they haven't specified one. The version number follows the **Core** package's version (e.g., `3.0.2`).
 
 ---
 
@@ -17,9 +17,9 @@ This skill guides you through downloading and installing PuerTS packages into a 
   ```
   https://github.com/Tencent/puerts/releases/tag/Unity_v{VERSION}
   ```
-  For example: `https://github.com/Tencent/puerts/releases/tag/Unity_v3.0.1`
+  For example: `https://github.com/Tencent/puerts/releases/tag/Unity_v3.0.2`
 
-> **⚠️ Important — Version Numbers Inside Archives**: The version number in the release page URL (e.g., `Unity_v3.0.1`) is based on the **Core** package version. However, the version numbers inside each `.tar.gz` filename may differ — each package follows its own versioning cadence. You may need to download/parse the release page HTML to determine the exact filenames available.
+> **⚠️ Important — Version Numbers Inside Archives**: The version number in the release page URL (e.g., `Unity_v3.0.2`) is based on the **Core** package version. However, the version numbers inside each `.tar.gz` filename may differ — each package follows its own versioning cadence. You may need to download/parse the release page HTML to determine the exact filenames available.
 
 ---
 
@@ -102,7 +102,7 @@ The following packages contain compiled native binary plugins and **must** be in
 **Steps:**
 
 1. Go to `https://github.com/Tencent/puerts/releases/tag/Unity_v{VERSION}`
-2. Download the required `.tar.gz` file(s) (e.g., `PuerTS_Core_3.0.1.tar.gz`)
+2. Download the required `.tar.gz` file(s) (e.g., `PuerTS_Core_3.0.2.tar.gz`)
 3. Extract the archive — it will produce a directory (e.g., `core/`) containing a standard UPM package structure with a `package.json`
 4. Move the extracted directory into the Unity project's `Packages/` folder
 5. Verify installation by checking `Packages/manifest.json`
@@ -125,9 +125,9 @@ You can either:
   ```
   Examples:
   ```
-  https://github.com/Tencent/puerts.git?path=unity/upms/agent#Unity_v3.0.1
-  https://github.com/Tencent/puerts.git?path=unity/upms/mcp#Unity_v3.0.1
-  https://github.com/Tencent/puerts.git?path=unity/upms/webgl#Unity_v3.0.1
+  https://github.com/Tencent/puerts.git?path=unity/upms/agent#Unity_v3.0.2
+  https://github.com/Tencent/puerts.git?path=unity/upms/mcp#Unity_v3.0.2
+  https://github.com/Tencent/puerts.git?path=unity/upms/webgl#Unity_v3.0.2
   ```
 
 #### When the package **does NOT exist** on the release page
@@ -144,7 +144,7 @@ Add the URL to the project's `Packages/manifest.json` under `"dependencies"`, fo
 ```json
 {
   "dependencies": {
-    "com.tencent.puerts.agent": "https://github.com/Tencent/puerts.git?path=unity/upms/agent#Unity_v3.0.1"
+    "com.tencent.puerts.agent": "https://github.com/Tencent/puerts.git?path=unity/upms/agent#Unity_v3.0.2"
   }
 }
 ```
