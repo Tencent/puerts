@@ -79,34 +79,43 @@ import types
 from importlib import machinery
 
 _csTypeCache_ = dict()
+_csGenericTypeBuilderCache_ = dict()
 _p_loader = scriptEnv.GetLoader()
 
 _p_BindingFlags = loadType(scriptEnv.GetTypeByString('System.Reflection.BindingFlags'))
 _csTypeCache_['System.Reflection.BindingFlags'] = _p_BindingFlags
 _p_GET_MEMBER_FLAGS = _p_BindingFlags.Public | _p_BindingFlags.NonPublic | _p_BindingFlags.Instance | _p_BindingFlags.Static
+
 class PesapiLoader(importlib.abc.Loader):
-
-    def exec_module(self, mod):
-        pass
-
-    def create_module(self, spec: machinery.ModuleSpec):
+    def create_module(self, spec):
         type_name = spec.name
         if _p_loader.NamespaceManager.IsValidNamespace(type_name):
-            return NameSpaceProxy(type_name)
-        else:
-            try:
-                return puerts.load_type(type_name)
-            except Exception as e:
-                if _p_loader.NamespaceManager.IsValidGenericTypePrefix(type_name):
-                    # type_name: System.Collections.Generic.List, exist types : System.Collections.Generic.List^1 => valid
-                    return _p_Import_Generic_Wrapper(type_name)
-                else:
-                    raise e
+            mod = NameSpaceProxy(type_name)
+            mod.__loader__ = self
+            mod.__spec__ = spec
+            return mod
+        return puerts.load_type(type_name)
 
+    def exec_module(self, module):
+        return
 
 class PesapiFinder(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, paths=None, target=None):
-        return importlib.machinery.ModuleSpec(fullname, PesapiLoader(), is_package=True)
+    def find_spec(self, fullname, path=None, target=None):
+        try:
+            if _p_loader.NamespaceManager.IsValidNamespace(fullname):
+                return machinery.ModuleSpec(fullname, PesapiLoader(), is_package=True)
+
+            cs_type = scriptEnv.GetTypeByString(fullname)
+            if cs_type is not None:
+                return machinery.ModuleSpec(fullname, PesapiLoader(), is_package=False)
+
+            state = _p_loader.NamespaceManager.GetTypeParameterStateByPrefix(fullname)
+            if state in (1, 2):
+                return machinery.ModuleSpec(fullname, PesapiLoader(), is_package=False)
+        except Exception:
+            pass
+
+        return None
 
 
 class NameSpaceProxy(types.ModuleType):
@@ -120,18 +129,46 @@ class NameSpaceProxy(types.ModuleType):
         full_name = self.__p_namespace_name + '.' + attr
         try:
             result = puerts.load_type(full_name)
+            setattr(self, attr, result)
             return result
-        except Exception as e:
-            if str(e) != f'No type named {full_name}':
-                raise e
+        except ModuleNotFoundError:
             if _p_loader.NamespaceManager.IsValidNamespace(full_name):
-                return NameSpaceProxy(full_name)
-            elif _p_loader.NamespaceManager.IsValidGenericTypePrefix(full_name):
-                # full_name: System.Collections.Generic.List, exist types : System.Collections.Generic.List^1 => valid
-                return _p_Import_Generic_Wrapper(full_name)
-            else:
-                raise ModuleNotFoundError(f'No namespace or type named {full_name}')
+                ns = NameSpaceProxy(full_name)
+                setattr(self, attr, ns)
+                return ns
+            raise ModuleNotFoundError(f'No namespace or type named {full_name}')
 
+class _p_cs_type_Wrapped:
+    def __init__(self, cls):
+        object.__setattr__(self, '_cls', cls)
+        object.__setattr__(self, '__name__', cls.__name__)
+        object.__setattr__(self, '__qualname__', cls.__qualname__)
+        object.__setattr__(self, '__module__', cls.__module__)
+
+    def __call__(self, *args, **kwargs):
+        return self._cls(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._cls, name)
+
+    def __setattr__(self, name, value):
+        setattr(self._cls, name, value)
+
+    def __getitem__(self, item):
+        # System.Collections.Generic.List^item Count
+        # List[System.String] => System.Collections.Generic.List^1 and make Generic
+        generic_type_name = self._p_cs_type.FullName + '`' + str(len(item) if isinstance(item, tuple) else 1)
+        try:
+            # note: *args, so we need to make item a tuple if it's not already
+            return _p_LoadGenericType(generic_type_name, *item if isinstance(item, tuple) else (item,))
+        except Exception as e:
+            raise ModuleNotFoundError(f'Error loading type {generic_type_name} with {item} in __getitem__ of _p_cs_type_Wrapped: {e}')
+
+# for puerts.__generic
+# type_name: List`1
+def _p_LoadGenericType(type_name, *args):
+    cs_type = scriptEnv.GetTypeByString(type_name)
+    return puerts._puerts__generic(cs_type, *args)
 
 class _p_Import_Generic_Wrapper:
     def __init__(self, type_name_prefix):
@@ -140,54 +177,70 @@ class _p_Import_Generic_Wrapper:
     def __getitem__(self, item):
         # System.Collections.Generic.List^item Count
         # List[System.String] => System.Collections.Generic.List^1 and make Generic
-        generic_type_name = self.__p_type_name_prefix + '_' + str(len(item) if isinstance(item, tuple) else 1)
+        generic_type_name = self.__p_type_name_prefix + '`' + str(len(item) if isinstance(item, tuple) else 1)
         try:
-            return puerts.load_type(generic_type_name)[item]
+            return _p_LoadGenericType(generic_type_name, *(item if isinstance(item, tuple) else (item,)))
         except Exception as e:
             raise ModuleNotFoundError(f'Error loading type {generic_type_name} with {item} in _p_Import_Generic_Wrapper: {e}')
-        
 
 class puerts:
+
     @staticmethod
     def load_type(type_name: str):
         """"""
         Load a C# class or generic type definition, raise ModuleNotFoundError if the type cannot be found or loaded.
-        :param type_name: The full name of the C# type to load. If the type is generic, use the format 'TypeName_n' where n is the number of generic parameters.
+        :param type_name: The full name of the C# type to load. For generic type definitions, the type name should not include the arity (e.g. `List` instead of `List`1). For nested types, the type name should use dot as separator (e.g. `OuterClass.NestedClass`).
         :return: The loaded C# class or generic type definition
         """"""
-        generic_tick_index = type_name.find('_')
-        if generic_tick_index != -1:
-            suffix = type_name[generic_tick_index + 1:]
-            if suffix and suffix.isdigit():
-                type_name = type_name[:generic_tick_index] + '`' + suffix
+        #  2 => T<...>
+        #  1 => T, T<...>
+        #  0 => T
+        # -1 => Not exist
+        shouldAddGetItem = False
+        match _p_loader.NamespaceManager.GetTypeParameterStateByPrefix(type_name):
+            case 0: # go load type
+                pass
+            case 2: # return builder
+                if type_name in _csGenericTypeBuilderCache_:
+                    return _csGenericTypeBuilderCache_[type_name]
+                generic_builder = _p_Import_Generic_Wrapper(type_name)
+                _csGenericTypeBuilderCache_[type_name] = generic_builder
+                return generic_builder
+            case 1: # go load type and add __class_getitem__ for build GenericType
+                shouldAddGetItem = True
+            case -1:
+                pass
+
         if type_name in _csTypeCache_:
             return _csTypeCache_[type_name]
+        
         cs_type = scriptEnv.GetTypeByString(type_name)
+
         if cs_type is None:
             raise ModuleNotFoundError(f'No type named {type_name}')
+        
         if cs_type.IsGenericTypeDefinition:
             builder = puerts.GenericTypeDefWrapper(cs_type)
             _csTypeCache_[type_name] = builder  ## cache generic type definitions directly
             return builder  ## skip loadType for generic type definitions
+
         cs_class = loadType(cs_type)
         if cs_class is None:
             raise ModuleNotFoundError(f'Failed to load type {type_name} in loadType')
         cs_class._p_cs_type = cs_type
+
         nestedTypes = puerts.get_nested_types(cs_type)
         if nestedTypes:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
-                if ntype.IsGenericTypeDefinition:
-                    nName = ntype.Name  ## convert name (T`1) to (T_1) for syntax compatibility
-                    tick_index = nName.find('`')
-                    nName = nName[:tick_index] + '_' + nName[tick_index + 1:]
-                    setattr(cs_class, nName, puerts.load_type(ntype.FullName))
-                    pass  ## skip generic type definitions, use puerts.generic to instantiate them
-                else:
-                    try:
-                        setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
-                    except Exception as e:
-                        raise ModuleNotFoundError(f'Failed to load nested type {ntype.FullName} of {cs_type.FullName}: {e}')
+                try:
+                    setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
+                except Exception as e:
+                    raise ModuleNotFoundError(f'Failed to load nested type {ntype.FullName} of {cs_type.FullName}: {e}')
+        
+        if shouldAddGetItem:
+            cs_class = _p_cs_type_Wrapped(cs_class)
+        
         _csTypeCache_[type_name] = cs_class
         return cs_class
 
@@ -203,9 +256,7 @@ class puerts:
     def typeof(cls):
         if hasattr(cls, '_p_cs_type'):
             return cls._p_cs_type
-        if hasattr(cls, '_p_cs_generic_type'):
-            return cls._p_cs_generic_type
-        raise TypeError(f'object {cls} is not a type loaded by puerts')
+        raise TypeError(f'object {cls} is not a type loaded by puerts, or you need initial generic type building') 
 
     @staticmethod
     def ref(obj):
@@ -220,21 +271,27 @@ class puerts:
         ref_obj[0] = value
 
     @staticmethod
-    def generic(cs_generic_type, *args):
+    def __generic(cs_generic_type, *args):
         """"""
+        Internal use
         Make a generic type from a generic type definition and generic arguments, and return the loaded C# class for the made generic type.
         :param cs_generic_type: The C# generic type definition to make generic type from. It must be a *generic type definition* loaded by puerts (import or puerts.load_type).
-        :param args: The generic arguments to make generic type with. They must be types loaded by puerts (import or puerts.load_type or puerts.generic).
+        :param args: The generic arguments to make generic type with. They must be types loaded by puerts (import or puerts.load_type or puerts.__generic).
         :return: The loaded C# class for the made generic type.
         """"""
         is_valid_cs_generic_type = hasattr(cs_generic_type, 'IsGenericTypeDefinition') and cs_generic_type.IsGenericTypeDefinition
 
         if not is_valid_cs_generic_type or len(args) == 0 or len(args) != cs_generic_type.GetGenericArguments().Length:
-            raise TypeError('invalid generic type or arguments for type ' + str(cs_generic_type))
+            raise TypeError('invalid generic type or arguments for type ' + str(cs_generic_type.FullName))
 
         generic_args = []
         for ga in args:
             generic_args.append(puerts.typeof(ga))
+
+        cacheName = cs_generic_type.FullName + '<' + ','.join([ga.FullName for ga in generic_args]) + '>'
+        if cacheName in _csTypeCache_:
+            return _csTypeCache_[cacheName]
+
         cs_generic_type_made = cs_generic_type.MakeGenericType(*generic_args)
         cs_class = loadType(cs_generic_type_made)
         cs_class._p_cs_type = cs_generic_type_made
@@ -247,7 +304,7 @@ class puerts:
             for i in range(nestedTypes.Length):
                 ntype = nestedTypes.get_Item(i)
                 if ntype.IsGenericTypeDefinition:
-                    setattr(cs_class, ntype.Name, puerts.generic(ntype, *args))
+                    setattr(cs_class, ntype.Name, puerts._puerts__generic(ntype, *args))
                 else:
                     try:
                         setattr(cs_class, ntype.Name, puerts.load_type(ntype.FullName))
@@ -260,9 +317,9 @@ class puerts:
     def generic_method(cls, method_name: str, *args):
         """"""
         Make a generic method from a generic method definition and generic arguments, and return a Python function that can call the made generic method.
-        :param cls: The class that the generic method belongs to. It must be a class loaded by puerts (import or puerts.load_type or puerts.generic).
+        :param cls: The class that the generic method belongs to. It must be a class loaded by puerts (import or puerts.load_type or puerts.__generic).
         :param method_name: The name of the generic method to make generic method from.
-        :param args: The generic arguments to make generic method with. They must be types loaded by puerts (import or puerts.load_type or puerts.generic).
+        :param args: The generic arguments to make generic method with. They must be types loaded by puerts (import or puerts.load_type or puerts.__generic).
         :return: A Python function that can call the made generic method.
         """"""
         cs_type = None
@@ -294,7 +351,8 @@ class puerts:
         
         overload_count = len(overload_functions)
         if overload_count == 0:
-            raise TypeError(f'No generic method named {method_name} with following generic arguments: {"", "".join([str(puerts.typeof(arg).Name) for arg in args])} found in {cs_type.Name}')
+            arg_names = ', '.join([puerts.typeof(arg).Name for arg in args])
+            raise TypeError(f'No generic method named {method_name} with generic arguments [{arg_names}] found in {cs_type.Name}')
         return createFunction(*overload_functions)
 
     class IteratorWrapper:
@@ -307,7 +365,9 @@ class puerts:
         def __next__(self):
             if self.__p_iterator.MoveNext():
                 return self.__p_iterator.Current
-            self.__p_iterator.Dispose()
+            dispose = getattr(self.__p_iterator, 'Dispose', None)
+            if dispose is not None:
+                dispose()
             raise StopIteration
 
 
@@ -320,7 +380,7 @@ class puerts:
                 args = (args,)
             if len(args) != self._p_cs_generic_type.GetGenericArguments().Length:
                 raise TypeError(f'Expected {self._p_cs_generic_type.GetGenericArguments().Length} generic arguments, got {len(args)}')
-            return puerts.generic(self._p_cs_generic_type, *args)
+            return puerts._puerts__generic(self._p_cs_generic_type, *args)
 
         def __getattr__(self, attr):
             if attr == '_p_cs_generic_type':
@@ -337,7 +397,7 @@ class puerts:
             raise AttributeError('Cannot delete attributes of GenericTypeDefWrapper')
 
         def __call__(self, *args, **kwargs):
-            return self._p_cs_type(*args, **kwargs)
+            raise TypeError(f'Cannot instantiate generic type definition {self._p_cs_generic_type.FullName}; use [] to provide generic arguments first.')
 
 
 sys.meta_path.append(PesapiFinder())

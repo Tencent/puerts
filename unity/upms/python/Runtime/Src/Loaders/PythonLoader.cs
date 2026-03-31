@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace Puerts
@@ -31,9 +30,11 @@ namespace Puerts
 
     public class NamespaceManager
     {
-        private readonly HashSet<string> _namespaces = new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<string> _genericTypePrefixes = new HashSet<string>(StringComparer.Ordinal);
-        private static readonly object _lock = new object();
+        private readonly HashSet<string> namespaces = new HashSet<string>(StringComparer.Ordinal);
+
+        private readonly Dictionary<string, TypeParameterState> typePrefixStates = new Dictionary<string, TypeParameterState>(StringComparer.Ordinal);
+
+        private readonly object @lock = new object();
 
         public NamespaceManager()
         {
@@ -43,7 +44,7 @@ namespace Puerts
 
         private void LoadNamespacesFromLoadedAssemblies()
         {
-            lock (_lock)
+            lock (@lock)
             {
                 var assemblies = AppDomain.CurrentDomain.GetAssemblies();
                 foreach (var assembly in assemblies)
@@ -55,7 +56,7 @@ namespace Puerts
 
         private void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
         {
-            lock (_lock)
+            lock (@lock)
             {
                 AddNamespacesFromAssembly(args.LoadedAssembly);
             }
@@ -91,89 +92,87 @@ namespace Puerts
         {
             if (!string.IsNullOrEmpty(type.Namespace))
             {
-                _namespaces.Add(type.Namespace);
+                namespaces.Add(type.Namespace);
             }
 
-            CacheGenericTypePrefix(type);
+            CacheTypePrefix(type);
         }
 
-        private void CacheGenericTypePrefix(Type type)
+        private void CacheTypePrefix(Type type)
         {
-            if (!type.IsGenericTypeDefinition)
-                return;
-
-            var names = new Stack<string>();
-            var current = type;
-
-            while (current != null)
+            var fullName = type.FullName;
+            if (string.IsNullOrEmpty(fullName))
             {
-                var name = current.Name;
-                var tickIndex = name.IndexOf('`');
-                if (tickIndex >= 0)
-                {
-                    name = name[..tickIndex];
-                }
-
-                names.Push(name);
-                current = current.DeclaringType;
+                return;
             }
 
-            var joinedByPlus = string.Join("+", names);
-            var joinedByDot = string.Join(".", names);
-
-            if (!string.IsNullOrEmpty(type.Namespace))
+            var tickIndex = fullName.IndexOf('`');
+            bool isGeneric = tickIndex >= 0;
+            var prefix = isGeneric ? fullName.Substring(0, tickIndex) : fullName;
+            if (typePrefixStates.TryGetValue(prefix, out var existingState))
             {
-                _genericTypePrefixes.Add($"{type.Namespace}.{joinedByPlus}");
-                _genericTypePrefixes.Add($"{type.Namespace}.{joinedByDot}");
+                typePrefixStates[prefix] = MergeTypeParameterState(existingState, isGeneric);
             }
             else
             {
-                _genericTypePrefixes.Add(joinedByPlus);
-                _genericTypePrefixes.Add(joinedByDot);
+                typePrefixStates[prefix] = isGeneric
+                    ? TypeParameterState.HasOneMoreParameter
+                    : TypeParameterState.NoParameter;
             }
         }
 
-        public IEnumerable<string> GetAllNamespaces()
+        private static TypeParameterState MergeTypeParameterState(TypeParameterState existingState, bool isGeneric)
         {
-            lock (_lock)
+            switch (existingState)
             {
-                return _namespaces.OrderBy(ns => ns).ToList();
+                case TypeParameterState.NoType:
+                    return isGeneric ? TypeParameterState.HasOneMoreParameter : TypeParameterState.NoParameter;
+                case TypeParameterState.NoParameter:
+                    return isGeneric ? TypeParameterState.HasZeroAndMoreParameter : TypeParameterState.NoParameter;
+                case TypeParameterState.HasOneMoreParameter:
+                    return isGeneric
+                        ? TypeParameterState.HasOneMoreParameter
+                        : TypeParameterState.HasZeroAndMoreParameter;
+                case TypeParameterState.HasZeroAndMoreParameter:
+                    return TypeParameterState.HasZeroAndMoreParameter;
+                default:
+                    return existingState;
             }
         }
 
         public bool IsValidNamespace(string namespaceName)
         {
-            lock (_lock)
+            lock (@lock)
             {
-                return _namespaces.Contains(namespaceName);
+                return namespaces.Contains(namespaceName);
+            }
+        }
+        
+        //  2 => T<...>
+        //  1 => T, T<...>
+        //  0 => T
+        // -1 => Not exist
+        public int GetTypeParameterStateByPrefix(string typeNamePrefix)
+        {
+            if (string.IsNullOrEmpty(typeNamePrefix))
+            {
+                return (int)TypeParameterState.NoType;
+            }
+
+            lock (@lock)
+            {
+                return typePrefixStates.TryGetValue(typeNamePrefix, out var state)
+                    ? (int)state
+                    : (int)TypeParameterState.NoType;
             }
         }
 
-        // typeName: System.Collections.Generic.List
-        // exist types: System.Collections.Generic.List`1 => valid
-        public bool IsValidGenericTypePrefix(string typeName)
+        private enum TypeParameterState
         {
-            if (string.IsNullOrWhiteSpace(typeName))
-                return false;
-
-            var normalized = typeName.Trim();
-
-            var tickIndex = normalized.IndexOf('`');
-            if (tickIndex >= 0)
-            {
-                normalized = normalized[..tickIndex];
-            }
-
-            var genericStartIndex = normalized.IndexOf('<');
-            if (genericStartIndex >= 0)
-            {
-                normalized = normalized[..genericStartIndex];
-            }
-
-            lock (_lock)
-            {
-                return _genericTypePrefixes.Contains(normalized);
-            }
+            NoType = -1,
+            NoParameter = 0,
+            HasZeroAndMoreParameter = 1,
+            HasOneMoreParameter = 2
         }
     }
 

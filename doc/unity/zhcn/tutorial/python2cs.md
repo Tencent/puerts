@@ -173,44 +173,18 @@ print('ret=' + str(ret) + ', out=' + str(outRef[0]) + ', ref=' + str(refRef[0]))
 ----------------------------
 ### 泛型
 
-Python 中使用 `puerts.generic()` 来创建泛型类型：
+PuerTS 支持 Python 风格的中括号语法来实例化泛型类型，类似于 Python 标准库中 `list[int]` 的写法：
 
 ```csharp
 void Start() {
     var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
     env.Eval(@"
 exec('''
-import System
-import System.Collections.Generic.List_1 as List
-
-# create generic type: List<int>
-ListInt = puerts.generic(List, System.Int32)
-ls = ListInt()
-ls.Add(1)
-ls.Add(2)
-ls.Add(3)
-
-print(ls.Count)  # 3
-''')
-");
-    env.Dispose();
-}
-```
-
-**方式二：使用中括号语法（推荐）**
-
-PuerTS 还支持 Python 风格的中括号语法来实例化泛型类型，类似于 Python 标准库中 `list[int]` 的写法：
-
-```csharp
-void Start() {
-    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
-    env.Eval(@"
-exec('''
-from System.Collections.Generic import List_1
+from System.Collections.Generic import List
 from System import Int32
 
 # use square bracket syntax to create generic type: List<int>
-List_Int32 = List_1[Int32]
+List_Int32 = List[Int32]
 ls = List_Int32()
 ls.Add(1)
 ls.Add(2)
@@ -223,21 +197,19 @@ print(ls.Count)  # 3
 }
 ```
 
-中括号语法 `List_1[Int32]` 等价于 `puerts.generic(List_1, Int32)`，对于多个类型参数，使用逗号分隔：`Dictionary_2[String, Int32]`。
+以下导入语法都是等价的
 
-> ⚠️ **泛型类名的特殊表示**：C# 中泛型类名使用反引号表示类型参数个数（如 `` List`1 ``），而在 Python 的 `import` 语法中，反引号需要替换为 `_` 加参数个数：
-> - `` List`1 `` → `List_1`
-> - `` Dictionary`2 `` → `Dictionary_2`
->
-> 使用 `puerts.load_type()` 时，可以直接使用反引号原始格式：
-> ```python
-> List = puerts.load_type('System.Collections.Generic.List`1')
-> ```
+```python
+import System.Collections.Generic.List as List
+from System.Collections.Generic import List
+```
+
+同时也都可以直接使用 `List[System.String]` 语法来创建泛型类型
+
+对于多个类型参数，使用逗号分隔：`Dictionary[String, Int32]`。
 
 ----------------------------
 ### 嵌套类型
-
-C# 中的嵌套类型可以通过两种方式访问：
 
 ```csharp
 void Start() {
@@ -253,28 +225,19 @@ x = InnerClassA()
 print(x.Foo)  # Hello
 
 # access generic nested class
-InnerClassB_1 = puerts.generic(TestNestedTypes.InnerClassB_1, Int32)
-y = InnerClassB_1()
+InnerClassB = TestNestedTypes.InnerClassB[Int32]
+y = InnerClassB()
 print(y.Bar)  # Hello
 
-InnerClassB_2 = puerts.generic(TestNestedTypes.InnerClassB_2, Int32, String)
-z = InnerClassB_2()
+InnerClassB = TestNestedTypes.InnerClassB[Int32, String]
+z = InnerClassB()
 print(z.Bar)  # Hello
 ''')
 ");
     env.Dispose();
 }
-
-// use load_type for nested types (with '+' separator)
-env.Eval(@"
-exec('''
-Inner = puerts.load_type('Puerts.UnitTest.CSharpModuleTestPython+Inner')
-print(Inner.i)  # 3
-''')
 ");
 ```
-
-> 💡 使用 `puerts.load_type()` 访问嵌套类型时，使用 C# 反射的 `+` 分隔符格式（如 `OuterClass+InnerClass`）。
 
 ----------------------------
 ### 数组与索引器访问
@@ -287,7 +250,7 @@ void Start() {
     env.Eval(@"
 exec('''
 import System
-from System.Collections.Generic import List_1, Dictionary_2
+from System.Collections.Generic import List, Dictionary
 
 # 创建 C# 数组
 arr = System.Array.CreateInstance(puerts.typeof(System.Int32), 3)
@@ -296,14 +259,14 @@ val = arr.get_Item(0)          # 等价于 C# 的 val = arr[0]
 print(val)                     # 42
 
 # 同样适用于 List<T>
-ListInt = puerts.generic(List_1, System.Int32)
+ListInt = List[System.Int32]
 lst = ListInt()
 lst.Add(10)
 first = lst.get_Item(0)       # 等价于 C# 的 lst[0]
 lst.set_Item(0, 20)           # 等价于 C# 的 lst[0] = 20
 
 # 同样适用于 Dictionary<TKey, TValue>
-DictStrInt = puerts.generic(Dictionary_2, System.String, System.Int32)
+DictStrInt = Dictionary[System.String, System.Int32]
 d = DictStrInt()
 d.set_Item('key', 100)        # 等价于 C# 的 dict['key'] = 100
 v = d.get_Item('key')         # 等价于 C# 的 v = dict['key']
@@ -477,10 +440,10 @@ void Start() {
     var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
     env.Eval(@"
 exec('''
-from System.Collections.Generic import List_1
+from System.Collections.Generic import List
 from System import Int32
 
-List_Int32 = List_1[Int32]
+List_Int32 = List[Int32]
 myList = List_Int32()
 myList.Add(1)
 myList.Add(2)
