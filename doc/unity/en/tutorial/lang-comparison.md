@@ -114,9 +114,9 @@ print(outB[0], refC[0])  # 100, 20
 |----------|--------------------|---------------------|
 | **JavaScript** | `List$1` | `puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32)` |
 | **Lua** | `List_1` | `puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)` |
-| **Python** | `List__T1` (import) or `` List`1 `` (load_type) | `puerts.generic(List, System.Int32)` |
+| **Python** | `List` | `List[System.Int32]` |
 
-> The backtick `` ` `` substitute differs across languages: JS uses `$`, Lua uses `_`, Python import uses `__T`.
+> In Python, using `import XXX` imports a special generic factory type. When called with type arguments, it creates an instance of a generic type based on the number of mixed-in type arguments.
 
 ---
 
@@ -126,7 +126,7 @@ print(outB[0], refC[0])  # 100, 20
 |----------|--------|
 | **JavaScript** | Call directly, V8 auto-infers type parameters |
 | **Lua** | `puerts.genericMethod(Type, 'MethodName', GenericArgs...)` |
-| **Python** | `puerts.genericMethod(Type, 'MethodName', GenericArgs...)` |
+| **Python** | `puerts.generic_method(Type, 'MethodName', GenericArgs...)` |
 
 ```lua
 -- Lua example
@@ -136,7 +136,21 @@ func(obj)
 
 ---
 
-## 10. typeof
+## 10. Array and Indexer Access (`[]` Operator)
+
+C# `[]` operators (arrays, `List`, `Dictionary`, custom indexers) **cannot** be accessed directly with `[]` in these three languages. You must use `get_Item()` / `set_Item()`.
+
+| Language | Read (C# `arr[0]`) | Write (C# `arr[0] = val`) |
+|----------|---------------------|---------------------------|
+| **JavaScript** | `arr.get_Item(0)` | `arr.set_Item(0, val)` |
+| **Lua** | `arr:get_Item(0)` | `arr:set_Item(0, val)` |
+| **Python** | `arr.get_Item(0)` | `arr.set_Item(0, val)` |
+
+> ⚠️ Lua uses colon `:` syntax for instance methods, while JS and Python use dot `.` syntax. This rule applies to all C# types with indexers (arrays, `List`, `Dictionary`, etc.).
+
+---
+
+## 11. typeof
 
 | Language | Syntax |
 |----------|--------|
@@ -146,7 +160,7 @@ func(obj)
 
 ---
 
-## 11. null Representation
+## 12. null Representation
 
 | Language | Script-side null | Notes |
 |----------|-----------------|-------|
@@ -156,7 +170,7 @@ func(obj)
 
 ---
 
-## 12. Callbacks / Lambda
+## 13. Callbacks / Lambda
 
 | Language | Example |
 |----------|---------|
@@ -174,7 +188,7 @@ fn("hello");
 
 ---
 
-## 13. Throwing Exceptions
+## 14. Throwing Exceptions
 
 | Language | Syntax |
 |----------|--------|
@@ -190,8 +204,8 @@ fn("hello");
 
 | Feature | JavaScript (`puer.xxx`) | Lua (`require('puerts').xxx`) | Python (`puerts.xxx`) |
 |---------|------------------------|------------------------------|----------------------|
-| Generic type | `puer.$generic()` | `puerts.generic()` | `puerts.generic()` |
-| Generic method | — (auto-inferred) | `puerts.genericMethod()` | `puerts.genericMethod()` |
+| Generic type | `puer.$generic()` | `puerts.generic()` | You can import the generic directly using `import` (e.g., `import List`). For details, refer to the explanation of generics above. |
+| Generic method | — (auto-inferred) | `puerts.genericMethod()` | `puerts.generic_method()` |
 | typeof | `puer.$typeof()` | `puerts.typeof()` | `puerts.typeof()` |
 | ref/out create | `puer.$ref()` | `{}` (table) | `[]` (list) |
 | ref/out retrieve | `puer.$unref()` | `[1]` | `[0]` |

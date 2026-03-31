@@ -50,24 +50,6 @@ Diagnostics.Debug.WriteLine('Test')
 
 PuerTS extends Python's `import` mechanism to directly import C# namespaces and types. You can use standard Python `import` / `from ... import` / `import ... as` syntax.
 
-**Method 2: Using `puerts.load_type()` for dynamic loading**
-
-```csharp
-void Start() {
-    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
-    env.Eval(@"
-exec('''
-# load a type by full name string
-TestHelper = puerts.load_type('Puerts.UnitTest.TestHelper')
-Vector3 = puerts.load_type('UnityEngine.Vector3')
-''')
-");
-    env.Dispose();
-}
-```
-
-`puerts.load_type()` accepts a full type name string, which is useful when dynamically loading types or when the name contains special characters (such as the `+` sign for nested types).
-
 > ⚠️ **Note**: Accessing a non-existent namespace or type will throw a `ModuleNotFoundError` exception.
 
 ------------------
@@ -173,19 +155,19 @@ Unlike JS's `puer.$ref()` / `puer.$unref()` and Lua's table `{}` / `[1]`, Python
 ----------------------------
 ### Generics
 
-Use `puerts.generic()` to create generic types in Python:
+PuerTS supports Python-style square-bracket syntax for instantiating generic types, similar to the `list[int]` syntax in the Python standard library:
 
 ```csharp
 void Start() {
     var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
     env.Eval(@"
 exec('''
-import System
-import System.Collections.Generic.List_1 as List
+from System.Collections.Generic import List
+from System import Int32
 
-# create generic type: List<int>
-ListInt = puerts.generic(List, System.Int32)
-ls = ListInt()
+# use square bracket syntax to create generic type: List<int>
+List_Int32 = List[Int32]
+ls = List_Int32()
 ls.Add(1)
 ls.Add(2)
 ls.Add(3)
@@ -197,19 +179,19 @@ print(ls.Count)  # 3
 }
 ```
 
-> ⚠️ **Special naming for generic types**: In C#, generic type names use backticks to indicate the number of type parameters (e.g. `` List`1 ``). In Python's `import` syntax, backticks must be replaced with `_` followed by the count:
-> - `` List`1 `` → `List_1`
-> - `` Dictionary`2 `` → `Dictionary_2`
->
-> When using `puerts.load_type()`, you can use the original backtick format directly:
-> ```python
-> List = puerts.load_type('System.Collections.Generic.List`1')
-> ```
+The following import syntaxes are equivalent:
+
+```python
+import System.Collections.Generic.List as List
+from System.Collections.Generic import List
+```
+
+You can also directly use syntax like `List[System.String]` to create a generic type.
+
+For multiple type arguments, separate them with commas: `Dictionary[String, Int32]`.
 
 ----------------------------
 ### Nested Types
-
-C# nested types can be accessed in two ways:
 
 ```csharp
 void Start() {
@@ -219,34 +201,63 @@ exec('''
 from Puerts.UnitTest import TestNestedTypes
 from System import Int32, String
 
-# access nested class as attribute of outer class
+# access nested class as an attribute of the outer class
 InnerClassA = TestNestedTypes.InnerClassA
 x = InnerClassA()
 print(x.Foo)  # Hello
 
 # access generic nested class
-InnerClassB_1 = puerts.generic(TestNestedTypes.InnerClassB_1, Int32)
-y = InnerClassB_1()
+InnerClassB = TestNestedTypes.InnerClassB[Int32]
+y = InnerClassB()
 print(y.Bar)  # Hello
 
-InnerClassB_2 = puerts.generic(TestNestedTypes.InnerClassB_2, Int32, String)
-z = InnerClassB_1()
+InnerClassB = TestNestedTypes.InnerClassB[Int32, String]
+z = InnerClassB()
 print(z.Bar)  # Hello
 ''')
 ");
     env.Dispose();
 }
-
-// use load_type for nested types (with '+' separator)
-env.Eval(@"
-exec('''
-Inner = puerts.load_type('Puerts.UnitTest.CSharpModuleTestPython+Inner')
-print(Inner.i)  # 3
-''')
-");
 ```
 
-> 💡 When using `puerts.load_type()` to access nested types, use the C# reflection `+` separator format (e.g. `OuterClass+InnerClass`).
+----------------------------
+### Array and Indexer Access
+
+C# `[]` operators (including array indexing, `List` indexing, `Dictionary` indexing, and any custom indexer) **cannot** be accessed directly with Python `[]` syntax for C# objects. You must use `get_Item()` / `set_Item()`:
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
+    env.Eval(@"
+exec('''
+import System
+from System.Collections.Generic import List, Dictionary
+
+# create C# array
+arr = System.Array.CreateInstance(puerts.typeof(System.Int32), 3)
+arr.set_Item(0, 42)            # equivalent to C#: arr[0] = 42
+val = arr.get_Item(0)          # equivalent to C#: val = arr[0]
+print(val)                     # 42
+
+# also applies to List<T>
+ListInt = List[System.Int32]
+lst = ListInt()
+lst.Add(10)
+first = lst.get_Item(0)       # equivalent to C#: lst[0]
+lst.set_Item(0, 20)           # equivalent to C#: lst[0] = 20
+
+# also applies to Dictionary<TKey, TValue>
+DictStrInt = Dictionary[System.String, System.Int32]
+d = DictStrInt()
+d.set_Item('key', 100)        # equivalent to C#: dict['key'] = 100
+v = d.get_Item('key')         # equivalent to C#: v = dict['key']
+''')
+");
+    env.Dispose();
+}
+```
+
+> ⚠️ **Important**: Although Python native `[]` is used for Python lists/dicts, index access on C# objects must use `get_Item()` / `set_Item()`. This is consistent with JS and Lua rules.
 
 ----------------------------
 ### typeof
@@ -399,6 +410,40 @@ void Start() {
     env.Dispose();
 }
 ```
+
+----------------------------
+### Iterators
+
+Use `puerts.gen_iterator()` to convert C# iterable objects (objects implementing `IEnumerable`) into Python iterators, so you can use Python `for ... in` loops:
+
+```csharp
+void Start() {
+    var env = new Puerts.ScriptEnv(new Puerts.BackendPython());
+    env.Eval(@"
+exec('''
+from System.Collections.Generic import List
+from System import Int32
+
+List_Int32 = List[Int32]
+myList = List_Int32()
+myList.Add(1)
+myList.Add(2)
+myList.Add(3)
+
+# convert C# IEnumerable to Python iterator
+iter = puerts.gen_iterator(myList)
+result = []
+for i in iter:
+    result.append(i)
+
+print(result)  # [1, 2, 3]
+''')
+");
+    env.Dispose();
+}
+```
+
+`puerts.gen_iterator()` internally calls the object's `GetEnumerator()` method and wraps it as an iterator object that supports Python iteration protocol (`__iter__` / `__next__`).
 
 -------------
 This section covers calling C# from Python. In the next section, we'll go the other direction: [Invoking Python from C#](./cs2python.md).
