@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 [跳转中文](./changelog-hans.md)
 
+## [3.0.2] - 2026-04-01
+1. Code generation logic rewritten in C#, removing the dependency on JS-based generation (#2311) fix #2305
+2. Added static C# wrapper generation support for PInvoke (non-il2cpp) environment (#2313)
+3. PInvoke version added IntPtr support (mapped to int64)
+4. Fixed compilation error when enabling THREAD_SAFE macro fix #2299
+5. Python uses index syntax to create generics, removed public api `puerts.generic` (#2314)
+6. Python supports using `List[String]` syntax for generics, with generic type prefix validation and loading (#2312)
+7. Python supports calling instance generic methods via `method(this=DynObj)` (#2296)
+8. Python adjusted generic usage from `__n` to `_n` (#2294)
+9. Python supports using `[]` to pass generic parameters for class construction, added `puerts.generic_method` for static methods, improved `puerts.gen_iterator` (#2293)
+10. Lua generic classes now use index syntax similar to Python
+11. Added PuerTS Agent (Editor AI Assistant) with MCP service support, streaming responses, and various robustness improvements
+
 ## [3.0.1] - 2026-03-04
 1. Fixed a crash caused by binding a JS function to different delegates, which could lead to duplicate delete crash fix #2290
 2. Added thread-safety code to fix a probabilistic crash when connecting the debugger on macOS fix #2286

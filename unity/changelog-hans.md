@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 [english version](./changelog.md)
 
+## [3.0.2] - 2026-04-01
+1. 代码生成逻辑重写为C#实现，移除对JS版生成的依赖 (#2311) fix #2305
+2. PInvoke（非il2cpp）环境支持静态C# wrapper生成 (#2313)
+3. PInvoke版本加入IntPtr的支持（映射到int64）
+4. 修复打开THREAD_SAFE宏报错的问题 fix #2299
+5. Python使用索引语法创建泛型，移除公开api `puerts.generic` (#2314)
+6. Python支持用 `List[String]` 方式使用泛型，同时支持泛型类型前缀的验证和加载 (#2312)
+7. Python支持以 `method(this=DynObj)` 的方式调用实例的泛型方法 (#2296)
+8. Python调整泛型使用 `__n` 为 `_n` (#2294)
+9. Python支持使用 `[]` 传入泛型来构建类，添加 `puerts.generic_method` 方法（目前只支持静态方法），完善 `puerts.gen_iterator` (#2293)
+10. Lua泛型类也改为和Python类似的索引语法
+11. 新增 PuerTS Agent（编辑器AI助手），支持MCP服务、流式响应等功能
+
 ## [3.0.1] - 2026-03-04
 1. 解决一个js函数绑定不同的delegate可能会导致重复delete崩溃的问题 fix #2290
 2. 尝试增加线程安全代码，解决mac下调试链接时的概率崩溃 fix #2286
