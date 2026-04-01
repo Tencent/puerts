@@ -192,6 +192,18 @@ Add the following Streamable HTTP server to your MCP client configuration file:
 }
 ```
 
+> **Note on `transport` field**: Most modern MCP clients (Cursor, Claude Desktop, etc.) automatically infer the transport type from the `url` field — no extra configuration is needed. If your client fails to connect, you can explicitly add `"transport": "streamable-http"`:
+> ```json
+> {
+>   "mcpServers": {
+>     "puerts-unity-editor-assistant": {
+>       "url": "http://127.0.0.1:3100/mcp",
+>       "transport": "streamable-http"
+>     }
+>   }
+> }
+> ```
+
 #### Manual Connection Testing
 
 You can use curl to verify the service is running:
