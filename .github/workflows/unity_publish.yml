@@ -340,6 +340,7 @@ jobs:
           echo "WEBGL_VERSION=${WEBGL_VERSION}" >> $GITHUB_ENV
           echo "AGENT_VERSION=${AGENT_VERSION}" >> $GITHUB_ENV
           echo "MCP_VERSION=${MCP_VERSION}" >> $GITHUB_ENV
+          echo "SKILLS_VERSION=${CORE_VERSION}" >> $GITHUB_ENV
           tar cvfz ../../PuerTS_Core_${CORE_VERSION}.tar.gz core
           tar cvfz ../../PuerTS_V8_${V8_VERSION}.tar.gz v8
           tar cvfz ../../PuerTS_Quickjs_${QUICKJS_VERSION}.tar.gz quickjs
@@ -349,6 +350,8 @@ jobs:
           tar cvfz ../../PuerTS_Webgl_${WEBGL_VERSION}.tar.gz webgl
           tar cvfz ../../PuerTS_Agent_${AGENT_VERSION}.tar.gz agent
           tar cvfz ../../PuerTS_Mcp_${MCP_VERSION}.tar.gz mcp
+          cd ../skills
+          tar cvfz ../../Unity_Skills_${CORE_VERSION}.tar.gz .
           
       - name: Create Release
         id: create_release
@@ -456,6 +459,16 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./PuerTS_Mcp_${{ env.MCP_VERSION }}.tar.gz
           asset_name: "PuerTS_Mcp_${{ env.MCP_VERSION }}.tar.gz"
+          asset_content_type: application/tgz
+
+      - name: Upload Unity Skills
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Unity_Skills_${{ env.SKILLS_VERSION }}.tar.gz
+          asset_name: "Unity_Skills_${{ env.SKILLS_VERSION }}.tar.gz"
           asset_content_type: application/tgz
 
       # - name: Trigger demo/upm repository update
