@@ -188,3 +188,73 @@ After installation, the following package IDs should appear in `Packages/manifes
 - `com.tencent.puerts.agent`
 - `com.tencent.puerts.webgl`
 - `com.tencent.puerts.mcp`
+
+---
+
+## 7. Known Issues & Troubleshooting (Windows)
+
+### 7.1 `curl` on Windows is an alias for `Invoke-WebRequest` — use different flags
+
+On Windows PowerShell, `curl` is an alias for `Invoke-WebRequest` and does **not** accept standard Unix `curl` flags like `-L`, `--max-time`, `-o`. Use the native PowerShell syntax instead:
+
+```powershell
+# ❌ Wrong — Unix curl flags don't work in PowerShell
+curl -L --max-time 30 -o output.html https://...
+
+# ✅ Correct — use Invoke-WebRequest with PowerShell parameters
+Invoke-WebRequest -Uri "https://..." -OutFile "output.html" -UseBasicParsing
+```
+
+### 7.2 GitHub API rate limit when unauthenticated
+
+Calling `https://api.github.com/repos/Tencent/puerts/releases/tags/Unity_v{VERSION}` without authentication will quickly hit GitHub's rate limit (especially on shared IPs). 
+
+**Workaround**: Instead of the API, fetch the **expanded assets HTML fragment** directly — it contains all download links and is not rate-limited:
+
+```powershell
+Invoke-WebRequest -Uri "https://github.com/Tencent/puerts/releases/expanded_assets/Unity_v{VERSION}" `
+    -OutFile "assets.html" -UseBasicParsing
+
+# Then extract download links with regex:
+$content = Get-Content "assets.html" -Raw
+$matches = [regex]::Matches($content, 'href="(/Tencent/puerts/releases/download[^"]*)"')
+$matches | ForEach-Object { $_.Groups[1].Value }
+```
+
+This returns the exact filenames (e.g., `PuerTS_Core_3.0.2.tar.gz`) without consuming API quota.
+
+### 7.3 `Invoke-WebRequest` times out on large files
+
+`Invoke-WebRequest` can time out when downloading large packages (e.g., `PuerTS_V8` ~74 MB, `PuerTS_Nodejs` ~169 MB).
+
+**Workaround**: Use `Start-BitsTransfer` instead — it is more reliable for large files and does not time out:
+
+```powershell
+Start-BitsTransfer `
+    -Source "https://github.com/Tencent/puerts/releases/download/Unity_v3.0.2/PuerTS_V8_3.0.2.tar.gz" `
+    -Destination "C:\path\to\output\PuerTS_V8_3.0.2.tar.gz"
+```
+
+### 7.4 Release page HTML does not contain download links (JavaScript-rendered)
+
+The main release page (`/releases/tag/Unity_v{VERSION}`) renders asset links via JavaScript — the raw HTML fetched by `Invoke-WebRequest` will **not** contain any `releases/download` links.
+
+**Solution**: Use the `expanded_assets` endpoint instead (see Section 7.2 above), which returns a static HTML fragment with all asset links.
+
+### 7.5 `manifest.json` must use `file:` prefix for local packages
+
+When packages are extracted into the `Packages/` directory, `manifest.json` must reference them with the `file:` prefix pointing to the subdirectory name:
+
+```json
+{
+  "dependencies": {
+    "com.tencent.puerts.core":   "file:core",
+    "com.tencent.puerts.v8":     "file:v8",
+    "com.tencent.puerts.nodejs": "file:nodejs",
+    "com.tencent.puerts.agent":  "file:agent",
+    "com.tencent.puerts.mcp":    "file:mcp"
+  }
+}
+```
+
+Unity will automatically resolve these local paths when the project is opened.
