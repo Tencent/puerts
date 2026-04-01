@@ -113,7 +113,7 @@ print(outB[0], refC[0])  # 100, 20
 | Language | Generic Class Name | Creating `List<int>` |
 |----------|--------------------|---------------------|
 | **JavaScript** | `List$1` | `puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32)` |
-| **Lua** | `List_1` | `puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)` |
+| **Lua** | `List_1` | `CS.System.Collections.Generic.List_1(CS.System.Int32)` |
 | **Python** | `List` | `List[System.Int32]` |
 
 > In Python, using `import XXX` imports a special generic factory type. When called with type arguments, it creates an instance of a generic type based on the number of mixed-in type arguments.
@@ -204,7 +204,7 @@ fn("hello");
 
 | Feature | JavaScript (`puer.xxx`) | Lua (`require('puerts').xxx`) | Python (`puerts.xxx`) |
 |---------|------------------------|------------------------------|----------------------|
-| Generic type | `puer.$generic()` | `puerts.generic()` | You can import the generic directly using `import` (e.g., `import List`). For details, refer to the explanation of generics above. |
+| Generic type | `puer.$generic()` | `List_1(TypeArgs...)` — direct call | You can import the generic directly using `import` (e.g., `import List`). For details, refer to the explanation of generics above. |
 | Generic method | — (auto-inferred) | `puerts.genericMethod()` | `puerts.generic_method()` |
 | typeof | `puer.$typeof()` | `puerts.typeof()` | `puerts.typeof()` |
 | ref/out create | `puer.$ref()` | `{}` (table) | `[]` (list) |

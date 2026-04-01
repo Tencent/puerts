@@ -134,17 +134,16 @@ void Start() {
 ----------------------------
 ### Generics
 
-C# generic types in Lua require `puerts.generic()` to create:
+C# generic types in Lua can be created by directly calling the generic type definition with type arguments using parentheses:
 
 ```csharp
 void Start() {
     var env = new Puerts.ScriptEnv(new Puerts.BackendLua());
     env.Eval(@"
         local CS = require('csharp')
-        local puerts = require('puerts')
 
         -- Create List<int> type
-        local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+        local List = CS.System.Collections.Generic.List_1(CS.System.Int32)
         local ls = List()
         ls:Add(1)
         ls:Add(2)
@@ -198,10 +197,9 @@ void Start() {
 
 ```lua
 local CS = require('csharp')
-local puerts = require('puerts')
 
 -- Create generic class GenericTestClass<string>
-local GenericTestClass = puerts.generic(CS.Puerts.UnitTest.GenericTestClass_1, CS.System.String)
+local GenericTestClass = CS.Puerts.UnitTest.GenericTestClass_1(CS.System.String)
 GenericTestClass.v = '6'
 
 -- Access nested types
@@ -229,14 +227,14 @@ void Start() {
         print(val)                     -- 42
 
         -- Same for List<T>
-        local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+        local List = CS.System.Collections.Generic.List_1(CS.System.Int32)
         local lst = List()
         lst:Add(10)
         local first = lst:get_Item(0)  -- equivalent to C#: lst[0]
         lst:set_Item(0, 20)            -- equivalent to C#: lst[0] = 20
 
         -- Same for Dictionary<TKey, TValue>
-        local Dict = puerts.generic(CS.System.Collections.Generic.Dictionary_2, CS.System.String, CS.System.Int32)
+        local Dict = CS.System.Collections.Generic.Dictionary_2(CS.System.String, CS.System.Int32)
         local dict = Dict()
         dict:set_Item('key', 100)      -- equivalent to C#: dict['key'] = 100
         local v = dict:get_Item('key') -- equivalent to C#: v = dict['key']

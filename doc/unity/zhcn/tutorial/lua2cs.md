@@ -134,17 +134,16 @@ void Start() {
 ----------------------------
 ### 泛型
 
-C# 中的泛型类型在 Lua 中需要借助 `puerts.generic()` 来创建：
+C# 中的泛型类型在 Lua 中可以直接通过括号语法传入类型参数来创建：
 
 ```csharp
 void Start() {
     var env = new Puerts.ScriptEnv(new Puerts.BackendLua());
     env.Eval(@"
         local CS = require('csharp')
-        local puerts = require('puerts')
 
         -- 创建 List<int> 类型
-        local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+        local List = CS.System.Collections.Generic.List_1(CS.System.Int32)
         local ls = List()
         ls:Add(1)
         ls:Add(2)
@@ -198,10 +197,9 @@ void Start() {
 
 ```lua
 local CS = require('csharp')
-local puerts = require('puerts')
 
 -- 创建泛型类 GenericTestClass<string>
-local GenericTestClass = puerts.generic(CS.Puerts.UnitTest.GenericTestClass_1, CS.System.String)
+local GenericTestClass = CS.Puerts.UnitTest.GenericTestClass_1(CS.System.String)
 GenericTestClass.v = '6'
 
 -- 访问嵌套类型
@@ -229,14 +227,14 @@ void Start() {
         print(val)                     -- 42
 
         -- 同样适用于 List<T>
-        local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+        local List = CS.System.Collections.Generic.List_1(CS.System.Int32)
         local lst = List()
         lst:Add(10)
         local first = lst:get_Item(0)  -- 等价于 C# 的 lst[0]
         lst:set_Item(0, 20)            -- 等价于 C# 的 lst[0] = 20
 
         -- 同样适用于 Dictionary<TKey, TValue>
-        local Dict = puerts.generic(CS.System.Collections.Generic.Dictionary_2, CS.System.String, CS.System.Int32)
+        local Dict = CS.System.Collections.Generic.Dictionary_2(CS.System.String, CS.System.Int32)
         local dict = Dict()
         dict:set_Item('key', 100)      -- 等价于 C# 的 dict['key'] = 100
         local v = dict:get_Item('key') -- 等价于 C# 的 v = dict['key']

@@ -132,9 +132,31 @@ namespace Puerts
                 local type = scriptEnv:GetTypeByString(full_name)
                 return cs_type_to_lua(type)
             end
+            local unpack = unpack or table.unpack
+            local generic_type_mt = {
+                __call = function(self, ...)
+                    local cs_type = self.__p_innerType
+                    if not cs_type then error('the class must be a constructor') end
+                    local n = select('#', ...)
+                    if n == 0 then error('no generic argument') end
+                    local args = {}
+                    for i = 1, n do
+                        local arg_obj = select(i, ...)
+                        local arg = type(arg_obj) == 'table' and arg_obj.__p_innerType or nil
+                        if not arg then
+                            arg = type(arg_obj) == 'userdata' and arg_obj.__p_innerType or nil
+                        end
+                        if not arg then error('invalid Type for generic arguments '.. i) end
+                        table.insert(args, arg)
+                    end
+                    return cs_type_to_lua(cs_type:MakeGenericType(unpack(args)), unpack(args))
+                end
+            }
             local function import_generic_type(full_name)
-                local type = scriptEnv:GetTypeByString(full_name)
-                return {__p_innerType = type}
+                local cstype = scriptEnv:GetTypeByString(full_name)
+                local obj = {__p_innerType = cstype}
+                setmetatable(obj, generic_type_mt)
+                return obj
             end
 
             function metatable:__index(key) 
@@ -218,6 +240,7 @@ namespace Puerts
 
             puerts.createFunction = createFunction
 
+            -- puerts.generic is kept as an internal function for backward compatibility
             function puerts.generic(l_type, ...)
                 local cs_type = puerts.typeof(l_type)
                 if not cs_type then error('the class must be a constructor') end

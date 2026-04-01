@@ -13,8 +13,7 @@ namespace Puerts.UnitTest
             var luaEnv = new ScriptEnv(new BackendLua());
             var res = luaEnv.Eval<int>(@"
                 local CS = require('csharp')
-                local puerts = require('puerts')
-                local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+                local List = CS.System.Collections.Generic.List_1(CS.System.Int32)
                 local ls = List();
                 ls:Add(1);
                 ls:Add(2);
@@ -46,8 +45,7 @@ namespace Puerts.UnitTest
             var luaEnv = new ScriptEnv(new BackendLua());
             luaEnv.Eval(@"
                 local CS = require('csharp')
-                local puerts = require('puerts')
-                local List = puerts.generic(CS.System.Collections.Generic.List_1, CS.System.Int32)
+                local List = CS.System.Collections.Generic.List_1(CS.System.Int32)
                 local ls = List()
                 ls:Add(1)
                 ls:Add(2)
@@ -152,8 +150,7 @@ namespace Puerts.UnitTest
             var luaEnv = new ScriptEnv(new BackendLua());
             string result = luaEnv.Eval<string>(@"
                 local CS = require('csharp')
-                local puerts = require('puerts')
-                local GenericTestClass = puerts.generic(CS.Puerts.UnitTest.GenericTestClass_1, CS.System.String)
+                local GenericTestClass = CS.Puerts.UnitTest.GenericTestClass_1(CS.System.String)
                 GenericTestClass.v = '6'
                 GenericTestClass.Inner()
                 return GenericTestClass.Inner.stringProp
