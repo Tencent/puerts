@@ -6,9 +6,10 @@
  * the evalJsCode tool over HTTP using Streamable HTTP transport.
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { z } from 'zod';
 import http from 'node:http';
+import crypto from 'node:crypto';
+import { NodeStreamableHTTPServerTransport } from './streamable-http-transport.mjs';
 
 import { setResourceRoot } from '../../ai_shared_src/resource-root.mjs';
 import { initBuiltins, executeCode, builtinSummariesText } from '../../ai_shared_src/eval-core.mjs';
@@ -20,8 +21,8 @@ import { initBuiltins, executeCode, builtinSummariesText } from '../../ai_shared
 let mcpServer: InstanceType<typeof McpServer> | null = null;
 let httpServer: http.Server | null = null;
 
-// SSE transport management: one transport per session
-const transports: Map<string, SSEServerTransport> = new Map();
+// Streamable HTTP transport management: one transport per session
+let activeTransport: NodeStreamableHTTPServerTransport | null = null;
 
 // Track all open sockets so we can forcefully destroy them on shutdown
 import net from 'node:net';
@@ -147,7 +148,7 @@ function createMcpServer(): InstanceType<typeof McpServer> {
 }
 
 // ---------------------------------------------------------------------------
-// HTTP Server with SSE transport
+// HTTP Server with Streamable HTTP transport
 // ---------------------------------------------------------------------------
 
 function startHttpServer(port: number): Promise<void> {
@@ -159,7 +160,8 @@ function startHttpServer(port: number): Promise<void> {
             // CORS headers
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
+            res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
 
             if (req.method === 'OPTIONS') {
                 res.writeHead(204);
@@ -167,51 +169,41 @@ function startHttpServer(port: number): Promise<void> {
                 return;
             }
 
-            // SSE endpoint — client connects here to get the session
-            if (url.pathname === '/sse' && req.method === 'GET') {
-                // Close any existing transports and recreate the McpServer
-                // so we don't hit "Already connected to a transport".
-                // The MCP SDK Server only supports one transport at a time.
-                for (const [id, oldTransport] of transports) {
-                    try {
-                        oldTransport.close?.();
-                    } catch (_) {
-                        // ignore
+            // MCP Streamable HTTP endpoint
+            if (url.pathname === '/mcp') {
+                const incomingSessionId = req.headers['mcp-session-id'] as string | undefined;
+
+                // Determine whether we need to create a fresh transport:
+                // 1. No active transport at all
+                // 2. No session ID header (client wants to initialize)
+                // 3. Session ID doesn't match the active transport (stale session)
+                const needNewTransport = !activeTransport
+                    || !incomingSessionId
+                    || (activeTransport.sessionId !== undefined && incomingSessionId !== activeTransport.sessionId);
+
+                if (needNewTransport) {
+                    // Tear down previous transport / server
+                    if (activeTransport) {
+                        try { await activeTransport.close(); } catch (_) { /* ignore */ }
+                        activeTransport = null;
                     }
-                }
-                transports.clear();
+                    if (mcpServer) {
+                        try { mcpServer.close(); } catch (_) { /* ignore */ }
+                    }
+                    mcpServer = createMcpServer();
 
-                try {
-                    mcpServer?.close();
-                } catch (_) {
-                    // ignore
-                }
-                mcpServer = createMcpServer();
+                    activeTransport = new NodeStreamableHTTPServerTransport({
+                        sessionIdGenerator: () => crypto.randomUUID(),
+                    });
 
-                const transport = new SSEServerTransport('/messages', res);
-                const sessionId = transport.sessionId;
-                transports.set(sessionId, transport);
+                    activeTransport.onclose = () => {
+                        activeTransport = null;
+                    };
 
-                // Clean up on close
-                res.on('close', () => {
-                    transports.delete(sessionId);
-                });
-
-                await mcpServer.connect(transport);
-                return;
-            }
-
-            // Message endpoint — client sends JSON-RPC messages here
-            if (url.pathname === '/messages' && req.method === 'POST') {
-                const sessionId = url.searchParams.get('sessionId');
-                if (!sessionId || !transports.has(sessionId)) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'Invalid or missing sessionId' }));
-                    return;
+                    await mcpServer.connect(activeTransport);
                 }
 
-                const transport = transports.get(sessionId)!;
-                await transport.handlePostMessage(req, res);
+                await activeTransport!.handleRequest(req, res);
                 return;
             }
 
@@ -229,7 +221,7 @@ function startHttpServer(port: number): Promise<void> {
 
         httpServer.listen(port, '127.0.0.1', () => {
             console.log(`[McpServer] HTTP server listening on http://127.0.0.1:${port}`);
-            console.log(`[McpServer] SSE endpoint: http://127.0.0.1:${port}/sse`);
+            console.log(`[McpServer] Streamable HTTP endpoint: http://127.0.0.1:${port}/mcp`);
             resolve();
         });
 
@@ -287,15 +279,15 @@ export function onInitialize(root: string, port: number, onReady: CS.System.Acti
 export function onShutdown(): void {
     console.log('[McpServer] Shutting down...');
 
-    // Close all SSE transports — this ends any long-lived SSE streams
-    for (const [id, transport] of transports) {
+    // Close the active Streamable HTTP transport
+    if (activeTransport) {
         try {
-            transport.close?.();
+            activeTransport.close?.();
         } catch (e) {
             // ignore
         }
+        activeTransport = null;
     }
-    transports.clear();
 
     // Close the MCP server
     if (mcpServer) {

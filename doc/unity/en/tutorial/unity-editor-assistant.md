@@ -19,7 +19,7 @@ The Editor Assistant comes in two modes, each with its own strengths:
 |:---|:---|:---|
 | **UPM Package** | `com.tencent.puerts.agent` | `com.tencent.puerts.mcp` |
 | **How it works** | Chat directly inside a Unity Editor window | Connect from Cursor, Windsurf, Claude Desktop, or any MCP-compatible AI tool |
-| **Speed** | ⚡ Faster — no network round-trips, scripts execute locally | Communicates via HTTP/SSE |
+| **Speed** | ⚡ Faster — no network round-trips, scripts execute locally | Communicates via HTTP (Streamable HTTP) |
 | **Collaboration** | Independent work, focused on Unity operations | 🤝 Works alongside code editors — AI edits code while controlling Unity to verify results |
 | **Best for** | Scene building, inspections, quick prototyping | Vibe coding workflows — deep integration between code editor and Unity |
 
@@ -102,7 +102,7 @@ The MCP version launches an [MCP (Model Context Protocol)](https://modelcontextp
 
 - **Runtime**: PuerTS Node.js backend (V8 engine)
 - **MCP SDK**: `@modelcontextprotocol/sdk`
-- **Transport**: HTTP + SSE (Server-Sent Events)
+- **Transport**: Streamable HTTP (MCP protocol 2025-03-26)
 - **Minimum Unity Version**: 2021.3
 
 ---
@@ -143,7 +143,7 @@ This opens the MCP Server management window.
 Click the **Start Server** button. Once started successfully:
 
 - Status displays green **Running on port 3100**
-- SSE Endpoint address is shown: `http://127.0.0.1:3100/sse`
+- Endpoint address is shown: `http://127.0.0.1:3100/mcp`
 
 #### 4. Stop the Server
 
@@ -167,11 +167,12 @@ Once started, the MCP Server exposes the following HTTP endpoints (default liste
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/sse` | `GET` | SSE connection endpoint; clients establish MCP sessions here |
-| `/messages?sessionId=xxx` | `POST` | JSON-RPC message endpoint for sending MCP requests |
+| `/mcp` | `POST` | Streamable HTTP endpoint; clients send JSON-RPC messages here, responses are returned as SSE streams |
+| `/mcp` | `GET` | Opens a server-initiated SSE stream for notifications and server requests |
+| `/mcp` | `DELETE` | Terminates the current MCP session |
 | `/health` | `GET` | Health check endpoint; returns `{"status": "ok"}` |
 
-All endpoints support CORS (`Access-Control-Allow-Origin: *`).
+All endpoints support CORS (`Access-Control-Allow-Origin: *`). Session management uses the `Mcp-Session-Id` HTTP header.
 
 ---
 
@@ -179,13 +180,13 @@ All endpoints support CORS (`Access-Control-Allow-Origin: *`).
 
 #### Cursor / Claude Desktop and Other MCP Clients
 
-Add the following SSE-type server to your MCP client configuration file:
+Add the following Streamable HTTP server to your MCP client configuration file:
 
 ```json
 {
   "mcpServers": {
     "puerts-unity-editor-assistant": {
-      "url": "http://127.0.0.1:3100/sse"
+      "url": "http://127.0.0.1:3100/mcp"
     }
   }
 }
@@ -199,8 +200,8 @@ You can use curl to verify the service is running:
 # Health check
 curl http://127.0.0.1:3100/health
 
-# Establish SSE connection (will continuously output event stream)
-curl -N http://127.0.0.1:3100/sse
+# Send an initialize request (Streamable HTTP)
+curl -X POST http://127.0.0.1:3100/mcp -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"initialize","params":{"capabilities":{}},"id":1}'
 ```
 
 ---
@@ -356,9 +357,9 @@ async function execute() {
 ```
 ┌─────────────────────────────────────────────────┐
 │  External AI Client (Cursor / Claude Desktop)   │
-│         MCP Client via SSE Transport            │
+│      MCP Client via Streamable HTTP Transport   │
 └──────────────────────┬──────────────────────────┘
-                       │ HTTP (SSE + JSON-RPC)
+                       │ HTTP (Streamable HTTP + JSON-RPC)
                        ▼
 ┌─────────────────────────────────────────────────┐
 │              Unity Editor Process               │
@@ -378,7 +379,7 @@ async function execute() {
 │  │  ┌─────────────────────────────────────┐  │  │
 │  │  │  MCP Server (TypeScript/JS)         │  │  │
 │  │  │  - HTTP Server (node:http)          │  │  │
-│  │  │  - SSE Transport                    │  │  │
+│  │  │  - Streamable HTTP Transport        │  │  │
 │  │  │  - evalJsCode Tool                  │  │  │
 │  │  │  - Builtin Helper Modules           │  │  │
 │  │  └─────────────────────────────────────┘  │  │
@@ -420,4 +421,4 @@ manager.Shutdown();
 
 #### Q: Does it support multiple simultaneous client connections?
 
-Yes. Each SSE connection creates an independent session. Multiple AI clients can connect and interact simultaneously.
+Yes. Each connection creates an independent session (managed via the `Mcp-Session-Id` header). Multiple AI clients can connect and interact simultaneously.
