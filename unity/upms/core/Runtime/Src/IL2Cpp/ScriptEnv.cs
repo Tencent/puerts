@@ -298,15 +298,14 @@ namespace Puerts
                 Puerts.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
                 nativeScriptObjectsRefsMgr = IntPtr.Zero;
                 disposed = true;
-#if THREAD_SAFE
             }
+#if THREAD_SAFE
             lock (scriptEnvs)
+#endif
             {
-#endif
+
                 scriptEnvs[Idx] = null;
-#if THREAD_SAFE
             }
-#endif
         }
         
         public void UsingAction<T1>() { }
