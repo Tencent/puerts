@@ -12,7 +12,7 @@
 
 ## Unity Releases
 
-[![unity](https://img.shields.io/badge/unity-v3.0.1(latest)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v3.0.1)
+[![unity](https://img.shields.io/badge/unity-v3.0.2(latest)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v3.0.2)
 [![unity](https://img.shields.io/badge/unity-v2.2.3(lts)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v2.2.3)
 
 ## Nuget Releases
