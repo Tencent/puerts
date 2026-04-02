@@ -280,26 +280,33 @@ namespace Puerts
 
         protected virtual void Dispose(bool dispose)
         {
+            System.GC.Collect();
+            System.GC.WaitForPendingFinalizers();
+#if THREAD_SAFE
             lock (this)
+#endif
             {
                 if (disposed) return;
                 
                 // void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)" failed in android
                 TickHandler = null;
                 moduleExecutor = null;
-                System.GC.Collect();
-                System.GC.WaitForPendingFinalizers();
+
                 Puerts.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
                 
                 backend.DestroyEnvRef(envRef);
                 Puerts.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);
                 nativeScriptObjectsRefsMgr = IntPtr.Zero;
                 disposed = true;
+#if THREAD_SAFE
             }
             lock (scriptEnvs)
             {
+#endif
                 scriptEnvs[Idx] = null;
+#if THREAD_SAFE
             }
+#endif
         }
         
         public void UsingAction<T1>() { }

@@ -382,27 +382,30 @@ namespace Puerts
 
         public void Dispose()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             Dispose(true);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         private bool disposed = false;
 
         protected virtual void Dispose(bool dispose)
         {
+#if THREAD_SAFE
+            lock(this) {
+#endif
             if (disposed) return;
             backend.OnExit(this);
             backend.CloseRemoteDebugger();
             // quickjs void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)"
             TickHandler = null;
             moduleExecutor = null;
+#if THREAD_SAFE
+            }
+#endif
             GC.Collect();
             GC.WaitForPendingFinalizers();
+#if THREAD_SAFE
+            lock(this) {
+#endif
             cleanupPendingKillScriptObjects();
 
             foreach (var weakRef in allocedJsScriptObject)
@@ -422,11 +425,16 @@ namespace Puerts
             backend.DestroyEnvRef(envRef);
             disposed = true;
 
+#if THREAD_SAFE
             lock (scriptEnvs)
             {
-                scriptEnvs[Idx] = null;
+#endif
+            scriptEnvs[Idx] = null;
+#if THREAD_SAFE
             }
-        }
+            }
+#endif
+            }
 
         public bool CheckLiveness(bool shouldThrow = true)
         {
