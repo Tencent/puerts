@@ -334,7 +334,7 @@ namespace Puerts
         public Action TickHandler;
         public void Tick()
         {
-            if (disposed) return;
+            CheckLiveness();
             Puerts.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
             Puerts.PuertsDLL.InspectorTick(nativeJsEnv);
             Puerts.PuertsDLL.LogicTick(nativeJsEnv);
@@ -406,6 +406,15 @@ namespace Puerts
             {
                 jsEnvs[Idx] = null;
             }
+        }
+        
+        internal bool CheckLiveness(bool shouldThrow = true)
+        {
+            if (disposed && shouldThrow)
+            {
+                throw new InvalidOperationException("JsEnv has been disposed!");
+            }
+            return !disposed;
         }
         
         public void UsingAction<T1>() { }

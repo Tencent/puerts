@@ -500,7 +500,10 @@ namespace Puerts.UnitTest
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
             //UnityEngine.Debug.Log("=======DisposeTest2=========");
-            jsEnv.Tick();
+            Assert.Catch(() =>
+            {
+                jsEnv.Tick();
+            });
 
         }
 #endif
