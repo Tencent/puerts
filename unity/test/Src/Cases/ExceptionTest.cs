@@ -492,7 +492,7 @@ namespace Puerts.UnitTest
         {
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
-            var jsEnv = new JsEnv();
+            var jsEnv = new JsEnv(UnitTestEnv.GetLoader());
             var obj = jsEnv.Eval<JSObject>("{}");
             jsEnv.Dispose();
             //UnityEngine.Debug.Log("=======DisposeTest=========");
