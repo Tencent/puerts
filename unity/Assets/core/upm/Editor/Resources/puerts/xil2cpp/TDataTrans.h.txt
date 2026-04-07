@@ -48,10 +48,11 @@ struct PObjectRefInfo
     struct pesapi_ffi* Apis;
     pesapi_value_ref ValueRef;
     void* EnvPrivate;
+    Il2CppObject *CsEnv;
 };
 
 // sizeof(PObjectRefInfo) do exceed C# sizeof(JSObject)
-static_assert(sizeof(PObjectRefInfo) <= sizeof(void*) * 3, "PObjectRefInfo Size invalid");
+static_assert(sizeof(PObjectRefInfo) <= sizeof(void*) * 4, "PObjectRefInfo Size invalid");
 
 // begin function in Puerts_il2cpp.cpp
 Il2CppObject* JsValueToCSRef(struct pesapi_ffi* apis, Il2CppClass *klass, pesapi_env env, pesapi_value jsval);

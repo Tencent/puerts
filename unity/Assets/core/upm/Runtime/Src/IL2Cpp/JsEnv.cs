@@ -132,7 +132,7 @@ namespace Puerts
             }
             disposed = false;
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
-            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
+            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(apis, nativePesapiEnv, this, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
 
             Puerts.NativeAPI.SetObjectToGlobal(apis, nativePesapiEnv, "jsEnv", this);
 
@@ -334,6 +334,7 @@ namespace Puerts
         public Action TickHandler;
         public void Tick()
         {
+            if (disposed) return;
             Puerts.NativeAPI.CleanupPendingKillScriptObjects(nativeScriptObjectsRefsMgr);
             Puerts.PuertsDLL.InspectorTick(nativeJsEnv);
             Puerts.PuertsDLL.LogicTick(nativeJsEnv);
@@ -372,7 +373,7 @@ namespace Puerts
             Dispose(true);
         }
 
-        private bool disposed = false;
+        internal bool disposed = false;
 
         protected virtual void Dispose(bool dispose)
         {
@@ -390,9 +391,11 @@ namespace Puerts
                 // void JS_FreeRuntime(JSRuntime *): assertion "list_empty(&rt->gc_obj_list)" failed in android
                 TickHandler = null;
                 moduleExecutor = null;
-                System.GC.Collect();
-                System.GC.WaitForPendingFinalizers();
-                
+            }
+            System.GC.Collect();
+            System.GC.WaitForPendingFinalizers();
+            lock (this)
+            {
                 Puerts.NativeAPI.CleanupPapiEnvRef(apis, nativePesapiEnv);
                 Puerts.PuertsDLL.DestroyJSEngine(nativeJsEnv);
                 Puerts.NativeAPI.DestroyJSEnvPrivate(nativeScriptObjectsRefsMgr);

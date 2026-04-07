@@ -19,6 +19,7 @@ namespace Puerts
         IntPtr apis; // PObjectRefInfo first ptr
         IntPtr valueRef;
         IntPtr nativeJsEnv;
+        JsEnv jsEnv;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         object GetJSObjectValue(IntPtr apis, string key, Type resultType)
@@ -33,7 +34,13 @@ namespace Puerts
 
         ~JSObject()
         {
-            Puerts.NativeAPI.AddPendingKillScriptObjects(apis, nativeJsEnv, valueRef);
+            lock (jsEnv)
+            {
+                if (!jsEnv.disposed)
+                {
+                    Puerts.NativeAPI.AddPendingKillScriptObjects(apis, nativeJsEnv, valueRef);
+                }
+            }
         }
     }
 }

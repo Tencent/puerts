@@ -486,6 +486,23 @@ namespace Puerts.UnitTest
 
             Assert.True(System.Text.RegularExpressions.Regex.IsMatch(anrStackTrace, @"\s+at func1\(.*\)\s+at func2\(.*\)\s+at func3\(.*\)\s+at main\(.*\)", System.Text.RegularExpressions.RegexOptions.Multiline));
         }
+
+        [Test]
+        public void DisposeTest()
+        {
+            System.GC.Collect();
+            System.GC.WaitForPendingFinalizers();
+            var jsEnv = new JsEnv();
+            var obj = jsEnv.Eval<JSObject>("{}");
+            jsEnv.Dispose();
+            //UnityEngine.Debug.Log("=======DisposeTest=========");
+            obj = null;
+            System.GC.Collect();
+            System.GC.WaitForPendingFinalizers();
+            //UnityEngine.Debug.Log("=======DisposeTest2=========");
+            jsEnv.Tick();
+
+        }
 #endif
     }
 }
