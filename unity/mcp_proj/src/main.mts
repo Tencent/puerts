@@ -1,15 +1,16 @@
 /**
- * MCP Server Entry Module
+ * MCP Server Entry Module (V8 backend)
  *
- * This is the main entry point loaded by PuerTS (Node.js backend).
- * It creates an MCP Server using @modelcontextprotocol/sdk and exposes
- * the evalJsCode tool over HTTP using Streamable HTTP transport.
+ * This is the main entry point loaded by PuerTS (V8 backend).
+ * It creates an MCP Server using @modelcontextprotocol/sdk and bridges
+ * HTTP handling to C# McpHttpServer via CSharpBridgeTransport.
+ *
+ * No Node.js APIs are used — all HTTP/network operations are handled by C#.
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import http from 'node:http';
-import crypto from 'node:crypto';
-import { NodeStreamableHTTPServerTransport } from './streamable-http-transport.mjs';
+import { CSharpBridgeTransport } from './csharp-bridge-transport.mjs';
+import type { CSharpHttpBridge } from './csharp-bridge-transport.mjs';
 
 import { setResourceRoot } from '../../ai_shared_src/resource-root.mjs';
 import { initBuiltins, executeCode, builtinSummariesText } from '../../ai_shared_src/eval-core.mjs';
@@ -19,14 +20,7 @@ import { initBuiltins, executeCode, builtinSummariesText } from '../../ai_shared
 // ---------------------------------------------------------------------------
 
 let mcpServer: InstanceType<typeof McpServer> | null = null;
-let httpServer: http.Server | null = null;
-
-// Streamable HTTP transport management: one transport per session
-let activeTransport: NodeStreamableHTTPServerTransport | null = null;
-
-// Track all open sockets so we can forcefully destroy them on shutdown
-import net from 'node:net';
-const trackedSockets: Set<net.Socket> = new Set();
+let activeTransport: CSharpBridgeTransport | null = null;
 
 // ---------------------------------------------------------------------------
 // MCP Server setup
@@ -148,96 +142,19 @@ function createMcpServer(): InstanceType<typeof McpServer> {
 }
 
 // ---------------------------------------------------------------------------
-// HTTP Server with Streamable HTTP transport
+// MCP Server with C# Bridge Transport
 // ---------------------------------------------------------------------------
 
-function startHttpServer(port: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-        mcpServer = createMcpServer();
-        httpServer = http.createServer(async (req, res) => {
-            const url = new URL(req.url || '/', `http://localhost:${port}`);
+async function startMcpServer(bridge: CSharpHttpBridge): Promise<void> {
+    mcpServer = createMcpServer();
+    activeTransport = new CSharpBridgeTransport(bridge);
 
-            // CORS headers
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
-            res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+    activeTransport.onclose = () => {
+        activeTransport = null;
+    };
 
-            if (req.method === 'OPTIONS') {
-                res.writeHead(204);
-                res.end();
-                return;
-            }
-
-            // MCP Streamable HTTP endpoint
-            if (url.pathname === '/mcp') {
-                const incomingSessionId = req.headers['mcp-session-id'] as string | undefined;
-
-                // Determine whether we need to create a fresh transport:
-                // 1. No active transport at all
-                // 2. No session ID header (client wants to initialize)
-                // 3. Session ID doesn't match the active transport (stale session)
-                const needNewTransport = !activeTransport
-                    || !incomingSessionId
-                    || (activeTransport.sessionId !== undefined && incomingSessionId !== activeTransport.sessionId);
-
-                if (needNewTransport) {
-                    // Tear down previous transport / server
-                    if (activeTransport) {
-                        try { await activeTransport.close(); } catch (_) { /* ignore */ }
-                        activeTransport = null;
-                    }
-                    if (mcpServer) {
-                        try { mcpServer.close(); } catch (_) { /* ignore */ }
-                    }
-                    mcpServer = createMcpServer();
-
-                    activeTransport = new NodeStreamableHTTPServerTransport({
-                        sessionIdGenerator: () => crypto.randomUUID(),
-                    });
-
-                    activeTransport.onclose = () => {
-                        activeTransport = null;
-                    };
-
-                    await mcpServer.connect(activeTransport);
-                }
-
-                await activeTransport!.handleRequest(req, res);
-                return;
-            }
-
-            // Health check
-            if (url.pathname === '/health') {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ status: 'ok', server: 'unity-puerts-mcp' }));
-                return;
-            }
-
-            // Not found
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Not Found' }));
-        });
-
-        httpServer.listen(port, '127.0.0.1', () => {
-            console.log(`[McpServer] HTTP server listening on http://127.0.0.1:${port}`);
-            console.log(`[McpServer] Streamable HTTP endpoint: http://127.0.0.1:${port}/mcp`);
-            resolve();
-        });
-
-        // Track connections for forceful shutdown
-        httpServer.on('connection', (socket: net.Socket) => {
-            trackedSockets.add(socket);
-            socket.on('close', () => {
-                trackedSockets.delete(socket);
-            });
-        });
-
-        httpServer.on('error', (err) => {
-            console.error(`[McpServer] HTTP server error: ${err.message}`);
-            reject(err);
-        });
-    });
+    await mcpServer.connect(activeTransport);
+    console.log('[McpServer] MCP Server connected to C# bridge transport.');
 }
 
 // ---------------------------------------------------------------------------
@@ -245,20 +162,19 @@ function startHttpServer(port: number): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * Initialize resources and start the MCP HTTP Server.
+ * Initialize resources and start the MCP Server.
  * Called from C# McpScriptManager.Initialize().
  *
  * @param root - Unity Resources path prefix, e.g. "LLMAgent/editor-assistant"
- * @param port - TCP port for the HTTP server (default 3100)
+ * @param bridge - C# McpHttpServer instance (implements CSharpHttpBridge interface)
  * @param onReady - C# Action<bool, string> callback invoked when the server is ready.
- *                  First arg: success (true/false), second arg: error message (empty on success).
  */
-export function onInitialize(root: string, port: number, onReady: CS.System.Action$2<boolean, string>): void {
+export function onInitialize(root: string, bridge: CSharpHttpBridge, onReady: CS.System.Action$2<boolean, string>): void {
     (async () => {
         try {
             setResourceRoot(root);
             await initBuiltins();
-            await startHttpServer(port);
+            await startMcpServer(bridge);
             console.log('[McpServer] MCP Server initialization complete.');
             onReady.Invoke!(true, '');
         } catch (e: any) {
@@ -270,16 +186,40 @@ export function onInitialize(root: string, port: number, onReady: CS.System.Acti
 }
 
 /**
- * Shut down the MCP Server and close the HTTP server.
+ * Handle an incoming HTTP POST from C#.
+ * Called by McpHttpServer.OnHttpPost callback.
+ */
+export function handleHttpPost(requestContextId: string, method: string, body: string, sessionIdHeader: string): void {
+    if (!activeTransport) {
+        console.error('[McpServer] handleHttpPost called but no active transport');
+        return;
+    }
+    activeTransport.handlePost(requestContextId, body, sessionIdHeader);
+}
+
+/**
+ * Handle a DELETE request from C#.
+ */
+export function handleHttpDelete(): void {
+    if (activeTransport) {
+        activeTransport.handleDelete();
+    }
+
+    // Recreate the MCP server and transport for the next session
+    if (mcpServer) {
+        try { mcpServer.close(); } catch { /* ignore */ }
+    }
+    // Note: the transport is still alive, just reset.
+    // A new initialize request will set up a new session.
+}
+
+/**
+ * Shut down the MCP Server.
  * Called from C# McpScriptManager.Shutdown().
- *
- * This forcefully destroys all active connections so that remote clients
- * get an immediate socket close instead of hanging indefinitely.
  */
 export function onShutdown(): void {
     console.log('[McpServer] Shutting down...');
 
-    // Close the active Streamable HTTP transport
     if (activeTransport) {
         try {
             activeTransport.close?.();
@@ -289,7 +229,6 @@ export function onShutdown(): void {
         activeTransport = null;
     }
 
-    // Close the MCP server
     if (mcpServer) {
         try {
             mcpServer.close();
@@ -297,23 +236,6 @@ export function onShutdown(): void {
             // ignore
         }
         mcpServer = null;
-    }
-
-    // Close the HTTP server and forcefully destroy all open sockets
-    // so that in-flight requests are terminated immediately.
-    if (httpServer) {
-        // Destroy all tracked connections so clients get RST immediately
-        for (const socket of trackedSockets) {
-            try {
-                socket.destroy();
-            } catch (_) {
-                // ignore
-            }
-        }
-        trackedSockets.clear();
-
-        httpServer.close();
-        httpServer = null;
     }
 
     console.log('[McpServer] Shut down complete.');

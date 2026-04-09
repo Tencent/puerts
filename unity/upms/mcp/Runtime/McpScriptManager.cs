@@ -8,21 +8,25 @@ using UnityEditor;
 namespace PuertsMcp
 {
     /// <summary>
-    /// Manages PuerTS Node.js ScriptEnv lifecycle for the MCP Server.
-    /// Uses BackendNodeJS to get full Node.js API support (http, streams, etc.).
+    /// Manages PuerTS V8 ScriptEnv lifecycle for the MCP Server.
+    /// Uses the default V8 backend (no Node.js dependency).
+    /// HTTP serving is handled by C# McpHttpServer.
     /// </summary>
     public class McpScriptManager : IDisposable
     {
         private ScriptEnv scriptEnv;
+        private McpHttpServer httpServer;
         private bool isInitialized;
         private bool isTicking;
         private string lastError;
 
         // TS function delegates
-        private Action<string, int, Action<bool, string>> onInitialize;
+        private Action<string, object, Action<bool, string>> onInitialize;
         private Action onShutdown;
+        private Action<string, string, string, string> handleHttpPost;
+        private Action handleHttpDelete;
 
-        private const string EntryModule = "McpServer/main.cjs";
+        private const string EntryModule = "McpServer/main.mjs";
 
         /// <summary>
         /// Whether the MCP Server TS module has been successfully loaded and the server is running.
@@ -35,7 +39,7 @@ namespace PuertsMcp
         public string LastError => lastError;
 
         /// <summary>
-        /// Initialize ScriptEnv with Node.js backend and start the MCP Server.
+        /// Initialize ScriptEnv with V8 backend and start the MCP Server.
         /// </summary>
         /// <param name="resourceRoot">Resource root path passed to TS onInitialize (e.g. "LLMAgent/editor-assistant").</param>
         /// <param name="port">TCP port for the MCP HTTP Server (default 3100).</param>
@@ -50,22 +54,15 @@ namespace PuertsMcp
 
             try
             {
-                scriptEnv = new ScriptEnv(new BackendNodeJS());
+                scriptEnv = new ScriptEnv(new BackendV8());
 
-                // Load the CJS bundle via require() — node:xxx built-ins work with require()
-                // but fail with ESM import in PuerTS.
-                // Use the resolved package path to locate the bundled CJS file.
-                // This works for all UPM installation methods (local, Git URL, tarball, etc.).
-                var resourcePath = ResolvePackageResourcePath(EntryModule);
-                // Normalise to forward slashes so Node.js require() can resolve it
-                var fullPath = resourcePath.Replace("\\", "/");
-                ScriptObject moduleExports = scriptEnv.Eval<ScriptObject>(
-                    $"require('{fullPath}')"
-                );
+                ScriptObject moduleExports = scriptEnv.ExecuteModule(EntryModule);
 
-                // Get exported functions from CJS module
-                onInitialize = moduleExports.Get<Action<string, int, Action<bool, string>>>("onInitialize");
+                // Get exported functions from ESM module
+                onInitialize = moduleExports.Get<Action<string, object, Action<bool, string>>>("onInitialize");
                 onShutdown = moduleExports.Get<Action>("onShutdown");
+                handleHttpPost = moduleExports.Get<Action<string, string, string, string>>("handleHttpPost");
+                handleHttpDelete = moduleExports.Get<Action>("handleHttpDelete");
 
                 if (onInitialize == null)
                 {
@@ -77,8 +74,47 @@ namespace PuertsMcp
                 // Start ticking ScriptEnv immediately (needed for JS microtask/promise processing)
                 StartTicking();
 
-                // Trigger async initialization: load builtins + start HTTP server
-                onInitialize(resourceRoot, port, (bool success, string errorMsg) =>
+                // Create and start the C# HTTP server
+                httpServer = new McpHttpServer(port);
+
+                // Wire up HTTP callbacks to JS handlers
+                httpServer.OnHttpPost = (requestContextId, method, body, sessionIdHeader) =>
+                {
+                    // This is called from a background thread — we need to dispatch to the main thread
+                    // so that JS execution happens on the main thread where ScriptEnv lives.
+                    EnqueueMainThread(() =>
+                    {
+                        try
+                        {
+                            handleHttpPost?.Invoke(requestContextId, method, body, sessionIdHeader);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogError($"[McpScriptManager] Error in handleHttpPost: {ex.Message}");
+                        }
+                    });
+                };
+
+                httpServer.OnHttpDelete = () =>
+                {
+                    EnqueueMainThread(() =>
+                    {
+                        try
+                        {
+                            handleHttpDelete?.Invoke();
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogError($"[McpScriptManager] Error in handleHttpDelete: {ex.Message}");
+                        }
+                    });
+                };
+
+                httpServer.Start();
+
+                // Trigger async initialization: load builtins + connect MCP server to bridge transport
+                // Pass the httpServer as the C# bridge object
+                onInitialize(resourceRoot, httpServer, (bool success, string errorMsg) =>
                 {
                     if (success)
                     {
@@ -123,6 +159,37 @@ namespace PuertsMcp
             Dispose();
         }
 
+        // -------------------------------------------------------------------
+        // Main-thread dispatch queue
+        // -------------------------------------------------------------------
+
+        private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _mainThreadQueue
+            = new System.Collections.Concurrent.ConcurrentQueue<Action>();
+
+        private void EnqueueMainThread(Action action)
+        {
+            _mainThreadQueue.Enqueue(action);
+        }
+
+        private void DrainMainThreadQueue()
+        {
+            while (_mainThreadQueue.TryDequeue(out var action))
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[McpScriptManager] Main thread action error: {ex.Message}");
+                }
+            }
+        }
+
+        // -------------------------------------------------------------------
+        // Ticking
+        // -------------------------------------------------------------------
+
         /// <summary>
         /// Start ticking the ScriptEnv to process JS microtasks.
         /// </summary>
@@ -161,10 +228,14 @@ namespace PuertsMcp
         }
 
         /// <summary>
-        /// Called every frame to process pending JS microtasks.
+        /// Called every frame to process pending JS microtasks and main-thread actions.
         /// </summary>
         private void Tick()
         {
+            // First drain the main-thread queue (HTTP requests dispatched from background threads)
+            DrainMainThreadQueue();
+
+            // Then tick the JS engine
             if (scriptEnv != null)
             {
                 try
@@ -187,7 +258,23 @@ namespace PuertsMcp
 
             onInitialize = null;
             onShutdown = null;
+            handleHttpPost = null;
+            handleHttpDelete = null;
             isInitialized = false;
+
+            // Stop the C# HTTP server
+            if (httpServer != null)
+            {
+                try
+                {
+                    httpServer.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[McpScriptManager] Error disposing HttpServer: {ex.Message}");
+                }
+                httpServer = null;
+            }
 
             if (scriptEnv != null)
             {
@@ -215,8 +302,6 @@ namespace PuertsMcp
             const string resourceFolder = "Resources";
 
 #if UNITY_EDITOR
-            // PackageInfo.FindForAssetPath resolves the virtual "Packages/..." path
-            // to the actual physical location (works for Git URL, local, embedded, etc.)
             var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath($"Packages/{packageName}");
             if (packageInfo != null)
             {
@@ -228,7 +313,6 @@ namespace PuertsMcp
                 Debug.LogWarning($"[McpScriptManager] File not found at resolved path: {resolvedPath}, falling back to virtual path.");
             }
 #endif
-            // Fallback: use the virtual Packages/ path (works for local/embedded packages)
             return System.IO.Path.GetFullPath($"Packages/{packageName}/{resourceFolder}/{relativeResourcePath}");
         }
 
