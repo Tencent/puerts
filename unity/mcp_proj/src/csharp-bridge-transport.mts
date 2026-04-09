@@ -193,10 +193,11 @@ export class CSharpBridgeTransport implements Transport {
 
             // --- Initialization ---
             if (isInit) {
-                if (this._initialized && this.sessionId !== undefined) {
-                    this._bridge.SendJsonResponse(requestContextId, 400,
-                        JSON.stringify({ jsonrpc: '2.0', error: { code: -32600, message: 'Server already initialized' }, id: null }));
-                    return;
+                // If already initialized, reset state for the new session.
+                // This handles the case where a client reconnects without sending DELETE first.
+                if (this._initialized) {
+                    this._requestToContext.clear();
+                    this._responseBuffer.clear();
                 }
                 this.sessionId = generateUUID();
                 this._initialized = true;

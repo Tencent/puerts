@@ -21,6 +21,7 @@ import { initBuiltins, executeCode, builtinSummariesText } from '../../ai_shared
 
 let mcpServer: InstanceType<typeof McpServer> | null = null;
 let activeTransport: CSharpBridgeTransport | null = null;
+let activeBridge: CSharpHttpBridge | null = null;
 
 // ---------------------------------------------------------------------------
 // MCP Server setup
@@ -147,6 +148,7 @@ function createMcpServer(): InstanceType<typeof McpServer> {
 
 async function startMcpServer(bridge: CSharpHttpBridge): Promise<void> {
     mcpServer = createMcpServer();
+    activeBridge = bridge;
     activeTransport = new CSharpBridgeTransport(bridge);
 
     activeTransport.onclose = () => {
@@ -194,6 +196,12 @@ export function onInitialize(root: string, bridge: CSharpHttpBridge, onReady: CS
 export function handleHttpPost(requestContextId: string, method: string, body: string, sessionIdHeader: string): void {
     if (!activeTransport) {
         console.error('[McpServer] handleHttpPost called but no active transport');
+        // Return a proper JSON-RPC error so the client knows to retry,
+        // instead of silently dropping the request.
+        try {
+            activeBridge?.SendJsonResponse(requestContextId, 503,
+                JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: 'Server is starting, please retry' }, id: null }));
+        } catch { /* ignore */ }
         return;
     }
     activeTransport.handlePost(requestContextId, body, sessionIdHeader);
@@ -201,18 +209,36 @@ export function handleHttpPost(requestContextId: string, method: string, body: s
 
 /**
  * Handle a DELETE request from C#.
+ * Tears down the current session and recreates the MCP server + transport
+ * so the next client connection can start a fresh session.
  */
 export function handleHttpDelete(): void {
+    // Detach onclose to prevent it from nullifying activeTransport during teardown
     if (activeTransport) {
+        activeTransport.onclose = undefined;
         activeTransport.handleDelete();
+        try { activeTransport.close?.(); } catch { /* ignore */ }
+        activeTransport = null;
     }
 
-    // Recreate the MCP server and transport for the next session
     if (mcpServer) {
         try { mcpServer.close(); } catch { /* ignore */ }
+        mcpServer = null;
     }
-    // Note: the transport is still alive, just reset.
-    // A new initialize request will set up a new session.
+
+    // Recreate the MCP server and transport so the next initialize request succeeds
+    if (activeBridge) {
+        mcpServer = createMcpServer();
+        activeTransport = new CSharpBridgeTransport(activeBridge);
+        activeTransport.onclose = () => {
+            activeTransport = null;
+        };
+        mcpServer.connect(activeTransport).then(() => {
+            console.log('[McpServer] MCP Server reconnected after DELETE, ready for new session.');
+        }).catch((err: any) => {
+            console.error(`[McpServer] Failed to reconnect after DELETE: ${err.message || err}`);
+        });
+    }
 }
 
 /**
@@ -230,6 +256,8 @@ export function onShutdown(): void {
         }
         activeTransport = null;
     }
+
+    activeBridge = null;
 
     if (mcpServer) {
         try {

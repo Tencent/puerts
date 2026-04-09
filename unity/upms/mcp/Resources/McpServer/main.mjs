@@ -31238,13 +31238,9 @@ var CSharpBridgeTransport = class {
       }
       const isInit = messages.some(isInitializeRequest);
       if (isInit) {
-        if (this._initialized && this.sessionId !== void 0) {
-          this._bridge.SendJsonResponse(
-            requestContextId,
-            400,
-            JSON.stringify({ jsonrpc: "2.0", error: { code: -32600, message: "Server already initialized" }, id: null })
-          );
-          return;
+        if (this._initialized) {
+          this._requestToContext.clear();
+          this._responseBuffer.clear();
         }
         this.sessionId = generateUUID();
         this._initialized = true;
@@ -31493,6 +31489,7 @@ __name(executeCode, "executeCode");
 // src/main.mts
 var mcpServer = null;
 var activeTransport = null;
+var activeBridge = null;
 function createMcpServer() {
   const server = new McpServer({
     name: "puerts-unity-editor-assistant",
@@ -31568,6 +31565,7 @@ function createMcpServer() {
 __name(createMcpServer, "createMcpServer");
 async function startMcpServer(bridge) {
   mcpServer = createMcpServer();
+  activeBridge = bridge;
   activeTransport = new CSharpBridgeTransport(bridge);
   activeTransport.onclose = () => {
     activeTransport = null;
@@ -31596,6 +31594,14 @@ __name(onInitialize, "onInitialize");
 function handleHttpPost(requestContextId, method, body, sessionIdHeader) {
   if (!activeTransport) {
     console.error("[McpServer] handleHttpPost called but no active transport");
+    try {
+      activeBridge?.SendJsonResponse(
+        requestContextId,
+        503,
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32e3, message: "Server is starting, please retry" }, id: null })
+      );
+    } catch {
+    }
     return;
   }
   activeTransport.handlePost(requestContextId, body, sessionIdHeader);
@@ -31603,13 +31609,32 @@ function handleHttpPost(requestContextId, method, body, sessionIdHeader) {
 __name(handleHttpPost, "handleHttpPost");
 function handleHttpDelete() {
   if (activeTransport) {
+    activeTransport.onclose = void 0;
     activeTransport.handleDelete();
+    try {
+      activeTransport.close?.();
+    } catch {
+    }
+    activeTransport = null;
   }
   if (mcpServer) {
     try {
       mcpServer.close();
     } catch {
     }
+    mcpServer = null;
+  }
+  if (activeBridge) {
+    mcpServer = createMcpServer();
+    activeTransport = new CSharpBridgeTransport(activeBridge);
+    activeTransport.onclose = () => {
+      activeTransport = null;
+    };
+    mcpServer.connect(activeTransport).then(() => {
+      console.log("[McpServer] MCP Server reconnected after DELETE, ready for new session.");
+    }).catch((err) => {
+      console.error(`[McpServer] Failed to reconnect after DELETE: ${err.message || err}`);
+    });
   }
 }
 __name(handleHttpDelete, "handleHttpDelete");
@@ -31622,6 +31647,7 @@ function onShutdown() {
     }
     activeTransport = null;
   }
+  activeBridge = null;
   if (mcpServer) {
     try {
       mcpServer.close();

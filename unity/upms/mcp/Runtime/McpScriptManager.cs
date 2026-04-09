@@ -86,6 +86,13 @@ namespace PuertsMcp
                     {
                         try
                         {
+                            if (!isInitialized)
+                            {
+                                // JS async initialization not yet complete — return 503 so the client retries.
+                                httpServer?.SendJsonResponse(requestContextId, 503,
+                                    "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Server is starting, please retry\"},\"id\":null}");
+                                return;
+                            }
                             handleHttpPost?.Invoke(requestContextId, method, body, sessionIdHeader);
                         }
                         catch (Exception ex)
