@@ -3,7 +3,8 @@
     "rootNamespace": "PuertsMcp",
     "references": [
         "com.tencent.puerts.core",
-        "com.tencent.puerts.v8"
+        "com.tencent.puerts.v8",
+		"com.tencent.puerts.agent"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

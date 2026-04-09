@@ -16,6 +16,7 @@
     "url": "https://github.com/puerts"
   },
   "dependencies": {
-    "com.tencent.puerts.v8": "3.0.2"
+    "com.tencent.puerts.v8": "3.0.2",
+	"com.tencent.puerts.agent": "3.0.2"
   }
 }

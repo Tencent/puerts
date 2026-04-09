@@ -173,6 +173,8 @@ export function onInitialize(root: string, bridge: CSharpHttpBridge, onReady: CS
     (async () => {
         try {
             setResourceRoot(root);
+            // Ensure Unity log capture is active so builtin unity-log module can read logs
+            CS.LLMAgent.UnityLogBridge.StartListening();
             await initBuiltins();
             await startMcpServer(bridge);
             console.log('[McpServer] MCP Server initialization complete.');

@@ -56,7 +56,7 @@ Each release page may contain the following `.tar.gz` archives, each correspondi
 
 - **`com.tencent.puerts.core`** is the foundational package — **all other packages depend on it**.
 - **`com.tencent.puerts.agent`** depends on `com.tencent.puerts.core` + `com.tencent.puerts.v8`
-- **`com.tencent.puerts.mcp`** depends on `com.tencent.puerts.core` + `com.tencent.puerts.v8` + `com.tencent.puerts.nodejs`
+- **`com.tencent.puerts.mcp`** depends on `com.tencent.puerts.core` + `com.tencent.puerts.v8` + `com.tencent.puerts.agent`
 - **All backend packages** (`com.tencent.puerts.v8`, `com.tencent.puerts.lua`, `com.tencent.puerts.nodejs`, `com.tencent.puerts.python`, `com.tencent.puerts.quickjs`, `com.tencent.puerts.webgl`) depend on `com.tencent.puerts.core`
 
 ### Dependency Graph
@@ -65,9 +65,9 @@ Each release page may contain the following `.tar.gz` archives, each correspondi
 com.tencent.puerts.core  (required by all)
   ├── com.tencent.puerts.v8
   │     ├── com.tencent.puerts.agent
-  │     └── com.tencent.puerts.mcp  (also requires nodejs)
+  │     │     └── com.tencent.puerts.mcp
+  │     └── com.tencent.puerts.mcp
   ├── com.tencent.puerts.nodejs
-  │     └── com.tencent.puerts.mcp  (also requires v8)
   ├── com.tencent.puerts.lua
   ├── com.tencent.puerts.python
   ├── com.tencent.puerts.quickjs
@@ -79,8 +79,8 @@ com.tencent.puerts.core  (required by all)
 | User requests to install | Must also install |
 |---|---|
 | `agent` | `core`, `v8` |
-| `mcp` | `core`, `v8`, `nodejs` |
-| `mcp` + `agent` | `core`, `v8`, `nodejs` |
+| `mcp` | `core`, `v8`, `agent` |
+| `mcp` + `agent` | `core`, `v8` |
 | `v8` | `core` |
 | `lua` | `core` |
 
@@ -166,9 +166,9 @@ If the user requests to **"install PuerTS Editor Assistant"** (or similar phrasi
 
 | User Request | Packages to Install |
 |---|---|
-| "Install PuerTS Editor Assistant" (no specific version mentioned) | **Both** `com.tencent.puerts.agent` **and** `com.tencent.puerts.mcp` (plus all their dependencies: `core`, `v8`, `nodejs`) |
+| "Install PuerTS Editor Assistant" (no specific version mentioned) | **Both** `com.tencent.puerts.agent` **and** `com.tencent.puerts.mcp` (plus all their dependencies: `core`, `v8`) |
 | "Install PuerTS Editor Assistant — Agent version" | Only `com.tencent.puerts.agent` (plus its dependencies: `core`, `v8`) |
-| "Install PuerTS Editor Assistant — MCP version" | Only `com.tencent.puerts.mcp` (plus its dependencies: `core`, `v8`, `nodejs`) |
+| "Install PuerTS Editor Assistant — MCP version" | Only `com.tencent.puerts.mcp` (plus its dependencies: `core`, `v8`, `agent`) |
 
 4. **Check the release page** `https://github.com/Tencent/puerts/releases/tag/Unity_v{VERSION}` to see which archives are available — note that actual filenames in the `.tar.gz` may have different version numbers than the release tag
 5. **For packages with native plugins** (`com.tencent.puerts.core`, `com.tencent.puerts.v8`, `com.tencent.puerts.lua`, `com.tencent.puerts.nodejs`, `com.tencent.puerts.python`, `com.tencent.puerts.quickjs`): guide the user to download and extract into `Packages/`
