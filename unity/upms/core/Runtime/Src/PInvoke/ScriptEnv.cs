@@ -277,6 +277,7 @@ namespace Puerts
 
         public void Tick()
         {
+            CheckLiveness();
 #if THREAD_SAFE
             lock(this) {
 #endif
