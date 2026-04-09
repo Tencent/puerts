@@ -32,7 +32,7 @@ namespace Puerts
         public static extern void CleanupPendingKillScriptObjects(IntPtr jsEnv);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
+        public static IntPtr InitialPapiEnvRef(IntPtr api, IntPtr envRef, ScriptEnv scriptEnv, Object obj, MethodBase addMethodBase, MethodBase removeMethodBase)
         {
             throw new NotImplementedException();
         }

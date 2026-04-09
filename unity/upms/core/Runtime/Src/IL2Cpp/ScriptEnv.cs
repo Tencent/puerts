@@ -116,7 +116,7 @@ namespace Puerts
             }
             
             var objectPoolType = typeof(PuertsIl2cpp.ObjectPool);
-            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(papis, envRef, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
+            nativeScriptObjectsRefsMgr = Puerts.NativeAPI.InitialPapiEnvRef(papis, envRef, this, objectPool, objectPoolType.GetMethod("Add"), objectPoolType.GetMethod("Remove"));
             
             var scope = PuertsNative.pesapi_open_scope(papis, envRef);
             var env = PuertsNative.pesapi_get_env_from_ref(papis, envRef);
@@ -222,6 +222,7 @@ namespace Puerts
         public Action TickHandler;
         public void Tick()
         {
+            CheckLiveness();
 #if THREAD_SAFE
             lock(this) {
 #endif
@@ -276,15 +277,13 @@ namespace Puerts
             Dispose(true);
         }
 
-        private bool disposed = false;
+        internal bool disposed = false;
 
         protected virtual void Dispose(bool dispose)
         {
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
-#if THREAD_SAFE
             lock (this)
-#endif
             {
                 if (disposed) return;
                 
@@ -299,13 +298,20 @@ namespace Puerts
                 nativeScriptObjectsRefsMgr = IntPtr.Zero;
                 disposed = true;
             }
-#if THREAD_SAFE
             lock (scriptEnvs)
-#endif
             {
 
                 scriptEnvs[Idx] = null;
             }
+        }
+
+        public bool CheckLiveness(bool shouldThrow = true)
+        {
+            if (disposed && shouldThrow)
+            {
+                throw new InvalidOperationException("JsEnv has been disposed!");
+            }
+            return !disposed;
         }
         
         public void UsingAction<T1>() { }
