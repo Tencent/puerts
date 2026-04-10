@@ -11,12 +11,12 @@ namespace PuertsMcp
 {
     /// <summary>
     /// C# HTTP Server for MCP Streamable HTTP protocol.
-    /// Replaces the Node.js HTTP server so the JS side can run on a pure V8 backend.
+    /// Supports multiple concurrent sessions (multi-agent access).
     ///
     /// Protocol:
     ///   POST   /mcp  — client sends JSON-RPC message(s); server responds with SSE or JSON.
     ///   GET    /mcp  — client opens an SSE stream for server-initiated messages.
-    ///   DELETE /mcp  — client terminates the session.
+    ///   DELETE /mcp  — client terminates a specific session.
     ///   GET    /health — health check endpoint.
     /// </summary>
     public class McpHttpServer : IDisposable
@@ -26,19 +26,22 @@ namespace PuertsMcp
         private volatile bool _running;
         private readonly int _port;
 
-        // Session management
-        private string _sessionId;
-        private bool _initialized;
+        // Multi-session management
+        private readonly HashSet<string> _sessions = new HashSet<string>();
         private readonly object _sessionLock = new object();
 
         // SSE stream management
-        // requestId -> HttpListenerResponse (kept open for SSE streaming)
+        // requestContextId -> HttpListenerResponse (kept open for SSE streaming)
         private readonly ConcurrentDictionary<string, HttpListenerResponse> _postStreams
             = new ConcurrentDictionary<string, HttpListenerResponse>();
 
-        // Standalone GET SSE stream
-        private HttpListenerResponse _getStream;
-        private readonly object _getStreamLock = new object();
+        // requestContextId -> sessionId (so we can add the correct session header)
+        private readonly ConcurrentDictionary<string, string> _contextToSession
+            = new ConcurrentDictionary<string, string>();
+
+        // Standalone GET SSE streams, one per session
+        private readonly ConcurrentDictionary<string, HttpListenerResponse> _getStreams
+            = new ConcurrentDictionary<string, HttpListenerResponse>();
 
         // Callback to JS side: receives the raw JSON body + request context
         // JS processes the message and calls back with responses via SendSseEvent / CompleteRequest
@@ -47,8 +50,9 @@ namespace PuertsMcp
         // requestContextId is a unique ID for this HTTP request, used to route responses back.
         public Action<string, string, string, string> OnHttpPost;
 
-        // Called when a DELETE request is received
-        public Action OnHttpDelete;
+        // Called when a DELETE request is received for a specific session
+        // Parameter: sessionId
+        public Action<string> OnHttpDelete;
 
         // Called when a GET SSE stream is opened
         public Action OnSseStreamOpened;
@@ -81,21 +85,20 @@ namespace PuertsMcp
         {
             _running = false;
 
-            // Close all SSE streams
-            lock (_getStreamLock)
+            // Close all GET SSE streams
+            foreach (var kvp in _getStreams)
             {
-                if (_getStream != null)
-                {
-                    try { _getStream.Close(); } catch { }
-                    _getStream = null;
-                }
+                try { kvp.Value.Close(); } catch { }
             }
+            _getStreams.Clear();
 
+            // Close all POST SSE streams
             foreach (var kvp in _postStreams)
             {
                 try { kvp.Value.Close(); } catch { }
             }
             _postStreams.Clear();
+            _contextToSession.Clear();
 
             // Stop listener
             if (_listener != null)
@@ -107,8 +110,7 @@ namespace PuertsMcp
 
             lock (_sessionLock)
             {
-                _sessionId = null;
-                _initialized = false;
+                _sessions.Clear();
             }
 
             Debug.Log("[McpHttpServer] Stopped.");
@@ -120,20 +122,51 @@ namespace PuertsMcp
         }
 
         // -------------------------------------------------------------------
-        // Methods called from JS to send responses back
+        // Methods called from JS to manage sessions
         // -------------------------------------------------------------------
 
         /// <summary>
-        /// Set the session ID (called from JS when processing an initialize request).
+        /// Register a new session ID (called from JS when a new session is created).
         /// </summary>
-        public void SetSession(string sessionId)
+        public void AddSession(string sessionId)
         {
             lock (_sessionLock)
             {
-                _sessionId = sessionId;
-                _initialized = true;
+                _sessions.Add(sessionId);
             }
         }
+
+        /// <summary>
+        /// Unregister a session ID (called from JS when a session is destroyed).
+        /// Also closes the GET SSE stream for this session if any.
+        /// </summary>
+        public void RemoveSession(string sessionId)
+        {
+            lock (_sessionLock)
+            {
+                _sessions.Remove(sessionId);
+            }
+
+            // Close the GET SSE stream for this session
+            if (_getStreams.TryRemove(sessionId, out var getStream))
+            {
+                try { getStream.Close(); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Associate a request context with a specific session ID,
+        /// so the correct mcp-session-id header is added to the response.
+        /// Called from JS after creating a new session for an initialize request.
+        /// </summary>
+        public void AddSessionHeaderForContext(string requestContextId, string sessionId)
+        {
+            _contextToSession[requestContextId] = sessionId;
+        }
+
+        // -------------------------------------------------------------------
+        // Methods called from JS to send responses back
+        // -------------------------------------------------------------------
 
         /// <summary>
         /// Write an SSE event to a POST response stream.
@@ -165,28 +198,28 @@ namespace PuertsMcp
             {
                 try { response.Close(); } catch { }
             }
+            _contextToSession.TryRemove(requestContextId, out _);
         }
 
         /// <summary>
-        /// Write an SSE event to the standalone GET stream (server-initiated messages).
+        /// Write an SSE event to the standalone GET stream for a specific session.
         /// </summary>
-        public void SendGetSseEvent(string jsonData)
+        public void SendGetSseEventForSession(string sessionId, string jsonData)
         {
-            lock (_getStreamLock)
+            if (_getStreams.TryGetValue(sessionId, out var stream))
             {
-                if (_getStream != null)
+                try
                 {
-                    try
+                    var data = Encoding.UTF8.GetBytes($"event: message\ndata: {jsonData}\n\n");
+                    stream.OutputStream.Write(data, 0, data.Length);
+                    stream.OutputStream.Flush();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[McpHttpServer] Error writing GET SSE event for session {sessionId}: {ex.Message}");
+                    if (_getStreams.TryRemove(sessionId, out var removed))
                     {
-                        var data = Encoding.UTF8.GetBytes($"event: message\ndata: {jsonData}\n\n");
-                        _getStream.OutputStream.Write(data, 0, data.Length);
-                        _getStream.OutputStream.Flush();
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning($"[McpHttpServer] Error writing GET SSE event: {ex.Message}");
-                        try { _getStream.Close(); } catch { }
-                        _getStream = null;
+                        try { removed.Close(); } catch { }
                     }
                 }
             }
@@ -203,7 +236,7 @@ namespace PuertsMcp
                 {
                     response.StatusCode = statusCode;
                     response.ContentType = "application/json";
-                    AddSessionHeader(response);
+                    AddSessionHeader(response, requestContextId);
                     var data = Encoding.UTF8.GetBytes(jsonBody);
                     response.ContentLength64 = data.Length;
                     response.OutputStream.Write(data, 0, data.Length);
@@ -215,6 +248,7 @@ namespace PuertsMcp
                     try { response.Close(); } catch { }
                 }
             }
+            _contextToSession.TryRemove(requestContextId, out _);
         }
 
         /// <summary>
@@ -227,7 +261,7 @@ namespace PuertsMcp
                 try
                 {
                     response.StatusCode = 202;
-                    AddSessionHeader(response);
+                    AddSessionHeader(response, requestContextId);
                     response.Close();
                 }
                 catch (Exception ex)
@@ -236,6 +270,7 @@ namespace PuertsMcp
                     try { response.Close(); } catch { }
                 }
             }
+            _contextToSession.TryRemove(requestContextId, out _);
         }
 
         /// <summary>
@@ -251,7 +286,7 @@ namespace PuertsMcp
                     response.ContentType = "text/event-stream";
                     response.Headers.Set("Cache-Control", "no-cache, no-transform");
                     response.Headers.Set("Connection", "keep-alive");
-                    AddSessionHeader(response);
+                    AddSessionHeader(response, requestContextId);
                     // Flush headers by writing empty content
                     response.OutputStream.Flush();
                 }
@@ -374,12 +409,18 @@ namespace PuertsMcp
             var sessionIdHeader = request.Headers["mcp-session-id"];
             var requestContextId = Guid.NewGuid().ToString();
 
+            // If a session header is provided, associate this context with that session
+            if (!string.IsNullOrEmpty(sessionIdHeader))
+            {
+                _contextToSession[requestContextId] = sessionIdHeader;
+            }
+
             // Store the response so JS can write to it later
             _postStreams[requestContextId] = response;
 
             // Delegate to JS for JSON-RPC processing
             // JS will call back: BeginSseStream, SendSseEvent, ClosePostStream,
-            //                    SendJsonResponse, Send202, SetSession, etc.
+            //                    SendJsonResponse, Send202, AddSession, etc.
             try
             {
                 OnHttpPost?.Invoke(requestContextId, "POST", body, sessionIdHeader ?? "");
@@ -393,73 +434,68 @@ namespace PuertsMcp
 
         private void HandleGet(HttpListenerRequest request, HttpListenerResponse response)
         {
+            var incoming = request.Headers["mcp-session-id"];
+
             // Validate session
             lock (_sessionLock)
             {
-                if (!_initialized)
+                if (_sessions.Count == 0)
                 {
                     SendError(response, 400, -32000, "Server not initialized");
                     return;
                 }
-                var incoming = request.Headers["mcp-session-id"];
                 if (string.IsNullOrEmpty(incoming))
                 {
                     SendError(response, 400, -32000, "Mcp-Session-Id header is required");
                     return;
                 }
-                if (incoming != _sessionId)
+                if (!_sessions.Contains(incoming))
                 {
                     SendError(response, 404, -32001, "Session not found");
                     return;
                 }
             }
 
-            lock (_getStreamLock)
+            // Check if this session already has a GET stream
+            if (_getStreams.ContainsKey(incoming))
             {
-                if (_getStream != null)
-                {
-                    SendError(response, 409, -32000, "Only one GET SSE stream allowed per session");
-                    return;
-                }
-
-                // Set up SSE headers and keep connection open
-                response.StatusCode = 200;
-                response.ContentType = "text/event-stream";
-                response.Headers.Set("Cache-Control", "no-cache, no-transform");
-                response.Headers.Set("Connection", "keep-alive");
-                AddSessionHeader(response);
-                response.OutputStream.Flush();
-
-                _getStream = response;
+                SendError(response, 409, -32000, "Only one GET SSE stream allowed per session");
+                return;
             }
+
+            // Set up SSE headers and keep connection open
+            response.StatusCode = 200;
+            response.ContentType = "text/event-stream";
+            response.Headers.Set("Cache-Control", "no-cache, no-transform");
+            response.Headers.Set("Connection", "keep-alive");
+            response.Headers.Set("mcp-session-id", incoming);
+            response.OutputStream.Flush();
+
+            _getStreams[incoming] = response;
 
             OnSseStreamOpened?.Invoke();
         }
 
         private void HandleDelete(HttpListenerRequest request, HttpListenerResponse response)
         {
+            var incoming = request.Headers["mcp-session-id"];
+
             // Validate session
             lock (_sessionLock)
             {
-                if (!_initialized)
-                {
-                    SendError(response, 400, -32000, "Server not initialized");
-                    return;
-                }
-                var incoming = request.Headers["mcp-session-id"];
                 if (string.IsNullOrEmpty(incoming))
                 {
                     SendError(response, 400, -32000, "Mcp-Session-Id header is required");
                     return;
                 }
-                if (incoming != _sessionId)
+                if (!_sessions.Contains(incoming))
                 {
                     SendError(response, 404, -32001, "Session not found");
                     return;
                 }
             }
 
-            OnHttpDelete?.Invoke();
+            OnHttpDelete?.Invoke(incoming);
 
             response.StatusCode = 200;
             response.Close();
@@ -469,14 +505,14 @@ namespace PuertsMcp
         // Helpers
         // -------------------------------------------------------------------
 
-        private void AddSessionHeader(HttpListenerResponse response)
+        /// <summary>
+        /// Add the mcp-session-id header to a response, looking up the session from the request context.
+        /// </summary>
+        private void AddSessionHeader(HttpListenerResponse response, string requestContextId)
         {
-            lock (_sessionLock)
+            if (_contextToSession.TryGetValue(requestContextId, out var sessionId))
             {
-                if (_sessionId != null)
-                {
-                    response.Headers.Set("mcp-session-id", _sessionId);
-                }
+                response.Headers.Set("mcp-session-id", sessionId);
             }
         }
 

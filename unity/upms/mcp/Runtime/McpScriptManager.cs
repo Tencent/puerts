@@ -24,7 +24,7 @@ namespace PuertsMcp
         private Action<string, object, Action<bool, string>> onInitialize;
         private Action onShutdown;
         private Action<string, string, string, string> handleHttpPost;
-        private Action handleHttpDelete;
+        private Action<string> handleHttpDelete;
 
         private const string EntryModule = "McpServer/main.mjs";
 
@@ -62,7 +62,7 @@ namespace PuertsMcp
                 onInitialize = moduleExports.Get<Action<string, object, Action<bool, string>>>("onInitialize");
                 onShutdown = moduleExports.Get<Action>("onShutdown");
                 handleHttpPost = moduleExports.Get<Action<string, string, string, string>>("handleHttpPost");
-                handleHttpDelete = moduleExports.Get<Action>("handleHttpDelete");
+                handleHttpDelete = moduleExports.Get<Action<string>>("handleHttpDelete");
 
                 if (onInitialize == null)
                 {
@@ -102,13 +102,13 @@ namespace PuertsMcp
                     });
                 };
 
-                httpServer.OnHttpDelete = () =>
+                httpServer.OnHttpDelete = (sessionId) =>
                 {
                     EnqueueMainThread(() =>
                     {
                         try
                         {
-                            handleHttpDelete?.Invoke();
+                            handleHttpDelete?.Invoke(sessionId);
                         }
                         catch (Exception ex)
                         {

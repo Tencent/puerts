@@ -31147,14 +31147,14 @@ var CSharpBridgeTransport = class {
   onerror;
   onmessage;
   _bridge;
-  _initialized = false;
   _started = false;
   /** requestId → requestContextId so we know where to write the response. */
   _requestToContext = /* @__PURE__ */ new Map();
   /** requestId → response message (buffered until all responses for a context are ready). */
   _responseBuffer = /* @__PURE__ */ new Map();
-  constructor(bridge) {
+  constructor(bridge, sessionId) {
     this._bridge = bridge;
+    this.sessionId = sessionId;
   }
   // --- Transport interface ---
   async start() {
@@ -31172,7 +31172,7 @@ var CSharpBridgeTransport = class {
       requestId = message.id;
     }
     if (requestId === void 0) {
-      this._bridge.SendGetSseEvent(JSON.stringify(message));
+      this._bridge.SendGetSseEventForSession(this.sessionId, JSON.stringify(message));
       return;
     }
     const requestIdStr = String(requestId);
@@ -31198,80 +31198,17 @@ var CSharpBridgeTransport = class {
     }
   }
   // -------------------------------------------------------------------
-  // Called from C# via McpHttpServer.OnHttpPost callback
+  // Called from the SessionManager when routing a POST to this session
   // -------------------------------------------------------------------
   /**
-   * Handle an incoming HTTP POST request from C#.
-   * This is the main entry point for processing MCP messages.
+   * Handle an incoming HTTP POST request routed to this session.
    *
    * @param requestContextId - Unique ID for this HTTP request (from C#)
    * @param body - Raw JSON body string
-   * @param sessionIdHeader - The mcp-session-id header value (empty string if absent)
+   * @param messages - Already-parsed and validated JSON-RPC messages
    */
-  handlePost(requestContextId, body, sessionIdHeader) {
+  handlePost(requestContextId, messages) {
     try {
-      let rawMessage;
-      try {
-        rawMessage = JSON.parse(body);
-      } catch {
-        this._bridge.SendJsonResponse(
-          requestContextId,
-          400,
-          JSON.stringify({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: Invalid JSON" }, id: null })
-        );
-        return;
-      }
-      let messages;
-      try {
-        if (Array.isArray(rawMessage)) {
-          messages = rawMessage.map((m) => JSONRPCMessageSchema.parse(m));
-        } else {
-          messages = [JSONRPCMessageSchema.parse(rawMessage)];
-        }
-      } catch {
-        this._bridge.SendJsonResponse(
-          requestContextId,
-          400,
-          JSON.stringify({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: Invalid JSON-RPC message" }, id: null })
-        );
-        return;
-      }
-      const isInit = messages.some(isInitializeRequest);
-      if (isInit) {
-        if (this._initialized) {
-          this._requestToContext.clear();
-          this._responseBuffer.clear();
-        }
-        this.sessionId = generateUUID();
-        this._initialized = true;
-        this._bridge.SetSession(this.sessionId);
-      }
-      if (!isInit) {
-        if (!this._initialized) {
-          this._bridge.SendJsonResponse(
-            requestContextId,
-            400,
-            JSON.stringify({ jsonrpc: "2.0", error: { code: -32e3, message: "Server not initialized" }, id: null })
-          );
-          return;
-        }
-        if (!sessionIdHeader) {
-          this._bridge.SendJsonResponse(
-            requestContextId,
-            400,
-            JSON.stringify({ jsonrpc: "2.0", error: { code: -32e3, message: "Mcp-Session-Id header is required" }, id: null })
-          );
-          return;
-        }
-        if (sessionIdHeader !== this.sessionId) {
-          this._bridge.SendJsonResponse(
-            requestContextId,
-            404,
-            JSON.stringify({ jsonrpc: "2.0", error: { code: -32001, message: "Session not found" }, id: null })
-          );
-          return;
-        }
-      }
       const hasRequests = messages.some(isJSONRPCRequest2);
       if (!hasRequests) {
         for (const msg of messages) {
@@ -31292,7 +31229,7 @@ var CSharpBridgeTransport = class {
     } catch (err) {
       const errMsg = err instanceof Error ? `${err.message}
 ${err.stack}` : String(err);
-      console.error(`[CSharpBridgeTransport] handlePost error: ${errMsg}`);
+      console.error(`[CSharpBridgeTransport] handlePost error (session=${this.sessionId}): ${errMsg}`);
       this.onerror?.(err instanceof Error ? err : new Error(String(err)));
       try {
         this._bridge.SendJsonResponse(
@@ -31305,11 +31242,9 @@ ${err.stack}` : String(err);
     }
   }
   /**
-   * Handle a DELETE request — reset session state.
+   * Handle a DELETE request — clean up this session's state.
    */
   handleDelete() {
-    this._initialized = false;
-    this.sessionId = void 0;
     this._requestToContext.clear();
     this._responseBuffer.clear();
   }
@@ -31487,9 +31422,9 @@ ${code}`);
 __name(executeCode, "executeCode");
 
 // src/main.mts
-var mcpServer = null;
-var activeTransport = null;
+var sessions = /* @__PURE__ */ new Map();
 var activeBridge = null;
+var serverReady = false;
 function createMcpServer() {
   const server = new McpServer({
     name: "puerts-unity-editor-assistant",
@@ -31563,24 +31498,67 @@ function createMcpServer() {
   return server;
 }
 __name(createMcpServer, "createMcpServer");
-async function startMcpServer(bridge) {
-  mcpServer = createMcpServer();
-  activeBridge = bridge;
-  activeTransport = new CSharpBridgeTransport(bridge);
-  activeTransport.onclose = () => {
-    activeTransport = null;
+async function createSession(bridge) {
+  const sessionId = generateUUID();
+  const server = createMcpServer();
+  const transport = new CSharpBridgeTransport(bridge, sessionId);
+  transport.onclose = () => {
+    sessions.delete(sessionId);
+    bridge.RemoveSession(sessionId);
+    console.log(`[McpServer] Session ${sessionId} closed. Active sessions: ${sessions.size}`);
   };
-  await mcpServer.connect(activeTransport);
-  console.log("[McpServer] MCP Server connected to C# bridge transport.");
+  await server.connect(transport);
+  bridge.AddSession(sessionId);
+  const entry = { server, transport };
+  sessions.set(sessionId, entry);
+  console.log(`[McpServer] New session ${sessionId} created. Active sessions: ${sessions.size}`);
+  return entry;
 }
-__name(startMcpServer, "startMcpServer");
+__name(createSession, "createSession");
+function destroySession(sessionId) {
+  const entry = sessions.get(sessionId);
+  if (!entry) return;
+  sessions.delete(sessionId);
+  entry.transport.onclose = void 0;
+  entry.transport.handleDelete();
+  try {
+    entry.transport.close?.();
+  } catch {
+  }
+  try {
+    entry.server.close();
+  } catch {
+  }
+  activeBridge?.RemoveSession(sessionId);
+  console.log(`[McpServer] Session ${sessionId} destroyed. Active sessions: ${sessions.size}`);
+}
+__name(destroySession, "destroySession");
+function destroyAllSessions() {
+  for (const [sessionId, entry] of sessions) {
+    entry.transport.onclose = void 0;
+    entry.transport.handleDelete();
+    try {
+      entry.transport.close?.();
+    } catch {
+    }
+    try {
+      entry.server.close();
+    } catch {
+    }
+    activeBridge?.RemoveSession(sessionId);
+  }
+  sessions.clear();
+  console.log("[McpServer] All sessions destroyed.");
+}
+__name(destroyAllSessions, "destroyAllSessions");
 function onInitialize(root, bridge, onReady) {
   (async () => {
     try {
       setResourceRoot(root);
       await initBuiltins();
-      await startMcpServer(bridge);
-      console.log("[McpServer] MCP Server initialization complete.");
+      activeBridge = bridge;
+      serverReady = true;
+      console.log("[McpServer] MCP Server initialization complete. Ready for sessions.");
       onReady.Invoke(true, "");
     } catch (e) {
       const errMsg = e.message || String(e);
@@ -31591,8 +31569,8 @@ function onInitialize(root, bridge, onReady) {
 }
 __name(onInitialize, "onInitialize");
 function handleHttpPost(requestContextId, method, body, sessionIdHeader) {
-  if (!activeTransport) {
-    console.error("[McpServer] handleHttpPost called but no active transport");
+  if (!serverReady || !activeBridge) {
+    console.error("[McpServer] handleHttpPost called but server not ready");
     try {
       activeBridge?.SendJsonResponse(
         requestContextId,
@@ -31603,57 +31581,92 @@ function handleHttpPost(requestContextId, method, body, sessionIdHeader) {
     }
     return;
   }
-  activeTransport.handlePost(requestContextId, body, sessionIdHeader);
+  try {
+    let rawMessage;
+    try {
+      rawMessage = JSON.parse(body);
+    } catch {
+      activeBridge.SendJsonResponse(
+        requestContextId,
+        400,
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: Invalid JSON" }, id: null })
+      );
+      return;
+    }
+    let messages;
+    try {
+      if (Array.isArray(rawMessage)) {
+        messages = rawMessage.map((m) => JSONRPCMessageSchema.parse(m));
+      } else {
+        messages = [JSONRPCMessageSchema.parse(rawMessage)];
+      }
+    } catch {
+      activeBridge.SendJsonResponse(
+        requestContextId,
+        400,
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: Invalid JSON-RPC message" }, id: null })
+      );
+      return;
+    }
+    const isInit = messages.some(isInitializeRequest);
+    if (isInit) {
+      createSession(activeBridge).then((entry2) => {
+        activeBridge.AddSessionHeaderForContext(requestContextId, entry2.transport.sessionId);
+        entry2.transport.handlePost(requestContextId, messages);
+      }).catch((err) => {
+        console.error(`[McpServer] Failed to create session: ${err.message || err}`);
+        activeBridge.SendJsonResponse(
+          requestContextId,
+          500,
+          JSON.stringify({ jsonrpc: "2.0", error: { code: -32e3, message: "Failed to create session" }, id: null })
+        );
+      });
+      return;
+    }
+    if (!sessionIdHeader) {
+      activeBridge.SendJsonResponse(
+        requestContextId,
+        400,
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32e3, message: "Mcp-Session-Id header is required" }, id: null })
+      );
+      return;
+    }
+    const entry = sessions.get(sessionIdHeader);
+    if (!entry) {
+      activeBridge.SendJsonResponse(
+        requestContextId,
+        404,
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32001, message: "Session not found" }, id: null })
+      );
+      return;
+    }
+    entry.transport.handlePost(requestContextId, messages);
+  } catch (err) {
+    const errMsg = err instanceof Error ? `${err.message}
+${err.stack}` : String(err);
+    console.error(`[McpServer] handleHttpPost error: ${errMsg}`);
+    try {
+      activeBridge.SendJsonResponse(
+        requestContextId,
+        500,
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32e3, message: "Internal error" }, id: null })
+      );
+    } catch {
+    }
+  }
 }
 __name(handleHttpPost, "handleHttpPost");
-function handleHttpDelete() {
-  if (activeTransport) {
-    activeTransport.onclose = void 0;
-    activeTransport.handleDelete();
-    try {
-      activeTransport.close?.();
-    } catch {
-    }
-    activeTransport = null;
-  }
-  if (mcpServer) {
-    try {
-      mcpServer.close();
-    } catch {
-    }
-    mcpServer = null;
-  }
-  if (activeBridge) {
-    mcpServer = createMcpServer();
-    activeTransport = new CSharpBridgeTransport(activeBridge);
-    activeTransport.onclose = () => {
-      activeTransport = null;
-    };
-    mcpServer.connect(activeTransport).then(() => {
-      console.log("[McpServer] MCP Server reconnected after DELETE, ready for new session.");
-    }).catch((err) => {
-      console.error(`[McpServer] Failed to reconnect after DELETE: ${err.message || err}`);
-    });
+function handleHttpDelete(sessionId) {
+  if (sessionId) {
+    destroySession(sessionId);
   }
 }
 __name(handleHttpDelete, "handleHttpDelete");
 function onShutdown() {
   console.log("[McpServer] Shutting down...");
-  if (activeTransport) {
-    try {
-      activeTransport.close?.();
-    } catch (e) {
-    }
-    activeTransport = null;
-  }
+  destroyAllSessions();
   activeBridge = null;
-  if (mcpServer) {
-    try {
-      mcpServer.close();
-    } catch (e) {
-    }
-    mcpServer = null;
-  }
+  serverReady = false;
   console.log("[McpServer] Shut down complete.");
 }
 __name(onShutdown, "onShutdown");

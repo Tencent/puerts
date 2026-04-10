@@ -10,6 +10,9 @@
  *
  * The JS side handles:
  *   - JSON-RPC message parsing/validation, session logic, MCP protocol
+ *
+ * Multi-session: Each CSharpBridgeTransport instance represents one session.
+ * The SessionManager in main.mts creates/destroys instances as clients connect/disconnect.
  */
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { JSONRPCMessage, RequestId } from '@modelcontextprotocol/sdk/types.js';
@@ -23,7 +26,7 @@ function isJSONRPCRequest(msg: JSONRPCMessage): msg is JSONRPCMessage & { method
     return 'method' in msg && 'id' in msg;
 }
 
-function isInitializeRequest(msg: JSONRPCMessage): boolean {
+export function isInitializeRequest(msg: JSONRPCMessage): boolean {
     return isJSONRPCRequest(msg) && (msg as any).method === 'initialize';
 }
 
@@ -32,7 +35,7 @@ function isJSONRPCResponse(msg: JSONRPCMessage): msg is JSONRPCMessage & { id: R
 }
 
 /** Simple UUID v4 generator (no dependency on node:crypto). */
-function generateUUID(): string {
+export function generateUUID(): string {
     // Use Math.random-based UUID (sufficient for session IDs)
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
@@ -48,22 +51,28 @@ function generateUUID(): string {
 /**
  * Interface for the C# McpHttpServer methods exposed to JS.
  * These are called from JS to send HTTP responses back through C#.
+ *
+ * Multi-session aware: AddSession/RemoveSession manage the set of valid sessions.
  */
 export interface CSharpHttpBridge {
-    /** Set the MCP session ID on the C# server. */
-    SetSession(sessionId: string): void;
+    /** Register a new session ID on the C# server. */
+    AddSession(sessionId: string): void;
+    /** Unregister a session ID from the C# server. */
+    RemoveSession(sessionId: string): void;
     /** Begin SSE streaming for a POST request. */
     BeginSseStream(requestContextId: string): void;
     /** Write an SSE event to a POST response stream. */
     SendSseEvent(requestContextId: string, jsonData: string): void;
     /** Close a POST SSE stream. */
     ClosePostStream(requestContextId: string): void;
-    /** Write an SSE event to the standalone GET stream. */
-    SendGetSseEvent(jsonData: string): void;
+    /** Write an SSE event to the standalone GET stream for a specific session. */
+    SendGetSseEventForSession(sessionId: string, jsonData: string): void;
     /** Send a plain JSON response and close the connection. */
     SendJsonResponse(requestContextId: string, statusCode: number, jsonBody: string): void;
     /** Send a 202 Accepted response. */
     Send202(requestContextId: string): void;
+    /** Add the session header to a response for a specific request context. */
+    AddSessionHeaderForContext(requestContextId: string, sessionId: string): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,13 +81,12 @@ export interface CSharpHttpBridge {
 
 export class CSharpBridgeTransport implements Transport {
     // --- Transport interface fields ---
-    sessionId?: string;
+    sessionId: string;
     onclose?: () => void;
     onerror?: (error: Error) => void;
     onmessage?: (message: JSONRPCMessage, extra?: any) => void;
 
     private _bridge: CSharpHttpBridge;
-    private _initialized = false;
     private _started = false;
 
     /** requestId → requestContextId so we know where to write the response. */
@@ -87,8 +95,9 @@ export class CSharpBridgeTransport implements Transport {
     /** requestId → response message (buffered until all responses for a context are ready). */
     private _responseBuffer = new Map<string, JSONRPCMessage>();
 
-    constructor(bridge: CSharpHttpBridge) {
+    constructor(bridge: CSharpHttpBridge, sessionId: string) {
         this._bridge = bridge;
+        this.sessionId = sessionId;
     }
 
     // --- Transport interface ---
@@ -112,9 +121,9 @@ export class CSharpBridgeTransport implements Transport {
             requestId = (message as any).id;
         }
 
-        // Server-initiated message (no related request) → standalone GET stream
+        // Server-initiated message (no related request) → standalone GET stream for this session
         if (requestId === undefined) {
-            this._bridge.SendGetSseEvent(JSON.stringify(message));
+            this._bridge.SendGetSseEventForSession(this.sessionId, JSON.stringify(message));
             return;
         }
 
@@ -152,78 +161,18 @@ export class CSharpBridgeTransport implements Transport {
     }
 
     // -------------------------------------------------------------------
-    // Called from C# via McpHttpServer.OnHttpPost callback
+    // Called from the SessionManager when routing a POST to this session
     // -------------------------------------------------------------------
 
     /**
-     * Handle an incoming HTTP POST request from C#.
-     * This is the main entry point for processing MCP messages.
+     * Handle an incoming HTTP POST request routed to this session.
      *
      * @param requestContextId - Unique ID for this HTTP request (from C#)
      * @param body - Raw JSON body string
-     * @param sessionIdHeader - The mcp-session-id header value (empty string if absent)
+     * @param messages - Already-parsed and validated JSON-RPC messages
      */
-    handlePost(requestContextId: string, body: string, sessionIdHeader: string): void {
+    handlePost(requestContextId: string, messages: JSONRPCMessage[]): void {
         try {
-            // Parse body
-            let rawMessage: unknown;
-            try {
-                rawMessage = JSON.parse(body);
-            } catch {
-                this._bridge.SendJsonResponse(requestContextId, 400,
-                    JSON.stringify({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error: Invalid JSON' }, id: null }));
-                return;
-            }
-
-            // Validate JSON-RPC
-            let messages: JSONRPCMessage[];
-            try {
-                if (Array.isArray(rawMessage)) {
-                    messages = rawMessage.map(m => JSONRPCMessageSchema.parse(m));
-                } else {
-                    messages = [JSONRPCMessageSchema.parse(rawMessage)];
-                }
-            } catch {
-                this._bridge.SendJsonResponse(requestContextId, 400,
-                    JSON.stringify({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error: Invalid JSON-RPC message' }, id: null }));
-                return;
-            }
-
-            const isInit = messages.some(isInitializeRequest);
-
-            // --- Initialization ---
-            if (isInit) {
-                // If already initialized, reset state for the new session.
-                // This handles the case where a client reconnects without sending DELETE first.
-                if (this._initialized) {
-                    this._requestToContext.clear();
-                    this._responseBuffer.clear();
-                }
-                this.sessionId = generateUUID();
-                this._initialized = true;
-                // Tell C# about the session ID so it can add headers and validate future requests
-                this._bridge.SetSession(this.sessionId);
-            }
-
-            // --- Session validation (non-init) ---
-            if (!isInit) {
-                if (!this._initialized) {
-                    this._bridge.SendJsonResponse(requestContextId, 400,
-                        JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: 'Server not initialized' }, id: null }));
-                    return;
-                }
-                if (!sessionIdHeader) {
-                    this._bridge.SendJsonResponse(requestContextId, 400,
-                        JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: 'Mcp-Session-Id header is required' }, id: null }));
-                    return;
-                }
-                if (sessionIdHeader !== this.sessionId) {
-                    this._bridge.SendJsonResponse(requestContextId, 404,
-                        JSON.stringify({ jsonrpc: '2.0', error: { code: -32001, message: 'Session not found' }, id: null }));
-                    return;
-                }
-            }
-
             // --- If no requests (only notifications / responses) → 202 ---
             const hasRequests = messages.some(isJSONRPCRequest);
             if (!hasRequests) {
@@ -250,7 +199,7 @@ export class CSharpBridgeTransport implements Transport {
             }
         } catch (err: any) {
             const errMsg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
-            console.error(`[CSharpBridgeTransport] handlePost error: ${errMsg}`);
+            console.error(`[CSharpBridgeTransport] handlePost error (session=${this.sessionId}): ${errMsg}`);
             this.onerror?.(err instanceof Error ? err : new Error(String(err)));
             try {
                 this._bridge.SendJsonResponse(requestContextId, 500,
@@ -260,11 +209,9 @@ export class CSharpBridgeTransport implements Transport {
     }
 
     /**
-     * Handle a DELETE request — reset session state.
+     * Handle a DELETE request — clean up this session's state.
      */
     handleDelete(): void {
-        this._initialized = false;
-        this.sessionId = undefined;
         this._requestToContext.clear();
         this._responseBuffer.clear();
     }
