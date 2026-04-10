@@ -31578,7 +31578,6 @@ function onInitialize(root, bridge, onReady) {
   (async () => {
     try {
       setResourceRoot(root);
-      CS.LLMAgent.UnityLogBridge.StartListening();
       await initBuiltins();
       await startMcpServer(bridge);
       console.log("[McpServer] MCP Server initialization complete.");

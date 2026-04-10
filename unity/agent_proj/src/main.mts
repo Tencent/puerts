@@ -21,9 +21,6 @@ import { initSystemPrompt } from './agent/prompt.mjs';
 import { initSkills } from './tools/skill-tool.mjs';
 import { initBuiltins } from './tools/eval-tool.mjs';
 
-// Start capturing Unity logs for the agent's log tool
-CS.LLMAgent.UnityLogBridge.StartListening();
-
 console.log('[Agent] LLM Agent module loaded.');
 
 /**

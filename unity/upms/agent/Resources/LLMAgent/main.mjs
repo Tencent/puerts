@@ -38442,7 +38442,6 @@ __name(getIsConfigured, "getIsConfigured");
 
 // src/main.mts
 console.log("[Agent] LLM Agent initialized.");
-CS.LLMAgent.UnityLogBridge.StartListening();
 console.log("[Agent] LLM Agent module loaded.");
 function configureAgent(apiKey, baseURL, model, maxSteps = 0) {
   return configure({
