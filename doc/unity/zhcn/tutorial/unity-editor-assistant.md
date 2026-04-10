@@ -100,7 +100,7 @@ MCP 版在 Unity 编辑器内启动一个 [MCP (Model Context Protocol)](https:/
 
 ### 技术栈
 
-- **运行时**：PuerTS Node.js 后端（V8 引擎）
+- **运行时**：PuerTS V8 后端
 - **MCP SDK**：`@modelcontextprotocol/sdk`
 - **传输层**：Streamable HTTP（MCP 协议 2025-03-26 版本）
 - **最低 Unity 版本**：2021.3
@@ -114,7 +114,8 @@ MCP 版在 Unity 编辑器内启动一个 [MCP (Model Context Protocol)](https:/
 | 包名 | 说明 |
 |------|------|
 | `com.tencent.puerts.core` | PuerTS 核心运行时 |
-| `com.tencent.puerts.nodejs` | PuerTS Node.js 后端 |
+| `com.tencent.puerts.v8` | PuerTS V8 后端 |
+| `com.tencent.puerts.agent` | PuerTS Agent 框架 |
 
 ---
 

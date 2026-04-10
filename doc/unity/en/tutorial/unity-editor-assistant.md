@@ -100,7 +100,7 @@ The MCP version launches an [MCP (Model Context Protocol)](https://modelcontextp
 
 ### Tech Stack
 
-- **Runtime**: PuerTS Node.js backend (V8 engine)
+- **Runtime**: PuerTS V8 backend
 - **MCP SDK**: `@modelcontextprotocol/sdk`
 - **Transport**: Streamable HTTP (MCP protocol 2025-03-26)
 - **Minimum Unity Version**: 2021.3
@@ -114,7 +114,8 @@ This package requires the following UPM dependencies:
 | Package | Description |
 |---------|-------------|
 | `com.tencent.puerts.core` | PuerTS core runtime |
-| `com.tencent.puerts.nodejs` | PuerTS Node.js backend |
+| `com.tencent.puerts.v8` | PuerTS V8 backend |
+| `com.tencent.puerts.agent` | PuerTS Agent framework |
 
 ---
 
