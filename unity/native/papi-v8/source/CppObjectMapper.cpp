@@ -15,12 +15,6 @@
 namespace PUERTS_NAMESPACE
 {
 
-struct LazyMemberData
-{
-    const ScriptClassDefinition* ClassDefinition;
-    ScriptClassRegistry* Registry;
-};
-
 #define container_of(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
 
 static void ThrowException(v8::Isolate* Isolate, const char* Message)
@@ -256,12 +250,11 @@ static v8::Intercepted LazyInstanceMemberGetter(
     if (!Name->IsString())
         return v8::Intercepted::kNo;
 
-    LazyMemberData* LazyData = static_cast<LazyMemberData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const ScriptClassDefinition* ClassDefinition =
+        static_cast<const ScriptClassDefinition*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
 
     v8::String::Utf8Value Utf8Name(Isolate, Name);
     const char* NameStr = *Utf8Name;
-
-    const ScriptClassDefinition* ClassDefinition = LazyData->ClassDefinition;
 
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
@@ -310,11 +303,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<ScriptClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
-        auto* LazyData = new LazyMemberData{ClassDefinition, Registry};
-        LazyMemberDatas.push_back(LazyData);
         Template->PrototypeTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
             LazyInstanceMemberGetter, nullptr, nullptr, nullptr, nullptr,
-            v8::External::New(Isolate, LazyData),
+            v8::External::New(Isolate, const_cast<ScriptClassDefinition*>(ClassDefinition)),
             v8::PropertyHandlerFlags::kNonMasking));
 
         ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
@@ -527,8 +518,6 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete CallbackData;
     }
     FunctionDatas.clear();
-    for (auto* Data : LazyMemberDatas) delete Data;
-    LazyMemberDatas.clear();
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
     PrivateKey.Reset();
