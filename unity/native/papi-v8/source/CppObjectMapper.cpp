@@ -19,7 +19,6 @@ struct LazyMemberData
 {
     const ScriptClassDefinition* ClassDefinition;
     ScriptClassRegistry* Registry;
-    bool InDefine = false;
 };
 
 #define container_of(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
@@ -259,17 +258,12 @@ static v8::Intercepted LazyInstanceMemberGetter(
 
     LazyMemberData* LazyData = static_cast<LazyMemberData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
 
-    // Re-entrancy guard: CreateDataProperty/SetAccessorProperty on Holder may trigger this handler again
-    if (LazyData->InDefine)
-        return v8::Intercepted::kNo;
-
     v8::String::Utf8Value Utf8Name(Isolate, Name);
     const char* NameStr = *Utf8Name;
 
     const ScriptClassDefinition* ClassDefinition = LazyData->ClassDefinition;
 
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Local<v8::Object> Holder = Info.Holder();
 
     // Search Methods - find the LAST match to replicate PrototypeTemplate->Set() override behavior
     ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
@@ -304,7 +298,6 @@ static v8::Intercepted LazyInstanceMemberGetter(
         return v8::Intercepted::kYes;
     }
 
-    // Only search Methods - Properties are eagerly registered on PrototypeTemplate
     return v8::Intercepted::kNo;
 }
 
