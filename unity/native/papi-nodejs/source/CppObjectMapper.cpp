@@ -15,6 +15,13 @@
 namespace PUERTS_NAMESPACE
 {
 
+struct LazyMemberData
+{
+    const ScriptClassDefinition* ClassDefinition;
+    ScriptClassRegistry* Registry;
+    bool InDefine = false;
+};
+
 #define container_of(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
 
 static void ThrowException(v8::Isolate* Isolate, const char* Message)
@@ -242,6 +249,64 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
+static void LazyInstanceMemberGetter(
+    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString())
+        return;
+
+    LazyMemberData* LazyData = static_cast<LazyMemberData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+
+    // Re-entrancy guard: CreateDataProperty/SetAccessorProperty on Holder may trigger this handler again
+    if (LazyData->InDefine)
+        return;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    const ScriptClassDefinition* ClassDefinition = LazyData->ClassDefinition;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Local<v8::Object> Holder = Info.Holder();
+
+    // Search Methods - find the LAST match to replicate PrototypeTemplate->Set() override behavior
+    ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
+    ScriptFunctionInfo* MatchedFunctionInfo = nullptr;
+    while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+    {
+        if (strcmp(FunctionInfo->Name, NameStr) == 0)
+        {
+            MatchedFunctionInfo = FunctionInfo;
+        }
+        ++FunctionInfo;
+    }
+    if (MatchedFunctionInfo)
+    {
+        v8::Local<v8::Function> Func;
+        auto FastCallInfo = MatchedFunctionInfo->ReflectionInfo ? MatchedFunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+        if (FastCallInfo)
+        {
+            Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                v8::External::New(Isolate, &MatchedFunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        else
+        {
+            Func = v8::FunctionTemplate::New(
+                Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &MatchedFunctionInfo->Data),
+                v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        Info.GetReturnValue().Set(Func);
+        return;
+    }
+
+    // Only search Methods - Properties are eagerly registered on PrototypeTemplate
+}
+
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition)
 {
     auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
@@ -250,6 +315,13 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         auto Template = v8::FunctionTemplate::New(
             Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<ScriptClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
+
+        auto* LazyData = new LazyMemberData{ClassDefinition, Registry};
+        LazyMemberDatas.push_back(LazyData);
+        Template->PrototypeTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
+            LazyInstanceMemberGetter, nullptr, nullptr, nullptr, nullptr,
+            v8::External::New(Isolate, LazyData),
+            v8::PropertyHandlerFlags::kNonMasking));
 
         ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
         while (PropertyInfo && PropertyInfo->Name)
@@ -287,30 +359,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ++PropertyInfo;
         }
 
-        ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
-        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
-        {
-            auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-            if (FastCallInfo)
-            {
-                Template->PrototypeTemplate()->Set(
-                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                        v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-                        v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
-            }
-            else
-            {
-                Template->PrototypeTemplate()->Set(
-                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(
-                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data),
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
-                        ));
-            }
-            ++FunctionInfo;
-        }
-        FunctionInfo = ClassDefinition->Functions;
+        ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
             auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
@@ -484,6 +533,8 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete CallbackData;
     }
     FunctionDatas.clear();
+    for (auto* Data : LazyMemberDatas) delete Data;
+    LazyMemberDatas.clear();
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
     PrivateKey.Reset();
