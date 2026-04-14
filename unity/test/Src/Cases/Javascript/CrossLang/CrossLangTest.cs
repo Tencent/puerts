@@ -268,6 +268,26 @@ namespace Puerts.UnitTest
         public static float Value;
     }
 
+    public class OverrideTestBase
+    {
+        public string Foo()
+        {
+            return "i am base";
+        }
+    }
+
+    public class OverrideTestDriveA : OverrideTestBase
+    {
+    }
+
+    public class OverrideTestDriveB : OverrideTestBase
+    {
+        public string Foo() 
+        {
+            return "i am B";
+        }
+    }
+
     public unsafe class TestHelper
     {
         protected static TestHelper instance;
@@ -2132,6 +2152,22 @@ __PDUOTF;");
             TestHelper.AssertAndPrint("FieldClass2", 0, FieldClass2.ObjCount);
         }
 #endif
+
+        [Test]
+        public void LazyLoadOverrideTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            //先通过另外一个类触发基类同名方法加载
+            jsEnv.Eval(@"
+                (function() {
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const objA = new CS.Puerts.UnitTest.OverrideTestDriveA();
+                    AssertAndPrint('objA', objA.Foo() == 'i am base');
+                    const objB = new CS.Puerts.UnitTest.OverrideTestDriveB();
+                    AssertAndPrint('objB', objB.Foo() == 'i am B');
+                })()
+            ");
+        }
 
     }
 }
