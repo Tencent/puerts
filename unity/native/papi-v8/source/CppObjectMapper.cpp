@@ -269,6 +269,27 @@ static bool SuperHasMethod(ScriptClassRegistry* Registry, const ScriptClassDefin
     return false;
 }
 
+// Check if any ancestor class in the inheritance chain has a property with the given name
+static bool SuperHasProperty(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
+{
+    const void* SuperTypeId = ClassDefinition->SuperTypeId;
+    while (SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(Registry, SuperTypeId);
+        if (!SuperDef)
+            break;
+        ScriptPropertyInfo* PropertyInfo = SuperDef->Properties;
+        while (PropertyInfo && PropertyInfo->Name)
+        {
+            if (strcmp(PropertyInfo->Name, Name) == 0)
+                return true;
+            ++PropertyInfo;
+        }
+        SuperTypeId = SuperDef->SuperTypeId;
+    }
+    return false;
+}
+
 // Search for a method by name in the given ClassDefinition's Methods, create the v8::Function,
 // cache it on proto, and return it. If not found, recurse into the parent ClassDefinition
 // (via SuperTypeId) and proto's prototype. Returns empty Maybe if no match in the entire chain.
@@ -330,6 +351,76 @@ static v8::MaybeLocal<v8::Function> FindAndCacheMethodInChain(
     return v8::MaybeLocal<v8::Function>();
 }
 
+// Search for a property by name in the given ClassDefinition's Properties, create the accessor,
+// cache it on proto, and return true. If not found, recurse into the parent ClassDefinition
+// (via SuperTypeId) and proto's prototype. Returns false if no match in the entire chain.
+static bool FindAndCachePropertyInChain(
+    v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Name> Name,
+    const char* NameStr, const ScriptClassDefinition* ClassDefinition,
+    v8::Local<v8::Object> Proto, ScriptClassRegistry* Registry,
+    v8::Local<v8::Value>* OutGetter, v8::Local<v8::Value>* OutSetter)
+{
+    // Search Properties - find the LAST match
+    ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
+    ScriptPropertyInfo* MatchedPropertyInfo = nullptr;
+    while (PropertyInfo && PropertyInfo->Name)
+    {
+        if (strcmp(PropertyInfo->Name, NameStr) == 0)
+        {
+            MatchedPropertyInfo = PropertyInfo;
+        }
+        ++PropertyInfo;
+    }
+    if (MatchedPropertyInfo)
+    {
+        v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+        if (!MatchedPropertyInfo->Setter)
+            PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+        auto GetterData = v8::External::New(Isolate, &MatchedPropertyInfo->GetterData);
+        auto SetterData = v8::External::New(Isolate, &MatchedPropertyInfo->SetterData);
+        v8::Local<v8::Function> GetterFunc;
+        v8::Local<v8::Function> SetterFunc;
+        if (MatchedPropertyInfo->Getter)
+        {
+            GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        if (MatchedPropertyInfo->Setter)
+        {
+            SetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        // Cache the accessor property on proto
+        v8::Local<v8::Value> GetterVal = GetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : GetterFunc.As<v8::Value>();
+        v8::Local<v8::Value> SetterVal = SetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : SetterFunc.As<v8::Value>();
+        v8::PropertyDescriptor Desc(GetterVal, SetterVal);
+        Desc.set_enumerable(true);
+        Desc.set_configurable(false);
+        (void) Proto->DefineProperty(Context, Name, Desc);
+        if (OutGetter) *OutGetter = GetterVal;
+        if (OutSetter) *OutSetter = SetterVal;
+        return true;
+    }
+
+    // Not found in current ClassDefinition, recurse into parent
+    if (ClassDefinition->SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(Registry, ClassDefinition->SuperTypeId);
+        if (SuperDef)
+        {
+            auto ProtoProtoVal = Proto->GetPrototype();
+            if (!ProtoProtoVal.IsEmpty() && ProtoProtoVal->IsObject())
+            {
+                return FindAndCachePropertyInChain(
+                    Isolate, Context, Name, NameStr, SuperDef,
+                    ProtoProtoVal.As<v8::Object>(), Registry, OutGetter, OutSetter);
+            }
+        }
+    }
+
+    return false;
+}
+
 static v8::Intercepted LazyInstanceMemberGetter(
     v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
@@ -361,6 +452,64 @@ static v8::Intercepted LazyInstanceMemberGetter(
         return v8::Intercepted::kYes;
     }
 
+    // Try to find a property accessor in the inheritance chain
+    v8::Local<v8::Value> GetterFunc;
+    if (FindAndCachePropertyInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto.As<v8::Object>(), Registry, &GetterFunc, nullptr))
+    {
+        // Property found and cached; invoke the getter for this access
+        if (GetterFunc->IsFunction())
+        {
+            v8::Local<v8::Value> Self = Info.This();
+            v8::MaybeLocal<v8::Value> Result = GetterFunc.As<v8::Function>()->Call(Context, Self, 0, nullptr);
+            if (!Result.IsEmpty())
+            {
+                Info.GetReturnValue().Set(Result.ToLocalChecked());
+            }
+        }
+        return v8::Intercepted::kYes;
+    }
+
+    return v8::Intercepted::kNo;
+}
+
+static v8::Intercepted LazyInstanceMemberSetter(
+    v8::Local<v8::Name> Name, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString())
+        return v8::Intercepted::kNo;
+
+    LazyInterceptorData* InterceptorData =
+        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const ScriptClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+    ScriptClassRegistry* Registry = InterceptorData->Registry;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    auto Proto = Info.This()->GetPrototype();
+    if (Proto.IsEmpty() || !Proto->IsObject())
+        return v8::Intercepted::kNo;
+
+    // Try to find a property accessor in the inheritance chain
+    v8::Local<v8::Value> SetterFunc;
+    if (FindAndCachePropertyInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto.As<v8::Object>(), Registry, nullptr, &SetterFunc))
+    {
+        // Property found and cached; invoke the setter for this access
+        if (SetterFunc->IsFunction())
+        {
+            v8::Local<v8::Value> Self = Info.This();
+            v8::Local<v8::Value> Args[] = { Value };
+            (void) SetterFunc.As<v8::Function>()->Call(Context, Self, 1, Args);
+        }
+        return v8::Intercepted::kYes;
+    }
+
     return v8::Intercepted::kNo;
 }
 
@@ -377,7 +526,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         auto InterceptorData = new LazyInterceptorData{ClassDefinition, Registry};
         InterceptorDatas.push_back(InterceptorData);
         Template->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
-            LazyInstanceMemberGetter, nullptr, nullptr, nullptr, nullptr,
+            LazyInstanceMemberGetter, LazyInstanceMemberSetter, nullptr, nullptr, nullptr,
             v8::External::New(Isolate, InterceptorData),
             v8::PropertyHandlerFlags::kNonMasking));
 
@@ -421,25 +570,41 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
         }
 
-        ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
-        while (PropertyInfo && PropertyInfo->Name)
+        // For properties that override a parent property, register them directly on PrototypeTemplate
+        if (ClassDefinition->SuperTypeId)
         {
-            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
-            if (!PropertyInfo->Setter)
-                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-            Template->PrototypeTemplate()->SetAccessorProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyAttribute);
-            ++PropertyInfo;
+            ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
+            while (PropertyInfo && PropertyInfo->Name)
+            {
+                if (SuperHasProperty(Registry, ClassDefinition, PropertyInfo->Name))
+                {
+                    // Find the LAST match for this name to replicate override behavior
+                    ScriptPropertyInfo* LastMatch = PropertyInfo;
+                    ScriptPropertyInfo* Search = PropertyInfo + 1;
+                    while (Search && Search->Name)
+                    {
+                        if (strcmp(Search->Name, PropertyInfo->Name) == 0)
+                            LastMatch = Search;
+                        ++Search;
+                    }
+                    v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+                    if (!LastMatch->Setter)
+                        PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                    auto GetterData = v8::External::New(Isolate, &LastMatch->GetterData);
+                    auto SetterData = v8::External::New(Isolate, &LastMatch->SetterData);
+                    Template->PrototypeTemplate()->SetAccessorProperty(
+                        v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                        LastMatch->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                                          : v8::Local<v8::FunctionTemplate>(),
+                        LastMatch->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                                          : v8::Local<v8::FunctionTemplate>(),
+                        PropertyAttribute);
+                }
+                ++PropertyInfo;
+            }
         }
 
-        PropertyInfo = ClassDefinition->Variables;
+        ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
         while (PropertyInfo && PropertyInfo->Name)
         {
             v8::PropertyAttribute PropertyAttribute = v8::None;
