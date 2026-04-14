@@ -242,7 +242,11 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
-static bool LazyMemberDefining = false;
+struct LazyInterceptorData
+{
+    const ScriptClassDefinition* ClassDefinition;
+    ScriptClassRegistry* Registry;
+};
 
 // Check if any ancestor class in the inheritance chain has a method with the given name
 static bool SuperHasMethod(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
@@ -265,22 +269,14 @@ static bool SuperHasMethod(ScriptClassRegistry* Registry, const ScriptClassDefin
     return false;
 }
 
-static v8::Intercepted LazyInstanceMemberGetter(
-    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+// Search for a method by name in the given ClassDefinition's Methods, create the v8::Function,
+// cache it on proto, and return it. If not found, recurse into the parent ClassDefinition
+// (via SuperTypeId) and proto's prototype. Returns empty Maybe if no match in the entire chain.
+static v8::MaybeLocal<v8::Function> FindAndCacheMethodInChain(
+    v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Name> Name,
+    const char* NameStr, const ScriptClassDefinition* ClassDefinition,
+    v8::Local<v8::Object> Proto, ScriptClassRegistry* Registry)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-
-    if (!Name->IsString() || LazyMemberDefining)
-        return v8::Intercepted::kNo;
-
-    const ScriptClassDefinition* ClassDefinition =
-        static_cast<const ScriptClassDefinition*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
-
-    v8::String::Utf8Value Utf8Name(Isolate, Name);
-    const char* NameStr = *Utf8Name;
-
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
     // Search Methods - find the LAST match to replicate PrototypeTemplate->Set() override behavior
     ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
     ScriptFunctionInfo* MatchedFunctionInfo = nullptr;
@@ -310,10 +306,58 @@ static v8::Intercepted LazyInstanceMemberGetter(
                 v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
                 ->GetFunction(Context).ToLocalChecked();
         }
-        LazyMemberDefining = true;
-        Info.Holder()->DefineOwnProperty(Context, Name, Func, v8::DontEnum).Check();
-        LazyMemberDefining = false;
-        Info.GetReturnValue().Set(Func);
+        // Cache the method on proto so subsequent accesses won't trigger the interceptor
+        (void) Proto->Set(Context, Name, Func);
+        return Func;
+    }
+
+    // Not found in current ClassDefinition, recurse into parent
+    if (ClassDefinition->SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(Registry, ClassDefinition->SuperTypeId);
+        if (SuperDef)
+        {
+            auto ProtoProtoVal = Proto->GetPrototype();
+            if (!ProtoProtoVal.IsEmpty() && ProtoProtoVal->IsObject())
+            {
+                return FindAndCacheMethodInChain(
+                    Isolate, Context, Name, NameStr, SuperDef,
+                    ProtoProtoVal.As<v8::Object>(), Registry);
+            }
+        }
+    }
+
+    return v8::MaybeLocal<v8::Function>();
+}
+
+static v8::Intercepted LazyInstanceMemberGetter(
+    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString())
+        return v8::Intercepted::kNo;
+
+    LazyInterceptorData* InterceptorData =
+        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const ScriptClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+    ScriptClassRegistry* Registry = InterceptorData->Registry;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    auto Proto = Info.This()->GetPrototype();
+    if (Proto.IsEmpty() || !Proto->IsObject())
+        return v8::Intercepted::kNo;
+
+    v8::MaybeLocal<v8::Function> MaybeFunc = FindAndCacheMethodInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto.As<v8::Object>(), Registry);
+
+    if (!MaybeFunc.IsEmpty())
+    {
+        Info.GetReturnValue().Set(MaybeFunc.ToLocalChecked());
         return v8::Intercepted::kYes;
     }
 
@@ -329,9 +373,12 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<ScriptClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
-        Template->PrototypeTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
+        // InstanceTemplate, PrototypeTemplate
+        auto InterceptorData = new LazyInterceptorData{ClassDefinition, Registry};
+        InterceptorDatas.push_back(InterceptorData);
+        Template->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
             LazyInstanceMemberGetter, nullptr, nullptr, nullptr, nullptr,
-            v8::External::New(Isolate, const_cast<ScriptClassDefinition*>(ClassDefinition)),
+            v8::External::New(Isolate, InterceptorData),
             v8::PropertyHandlerFlags::kNonMasking));
 
         // For methods that override a parent method, register them directly on PrototypeTemplate
@@ -584,6 +631,11 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete CallbackData;
     }
     FunctionDatas.clear();
+    for (auto* Data : InterceptorDatas)
+    {
+        delete static_cast<LazyInterceptorData*>(Data);
+    }
+    InterceptorDatas.clear();
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
     PrivateKey.Reset();

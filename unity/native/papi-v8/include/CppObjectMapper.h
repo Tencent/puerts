@@ -101,6 +101,7 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
     std::vector<PesapiCallbackData*> FunctionDatas;
+    std::vector<void*> InterceptorDatas;
     v8::Global<v8::Symbol> PrivateKey;
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
