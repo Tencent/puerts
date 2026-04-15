@@ -242,77 +242,6 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
-static void LazyInstanceMemberGetter(
-    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-
-    if (!Name->IsString())
-        return;
-
-    const ScriptClassDefinition* ClassDefinition =
-        static_cast<const ScriptClassDefinition*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
-
-    v8::String::Utf8Value Utf8Name(Isolate, Name);
-    const char* NameStr = *Utf8Name;
-
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    // Search Methods - find the LAST match to replicate PrototypeTemplate->Set() override behavior
-    ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
-    ScriptFunctionInfo* MatchedFunctionInfo = nullptr;
-    while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
-    {
-        if (strcmp(FunctionInfo->Name, NameStr) == 0)
-        {
-            MatchedFunctionInfo = FunctionInfo;
-        }
-        ++FunctionInfo;
-    }
-    if (MatchedFunctionInfo)
-    {
-        v8::Local<v8::Function> Func;
-        auto FastCallInfo = MatchedFunctionInfo->ReflectionInfo ? MatchedFunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-        if (FastCallInfo)
-        {
-            Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                v8::External::New(Isolate, &MatchedFunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
-                ->GetFunction(Context).ToLocalChecked();
-        }
-        else
-        {
-            Func = v8::FunctionTemplate::New(
-                Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &MatchedFunctionInfo->Data),
-                v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
-                ->GetFunction(Context).ToLocalChecked();
-        }
-        Info.GetReturnValue().Set(Func);
-        return;
-    }
-}
-
-// Check if any ancestor class in the inheritance chain has a method with the given name
-static bool SuperHasMethod(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
-{
-    const void* SuperTypeId = ClassDefinition->SuperTypeId;
-    while (SuperTypeId)
-    {
-        auto SuperDef = FindClassByID(Registry, SuperTypeId);
-        if (!SuperDef)
-            break;
-        ScriptFunctionInfo* FunctionInfo = SuperDef->Methods;
-        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
-        {
-            if (strcmp(FunctionInfo->Name, Name) == 0)
-                return true;
-            ++FunctionInfo;
-        }
-        SuperTypeId = SuperDef->SuperTypeId;
-    }
-    return false;
-}
-
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition)
 {
     auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
@@ -321,51 +250,6 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         auto Template = v8::FunctionTemplate::New(
             Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<ScriptClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
-
-        Template->PrototypeTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
-            LazyInstanceMemberGetter, nullptr, nullptr, nullptr, nullptr,
-            v8::External::New(Isolate, const_cast<ScriptClassDefinition*>(ClassDefinition)),
-            v8::PropertyHandlerFlags::kNonMasking));
-
-        // For methods that override a parent method, register them directly on PrototypeTemplate
-        // to avoid kNonMasking interceptor being skipped when parent prototype already has the property cached
-        if (ClassDefinition->SuperTypeId)
-        {
-            ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
-            while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
-            {
-                if (SuperHasMethod(Registry, ClassDefinition, FunctionInfo->Name))
-                {
-                    // Find the LAST match for this name to replicate override behavior
-                    ScriptFunctionInfo* LastMatch = FunctionInfo;
-                    ScriptFunctionInfo* Search = FunctionInfo + 1;
-                    while (Search && Search->Name && Search->Callback)
-                    {
-                        if (strcmp(Search->Name, FunctionInfo->Name) == 0)
-                            LastMatch = Search;
-                        ++Search;
-                    }
-                    auto FastCallInfo = LastMatch->ReflectionInfo ? LastMatch->ReflectionInfo->FastCallInfo() : nullptr;
-                    if (FastCallInfo)
-                    {
-                        Template->PrototypeTemplate()->Set(
-                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                            v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
-                                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
-                    }
-                    else
-                    {
-                        Template->PrototypeTemplate()->Set(
-                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                            v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
-                                v8::ConstructorBehavior::kThrow));
-                    }
-                }
-                ++FunctionInfo;
-            }
-        }
 
         ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
         while (PropertyInfo && PropertyInfo->Name)
@@ -403,7 +287,30 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ++PropertyInfo;
         }
 
-        ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
+        ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
+        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+        {
+            auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+            if (FastCallInfo)
+            {
+                Template->PrototypeTemplate()->Set(
+                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                    v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                        v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+                        v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
+            }
+            else
+            {
+                Template->PrototypeTemplate()->Set(
+                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                    v8::FunctionTemplate::New(
+                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data),
+                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
+                        ));
+            }
+            ++FunctionInfo;
+        }
+        FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
             auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
