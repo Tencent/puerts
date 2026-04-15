@@ -242,6 +242,131 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
+static thread_local bool LazyStaticMemberCaching = false;
+
+// Lazy getter for static functions: creates the v8::Function on first access and replaces itself
+static void LazyStaticFunctionGetter(
+    v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    if (LazyStaticMemberCaching) return;
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    ScriptFunctionInfo* FunctionInfo = static_cast<ScriptFunctionInfo*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+
+    v8::Local<v8::Function> Func;
+    auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+    if (FastCallInfo)
+    {
+        Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+            v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+            v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+    else
+    {
+        Func = v8::FunctionTemplate::New(
+            Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data),
+            v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+    // Replace the native data property with a real data property so this getter won't be called again
+    LazyStaticMemberCaching = true;
+    (void) Info.This()->DefineOwnProperty(Context, Property, Func, v8::DontDelete);
+    LazyStaticMemberCaching = false;
+    Info.GetReturnValue().Set(Func);
+}
+
+// Lazy getter for static properties (Variables): creates getter/setter Functions on first access,
+// replaces the native data property with a real accessor property, then invokes the getter.
+static void LazyStaticPropertyGetter(
+    v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    if (LazyStaticMemberCaching) return;
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    ScriptPropertyInfo* PropertyInfo = static_cast<ScriptPropertyInfo*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+
+    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
+    v8::Local<v8::Function> GetterFunc;
+    v8::Local<v8::Function> SetterFunc;
+    if (PropertyInfo->Getter)
+    {
+        GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+    if (PropertyInfo->Setter)
+    {
+        SetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+
+    // Replace the native data property with a real accessor property
+    v8::Local<v8::Value> GetterVal = GetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : GetterFunc.As<v8::Value>();
+    v8::Local<v8::Value> SetterVal = SetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : SetterFunc.As<v8::Value>();
+    v8::PropertyDescriptor Desc(GetterVal, SetterVal);
+    Desc.set_enumerable(true);
+    Desc.set_configurable(false);
+    LazyStaticMemberCaching = true;
+    (void) Info.This()->DefineProperty(Context, Property, Desc);
+    LazyStaticMemberCaching = false;
+
+    // Invoke the getter for this first access
+    if (!GetterFunc.IsEmpty())
+    {
+        v8::Local<v8::Value> Self = Info.This();
+        v8::MaybeLocal<v8::Value> Result = GetterFunc->Call(Context, Self, 0, nullptr);
+        if (!Result.IsEmpty())
+        {
+            Info.GetReturnValue().Set(Result.ToLocalChecked());
+        }
+    }
+}
+
+// Lazy setter for static properties (Variables): creates getter/setter Functions on first access,
+// replaces the native data property with a real accessor property, then invokes the setter.
+static void LazyStaticPropertySetter(
+    v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+{
+    if (LazyStaticMemberCaching) return;
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    ScriptPropertyInfo* PropertyInfo = static_cast<ScriptPropertyInfo*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+
+    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
+    v8::Local<v8::Function> GetterFunc;
+    v8::Local<v8::Function> SetterFunc;
+    if (PropertyInfo->Getter)
+    {
+        GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+    if (PropertyInfo->Setter)
+    {
+        SetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+
+    // Replace the native data property with a real accessor property
+    v8::Local<v8::Value> GetterVal = GetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : GetterFunc.As<v8::Value>();
+    v8::Local<v8::Value> SetterVal = SetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : SetterFunc.As<v8::Value>();
+    v8::PropertyDescriptor Desc(GetterVal, SetterVal);
+    Desc.set_enumerable(true);
+    Desc.set_configurable(false);
+    LazyStaticMemberCaching = true;
+    (void) Info.This()->DefineProperty(Context, Property, Desc);
+    LazyStaticMemberCaching = false;
+
+    // Invoke the setter for this first access
+    if (!SetterFunc.IsEmpty())
+    {
+        v8::Local<v8::Value> Self = Info.This();
+        v8::Local<v8::Value> Args[] = { Value };
+        (void) SetterFunc->Call(Context, Self, 1, Args);
+    }
+}
+
 struct LazyInterceptorData
 {
     const ScriptClassDefinition* ClassDefinition;
@@ -659,43 +784,32 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
         }
 
+        // Static properties (Variables): use SetNativeDataProperty for lazy getter/setter
         ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
         while (PropertyInfo && PropertyInfo->Name)
         {
             v8::PropertyAttribute PropertyAttribute = v8::None;
             if (!PropertyInfo->Setter)
                 PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-            Template->SetAccessorProperty(
+            Template->SetNativeDataProperty(
                 v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
+                LazyStaticPropertyGetter,
+                PropertyInfo->Setter ? LazyStaticPropertySetter : nullptr,
+                v8::External::New(Isolate, PropertyInfo),
                 PropertyAttribute);
             ++PropertyInfo;
         }
 
+        // Static functions (Functions): use SetNativeDataProperty for lazy creation
         ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-            auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-            if (FastCallInfo)
-            {
-                Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                        v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-                        v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
-            }
-            else
-            {
-                Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(
-                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data),
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
-                        ));
-            }
+            Template->SetNativeDataProperty(
+                v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                LazyStaticFunctionGetter,
+                nullptr,
+                v8::External::New(Isolate, FunctionInfo),
+                v8::DontDelete);
             ++FunctionInfo;
         }
 

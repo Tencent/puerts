@@ -50,13 +50,14 @@ function csTypeToClass(csType) {
                             })
                         );
                     }
-                    if (cls.__p_innerType.IsEnum) {
-                        const val = cls[key];
-                        if ((typeof val) == 'number') {
-                            cls[val] = key;
-                        }
-                    }
                 }
+				
+				if (cls.__p_innerType.IsEnum && readonlyStaticMembers.has(key)) {
+					const val = cls[key];
+					if ((typeof val) == 'number') {
+						cls[val] = key;
+					}
+				}
             }
         }
 
