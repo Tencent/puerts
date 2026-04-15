@@ -11,7 +11,6 @@
 #include "pesapi.h"
 #include "PString.h"
 #include "TypeInfo.hpp"
-#include "Log.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -300,7 +299,6 @@ static v8::Intercepted LazyInstanceMemberGetter(
 
     v8::String::Utf8Value Utf8Name(Isolate, Name);
     const char* NameStr = *Utf8Name;
-    PLog(puerts::LogLevel::Log, "++++++++++++++++++LazyInstanceMemberGetter: %s", NameStr);
 
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
@@ -392,89 +390,7 @@ static v8::Intercepted LazyInstanceMemberGetter(
     return v8::Intercepted::kNo;
 }
 
-static v8::Intercepted LazyInstanceMemberSetter(
-    v8::Local<v8::Name> Name, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-
-    if (!Name->IsString() || LazyMemberDefining)
-        return v8::Intercepted::kNo;
-
-    const ScriptClassDefinition* ClassDefinition =
-        static_cast<const ScriptClassDefinition*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
-
-    v8::String::Utf8Value Utf8Name(Isolate, Name);
-    const char* NameStr = *Utf8Name;
-
-    PLog(puerts::LogLevel::Log, "...............LazyInstanceMemberSetter: %s", NameStr);
-
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    // Search Properties - find the LAST match
-    ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
-    ScriptPropertyInfo* MatchedPropertyInfo = nullptr;
-    while (PropertyInfo && PropertyInfo->Name)
-    {
-        if (strcmp(PropertyInfo->Name, NameStr) == 0)
-        {
-            MatchedPropertyInfo = PropertyInfo;
-        }
-        ++PropertyInfo;
-    }
-    if (MatchedPropertyInfo)
-    {
-        auto GetterData = v8::External::New(Isolate, &MatchedPropertyInfo->GetterData);
-        auto SetterData = v8::External::New(Isolate, &MatchedPropertyInfo->SetterData);
-        v8::Local<v8::Function> GetterFunc;
-        v8::Local<v8::Function> SetterFunc;
-        if (MatchedPropertyInfo->Getter)
-        {
-            GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                ->GetFunction(Context).ToLocalChecked();
-        }
-        if (MatchedPropertyInfo->Setter)
-        {
-            SetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                ->GetFunction(Context).ToLocalChecked();
-        }
-        // Cache the accessor property on the holder (prototype)
-        v8::Local<v8::Value> GetterVal = GetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : GetterFunc.As<v8::Value>();
-        v8::Local<v8::Value> SetterVal = SetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : SetterFunc.As<v8::Value>();
-        v8::PropertyDescriptor Desc(GetterVal, SetterVal);
-        Desc.set_enumerable(true);
-        Desc.set_configurable(false);
-        LazyMemberDefining = true;
-        (void) Info.Holder()->DefineProperty(Context, Name, Desc);
-        LazyMemberDefining = false;
-        // Invoke the setter for this first access
-        if (MatchedPropertyInfo->Setter && !SetterFunc.IsEmpty())
-        {
-            v8::Local<v8::Value> Self = Info.This();
-            v8::Local<v8::Value> Args[] = { Value };
-            (void) SetterFunc->Call(Context, Self, 1, Args);
-        }
-        return v8::Intercepted::kYes;
-    }
-
-    // Not found in current ClassDefinition; if there's a C# base class, trigger a Get on
-    // the parent prototype to lazily cache the accessor, then Set on the original instance
-    // so that the setter callback receives the correct 'this' (the instance, not the prototype).
-    if (ClassDefinition->SuperTypeId)
-    {
-        auto ProtoProto = Info.Holder()->GetPrototype();
-        if (!ProtoProto.IsEmpty() && ProtoProto->IsObject())
-        {
-            // Trigger lazy getter on parent prototype to cache the accessor property
-            (void) ProtoProto.As<v8::Object>()->Get(Context, Name);
-            // Now set on the original instance; the cached accessor's setter will be invoked with correct 'this'
-            (void) Info.This()->Set(Context, Name, Value);
-            return v8::Intercepted::kYes;
-        }
-    }
-
-    return v8::Intercepted::kNo;
-}
-
+// InstanceTemplate setter interceptor
 // InstanceTemplate setter interceptor: triggers a Get on the prototype to lazily cache the
 // accessor property, then sets on the instance so the setter callback receives correct 'this'.
 static v8::Intercepted LazyInstanceSetterForwarder(
@@ -513,7 +429,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
         Template->PrototypeTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
-            LazyInstanceMemberGetter, LazyInstanceMemberSetter, nullptr, nullptr, nullptr,
+            LazyInstanceMemberGetter, nullptr, nullptr, nullptr, nullptr,
             v8::External::New(Isolate, const_cast<ScriptClassDefinition*>(ClassDefinition)),
             v8::PropertyHandlerFlags::kNonMasking));
 
