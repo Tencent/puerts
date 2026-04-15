@@ -248,6 +248,8 @@ struct LazyInterceptorData
     ScriptClassRegistry* Registry;
 };
 
+static thread_local bool LazyMemberCaching = false;
+
 // Check if any ancestor class in the inheritance chain has a method with the given name
 static bool SuperHasMethod(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
 {
@@ -328,7 +330,9 @@ static v8::MaybeLocal<v8::Function> FindAndCacheMethodInChain(
                 ->GetFunction(Context).ToLocalChecked();
         }
         // Cache the method on proto so subsequent accesses won't trigger the interceptor
+        LazyMemberCaching = true;
         (void) Proto->Set(Context, Name, Func);
+        LazyMemberCaching = false;
         return Func;
     }
 
@@ -396,7 +400,9 @@ static bool FindAndCachePropertyInChain(
         v8::PropertyDescriptor Desc(GetterVal, SetterVal);
         Desc.set_enumerable(true);
         Desc.set_configurable(false);
+        LazyMemberCaching = true;
         (void) Proto->DefineProperty(Context, Name, Desc);
+        LazyMemberCaching = false;
         if (OutGetter) *OutGetter = GetterVal;
         if (OutSetter) *OutSetter = SetterVal;
         return true;
@@ -513,6 +519,50 @@ static v8::Intercepted LazyInstanceMemberSetter(
     return v8::Intercepted::kNo;
 }
 
+// Prototype-level lazy getter: triggered when accessing properties directly on the prototype object
+// (e.g. CS.System.Object.prototype.ToString), not through an instance.
+static v8::Intercepted LazyPrototypeMemberGetter(
+    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString() || LazyMemberCaching)
+        return v8::Intercepted::kNo;
+
+    LazyInterceptorData* InterceptorData =
+        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const ScriptClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+    ScriptClassRegistry* Registry = InterceptorData->Registry;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    // Info.This() is the prototype object itself; cache methods/properties directly on it
+    v8::Local<v8::Object> Proto = Info.This();
+
+    v8::MaybeLocal<v8::Function> MaybeFunc = FindAndCacheMethodInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto, Registry);
+
+    if (!MaybeFunc.IsEmpty())
+    {
+        Info.GetReturnValue().Set(MaybeFunc.ToLocalChecked());
+        return v8::Intercepted::kYes;
+    }
+
+    // Try to find a property accessor in the inheritance chain
+    // For prototype-level access, just cache the accessor; don't invoke the getter
+    // (there's no real instance to call it on)
+    if (FindAndCachePropertyInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto, Registry, nullptr, nullptr))
+    {
+        return v8::Intercepted::kYes;
+    }
+
+    return v8::Intercepted::kNo;
+}
+
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition)
 {
     auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
@@ -527,6 +577,11 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         InterceptorDatas.push_back(InterceptorData);
         Template->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
             LazyInstanceMemberGetter, LazyInstanceMemberSetter, nullptr, nullptr, nullptr,
+            v8::External::New(Isolate, InterceptorData),
+            v8::PropertyHandlerFlags::kNonMasking));
+
+        Template->PrototypeTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
+            LazyPrototypeMemberGetter, nullptr, nullptr, nullptr, nullptr,
             v8::External::New(Isolate, InterceptorData),
             v8::PropertyHandlerFlags::kNonMasking));
 
