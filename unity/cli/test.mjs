@@ -250,20 +250,22 @@ function getExeSuffix() {
     return "";
 }
 
-export async function dotnetTest(cwd, backend, filter = '', thread_safe = false) {
+export async function dotnetTest(cwd, backend, filter = '', thread_safe = false, lazyload = false) {
     // 编译binary
     let dlls = await runPuertsMake(join(cwd, '../../native/puerts'), {
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
 
     const qjsdlls = await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
     dlls = dlls.concat(qjsdlls);
 
@@ -271,7 +273,8 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
     dlls = dlls.concat(v8dlls);
     
@@ -279,7 +282,8 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
     dlls = dlls.concat(luadlls);
     
@@ -287,7 +291,8 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
     dlls = dlls.concat(nodedlls);
 	
@@ -295,7 +300,8 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         platform: getPlatform(),
         config: "Debug",
         arch: process.arch,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
     dlls = dlls.concat(pydlls);
 
@@ -304,7 +310,8 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         config: "Debug",
         arch: process.arch,
         websocket: 1,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
     dlls = dlls.concat(wsppaddondlls);
 
@@ -312,7 +319,7 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
     await runTest(cwd, dlls, false, filter);
 }
 
-export async function unityTest(cwd, unityPath) {
+export async function unityTest(cwd, unityPath, lazyload = false) {
     function execUnityEditor(args) {
         const unityBatchModeBase = `"${unityPath}" -batchmode -nographics -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`;
         const code = exec(`${unityBatchModeBase} ${args}`).code;
@@ -380,45 +387,52 @@ export async function unityTest(cwd, unityPath) {
     await runPuertsMake(join(cwd, '../../native/puerts'), {
         platform: platform,
         config: "Debug",
-        arch: process.arch
+        arch: process.arch,
+        lazyload: lazyload
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-quickjs'), {
         platform: platform,
         config: "Debug",
-        arch: process.arch
+        arch: process.arch,
+        lazyload: lazyload
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-v8'), {
         platform: platform,
         config: "Debug",
-        arch: process.arch
+        arch: process.arch,
+        lazyload: lazyload
     });
     
     await runPuertsMake(join(cwd, '../../native/papi-lua'), {
         platform: platform,
         config: "Debug",
-        arch: process.arch
+        arch: process.arch,
+        lazyload: lazyload
     });
     
     await runPuertsMake(join(cwd, '../../native/papi-nodejs'), {
         platform: platform,
         config: "Debug",
-        arch: process.arch
+        arch: process.arch,
+        lazyload: lazyload
     });
 
     await runPuertsMake(join(cwd, '../../native/papi-python'), {
         platform: platform,
         config: "Debug",
         websocket: 1,
-        arch: process.arch
+        arch: process.arch,
+        lazyload: lazyload
     });
 	
 	await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
         platform: platform,
         config: "Debug",
         websocket: 1,
-        arch: process.arch
+        arch: process.arch,
+        lazyload: lazyload
     });
     
     console.log('-------------------------Without Wrapper test-------------------------');

@@ -417,6 +417,10 @@ async function runPuertsMake(cwd, options) {
         console.log('################################## jitless ##################################');
         BackendConfig.definition.push("JITLESS");
     }
+    if (options.lazyload) {
+        console.log('################################## lazyload ##################################');
+        BackendConfig.definition.push("PUERTS_LAZYLOAD");
+    }
     const definitionD = (BackendConfig.definition || []).join(';');
     const linkD = (BackendConfig['link-libraries']?.[options.platform]?.[options.arch] || []).join(';');
     const incD = (BackendConfig.include || []).join(';');

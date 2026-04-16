@@ -16,7 +16,17 @@ function csTypeToClass(csType) {
 
         // 此处parentPrototype如果是一个泛型，会丢失父父的继承信息，必须循环找下去
         while (parentPrototype) {
-            Object.setPrototypeOf(currentCls, parentPrototype.constructor);//v8 api的inherit并不能把静态属性也继承，通过这种方式修复下
+            // v8 api的inherit并不能把静态属性也继承，通过这种方式修复下
+            // C++ layer may have inserted a lazy interceptor node between currentCls and Function.prototype
+            // via Func->SetPrototype. We need to preserve it by setting the interceptor node's prototype
+            // to the parent constructor instead of directly overwriting currentCls's prototype.
+            let currentProto = Object.getPrototypeOf(currentCls);
+            if (currentProto && currentProto !== Function.prototype && currentProto !== parentPrototype.constructor) {
+                // Interceptor node exists, chain it: currentCls -> interceptorNode -> parentCls
+                Object.setPrototypeOf(currentProto, parentPrototype.constructor);
+            } else {
+                Object.setPrototypeOf(currentCls, parentPrototype.constructor);
+            }
             currentCls.__static_inherit__ = true;
 
             currentCls = parentPrototype.constructor;
@@ -27,9 +37,9 @@ function csTypeToClass(csType) {
         let readonlyStaticMembers;
         if (readonlyStaticMembers = cls.__puertsMetadata.get('readonlyStaticMembers')) {
             cls.__puertsMetadata.set('readonlyStaticMembers', undefined);
-            for (var key in cls) {
+            for (let key of readonlyStaticMembers) {
                 let desc = Object.getOwnPropertyDescriptor(cls, key);
-                if (readonlyStaticMembers.has(key) && desc && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
+                if (desc && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
                     let getter = desc.get;
                     let value;
                     let valueGetted = false;
@@ -50,13 +60,14 @@ function csTypeToClass(csType) {
                             })
                         );
                     }
-                    if (cls.__p_innerType.IsEnum) {
-                        const val = cls[key];
-                        if ((typeof val) == 'number') {
-                            cls[val] = key;
-                        }
-                    }
                 }
+				
+				if (cls.__p_innerType.IsEnum) {
+					const val = cls[key];
+					if ((typeof val) == 'number') {
+						cls[val] = key;
+					}
+				}
             }
         }
 

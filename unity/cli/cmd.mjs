@@ -39,6 +39,7 @@ program
 	.option('-egc, --expose_gc', 'expose gc')
     .option('-wi, --with_inspector', 'with inspector')
     .option('-jl, --jitless', 'jitless')
+    .option('-ll, --lazyload', 'enable lazyload')
     .option('--with_symbols', 'generate symbol file for debug')
     .action(function (quickcommand, options) {
         let backend = options.backend;
@@ -148,6 +149,7 @@ program
     .option('-sq, --switch_qjs', 'switch to quickjs backend')
     .option('-sn, --switch_njs', 'switch to nodejs backend')
     .option('-ts, --thread_safe', 'thread safe')
+    .option('-ll, --lazyload', 'enable lazyload')
     .action((backend, options) => {
         if (options.switch_qjs) {
             process.env.SwitchToQJS = '1';
@@ -155,14 +157,15 @@ program
         if (options.switch_njs) {
             process.env.SwitchToNJS = '1';
         }
-        dotnetTest(cwd, backend || "quickjs", options.filter, options.thread_safe);
+        dotnetTest(cwd, backend || "quickjs", options.filter, options.thread_safe, options.lazyload);
     });
 
 program
     .command('unity-test')
     .requiredOption("--unity <pathToUnity>")
+    .option('-ll, --lazyload', 'enable lazyload')
     .action((options) => {
-        unityTest(cwd, options.unity);
+        unityTest(cwd, options.unity, options.lazyload);
     });
 
 program.parse(process.argv);
