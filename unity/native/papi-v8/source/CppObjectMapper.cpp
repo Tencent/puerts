@@ -42,7 +42,9 @@ void FCppObjectMapper::findClassByName(const v8::FunctionCallbackInfo<v8::Value>
     auto ClassDef = FindCppTypeClassByName(Registry, TypeName);
     if (ClassDef)
     {
-        Info.GetReturnValue().Set(GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked());
+        auto Func = GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked();
+        WrapFunctionWithStaticLazyInterceptor(Isolate, Context, Func, ClassDef);
+        Info.GetReturnValue().Set(Func);
     }
     else
     {
@@ -59,7 +61,12 @@ v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Contex
         return v8::MaybeLocal<v8::Function>();
     }
     auto Template = GetTemplateOfClass(Context->GetIsolate(), ClassDef);
-    return Template->GetFunction(Context);
+    auto MaybeFunc = Template->GetFunction(Context);
+    if (!MaybeFunc.IsEmpty())
+    {
+        WrapFunctionWithStaticLazyInterceptor(Context->GetIsolate(), Context, MaybeFunc.ToLocalChecked(), ClassDef);
+    }
+    return MaybeFunc;
 }
 
 static void PointerNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -244,38 +251,6 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 static thread_local bool LazyStaticMemberCaching = false;
 
-// Lazy getter for static functions: creates the v8::Function on first access and replaces itself
-static void LazyStaticFunctionGetter(
-    v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
-{
-    if (LazyStaticMemberCaching) return;
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    ScriptFunctionInfo* FunctionInfo = static_cast<ScriptFunctionInfo*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
-
-    v8::Local<v8::Function> Func;
-    auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-    if (FastCallInfo)
-    {
-        Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-            v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-            v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
-            ->GetFunction(Context).ToLocalChecked();
-    }
-    else
-    {
-        Func = v8::FunctionTemplate::New(
-            Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data),
-            v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
-            ->GetFunction(Context).ToLocalChecked();
-    }
-    // Replace the native data property with a real data property so this getter won't be called again
-    LazyStaticMemberCaching = true;
-    (void) Info.This()->DefineOwnProperty(Context, Property, Func, v8::DontDelete);
-    LazyStaticMemberCaching = false;
-    Info.GetReturnValue().Set(Func);
-}
-
 // Lazy getter for static properties (Variables): creates getter/setter Functions on first access,
 // replaces the native data property with a real accessor property, then invokes the getter.
 static void LazyStaticPropertyGetter(
@@ -373,7 +348,85 @@ struct LazyInterceptorData
     ScriptClassRegistry* Registry;
 };
 
+// Lazy getter interceptor for static functions via SetHandler on an inserted prototype node.
+// Searches ClassDefinition->Functions for the requested name, creates the v8::Function on first access,
+// and caches it directly on the interceptor node object.
+static v8::Intercepted LazyStaticFunctionInterceptorGetter(
+    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString() || LazyStaticMemberCaching)
+        return v8::Intercepted::kNo;
+
+    LazyInterceptorData* InterceptorData =
+        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const ScriptClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    // Search Functions (static methods) - find the LAST match
+    ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
+    ScriptFunctionInfo* MatchedFunctionInfo = nullptr;
+    while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+    {
+        if (strcmp(FunctionInfo->Name, NameStr) == 0)
+        {
+            MatchedFunctionInfo = FunctionInfo;
+        }
+        ++FunctionInfo;
+    }
+    if (!MatchedFunctionInfo)
+        return v8::Intercepted::kNo;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Local<v8::Function> Func;
+    auto FastCallInfo = MatchedFunctionInfo->ReflectionInfo ? MatchedFunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+    if (FastCallInfo)
+    {
+        Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+            v8::External::New(Isolate, &MatchedFunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+            v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+    else
+    {
+        Func = v8::FunctionTemplate::New(
+            Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &MatchedFunctionInfo->Data),
+            v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+            ->GetFunction(Context).ToLocalChecked();
+    }
+    // Cache the function on the interceptor node so subsequent accesses won't trigger the interceptor
+    LazyStaticMemberCaching = true;
+    (void) Info.This()->Set(Context, Name, Func);
+    LazyStaticMemberCaching = false;
+    Info.GetReturnValue().Set(Func);
+    return v8::Intercepted::kYes;
+}
+
 static thread_local bool LazyMemberCaching = false;
+
+// Check if any ancestor class in the inheritance chain has a static method (Functions) with the given name
+static bool SuperHasStaticMethod(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
+{
+    const void* SuperTypeId = ClassDefinition->SuperTypeId;
+    while (SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(Registry, SuperTypeId);
+        if (!SuperDef)
+            break;
+        ScriptFunctionInfo* FunctionInfo = SuperDef->Functions;
+        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+        {
+            if (strcmp(FunctionInfo->Name, Name) == 0)
+                return true;
+            ++FunctionInfo;
+        }
+        SuperTypeId = SuperDef->SuperTypeId;
+    }
+    return false;
+}
 
 // Check if any ancestor class in the inheritance chain has a method with the given name
 static bool SuperHasMethod(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
@@ -800,17 +853,44 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ++PropertyInfo;
         }
 
-        // Static functions (Functions): use SetNativeDataProperty for lazy creation
-        ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
-        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+        // For static methods that override a parent static method, register them directly on FunctionTemplate
+        // (not lazy-loaded) to ensure proper override behavior, similar to instance methods
+        if (ClassDefinition->SuperTypeId)
         {
-            Template->SetNativeDataProperty(
-                v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                LazyStaticFunctionGetter,
-                nullptr,
-                v8::External::New(Isolate, FunctionInfo),
-                v8::DontDelete);
-            ++FunctionInfo;
+            ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
+            while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+            {
+                if (SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
+                {
+                    // Find the LAST match for this name to replicate override behavior
+                    ScriptFunctionInfo* LastMatch = FunctionInfo;
+                    ScriptFunctionInfo* Search = FunctionInfo + 1;
+                    while (Search && Search->Name && Search->Callback)
+                    {
+                        if (strcmp(Search->Name, FunctionInfo->Name) == 0)
+                            LastMatch = Search;
+                        ++Search;
+                    }
+                    auto FastCallInfo = LastMatch->ReflectionInfo ? LastMatch->ReflectionInfo->FastCallInfo() : nullptr;
+                    if (FastCallInfo)
+                    {
+                        Template->Set(
+                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
+                                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
+                    }
+                    else
+                    {
+                        Template->Set(
+                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
+                                v8::ConstructorBehavior::kThrow));
+                    }
+                }
+                ++FunctionInfo;
+            }
         }
 
         if (ClassDefinition->SuperTypeId)
@@ -829,6 +909,50 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
     {
         return v8::Local<v8::FunctionTemplate>::New(Isolate, Iter->second);
     }
+}
+
+void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
+    v8::Local<v8::Function> Func, const ScriptClassDefinition* ClassDefinition)
+{
+    // Avoid wrapping the same type multiple times (GetFunction returns the same object in the same Context)
+    if (StaticLazyWrappedTypes.find(ClassDefinition->TypeId) != StaticLazyWrappedTypes.end())
+        return;
+
+    // Only wrap if there are static functions that are not already directly registered (i.e. not overriding parent)
+    bool HasLazyStaticFunctions = false;
+    ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
+    while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+    {
+        if (!ClassDefinition->SuperTypeId || !SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
+        {
+            HasLazyStaticFunctions = true;
+            break;
+        }
+        ++FunctionInfo;
+    }
+    if (!HasLazyStaticFunctions)
+        return;
+
+    // Create an ObjectTemplate with SetHandler for lazy static function interception
+    auto InterceptorData = new LazyInterceptorData{ClassDefinition, Registry};
+    InterceptorDatas.push_back(InterceptorData);
+
+    auto ObjTemplate = v8::ObjectTemplate::New(Isolate);
+    ObjTemplate->SetHandler(v8::NamedPropertyHandlerConfiguration(
+        LazyStaticFunctionInterceptorGetter, nullptr, nullptr, nullptr, nullptr,
+        v8::External::New(Isolate, InterceptorData),
+        v8::PropertyHandlerFlags::kNonMasking));
+
+    auto InterceptorNode = ObjTemplate->NewInstance(Context).ToLocalChecked();
+
+    // Insert the interceptor node into the prototype chain:
+    // Before: Func -> OriginalPrototype
+    // After:  Func -> InterceptorNode -> OriginalPrototype
+    auto OriginalPrototype = Func->GetPrototype();
+    (void) InterceptorNode->SetPrototype(Context, OriginalPrototype);
+    (void) Func->SetPrototype(Context, InterceptorNode);
+
+    StaticLazyWrappedTypes.insert(ClassDefinition->TypeId);
 }
 
 static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<ScriptClassDefinition>& Data)
@@ -970,6 +1094,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete static_cast<LazyInterceptorData*>(Data);
     }
     InterceptorDatas.clear();
+    StaticLazyWrappedTypes.clear();
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
     PrivateKey.Reset();

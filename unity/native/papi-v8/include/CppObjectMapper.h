@@ -17,6 +17,7 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include <unordered_map>
+#include <unordered_set>
 #include "ScriptClassRegistry.h"
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
@@ -93,6 +94,9 @@ public:
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition);
 
+    void WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
+        v8::Local<v8::Function> Func, const ScriptClassDefinition* ClassDefinition);
+
 private:
     std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
 
@@ -102,6 +106,7 @@ private:
 
     std::vector<PesapiCallbackData*> FunctionDatas;
     std::vector<void*> InterceptorDatas;
+    std::unordered_set<const void*, PointerHash, PointerEqual> StaticLazyWrappedTypes;
     v8::Global<v8::Symbol> PrivateKey;
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
