@@ -43,9 +43,36 @@ namespace Puerts
             }
         }
 
+        public static void LogCallback(IntPtr msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            System.Console.WriteLine(MarshalExtensions.PtrToStringUTF8(msg));
+#else
+            UnityEngine.Debug.Log(MarshalExtensions.PtrToStringUTF8(msg));
+#endif
+        }
+
+        public static void LogWarningCallback(IntPtr msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(MarshalExtensions.PtrToStringUTF8(msg));
+#endif
+        }
+
+        public static void LogErrorCallback(IntPtr msg)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+#else
+            UnityEngine.Debug.Log(MarshalExtensions.PtrToStringUTF8(msg));
+#endif
+        }
+
         public ScriptEnv(Backend backend, int debugPort = -1)
         {
             this.backend = backend;
+
+            // PuertsNative.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
 
             const int libVersionExpect = 11;
             int libVersion = PuertsNative.GetPapiVersion();
