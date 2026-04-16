@@ -43,7 +43,9 @@ void FCppObjectMapper::findClassByName(const v8::FunctionCallbackInfo<v8::Value>
     if (ClassDef)
     {
         auto Func = GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked();
+#ifdef PUERTS_LAZYLOAD
         WrapFunctionWithStaticLazyInterceptor(Isolate, Context, Func, ClassDef);
+#endif
         Info.GetReturnValue().Set(Func);
     }
     else
@@ -62,10 +64,12 @@ v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Contex
     }
     auto Template = GetTemplateOfClass(Context->GetIsolate(), ClassDef);
     auto MaybeFunc = Template->GetFunction(Context);
+#ifdef PUERTS_LAZYLOAD
     if (!MaybeFunc.IsEmpty())
     {
         WrapFunctionWithStaticLazyInterceptor(Context->GetIsolate(), Context, MaybeFunc.ToLocalChecked(), ClassDef);
     }
+#endif
     return MaybeFunc;
 }
 
@@ -249,6 +253,7 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
+#ifdef PUERTS_LAZYLOAD
 static thread_local bool LazyStaticMemberCaching = false;
 
 struct LazyInterceptorData
@@ -354,7 +359,9 @@ static v8::Intercepted LazyStaticFunctionInterceptorGetter(
 }
 
 static thread_local bool LazyMemberCaching = false;
+#endif // PUERTS_LAZYLOAD
 
+#ifdef PUERTS_LAZYLOAD
 // Check if any ancestor class in the inheritance chain has a static variable (Variables) with the given name
 static bool SuperHasStaticVariable(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
 {
@@ -438,7 +445,9 @@ static bool SuperHasProperty(ScriptClassRegistry* Registry, const ScriptClassDef
     }
     return false;
 }
+#endif // PUERTS_LAZYLOAD
 
+#ifdef PUERTS_LAZYLOAD
 // Search for a method by name in the given ClassDefinition's Methods, create the v8::Function,
 // cache it on proto, and return it. If not found, recurse into the parent ClassDefinition
 // (via SuperTypeId) and proto's prototype. Returns empty Maybe if no match in the entire chain.
@@ -709,6 +718,7 @@ static v8::Intercepted LazyPrototypeMemberGetter(
 
     return v8::Intercepted::kNo;
 }
+#endif // PUERTS_LAZYLOAD
 
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition)
 {
@@ -719,6 +729,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<ScriptClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
+#ifdef PUERTS_LAZYLOAD
         // InstanceTemplate, PrototypeTemplate
         auto InterceptorData = new LazyInterceptorData{ClassDefinition, Registry};
         InterceptorDatas.push_back(InterceptorData);
@@ -731,15 +742,16 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             LazyPrototypeMemberGetter, nullptr, nullptr, nullptr, nullptr,
             v8::External::New(Isolate, InterceptorData),
             v8::PropertyHandlerFlags::kNonMasking));
+#endif // PUERTS_LAZYLOAD
 
-        // For methods that override a parent method, register them directly on PrototypeTemplate
-        // to avoid kNonMasking interceptor being skipped when parent prototype already has the property cached
-        if (ClassDefinition->SuperTypeId)
+        // Methods
         {
             ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
             while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
             {
-                if (SuperHasMethod(Registry, ClassDefinition, FunctionInfo->Name))
+#ifdef PUERTS_LAZYLOAD
+                if (ClassDefinition->SuperTypeId && SuperHasMethod(Registry, ClassDefinition, FunctionInfo->Name))
+#endif
                 {
                     auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
                     if (FastCallInfo)
@@ -763,13 +775,14 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
         }
 
-        // For properties that override a parent property, register them directly on PrototypeTemplate
-        if (ClassDefinition->SuperTypeId)
+        // Properties
         {
             ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
             while (PropertyInfo && PropertyInfo->Name)
             {
-                if (SuperHasProperty(Registry, ClassDefinition, PropertyInfo->Name))
+#ifdef PUERTS_LAZYLOAD
+                if (ClassDefinition->SuperTypeId && SuperHasProperty(Registry, ClassDefinition, PropertyInfo->Name))
+#endif
                 {
                     v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                     if (!PropertyInfo->Setter)
@@ -788,17 +801,17 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
         }
 
-        // Static properties (Variables): writable properties and read-only properties that override
-        // a parent's same-named variable are registered directly; read-only properties without parent
-        // override are lazy-loaded via the static function interceptor handler.
+        // Variables (static properties)
         {
             ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
             while (PropertyInfo && PropertyInfo->Name)
             {
+#ifdef PUERTS_LAZYLOAD
                 // Directly register if: has setter (writable), or parent has same-named static variable (override)
                 bool DirectRegister = PropertyInfo->Setter
                     || (ClassDefinition->SuperTypeId && SuperHasStaticVariable(Registry, ClassDefinition, PropertyInfo->Name));
                 if (DirectRegister)
+#endif
                 {
                     v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                     if (!PropertyInfo->Setter)
@@ -813,19 +826,18 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                                              : v8::Local<v8::FunctionTemplate>(),
                         PropertyAttribute);
                 }
-                // else: read-only without parent override -> lazy-loaded via LazyStaticFunctionInterceptorGetter
                 ++PropertyInfo;
             }
         }
 
-        // For static methods that override a parent static method, register them directly on FunctionTemplate
-        // (not lazy-loaded) to ensure proper override behavior, similar to instance methods
-        if (ClassDefinition->SuperTypeId)
+        // Functions (static methods)
         {
             ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
             while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
             {
-                if (SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
+#ifdef PUERTS_LAZYLOAD
+                if (ClassDefinition->SuperTypeId && SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
+#endif
                 {
                     auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
                     if (FastCallInfo)
@@ -867,6 +879,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
     }
 }
 
+#ifdef PUERTS_LAZYLOAD
 void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
     v8::Local<v8::Function> Func, const ScriptClassDefinition* ClassDefinition)
 {
@@ -922,6 +935,7 @@ void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolat
 
     StaticLazyWrappedTypes.insert(ClassDefinition->TypeId);
 }
+#endif // PUERTS_LAZYLOAD
 
 static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<ScriptClassDefinition>& Data)
 {
@@ -1057,12 +1071,14 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete CallbackData;
     }
     FunctionDatas.clear();
+#ifdef PUERTS_LAZYLOAD
     for (auto* Data : InterceptorDatas)
     {
         delete static_cast<LazyInterceptorData*>(Data);
     }
     InterceptorDatas.clear();
     StaticLazyWrappedTypes.clear();
+#endif // PUERTS_LAZYLOAD
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
     PrivateKey.Reset();
