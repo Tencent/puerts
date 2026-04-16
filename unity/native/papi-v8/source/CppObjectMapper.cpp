@@ -887,36 +887,6 @@ void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolat
     if (StaticLazyWrappedTypes.find(ClassDefinition->TypeId) != StaticLazyWrappedTypes.end())
         return;
 
-    // Only wrap if there are lazy-loaded static functions or lazy-loaded read-only static variables
-    bool HasLazyStaticMembers = false;
-    ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
-    while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
-    {
-        if (!ClassDefinition->SuperTypeId || !SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
-        {
-            HasLazyStaticMembers = true;
-            break;
-        }
-        ++FunctionInfo;
-    }
-    if (!HasLazyStaticMembers)
-    {
-        // Check for read-only static variables that are not overriding parent
-        ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
-        while (PropertyInfo && PropertyInfo->Name)
-        {
-            if (!PropertyInfo->Setter
-                && (!ClassDefinition->SuperTypeId || !SuperHasStaticVariable(Registry, ClassDefinition, PropertyInfo->Name)))
-            {
-                HasLazyStaticMembers = true;
-                break;
-            }
-            ++PropertyInfo;
-        }
-    }
-    if (!HasLazyStaticMembers)
-        return;
-
     // Create an ObjectTemplate with SetHandler for lazy static function interception
     auto ObjTemplate = v8::ObjectTemplate::New(Isolate);
     ObjTemplate->SetHandler(v8::NamedPropertyHandlerConfiguration(
