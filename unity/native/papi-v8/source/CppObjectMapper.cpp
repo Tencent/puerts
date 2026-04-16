@@ -251,97 +251,6 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 static thread_local bool LazyStaticMemberCaching = false;
 
-// Lazy getter for static properties (Variables): creates getter/setter Functions on first access,
-// replaces the native data property with a real accessor property, then invokes the getter.
-static void LazyStaticPropertyGetter(
-    v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
-{
-    if (LazyStaticMemberCaching) return;
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    ScriptPropertyInfo* PropertyInfo = static_cast<ScriptPropertyInfo*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
-
-    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-    v8::Local<v8::Function> GetterFunc;
-    v8::Local<v8::Function> SetterFunc;
-    if (PropertyInfo->Getter)
-    {
-        GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-            ->GetFunction(Context).ToLocalChecked();
-    }
-    if (PropertyInfo->Setter)
-    {
-        SetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-            ->GetFunction(Context).ToLocalChecked();
-    }
-
-    // Replace the native data property with a real accessor property
-    v8::Local<v8::Value> GetterVal = GetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : GetterFunc.As<v8::Value>();
-    v8::Local<v8::Value> SetterVal = SetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : SetterFunc.As<v8::Value>();
-    v8::PropertyDescriptor Desc(GetterVal, SetterVal);
-    Desc.set_enumerable(true);
-    Desc.set_configurable(false);
-    LazyStaticMemberCaching = true;
-    (void) Info.This()->DefineProperty(Context, Property, Desc);
-    LazyStaticMemberCaching = false;
-
-    // Invoke the getter for this first access
-    if (!GetterFunc.IsEmpty())
-    {
-        v8::Local<v8::Value> Self = Info.This();
-        v8::MaybeLocal<v8::Value> Result = GetterFunc->Call(Context, Self, 0, nullptr);
-        if (!Result.IsEmpty())
-        {
-            Info.GetReturnValue().Set(Result.ToLocalChecked());
-        }
-    }
-}
-
-// Lazy setter for static properties (Variables): creates getter/setter Functions on first access,
-// replaces the native data property with a real accessor property, then invokes the setter.
-static void LazyStaticPropertySetter(
-    v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
-{
-    if (LazyStaticMemberCaching) return;
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    ScriptPropertyInfo* PropertyInfo = static_cast<ScriptPropertyInfo*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
-
-    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-    v8::Local<v8::Function> GetterFunc;
-    v8::Local<v8::Function> SetterFunc;
-    if (PropertyInfo->Getter)
-    {
-        GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-            ->GetFunction(Context).ToLocalChecked();
-    }
-    if (PropertyInfo->Setter)
-    {
-        SetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-            ->GetFunction(Context).ToLocalChecked();
-    }
-
-    // Replace the native data property with a real accessor property
-    v8::Local<v8::Value> GetterVal = GetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : GetterFunc.As<v8::Value>();
-    v8::Local<v8::Value> SetterVal = SetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : SetterFunc.As<v8::Value>();
-    v8::PropertyDescriptor Desc(GetterVal, SetterVal);
-    Desc.set_enumerable(true);
-    Desc.set_configurable(false);
-    LazyStaticMemberCaching = true;
-    (void) Info.This()->DefineProperty(Context, Property, Desc);
-    LazyStaticMemberCaching = false;
-
-    // Invoke the setter for this first access
-    if (!SetterFunc.IsEmpty())
-    {
-        v8::Local<v8::Value> Self = Info.This();
-        v8::Local<v8::Value> Args[] = { Value };
-        (void) SetterFunc->Call(Context, Self, 1, Args);
-    }
-}
-
 struct LazyInterceptorData
 {
     const ScriptClassDefinition* ClassDefinition;
@@ -377,35 +286,95 @@ static v8::Intercepted LazyStaticFunctionInterceptorGetter(
         }
         ++FunctionInfo;
     }
-    if (!MatchedFunctionInfo)
-        return v8::Intercepted::kNo;
+    if (MatchedFunctionInfo)
+    {
+        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+        v8::Local<v8::Function> Func;
+        auto FastCallInfo = MatchedFunctionInfo->ReflectionInfo ? MatchedFunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+        if (FastCallInfo)
+        {
+            Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                v8::External::New(Isolate, &MatchedFunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        else
+        {
+            Func = v8::FunctionTemplate::New(
+                Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &MatchedFunctionInfo->Data),
+                v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        // Cache the function on the interceptor node so subsequent accesses won't trigger the interceptor
+        LazyStaticMemberCaching = true;
+        (void) Info.This()->Set(Context, Name, Func);
+        LazyStaticMemberCaching = false;
+        Info.GetReturnValue().Set(Func);
+        return v8::Intercepted::kYes;
+    }
 
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Local<v8::Function> Func;
-    auto FastCallInfo = MatchedFunctionInfo->ReflectionInfo ? MatchedFunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-    if (FastCallInfo)
+    // Search Variables (read-only static properties) for lazy getter creation
+    ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
+    ScriptPropertyInfo* MatchedPropertyInfo = nullptr;
+    while (PropertyInfo && PropertyInfo->Name)
     {
-        Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-            v8::External::New(Isolate, &MatchedFunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-            v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
-            ->GetFunction(Context).ToLocalChecked();
+        if (!PropertyInfo->Setter && strcmp(PropertyInfo->Name, NameStr) == 0)
+        {
+            MatchedPropertyInfo = PropertyInfo;
+            break;
+        }
+        ++PropertyInfo;
     }
-    else
+    if (MatchedPropertyInfo && MatchedPropertyInfo->Getter)
     {
-        Func = v8::FunctionTemplate::New(
-            Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &MatchedFunctionInfo->Data),
-            v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow)
+        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+        auto GetterData = v8::External::New(Isolate, &MatchedPropertyInfo->GetterData);
+        auto GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
             ->GetFunction(Context).ToLocalChecked();
+
+        // Cache as a read-only accessor property on the interceptor node
+        v8::PropertyDescriptor Desc(GetterFunc.As<v8::Value>(), v8::Undefined(Isolate).As<v8::Value>());
+        Desc.set_enumerable(true);
+        Desc.set_configurable(false);
+        LazyStaticMemberCaching = true;
+        (void) Info.This()->DefineProperty(Context, Name, Desc);
+        LazyStaticMemberCaching = false;
+
+        // Invoke the getter for this first access
+        v8::Local<v8::Value> Self = Info.This();
+        v8::MaybeLocal<v8::Value> Result = GetterFunc->Call(Context, Self, 0, nullptr);
+        if (!Result.IsEmpty())
+        {
+            Info.GetReturnValue().Set(Result.ToLocalChecked());
+        }
+        return v8::Intercepted::kYes;
     }
-    // Cache the function on the interceptor node so subsequent accesses won't trigger the interceptor
-    LazyStaticMemberCaching = true;
-    (void) Info.This()->Set(Context, Name, Func);
-    LazyStaticMemberCaching = false;
-    Info.GetReturnValue().Set(Func);
-    return v8::Intercepted::kYes;
+
+    return v8::Intercepted::kNo;
 }
 
 static thread_local bool LazyMemberCaching = false;
+
+// Check if any ancestor class in the inheritance chain has a static variable (Variables) with the given name
+static bool SuperHasStaticVariable(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
+{
+    const void* SuperTypeId = ClassDefinition->SuperTypeId;
+    while (SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(Registry, SuperTypeId);
+        if (!SuperDef)
+            break;
+        ScriptPropertyInfo* PropertyInfo = SuperDef->Variables;
+        while (PropertyInfo && PropertyInfo->Name)
+        {
+            if (strcmp(PropertyInfo->Name, Name) == 0)
+                return true;
+            ++PropertyInfo;
+        }
+        SuperTypeId = SuperDef->SuperTypeId;
+    }
+    return false;
+}
 
 // Check if any ancestor class in the inheritance chain has a static method (Functions) with the given name
 static bool SuperHasStaticMethod(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
@@ -819,20 +788,34 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
         }
 
-        // Static properties (Variables): use SetNativeDataProperty for lazy getter/setter
-        ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
-        while (PropertyInfo && PropertyInfo->Name)
+        // Static properties (Variables): writable properties and read-only properties that override
+        // a parent's same-named variable are registered directly; read-only properties without parent
+        // override are lazy-loaded via the static function interceptor handler.
         {
-            v8::PropertyAttribute PropertyAttribute = v8::None;
-            if (!PropertyInfo->Setter)
-                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            Template->SetNativeDataProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                LazyStaticPropertyGetter,
-                PropertyInfo->Setter ? LazyStaticPropertySetter : nullptr,
-                v8::External::New(Isolate, PropertyInfo),
-                PropertyAttribute);
-            ++PropertyInfo;
+            ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
+            while (PropertyInfo && PropertyInfo->Name)
+            {
+                // Directly register if: has setter (writable), or parent has same-named static variable (override)
+                bool DirectRegister = PropertyInfo->Setter
+                    || (ClassDefinition->SuperTypeId && SuperHasStaticVariable(Registry, ClassDefinition, PropertyInfo->Name));
+                if (DirectRegister)
+                {
+                    v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+                    if (!PropertyInfo->Setter)
+                        PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+                    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
+                    Template->SetAccessorProperty(
+                        v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                        PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
+                        PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
+                        PropertyAttribute);
+                }
+                // else: read-only without parent override -> lazy-loaded via LazyStaticFunctionInterceptorGetter
+                ++PropertyInfo;
+            }
         }
 
         // For static methods that override a parent static method, register them directly on FunctionTemplate
@@ -891,19 +874,34 @@ void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolat
     if (StaticLazyWrappedTypes.find(ClassDefinition->TypeId) != StaticLazyWrappedTypes.end())
         return;
 
-    // Only wrap if there are static functions that are not already directly registered (i.e. not overriding parent)
-    bool HasLazyStaticFunctions = false;
+    // Only wrap if there are lazy-loaded static functions or lazy-loaded read-only static variables
+    bool HasLazyStaticMembers = false;
     ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
     while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
     {
         if (!ClassDefinition->SuperTypeId || !SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
         {
-            HasLazyStaticFunctions = true;
+            HasLazyStaticMembers = true;
             break;
         }
         ++FunctionInfo;
     }
-    if (!HasLazyStaticFunctions)
+    if (!HasLazyStaticMembers)
+    {
+        // Check for read-only static variables that are not overriding parent
+        ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
+        while (PropertyInfo && PropertyInfo->Name)
+        {
+            if (!PropertyInfo->Setter
+                && (!ClassDefinition->SuperTypeId || !SuperHasStaticVariable(Registry, ClassDefinition, PropertyInfo->Name)))
+            {
+                HasLazyStaticMembers = true;
+                break;
+            }
+            ++PropertyInfo;
+        }
+    }
+    if (!HasLazyStaticMembers)
         return;
 
     // Create an ObjectTemplate with SetHandler for lazy static function interception
