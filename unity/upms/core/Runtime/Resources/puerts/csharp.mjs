@@ -37,9 +37,9 @@ function csTypeToClass(csType) {
         let readonlyStaticMembers;
         if (readonlyStaticMembers = cls.__puertsMetadata.get('readonlyStaticMembers')) {
             cls.__puertsMetadata.set('readonlyStaticMembers', undefined);
-            for (var key in cls) {
+            for (let key of readonlyStaticMembers) {
                 let desc = Object.getOwnPropertyDescriptor(cls, key);
-                if (readonlyStaticMembers.has(key) && desc && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
+                if (desc && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
                     let getter = desc.get;
                     let value;
                     let valueGetted = false;
@@ -62,7 +62,7 @@ function csTypeToClass(csType) {
                     }
                 }
 				
-				if (cls.__p_innerType.IsEnum && readonlyStaticMembers.has(key)) {
+				if (cls.__p_innerType.IsEnum) {
 					const val = cls[key];
 					if ((typeof val) == 'number') {
 						cls[val] = key;
