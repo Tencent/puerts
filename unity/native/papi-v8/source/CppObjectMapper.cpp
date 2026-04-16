@@ -359,14 +359,13 @@ static v8::Intercepted LazyStaticFunctionInterceptorGetter(
     if (!Name->IsString() || LazyStaticMemberCaching)
         return v8::Intercepted::kNo;
 
-    LazyInterceptorData* InterceptorData =
-        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
-    const ScriptClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+    const ScriptClassDefinition* ClassDefinition =
+        static_cast<const ScriptClassDefinition*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
 
     v8::String::Utf8Value Utf8Name(Isolate, Name);
     const char* NameStr = *Utf8Name;
 
-    // Search Functions (static methods) - find the LAST match
+    // Search Functions (static methods)
     ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
     ScriptFunctionInfo* MatchedFunctionInfo = nullptr;
     while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
@@ -374,6 +373,7 @@ static v8::Intercepted LazyStaticFunctionInterceptorGetter(
         if (strcmp(FunctionInfo->Name, NameStr) == 0)
         {
             MatchedFunctionInfo = FunctionInfo;
+            break;
         }
         ++FunctionInfo;
     }
@@ -907,13 +907,10 @@ void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolat
         return;
 
     // Create an ObjectTemplate with SetHandler for lazy static function interception
-    auto InterceptorData = new LazyInterceptorData{ClassDefinition, Registry};
-    InterceptorDatas.push_back(InterceptorData);
-
     auto ObjTemplate = v8::ObjectTemplate::New(Isolate);
     ObjTemplate->SetHandler(v8::NamedPropertyHandlerConfiguration(
         LazyStaticFunctionInterceptorGetter, nullptr, nullptr, nullptr, nullptr,
-        v8::External::New(Isolate, InterceptorData),
+        v8::External::New(Isolate, const_cast<ScriptClassDefinition*>(ClassDefinition)),
         v8::PropertyHandlerFlags::kNonMasking));
 
     auto InterceptorNode = ObjTemplate->NewInstance(Context).ToLocalChecked();
