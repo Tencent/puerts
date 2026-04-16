@@ -772,30 +772,21 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             {
                 if (SuperHasMethod(Registry, ClassDefinition, FunctionInfo->Name))
                 {
-                    // Find the LAST match for this name to replicate override behavior
-                    ScriptFunctionInfo* LastMatch = FunctionInfo;
-                    ScriptFunctionInfo* Search = FunctionInfo + 1;
-                    while (Search && Search->Name && Search->Callback)
-                    {
-                        if (strcmp(Search->Name, FunctionInfo->Name) == 0)
-                            LastMatch = Search;
-                        ++Search;
-                    }
-                    auto FastCallInfo = LastMatch->ReflectionInfo ? LastMatch->ReflectionInfo->FastCallInfo() : nullptr;
+                    auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
                     if (FastCallInfo)
                     {
                         Template->PrototypeTemplate()->Set(
-                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                             v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
+                                v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
                                 v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
                     }
                     else
                     {
                         Template->PrototypeTemplate()->Set(
-                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                             v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
+                                v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
                                 v8::ConstructorBehavior::kThrow));
                     }
                 }
@@ -811,26 +802,17 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             {
                 if (SuperHasProperty(Registry, ClassDefinition, PropertyInfo->Name))
                 {
-                    // Find the LAST match for this name to replicate override behavior
-                    ScriptPropertyInfo* LastMatch = PropertyInfo;
-                    ScriptPropertyInfo* Search = PropertyInfo + 1;
-                    while (Search && Search->Name)
-                    {
-                        if (strcmp(Search->Name, PropertyInfo->Name) == 0)
-                            LastMatch = Search;
-                        ++Search;
-                    }
                     v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
-                    if (!LastMatch->Setter)
+                    if (!PropertyInfo->Setter)
                         PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-                    auto GetterData = v8::External::New(Isolate, &LastMatch->GetterData);
-                    auto SetterData = v8::External::New(Isolate, &LastMatch->SetterData);
+                    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+                    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
                     Template->PrototypeTemplate()->SetAccessorProperty(
-                        v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                        LastMatch->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                                          : v8::Local<v8::FunctionTemplate>(),
-                        LastMatch->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                                          : v8::Local<v8::FunctionTemplate>(),
+                        v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                        PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
+                        PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
                         PropertyAttribute);
                 }
                 ++PropertyInfo;
@@ -862,30 +844,21 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             {
                 if (SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
                 {
-                    // Find the LAST match for this name to replicate override behavior
-                    ScriptFunctionInfo* LastMatch = FunctionInfo;
-                    ScriptFunctionInfo* Search = FunctionInfo + 1;
-                    while (Search && Search->Name && Search->Callback)
-                    {
-                        if (strcmp(Search->Name, FunctionInfo->Name) == 0)
-                            LastMatch = Search;
-                        ++Search;
-                    }
-                    auto FastCallInfo = LastMatch->ReflectionInfo ? LastMatch->ReflectionInfo->FastCallInfo() : nullptr;
+                    auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
                     if (FastCallInfo)
                     {
                         Template->Set(
-                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                             v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
+                                v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
                                 v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
                     }
                     else
                     {
                         Template->Set(
-                            v8::String::NewFromUtf8(Isolate, LastMatch->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                             v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                                v8::External::New(Isolate, &LastMatch->Data), v8::Local<v8::Signature>(), 0,
+                                v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
                                 v8::ConstructorBehavior::kThrow));
                     }
                 }
