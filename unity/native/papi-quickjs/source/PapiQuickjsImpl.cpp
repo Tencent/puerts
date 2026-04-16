@@ -354,12 +354,16 @@ int pesapi_is_boolean(pesapi_env env, pesapi_value pvalue)
 
 int pesapi_is_int32(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, JS_IsNumber);
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> JS_BOOL {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
+    });
 }
 
 int pesapi_is_uint32(pesapi_env env, pesapi_value pvalue)
 {
-    return pesapi_is_generic(env, pvalue, JS_IsNumber);
+    return pesapi_is_generic(env, pvalue, [](JSValue val) -> JS_BOOL {
+        return JS_VALUE_GET_TAG(val) == JS_TAG_INT;
+    });
 }
 
 int pesapi_is_int64(pesapi_env env, pesapi_value pvalue)
