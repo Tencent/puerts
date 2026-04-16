@@ -369,6 +369,10 @@ jobs:
           npm i
           cd test/dotnet
           node ../../cli dotnet-test v8_9.4
+      - name: UnitTest-v8-lazyload
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test -ll
       - name: UnitTest-nodejs
         run: |
           cd unity/test/dotnet
@@ -396,6 +400,10 @@ jobs:
           npm i
           cd test/dotnet
           node ../../cli dotnet-test
+      - name: UnitTest-v8-lazyload
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test -ll
       - name: UnitTest-nodejs
         run: |
           cd unity/test/dotnet
@@ -433,6 +441,10 @@ jobs:
           npm i
           cd test/dotnet
           node ../../cli dotnet-test
+      - name: UnitTest-v8-lazyload
+        run: |
+          cd unity/test/dotnet
+          node ../../cli dotnet-test -ll
       - name: UnitTest-nodejs
         run: |
           cd unity/test/dotnet
