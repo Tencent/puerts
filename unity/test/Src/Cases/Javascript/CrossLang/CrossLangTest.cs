@@ -352,6 +352,15 @@ namespace Puerts.UnitTest
             LegacyBridageConfig.UsingFunc<TestStruct, TestStruct>();
             LegacyBridageConfig.UsingFunc<TestStruct?, TestStruct?>();
             LegacyBridageConfig.UsingFunc<TestUnsafeStruct, TestUnsafeStruct>();
+            LegacyBridageConfig.UsingFunc<double, double>();
+            LegacyBridageConfig.UsingFunc<float, float>();
+            LegacyBridageConfig.UsingFunc<byte, byte>();
+            LegacyBridageConfig.UsingFunc<sbyte, sbyte>();
+            LegacyBridageConfig.UsingFunc<short, short>();
+            LegacyBridageConfig.UsingFunc<ushort, ushort>();
+            LegacyBridageConfig.UsingFunc<uint, uint>();
+            LegacyBridageConfig.UsingFunc<ulong, ulong>();
+            LegacyBridageConfig.UsingFunc<char, char>();
 #endif
         }
 
@@ -839,6 +848,339 @@ namespace Puerts.UnitTest
         {
             var ret = (TestStruct)ReturnAnyTestFunc.Invoke();
             AssertAndPrint("InvokeReturnNativeStructTestFunc", srcValue.value, ret.value);
+        }
+
+        // ========== double ==========
+        public double DoubleTestPipeLine(double initialValue, out double outArg, Func<double, double> JSValueHandler)
+        {
+            AssertAndPrint("CSGetDoubleArgFromJS", initialValue, 3.14);
+            AssertAndPrint("CSGetDoubleReturnFromJS", JSValueHandler(initialValue + 1.0), initialValue + 2.0);
+            outArg = initialValue + 3.0;
+            return initialValue + 4.0;
+        }
+        public double doubleTestField = 0;
+        protected double _doubleTestProp = 0;
+        public double doubleTestProp
+        {
+            get { return _doubleTestProp; }
+            set { _doubleTestProp = value; }
+        }
+        public static double doubleTestFieldStatic = 0;
+        protected static double _doubleTestPropStatic = 0;
+        public static double doubleTestPropStatic
+        {
+            get { return _doubleTestPropStatic; }
+            set { _doubleTestPropStatic = value; }
+        }
+        public void ClearDoubleTestMemberValue()
+        {
+            doubleTestField = 0;
+            doubleTestProp = 0;
+            doubleTestFieldStatic = 0;
+            doubleTestPropStatic = 0;
+        }
+        public void DoubleTestCheckMemberValue()
+        {
+            AssertAndPrint("CSDoubleTestField", doubleTestField, 1.5);
+            AssertAndPrint("CSDoubleTestProp", doubleTestProp, 1.5);
+            AssertAndPrint("CSDoubleTestFieldStatic", doubleTestFieldStatic, 1.5);
+            AssertAndPrint("CSDoubleTestPropStatic", doubleTestPropStatic, 1.5);
+        }
+
+        // ========== float ==========
+        public float FloatTestPipeLine(float initialValue, out float outArg, Func<float, float> JSValueHandler)
+        {
+            AssertAndPrint("CSGetFloatArgFromJS", (double)initialValue, (double)2.5f);
+            AssertAndPrint("CSGetFloatReturnFromJS", (double)JSValueHandler(initialValue + 1.0f), (double)(initialValue + 2.0f));
+            outArg = initialValue + 3.0f;
+            return initialValue + 4.0f;
+        }
+        public float floatTestField = 0;
+        protected float _floatTestProp = 0;
+        public float floatTestProp
+        {
+            get { return _floatTestProp; }
+            set { _floatTestProp = value; }
+        }
+        public static float floatTestFieldStatic = 0;
+        protected static float _floatTestPropStatic = 0;
+        public static float floatTestPropStatic
+        {
+            get { return _floatTestPropStatic; }
+            set { _floatTestPropStatic = value; }
+        }
+        public void ClearFloatTestMemberValue()
+        {
+            floatTestField = 0;
+            floatTestProp = 0;
+            floatTestFieldStatic = 0;
+            floatTestPropStatic = 0;
+        }
+        public void FloatTestCheckMemberValue()
+        {
+            AssertAndPrint("CSFloatTestField", (double)floatTestField, (double)1.5f);
+            AssertAndPrint("CSFloatTestProp", (double)floatTestProp, (double)1.5f);
+            AssertAndPrint("CSFloatTestFieldStatic", (double)floatTestFieldStatic, (double)1.5f);
+            AssertAndPrint("CSFloatTestPropStatic", (double)floatTestPropStatic, (double)1.5f);
+        }
+
+        // ========== byte ==========
+        public byte ByteTestPipeLine(byte initialValue, out byte outArg, Func<byte, byte> JSValueHandler)
+        {
+            AssertAndPrint("CSGetByteArgFromJS", (int)initialValue, 100);
+            AssertAndPrint("CSGetByteReturnFromJS", (int)JSValueHandler((byte)(initialValue + 1)), (int)(initialValue + 2));
+            outArg = (byte)(initialValue + 3);
+            return (byte)(initialValue + 4);
+        }
+        public byte byteTestField = 0;
+        protected byte _byteTestProp = 0;
+        public byte byteTestProp
+        {
+            get { return _byteTestProp; }
+            set { _byteTestProp = value; }
+        }
+        public static byte byteTestFieldStatic = 0;
+        protected static byte _byteTestPropStatic = 0;
+        public static byte byteTestPropStatic
+        {
+            get { return _byteTestPropStatic; }
+            set { _byteTestPropStatic = value; }
+        }
+        public void ClearByteTestMemberValue()
+        {
+            byteTestField = 0;
+            byteTestProp = 0;
+            byteTestFieldStatic = 0;
+            byteTestPropStatic = 0;
+        }
+        public void ByteTestCheckMemberValue()
+        {
+            AssertAndPrint("CSByteTestField", (int)byteTestField, 200);
+            AssertAndPrint("CSByteTestProp", (int)byteTestProp, 200);
+            AssertAndPrint("CSByteTestFieldStatic", (int)byteTestFieldStatic, 200);
+            AssertAndPrint("CSByteTestPropStatic", (int)byteTestPropStatic, 200);
+        }
+
+        // ========== sbyte ==========
+        public sbyte SByteTestPipeLine(sbyte initialValue, out sbyte outArg, Func<sbyte, sbyte> JSValueHandler)
+        {
+            AssertAndPrint("CSGetSByteArgFromJS", (int)initialValue, -50);
+            AssertAndPrint("CSGetSByteReturnFromJS", (int)JSValueHandler((sbyte)(initialValue + 1)), (int)(initialValue + 2));
+            outArg = (sbyte)(initialValue + 3);
+            return (sbyte)(initialValue + 4);
+        }
+        public sbyte sbyteTestField = 0;
+        protected sbyte _sbyteTestProp = 0;
+        public sbyte sbyteTestProp
+        {
+            get { return _sbyteTestProp; }
+            set { _sbyteTestProp = value; }
+        }
+        public static sbyte sbyteTestFieldStatic = 0;
+        protected static sbyte _sbyteTestPropStatic = 0;
+        public static sbyte sbyteTestPropStatic
+        {
+            get { return _sbyteTestPropStatic; }
+            set { _sbyteTestPropStatic = value; }
+        }
+        public void ClearSByteTestMemberValue()
+        {
+            sbyteTestField = 0;
+            sbyteTestProp = 0;
+            sbyteTestFieldStatic = 0;
+            sbyteTestPropStatic = 0;
+        }
+        public void SByteTestCheckMemberValue()
+        {
+            AssertAndPrint("CSSByteTestField", (int)sbyteTestField, 42);
+            AssertAndPrint("CSSByteTestProp", (int)sbyteTestProp, 42);
+            AssertAndPrint("CSSByteTestFieldStatic", (int)sbyteTestFieldStatic, 42);
+            AssertAndPrint("CSSByteTestPropStatic", (int)sbyteTestPropStatic, 42);
+        }
+
+        // ========== short ==========
+        public short ShortTestPipeLine(short initialValue, out short outArg, Func<short, short> JSValueHandler)
+        {
+            AssertAndPrint("CSGetShortArgFromJS", (int)initialValue, 1000);
+            AssertAndPrint("CSGetShortReturnFromJS", (int)JSValueHandler((short)(initialValue + 1)), (int)(initialValue + 2));
+            outArg = (short)(initialValue + 3);
+            return (short)(initialValue + 4);
+        }
+        public short shortTestField = 0;
+        protected short _shortTestProp = 0;
+        public short shortTestProp
+        {
+            get { return _shortTestProp; }
+            set { _shortTestProp = value; }
+        }
+        public static short shortTestFieldStatic = 0;
+        protected static short _shortTestPropStatic = 0;
+        public static short shortTestPropStatic
+        {
+            get { return _shortTestPropStatic; }
+            set { _shortTestPropStatic = value; }
+        }
+        public void ClearShortTestMemberValue()
+        {
+            shortTestField = 0;
+            shortTestProp = 0;
+            shortTestFieldStatic = 0;
+            shortTestPropStatic = 0;
+        }
+        public void ShortTestCheckMemberValue()
+        {
+            AssertAndPrint("CSShortTestField", (int)shortTestField, 999);
+            AssertAndPrint("CSShortTestProp", (int)shortTestProp, 999);
+            AssertAndPrint("CSShortTestFieldStatic", (int)shortTestFieldStatic, 999);
+            AssertAndPrint("CSShortTestPropStatic", (int)shortTestPropStatic, 999);
+        }
+
+        // ========== ushort ==========
+        public ushort UShortTestPipeLine(ushort initialValue, out ushort outArg, Func<ushort, ushort> JSValueHandler)
+        {
+            AssertAndPrint("CSGetUShortArgFromJS", (int)initialValue, 2000);
+            AssertAndPrint("CSGetUShortReturnFromJS", (int)JSValueHandler((ushort)(initialValue + 1)), (int)(initialValue + 2));
+            outArg = (ushort)(initialValue + 3);
+            return (ushort)(initialValue + 4);
+        }
+        public ushort ushortTestField = 0;
+        protected ushort _ushortTestProp = 0;
+        public ushort ushortTestProp
+        {
+            get { return _ushortTestProp; }
+            set { _ushortTestProp = value; }
+        }
+        public static ushort ushortTestFieldStatic = 0;
+        protected static ushort _ushortTestPropStatic = 0;
+        public static ushort ushortTestPropStatic
+        {
+            get { return _ushortTestPropStatic; }
+            set { _ushortTestPropStatic = value; }
+        }
+        public void ClearUShortTestMemberValue()
+        {
+            ushortTestField = 0;
+            ushortTestProp = 0;
+            ushortTestFieldStatic = 0;
+            ushortTestPropStatic = 0;
+        }
+        public void UShortTestCheckMemberValue()
+        {
+            AssertAndPrint("CSUShortTestField", (int)ushortTestField, 999);
+            AssertAndPrint("CSUShortTestProp", (int)ushortTestProp, 999);
+            AssertAndPrint("CSUShortTestFieldStatic", (int)ushortTestFieldStatic, 999);
+            AssertAndPrint("CSUShortTestPropStatic", (int)ushortTestPropStatic, 999);
+        }
+
+        // ========== uint ==========
+        public uint UIntTestPipeLine(uint initialValue, out uint outArg, Func<uint, uint> JSValueHandler)
+        {
+            AssertAndPrint("CSGetUIntArgFromJS", initialValue, (uint)100000);
+            AssertAndPrint("CSGetUIntReturnFromJS", JSValueHandler(initialValue + 1), initialValue + 2);
+            outArg = initialValue + 3;
+            return initialValue + 4;
+        }
+        public uint uintTestField = 0;
+        protected uint _uintTestProp = 0;
+        public uint uintTestProp
+        {
+            get { return _uintTestProp; }
+            set { _uintTestProp = value; }
+        }
+        public static uint uintTestFieldStatic = 0;
+        protected static uint _uintTestPropStatic = 0;
+        public static uint uintTestPropStatic
+        {
+            get { return _uintTestPropStatic; }
+            set { _uintTestPropStatic = value; }
+        }
+        public void ClearUIntTestMemberValue()
+        {
+            uintTestField = 0;
+            uintTestProp = 0;
+            uintTestFieldStatic = 0;
+            uintTestPropStatic = 0;
+        }
+        public void UIntTestCheckMemberValue()
+        {
+            AssertAndPrint("CSUIntTestField", uintTestField, (uint)12345);
+            AssertAndPrint("CSUIntTestProp", uintTestProp, (uint)12345);
+            AssertAndPrint("CSUIntTestFieldStatic", uintTestFieldStatic, (uint)12345);
+            AssertAndPrint("CSUIntTestPropStatic", uintTestPropStatic, (uint)12345);
+        }
+
+        // ========== ulong ==========
+        public ulong ULongTestPipeLine(ulong initialValue, out ulong outArg, Func<ulong, ulong> JSValueHandler)
+        {
+            AssertAndPrint("CSGetULongArgFromJS", initialValue, (ulong)9007199254740992);
+            AssertAndPrint("CSGetULongReturnFromJS", JSValueHandler(initialValue + 1), initialValue + 2);
+            outArg = initialValue + 3;
+            return initialValue + 4;
+        }
+        public ulong ulongTestField = 0;
+        protected ulong _ulongTestProp = 0;
+        public ulong ulongTestProp
+        {
+            get { return _ulongTestProp; }
+            set { _ulongTestProp = value; }
+        }
+        public static ulong ulongTestFieldStatic = 0;
+        protected static ulong _ulongTestPropStatic = 0;
+        public static ulong ulongTestPropStatic
+        {
+            get { return _ulongTestPropStatic; }
+            set { _ulongTestPropStatic = value; }
+        }
+        public void ClearULongTestMemberValue()
+        {
+            ulongTestField = 0;
+            ulongTestProp = 0;
+            ulongTestFieldStatic = 0;
+            ulongTestPropStatic = 0;
+        }
+        public void ULongTestCheckMemberValue()
+        {
+            AssertAndPrint("CSULongTestField", ulongTestField, (ulong)9007199254740987);
+            AssertAndPrint("CSULongTestProp", ulongTestProp, (ulong)9007199254740987);
+            AssertAndPrint("CSULongTestFieldStatic", ulongTestFieldStatic, (ulong)9007199254740987);
+            AssertAndPrint("CSULongTestPropStatic", ulongTestPropStatic, (ulong)9007199254740987);
+        }
+
+        // ========== char ==========
+        public char CharTestPipeLine(char initialValue, out char outArg, Func<char, char> JSValueHandler)
+        {
+            AssertAndPrint("CSGetCharArgFromJS", initialValue.ToString(), "A");
+            AssertAndPrint("CSGetCharReturnFromJS", JSValueHandler('B').ToString(), "C");
+            outArg = 'D';
+            return 'E';
+        }
+        public char charTestField = '\0';
+        protected char _charTestProp = '\0';
+        public char charTestProp
+        {
+            get { return _charTestProp; }
+            set { _charTestProp = value; }
+        }
+        public static char charTestFieldStatic = '\0';
+        protected static char _charTestPropStatic = '\0';
+        public static char charTestPropStatic
+        {
+            get { return _charTestPropStatic; }
+            set { _charTestPropStatic = value; }
+        }
+        public void ClearCharTestMemberValue()
+        {
+            charTestField = '\0';
+            charTestProp = '\0';
+            charTestFieldStatic = '\0';
+            charTestPropStatic = '\0';
+        }
+        public void CharTestCheckMemberValue()
+        {
+            AssertAndPrint("CSCharTestField", charTestField.ToString(), "Z");
+            AssertAndPrint("CSCharTestProp", charTestProp.ToString(), "Z");
+            AssertAndPrint("CSCharTestFieldStatic", charTestFieldStatic.ToString(), "Z");
+            AssertAndPrint("CSCharTestPropStatic", charTestPropStatic.ToString(), "Z");
         }
     }
     
@@ -2152,6 +2494,270 @@ __PDUOTF;");
             TestHelper.AssertAndPrint("FieldClass2", 0, FieldClass2.ObjCount);
         }
 #endif
+
+        [Test]
+        public void DoubleInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oDouble = outRef[0] = 3.14;
+                    const rDouble = testHelper.DoubleTestPipeLine(oDouble, outRef, function (d) {
+                        assertAndPrint('JSGetDoubleArgFromCS', d, oDouble + 1.0);
+                        return oDouble + 2.0;
+                    });
+                    assertAndPrint('JSGetDoubleOutArgFromCS', outRef[0], oDouble + 3.0);
+                    assertAndPrint('JSGetDoubleReturnFromCS', rDouble, oDouble + 4.0);
+                    testHelper.ClearDoubleTestMemberValue();
+                    testHelper.doubleTestField = 1.5
+                    testHelper.doubleTestProp = 1.5
+                    TestHelper.doubleTestFieldStatic = 1.5
+                    TestHelper.doubleTestPropStatic = 1.5
+                    testHelper.DoubleTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void FloatInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oFloat = outRef[0] = 2.5;
+                    const rFloat = testHelper.FloatTestPipeLine(oFloat, outRef, function (f) {
+                        assertAndPrint('JSGetFloatArgFromCS', f, oFloat + 1.0);
+                        return oFloat + 2.0;
+                    });
+                    assertAndPrint('JSGetFloatOutArgFromCS', outRef[0], oFloat + 3.0);
+                    assertAndPrint('JSGetFloatReturnFromCS', rFloat, oFloat + 4.0);
+                    testHelper.ClearFloatTestMemberValue();
+                    testHelper.floatTestField = 1.5
+                    testHelper.floatTestProp = 1.5
+                    TestHelper.floatTestFieldStatic = 1.5
+                    TestHelper.floatTestPropStatic = 1.5
+                    testHelper.FloatTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void ByteInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oByte = outRef[0] = 100;
+                    const rByte = testHelper.ByteTestPipeLine(oByte, outRef, function (b) {
+                        assertAndPrint('JSGetByteArgFromCS', b, oByte + 1);
+                        return oByte + 2;
+                    });
+                    assertAndPrint('JSGetByteOutArgFromCS', outRef[0], oByte + 3);
+                    assertAndPrint('JSGetByteReturnFromCS', rByte, oByte + 4);
+                    testHelper.ClearByteTestMemberValue();
+                    testHelper.byteTestField = 200
+                    testHelper.byteTestProp = 200
+                    TestHelper.byteTestFieldStatic = 200
+                    TestHelper.byteTestPropStatic = 200
+                    testHelper.ByteTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void SByteInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oSByte = outRef[0] = -50;
+                    const rSByte = testHelper.SByteTestPipeLine(oSByte, outRef, function (sb) {
+                        assertAndPrint('JSGetSByteArgFromCS', sb, oSByte + 1);
+                        return oSByte + 2;
+                    });
+                    assertAndPrint('JSGetSByteOutArgFromCS', outRef[0], oSByte + 3);
+                    assertAndPrint('JSGetSByteReturnFromCS', rSByte, oSByte + 4);
+                    testHelper.ClearSByteTestMemberValue();
+                    testHelper.sbyteTestField = 42
+                    testHelper.sbyteTestProp = 42
+                    TestHelper.sbyteTestFieldStatic = 42
+                    TestHelper.sbyteTestPropStatic = 42
+                    testHelper.SByteTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void ShortInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oShort = outRef[0] = 1000;
+                    const rShort = testHelper.ShortTestPipeLine(oShort, outRef, function (s) {
+                        assertAndPrint('JSGetShortArgFromCS', s, oShort + 1);
+                        return oShort + 2;
+                    });
+                    assertAndPrint('JSGetShortOutArgFromCS', outRef[0], oShort + 3);
+                    assertAndPrint('JSGetShortReturnFromCS', rShort, oShort + 4);
+                    testHelper.ClearShortTestMemberValue();
+                    testHelper.shortTestField = 999
+                    testHelper.shortTestProp = 999
+                    TestHelper.shortTestFieldStatic = 999
+                    TestHelper.shortTestPropStatic = 999
+                    testHelper.ShortTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void UShortInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oUShort = outRef[0] = 2000;
+                    const rUShort = testHelper.UShortTestPipeLine(oUShort, outRef, function (us) {
+                        assertAndPrint('JSGetUShortArgFromCS', us, oUShort + 1);
+                        return oUShort + 2;
+                    });
+                    assertAndPrint('JSGetUShortOutArgFromCS', outRef[0], oUShort + 3);
+                    assertAndPrint('JSGetUShortReturnFromCS', rUShort, oUShort + 4);
+                    testHelper.ClearUShortTestMemberValue();
+                    testHelper.ushortTestField = 999
+                    testHelper.ushortTestProp = 999
+                    TestHelper.ushortTestFieldStatic = 999
+                    TestHelper.ushortTestPropStatic = 999
+                    testHelper.UShortTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void UIntInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oUInt = outRef[0] = 100000;
+                    const rUInt = testHelper.UIntTestPipeLine(oUInt, outRef, function (ui) {
+                        assertAndPrint('JSGetUIntArgFromCS', ui, oUInt + 1);
+                        return oUInt + 2;
+                    });
+                    assertAndPrint('JSGetUIntOutArgFromCS', outRef[0], oUInt + 3);
+                    assertAndPrint('JSGetUIntReturnFromCS', rUInt, oUInt + 4);
+                    testHelper.ClearUIntTestMemberValue();
+                    testHelper.uintTestField = 12345
+                    testHelper.uintTestProp = 12345
+                    TestHelper.uintTestFieldStatic = 12345
+                    TestHelper.uintTestPropStatic = 12345
+                    testHelper.UIntTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+#if !UNITY_WEBGL
+        [Test]
+        public void ULongInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oULong = outRef[0] = 9007199254740992n;
+                    const rULong = testHelper.ULongTestPipeLine(oULong, outRef, function (ul) {
+                        assertAndPrint('JSGetULongArgFromCS', ul == oULong + 1n);
+                        return oULong + 2n;
+                    });
+                    assertAndPrint('JSGetULongOutArgFromCS', outRef[0] == oULong + 3n);
+                    assertAndPrint('JSGetULongReturnFromCS', rULong == oULong + 4n);
+                    testHelper.ClearULongTestMemberValue();
+                    testHelper.ulongTestField = 9007199254740987n
+                    testHelper.ulongTestProp = 9007199254740987n
+                    TestHelper.ulongTestFieldStatic = 9007199254740987n
+                    TestHelper.ulongTestPropStatic = 9007199254740987n
+                    testHelper.ULongTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+#endif
+        [Test]
+        public void CharInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oChar = outRef[0] = 65; // 'A'
+                    const rChar = testHelper.CharTestPipeLine(oChar, outRef, function (c) {
+                        assertAndPrint('JSGetCharArgFromCS', c, 66); // 'B'
+                        return 67; // 'C'
+                    });
+                    assertAndPrint('JSGetCharOutArgFromCS', outRef[0], 68); // 'D'
+                    assertAndPrint('JSGetCharReturnFromCS', rChar, 69); // 'E'
+                    testHelper.ClearCharTestMemberValue();
+                    testHelper.charTestField = 90 // 'Z'
+                    testHelper.charTestProp = 90
+                    TestHelper.charTestFieldStatic = 90
+                    TestHelper.charTestPropStatic = 90
+                    testHelper.CharTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
 
         [Test]
         public void LazyLoadOverrideTest()
