@@ -227,6 +227,22 @@ namespace Puerts
                 {
                     return NativeToScript_String(apis, env, strValue);
                 }
+                else if (t is byte byteValue)
+                {
+                    return PuertsNative.pesapi_create_uint32(apis, env, byteValue);
+                }
+                else if (t is sbyte sbyteValue)
+                {
+                    return PuertsNative.pesapi_create_int32(apis, env, sbyteValue);
+                }
+                else if (t is short shortValue)
+                {
+                    return PuertsNative.pesapi_create_int32(apis, env, shortValue);
+                }
+                else if (t is ushort ushortValue)
+                {
+                    return PuertsNative.pesapi_create_uint32(apis, env, ushortValue);
+                }
                 else if (t is ScriptObject scriptObject)
                 {
                     return NativeToScript_ScriptObject(apis, env, scriptObject);

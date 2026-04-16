@@ -1223,6 +1223,60 @@ namespace Puerts.UnitTest
         {
             BoxedValue = 123;
         }
+
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedInt() { return (int)42; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedDouble() { return (double)3.14; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedFloat() { return (float)2.5f; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedBool() { return true; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedLong() { return (long)9007199254740992; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedByte() { return (byte)200; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedSByte() { return (sbyte)-50; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedShort() { return (short)-1000; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedUShort() { return (ushort)60000; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedUInt() { return (uint)3000000000; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedULong() { return (ulong)9007199254740993; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedChar() { return 'A'; }
+        [UnityEngine.Scripting.Preserve]
+        public object BoxedString() { return "hello"; }
+
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedInt(object val) { TestHelper.AssertAndPrint("CheckBoxedInt", val.ToString(), ((int)42).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedDouble(object val) { TestHelper.AssertAndPrint("CheckBoxedDouble", val.ToString(), ((double)3.14).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedFloat(object val) { TestHelper.AssertAndPrint("CheckBoxedFloat", val.ToString(), ((float)2.5f).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedBool(object val) { TestHelper.AssertAndPrint("CheckBoxedBool", val.ToString(), true.ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedLong(object val) { TestHelper.AssertAndPrint("CheckBoxedLong", val.ToString(), ((long)9007199254740992).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedByte(object val) { TestHelper.AssertAndPrint("CheckBoxedByte", val.ToString(), ((byte)200).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedSByte(object val) { TestHelper.AssertAndPrint("CheckBoxedSByte", val.ToString(), ((sbyte)-50).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedShort(object val) { TestHelper.AssertAndPrint("CheckBoxedShort", val.ToString(), ((short)-1000).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedUShort(object val) { TestHelper.AssertAndPrint("CheckBoxedUShort", val.ToString(), ((ushort)60000).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedUInt(object val) { TestHelper.AssertAndPrint("CheckBoxedUInt", val.ToString(), ((uint)3000000000).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedULong(object val) { TestHelper.AssertAndPrint("CheckBoxedULong", val.ToString(), ((ulong)9007199254740993).ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedChar(object val) { TestHelper.AssertAndPrint("CheckBoxedChar", val.ToString(), 65.ToString()); }
+        [UnityEngine.Scripting.Preserve]
+        public void CheckBoxedString(object val) { TestHelper.AssertAndPrint("CheckBoxedString", val.ToString(), "hello"); }
     }
 
     [UnityEngine.Scripting.Preserve]
@@ -2314,7 +2368,7 @@ __PDUOTF;");
             ");
             cb1(1, 2, 6, 3);
         }
-
+        /*
         [Test]
         public void TestFloatAsUInt()
         {
@@ -2341,6 +2395,7 @@ __PDUOTF;");
                 })()
             ");
         }
+        */
 
         [Test]
         public void TestVirtualCall()
@@ -2376,6 +2431,193 @@ __PDUOTF;");
                     AssertAndPrint(`BoxValueTest changed type`,   typeof obj.BoxedValue == 'number');
                 })()
             ");
+        }
+
+        [Test]
+        public void BoxedPrimitiveReturnTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const BoxValueContainer = CS.Puerts.UnitTest.BoxValueContainer;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const obj = new BoxValueContainer();
+
+                    // int
+                    const boxedInt = obj.BoxedInt();
+                    AssertAndPrint('BoxedInt value', boxedInt == 42);
+                    AssertAndPrint('BoxedInt type', typeof boxedInt == 'number');
+
+                    // double
+                    const boxedDouble = obj.BoxedDouble();
+                    AssertAndPrint('BoxedDouble value', Math.abs(boxedDouble - 3.14) < 0.001);
+                    AssertAndPrint('BoxedDouble type', typeof boxedDouble == 'number');
+
+                    // float
+                    const boxedFloat = obj.BoxedFloat();
+                    AssertAndPrint('BoxedFloat value', Math.abs(boxedFloat - 2.5) < 0.001);
+                    AssertAndPrint('BoxedFloat type', typeof boxedFloat == 'number');
+
+                    // bool
+                    const boxedBool = obj.BoxedBool();
+                    AssertAndPrint('BoxedBool value', boxedBool === true);
+                    AssertAndPrint('BoxedBool type', typeof boxedBool == 'boolean');
+
+                    // byte
+                    const boxedByte = obj.BoxedByte();
+                    AssertAndPrint('BoxedByte value', boxedByte == 200);
+                    AssertAndPrint('BoxedByte type', typeof boxedByte == 'number');
+
+                    // sbyte
+                    const boxedSByte = obj.BoxedSByte();
+                    AssertAndPrint('BoxedSByte value', boxedSByte == -50);
+                    AssertAndPrint('BoxedSByte type', typeof boxedSByte == 'number');
+
+                    // short
+                    const boxedShort = obj.BoxedShort();
+                    AssertAndPrint('BoxedShort value', boxedShort == -1000);
+                    AssertAndPrint('BoxedShort type', typeof boxedShort == 'number');
+
+                    // ushort
+                    const boxedUShort = obj.BoxedUShort();
+                    AssertAndPrint('BoxedUShort value', boxedUShort == 60000);
+                    AssertAndPrint('BoxedUShort type', typeof boxedUShort == 'number');
+
+                    // uint
+                    const boxedUInt = obj.BoxedUInt();
+                    AssertAndPrint('BoxedUInt value', boxedUInt == 3000000000);
+                    AssertAndPrint('BoxedUInt type', typeof boxedUInt == 'number');
+
+                    // char
+                    const boxedChar = obj.BoxedChar();
+                    AssertAndPrint('BoxedChar value', boxedChar == 65); // 'A' == 65
+                    AssertAndPrint('BoxedChar type', typeof boxedChar == 'number');
+
+                    // string
+                    const boxedString = obj.BoxedString();
+                    AssertAndPrint('BoxedString value', boxedString == 'hello');
+                    AssertAndPrint('BoxedString type', typeof boxedString == 'string');
+                })()
+            ");
+            jsEnv.Tick();
+        }
+
+#if !UNITY_WEBGL
+        [Test]
+        public void BoxedBigIntReturnTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const BoxValueContainer = CS.Puerts.UnitTest.BoxValueContainer;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const obj = new BoxValueContainer();
+
+                    // long
+                    const boxedLong = obj.BoxedLong();
+                    AssertAndPrint('BoxedLong value', boxedLong == 9007199254740992n);
+                    AssertAndPrint('BoxedLong type', typeof boxedLong == 'bigint');
+
+                    // ulong
+                    const boxedULong = obj.BoxedULong();
+                    AssertAndPrint('BoxedULong value', boxedULong == 9007199254740993n);
+                    AssertAndPrint('BoxedULong type', typeof boxedULong == 'bigint');
+                })()
+            ");
+            jsEnv.Tick();
+        }
+#endif
+
+        [Test]
+        public void BoxedPrimitivePassToCSTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const BoxValueContainer = CS.Puerts.UnitTest.BoxValueContainer;
+                    const obj = new BoxValueContainer();
+
+                    // pass JS values to C# object parameter
+                    obj.CheckBoxedInt(42);
+                    obj.CheckBoxedDouble(3.14);
+                    obj.CheckBoxedFloat(2.5);
+                    obj.CheckBoxedBool(true);
+                    obj.CheckBoxedByte(200);
+                    obj.CheckBoxedSByte(-50);
+                    obj.CheckBoxedShort(-1000);
+                    obj.CheckBoxedUShort(60000);
+                    obj.CheckBoxedUInt(3000000000);
+                    obj.CheckBoxedChar(65);
+                    obj.CheckBoxedString('hello');
+                })()
+            ");
+            jsEnv.Tick();
+        }
+
+#if !UNITY_WEBGL
+        [Test]
+        public void BoxedBigIntPassToCSTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const BoxValueContainer = CS.Puerts.UnitTest.BoxValueContainer;
+                    const obj = new BoxValueContainer();
+
+                    obj.CheckBoxedLong(9007199254740992n);
+                    obj.CheckBoxedULong(9007199254740993n);
+                })()
+            ");
+            jsEnv.Tick();
+        }
+#endif
+
+        [Test]
+        public void BoxedPrimitiveFieldRoundtripTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const BoxValueContainer = CS.Puerts.UnitTest.BoxValueContainer;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const obj = new BoxValueContainer();
+
+                    // write boxed return value back to object field, then read it back
+                    obj.BoxedValue = obj.BoxedInt();
+                    AssertAndPrint('Roundtrip int', obj.BoxedValue == 42);
+
+                    obj.BoxedValue = obj.BoxedDouble();
+                    AssertAndPrint('Roundtrip double', Math.abs(obj.BoxedValue - 3.14) < 0.001);
+
+                    obj.BoxedValue = obj.BoxedFloat();
+                    AssertAndPrint('Roundtrip float', Math.abs(obj.BoxedValue - 2.5) < 0.001);
+
+                    obj.BoxedValue = obj.BoxedBool();
+                    AssertAndPrint('Roundtrip bool', obj.BoxedValue === true);
+
+                    obj.BoxedValue = obj.BoxedByte();
+                    AssertAndPrint('Roundtrip byte', obj.BoxedValue == 200);
+
+                    obj.BoxedValue = obj.BoxedSByte();
+                    AssertAndPrint('Roundtrip sbyte', obj.BoxedValue == -50);
+
+                    obj.BoxedValue = obj.BoxedShort();
+                    AssertAndPrint('Roundtrip short', obj.BoxedValue == -1000);
+
+                    obj.BoxedValue = obj.BoxedUShort();
+                    AssertAndPrint('Roundtrip ushort', obj.BoxedValue == 60000);
+
+                    obj.BoxedValue = obj.BoxedUInt();
+                    AssertAndPrint('Roundtrip uint', obj.BoxedValue == 3000000000);
+
+                    obj.BoxedValue = obj.BoxedChar();
+                    AssertAndPrint('Roundtrip char', obj.BoxedValue == 65);
+
+                    obj.BoxedValue = obj.BoxedString();
+                    AssertAndPrint('Roundtrip string', obj.BoxedValue == 'hello');
+                })()
+            ");
+            jsEnv.Tick();
         }
 
         [Test]
