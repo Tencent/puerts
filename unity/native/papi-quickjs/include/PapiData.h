@@ -160,6 +160,7 @@ struct pesapi_scope__
                 js_free(ctx, dynamicValue);
             }
             dynamic_alloc_values->~vector();
+            js_free(ctx, dynamic_alloc_values);
             dynamic_alloc_values = nullptr;
         }
         pesapi::qjsimpl::setCurrentScope(ctx, prev_scope);
