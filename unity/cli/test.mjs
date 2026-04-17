@@ -209,7 +209,7 @@ function getExeSuffix() {
     return "";
 }
 
-export async function dotnetTest(cwd, backend, filter = '', thread_safe = false) {
+export async function dotnetTest(cwd, backend, filter = '', thread_safe = false, lazyload = false) {
     // 编译binary
     const copyConfig = await runPuertsMake(join(cwd, '../../native_src'), {
         platform: getPlatform(),
@@ -217,14 +217,15 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false)
         backend: backend || 'v8_9.4',
         arch: process.arch,
         websocket: 1,
-        thread_safe: thread_safe
+        thread_safe: thread_safe,
+        lazyload: lazyload
     });
 
     // await runTest(cwd, copyConfig, true, filter);
     await runTest(cwd, copyConfig, false, filter);
 }
 
-export async function unityTest(cwd, unityPath) {
+export async function unityTest(cwd, unityPath, lazyload = false) {
     function execUnityEditor(args) {
         const unityBatchModeBase = `"${unityPath}" -batchmode -nographics -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`;
         const code = exec(`${unityBatchModeBase} ${args}`).code;
@@ -248,7 +249,8 @@ export async function unityTest(cwd, unityPath) {
         platform: platform,
         config: 'Debug',
         arch: process.arch,
-        websocket: 1
+        websocket: 1,
+        lazyload: lazyload
     });
 
 	rm("-rf", join(cwd, 'Assets/csc.rsp'));
@@ -302,7 +304,8 @@ export async function unityTest(cwd, unityPath) {
         platform: platform,
         config: 'Debug',
         arch: process.arch,
-        websocket: 1
+        websocket: 1,
+        lazyload: lazyload
     });
 
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
@@ -319,7 +322,8 @@ export async function unityTest(cwd, unityPath) {
         platform: platform,
         config: 'Debug',
         arch: process.arch,
-        websocket: 1
+        websocket: 1,
+        lazyload: lazyload
     });
 
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);

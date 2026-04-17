@@ -42,7 +42,11 @@ void FCppObjectMapper::findClassByName(const v8::FunctionCallbackInfo<v8::Value>
     auto ClassDef = FindCppTypeClassByName(TypeName);
     if (ClassDef)
     {
-        Info.GetReturnValue().Set(GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked());
+        auto Func = GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked();
+#ifdef PUERTS_LAZYLOAD
+        WrapFunctionWithStaticLazyInterceptor(Isolate, Context, Func, ClassDef);
+#endif
+        Info.GetReturnValue().Set(Func);
     }
     else
     {
@@ -59,7 +63,14 @@ v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Contex
         return v8::MaybeLocal<v8::Function>();
     }
     auto Template = GetTemplateOfClass(Context->GetIsolate(), ClassDef);
-    return Template->GetFunction(Context);
+    auto MaybeFunc = Template->GetFunction(Context);
+#ifdef PUERTS_LAZYLOAD
+    if (!MaybeFunc.IsEmpty())
+    {
+        WrapFunctionWithStaticLazyInterceptor(Context->GetIsolate(), Context, MaybeFunc.ToLocalChecked(), ClassDef);
+    }
+#endif
+    return MaybeFunc;
 }
 
 static void PointerNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -244,6 +255,465 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
+#ifdef PUERTS_LAZYLOAD
+static thread_local bool LazyStaticMemberCaching = false;
+
+struct LazyInterceptorData
+{
+    const JSClassDefinition* ClassDefinition;
+};
+
+// Lazy getter interceptor for static functions via SetHandler on an inserted prototype node.
+// Searches ClassDefinition->Functions for the requested name, creates the v8::Function on first access,
+// and caches it directly on the interceptor node object.
+static void LazyStaticFunctionInterceptorGetter(
+    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString() || LazyStaticMemberCaching)
+        return;
+
+    const JSClassDefinition* ClassDefinition =
+        static_cast<const JSClassDefinition*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    // Search Functions (static methods)
+    JSFunctionInfo* FunctionInfo = ClassDefinition->Functions;
+    JSFunctionInfo* MatchedFunctionInfo = nullptr;
+    while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+    {
+        if (strcmp(FunctionInfo->Name, NameStr) == 0)
+        {
+            MatchedFunctionInfo = FunctionInfo;
+            break;
+        }
+        ++FunctionInfo;
+    }
+    if (MatchedFunctionInfo)
+    {
+        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+        v8::Local<v8::Function> Func;
+#ifndef WITH_QUICKJS
+        auto FastCallInfo = MatchedFunctionInfo->ReflectionInfo ? MatchedFunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+        if (FastCallInfo)
+        {
+            Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                v8::External::New(Isolate, &MatchedFunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        else
+#endif
+        {
+            Func = v8::FunctionTemplate::New(
+                Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &MatchedFunctionInfo->Data)
+#ifndef WITH_QUICKJS
+                , v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
+#endif
+                )->GetFunction(Context).ToLocalChecked();
+        }
+        // Cache the function on the interceptor node so subsequent accesses won't trigger the interceptor
+        LazyStaticMemberCaching = true;
+        (void) Info.This()->Set(Context, Name, Func);
+        LazyStaticMemberCaching = false;
+        Info.GetReturnValue().Set(Func);
+        return;
+    }
+
+    // Search Variables (read-only static properties) for lazy getter creation
+    JSPropertyInfo* PropertyInfo = ClassDefinition->Variables;
+    JSPropertyInfo* MatchedPropertyInfo = nullptr;
+    while (PropertyInfo && PropertyInfo->Name)
+    {
+        if (!PropertyInfo->Setter && strcmp(PropertyInfo->Name, NameStr) == 0)
+        {
+            MatchedPropertyInfo = PropertyInfo;
+            break;
+        }
+        ++PropertyInfo;
+    }
+    if (MatchedPropertyInfo && MatchedPropertyInfo->Getter)
+    {
+        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+        auto GetterData = v8::External::New(Isolate, &MatchedPropertyInfo->GetterData);
+        auto GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+            ->GetFunction(Context).ToLocalChecked();
+
+        // Cache as a read-only accessor property on the interceptor node
+        v8::PropertyDescriptor Desc(GetterFunc.As<v8::Value>(), v8::Undefined(Isolate).As<v8::Value>());
+        Desc.set_enumerable(true);
+        Desc.set_configurable(false);
+        LazyStaticMemberCaching = true;
+        (void) Info.This()->DefineProperty(Context, Name, Desc);
+        LazyStaticMemberCaching = false;
+
+        // Invoke the getter for this first access
+        v8::Local<v8::Value> Self = Info.This();
+        v8::MaybeLocal<v8::Value> Result = GetterFunc->Call(Context, Self, 0, nullptr);
+        if (!Result.IsEmpty())
+            {
+                Info.GetReturnValue().Set(Result.ToLocalChecked());
+            }
+        return;
+    }
+}
+
+static thread_local bool LazyMemberCaching = false;
+#endif // PUERTS_LAZYLOAD
+
+#ifdef PUERTS_LAZYLOAD
+// Check if any ancestor class in the inheritance chain has a static variable (Variables) with the given name
+static bool SuperHasStaticVariable(const JSClassDefinition* ClassDefinition, const char* Name)
+{
+    const void* SuperTypeId = ClassDefinition->SuperTypeId;
+    while (SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(SuperTypeId);
+        if (!SuperDef)
+            break;
+        JSPropertyInfo* PropertyInfo = SuperDef->Variables;
+        while (PropertyInfo && PropertyInfo->Name)
+        {
+            if (strcmp(PropertyInfo->Name, Name) == 0)
+                return true;
+            ++PropertyInfo;
+        }
+        SuperTypeId = SuperDef->SuperTypeId;
+    }
+    return false;
+}
+
+// Check if any ancestor class in the inheritance chain has a static method (Functions) with the given name
+static bool SuperHasStaticMethod(const JSClassDefinition* ClassDefinition, const char* Name)
+{
+    const void* SuperTypeId = ClassDefinition->SuperTypeId;
+    while (SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(SuperTypeId);
+        if (!SuperDef)
+            break;
+        JSFunctionInfo* FunctionInfo = SuperDef->Functions;
+        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+        {
+            if (strcmp(FunctionInfo->Name, Name) == 0)
+                return true;
+            ++FunctionInfo;
+        }
+        SuperTypeId = SuperDef->SuperTypeId;
+    }
+    return false;
+}
+
+// Check if any ancestor class in the inheritance chain has a method with the given name
+static bool SuperHasMethod(const JSClassDefinition* ClassDefinition, const char* Name)
+{
+    const void* SuperTypeId = ClassDefinition->SuperTypeId;
+    while (SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(SuperTypeId);
+        if (!SuperDef)
+            break;
+        JSFunctionInfo* FunctionInfo = SuperDef->Methods;
+        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+        {
+            if (strcmp(FunctionInfo->Name, Name) == 0)
+                return true;
+            ++FunctionInfo;
+        }
+        SuperTypeId = SuperDef->SuperTypeId;
+    }
+    return false;
+}
+
+// Check if any ancestor class in the inheritance chain has a property with the given name
+static bool SuperHasProperty(const JSClassDefinition* ClassDefinition, const char* Name)
+{
+    const void* SuperTypeId = ClassDefinition->SuperTypeId;
+    while (SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(SuperTypeId);
+        if (!SuperDef)
+            break;
+        JSPropertyInfo* PropertyInfo = SuperDef->Properties;
+        while (PropertyInfo && PropertyInfo->Name)
+        {
+            if (strcmp(PropertyInfo->Name, Name) == 0)
+                return true;
+            ++PropertyInfo;
+        }
+        SuperTypeId = SuperDef->SuperTypeId;
+    }
+    return false;
+}
+#endif // PUERTS_LAZYLOAD
+
+#ifdef PUERTS_LAZYLOAD
+// Search for a method by name in the given ClassDefinition's Methods, create the v8::Function,
+// cache it on proto, and return it. If not found, recurse into the parent ClassDefinition
+// (via SuperTypeId) and proto's prototype. Returns empty Maybe if no match in the entire chain.
+static v8::MaybeLocal<v8::Function> FindAndCacheMethodInChain(
+    v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Name> Name,
+    const char* NameStr, const JSClassDefinition* ClassDefinition,
+    v8::Local<v8::Object> Proto)
+{
+    // Search Methods - find the LAST match to replicate PrototypeTemplate->Set() override behavior
+    JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
+    JSFunctionInfo* MatchedFunctionInfo = nullptr;
+    while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+    {
+        if (strcmp(FunctionInfo->Name, NameStr) == 0)
+        {
+            MatchedFunctionInfo = FunctionInfo;
+        }
+        ++FunctionInfo;
+    }
+    if (MatchedFunctionInfo)
+    {
+        v8::Local<v8::Function> Func;
+#ifndef WITH_QUICKJS
+        auto FastCallInfo = MatchedFunctionInfo->ReflectionInfo ? MatchedFunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+        if (FastCallInfo)
+        {
+            Func = v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                v8::External::New(Isolate, &MatchedFunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        else
+#endif
+        {
+            Func = v8::FunctionTemplate::New(
+                Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &MatchedFunctionInfo->Data)
+#ifndef WITH_QUICKJS
+                , v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
+#endif
+                )->GetFunction(Context).ToLocalChecked();
+        }
+        // Cache the method on proto so subsequent accesses won't trigger the interceptor
+        LazyMemberCaching = true;
+        (void) Proto->Set(Context, Name, Func);
+        LazyMemberCaching = false;
+        return Func;
+    }
+
+    // Not found in current ClassDefinition, recurse into parent
+    if (ClassDefinition->SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(ClassDefinition->SuperTypeId);
+        if (SuperDef)
+        {
+            auto ProtoProtoVal = Proto->GetPrototype();
+            if (!ProtoProtoVal.IsEmpty() && ProtoProtoVal->IsObject())
+            {
+                return FindAndCacheMethodInChain(
+                    Isolate, Context, Name, NameStr, SuperDef,
+                    ProtoProtoVal.As<v8::Object>());
+            }
+        }
+    }
+
+    return v8::MaybeLocal<v8::Function>();
+}
+
+// Search for a property by name in the given ClassDefinition's Properties, create the accessor,
+// cache it on proto, and return true. If not found, recurse into the parent ClassDefinition
+// (via SuperTypeId) and proto's prototype. Returns false if no match in the entire chain.
+static bool FindAndCachePropertyInChain(
+    v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Name> Name,
+    const char* NameStr, const JSClassDefinition* ClassDefinition,
+    v8::Local<v8::Object> Proto,
+    v8::Local<v8::Value>* OutGetter, v8::Local<v8::Value>* OutSetter)
+{
+    // Search Properties - find the LAST match
+    JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
+    JSPropertyInfo* MatchedPropertyInfo = nullptr;
+    while (PropertyInfo && PropertyInfo->Name)
+    {
+        if (strcmp(PropertyInfo->Name, NameStr) == 0)
+        {
+            MatchedPropertyInfo = PropertyInfo;
+        }
+        ++PropertyInfo;
+    }
+    if (MatchedPropertyInfo)
+    {
+        v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+        if (!MatchedPropertyInfo->Setter)
+            PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+        auto GetterData = v8::External::New(Isolate, &MatchedPropertyInfo->GetterData);
+        auto SetterData = v8::External::New(Isolate, &MatchedPropertyInfo->SetterData);
+        v8::Local<v8::Function> GetterFunc;
+        v8::Local<v8::Function> SetterFunc;
+        if (MatchedPropertyInfo->Getter)
+        {
+            GetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        if (MatchedPropertyInfo->Setter)
+        {
+            SetterFunc = v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                ->GetFunction(Context).ToLocalChecked();
+        }
+        // Cache the accessor property on proto
+        v8::Local<v8::Value> GetterVal = GetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : GetterFunc.As<v8::Value>();
+        v8::Local<v8::Value> SetterVal = SetterFunc.IsEmpty() ? v8::Undefined(Isolate).As<v8::Value>() : SetterFunc.As<v8::Value>();
+        v8::PropertyDescriptor Desc(GetterVal, SetterVal);
+        Desc.set_enumerable(true);
+        Desc.set_configurable(false);
+        LazyMemberCaching = true;
+        (void) Proto->DefineProperty(Context, Name, Desc);
+        LazyMemberCaching = false;
+        if (OutGetter) *OutGetter = GetterVal;
+        if (OutSetter) *OutSetter = SetterVal;
+        return true;
+    }
+
+    // Not found in current ClassDefinition, recurse into parent
+    if (ClassDefinition->SuperTypeId)
+    {
+        auto SuperDef = FindClassByID(ClassDefinition->SuperTypeId);
+        if (SuperDef)
+        {
+            auto ProtoProtoVal = Proto->GetPrototype();
+            if (!ProtoProtoVal.IsEmpty() && ProtoProtoVal->IsObject())
+            {
+                return FindAndCachePropertyInChain(
+                    Isolate, Context, Name, NameStr, SuperDef,
+                    ProtoProtoVal.As<v8::Object>(), OutGetter, OutSetter);
+            }
+        }
+    }
+
+    return false;
+}
+
+static void LazyInstanceMemberGetter(
+    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString())
+        return;
+
+    LazyInterceptorData* InterceptorData =
+        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const JSClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    auto Proto = Info.This()->GetPrototype();
+    if (Proto.IsEmpty() || !Proto->IsObject())
+        return;
+
+    v8::MaybeLocal<v8::Function> MaybeFunc = FindAndCacheMethodInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto.As<v8::Object>());
+
+    if (!MaybeFunc.IsEmpty())
+    {
+        Info.GetReturnValue().Set(MaybeFunc.ToLocalChecked());
+        return;
+    }
+
+    // Try to find a property accessor in the inheritance chain
+    v8::Local<v8::Value> GetterFunc;
+    if (FindAndCachePropertyInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto.As<v8::Object>(), &GetterFunc, nullptr))
+    {
+        // Property found and cached; invoke the getter for this access
+        if (GetterFunc->IsFunction())
+        {
+            v8::Local<v8::Value> Self = Info.This();
+            v8::MaybeLocal<v8::Value> Result = GetterFunc.As<v8::Function>()->Call(Context, Self, 0, nullptr);
+            if (!Result.IsEmpty())
+            {
+                Info.GetReturnValue().Set(Result.ToLocalChecked());
+            }
+        }
+    }
+}
+
+static void LazyInstanceMemberSetter(
+    v8::Local<v8::Name> Name, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString())
+        return;
+
+    LazyInterceptorData* InterceptorData =
+        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const JSClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    auto Proto = Info.This()->GetPrototype();
+    if (Proto.IsEmpty() || !Proto->IsObject())
+        return;
+
+    // Try to find a property accessor in the inheritance chain
+    v8::Local<v8::Value> SetterFunc;
+    if (FindAndCachePropertyInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto.As<v8::Object>(), nullptr, &SetterFunc))
+    {
+        // Property found and cached; invoke the setter for this access
+        if (SetterFunc->IsFunction())
+        {
+            v8::Local<v8::Value> Self = Info.This();
+            v8::Local<v8::Value> Args[] = { Value };
+            (void) SetterFunc.As<v8::Function>()->Call(Context, Self, 1, Args);
+            Info.GetReturnValue().Set(Value);
+        }
+    }
+}
+
+// Prototype-level lazy getter: triggered when accessing properties directly on the prototype object
+// (e.g. CS.System.Object.prototype.ToString), not through an instance.
+static void LazyPrototypeMemberGetter(
+    v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+
+    if (!Name->IsString() || LazyMemberCaching)
+        return;
+
+    LazyInterceptorData* InterceptorData =
+        static_cast<LazyInterceptorData*>(v8::Local<v8::External>::Cast(Info.Data())->Value());
+    const JSClassDefinition* ClassDefinition = InterceptorData->ClassDefinition;
+
+    v8::String::Utf8Value Utf8Name(Isolate, Name);
+    const char* NameStr = *Utf8Name;
+
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    // Info.This() is the prototype object itself; cache methods/properties directly on it
+    v8::Local<v8::Object> Proto = Info.This();
+
+    v8::MaybeLocal<v8::Function> MaybeFunc = FindAndCacheMethodInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto);
+
+    if (!MaybeFunc.IsEmpty())
+    {
+        Info.GetReturnValue().Set(MaybeFunc.ToLocalChecked());
+        return;
+    }
+
+    // Try to find a property accessor in the inheritance chain
+    // For prototype-level access, just cache the accessor; don't invoke the getter
+    // (there's no real instance to call it on)
+    FindAndCachePropertyInChain(
+        Isolate, Context, Name, NameStr, ClassDefinition, Proto, nullptr, nullptr);
+}
+#endif // PUERTS_LAZYLOAD
+
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition)
 {
     auto Iter = TypeIdToTemplateMap.find(ClassDefinition->TypeId);
@@ -253,95 +723,146 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<JSClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
-        JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
-        while (PropertyInfo && PropertyInfo->Name)
+#ifdef PUERTS_LAZYLOAD
+        // InstanceTemplate, PrototypeTemplate
+        auto InterceptorData = new LazyInterceptorData{ClassDefinition};
+        InterceptorDatas.push_back(InterceptorData);
+        Template->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
+            LazyInstanceMemberGetter, LazyInstanceMemberSetter, nullptr, nullptr, nullptr,
+            v8::External::New(Isolate, InterceptorData),
+            v8::PropertyHandlerFlags::kNonMasking));
+
+        Template->PrototypeTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
+            LazyPrototypeMemberGetter, nullptr, nullptr, nullptr, nullptr,
+            v8::External::New(Isolate, InterceptorData),
+            v8::PropertyHandlerFlags::kNonMasking));
+#endif // PUERTS_LAZYLOAD
+
+        // Methods
         {
-            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
-            if (!PropertyInfo->Setter)
-                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-            Template->PrototypeTemplate()->SetAccessorProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyAttribute);
-            ++PropertyInfo;
+            JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
+            while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+            {
+#ifdef PUERTS_LAZYLOAD
+                if (ClassDefinition->SuperTypeId && SuperHasMethod(ClassDefinition, FunctionInfo->Name))
+#endif
+                {
+#ifndef WITH_QUICKJS
+                    auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+                    if (FastCallInfo)
+                    {
+                        Template->PrototypeTemplate()->Set(
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                                v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+                                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
+                    }
+                    else
+#endif
+                    {
+                        Template->PrototypeTemplate()->Set(
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::FunctionTemplate::New(
+                                Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
+#ifndef WITH_QUICKJS
+                                , v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
+#endif
+                                ));
+                    }
+                }
+                ++FunctionInfo;
+            }
         }
 
-        PropertyInfo = ClassDefinition->Variables;
-        while (PropertyInfo && PropertyInfo->Name)
+        // Properties
         {
-            v8::PropertyAttribute PropertyAttribute = v8::None;
-            if (!PropertyInfo->Setter)
-                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
-            Template->SetAccessorProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyAttribute);
-            ++PropertyInfo;
+            JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
+            while (PropertyInfo && PropertyInfo->Name)
+            {
+#ifdef PUERTS_LAZYLOAD
+                if (ClassDefinition->SuperTypeId && SuperHasProperty(ClassDefinition, PropertyInfo->Name))
+#endif
+                {
+                    v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+                    if (!PropertyInfo->Setter)
+                        PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+                    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
+                    Template->PrototypeTemplate()->SetAccessorProperty(
+                        v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                        PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
+                        PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
+                        PropertyAttribute);
+                }
+                ++PropertyInfo;
+            }
         }
 
-        JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
-        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+        // Variables (static properties)
         {
-#ifndef WITH_QUICKJS
-            auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-            if (FastCallInfo)
+            JSPropertyInfo* PropertyInfo = ClassDefinition->Variables;
+            while (PropertyInfo && PropertyInfo->Name)
             {
-                Template->PrototypeTemplate()->Set(
-                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                        v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-                        v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
-            }
-            else
+#ifdef PUERTS_LAZYLOAD
+                // Directly register if: has setter (writable), or parent has same-named static variable (override)
+                bool DirectRegister = PropertyInfo->Setter
+                    || (ClassDefinition->SuperTypeId && SuperHasStaticVariable(ClassDefinition, PropertyInfo->Name));
+                if (DirectRegister)
 #endif
-            {
-                Template->PrototypeTemplate()->Set(
-                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(
-                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
-#ifndef WITH_QUICKJS
-                                                                                    ,
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
-#endif
-                        ));
+                {
+                    v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+                    if (!PropertyInfo->Setter)
+                        PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+                    auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
+                    auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
+                    Template->SetAccessorProperty(
+                        v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                        PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, &PesapiGetterWrap, GetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
+                        PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, &PesapiSetterWrap, SetterData)
+                                             : v8::Local<v8::FunctionTemplate>(),
+                        PropertyAttribute);
+                }
+                ++PropertyInfo;
             }
-            ++FunctionInfo;
         }
-        FunctionInfo = ClassDefinition->Functions;
-        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
+
+        // Functions (static methods)
         {
-#ifndef WITH_QUICKJS
-            auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-            if (FastCallInfo)
+            JSFunctionInfo* FunctionInfo = ClassDefinition->Functions;
+            while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
             {
-                Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
-                        v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-                        v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
-            }
-            else
+#ifdef PUERTS_LAZYLOAD
+                if (ClassDefinition->SuperTypeId && SuperHasStaticMethod(ClassDefinition, FunctionInfo->Name))
 #endif
-            {
-                Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(
-                        Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
+                {
 #ifndef WITH_QUICKJS
-                                                                                    ,
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
+                    auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
+                    if (FastCallInfo)
+                    {
+                        Template->Set(
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::FunctionTemplate::New(Isolate, &PesapiCallbackWrap,
+                                v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
+                                v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
+                    }
+                    else
 #endif
-                        ));
+                    {
+                        Template->Set(
+                            v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                            v8::FunctionTemplate::New(
+                                Isolate, &PesapiCallbackWrap, v8::External::New(Isolate, &FunctionInfo->Data)
+#ifndef WITH_QUICKJS
+                                , v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
+#endif
+                                ));
+                    }
+                }
+                ++FunctionInfo;
             }
-            ++FunctionInfo;
         }
 
         if (ClassDefinition->SuperTypeId)
@@ -361,6 +882,34 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         return v8::Local<v8::FunctionTemplate>::New(Isolate, Iter->second);
     }
 }
+
+#ifdef PUERTS_LAZYLOAD
+void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
+    v8::Local<v8::Function> Func, const JSClassDefinition* ClassDefinition)
+{
+    // Avoid wrapping the same type multiple times (GetFunction returns the same object in the same Context)
+    if (StaticLazyWrappedTypes.find(ClassDefinition->TypeId) != StaticLazyWrappedTypes.end())
+        return;
+
+    // Create an ObjectTemplate with SetHandler for lazy static function interception
+    auto ObjTemplate = v8::ObjectTemplate::New(Isolate);
+    ObjTemplate->SetHandler(v8::NamedPropertyHandlerConfiguration(
+        LazyStaticFunctionInterceptorGetter, nullptr, nullptr, nullptr, nullptr,
+        v8::External::New(Isolate, const_cast<JSClassDefinition*>(ClassDefinition)),
+        v8::PropertyHandlerFlags::kNonMasking));
+
+    auto InterceptorNode = ObjTemplate->NewInstance(Context).ToLocalChecked();
+
+    // Insert the interceptor node into the prototype chain:
+    // Before: Func -> OriginalPrototype
+    // After:  Func -> InterceptorNode -> OriginalPrototype
+    auto OriginalPrototype = Func->GetPrototype();
+    (void) InterceptorNode->SetPrototype(Context, OriginalPrototype);
+    (void) Func->SetPrototype(Context, InterceptorNode);
+
+    StaticLazyWrappedTypes.insert(ClassDefinition->TypeId);
+}
+#endif // PUERTS_LAZYLOAD
 
 static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefinition>& Data)
 {
@@ -503,6 +1052,14 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete CallbackData;
     }
     FunctionDatas.clear();
+#ifdef PUERTS_LAZYLOAD
+    for (auto* Data : InterceptorDatas)
+    {
+        delete static_cast<LazyInterceptorData*>(Data);
+    }
+    InterceptorDatas.clear();
+    StaticLazyWrappedTypes.clear();
+#endif // PUERTS_LAZYLOAD
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
 #ifndef WITH_QUICKJS

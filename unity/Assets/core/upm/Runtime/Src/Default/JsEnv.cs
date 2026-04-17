@@ -875,6 +875,7 @@ namespace Puerts
         public static void LogCallback(string msg)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            Console.WriteLine(msg);
 #else
             UnityEngine.Debug.Log(msg);
 #endif
@@ -884,6 +885,7 @@ namespace Puerts
         public static void LogWarningCallback(string msg)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            Console.WriteLine(msg);
 #else
             UnityEngine.Debug.Log(msg);
 #endif
@@ -893,6 +895,7 @@ namespace Puerts
         public static void LogErrorCallback(string msg)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            Console.WriteLine(msg);
 #else
             UnityEngine.Debug.Log(msg);
 #endif
