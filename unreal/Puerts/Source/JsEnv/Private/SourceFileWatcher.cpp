@@ -19,24 +19,56 @@ FSourceFileWatcher::FSourceFileWatcher(std::function<void(const FString&)> InOnW
 {
 }
 
+FSourceFileWatcher::~FSourceFileWatcher()
+{
+    if (WatchedRootDirHandle.IsValid())
+    {
+        FDirectoryWatcherModule& DirectoryWatcherModule =
+            FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
+        IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
+
+        FScopeLock ScopeLock(&SourceFileWatcherCritical);
+        DirectoryWatcher->UnregisterDirectoryChangedCallback_Handle(WatchedRootDir, WatchedRootDirHandle);
+    }
+}
+
 void FSourceFileWatcher::OnSourceLoaded(const FString& InPath)
 {
     FString Dir = FPaths::GetPath(InPath);
     FString FileName = FPaths::GetCleanFilename(InPath);
 
     FScopeLock ScopeLock(&SourceFileWatcherCritical);
-    if (!WatchedDirs.Contains(Dir))
+
+    if (WatchedRootDir.IsEmpty())
     {
         FDirectoryWatcherModule& DirectoryWatcherModule =
             FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
         IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
-        FDelegateHandle DelegateHandle;
+
         DirectoryWatcher->RegisterDirectoryChangedCallback_Handle(Dir,
-            IDirectoryWatcher::FDirectoryChanged::CreateRaw(this, &FSourceFileWatcher::OnDirectoryChanged), DelegateHandle,
-            IDirectoryWatcher::IgnoreChangesInSubtree);
-        WatchedDirs.Emplace(Dir, DelegateHandle);
-        UE_LOG(Puerts, Log, TEXT("add watched dir: %s"), *Dir);
+            IDirectoryWatcher::FDirectoryChanged::CreateRaw(this, &FSourceFileWatcher::OnDirectoryChanged), WatchedRootDirHandle,
+            IDirectoryWatcher::IncludeDirectoryChanges);
+        WatchedRootDir = Dir;
+        UE_LOG(Puerts, Log, TEXT("add watched root dir: %s"), *Dir);
     }
+    else if (!Dir.StartsWith(WatchedRootDir))
+    {
+        FString NewRootDir = FindCommonParentDir(WatchedRootDir, Dir);
+        if (!NewRootDir.IsEmpty() && NewRootDir != WatchedRootDir)
+        {
+            FDirectoryWatcherModule& DirectoryWatcherModule =
+                FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
+            IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
+
+            DirectoryWatcher->UnregisterDirectoryChangedCallback_Handle(WatchedRootDir, WatchedRootDirHandle);
+            DirectoryWatcher->RegisterDirectoryChangedCallback_Handle(NewRootDir,
+                IDirectoryWatcher::FDirectoryChanged::CreateRaw(this, &FSourceFileWatcher::OnDirectoryChanged),
+                WatchedRootDirHandle, IDirectoryWatcher::IncludeDirectoryChanges);
+            WatchedRootDir = NewRootDir;
+            UE_LOG(Puerts, Log, TEXT("update watched root dir to: %s"), *NewRootDir);
+        }
+    }
+
     if (!WatchedFiles.Contains(Dir))
     {
         WatchedFiles.Emplace(Dir, TMap<FString, FMD5Hash>());
@@ -53,53 +85,98 @@ void FSourceFileWatcher::OnDirectoryChanged(const TArray<FFileChangeData>& FileC
 {
     FScopeLock ScopeLock(&SourceFileWatcherCritical);
     if (!OnWatchedFileChanged)
+    {
         return;
+    }
     for (auto Change : FileChanges)
     {
-        if (Change.Action == FFileChangeData::FCA_Modified && Change.Filename.EndsWith(TEXT(".js")))
+        if (!Change.Filename.EndsWith(TEXT(".js")))
         {
-            FPaths::NormalizeFilename(Change.Filename);
-            Change.Filename = FPaths::ConvertRelativePathToFull(Change.Filename);
-            FString Dir = FPaths::GetPath(Change.Filename);
-            FString FileName = FPaths::GetCleanFilename(Change.Filename);
-            FString Splitter = TEXT("/");
-            if (!WatchedFiles.Contains(Dir))
+            continue;
+        }
+
+        FPaths::NormalizeFilename(Change.Filename);
+        Change.Filename = FPaths::ConvertRelativePathToFull(Change.Filename);
+        FString Dir = FPaths::GetPath(Change.Filename);
+        FString FileName = FPaths::GetCleanFilename(Change.Filename);
+        FString Splitter = TEXT("/");
+        if (!WatchedFiles.Contains(Dir))
+        {
+            Dir = Dir.Replace(TEXT("/"), TEXT("\\"));
+            Splitter = TEXT("\\");
+        }
+
+        if (!WatchedFiles.Contains(Dir))
+        {
+            continue;
+        }
+
+        if (Change.Action == FFileChangeData::FCA_Modified)
+        {
+            if (WatchedFiles[Dir].Contains(FileName))
             {
-                Dir = Dir.Replace(TEXT("/"), TEXT("\\"));
-                Splitter = TEXT("\\");
-            }
-            if (WatchedFiles.Contains(Dir))
-            {
-                if (WatchedFiles[Dir].Contains(FileName))
+                FString NotifyPath = Dir + Splitter + FileName;
+                FMD5Hash Hash = FMD5Hash::HashFile(*NotifyPath);
+                if (WatchedFiles[Dir][FileName] != Hash)
                 {
-                    FString NotifyPath = Dir + Splitter + FileName;
-                    FMD5Hash Hash = FMD5Hash::HashFile(*NotifyPath);
-                    if (WatchedFiles[Dir][FileName] != Hash)
-                    {
-                        OnWatchedFileChanged(NotifyPath);
-                        WatchedFiles[Dir][FileName] = Hash;
-                    }
+                    OnWatchedFileChanged(NotifyPath);
+                    WatchedFiles[Dir][FileName] = Hash;
                 }
             }
-            else
+        }
+        else if (Change.Action == FFileChangeData::FCA_Removed)
+        {
+            if (WatchedFiles[Dir].Contains(FileName))
             {
-                UE_LOG(Puerts, Error, TEXT("callback with unwatched dir: %s"), *Dir);
+                FString NotifyPath = Dir + Splitter + FileName;
+                UE_LOG(Puerts, Log, TEXT("watched file removed: %s"), *NotifyPath);
+                WatchedFiles[Dir].Remove(FileName);
+            }
+        }
+        else if (Change.Action == FFileChangeData::FCA_Added)
+        {
+            if (!WatchedFiles[Dir].Contains(FileName))
+            {
+                FString NotifyPath = Dir + Splitter + FileName;
+                FMD5Hash Hash = FMD5Hash::HashFile(*NotifyPath);
+                if (Hash.IsValid())
+                {
+                    WatchedFiles[Dir].Add(FileName, Hash);
+                    UE_LOG(Puerts, Log, TEXT("watched file added: %s"), *NotifyPath);
+                    OnWatchedFileChanged(NotifyPath);
+                }
             }
         }
     }
 }
 
-FSourceFileWatcher::~FSourceFileWatcher()
+FString FSourceFileWatcher::FindCommonParentDir(const FString& PathA, const FString& PathB)
 {
-    FDirectoryWatcherModule& DirectoryWatcherModule =
-        FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
-    IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
+    TArray<FString> PartsA, PartsB;
+    PathA.ParseIntoArray(PartsA, TEXT("/"), true);
+    PathB.ParseIntoArray(PartsB, TEXT("/"), true);
 
-    FScopeLock ScopeLock(&SourceFileWatcherCritical);
-    for (auto KV : WatchedDirs)
+    FString CommonParent;
+    int32 MinLen = FMath::Min(PartsA.Num(), PartsB.Num());
+    for (int32 i = 0; i < MinLen; ++i)
     {
-        DirectoryWatcher->UnregisterDirectoryChangedCallback_Handle(KV.Key, KV.Value);
+        if (PartsA[i].Equals(PartsB[i], ESearchCase::IgnoreCase))
+        {
+            if (CommonParent.IsEmpty())
+            {
+                CommonParent = PartsA[i];
+            }
+            else
+            {
+                CommonParent = CommonParent / PartsA[i];
+            }
+        }
+        else
+        {
+            break;
+        }
     }
+    return CommonParent;
 }
 }    // namespace PUERTS_NAMESPACE
 #endif
