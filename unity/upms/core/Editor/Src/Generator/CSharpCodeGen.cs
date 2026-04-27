@@ -1087,8 +1087,8 @@ namespace puerts
             var caseClauses = new List<string>();
             foreach (var pair in extendedType2extensionType)
             {
-                string extendedTypeName = Puerts.TypeExtensions.GetFriendlyName(pair.Key);
-                var extensionTypeNames = pair.Value.Select(t => $"typeof({Puerts.TypeExtensions.GetFriendlyName(t)})").ToList();
+                string extendedTypeName = (pair.Key.IsArray || pair.Key.IsPrimitive ? "" : "global::") +  Puerts.TypeExtensions.GetFriendlyName(pair.Key);
+                var extensionTypeNames = pair.Value.Select(t => $"typeof(global::{Puerts.TypeExtensions.GetFriendlyName(t)})").ToList();
                 caseClauses.Add($@"        else if (typeof({extendedTypeName}).AssemblyQualifiedName == assemblyQualifiedName)
         {{
             return ExtensionMethodInfo.GetExtensionMethods(typeof({extendedTypeName}), {string.Join(", ", extensionTypeNames)});
