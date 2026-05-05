@@ -180,8 +180,74 @@
         return __loader;
     }
 
+    const isValidExportName = (name) => /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(name)
+
+    const jsonString = (value) => JSON.stringify(value)
+
+    let __node_builtin_modules = undefined
+    const getNodeBuiltinModules = () => {
+        if (!global.process || !global.process.versions || !global.process.versions.node || typeof global.require !== 'function') {
+            return undefined
+        }
+        if (!__node_builtin_modules) {
+            let builtinModules
+            try {
+                const nodeModule = global.require('module')
+                builtinModules = nodeModule && nodeModule.builtinModules
+            } catch {
+                return undefined
+            }
+            if (!builtinModules || typeof builtinModules[Symbol.iterator] !== 'function') {
+                return undefined
+            }
+            __node_builtin_modules = new Set()
+            for (const name of builtinModules) {
+                if (typeof name !== 'string') continue
+                __node_builtin_modules.add(name)
+                __node_builtin_modules.add(name.startsWith('node:') ? name.slice(5) : `node:${name}`)
+            }
+        }
+        return __node_builtin_modules
+    }
+
+    const resolveNodeBuiltinSpecifier = (specifier) => {
+        const builtins = getNodeBuiltinModules()
+        if (!builtins || typeof specifier !== 'string') return undefined
+
+        if (specifier.startsWith('node:')) {
+            const name = specifier.slice(5)
+            return builtins.has(name) || builtins.has(specifier) ? `node:${name}` : undefined
+        }
+
+        return builtins.has(specifier) || builtins.has(`node:${specifier}`) ? `node:${specifier}` : undefined
+    }
+
+    const createNodeBuiltinESMWrapper = (specifier) => {
+        const mod = global.require(specifier)
+        const lines = [
+            `const __puer_builtin = globalThis.require(${jsonString(specifier)});`,
+            'export default __puer_builtin;'
+        ]
+        let index = 0
+        for (const key of Reflect.ownKeys(mod)) {
+            if (typeof key !== 'string') continue
+            if (key === 'default' || key === '__esModule') continue
+            if (!isValidExportName(key)) continue
+
+            const localName = `__puer_builtin_export_${index++}`
+            lines.push(`const ${localName} = __puer_builtin[${jsonString(key)}];`)
+            lines.push(`export { ${localName} as ${key} };`)
+        }
+        return lines.join('\n')
+    }
+
     global.__puer_resolve_module_url__ = function(specifier, referer) {
         const originSp = specifier;
+        const nodeBuiltinSpecifier = resolveNodeBuiltinSpecifier(specifier)
+        if (nodeBuiltinSpecifier) {
+            return nodeBuiltinSpecifier
+        }
+
         const loader = getLoader();
         if (!loader.Resolve) {
             let s = !__puer_path__.isRelative(specifier) ? specifier :
@@ -203,6 +269,11 @@
 
     global.__puer_resolve_module_content__ = function(specifier, debugpathRef = []) {
         const originSp = specifier;
+        const nodeBuiltinSpecifier = resolveNodeBuiltinSpecifier(specifier)
+        if (nodeBuiltinSpecifier) {
+            return createNodeBuiltinESMWrapper(nodeBuiltinSpecifier)
+        }
+
         const loader = getLoader();
         let isESM = true;
         if (loader.IsESM) isESM = specifier.startsWith('puerts/') || loader.IsESM(specifier)
