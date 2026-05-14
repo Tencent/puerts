@@ -795,7 +795,11 @@ void FFixSizeArrayWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>
         return;
     }
 
+#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
+    auto Ptr = Self + Property->GetElementSize() * Index;
+#else
     auto Ptr = Self + Property->ElementSize * Index;
+#endif
 
     auto Ret = Inner->UEToJs(Isolate, Context, Ptr, PassByPointer);
     if (Inner->NeedLinkOuter && PassByPointer)
@@ -843,7 +847,11 @@ void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
 
+#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
+    auto Ptr = Self + Property->GetElementSize() * Index;
+#else
     auto Ptr = Self + Property->ElementSize * Index;
+#endif
 
     Inner->JsToUE(Isolate, Context, Info[1], Ptr, true);
 }
