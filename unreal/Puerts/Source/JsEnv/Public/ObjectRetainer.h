@@ -11,6 +11,7 @@
 #include "CoreMinimal.h"
 #include "UObject/GCObject.h"
 #include "PuertsNamespaceDef.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 #ifdef THREAD_SAFE
 #if defined(WITH_QJS_NAMESPACE_SUFFIX)

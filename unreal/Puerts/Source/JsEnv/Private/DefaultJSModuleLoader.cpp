@@ -10,6 +10,7 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Algo/Reverse.h"
+#include "Runtime/Launch/Resources/Version.h"
 #if (ENGINE_MAJOR_VERSION >= 5)
 #include "HAL/PlatformFileManager.h"
 #else

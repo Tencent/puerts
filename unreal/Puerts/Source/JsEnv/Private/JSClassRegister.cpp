@@ -9,6 +9,7 @@
 #include "JSClassRegister.h"
 #if USING_IN_UNREAL_ENGINE
 #include "UObject/Class.h"
+#include "UObject/Package.h"
 #endif
 #include <map>
 #include <cstring>
