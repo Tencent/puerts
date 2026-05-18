@@ -223,19 +223,22 @@
     }
 
     const createNodeBuiltinESMWrapper = (specifier) => {
-        const mod = global.require(specifier)
+        // Use bare module name (without 'node:' prefix) for require() to support older Node versions (< 16)
+        const requireName = specifier.startsWith('node:') ? specifier.slice(5) : specifier
+        // Pre-require the module at wrapper generation time to discover its exported keys.
+        // Node's require cache ensures this has no extra cost at runtime.
+        const mod = global.require(requireName)
         const lines = [
-            `const __puer_builtin = globalThis.require(${jsonString(specifier)});`,
-            'export default __puer_builtin;'
+            `const __puer_nbi__ = globalThis.require(${jsonString(requireName)});`,
+            'export default __puer_nbi__;'
         ]
         let index = 0
-        for (const key of Reflect.ownKeys(mod)) {
-            if (typeof key !== 'string') continue
+        for (const key of Object.keys(mod)) {
             if (key === 'default' || key === '__esModule') continue
             if (!isValidExportName(key)) continue
 
-            const localName = `__puer_builtin_export_${index++}`
-            lines.push(`const ${localName} = __puer_builtin[${jsonString(key)}];`)
+            const localName = `__puer_nbi_${index++}__`
+            lines.push(`const ${localName} = __puer_nbi__[${jsonString(key)}];`)
             lines.push(`export { ${localName} as ${key} };`)
         }
         return lines.join('\n')
