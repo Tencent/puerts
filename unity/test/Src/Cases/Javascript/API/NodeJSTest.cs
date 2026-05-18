@@ -51,7 +51,7 @@ namespace Puerts.UnitTest
             }
             else
             {
-                Assert.Catch(() => env.ExecuteModule("node-builtin-import/main.mjs"), "InvalidOperationException");
+                Assert.Catch(() => env.ExecuteModule("node-builtin-import/main.mjs"));
             }
         }
     }
