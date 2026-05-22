@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -208,7 +208,7 @@ namespace Puerts.UnitTest
                 local testHelper = TestHelper.GetInstance()
 
                 local outRef = {}
-                local oNativeStruct = CS.Puerts.UnitTest.TestStruct(1)
+                local oNativeStruct = CS.Puerts.UnitTest.TestStruct(1.0)
                 outRef[1] = oNativeStruct
 
                 local rNativeStruct = testHelper:NativeStructTestPipeLine(oNativeStruct, outRef, function(obj)
@@ -219,10 +219,10 @@ namespace Puerts.UnitTest
                 assertAndPrint('LuaGetNativeStructOutArgFromCS', outRef[1].value, oNativeStruct.value)
                 assertAndPrint('LuaGetNativeStructReturnFromCS', rNativeStruct.value, oNativeStruct.value)
 
-                testHelper.nativeStructTestField = CS.Puerts.UnitTest.TestStruct(765)
-                testHelper.nativeStructTestProp = CS.Puerts.UnitTest.TestStruct(765)
-                TestHelper.nativeStructTestFieldStatic = CS.Puerts.UnitTest.TestStruct(765)
-                TestHelper.nativeStructTestPropStatic = CS.Puerts.UnitTest.TestStruct(765)
+                testHelper.nativeStructTestField = CS.Puerts.UnitTest.TestStruct(765.0)
+                testHelper.nativeStructTestProp = CS.Puerts.UnitTest.TestStruct(765.0)
+                TestHelper.nativeStructTestFieldStatic = CS.Puerts.UnitTest.TestStruct(765.0)
+                TestHelper.nativeStructTestPropStatic = CS.Puerts.UnitTest.TestStruct(765.0)
                 testHelper:NativeStructTestCheckMemberValue()
             ");
             luaEnv.Dispose();
