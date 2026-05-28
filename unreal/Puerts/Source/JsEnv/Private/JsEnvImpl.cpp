@@ -1395,37 +1395,33 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 
                         TryReleaseType(TypeScriptGeneratedClass);
                         auto NativeCtor = GetJsClass(TypeScriptGeneratedClass, Context);
-                        //如果已经有了bindinfoptr(此时forcereinject一定是true),这种情况下prototype是已经设置过了的,因此不用重复设置prototype
-                        if (!(BindInfoPtr && ForceReinject))
+                        
+                        // Hot reload must refresh NativeProto own methods and prototype chain for existing UObject wrappers.
+                        v8::Local<v8::Value> VNativeProto;
+                        if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) &&
+                            VNativeProto->IsObject())
                         {
-                            v8::Local<v8::Value> VNativeProto;
-                            if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) &&
-                                VNativeProto->IsObject())
+                            //{} -> Native Prototype -> Js Prototype -> Super Prototype
+                            v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
+                            __USE(BindInfoMap[TypeScriptGeneratedClass].Prototype.Get(Isolate)->SetPrototype(
+                                Context, NativeProto));
+                            if (SuperClass)
                             {
-                                //{} -> Native Prototype -> Js Prototype -> Super Prototype
-                                v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
-                                __USE(BindInfoMap[TypeScriptGeneratedClass].Prototype.Get(Isolate)->SetPrototype(
-                                    Context, NativeProto));
-                                if (SuperClass)
-                                {
-                                    __USE(Proto->SetPrototype(Context, BindInfoMap[SuperClass].Prototype.Get(Isolate)));
-                                }
-                                else
-                                {
-                                    __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
-                                }
-                                __USE(NativeProto->SetPrototype(Context, Proto));
-
-#if !PUERTS_FORCE_CPP_UFUNCTION
-                                v8::Local<v8::Value> MergeArgs[] = {Proto, NativeProto, NetMethods};
-
-                                __USE(MergePrototype.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 3, MergeArgs));
-#endif
+                                __USE(Proto->SetPrototype(Context, BindInfoMap[SuperClass].Prototype.Get(Isolate)));
                             }
                             else
                             {
-                                __USE(BindInfoMap[TypeScriptGeneratedClass].Prototype.Get(Isolate)->SetPrototype(Context, Proto));
+                                __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
                             }
+                            __USE(NativeProto->SetPrototype(Context, Proto));
+#if !PUERTS_FORCE_CPP_UFUNCTION
+                            v8::Local<v8::Value> MergeArgs[] = {Proto, NativeProto, NetMethods};
+                            __USE(MergePrototype.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 3, MergeArgs));
+#endif
+                        }
+                        else
+                        {
+                            __USE(BindInfoMap[TypeScriptGeneratedClass].Prototype.Get(Isolate)->SetPrototype(Context, Proto));
                         }
 
                         if (RebindObject)
@@ -1492,6 +1488,32 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
         if (TryCatch.HasCaught())
         {
             Logger->Error(FString::Printf(TEXT("reload module exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+        }
+        else
+        {
+            FString NormalizedModuleName = ModuleName.ToString().Replace(TEXT("\\"), TEXT("/"));
+            static FString PackageNamePrefix(TEXT(TS_BLUEPRINT_PATH));
+            for (TObjectIterator<UTypeScriptGeneratedClass> It; It; ++It)
+            {
+                UTypeScriptGeneratedClass* TypeScriptGeneratedClass = *It;
+                auto Package = Cast<UPackage>(TypeScriptGeneratedClass->GetOuter());
+                if (!Package || TypeScriptGeneratedClass->NotSupportInject())
+                {
+                    continue;
+                }
+                FString PackageName = Package->GetName();
+                auto PrefixPos = PackageName.Find(PackageNamePrefix);
+                if (PrefixPos == INDEX_NONE)
+                {
+                    continue;
+                }
+                FString ClassModuleName = PackageName.Mid(PrefixPos + PackageNamePrefix.Len()).Replace(TEXT("\\"), TEXT("/"));
+                if (ClassModuleName == NormalizedModuleName)
+                {
+                    MakeSureInject(TypeScriptGeneratedClass, true, true);
+                    break;
+                }
+            }
         }
     }
     else
