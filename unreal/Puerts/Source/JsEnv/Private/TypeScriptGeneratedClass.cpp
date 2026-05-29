@@ -239,6 +239,7 @@ void UTypeScriptGeneratedClass::RedirectToTypeScriptFinish()
             continue;
         }
         Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+        Function->Bind();
     }
 }
 
