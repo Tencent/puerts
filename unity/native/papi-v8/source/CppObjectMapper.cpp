@@ -43,7 +43,7 @@ void FCppObjectMapper::findClassByName(const v8::FunctionCallbackInfo<v8::Value>
     if (ClassDef)
     {
         auto Func = GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked();
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
         WrapFunctionWithStaticLazyInterceptor(Isolate, Context, Func, ClassDef);
 #endif
         Info.GetReturnValue().Set(Func);
@@ -64,7 +64,7 @@ v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Contex
     }
     auto Template = GetTemplateOfClass(Context->GetIsolate(), ClassDef);
     auto MaybeFunc = Template->GetFunction(Context);
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
     if (!MaybeFunc.IsEmpty())
     {
         WrapFunctionWithStaticLazyInterceptor(Context->GetIsolate(), Context, MaybeFunc.ToLocalChecked(), ClassDef);
@@ -253,7 +253,7 @@ static void PesapiSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     PropertyInfo->Setter(&v8impl::g_pesapi_ffi, (pesapi_callback_info)(&Info));
 }
 
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 static thread_local bool LazyStaticMemberCaching = false;
 
 struct LazyInterceptorData
@@ -359,9 +359,9 @@ static v8::Intercepted LazyStaticFunctionInterceptorGetter(
 }
 
 static thread_local bool LazyMemberCaching = false;
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 // Check if any ancestor class in the inheritance chain has a static variable (Variables) with the given name
 static bool SuperHasStaticVariable(ScriptClassRegistry* Registry, const ScriptClassDefinition* ClassDefinition, const char* Name)
 {
@@ -445,9 +445,9 @@ static bool SuperHasProperty(ScriptClassRegistry* Registry, const ScriptClassDef
     }
     return false;
 }
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 // Search for a method by name in the given ClassDefinition's Methods, create the v8::Function,
 // cache it on proto, and return it. If not found, recurse into the parent ClassDefinition
 // (via SuperTypeId) and proto's prototype. Returns empty Maybe if no match in the entire chain.
@@ -718,7 +718,7 @@ static v8::Intercepted LazyPrototypeMemberGetter(
 
     return v8::Intercepted::kNo;
 }
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition)
 {
@@ -729,7 +729,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             Isolate, CDataNew, v8::External::New(Isolate, &(const_cast<ScriptClassDefinition*>(ClassDefinition)->Data)));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
         // InstanceTemplate, PrototypeTemplate
         auto InterceptorData = new LazyInterceptorData{ClassDefinition, Registry};
         InterceptorDatas.push_back(InterceptorData);
@@ -742,14 +742,14 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             LazyPrototypeMemberGetter, nullptr, nullptr, nullptr, nullptr,
             v8::External::New(Isolate, InterceptorData),
             v8::PropertyHandlerFlags::kNonMasking));
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 
         // Methods
         {
             ScriptFunctionInfo* FunctionInfo = ClassDefinition->Methods;
             while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
             {
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
                 if (ClassDefinition->SuperTypeId && SuperHasMethod(Registry, ClassDefinition, FunctionInfo->Name))
 #endif
                 {
@@ -780,7 +780,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ScriptPropertyInfo* PropertyInfo = ClassDefinition->Properties;
             while (PropertyInfo && PropertyInfo->Name)
             {
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
                 if (ClassDefinition->SuperTypeId && SuperHasProperty(Registry, ClassDefinition, PropertyInfo->Name))
 #endif
                 {
@@ -806,7 +806,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ScriptPropertyInfo* PropertyInfo = ClassDefinition->Variables;
             while (PropertyInfo && PropertyInfo->Name)
             {
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
                 // Directly register if: has setter (writable), or parent has same-named static variable (override)
                 bool DirectRegister = PropertyInfo->Setter
                     || (ClassDefinition->SuperTypeId && SuperHasStaticVariable(Registry, ClassDefinition, PropertyInfo->Name));
@@ -835,7 +835,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ScriptFunctionInfo* FunctionInfo = ClassDefinition->Functions;
             while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
             {
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
                 if (ClassDefinition->SuperTypeId && SuperHasStaticMethod(Registry, ClassDefinition, FunctionInfo->Name))
 #endif
                 {
@@ -879,7 +879,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
     }
 }
 
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
     v8::Local<v8::Function> Func, const ScriptClassDefinition* ClassDefinition)
 {
@@ -905,7 +905,7 @@ void FCppObjectMapper::WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolat
 
     StaticLazyWrappedTypes.insert(ClassDefinition->TypeId);
 }
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 
 static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<ScriptClassDefinition>& Data)
 {
@@ -1041,14 +1041,14 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete CallbackData;
     }
     FunctionDatas.clear();
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
     for (auto* Data : InterceptorDatas)
     {
         delete static_cast<LazyInterceptorData*>(Data);
     }
     InterceptorDatas.clear();
     StaticLazyWrappedTypes.clear();
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
     CDataCache.clear();
     TypeIdToTemplateMap.clear();
     PrivateKey.Reset();
