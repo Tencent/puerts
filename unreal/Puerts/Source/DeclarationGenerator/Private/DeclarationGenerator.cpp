@@ -77,6 +77,38 @@ bool IsTypeScriptKeyword(const FString& InputString)
     return TypeScriptKeywords.Contains(InputString);
 }
 
+// Verification step: scan a generated declaration file for any type/namespace declared with a TypeScript
+// reserved word as its identifier (e.g. `namespace enum {`, `enum class {`). FilenameToTypeScriptVariableName
+// already escapes such names, so this is a defense-in-depth check: any hit here means the generated .d.ts
+// will not compile and would silently abort the PuertsEditor build. Returns the number of violations found.
+static int32 VerifyNoReservedWordIdentifiers(const FString& Content, const FString& FileLabel)
+{
+    const FRegexPattern Pattern(TEXT("\\b(namespace|enum|class|interface)\\s+([A-Za-z_$][A-Za-z0-9_$]*)"));
+    FRegexMatcher Matcher(Pattern, Content);
+    int32 ViolationCount = 0;
+    while (Matcher.FindNext())
+    {
+        const FString Kind = Matcher.GetCaptureGroup(1);
+        const FString Identifier = Matcher.GetCaptureGroup(2);
+        if (PUERTS_NAMESPACE::IsTypeScriptReservedWord(Identifier))
+        {
+            ViolationCount++;
+            UE_LOG(LogTemp, Error,
+                TEXT("[Puerts] %s: '%s %s' uses TypeScript reserved word '%s' as an identifier - the declaration "
+                     "file is invalid and TypeScript compilation will abort."),
+                *FileLabel, *Kind, *Identifier, *Identifier);
+        }
+    }
+    if (ViolationCount > 0)
+    {
+        UE_LOG(LogTemp, Error,
+            TEXT("[Puerts] %s contains %d reserved-word identifier(s); generated types will not compile. This should "
+                 "not happen with the keyword-safe naming rule - please report it."),
+            *FileLabel, ViolationCount);
+    }
+    return ViolationCount;
+}
+
 static FString SafeName(const FString& Name)
 {
     auto Ret = Name.Replace(TEXT(" "), TEXT(""))
@@ -432,6 +464,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 #endif
 
     FFileHelper::SaveStringToFile(ToString(), *UEDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    VerifyNoReservedWordIdentifiers(ToString(), TEXT("ue.d.ts"));
 
     Begin();
     for (auto& KV : BlueprintTypeDeclInfoCache)
@@ -455,6 +488,21 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 #endif
 
     FFileHelper::SaveStringToFile(ToString(), *BPDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    VerifyNoReservedWordIdentifiers(ToString(), TEXT("ue_bp.d.ts"));
+
+    // Generate the entry declaration (index.d.ts) so the `ue` module always resolves to both the engine
+    // (ue.d.ts) and blueprint (ue_bp.d.ts) declarations. Previously this file was only seeded by a
+    // non-overwriting directory copy, so a stale/incomplete index.d.ts left in the project could break
+    // `import * as UE from 'ue'`. We (re)write it on every generation.
+    const FString UEIndexFilePath = FPaths::ProjectDir() / TEXT("Typing/ue/index.d.ts");
+    const FString UEIndexContent = TEXT("/// <reference path=\"puerts.d.ts\" />\n")
+                                   TEXT("/// <reference path=\"ue.d.ts\" />\n")
+                                   TEXT("/// <reference path=\"puerts_decorators.d.ts\" />\n")
+                                   TEXT("/// <reference path=\"ue_bp.d.ts\" />\n");
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+    PuertsSourceControlUtils::MakeSourceControlFileWritable(UEIndexFilePath);
+#endif
+    FFileHelper::SaveStringToFile(UEIndexContent, *UEIndexFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
 static UPackage* GetPackage(UObject* Obj)

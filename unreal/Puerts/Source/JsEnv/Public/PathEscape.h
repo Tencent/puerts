@@ -12,6 +12,26 @@
 
 namespace PUERTS_NAMESPACE
 {
+// ECMAScript reserved words. None of these may be used as a bare binding identifier, so a generated
+// `namespace enum { ... }`, `enum class { ... }`, `class default { ... }` etc. is a TypeScript syntax error.
+// `skipLibCheck` does NOT suppress such grammar errors in .d.ts files, so a single occurrence aborts the
+// whole PuertsEditor compilation. Contextual keywords (any, as, type, namespace, module, ...) are legal as
+// identifiers and are intentionally excluded so we never rename a name that did not need it.
+FORCEINLINE bool IsTypeScriptReservedWord(const FString& Identifier)
+{
+    static const TArray<FString> ReservedWords = {TEXT("await"), TEXT("break"), TEXT("case"), TEXT("catch"),
+        TEXT("class"), TEXT("const"), TEXT("continue"), TEXT("debugger"), TEXT("default"), TEXT("delete"), TEXT("do"),
+        TEXT("else"), TEXT("enum"), TEXT("export"), TEXT("extends"), TEXT("false"), TEXT("finally"), TEXT("for"),
+        TEXT("function"), TEXT("if"), TEXT("import"), TEXT("in"), TEXT("instanceof"), TEXT("new"), TEXT("null"),
+        TEXT("return"), TEXT("super"), TEXT("switch"), TEXT("this"), TEXT("throw"), TEXT("true"), TEXT("try"),
+        TEXT("typeof"), TEXT("var"), TEXT("void"), TEXT("while"), TEXT("with"),
+        // future reserved words in strict mode (a .d.ts is parsed in strict mode)
+        TEXT("implements"), TEXT("interface"), TEXT("let"), TEXT("package"), TEXT("private"), TEXT("protected"),
+        TEXT("public"), TEXT("static"), TEXT("yield")};
+
+    return ReservedWords.Contains(Identifier);
+}
+
 FORCEINLINE FString FilenameToTypeScriptVariableName(const FString& Filename)
 {
     FString TypeScriptVariable;
@@ -35,6 +55,14 @@ FORCEINLINE FString FilenameToTypeScriptVariableName(const FString& Filename)
             TypeScriptVariable.Append(FString::Printf(TEXT("%d"), (int) c));
             TypeScriptVariable.AppendChar('$');
         }
+    }
+    // A reserved word can not be emitted as a bare identifier. Escape its first character with the same
+    // reversible `$<charcode>$` scheme used above; the result (e.g. "enum" -> "$101$num") is a valid,
+    // non-reserved identifier that TypeScriptVariableNameToFilename() restores to the original name, so
+    // runtime class/enum/struct loading (FStructWrapper::Load with UnEscape=true) keeps working.
+    if (IsTypeScriptReservedWord(TypeScriptVariable))
+    {
+        TypeScriptVariable = FString::Printf(TEXT("$%d$"), (int) TypeScriptVariable[0]) + TypeScriptVariable.RightChop(1);
     }
     return TypeScriptVariable;
 }
