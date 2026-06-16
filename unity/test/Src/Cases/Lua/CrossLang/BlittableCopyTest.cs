@@ -19,10 +19,10 @@ namespace Puerts.UnitTest
                 
                 -- Create color array
                 for i = 1, 8 do
-                    colors[i] = CS.UnityEngine.Color(i, 1, 1, 1)
+                    colors[i] = CS.UnityEngine.Color(i + 0.0, 1.0, 1.0, 1.0)
                 end
                 
-                local a = CS.UnityEngine.Color(100, 1, 1, 1)
+                local a = CS.UnityEngine.Color(100.0, 1.0, 1.0, 1.0)
                 colors[9] = a
                 
                 -- Calculate sum of red values
@@ -31,7 +31,7 @@ namespace Puerts.UnitTest
                     sumRed = sumRed + colors[i].r
                 end
                 
-                return sumRed
+                return math.tointeger(sumRed)
             ");
             UnityEngine.Debug.Log(sumRed);
             Assert.True(sumRed < 200);

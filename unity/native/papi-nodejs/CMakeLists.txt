@@ -12,7 +12,9 @@ project(PApiNodejs LANGUAGES C CXX)
 include(CheckCCompilerFlag)
 
 
-if("${JS_ENGINE}" MATCHES "^v8_10.6.194")
+if("${BACKEND_DEFINITIONS}" MATCHES "V8_129_OR_NEWER")
+    set(CMAKE_CXX_STANDARD 20)
+elseif ("${BACKEND_DEFINITIONS}" MATCHES "V8_118_OR_NEWER")
     set(CMAKE_CXX_STANDARD 17)
 else ()
     set(CMAKE_CXX_STANDARD 14)
@@ -52,28 +54,28 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ThirdParty}/Include/websocketpp
     ${ThirdParty}/Include/asio
-    include
+    ${PROJECT_SOURCE_DIR}/../papi-v8/include
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private
     ${BACKEND_INC_NAMES}
     ${PROJECT_SOURCE_DIR}/../puerts/include
 )
 
 set ( PUERTS_INC
-    include/Common.h
-    include/BackendEnv.h
-    include/JSEngine.h
-    include/V8Utils.h
+    ${PROJECT_SOURCE_DIR}/../papi-v8/include/Common.h
+    ${PROJECT_SOURCE_DIR}/../papi-v8/include/BackendEnv.h
+    ${PROJECT_SOURCE_DIR}/../papi-v8/include/JSEngine.h
+    ${PROJECT_SOURCE_DIR}/../papi-v8/include/V8Utils.h
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
 )
 
 set ( PUERTS_SRC
     source/PapiExport.cpp
-    source/BackendEnv.cpp
-    source/JSEngine.cpp
-    source/CppObjectMapper.cpp
-    source/DataTransfer.cpp
-    source/PesapiV8Impl.cpp
+    ${PROJECT_SOURCE_DIR}/../papi-v8/source/BackendEnv.cpp
+    ${PROJECT_SOURCE_DIR}/../papi-v8/source/JSEngine.cpp
+    ${PROJECT_SOURCE_DIR}/../papi-v8/source/CppObjectMapper.cpp
+    ${PROJECT_SOURCE_DIR}/../papi-v8/source/DataTransfer.cpp
+    ${PROJECT_SOURCE_DIR}/../papi-v8/source/PesapiV8Impl.cpp
     ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 

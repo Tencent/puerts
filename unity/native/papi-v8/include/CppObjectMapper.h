@@ -94,10 +94,10 @@ public:
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const ScriptClassDefinition* ClassDefinition);
 
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
     void WrapFunctionWithStaticLazyInterceptor(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
         v8::Local<v8::Function> Func, const ScriptClassDefinition* ClassDefinition);
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
 
 private:
     std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
@@ -107,10 +107,10 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
     std::vector<PesapiCallbackData*> FunctionDatas;
-#ifdef PUERTS_LAZYLOAD
+#if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
     std::vector<void*> InterceptorDatas;
     std::unordered_set<const void*, PointerHash, PointerEqual> StaticLazyWrappedTypes;
-#endif // PUERTS_LAZYLOAD
+#endif // defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
     v8::Global<v8::Symbol> PrivateKey;
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);

@@ -11,9 +11,6 @@ project(PApiV8 LANGUAGES C CXX)
 
 include(CheckCCompilerFlag)
 
-option ( USING_V8 "using v8" ON )
-option ( USING_QJS "using quickjs" ON )
-option ( USING_QJS_SUFFIX "add _qjs to namespace of simule v8 api " ON )
 
 if("${BACKEND_DEFINITIONS}" MATCHES "V8_129_OR_NEWER")
     set(CMAKE_CXX_STANDARD 20)

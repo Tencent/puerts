@@ -505,7 +505,11 @@ void FStructWrapper::Find(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Info.Length() > 1)
         {
             UObject* Outer = FV8Utils::GetUObject(Context, Info[1]);
+#if ENGINE_MINOR_VERSION >= 7 && ENGINE_MAJOR_VERSION >= 5
+            Object = StaticFindObject(Class, Outer, *FV8Utils::ToFString(Isolate, Info[0]), EFindObjectFlags::None);
+#else
             Object = StaticFindObject(Class, Outer, *FV8Utils::ToFString(Isolate, Info[0]), false);
+#endif
         }
         else
         {
