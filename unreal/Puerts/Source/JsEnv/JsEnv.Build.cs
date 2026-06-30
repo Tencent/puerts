@@ -22,7 +22,7 @@ public class JsEnv : ModuleRules
 
     private SupportedV8Versions UseV8Version = 
 #if UE_4_25_OR_LATER
-        SupportedV8Versions.V11_8_172;
+        SupportedV8Versions.V9_4_146_24;
 #else
         SupportedV8Versions.VDeprecated;
 #endif
