@@ -15,6 +15,7 @@
 #include "DelegateWrapper.h"
 #include "ContainerWrapper.h"
 #include "SoftObjectWrapper.h"
+#include "WeakObjectPtrWrapper.h"
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "JSLogger.h"
@@ -515,6 +516,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Isolate, Context, Global, "__tgjsNewStruct", This);
 
+    MethodBindingHelper<&FJsEnvImpl::MakeWeakObjectPtr>::Bind(Isolate, Context, Global, "__tgjsMakeWeakObjectPtr", This);
+
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     MethodBindingHelper<&FJsEnvImpl::MakeUClass>::Bind(Isolate, Context, Global, "__tgjsMakeUClass", This);
 
@@ -609,6 +612,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FMulticastDelegateWrapper::ToFunctionTemplate(Isolate));
 
     SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
+
+    WeakObjectPtrTemplate =
+        v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FWeakObjectPtrWrapper::ToFunctionTemplate(Isolate));
 
     DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
     MixinInvoker = DynamicInvoker;
@@ -870,6 +876,7 @@ FJsEnvImpl::~FJsEnvImpl()
         DynamicInvoker.Reset();
         MixinInvoker.Reset();
 
+        WeakObjectPtrTemplate.Reset();
         SoftObjectPtrTemplate.Reset();
         MulticastDelegateTemplate.Reset();
         DelegateTemplate.Reset();
@@ -1142,6 +1149,39 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
     {
         FV8Utils::ThrowException(Isolate, "invalid argument");
     }
+}
+
+void FJsEnvImpl::MakeWeakObjectPtr(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    UObject* Object = reinterpret_cast<UObject*>(FV8Utils::GetPointer(Context, Info[0]));
+    if (FV8Utils::IsReleasedPtr(Object))
+    {
+        Object = nullptr;
+    }
+
+    TWeakObjectPtr<UObject>* WeakPtr = new TWeakObjectPtr<UObject>(Object);
+
+    const auto JSObject = WeakObjectPtrTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+    DataTransfer::SetPointer(Isolate, JSObject, WeakPtr, 0);
+
+    v8::Global<v8::Object>* GlobalPtr = new v8::Global<v8::Object>(Isolate, JSObject);
+    GlobalPtr->SetWeak<v8::Global<v8::Object>>(
+        GlobalPtr,
+        [](const v8::WeakCallbackInfo<v8::Global<v8::Object>>& Data)
+        {
+            void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
+            delete static_cast<TWeakObjectPtr<UObject>*>(Ptr);
+            delete Data.GetParameter();
+        },
+        v8::WeakCallbackType::kInternalFields);
+
+    Info.GetReturnValue().Set(JSObject);
 }
 
 bool FJsEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)

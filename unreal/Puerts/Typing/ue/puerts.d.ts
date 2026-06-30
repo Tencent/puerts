@@ -130,6 +130,13 @@ declare module "ue" {
     function NewStruct(St: ScriptStruct): object;
 
     function FNameLiteral(str:string):string;
+
+    interface WeakObjectPtr<T> {
+        Get(): T | undefined;
+        IsValid(): boolean;
+    }
+
+    function MakeWeakObjectPtr<T extends Object>(obj: T): WeakObjectPtr<T>;
     
     type TWeakObjectPtr<T> = {
         [K in keyof T]: T[K];

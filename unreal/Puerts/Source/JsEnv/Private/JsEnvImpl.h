@@ -330,6 +330,8 @@ private:
 
     void NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    void MakeWeakObjectPtr(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     void MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -693,6 +695,8 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> MulticastDelegateTemplate;
 
     v8::UniquePersistent<v8::FunctionTemplate> SoftObjectPtrTemplate;
+
+    v8::UniquePersistent<v8::FunctionTemplate> WeakObjectPtrTemplate;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 

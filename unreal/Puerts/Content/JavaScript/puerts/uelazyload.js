@@ -200,6 +200,9 @@ var global = global || (function () { return this; }());
     rawSet(UE, 'NewStruct', global.__tgjsNewStruct);
     global.__tgjsNewStruct = undefined;
     
+    rawSet(UE, 'MakeWeakObjectPtr', global.__tgjsMakeWeakObjectPtr);
+    global.__tgjsMakeWeakObjectPtr = undefined;
+    
     puerts.$ref = ref;
     puerts.$unref = unref;
     puerts.$set = setref;
