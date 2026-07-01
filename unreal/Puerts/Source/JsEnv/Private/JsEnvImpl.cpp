@@ -613,8 +613,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
 
-    WeakObjectPtrTemplate =
-        v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FWeakObjectPtrWrapper::ToFunctionTemplate(Isolate));
+    WeakObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FWeakObjectPtrWrapper::ToFunctionTemplate(Isolate));
 
     DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
     MixinInvoker = DynamicInvoker;

@@ -24,11 +24,11 @@ namespace PUERTS_NAMESPACE
 class FWeakObjectPtrWrapper
 {
 public:
-	static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
 private:
-	static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-	static void IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
 }    // namespace PUERTS_NAMESPACE
