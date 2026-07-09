@@ -2436,7 +2436,13 @@ void FJsEnvImpl::ExecuteDelegate(
     {
         JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
             [MulticastScriptDelegate = static_cast<FMulticastScriptDelegate*>(DelegatePtr)](void* Params)
-            { MulticastScriptDelegate->ProcessMulticastDelegate<UObject>(Params); });
+            {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 8
+                MulticastScriptDelegate->ProcessDelegate<UObject>(Params);
+#else
+                MulticastScriptDelegate->ProcessMulticastDelegate<UObject>(Params);
+#endif
+            });
     }
 }
 
