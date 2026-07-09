@@ -2434,15 +2434,15 @@ void FJsEnvImpl::ExecuteDelegate(
     }
     else
     {
+        JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
+            [MulticastScriptDelegate = static_cast<FMulticastScriptDelegate*>(DelegatePtr)](void* Params)
+            {
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 8
-        JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
-            [MulticastScriptDelegate = static_cast<FMulticastScriptDelegate*>(DelegatePtr)](void* Params)
-            { MulticastScriptDelegate->ProcessDelegate<UObject>(Params); });
+                MulticastScriptDelegate->ProcessDelegate<UObject>(Params);
 #else
-        JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
-            [MulticastScriptDelegate = static_cast<FMulticastScriptDelegate*>(DelegatePtr)](void* Params)
-            { MulticastScriptDelegate->ProcessMulticastDelegate<UObject>(Params); });
+                MulticastScriptDelegate->ProcessMulticastDelegate<UObject>(Params);
 #endif
+            });    
     }
 }
 
