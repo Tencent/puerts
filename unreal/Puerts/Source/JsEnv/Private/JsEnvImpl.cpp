@@ -2442,7 +2442,7 @@ void FJsEnvImpl::ExecuteDelegate(
 #else
                 MulticastScriptDelegate->ProcessMulticastDelegate<UObject>(Params);
 #endif
-            });    
+            });
     }
 }
 
