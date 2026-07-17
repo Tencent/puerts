@@ -43,9 +43,6 @@
     <DebugType>full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="EpicGames.Build">
       <HintPath>$(EngineDir)\Binaries\DotNET\UnrealBuildTool\EpicGames.Build.dll</HintPath>
     </Reference>

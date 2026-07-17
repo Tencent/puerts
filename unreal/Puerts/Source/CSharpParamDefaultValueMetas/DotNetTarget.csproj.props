@@ -2,7 +2,10 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <!-- 读取引擎的配置 -->
+    <!-- 读取引擎的 .NET 版本配置 -->
+    <!-- 优先级: UnrealBuildTool.csproj > Shared\UnrealEngine.csproj.props > 扫描 DotNet 第三方目录 -->
+
+    <!-- 优先级1: UnrealBuildTool.csproj (UE5.7 及更早) -->
     <UbtPath>$(EngineDir)\Source\Programs\UnrealBuildTool\UnrealBuildTool.csproj</UbtPath>
     <UbtContent Condition="Exists('$(UbtPath)')">$([System.IO.File]::ReadAllText('$(UbtPath)'))</UbtContent>
 
@@ -12,9 +15,20 @@
     <!-- Groups[1].Value 取的是括号里匹配到的内容 -->
     <UbtFrameworkRaw>$([System.Text.RegularExpressions.Regex]::Match('$(UbtContent)', '&lt;TargetFramework&gt;\s*(.+?)\s*&lt;/TargetFramework&gt;').Groups[1].Value)</UbtFrameworkRaw>
 
-    <!-- 设置版本 (如果没读到，默认兜底 net8.0) -->
+    <!-- 优先级2: Shared\UnrealEngine.csproj.props (UE5.8+ 把该配置挪到了这里) -->
+    <SharedPropsPath>$(EngineDir)\Source\Programs\Shared\UnrealEngine.csproj.props</SharedPropsPath>
+    <SharedPropsContent Condition="'$(UbtFrameworkRaw)' == '' AND Exists('$(SharedPropsPath)')">$([System.IO.File]::ReadAllText('$(SharedPropsPath)'))</SharedPropsContent>
+    <SharedPropsFrameworkRaw>$([System.Text.RegularExpressions.Regex]::Match('$(SharedPropsContent)', '&lt;TargetFramework&gt;\s*(.+?)\s*&lt;/TargetFramework&gt;').Groups[1].Value)</SharedPropsFrameworkRaw>
+
+    <!-- 优先级3: 兜底 - 扫描 DotNet 第三方目录 (原始方式) -->
+    <DotNetDir>$(EngineDir)\Binaries\ThirdParty\DotNet</DotNetDir>
+    <DotNet8Path Condition="'$(UbtFrameworkRaw)' == '' AND '$(SharedPropsFrameworkRaw)' == '' AND Exists('$(DotNetDir)')">$([System.IO.Directory]::GetDirectories('$(DotNetDir)', '8.0.*'))</DotNet8Path>
+
+    <!-- 合并设置版本 -->
     <TargetFramework Condition="'$(UbtFrameworkRaw)' != ''">$(UbtFrameworkRaw)</TargetFramework>
-    <TargetFramework Condition="'$(UbtFrameworkRaw)' == ''">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(UbtFrameworkRaw)' == '' AND '$(SharedPropsFrameworkRaw)' != ''">$(SharedPropsFrameworkRaw)</TargetFramework>
+    <TargetFramework Condition="'$(UbtFrameworkRaw)' == '' AND '$(SharedPropsFrameworkRaw)' == '' AND '$(DotNet8Path)' != ''">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(UbtFrameworkRaw)' == '' AND '$(SharedPropsFrameworkRaw)' == '' AND '$(DotNet8Path)' == ''">net6.0</TargetFramework>
   </PropertyGroup>
 
 </Project>
