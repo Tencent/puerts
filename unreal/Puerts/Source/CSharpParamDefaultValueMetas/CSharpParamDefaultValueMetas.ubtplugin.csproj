@@ -23,10 +23,15 @@
     <DebugType>pdbonly</DebugType>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition=" $(EngineDir.Contains('UE_5.5')) ">
-    <DefineConstants>$(DefineConstants);UE_5_5_OR_LATER</DefineConstants>
+  <!-- 通过读取引擎 Build.version 判断是否为 UE5.5+, 以选择 UHT API -->
+  <!-- (5.5+ 用 Session.Modules, 更早用 Session.Packages) -->
+  <PropertyGroup>
+    <UeVersionFile>$(EngineDir)\Build\Build.version</UeVersionFile>
+    <UeVersionJson Condition="Exists('$(UeVersionFile)')">$([System.IO.File]::ReadAllText('$(UeVersionFile)'))</UeVersionJson>
+    <UeMajor>$([System.Text.RegularExpressions.Regex]::Match('$(UeVersionJson)', '&quot;MajorVersion&quot;\s*:\s*(\d+)').Groups[1].Value)</UeMajor>
+    <UeMinor>$([System.Text.RegularExpressions.Regex]::Match('$(UeVersionJson)', '&quot;MinorVersion&quot;\s*:\s*(\d+)').Groups[1].Value)</UeMinor>
   </PropertyGroup>
-  <PropertyGroup Condition=" $(EngineDir.Contains('UE_5.7')) ">
+  <PropertyGroup Condition=" '$(UeMajor)' != '' AND ($(UeMajor) &gt; 5 OR ($(UeMajor) == 5 AND $(UeMinor) &gt;= 5)) ">
     <DefineConstants>$(DefineConstants);UE_5_5_OR_LATER</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Development|AnyCPU' ">
