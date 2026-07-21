@@ -396,8 +396,8 @@ namespace Puerts
 #else
                 throw new Exception("GenericDelegate should only be used in main thread");
 #endif
-#endif
             }
+#endif
         }
 
         ~GenericDelegate() 
