@@ -109,6 +109,12 @@ namespace CSharpParamDefaultValueMetas
             }
         }
         
+        private static bool IsLatentInfoParameter(UhtFunction function, UhtProperty property)
+        {
+            return function.MetaData.TryGetValue("LatentInfo", out string? latentInfoParameterName)
+                && string.Equals(latentInfoParameterName, property.SourceName, StringComparison.Ordinal);
+        }
+
         private static bool TryGetDefaultValue(UhtMetaData metaData, UhtProperty property, out string value)
         {
             var hasValue = metaData.TryGetValue(property.SourceName, out string? tempValue);
@@ -132,8 +138,14 @@ namespace CSharpParamDefaultValueMetas
             
             foreach (var property in properties.OrderBy(Property => Property.SourceName))
             {
+                if (IsLatentInfoParameter(uhtFunction, property))
+                {
+                    continue;
+                }
+
                 if (TryGetDefaultValue(uhtFunction.MetaData, property, out string defaultValue))
                 {
+
                     declareClassOnce();
                     if (!declared)
                     {

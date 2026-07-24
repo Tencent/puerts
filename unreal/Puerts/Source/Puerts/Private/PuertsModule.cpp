@@ -56,6 +56,7 @@ public:
 
     void PreBeginPIE(bool bIsSimulating);
     void EndPIE(bool bIsSimulating);
+    void EndPlayMap();
     bool HandleSettingsSaved();
 #endif
 
@@ -315,38 +316,46 @@ void FPuertsModule::PreBeginPIE(bool bIsSimulating)
 }
 void FPuertsModule::EndPIE(bool bIsSimulating)
 {
+    // UEditorEngine broadcasts EndPIE before TeardownPlaySession starts cleaning up play worlds.
+    // Keep the environment alive so JavaScript teardown can run during World and GameInstance deinitialization.
     bIsInPIE = false;
-    if (Enabled)
+}
+void FPuertsModule::EndPlayMap()
+{
+    if (!Enabled)
     {
-        JsEnv.Reset();
-        for (TObjectIterator<UClass> It; It; ++It)
+        return;
+    }
+
+    JsEnv.Reset();
+    JsEnvGroup.Reset();
+    for (TObjectIterator<UClass> It; It; ++It)
+    {
+        UClass* Class = *It;
+        if (auto TsClass = Cast<UTypeScriptGeneratedClass>(Class))
         {
-            UClass* Class = *It;
-            if (auto TsClass = Cast<UTypeScriptGeneratedClass>(Class))
+            TsClass->CancelRedirection();
+            TsClass->DynamicInvoker.Reset();
+        }
+        if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor)
+        {
+            auto SuperClass = Class->GetSuperClass();
+            while (SuperClass)
             {
-                TsClass->CancelRedirection();
-                TsClass->DynamicInvoker.Reset();
+                if (SuperClass->ClassConstructor != UTypeScriptGeneratedClass::StaticConstructor)
+                {
+                    Class->ClassConstructor = SuperClass->ClassConstructor;
+                    break;
+                }
+                SuperClass = SuperClass->GetSuperClass();
             }
             if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor)
             {
-                auto SuperClass = Class->GetSuperClass();
-                while (SuperClass)
-                {
-                    if (SuperClass->ClassConstructor != UTypeScriptGeneratedClass::StaticConstructor)
-                    {
-                        Class->ClassConstructor = SuperClass->ClassConstructor;
-                        break;
-                    }
-                    SuperClass = SuperClass->GetSuperClass();
-                }
-                if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor)
-                {
-                    Class->ClassConstructor = nullptr;
-                }
+                Class->ClassConstructor = nullptr;
             }
         }
-        UE_LOG(PuertsModule, Display, TEXT("JsEnv reset"));
     }
+    UE_LOG(PuertsModule, Display, TEXT("JsEnv reset after play worlds cleaned up"));
 }
 #endif
 
@@ -414,6 +423,7 @@ void FPuertsModule::StartupModule()
     {
         FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsModule::PreBeginPIE);
         FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+        FGameDelegates::Get().GetEndPlayMapDelegate().AddRaw(this, &FPuertsModule::EndPlayMap);
 
         // FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
         // FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
@@ -502,6 +512,7 @@ void FPuertsModule::ShutdownModule()
 {
 #if WITH_EDITOR
     UnregisterSettings();
+    FGameDelegates::Get().GetEndPlayMapDelegate().RemoveAll(this);
     if (FLevelEditorModule* LevelEditor = FModuleManager::GetModulePtr<FLevelEditorModule>("LevelEditor"))
     {
         LevelEditor->OnMapChanged().RemoveAll(this);
