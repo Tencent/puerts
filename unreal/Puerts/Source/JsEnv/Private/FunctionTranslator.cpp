@@ -155,6 +155,12 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
                         DefaultValuePtr = MetaMap->Find(Property->GetFName());
                         if (DefaultValuePtr && !DefaultValuePtr->IsEmpty())
                         {
+                            // LatentInfo="LatentInfo" identifies the latent parameter; it is not a valid struct default value.
+                            // Keep this runtime guard for metadata generated before the UHT exporter fix.
+                            if (Property->GetFName() == TEXT("LatentInfo") && *DefaultValuePtr == TEXT("LatentInfo"))
+                            {
+                                continue;
+                            }
                             // UE_LOG(LogTemp, Warning, TEXT("Meta %s %s"), *Property->GetFName().ToString(), **DefaultValuePtr);
                             if (!ArgumentDefaultValues)
                             {
