@@ -764,6 +764,9 @@ namespace PUERTS_NAMESPACE
 
     void JSEngine::LowMemoryNotification()
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(MainIsolate);
+#endif
         MainIsolate->LowMemoryNotification();
     }
 
