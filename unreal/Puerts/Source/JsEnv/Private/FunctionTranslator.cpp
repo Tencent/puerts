@@ -116,7 +116,7 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
         IsStatic = InFunction->HasAnyFunctionFlags(FUNC_Static);
     }
     Arguments.clear();
-    Result.reset(); // 函数签名可能在重编译后改变，避免继续持有旧返回值属性转换器
+    Return.reset(); // 函数签名可能在重编译后改变，避免继续持有旧返回值属性转换器
 
     SkipWorldContextInArg0 = false;
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
