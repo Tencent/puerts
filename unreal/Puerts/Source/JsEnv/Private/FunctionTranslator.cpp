@@ -87,6 +87,7 @@ static GlobalBufferAutoRelease Dummy;
 #endif
 
 FFunctionTranslator::FFunctionTranslator(UFunction* InFunction, bool IsDelegate)
+    : ArgumentDefaultValues(nullptr) // 初始化默认参数缓存指针,确保函数刷新时可以安全清理旧缓存
 {
     Init(InFunction, IsDelegate);
 }
@@ -115,6 +116,7 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
         IsStatic = InFunction->HasAnyFunctionFlags(FUNC_Static);
     }
     Arguments.clear();
+    Result.reset(); // 函数签名可能在重编译后改变，避免继续持有旧返回值属性转换器
 
     SkipWorldContextInArg0 = false;
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
@@ -136,6 +138,10 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
         }
     }
 
+    if (ArgumentDefaultValues) // 蓝图重编译后会复用函数转换器, 重新初始化前需要释放旧函数的默认参数缓存
+    {
+        FMemory::Free(ArgumentDefaultValues);
+    }
     ArgumentDefaultValues = nullptr;
 
     if (!IsDelegate)
@@ -253,23 +259,48 @@ void FFunctionTranslator::Call(
         FV8Utils::ThrowException(Isolate, "access a invalid object");
         return;
     }
-    TWeakObjectPtr<UFunction> CallFunction =
-        !IsInterfaceFunction ? Function : (CallObject->GetClass()->FindFunctionByName(Function->GetFName()));
+    TWeakObjectPtr<UFunction> CallFunction = Function;
+    if (IsInterfaceFunction && Function.IsValid())
+    {
+        CallFunction = CallObject->GetClass()->FindFunctionByName(Function->GetFName());
+    }
+    
+    UFunction* CallFunctionPtr = CallFunction.Get();
+    
+#if WITH_EDITOR
+    // Blueprint 重编译后，旧 Class 会被标记为 CLASS_NewerVersionExists。
+    // 使用 ClassFlags 判断可以避免每次调用都检查 TRASHCLASS_、REINST_ 等名称前缀。
+    UClass* OwnerClass = CallFunctionPtr ? CallFunctionPtr->GetOuterUClass() : nullptr;
+    if (!OwnerClass || OwnerClass->HasAnyClassFlags(CLASS_NewerVersionExists))
+    {
+        UFunction* RefreshedFunction = CallObject->GetClass()->FindFunctionByName(FunctionName);
+        UClass* RefreshedOwnerClass = ::IsValid(RefreshedFunction) ? RefreshedFunction->GetOuterUClass() : nullptr;
+    
+        if (!RefreshedOwnerClass || RefreshedOwnerClass->HasAnyClassFlags(CLASS_NewerVersionExists))
+        {
+            FV8Utils::ThrowException(Isolate, "failed to refresh function after class recompilation");
+            return;
+        }
+    
+        Init(RefreshedFunction, false);
+        CallFunctionPtr = RefreshedFunction;
+    }
+#endif
+    
+    if (!CallFunctionPtr)
+    {
+        FV8Utils::ThrowException(Isolate, "access an invalid function");
+        return;
+    }
+    
+    // 参数缓冲区必须在函数刷新之后分配，确保使用新的 ParamsBufferSize。
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void* Params = Buffer;
 #else
     void* Params = ParamsBufferSize > 0 ? FMemory_Alloca(ParamsBufferSize) : nullptr;
 #endif
-#if WITH_EDITOR
-    if (!CallFunction.IsValid())
-    {
-        CallFunction = CallObject->GetClass()->FindFunctionByName(FunctionName);
-        Init(CallFunction.Get(), false);
-    }
-#endif
-
-    auto CallFunctionPtr = CallFunction.Get();
-    if ((Function->FunctionFlags & FUNC_Native) && !(Function->FunctionFlags & FUNC_Net) &&
+    
+    if ((CallFunctionPtr->FunctionFlags & FUNC_Native) && !(CallFunctionPtr->FunctionFlags & FUNC_Net) &&
         !CallFunctionPtr->HasAnyFunctionFlags(FUNC_UbergraphFunction))
     {
         FastCall(Isolate, Context, Info, CallObject, CallFunctionPtr, Params);
