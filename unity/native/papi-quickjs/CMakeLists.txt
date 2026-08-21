@@ -177,3 +177,7 @@ target_compile_options(PapiQuickjs PRIVATE
         /GR-   # 禁用RTTI
     >
 )
+
+if ( ANDROID )
+    target_link_options(PapiQuickjs PRIVATE -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384) # android 16K Pagesize
+endif ()

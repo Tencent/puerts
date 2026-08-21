@@ -64,4 +64,8 @@ target_compile_options(PuertsCore PRIVATE
     >
 )
 
+if ( ANDROID )
+    target_link_options(PuertsCore PRIVATE -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384) # android 16K Pagesize
+endif ()
+
 install(TARGETS PuertsCore DESTINATION ${PROJECT_SOURCE_DIR}/lib)
