@@ -240,6 +240,7 @@ elseif ( ANDROID )
     if ( CMAKE_BUILD_TYPE MATCHES "Release" )
         target_link_options(WSPPAddon PRIVATE -s)
     endif ()
+    target_link_options(WSPPAddon PRIVATE -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384) # android 16K Pagesize
 elseif ( APPLE )
 
     if ( IOS )
