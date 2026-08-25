@@ -87,7 +87,7 @@ static GlobalBufferAutoRelease Dummy;
 #endif
 
 FFunctionTranslator::FFunctionTranslator(UFunction* InFunction, bool IsDelegate)
-    : ArgumentDefaultValues(nullptr) // 初始化默认参数缓存指针,确保函数刷新时可以安全清理旧缓存
+    : ArgumentDefaultValues(nullptr)    // 初始化默认参数缓存指针,确保函数刷新时可以安全清理旧缓存
 {
     Init(InFunction, IsDelegate);
 }
@@ -116,7 +116,7 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
         IsStatic = InFunction->HasAnyFunctionFlags(FUNC_Static);
     }
     Arguments.clear();
-    Return.reset(); // 函数签名可能在重编译后改变，避免继续持有旧返回值属性转换器
+    Return.reset();    // 函数签名可能在重编译后改变，避免继续持有旧返回值属性转换器
 
     SkipWorldContextInArg0 = false;
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
@@ -138,7 +138,7 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
         }
     }
 
-    if (ArgumentDefaultValues) // 蓝图重编译后会复用函数转换器, 重新初始化前需要释放旧函数的默认参数缓存
+    if (ArgumentDefaultValues)    // 蓝图重编译后会复用函数转换器, 重新初始化前需要释放旧函数的默认参数缓存
     {
         FMemory::Free(ArgumentDefaultValues);
     }
@@ -264,9 +264,9 @@ void FFunctionTranslator::Call(
     {
         CallFunction = CallObject->GetClass()->FindFunctionByName(Function->GetFName());
     }
-    
+
     UFunction* CallFunctionPtr = CallFunction.Get();
-    
+
 #if WITH_EDITOR
     // Blueprint 重编译后，旧 Class 会被标记为 CLASS_NewerVersionExists。
     // 使用 ClassFlags 判断可以避免每次调用都检查 TRASHCLASS_、REINST_ 等名称前缀。
@@ -275,31 +275,31 @@ void FFunctionTranslator::Call(
     {
         UFunction* RefreshedFunction = CallObject->GetClass()->FindFunctionByName(FunctionName);
         UClass* RefreshedOwnerClass = ::IsValid(RefreshedFunction) ? RefreshedFunction->GetOuterUClass() : nullptr;
-    
+
         if (!RefreshedOwnerClass || RefreshedOwnerClass->HasAnyClassFlags(CLASS_NewerVersionExists))
         {
             FV8Utils::ThrowException(Isolate, "failed to refresh function after class recompilation");
             return;
         }
-    
+
         Init(RefreshedFunction, false);
         CallFunctionPtr = RefreshedFunction;
     }
 #endif
-    
+
     if (!CallFunctionPtr)
     {
         FV8Utils::ThrowException(Isolate, "access an invalid function");
         return;
     }
-    
+
     // 参数缓冲区必须在函数刷新之后分配，确保使用新的 ParamsBufferSize。
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void* Params = Buffer;
 #else
     void* Params = ParamsBufferSize > 0 ? FMemory_Alloca(ParamsBufferSize) : nullptr;
 #endif
-    
+
     if ((CallFunctionPtr->FunctionFlags & FUNC_Native) && !(CallFunctionPtr->FunctionFlags & FUNC_Net) &&
         !CallFunctionPtr->HasAnyFunctionFlags(FUNC_UbergraphFunction))
     {
