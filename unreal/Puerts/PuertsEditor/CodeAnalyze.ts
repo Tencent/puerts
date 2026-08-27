@@ -114,17 +114,30 @@ if (!ts.sys) {
 }
 
 function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
+    if (!allDiagnostics || allDiagnostics.length === 0) {
+        return;
+    }
+    let errorCount = 0;
+    let warningCount = 0;
     allDiagnostics.forEach(diagnostic => {
       let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-      if (diagnostic.file) {
+      let category = ts.DiagnosticCategory[diagnostic.category]; // "Error" / "Warning" / "Message" / "Suggestion"
+      let code = `TS${diagnostic.code}`;
+      if (diagnostic.category === ts.DiagnosticCategory.Error) {
+          errorCount++;
+      } else if (diagnostic.category === ts.DiagnosticCategory.Warning) {
+          warningCount++;
+      }
+      if (diagnostic.file && diagnostic.start !== undefined) {
         let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
-          diagnostic.start!
+          diagnostic.start
         );
-        console.error(`  Error ${diagnostic.file.fileName} (${line + 1},${character +1}): ${message}`);
+        console.error(`  [${category} ${code}] ${diagnostic.file.fileName}(${line + 1},${character + 1}): ${message}`);
       } else {
-        console.error(`  Error: ${message}`);
+        console.error(`  [${category} ${code}] ${message}`);
       }
     });
+    console.error(`PuertsEditor: TypeScript reported ${errorCount} error(s), ${warningCount} warning(s).`);
 }
 
 type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float" | "enum" | "softobject" | "softclass";
@@ -416,7 +429,15 @@ function watch(configFilePath:string) {
         fileNames.forEach(fileName => {
             fileVersions[fileName] = restoredFileVersions[fileName] || fileVersions[fileName];
         });
+        console.error("==================== PuertsEditor: TypeScript compilation FAILED ====================");
         logErrors(diagnostics);
+        // If any diagnostic points at the generated declaration files, the type generation produced invalid TypeScript.
+        const declErrors = diagnostics.filter(d => d.file && /ue(_bp)?\.d\.ts$/.test(d.file.fileName));
+        if (declErrors.length > 0) {
+            console.error(`PuertsEditor: ${declErrors.length} error(s) originate from generated declaration files (ue.d.ts/ue_bp.d.ts). Regenerate the types (the generator now rejects TypeScript reserved words).`);
+        }
+        console.error("PuertsEditor: No JavaScript/Blueprints were generated because of the errors above. Fix them and save again.");
+        console.error("=====================================================================================");
     } else {
         function getClassPathInfo(sourceFilePath: string): {moduleFileName:string, modulePath:string} {
             let modulePath:string = undefined;

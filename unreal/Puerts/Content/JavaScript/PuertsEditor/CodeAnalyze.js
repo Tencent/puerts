@@ -26,9 +26,11 @@ function getCustomSystem() {
     };
     function fileExists(path) {
         let res = UE.FileSystemOperation.FileExists(path);
+        //console.log(`${path} exists? ${res}`);
         return res;
     }
     function write(s) {
+        console.log(s);
     }
     function readFile(path, encoding) {
         let data = (0, puerts_1.$ref)(undefined);
@@ -37,6 +39,7 @@ function getCustomSystem() {
             return (0, puerts_1.$unref)(data);
         }
         else {
+            console.warn("readFile: read file fail! path=" + path + ", stack:" + new Error().stack);
             return undefined;
         }
     }
@@ -67,6 +70,30 @@ function getCustomSystem() {
         }
         return result;
     }
+    //for debug only
+    /*return new Proxy({}, {
+        get: function(target, name) {
+            if (!(name in target)) {
+                if (typeof name === 'string') {
+                    if (!(name in tgamejsSystem)) {
+                        return undefined;
+                    }
+                    let maybeFunc = tgamejsSystem[name];
+                    if (typeof maybeFunc === 'function') {
+                        target[name] = function(...args: any[]) {
+                            const res = maybeFunc(...args);
+                            console.log("method:", name, ", args:", JSON.stringify(args), ",res:", res);
+                            return res;
+                        }
+                    } else {
+                        target[name] = tgamejsSystem[name];
+                    }
+                }
+            }
+
+            return target[name]
+        }
+    }) as ts.System;*/
     return customSystem;
 }
 let customSystem = getCustomSystem();
@@ -75,14 +102,30 @@ if (!ts.sys) {
     t.sys = customSystem;
 }
 function logErrors(allDiagnostics) {
+    if (!allDiagnostics || allDiagnostics.length === 0) {
+        return;
+    }
+    let errorCount = 0;
+    let warningCount = 0;
     allDiagnostics.forEach(diagnostic => {
         let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-        if (diagnostic.file) {
+        let category = ts.DiagnosticCategory[diagnostic.category]; // "Error" / "Warning" / "Message" / "Suggestion"
+        let code = `TS${diagnostic.code}`;
+        if (diagnostic.category === ts.DiagnosticCategory.Error) {
+            errorCount++;
+        }
+        else if (diagnostic.category === ts.DiagnosticCategory.Warning) {
+            warningCount++;
+        }
+        if (diagnostic.file && diagnostic.start !== undefined) {
             let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+            console.error(`  [${category} ${code}] ${diagnostic.file.fileName}(${line + 1},${character + 1}): ${message}`);
         }
         else {
+            console.error(`  [${category} ${code}] ${message}`);
         }
     });
+    console.error(`PuertsEditor: TypeScript reported ${errorCount} error(s), ${warningCount} warning(s).`);
 }
 const FunctionFlags = {
     FUNC_None: 0x00000000,
@@ -202,17 +245,19 @@ function readAndParseConfigFile(configFilePath) {
         readDirectory: customSystem.readDirectory,
         fileExists: customSystem.fileExists,
         readFile: customSystem.readFile,
-        trace: s => { }
+        trace: s => console.log(s)
     }, customSystem.getCurrentDirectory());
 }
 function watch(configFilePath) {
     let { fileNames, options } = readAndParseConfigFile(configFilePath);
+    console.log("start watch..", JSON.stringify({ fileNames: fileNames, options: options }));
     const versionsFilePath = tsi.getDirectoryPath(configFilePath) + "/ts_file_versions_info.json";
     const fileVersions = {};
     let beginTime = new Date().getTime();
     fileNames.forEach(fileName => {
         fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false, isBP: false };
     });
+    console.log("calc md5 using " + (new Date().getTime() - beginTime) + "ms");
     function getDefaultLibLocation() {
         return tsi.getDirectoryPath(tsi.normalizePath(customSystem.getExecutingFilePath()));
     }
@@ -232,6 +277,7 @@ function watch(configFilePath) {
         },
         getScriptSnapshot: fileName => {
             if (!customSystem.fileExists(fileName)) {
+                console.error("getScriptSnapshot: file not existed! path=" + fileName);
                 return undefined;
             }
             if (!(fileName in fileVersions)) {
@@ -240,6 +286,7 @@ function watch(configFilePath) {
             if (!scriptSnapshotsCache.has(fileName)) {
                 const sourceFile = customSystem.readFile(fileName);
                 if (!sourceFile) {
+                    console.error("getScriptSnapshot: read file failed! path=" + fileName);
                     return undefined;
                 }
                 scriptSnapshotsCache.set(fileName, {
@@ -251,11 +298,13 @@ function watch(configFilePath) {
             if (scriptSnapshotsInfo.version != fileVersions[fileName].version) {
                 const sourceFile = customSystem.readFile(fileName);
                 if (!sourceFile) {
+                    console.error("getScriptSnapshot: read file failed! path=" + fileName);
                     return undefined;
                 }
                 scriptSnapshotsInfo.version = fileVersions[fileName].version;
                 scriptSnapshotsInfo.scriptSnapshot = ts.ScriptSnapshot.fromString(sourceFile);
             }
+            //console.log("getScriptSnapshot:"+ fileName + ",in:" + new Error().stack)
             return scriptSnapshotsInfo.scriptSnapshot;
         },
         getCurrentDirectory: customSystem.getCurrentDirectory,
@@ -274,8 +323,9 @@ function watch(configFilePath) {
                 return service.getProgram();
             }
             catch (e) {
+                console.error(e);
             }
-            //An exception causes a new Language Service to be created. It is possible that it will continue to fail. UE file reading will occasionally fail, and after the failure, ts incremental compilation will continue to fail the assertion at tryReuseStructureFromOldProgram
+            //异常了从新创建Language Service，有可能不断失败,UE的文件读取偶尔会失败，失败后ts增量编译会不断的在tryReuseStructureFromOldProgram那断言失败
             service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
         }
     }
@@ -322,6 +372,7 @@ function watch(configFilePath) {
     }
     beginTime = new Date().getTime();
     let program = getProgramFromService();
+    console.log("full compile using " + (new Date().getTime() - beginTime) + "ms");
     let diagnostics = ts.getPreEmitDiagnostics(program);
     let restoredFileVersions = {};
     var changed = false;
@@ -329,6 +380,7 @@ function watch(configFilePath) {
     if (versionsFileExisted) {
         try {
             restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
+            console.log("restore versions from ", versionsFilePath);
         }
         catch { }
     }
@@ -336,7 +388,15 @@ function watch(configFilePath) {
         fileNames.forEach(fileName => {
             fileVersions[fileName] = restoredFileVersions[fileName] || fileVersions[fileName];
         });
+        console.error("==================== PuertsEditor: TypeScript compilation FAILED ====================");
         logErrors(diagnostics);
+        // If any diagnostic points at the generated declaration files, the type generation produced invalid TypeScript.
+        const declErrors = diagnostics.filter(d => d.file && /ue(_bp)?\.d\.ts$/.test(d.file.fileName));
+        if (declErrors.length > 0) {
+            console.error(`PuertsEditor: ${declErrors.length} error(s) originate from generated declaration files (ue.d.ts/ue_bp.d.ts). Regenerate the types (the generator now rejects TypeScript reserved words).`);
+        }
+        console.error("PuertsEditor: No JavaScript/Blueprints were generated because of the errors above. Fix them and save again.");
+        console.error("=====================================================================================");
     }
     else {
         function getClassPathInfo(sourceFilePath) {
@@ -387,7 +447,7 @@ function watch(configFilePath) {
         }
     }
     var dirWatcher = new UE.PEDirectoryWatcher();
-    global.__dirWatcher = dirWatcher; //prevent it from being released?
+    global.__dirWatcher = dirWatcher; //防止被释放?
     dirWatcher.OnChanged.Add((added, modified, removed) => {
         setTimeout(() => {
             var changed = false;
@@ -418,8 +478,10 @@ function watch(configFilePath) {
                 if (fileName in fileVersions) {
                     let md5 = UE.FileSystemOperation.FileMD5Hash(fileName);
                     if (md5 === fileVersions[fileName].version) {
+                        console.log(fileName + " md5 not changed, so skiped!");
                     }
                     else {
+                        console.log(`${fileName} md5 from ${fileVersions[fileName].version} to ${md5}`);
                         fileVersions[fileName].version = md5;
                         onSourceFileAddOrChange(fileName, true);
                         changed = true;
@@ -428,9 +490,10 @@ function watch(configFilePath) {
             });
             refreshBlueprints();
             if (changed) {
+                console.log("versions saved to " + versionsFilePath);
                 UE.FileSystemOperation.WriteFile(versionsFilePath, JSON.stringify(fileVersions, null, 4));
             }
-        }, 100); //Delay 100 milliseconds to prevent file reading failure due to read conflict
+        }, 100); //延时100毫秒，防止因为读冲突而文件读取失败
     });
     dirWatcher.Watch(customSystem.getCurrentDirectory());
     function onFileAdded() {
@@ -438,6 +501,7 @@ function watch(configFilePath) {
         let newFiles = [];
         cmdLine.fileNames.forEach(fileName => {
             if (!(fileName in fileVersions)) {
+                console.log(`new file: ${fileName} ...`);
                 newFiles.push(fileName);
                 fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false };
             }
@@ -453,6 +517,7 @@ function watch(configFilePath) {
         if (!program) {
             let beginTime = new Date().getTime();
             program = getProgramFromService();
+            console.log("incremental compile " + sourceFilePath + " using " + (new Date().getTime() - beginTime) + "ms");
         }
         let sourceFile = program.getSourceFile(sourceFilePath);
         if (sourceFile) {
@@ -477,6 +542,7 @@ function watch(configFilePath) {
                         let jsSource = undefined;
                         emitOutput.outputFiles.forEach(output => {
                             if (doEmitJs) {
+                                console.log(`write ${output.name} ...`);
                                 UE.FileSystemOperation.WriteFile(output.name, output.text);
                             }
                             if (output.name.endsWith(".js") || output.name.endsWith(".mjs")) {
@@ -501,6 +567,7 @@ function watch(configFilePath) {
                                 if (!type || !type.getSymbol())
                                     return;
                                 if (type.getSymbol().getName() != tsi.getBaseFileName(moduleFileName)) {
+                                    //console.error("type name must the same as file name!");
                                     return;
                                 }
                                 let baseTypes = type.getBaseTypes();
@@ -515,15 +582,18 @@ function watch(configFilePath) {
                                     baseTypeUClass = structOfType;
                                 }
                                 else {
+                                    console.warn("do not support UStruct:" + checker.typeToString(type));
                                     return;
                                 }
                                 if (baseTypeUClass) {
                                     if (isSubclassOf(type, "Subsystem")) {
+                                        console.error("do not support Subsystem " + checker.typeToString(type));
                                         return;
                                     }
                                     if (!baseTypeUClass.IsNative()) {
                                         let moduleNames = getModuleNames(baseTypes[0]);
                                         if (moduleNames.length > 1 && moduleNames[0] == 'ue') {
+                                            console.error(`${checker.typeToString(type)} extends a blueprint`);
                                             return;
                                         }
                                     }
@@ -531,6 +601,7 @@ function watch(configFilePath) {
                                     foundBaseTypeUClass = baseTypeUClass;
                                 }
                                 else {
+                                    console.warn("can not find base for " + checker.typeToString(type));
                                 }
                             }
                         });
@@ -572,6 +643,7 @@ function watch(configFilePath) {
                             }
                         }
                         catch (e) {
+                            console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
                         }
                     }
                     else if (moduleNames.length == 2) {
@@ -587,6 +659,7 @@ function watch(configFilePath) {
                     let baseTypeUClass = getUClassOfType(baseTypes[0]);
                     if (!baseTypeUClass)
                         return undefined;
+                    //console.error("modulePath:", getModulePath(type.symbol.valueDeclaration.getSourceFile().fileName));
                     let sourceFile = type.symbol.valueDeclaration.getSourceFile();
                     let sourceFileName;
                     program.emit(sourceFile, writeFile, undefined, false, undefined);
@@ -596,6 +669,7 @@ function watch(configFilePath) {
                         }
                     }
                     if (tsi.getBaseFileName(sourceFileName) != type.symbol.getName()) {
+                        console.error("type name must the same as file name!");
                         return undefined;
                     }
                     if (options.outDir && sourceFileName.startsWith(options.outDir)) {
@@ -623,6 +697,7 @@ function watch(configFilePath) {
                     return undefined;
                 try {
                     let typeNode = checker.typeToTypeNode(type, undefined, undefined);
+                    //console.log(checker.typeToString(type), tds)
                     if (ts.isTypeReferenceNode(typeNode) && type.symbol) {
                         let typeName = type.symbol.getName();
                         if (typeName == 'BigInt') {
@@ -638,6 +713,7 @@ function watch(configFilePath) {
                                 if (uenum) {
                                     return { pinType: new UE.PEGraphPinType("byte", uenum, UE.EPinContainerType.None, false, false) };
                                 }
+                                console.warn("can not find type of " + typeName);
                                 return undefined;
                             }
                             let pinType = new UE.PEGraphPinType(category, uclass, UE.EPinContainerType.None, false, false);
@@ -651,6 +727,7 @@ function watch(configFilePath) {
                                 typeName = typeRef.aliasSymbol.getName();
                             }
                             if (!typeArguments) {
+                                console.warn("can not find type arguments of " + node.getFullText());
                                 return undefined;
                             }
                             if (node) {
@@ -660,6 +737,7 @@ function watch(configFilePath) {
                             }
                             let result = tsTypeToPinType(typeArguments[0], children[1]);
                             if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None && typeName != '$Ref' && typeName != '$InRef') {
+                                console.warn("can not find pin type of typeArguments[0] " + typeName);
                                 return undefined;
                             }
                             if (children[1]) {
@@ -696,6 +774,7 @@ function watch(configFilePath) {
                             else if (typeName == 'TMap') {
                                 let valuePinType = tsTypeToPinType(typeArguments[1], undefined);
                                 if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
+                                    console.warn("can not find pin type of typeArguments[1] " + typeName);
                                     return undefined;
                                 }
                                 if (children[2]) {
@@ -706,6 +785,7 @@ function watch(configFilePath) {
                                 return result;
                             }
                             else {
+                                console.warn("not support generic type: " + typeName);
                                 return undefined;
                             }
                         }
@@ -727,6 +807,7 @@ function watch(configFilePath) {
                                 category = 'bool';
                                 break;
                             default:
+                                console.warn("not support kind: " + typeNode.kind);
                                 return undefined;
                         }
                         let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false, false);
@@ -734,6 +815,7 @@ function watch(configFilePath) {
                     }
                 }
                 catch (e) {
+                    console.error(e.stack || e);
                     return undefined;
                 }
             }
@@ -815,6 +897,7 @@ function watch(configFilePath) {
                 return ret;
             }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
+                console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let lsFunctionLibrary = baseTypeUClass && baseTypeUClass.GetName() === "BlueprintFunctionLibrary";
                 let bp = new UE.PEBlueprintAsset();
                 bp.LoadOrCreateWithMetaData(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0, uemeta.compileClassMetaData(type));
@@ -824,13 +907,16 @@ function watch(configFilePath) {
                     if (ts.isMethodDeclaration(x) && !manualSkip(x)) {
                         let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
                         if (isStatic && !lsFunctionLibrary) {
+                            console.warn(`do not support static function [${x.name.getText()}]`);
                             return;
                         }
                         if (!isStatic && lsFunctionLibrary) {
+                            console.warn(`do not support non-static function [${x.name.getText()}] in BlueprintFunctionLibrary`);
                             return;
                         }
                         if (x.name.getText() === 'ReceiveInit') {
                             if (baseTypeUClass == UE.GameInstance.StaticClass() || baseTypeUClass.IsChildOf(UE.GameInstance.StaticClass())) {
+                                console.warn(`do not support override GameInstance.ReceiveInit in ${type.getSymbol().getName()}`);
                                 return;
                             }
                         }
@@ -839,6 +925,7 @@ function watch(configFilePath) {
                     else if (ts.isPropertyDeclaration(x) && !manualSkip(x)) {
                         let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
                         if (isStatic) {
+                            console.warn("static property:" + x.name.getText() + ' not support');
                             return;
                         }
                         properties.push(checker.getSymbolAtLocation(x.name));
@@ -856,9 +943,11 @@ function watch(configFilePath) {
                         let methodType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
                         let signatures = checker.getSignaturesOfType(methodType, ts.SignatureKind.Call);
                         if (!signatures) {
+                            console.warn(`can not find signature for ${symbol.getName()} `);
                             return;
                         }
                         if (signatures.length != 1) {
+                            console.warn(`find more than one signature for ${symbol.getName()} `);
                             return;
                         }
                         let signature = signatures[0];
@@ -866,6 +955,7 @@ function watch(configFilePath) {
                             let paramType = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration);
                             let paramPinType = tsTypeToPinType(paramType, getSymbolTypeNode(signature.parameters[i]));
                             if (!paramPinType) {
+                                console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
                                 bp.ClearParameter();
                                 return;
                             }
@@ -873,6 +963,7 @@ function watch(configFilePath) {
                             // bp.AddParameter(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType);
                             bp.AddParameterWithMetaData(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType, uemeta.compileParamMetaData(signature.parameters[i]));
                         }
+                        //console.log("add function", symbol.getName());
                         let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                         let flags = getFlagsValue(sflags, FunctionFlags);
                         let clearFlags = 0;
@@ -889,6 +980,7 @@ function watch(configFilePath) {
                             let returnType = signature.getReturnType();
                             let resultPinType = tsTypeToPinType(returnType, getSymbolTypeNode(symbol));
                             if (!resultPinType) {
+                                console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported return type!");
                                 bp.ClearParameter();
                                 return;
                             }
@@ -902,29 +994,27 @@ function watch(configFilePath) {
                         let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
                         let propPinType = tsTypeToPinType(propType, getSymbolTypeNode(symbol));
                         if (!propPinType) {
+                            console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                         }
                         else {
                             postProcessPinType(symbol.valueDeclaration, propPinType.pinType, true);
+                            //console.log("add member variable", symbol.getName());
                             let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                             let localFlags = BigInt(getFlagsValue(sflags, PropertyFlags)); // From //@flags
                             let cond = 0;
-
                             if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
                                 // Handle @flags() decorator
                                 localFlags |= getDecoratorFlagsValue(symbol.valueDeclaration, "flags", PropertyFlags);
-
                                 // Handle @condition() for CPF_Net
                                 cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "condition", ELifetimeCondition));
                                 if (cond != 0) {
-                                    localFlags |= BigInt(PropertyFlags.CPF_Net); 
+                                    localFlags |= BigInt(PropertyFlags.CPF_Net);
                                 }
-
                                 // Handle specific @edit_on_instance decorator as an override
                                 if (hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
                                     localFlags &= ~BigInt(PropertyFlags.CPF_DisableEditOnInstance); // Remove restriction
                                     localFlags |= BigInt(PropertyFlags.CPF_Edit); // Ensure it's editable if this is used
                                 }
-                                
                                 // Attachment logic (preserved)
                                 symbol.valueDeclaration.decorators.forEach((decorator) => {
                                     let expression = decorator.expression;
@@ -937,22 +1027,19 @@ function watch(configFilePath) {
                                     }
                                 });
                             }
-
                             let propertyMetaData = uemeta.compilePropertyMetaData(symbol);
-
                             // If UEMeta provides no metadata (e.g. no @uproperty decorator on the member) AND
                             // localFlags themselves don't already make the property editable, 
                             // then apply a default CPF_DisableEditOnInstance to localFlags.
                             // This makes un-decorated or un-annotated properties non-editable on instances by default.
                             if (!propertyMetaData && !(localFlags & BigInt(PropertyFlags.CPF_Edit))) {
                                 // Check hasDecorator again because the main decorators loop might not have run if no decorators exist at all
-                                if (!symbol.valueDeclaration || !symbol.valueDeclaration.decorators || !hasDecorator(symbol.valueDeclaration, "edit_on_instance")) { 
-                                     localFlags |= BigInt(PropertyFlags.CPF_DisableEditOnInstance);
+                                if (!symbol.valueDeclaration || !symbol.valueDeclaration.decorators || !hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
+                                    localFlags |= BigInt(PropertyFlags.CPF_DisableEditOnInstance);
                                 }
                             }
-                            // When propertyMetaData *is* present, its internal flags (derived by UEMeta.js from EditAnywhere etc.)
+                            // When propertyMetaData *is* present, its internal flags (derived by UEMeta.ts from EditAnywhere etc.)
                             // are authoritative. localFlags here are for truly additional/override flags.
-
                             bp.AddMemberVariableWithMetaData(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(localFlags & 0xffffffffn), Number(localFlags >> 32n), cond, propertyMetaData);
                         }
                     }
@@ -1009,9 +1096,11 @@ function watch(configFilePath) {
     }
     function list(pattern) {
         var re = new RegExp(pattern ? pattern : '.*');
+        console.log(`id\t\t\t\t\t\t\t\t\tprocessed\tisBP\tpath`);
         for (var key in fileVersions) {
             var value = fileVersions[key];
             if (!pattern || re.test(key)) {
+                console.log(`${value.version}\t${!!value.processed}\t\t${!!value.isBP}\t${key}`);
             }
         }
     }
@@ -1019,6 +1108,7 @@ function watch(configFilePath) {
         for (var key in fileVersions) {
             var value = fileVersions[key];
             if (value.version === id.trim()) {
+                console.log(`compiling ${key} ...`);
                 onSourceFileAddOrChange(key, true);
             }
         }
@@ -1032,6 +1122,7 @@ function watch(configFilePath) {
             compile(args);
         }
         else {
+            console.error(`unknow command for Puerts ${cmd}`);
         }
     }
     cpp.FPuertsEditorModule.SetCmdCallback(dispatchCmd);
