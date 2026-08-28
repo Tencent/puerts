@@ -27,8 +27,12 @@ public:
 
     void OnDirectoryChanged(const TArray<FFileChangeData>& FileChanges);
 
+    FString FindCommonParentDir(const FString& PathA, const FString& PathB);
+
 private:
-    TMap<FString, FDelegateHandle> WatchedDirs;
+    FString WatchedRootDir;
+
+    FDelegateHandle WatchedRootDirHandle;
 
     TMap<FString, TMap<FString, FMD5Hash>> WatchedFiles;
 
