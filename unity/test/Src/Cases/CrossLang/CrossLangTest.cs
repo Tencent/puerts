@@ -241,6 +241,11 @@ namespace Puerts.UnitTest
 
         [UnityEngine.Scripting.Preserve]
         public static float Value;
+
+        [UnityEngine.Scripting.Preserve]
+        public static bool TestOverloadBigInt(ref long a) {return true;}
+        [UnityEngine.Scripting.Preserve]
+        public static bool TestOverloadBigInt(ref int a) {return false;}
     }
 
     public class OverrideTestBase
@@ -1988,6 +1993,21 @@ __PDUOTF;");
                     AssertAndPrint('objA', objA.Foo() == 'i am base');
                     const objB = new CS.Puerts.UnitTest.OverrideTestDriveB();
                     AssertAndPrint('objB', objB.Foo() == 'i am B');
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestRefParamOverload()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const { $ref, $unref } = puer;
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('TestOverloadBigInt bigint', ConstructorOverloadFactory.TestOverloadBigInt($ref(1n)))
+                    AssertAndPrint('TestOverloadBigInt number', !ConstructorOverloadFactory.TestOverloadBigInt($ref(1)))
                 })()
             ");
         }

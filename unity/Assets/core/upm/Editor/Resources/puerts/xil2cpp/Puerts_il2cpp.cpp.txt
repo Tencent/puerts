@@ -1727,14 +1727,17 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
             }
             if (passedByReference)
             {
-                if (${invokePapi('is_object')}(env, jsValue))
-                {
-                    continue;
-                }
-                else
+                if (!${invokePapi('is_object')}(env, jsValue))
                 {
                     return false;
                 }
+                bool isOut = (parameterType->attrs & PARAM_ATTRIBUTE_OUT) && !(parameterType->attrs & PARAM_ATTRIBUTE_IN);
+                if (isOut)
+                {
+                    continue;
+                }
+                jsValue = JsObjectUnRef(apis, env, jsValue);
+                parameterType = &parameterKlass->byval_arg;
             }
             int t;
             if (isLastArgument && hasParamArray)
