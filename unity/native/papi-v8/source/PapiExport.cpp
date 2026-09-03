@@ -134,9 +134,6 @@ V8_EXPORT void LogicTick(v8::Isolate *Isolate)
 
 V8_EXPORT void TerminateExecution(v8::Isolate *Isolate)
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
     Isolate->TerminateExecution();
 }
 
