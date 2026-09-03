@@ -915,6 +915,11 @@ namespace Puerts.UnitTest
         {
             e = TestEnum.B;
         }
+
+        public static void StringRefParam(ref string s)
+        {
+            s = s + "_cs";
+        }
     }
 
 
@@ -1982,6 +1987,9 @@ __PDUOTF;");
                     const p2 = $ref(1);
                     InOutParamClass.EnumRefParam(p2);
                     AssertAndPrint('EnumRefParam', $unref(p2) == 213);
+                    const p3 = $ref('abc');
+                    InOutParamClass.StringRefParam(p3);
+                    AssertAndPrint('StringRefParam', $unref(p3) == 'abc_cs');
                 })()
             ");
         }

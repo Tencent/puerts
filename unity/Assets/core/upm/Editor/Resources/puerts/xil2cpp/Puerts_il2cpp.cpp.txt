@@ -2017,8 +2017,9 @@ handle_underlying:
                         *arg = ptr;
                     }
                 }
-                else if (underlyClass == il2cpp_defaults.object_class) // any type
+                else
                 {
+                    // no native object ptr, e.g. string/boxed primitive/"any type" passed by ref
                     *arg = JsValueToCSRef(apis, underlyClass, env, jsValue);
                 }
             }
