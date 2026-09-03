@@ -29,7 +29,17 @@ namespace Puerts
 
         public T Get<T>(string key) 
         {
-            return (T)GetJSObjectValue(apis, key, typeof(T));
+            lock (jsEnv)
+            {
+                if (!jsEnv.disposed)
+                {
+                    return (T)GetJSObjectValue(apis, key, typeof(T));
+                }
+                else
+                {
+                    throw new ObjectDisposedException("JsEnv");
+                }
+            }
         }
 
         ~JSObject()
