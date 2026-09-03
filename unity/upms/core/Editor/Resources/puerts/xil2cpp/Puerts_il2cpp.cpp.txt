@@ -741,6 +741,7 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
     }
     else
     {
+        il2cpp::vm::Runtime::ClassInit(field->parent);
         il2cpp::vm::Field::StaticSetValue(field, value);
     }
 }
@@ -1746,14 +1747,17 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
             }
             if (passedByReference)
             {
-                if (${invokePapi('is_object')}(env, jsValue))
-                {
-                    continue;
-                }
-                else
+                if (!${invokePapi('is_object')}(env, jsValue))
                 {
                     return false;
                 }
+                bool isOut = (parameterType->attrs & PARAM_ATTRIBUTE_OUT) && !(parameterType->attrs & PARAM_ATTRIBUTE_IN);
+                if (isOut)
+                {
+                    continue;
+                }
+                jsValue = JsObjectUnRef(apis, env, jsValue);
+                parameterType = &parameterKlass->byval_arg;
             }
             int t;
             if (isLastArgument && hasParamArray)
@@ -2042,8 +2046,9 @@ handle_underlying:
                         *arg = ptr;
                     }
                 }
-                else if (underlyClass == il2cpp_defaults.object_class) // any type
+                else
                 {
+                    // no native object ptr, e.g. string/boxed primitive/"any type" passed by ref
                     *arg = JsValueToCSRef(apis, underlyClass, env, jsValue);
                 }
             }
