@@ -29,7 +29,17 @@ namespace Puerts
 
         public T Get<T>(string key) 
         {
-            return (T)GetValue(apis, key, typeof(T));
+            lock (scriptEnv)
+            {
+                if (!scriptEnv.disposed)
+                {
+                    return (T)GetValue(apis, key, typeof(T));
+                }
+                else
+                {
+                    throw new ObjectDisposedException("ScriptEnv");
+                }
+            }
         }
 
         ~ScriptObject()
