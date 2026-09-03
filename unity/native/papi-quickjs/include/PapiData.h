@@ -51,7 +51,7 @@ struct pesapi_value_ref__ : pesapi_env_ref__
     ~pesapi_value_ref__()
     {
         auto mapper = pesapi::qjsimpl::CppObjectMapper::Get(context_persistent);
-        mapper->RemoveStrongRefObject(&value_persistent);
+        if (mapper) mapper->RemoveStrongRefObject(&value_persistent);
         JS_FreeValue(context_persistent, value_persistent);
     }
 

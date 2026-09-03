@@ -16,6 +16,7 @@ struct FuncFinalizeData
 void PApiFuncFinalizer(JSRuntime* rt, JSValue val)
 {
     CppObjectMapper* mapper = reinterpret_cast<CppObjectMapper*>(JS_GetRuntimeOpaque1(rt));
+    if (!mapper) return;
     FuncFinalizeData* data = (FuncFinalizeData*)JS_GetOpaque(val, mapper->funcTracerClassId);
     if (data->finalize)
     {
@@ -73,6 +74,7 @@ JSValue CppObjectMapper::CreateError(JSContext* ctx, const char* message)
 void PApiObjectFinalizer(JSRuntime* rt, JSValue val)
 {
     CppObjectMapper* mapper = reinterpret_cast<CppObjectMapper*>(JS_GetRuntimeOpaque1(rt));
+    if (!mapper) return;
     ObjectUserData* object_udata = (ObjectUserData*)JS_GetOpaque(val, mapper->classId);
 
     if (object_udata && object_udata->ptr)
@@ -444,6 +446,7 @@ void CppObjectMapper::Cleanup()
     TypeIdToFunctionMap.clear();
     //CDataCache.~hash_map();
     //TypeIdToFunctionMap.~hash_map();
+    JS_SetRuntimeOpaque1(rt, nullptr);
 }
 
 }

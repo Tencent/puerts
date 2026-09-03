@@ -887,13 +887,17 @@ pesapi_value pesapi_global(pesapi_env env)
 const void* pesapi_get_env_private(pesapi_env env)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
-    return CppObjectMapper::Get(ctx)->GetEnvPrivate();
+    auto mapper = CppObjectMapper::Get(ctx);
+    if (!mapper) return nullptr;
+    return mapper->GetEnvPrivate();
 }
 
 void pesapi_set_env_private(pesapi_env env, const void* ptr)
 {
     auto ctx = qjsContextFromPesapiEnv(env);
-    CppObjectMapper::Get(ctx)->SetEnvPrivate(ptr);
+    auto mapper = CppObjectMapper::Get(ctx);
+    if (!mapper) return;
+    mapper->SetEnvPrivate(ptr);
 }
 
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
