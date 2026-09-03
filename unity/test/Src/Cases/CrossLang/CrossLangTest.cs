@@ -654,6 +654,8 @@ namespace Puerts.UnitTest
             set { _nullableNativeStructTestProp = value; }
         }
         public static TestStruct? nullableNativeStructTestFieldStatic = default(TestStruct);
+        public static bool? nullableBoolStatic = null;
+        public static int? nullableIntStatic = null;
         protected static TestStruct? _nullableNativeStructTestPropStatic = default(TestStruct);
         public static TestStruct? nullableNativeStructTestPropStatic
         {
@@ -2035,6 +2037,46 @@ __PDUOTF;");
             ");
             jsEnv.Tick();
             Assert.False(StaticFeildTestHelper.Field1);
+        }
+
+        [Test]
+        public void TestNullableBool()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const { $ref, $unref } = puer;
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    console.log(typeof TestHelper.nullableBoolStatic)
+                    AssertAndPrint('TestHelper.nullableBoolStatic', TestHelper.nullableBoolStatic === null);
+                    TestHelper.nullableBoolStatic = true
+                    console.log(TestHelper.nullableBoolStatic, console.log(typeof TestHelper.nullableBoolStatic))
+                    AssertAndPrint('TestHelper.nullableBoolStatic', TestHelper.nullableBoolStatic == true);
+                    TestHelper.nullableBoolStatic = false
+                    AssertAndPrint('TestHelper.nullableBoolStatic', TestHelper.nullableBoolStatic === false);
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestNullableInt()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const { $ref, $unref } = puer;
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    console.log(typeof TestHelper.nullableIntStatic)
+                    AssertAndPrint('TestHelper.nullableIntStatic', TestHelper.nullableIntStatic === null);
+                    TestHelper.nullableIntStatic = 2
+                    console.log(TestHelper.nullableIntStatic)
+                    AssertAndPrint('TestHelper.nullableIntStatic', TestHelper.nullableIntStatic == 2);
+                    TestHelper.nullableIntStatic = 3
+                    AssertAndPrint('TestHelper.nullableIntStatic', TestHelper.nullableIntStatic === 3);
+                })()
+            ");
         }
 
     }

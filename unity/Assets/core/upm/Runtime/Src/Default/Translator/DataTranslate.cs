@@ -390,6 +390,7 @@ namespace Puerts
     public class GeneralSetterManager
     {
         private Dictionary<Type, GeneralSetter> generalSetterMap = new Dictionary<Type, GeneralSetter>();
+        private Dictionary<Type, GeneralSetter> nullableTypeGeneralGetterMap = new Dictionary<Type, GeneralSetter>();
 
         public GeneralSetterManager()
         {
@@ -579,19 +580,48 @@ namespace Puerts
             }
         }
 
+        GeneralSetter MakeNullableTranslateFunc(GeneralSetter jvt)
+        {
+            return (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
+            {
+                if (obj == null)
+                {
+                    setValueApi.SetNull(isolate, holder);
+                }
+                else
+                {
+                    jvt(jsEnvIdx, isolate, setValueApi, holder, obj);
+                }
+            };
+        }
+
         public GeneralSetter GetTranslateFunc(Type type)
         {
             if (type.IsByRef) return GetTranslateFunc(type.GetElementType());
 
-            if (type.IsEnum) return GetTranslateFunc(Enum.GetUnderlyingType(type));
-
-            GeneralSetter jvt;
-            if (!generalSetterMap.TryGetValue(type, out jvt))
+            Type underlyingType = Nullable.GetUnderlyingType(type);
+            if (underlyingType != null)
             {
-                jvt = MakeTranslateFunc(type);
-                generalSetterMap.Add(type, jvt);
+                GeneralSetter jvt;
+                if (!nullableTypeGeneralGetterMap.TryGetValue(underlyingType, out jvt))
+                {
+                    jvt = MakeNullableTranslateFunc(GetTranslateFunc(underlyingType));
+                    nullableTypeGeneralGetterMap.Add(underlyingType, jvt);
+                }
+                return jvt;
             }
-            return jvt;
+            else
+            {
+                if (type.IsEnum) return GetTranslateFunc(Enum.GetUnderlyingType(type));
+
+                GeneralSetter jvt;
+                if (!generalSetterMap.TryGetValue(type, out jvt))
+                {
+                    jvt = MakeTranslateFunc(type);
+                    generalSetterMap.Add(type, jvt);
+                }
+                return jvt;
+            }
         }
 
         public void RegisterSetter(Type type, GeneralSetter generalSetter)
