@@ -402,7 +402,7 @@ V8_EXPORT const char *GetStringFromValue(v8::Isolate* Isolate, v8::Value *Value,
         v8::Local<v8::String> Str;
         if (!Value->ToString(Context).ToLocal(&Str)) return nullptr;
         *Length = Str->Utf8Length(Isolate);
-        if (JsEngine->StrBuffer.size() < *Length + 1) JsEngine->StrBuffer.reserve(*Length + 1);
+        if (JsEngine->StrBuffer.size() < *Length + 1) JsEngine->StrBuffer.resize(*Length + 1);
         Str->WriteUtf8(Isolate, JsEngine->StrBuffer.data());
         
         return JsEngine->StrBuffer.data();
@@ -927,7 +927,7 @@ V8_EXPORT const char *GetStringFromResult(FResultInfo *ResultInfo, int *Length)
         return nullptr;
     }
     *Length = Str->Utf8Length(Isolate);
-    if (JsEngine->StrBuffer.size() < *Length + 1) JsEngine->StrBuffer.reserve(*Length + 1);
+    if (JsEngine->StrBuffer.size() < *Length + 1) JsEngine->StrBuffer.resize(*Length + 1);
     Str->WriteUtf8(Isolate, JsEngine->StrBuffer.data());
 
     return JsEngine->StrBuffer.data();
@@ -1127,8 +1127,9 @@ V8_EXPORT const char* GetJSStackTrace(v8::Isolate* Isolate, int* Length)
     std::string str = JsEngine->GetJSStackTrace();
     *Length = static_cast<int>(str.length());
     if (JsEngine->StrBuffer.size() < *Length + 1)
-        JsEngine->StrBuffer.reserve(*Length + 1);
+        JsEngine->StrBuffer.resize(*Length + 1);
     memcpy(JsEngine->StrBuffer.data(), str.c_str(), *Length);
+    JsEngine->StrBuffer[*Length] = 0;
     return JsEngine->StrBuffer.data();
 }
 

@@ -320,8 +320,9 @@ const char* V8Plugin::GetJSStackTrace(int* Length)
     std::string str = jsEngine.GetJSStackTrace();
     *Length = static_cast<int>(str.length());
     if (jsEngine.StrBuffer.size() < *Length + 1)
-        jsEngine.StrBuffer.reserve(*Length + 1);
+        jsEngine.StrBuffer.resize(*Length + 1);
     memcpy(jsEngine.StrBuffer.data(), str.c_str(), *Length);
+    jsEngine.StrBuffer[*Length] = 0;
     return jsEngine.StrBuffer.data();
 }
 
@@ -466,7 +467,7 @@ const char *V8Plugin::GetStringFromValue(void* pValue, int *Length, int IsOut)
         v8::Local<v8::String> Str;
         if (!Value->ToString(Context).ToLocal(&Str)) return nullptr;
         *Length = Str->Utf8Length(Isolate);
-        if (jsEngine.StrBuffer.size() < *Length + 1) jsEngine.StrBuffer.reserve(*Length + 1);
+        if (jsEngine.StrBuffer.size() < *Length + 1) jsEngine.StrBuffer.resize(*Length + 1);
         Str->WriteUtf8(Isolate, jsEngine.StrBuffer.data());
         
         return jsEngine.StrBuffer.data();
@@ -1050,7 +1051,7 @@ const char *V8Plugin::GetStringFromResult(void* pResultInfo, int *Length)
         return nullptr;
     }
     *Length = Str->Utf8Length(Isolate);
-    if (jsEngine.StrBuffer.size() < *Length + 1) jsEngine.StrBuffer.reserve(*Length + 1);
+    if (jsEngine.StrBuffer.size() < *Length + 1) jsEngine.StrBuffer.resize(*Length + 1);
     Str->WriteUtf8(Isolate, jsEngine.StrBuffer.data());
 
     return jsEngine.StrBuffer.data();
