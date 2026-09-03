@@ -738,6 +738,7 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
     }
     else
     {
+        il2cpp::vm::Runtime::ClassInit(field->parent);
         il2cpp::vm::Field::StaticSetValue(field, value);
     }
 }

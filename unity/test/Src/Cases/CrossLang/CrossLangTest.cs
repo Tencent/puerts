@@ -5,6 +5,11 @@ using System.Runtime.InteropServices;
 namespace Puerts.UnitTest
 {
     [UnityEngine.Scripting.Preserve]
+    public class StaticFeildTestHelper
+    {
+        public static bool Field1 = true;
+    }
+    [UnityEngine.Scripting.Preserve]
     public class TestGC
     {
         public static int ObjCount = 0;
@@ -2010,6 +2015,18 @@ __PDUOTF;");
                     AssertAndPrint('TestOverloadBigInt number', !ConstructorOverloadFactory.TestOverloadBigInt($ref(1)))
                 })()
             ");
+        }
+
+        [Test]
+        public void StaticFeildTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                global.CS.Puerts.UnitTest.StaticFeildTestHelper.Field1 = false;
+                console.log(global.CS.Puerts.UnitTest.StaticFeildTestHelper.Field1)
+            ");
+            jsEnv.Tick();
+            Assert.False(StaticFeildTestHelper.Field1);
         }
 
     }
