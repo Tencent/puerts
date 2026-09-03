@@ -860,8 +860,8 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     auto rt = JS_GetRuntime(ctx);
     eastl::vector<char, eastl::allocator_malloc> buff;
     buff.reserve(code_size + 1);
-    memcpy(buff.data(), code, code_size);
-    buff.data()[code_size] = '\0'; // 尽管JS_Eval传了长度，但如果代码没有以\0结尾，JS_Eval会出现随机错误
+    buff.insert(buff.end(), code, code + code_size);
+    buff.push_back('\0'); // 尽管JS_Eval传了长度，但如果代码没有以\0结尾，JS_Eval会出现随机错误
     JS_UpdateStackTop(rt);
     JSValue retOrEx = JS_Eval(ctx, (const char *)buff.data(), code_size, path, JS_EVAL_TYPE_GLOBAL);
     if (JS_IsException(retOrEx)) {
