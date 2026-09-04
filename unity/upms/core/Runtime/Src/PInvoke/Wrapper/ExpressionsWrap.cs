@@ -1119,6 +1119,13 @@ namespace Puerts
         {
             var hasParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false);
             var test = checkArgument(context, parameterInfo.ParameterType, value);
+            if (parameterInfo.ParameterType.IsByRef && !parameterInfo.IsOut)
+            {
+                // ref 参数除了要求是 $ref 包装对象，还需按元素类型检查包装内的值，
+                // 否则 ref long/ref int 这类重载会总命中第一个匹配项。
+                // 纯 out 参数无需检查入参内容（与 il2cpp 实现中 isOut 跳过的逻辑一致）。
+                test = Expression.AndAlso(test, checkArgument(context, parameterInfo.ParameterType.GetElementType(), callPApi(context.Apis, "unboxing", context.Env, value)));
+            }
             if (hasParams)
             {
                 test = Expression.OrElse(test, checkArgument(context, parameterInfo.ParameterType.GetElementType(), value));
