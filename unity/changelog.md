@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 [跳转中文](./changelog-hans.md)
 
+## [3.0.3] - 2026-09-04
+1. Added member-level lazyload (build option `--lazyload`, requires V8 13 or above), supporting on-demand loading of instance methods/properties, static methods and readonly static properties (#2324) fix #2138
+2. PuerTS Agent/MCP: the MCP http server is now implemented in C# and no longer depends on nodejs; added multi-session support; fixed the connection failure after restarting MCP and the failure of getting unity log when the agent is not started
+3. nodejs backend supports `import` of node builtin modules (#2330)
+4. Lua distinguishes integers from floats and validates the int32/uint32/uint64 range (#2336)
+5. Updated the v8 library, fixing heap corruption (crash) caused by stale EphemeronRememberedSet entries of WeakMap puerts/backend-v8#29
+6. Fixed a use-after-free crash after CppObjectMapper destruction when an external runtime is injected into the quickjs backend
+7. Fixed the quickjs backend accepting number in `is_int32`/`is_uint32`, which made a float passed to an `object` parameter be handled as an int
+8. Fixed a memory leak reported when the quickjs backend closes the VM fix #2107
+9. Fixed `pesapi_release_value_ref` not resetting the v8::Persistent, which leaked the js function passed into a C# delegate and everything its closure captures (#2342)
+10. Fixed undefined behavior in `pesapi_eval`: writing data into a vector that was only reserved but never resized
+11. Fixed a deadlock when disposing ScriptEnv, caused by locking around GC.WaitForPendingFinalizers fix #2316
+12. Fixed a crash when accessing ScriptObject after ScriptEnv is disposed (PInvoke `Tick` now calls CheckLiveness; under il2cpp `ScriptObject.Get` throws ObjectDisposedException once the ScriptEnv is disposed)
+13. Fixed a missing v8::Locker in LowMemoryNotification under THREAD_SAFE
+14. Fixed TerminateExecution holding a v8::Locker, which hung the calling thread instead of interrupting execution
+15. Fixed by-ref argument overload matching in reflection calls under PInvoke (ref long/ref int always matched the first overload)
+16. Three il2cpp(xil2cpp) fixes: by-ref argument overload matching in reflection calls; missing ClassInit before setting a static field; failure of passing non-native-pointer types such as `string` by ref/out
+17. Fixed the ExtensionMethodInfos_Gen error when an extension class namespace happens to be the same as a PuerTS internal class name fix #2329
+18. PInvoke: completed the handling of boxed primitives fix #2320; `int`/`uint` no longer accept floating point values fix #2325
+19. Android 16K Pagesize support for the 3.x native projects (#2360)
+20. Fixed the import settings of libPapiQuickjs.so for Android (arm64-v8a had no Android platform entry so it was not packaged into the apk; armeabi-v7a declared CPU ARM64), which caused DllNotFoundException on device (#2361)
+
 ## [3.0.2] - 2026-04-01
 1. Code generation logic rewritten in C#, removing the dependency on JS-based generation (#2311) fix #2305
 2. Added static C# wrapper generation support for PInvoke (non-il2cpp) environment (#2313)

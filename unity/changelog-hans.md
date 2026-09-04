@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 [english version](./changelog.md)
 
+## [3.0.3] - 2026-09-04
+1. 新增成员粒度的lazyload（编译选项 `--lazyload`，V8 13及以上生效），支持实例方法/属性、静态方法、只读静态属性的按需加载 (#2324) fix #2138
+2. PuerTS Agent/MCP：MCP的http server改为C#实现，不再依赖nodejs；支持多会话；解决重启MCP后连不上、没启动Agent时mcp获取unity log失败的问题
+3. nodejs后端支持以 `import` 方式引入node内置模块 (#2330)
+4. Lua区分整数与浮点数，并对 int32/uint32/uint64 做范围校验 (#2336)
+5. 更新v8库，解决v8 WeakMap的EphemeronRememberedSet陈旧条目导致堆破坏（崩溃）的问题 puerts/backend-v8#29
+6. 修复quickjs后端外部注入runtime的情况下，CppObjectMapper销毁后的UAF崩溃
+7. 修复quickjs后端 is_int32/is_uint32 接受number，导致浮点传object参数被处理成int的问题
+8. 修复quickjs后端关闭虚拟机时报内存泄漏的问题 fix #2107
+9. 修复 pesapi_release_value_ref 没有Reset v8::Persistent，导致传入C# delegate的js函数及其闭包泄漏的问题 (#2342)
+10. 修复 pesapi_eval 中vector只reserve未resize就写入数据的未定义行为
+11. 解决ScriptEnv dispose时GC.WaitForPendingFinalizers加锁导致死锁的问题 fix #2316
+12. 解决ScriptEnv dispose后访问ScriptObject崩溃的问题（PInvoke的Tick增加CheckLiveness；il2cpp下ScriptObject.Get检测到ScriptEnv已释放则抛ObjectDisposedException）
+13. 修复THREAD_SAFE模式下LowMemoryNotification漏加Locker的问题
+14. 修复TerminateExecution持有v8::Locker会导致调用线程卡死、无法中断执行的问题
+15. 修复PInvoke下反射调用by-ref参数的重载匹配错误（ref long/ref int总是命中第一个重载）
+16. il2cpp（xil2cpp）三处修复：反射调用by-ref参数的重载匹配错误；设置静态字段前未做类初始化（ClassInit）；ref/out传string等非原生指针对象失败
+17. 修复扩展类的名字空间恰好和PuerTS内部类目一样时 ExtensionMethodInfos_Gen 报错的问题 fix #2329
+18. PInvoke补全boxed primitive的处理 fix #2320；int/uint不再接受浮点数 fix #2325
+19. Android 16K Pagesize支持（libPuertsCore / libPapiQuickjs / libWSPPAddon）(#2360)
+20. 修复Android下 libPapiQuickjs.so 的导入设置错误（arm64-v8a没有配置Android平台导致没打进包，armeabi-v7a的CPU配成了ARM64），解决真机 DllNotFoundException 的问题 (#2361)
+
 ## [3.0.2] - 2026-04-01
 1. 代码生成逻辑重写为C#实现，移除对JS版生成的依赖 (#2311) fix #2305
 2. PInvoke（非il2cpp）环境支持静态C# wrapper生成 (#2313)
