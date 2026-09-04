@@ -218,6 +218,48 @@ namespace Puerts.Editor.Generator
             return "js_args_len != " + parameterSignatures.Count;
         }
 
+        // 生成"值可接受为某类型"的 C++ 条件表达式（用于 by-ref 参数对 $ref 包装内值的检查），返回 null 表示该类型无需/无法检查
+        private static string ElemAcceptCondition(string signature, string valueExpr, string typeInfoVar)
+        {
+            if (IsPrimitive(signature))
+            {
+                return $"converter::Converter<{PrimitiveSignatureCppTypeMap[signature]}>::accept(apis, env, {valueExpr})";
+            }
+            else if (signature == "p" || signature == "a") // IntPtr, ArrayBuffer
+            {
+                return $"{InvokePapi("is_binary")}(env, {valueExpr}) || {InvokePapi("is_null")}(env, {valueExpr}) || {InvokePapi("is_undefined")}(env, {valueExpr})";
+            }
+            else if (signature == "s")
+            {
+                return $"converter::Converter<Il2CppString*>::accept(apis, env, {valueExpr})";
+            }
+            else if (signature == "o")
+            {
+                return $"DataTransfer::IsAssignable(apis, env, {valueExpr}, {typeInfoVar}, false)";
+            }
+            else if (signature == "O") // System.Object 接受任何类型
+            {
+                return null;
+            }
+            else if (signature.StartsWith(NullableStructPrefix)) // Nullable 元素类型是 ValueType
+            {
+                string si = signature.Substring(3, signature.Length - 4); // slice(3, -1)
+                if (IsPrimitive(si))
+                {
+                    return $"{InvokePapi("is_null")}(env, {valueExpr}) || converter::Converter<{PrimitiveSignatureCppTypeMap[si]}>::accept(apis, env, {valueExpr})";
+                }
+                else
+                {
+                    return $"{InvokePapi("is_null")}(env, {valueExpr}) || DataTransfer::IsAssignable(apis, env, {valueExpr}, il2cpp::vm::Class::GetNullableArgument({typeInfoVar}), true)";
+                }
+            }
+            else if (IsStruct(signature))
+            {
+                return $"DataTransfer::IsAssignable(apis, env, {valueExpr}, {typeInfoVar}, true)";
+            }
+            return null;
+        }
+
         private static string CheckJSArg(string signature, int index)
         {
             string ret = "";
@@ -256,7 +298,14 @@ namespace Puerts.Editor.Generator
             }
             else if (signature.Length > 0 && signature[0] == 'P')
             {
-                ret += $"!{InvokePapi("is_boxed_value")}(env, _sv{index})) return false;";
+                string elmSignature = signature.Substring(1);
+                string unboxedValue = $"{InvokePapi("unboxing")}(env, _sv{index})";
+                string elmAccept = ElemAcceptCondition(elmSignature, unboxedValue, typeInfoVar);
+                // 包装内值是 undefined 时放行（兼容 out 参数未初始化场景），否则必须匹配元素类型，
+                // 否则 ref long/ref int 这类重载会总命中第一个匹配项
+                ret += elmAccept != null
+                    ? $"!{InvokePapi("is_boxed_value")}(env, _sv{index}) || (!{InvokePapi("is_undefined")}(env, {unboxedValue}) && !({elmAccept}))) return false;"
+                    : $"!{InvokePapi("is_boxed_value")}(env, _sv{index})) return false;";
             }
             else if (signature == "s")
             {

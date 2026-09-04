@@ -1747,7 +1747,7 @@ static bool ReflectionWrapper(struct pesapi_ffi* apis, MethodInfo* method, Il2Cp
             }
             if (passedByReference)
             {
-                if (!${invokePapi('is_object')}(env, jsValue))
+                if (!${invokePapi('is_boxed_value')}(env, jsValue))
                 {
                     return false;
                 }
