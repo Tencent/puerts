@@ -232,6 +232,31 @@ export function declareTypeInfo(wrapperInfo) {
     return ret.join('\n    ')
 }
     
+// 生成"值可接受为某类型"的 C++ 条件表达式（用于 by-ref 参数对 $ref 包装内值的检查），返回 null 表示该类型无需/无法检查
+function elemAcceptCondition(signature, valueExpr, typeInfoVar) {
+    if (signature in PrimitiveSignatureCppTypeMap) {
+        return `converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(apis, env, ${valueExpr})`;
+    } else if (signature == 'p' || signature == 'a') { // IntPtr, ArrayBuffer
+        return `${invokePapi('is_binary')}(env, ${valueExpr}) || ${invokePapi('is_null')}(env, ${valueExpr}) || ${invokePapi('is_undefined')}(env, ${valueExpr})`;
+    } else if (signature == 's') {
+        return `converter::Converter<Il2CppString*>::accept(apis, env, ${valueExpr})`;
+    } else if (signature == 'o') {
+        return `DataTransfer::IsAssignable(apis, env, ${valueExpr}, ${typeInfoVar}, false)`;
+    } else if (signature == 'O') { // System.Object 接受任何类型
+        return null;
+    } else if (signature.startsWith(sigs.NullableStructPrefix)) { // Nullable 元素类型是 ValueType
+        const si = signature.slice(3, -1);
+        if (si in PrimitiveSignatureCppTypeMap) {
+            return `${invokePapi('is_null')}(env, ${valueExpr}) || converter::Converter<${PrimitiveSignatureCppTypeMap[si]}>::accept(apis, env, ${valueExpr})`;
+        } else {
+            return `${invokePapi('is_null')}(env, ${valueExpr}) || DataTransfer::IsAssignable(apis, env, ${valueExpr}, il2cpp::vm::Class::GetNullableArgument(${typeInfoVar}), true)`;
+        }
+    } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
+        return `DataTransfer::IsAssignable(apis, env, ${valueExpr}, ${typeInfoVar}, true)`;
+    }
+    return null;
+}
+
 export function checkJSArg(signature, index) {
     let ret = ''
     let typeInfoVar = `TIp${index}`;
@@ -255,7 +280,14 @@ export function checkJSArg(signature, index) {
     } else if (signature == 'p' || signature == 'Pv' || signature == 'a') { // IntPtr, void*, ArrayBuffer
         ret += `!${invokePapi('is_binary')}(env, _sv${index}) && !${invokePapi('is_null')}(env, _sv${index}) && !${invokePapi('is_undefined')}(env, _sv${index})) return false;`
     } else if (signature[0] == 'P') {
-        ret += `!${invokePapi('is_boxed_value')}(env, _sv${index})) return false;`
+        const elmSignature = signature.substring(1);
+        const unboxedValue = `${invokePapi('unboxing')}(env, _sv${index})`;
+        const elmAccept = elemAcceptCondition(elmSignature, unboxedValue, typeInfoVar);
+        // 包装内值是 undefined 时放行（兼容 out 参数未初始化场景），否则必须匹配元素类型，
+        // 否则 ref long/ref int 这类重载会总命中第一个匹配项
+        ret += elmAccept
+            ? `!${invokePapi('is_boxed_value')}(env, _sv${index}) || (!${invokePapi('is_undefined')}(env, ${unboxedValue}) && !(${elmAccept}))) return false;`
+            : `!${invokePapi('is_boxed_value')}(env, _sv${index})) return false;`
     } else if (signature == 's') {
         ret += `!converter::Converter<Il2CppString*>::accept(apis, env, _sv${index})) return false;`
     } else if (signature == 'o' || signature == 'a') {
