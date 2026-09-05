@@ -209,6 +209,11 @@ jobs:
     name: Pack NuGet
     needs: build
     runs-on: windows-2022
+    # NuGet/login 依赖 GitHub OIDC 换发短期 API Key（Trusted Publishing），
+    # 必须声明 id-token: write，否则无法签发 OIDC token。
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -287,11 +292,19 @@ jobs:
           Remove-Item -Path "$destPath/python" -Recurse -Force
 
         shell: pwsh
+      # Trusted Publishing (https://learn.microsoft.com/zh-cn/nuget/nuget-org/trusted-publishing):
+      # 不再使用固定的 NUGET_API_KEY，改为经 GitHub OIDC 换发 1 小时有效的短期 API Key。
+      - name: NuGet login (trusted publishing)
+        if: ${{ github.event.inputs.publish == 'true' }}
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USER }}
       - name: Run NuGet Packaging and Publishing
         if: ${{ github.event.inputs.publish == 'true' }}
         run: |
           cd unity/nuget
-          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd" --Source "https://api.nuget.org/v3/index.json" --ApiKey "${{ secrets.NUGET_API_KEY }}"
+          .\build.ps1 --NativeAssetsDirectory "$pwd\downloaded_natives" --ProjectsRoot "$pwd" --Source "https://api.nuget.org/v3/index.json" --ApiKey "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"
         shell: pwsh
       - name: Run NuGet Packaging
         if: ${{ github.event.inputs.publish != 'true' }}
