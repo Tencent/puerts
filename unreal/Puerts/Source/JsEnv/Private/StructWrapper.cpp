@@ -562,11 +562,17 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
             UnEscape = Info[1]->BooleanValue(Isolate);
         }
         auto Path = FV8Utils::ToFString(Isolate, Info[0]);
+        if (UnEscape)
+        {
+            // Decode the TypeScript identifier escaping ($<charcode>$, used for names that are not valid or are reserved
+            // in TypeScript) before the package-existence check as well; otherwise an escaped asset name such as
+            // "/Game/Foo/$101$num.enum_C" is reported as a non-existent package and never reaches StaticLoadObject.
+            Path = TypeScriptVariableNameToFilename(Path);
+        }
 
         if (FPackageName::DoesPackageExist(FSoftObjectPath(Path).GetLongPackageName()))
         {
-            auto Object =
-                StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
+            auto Object = StaticLoadObject(Class, nullptr, *Path, nullptr, LOAD_NoWarn);
             if (Object)
             {
                 auto Result =

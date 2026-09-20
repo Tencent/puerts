@@ -77,6 +77,45 @@ bool IsTypeScriptKeyword(const FString& InputString)
     return TypeScriptKeywords.Contains(InputString);
 }
 
+// Verification step: scan a generated declaration file for any type/namespace declared with a TypeScript
+// reserved word as its identifier (e.g. `namespace enum {`, `enum class {`). FilenameToTypeScriptVariableName
+// already escapes such names, so this is a defense-in-depth check: any hit here means the generated .d.ts
+// will not compile and would silently abort the PuertsEditor build. Returns the number of violations found.
+// The pattern is anchored to the start of a line (after `^` or a newline) so that the declaration keyword
+// must be the first token on its line; otherwise the same words occurring in JSDoc prose (e.g. "...the
+// class for given controller", "...include the namespace in a token") would be flagged as false positives.
+static int32 VerifyNoReservedWordIdentifiers(const FString& Content, const FString& FileLabel)
+{
+    const FRegexPattern Pattern(
+        TEXT("(?:^|\\n)\\s*(?:export\\s+)?(?:declare\\s+)?(namespace|enum|class|interface)\\s+"
+             "([A-Za-z_$][A-Za-z0-9_$]*(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)*)"));
+    FRegexMatcher Matcher(Pattern, Content);
+    int32 ViolationCount = 0;
+    while (Matcher.FindNext())
+    {
+        const FString Kind = Matcher.GetCaptureGroup(1);
+        const FString DeclaredName = Matcher.GetCaptureGroup(2);
+        // A namespace declaration may be dotted (`namespace Game.Foo.enum`); every component is an identifier
+        // in its own right and each must be checked, since the generator escapes them one by one.
+        TArray<FString> Components;
+        DeclaredName.ParseIntoArray(Components, TEXT("."));
+        for (const FString& Identifier : Components)
+        {
+            if (PUERTS_NAMESPACE::IsTypeScriptReservedWord(Identifier))
+            {
+                ViolationCount++;
+                UE_LOG(LogTemp, Error, TEXT("%s: '%s %s' uses reserved word '%s' as an identifier"), *FileLabel, *Kind,
+                    *DeclaredName, *Identifier);
+            }
+        }
+    }
+    if (ViolationCount > 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("%s: %d reserved-word identifier(s), the file will not compile"), *FileLabel, ViolationCount);
+    }
+    return ViolationCount;
+}
+
 static FString SafeName(const FString& Name)
 {
     auto Ret = Name.Replace(TEXT(" "), TEXT(""))
@@ -432,6 +471,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 #endif
 
     FFileHelper::SaveStringToFile(ToString(), *UEDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    VerifyNoReservedWordIdentifiers(ToString(), TEXT("ue.d.ts"));
 
     Begin();
     for (auto& KV : BlueprintTypeDeclInfoCache)
@@ -455,6 +495,19 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 #endif
 
     FFileHelper::SaveStringToFile(ToString(), *BPDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    VerifyNoReservedWordIdentifiers(ToString(), TEXT("ue_bp.d.ts"));
+
+    // Generate the entry declaration (index.d.ts) so the `ue` module always resolves to both the engine
+    // (ue.d.ts) and blueprint (ue_bp.d.ts) declarations. Previously this file was only seeded by a
+    // non-overwriting directory copy, so a stale/incomplete index.d.ts left in the project could break
+    // `import * as UE from 'ue'`. We (re)write it on every generation.
+    const FString UEIndexFilePath = FPaths::ProjectDir() / TEXT("Typing/ue/index.d.ts");
+    const FString UEIndexContent = TEXT("/// <reference path=\"puerts.d.ts\" />\n") TEXT("/// <reference path=\"ue.d.ts\" />\n")
+        TEXT("/// <reference path=\"puerts_decorators.d.ts\" />\n") TEXT("/// <reference path=\"ue_bp.d.ts\" />\n");
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+    PuertsSourceControlUtils::MakeSourceControlFileWritable(UEIndexFilePath);
+#endif
+    FFileHelper::SaveStringToFile(UEIndexContent, *UEIndexFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
 static UPackage* GetPackage(UObject* Obj)
@@ -592,6 +645,28 @@ void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FStrin
                     FString Namespace =
                         TypeDecl.Mid(NamespaceStart + NS_Keyword.Len(), NamespaceEnd - NamespaceStart - NS_Keyword.Len())
                             .TrimStartAndEnd();
+
+                    // A cached declaration written before reserved words were escaped is invalid TypeScript. Do not restore
+                    // it: the asset is then regenerated (escaped) by this ordinary generation instead of requiring a full one.
+                    TArray<FString> NamespaceParts;
+                    Namespace.ParseIntoArray(NamespaceParts, TEXT("."));
+                    bool bStaleReservedWord = false;
+                    for (const FString& Part : NamespaceParts)
+                    {
+                        if (PUERTS_NAMESPACE::IsTypeScriptReservedWord(Part))
+                        {
+                            bStaleReservedWord = true;
+                            break;
+                        }
+                    }
+                    if (bStaleReservedWord)
+                    {
+                        UE_LOG(LogTemp, Warning, TEXT("discard cached declaration of %s: reserved word in namespace, regenerate"),
+                            *Namespace);
+                        Pos = FileContent.Find(*Start, ESearchCase::CaseSensitive, ESearchDir::FromStart, DeclEnd + End.Len());
+                        continue;
+                    }
+
                     FString PackageName = FString(TEXT("/")) + Namespace.Replace(TEXT("."), TEXT("/"));
 
                     FRegexPattern Pattern(TEXT("\\{\\s+(?:(?:class)|(?:enum))\\s+([\\u4e00-\\u9fa5a-zA-Z0-9_]+)"));

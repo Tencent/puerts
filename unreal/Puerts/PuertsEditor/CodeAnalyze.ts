@@ -114,17 +114,29 @@ if (!ts.sys) {
 }
 
 function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
+    if (!allDiagnostics || allDiagnostics.length === 0) {
+        return;
+    }
+    let errorCount = 0;
+    let warningCount = 0;
     allDiagnostics.forEach(diagnostic => {
       let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-      if (diagnostic.file) {
+      let category = ts.DiagnosticCategory[diagnostic.category].toLowerCase();
+      if (diagnostic.category === ts.DiagnosticCategory.Error) {
+          errorCount++;
+      } else if (diagnostic.category === ts.DiagnosticCategory.Warning) {
+          warningCount++;
+      }
+      if (diagnostic.file && diagnostic.start !== undefined) {
         let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
-          diagnostic.start!
+          diagnostic.start
         );
-        console.error(`  Error ${diagnostic.file.fileName} (${line + 1},${character +1}): ${message}`);
+        console.error(`${diagnostic.file.fileName}(${line + 1},${character + 1}): ${category} TS${diagnostic.code}: ${message}`);
       } else {
-        console.error(`  Error: ${message}`);
+        console.error(`${category} TS${diagnostic.code}: ${message}`);
       }
     });
+    console.error(`${errorCount} error(s), ${warningCount} warning(s)`);
 }
 
 type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float" | "enum" | "softobject" | "softclass";
@@ -417,6 +429,10 @@ function watch(configFilePath:string) {
             fileVersions[fileName] = restoredFileVersions[fileName] || fileVersions[fileName];
         });
         logErrors(diagnostics);
+        if (diagnostics.some(d => d.file && /ue(_bp)?\.d\.ts$/.test(d.file.fileName))) {
+            console.error("errors in generated declaration files, regenerate ue.d.ts/ue_bp.d.ts");
+        }
+        console.error("compile failed, nothing generated");
     } else {
         function getClassPathInfo(sourceFilePath: string): {moduleFileName:string, modulePath:string} {
             let modulePath:string = undefined;
@@ -1108,7 +1124,11 @@ function watch(configFilePath:string) {
                         let nameOfModule:string = undefined;
                         while(moduleDeclaration) {
                             let ns = moduleDeclaration.name.text;
-                            ns = ns.startsWith("$") ? ns.substring(1) : ns;
+                            // A leading "$" used to mark an escaped path segment (digit-first directories, 1fba3cf8). Today an
+                            // escaped segment is a "$<charcode>$" sequence (reserved words, invalid characters) that
+                            // TypeScriptVariableNameToFilename() decodes on the native side; stripping its first "$" would corrupt
+                            // it ("$101$num" -> "101$num"), so only strip a lone "$" that does not start such a sequence.
+                            ns = (ns.startsWith("$") && !/^\$\d+\$/.test(ns)) ? ns.substring(1) : ns;
                             nameOfModule = nameOfModule ? (ns + '/' + nameOfModule) : ns;
                             if (ts.isModuleDeclaration(moduleDeclaration.parent)) {
                                 moduleDeclaration = moduleDeclaration.parent;
