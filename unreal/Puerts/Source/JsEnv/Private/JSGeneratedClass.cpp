@@ -12,6 +12,14 @@
 #include "JSWidgetGeneratedClass.h"
 #include "JSLogger.h"
 
+// UE 5.8 deprecates REN_ForceNoResetLoaders: UObject::Rename no longer calls ResetLoaders, so the flag has no effect
+// there. Earlier engines keep it, where Rename would otherwise reset the package loaders.
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+#define PUERTS_RENAME_FLAGS (REN_DontCreateRedirectors | REN_DoNotDirty)
+#else
+#define PUERTS_RENAME_FLAGS (REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders)
+#endif
+
 #define OLD_METHOD_PREFIX "__puerts_old__"
 #define MIXIN_METHOD_SUFFIX "__puerts_mixin__"
 
@@ -101,8 +109,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
         }
         // UE_LOG(LogTemp, Error, TEXT("replace %s of %s"), *Super->GetName(), *Class->GetName());
         //同一Outer下的同名对象只能有一个...
-        Super->Rename(*FString::Printf(TEXT("%s%s"), TEXT(OLD_METHOD_PREFIX), *Super->GetName()), Class,
-            REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+        Super->Rename(*FString::Printf(TEXT("%s%s"), TEXT(OLD_METHOD_PREFIX), *Super->GetName()), Class, PUERTS_RENAME_FLAGS);
         Class->AddFunctionToFunctionMap(Super, Super->GetFName());
         // UE_LOG(LogTemp, Error, TEXT("rename to %s"), *Super->GetName());
     }
@@ -317,7 +324,7 @@ void UJSGeneratedClass::Restore(UClass* Class)
             {
                 JGF->RemoveFromRoot();
             }
-            JGF->Rename(nullptr, OrphanedClass, REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+            JGF->Rename(nullptr, OrphanedClass, PUERTS_RENAME_FLAGS);
             FLinkerLoad::InvalidateExport(JGF);
         }
         else
@@ -337,8 +344,7 @@ void UJSGeneratedClass::Restore(UClass* Class)
             if (Function->GetName().StartsWith(TEXT(OLD_METHOD_PREFIX)))
             {
                 Class->RemoveFunctionFromFunctionMap(Function);
-                Function->Rename(*Function->GetName().Mid(strlen(OLD_METHOD_PREFIX)), Class,
-                    REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+                Function->Rename(*Function->GetName().Mid(strlen(OLD_METHOD_PREFIX)), Class, PUERTS_RENAME_FLAGS);
                 Class->AddFunctionToFunctionMap(Function, Function->GetFName());
             }
         }
@@ -379,3 +385,5 @@ void UJSGeneratedClass::Release()
     Constructor.Reset();
     Prototype.Reset();
 }
+
+#undef PUERTS_RENAME_FLAGS
