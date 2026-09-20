@@ -24,7 +24,7 @@ When it comes to selecting a JavaScript backend, its important to identify whats
 
 #### V8 Backend
 1. Download V8:
-    - For UE4.25 and above (e.g UE5.5), choose one: [8.4.371.19](https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz), [9.4.146.24](https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz), [10.6.194](https://github.com/puerts/backend-v8/releases/download/V8_10.6.194_240612/v8_bin_10.6.194.tgz), [11.8.172](https://github.com/puerts/backend-v8/releases/download/V8_11.8.172_with_new_wrap_241205/v8_bin_11.8.172.tgz)
+    - For UE4.25 and above (e.g UE5.5), choose one: [8.4.371.19](https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz), [9.4.146.24](https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_240430/v8_bin_9.4.146.24.tgz), [11.8.172](https://github.com/puerts/backend-v8/releases/download/V8_11.8.172__251225/v8_bin_11.8.172.tar.gz)
     - For UE4.24 and below: [V8 for UE 4.24 or below](https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz)
 
 2. Extract the downloaded V8 backend folder into `YourProject/Plugins/Puerts/ThirdParty`.
