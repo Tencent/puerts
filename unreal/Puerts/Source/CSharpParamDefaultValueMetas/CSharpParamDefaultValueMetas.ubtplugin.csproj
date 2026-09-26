@@ -18,7 +18,7 @@
     <Configurations>Debug;Release;Development</Configurations>
     <RootNamespace>CSharpParamDefaultValueMetas</RootNamespace>
     <AssemblyName>CSharpParamDefaultValueMetas</AssemblyName>
-    <OutputPath>..\..\..\..\Binaries\DotNET\UnrealBuildTool\Plugins\CSharpParamDefaultValueMetas\</OutputPath>
+    <OutputPath>../../../../Binaries/DotNET/UnrealBuildTool/Plugins/CSharpParamDefaultValueMetas/</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DebugType>pdbonly</DebugType>
     <Nullable>enable</Nullable>
