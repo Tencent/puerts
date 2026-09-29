@@ -44,6 +44,7 @@
 #include "HAL/PlatformFileManager.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Misc/MessageDialog.h"
+#include "Misc/SecureHash.h"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
@@ -1047,6 +1048,80 @@ void UPEBlueprintAsset::SetupAttachments(TMap<FName, FName> InAttachments)
     }
 }
 
+/**
+ * Derive a stable GUID for an SCS node from the generated blueprint's package path plus the component variable name.
+ *
+ * USimpleConstructionScript::CreateNode assigns VariableGuid with FGuid::NewGuid(). Child blueprints store per-property
+ * overrides of *inherited* components in UInheritableComponentHandler, whose lookup key FComponentKey{OwnerClass,
+ * AssociatedGuid} is matched by GUID only - the variable name is not considered. Because blueprints generated from
+ * TypeScript are usually treated as local build artifacts (the generated folder is commonly excluded from version
+ * control), a random GUID differs on every machine, so a version-controlled child blueprint fails to match on anyone
+ * else's machine: the override record is dropped by ValidateTemplates() during compilation and the properties silently
+ * fall back to the parent template defaults.
+ *
+ * Deriving the GUID with MD5 instead of FGuid::NewDeterministicGuid keeps this independent of the engine version (that
+ * API does not exist in older engines) and keeps the result reproducible regardless of engine implementation changes.
+ */
+static FGuid MakeStableSCSNodeGuid(const UBlueprint* InBlueprint, const FName InVariableName)
+{
+    const FString Seed = InBlueprint->GetPathName() + TEXT(":") + InVariableName.ToString();
+    const FTCHARToUTF8 Utf8Seed(*Seed);
+
+    FMD5 Md5Gen;
+    Md5Gen.Update(reinterpret_cast<const uint8*>(Utf8Seed.Get()), Utf8Seed.Length());
+    uint8 Digest[16] = {};
+    Md5Gen.Final(Digest);
+
+    uint32 Parts[4];
+    for (int32 Index = 0; Index < UE_ARRAY_COUNT(Parts); ++Index)
+    {
+        const int32 Offset = Index * 4;
+        Parts[Index] = static_cast<uint32>(Digest[Offset]) | (static_cast<uint32>(Digest[Offset + 1]) << 8) |
+                       (static_cast<uint32>(Digest[Offset + 2]) << 16) | (static_cast<uint32>(Digest[Offset + 3]) << 24);
+    }
+    return FGuid(Parts[0], Parts[1], Parts[2], Parts[3]);
+}
+
+/**
+ * Normalize the VariableGuid of every SCS node in the generated blueprint to its deterministic value.
+ * Returns whether anything changed.
+ *
+ * Runs on every generation pass and is idempotent, so existing generated assets converge to stable GUIDs without having
+ * to be deleted and regenerated. DefaultSceneRootNode is only present in AllNodes while it is actually used as the root
+ * node (see USimpleConstructionScript::ValidateSceneRootNodes), so it is handled separately.
+ */
+static bool NormalizeSCSNodeGuids(UBlueprint* InBlueprint)
+{
+    USimpleConstructionScript* SCS = InBlueprint->SimpleConstructionScript;
+    if (!SCS)
+    {
+        return false;
+    }
+
+    bool bChanged = false;
+    auto NormalizeNode = [&](USCS_Node* Node)
+    {
+        if (!Node)
+        {
+            return;
+        }
+        const FGuid StableGuid = MakeStableSCSNodeGuid(InBlueprint, Node->GetVariableName());
+        if (Node->VariableGuid != StableGuid)
+        {
+            Node->VariableGuid = StableGuid;
+            bChanged = true;
+        }
+    };
+
+    for (USCS_Node* Node : SCS->GetAllNodes())
+    {
+        NormalizeNode(Node);
+    }
+    NormalizeNode(SCS->GetDefaultSceneRootNode());
+
+    return bChanged;
+}
+
 void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType,
     int32 InLFlags, int32 InHFlags, int32 InLifetimeCondition)
 {
@@ -1347,6 +1422,14 @@ void UPEBlueprintAsset::Save()
     auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass);
     if (Blueprint && TypeScriptGeneratedClass)
     {
+        // SCS node GUIDs must be normalized before compiling and saving, otherwise the child blueprint's inherited
+        // component override records get dropped by the validation that runs during compilation. Changing the class
+        // layout is forbidden during PIE, so skip it there and converge on the next generation pass instead.
+        if (!IsPlaying() && NormalizeSCSNodeGuids(Blueprint))
+        {
+            NeedSave = true;
+        }
+
         NeedSave = NeedSave || (TypeScriptGeneratedClass->HasConstructor != HasConstructor);
         if (NeedSave)
             CanChangeCheck();
