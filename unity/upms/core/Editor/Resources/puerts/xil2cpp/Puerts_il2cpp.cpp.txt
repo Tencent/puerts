@@ -578,6 +578,7 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
         {
             Il2CppMethodPointer methodPointer = (*wrapDatas)->MethodPointer;
             const MethodInfo* method = (*wrapDatas)->Method;
+            void* callSelf = self;
             if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && self)
             {
                 Il2CppClass* thisType = method->klass;
@@ -586,10 +587,20 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
                 if (!il2cpp::vm::Class::IsValuetype(thisType))
                 {
                     method = il2cpp::vm::Object::GetVirtualMethod(obj, method);
-                    methodPointer = method->methodPointer;
+                    if (il2cpp::vm::Class::IsValuetype(method->klass))
+                    {
+                        // resolved to a struct override (e.g. Object.ToString -> Vector3.ToString):
+                        // the direct method body expects an unboxed this pointer
+                        callSelf = il2cpp::vm::Object::Unbox(obj);
+                        methodPointer = GetMethodPointer(method);
+                    }
+                    else
+                    {
+                        methodPointer = method->methodPointer;
+                    }
                 }
             }
-            if ((*wrapDatas)->Wrap(apis, (MethodInfo*)method, methodPointer, info, env, self, checkArgument, *wrapDatas))
+            if ((*wrapDatas)->Wrap(apis, (MethodInfo*)method, methodPointer, info, env, callSelf, checkArgument, *wrapDatas))
             {
                 return;
             }

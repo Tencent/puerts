@@ -122,6 +122,27 @@ namespace Puerts.UnitTest
             return v1 + ":" + v2 + ":" + v3;
         }
     }
+    [UnityEngine.Scripting.Preserve]
+    public struct TestStructOverrideToString
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        [UnityEngine.Scripting.Preserve]
+        public TestStructOverrideToString(float x, float y, float z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public override string ToString()
+        {
+            return x + "," + y + "," + z;
+        }
+    }
     [StructLayout(LayoutKind.Sequential)]
     [UnityEngine.Scripting.Preserve]
     public unsafe struct TestUnsafeStruct
@@ -1720,6 +1741,21 @@ namespace Puerts.UnitTest
                  })()
             ");
             Assert.AreEqual("5345:3214:fqpziq", res);
+        }
+        [Test]
+        public void StructOverrideToStringViaObjectTest()
+        {
+            // JS toString is bound to System.Object.ToString; virtual dispatch to a struct override
+            // must pass an unboxed this, otherwise il2cpp reads the object header as fields
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<string>(@"
+                 (function() {
+                     const s = new CS.Puerts.UnitTest.TestStructOverrideToString(1, 2, 3);
+                     const s2 = new CS.Puerts.UnitTest.TestStruct2(5345, 3214, 'fqpziq');
+                     return ['' + s, s.toString(), `${s}`, '' + s2, s2.toString()].join('|');
+                 })()
+            ");
+            Assert.AreEqual("1,2,3|1,2,3|1,2,3|5345:3214:fqpziq|5345:3214:fqpziq", res);
         }
         [Test]
         public void NullableNativeStructInstanceTest()
