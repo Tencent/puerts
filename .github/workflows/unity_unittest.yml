@@ -228,7 +228,7 @@ jobs:
           java-version: 17
           distribution: 'adopt'
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
       - name: Start emulator and run commands
         uses: reactivecircus/android-emulator-runner@v2
         with:
