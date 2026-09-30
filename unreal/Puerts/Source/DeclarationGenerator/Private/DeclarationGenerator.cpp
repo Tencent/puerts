@@ -65,6 +65,27 @@ static FAutoConsoleVariableRef CVarSearchAllPluginBP(TEXT("bSearchAllPluginBP"),
 #define GET_VERSION_ID(PD) PD->PackageGuid.ToString()
 #endif
 
+static bool ShouldSkipBlueprintDeclarationAsset(const FString& PackageNameOrPath)
+{
+    return PackageNameOrPath.StartsWith(TEXT("/Engine/TedsDynamicColumns"));
+}
+
+static bool ShouldSkipBlueprintDeclarationAsset(const FName& PackageNameOrPath)
+{
+    return ShouldSkipBlueprintDeclarationAsset(PackageNameOrPath.ToString());
+}
+
+static FString RestoreEscapedPackageNameFromNamespace(const FString& Namespace)
+{
+    TArray<FString> NamespaceFrags;
+    Namespace.ParseIntoArray(NamespaceFrags, TEXT("."));
+    for (FString& NamespaceFrag : NamespaceFrags)
+    {
+        NamespaceFrag = PUERTS_NAMESPACE::TypeScriptVariableNameToFilename(NamespaceFrag);
+    }
+    return FString(TEXT("/")) + FString::Join(NamespaceFrags, TEXT("/"));
+}
+
 bool IsTypeScriptKeyword(const FString& InputString)
 {
     static TArray<FString> TypeScriptKeywords = {TEXT("break"), TEXT("as"), TEXT("any"), TEXT("switch"), TEXT("case"), TEXT("if"),
@@ -436,6 +457,10 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
     Begin();
     for (auto& KV : BlueprintTypeDeclInfoCache)
     {
+        if (ShouldSkipBlueprintDeclarationAsset(KV.Key))
+        {
+            continue;
+        }
         if (KV.Value.IsExist)
         {
             for (auto& NameToDecl : KV.Value.NameToDecl)
@@ -532,6 +557,11 @@ void FTypeScriptDeclarationGenerator::WriteOutput(UObject* Obj, const FStringBuf
     const UPackage* Pkg = GetPackage(Obj);
     if (Pkg && !Obj->IsNative())
     {
+        if (ShouldSkipBlueprintDeclarationAsset(Pkg->GetFName()))
+        {
+            return;
+        }
+
         FStringBuffer Temp;
         Temp.Prefix = Output.Prefix;
         NamespaceBegin(Obj, Temp);
@@ -592,27 +622,29 @@ void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FStrin
                     FString Namespace =
                         TypeDecl.Mid(NamespaceStart + NS_Keyword.Len(), NamespaceEnd - NamespaceStart - NS_Keyword.Len())
                             .TrimStartAndEnd();
-                    FString PackageName = FString(TEXT("/")) + Namespace.Replace(TEXT("."), TEXT("/"));
-
-                    FRegexPattern Pattern(TEXT("\\{\\s+(?:(?:class)|(?:enum))\\s+([\\u4e00-\\u9fa5a-zA-Z0-9_]+)"));
-                    FRegexMatcher Matcher(Pattern, TypeDecl.Mid(NamespaceEnd));
-
-                    if (Matcher.FindNext())
+                    FString PackageName = RestoreEscapedPackageNameFromNamespace(Namespace);
+                    if (!ShouldSkipBlueprintDeclarationAsset(PackageName))
                     {
-                        FName TypeName = *Matcher.GetCaptureGroup(1);
-                        auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(*PackageName);
+                        FRegexPattern Pattern(TEXT("\\{\\s+(?:(?:class)|(?:enum))\\s+([\\u4e00-\\u9fa5a-zA-Z0-9_$]+)"));
+                        FRegexMatcher Matcher(Pattern, TypeDecl.Mid(NamespaceEnd));
 
-                        if (BlueprintTypeDeclInfoPtr)
+                        if (Matcher.FindNext())
                         {
-                            BlueprintTypeDeclInfoPtr->NameToDecl.Add(TypeName, TypeDecl);
-                        }
-                        else
-                        {
-                            TMap<FName, FString> NameToDecl;
-                            NameToDecl.Add(TypeName, TypeDecl);
-                            bool bIsExist = InGenFull ? false : bIsAssociation;
-                            BlueprintTypeDeclInfoCache.Add(
-                                FName(*PackageName), {NameToDecl, FileVersionString, bIsExist, true, bIsAssociation});
+                            FName TypeName = *PUERTS_NAMESPACE::TypeScriptVariableNameToFilename(Matcher.GetCaptureGroup(1));
+                            auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(*PackageName);
+
+                            if (BlueprintTypeDeclInfoPtr)
+                            {
+                                BlueprintTypeDeclInfoPtr->NameToDecl.Add(TypeName, TypeDecl);
+                            }
+                            else
+                            {
+                                TMap<FName, FString> NameToDecl;
+                                NameToDecl.Add(TypeName, TypeDecl);
+                                bool bIsExist = InGenFull ? false : bIsAssociation;
+                                BlueprintTypeDeclInfoCache.Add(
+                                    FName(*PackageName), {NameToDecl, FileVersionString, bIsExist, true, bIsAssociation});
+                            }
                         }
                     }
                 }
@@ -661,6 +693,12 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
     AssetRegistry.GetAssets(BPFilter, AssetList);
     for (FAssetData const& AssetData : AssetList)
     {
+        if (ShouldSkipBlueprintDeclarationAsset(AssetData.PackageName) ||
+            ShouldSkipBlueprintDeclarationAsset(AssetData.PackagePath))
+        {
+            continue;
+        }
+
 #if ENGINE_MAJOR_VERSION >= 5
         const FAssetPackageData* PackageData = nullptr;
         auto OptionalPackageData = AssetRegistry.GetAssetPackageDataCopy(AssetData.PackageName);
