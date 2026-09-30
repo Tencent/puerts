@@ -75,14 +75,29 @@ if (!ts.sys) {
     t.sys = customSystem;
 }
 function logErrors(allDiagnostics) {
+    if (!allDiagnostics || allDiagnostics.length === 0) {
+        return;
+    }
+    let errorCount = 0;
+    let warningCount = 0;
     allDiagnostics.forEach(diagnostic => {
         let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-        if (diagnostic.file) {
+        let category = ts.DiagnosticCategory[diagnostic.category].toLowerCase();
+        if (diagnostic.category === ts.DiagnosticCategory.Error) {
+            errorCount++;
+        }
+        else if (diagnostic.category === ts.DiagnosticCategory.Warning) {
+            warningCount++;
+        }
+        if (diagnostic.file && diagnostic.start !== undefined) {
             let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+            console.error(`${diagnostic.file.fileName}(${line + 1},${character + 1}): ${category} TS${diagnostic.code}: ${message}`);
         }
         else {
+            console.error(`${category} TS${diagnostic.code}: ${message}`);
         }
     });
+    console.error(`${errorCount} error(s), ${warningCount} warning(s)`);
 }
 const FunctionFlags = {
     FUNC_None: 0x00000000,
@@ -337,6 +352,10 @@ function watch(configFilePath) {
             fileVersions[fileName] = restoredFileVersions[fileName] || fileVersions[fileName];
         });
         logErrors(diagnostics);
+        if (diagnostics.some(d => d.file && /ue(_bp)?\.d\.ts$/.test(d.file.fileName))) {
+            console.error("errors in generated declaration files, regenerate ue.d.ts/ue_bp.d.ts");
+        }
+        console.error("compile failed, nothing generated");
     }
     else {
         function getClassPathInfo(sourceFilePath) {
@@ -973,7 +992,7 @@ function watch(configFilePath) {
                         let nameOfModule = undefined;
                         while (moduleDeclaration) {
                             let ns = moduleDeclaration.name.text;
-                            ns = ns.startsWith("$") ? ns.substring(1) : ns;
+                            ns = (ns.startsWith("$") && !/^\$\d+\$/.test(ns)) ? ns.substring(1) : ns;
                             nameOfModule = nameOfModule ? (ns + '/' + nameOfModule) : ns;
                             if (ts.isModuleDeclaration(moduleDeclaration.parent)) {
                                 moduleDeclaration = moduleDeclaration.parent;
