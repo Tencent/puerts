@@ -3114,5 +3114,64 @@ __PDUOTF;");
             ");
         }
 
+
+        public void CreateJsObjects()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval("global.__weak_ref_arr = []");
+
+            for (int i = 0; i < 10; i++)
+            {
+                jsEnv.Eval<ScriptObject>(@"
+                var test_val_weak = new WeakRef({a:1});
+                global.__weak_ref_arr.push(test_val_weak)
+                test_val_weak.deref();");
+            }
+        }
+
+        [Test]
+        public void JsObjectCollectTest()
+        {
+            CreateJsObjects();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Tick();
+            jsEnv.Backend.LowMemoryNotification();
+
+            Assert.AreNotEqual(0, jsEnv.Eval<int>("global.__weak_ref_arr.filter(e => e.deref() === undefined).length"));
+        }
+
+        public void CreateDelegate()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval("global.__weak_ref_arr = []");
+
+            for (int i = 0; i < 10; i++)
+            {
+                jsEnv.Eval<Action>(@"
+                var test_val_weak = new WeakRef(() => {});
+                global.__weak_ref_arr.push(test_val_weak)
+                test_val_weak.deref();");
+            }
+        }
+
+        [Test]
+        public void DelegateCollectTest()
+        {
+            CreateDelegate();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Tick();
+            jsEnv.Backend.LowMemoryNotification();
+
+            Assert.AreNotEqual(0, jsEnv.Eval<int>("global.__weak_ref_arr.filter(e => e.deref() === undefined).length"));
+        }
+
     }
 }
