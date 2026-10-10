@@ -32,7 +32,7 @@ struct pesapi_env_ref__
     {
     }
 
-    v8::Persistent<v8::Context> context_persistent;
+    v8::Global<v8::Context> context_persistent;
     v8::Isolate* const isolate;
     int ref_count;
     std::weak_ptr<int> env_life_cycle_tracker;
@@ -45,7 +45,7 @@ struct pesapi_value_ref__ : pesapi_env_ref__
     {
     }
 
-    v8::Persistent<v8::Value> value_persistent;
+    v8::Global<v8::Value> value_persistent;
     uint32_t internal_field_count;
     void* internal_fields[0];
 };
