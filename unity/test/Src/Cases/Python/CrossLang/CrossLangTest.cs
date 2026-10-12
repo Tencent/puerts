@@ -372,6 +372,7 @@ def func():
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
+            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
             Assert.AreEqual(objCount, TestGC.ObjCount);
             Assert.True(objCount > 0);
 
@@ -382,6 +383,7 @@ def func():
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
+            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
             Assert.AreEqual(0, TestGC.ObjCount);
 
             pythonEnv.Dispose();
@@ -412,6 +414,7 @@ def func():
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
+            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
             Assert.AreEqual(objCount, TestGC.ObjCount);
             Assert.True(objCount > 0);
 
@@ -422,6 +425,7 @@ def func():
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
+            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
             Assert.AreEqual(0, TestGC.ObjCount);
 
             pythonEnv.Dispose();
