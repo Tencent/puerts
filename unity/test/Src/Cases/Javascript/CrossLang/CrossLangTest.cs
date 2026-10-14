@@ -3187,5 +3187,21 @@ __PDUOTF;");
             Assert.AreNotEqual(0, jsEnv.Eval<int>("global.__weak_ref_arr.filter(e => e.deref() === undefined).length"));
         }
 
+        [Test]
+        public void ValueTypePrototypeEquals()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var result = jsEnv.Eval<bool>(@"
+                (function() {
+                    const TestStruct = CS.Puerts.UnitTest.TestStruct;
+                    const valueTypeEquals = CS.System.ValueType.prototype.Equals;
+                    const s = new TestStruct(123);
+                    return valueTypeEquals.call(s, s);
+                })()
+            ");
+
+            Assert.True(result);
+        }
+
     }
 }

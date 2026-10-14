@@ -2593,7 +2593,8 @@ static void createFunctionWrapper(struct pesapi_ffi* apis, pesapi_callback_info 
         else
         {
             bool isStatic = !il2cpp::vm::Method::IsInstance(reflectionMethod->method);
-            bool needBoxing = reflectionMethod->method->klass == il2cpp_defaults.object_class;
+            bool needBoxing = reflectionMethod->method->klass == il2cpp_defaults.object_class || 
+                reflectionMethod->method->klass == il2cpp_defaults.value_type_class;
             if (csharpMethodInfo == nullptr)
             {
                 csharpMethodInfo = new CSharpMethodInfo { reflectionMethod->method->name, isStatic, false, false, needBoxing};
@@ -2764,7 +2765,8 @@ static bool RegisterType(Il2CppClass* klass)
         }
         std::vector<puerts::WrapData*> OverloadDatas;
         OverloadDatas.push_back(CreateOverloadData(method, isExtensionMethod));
-        bool needBoxing = (isExtensionMethod ? GetParameterType(method, 0) : method->klass) == il2cpp_defaults.object_class;
+        auto klass = (isExtensionMethod ? GetParameterType(method, 0) : method->klass);
+        bool needBoxing = klass == il2cpp_defaults.object_class || klass == il2cpp_defaults.value_type_class;
         classInfo->Methods.push_back({ name, isStatic, isGetter, isSetter, needBoxing, std::move(OverloadDatas) });
         return true;
     };
