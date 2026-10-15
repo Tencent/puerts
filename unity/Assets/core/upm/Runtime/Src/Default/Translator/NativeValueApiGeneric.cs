@@ -198,7 +198,7 @@ namespace Puerts
         {
             if (arrayBuffer == null || arrayBuffer.Bytes == null)
             {
-                PuertsDLL.ReturnArrayBuffer(isolate, holder, null, 0);
+                PuertsDLL.ReturnNull(isolate, holder);
             }
             else
             {
@@ -258,7 +258,7 @@ namespace Puerts
         {
             if (arrayBuffer == null || arrayBuffer.Bytes == null)
             {
-                PuertsDLL.SetArrayBufferToOutValue(isolate, holder, null, 0);
+                PuertsDLL.SetNullToOutValue(isolate, holder);
             }
             else
             {

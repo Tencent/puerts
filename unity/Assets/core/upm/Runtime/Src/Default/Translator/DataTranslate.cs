@@ -354,7 +354,7 @@ namespace Puerts
             // }
             else if (type == typeof(ArrayBuffer))
             {
-                mask = JsValueType.ArrayBuffer;
+                mask = JsValueType.ArrayBuffer | JsValueType.NullOrUndefined;
             }
             else if (type == typeof(JSObject))
             {
