@@ -182,7 +182,14 @@ namespace Puerts
 
             public static IntPtr NativeToScript_ArrayBuffer(IntPtr apis, IntPtr env, ArrayBuffer arrayBuffer)
             {
-                return PuertsNative.pesapi_create_binary_by_value(apis, env, arrayBuffer.Bytes, new UIntPtr((uint)arrayBuffer.Count));
+                if (arrayBuffer == null || arrayBuffer.Bytes == null)
+                {
+                    return PuertsNative.pesapi_create_null(apis, env);
+                }
+                else
+                {
+                    return PuertsNative.pesapi_create_binary_by_value(apis, env, arrayBuffer.Bytes, new UIntPtr((uint)arrayBuffer.Count));
+                }
             }
 
             public static IntPtr NativeToScript_Object(IntPtr apis, IntPtr env, object t)

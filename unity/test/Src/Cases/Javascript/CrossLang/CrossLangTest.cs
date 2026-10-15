@@ -653,6 +653,10 @@ namespace Puerts.UnitTest
             set { _arrayBufferTestProp = value; }
         }
         public static Puerts.ArrayBuffer arrayBufferTestFieldStatic = null;
+        public static void ArrayBufferTestOutValue(out Puerts.ArrayBuffer value)
+        {
+            value = null;
+        }
         protected static Puerts.ArrayBuffer _arrayBufferTestPropStatic = null;
         public static Puerts.ArrayBuffer arrayBufferTestPropStatic
         {
@@ -3203,5 +3207,24 @@ __PDUOTF;");
             Assert.True(result);
         }
 
+        [Test]
+        public void ArrayBufferInstanceTestNull()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    TestHelper.arrayBufferTestFieldStatic = null;
+                    assertAndPrint('null ArrayBuffer', TestHelper.arrayBufferTestFieldStatic, null);
+
+                    var o = puerts.$ref();
+                    TestHelper.ArrayBufferTestOutValue(o);
+                    assertAndPrint('null ArrayBuffer out value', puerts.$unref(o), null);
+                })();
+            ");
+            jsEnv.Tick();
+        }
     }
 }
