@@ -58,7 +58,7 @@ static bool IsPlaying()
     if (IsPlaying())                                                                                       \
     {                                                                                                      \
         UE_LOG(PuertsEditorModule, Error, TEXT("change the layout of class[%s] in PIE mode is forbiden!"), \
-            *GeneratedClass->GetName());                                                                   \
+            *GetNameSafe(GeneratedClass));                                                                 \
         NeedSave = false;                                                                                  \
         return false;                                                                                      \
     }
@@ -67,10 +67,25 @@ static bool IsPlaying()
     if (IsPlaying())                                                                                       \
     {                                                                                                      \
         UE_LOG(PuertsEditorModule, Error, TEXT("change the layout of class[%s] in PIE mode is forbiden!"), \
-            *GeneratedClass->GetName());                                                                   \
+            *GetNameSafe(GeneratedClass));                                                                 \
         NeedSave = false;                                                                                  \
         return;                                                                                            \
     }
+
+bool UPEBlueprintAsset::IsAssetReady(const TCHAR* InOperation)
+{
+    if (IsValid(Blueprint) && IsValid(GeneratedClass))
+    {
+        return true;
+    }
+
+    // LoadOrCreate[WithMetaData] failed (or was refused in PIE mode) and left this asset half initialized. The
+    // TypeScript side drives every Add*/Setup* call unconditionally, so bail out instead of dereferencing null.
+    UE_LOG(PuertsEditorModule, Error, TEXT("%s skipped: blueprint asset is not ready (blueprint[%s], generated class[%s])"),
+        InOperation, *GetNameSafe(Blueprint), *GetNameSafe(GeneratedClass));
+    NeedSave = false;
+    return false;
+}
 
 bool UPEBlueprintAsset::Existed(const FString& InName, const FString& InPath)
 {
@@ -95,22 +110,87 @@ bool UPEBlueprintAsset::LoadOrCreate(
     if (Blueprint)
     {
         GeneratedClass = Blueprint->GeneratedClass;
-        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass))
+        if (IsValid(GeneratedClass))
         {
-            HasConstructor = TypeScriptGeneratedClass->HasConstructor;
+            if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass))
+            {
+                HasConstructor = TypeScriptGeneratedClass->HasConstructor;
+            }
+            Package = Cast<UPackage>(Blueprint->GetOuter());
+            if (Blueprint->ParentClass != ParentClass)
+            {
+                // Normal TypeScript reparent: old parent still loads, just retarget and let Save recompile.
+                CanChangeCheckWithBoolRet();
+                Blueprint->ParentClass = ParentClass;
+                NeedSave = true;
+            }
+            else
+            {
+                NeedSave = false;
+            }
+            return true;
         }
-        Package = Cast<UPackage>(Blueprint->GetOuter());
-        if (Blueprint->ParentClass != ParentClass)
+
+        // Stale asset: the parent class recorded in the .uasset failed to load, so GeneratedClass never came up
+        // (see the LogLinker "both will fail to load" warnings). If TypeScript already points at a live ParentClass,
+        // tear the broken asset down and fall through to recreate - otherwise users could not recover by changing
+        // the TS base class. With no replacement parent there is nothing we can safely do.
+        if (!IsValid(ParentClass))
         {
-            CanChangeCheckWithBoolRet();
-            Blueprint->ParentClass = ParentClass;
-            NeedSave = true;
-        }
-        else
-        {
+            UE_LOG(PuertsEditorModule, Error,
+                TEXT("blueprint [%s] has no valid generated class and no replacement parent was provided, skip"), *PackageName);
+            Blueprint = nullptr;
+            GeneratedClass = nullptr;
             NeedSave = false;
+            return false;
         }
-        return true;
+
+        if (IsPlaying())
+        {
+            UE_LOG(PuertsEditorModule, Error,
+                TEXT("blueprint [%s] is broken (missing generated class) but recreating in PIE mode is forbiden!"), *PackageName);
+            Blueprint = nullptr;
+            GeneratedClass = nullptr;
+            NeedSave = false;
+            return false;
+        }
+
+        UE_LOG(PuertsEditorModule, Warning,
+            TEXT("blueprint [%s] has no valid generated class (recorded parent failed to load). Recreating under parent [%s]"),
+            *PackageName, *ParentClass->GetName());
+
+        FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+        AssetRegistryModule.Get().AssetDeleted(Blueprint);
+
+        // Move the broken object out of the package so CreateBlueprint can reuse the same asset name.
+        const FString TrashName = InName + TEXT("__Broken_") + FGuid::NewGuid().ToString(EGuidFormats::Digits);
+        Blueprint->ClearFlags(RF_Standalone | RF_Public);
+        Blueprint->Rename(*TrashName, GetTransientPackage(),
+            REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders | REN_NonTransactional);
+        Blueprint->RemoveFromRoot();
+#if ENGINE_MAJOR_VERSION >= 5
+        Blueprint->MarkAsGarbage();
+#else
+        Blueprint->MarkPendingKill();
+#endif
+        Blueprint = nullptr;
+        GeneratedClass = nullptr;
+        Package = nullptr;
+
+        FString AssetFilePath = FString(TEXT(TS_BLUEPRINT_PATH)) / InPath / InName + TEXT(".uasset");
+        if (AssetFilePath[0] == TEXT('/') || AssetFilePath[0] == TEXT('\\'))
+        {
+            AssetFilePath = AssetFilePath.Mid(1);
+        }
+        AssetFilePath = FPaths::ProjectContentDir() / AssetFilePath;
+        IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+        if (PlatformFile.FileExists(*AssetFilePath) && !PlatformFile.DeleteFile(*AssetFilePath))
+        {
+            UE_LOG(PuertsEditorModule, Error, TEXT("Failed to delete broken TypeScript blueprint asset: %s"), *AssetFilePath);
+            NeedSave = false;
+            return false;
+        }
+        // Fall through to the create path below with the caller's ParentClass.
     }
 
     if (!ParentClass)
@@ -161,6 +241,14 @@ bool UPEBlueprintAsset::LoadOrCreate(
         // Mark the package dirty...
         Package->MarkPackageDirty();
         GeneratedClass = Blueprint->GeneratedClass;
+        if (!IsValid(GeneratedClass))
+        {
+            UE_LOG(PuertsEditorModule, Error, TEXT("blueprint [%s] was created without a valid generated class"), *PackageName);
+            Blueprint = nullptr;
+            GeneratedClass = nullptr;
+            NeedSave = false;
+            return false;
+        }
         return true;
     }
     else
@@ -394,6 +482,12 @@ UClass* const GetOverrideFunctionClass(UBlueprint* Blueprint, const FName FuncNa
 void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType,
     int32 InSetFlags, int32 InClearFlags)
 {
+    if (!IsAssetReady(TEXT("AddFunction")))
+    {
+        ClearParameter();
+        return;
+    }
+
     InSetFlags &= ~InClearFlags;
     InSetFlags &= ~FUNC_Native;
     const int32 NetMask = FUNC_Net | FUNC_NetMulticast | FUNC_NetServer | FUNC_NetClient | FUNC_NetReliable;
@@ -404,7 +498,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
-    UFunction* ParentFunction = SuperClass->FindFunctionByName(InName);
+    UFunction* ParentFunction = SuperClass ? SuperClass->FindFunctionByName(InName) : nullptr;
 
     UFunction* Function = GeneratedClass->FindFunctionByName(InName, EIncludeSuperFlag::ExcludeSuper);
 
@@ -856,6 +950,12 @@ void UPEBlueprintAsset::AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGr
      * @brief
      *		function body
      */
+    if (!IsAssetReady(TEXT("AddFunctionWithMetaData")))
+    {
+        ClearParameter();
+        return;
+    }
+
     if (IsValid(InMetaData))
     {
         InSetFlags |= static_cast<int32>(InMetaData->FunctionFlags);
@@ -895,6 +995,11 @@ void UPEBlueprintAsset::ClearParameter()
 
 void UPEBlueprintAsset::RemoveComponent(FName ComponentName)
 {
+    if (!IsValid(Blueprint) || !Blueprint->SimpleConstructionScript)
+    {
+        return;
+    }
+
     auto SCS_Node = Blueprint->SimpleConstructionScript->FindSCSNode(ComponentName);
     if (SCS_Node)
     {
@@ -970,6 +1075,11 @@ void UPEBlueprintAsset::RemoveComponent(FName ComponentName)
 
 void UPEBlueprintAsset::SetupAttachment(FName InComponentName, FName InParentComponentName)
 {
+    if (!IsValid(Blueprint))
+    {
+        return;
+    }
+
     if (Blueprint->SimpleConstructionScript)
     {
         auto SCS_Node = Blueprint->SimpleConstructionScript->FindSCSNode(InComponentName);
@@ -1017,6 +1127,11 @@ void UPEBlueprintAsset::SetupAttachment(FName InComponentName, FName InParentCom
 
 void UPEBlueprintAsset::SetupAttachments(TMap<FName, FName> InAttachments)
 {
+    if (!IsAssetReady(TEXT("SetupAttachments")))
+    {
+        return;
+    }
+
     if (Blueprint->SimpleConstructionScript)
     {
         for (auto& KV : InAttachments)
@@ -1050,6 +1165,11 @@ void UPEBlueprintAsset::SetupAttachments(TMap<FName, FName> InAttachments)
 void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType,
     int32 InLFlags, int32 InHFlags, int32 InLifetimeCondition)
 {
+    if (!IsAssetReady(TEXT("AddMemberVariable")))
+    {
+        return;
+    }
+
     uint64 InFlags = (uint64) InHFlags << 32 | InLFlags;
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
@@ -1057,7 +1177,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
     {
         if (auto ComponentClass = Cast<UClass>(PinType.PinSubCategoryObject))
         {
-            if (Blueprint->GeneratedClass->IsChildOf<AActor>() && Blueprint->SimpleConstructionScript &&
+            if (GeneratedClass->IsChildOf<AActor>() && Blueprint->SimpleConstructionScript &&
                 PinType.PinCategory == UEdGraphSchema_K2::PC_Object &&
                 (ComponentClass == UActorComponent::StaticClass() || ComponentClass->IsChildOf<UActorComponent>()))
             {
@@ -1183,6 +1303,11 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
 void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGraphPinType InGraphPinType,
     FPEGraphTerminalType InPinValueType, int32 InLFlags, int32 InHFLags, int32 InLifetimeCondition, UPEPropertyMetaData* InMetaData)
 {
+    if (!IsAssetReady(TEXT("AddMemberVariableWithMetaData")))
+    {
+        return;
+    }
+
     if (IsValid(InMetaData))
     {    //	handle the conflict here
         EPropertyFlags InputFlags = static_cast<EPropertyFlags>((static_cast<uint64>(InHFLags) << 32) + InLFlags);
@@ -1356,38 +1481,54 @@ void UPEBlueprintAsset::Save()
             FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
             FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
-            for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+            // Compiling may reinstance the class: the previous UClass is trashed while the blueprint points at a
+            // freshly created one. Refresh the cached pointer, otherwise derived TypeScript classes that take
+            // GeneratedClass as their parent keep a dead class.
+            GeneratedClass = Blueprint->GeneratedClass;
+            TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass);
+
+            if (IsValid(TypeScriptGeneratedClass))
             {
-                auto Function = *FuncIt;
-                Function->FunctionFlags &= ~FUNC_Native;
-
-                auto FunctionFName = Function->GetFName();
-                FString FunctionName = Function->GetName();
-
-                static FString AxisPrefix(TEXT("InpAxisEvt_"));
-                if (FunctionName.StartsWith(AxisPrefix))
+                for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt;
+                     ++FuncIt)
                 {
-                    auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
-                    int32 SubPos;
-                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                    auto Function = *FuncIt;
+                    Function->FunctionFlags &= ~FUNC_Native;
+
+                    auto FunctionFName = Function->GetFName();
+                    FString FunctionName = Function->GetName();
+
+                    static FString AxisPrefix(TEXT("InpAxisEvt_"));
+                    if (FunctionName.StartsWith(AxisPrefix))
                     {
-                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                        auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
+                        int32 SubPos;
+                        if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                        {
+                            FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                        }
+                    }
+                    static FString ActionPrefix(TEXT("InpActEvt_"));
+                    if (FunctionName.StartsWith(ActionPrefix))
+                    {
+                        auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
+                        int32 SubPos;
+                        if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                        {
+                            FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                        }
+                    }
+                    if (FunctionAdded.Contains(*FunctionName))
+                    {
+                        TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
                     }
                 }
-                static FString ActionPrefix(TEXT("InpActEvt_"));
-                if (FunctionName.StartsWith(ActionPrefix))
-                {
-                    auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
-                    int32 SubPos;
-                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
-                    {
-                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
-                    }
-                }
-                if (FunctionAdded.Contains(*FunctionName))
-                {
-                    TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
-                }
+            }
+            else
+            {
+                UE_LOG(PuertsEditorModule, Error,
+                    TEXT("blueprint [%s] has no valid generated class after compiling, function redirection is skipped"),
+                    *GetNameSafe(Blueprint));
             }
 
             TArray<UPackage*> PackagesToSave;
