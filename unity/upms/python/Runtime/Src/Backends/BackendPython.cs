@@ -38,7 +38,35 @@ namespace Puerts
             var pythonPrefix = System.IO.Path.Combine(AppContext.BaseDirectory, "runtimes", GetRuntimeIdentifier(), "native");
             PapiPythonNative.InitPythonByHome(pythonPrefix);
 #endif
-            envRef = PapiPythonNative.CreatePythonPapiEnvRef();  
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            var pythonPrefix = System.IO.Path.Combine(UnityEngine.Application.dataPath, "Plugins\\x86_64");
+            PapiPythonNative.InitPythonByHome(pythonPrefix);
+#endif
+#if UNITY_EDITOR
+            const string packageName = "com.tencent.puerts.python";
+            var pi = UnityEditor.PackageManager.PackageInfo.FindForPackageName(packageName);
+            string packagePath = null;
+            if (pi != null && !string.IsNullOrEmpty(pi.resolvedPath))
+            {
+                packagePath = pi.resolvedPath;
+            }
+
+            string pythonHomeRelativePath = null;
+            if (packagePath != null)
+            {
+#if UNITY_EDITOR_WIN
+                pythonHomeRelativePath = "Plugins/x86_64";
+                var home = System.IO.Path.GetFullPath(System.IO.Path.Combine(packagePath, pythonHomeRelativePath));
+                PapiPythonNative.InitPythonByHome(home);
+#endif
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning($"Package {packageName} not found. Python initialization may fail if the Python runtime is not in the system PATH.");
+            }
+#endif
+            envRef = PapiPythonNative.CreatePythonPapiEnvRef();
             return envRef;
         }
 
