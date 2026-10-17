@@ -353,11 +353,21 @@ bool UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBluep
         InBlueprint->BlueprintDisplayName = newDisplayName;
         onChange = true;
     }
-    EBlueprintType newType = (InClass->ClassFlags & CLASS_Const) ? BPTYPE_Const : BPTYPE_Normal;
-    if (InBlueprint->BlueprintType != newType)
+    // BPTYPE_FunctionLibrary is derived from the parent class by UPEBlueprintAsset::LoadOrCreate and cannot be
+    // expressed through @uclass flags, so this sync only owns the Const / Normal distinction and must not downgrade
+    // a function library blueprint. Downgrading it would make UEdGraphSchema_K2::IsStaticFunctionGraph fall back to
+    // probing FUNC_Static on the function entry node, so the implicit hidden __WorldContext parameter would follow
+    // that flag instead of the blueprint type while the function library fallbacks in FastGenerateSkeletonClass stay
+    // disabled - the serialized generated class and the skeleton class then disagree on the signature and callers
+    // fail to compile with "Could not find a pin for the parameter __WorldContext".
+    if (InBlueprint->BlueprintType != BPTYPE_FunctionLibrary)
     {
-        InBlueprint->BlueprintType = newType;
-        onChange = true;
+        const EBlueprintType newType = (InClass->ClassFlags & CLASS_Const) ? BPTYPE_Const : BPTYPE_Normal;
+        if (InBlueprint->BlueprintType != newType)
+        {
+            InBlueprint->BlueprintType = newType;
+            onChange = true;
+        }
     }
     FString newCategory = InClass->HasMetaData(TEXT("Category")) ? InClass->GetMetaData(TEXT("Category")) : FString{};
     if (InBlueprint->BlueprintCategory != newCategory)

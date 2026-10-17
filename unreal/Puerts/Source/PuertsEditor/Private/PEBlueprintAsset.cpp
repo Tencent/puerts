@@ -100,15 +100,32 @@ bool UPEBlueprintAsset::LoadOrCreate(
             HasConstructor = TypeScriptGeneratedClass->HasConstructor;
         }
         Package = Cast<UPackage>(Blueprint->GetOuter());
+        NeedSave = false;
         if (Blueprint->ParentClass != ParentClass)
         {
             CanChangeCheckWithBoolRet();
             Blueprint->ParentClass = ParentClass;
             NeedSave = true;
         }
-        else
+
+        // BlueprintType has to keep tracking the parent class. Only the create path below derives it, so an asset
+        // generated before its TypeScript class became a BlueprintFunctionLibrary derivative would stay
+        // BPTYPE_Normal forever. That desync is not cosmetic: UEdGraphSchema_K2::IsStaticFunctionGraph then falls
+        // back to probing FUNC_Static on the function entry node, so the implicit hidden __WorldContext parameter
+        // appears or disappears together with that flag, and the function library fallbacks in
+        // FastGenerateSkeletonClass stay disabled. The serialized generated class and the skeleton class (rebuilt
+        // on every load) end up disagreeing on the signature, which makes callers fail to compile with
+        // "Could not find a pin for the parameter __WorldContext".
+        if (ParentClass)
         {
-            NeedSave = false;
+            const EBlueprintType DesiredBlueprintType =
+                ParentClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()) ? BPTYPE_FunctionLibrary : BPTYPE_Normal;
+            if (Blueprint->BlueprintType != DesiredBlueprintType)
+            {
+                CanChangeCheckWithBoolRet();
+                Blueprint->BlueprintType = DesiredBlueprintType;
+                NeedSave = true;
+            }
         }
         return true;
     }
