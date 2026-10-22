@@ -62,6 +62,67 @@ static void PointerNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     // do nothing
 }
 
+#ifndef WITH_QUICKJS
+static void CppObjectMapperPesapiFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    auto FunctionData = reinterpret_cast<FCppObjectMapper::FPesapiFunctionData*>(
+        reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) -
+        offsetof(FCppObjectMapper::FPesapiFunctionData, Data));
+    FunctionData->Callback(FunctionData->Apis, (pesapi_callback_info) (&Info));
+}
+
+void FCppObjectMapper::PesapiFunctionDataGarbageCollected(const v8::WeakCallbackInfo<FPesapiFunctionData>& Data)
+{
+    FPesapiFunctionData* FunctionData = Data.GetParameter();
+    FunctionData->JsFunction.Reset();
+    if (FunctionData->Finalize)
+    {
+        FunctionData->Finalize(FunctionData->Apis, FunctionData->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+    }
+    auto& Datas = FunctionData->Mapper->FunctionDatas;
+    for (auto It = Datas.begin(); It != Datas.end();)
+    {
+        if (*It == FunctionData)
+        {
+            It = Datas.erase(It);
+        }
+        else
+        {
+            ++It;
+        }
+    }
+    delete FunctionData;
+}
+
+v8::MaybeLocal<v8::Function> FCppObjectMapper::CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
+    pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize)
+{
+    auto Isolate = Context->GetIsolate();
+    auto FunctionData = new FPesapiFunctionData();
+    FunctionData->Callback = Callback;
+    FunctionData->Data = Data;
+    FunctionData->Mapper = this;
+    FunctionData->Finalize = Finalize;
+    FunctionData->Apis = Apis;
+    auto Template =
+        v8::FunctionTemplate::New(Isolate, CppObjectMapperPesapiFunctionCallback, v8::External::New(Isolate, &FunctionData->Data));
+    Template->Set(Isolate, "__do_not_cache", v8::ObjectTemplate::New(Isolate));
+    auto Ret = Template->GetFunction(Context);
+    if (!Ret.IsEmpty())
+    {
+        FunctionData->JsFunction.Reset(Isolate, Ret.ToLocalChecked());
+        FunctionData->JsFunction.SetWeak<FPesapiFunctionData>(
+            FunctionData, PesapiFunctionDataGarbageCollected, v8::WeakCallbackType::kParameter);
+        FunctionDatas.push_back(FunctionData);
+    }
+    else
+    {
+        delete FunctionData;
+    }
+    return Ret;
+}
+#endif
+
 void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext)
 {
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
@@ -283,7 +344,10 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
 {
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-    if (ClassDefinition->Finalize)
+    if (ClassDefinition->PesapiFinalize)
+        ClassDefinition->PesapiFinalize(ClassDefinition->PesapiApis, Ptr, ClassDefinition->Data,
+            DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+    else if (ClassDefinition->Finalize)
         ClassDefinition->Finalize(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);
 }
@@ -396,13 +460,17 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             const JSClassDefinition* ClassDefinition = FindClassByID(PNode->TypeId);
             if (PNode->MustCallFinalize)
             {
-                if (ClassDefinition && ClassDefinition->Finalize)
+                if (ClassDefinition && ClassDefinition->PesapiFinalize)
+                {
+                    ClassDefinition->PesapiFinalize(ClassDefinition->PesapiApis, KV.first, ClassDefinition->Data, PData);
+                }
+                else if (ClassDefinition && ClassDefinition->Finalize)
                 {
                     ClassDefinition->Finalize(KV.first, ClassDefinition->Data, PData);
                 }
                 PNode->MustCallFinalize = false;
             }
-            if (ClassDefinition->OnExit)
+            if (ClassDefinition && ClassDefinition->OnExit)
             {
                 ClassDefinition->OnExit(
                     KV.first, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(InIsolate), PNode->UserData);
@@ -411,6 +479,18 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         }
     }
     CDataCache.clear();
+#ifndef WITH_QUICKJS
+    for (auto FunctionData : FunctionDatas)
+    {
+        FunctionData->JsFunction.Reset();
+        if (FunctionData->Finalize)
+        {
+            FunctionData->Finalize(FunctionData->Apis, FunctionData->Data, PData);
+        }
+        delete FunctionData;
+    }
+    FunctionDatas.clear();
+#endif
     TypeIdToTemplateMap.clear();
 #ifndef WITH_QUICKJS
     PrivateKey.Reset();

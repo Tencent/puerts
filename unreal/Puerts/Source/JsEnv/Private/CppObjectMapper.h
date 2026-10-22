@@ -17,6 +17,7 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include <unordered_map>
+#include <vector>
 #include "JSClassRegister.h"
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
@@ -63,9 +64,31 @@ public:
 
     virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) override;
 
+#ifndef WITH_QUICKJS
+    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
+        pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) override;
+#endif
+
     void UnInitialize(v8::Isolate* InIsolate);
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition);
+
+#ifndef WITH_QUICKJS
+    struct FPesapiFunctionData
+    {
+        pesapi_callback Callback;
+        void* Data;
+        FCppObjectMapper* Mapper;
+        v8::Global<v8::Function> JsFunction;
+        pesapi_function_finalize Finalize;
+        struct pesapi_ffi* Apis;
+    };
+
+private:
+    static void PesapiFunctionDataGarbageCollected(const v8::WeakCallbackInfo<FPesapiFunctionData>& Data);
+
+    std::vector<FPesapiFunctionData*> FunctionDatas;
+#endif
 
 private:
     std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;

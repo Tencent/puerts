@@ -40,6 +40,13 @@ namespace PUERTS_NAMESPACE
 {
 class CFunctionInfo;
 
+// Internal callback types used by the class registry. They store backend native callbacks (e.g. v8::FunctionCallback),
+// pesapi style callbacks (with pesapi_ffi* as the first parameter) are stored in the Pesapi* fields and dispatched via
+// trampolines.
+typedef void (*JSFunctionCallback)(pesapi_callback_info info);
+typedef void* (*JSInitializeFunc)(pesapi_callback_info info);
+typedef void (*JSFinalizeFunc)(void* Ptr, void* ClassData, void* EnvPrivate);
+
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 struct JSENV_API JSFunctionInfo
@@ -49,7 +56,7 @@ struct JSENV_API JSFunctionInfo
     }
 
     JSFunctionInfo(
-        const char* InName, pesapi_callback InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr)
+        const char* InName, JSFunctionCallback InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr)
         : Name(InName), Callback(InCallback), Data(InData), ReflectionInfo(InReflectionInfo)
     {
     }
@@ -57,14 +64,15 @@ struct JSENV_API JSFunctionInfo
     template <class CallbackType>
     JSFunctionInfo(
         const char* InName, CallbackType InCallback, void* InData = nullptr, const CFunctionInfo* InReflectionInfo = nullptr)
-        : Name(InName), Callback(reinterpret_cast<pesapi_callback>(InCallback)), Data(InData), ReflectionInfo(InReflectionInfo)
+        : Name(InName), Callback(reinterpret_cast<JSFunctionCallback>(InCallback)), Data(InData), ReflectionInfo(InReflectionInfo)
     {
     }
 
     const char* Name;
-    pesapi_callback Callback;
+    JSFunctionCallback Callback;
     void* Data = nullptr;
     const CFunctionInfo* ReflectionInfo = nullptr;
+    pesapi_callback PesapiCallback = nullptr;
 };
 
 struct JSENV_API JSPropertyInfo
@@ -73,7 +81,7 @@ struct JSENV_API JSPropertyInfo
     {
     }
 
-    JSPropertyInfo(const char* InName, pesapi_callback InGetter, pesapi_callback InSetter, void* InGetterData = nullptr,
+    JSPropertyInfo(const char* InName, JSFunctionCallback InGetter, JSFunctionCallback InSetter, void* InGetterData = nullptr,
         void* InSetterData = nullptr)
         : Name(InName), Getter(InGetter), Setter(InSetter), GetterData(InGetterData), SetterData(InSetterData)
     {
@@ -83,18 +91,20 @@ struct JSENV_API JSPropertyInfo
     JSPropertyInfo(const char* InName, CallbackType InGetter, CallbackType InSetter, void* InGetterData = nullptr,
         void* InSetterData = nullptr)
         : Name(InName)
-        , Getter(reinterpret_cast<pesapi_callback>(InGetter))
-        , Setter(reinterpret_cast<pesapi_callback>(InSetter))
+        , Getter(reinterpret_cast<JSFunctionCallback>(InGetter))
+        , Setter(reinterpret_cast<JSFunctionCallback>(InSetter))
         , GetterData(InGetterData)
         , SetterData(InSetterData)
     {
     }
 
     const char* Name;
-    pesapi_callback Getter;
-    pesapi_callback Setter;
+    JSFunctionCallback Getter;
+    JSFunctionCallback Setter;
     void* GetterData = nullptr;
     void* SetterData = nullptr;
+    pesapi_callback PesapiGetter = nullptr;
+    pesapi_callback PesapiSetter = nullptr;
 };
 
 struct NamedFunctionInfo;
@@ -106,17 +116,17 @@ struct JSENV_API JSClassDefinition
     const void* SuperTypeId;
     const char* ScriptName;
     const char* UETypeName;
-    pesapi_constructor Initialize;
+    JSInitializeFunc Initialize;
     template <class InitializeType>
     void SetInitialize(InitializeType InInitialize)
     {
-        Initialize = reinterpret_cast<pesapi_constructor>(InInitialize);
+        Initialize = reinterpret_cast<JSInitializeFunc>(InInitialize);
     }
     JSFunctionInfo* Methods;       //成员方法
     JSFunctionInfo* Functions;     //静态方法
     JSPropertyInfo* Properties;    //成员属性
     JSPropertyInfo* Variables;     //静态属性
-    pesapi_finalize Finalize;
+    JSFinalizeFunc Finalize;
     // int InternalFieldCount;
     NamedFunctionInfo* ConstructorInfos;
     NamedFunctionInfo* MethodInfos;
@@ -126,6 +136,10 @@ struct JSENV_API JSClassDefinition
     void* Data = nullptr;
     pesapi_on_native_object_enter OnEnter = nullptr;
     pesapi_on_native_object_exit OnExit = nullptr;
+    // pesapi style constructor/finalize (registered through pesapi_registry_api)
+    pesapi_constructor PesapiInitialize = nullptr;
+    pesapi_finalize PesapiFinalize = nullptr;
+    struct pesapi_ffi* PesapiApis = nullptr;
 };
 MSVC_PRAGMA(warning(pop))
 

@@ -384,5 +384,18 @@ public:
 #endif
 #endif
     }
+
+#ifndef WITH_QUICKJS
+    // create an ArrayBuffer owned by js engine, and copy data into it
+    FORCEINLINE static v8::Local<v8::ArrayBuffer> NewArrayBufferCopy(v8::Local<v8::Context> Context, const void* Data, size_t DataLength)
+    {
+        auto Ab = v8::ArrayBuffer::New(Context->GetIsolate(), DataLength);
+        if (DataLength > 0 && Data)
+        {
+            memcpy(GetArrayBufferData(Ab), Data, DataLength);
+        }
+        return Ab;
+    }
+#endif
 };
 }    // namespace PUERTS_NAMESPACE

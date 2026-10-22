@@ -171,6 +171,10 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
 
 void SetReflectoinInfo(JSFunctionInfo* Methods, const NamedFunctionInfo* MethodInfos)
 {
+    if (!Methods || !MethodInfos)
+    {
+        return;
+    }
     std::map<PString, std::tuple<int, const NamedFunctionInfo*>> InfoMap;
     const NamedFunctionInfo* MethodInfo = MethodInfos;
     while (MethodInfo->Name)

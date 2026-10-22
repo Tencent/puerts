@@ -644,7 +644,7 @@ void* FScriptStructWrapper::Alloc(UScriptStruct* InScriptStruct)
     return ScriptStructMemory;
 }
 
-void FScriptStructWrapper::Free(TWeakObjectPtr<UStruct> InStruct, pesapi_finalize InExternalFinalize, void* Ptr)
+void FScriptStructWrapper::Free(TWeakObjectPtr<UStruct> InStruct, PUERTS_NAMESPACE::JSFinalizeFunc InExternalFinalize, void* Ptr)
 {
     if (InExternalFinalize)
     {

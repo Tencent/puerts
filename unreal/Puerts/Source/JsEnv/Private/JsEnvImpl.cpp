@@ -3038,6 +3038,14 @@ v8::MaybeLocal<v8::Function> FJsEnvImpl::LoadTypeById(v8::Local<v8::Context> Con
     return CppObjectMapper.LoadTypeById(Context, TypeId);
 }
 
+#ifndef WITH_QUICKJS
+v8::MaybeLocal<v8::Function> FJsEnvImpl::CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
+    pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize)
+{
+    return CppObjectMapper.CreateFunction(Context, Apis, Callback, Data, Finalize);
+}
+#endif
+
 void FJsEnvImpl::UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr)
 {
     auto CacheNodePtr = StructCache.Find(Ptr);

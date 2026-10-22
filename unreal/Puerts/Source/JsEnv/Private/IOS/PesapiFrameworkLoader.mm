@@ -9,52 +9,21 @@
 
 #import <Foundation/Foundation.h>
 #include <pesapi.h>
-#include <string>
+#include <dlfcn.h>
 
-@interface PesapiFrameworkLoader : NSObject
-
-@end
-
-@implementation PesapiFrameworkLoader
-
-+ (int)load:(NSString*) frameworkName entryClassName:(NSString*)entryClassName funcPtrArray:(pesapi_func_ptr*)funcPtrArray {
-    NSLog(@"load addon name:%@  entry class:%@", frameworkName, entryClassName);
-
-    //for + function
-    Class entryClass = NSClassFromString(entryClassName);
-    if (entryClass) {
-        SEL selector = NSSelectorFromString(@"initlib:");
-
-        //for + function
-        IMP impl = [entryClass methodForSelector:selector];
-        if (impl) {
-             //@try {
-                 void* (*entryFunc)(Class, SEL, pesapi_func_ptr*) = (void*(*)(Class,SEL,pesapi_func_ptr*))impl;
-                 entryFunc(entryClass, selector, funcPtrArray);
-                 return 0;
-             //}
-             //@catch (NSException * e) {
-             //   NSLog(@"PesapiFrameworkLoader loadFramework exception: %@", e);
-             //}
-             //@finally {
-             //   NSLog(@"PesapiFrameworkLoader loadFramework finally");
-             //}
-        } else {
-            NSLog(@"load addon %@ fail: can not found selector initlib:", frameworkName);
-        }
-    } else {
-        NSLog(@"load addon %@ fail: can not found class:%@", frameworkName, entryClassName);
-    }
-    return -1;
-}
-
-@end
-
-int PesapiLoadFramework(std::string frameworkName, std::string entryClassName, pesapi_func_ptr* funcPtrArray)
+// addons are statically linked on iOS, the entry is a C function named pesapi_register_<module_name>_v<PESAPI_VERSION>
+int PesapiLoadFramework(const char* frameworkName, const char* entryName, struct pesapi_registry_api* registryApi, pesapi_registry registry)
 {
-    NSString* p1 = [NSString stringWithUTF8String:frameworkName.c_str()];
-    NSString* p2 = [NSString stringWithUTF8String:entryClassName.c_str()];
-    return [PesapiFrameworkLoader load:p1 entryClassName:p2 funcPtrArray:funcPtrArray];
+    NSLog(@"load addon name:%s  entry:%s", frameworkName, entryName);
+    typedef void (*EntryFuncType)(struct pesapi_registry_api*, pesapi_registry);
+    EntryFuncType entryFunc = (EntryFuncType) dlsym(RTLD_DEFAULT, entryName);
+    if (entryFunc)
+    {
+        entryFunc(registryApi, registry);
+        return 0;
+    }
+    NSLog(@"load addon %s fail: can not found entry:%s", frameworkName, entryName);
+    return -1;
 }
 
 #endif

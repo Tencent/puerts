@@ -79,7 +79,7 @@ protected:
 
     V8InitializeFuncType ExternalInitialize;
 
-    pesapi_finalize ExternalFinalize;
+    PUERTS_NAMESPACE::JSFinalizeFunc ExternalFinalize;
 
     TWeakObjectPtr<UStruct> Struct;
 
@@ -113,7 +113,7 @@ public:
 
     static void* Alloc(UScriptStruct* InScriptStruct);
 
-    static void Free(TWeakObjectPtr<UStruct> InStruct, pesapi_finalize InExternalFinalize, void* Ptr);
+    static void Free(TWeakObjectPtr<UStruct> InStruct, PUERTS_NAMESPACE::JSFinalizeFunc InExternalFinalize, void* Ptr);
 
     void Free(void* Ptr)
     {

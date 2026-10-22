@@ -171,6 +171,11 @@ public:
 
     virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) override;
 
+#ifndef WITH_QUICKJS
+    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
+        pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) override;
+#endif
+
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
 

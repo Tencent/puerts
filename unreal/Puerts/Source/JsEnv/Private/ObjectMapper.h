@@ -46,6 +46,11 @@ public:
 
     virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) = 0;
 
+#ifndef WITH_QUICKJS
+    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
+        pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) = 0;
+#endif
+
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
     virtual ~ICppObjectMapper()
