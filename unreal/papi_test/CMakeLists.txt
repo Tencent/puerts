@@ -77,6 +77,7 @@ add_executable(papi_test_host
     ${JSENV_DIR}/Private/PesapiRegister.cpp
     ${JSENV_DIR}/Private/CppObjectMapper.cpp
     ${JSENV_DIR}/Private/JSClassRegister.cpp
+    ${JSENV_DIR}/Private/ScriptClassRegistry.cpp
     ${JSENV_DIR}/Private/DataTransfer.cpp
 )
 target_include_directories(papi_test_host PRIVATE ${JSENV_DIR}/Public ${JSENV_DIR}/Private ${V8_ROOT}/Inc)

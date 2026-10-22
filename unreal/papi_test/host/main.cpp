@@ -97,6 +97,25 @@ static void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     GMapper->LoadCppType(Info);
 }
 
+static pesapi_registry GEmptyRegistry = nullptr;
+
+// puerts.useEmptyRegistry(bool): bind the env to a newly created (empty) registry or back to the default one through
+// pesapi create_registry/set_registry, returns whether hello.TestClass can be found in the registry now in use
+static void UseEmptyRegistry(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    if (!GEmptyRegistry)
+    {
+        GEmptyRegistry = pesapi::regimpl::g_reg_apis.create_registry();
+    }
+    bool UseEmpty = Info.Length() > 0 && Info[0]->BooleanValue(Isolate);
+    pesapi_registry Registry = UseEmpty ? GEmptyRegistry : pesapi::regimpl::GetDefaultRegistry();
+    v8impl::g_pesapi_ffi.set_registry(reinterpret_cast<pesapi_env>(*Context), Registry);
+    bool Found = pesapi::regimpl::g_reg_apis.find_type_id(Registry, "hello", "TestClass") != nullptr;
+    Info.GetReturnValue().Set(Found);
+}
+
 static void Print(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -186,6 +205,7 @@ int main(int argc, char* argv[])
         (void) Global->Set(Context, v8::String::NewFromUtf8(Isolate, "puerts").ToLocalChecked(), Puerts);
         SetFunction(Context, Puerts, "loadAddon", LoadAddon);
         SetFunction(Context, Puerts, "loadCPPType", LoadCppType);
+        SetFunction(Context, Puerts, "useEmptyRegistry", UseEmptyRegistry);
         SetFunction(Context, Global, "print", Print);
         SetFunction(Context, Global, "gc", Gc);
         (void) Global->Set(Context, v8::String::NewFromUtf8(Isolate, "ADDON_PATH").ToLocalChecked(),
@@ -207,6 +227,8 @@ int main(int argc, char* argv[])
 
         Mapper.UnInitialize(Isolate);
         GMapper = nullptr;
+        puerts::DestroyRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(GEmptyRegistry));
+        GEmptyRegistry = nullptr;
     }
 
     Isolate->Dispose();

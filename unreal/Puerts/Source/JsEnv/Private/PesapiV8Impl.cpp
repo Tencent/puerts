@@ -916,9 +916,9 @@ void pesapi_set_env_private(pesapi_env env, const void* ptr)
 
 void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
 {
-    // unreal has only one global class registry, nothing to do
-    (void) env;
-    (void) registry;
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())
+        ->SetRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(registry));
 }
 
 pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_create_boolean, &pesapi_create_int32,

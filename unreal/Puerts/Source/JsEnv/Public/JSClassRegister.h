@@ -148,6 +148,48 @@ MSVC_PRAGMA(warning(pop))
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
     }
 
+// ---------------------------------------------------------------- class registry instance api
+// aligned with unity/native/puerts/include/ScriptClassRegistry.h. A pesapi_registry is a ScriptClassRegistry*.
+// The legacy global functions below operate on the default registry returned by GetDefaultClassRegistry().
+class ScriptClassRegistry;
+typedef JSClassDefinition ScriptClassDefinition;
+typedef JSFunctionInfo ScriptFunctionInfo;
+typedef JSPropertyInfo ScriptPropertyInfo;
+
+JSENV_API ScriptClassRegistry* GetDefaultClassRegistry();
+
+JSENV_API ScriptClassRegistry* CreateRegistry();
+
+// the default registry can not be destroyed
+JSENV_API void DestroyRegistry(ScriptClassRegistry* Registry);
+
+JSENV_API void RegisterScriptClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
+
+JSENV_API void SetClassTypeInfo(ScriptClassRegistry* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
+    const NamedFunctionInfo* MethodInfos, const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos,
+    const NamedPropertyInfo* VariableInfos);
+
+JSENV_API void ForeachRegisterClass(
+    ScriptClassRegistry* Registry, const std::function<void(const ScriptClassDefinition* ClassDefinition)>& Callback);
+
+JSENV_API const ScriptClassDefinition* FindClassByID(ScriptClassRegistry* Registry, const void* TypeId);
+
+JSENV_API void OnClassNotFound(ScriptClassRegistry* Registry, pesapi_class_not_found_callback Callback);
+
+JSENV_API const ScriptClassDefinition* LoadClassByID(ScriptClassRegistry* Registry, const void* TypeId);
+
+JSENV_API const ScriptClassDefinition* FindCppTypeClassByName(ScriptClassRegistry* Registry, const PString& Name);
+
+JSENV_API const ScriptClassDefinition* FindCppTypeClassByCName(ScriptClassRegistry* Registry, const char* Name);
+
+JSENV_API bool TraceObjectLifecycle(
+    ScriptClassRegistry* Registry, const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
+
+#if USING_IN_UNREAL_ENGINE
+JSENV_API const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type);
+#endif
+
+// ---------------------------------------------------------------- legacy global api (default registry)
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 
 void JSENV_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,

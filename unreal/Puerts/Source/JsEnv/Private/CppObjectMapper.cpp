@@ -34,7 +34,7 @@ void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& In
 
     PString TypeName = *(v8::String::Utf8Value(Isolate, Info[0]));
 
-    auto ClassDef = FindCppTypeClassByName(TypeName);
+    auto ClassDef = FindCppTypeClassByName(Registry, TypeName);
     if (ClassDef)
     {
         Info.GetReturnValue().Set(GetTemplateOfClass(Isolate, ClassDef)->GetFunction(Context).ToLocalChecked());
@@ -48,7 +48,7 @@ void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& In
 
 v8::MaybeLocal<v8::Function> FCppObjectMapper::LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId)
 {
-    auto ClassDef = puerts::LoadClassByID(TypeId);
+    auto ClassDef = LoadClassByID(Registry, TypeId);
     if (!ClassDef)
     {
         return v8::MaybeLocal<v8::Function>();
@@ -155,7 +155,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     }
 
     // create and link
-    auto ClassDefinition = LoadClassByID(TypeId);
+    auto ClassDefinition = LoadClassByID(Registry, TypeId);
     if (ClassDefinition)
     {
         auto Result = GetTemplateOfClass(Isolate, ClassDefinition)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
@@ -177,7 +177,7 @@ bool FCppObjectMapper::IsInstanceOfCppObject(v8::Isolate* Isolate, const void* T
     {
         return true;
     }
-    auto ClassDefinition = FindClassByID(TypeId);
+    auto ClassDefinition = FindClassByID(Registry, TypeId);
     if (ClassDefinition)
     {
         auto Template = GetTemplateOfClass(Isolate, ClassDefinition);
@@ -323,7 +323,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
 
         if (ClassDefinition->SuperTypeId)
         {
-            if (auto SuperDefinition = LoadClassByID(ClassDefinition->SuperTypeId))
+            if (auto SuperDefinition = LoadClassByID(Registry, ClassDefinition->SuperTypeId))
             {
                 Template->Inherit(GetTemplateOfClass(Isolate, SuperDefinition));
             }
@@ -457,7 +457,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         FObjectCacheNode* PNode = &KV.second;
         while (PNode)
         {
-            const JSClassDefinition* ClassDefinition = FindClassByID(PNode->TypeId);
+            const JSClassDefinition* ClassDefinition = FindClassByID(Registry, PNode->TypeId);
             if (PNode->MustCallFinalize)
             {
                 if (ClassDefinition && ClassDefinition->PesapiFinalize)

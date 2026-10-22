@@ -134,4 +134,10 @@ gc();
 gc();
 assert(LifeCycleClass.GetAliveCount() < 100, "finalize called after gc, alive: " + LifeCycleClass.GetAliveCount());
 
+// class registry: an env bound to a new registry (create_registry + set_registry) can not see classes of the default one
+assertEq(puerts.useEmptyRegistry(true), false, "TestClass not in a new registry");
+assertThrows(() => puerts.loadCPPType("hello.TestClass"), "load type from an empty registry");
+assertEq(puerts.useEmptyRegistry(false), true, "TestClass in the default registry");
+assertEq(puerts.loadCPPType("hello.TestClass"), TestClass, "load type after switching back to the default registry");
+
 print("all " + passed + " assertions passed");

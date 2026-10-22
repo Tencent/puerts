@@ -83,17 +83,21 @@ struct pesapi_signature_info__
     pesapi_type_info parameter_types;
 };
 
-static int GDefaultRegistryPlaceHolder = 0;
-
 pesapi_registry GetDefaultRegistry()
 {
-    return reinterpret_cast<pesapi_registry>(&GDefaultRegistryPlaceHolder);
+    return reinterpret_cast<pesapi_registry>(PUERTS_NAMESPACE::GetDefaultClassRegistry());
 }
 
-// unreal has only one global class registry, the registry param is ignored
+// a pesapi_registry is a ScriptClassRegistry*, nullptr means the default registry
+static PUERTS_NAMESPACE::ScriptClassRegistry* ToRegistry(pesapi_registry registry)
+{
+    return registry ? reinterpret_cast<PUERTS_NAMESPACE::ScriptClassRegistry*>(registry)
+                    : PUERTS_NAMESPACE::GetDefaultClassRegistry();
+}
+
 static pesapi_registry pesapi_create_registry()
 {
-    return GetDefaultRegistry();
+    return reinterpret_cast<pesapi_registry>(PUERTS_NAMESPACE::CreateRegistry());
 }
 
 static pesapi_type_info pesapi_alloc_type_infos(size_t count)
@@ -142,7 +146,7 @@ static void pesapi_define_class(pesapi_registry registry, const void* type_id, c
     classDef.SuperTypeId = super_type_id;
 
     const char* prefix = GPesapiModuleName ? GPesapiModuleName : module_name;
-    // ScriptName will point to the key stored in class registry after RegisterJSClass, so a temporary string is safe here
+    // ScriptName will point to the key stored in class registry after RegisterScriptClass, so a temporary string is safe here
     PUERTS_NAMESPACE::PString ScriptNameWithModuleName;
     if (prefix && prefix[0] != '\0')
     {
@@ -163,20 +167,21 @@ static void pesapi_define_class(pesapi_registry registry, const void* type_id, c
     classDef.PesapiFinalize = finalize;
     classDef.PesapiApis = &v8impl::g_pesapi_ffi;
 
-    PUERTS_NAMESPACE::RegisterJSClass(classDef);
+    PUERTS_NAMESPACE::RegisterScriptClass(ToRegistry(registry), classDef);
 }
 
 template <typename T>
 static T* PesapiRegAllocInfos(int count)
 {
-    // terminated by an element with Name == nullptr, must be allocated by new[] (released by delete[] in JSClassRegister)
+    // terminated by an element with Name == nullptr, must be allocated by new[] (released by delete[] in ScriptClassRegistry)
     return new T[count + 1];
 }
 
 static void pesapi_set_property_info_size(
     pesapi_registry registry, const void* type_id, int method_count, int function_count, int property_count, int variable_count)
 {
-    auto classDef = const_cast<PUERTS_NAMESPACE::JSClassDefinition*>(PUERTS_NAMESPACE::FindClassByID(type_id));
+    auto classDef =
+        const_cast<PUERTS_NAMESPACE::JSClassDefinition*>(PUERTS_NAMESPACE::FindClassByID(ToRegistry(registry), type_id));
     if (classDef)
     {
         delete[] classDef->Methods;
@@ -193,7 +198,7 @@ static void pesapi_set_property_info_size(
 static void pesapi_set_method_info(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static,
     pesapi_callback method, void* data, int copy_str)
 {
-    auto classDef = PUERTS_NAMESPACE::FindClassByID(type_id);
+    auto classDef = PUERTS_NAMESPACE::FindClassByID(ToRegistry(registry), type_id);
     if (classDef)
     {
         PUERTS_NAMESPACE::JSFunctionInfo* infos = is_static ? classDef->Functions : classDef->Methods;
@@ -213,7 +218,7 @@ static void pesapi_set_method_info(pesapi_registry registry, const void* type_id
 static void pesapi_set_property_info(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static,
     pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, int copy_str)
 {
-    auto classDef = PUERTS_NAMESPACE::FindClassByID(type_id);
+    auto classDef = PUERTS_NAMESPACE::FindClassByID(ToRegistry(registry), type_id);
     if (classDef)
     {
         PUERTS_NAMESPACE::JSPropertyInfo* infos = is_static ? classDef->Variables : classDef->Properties;
@@ -234,13 +239,14 @@ static void pesapi_set_property_info(pesapi_registry registry, const void* type_
 
 static void* pesapi_get_class_data(pesapi_registry registry, const void* type_id, int force_load)
 {
-    auto clsDef = force_load ? PUERTS_NAMESPACE::LoadClassByID(type_id) : PUERTS_NAMESPACE::FindClassByID(type_id);
+    auto clsDef = force_load ? PUERTS_NAMESPACE::LoadClassByID(ToRegistry(registry), type_id)
+                             : PUERTS_NAMESPACE::FindClassByID(ToRegistry(registry), type_id);
     return clsDef ? clsDef->Data : nullptr;
 }
 
 static void pesapi_on_class_not_found(pesapi_registry registry, pesapi_class_not_found_callback callback)
 {
-    PUERTS_NAMESPACE::OnClassNotFound(callback);
+    PUERTS_NAMESPACE::OnClassNotFound(ToRegistry(registry), callback);
 }
 
 static void pesapi_class_type_info(pesapi_registry registry, const char* proto_magic_id, const void* type_id,
@@ -252,7 +258,8 @@ static void pesapi_class_type_info(pesapi_registry registry, const char* proto_m
         return;
     }
 
-    PUERTS_NAMESPACE::SetClassTypeInfo(type_id, static_cast<const PUERTS_NAMESPACE::NamedFunctionInfo*>(constructor_info),
+    PUERTS_NAMESPACE::SetClassTypeInfo(ToRegistry(registry), type_id,
+        static_cast<const PUERTS_NAMESPACE::NamedFunctionInfo*>(constructor_info),
         static_cast<const PUERTS_NAMESPACE::NamedFunctionInfo*>(methods_info),
         static_cast<const PUERTS_NAMESPACE::NamedFunctionInfo*>(functions_info),
         static_cast<const PUERTS_NAMESPACE::NamedPropertyInfo*>(properties_info),
@@ -271,14 +278,14 @@ static const void* pesapi_find_type_id(pesapi_registry registry, const char* mod
     {
         fullname += type_name;
     }
-    const auto class_def = PUERTS_NAMESPACE::FindCppTypeClassByName(fullname);
+    const auto class_def = PUERTS_NAMESPACE::FindCppTypeClassByName(ToRegistry(registry), fullname);
     return class_def ? class_def->TypeId : nullptr;
 }
 
 static int pesapi_trace_native_object_lifecycle(
     pesapi_registry registry, const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit)
 {
-    return PUERTS_NAMESPACE::TraceObjectLifecycle(type_id, on_enter, on_exit) ? 1 : 0;
+    return PUERTS_NAMESPACE::TraceObjectLifecycle(ToRegistry(registry), type_id, on_enter, on_exit) ? 1 : 0;
 }
 
 MSVC_PRAGMA(warning(pop))

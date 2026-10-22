@@ -230,6 +230,10 @@ public:
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() override;
 
+    virtual void SetRegistry(ScriptClassRegistry* InRegistry) override;
+
+    virtual ScriptClassRegistry* GetRegistry() override;
+
     virtual v8::Local<v8::Value> AddSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
         FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) override;
 

@@ -53,6 +53,11 @@ public:
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
+    // class registry used by this env (pesapi set_registry), nullptr resets to the default registry
+    virtual void SetRegistry(ScriptClassRegistry* InRegistry) = 0;
+
+    virtual ScriptClassRegistry* GetRegistry() = 0;
+
     virtual ~ICppObjectMapper()
     {
     }

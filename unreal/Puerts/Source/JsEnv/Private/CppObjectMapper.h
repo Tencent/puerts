@@ -50,6 +50,16 @@ public:
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() override;
 
+    virtual void SetRegistry(ScriptClassRegistry* InRegistry) override
+    {
+        Registry = InRegistry ? InRegistry : GetDefaultClassRegistry();
+    }
+
+    virtual ScriptClassRegistry* GetRegistry() override
+    {
+        return Registry;
+    }
+
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
 
@@ -102,6 +112,8 @@ private:
 #endif
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
+
+    ScriptClassRegistry* Registry = GetDefaultClassRegistry();
 };
 
 }    // namespace PUERTS_NAMESPACE
