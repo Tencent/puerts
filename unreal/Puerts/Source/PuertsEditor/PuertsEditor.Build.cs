@@ -36,7 +36,12 @@ public class PuertsEditor : ModuleRules
                 "AssetTools"
             }
         );
-        
+
+#if UE_5_6_OR_LATER
+        // Editor-only module. PuertsEditor itself is an Editor module, so this stays out of runtime targets.
+        PrivateDependencyModuleNames.Add("DataValidation");
+#endif
+
         if (JsEnv.WithSourceControl)
         {
             PrivateDependencyModuleNames.Add("SourceControl");
