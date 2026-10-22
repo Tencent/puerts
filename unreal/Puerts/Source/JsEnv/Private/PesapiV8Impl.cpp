@@ -216,8 +216,13 @@ int pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 
 int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value pvalue)
 {
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    // fast path, no conversion (and no TryCatch) is needed
+    if (value->IsInt32())
+    {
+        return value.As<v8::Int32>()->Value();
+    }
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
 
     v8::TryCatch trycatch(context->GetIsolate());
     auto maybe_result = value->Int32Value(context);
@@ -234,8 +239,13 @@ int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value pvalue)
 
 uint32_t pesapi_get_value_uint32(pesapi_env env, pesapi_value pvalue)
 {
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    // fast path, no conversion (and no TryCatch) is needed
+    if (value->IsUint32())
+    {
+        return value.As<v8::Uint32>()->Value();
+    }
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
 
     v8::TryCatch trycatch(context->GetIsolate());
     auto maybe_result = value->Uint32Value(context);
@@ -266,8 +276,13 @@ uint64_t pesapi_get_value_uint64(pesapi_env env, pesapi_value pvalue)
 
 double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
 {
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    // fast path, no conversion (and no TryCatch) is needed
+    if (value->IsNumber())
+    {
+        return value.As<v8::Number>()->Value();
+    }
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
 
     v8::TryCatch trycatch(context->GetIsolate());
     auto maybe_result = value->NumberValue(context);
