@@ -67,16 +67,27 @@ public:
         return DataTransfer::GetPointerFast<T>(Object, Index);
     }
 
+    // Index 0 reads the UObject of a UObject wrapper (through its FUObjectHandle), other indexes read a raw UObject pointer stored
+    // in the internal fields of other wrappers (e.g. the class of a soft object / struct wrapper)
     FORCEINLINE static UObject* GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
-        auto UEObject = reinterpret_cast<UObject*>(GetPointer(Context, Value, Index));
-        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject)))
-                   ? UEObject
-                   : RELEASED_UOBJECT;
+        if (Value.IsEmpty() || !Value->IsObject())
+        {
+            return nullptr;
+        }
+        return GetUObject(Value.As<v8::Object>(), Index);
     }
 
     FORCEINLINE static UObject* GetUObject(v8::Local<v8::Object> Object, int Index = 0)
     {
+        if (V8_LIKELY(Index == 0))
+        {
+            if (Object.IsEmpty() || Object->IsNullOrUndefined())
+            {
+                return nullptr;
+            }
+            return DataTransfer::GetUObjectOfWrapper(Object);
+        }
         auto UEObject = reinterpret_cast<UObject*>(GetPointer(Object, Index));
         return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject)))
                    ? UEObject

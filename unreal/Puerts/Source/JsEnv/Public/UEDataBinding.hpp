@@ -326,9 +326,9 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        T* Ret = DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
-        return (!Ret || Ret == RELEASED_UOBJECT_MEMBER || !Ret->IsValidLowLevelFast() || UEObjectIsPendingKill(Ret)) ? nullptr
-                                                                                                                     : Ret;
+        // a released / pending kill UObject (or a non-UObject wrapper) is returned as nullptr
+        UObject* Ret = DataTransfer::GetUObjectOfWrapper(value.As<v8::Object>());
+        return V8_LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(Ret) : nullptr;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -350,8 +350,9 @@ struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObj
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        T* Ret = DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
-        return (!Ret || Ret == RELEASED_UOBJECT_MEMBER || !Ret->IsValidLowLevelFast()) ? nullptr : Ret;
+        // pending kill objects are still accessible through UObjectBase (the same as before)
+        UObject* Ret = DataTransfer::GetUObjectOfWrapper(value.As<v8::Object>(), true);
+        return V8_LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(static_cast<UObjectBase*>(Ret)) : nullptr;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)

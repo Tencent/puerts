@@ -621,9 +621,10 @@ void FScriptStructWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<FScript
 
 void FClassWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data)
 {
-    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())
-        ->UnBind(Data.GetParameter(), reinterpret_cast<UObject*>(DataTransfer::MakeAddressWithHighPartOfTwo(
-                                          Data.GetInternalField(0), Data.GetInternalField(1))));
+    // internal field 0 of a UObject wrapper holds a FUObjectHandle, the raw UObject* in it is the key of the object map
+    auto Handle = static_cast<FUObjectHandle*>(
+        DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
+    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBind(Data.GetParameter(), Handle->Object);
 }
 
 void FClassWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)

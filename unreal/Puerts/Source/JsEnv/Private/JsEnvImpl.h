@@ -584,7 +584,19 @@ private:
 
     TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
 
-    TMap<UObject*, v8::UniquePersistent<v8::Value>> ObjectMap;
+    // A UObject wrapper stores a FUObjectBinding (a FUObjectHandle) in internal field 0. The binding lives as long as the js
+    // object: when the UObject is destroyed first, the binding is detached (see UnBind) and moved to ReleasedObjectBindings
+    // until the js object is garbage collected.
+    struct FUObjectBinding : FUObjectHandle
+    {
+        v8::UniquePersistent<v8::Value> JsObject;
+    };
+
+    static void OnReleasedObjectBindingGarbageCollected(const v8::WeakCallbackInfo<FUObjectBinding>& Data);
+
+    TMap<UObject*, FUObjectBinding*> ObjectMap;
+
+    TSet<FUObjectBinding*> ReleasedObjectBindings;
 
     TMap<void*, FObjectCacheNode> StructCache;
 

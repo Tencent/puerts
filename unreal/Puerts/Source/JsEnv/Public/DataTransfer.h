@@ -12,6 +12,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Package.h"
 #include "UObject/Class.h"
+#include "UObjectHandle.h"
 #else
 #include "JSClassRegister.h"
 #endif
@@ -271,6 +272,26 @@ public:
         }
         return nullptr;
     }
+
+#if USING_IN_UNREAL_ENGINE
+    // UObject of a js wrapper (whose native pointer is a FUObjectHandle): nullptr if the js object holds no native pointer,
+    // RELEASED_UOBJECT if the UObject is destroyed / pending kill, or the js object is not a UObject wrapper
+    FORCEINLINE static UObject* GetUObjectOfWrapper(v8::Local<v8::Object> Object, bool EvenIfPendingKill = false)
+    {
+        void* Ptr = GetPointerFast<void>(Object);
+        if (!Ptr)
+        {
+            return nullptr;
+        }
+        if (V8_UNLIKELY(!FUObjectHandle::IsHandle(Ptr)))
+        {
+            return RELEASED_UOBJECT;
+        }
+        auto Handle = static_cast<FUObjectHandle*>(Ptr);
+        UObject* Ret = EvenIfPendingKill ? Handle->GetEvenIfPendingKill() : Handle->Get();
+        return V8_LIKELY(Ret) ? Ret : RELEASED_UOBJECT;
+    }
+#endif
 
     //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);
     FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, const void* Ptr, int Index)

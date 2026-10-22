@@ -757,7 +757,18 @@ FJsEnvImpl::~FJsEnvImpl()
 
         CppObjectMapper.UnInitialize(Isolate);
 
+        for (auto& KV : ObjectMap)
+        {
+            KV.Value->JsObject.Reset();
+            delete KV.Value;
+        }
         ObjectMap.Empty();
+        for (auto Binding : ReleasedObjectBindings)
+        {
+            Binding->JsObject.Reset();
+            delete Binding;
+        }
+        ReleasedObjectBindings.Empty();
 
         for (auto& KV : StructCache)
         {
@@ -1158,7 +1169,11 @@ void FJsEnvImpl::MakeWeakObjectPtr(const v8::FunctionCallbackInfo<v8::Value>& In
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    UObject* Object = reinterpret_cast<UObject*>(FV8Utils::GetPointer(Context, Info[0]));
+    UObject* Object = nullptr;
+    if (Info[0]->IsObject())
+    {
+        Object = DataTransfer::GetUObjectOfWrapper(Info[0].As<v8::Object>(), true);
+    }
     if (FV8Utils::IsReleasedPtr(Object))
     {
         Object = nullptr;
@@ -1783,9 +1798,15 @@ void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
     const bool IsNativeTakeJsRef = (IsCDO || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
 #endif
 
-    DataTransfer::SetPointer(MainIsolate, JSObject, UEObject, 0);
+    auto Binding = new FUObjectBinding();
+    Binding->Object = UEObject;
+    Binding->WeakObject = UEObject;
+    Binding->Class = UEObject->GetClass();
+    Binding->JsObject.Reset(MainIsolate, JSObject);
+
+    DataTransfer::SetPointer(MainIsolate, JSObject, Binding, 0);
     DataTransfer::SetPointer(MainIsolate, JSObject, nullptr, 1);
-    ObjectMap.Emplace(UEObject, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
+    ObjectMap.Emplace(UEObject, Binding);
 
     if (!IsNativeTakeJsRef)
     {
@@ -1796,29 +1817,41 @@ void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
 void FJsEnvImpl::SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper)
 {
     UserObjectRetainer.Retain(UEObject);
-    ObjectMap[UEObject].SetWeak<UClass>(
+    ObjectMap[UEObject]->JsObject.SetWeak<UClass>(
         Cast<UClass>(ClassWrapper->Struct.Get()), FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+}
+
+void FJsEnvImpl::OnReleasedObjectBindingGarbageCollected(const v8::WeakCallbackInfo<FUObjectBinding>& Data)
+{
+    FUObjectBinding* Binding = Data.GetParameter();
+    auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate()));
+    Self->ReleasedObjectBindings.Remove(Binding);
+    Binding->JsObject.Reset();
+    delete Binding;
 }
 
 void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)
 {
-    auto PersistentValuePtr = ObjectMap.Find(UEObject);
-    if (PersistentValuePtr)
+    FUObjectBinding* Binding = nullptr;
+    if (ObjectMap.RemoveAndCopyValue(UEObject, Binding))
     {
+        UserObjectRetainer.Release(UEObject);
         if (ResetPointer)
         {
-            auto Isolate = MainIsolate;
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            auto Context = DefaultContext.Get(Isolate);
-            v8::Context::Scope ContextScope(Context);
-
-            auto JsObject = PersistentValuePtr->Get(Isolate).As<v8::Object>();
-            DataTransfer::SetPointer(MainIsolate, JsObject, RELEASED_UOBJECT, 0);
-            DataTransfer::SetPointer(Isolate, JsObject, nullptr, 1);
+            // the UObject is destroyed while the js object is still alive: detach the handle (any access from js reports an
+            // invalid object from now on) and keep it until the js object is garbage collected
+            Binding->Object = nullptr;
+            Binding->WeakObject.Reset();
+            Binding->JsObject.SetWeak<FUObjectBinding>(
+                Binding, OnReleasedObjectBindingGarbageCollected, v8::WeakCallbackType::kParameter);
+            ReleasedObjectBindings.Add(Binding);
         }
-        ObjectMap.Remove(UEObject);
-        UserObjectRetainer.Release(UEObject);
+        else
+        {
+            // the js object is garbage collected
+            Binding->JsObject.Reset();
+            delete Binding;
+        }
     }
 }
 
@@ -1852,7 +1885,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(
     }
     else
     {
-        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
+        return v8::Local<v8::Value>::New(Isolate, (*PersistentValuePtr)->JsObject);
     }
 }
 
@@ -2029,9 +2062,12 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, const v8::UniquePer
     v8::TryCatch TryCatch(Isolate);
 
     auto JSObject = FindOrAdd(Isolate, Context, Class, Object)->ToObject(Context).ToLocalChecked();
-    // 过时功能(makeUClass)用不影响现有功能的方式修改
-    UnBind(Class, Object);
-    ObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
+    // 过时功能(makeUClass)用不影响现有功能的方式修改: 由js持有引用改为native持有js的强引用, 句柄保持不变
+    if (auto BindingPtr = ObjectMap.Find(Object))
+    {
+        UserObjectRetainer.Release(Object);
+        (*BindingPtr)->JsObject.Reset(MainIsolate, JSObject);
+    }
 
     if (!Prototype.IsEmpty())
     {
@@ -2115,7 +2151,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         }
         else
         {
-            JSObject = PersistentValuePtr->Get(Isolate).As<v8::Object>();
+            JSObject = (*PersistentValuePtr)->JsObject.Get(Isolate).As<v8::Object>();
         }
 
         //假如是UTypeScriptGeneratedClass的对象，设置成间接Prototype，后续刷新代码对象会自动更新
@@ -2242,7 +2278,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Fu
     auto GeneratedObjectPtr = ObjectMap.Find(ContextObject);
     if (GeneratedObjectPtr)
     {
-        Self = GeneratedObjectPtr->Get(Isolate);
+        Self = (*GeneratedObjectPtr)->JsObject.Get(Isolate);
     }
 
     if (Self.IsEmpty())
