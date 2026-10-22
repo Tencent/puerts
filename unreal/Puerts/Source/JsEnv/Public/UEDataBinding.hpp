@@ -9,6 +9,7 @@
 #pragma once
 
 #include "ScriptBackend.hpp"
+#include "PesapiBackend.hpp"
 #include "DataTransfer.h"
 #include "ArrayBuffer.h"
 #include "UECompatible.h"
@@ -573,5 +574,146 @@ template <typename T>
 struct ScriptTypeName<const T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : ScriptTypeName<T>
 {
 };
+
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+namespace pesapi_impl
+{
+// Converters of UE types for the pesapi backend. Inside the plugin pesapi_value/pesapi_env are reinterpreted v8 handles
+// (see PapiV8Bridge.h), so they just delegate to the v8_impl converters above with no extra overhead and the same behavior.
+template <typename T>
+struct V8DelegateConverter
+{
+    template <typename U>
+    static pesapi_value toScript(PApiCallbackEnv env, U&& value)
+    {
+        return papi_bridge::ToPapi(
+            v8::Local<v8::Value>(v8_impl::Converter<T>::toScript(papi_bridge::ToV8(env.env), std::forward<U>(value))));
+    }
+
+    static decltype(auto) toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        return v8_impl::Converter<T>::toCpp(papi_bridge::ToV8(env.env), papi_bridge::ToV8(value));
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return v8_impl::Converter<T>::accept(papi_bridge::ToV8(env.env), papi_bridge::ToV8(value));
+    }
+};
+
+class TCharStringHolder
+{
+public:
+    TCharStringHolder()
+    {
+    }
+
+    TCharStringHolder(PApiCallbackEnv env, pesapi_value value)
+    {
+        Str = FV8Utils::ToFString(papi_bridge::IsolateOf(env.env), papi_bridge::ToV8(value));
+    }
+
+    const TCHAR* Data() const
+    {
+        return *Str;
+    }
+
+private:
+    FString Str;
+};
+
+template <>
+struct CustomArgumentBufferType<const TCHAR*>
+{
+    using type = TCharStringHolder;
+    static constexpr bool enable = true;
+};
+
+template <>
+struct Converter<FString> : V8DelegateConverter<FString>
+{
+};
+
+template <>
+struct Converter<FName> : V8DelegateConverter<FName>
+{
+};
+
+template <>
+struct Converter<const TCHAR*>
+{
+    static pesapi_value toScript(PApiCallbackEnv env, const TCHAR* value)
+    {
+        return papi_bridge::ToPapi(v8::Local<v8::Value>(FV8Utils::ToV8String(papi_bridge::IsolateOf(env.env), value)));
+    }
+
+    static TCharStringHolder toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        return TCharStringHolder(env, value);
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return env.apis->is_string(env.env, value) != 0;
+    }
+};
+
+#ifndef PUERTS_FTEXT_AS_OBJECT
+template <>
+struct Converter<FText> : V8DelegateConverter<FText>
+{
+};
+#endif
+
+template <>
+struct Converter<FArrayBuffer> : V8DelegateConverter<FArrayBuffer>
+{
+};
+
+template <>
+struct Converter<FArrayBufferValue> : V8DelegateConverter<FArrayBufferValue>
+{
+};
+
+// UObject and UObjectBase derived (both const and non-const)
+template <typename T>
+struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObjectBase*>::value>::type> : V8DelegateConverter<T*>
+{
+};
+
+template <typename T>
+struct Converter<T*, typename std::enable_if<!std::is_const<T>::value && !std::is_convertible<T*, const UObject*>::value &&
+                                             internal::IsUStructHelper<T>::value>::type> : V8DelegateConverter<T*>
+{
+};
+
+template <typename T>
+struct Converter<const T*,
+    typename std::enable_if<!std::is_convertible<T*, const UObject*>::value && internal::IsUStructHelper<T>::value>::type>
+    : Converter<T*>
+{
+};
+
+template <typename T>
+struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : V8DelegateConverter<T>
+{
+};
+
+template <typename T>
+struct Converter<const T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : Converter<T>
+{
+};
+
+// the same as v8_impl::API::GetSelf, a released or pending kill UObject is returned as nullptr
+template <typename T>
+struct SelfChecker<T, typename std::enable_if<std::is_convertible<T*, const UObjectBase*>::value>::type>
+{
+    static T* Get(PApiCallbackEnv env, pesapi_callback_info info)
+    {
+        return v8_impl::Converter<T*>::toCpp(papi_bridge::ToV8(env.env), papi_bridge::HolderOf(info));
+    }
+};
+}    // namespace pesapi_impl
+#endif
 
 }    // namespace PUERTS_NAMESPACE
