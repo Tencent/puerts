@@ -18,6 +18,10 @@
 #include "AssetRegistryModule.h"
 #endif
 #include "FileHelpers.h"
+// FScopedDisableValidateOnSave landed with the startup validator warning in UE 5.6.
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6)
+#include "EditorValidatorSubsystem.h"
+#endif
 #include "Misc/PackageName.h"
 #include "UObject/MetaData.h"
 #include "CoreGlobals.h"
@@ -1400,7 +1404,25 @@ void UPEBlueprintAsset::Save()
 
             TArray<UPackage*> PackagesToSave;
             PackagesToSave.Add(Package);
-            FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+            // Blueprint validators register on Asset Registry OnFilesLoaded. Saving a generated
+            // blueprint while the initial scan is still running reaches Validate on Save first and
+            // logs the missing registration as an AssetCheck error on that asset. Saves after the
+            // scan, and the blueprint compile's own IsDataValid, stay unchanged.
+            auto SaveGeneratedPackage = [&PackagesToSave]()
+            {
+                FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+            };
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6)
+            if (IAssetRegistry::GetChecked().IsLoadingAssets())
+            {
+                FScopedDisableValidateOnSave DisableValidateOnSave;
+                SaveGeneratedPackage();
+            }
+            else
+#endif
+            {
+                SaveGeneratedPackage();
+            }
         }
     }
     FunctionAdded.Empty();
