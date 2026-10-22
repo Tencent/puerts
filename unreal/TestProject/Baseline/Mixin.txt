@@ -1,0 +1,7 @@
+BlueprintNativeEvent via C++ after mixin: "native:a"
+BlueprintNativeEvent via js after mixin: "js:a"
+mixin extra method on base instance: "function"
+mixin returned class: true
+mixin twice: throws Error: had mixin
+impl event after unmixin: 0
+makeUClass type: "function"

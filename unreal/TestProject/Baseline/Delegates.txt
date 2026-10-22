@@ -1,0 +1,4 @@
+multicast IsBound after clear: throws TypeError: obj.Multicast.IsBound is not a function
+delegate ctor: ""
+delegate same view: true
+toManualReleaseDelegate type: "function"

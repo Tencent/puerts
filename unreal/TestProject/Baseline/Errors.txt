@@ -1,0 +1,24 @@
+int from string: <no throw>
+missing args: <no throw>
+extra args: <no throw>
+object from number: <no throw>
+object of wrong class: <no throw>
+struct from number: <no throw>
+out param without ref: <no throw>
+ref param without ref: <no throw>
+enum out of range: <no throw>
+byte overflow: <no throw>
+byte overflow value: 44
+method on wrong this: Error: access a null object
+getter on prototype: Error: access a null object
+call method unbound: Error: access a null object
+unknown class: Error: can not find type:NoSuchClassXYZ
+unknown member: undefined
+unknown cpp class: Error: can not find type: NoSuchCppClass
+require missing module: Error: can not find no_such_module in <js-root>/tests
+array add wrong type: <no throw>
+array set out of range: Error: invalid index
+map key wrong type: <no throw>
+fixed array out of range: Error: invalid index
+bind non function: Error: invalid arguments
+ref shape: [1]

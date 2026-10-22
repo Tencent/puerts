@@ -1,0 +1,10 @@
+array struct element modify: 5
+array get out of range: throws Error: invalid index
+set has Remove: "undefined"
+set Get(0): "a"
+map get missing: undefined
+array iterable: [1, 2]
+map iterable: [["k", 1]]
+array ctor: ""
+array keys: []
+array typeof index: undefined

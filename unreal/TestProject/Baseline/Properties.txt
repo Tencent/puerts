@@ -1,0 +1,18 @@
+int64 typeof: "bigint"
+int64 assign number: 9007199254740993n
+name typeof: "string"
+text typeof: "string"
+struct property get then modify: 99
+struct property get twice identical: true
+object property null assign: undefined
+soft object default: {}
+typeof class: "function"
+instanceof Object: true
+instanceof PuertsTestObject: true
+own keys: []
+ctor name: "/Script/PuertsTest.PuertsTestObject"
+derived proto chain: true
+has IntValue in proto: true
+IntValue enumerable on proto: true
+StaticClass name: "PuertsTestObject"
+struct instanceof: true
