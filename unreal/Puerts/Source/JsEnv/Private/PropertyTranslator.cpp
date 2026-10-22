@@ -20,163 +20,172 @@
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
 #include "JsObject.h"
+#include "PesapiClassThunks.h"
 #ifdef PUERTS_FTEXT_AS_OBJECT
 #include "TypeInfo.hpp"
 #endif
 
 namespace PUERTS_NAMESPACE
 {
-void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info)
+static FORCEINLINE bool IsDelegatePropertyForAccessor(PropertyMacro* InProperty)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    FPropertyTranslator* This = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    This->Getter(Isolate, Context, Info);
+    return InProperty->IsA<DelegatePropertyMacro>() || InProperty->IsA<MulticastDelegatePropertyMacro>()
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
+           || InProperty->IsA<MulticastInlineDelegatePropertyMacro>() || InProperty->IsA<MulticastSparseDelegatePropertyMacro>()
+#endif
+        ;
 }
 
-void FPropertyTranslator::Getter(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::InitAccessorInfo()
+{
+    AccessorInfo.Name = nullptr;
+    if (IsDelegatePropertyForAccessor(Property))
+    {
+        AccessorInfo.Getter = &FPropertyTranslator::DelegateGetter;
+        AccessorInfo.Setter = nullptr;
+    }
+    else
+    {
+        AccessorInfo.Getter = &FPropertyTranslator::Getter;
+        AccessorInfo.Setter = &FPropertyTranslator::Setter;
+    }
+    AccessorInfo.GetterData = this;
+    AccessorInfo.SetterData = this;
+}
+
+void FPropertyTranslator::Getter(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    static_cast<FPropertyTranslator*>(Apis->get_userdata(Info))->Getter(Apis, Apis->get_env(Info), Info);
+}
+
+void FPropertyTranslator::Getter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info)
 {
     if (!IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "Property is invalid!");
+        Apis->throw_by_string(Info, "Property is invalid!");
         return;
     }
 
-    v8::Local<v8::Value> Ret;
+    pesapi_value Ret;
+    void* HolderPtr = Apis->get_native_holder_ptr(Info);
 
     if (OwnerIsClass)
     {
-        UObject* Object = FV8Utils::GetUObject(Info.Holder());
+        UObject* Object = DataTransfer::GetUObjectOfNativePtr(HolderPtr);
         if (!Object)
         {
-            FV8Utils::ThrowException(Isolate, "access a null object");
+            Apis->throw_by_string(Info, "access a null object");
             return;
         }
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "access a invalid object");
+            Apis->throw_by_string(Info, "access a invalid object");
             return;
         }
-        Ret = UEToJsInContainer(Isolate, Context, Object, true);
+        Ret = UEToJsInContainer(Apis, Env, Object, true);
     }
     else
     {
-        auto Ptr = FV8Utils::GetPointer(Info.Holder());
-        if (!Ptr)
+        if (!HolderPtr)
         {
-            FV8Utils::ThrowException(Isolate, "access a null struct");
+            Apis->throw_by_string(Info, "access a null struct");
             return;
         }
-        Ret = UEToJsInContainer(Isolate, Context, Ptr, true);
+        Ret = UEToJsInContainer(Apis, Env, HolderPtr, true);
     }
     if (NeedLinkOuter)
     {
-        LinkOuterImpl(Context, Info.Holder(), Ret);
+        LinkOuterImpl(papi_bridge::ToV8(Env), papi_bridge::HolderOf(Info), papi_bridge::ToV8(Ret));
     }
-    Info.GetReturnValue().Set(Ret);
+    Apis->add_return(Info, Ret);
 }
 
-void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::Setter(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    FPropertyTranslator* This = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    This->Setter(Isolate, Context, Info[0], Info);
+    static_cast<FPropertyTranslator*>(Apis->get_userdata(Info))->Setter(Apis, Apis->get_env(Info), Apis->get_arg(Info, 0), Info);
 }
 
-void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value,
-    const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::Setter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, pesapi_callback_info Info)
 {
     if (!IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "Property is invalid!");
+        Apis->throw_by_string(Info, "Property is invalid!");
         return;
     }
 
+    void* HolderPtr = Apis->get_native_holder_ptr(Info);
+
     if (OwnerIsClass)
     {
-        UObject* Object = FV8Utils::GetUObject(Info.Holder());
+        UObject* Object = DataTransfer::GetUObjectOfNativePtr(HolderPtr);
         if (!Object)
         {
-            FV8Utils::ThrowException(Isolate, "access a null object");
+            Apis->throw_by_string(Info, "access a null object");
             return;
         }
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "access a invalid object");
+            Apis->throw_by_string(Info, "access a invalid object");
             return;
         }
-        JsToUEInContainer(Isolate, Context, Value, Object, true);
+        JsToUEInContainer(Apis, Env, Value, Object, true);
     }
     else
     {
-        auto Ptr = FV8Utils::GetPointer(Info.Holder());
-        if (!Ptr)
+        if (!HolderPtr)
         {
-            FV8Utils::ThrowException(Isolate, "access a null struct");
+            Apis->throw_by_string(Info, "access a null struct");
             return;
         }
-        JsToUEInContainer(Isolate, Context, Value, Ptr, true);
+        JsToUEInContainer(Apis, Env, Value, HolderPtr, true);
     }
 }
 
-void FPropertyTranslator::DelegateGetter(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::DelegateGetter(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    FPropertyTranslator* PropertyTranslator =
-        static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FPropertyTranslator* PropertyTranslator = static_cast<FPropertyTranslator*>(Apis->get_userdata(Info));
     if (!PropertyTranslator->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "Property is invalid!");
+        Apis->throw_by_string(Info, "Property is invalid!");
         return;
     }
 
-    auto Object = FV8Utils::GetUObject(Info.Holder());
+    auto Object = DataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
     if (!Object)
     {
-        FV8Utils::ThrowException(Isolate, "access a null object");
+        Apis->throw_by_string(Info, "access a null object");
         return;
     }
     if (FV8Utils::IsReleasedPtr(Object))
     {
-        FV8Utils::ThrowException(Isolate, "access a invalid object");
+        Apis->throw_by_string(Info, "access a invalid object");
         return;
     }
     auto DelegatePtr = PropertyTranslator->Property->ContainerPtrToValuePtr<void>(Object);
 
-    Info.GetReturnValue().Set(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(
-        Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr, true));
+    // the delegate wrappers are not migrated yet
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Apis->get_env(Info));
+    v8::Isolate* Isolate = Context->GetIsolate();
+    Apis->add_return(Info, papi_bridge::ToPapi(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(
+                               Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr, true)));
 }
 
 void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template)
 {
-    if (Property->IsA<DelegatePropertyMacro>() || Property->IsA<MulticastDelegatePropertyMacro>()
-#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-        || Property->IsA<MulticastInlineDelegatePropertyMacro>() || Property->IsA<MulticastSparseDelegatePropertyMacro>()
-#endif
-    )
+    if (IsDelegatePropertyForAccessor(Property))
     {
         if (Property->GetOwnerStruct()->IsA<UClass>())    // only uobject support
         {
-            auto DelegateGetterTemplate = v8::FunctionTemplate::New(Isolate, DelegateGetter, v8::External::New(Isolate, this));
             Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, Property->GetName()),
-                DelegateGetterTemplate, v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
+                ClassThunks::GetterTemplate(Isolate, &AccessorInfo), v8::Local<v8::FunctionTemplate>(),
+                (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
         }
     }
     else
     {
         auto OwnerStruct = Property->GetOwnerStruct();
-        auto Self = v8::External::New(Isolate, this);
-        auto GetterTemplate = v8::FunctionTemplate::New(Isolate, Getter, Self);
-        auto SetterTemplate = v8::FunctionTemplate::New(Isolate, Setter, Self);
+        auto GetterTemplate = ClassThunks::GetterTemplate(Isolate, &AccessorInfo);
+        auto SetterTemplate = ClassThunks::SetterTemplate(Isolate, &AccessorInfo);
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         FString PropertyName = OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4

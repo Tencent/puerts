@@ -25,6 +25,7 @@
 #include "pesapi.h"
 #include "PapiV8Bridge.h"
 #include "PesapiImpl.h"
+#include "JSClassRegister.h"
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -168,6 +169,7 @@ public:
     explicit FPropertyTranslator(PropertyMacro* InProperty)
     {
         Init(InProperty);
+        InitAccessorInfo();
     }
 
     FORCEINLINE void Init(PropertyMacro* InProperty)
@@ -226,18 +228,24 @@ public:
 
     std::unique_ptr<FPropertyTranslator> Inner;
 
-    static void Getter(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    // pesapi style accessors, the userdata is the translator (see AccessorInfo)
+    static void Getter(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Getter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info);
 
-    static void Setter(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Setter(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value,
-        const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Setter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, pesapi_callback_info Info);
 
-    static void DelegateGetter(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void DelegateGetter(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template);
+
+    // registry style accessor entry, filled on construction (also by CreateOn), so templates created before a
+    // CreateOn still dispatch to this translator
+    JSPropertyInfo AccessorInfo;
+
+    void InitAccessorInfo();
 
     bool IsPropertyValid()
     {

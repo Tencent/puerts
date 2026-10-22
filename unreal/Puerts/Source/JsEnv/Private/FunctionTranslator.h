@@ -40,8 +40,11 @@ public:
         }
     }
 
-    // the v8 function template is still used for registration until M4 (registry)
-    virtual v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    // the v8 function template is still used for registration until the registry migration, it is created from CallbackInfo
+    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+
+    // registry style entry of this function, the userdata is the translator
+    JSFunctionInfo CallbackInfo;
 
     // papi entries
 
@@ -142,7 +145,7 @@ protected:
     FName FunctionName;
 #endif
 private:
-    static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void CallThunk(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void Call(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -163,10 +166,8 @@ class FExtensionMethodTranslator : public FFunctionTranslator
 public:
     explicit FExtensionMethodTranslator(UFunction* InFunction);
 
-    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate) override;
-
 private:
-    static void CallExtension(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void CallExtensionThunk(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void CallExtension(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 

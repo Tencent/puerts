@@ -8,6 +8,7 @@
 
 #include "FunctionTranslator.h"
 #include "V8Utils.h"
+#include "PesapiClassThunks.h"
 #include "Misc/DefaultValueHelper.h"
 #include <mutex>
 
@@ -89,6 +90,9 @@ static GlobalBufferAutoRelease Dummy;
 FFunctionTranslator::FFunctionTranslator(UFunction* InFunction, bool IsDelegate)
     : ArgumentDefaultValues(nullptr)    // 初始化默认参数缓存指针,确保函数刷新时可以安全清理旧缓存
 {
+    CallbackInfo.Name = nullptr;
+    CallbackInfo.Callback = &FFunctionTranslator::CallThunk;
+    CallbackInfo.Data = this;
     Init(InFunction, IsDelegate);
 }
 void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
@@ -225,13 +229,12 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
 
 v8::Local<v8::FunctionTemplate> FFunctionTranslator::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    return v8::FunctionTemplate::New(Isolate, Call, v8::External::New(Isolate, this));
+    return ClassThunks::MethodTemplate(Isolate, &CallbackInfo, v8::ConstructorBehavior::kAllow);
 }
 
-void FFunctionTranslator::Call(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FFunctionTranslator::CallThunk(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    FFunctionTranslator* This = static_cast<FFunctionTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    This->Call(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Info));
+    static_cast<FFunctionTranslator*>(Apis->get_userdata(Info))->Call(Apis, Info);
 }
 
 void FFunctionTranslator::Call(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -674,24 +677,12 @@ FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction* InFunction) : 
     PropertyMacro* Property = *It;
     IsUObject = Property->IsA<ObjectPropertyBaseMacro>();
     Arguments[0] = FPropertyTranslator::Create(Property, true);
+    CallbackInfo.Callback = &FExtensionMethodTranslator::CallExtensionThunk;
 }
 
-v8::Local<v8::FunctionTemplate> FExtensionMethodTranslator::ToFunctionTemplate(v8::Isolate* Isolate)
+void FExtensionMethodTranslator::CallExtensionThunk(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return v8::FunctionTemplate::New(Isolate, CallExtension, v8::External::New(Isolate, this));
-}
-
-void FExtensionMethodTranslator::CallExtension(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    FExtensionMethodTranslator* This =
-        reinterpret_cast<FExtensionMethodTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    This->CallExtension(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Info));
+    static_cast<FExtensionMethodTranslator*>(Apis->get_userdata(Info))->CallExtension(Apis, Info);
 }
 
 void FExtensionMethodTranslator::CallExtension(struct pesapi_ffi* Apis, pesapi_callback_info Info)
