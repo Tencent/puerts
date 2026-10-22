@@ -27,57 +27,59 @@ UsingUClass(UDataTable);
 UsingUClass(UDataTableFunctionLibrary);
 #endif
 #ifdef PUERTS_FTEXT_AS_OBJECT
-UsingCppType(FText);
 static PUERTS_NAMESPACE::CFunctionInfoWithCustomSignature FormatSignature(
     "(Fmt: string | FText, ...InArguments: (string | number | FText) []) :FText");
 
-static void FText_Format(const v8::FunctionCallbackInfo<v8::Value>& Info)
+static void FText_Format(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    using FTextPtrConverter = ::PUERTS_NAMESPACE::pesapi_impl::Converter<FText*>;
+    pesapi_env env = apis->get_env(info);
+    ::PUERTS_NAMESPACE::pesapi_impl::PApiCallbackEnv Env{apis, env};
 
     FTextFormat Fmt;
-    auto P0 = Info[0];
-    if (P0->IsString())
+    auto P0 = apis->get_arg(info, 0);
+    if (apis->is_string(env, P0) != 0)
     {
-        Fmt = FTextFormat::FromString(PUERTS_NAMESPACE::FV8Utils::ToFString(Isolate, P0));
+        Fmt = FTextFormat::FromString(::PUERTS_NAMESPACE::pesapi_impl::Converter<FString>::toCpp(Env, P0));
     }
-    else if (::PUERTS_NAMESPACE::v8_impl::Converter<FText*>::accept(Context, P0))
+    else if (FTextPtrConverter::accept(Env, P0))
     {
-        Fmt = *::PUERTS_NAMESPACE::v8_impl::Converter<FText*>::toCpp(Context, P0);
+        Fmt = *FTextPtrConverter::toCpp(Env, P0);
     }
     else
     {
-        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Fmt expect a string or FText");
+        apis->throw_by_string(info, "Fmt expect a string or FText");
         return;
     }
     FFormatOrderedArguments Args;
-    for (int i = 1; i < Info.Length(); i++)
+    const int Len = apis->get_args_len(info);
+    for (int i = 1; i < Len; i++)
     {
-        if (Info[i]->IsInt32())
+        auto Arg = apis->get_arg(info, i);
+        if (apis->is_int32(env, Arg) != 0)
         {
-            Args.Add(FFormatArgumentValue(Info[i]->Int32Value(Context).FromJust()));
+            Args.Add(FFormatArgumentValue(apis->get_value_int32(env, Arg)));
         }
-        else if (Info[i]->IsNumber())
+        else if (apis->is_double(env, Arg) != 0)
         {
-            Args.Add(FFormatArgumentValue(Info[i]->ToNumber(Context).ToLocalChecked()->Value()));
+            Args.Add(FFormatArgumentValue(apis->get_value_double(env, Arg)));
         }
-        else if (Info[i]->IsString())
+        else if (apis->is_string(env, Arg) != 0)
         {
-            Args.Add(FFormatArgumentValue(FText::FromString(PUERTS_NAMESPACE::FV8Utils::ToFString(Isolate, Info[i]))));
+            Args.Add(FFormatArgumentValue(FText::FromString(::PUERTS_NAMESPACE::pesapi_impl::Converter<FString>::toCpp(Env, Arg))));
         }
-        else if (Info[i]->IsObject() && ::PUERTS_NAMESPACE::v8_impl::Converter<FText*>::accept(Context, Info[i]))
+        else if (apis->is_object(env, Arg) != 0 && FTextPtrConverter::accept(Env, Arg))
         {
-            Args.Add(FFormatArgumentValue(*::PUERTS_NAMESPACE::v8_impl::Converter<FText*>::toCpp(Context, Info[i])));
+            Args.Add(FFormatArgumentValue(*FTextPtrConverter::toCpp(Env, Arg)));
         }
         else
         {
-            PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "InArguments expect a number/string/FText");
+            apis->throw_by_string(info, "InArguments expect a number/string/FText");
             return;
         }
     }
 
-    Info.GetReturnValue().Set(::PUERTS_NAMESPACE::v8_impl::Converter<FText>::toScript(Context, FText::Format(Fmt, Args)));
+    apis->add_return(info, ::PUERTS_NAMESPACE::pesapi_impl::Converter<FText>::toScript(Env, FText::Format(Fmt, Args)));
 }
 
 static FText FromStringTable(const FName InTableId, const FString& InKey,

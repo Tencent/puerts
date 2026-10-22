@@ -15,23 +15,32 @@
 #if defined(BUILDING_PES_EXTENSION)
 #include "PesapiBackend.hpp"
 #else
+// inside the unreal plugin both backends are available, V8Backend.hpp is still used by the plugin internals (and can be
+// selected for the template binding by defining PUERTS_BINDING_IMPL as v8_impl), PesapiBackend.hpp is the default one
 #include "V8Backend.hpp"
+#include "PesapiBackend.hpp"
 #endif
 #include "Object.hpp"
 
 #ifndef PUERTS_BINDING_IMPL
-#if defined(BUILDING_PES_EXTENSION)
 #define PUERTS_BINDING_IMPL pesapi_impl
-#else
-#define PUERTS_BINDING_IMPL v8_impl
+#define PUERTS_BINDING_IS_PESAPI 1
 #endif
+
+// PUERTS_BINDING_IMPL defined by user without PUERTS_BINDING_IS_PESAPI: only v8_impl is supported besides pesapi_impl
+#ifndef PUERTS_BINDING_IS_PESAPI
+#define PUERTS_BINDING_IS_PESAPI 0
+#endif
+
+#if defined(BUILDING_PES_EXTENSION) && !PUERTS_BINDING_IS_PESAPI
+#error "the pesapi based extension can only use the pesapi backend"
 #endif
 
 #define PUERTS_BINDING_API ::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API
 
 // parameter list / api argument used by the lambdas generated in MakeFunction / MakeExtension / SelectFunction,
 // the lambda is converted to the backend native callback type (FunctionCallbackType)
-#if defined(BUILDING_PES_EXTENSION)
+#if PUERTS_BINDING_IS_PESAPI
 #define PUERTS_CALLBACK_PARAMS PUERTS_BINDING_API::ApisType apis, PUERTS_BINDING_API::CallbackInfoType info
 #define PUERTS_CALLBACK_APIS apis
 #else

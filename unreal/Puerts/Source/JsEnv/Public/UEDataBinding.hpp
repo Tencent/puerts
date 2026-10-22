@@ -717,3 +717,8 @@ struct SelfChecker<T, typename std::enable_if<std::is_convertible<T*, const UObj
 #endif
 
 }    // namespace PUERTS_NAMESPACE
+
+#ifdef PUERTS_FTEXT_AS_OBJECT
+// FText is bound as a cpp object (registered in UEExtension.cpp), it is used by the generated wrappers too (e.g. FVector::ToText)
+UsingCppType(FText);
+#endif
