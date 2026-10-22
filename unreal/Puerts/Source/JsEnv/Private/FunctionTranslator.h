@@ -40,22 +40,45 @@ public:
         }
     }
 
+    // the v8 function template is still used for registration until M4 (registry)
     virtual v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
-    void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
-        v8::Local<v8::Value> This, void* Params);
+    // papi entries
 
-    void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
-        v8::Local<v8::Value> This, UObject* ContextObject, FFrame& Stack, void* RESULT_PARAM);
+    void CallJs(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsFunction, pesapi_value This, void* Params);
 
-    void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
-        std::function<void(void*)> OnCall);
+    void CallJs(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsFunction, pesapi_value This, UObject* ContextObject,
+        FFrame& Stack, void* RESULT_PARAM);
+
+    void Call(struct pesapi_ffi* Apis, pesapi_callback_info Info, std::function<void(void*)> OnCall);
+
+    // v8 adapters for the callers not migrated yet
+
+    FORCEINLINE void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
+        v8::Local<v8::Value> This, void* Params)
+    {
+        CallJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction), papi_bridge::ToPapi(This),
+            Params);
+    }
+
+    FORCEINLINE void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
+        v8::Local<v8::Value> This, UObject* ContextObject, FFrame& Stack, void* RESULT_PARAM)
+    {
+        CallJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction), papi_bridge::ToPapi(This),
+            ContextObject, Stack, RESULT_PARAM);
+    }
+
+    FORCEINLINE void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
+        std::function<void(void*)> OnCall)
+    {
+        Call(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Info), std::move(OnCall));
+    }
 
     bool IsValid() const;
 
 protected:
-    FORCEINLINE bool Call_ProcessParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-        const v8::FunctionCallbackInfo<v8::Value>& Info, void* Params, int StartPos)
+    FORCEINLINE bool Call_ProcessParams(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, void* Params, int StartPos)
     {
         if (Return)
         {
@@ -66,11 +89,12 @@ protected:
         {
             Arguments[i]->Property->InitializeValue_InContainer(Params);
 
-            if (UNLIKELY(ArgumentDefaultValues && Info[i - StartPos]->IsUndefined()))
+            pesapi_value Arg = Apis->get_arg(Info, i - StartPos);
+            if (UNLIKELY(ArgumentDefaultValues && Apis->is_undefined(Env, Arg)))
             {
                 Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
             }
-            else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - StartPos], Params, false))
+            else if (!Arguments[i]->JsToUEInContainer(Apis, Env, Arg, Params, false))
             {
                 return false;
             }
@@ -78,18 +102,18 @@ protected:
         return true;
     }
 
-    FORCEINLINE void Call_ProcessReturnAndOutParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-        const v8::FunctionCallbackInfo<v8::Value>& Info, void* Params, int StartPos)
+    FORCEINLINE void Call_ProcessReturnAndOutParams(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, void* Params, int StartPos)
     {
         if (Return)
         {
-            Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+            Apis->add_return(Info, Return->UEToJsInContainer(Apis, Env, Params));
             Return->Property->DestroyValue_InContainer(Params);
         }
 
         for (int i = StartPos; i < Arguments.size(); ++i)
         {
-            Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i - StartPos], Params, false);
+            Arguments[i]->UEOutToJsInContainer(Apis, Env, Apis->get_arg(Info, i - StartPos), Params, false);
             if (Arguments[i]->ParamShallowCopySize == 0)
             {
                 Arguments[i]->Property->DestroyValue_InContainer(Params);
@@ -120,13 +144,13 @@ protected:
 private:
     static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Call(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void SlowCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
-        UObject* CallObject, UFunction* CallFunction, void* Params);
+    void SlowCall(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, UObject* CallObject, UFunction* CallFunction,
+        void* Params);
 
-    void FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
-        UObject* CallObject, UFunction* CallFunction, void* Params);
+    void FastCall(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, UObject* CallObject, UFunction* CallFunction,
+        void* Params);
 
     void Init(UFunction* InFunction, bool IsDelegate);
 
@@ -144,7 +168,7 @@ public:
 private:
     static void CallExtension(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void CallExtension(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void CallExtension(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     bool IsUObject;
 };

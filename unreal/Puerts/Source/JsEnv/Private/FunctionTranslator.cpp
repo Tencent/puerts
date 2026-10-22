@@ -230,17 +230,13 @@ v8::Local<v8::FunctionTemplate> FFunctionTranslator::ToFunctionTemplate(v8::Isol
 
 void FFunctionTranslator::Call(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
     FFunctionTranslator* This = static_cast<FFunctionTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    This->Call(Isolate, Context, Info);
+    This->Call(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Info));
 }
 
-void FFunctionTranslator::Call(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FFunctionTranslator::Call(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    UObject* CallObject = IsStatic ? BindObject.Get() : FV8Utils::GetUObject(Info.Holder());
+    UObject* CallObject = IsStatic ? BindObject.Get() : DataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
     if (!CallObject)
     {
         if (IsStatic)    //延时初始化
@@ -250,13 +246,13 @@ void FFunctionTranslator::Call(
         }
         if (!CallObject)
         {
-            FV8Utils::ThrowException(Isolate, "access a null object");
+            Apis->throw_by_string(Info, "access a null object");
             return;
         }
     }
     if (FV8Utils::IsReleasedPtr(CallObject))
     {
-        FV8Utils::ThrowException(Isolate, "access a invalid object");
+        Apis->throw_by_string(Info, "access a invalid object");
         return;
     }
     TWeakObjectPtr<UFunction> CallFunction = Function;
@@ -278,7 +274,7 @@ void FFunctionTranslator::Call(
 
         if (!RefreshedOwnerClass || RefreshedOwnerClass->HasAnyClassFlags(CLASS_NewerVersionExists))
         {
-            FV8Utils::ThrowException(Isolate, "failed to refresh function after class recompilation");
+            Apis->throw_by_string(Info, "failed to refresh function after class recompilation");
             return;
         }
 
@@ -289,9 +285,11 @@ void FFunctionTranslator::Call(
 
     if (!CallFunctionPtr)
     {
-        FV8Utils::ThrowException(Isolate, "access an invalid function");
+        Apis->throw_by_string(Info, "access an invalid function");
         return;
     }
+
+    pesapi_env Env = Apis->get_env(Info);
 
     // 参数缓冲区必须在函数刷新之后分配，确保使用新的 ParamsBufferSize。
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
@@ -303,34 +301,34 @@ void FFunctionTranslator::Call(
     if ((CallFunctionPtr->FunctionFlags & FUNC_Native) && !(CallFunctionPtr->FunctionFlags & FUNC_Net) &&
         !CallFunctionPtr->HasAnyFunctionFlags(FUNC_UbergraphFunction))
     {
-        FastCall(Isolate, Context, Info, CallObject, CallFunctionPtr, Params);
+        FastCall(Apis, Env, Info, CallObject, CallFunctionPtr, Params);
     }
     else
     {
-        SlowCall(Isolate, Context, Info, CallObject, CallFunctionPtr, Params);
+        SlowCall(Apis, Env, Info, CallObject, CallFunctionPtr, Params);
     }
 }
 
-void FFunctionTranslator::SlowCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-    const v8::FunctionCallbackInfo<v8::Value>& Info, UObject* CallObject, UFunction* CallFunction, void* Params)
+void FFunctionTranslator::SlowCall(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, UObject* CallObject, UFunction* CallFunction, void* Params)
 {
     if (Params)
     {
         FMemory::Memzero(Params, ParamsBufferSize);
     }
 
-    if (!Call_ProcessParams(Isolate, Context, Info, Params, 0))
+    if (!Call_ProcessParams(Apis, Env, Info, Params, 0))
     {
         return;
     }
 
     CallObject->UObject::ProcessEvent(CallFunction, Params);
 
-    Call_ProcessReturnAndOutParams(Isolate, Context, Info, Params, 0);
+    Call_ProcessReturnAndOutParams(Apis, Env, Info, Params, 0);
 }
 
-void FFunctionTranslator::FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-    const v8::FunctionCallbackInfo<v8::Value>& Info, UObject* CallObject, UFunction* CallFunction, void* Params)
+void FFunctionTranslator::FastCall(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, UObject* CallObject, UFunction* CallFunction, void* Params)
 {
     if (Params)
     {
@@ -381,7 +379,8 @@ void FFunctionTranslator::FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>&
             continue;
         }
 
-        if (UNLIKELY(ArgumentDefaultValues && Info[Index]->IsUndefined()))
+        pesapi_value Arg = Apis->get_arg(Info, Index);
+        if (UNLIKELY(ArgumentDefaultValues && Apis->is_undefined(Env, Arg)))
         {
             Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
             if (Property->HasAnyPropertyFlags(CPF_OutParm))
@@ -394,15 +393,14 @@ void FFunctionTranslator::FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>&
             Property->InitializeValue_InContainer(Params);
             if (Property->HasAnyPropertyFlags(CPF_OutParm))
             {
-                if (!Arguments[Index]->JsToUEFastInContainer(
-                        Isolate, Context, Info[Index], Params, reinterpret_cast<void**>(&(Out->PropAddr))))
+                if (!Arguments[Index]->JsToUEFastInContainer(Apis, Env, Arg, Params, reinterpret_cast<void**>(&(Out->PropAddr))))
                 {
                     return;
                 }
             }
             else
             {
-                if (!Arguments[Index]->JsToUEInContainer(Isolate, Context, Info[Index], Params, false))
+                if (!Arguments[Index]->JsToUEInContainer(Apis, Env, Arg, Params, false))
                 {
                     return;
                 }
@@ -424,7 +422,7 @@ void FFunctionTranslator::FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>&
 
     if (Return)
     {
-        Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+        Apis->add_return(Info, Return->UEToJsInContainer(Apis, Env, Params));
         Return->Property->DestroyValue_InContainer(Params);
     }
 
@@ -438,7 +436,7 @@ void FFunctionTranslator::FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>&
             {
                 if ((*LastOut)->PropAddr >= (uint8*) Params && (*LastOut)->PropAddr < ((uint8*) Params + ParamsBufferSize))
                 {
-                    Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
+                    Arguments[i]->UEOutToJsInContainer(Apis, Env, Apis->get_arg(Info, i), Params, false);
                 }
                 else
                 {
@@ -455,8 +453,7 @@ void FFunctionTranslator::FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>&
     }
 }
 
-void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-    const v8::FunctionCallbackInfo<v8::Value>& Info, std::function<void(void*)> OnCall)
+void FFunctionTranslator::Call(struct pesapi_ffi* Apis, pesapi_callback_info Info, std::function<void(void*)> OnCall)
 {
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void* Params = Buffer;
@@ -466,44 +463,44 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Params)
         FMemory::Memzero(Params, ParamsBufferSize);
 
-    Call_ProcessParams(Isolate, Context, Info, Params, 0);
+    pesapi_env Env = Apis->get_env(Info);
+
+    Call_ProcessParams(Apis, Env, Info, Params, 0);
 
     OnCall(Params);
 
-    Call_ProcessReturnAndOutParams(Isolate, Context, Info, Params, 0);
+    Call_ProcessReturnAndOutParams(Apis, Env, Info, Params, 0);
 }
 
-void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
-    v8::Local<v8::Value> This, void* Params)
+void FFunctionTranslator::CallJs(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsFunction, pesapi_value This, void* Params)
 {
-    v8::Local<v8::Value>* Args =
-        static_cast<v8::Local<v8::Value>*>(FMemory_Alloca(sizeof(v8::Local<v8::Value>) * Arguments.size()));
-    FMemory::Memset(Args, 0, sizeof(v8::Local<v8::Value>) * Arguments.size());
+    pesapi_value* Args = static_cast<pesapi_value*>(FMemory_Alloca(sizeof(pesapi_value) * Arguments.size()));
+    FMemory::Memset(Args, 0, sizeof(pesapi_value) * Arguments.size());
     for (int i = 0; i < Arguments.size(); ++i)
     {
-        Args[i] = Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false);
+        Args[i] = Arguments[i]->UEToJsInContainer(Apis, Env, Params, false);
     }
 
-    v8::MaybeLocal<v8::Value> Result;
+    pesapi_value Result;
     if (UNLIKELY(SkipWorldContextInArg0))
     {
-        Result = JsFunction->Call(Context, This, Arguments.size() - 1, &Args[0] + 1);
+        Result = Apis->call_function(Env, JsFunction, This, static_cast<int>(Arguments.size()) - 1, &Args[0] + 1);
     }
     else
     {
-        Result = JsFunction->Call(Context, This, Arguments.size(), Args);
+        Result = Apis->call_function(Env, JsFunction, This, static_cast<int>(Arguments.size()), Args);
     }
 
-    if (!Result.IsEmpty())    // empty mean exception
+    if (Result)    // nullptr mean exception
     {
         if (Return)
         {
-            Return->JsToUEInContainer(Isolate, Context, Result.ToLocalChecked(), Params, true);
+            Return->JsToUEInContainer(Apis, Env, Result, Params, true);
         }
 
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            Arguments[i]->JsToUEOutInContainer(Isolate, Context, Args[i], Params, true);
+            Arguments[i]->JsToUEOutInContainer(Apis, Env, Args[i], Params, true);
         }
     }
 }
@@ -522,8 +519,8 @@ static FOutParmRec* GetMatchOutParmRec(FOutParmRec* OutParam, PropertyMacro* Out
     return nullptr;
 }
 
-void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
-    v8::Local<v8::Value> This, UObject* ContextObject, FFrame& Stack, void* RESULT_PARAM)
+void FFunctionTranslator::CallJs(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsFunction, pesapi_value This,
+    UObject* ContextObject, FFrame& Stack, void* RESULT_PARAM)
 {
     void* Params = Stack.Locals;
 
@@ -601,9 +598,8 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
         }
     }
 
-    v8::Local<v8::Value>* Args =
-        static_cast<v8::Local<v8::Value>*>(FMemory_Alloca(sizeof(v8::Local<v8::Value>) * Arguments.size()));
-    FMemory::Memset(Args, 0, sizeof(v8::Local<v8::Value>) * Arguments.size());
+    pesapi_value* Args = static_cast<pesapi_value*>(FMemory_Alloca(sizeof(pesapi_value) * Arguments.size()));
+    FMemory::Memset(Args, 0, sizeof(pesapi_value) * Arguments.size());
     for (int i = 0; i < Arguments.size(); ++i)
     {
         const auto Property = Arguments[i]->Property;
@@ -616,27 +612,27 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 Out = Out->NextOutParm;
                 checkSlow(Out);
             }
-            Args[i] = Arguments[i]->UEToJs(Isolate, Context, Out->PropAddr, false);
+            Args[i] = Arguments[i]->UEToJs(Apis, Env, Out->PropAddr, false);
             continue;
         }
-        Args[i] = Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false);
+        Args[i] = Arguments[i]->UEToJsInContainer(Apis, Env, Params, false);
     }
 
-    v8::MaybeLocal<v8::Value> Result;
+    pesapi_value Result;
     if (UNLIKELY(SkipWorldContextInArg0))
     {
-        Result = JsFunction->Call(Context, This, Arguments.size() - 1, &Args[0] + 1);
+        Result = Apis->call_function(Env, JsFunction, This, static_cast<int>(Arguments.size()) - 1, &Args[0] + 1);
     }
     else
     {
-        Result = JsFunction->Call(Context, This, Arguments.size(), Args);
+        Result = Apis->call_function(Env, JsFunction, This, static_cast<int>(Arguments.size()), Args);
     }
 
-    if (!Result.IsEmpty())    // empty mean exception
+    if (Result)    // nullptr mean exception
     {
         if (Return)
         {
-            Return->JsToUE(Isolate, Context, Result.ToLocalChecked(), RESULT_PARAM, true);
+            Return->JsToUE(Apis, Env, Result, RESULT_PARAM, true);
         }
 
         auto OutParms = NewOutParms ? NewOutParms : Stack.OutParms;
@@ -648,7 +644,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 auto OutParmRec = GetMatchOutParmRec(OutParms, Arguments[i]->Property);
                 if (OutParmRec)
                 {
-                    Arguments[i]->JsToUEOut(Isolate, Context, Args[i], OutParmRec->PropAddr, true);
+                    Arguments[i]->JsToUEOut(Apis, Env, Args[i], OutParmRec->PropAddr, true);
                 }
             }
         }
@@ -695,11 +691,10 @@ void FExtensionMethodTranslator::CallExtension(const v8::FunctionCallbackInfo<v8
 
     FExtensionMethodTranslator* This =
         reinterpret_cast<FExtensionMethodTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    This->CallExtension(Isolate, Context, Info);
+    This->CallExtension(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Info));
 }
 
-void FExtensionMethodTranslator::CallExtension(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FExtensionMethodTranslator::CallExtension(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void* Params = Buffer;
@@ -710,7 +705,10 @@ void FExtensionMethodTranslator::CallExtension(
     if (Params)
         Function->InitializeStruct(Params);
 
-    if (!Arguments[0]->JsToUEInContainer(Isolate, Context, Info.Holder(), Params, false))
+    pesapi_env Env = Apis->get_env(Info);
+
+    // the receiver is passed as the first argument of the extension method, there is no pesapi to get it as a value yet
+    if (!Arguments[0]->JsToUEInContainer(Apis, Env, papi_bridge::ToPapi(papi_bridge::HolderOf(Info)), Params, false))
     {
         if (Params)
         {
@@ -722,17 +720,18 @@ void FExtensionMethodTranslator::CallExtension(
                 }
             }
         }
-        FV8Utils::ThrowException(Isolate, "access a invalid object");
+        Apis->throw_by_string(Info, "access a invalid object");
         return;
     }
 
     for (int i = 1; i < Arguments.size(); ++i)
     {
-        if (UNLIKELY(ArgumentDefaultValues && Info[i - 1]->IsUndefined()))
+        pesapi_value Arg = Apis->get_arg(Info, i - 1);
+        if (UNLIKELY(ArgumentDefaultValues && Apis->is_undefined(Env, Arg)))
         {
             Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
         }
-        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
+        else if (!Arguments[i]->JsToUEInContainer(Apis, Env, Arg, Params, false))
         {
             return;
         }
@@ -747,20 +746,20 @@ void FExtensionMethodTranslator::CallExtension(
 
     if (Return)
     {
-        Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+        Apis->add_return(Info, Return->UEToJsInContainer(Apis, Env, Params));
         Return->Property->DestroyValue_InContainer(Params);
     }
 
     for (int i = 1; i < Arguments.size(); ++i)
     {
-        Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i - 1], Params, false);
+        Arguments[i]->UEOutToJsInContainer(Apis, Env, Apis->get_arg(Info, i - 1), Params, false);
     }
 
     // Function->HasAnyFlags()
     if (!IsUObject)    // FScriptStruct, so copy back
     {
         auto StructProperty = Arguments[0]->StructProperty;
-        StructProperty->CopySingleValue(FV8Utils::GetPointer(Info.Holder()), StructProperty->ContainerPtrToValuePtr<void>(Params));
+        StructProperty->CopySingleValue(Apis->get_native_holder_ptr(Info), StructProperty->ContainerPtrToValuePtr<void>(Params));
     }
 
     if (Params)

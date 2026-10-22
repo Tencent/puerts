@@ -15,6 +15,7 @@
 #include "CoreMinimal.h"
 #include "pesapi.h"
 #include "NamespaceDef.h"
+#include <type_traits>
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -38,6 +39,14 @@ V8_INLINE v8::Local<v8::Value> ToV8(pesapi_value Value)
 }
 
 V8_INLINE pesapi_value ToPapi(v8::Local<v8::Value> Local)
+{
+    return reinterpret_cast<pesapi_value>(*Local);
+}
+
+// v8::Local<T> has an unconstrained converting constructor, so v8::Local<v8::Object> etc. would be ambiguous between the
+// pesapi_value and pesapi_env overloads without this exact-match one.
+template <typename T, typename std::enable_if<std::is_base_of<v8::Value, T>::value, int>::type = 0>
+V8_INLINE pesapi_value ToPapi(v8::Local<T> Local)
 {
     return reinterpret_cast<pesapi_value>(*Local);
 }

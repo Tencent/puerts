@@ -274,11 +274,11 @@ public:
     }
 
 #if USING_IN_UNREAL_ENGINE
-    // UObject of a js wrapper (whose native pointer is a FUObjectHandle): nullptr if the js object holds no native pointer,
-    // RELEASED_UOBJECT if the UObject is destroyed / pending kill, or the js object is not a UObject wrapper
-    FORCEINLINE static UObject* GetUObjectOfWrapper(v8::Local<v8::Object> Object, bool EvenIfPendingKill = false)
+    // UObject of the native pointer of a js wrapper (a FUObjectHandle for UObject wrappers, e.g. the result of
+    // pesapi get_native_object_ptr / get_native_holder_ptr): nullptr if no native pointer, RELEASED_UOBJECT if the UObject is
+    // destroyed / pending kill, or the pointer is not a FUObjectHandle
+    FORCEINLINE static UObject* GetUObjectOfNativePtr(void* Ptr, bool EvenIfPendingKill = false)
     {
-        void* Ptr = GetPointerFast<void>(Object);
         if (!Ptr)
         {
             return nullptr;
@@ -290,6 +290,13 @@ public:
         auto Handle = static_cast<FUObjectHandle*>(Ptr);
         UObject* Ret = EvenIfPendingKill ? Handle->GetEvenIfPendingKill() : Handle->Get();
         return V8_LIKELY(Ret) ? Ret : RELEASED_UOBJECT;
+    }
+
+    // UObject of a js wrapper (whose native pointer is a FUObjectHandle): nullptr if the js object holds no native pointer,
+    // RELEASED_UOBJECT if the UObject is destroyed / pending kill, or the js object is not a UObject wrapper
+    FORCEINLINE static UObject* GetUObjectOfWrapper(v8::Local<v8::Object> Object, bool EvenIfPendingKill = false)
+    {
+        return GetUObjectOfNativePtr(GetPointerFast<void>(Object), EvenIfPendingKill);
     }
 #endif
 

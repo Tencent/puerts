@@ -76,6 +76,24 @@ public:
         return JsToUE(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), DeepCopy);
     }
 
+    FORCEINLINE bool JsToUEFastInContainer(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const
+    {
+        return JsToUEFast(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(TempBuff), OutValuePtr);
+    }
+
+    FORCEINLINE void UEOutToJsInContainer(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, const void* ContainerPtr, bool PassByPointer) const
+    {
+        UEOutToJs(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
+    }
+
+    FORCEINLINE bool JsToUEOutInContainer(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ContainerPtr, bool PassByPointer) const
+    {
+        return JsToUEOut(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
+    }
+
     // v8 adapters for the callers not migrated yet, zero cost since pesapi_value/pesapi_env are reinterpreted v8 handles
 
     FORCEINLINE v8::Local<v8::Value> UEToJs(
