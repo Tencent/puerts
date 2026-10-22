@@ -28,7 +28,7 @@ namespace pesapi
 {
 namespace regimpl
 {
-#define PESAPI_REG_CONTAINER_OF(ptr, type, member) ((type*) ((char*) (ptr) - offsetof(type, member)))
+#define PESAPI_REG_CONTAINER_OF(ptr, type, member) ((type*) ((char*) (ptr) -offsetof(type, member)))
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))

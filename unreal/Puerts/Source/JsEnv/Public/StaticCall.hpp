@@ -177,8 +177,7 @@ struct ExceptionHandle<API, typename std::enable_if<std::is_pointer<typename API
 {
 #if defined(WITH_THROW_IN_CPP) && defined(THREAD_LOCAL_IMPL_THROW)
     // TripleOp : 1. init; 2. get state; 3. throw
-    static bool TripleOp(
-        typename API::ApisType apis, typename API::CallbackInfoType info, const char* error_msg, bool b_get_state)
+    static bool TripleOp(typename API::ApisType apis, typename API::CallbackInfoType info, const char* error_msg, bool b_get_state)
     {
         thread_local typename API::ApisType s_apis;
         thread_local typename API::CallbackInfoType s_info;
@@ -245,8 +244,7 @@ struct ExceptionHandle<API, typename std::enable_if<!std::is_pointer<typename AP
     // 1. init: info is not null, error_msg is null, b_get_state is false;
     // 2. get state: b_get_state is true;
     // 3. throw: error_msg is not null, b_get_state is false;
-    static bool TripleOp(
-        typename API::ApisType apis, typename API::CallbackInfoType info, const char* error_msg, bool b_get_state)
+    static bool TripleOp(typename API::ApisType apis, typename API::CallbackInfoType info, const char* error_msg, bool b_get_state)
     {
         thread_local typename API::ApisType s_apis;
         thread_local typename std::decay<typename API::CallbackInfoType>::type* s_info;
@@ -720,8 +718,9 @@ private:
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
             cppArgHolders, API::GetArgsLen(context, info), std::forward<DefaultArguments>(defaultValues)...);
 
-        API::SetReturn(context, info, ReturnConverter<Ret>::Convert(context,
-                                          std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
+        API::SetReturn(context, info,
+            ReturnConverter<Ret>::Convert(
+                context, std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
 
         RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
 
@@ -807,8 +806,8 @@ private:
             cppArgHolders, API::GetArgsLen(context, info), std::forward<DefaultArguments>(defaultValues)...);
 
         API::SetReturn(context, info,
-            ReturnConverter<Ret>::Convert(context,
-                std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
+            ReturnConverter<Ret>::Convert(
+                context, std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
 
         RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
 
@@ -873,8 +872,8 @@ private:
             cppArgHolders, API::GetArgsLen(context, info), std::forward<DefaultArguments>(defaultValues)...);
 
         API::SetReturn(context, info,
-            ReturnConverter<Ret>::Convert(context,
-                std::forward<Ret>(func(*self, std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
+            ReturnConverter<Ret>::Convert(
+                context, std::forward<Ret>(func(*self, std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
 
         RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
 
@@ -883,7 +882,8 @@ private:
 
 public:
     template <typename Func, class... DefaultArguments>
-    static bool call(Func&& func, typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool call(
+        Func&& func, typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
 #if defined(WITH_THROW_IN_CPP)
@@ -1052,14 +1052,16 @@ struct FuncCallWrapper<API, Ret (*)(Args...), func, ReturnByPointer, ScriptTypeP
         }
     }
     template <class... DefaultArguments>
-    static void callWithDefaultValues(typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callWithDefaultValues(
+        typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         using Helper = internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer,
             ScriptTypePtrAsRef, GetSelfFromData>;
         Helper::call(func, apis, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     template <class... DefaultArguments>
-    static bool overloadCallWithDefaultValues(typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool overloadCallWithDefaultValues(
+        typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         using Helper = internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef,
             GetSelfFromData>;
@@ -1082,7 +1084,8 @@ struct FuncCallWrapper<API, Ret (*)(Args...), func, ReturnByPointer, ScriptTypeP
         }
     };
     template <class... DefaultArguments>
-    static void callExtensionWithDefaultValues(typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callExtensionWithDefaultValues(
+        typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         ExtensionCallHelper<Args...>::call(apis, info, std::forward<DefaultArguments>(defaultValues)...);
     }
@@ -1119,14 +1122,16 @@ struct FuncCallWrapper<API, Ret (Inc::*)(Args...), func, ReturnByPointer, Script
         }
     }
     template <class... DefaultArguments>
-    static void callWithDefaultValues(typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callWithDefaultValues(
+        typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         using Helper = internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer,
             ScriptTypePtrAsRef, GetSelfFromData>;
         Helper::template callMethod<Inc>(func, apis, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     template <class... DefaultArguments>
-    static bool overloadCallWithDefaultValues(typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool overloadCallWithDefaultValues(
+        typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         using Helper = internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef,
             GetSelfFromData>;
@@ -1166,14 +1171,16 @@ struct FuncCallWrapper<API, Ret (Inc::*)(Args...) const, func, ReturnByPointer, 
         }
     }
     template <class... DefaultArguments>
-    static void callWithDefaultValues(typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callWithDefaultValues(
+        typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         using Helper = internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer,
             ScriptTypePtrAsRef, GetSelfFromData>;
         Helper::template callMethod<Inc>(func, apis, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     template <class... DefaultArguments>
-    static bool overloadCallWithDefaultValues(typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool overloadCallWithDefaultValues(
+        typename API::ApisType apis, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         using Helper = internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef,
             GetSelfFromData>;
@@ -1845,8 +1852,7 @@ public:
     template <typename Func, Func func>
     ClassDefineBuilder<T, API, RegisterAPI>& MethodProxy(const char* name)
     {
-        typename API::FunctionCallbackType proxyed =
-            FunctionCallbackAdapter<API, &MethodProxyHelper<Func, func>::call>::Get();
+        typename API::FunctionCallbackType proxyed = FunctionCallbackAdapter<API, &MethodProxyHelper<Func, func>::call>::Get();
         methods_.push_back(typename API::GeneralFunctionInfo{name, proxyed, nullptr, nullptr});
         return *this;
     }

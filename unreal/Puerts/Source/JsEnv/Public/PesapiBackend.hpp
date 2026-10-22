@@ -258,8 +258,8 @@ struct API
         }
         const void* type_id = StaticTypeId<T>::get();
 
-        registry_api->define_class(registry, type_id, Cdb.superTypeId_, nullptr, Cdb.className_, Cdb.constructor_, Finalize,
-            nullptr, false);
+        registry_api->define_class(
+            registry, type_id, Cdb.superTypeId_, nullptr, Cdb.className_, Cdb.constructor_, Finalize, nullptr, false);
 
         registry_api->set_property_info_size(registry, type_id, static_cast<int>(Cdb.methods_.size()),
             static_cast<int>(Cdb.functions_.size()), static_cast<int>(Cdb.properties_.size()),

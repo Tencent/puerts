@@ -345,8 +345,8 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->PesapiFinalize)
-        ClassDefinition->PesapiFinalize(ClassDefinition->PesapiApis, Ptr, ClassDefinition->Data,
-            DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+        ClassDefinition->PesapiFinalize(
+            ClassDefinition->PesapiApis, Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     else if (ClassDefinition->Finalize)
         ClassDefinition->Finalize(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);

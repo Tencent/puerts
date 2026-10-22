@@ -79,15 +79,16 @@
 
 #else
 
-#define PESAPI_MODULE(modname, initfunc)                                                                                                      \
-    EXTERN_C_START                                                                                                                            \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(struct pesapi_registry_api * registry_api, pesapi_registry registry);        \
-    EXTERN_C_END                                                                                                                              \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(struct pesapi_registry_api * registry_api, pesapi_registry registry)         \
-    {                                                                                                                                         \
-        initfunc(registry_api, registry);                                                                                                     \
+#define PESAPI_MODULE(modname, initfunc)                                      \
+    EXTERN_C_START                                                            \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(             \
+        struct pesapi_registry_api * registry_api, pesapi_registry registry); \
+    EXTERN_C_END                                                              \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(             \
+        struct pesapi_registry_api * registry_api, pesapi_registry registry)  \
+    {                                                                         \
+        initfunc(registry_api, registry);                                     \
     }
-
 
 #endif
 
@@ -142,7 +143,8 @@ typedef pesapi_value (*pesapi_create_string_utf16_func)(pesapi_env env, const ui
 typedef pesapi_value (*pesapi_create_binary_func)(pesapi_env env, void* str, size_t length);
 typedef pesapi_value (*pesapi_create_array_func)(pesapi_env env);
 typedef pesapi_value (*pesapi_create_object_func)(pesapi_env env);
-typedef pesapi_value (*pesapi_create_function_func)(pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize);
+typedef pesapi_value (*pesapi_create_function_func)(
+    pesapi_env env, pesapi_callback native_impl, void* data, pesapi_function_finalize finalize);
 typedef pesapi_value (*pesapi_create_class_func)(pesapi_env env, const void* type_id);
 
 typedef int (*pesapi_get_value_bool_func)(pesapi_env env, pesapi_value value);
@@ -170,7 +172,8 @@ typedef int (*pesapi_is_function_func)(pesapi_env env, pesapi_value value);
 typedef int (*pesapi_is_binary_func)(pesapi_env env, pesapi_value value);
 typedef int (*pesapi_is_array_func)(pesapi_env env, pesapi_value value);
 
-typedef pesapi_value (*pesapi_native_object_to_value_func)(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize);
+typedef pesapi_value (*pesapi_native_object_to_value_func)(
+    pesapi_env env, const void* type_id, void* object_ptr, int call_finalize);
 typedef void* (*pesapi_get_native_object_ptr_func)(pesapi_env env, pesapi_value value);
 typedef const void* (*pesapi_get_native_object_typeid_func)(pesapi_env env, pesapi_value value);
 typedef int (*pesapi_is_instance_of_func)(pesapi_env env, const void* type_id, pesapi_value value);
@@ -219,7 +222,8 @@ typedef int (*pesapi_set_private_func)(pesapi_env env, pesapi_value object, void
 typedef pesapi_value (*pesapi_get_property_uint32_func)(pesapi_env env, pesapi_value object, uint32_t key);
 typedef int (*pesapi_set_property_uint32_func)(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
 
-typedef pesapi_value (*pesapi_call_function_func)(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
+typedef pesapi_value (*pesapi_call_function_func)(
+    pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
 typedef pesapi_value (*pesapi_eval_func)(pesapi_env env, const uint8_t* code, size_t code_size, const char* path);
 typedef pesapi_value (*pesapi_global_func)(pesapi_env env);
 typedef const void* (*pesapi_get_env_private_func)(pesapi_env env);
@@ -319,17 +323,27 @@ struct pesapi_ffi
 
 typedef pesapi_registry (*pesapi_create_registry_func)();
 typedef pesapi_type_info (*pesapi_alloc_type_infos_func)(size_t count);
-typedef void (*pesapi_set_type_info_func)(pesapi_type_info type_infos, size_t index, const char* name, int is_pointer, int is_const, int is_ref, int is_primitive);
-typedef pesapi_signature_info (*pesapi_create_signature_info_func)(pesapi_type_info return_type, size_t parameter_count, pesapi_type_info parameter_types);
-typedef void (*pesapi_define_class_func)(pesapi_registry registry, const void* type_id, const void* super_type_id, const char* module_name, const char* type_name, pesapi_constructor constructor, pesapi_finalize finalize, void* data, int copy_str);
-typedef void (*pesapi_set_property_info_size_func)(pesapi_registry registry, const void* type_id, int method_count, int function_count, int property_count, int variable_count);
-typedef void (*pesapi_set_method_info_func)(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static, pesapi_callback method, void* data, int copy_str);
-typedef void (*pesapi_set_property_info_func)(pesapi_registry registry, const void* type_id, int index, const char* name, int is_static, pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, int copy_str);
+typedef void (*pesapi_set_type_info_func)(
+    pesapi_type_info type_infos, size_t index, const char* name, int is_pointer, int is_const, int is_ref, int is_primitive);
+typedef pesapi_signature_info (*pesapi_create_signature_info_func)(
+    pesapi_type_info return_type, size_t parameter_count, pesapi_type_info parameter_types);
+typedef void (*pesapi_define_class_func)(pesapi_registry registry, const void* type_id, const void* super_type_id,
+    const char* module_name, const char* type_name, pesapi_constructor constructor, pesapi_finalize finalize, void* data,
+    int copy_str);
+typedef void (*pesapi_set_property_info_size_func)(
+    pesapi_registry registry, const void* type_id, int method_count, int function_count, int property_count, int variable_count);
+typedef void (*pesapi_set_method_info_func)(pesapi_registry registry, const void* type_id, int index, const char* name,
+    int is_static, pesapi_callback method, void* data, int copy_str);
+typedef void (*pesapi_set_property_info_func)(pesapi_registry registry, const void* type_id, int index, const char* name,
+    int is_static, pesapi_callback getter, pesapi_callback setter, void* getter_data, void* setter_data, int copy_str);
 typedef void* (*pesapi_get_class_data_func)(pesapi_registry registry, const void* type_id, int force_load);
 typedef void (*pesapi_on_class_not_found_func)(pesapi_registry registry, pesapi_class_not_found_callback callback);
-typedef void (*pesapi_class_type_info_func)(pesapi_registry registry, const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info);
+typedef void (*pesapi_class_type_info_func)(pesapi_registry registry, const char* proto_magic_id, const void* type_id,
+    const void* constructor_info, const void* methods_info, const void* functions_info, const void* properties_info,
+    const void* variables_info);
 typedef const void* (*pesapi_find_type_id_func)(pesapi_registry registry, const char* module_name, const char* type_name);
-typedef int (*pesapi_trace_native_object_lifecycle_func)(pesapi_registry registry, const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
+typedef int (*pesapi_trace_native_object_lifecycle_func)(
+    pesapi_registry registry, const void* type_id, pesapi_on_native_object_enter on_enter, pesapi_on_native_object_exit on_exit);
 
 struct pesapi_registry_api
 {

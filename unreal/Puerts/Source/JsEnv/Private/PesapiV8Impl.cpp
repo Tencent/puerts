@@ -20,8 +20,6 @@
 #include <cstring>
 #include "PString.h"
 
-
-
 struct pesapi_env_ref__
 {
     explicit pesapi_env_ref__(v8::Local<v8::Context> context)
@@ -52,11 +50,14 @@ struct pesapi_value_ref__ : pesapi_env_ref__
 
 struct pesapi_scope__
 {
-    explicit pesapi_scope__(v8::Isolate* isolate) : 
+    explicit pesapi_scope__(v8::Isolate* isolate)
+        :
 #ifdef THREAD_SAFE
-        locker(isolate),
+        locker(isolate)
+        ,
 #endif
-        scope(isolate), trycatch(isolate)
+        scope(isolate)
+        , trycatch(isolate)
     {
     }
 #ifdef THREAD_SAFE
@@ -159,7 +160,8 @@ pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t* str, siz
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     return v8impl::PesapiValueFromV8LocalValue(
-        v8::String::NewFromTwoByte(context->GetIsolate(), str, v8::NewStringType::kNormal, static_cast<int>(length)).ToLocalChecked());
+        v8::String::NewFromTwoByte(context->GetIsolate(), str, v8::NewStringType::kNormal, static_cast<int>(length))
+            .ToLocalChecked());
 }
 
 pesapi_value pesapi_create_binary(pesapi_env env, void* bin, size_t length)
@@ -216,11 +218,13 @@ int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    
+
     v8::TryCatch trycatch(context->GetIsolate());
     auto maybe_result = value->Int32Value(context);
-    if (maybe_result.IsNothing() || trycatch.HasCaught()) {
-        if (trycatch.HasCaught()) {
+    if (maybe_result.IsNothing() || trycatch.HasCaught())
+    {
+        if (trycatch.HasCaught())
+        {
             trycatch.Reset();
         }
         return 0;
@@ -232,11 +236,13 @@ uint32_t pesapi_get_value_uint32(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    
+
     v8::TryCatch trycatch(context->GetIsolate());
     auto maybe_result = value->Uint32Value(context);
-    if (maybe_result.IsNothing() || trycatch.HasCaught()) {
-        if (trycatch.HasCaught()) {
+    if (maybe_result.IsNothing() || trycatch.HasCaught())
+    {
+        if (trycatch.HasCaught())
+        {
             trycatch.Reset();
         }
         return 0;
@@ -262,11 +268,13 @@ double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    
+
     v8::TryCatch trycatch(context->GetIsolate());
     auto maybe_result = value->NumberValue(context);
-    if (maybe_result.IsNothing() || trycatch.HasCaught()) {
-        if (trycatch.HasCaught()) {
+    if (maybe_result.IsNothing() || trycatch.HasCaught())
+    {
+        if (trycatch.HasCaught())
+        {
             trycatch.Reset();
         }
         return 0.0;
@@ -913,94 +921,24 @@ void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
     (void) registry;
 }
 
-pesapi_ffi g_pesapi_ffi {
-    &pesapi_create_null,
-    &pesapi_create_undefined,
-    &pesapi_create_boolean,
-    &pesapi_create_int32,
-    &pesapi_create_uint32,
-    &pesapi_create_int64,
-    &pesapi_create_uint64,
-    &pesapi_create_double,
-    &pesapi_create_string_utf8,
-    &pesapi_create_string_utf16,
-    &pesapi_create_binary,
-    &pesapi_create_binary_by_value,
-    &pesapi_create_array,
-    &pesapi_create_object,
-    &pesapi_create_function,
-    &pesapi_create_class,
-    &pesapi_get_value_bool,
-    &pesapi_get_value_int32,
-    &pesapi_get_value_uint32,
-    &pesapi_get_value_int64,
-    &pesapi_get_value_uint64,
-    &pesapi_get_value_double,
-    &pesapi_get_value_string_utf8,
-    &pesapi_get_value_string_utf16,
-    &pesapi_get_value_binary,
-    &pesapi_get_array_length,
-    &pesapi_is_null,
-    &pesapi_is_undefined,
-    &pesapi_is_boolean,
-    &pesapi_is_int32,
-    &pesapi_is_uint32,
-    &pesapi_is_int64,
-    &pesapi_is_uint64,
-    &pesapi_is_double,
-    &pesapi_is_string,
-    &pesapi_is_object,
-    &pesapi_is_function,
-    &pesapi_is_binary,
-    &pesapi_is_array,
-    &pesapi_native_object_to_value,
-    &pesapi_get_native_object_ptr,
-    &pesapi_get_native_object_typeid,
-    &pesapi_is_instance_of,
-    &pesapi_boxing,
-    &pesapi_unboxing,
-    &pesapi_update_boxed_value,
-    &pesapi_is_boxed_value,
-    &pesapi_get_args_len,
-    &pesapi_get_arg,
-    &pesapi_get_env,
-    &pesapi_get_native_holder_ptr,
-    &pesapi_get_native_holder_typeid,
-    &pesapi_get_userdata,
-    &pesapi_add_return,
-    &pesapi_throw_by_string,
-    &pesapi_create_env_ref,
-    &pesapi_env_ref_is_valid,
-    &pesapi_get_env_from_ref,
-    &pesapi_duplicate_env_ref,
-    &pesapi_release_env_ref,
-    &pesapi_open_scope,
-    &pesapi_open_scope_placement,
-    &pesapi_has_caught,
-    &pesapi_get_exception_as_string,
-    &pesapi_close_scope,
-    &pesapi_close_scope_placement,
-    &pesapi_create_value_ref,
-    &pesapi_duplicate_value_ref,
-    &pesapi_release_value_ref,
-    &pesapi_get_value_from_ref,
-    &pesapi_set_ref_weak,
-    &pesapi_set_owner,
-    &pesapi_get_ref_associated_env,
-    &pesapi_get_ref_internal_fields,
-    &pesapi_get_property,
-    &pesapi_set_property,
-    &pesapi_get_private,
-    &pesapi_set_private,
-    &pesapi_get_property_uint32,
-    &pesapi_set_property_uint32,
-    &pesapi_call_function,
-    &pesapi_eval,
-    &pesapi_global,
-    &pesapi_get_env_private,
-    &pesapi_set_env_private,
-    &pesapi_set_registry
-};
+pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_create_boolean, &pesapi_create_int32,
+    &pesapi_create_uint32, &pesapi_create_int64, &pesapi_create_uint64, &pesapi_create_double, &pesapi_create_string_utf8,
+    &pesapi_create_string_utf16, &pesapi_create_binary, &pesapi_create_binary_by_value, &pesapi_create_array, &pesapi_create_object,
+    &pesapi_create_function, &pesapi_create_class, &pesapi_get_value_bool, &pesapi_get_value_int32, &pesapi_get_value_uint32,
+    &pesapi_get_value_int64, &pesapi_get_value_uint64, &pesapi_get_value_double, &pesapi_get_value_string_utf8,
+    &pesapi_get_value_string_utf16, &pesapi_get_value_binary, &pesapi_get_array_length, &pesapi_is_null, &pesapi_is_undefined,
+    &pesapi_is_boolean, &pesapi_is_int32, &pesapi_is_uint32, &pesapi_is_int64, &pesapi_is_uint64, &pesapi_is_double,
+    &pesapi_is_string, &pesapi_is_object, &pesapi_is_function, &pesapi_is_binary, &pesapi_is_array, &pesapi_native_object_to_value,
+    &pesapi_get_native_object_ptr, &pesapi_get_native_object_typeid, &pesapi_is_instance_of, &pesapi_boxing, &pesapi_unboxing,
+    &pesapi_update_boxed_value, &pesapi_is_boxed_value, &pesapi_get_args_len, &pesapi_get_arg, &pesapi_get_env,
+    &pesapi_get_native_holder_ptr, &pesapi_get_native_holder_typeid, &pesapi_get_userdata, &pesapi_add_return,
+    &pesapi_throw_by_string, &pesapi_create_env_ref, &pesapi_env_ref_is_valid, &pesapi_get_env_from_ref, &pesapi_duplicate_env_ref,
+    &pesapi_release_env_ref, &pesapi_open_scope, &pesapi_open_scope_placement, &pesapi_has_caught, &pesapi_get_exception_as_string,
+    &pesapi_close_scope, &pesapi_close_scope_placement, &pesapi_create_value_ref, &pesapi_duplicate_value_ref,
+    &pesapi_release_value_ref, &pesapi_get_value_from_ref, &pesapi_set_ref_weak, &pesapi_set_owner, &pesapi_get_ref_associated_env,
+    &pesapi_get_ref_internal_fields, &pesapi_get_property, &pesapi_set_property, &pesapi_get_private, &pesapi_set_private,
+    &pesapi_get_property_uint32, &pesapi_set_property_uint32, &pesapi_call_function, &pesapi_eval, &pesapi_global,
+    &pesapi_get_env_private, &pesapi_set_env_private, &pesapi_set_registry};
 
 }    // namespace v8impl
 

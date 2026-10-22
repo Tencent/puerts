@@ -56,7 +56,8 @@ static PesapiAddonRegisterFunc PesapiFindAddonEntry(void* DllHandle, const FStri
         {
             continue;
         }
-        auto Init = (PesapiAddonRegisterFunc) (uintptr_t) FPlatformProcess::GetDllExport(DllHandle, *PesapiAddonEntryName(Candidate));
+        auto Init =
+            (PesapiAddonRegisterFunc) (uintptr_t) FPlatformProcess::GetDllExport(DllHandle, *PesapiAddonEntryName(Candidate));
         if (Init)
         {
             OutModuleName = Candidate;
@@ -150,7 +151,7 @@ static int PesapiLoadAddonImpl(const char* path, const char* module_name)
         return 0;
     }
     FString PreferModuleName = (module_name && module_name[0] != '\0') ? FString(UTF8_TO_TCHAR(module_name))
-                                                                         : PesapiModuleNameFromPath(UTF8_TO_TCHAR(path));
+                                                                       : PesapiModuleNameFromPath(UTF8_TO_TCHAR(path));
 #if !PLATFORM_IOS
     void* Handle = FPlatformProcess::GetDllHandle(UTF8_TO_TCHAR(path));
     if (Handle)
