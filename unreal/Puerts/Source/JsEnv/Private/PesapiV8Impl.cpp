@@ -320,15 +320,29 @@ const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalu
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
 
+    v8::Local<v8::String> str;
+    if (value->IsString())
+    {
+        str = value.As<v8::String>();
+    }
+    else
+    {
+        // the same as FV8Utils::ToFString: a value that can not be converted to string (Symbol...) is treated as ""
+        v8::TryCatch trycatch(context->GetIsolate());
+        if (!value->ToString(context).ToLocal(&str))
+        {
+            *bufsize = 0;
+            return buf;
+        }
+    }
+
     if (buf == nullptr)
     {
-        auto str = value->ToString(context).ToLocalChecked();
         *bufsize = str->Length();
     }
     else
     {
-        auto str = value->ToString(context).ToLocalChecked();
-        str->Write(context->GetIsolate(), buf, 0, *bufsize);
+        str->Write(context->GetIsolate(), buf, 0, static_cast<int>(*bufsize));
     }
     return buf;
 }

@@ -22,6 +22,9 @@
 #include "NamespaceDef.h"
 #include "ArrayBuffer.h"
 #include "JsObject.h"
+#include "pesapi.h"
+#include "PapiV8Bridge.h"
+#include "PesapiImpl.h"
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -38,6 +41,72 @@ public:
     static std::unique_ptr<FPropertyTranslator> Create(PropertyMacro* InProperty, bool IgnoreOut = false);
 
     static void CreateOn(PropertyMacro* InProperty, FPropertyTranslator* InOldProperty);
+
+    // papi entries, the translators are implemented against these
+
+    virtual pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const = 0;
+
+    virtual bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const = 0;
+
+    virtual bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const
+    {
+        *OutValuePtr = TempBuff;    // using temp buffer by default
+        return JsToUE(Apis, Env, Value, TempBuff, false);
+    }
+
+    virtual void UEOutToJs(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, const void* ValuePtr, bool PassByPointer) const
+    {
+    }
+
+    virtual bool JsToUEOut(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const
+    {
+        return true;
+    }
+
+    FORCEINLINE pesapi_value UEToJsInContainer(
+        struct pesapi_ffi* Apis, pesapi_env Env, const void* ContainerPtr, bool PassByPointer = false) const
+    {
+        return UEToJs(Apis, Env, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
+    }
+
+    FORCEINLINE bool JsToUEInContainer(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ContainerPtr, bool DeepCopy) const
+    {
+        return JsToUE(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), DeepCopy);
+    }
+
+    // v8 adapters for the callers not migrated yet, zero cost since pesapi_value/pesapi_env are reinterpreted v8 handles
+
+    FORCEINLINE v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    {
+        return papi_bridge::ToV8(UEToJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), ValuePtr, PassByPointer));
+    }
+
+    FORCEINLINE bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
+        void* ValuePtr, bool DeepCopy) const
+    {
+        return JsToUE(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), ValuePtr, DeepCopy);
+    }
+
+    FORCEINLINE bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
+        void* TempBuff, void** OutValuePtr) const
+    {
+        return JsToUEFast(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), TempBuff, OutValuePtr);
+    }
+
+    FORCEINLINE void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
+        const void* ValuePtr, bool PassByPointer) const
+    {
+        UEOutToJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), ValuePtr, PassByPointer);
+    }
+
+    FORCEINLINE bool JsToUEOut(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
+        void* ValuePtr, bool DeepCopy) const
+    {
+        return JsToUEOut(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), ValuePtr, DeepCopy);
+    }
 
     FORCEINLINE v8::Local<v8::Value> UEToJsInContainer(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ContainerPtr, bool PassByPointer = false) const
@@ -69,32 +138,8 @@ public:
         return JsToUEOut(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
-    virtual v8::Local<v8::Value> UEToJs(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const = 0;
-
-    virtual bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const = 0;
-
-    virtual bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* TempBuff, void** OutValuePtr) const
-    {
-        *OutValuePtr = TempBuff;    // using temp buffer by default
-        return JsToUE(Isolate, Context, Value, TempBuff, false);
-    }
-
     virtual void Cleanup(void* ContainerPtr) const
     {
-    }
-
-    virtual void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        const void* ValuePtr, bool PassByPointer) const
-    {
-    }
-
-    virtual bool JsToUEOut(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
-    {
-        return true;
     }
 
     virtual bool IsOut() const
