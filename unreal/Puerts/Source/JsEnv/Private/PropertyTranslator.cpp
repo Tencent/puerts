@@ -164,11 +164,8 @@ void FPropertyTranslator::DelegateGetter(struct pesapi_ffi* Apis, pesapi_callbac
     }
     auto DelegatePtr = PropertyTranslator->Property->ContainerPtrToValuePtr<void>(Object);
 
-    // the delegate wrappers are not migrated yet
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Apis->get_env(Info));
-    v8::Isolate* Isolate = Context->GetIsolate();
-    Apis->add_return(Info, papi_bridge::ToPapi(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(
-                               Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr, true)));
+    Apis->add_return(
+        Info, PapiUtils::FindOrAddDelegate(Apis->get_env(Info), Object, PropertyTranslator->Property, DelegatePtr, true));
 }
 
 void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template)
@@ -243,22 +240,6 @@ static FORCEINLINE FString NameToFString(const FName& Name)
     }
     return Out;
 }
-
-// translators not migrated yet (they still depend on IObjectMapper/DataTransfer) implement UEToJsV8/JsToUEV8, the papi
-// entries forward to them through papi_bridge, to be removed in M4
-#define PUERTS_PAPI_FORWARD_UETOJS()                                                                                      \
-    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override \
-    {                                                                                                                     \
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);                                                          \
-        return papi_bridge::ToPapi(UEToJsV8(Context->GetIsolate(), Context, ValuePtr, PassByPointer));                    \
-    }
-
-#define PUERTS_PAPI_FORWARD_JSTOUE()                                                                                       \
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override \
-    {                                                                                                                      \
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);                                                           \
-        return JsToUEV8(Context->GetIsolate(), Context, papi_bridge::ToV8(Value), ValuePtr, DeepCopy);                     \
-    }
 
 class FInt32PropertyTranslator : public FPropertyTranslator
 {
@@ -477,9 +458,8 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         return PapiFromFString(Apis, Env, TextProperty->GetPropertyValue(ValuePtr).ToString());
 #else
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, StaticTypeId<FText>::get(),
-            PassByPointer ? ValuePtr : new FText(TextProperty->GetPropertyValue(ValuePtr)), PassByPointer));
+        return Apis->native_object_to_value(Env, StaticTypeId<FText>::get(),
+            PassByPointer ? const_cast<void*>(ValuePtr) : new FText(TextProperty->GetPropertyValue(ValuePtr)), !PassByPointer);
 #endif
     }
 
@@ -488,7 +468,7 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(PapiToFString(Apis, Env, Value)));
 #else
-        auto TextPtr = DataTransfer::GetPointerFast<FText>(papi_bridge::ToV8(Value).As<v8::Object>());
+        auto TextPtr = static_cast<FText*>(Apis->get_native_object_ptr(Env, Value));
         TextProperty->SetPropertyValue(ValuePtr, TextPtr ? *TextPtr : FText());
 #endif
         return true;
@@ -503,29 +483,23 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         UObject* UEObject = ObjectBaseProperty->GetObjectPropertyValue(ValuePtr);
 
         if (!UEObject || !UEObject->IsValidLowLevelFast() || UEObjectIsPendingKill(UEObject))
         {
-            return v8::Undefined(Isolate);
+            return Apis->create_undefined(Env);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, UEObject->GetClass(), UEObject);
+        return PapiUtils::FindOrAddUObject(Env, UEObject->GetClass(), UEObject);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Object = FV8Utils::GetUObject(Context, Value);
+        auto Object = PapiUtils::GetUObject(Apis, Env, Value);
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            PapiUtils::ThrowException(Env, "passing a invalid object");
             return false;
         }
         ObjectBaseProperty->SetObjectPropertyValue(ValuePtr, Object);
@@ -542,25 +516,18 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(
-            Isolate, Context, new FSoftObjectPtr(*Ptr), SoftObjectProperty->PropertyClass, false);
+        return PapiUtils::AddSoftObjectPtr(Env, new FSoftObjectPtr(*Ptr), SoftObjectProperty->PropertyClass, false);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
+        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(Apis->get_native_object_ptr(Env, Value));
         if (!Ptr)
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object for FSoftObjectPtr");
+            PapiUtils::ThrowException(Env, "passing a invalid object for FSoftObjectPtr");
             return false;
         }
 
@@ -577,25 +544,18 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(
-            Isolate, Context, new FSoftObjectPtr(*Ptr), SoftClassProperty->MetaClass, true);
+        return PapiUtils::AddSoftObjectPtr(Env, new FSoftObjectPtr(*Ptr), SoftClassProperty->MetaClass, true);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
+        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(Apis->get_native_object_ptr(Env, Value));
         if (!Ptr)
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object for FSoftObjectPtr");
+            PapiUtils::ThrowException(Env, "passing a invalid object for FSoftObjectPtr");
             return false;
         }
 
@@ -626,8 +586,7 @@ public:
 
         if (!FieldPath.GetTyped(FieldPathProperty->PropertyClass))
         {
-            // pesapi_throw_by_string needs the callback info, which is not available here
-            FV8Utils::ThrowException(papi_bridge::IsolateOf(Env), FString::Printf(TEXT("invalid FieldPath: %s"), *Path));
+            PapiUtils::ThrowException(Env, FString::Printf(TEXT("invalid FieldPath: %s"), *Path));
             return false;
         }
 
@@ -649,30 +608,24 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         const FScriptInterface& Interface = InterfaceProperty->GetPropertyValue(ValuePtr);
 
         UObject* Object = Interface.GetObject();
         if (!Object || !Object->IsValidLowLevelFast() || UEObjectIsPendingKill(Object))
         {
-            return v8::Undefined(Isolate);
+            return Apis->create_undefined(Env);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
+        return PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        UObject* Object = FV8Utils::GetUObject(Context, Value);
+        UObject* Object = PapiUtils::GetUObject(Apis, Env, Value);
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            PapiUtils::ThrowException(Env, "passing a invalid object");
             return false;
         }
         FScriptInterface* Interface = reinterpret_cast<FScriptInterface*>(ValuePtr);
@@ -691,8 +644,7 @@ public:
 
     bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const override
     {
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-        void* Ptr = FV8Utils::GetPointer(Context, papi_bridge::ToV8(Value));
+        void* Ptr = Apis->get_native_object_ptr(Env, Value);
 
         if (Ptr)
         {
@@ -711,10 +663,8 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer)
-        const    //还是得有个指针模式，否则不能通过obj.xx.xx直接修改struct值，倒是和性能无关，应该强制js测不许保存指针型对象的引用（从native侧进入，最后一层退出时清空？）
+    //还是得有个指针模式，否则不能通过obj.xx.xx直接修改struct值，倒是和性能无关，应该强制js测不许保存指针型对象的引用（从native侧进入，最后一层退出时清空？）
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         void* Ptr = const_cast<void*>(ValuePtr);
 
@@ -724,16 +674,12 @@ public:
             Ptr = FScriptStructWrapper::Alloc(StructProperty->Struct);
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
-            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer);
+        return PapiUtils::FindOrAddStruct(Env, StructProperty->Struct, Ptr, PassByPointer);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        void* Ptr = FV8Utils::GetPointer(Context, Value);
+        void* Ptr = Apis->get_native_object_ptr(Env, Value);
 
         if (Ptr)
         {
@@ -746,10 +692,9 @@ public:
                 FMemory::Memcpy(ValuePtr, Ptr, ParamShallowCopySize);
             }
         }
-        else if (Value->IsObject())
+        else if (Apis->is_object(Env, Value))
         {
-            FV8Utils::IsolateData<IObjectMapper>(Isolate)->Merge(
-                Isolate, Context, Value->ToObject(Context).ToLocalChecked(), StructProperty->Struct, ValuePtr);
+            PapiUtils::Merge(Env, Value, StructProperty->Struct, ValuePtr);
         }
         return true;
     }
@@ -762,45 +707,24 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        void* Ptr = const_cast<void*>(ValuePtr);
-
-        FArrayBuffer* ArrayBuffer = static_cast<FArrayBuffer*>(Ptr);
+        FArrayBuffer* ArrayBuffer = static_cast<FArrayBuffer*>(const_cast<void*>(ValuePtr));
         if (ArrayBuffer->bCopy)
         {
-            v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Length);
-            void* Buff = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
-            ::memcpy(Buff, ArrayBuffer->Data, ArrayBuffer->Length);
-            return Ab;
+            return Apis->create_binary_by_value(Env, ArrayBuffer->Data, ArrayBuffer->Length);
         }
-        else
-        {
-            return DataTransfer::NewArrayBuffer(Context, ArrayBuffer->Data, ArrayBuffer->Length);
-        }
+        return Apis->create_binary(Env, ArrayBuffer->Data, ArrayBuffer->Length);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         FArrayBuffer ArrayBuffer;
-        if (Value->IsArrayBufferView())
+        // an ArrayBuffer or an ArrayBufferView
+        if (Apis->is_binary(Env, Value))
         {
-            v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
-            auto Ab = BuffView->Buffer();
-            ArrayBuffer.Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
-            ArrayBuffer.Length = BuffView->ByteLength();
-        }
-        else if (Value->IsArrayBuffer())
-        {
-            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Value);
-            size_t ByteLength;
-            ArrayBuffer.Data = DataTransfer::GetArrayBufferData(Ab, ByteLength);
+            size_t ByteLength = 0;
+            ArrayBuffer.Data = Apis->get_value_binary(Env, Value, &ByteLength);
             ArrayBuffer.Length = ByteLength;
         }
 
@@ -817,39 +741,21 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        void* Ptr = const_cast<void*>(ValuePtr);
-
-        FArrayBufferValue* ArrayBuffer = static_cast<FArrayBufferValue*>(Ptr);
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data.Num());
-        void* Buff = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
-        ::memcpy(Buff, ArrayBuffer->Data.GetData(), ArrayBuffer->Data.Num());
-        return Ab;
+        FArrayBufferValue* ArrayBuffer = static_cast<FArrayBufferValue*>(const_cast<void*>(ValuePtr));
+        return Apis->create_binary_by_value(Env, ArrayBuffer->Data.GetData(), static_cast<size_t>(ArrayBuffer->Data.Num()));
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         FArrayBufferValue* ArrayBuffer = static_cast<FArrayBufferValue*>(ValuePtr);
         size_t Len = 0;
         char* Data = nullptr;
-        if (Value->IsArrayBufferView())
+        // an ArrayBuffer or an ArrayBufferView
+        if (Apis->is_binary(Env, Value))
         {
-            v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
-            auto Ab = BuffView->Buffer();
-            Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
-            Len = BuffView->ByteLength();
-        }
-        else if (Value->IsArrayBuffer())
-        {
-            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Value);
-            Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab, Len));
+            Data = static_cast<char*>(Apis->get_value_binary(Env, Value, &Len));
         }
 
         if (Len > 0 && Data)
@@ -873,26 +779,20 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    // FJsObject holds a v8 persistent handle, it stays v8 specific (see M8), so it is converted through the bridge
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         if (!ValuePtr)
-            return v8::Undefined(Isolate);
+            return Apis->create_undefined(Env);
         const FJsObject* JsObject = static_cast<const FJsObject*>(ValuePtr);
-        return JsObject->GetJsObject();
+        return papi_bridge::ToPapi(v8::Local<v8::Value>(JsObject->GetJsObject()));
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        if (Value->IsObject())
+        if (Apis->is_object(Env, Value))
         {
-            auto Object = Value.As<v8::Object>();
-            FJsObject JsObject(Context, Object);
+            FJsObject JsObject(papi_bridge::ToV8(Env), papi_bridge::ToV8(Value).As<v8::Object>());
             *static_cast<FJsObject*>(ValuePtr) = JsObject;
         }
 
@@ -907,15 +807,12 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Object = FV8Utils::GetUObject(Context, Value);
+        auto Object = PapiUtils::GetUObject(Apis, Env, Value);
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            PapiUtils::ThrowException(Env, "passing a invalid object");
             return false;
         }
         UClass* Class = Cast<UClass>(Object);
@@ -938,9 +835,7 @@ public:
         }
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool ByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool ByPointer) const override
     {
         FScriptArray* ScriptArray;
         if (ByPointer)
@@ -953,16 +848,12 @@ public:
             ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
             ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
-            Isolate, Context, ArrayProperty->Inner, ScriptArray, ByPointer);
+        return PapiUtils::FindOrAddContainer(Env, ArrayProperty->Inner, ScriptArray, ByPointer);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = FV8Utils::GetPointer(Context, Value);
+        auto Ptr = Apis->get_native_object_ptr(Env, Value);
         if (Ptr)
         {
             if (DeepCopy || !ParamShallowCopySize)
@@ -991,9 +882,7 @@ public:
         }
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool ByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool ByPointer) const override
     {
         FScriptSet* ScriptSet;
         if (ByPointer)
@@ -1005,16 +894,12 @@ public:
             ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
             SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
-            Isolate, Context, SetProperty->ElementProp, ScriptSet, ByPointer);
+        return PapiUtils::FindOrAddContainer(Env, SetProperty->ElementProp, ScriptSet, ByPointer);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = FV8Utils::GetPointer(Context, Value);
+        auto Ptr = Apis->get_native_object_ptr(Env, Value);
         if (Ptr)
         {
             if (DeepCopy || !ParamShallowCopySize)
@@ -1043,9 +928,7 @@ public:
         }
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool ByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool ByPointer) const override
     {
         FScriptMap* ScriptMap;
         if (ByPointer)
@@ -1057,16 +940,12 @@ public:
             ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
             MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
-            Isolate, Context, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
+        return PapiUtils::FindOrAddContainer(Env, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = FV8Utils::GetPointer(Context, Value);
+        auto Ptr = Apis->get_native_object_ptr(Env, Value);
         if (Ptr)
         {
             if (DeepCopy || !ParamShallowCopySize)
@@ -1114,19 +993,12 @@ public:
         Inner = std::move(InInner);
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->CreateArray(
-            Isolate, Context, Inner.get(), const_cast<void*>(ValuePtr));
+        return PapiUtils::CreateArray(Env, Inner.get(), const_cast<void*>(ValuePtr));
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         // Fix Size Array do not assignable
         return true;
@@ -1146,10 +1018,7 @@ public:
     {
     }
 
-    PUERTS_PAPI_FORWARD_UETOJS()
-
-    v8::Local<v8::Value> UEToJsV8(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+    pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         auto DelegatePtr = static_cast<FScriptDelegate*>(const_cast<void*>(ValuePtr));
 
@@ -1158,54 +1027,47 @@ public:
             UObject* UEObject = DelegatePtr->GetUObject();
             if (UEObject && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject))
             {
-                return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(
-                    Isolate, Context, UEObject, DelegateProperty, DelegatePtr, PassByPointer);
+                return PapiUtils::FindOrAddDelegate(Env, UEObject, DelegateProperty, DelegatePtr, PassByPointer);
             }
         }
-        return v8::Undefined(Isolate);
+        return Apis->create_undefined(Env);
     }
 
-    PUERTS_PAPI_FORWARD_JSTOUE()
-
-    bool JsToUEV8(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
-        bool DeepCopy) const
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         FScriptDelegate* Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
-        if (Value->IsFunction())
+        if (Apis->is_function(Env, Value))
         {
-            *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewDelegate(
-                Isolate, Context, nullptr, Value.As<v8::Function>(), DelegateProperty->SignatureFunction);
+            *Des = PapiUtils::NewDelegate(Env, nullptr, Value, DelegateProperty->SignatureFunction);
         }
         else
         {
-            auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPointer(Context, Value, 0));
+            auto Src = static_cast<FScriptDelegate*>(Apis->get_native_object_ptr(Env, Value));
             if (Des && Src)
             {
                 *Des = *Src;
             }
-            else if (Des && Value->IsArray())
+            else if (Des && Apis->is_array(Env, Value))
             {
-                auto Array = Value->ToObject(Context).ToLocalChecked();
-                auto Obj = FV8Utils::GetUObject(Context, Array->Get(Context, 0).ToLocalChecked());
+                auto Obj = PapiUtils::GetUObject(Apis, Env, Apis->get_property_uint32(Env, Value, 0));
                 if (Obj)
                 {
                     if (FV8Utils::IsReleasedPtr(Obj))
                     {
-                        FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                        PapiUtils::ThrowException(Env, "passing a invalid object");
                         return false;
                     }
 
-                    auto Func = Array->Get(Context, 1).ToLocalChecked();
-                    if (Func->IsString())
+                    auto Func = Apis->get_property_uint32(Env, Value, 1);
+                    if (Apis->is_string(Env, Func))
                     {
                         FScriptDelegate Delegate;
-                        Delegate.BindUFunction(Obj, *FV8Utils::ToFString(Isolate, Func));
+                        Delegate.BindUFunction(Obj, *PapiUtils::ToFString(Apis, Env, Func));
                         *Des = Delegate;
                     }
-                    else if (Func->IsFunction())
+                    else if (Apis->is_function(Env, Func))
                     {
-                        *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewDelegate(
-                            Isolate, Context, Obj, Func.As<v8::Function>(), DelegateProperty->SignatureFunction);
+                        *Des = PapiUtils::NewDelegate(Env, Obj, Func, DelegateProperty->SignatureFunction);
                     }
                 }
             }
@@ -1265,8 +1127,7 @@ public:
             if (Inner->ParamShallowCopySize)
             {
                 auto Realvalue = Apis->get_property_uint32(Env, Value, 0);
-                v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-                auto Ptr = FV8Utils::GetPointer(Context, papi_bridge::ToV8(Realvalue));
+                auto Ptr = Apis->get_native_object_ptr(Env, Realvalue);
                 if (Ptr && Ptr != ValuePtr)
                 {
                     FMemory::Memcpy(Ptr, ValuePtr, ParamShallowCopySize);

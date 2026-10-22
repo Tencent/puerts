@@ -14,17 +14,6 @@
 
 namespace PUERTS_NAMESPACE
 {
-// the delegate bookkeeping lives in IObjectMapper, which is not migrated yet, so these calls still go through the bridge
-static FORCEINLINE IObjectMapper* DelegateObjectMapperOf(pesapi_env Env)
-{
-    return FV8Utils::IsolateData<IObjectMapper>(papi_bridge::IsolateOf(Env));
-}
-
-static FORCEINLINE v8::Local<v8::Function> DelegateJsFunctionOf(pesapi_value Value)
-{
-    return papi_bridge::ToV8(Value).As<v8::Function>();
-}
-
 static v8::Local<v8::FunctionTemplate> DelegateTemplate(
     v8::Isolate* Isolate, v8::FunctionCallback Constructor, const JSFunctionInfo* Methods, int MethodCount)
 {
@@ -62,9 +51,7 @@ void FDelegateWrapper::Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     if (ArgCount == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
         auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-        DelegateObjectMapperOf(Env)->AddToDelegate(
-            Context->GetIsolate(), Context, DelegatePtr, DelegateJsFunctionOf(Apis->get_arg(Info, 0)));
+        PapiUtils::AddToDelegate(Env, DelegatePtr, Apis->get_arg(Info, 0));
         return;
     }
     if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
@@ -90,16 +77,14 @@ void FDelegateWrapper::Unbind(struct pesapi_ffi* Apis, pesapi_callback_info Info
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    DelegateObjectMapperOf(Env)->ClearDelegate(Context->GetIsolate(), Context, DelegatePtr);
+    PapiUtils::ClearDelegate(Env, DelegatePtr);
 }
 
 void FDelegateWrapper::Execute(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    DelegateObjectMapperOf(Env)->ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
+    PapiUtils::ExecuteDelegate(Env, Info, DelegatePtr);
 }
 
 v8::Local<v8::FunctionTemplate> FMulticastDelegateWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
@@ -119,9 +104,7 @@ void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_inf
     if (ArgCount == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
         auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-        DelegateObjectMapperOf(Env)->AddToDelegate(
-            Context->GetIsolate(), Context, DelegatePtr, DelegateJsFunctionOf(Apis->get_arg(Info, 0)));
+        PapiUtils::AddToDelegate(Env, DelegatePtr, Apis->get_arg(Info, 0));
         return;
     }
     if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
@@ -134,8 +117,7 @@ void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_inf
                 return;
             }
             auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-            if (auto Property =
-                    CastFieldMacro<MulticastDelegatePropertyMacro>(DelegateObjectMapperOf(Env)->FindDelegateProperty(DelegatePtr)))
+            if (auto Property = CastFieldMacro<MulticastDelegatePropertyMacro>(PapiUtils::FindDelegateProperty(Env, DelegatePtr)))
             {
                 FScriptDelegate Delegate;
                 Delegate.BindUFunction(Object, FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
@@ -163,9 +145,7 @@ void FMulticastDelegateWrapper::Remove(struct pesapi_ffi* Apis, pesapi_callback_
     if (Apis->get_args_len(Info) == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
         auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-        DelegateObjectMapperOf(Env)->RemoveFromDelegate(
-            Context->GetIsolate(), Context, DelegatePtr, DelegateJsFunctionOf(Apis->get_arg(Info, 0)));
+        PapiUtils::RemoveFromDelegate(Env, DelegatePtr, Apis->get_arg(Info, 0));
     }
     else
     {
@@ -177,15 +157,13 @@ void FMulticastDelegateWrapper::Clear(struct pesapi_ffi* Apis, pesapi_callback_i
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    DelegateObjectMapperOf(Env)->ClearDelegate(Context->GetIsolate(), Context, DelegatePtr);
+    PapiUtils::ClearDelegate(Env, DelegatePtr);
 }
 
 void FMulticastDelegateWrapper::Broadcast(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    DelegateObjectMapperOf(Env)->ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
+    PapiUtils::ExecuteDelegate(Env, Info, DelegatePtr);
 }
 }    // namespace PUERTS_NAMESPACE
