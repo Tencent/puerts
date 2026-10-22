@@ -7,87 +7,104 @@
  */
 
 #pragma once
+
+#if defined(BUILDING_PES_EXTENSION) && defined(PES_EXTENSION_WITH_V8_API)
+#error "PES_EXTENSION_WITH_V8_API is no longer supported, the pesapi based extension can only use the pesapi backend"
+#endif
+
 #if defined(BUILDING_PES_EXTENSION)
 #include "PesapiBackend.hpp"
-#endif
-#if !defined(BUILDING_PES_EXTENSION) || defined(PES_EXTENSION_WITH_V8_API)
+#else
 #include "V8Backend.hpp"
 #endif
 #include "Object.hpp"
 
 #ifndef PUERTS_BINDING_IMPL
-#if defined(BUILDING_PES_EXTENSION) && !defined(PES_EXTENSION_WITH_V8_API)
+#if defined(BUILDING_PES_EXTENSION)
 #define PUERTS_BINDING_IMPL pesapi_impl
 #else
 #define PUERTS_BINDING_IMPL v8_impl
 #endif
 #endif
 
-#define MakeConstructor(T, ...) \
-    ::PUERTS_NAMESPACE::template ConstructorWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, T, ##__VA_ARGS__>
-#define MakeGetter(M) &(::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::getter)
-#define MakeSetter(M) &(::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::setter)
-#define MakeProperty(M)                                                                                             \
-    &(::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::getter),     \
-        &(::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::setter), \
-        ::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::info()
-#define MakePropertyByGetterSetter(Getter, Setter)                                                                              \
-    &(::PUERTS_NAMESPACE::PropertyGetterWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(Getter), Getter>::getter), \
-        &(::PUERTS_NAMESPACE::PropertySetterWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(Setter),               \
-            Setter>::setter),                                                                                                   \
-        ::PUERTS_NAMESPACE::PropertyGetterSetterInfo<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(Getter),              \
-            decltype(Setter)>::info()
-#define MakeReadonlyProperty(M)                                                                                          \
-    &(::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::getter), nullptr, \
-        ::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::info()
+#define PUERTS_BINDING_API ::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API
+
+// parameter list / api argument used by the lambdas generated in MakeFunction / MakeExtension / SelectFunction,
+// the lambda is converted to the backend native callback type (FunctionCallbackType)
+#if defined(BUILDING_PES_EXTENSION)
+#define PUERTS_CALLBACK_PARAMS PUERTS_BINDING_API::ApisType apis, PUERTS_BINDING_API::CallbackInfoType info
+#define PUERTS_CALLBACK_APIS apis
+#else
+#define PUERTS_CALLBACK_PARAMS PUERTS_BINDING_API::CallbackInfoType info
+#define PUERTS_CALLBACK_APIS PUERTS_BINDING_API::ApisType{}
+#endif
+
+// convert a StaticCall internal callback (ApisType, CallbackInfoType) to the backend native callback type
+#define PUERTS_ADAPT_CALLBACK(...) ::PUERTS_NAMESPACE::FunctionCallbackAdapter<PUERTS_BINDING_API, __VA_ARGS__>::Get()
+#define PUERTS_ADAPT_INITIALIZE(...) ::PUERTS_NAMESPACE::InitializeFuncAdapter<PUERTS_BINDING_API, __VA_ARGS__>::Get()
+
+#define MakeConstructor(T, ...) ::PUERTS_NAMESPACE::template ConstructorWrapper<PUERTS_BINDING_API, T, ##__VA_ARGS__>
+#define MakeGetter(M) PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_BINDING_API, decltype(M), M>::getter)
+#define MakeSetter(M) PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_BINDING_API, decltype(M), M>::setter)
+#define MakeProperty(M)                                                                                     \
+    PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_BINDING_API, decltype(M), M>::getter), \
+        PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_BINDING_API, decltype(M), M>::setter), \
+        ::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_BINDING_API, decltype(M), M>::info()
+#define MakePropertyByGetterSetter(Getter, Setter)                                                                         \
+    PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::PropertyGetterWrapper<PUERTS_BINDING_API, decltype(Getter), Getter>::getter), \
+        PUERTS_ADAPT_CALLBACK(                                                                                             \
+            &::PUERTS_NAMESPACE::PropertySetterWrapper<PUERTS_BINDING_API, decltype(Setter), Setter>::setter),           \
+        ::PUERTS_NAMESPACE::PropertyGetterSetterInfo<PUERTS_BINDING_API, decltype(Getter), decltype(Setter)>::info()
+#define MakeReadonlyProperty(M)                                                                                       \
+    PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_BINDING_API, decltype(M), M>::getter), nullptr, \
+        ::PUERTS_NAMESPACE::PropertyWrapper<PUERTS_BINDING_API, decltype(M), M>::info()
 #define MakeVariable(M) MakeProperty(M)
 #define MakeVariableByGetterSetter(M) MakePropertyByGetterSetter(M)
 #define MakeReadonlyVariable(M) MakeReadonlyProperty(M)
-#define MakeFunction(M, ...)                                                                                          \
-    [](::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                                           \
-    {                                                                                                                 \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M,               \
-            false>::callWithDefaultValues(info, ##__VA_ARGS__);                                                       \
-    },                                                                                                                \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M, false>::info( \
+#define MakeFunction(M, ...)                                                                                     \
+    [](PUERTS_CALLBACK_PARAMS)                                                                                   \
+    {                                                                                                            \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, decltype(M), M, false>::callWithDefaultValues(   \
+            PUERTS_CALLBACK_APIS, info, ##__VA_ARGS__);                                                          \
+    },                                                                                                           \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, decltype(M), M, false>::info(                    \
             PUERTS_NAMESPACE::Count(__VA_ARGS__))
-#define MakeExtension(M, ...)                                                                                           \
-    [](::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                                             \
-    {                                                                                                                   \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M),                    \
-            M>::callExtensionWithDefaultValues(info, ##__VA_ARGS__);                                                    \
-    },                                                                                                                  \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M>::extensionInfo( \
+#define MakeExtension(M, ...)                                                                                          \
+    [](PUERTS_CALLBACK_PARAMS)                                                                                         \
+    {                                                                                                                  \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, decltype(M), M>::callExtensionWithDefaultValues(       \
+            PUERTS_CALLBACK_APIS, info, ##__VA_ARGS__);                                                                \
+    },                                                                                                                 \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, decltype(M), M>::extensionInfo(                        \
             PUERTS_NAMESPACE::Count(__VA_ARGS__))
-#define SelectFunction(SIGNATURE, M, ...)                                                                           \
-    [](::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                                         \
-    {                                                                                                               \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M,               \
-            false>::callWithDefaultValues(info, ##__VA_ARGS__);                                                     \
-    },                                                                                                              \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M, false>::info( \
+#define SelectFunction(SIGNATURE, M, ...)                                                                      \
+    [](PUERTS_CALLBACK_PARAMS)                                                                                 \
+    {                                                                                                          \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, SIGNATURE, M, false>::callWithDefaultValues(   \
+            PUERTS_CALLBACK_APIS, info, ##__VA_ARGS__);                                                        \
+    },                                                                                                         \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, SIGNATURE, M, false>::info(                    \
             PUERTS_NAMESPACE::Count(__VA_ARGS__))
-#define SelectFunction_PtrRet(SIGNATURE, M, ...)                                                                   \
-    [](::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                                        \
-    {                                                                                                              \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M,              \
-            true>::callWithDefaultValues(info, ##__VA_ARGS__);                                                     \
-    },                                                                                                             \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M, true>::info( \
+#define SelectFunction_PtrRet(SIGNATURE, M, ...)                                                              \
+    [](PUERTS_CALLBACK_PARAMS)                                                                                \
+    {                                                                                                         \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, SIGNATURE, M, true>::callWithDefaultValues(   \
+            PUERTS_CALLBACK_APIS, info, ##__VA_ARGS__);                                                       \
+    },                                                                                                        \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, SIGNATURE, M, true>::info(                    \
             PUERTS_NAMESPACE::Count(__VA_ARGS__))
-#define MakeCheckFunction(M)                                                                                                \
-    &(::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M, false>::checkedCall), \
-        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, decltype(M), M, false>::info()
-#define MakeOverload(SIGNATURE, M) \
-    PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M, false>
-#define CombineOverloads(...)                                                                                   \
-    &::PUERTS_NAMESPACE::OverloadsCombiner<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, __VA_ARGS__>::call,      \
-        ::PUERTS_NAMESPACE::OverloadsCombiner<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, __VA_ARGS__>::length, \
-        ::PUERTS_NAMESPACE::OverloadsCombiner<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, __VA_ARGS__>::infos()
-#define CombineConstructors(...)                                                                                   \
-    &::PUERTS_NAMESPACE::ConstructorsCombiner<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, __VA_ARGS__>::call,      \
-        ::PUERTS_NAMESPACE::ConstructorsCombiner<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, __VA_ARGS__>::length, \
-        ::PUERTS_NAMESPACE::ConstructorsCombiner<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, __VA_ARGS__>::infos()
+#define MakeCheckFunction(M)                                                                                     \
+    PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, decltype(M), M, false>::checkedCall), \
+        ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, decltype(M), M, false>::info()
+#define MakeOverload(SIGNATURE, M) PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, SIGNATURE, M, false>
+#define CombineOverloads(...)                                                                   \
+    PUERTS_ADAPT_CALLBACK(&::PUERTS_NAMESPACE::OverloadsCombiner<PUERTS_BINDING_API, __VA_ARGS__>::call), \
+        ::PUERTS_NAMESPACE::OverloadsCombiner<PUERTS_BINDING_API, __VA_ARGS__>::length,         \
+        ::PUERTS_NAMESPACE::OverloadsCombiner<PUERTS_BINDING_API, __VA_ARGS__>::infos()
+#define CombineConstructors(...)                                                                     \
+    PUERTS_ADAPT_INITIALIZE(&::PUERTS_NAMESPACE::ConstructorsCombiner<PUERTS_BINDING_API, __VA_ARGS__>::call), \
+        ::PUERTS_NAMESPACE::ConstructorsCombiner<PUERTS_BINDING_API, __VA_ARGS__>::length,           \
+        ::PUERTS_NAMESPACE::ConstructorsCombiner<PUERTS_BINDING_API, __VA_ARGS__>::infos()
 
 #define DeclOverloads(Name)      \
     template <typename T>        \
@@ -95,20 +112,20 @@
     {                            \
     };
 
-#define DeclOverload(Name, SIGNATURE, M, ...)                                                                           \
-    template <>                                                                                                         \
-    struct Name##PuertsOverloads<SIGNATURE>                                                                             \
-    {                                                                                                                   \
-        static bool overloadCall(::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API::CallbackInfoType info)                   \
-        {                                                                                                               \
-            return ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M,        \
-                true>::overloadCallWithDefaultValues(info, ##__VA_ARGS__);                                              \
-        }                                                                                                               \
-        static const ::PUERTS_NAMESPACE::CFunctionInfo* info()                                                          \
-        {                                                                                                               \
-            return ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API, SIGNATURE, M>::info( \
-                PUERTS_NAMESPACE::Count(__VA_ARGS__));                                                                  \
-        }                                                                                                               \
+#define DeclOverload(Name, SIGNATURE, M, ...)                                                                                \
+    template <>                                                                                                              \
+    struct Name##PuertsOverloads<SIGNATURE>                                                                                  \
+    {                                                                                                                        \
+        static bool overloadCall(PUERTS_BINDING_API::ApisType apis, PUERTS_BINDING_API::CallbackInfoType info)              \
+        {                                                                                                                    \
+            return ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, SIGNATURE, M, true>::overloadCallWithDefaultValues( \
+                apis, info, ##__VA_ARGS__);                                                                                  \
+        }                                                                                                                    \
+        static const ::PUERTS_NAMESPACE::CFunctionInfo* info()                                                               \
+        {                                                                                                                    \
+            return ::PUERTS_NAMESPACE::FuncCallWrapper<PUERTS_BINDING_API, SIGNATURE, M>::info(                              \
+                PUERTS_NAMESPACE::Count(__VA_ARGS__));                                                                       \
+        }                                                                                                                    \
     };
 
 #define SelectOverload(Name, SIGNATURE) Name##PuertsOverloads<SIGNATURE>
@@ -126,25 +143,36 @@
 
 #define UsingCppType(CLS) UsingNamedCppType(CLS, CLS)
 
-#if defined(BUILDING_PES_EXTENSION) && !defined(PES_EXTENSION_WITH_V8_API)
-#define UsingOtherModuleCppType(MODULE, CLS)                                \
-    namespace PUERTS_NAMESPACE                                              \
-    {                                                                       \
-    template <>                                                             \
-    struct StaticTypeId<CLS>                                                \
-    {                                                                       \
-        static const void* get()                                            \
-        {                                                                   \
-            static void* cache_type_id = nullptr;                           \
-            if (!cache_type_id)                                             \
-            {                                                               \
-                cache_type_id = (void*) pesapi_find_type_id(#MODULE, #CLS); \
-            }                                                               \
-            return cache_type_id;                                           \
-        }                                                                   \
-    };                                                                      \
-    }                                                                       \
+#if defined(BUILDING_PES_EXTENSION)
+#define UsingOtherModuleCppType(MODULE, CLS)                                                                \
+    namespace PUERTS_NAMESPACE                                                                              \
+    {                                                                                                       \
+    template <>                                                                                             \
+    struct StaticTypeId<CLS>                                                                                \
+    {                                                                                                       \
+        static const void* get()                                                                            \
+        {                                                                                                   \
+            static const void* cache_type_id = nullptr;                                                     \
+            if (!cache_type_id)                                                                             \
+            {                                                                                               \
+                cache_type_id = ::PUERTS_NAMESPACE::pesapi_impl::FindTypeId(#MODULE, #CLS);                 \
+            }                                                                                               \
+            return cache_type_id;                                                                           \
+        }                                                                                                   \
+    };                                                                                                      \
+    }                                                                                                       \
     UsingNamedCppType(CLS, CLS)
+
+// Declare a pesapi addon module whose initializer takes no argument, the registry passed in by the host is
+// saved (pesapi_impl::SetRegistry) before calling the initializer, so DefineClass<T>().Register() can be used
+// directly in it. Use PESAPI_MODULE directly if the initializer wants to handle the registry by itself.
+#define PUERTS_PESAPI_MODULE(modname, initfunc)                                                                               \
+    static void PUERTS_PESAPI_MODULE_INITIALIZER_##modname(struct pesapi_registry_api* registry_api, pesapi_registry registry) \
+    {                                                                                                                  \
+        ::PUERTS_NAMESPACE::pesapi_impl::SetRegistry(registry_api, registry);                                         \
+        initfunc();                                                                                                    \
+    }                                                                                                                  \
+    PESAPI_MODULE(modname, PUERTS_PESAPI_MODULE_INITIALIZER_##modname)
 #endif
 
 namespace PUERTS_NAMESPACE
@@ -152,21 +180,12 @@ namespace PUERTS_NAMESPACE
 template <typename T, typename API, typename RegisterAPI>
 class ClassDefineBuilder;
 
-#if defined(BUILDING_PES_EXTENSION)
-template <typename T>
-ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, pesapi_impl::API> DefineClass()
-{
-    static auto NameLiteral = ScriptTypeName<T>::value();
-    return ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, pesapi_impl::API>(NameLiteral.Data());
-}
-#else
 template <typename T>
 ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, PUERTS_BINDING_IMPL::API> DefineClass()
 {
     static auto NameLiteral = ScriptTypeName<T>::value();
     return ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, PUERTS_BINDING_IMPL::API>(NameLiteral.Data());
 }
-#endif
 
 using Object = PUERTS_BINDING_IMPL::Object;
 

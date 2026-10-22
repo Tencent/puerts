@@ -91,6 +91,8 @@ struct API
     typedef const v8::FunctionCallbackInfo<v8::Value>& CallbackInfoType;
     typedef v8::Local<v8::Context> ContextType;
     typedef v8::Local<v8::Value> ValueType;
+    // v8 callbacks do not receive an api table, ApisType is a placeholder so that StaticCall.hpp can use one signature
+    typedef void* ApisType;
     typedef v8::FunctionCallback FunctionCallbackType;
     typedef void* (*InitializeFuncType)(const v8::FunctionCallbackInfo<v8::Value>& Info);
     typedef void (*FinalizeFuncType)(void* Ptr, void* ClassData, void* EnvData);
@@ -99,52 +101,60 @@ struct API
     typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
     typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
 
-    V8_INLINE static int GetArgsLen(const v8::FunctionCallbackInfo<v8::Value>& info)
+    template <typename T>
+    static FinalizeFuncType MakeDeleteFinalize()
+    {
+        return [](void* Ptr, void* ClassData, void* EnvData) { delete static_cast<T*>(Ptr); };
+    }
+
+    V8_INLINE static int GetArgsLen(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         return info.Length();
     }
 
-    V8_INLINE static v8::Local<v8::Value> GetArg(const v8::FunctionCallbackInfo<v8::Value>& info, int index)
+    V8_INLINE static v8::Local<v8::Value> GetArg(
+        v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, int index)
     {
         return info[index];
     }
 
-    V8_INLINE static v8::Local<v8::Context> GetContext(const v8::FunctionCallbackInfo<v8::Value>& info)
+    V8_INLINE static v8::Local<v8::Context> GetContext(ApisType apis, const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         return info.GetIsolate()->GetCurrentContext();
     }
-    V8_INLINE static v8::Local<v8::Object> GetThis(const v8::FunctionCallbackInfo<v8::Value>& info)
-    {
-        return info.This();
-    }
 
-    V8_INLINE static v8::Local<v8::Object> GetHolder(const v8::FunctionCallbackInfo<v8::Value>& info)
+    // no v8::Signature is used, so Holder is the same as This
+    template <typename T>
+    V8_INLINE static T* GetSelf(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        return info.Holder();
+        return Converter<T*>::toCpp(context, info.Holder());
     }
 
     // use where GetSelfFromData is true
-    V8_INLINE static void* GetFunctionData(const v8::FunctionCallbackInfo<v8::Value>& info)
+    V8_INLINE static void* GetFunctionData(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         return v8::Local<v8::External>::Cast(info.Data())->Value();
     }
 
-    V8_INLINE static void ThrowException(const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
+    V8_INLINE static void ThrowException(
+        v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
     {
         v8::Isolate* isolate = info.GetIsolate();
         isolate->ThrowException(
             v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
     }
 
-    V8_INLINE static void SetReturn(const v8::FunctionCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value)
+    V8_INLINE static void SetReturn(
+        v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value)
     {
         info.GetReturnValue().Set(value);
     }
 
     template <typename T1, typename T2>
-    V8_INLINE static void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    V8_INLINE static void LinkOuter(
+        v8::Local<v8::Context> Context, const v8::FunctionCallbackInfo<v8::Value>& info, v8::Local<v8::Value> Inner)
     {
-        LinkOuterImpl(Context, Outer, Inner);
+        LinkOuterImpl(Context, info.Holder(), Inner);
     }
 
     V8_INLINE static void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, v8::Local<v8::Value> value)

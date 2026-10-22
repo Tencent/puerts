@@ -1,0 +1,66 @@
+name: unreal papi test
+
+# build the pesapi (papi) addon with static binding (Binding.hpp + PesapiBackend.hpp) and run it in a minimal
+# v8 host built from unreal JsEnv sources (PesapiV8Impl.cpp / PesapiRegister.cpp / CppObjectMapper.cpp ...),
+# see unreal/papi_test/CMakeLists.txt
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - unreal/Puerts/Source/JsEnv/**
+      - unreal/papi_test/**
+      - .github/workflows/unreal_papi_test.yml
+  pull_request:
+    paths:
+      - unreal/Puerts/Source/JsEnv/**
+      - unreal/papi_test/**
+      - .github/workflows/unreal_papi_test.yml
+
+env:
+  V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__241009/v8_bin_9.4.146.24.tgz"
+
+jobs:
+  papi_test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-2022
+            configure: cmake -S unreal/papi_test -B build -G "Visual Studio 17 2022" -A x64
+          - name: Linux
+            os: ubuntu-22.04
+            configure: CC=clang CXX=clang++ cmake -S unreal/papi_test -B build -DCMAKE_BUILD_TYPE=Release
+          - name: macOS
+            os: macos-14
+            configure: cmake -S unreal/papi_test -B build -DCMAKE_BUILD_TYPE=Release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install libc++
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libc++-dev libc++abi-dev
+
+      - name: Download v8
+        shell: bash
+        run: |
+          curl -L -s -o v8.tgz "${{ env.V8_URL }}"
+          tar xfz v8.tgz -C unreal/Puerts/ThirdParty
+          ls unreal/Puerts/ThirdParty/v8_9.4.146.24
+
+      - name: Configure
+        shell: bash
+        run: ${{ matrix.configure }}
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --config Release
+
+      - name: Test
+        shell: bash
+        run: ctest --test-dir build -C Release --output-on-failure -V
