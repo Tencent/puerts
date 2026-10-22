@@ -16,6 +16,7 @@
 #include "FunctionTranslator.h"
 
 #include "NamespaceDef.h"
+#include "pesapi.h"
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -34,13 +35,13 @@ public:
 private:
     static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    static void Bind(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void IsBound(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void IsBound(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Unbind(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Unbind(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Execute(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Execute(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 };
 
 class FMulticastDelegateWrapper
@@ -51,12 +52,12 @@ public:
 private:
     static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Add(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Remove(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Remove(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Clear(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Clear(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Broadcast(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Broadcast(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 };
 }    // namespace PUERTS_NAMESPACE

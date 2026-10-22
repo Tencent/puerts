@@ -11,6 +11,7 @@
 #include "CoreMinimal.h"
 
 #include "NamespaceDef.h"
+#include "pesapi.h"
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -27,8 +28,8 @@ public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
 private:
-    static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void IsValid(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 };
 }    // namespace PUERTS_NAMESPACE

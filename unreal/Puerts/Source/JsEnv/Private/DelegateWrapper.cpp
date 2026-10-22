@@ -9,144 +9,136 @@
 #include "DelegateWrapper.h"
 #include "ObjectMapper.h"
 #include "V8Utils.h"
+#include "PesapiClassThunks.h"
+#include "PapiUtils.h"
 
 namespace PUERTS_NAMESPACE
 {
+// the delegate bookkeeping lives in IObjectMapper, which is not migrated yet, so these calls still go through the bridge
+static FORCEINLINE IObjectMapper* DelegateObjectMapperOf(pesapi_env Env)
+{
+    return FV8Utils::IsolateData<IObjectMapper>(papi_bridge::IsolateOf(Env));
+}
+
+static FORCEINLINE v8::Local<v8::Function> DelegateJsFunctionOf(pesapi_value Value)
+{
+    return papi_bridge::ToV8(Value).As<v8::Function>();
+}
+
+static v8::Local<v8::FunctionTemplate> DelegateTemplate(
+    v8::Isolate* Isolate, v8::FunctionCallback Constructor, const JSFunctionInfo* Methods, int MethodCount)
+{
+    auto Result = v8::FunctionTemplate::New(Isolate, Constructor);
+    Result->InstanceTemplate()->SetInternalFieldCount(2);
+    for (int i = 0; i < MethodCount; ++i)
+    {
+        Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, Methods[i].Name),
+            ClassThunks::MethodTemplate(Isolate, &Methods[i], v8::ConstructorBehavior::kAllow));
+    }
+    return Result;
+}
+
 v8::Local<v8::FunctionTemplate> FDelegateWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    auto Result = v8::FunctionTemplate::New(Isolate, New);
-    Result->InstanceTemplate()->SetInternalFieldCount(2);
-
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Bind"), v8::FunctionTemplate::New(Isolate, Bind));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "IsBound"), v8::FunctionTemplate::New(Isolate, IsBound));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Unbind"), v8::FunctionTemplate::New(Isolate, Unbind));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Execute"), v8::FunctionTemplate::New(Isolate, Execute));
-
-    return Result;
+    // the entries are referenced by the function templates, so they must have static storage
+    static const JSFunctionInfo Methods[] = {{"Bind", &Bind}, {"IsBound", &IsBound}, {"Unbind", &Unbind}, {"Execute", &Execute}};
+    return DelegateTemplate(Isolate, New, Methods, UE_ARRAY_COUNT(Methods));
 }
 
 void FDelegateWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
 }
 
-void FDelegateWrapper::IsBound(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FDelegateWrapper::IsBound(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    auto DelegatePtr = FV8Utils::GetPointerFast<FScriptDelegate>(Info.Holder(), 0);
-
-    Info.GetReturnValue().Set(DelegatePtr->IsBound());
+    auto DelegatePtr = static_cast<FScriptDelegate*>(Apis->get_native_holder_ptr(Info));
+    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), DelegatePtr->IsBound()));
 }
 
-void FDelegateWrapper::Bind(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FDelegateWrapper::Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    if (Info.Length() == 1 && Info[0]->IsFunction())
+    pesapi_env Env = Apis->get_env(Info);
+    const int ArgCount = Apis->get_args_len(Info);
+    if (ArgCount == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
-        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddToDelegate(
-            Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
+        auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+        DelegateObjectMapperOf(Env)->AddToDelegate(
+            Context->GetIsolate(), Context, DelegatePtr, DelegateJsFunctionOf(Apis->get_arg(Info, 0)));
         return;
     }
-    if (Info.Length() == 2 && Info[0]->IsObject() && Info[1]->IsString())
+    if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
     {
-        if (auto Object = FV8Utils::GetUObject(Info[0].As<v8::Object>()))
+        if (auto Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
         {
             if (FV8Utils::IsReleasedPtr(Object))
             {
-                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                Apis->throw_by_string(Info, "passing a invalid object");
                 return;
             }
-            auto DelegatePtr = FV8Utils::GetPointerFast<FScriptDelegate>(Info.Holder(), 0);
+            auto DelegatePtr = static_cast<FScriptDelegate*>(Apis->get_native_holder_ptr(Info));
             FScriptDelegate Delegate;
-            Delegate.BindUFunction(Object, FName(*FV8Utils::ToFString(Isolate, Info[1])));
+            Delegate.BindUFunction(Object, FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
             *DelegatePtr = Delegate;
             return;
         }
     }
-    FV8Utils::ThrowException(Isolate, "invalid arguments");
+    Apis->throw_by_string(Info, "invalid arguments");
 }
 
-void FDelegateWrapper::Unbind(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FDelegateWrapper::Unbind(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-    FV8Utils::IsolateData<IObjectMapper>(Isolate)->ClearDelegate(Isolate, Context, DelegatePtr);
+    pesapi_env Env = Apis->get_env(Info);
+    auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+    DelegateObjectMapperOf(Env)->ClearDelegate(Context->GetIsolate(), Context, DelegatePtr);
 }
 
-void FDelegateWrapper::Execute(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FDelegateWrapper::Execute(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-    FV8Utils::IsolateData<IObjectMapper>(Isolate)->ExecuteDelegate(Isolate, Context, Info, DelegatePtr);
+    pesapi_env Env = Apis->get_env(Info);
+    auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+    DelegateObjectMapperOf(Env)->ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
 }
 
 v8::Local<v8::FunctionTemplate> FMulticastDelegateWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    auto Result = v8::FunctionTemplate::New(Isolate, New);
-    Result->InstanceTemplate()->SetInternalFieldCount(2);
-
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Add"), v8::FunctionTemplate::New(Isolate, Add));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Remove"), v8::FunctionTemplate::New(Isolate, Remove));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Clear"), v8::FunctionTemplate::New(Isolate, Clear));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Broadcast"), v8::FunctionTemplate::New(Isolate, Broadcast));
-
-    return Result;
+    static const JSFunctionInfo Methods[] = {{"Add", &Add}, {"Remove", &Remove}, {"Clear", &Clear}, {"Broadcast", &Broadcast}};
+    return DelegateTemplate(Isolate, New, Methods, UE_ARRAY_COUNT(Methods));
 }
 
 void FMulticastDelegateWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
 }
 
-void FMulticastDelegateWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    if (Info.Length() == 1 && Info[0]->IsFunction())
+    pesapi_env Env = Apis->get_env(Info);
+    const int ArgCount = Apis->get_args_len(Info);
+    if (ArgCount == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
-        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddToDelegate(
-            Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
+        auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+        DelegateObjectMapperOf(Env)->AddToDelegate(
+            Context->GetIsolate(), Context, DelegatePtr, DelegateJsFunctionOf(Apis->get_arg(Info, 0)));
         return;
     }
-    if (Info.Length() == 2 && Info[0]->IsObject() && Info[1]->IsString())
+    if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
     {
-        if (auto Object = FV8Utils::GetUObject(Info[0].As<v8::Object>()))
+        if (auto Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
         {
             if (FV8Utils::IsReleasedPtr(Object))
             {
-                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                Apis->throw_by_string(Info, "passing a invalid object");
                 return;
             }
-            auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-            if (auto Property = CastFieldMacro<MulticastDelegatePropertyMacro>(
-                    FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindDelegateProperty(DelegatePtr)))
+            auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+            if (auto Property =
+                    CastFieldMacro<MulticastDelegatePropertyMacro>(DelegateObjectMapperOf(Env)->FindDelegateProperty(DelegatePtr)))
             {
                 FScriptDelegate Delegate;
-                Delegate.BindUFunction(Object, FName(*FV8Utils::ToFString(Isolate, Info[1])));
+                Delegate.BindUFunction(Object, FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
 
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
                 if (Property->IsA<MulticastSparseDelegatePropertyMacro>())
@@ -162,50 +154,38 @@ void FMulticastDelegateWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& I
             }
         }
     }
-    FV8Utils::ThrowException(Isolate, "invalid arguments");
+    Apis->throw_by_string(Info, "invalid arguments");
 }
 
-void FMulticastDelegateWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FMulticastDelegateWrapper::Remove(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    if (Info.Length() == 1 && Info[0]->IsFunction())
+    pesapi_env Env = Apis->get_env(Info);
+    if (Apis->get_args_len(Info) == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
-        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->RemoveFromDelegate(
-            Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
+        auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+        DelegateObjectMapperOf(Env)->RemoveFromDelegate(
+            Context->GetIsolate(), Context, DelegatePtr, DelegateJsFunctionOf(Apis->get_arg(Info, 0)));
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, "invalid arguments");
+        Apis->throw_by_string(Info, "invalid arguments");
     }
 }
 
-void FMulticastDelegateWrapper::Clear(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FMulticastDelegateWrapper::Clear(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-    FV8Utils::IsolateData<IObjectMapper>(Isolate)->ClearDelegate(Isolate, Context, DelegatePtr);
+    pesapi_env Env = Apis->get_env(Info);
+    auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+    DelegateObjectMapperOf(Env)->ClearDelegate(Context->GetIsolate(), Context, DelegatePtr);
 }
 
-void FMulticastDelegateWrapper::Broadcast(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FMulticastDelegateWrapper::Broadcast(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
-    FV8Utils::IsolateData<IObjectMapper>(Isolate)->ExecuteDelegate(Isolate, Context, Info, DelegatePtr);
+    pesapi_env Env = Apis->get_env(Info);
+    auto DelegatePtr = Apis->get_native_holder_ptr(Info);
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+    DelegateObjectMapperOf(Env)->ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
 }
 }    // namespace PUERTS_NAMESPACE
