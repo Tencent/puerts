@@ -16,6 +16,7 @@
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "JSLogger.h"
+#include "pesapi.h"
 
 #include "NamespaceDef.h"
 
@@ -263,14 +264,10 @@ public:
     // TODO - 用doxygen注释
     // 参数：无
     // 返回：容器内元素总数
-    static void Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    static void Num(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-        auto Self = FV8Utils::GetPointerFast<T>(Info.Holder());
-        Info.GetReturnValue().Set(Self->Num());
+        auto Self = static_cast<T*>(Apis->get_native_holder_ptr(Info));
+        Apis->add_return(Info, Apis->create_int32(Apis->get_env(Info), Self->Num()));
     }
 };
 
@@ -283,47 +280,47 @@ private:
     // 参数：一到多个容器元素
     // 返回：无
     // 作用：追加新元素到容器
-    static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Add(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数：索引
     // 返回：元素（值类型，有内存拷贝）
     // 作用：获取索引对应的元素，如果索引越界则抛出异常
-    static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数：索引
     // 返回：元素（引用类型）
     // 作用：获取索引对应的元素，如果索引越界则抛出异常
-    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数1：索引；参数2：元素
     // 返回：无
     // 作用：设置容器中索引对应的元素值，如果索引越界则抛出异常
-    static void Set(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Set(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数：元素
     // 返回：bool
     // 作用：查询容器是否包含该元素，若是则返回true，否则返回false
-    static void Contains(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Contains(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数：元素
     // 返回：索引
     // 作用：返回容器中第一次出现该元素的索引，若元素不存在则返回INDEX_NONE（-1）
-    static void FindIndex(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void FindIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数：索引
     // 返回：无
     // 作用：移除索引对应的元素，被移除的位置之后的元素会自动前移，如果索引越界则抛出异常
-    static void RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void RemoveAt(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数：索引
     // 返回：bool
     // 作用：如果参数是有效索引，返回true，否则返回false
-    static void IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void IsValidIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // 参数：无
     // 返回：无
     // 作用：清空容器
-    static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     FORCEINLINE static int32 AddUninitialized(FScriptArray* ScriptArray, int32 ElementSize, int32 Count = 1);
 
@@ -331,9 +328,9 @@ private:
 
     FORCEINLINE static void Construct(FScriptArray* ScriptArray, FPropertyTranslator* Inner, int32 Index, int32 Count = 1);
 
-    static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static int32 FindIndexInner(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    FORCEINLINE static void InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
+    FORCEINLINE static void InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer);
 };
 
 class FScriptSetWrapper : public FContainerWrapper<FScriptSet>
@@ -342,27 +339,27 @@ public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
 private:
-    static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Add(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Contains(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Contains(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void FindIndex(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void FindIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void RemoveAt(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void GetMaxIndex(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void GetMaxIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void IsValidIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    FORCEINLINE static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    FORCEINLINE static int32 FindIndexInner(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    FORCEINLINE static void InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
+    FORCEINLINE static void InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer);
 };
 
 class FScriptMapWrapper : public FContainerWrapper<FScriptMap>
@@ -371,27 +368,27 @@ public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
 private:
-    static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Add(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Set(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Set(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Remove(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Remove(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void GetMaxIndex(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void GetMaxIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void IsValidIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void GetKey(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void GetKey(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     FORCEINLINE static FScriptMapLayout GetScriptLayout(const PropertyMacro* KeyProperty, const PropertyMacro* ValueProperty);
 
-    FORCEINLINE static void InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
+    FORCEINLINE static void InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer);
 };
 
 class FFixSizeArrayWrapper
@@ -404,14 +401,14 @@ private:
     {
     }
 
-    static void Num(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Num(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    static void Set(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    static void Set(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    FORCEINLINE static void InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
+    FORCEINLINE static void InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer);
 };
 }    // namespace PUERTS_NAMESPACE

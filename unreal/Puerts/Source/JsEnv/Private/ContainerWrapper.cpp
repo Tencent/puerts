@@ -8,159 +8,195 @@
 
 #include "ContainerWrapper.h"
 #include "PropertyTranslator.h"
+#include "PesapiClassThunks.h"
+#include "PapiV8Bridge.h"
 
 namespace PUERTS_NAMESPACE
 {
-v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+// internal field 0 of a container wrapper is the container, field 1 is the translator of the element (of the key for a map),
+// they are the native pointer and type id slots of papi
+template <typename T>
+static FORCEINLINE T* ContainerSelfOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    return static_cast<T*>(Apis->get_native_holder_ptr(Info));
+}
+
+static FORCEINLINE FPropertyTranslator* ContainerInnerOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    return static_cast<FPropertyTranslator*>(const_cast<void*>(Apis->get_native_holder_typeid(Info)));
+}
+
+// papi exposes only two internal fields, the value translator of a map (field 2) is still read through the bridge
+static FORCEINLINE FPropertyTranslator* ContainerMapValueOf(pesapi_callback_info Info)
+{
+    return DataTransfer::GetPointerFast<FPropertyTranslator>(papi_bridge::HolderOf(Info), 2);
+}
+
+static FORCEINLINE bool ContainerCheckArgsLen(struct pesapi_ffi* Apis, pesapi_callback_info Info, int Length)
+{
+    const int Provided = Apis->get_args_len(Info);
+    if (Provided < Length)
+    {
+        Apis->throw_by_string(Info,
+            TCHAR_TO_UTF8(*FString::Printf(TEXT("Bad parameters, the function expect %d, but  %d provided."), Length, Provided)));
+        return false;
+    }
+    return true;
+}
+
+// the holder value is not reachable through papi yet
+static FORCEINLINE void ContainerLinkOuter(pesapi_env Env, pesapi_callback_info Info, pesapi_value Inner)
+{
+    LinkOuterImpl(papi_bridge::ToV8(Env), papi_bridge::HolderOf(Info), papi_bridge::ToV8(Inner));
+}
+
+static v8::Local<v8::FunctionTemplate> ContainerTemplate(
+    v8::Isolate* Isolate, v8::FunctionCallback Constructor, int InternalFieldCount, const JSFunctionInfo* Methods, int MethodCount)
 {
     v8::Isolate::Scope Isolatescope(Isolate);
-    auto Result = v8::FunctionTemplate::New(Isolate, New);
-    Result->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1 Property
-
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Add"), v8::FunctionTemplate::New(Isolate, Add));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, GetRef));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Set"), v8::FunctionTemplate::New(Isolate, Set));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Contains"), v8::FunctionTemplate::New(Isolate, Contains));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "FindIndex"), v8::FunctionTemplate::New(Isolate, FindIndex));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "RemoveAt"), v8::FunctionTemplate::New(Isolate, RemoveAt));
-    Result->PrototypeTemplate()->Set(
-        FV8Utils::InternalString(Isolate, "IsValidIndex"), v8::FunctionTemplate::New(Isolate, IsValidIndex));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Empty"), v8::FunctionTemplate::New(Isolate, Empty));
-
+    auto Result = v8::FunctionTemplate::New(Isolate, Constructor);
+    Result->InstanceTemplate()->SetInternalFieldCount(InternalFieldCount);
+    for (int i = 0; i < MethodCount; ++i)
+    {
+        Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, Methods[i].Name),
+            ClassThunks::MethodTemplate(Isolate, &Methods[i], v8::ConstructorBehavior::kAllow));
+    }
     return Result;
 }
 
-void FScriptArrayWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+#define PAPI_CONTAINER_CHECK_ARGS_LEN(Length)       \
+    if (!ContainerCheckArgsLen(Apis, Info, Length)) \
+    {                                               \
+        return;                                     \
+    }
 
-    if (Info.Length() > 0)
+v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+{
+    // the entries are referenced by the function templates, so they must have static storage
+    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
+        {"Contains", &Contains}, {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"IsValidIndex", &IsValidIndex},
+        {"Empty", &Empty}};
+    return ContainerTemplate(Isolate, New, 4, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1 Property
+}
+
+void FScriptArrayWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    const int ArgCount = Apis->get_args_len(Info);
+    if (ArgCount > 0)
     {
-        auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-        auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+        pesapi_env Env = Apis->get_env(Info);
+        auto Self = ContainerSelfOf<FScriptArray>(Apis, Info);
+        auto Inner = ContainerInnerOf(Apis, Info);
         if (!Inner->IsPropertyValid())
         {
-            FV8Utils::ThrowException(Isolate, "item info is invalid!");
+            Apis->throw_by_string(Info, "item info is invalid!");
             return;
         }
 
-        int32 Index = AddUninitialized(Self, GetSizeWithAlignment(Inner->Property), Info.Length());
-        for (int i = 0; i < Info.Length(); ++i)
+        const int32 ElementSize = GetSizeWithAlignment(Inner->Property);
+        int32 Index = AddUninitialized(Self, ElementSize, ArgCount);
+        for (int i = 0; i < ArgCount; ++i)
         {
-            uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index + i);
+            uint8* DataPtr = GetData(Self, ElementSize, Index + i);
             Inner->Property->InitializeValue(DataPtr);    //使用之前必须得初始化，即使是设置也要
-            Inner->JsToUE(Isolate, Context, Info[i], DataPtr, false);
+            Inner->JsToUE(Apis, Env, Apis->get_arg(Info, i), DataPtr, false);
         }
-        Info.GetReturnValue().Set(Index);
+        Apis->add_return(Info, Apis->create_int32(Env, Index));
     }
 }
 
-void FScriptArrayWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+void FScriptArrayWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptArray>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
 
-    int Index = Info[0]->Int32Value(Context).ToChecked();
+    int Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
     if (Index < 0 || Index >= Self->Num())
     {
-        FV8Utils::ThrowException(Isolate, TEXT("invalid index"));
+        Apis->throw_by_string(Info, "invalid index");
         return;
     }
     uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index);
-    auto Ret = Inner->UEToJs(Isolate, Context, DataPtr, PassByPointer);
+    auto Ret = Inner->UEToJs(Apis, Env, DataPtr, PassByPointer);
     if (Inner->NeedLinkOuter && PassByPointer)
     {
-        LinkOuterImpl(Context, Info.Holder(), Ret);
+        ContainerLinkOuter(Env, Info, Ret);
     }
-    Info.GetReturnValue().Set(Ret);
+    Apis->add_return(Info, Ret);
 }
 
-void FScriptArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::Get(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, false);
+    InternalGet(Apis, Info, false);
 }
 
-void FScriptArrayWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, true);
+    InternalGet(Apis, Info, true);
 }
 
-void FScriptArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::Set(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(2);
 
-    CHECK_V8_ARGS_LEN(2);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptArray>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
 
-    int Index = Info[0]->Int32Value(Context).ToChecked();
+    int Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
     if (Index < 0 || Index >= Self->Num())
     {
-        FV8Utils::ThrowException(Isolate, TEXT("invalid index"));
+        Apis->throw_by_string(Info, "invalid index");
         return;
     }
     uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index);
-    // Inner->Property->InitializeValue(DataPtr);
-    Inner->JsToUE(Isolate, Context, Info[1], DataPtr, false);
+    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 1), DataPtr, false);
 }
 
-void FScriptArrayWrapper::Contains(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::Contains(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    CHECK_V8_ARGS_LEN(1);
-    bool Result = FindIndexInner(Info) != INDEX_NONE;
-    Info.GetReturnValue().Set(Result);
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
+    bool Result = FindIndexInner(Apis, Info) != INDEX_NONE;
+    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), Result));
 }
 
-void FScriptArrayWrapper::FindIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::FindIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    CHECK_V8_ARGS_LEN(1);
-    int32 Result = FindIndexInner(Info);
-    Info.GetReturnValue().Set(Result);
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
+    int32 Result = FindIndexInner(Apis, Info);
+    Apis->add_return(Info, Apis->create_int32(Apis->get_env(Info), Result));
 }
 
-void FScriptArrayWrapper::RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::RemoveAt(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptArray>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
 
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
+    int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
     if (Index < 0 || Index >= Self->Num())
     {
-        FV8Utils::ThrowException(Isolate, TEXT("invalid index"));
+        Apis->throw_by_string(Info, "invalid index");
         return;
     }
     else
@@ -174,30 +210,23 @@ void FScriptArrayWrapper::RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& In
     }
 }
 
-void FScriptArrayWrapper::IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::IsValidIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
-    Info.GetReturnValue().Set(Self->IsValidIndex(Index));
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptArray>(Apis, Info);
+    int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
+    Apis->add_return(Info, Apis->create_boolean(Env, Self->IsValidIndex(Index)));
 }
 
-void FScriptArrayWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptArrayWrapper::Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    auto Self = ContainerSelfOf<FScriptArray>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
 
@@ -229,24 +258,21 @@ FORCEINLINE void FScriptArrayWrapper::Construct(FScriptArray* ScriptArray, FProp
     }
 }
 
-int32 FScriptArrayWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info)
+int32 FScriptArrayWrapper::FindIndexInner(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptArray>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return INDEX_NONE;
     }
     auto Property = Inner->Property;
 
     void* Dest = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(Dest);
-    Inner->JsToUE(Isolate, Context, Info[0], Dest, false);
+    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 0), Dest, false);
 
     const int32 Num = Self->Num();
     int32 Result = INDEX_NONE;
@@ -267,46 +293,29 @@ int32 FScriptArrayWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Val
 
 v8::Local<v8::FunctionTemplate> FScriptSetWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    v8::Isolate::Scope Isolatescope(Isolate);
-    auto Result = v8::FunctionTemplate::New(Isolate, New);
-    Result->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1 Property
-
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Add"), v8::FunctionTemplate::New(Isolate, Add));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, GetRef));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Contains"), v8::FunctionTemplate::New(Isolate, Contains));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "FindIndex"), v8::FunctionTemplate::New(Isolate, FindIndex));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "RemoveAt"), v8::FunctionTemplate::New(Isolate, RemoveAt));
-    Result->PrototypeTemplate()->Set(
-        FV8Utils::InternalString(Isolate, "GetMaxIndex"), v8::FunctionTemplate::New(Isolate, GetMaxIndex));
-    Result->PrototypeTemplate()->Set(
-        FV8Utils::InternalString(Isolate, "IsValidIndex"), v8::FunctionTemplate::New(Isolate, IsValidIndex));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Empty"), v8::FunctionTemplate::New(Isolate, Empty));
-
-    return Result;
+    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef},
+        {"Contains", &Contains}, {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"GetMaxIndex", &GetMaxIndex},
+        {"IsValidIndex", &IsValidIndex}, {"Empty", &Empty}};
+    return ContainerTemplate(Isolate, New, 4, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1 Property
 }
 
-void FScriptSetWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
     auto Property = Inner->Property;
 
     void* DataPtr = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(DataPtr);
-    Inner->JsToUE(Isolate, Context, Info[0], DataPtr, false);
+    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 0), DataPtr, false);
 
     auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
     Self->Add(
@@ -321,149 +330,129 @@ void FScriptSetWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Property->DestroyValue(DataPtr);
 }
 
-void FScriptSetWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+void FScriptSetWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
     auto Property = Inner->Property;
 
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
+    int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
     if (Self->IsValidIndex(Index) == false)
     {
-        FV8Utils::ThrowException(Isolate, "invalid index argument");
+        Apis->throw_by_string(Info, "invalid index argument");
     }
     else
     {
         auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
         void* Data = Self->GetData(Index, ScriptLayout);
-        auto Ret = Inner->UEToJs(Isolate, Context, Data, PassByPointer);
+        auto Ret = Inner->UEToJs(Apis, Env, Data, PassByPointer);
         if (Inner->NeedLinkOuter && PassByPointer)
         {
-            LinkOuterImpl(Context, Info.Holder(), Ret);
+            ContainerLinkOuter(Env, Info, Ret);
         }
-        Info.GetReturnValue().Set(Ret);
+        Apis->add_return(Info, Ret);
     }
 }
 
-void FScriptSetWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::Get(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, false);
+    InternalGet(Apis, Info, false);
 }
 
-void FScriptSetWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, true);
+    InternalGet(Apis, Info, true);
 }
 
-void FScriptSetWrapper::Contains(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::Contains(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    CHECK_V8_ARGS_LEN(1);
-    bool Result = FindIndexInner(Info) != INDEX_NONE;
-    Info.GetReturnValue().Set(Result);
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
+    bool Result = FindIndexInner(Apis, Info) != INDEX_NONE;
+    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), Result));
 }
 
-void FScriptSetWrapper::FindIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::FindIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    CHECK_V8_ARGS_LEN(1);
-    int32 Result = FindIndexInner(Info);
-    Info.GetReturnValue().Set(Result);
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
+    int32 Result = FindIndexInner(Apis, Info);
+    Apis->add_return(Info, Apis->create_int32(Apis->get_env(Info), Result));
 }
 
-void FScriptSetWrapper::RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::RemoveAt(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
     auto Property = Inner->Property;
 
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
+    int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
     if (Self->IsValidIndex(Index) == false)
     {
-        FV8Utils::ThrowException(Isolate, "invalid index argument");
+        Apis->throw_by_string(Info, "invalid index argument");
     }
     else
     {
         auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
-        void* Data = Self->GetData(Index, ScriptLayout);
         FScriptSetEx::Destruct(Self, Property, Index, 1);
         Self->RemoveAt(Index, ScriptLayout);
     }
 }
 
-void FScriptSetWrapper::GetMaxIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::GetMaxIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
+    auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
     uint32 Result = Self->GetMaxIndex();
-    Info.GetReturnValue().Set(Result);
+    Apis->add_return(Info, Apis->create_uint32(Apis->get_env(Info), Result));
 }
 
-void FScriptSetWrapper::IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::IsValidIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
+    int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
+    // kept as a number for compatibility
     uint32 Result = Self->IsValidIndex(Index);
-    Info.GetReturnValue().Set(Result);
+    Apis->add_return(Info, Apis->create_uint32(Env, Result));
 }
 
-void FScriptSetWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptSetWrapper::Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
 
     FScriptSetEx::Empty(Self, Inner->Property);
 }
 
-int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info)
+int32 FScriptSetWrapper::FindIndexInner(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return INDEX_NONE;
     }
     auto Property = Inner->Property;
@@ -471,7 +460,7 @@ int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value
     void* DataPtr = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(DataPtr);
 
-    Inner->JsToUE(Isolate, Context, Info[0], DataPtr, false);
+    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 0), DataPtr, false);
 
     auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
 
@@ -485,42 +474,25 @@ int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value
 //---------------------------------------Map-----------------------------------------------
 v8::Local<v8::FunctionTemplate> FScriptMapWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    v8::Isolate::Scope Isolatescope(Isolate);
-    auto Result = v8::FunctionTemplate::New(Isolate, New);
-    Result->InstanceTemplate()->SetInternalFieldCount(6);    // 0 Ptr, 1-2 Property
-
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Add"), v8::FunctionTemplate::New(Isolate, Add));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, GetRef));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Set"), v8::FunctionTemplate::New(Isolate, Set));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Remove"), v8::FunctionTemplate::New(Isolate, Remove));
-    Result->PrototypeTemplate()->Set(
-        FV8Utils::InternalString(Isolate, "GetMaxIndex"), v8::FunctionTemplate::New(Isolate, GetMaxIndex));
-    Result->PrototypeTemplate()->Set(
-        FV8Utils::InternalString(Isolate, "IsValidIndex"), v8::FunctionTemplate::New(Isolate, IsValidIndex));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetKey"), v8::FunctionTemplate::New(Isolate, GetKey));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Empty"), v8::FunctionTemplate::New(Isolate, Empty));
-
-    return Result;
+    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
+        {"Remove", &Remove}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex}, {"GetKey", &GetKey},
+        {"Empty", &Empty}};
+    return ContainerTemplate(Isolate, New, 6, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1-2 Property
 }
 
-void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(2);
 
-    CHECK_V8_ARGS_LEN(2);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
-    auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
+    auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
+        Apis->throw_by_string(Info, "key/value info is invalid!");
         return;
     }
 
@@ -530,8 +502,8 @@ void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     void* ValuePtr = FMemory_Alloca(GetSizeWithAlignment(ValueProperty));
     ValueProperty->InitializeValue(ValuePtr);
 
-    KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
-    ValuePropertyTranslator->JsToUE(Isolate, Context, Info[1], ValuePtr, false);
+    KeyPropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 0), KeyPtr, false);
+    ValuePropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 1), ValuePtr, false);
 
     auto ScriptLayout = FScriptMap::GetScriptLayout(
         KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
@@ -556,28 +528,25 @@ void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     ValueProperty->DestroyValue(ValuePtr);
 }
 
-void FScriptMapWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+void FScriptMapWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
-    auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
+    auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
+        Apis->throw_by_string(Info, "key/value info is invalid!");
         return;
     }
 
     void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
     KeyProperty->InitializeValue(KeyPtr);
-    KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
+    KeyPropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 0), KeyPtr, false);
 
     auto ScriptLayout = FScriptMap::GetScriptLayout(
         KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
@@ -588,53 +557,50 @@ void FScriptMapWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& I
 
     if (ValuePtr)
     {
-        auto Ret = ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, PassByPointer);
+        auto Ret = ValuePropertyTranslator->UEToJs(Apis, Env, ValuePtr, PassByPointer);
         if (ValuePropertyTranslator->NeedLinkOuter && PassByPointer)
         {
-            LinkOuterImpl(Context, Info.Holder(), Ret);
+            ContainerLinkOuter(Env, Info, Ret);
         }
-        Info.GetReturnValue().Set(Ret);
+        Apis->add_return(Info, Ret);
     }
     KeyProperty->DestroyValue(KeyPtr);
 }
 
-void FScriptMapWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::Get(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, false);
+    InternalGet(Apis, Info, false);
 }
 
-void FScriptMapWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, true);
+    InternalGet(Apis, Info, true);
 }
 
-void FScriptMapWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::Set(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    Add(Info);
+    Add(Apis, Info);
 }
 
-void FScriptMapWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::Remove(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
-    auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
+    auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
+        Apis->throw_by_string(Info, "key/value info is invalid!");
         return;
     }
 
     void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
     KeyProperty->InitializeValue(KeyPtr);
-    KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
+    KeyPropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 0), KeyPtr, false);
 
     auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
     int32 Index = Self->FindPairIndex(
@@ -642,7 +608,7 @@ void FScriptMapWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
         [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); });
     if (Index == INDEX_NONE)
     {
-        FV8Utils::ThrowException(Isolate, TEXT("invalid key argument"));
+        Apis->throw_by_string(Info, "invalid key argument");
     }
     else
     {
@@ -652,78 +618,63 @@ void FScriptMapWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
     KeyProperty->DestroyValue(KeyPtr);
 }
 
-void FScriptMapWrapper::GetMaxIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::GetMaxIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
+    auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
     int32 Result = Self->GetMaxIndex();
-    Info.GetReturnValue().Set(Result);
+    Apis->add_return(Info, Apis->create_int32(Apis->get_env(Info), Result));
 }
 
-void FScriptMapWrapper::IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::IsValidIndex(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
-    Info.GetReturnValue().Set(Self->IsValidIndex(Index));
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
+    int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
+    Apis->add_return(Info, Apis->create_boolean(Env, Self->IsValidIndex(Index)));
 }
 
-void FScriptMapWrapper::GetKey(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::GetKey(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CONTAINER_CHECK_ARGS_LEN(1);
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
+    int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
     if (Self->IsValidIndex(Index) == false)
     {
-        FV8Utils::ThrowException(Isolate, TEXT("the argument is an invalid index"));
-        Info.GetReturnValue().Set(v8::Undefined(Isolate));
+        Apis->throw_by_string(Info, "the argument is an invalid index");
     }
     else
     {
-        auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
         auto KeyProperty = KeyPropertyTranslator->Property;
-        auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
+        auto ValuePropertyTranslator = ContainerMapValueOf(Info);
         auto ValueProperty = ValuePropertyTranslator->Property;
         if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
         {
-            FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
+            Apis->throw_by_string(Info, "key/value info is invalid!");
             return;
         }
 
         auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
         uint8* Data = reinterpret_cast<uint8*>(Self->GetData(Index, ScriptLayout));
         void* KeyPtr = Data + GetKeyOffset(ScriptLayout);
-        Info.GetReturnValue().Set(KeyPropertyTranslator->UEToJs(Isolate, Context, KeyPtr, false));
+        Apis->add_return(Info, KeyPropertyTranslator->UEToJs(Apis, Env, KeyPtr, false));
     }
 }
 
-void FScriptMapWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptMapWrapper::Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
-    auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
+    auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
+        Apis->throw_by_string(Info, "key/value info is invalid!");
         return;
     }
 
@@ -739,59 +690,44 @@ FScriptMapLayout FScriptMapWrapper::GetScriptLayout(const PropertyMacro* KeyProp
 //---------------------------------------Fix Size Array-----------------------------------------------
 v8::Local<v8::FunctionTemplate> FFixSizeArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    v8::Isolate::Scope Isolatescope(Isolate);
-    auto Result = v8::FunctionTemplate::New(Isolate, New);
-    Result->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1 Property
-
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, GetRef));
-    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Set"), v8::FunctionTemplate::New(Isolate, Set));
-    // Result->PrototypeTemplate()->SetIndexedPropertyHandler(Getter, Setter);
-
-    return Result;
+    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set}};
+    return ContainerTemplate(Isolate, New, 4, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1 Property
 }
 
-void FFixSizeArrayWrapper::Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FFixSizeArrayWrapper::Num(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
-    Info.GetReturnValue().Set(Inner->Property->ArrayDim);
+    Apis->add_return(Info, Apis->create_int32(Apis->get_env(Info), Inner->Property->ArrayDim));
 }
 
-void FFixSizeArrayWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+// the index must be an int32, otherwise it is treated as invalid
+static FORCEINLINE int32 FixSizeArrayIndexOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    pesapi_value IndexValue = Apis->get_arg(Info, 0);
+    return Apis->is_int32(Env, IndexValue) ? Apis->get_value_int32(Env, IndexValue) : -1;
+}
 
-    auto Self = FV8Utils::GetPointerFast<uint8>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+void FFixSizeArrayWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool PassByPointer)
+{
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<uint8>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
     auto Property = Inner->Property;
 
-    int32 Index = -1;
-
-    if (Info[0]->IsInt32())
-    {
-        Index = Info[0]->Int32Value(Context).ToChecked();
-    }
-
+    int32 Index = FixSizeArrayIndexOf(Apis, Env, Info);
     if (Index < 0 || Index >= Property->ArrayDim)
     {
-        FV8Utils::ThrowException(Isolate, "invalid index");
+        Apis->throw_by_string(Info, "invalid index");
         return;
     }
 
@@ -801,49 +737,40 @@ void FFixSizeArrayWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>
     auto Ptr = Self + Property->ElementSize * Index;
 #endif
 
-    auto Ret = Inner->UEToJs(Isolate, Context, Ptr, PassByPointer);
+    auto Ret = Inner->UEToJs(Apis, Env, Ptr, PassByPointer);
     if (Inner->NeedLinkOuter && PassByPointer)
     {
-        LinkOuterImpl(Context, Info.Holder(), Ret);
+        ContainerLinkOuter(Env, Info, Ret);
     }
-    Info.GetReturnValue().Set(Ret);
+    Apis->add_return(Info, Ret);
 }
 
-void FFixSizeArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FFixSizeArrayWrapper::Get(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, false);
+    InternalGet(Apis, Info, false);
 }
 
-void FFixSizeArrayWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FFixSizeArrayWrapper::GetRef(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    InternalGet(Info, true);
+    InternalGet(Apis, Info, true);
 }
 
-void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FFixSizeArrayWrapper::Set(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-    auto Self = FV8Utils::GetPointerFast<uint8>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Self = ContainerSelfOf<uint8>(Apis, Info);
+    auto Inner = ContainerInnerOf(Apis, Info);
     if (!Inner->IsPropertyValid())
     {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        Apis->throw_by_string(Info, "item info is invalid!");
         return;
     }
     auto Property = Inner->Property;
 
-    int32 Index = -1;
-
-    if (Info[0]->IsInt32())
-    {
-        Index = Info[0]->Int32Value(Context).ToChecked();
-    }
-
+    int32 Index = FixSizeArrayIndexOf(Apis, Env, Info);
     if (Index < 0 || Index >= Property->ArrayDim)
     {
-        FV8Utils::ThrowException(Isolate, "invalid index");
+        Apis->throw_by_string(Info, "invalid index");
         return;
     }
 
@@ -853,6 +780,8 @@ void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
     auto Ptr = Self + Property->ElementSize * Index;
 #endif
 
-    Inner->JsToUE(Isolate, Context, Info[1], Ptr, true);
+    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 1), Ptr, true);
 }
+
+#undef PAPI_CONTAINER_CHECK_ARGS_LEN
 }    // namespace PUERTS_NAMESPACE
