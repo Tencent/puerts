@@ -9,8 +9,13 @@
 #pragma once
 
 #include "Binding.hpp"
+#include "PesapiBackend.hpp"
 #include "pesapi.h"
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+#include "JSLogger.h"
+#else
 #include <iostream>
+#endif
 
 namespace PUERTS_NAMESPACE
 {
@@ -37,7 +42,11 @@ namespace pesapi_impl
 {
 static inline void REPORT_EXCEPTION(const char* MSG)
 {
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+    UE_LOG(Puerts, Error, TEXT("call function throw: %s"), UTF8_TO_TCHAR(MSG));
+#else
     std::cout << "call function throw: " << MSG << std::endl;
+#endif
 }
 
 class Object
@@ -112,7 +121,7 @@ public:
         internal::AutoValueScope ValueScope(apis_, env_holder);
         auto env = apis_->get_env_from_ref(env_holder);
         auto val = apis_->get_value_from_ref(env, value_holder);
-        return val && apis_->is_object(env, val);
+        return val && apis_->is_object(env, val) != 0;
     }
 
     Object& operator=(const Object& obj)
@@ -202,7 +211,7 @@ public:
         internal::AutoValueScope ValueScope(apis_, env_holder);
         auto env = apis_->get_env_from_ref(env_holder);
         auto val = apis_->get_value_from_ref(env, value_holder);
-        return val && apis_->is_function(env, val);
+        return val && apis_->is_function(env, val) != 0;
     }
 
     template <typename T>
@@ -272,7 +281,7 @@ struct Converter<Object>
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_object(env.env, value);
+        return env.apis->is_object(env.env, value) != 0;
     }
 };
 
@@ -291,7 +300,7 @@ struct Converter<Function>
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_function(env.env, value);
+        return env.apis->is_function(env.env, value) != 0;
     }
 };
 

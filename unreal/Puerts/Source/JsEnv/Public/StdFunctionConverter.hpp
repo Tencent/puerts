@@ -5,7 +5,7 @@
  * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
  * which is part of this source code package.
  */
-#pragma once
+// NOTE: no include guard, this file is included inside the backend namespaces (v8_impl / pesapi_impl), once for each
 template <typename R, typename... Args>
 struct Converter<std::function<R(Args...)>>
 {

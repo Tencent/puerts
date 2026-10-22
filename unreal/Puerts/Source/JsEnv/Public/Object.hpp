@@ -8,10 +8,8 @@
 
 #pragma once
 
-#if defined(BUILDING_PES_EXTENSION)
 #include "PesapiObject.hpp"
-#endif
-#if !defined(BUILDING_PES_EXTENSION) || defined(PES_EXTENSION_WITH_V8_API)
+#if !defined(BUILDING_PES_EXTENSION)
 #include "V8Object.hpp"
 #endif
 

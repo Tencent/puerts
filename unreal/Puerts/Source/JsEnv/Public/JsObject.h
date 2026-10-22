@@ -306,4 +306,28 @@ struct Converter<FJsObject>
     }
 };
 }    // namespace v8_impl
+
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+namespace pesapi_impl
+{
+template <>
+struct Converter<FJsObject>
+{
+    static pesapi_value toScript(PApiCallbackEnv env, FJsObject value)
+    {
+        return papi_bridge::ToPapi(v8_impl::Converter<FJsObject>::toScript(papi_bridge::ToV8(env.env), value));
+    }
+
+    static FJsObject toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        return v8_impl::Converter<FJsObject>::toCpp(papi_bridge::ToV8(env.env), papi_bridge::ToV8(value));
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return papi_bridge::ToV8(value)->IsObject();
+    }
+};
+}    // namespace pesapi_impl
+#endif
 }    // namespace PUERTS_NAMESPACE
