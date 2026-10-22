@@ -1,6 +1,6 @@
 'use strict';
 // Error behaviour visible to scripts. Messages are recorded in the baseline rather than asserted.
-const { UE, puerts, test, note, catchError, run } = require('./framework');
+const { UE, puerts, test, note, assert, catchError, run } = require('./framework');
 const { $ref } = puerts;
 const obj = new UE.PuertsTestObject();
 
@@ -46,10 +46,10 @@ test('container errors', () => {
 
 test('delegate errors', () => {
     note('bind non function', catchError(() => obj.IntDelegate.Bind(1)));
-    // KNOWN CRASH: Execute on an unbound delegate hits check(Object.IsValid()) in
-    // FScriptDelegate::ProcessDelegate (JsEnvImpl::ExecuteDelegate has no IsBound guard).
-    // Kept out of the suite so it does not take down the editor; fix in a later batch.
-    // note('execute unbound', catchError(() => obj.IntDelegate.Execute(1)));
+    obj.IntDelegate.Unbind();
+    const unboundErr = catchError(() => obj.IntDelegate.Execute(1));
+    assert(unboundErr !== '<no throw>', 'execute on an unbound delegate must throw, not crash');
+    note('execute unbound', unboundErr);
 });
 
 test('ref helpers', () => {

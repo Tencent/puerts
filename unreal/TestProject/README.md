@@ -50,7 +50,6 @@ Because the plugin is built in place, `JsEnv.Build.cs` copies `Content/` and `Ty
 
 These are recorded, not fixed, so that the baseline reflects the implementation before refactoring:
 
-- `delegate.Execute()` on an unbound delegate crashes the editor (`check(Object.IsValid())` in `FScriptDelegate::ProcessDelegate`; `FJsEnvImpl::ExecuteDelegate` has no `IsBound` guard and also dereferences `DelegateMap.end()` after throwing). The case is commented out in `errors.js`.
 - `blueprint.mixin` on a native class overrides `BlueprintImplementableEvent` but not `BlueprintNativeEvent` called from C++ (`Mixin.txt`).
 - Many argument type mismatches do not throw (`Errors.txt`, `<no throw>` lines), e.g. `obj.Add('a', 'b')`.
 - `TSet` wrapper has no `Remove`; `Multicast.IsBound` is missing.

@@ -2419,6 +2419,13 @@ void FJsEnvImpl::ExecuteDelegate(
     if (Iter == DelegateMap.end())
     {
         FV8Utils::ThrowException(Isolate, "can not find the delegate!");
+        return;
+    }
+    if (Iter->second.DelegateProperty && !static_cast<FScriptDelegate*>(DelegatePtr)->IsBound())
+    {
+        // FScriptDelegate::ProcessDelegate asserts on an unbound (or stale) delegate
+        FV8Utils::ThrowException(Isolate, "can not execute an unbound delegate!");
+        return;
     }
     auto SignatureFunction = Iter->second.SignatureFunction;
     if (JsCallbackPrototypeMap.find(SignatureFunction) == JsCallbackPrototypeMap.end())

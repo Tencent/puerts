@@ -21,4 +21,5 @@ array set out of range: Error: invalid index
 map key wrong type: <no throw>
 fixed array out of range: Error: invalid index
 bind non function: Error: invalid arguments
+execute unbound: Error: can not execute an unbound delegate!
 ref shape: [1]
