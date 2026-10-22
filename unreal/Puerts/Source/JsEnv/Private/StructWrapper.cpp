@@ -11,6 +11,7 @@
 #include "ObjectMapper.h"
 #include "PathEscape.h"
 #include "PesapiClassThunks.h"
+#include "PapiUtils.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -278,9 +279,9 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
         if (!IsReuseTemplate)
         {
             Result->Set(FV8Utils::InternalString(Isolate, "Find"),
-                v8::FunctionTemplate::New(Isolate, Find, v8::External::New(Isolate, this)));
+                ClassThunks::MethodTemplate(Isolate, &FindInfo, v8::ConstructorBehavior::kAllow));
             Result->Set(FV8Utils::InternalString(Isolate, "Load"),
-                v8::FunctionTemplate::New(Isolate, Load, v8::External::New(Isolate, this)));
+                ClassThunks::MethodTemplate(Isolate, &LoadInfo, v8::ConstructorBehavior::kAllow));
         }
     }
 
@@ -305,12 +306,12 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
 
     if (!IsReuseTemplate)
         Result->Set(FV8Utils::InternalString(Isolate, "StaticClass"),
-            v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
+            ClassThunks::MethodTemplate(Isolate, &StaticClassInfo, v8::ConstructorBehavior::kAllow));
 
     if (!Struct->IsA<UClass>() && !IsReuseTemplate)
     {
         Result->Set(FV8Utils::InternalString(Isolate, "StaticStruct"),
-            v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
+            ClassThunks::MethodTemplate(Isolate, &StaticClassInfo, v8::ConstructorBehavior::kAllow));
     }
 
 #ifndef WITH_QUICKJS
@@ -407,108 +408,95 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
 }
 MSVC_PRAGMA(warning(pop))
 
-void FStructWrapper::StaticClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FStructWrapper::StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    FStructWrapper* This = reinterpret_cast<FStructWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FStructWrapper* This = static_cast<FStructWrapper*>(Apis->get_userdata(Info));
+    pesapi_env Env = Apis->get_env(Info);
 
     if (!This->Struct.IsValid())
     {
-        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        Apis->throw_by_string(Info, "Associated UStruct had been GC");
         return;
     }
 
-    auto Result =
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, This->Struct->GetClass(), This->Struct.Get());
-    Info.GetReturnValue().Set(Result);
+    Apis->add_return(Info, PapiUtils::FindOrAddUObject(Env, This->Struct->GetClass(), This->Struct.Get()));
 }
 
-void FStructWrapper::Find(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FStructWrapper::Find(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    FStructWrapper* This = reinterpret_cast<FStructWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FStructWrapper* This = static_cast<FStructWrapper*>(Apis->get_userdata(Info));
+    pesapi_env Env = Apis->get_env(Info);
 
     if (!This->Struct.IsValid())
     {
-        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        Apis->throw_by_string(Info, "Associated UStruct had been GC");
         return;
     }
 
     UClass* Class = Cast<UClass>(This->Struct);
+    const int ArgCount = Apis->get_args_len(Info);
+    pesapi_value NameValue = ArgCount >= 1 ? Apis->get_arg(Info, 0) : nullptr;
 
-    if (Class && Info.Length() >= 1 && Info[0]->IsString())
+    if (Class && NameValue && Apis->is_string(Env, NameValue))
     {
+        const FString Name = PapiUtils::ToFString(Apis, Env, NameValue);
         UObject* Object = nullptr;
-        if (Info.Length() > 1)
+        if (ArgCount > 1)
         {
-            UObject* Outer = FV8Utils::GetUObject(Context, Info[1]);
+            UObject* Outer = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 1));
 #if ENGINE_MINOR_VERSION >= 7 && ENGINE_MAJOR_VERSION >= 5
-            Object = StaticFindObject(Class, Outer, *FV8Utils::ToFString(Isolate, Info[0]), EFindObjectFlags::None);
+            Object = StaticFindObject(Class, Outer, *Name, EFindObjectFlags::None);
 #else
-            Object = StaticFindObject(Class, Outer, *FV8Utils::ToFString(Isolate, Info[0]), false);
+            Object = StaticFindObject(Class, Outer, *Name, false);
 #endif
         }
         else
         {
 #if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
-            Object = StaticFindFirstObject(Class, *FV8Utils::ToFString(Isolate, Info[0]));
+            Object = StaticFindFirstObject(Class, *Name);
 #else
-            Object = StaticFindObject(Class, ANY_PACKAGE, *FV8Utils::ToFString(Isolate, Info[0]), false);
+            Object = StaticFindObject(Class, ANY_PACKAGE, *Name, false);
 #endif
         }
 
         if (Object)
         {
-            auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
-            Info.GetReturnValue().Set(Result);
+            Apis->add_return(Info, PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object));
         }
         else
         {
-            Info.GetReturnValue().Set(v8::Undefined(Isolate));
+            Apis->add_return(Info, Apis->create_undefined(Env));
         }
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, "invalid argument");
+        Apis->throw_by_string(Info, "invalid argument");
     }
 }
 
-void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FStructWrapper::Load(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    FStructWrapper* This = reinterpret_cast<FStructWrapper*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FStructWrapper* This = static_cast<FStructWrapper*>(Apis->get_userdata(Info));
+    pesapi_env Env = Apis->get_env(Info);
 
     if (!This->Struct.IsValid())
     {
-        FV8Utils::ThrowException(Isolate, "Associated UStruct had been GC");
+        Apis->throw_by_string(Info, "Associated UStruct had been GC");
         return;
     }
 
     UClass* Class = Cast<UClass>(This->Struct);
+    const int ArgCount = Apis->get_args_len(Info);
+    pesapi_value PathValue = ArgCount > 0 ? Apis->get_arg(Info, 0) : nullptr;
 
-    if (Class && Info.Length() > 0 && Info[0]->IsString())
+    if (Class && PathValue && Apis->is_string(Env, PathValue))
     {
         bool UnEscape = false;
-        if (Info.Length() > 1)
+        if (ArgCount > 1)
         {
-            UnEscape = Info[1]->BooleanValue(Isolate);
+            UnEscape = Apis->get_value_bool(Env, Apis->get_arg(Info, 1)) != 0;
         }
-        auto Path = FV8Utils::ToFString(Isolate, Info[0]);
+        auto Path = PapiUtils::ToFString(Apis, Env, PathValue);
 
         if (FPackageName::DoesPackageExist(FSoftObjectPath(Path).GetLongPackageName()))
         {
@@ -516,19 +504,17 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
             if (Object)
             {
-                auto Result =
-                    FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
-                Info.GetReturnValue().Set(Result);
+                Apis->add_return(Info, PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object));
             }
         }
         else
         {
-            Info.GetReturnValue().Set(v8::Undefined(Isolate));
+            Apis->add_return(Info, Apis->create_undefined(Env));
         }
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, "invalid argument");
+        Apis->throw_by_string(Info, "invalid argument");
     }
 }
 

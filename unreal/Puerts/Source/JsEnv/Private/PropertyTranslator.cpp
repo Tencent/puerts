@@ -21,6 +21,7 @@
 #include "ContainerWrapper.h"
 #include "JsObject.h"
 #include "PesapiClassThunks.h"
+#include "PapiUtils.h"
 #ifdef PUERTS_FTEXT_AS_OBJECT
 #include "TypeInfo.hpp"
 #endif
@@ -214,23 +215,12 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
 
 static FORCEINLINE FString PapiToFString(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
 {
-    FString Ret;
-    size_t Len = 0;
-    Apis->get_value_string_utf16(Env, Value, nullptr, &Len);
-    if (Len > 0)
-    {
-        TArray<TCHAR>& CharArray = Ret.GetCharArray();
-        CharArray.SetNumUninitialized(static_cast<int32>(Len) + 1);
-        Apis->get_value_string_utf16(Env, Value, reinterpret_cast<uint16_t*>(CharArray.GetData()), &Len);
-        CharArray[static_cast<int32>(Len)] = TEXT('\0');
-    }
-    return Ret;
+    return PapiUtils::ToFString(Apis, Env, Value);
 }
 
 static FORCEINLINE pesapi_value PapiFromFString(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Str)
 {
-    static_assert(sizeof(TCHAR) == sizeof(uint16_t), "TCHAR must be UTF-16");
-    return Apis->create_string_utf16(Env, reinterpret_cast<const uint16_t*>(*Str), static_cast<size_t>(Str.Len()));
+    return PapiUtils::FromFString(Apis, Env, Str);
 }
 
 // the same as FV8Utils::ToV8String(FName): comparison entry plus "_N" suffix

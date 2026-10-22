@@ -49,6 +49,13 @@ class FStructWrapper
 public:
     explicit FStructWrapper(UStruct* InStruct) : ExternalInitialize(nullptr), Struct(InStruct)
     {
+        // the entries are referenced by the function templates, so they are filled once and never move
+        StaticClassInfo.Callback = &StaticClass;
+        StaticClassInfo.Data = this;
+        FindInfo.Callback = &Find;
+        FindInfo.Data = this;
+        LoadInfo.Callback = &Load;
+        LoadInfo.Data = this;
     }
 
     FORCEINLINE void Init(UStruct* InStruct, bool IsReuseTemplate)
@@ -110,11 +117,17 @@ protected:
 
     bool IsTypeScriptGeneratedClass = false;
 
-    static void StaticClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    JSFunctionInfo StaticClassInfo;
 
-    static void Find(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    JSFunctionInfo FindInfo;
 
-    static void Load(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    JSFunctionInfo LoadInfo;
+
+    static void StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    static void Find(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    static void Load(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     friend class FJsEnvImpl;
 };
