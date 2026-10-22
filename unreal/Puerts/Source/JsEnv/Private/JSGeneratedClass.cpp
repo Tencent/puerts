@@ -173,6 +173,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     if (Class->HasAnyInternalFlags(EInternalObjectFlags::RootSet) || GUObjectArray.IsDisregardForGC(Class))
     {
         Function->AddToRoot();
+        Super->AddToRoot();
     }
 }
 
@@ -246,6 +247,7 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
     if (Class->HasAnyInternalFlags(EInternalObjectFlags::RootSet) || GUObjectArray.IsDisregardForGC(Class))
     {
         Function->AddToRoot();
+        Super->AddToRoot();
     }
 
     Function->Original = Super;
