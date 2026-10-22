@@ -4,3 +4,10 @@ unity/native/papi-python/build_linux_x64_papi-python_debug
 output/
 unreal/Puerts/Config/
 unreal/Puerts/ThirdParty/v8_9.4.146.24/
+# build products when unreal/Puerts is built in place (e.g. via unreal/TestProject junction)
+unreal/Puerts/Binaries/
+unreal/Puerts/Intermediate/
+unreal/Puerts/Source/CSharpParamDefaultValueMetas/obj/
+# JsEnv.Build.cs copies Content/Typing to <plugin>/../../, which is the repo root for in-place builds
+/Content/
+/Typing/
