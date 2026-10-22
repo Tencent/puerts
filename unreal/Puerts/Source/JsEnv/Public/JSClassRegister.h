@@ -189,6 +189,17 @@ JSENV_API bool TraceObjectLifecycle(
 JSENV_API const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type);
 #endif
 
+// ---------------------------------------------------------------- pesapi entries of the plugin (v8impl)
+// used by PesapiBackend.hpp when binding inside the plugin (not in a pesapi addon)
+JSENV_API struct pesapi_ffi* GetPesapiFFI();
+
+JSENV_API struct pesapi_registry_api* GetPesapiRegistryApi();
+
+// Registers a class whose callbacks are pesapi style: PesapiCallback/PesapiGetter/PesapiSetter/PesapiInitialize/PesapiFinalize,
+// the backend native fields (Callback/Getter/Setter/Initialize/PesapiApis) are filled with trampolines here.
+// Unlike pesapi_registry_api, UE types (UETypeName) are supported. A nullptr Registry means the default registry.
+JSENV_API void RegisterPesapiClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
+
 // ---------------------------------------------------------------- legacy global api (default registry)
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 

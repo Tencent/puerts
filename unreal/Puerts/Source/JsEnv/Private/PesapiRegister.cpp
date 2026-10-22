@@ -23,6 +23,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include <cstring>
 #include <cstdlib>
 #include <cstddef>
+#include <vector>
 
 namespace pesapi
 {
@@ -310,5 +311,83 @@ pesapi_registry_api g_reg_apis = {
 
 }    // namespace regimpl
 }    // namespace pesapi
+
+namespace PUERTS_NAMESPACE
+{
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
+
+pesapi_ffi* GetPesapiFFI()
+{
+    return &v8impl::g_pesapi_ffi;
+}
+
+pesapi_registry_api* GetPesapiRegistryApi()
+{
+    return &pesapi::regimpl::g_reg_apis;
+}
+
+static std::vector<ScriptFunctionInfo> PesapiRegFillFunctionInfos(const ScriptFunctionInfo* Infos)
+{
+    std::vector<ScriptFunctionInfo> Ret;
+    while (Infos && Infos->Name)
+    {
+        ScriptFunctionInfo Info = *Infos;
+        if (Info.PesapiCallback)
+        {
+            Info.Callback = reinterpret_cast<JSFunctionCallback>(&pesapi::regimpl::PesapiRegMethodWrap);
+            Info.ReflectionInfo = nullptr;
+        }
+        Ret.push_back(Info);
+        ++Infos;
+    }
+    Ret.push_back(ScriptFunctionInfo());
+    return Ret;
+}
+
+static std::vector<ScriptPropertyInfo> PesapiRegFillPropertyInfos(const ScriptPropertyInfo* Infos)
+{
+    std::vector<ScriptPropertyInfo> Ret;
+    while (Infos && Infos->Name)
+    {
+        ScriptPropertyInfo Info = *Infos;
+        if (Info.PesapiGetter)
+        {
+            Info.Getter = reinterpret_cast<JSFunctionCallback>(&pesapi::regimpl::PesapiRegGetterWrap);
+        }
+        if (Info.PesapiSetter)
+        {
+            Info.Setter = reinterpret_cast<JSFunctionCallback>(&pesapi::regimpl::PesapiRegSetterWrap);
+        }
+        Ret.push_back(Info);
+        ++Infos;
+    }
+    Ret.push_back(ScriptPropertyInfo());
+    return Ret;
+}
+
+void RegisterPesapiClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition)
+{
+    ScriptClassDefinition ClassDef = ClassDefinition;
+
+    ClassDef.Initialize = ClassDef.PesapiInitialize ? &pesapi::regimpl::PesapiRegInitializeWrap : nullptr;
+    ClassDef.Finalize = nullptr;
+    ClassDef.PesapiApis = &v8impl::g_pesapi_ffi;
+
+    // the registry duplicates all arrays, so temporary storage is fine
+    auto Methods = PesapiRegFillFunctionInfos(ClassDefinition.Methods);
+    auto Functions = PesapiRegFillFunctionInfos(ClassDefinition.Functions);
+    auto Properties = PesapiRegFillPropertyInfos(ClassDefinition.Properties);
+    auto Variables = PesapiRegFillPropertyInfos(ClassDefinition.Variables);
+    ClassDef.Methods = Methods.data();
+    ClassDef.Functions = Functions.data();
+    ClassDef.Properties = Properties.data();
+    ClassDef.Variables = Variables.data();
+
+    RegisterScriptClass(Registry ? Registry : GetDefaultClassRegistry(), ClassDef);
+}
+
+MSVC_PRAGMA(warning(pop))
+}    // namespace PUERTS_NAMESPACE
 
 #endif    // WITH_QUICKJS

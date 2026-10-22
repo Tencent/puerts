@@ -23,10 +23,46 @@
 
 namespace PUERTS_NAMESPACE
 {
+// finalizer of a UScriptStruct registered by static binding, v8_impl style (Finalize) or pesapi style (PesapiFinalize)
+struct FExternalFinalizer
+{
+    PUERTS_NAMESPACE::JSFinalizeFunc Finalize = nullptr;
+    pesapi_finalize PesapiFinalize = nullptr;
+    struct pesapi_ffi* PesapiApis = nullptr;
+    void* ClassData = nullptr;
+
+    FORCEINLINE bool IsSet() const
+    {
+        return Finalize || PesapiFinalize;
+    }
+
+    FORCEINLINE void Reset()
+    {
+        Finalize = nullptr;
+        PesapiFinalize = nullptr;
+        PesapiApis = nullptr;
+        ClassData = nullptr;
+    }
+
+    // may be called in a v8 worker thread (ArrayBuffer deleter), env private data is not available
+    FORCEINLINE void operator()(void* Ptr) const
+    {
+        if (PesapiFinalize)
+        {
+            PesapiFinalize(PesapiApis, Ptr, ClassData, nullptr);
+        }
+        else if (Finalize)
+        {
+            Finalize(Ptr, nullptr, nullptr);
+        }
+    }
+};
+
 class FStructWrapper
 {
 public:
-    explicit FStructWrapper(UStruct* InStruct) : ExternalInitialize(nullptr), ExternalFinalize(nullptr), Struct(InStruct)
+    explicit FStructWrapper(UStruct* InStruct)
+        : ExternalInitialize(nullptr), ExternalPesapiInitialize(nullptr), ExternalPesapiApis(nullptr), Struct(InStruct)
     {
     }
 
@@ -36,7 +72,9 @@ public:
         if (!IsReuseTemplate)
         {
             ExternalInitialize = nullptr;
-            ExternalFinalize = nullptr;
+            ExternalPesapiInitialize = nullptr;
+            ExternalPesapiApis = nullptr;
+            ExternalFinalize.Reset();
             Properties.clear();
             ExtensionMethods.clear();
 #if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
@@ -79,7 +117,11 @@ protected:
 
     V8InitializeFuncType ExternalInitialize;
 
-    PUERTS_NAMESPACE::JSFinalizeFunc ExternalFinalize;
+    pesapi_constructor ExternalPesapiInitialize;
+
+    struct pesapi_ffi* ExternalPesapiApis;
+
+    FExternalFinalizer ExternalFinalize;
 
     TWeakObjectPtr<UStruct> Struct;
 
@@ -113,7 +155,7 @@ public:
 
     static void* Alloc(UScriptStruct* InScriptStruct);
 
-    static void Free(TWeakObjectPtr<UStruct> InStruct, PUERTS_NAMESPACE::JSFinalizeFunc InExternalFinalize, void* Ptr);
+    static void Free(TWeakObjectPtr<UStruct> InStruct, const FExternalFinalizer& InExternalFinalize, void* Ptr);
 
     void Free(void* Ptr)
     {
