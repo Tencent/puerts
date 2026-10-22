@@ -182,6 +182,70 @@ struct API
         return val->IsNullOrUndefined();
     }
 
+    // The class registry only stores pesapi style callbacks. The v8 native callbacks of this (legacy) binding are kept in the
+    // data fields (always nullptr when built by ClassDefineBuilder) and called by LegacyCallbackThunk: in the plugin a
+    // pesapi_callback_info is a const v8::FunctionCallbackInfo<v8::Value>*, and the data of the v8 template is an External
+    // pointing to the data field.
+    static void LegacyCallbackThunk(struct pesapi_ffi* apis, pesapi_callback_info info)
+    {
+        const auto& Info = *reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(info);
+        auto Callback =
+            reinterpret_cast<v8::FunctionCallback>(*static_cast<void**>(v8::Local<v8::External>::Cast(Info.Data())->Value()));
+        Callback(Info);
+    }
+
+    static void ToLegacyFunctionInfos(std::vector<JSFunctionInfo>& Infos)
+    {
+        for (auto& Info : Infos)
+        {
+            Info.Data = reinterpret_cast<void*>(Info.Callback);
+            Info.Callback = &LegacyCallbackThunk;
+        }
+    }
+
+    static void ToLegacyPropertyInfos(std::vector<JSPropertyInfo>& Infos)
+    {
+        for (auto& Info : Infos)
+        {
+            if (Info.Getter)
+            {
+                Info.GetterData = reinterpret_cast<void*>(Info.Getter);
+                Info.Getter = &LegacyCallbackThunk;
+            }
+            if (Info.Setter)
+            {
+                Info.SetterData = reinterpret_cast<void*>(Info.Setter);
+                Info.Setter = &LegacyCallbackThunk;
+            }
+        }
+    }
+
+    template <typename T>
+    struct LegacyClassThunks
+    {
+        static InitializeFuncType& InitializeRef()
+        {
+            static InitializeFuncType Func = nullptr;
+            return Func;
+        }
+
+        static FinalizeFuncType& FinalizeRef()
+        {
+            static FinalizeFuncType Func = nullptr;
+            return Func;
+        }
+
+        static void* InitializeThunk(struct pesapi_ffi* apis, pesapi_callback_info info)
+        {
+            return InitializeRef()(*reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(info));
+        }
+
+        static void FinalizeThunk(struct pesapi_ffi* apis, void* Ptr, void* ClassData, void* EnvData)
+        {
+            FinalizeRef()(Ptr, ClassData, EnvData);
+        }
+    };
+
     template <typename T, typename CDB>
     static void Register(FinalizeFuncType Finalize, const CDB& Cdb)
     {
@@ -210,22 +274,28 @@ struct API
             ClassDef.SuperTypeId = Cdb.superTypeId_;
         }
 
-        ClassDef.SetInitialize(Cdb.constructor_);
-        ClassDef.Finalize = Finalize;
+        LegacyClassThunks<T>::InitializeRef() = Cdb.constructor_;
+        LegacyClassThunks<T>::FinalizeRef() = Finalize;
+        ClassDef.Initialize = Cdb.constructor_ ? &LegacyClassThunks<T>::InitializeThunk : nullptr;
+        ClassDef.Finalize = Finalize ? &LegacyClassThunks<T>::FinalizeThunk : nullptr;
 
         s_functions_ = std::move(Cdb.functions_);
+        ToLegacyFunctionInfos(s_functions_);
         s_functions_.push_back(JSFunctionInfo());
         ClassDef.Functions = s_functions_.data();
 
         s_methods_ = std::move(Cdb.methods_);
+        ToLegacyFunctionInfos(s_methods_);
         s_methods_.push_back(JSFunctionInfo());
         ClassDef.Methods = s_methods_.data();
 
         s_properties_ = std::move(Cdb.properties_);
+        ToLegacyPropertyInfos(s_properties_);
         s_properties_.push_back(JSPropertyInfo());
         ClassDef.Properties = s_properties_.data();
 
         s_variables_ = std::move(Cdb.variables_);
+        ToLegacyPropertyInfos(s_variables_);
         s_variables_.push_back(JSPropertyInfo());
         ClassDef.Variables = s_variables_.data();
 

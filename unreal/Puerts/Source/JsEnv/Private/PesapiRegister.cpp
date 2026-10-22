@@ -29,44 +29,8 @@ namespace pesapi
 {
 namespace regimpl
 {
-#define PESAPI_REG_CONTAINER_OF(ptr, type, member) ((type*) ((char*) (ptr) -offsetof(type, member)))
-
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
-
-// trampolines: v8 native callback -> pesapi callback (inject pesapi_ffi)
-static void PesapiRegMethodWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    auto FunctionInfo =
-        PESAPI_REG_CONTAINER_OF(v8::Local<v8::External>::Cast(Info.Data())->Value(), PUERTS_NAMESPACE::JSFunctionInfo, Data);
-    FunctionInfo->PesapiCallback(&v8impl::g_pesapi_ffi, (pesapi_callback_info) (&Info));
-}
-
-static void PesapiRegGetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    auto PropertyInfo =
-        PESAPI_REG_CONTAINER_OF(v8::Local<v8::External>::Cast(Info.Data())->Value(), PUERTS_NAMESPACE::JSPropertyInfo, GetterData);
-    PropertyInfo->PesapiGetter(&v8impl::g_pesapi_ffi, (pesapi_callback_info) (&Info));
-}
-
-static void PesapiRegSetterWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    auto PropertyInfo =
-        PESAPI_REG_CONTAINER_OF(v8::Local<v8::External>::Cast(Info.Data())->Value(), PUERTS_NAMESPACE::JSPropertyInfo, SetterData);
-    PropertyInfo->PesapiSetter(&v8impl::g_pesapi_ffi, (pesapi_callback_info) (&Info));
-}
-
-static void* PesapiRegInitializeWrap(pesapi_callback_info PInfo)
-{
-    auto Info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(PInfo);
-    auto ClassDefinition =
-        PESAPI_REG_CONTAINER_OF(v8::Local<v8::External>::Cast(Info->Data())->Value(), PUERTS_NAMESPACE::JSClassDefinition, Data);
-    if (!ClassDefinition->PesapiInitialize)
-    {
-        return nullptr;
-    }
-    return ClassDefinition->PesapiInitialize(&v8impl::g_pesapi_ffi, PInfo);
-}
 
 struct pesapi_type_info__
 {
@@ -162,11 +126,8 @@ static void pesapi_define_class(pesapi_registry registry, const void* type_id, c
     }
     classDef.Data = data;
 
-    classDef.Initialize = constructor ? &PesapiRegInitializeWrap : nullptr;
-    classDef.Finalize = nullptr;
-    classDef.PesapiInitialize = constructor;
-    classDef.PesapiFinalize = finalize;
-    classDef.PesapiApis = &v8impl::g_pesapi_ffi;
+    classDef.Initialize = constructor;
+    classDef.Finalize = finalize;
 
     PUERTS_NAMESPACE::RegisterScriptClass(ToRegistry(registry), classDef);
 }
@@ -209,10 +170,9 @@ static void pesapi_set_method_info(pesapi_registry registry, const void* type_id
         }
         PUERTS_NAMESPACE::JSFunctionInfo& info = infos[index];
         info.Name = copy_str ? pesapi_reg_str_dup(name) : name;
-        info.Callback = reinterpret_cast<PUERTS_NAMESPACE::JSFunctionCallback>(&PesapiRegMethodWrap);
+        info.Callback = method;
         info.Data = data;
         info.ReflectionInfo = nullptr;
-        info.PesapiCallback = method;
     }
 }
 
@@ -229,12 +189,10 @@ static void pesapi_set_property_info(pesapi_registry registry, const void* type_
         }
         PUERTS_NAMESPACE::JSPropertyInfo& info = infos[index];
         info.Name = copy_str ? pesapi_reg_str_dup(name) : name;
-        info.Getter = getter ? reinterpret_cast<PUERTS_NAMESPACE::JSFunctionCallback>(&PesapiRegGetterWrap) : nullptr;
-        info.Setter = setter ? reinterpret_cast<PUERTS_NAMESPACE::JSFunctionCallback>(&PesapiRegSetterWrap) : nullptr;
+        info.Getter = getter;
+        info.Setter = setter;
         info.GetterData = getter_data;
         info.SetterData = setter_data;
-        info.PesapiGetter = getter;
-        info.PesapiSetter = setter;
     }
 }
 
@@ -307,8 +265,6 @@ pesapi_registry_api g_reg_apis = {
     &pesapi_trace_native_object_lifecycle,
 };
 
-#undef PESAPI_REG_CONTAINER_OF
-
 }    // namespace regimpl
 }    // namespace pesapi
 
@@ -327,64 +283,9 @@ pesapi_registry_api* GetPesapiRegistryApi()
     return &pesapi::regimpl::g_reg_apis;
 }
 
-static std::vector<ScriptFunctionInfo> PesapiRegFillFunctionInfos(const ScriptFunctionInfo* Infos)
-{
-    std::vector<ScriptFunctionInfo> Ret;
-    while (Infos && Infos->Name)
-    {
-        ScriptFunctionInfo Info = *Infos;
-        if (Info.PesapiCallback)
-        {
-            Info.Callback = reinterpret_cast<JSFunctionCallback>(&pesapi::regimpl::PesapiRegMethodWrap);
-            Info.ReflectionInfo = nullptr;
-        }
-        Ret.push_back(Info);
-        ++Infos;
-    }
-    Ret.push_back(ScriptFunctionInfo());
-    return Ret;
-}
-
-static std::vector<ScriptPropertyInfo> PesapiRegFillPropertyInfos(const ScriptPropertyInfo* Infos)
-{
-    std::vector<ScriptPropertyInfo> Ret;
-    while (Infos && Infos->Name)
-    {
-        ScriptPropertyInfo Info = *Infos;
-        if (Info.PesapiGetter)
-        {
-            Info.Getter = reinterpret_cast<JSFunctionCallback>(&pesapi::regimpl::PesapiRegGetterWrap);
-        }
-        if (Info.PesapiSetter)
-        {
-            Info.Setter = reinterpret_cast<JSFunctionCallback>(&pesapi::regimpl::PesapiRegSetterWrap);
-        }
-        Ret.push_back(Info);
-        ++Infos;
-    }
-    Ret.push_back(ScriptPropertyInfo());
-    return Ret;
-}
-
 void RegisterPesapiClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition)
 {
-    ScriptClassDefinition ClassDef = ClassDefinition;
-
-    ClassDef.Initialize = ClassDef.PesapiInitialize ? &pesapi::regimpl::PesapiRegInitializeWrap : nullptr;
-    ClassDef.Finalize = nullptr;
-    ClassDef.PesapiApis = &v8impl::g_pesapi_ffi;
-
-    // the registry duplicates all arrays, so temporary storage is fine
-    auto Methods = PesapiRegFillFunctionInfos(ClassDefinition.Methods);
-    auto Functions = PesapiRegFillFunctionInfos(ClassDefinition.Functions);
-    auto Properties = PesapiRegFillPropertyInfos(ClassDefinition.Properties);
-    auto Variables = PesapiRegFillPropertyInfos(ClassDefinition.Variables);
-    ClassDef.Methods = Methods.data();
-    ClassDef.Functions = Functions.data();
-    ClassDef.Properties = Properties.data();
-    ClassDef.Variables = Variables.data();
-
-    RegisterScriptClass(Registry ? Registry : GetDefaultClassRegistry(), ClassDef);
+    RegisterScriptClass(Registry ? Registry : GetDefaultClassRegistry(), ClassDefinition);
 }
 
 MSVC_PRAGMA(warning(pop))

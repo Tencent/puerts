@@ -9,6 +9,7 @@
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
 #include "PString.h"
+#include "PesapiClassThunks.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -202,12 +203,8 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     if (Info.IsConstructCall())
     {
         auto Self = Info.This();
-        JSClassDefinition* ClassDefinition = reinterpret_cast<JSClassDefinition*>(
-            reinterpret_cast<char*>(v8::Local<v8::External>::Cast(Info.Data())->Value()) - offsetof(JSClassDefinition, Data));
-        void* Ptr = nullptr;
-
-        if (ClassDefinition->Initialize)
-            Ptr = ClassDefinition->Initialize((pesapi_callback_info) &Info);
+        JSClassDefinition* ClassDefinition = ClassThunks::ClassDefinitionOf(Info);
+        void* Ptr = ClassThunks::Construct(ClassDefinition->Initialize, Info);
         if (Ptr == nullptr)
             return;
 
@@ -236,14 +233,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
             if (!PropertyInfo->Setter)
                 PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
             Template->PrototypeTemplate()->SetAccessorProperty(
                 v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Getter, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Setter, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
+                ClassThunks::GetterTemplate(Isolate, PropertyInfo), ClassThunks::SetterTemplate(Isolate, PropertyInfo),
                 PropertyAttribute);
             ++PropertyInfo;
         }
@@ -254,14 +246,9 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
             if (!PropertyInfo->Setter)
                 PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            auto GetterData = v8::External::New(Isolate, &PropertyInfo->GetterData);
-            auto SetterData = v8::External::New(Isolate, &PropertyInfo->SetterData);
             Template->SetAccessorProperty(
                 v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                PropertyInfo->Getter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Getter, GetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
-                PropertyInfo->Setter ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Setter, SetterData)
-                                     : v8::Local<v8::FunctionTemplate>(),
+                ClassThunks::GetterTemplate(Isolate, PropertyInfo), ClassThunks::SetterTemplate(Isolate, PropertyInfo),
                 PropertyAttribute);
             ++PropertyInfo;
         }
@@ -269,55 +256,16 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-#ifndef WITH_QUICKJS
-            auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-            if (FastCallInfo)
-            {
-                Template->PrototypeTemplate()->Set(
-                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) FunctionInfo->Callback,
-                        v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-                        v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
-            }
-            else
-#endif
-            {
-                Template->PrototypeTemplate()->Set(
-                    v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(
-                        Isolate, (v8::FunctionCallback) FunctionInfo->Callback, v8::External::New(Isolate, &FunctionInfo->Data)
-#ifndef WITH_QUICKJS
-                                                                                    ,
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
-#endif
-                        ));
-            }
+            Template->PrototypeTemplate()->Set(
+                v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                ClassThunks::MethodTemplate(Isolate, FunctionInfo, v8::ConstructorBehavior::kThrow));
             ++FunctionInfo;
         }
         FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-#ifndef WITH_QUICKJS
-            auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-            if (FastCallInfo)
-            {
-                Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) FunctionInfo->Callback,
-                        v8::External::New(Isolate, &FunctionInfo->Data), v8::Local<v8::Signature>(), 0,
-                        v8::ConstructorBehavior::kThrow, v8::SideEffectType::kHasSideEffect, FastCallInfo));
-            }
-            else
-#endif
-            {
-                Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
-                    v8::FunctionTemplate::New(
-                        Isolate, (v8::FunctionCallback) FunctionInfo->Callback, v8::External::New(Isolate, &FunctionInfo->Data)
-#ifndef WITH_QUICKJS
-                                                                                    ,
-                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow
-#endif
-                        ));
-            }
+            Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                ClassThunks::MethodTemplate(Isolate, FunctionInfo, v8::ConstructorBehavior::kThrow));
             ++FunctionInfo;
         }
 
@@ -344,11 +292,8 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
 {
     JSClassDefinition* ClassDefinition = Data.GetParameter();
     void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-    if (ClassDefinition->PesapiFinalize)
-        ClassDefinition->PesapiFinalize(
-            ClassDefinition->PesapiApis, Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
-    else if (ClassDefinition->Finalize)
-        ClassDefinition->Finalize(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
+    ClassThunks::Finalize(
+        ClassDefinition->Finalize, Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(Data.GetIsolate(), ClassDefinition, Ptr);
 }
 
@@ -460,13 +405,9 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             const JSClassDefinition* ClassDefinition = FindClassByID(Registry, PNode->TypeId);
             if (PNode->MustCallFinalize)
             {
-                if (ClassDefinition && ClassDefinition->PesapiFinalize)
+                if (ClassDefinition)
                 {
-                    ClassDefinition->PesapiFinalize(ClassDefinition->PesapiApis, KV.first, ClassDefinition->Data, PData);
-                }
-                else if (ClassDefinition && ClassDefinition->Finalize)
-                {
-                    ClassDefinition->Finalize(KV.first, ClassDefinition->Data, PData);
+                    ClassThunks::Finalize(ClassDefinition->Finalize, KV.first, ClassDefinition->Data, PData);
                 }
                 PNode->MustCallFinalize = false;
             }

@@ -40,12 +40,12 @@ namespace PUERTS_NAMESPACE
 {
 class CFunctionInfo;
 
-// Internal callback types used by the class registry. They store backend native callbacks (e.g. v8::FunctionCallback),
-// pesapi style callbacks (with pesapi_ffi* as the first parameter) are stored in the Pesapi* fields and dispatched via
-// trampolines.
-typedef void (*JSFunctionCallback)(pesapi_callback_info info);
-typedef void* (*JSInitializeFunc)(pesapi_callback_info info);
-typedef void (*JSFinalizeFunc)(void* Ptr, void* ClassData, void* EnvPrivate);
+// All callbacks stored in the class registry are pesapi style (with pesapi_ffi* as the first parameter), the layout of the
+// definitions below is the same as unity/native/puerts/include/ScriptClassRegistry.h. The backend object mapper dispatches
+// them through trampolines (see Private/PesapiClassThunks.h).
+typedef pesapi_callback JSFunctionCallback;
+typedef pesapi_constructor JSInitializeFunc;
+typedef pesapi_finalize JSFinalizeFunc;
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
@@ -72,7 +72,6 @@ struct JSENV_API JSFunctionInfo
     JSFunctionCallback Callback;
     void* Data = nullptr;
     const CFunctionInfo* ReflectionInfo = nullptr;
-    pesapi_callback PesapiCallback = nullptr;
 };
 
 struct JSENV_API JSPropertyInfo
@@ -103,8 +102,6 @@ struct JSENV_API JSPropertyInfo
     JSFunctionCallback Setter;
     void* GetterData = nullptr;
     void* SetterData = nullptr;
-    pesapi_callback PesapiGetter = nullptr;
-    pesapi_callback PesapiSetter = nullptr;
 };
 
 struct NamedFunctionInfo;
@@ -136,10 +133,6 @@ struct JSENV_API JSClassDefinition
     void* Data = nullptr;
     pesapi_on_native_object_enter OnEnter = nullptr;
     pesapi_on_native_object_exit OnExit = nullptr;
-    // pesapi style constructor/finalize (registered through pesapi_registry_api)
-    pesapi_constructor PesapiInitialize = nullptr;
-    pesapi_finalize PesapiFinalize = nullptr;
-    struct pesapi_ffi* PesapiApis = nullptr;
 };
 MSVC_PRAGMA(warning(pop))
 
@@ -195,9 +188,8 @@ JSENV_API struct pesapi_ffi* GetPesapiFFI();
 
 JSENV_API struct pesapi_registry_api* GetPesapiRegistryApi();
 
-// Registers a class whose callbacks are pesapi style: PesapiCallback/PesapiGetter/PesapiSetter/PesapiInitialize/PesapiFinalize,
-// the backend native fields (Callback/Getter/Setter/Initialize/PesapiApis) are filled with trampolines here.
-// Unlike pesapi_registry_api, UE types (UETypeName) are supported. A nullptr Registry means the default registry.
+// Same as RegisterScriptClass except that a nullptr Registry means the default registry.
+// Unlike pesapi_registry_api, UE types (UETypeName) are supported.
 JSENV_API void RegisterPesapiClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
 
 // ---------------------------------------------------------------- legacy global api (default registry)

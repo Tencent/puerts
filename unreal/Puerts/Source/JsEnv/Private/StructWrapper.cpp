@@ -10,9 +10,15 @@
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "PathEscape.h"
+#include "PesapiClassThunks.h"
 
 namespace PUERTS_NAMESPACE
 {
+void FExternalFinalizer::operator()(void* Ptr) const
+{
+    ClassThunks::Finalize(Finalize, Ptr, ClassData, nullptr);
+}
+
 void FStructWrapper::AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods)
 {
     ExtensionMethods.insert(ExtensionMethods.end(), InExtensionMethods.begin(), InExtensionMethods.end());
@@ -79,26 +85,6 @@ void FStructWrapper::RefreshMethod(UFunction* InFunction)
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
-// pesapi style callbacks are dispatched by the trampolines in PesapiRegister.cpp, which need the address of the data field
-static FORCEINLINE v8::Local<v8::Value> FunctionDataOf(v8::Isolate* Isolate, JSFunctionInfo* FunctionInfo)
-{
-    if (FunctionInfo->PesapiCallback)
-    {
-        return v8::External::New(Isolate, &FunctionInfo->Data);
-    }
-    return FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
-                              : v8::Local<v8::Value>();
-}
-
-static FORCEINLINE v8::Local<v8::Value> PropertyDataOf(v8::Isolate* Isolate, pesapi_callback PesapiCallback, void** Data)
-{
-    if (PesapiCallback)
-    {
-        return v8::External::New(Isolate, Data);
-    }
-    return *Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, *Data)) : v8::Local<v8::Value>();
-}
-
 void FStructWrapper::InitTemplateProperties(
     v8::Isolate* Isolate, UStruct* InStruct, v8::Local<v8::FunctionTemplate> Template, bool IsReuseTemplate)
 {
@@ -115,17 +101,8 @@ void FStructWrapper::InitTemplateProperties(
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
                     PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-                auto GetterData = PropertyDataOf(Isolate, PropertyInfo->PesapiGetter, &PropertyInfo->GetterData);
-
-                auto SetterData = PropertyDataOf(Isolate, PropertyInfo->PesapiSetter, &PropertyInfo->SetterData);
-
                 Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, PropertyInfo->Name),
-                    PropertyInfo->Getter
-                        ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Getter, GetterData)
-                        : v8::Local<v8::FunctionTemplate>(),
-                    PropertyInfo->Setter
-                        ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Setter, SetterData)
-                        : v8::Local<v8::FunctionTemplate>(),
+                    ClassThunks::GetterTemplate(Isolate, PropertyInfo), ClassThunks::SetterTemplate(Isolate, PropertyInfo),
                     PropertyAttribute);
             }
             ++PropertyInfo;
@@ -139,17 +116,8 @@ void FStructWrapper::InitTemplateProperties(
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
                     PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-                auto GetterData = PropertyDataOf(Isolate, PropertyInfo->PesapiGetter, &PropertyInfo->GetterData);
-
-                auto SetterData = PropertyDataOf(Isolate, PropertyInfo->PesapiSetter, &PropertyInfo->SetterData);
-
                 Template->SetAccessorProperty(FV8Utils::InternalString(Isolate, PropertyInfo->Name),
-                    PropertyInfo->Getter
-                        ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Getter, GetterData)
-                        : v8::Local<v8::FunctionTemplate>(),
-                    PropertyInfo->Setter
-                        ? v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) PropertyInfo->Setter, SetterData)
-                        : v8::Local<v8::FunctionTemplate>(),
+                    ClassThunks::GetterTemplate(Isolate, PropertyInfo), ClassThunks::SetterTemplate(Isolate, PropertyInfo),
                     PropertyAttribute);
                 ++PropertyInfo;
             }
@@ -201,12 +169,8 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
 
     if (ClassDefinition)
     {
-        ExternalInitialize = ClassDefinition->PesapiInitialize ? nullptr : (V8InitializeFuncType) ClassDefinition->Initialize;
-        ExternalPesapiInitialize = ClassDefinition->PesapiInitialize;
-        ExternalPesapiApis = ClassDefinition->PesapiApis;
+        ExternalInitialize = ClassDefinition->Initialize;
         ExternalFinalize.Finalize = ClassDefinition->Finalize;
-        ExternalFinalize.PesapiFinalize = ClassDefinition->PesapiFinalize;
-        ExternalFinalize.PesapiApis = ClassDefinition->PesapiApis;
         ExternalFinalize.ClassData = ClassDefinition->Data;
         JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
@@ -214,22 +178,8 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             AddedMethods.Add(FunctionInfo->Name);
             if (!IsReuseTemplate)
             {
-#ifndef WITH_QUICKJS
-                auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-                if (FastCallInfo)
-                {
-                    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
-                        v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) FunctionInfo->Callback,
-                            FunctionDataOf(Isolate, FunctionInfo), v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow,
-                            v8::SideEffectType::kHasSideEffect, FastCallInfo));
-                }
-                else
-#endif
-                {
-                    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
-                        v8::FunctionTemplate::New(
-                            Isolate, (v8::FunctionCallback) FunctionInfo->Callback, FunctionDataOf(Isolate, FunctionInfo)));
-                }
+                Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
+                    ClassThunks::MethodTemplate(Isolate, FunctionInfo, v8::ConstructorBehavior::kAllow));
             }
             ++FunctionInfo;
         }
@@ -239,22 +189,8 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             AddedFunctions.Add(FunctionInfo->Name);
             if (!IsReuseTemplate)
             {
-#ifndef WITH_QUICKJS
-                auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
-                if (FastCallInfo)
-                {
-                    Result->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
-                        v8::FunctionTemplate::New(Isolate, (v8::FunctionCallback) FunctionInfo->Callback,
-                            FunctionDataOf(Isolate, FunctionInfo), v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kThrow,
-                            v8::SideEffectType::kHasSideEffect, FastCallInfo));
-                }
-                else
-#endif
-                {
-                    Result->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
-                        v8::FunctionTemplate::New(
-                            Isolate, (v8::FunctionCallback) FunctionInfo->Callback, FunctionDataOf(Isolate, FunctionInfo)));
-                }
+                Result->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
+                    ClassThunks::MethodTemplate(Isolate, FunctionInfo, v8::ConstructorBehavior::kAllow));
             }
             ++FunctionInfo;
         }
@@ -622,17 +558,9 @@ void FScriptStructWrapper::New(
         void* Memory = nullptr;
 
         {
-            if (ExternalPesapiInitialize)
+            if (ExternalInitialize)
             {
-                Memory = ExternalPesapiInitialize(ExternalPesapiApis, (pesapi_callback_info) &Info);
-                if (!Memory)    // do not bind nullptr
-                {
-                    return;
-                }
-            }
-            else if (ExternalInitialize)
-            {
-                Memory = ExternalInitialize(Info);
+                Memory = ClassThunks::Construct(ExternalInitialize, Info);
                 if (!Memory)    // do not bind nullptr
                 {
                     return;

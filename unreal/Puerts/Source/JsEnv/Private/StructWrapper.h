@@ -23,46 +23,31 @@
 
 namespace PUERTS_NAMESPACE
 {
-// finalizer of a UScriptStruct registered by static binding, v8_impl style (Finalize) or pesapi style (PesapiFinalize)
+// finalizer of a UScriptStruct registered by static binding (pesapi style)
 struct FExternalFinalizer
 {
-    PUERTS_NAMESPACE::JSFinalizeFunc Finalize = nullptr;
-    pesapi_finalize PesapiFinalize = nullptr;
-    struct pesapi_ffi* PesapiApis = nullptr;
+    pesapi_finalize Finalize = nullptr;
     void* ClassData = nullptr;
 
     FORCEINLINE bool IsSet() const
     {
-        return Finalize || PesapiFinalize;
+        return Finalize != nullptr;
     }
 
     FORCEINLINE void Reset()
     {
         Finalize = nullptr;
-        PesapiFinalize = nullptr;
-        PesapiApis = nullptr;
         ClassData = nullptr;
     }
 
     // may be called in a v8 worker thread (ArrayBuffer deleter), env private data is not available
-    FORCEINLINE void operator()(void* Ptr) const
-    {
-        if (PesapiFinalize)
-        {
-            PesapiFinalize(PesapiApis, Ptr, ClassData, nullptr);
-        }
-        else if (Finalize)
-        {
-            Finalize(Ptr, nullptr, nullptr);
-        }
-    }
+    void operator()(void* Ptr) const;
 };
 
 class FStructWrapper
 {
 public:
-    explicit FStructWrapper(UStruct* InStruct)
-        : ExternalInitialize(nullptr), ExternalPesapiInitialize(nullptr), ExternalPesapiApis(nullptr), Struct(InStruct)
+    explicit FStructWrapper(UStruct* InStruct) : ExternalInitialize(nullptr), Struct(InStruct)
     {
     }
 
@@ -72,8 +57,6 @@ public:
         if (!IsReuseTemplate)
         {
             ExternalInitialize = nullptr;
-            ExternalPesapiInitialize = nullptr;
-            ExternalPesapiApis = nullptr;
             ExternalFinalize.Reset();
             Properties.clear();
             ExtensionMethods.clear();
@@ -113,13 +96,7 @@ protected:
 
     std::vector<UFunction*> ExtensionMethods;
 
-    typedef void* (*V8InitializeFuncType)(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
-    V8InitializeFuncType ExternalInitialize;
-
-    pesapi_constructor ExternalPesapiInitialize;
-
-    struct pesapi_ffi* ExternalPesapiApis;
+    pesapi_constructor ExternalInitialize;
 
     FExternalFinalizer ExternalFinalize;
 

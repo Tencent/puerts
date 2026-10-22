@@ -294,7 +294,7 @@ struct API
 
 #if PUERTS_PESAPI_IN_UE_PLUGIN
     // UE types (is_uetype) have no c++ type id and are keyed by UETypeName, which can not be done by pesapi_registry_api,
-    // so the class definition is built here and the backend trampolines are filled by RegisterPesapiClass.
+    // so the class definition is built here and registered by RegisterPesapiClass.
     template <typename T, typename CDB>
     static void RegisterInPlugin(FinalizeFuncType Finalize, const CDB& Cdb)
     {
@@ -310,8 +310,8 @@ struct API
             ClassDef.TypeId = StaticTypeId<T>::get();
             ClassDef.SuperTypeId = Cdb.superTypeId_;
         }
-        ClassDef.PesapiInitialize = Cdb.constructor_;
-        ClassDef.PesapiFinalize = Finalize;
+        ClassDef.Initialize = Cdb.constructor_;
+        ClassDef.Finalize = Finalize;
 
         // the registry duplicates all arrays, so temporary storage is fine
         std::vector<::PUERTS_NAMESPACE::ScriptFunctionInfo> methods = ToScriptFunctionInfos(Cdb.methods_);
@@ -352,7 +352,7 @@ struct API
             ::PUERTS_NAMESPACE::ScriptFunctionInfo FunctionInfo;
             FunctionInfo.Name = Info.Name;
             FunctionInfo.Data = Info.Data;
-            FunctionInfo.PesapiCallback = Info.Callback;
+            FunctionInfo.Callback = Info.Callback;
             Ret.push_back(FunctionInfo);
         }
         Ret.push_back(::PUERTS_NAMESPACE::ScriptFunctionInfo());
@@ -369,8 +369,8 @@ struct API
             PropertyInfo.Name = Info.Name;
             PropertyInfo.GetterData = Info.GetterData;
             PropertyInfo.SetterData = Info.SetterData;
-            PropertyInfo.PesapiGetter = Info.Getter;
-            PropertyInfo.PesapiSetter = Info.Setter;
+            PropertyInfo.Getter = Info.Getter;
+            PropertyInfo.Setter = Info.Setter;
             Ret.push_back(PropertyInfo);
         }
         Ret.push_back(::PUERTS_NAMESPACE::ScriptPropertyInfo());
