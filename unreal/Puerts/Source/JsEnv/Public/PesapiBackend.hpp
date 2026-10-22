@@ -16,6 +16,20 @@
 #include "pesapi.h"
 #include "TypeInfo.hpp"
 
+// Inside the unreal plugin (JsEnv and the modules depending on it, not a pesapi addon), the pesapi implementation is v8impl,
+// classes are registered into the plugin registry directly and UE types (UStruct/UClass) can be handled through PapiV8Bridge.h.
+#if defined(USING_IN_UNREAL_ENGINE) && !defined(BUILDING_PES_EXTENSION)
+#define PUERTS_PESAPI_IN_UE_PLUGIN 1
+#else
+#define PUERTS_PESAPI_IN_UE_PLUGIN 0
+#endif
+
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+#include "JSClassRegister.h"
+#include "DataTransfer.h"
+#include "PapiV8Bridge.h"
+#endif
+
 #define __DefObjectType_pesapi_impl(CLS)              \
     namespace PUERTS_NAMESPACE                        \
     {                                                 \
@@ -43,7 +57,7 @@
         }                                                                                                   \
         static bool accept(PApiCallbackEnv env, pesapi_value value)                                         \
         {                                                                                                   \
-            return env.apis->is_instance_of(env.env, StaticTypeId<CLS>::get(), value);                      \
+            return env.apis->is_instance_of(env.env, StaticTypeId<CLS>::get(), value) != 0;                 \
         }                                                                                                   \
     };                                                                                                      \
     }                                                                                                       \
@@ -67,7 +81,7 @@
         }                                                                                                            \
         static bool accept(PApiCallbackEnv env, pesapi_value value)                                                  \
         {                                                                                                            \
-            return env.apis->is_instance_of(env.env, StaticTypeId<CLS>::get(), value);                               \
+            return env.apis->is_instance_of(env.env, StaticTypeId<CLS>::get(), value) != 0;                          \
         }                                                                                                            \
     };                                                                                                               \
     }                                                                                                                \
@@ -111,9 +125,15 @@ inline void SetRegistry(struct pesapi_registry_api* registry_api, pesapi_registr
 
 inline struct pesapi_registry_api* GetRegistryApi()
 {
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+    auto registry_api = RegistryHolder::Api();
+    return registry_api ? registry_api : ::PUERTS_NAMESPACE::GetPesapiRegistryApi();
+#else
     return RegistryHolder::Api();
+#endif
 }
 
+// nullptr means the default registry
 inline pesapi_registry GetRegistry()
 {
     return RegistryHolder::Registry();
@@ -132,6 +152,17 @@ template <typename T, typename = void>
 struct CustomArgumentBufferType
 {
     static constexpr bool enable = false;
+};
+
+// Gets the native "this" of a method/property callback. Specialized for UObject in UEDataBinding.hpp to check that the
+// object is still valid (the same as v8_impl, which converts the holder by Converter<T*>).
+template <typename T, typename Enable = void>
+struct SelfChecker
+{
+    static T* Get(PApiCallbackEnv env, pesapi_callback_info info)
+    {
+        return static_cast<T*>(env.apis->get_native_holder_ptr(info));
+    }
 };
 
 struct API
@@ -184,7 +215,7 @@ struct API
     template <typename T>
     inline static T* GetSelf(PApiCallbackEnv env, pesapi_callback_info info)
     {
-        return static_cast<T*>(env.apis->get_native_holder_ptr(info));
+        return SelfChecker<T>::Get(env, info);
     }
 
     // use where GetSelfFromData is true
@@ -206,12 +237,17 @@ struct API
     template <typename T1, typename T2>
     inline static void LinkOuter(PApiCallbackEnv env, pesapi_callback_info info, pesapi_value inner)
     {
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+        // the holder may be a UStruct/UObject whose type id is not a registered c++ type id, link the holder object itself
+        LinkOuterImpl(papi_bridge::ToV8(env.env), papi_bridge::HolderOf(info), papi_bridge::ToV8(inner));
+#else
         auto outer_ptr = env.apis->get_native_holder_ptr(info);
         auto outer_type_id = env.apis->get_native_holder_typeid(info);
         if (!outer_ptr || !outer_type_id)
             return;
         auto outer_value = env.apis->native_object_to_value(env.env, outer_type_id, outer_ptr, false);
         env.apis->set_property_uint32(env.env, inner, 0, outer_value);
+#endif
     }
 
     inline static void UpdateRefValue(PApiCallbackEnv env, pesapi_value holder, pesapi_value value)
@@ -248,6 +284,102 @@ struct API
 
     template <typename T, typename CDB>
     static void Register(FinalizeFuncType Finalize, const CDB& Cdb)
+    {
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+        RegisterInPlugin<T>(Finalize, Cdb);
+#else
+        RegisterByRegistryApi<T>(Finalize, Cdb);
+#endif
+    }
+
+#if PUERTS_PESAPI_IN_UE_PLUGIN
+    // UE types (is_uetype) have no c++ type id and are keyed by UETypeName, which can not be done by pesapi_registry_api,
+    // so the class definition is built here and the backend trampolines are filled by RegisterPesapiClass.
+    template <typename T, typename CDB>
+    static void RegisterInPlugin(FinalizeFuncType Finalize, const CDB& Cdb)
+    {
+        ::PUERTS_NAMESPACE::ScriptClassDefinition ClassDef = JSClassEmptyDefinition;
+
+        if (is_uetype<T>::value)
+        {
+            ClassDef.UETypeName = Cdb.className_;
+        }
+        else
+        {
+            ClassDef.ScriptName = Cdb.className_;
+            ClassDef.TypeId = StaticTypeId<T>::get();
+            ClassDef.SuperTypeId = Cdb.superTypeId_;
+        }
+        ClassDef.PesapiInitialize = Cdb.constructor_;
+        ClassDef.PesapiFinalize = Finalize;
+
+        // the registry duplicates all arrays, so temporary storage is fine
+        std::vector<::PUERTS_NAMESPACE::ScriptFunctionInfo> methods = ToScriptFunctionInfos(Cdb.methods_);
+        std::vector<::PUERTS_NAMESPACE::ScriptFunctionInfo> functions = ToScriptFunctionInfos(Cdb.functions_);
+        std::vector<::PUERTS_NAMESPACE::ScriptPropertyInfo> properties = ToScriptPropertyInfos(Cdb.properties_);
+        std::vector<::PUERTS_NAMESPACE::ScriptPropertyInfo> variables = ToScriptPropertyInfos(Cdb.variables_);
+        ClassDef.Methods = methods.data();
+        ClassDef.Functions = functions.data();
+        ClassDef.Properties = properties.data();
+        ClassDef.Variables = variables.data();
+
+        std::vector<NamedFunctionInfo> constructorInfos = Cdb.constructorInfos_;
+        constructorInfos.push_back(NamedFunctionInfo{nullptr, nullptr});
+        std::vector<NamedFunctionInfo> methodInfos = Cdb.methodInfos_;
+        methodInfos.push_back(NamedFunctionInfo{nullptr, nullptr});
+        std::vector<NamedFunctionInfo> functionInfos = Cdb.functionInfos_;
+        functionInfos.push_back(NamedFunctionInfo{nullptr, nullptr});
+        std::vector<NamedPropertyInfo> propertyInfos = Cdb.propertyInfos_;
+        propertyInfos.push_back(NamedPropertyInfo{nullptr, nullptr});
+        std::vector<NamedPropertyInfo> variableInfos = Cdb.variableInfos_;
+        variableInfos.push_back(NamedPropertyInfo{nullptr, nullptr});
+        ClassDef.ConstructorInfos = constructorInfos.data();
+        ClassDef.MethodInfos = methodInfos.data();
+        ClassDef.FunctionInfos = functionInfos.data();
+        ClassDef.PropertyInfos = propertyInfos.data();
+        ClassDef.VariableInfos = variableInfos.data();
+
+        ::PUERTS_NAMESPACE::RegisterPesapiClass(
+            reinterpret_cast<::PUERTS_NAMESPACE::ScriptClassRegistry*>(GetRegistry()), ClassDef);
+    }
+
+    static std::vector<::PUERTS_NAMESPACE::ScriptFunctionInfo> ToScriptFunctionInfos(const std::vector<GeneralFunctionInfo>& Infos)
+    {
+        std::vector<::PUERTS_NAMESPACE::ScriptFunctionInfo> Ret;
+        Ret.reserve(Infos.size() + 1);
+        for (const auto& Info : Infos)
+        {
+            ::PUERTS_NAMESPACE::ScriptFunctionInfo FunctionInfo;
+            FunctionInfo.Name = Info.Name;
+            FunctionInfo.Data = Info.Data;
+            FunctionInfo.PesapiCallback = Info.Callback;
+            Ret.push_back(FunctionInfo);
+        }
+        Ret.push_back(::PUERTS_NAMESPACE::ScriptFunctionInfo());
+        return Ret;
+    }
+
+    static std::vector<::PUERTS_NAMESPACE::ScriptPropertyInfo> ToScriptPropertyInfos(const std::vector<GeneralPropertyInfo>& Infos)
+    {
+        std::vector<::PUERTS_NAMESPACE::ScriptPropertyInfo> Ret;
+        Ret.reserve(Infos.size() + 1);
+        for (const auto& Info : Infos)
+        {
+            ::PUERTS_NAMESPACE::ScriptPropertyInfo PropertyInfo;
+            PropertyInfo.Name = Info.Name;
+            PropertyInfo.GetterData = Info.GetterData;
+            PropertyInfo.SetterData = Info.SetterData;
+            PropertyInfo.PesapiGetter = Info.Getter;
+            PropertyInfo.PesapiSetter = Info.Setter;
+            Ret.push_back(PropertyInfo);
+        }
+        Ret.push_back(::PUERTS_NAMESPACE::ScriptPropertyInfo());
+        return Ret;
+    }
+#endif
+
+    template <typename T, typename CDB>
+    static void RegisterByRegistryApi(FinalizeFuncType Finalize, const CDB& Cdb)
     {
         auto registry_api = GetRegistryApi();
         auto registry = GetRegistry();
@@ -326,13 +458,12 @@ struct API
 class StringHolder
 {
 public:
-    StringHolder(PApiCallbackEnv env, pesapi_value value)
+    StringHolder(PApiCallbackEnv env, pesapi_value value) : str_(nullptr), needFree_(false)
     {
         if (!value)
             return;
         if (env.apis->is_binary(env.env, value))
         {
-            needFree_ = false;
             size_t length = 0;
             str_ = (char*) env.apis->get_value_binary(env.env, value, &length);
         }
@@ -340,11 +471,12 @@ public:
         {
             size_t length = 0;
             str_ = (char*) env.apis->get_value_string_utf8(env.env, value, nullptr, &length);
-            needFree_ = false;
             if (!str_)
             {
                 str_ = new char[length + 1];
                 env.apis->get_value_string_utf8(env.env, value, str_, &length);
+                // the buffer size passed is the string length, the implementation may not write the null terminator
+                str_[length] = 0;
                 needFree_ = true;
             }
         }
@@ -395,7 +527,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_int64(env.env, value);
+        return env.apis->is_int64(env.env, value) != 0;
     }
 };
 
@@ -414,7 +546,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_uint64(env.env, value);
+        return env.apis->is_uint64(env.env, value) != 0;
     }
 };
 
@@ -433,7 +565,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_int32(env.env, value);
+        return env.apis->is_int32(env.env, value) != 0;
     }
 };
 
@@ -452,7 +584,7 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_uint32(env.env, value);
+        return env.apis->is_uint32(env.env, value) != 0;
     }
 };
 
@@ -471,7 +603,7 @@ struct Converter<T, typename std::enable_if<std::is_enum<T>::value>::type>
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_int32(env.env, value);
+        return env.apis->is_int32(env.env, value) != 0;
     }
 };
 
@@ -490,7 +622,7 @@ struct Converter<T, typename std::enable_if<std::is_floating_point<T>::value>::t
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_double(env.env, value);
+        return env.apis->is_double(env.env, value) != 0;
     }
 };
 
@@ -514,13 +646,13 @@ struct Converter<std::string>
         {
             std::vector<char> buffer(bufSize + 1);
             str = env.apis->get_value_string_utf8(env.env, value, buffer.data(), &bufSize);
-            return std::string(str);
+            return std::string(str, bufSize);
         }
     }
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_string(env.env, value);
+        return env.apis->is_string(env.env, value) != 0;
     }
 };
 
@@ -534,7 +666,7 @@ struct Converter<const char*>
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_string(env.env, value);
+        return env.apis->is_string(env.env, value) != 0;
     }
 };
 
@@ -549,12 +681,18 @@ struct Converter<void*>
     static void* toCpp(PApiCallbackEnv env, pesapi_value value)
     {
         size_t bufsize;
-        return env.apis->get_value_binary(env.env, value, &bufsize);
+        void* ptr = env.apis->get_value_binary(env.env, value, &bufsize);
+        if (!ptr && env.apis->is_object(env.env, value))
+        {
+            // the same as v8_impl, a native object is accepted as void* too
+            ptr = env.apis->get_native_object_ptr(env.env, value);
+        }
+        return ptr;
     }
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_binary(env.env, value);
+        return env.apis->is_binary(env.env, value) != 0;
     }
 };
 
@@ -568,17 +706,17 @@ struct Converter<bool>
 
     static bool toCpp(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->get_value_bool(env.env, value);
+        return env.apis->get_value_bool(env.env, value) != 0;
     }
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_boolean(env.env, value);
+        return env.apis->is_boolean(env.env, value) != 0;
     }
 };
 
 template <typename T>
-struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objecttype<T>::value>::type>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objecttype<T>::value && !is_uetype<T>::value>::type>
 {
     static pesapi_value toScript(PApiCallbackEnv env, const T& value)
     {
@@ -587,17 +725,21 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objectty
 
     static T toCpp(PApiCallbackEnv env, pesapi_value value)
     {
-        return Converter<T>::toCpp(env, env.apis->unboxing(env.env, value));
+        if (env.apis->is_object(env.env, value))
+        {
+            return Converter<T>::toCpp(env, env.apis->unboxing(env.env, value));
+        }
+        return {};
     }
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_boxed_value(env.env, value);    // do not checked inner
+        return env.apis->is_boxed_value(env.env, value) != 0;    // do not checked inner
     }
 };
 
 template <typename T>
-struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttype<T>::value>::type>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttype<T>::value || is_uetype<T>::value>::type>
 {
     static pesapi_value toScript(PApiCallbackEnv env, const T& value)
     {
@@ -606,16 +748,16 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
 
     static T* toCpp(PApiCallbackEnv env, pesapi_value value)
     {
-        if (env.apis->is_object(env.env, value))
+        if (value && env.apis->is_object(env.env, value))
         {
-            return Converter<T*>::toCpp(env, env.apis->unboxing(env.env, value));
+            return Converter<typename std::decay<T>::type*>::toCpp(env, env.apis->unboxing(env.env, value));
         }
         return nullptr;
     }
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_boxed_value(env.env, value);    // do not checked inner
+        return env.apis->is_boxed_value(env.env, value) != 0;    // do not checked inner
     }
 };
 
@@ -637,7 +779,7 @@ struct Converter<T,
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_binary(env.env, value);
+        return env.apis->is_binary(env.env, value) != 0;
     }
 };
 
@@ -651,7 +793,7 @@ struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !s
 
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_binary(env.env, value);
+        return env.apis->is_binary(env.env, value) != 0;
     }
 };
 
@@ -670,7 +812,26 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     }
     static bool accept(PApiCallbackEnv env, pesapi_value value)
     {
-        return env.apis->is_instance_of(env.env, StaticTypeId<T>::get(), value);
+        return env.apis->is_instance_of(env.env, StaticTypeId<T>::get(), value) != 0;
+    }
+};
+
+template <class T>
+struct Converter<const T*,
+    typename std::enable_if<(is_objecttype<T>::value || std::is_same<T, void>::value || is_script_type<T>::value) &&
+                            !is_uetype<T>::value && !std::is_same<T, char>::value>::type>
+{
+    static pesapi_value toScript(PApiCallbackEnv env, const T* value)
+    {
+        return Converter<T*>::toScript(env, const_cast<T*>(value));
+    }
+    static const T* toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        return Converter<T*>::toCpp(env, value);
+    }
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return Converter<T*>::accept(env, value);
     }
 };
 
