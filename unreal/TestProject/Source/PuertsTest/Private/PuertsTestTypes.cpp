@@ -244,6 +244,21 @@ int32 UPuertsTestMixinTarget::LoopImplEvent(int32 Count)
     return Sum;
 }
 
+FString UPuertsTestMakeClassTarget::NativeEvent_Implementation(const FString& S)
+{
+    return TEXT("native:") + S;
+}
+
+int32 UPuertsTestMakeClassTarget::CallImplEvent(int32 Value)
+{
+    return ImplEvent(Value);
+}
+
+FString UPuertsTestMakeClassTarget::CallNativeEvent(const FString& S)
+{
+    return NativeEvent(S);
+}
+
 void UPuertsTestReporter::Pass(const FString& Name)
 {
     Passed.Add(Name);

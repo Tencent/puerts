@@ -37,4 +37,15 @@ bool FPuertsTest_Timers::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_MakeUClass, "Puerts.Functional.MakeUClass", PUERTS_TEST_FLAGS)
+bool FPuertsTest_MakeUClass::RunTest(const FString& Parameters)
+{
+    // tests/make_uclass.js throws in an override once, and in a Constructor which runs for the CDO and one instance
+    AddExpectedError(TEXT("makeuclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
+    AddExpectedError(TEXT("makeuclass ctor boom"), EAutomationExpectedErrorFlags::Contains, 2);
+    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/make_uclass"), TEXT("MakeUClass"));
+    Reporter->RemoveFromRoot();
+    return !HasAnyErrors();
+}
+
 #endif
