@@ -290,11 +290,10 @@ private:
 
     void ExecuteModule(const FString& ModuleName);
 
-    void EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    // require of the module system (the module loader of the backend), returns nullptr with the exception pending on failure
+    pesapi_value RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName);
 
     void Log(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    void SearchModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -303,6 +302,9 @@ private:
     void HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // puerts.forceReload(url?)
+    void ForceReloadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
     v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
@@ -367,8 +369,6 @@ private:
     void Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
-    void FindModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
     void DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info);
@@ -376,27 +376,6 @@ private:
     void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-#ifndef WITH_QUICKJS
-    v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> Context, const FString& FileName);
-
-    v8::MaybeLocal<v8::Module> FetchCJSModuleAsESModule(v8::Local<v8::Context> Context, const FString& ModuleName);
-
-    struct FModuleInfo
-    {
-        v8::Global<v8::Module> Module;
-        TMap<FString, v8::Global<v8::Module>> ResolveCache;
-        v8::Global<v8::Value> CJSValue;
-    };
-
-    std::unordered_multimap<int, FModuleInfo*>::iterator FindModuleInfo(v8::Local<v8::Module> Module);
-
-    static v8::MaybeLocal<v8::Module> ResolveModuleCallback(v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier,
-#if V8_MAJOR_VERSION >= 9
-        v8::Local<v8::FixedArray> ImportAttributes,    // not implement yet
-#endif
-        v8::Local<v8::Module> Referrer);
-#endif
 
     struct ObjectMerger;
 
@@ -494,6 +473,11 @@ private:
 
     // path -> debug path, filled by HostResolveModule
     TMap<FString, FString> ModuleDebugPaths;
+
+#if defined(WITH_NODEJS)
+    // the require of node, tried first by require (as modular.js did)
+    FPapiValueRef NodeRequire;
+#endif
 #endif
 
     std::shared_ptr<ILogger> Logger;
@@ -543,10 +527,6 @@ private:
 
     v8::Global<v8::Context> DefaultContext;
 
-    v8::Global<v8::Function> Require;
-
-    v8::Global<v8::Function> GetESMMain;
-
     v8::Global<v8::Function> ReloadJs;
 
 #if !PUERTS_FORCE_CPP_UFUNCTION
@@ -556,10 +536,6 @@ private:
     FPapiValueRef RemoveListItem;
 
     FPapiValueRef GenListApply;
-
-#if defined(WITH_V8_BYTECODE)
-    v8::Global<v8::Function> GenEmptyCode;
-#endif
 
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
@@ -749,12 +725,6 @@ private:
     TMap<uint32_t, TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbacks;
 
     TMap<UObject*, TArray<TWeakObjectPtr<UDynamicDelegateProxy>>> AutoReleaseCallbacksMap;
-
-#ifndef WITH_QUICKJS
-    TMap<FString, v8::Global<v8::Module>> PathToModule;
-
-    std::unordered_multimap<int, FModuleInfo*> HashToModuleInfo;
-#endif
 
 #ifdef SINGLE_THREAD_VERIFY
     uint32 BoundThreadId;

@@ -100,10 +100,9 @@ namespace PUERTS_NAMESPACE
 #if !defined(WITH_QUICKJS)
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-static void ModuleLoaderTestExecute(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-static void ModuleLoaderTestRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-static void ModuleLoaderTestForceReload(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-static void ModuleLoaderTestGetModuleByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+static void ModuleGenRequire(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+static void ModuleRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+static void ModuleGetByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
@@ -512,13 +511,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     pesapi_value PapiGlobal = papi_bridge::ToPapi(Global);
     pesapi_value PapiPuertsObj = papi_bridge::ToPapi(PuertsObj);
 
-    MethodBindingHelper<&FJsEnvImpl::EvalScript>::Bind(Isolate, Context, Global, "__tgjsEvalScript", This);
-
     PapiMethodBindingHelper<&FJsEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::SearchModule>::Bind(Apis, Env, PapiGlobal, "__tgjsSearchModule", this);
-
-    PapiMethodBindingHelper<&FJsEnvImpl::LoadModule>::Bind(Apis, Env, PapiGlobal, "__tgjsLoadModule", this);
+    PapiMethodBindingHelper<&FJsEnvImpl::LoadModule>::Bind(Apis, Env, PapiPuertsObj, "loadModule", this);
 
     PapiMethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
 
@@ -545,8 +540,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     PapiMethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
 #endif
-
-    PapiMethodBindingHelper<&FJsEnvImpl::FindModule>::Bind(Apis, Env, PapiGlobal, "__tgjsFindModule", this);
 
     MethodBindingHelper<&FJsEnvImpl::SetInspectorCallback>::Bind(Isolate, Context, Global, "__tgjsSetInspectorCallback", This);
 
@@ -611,14 +604,22 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     PapiModuleLoader = papi_v8::CreateModuleLoader(Env);
     PapiMethodBindingHelper<&FJsEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
     PapiMethodBindingHelper<&FJsEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
+#if defined(WITH_NODEJS)
     {
-        pesapi_value TestObj = Apis->create_object(Env);
-        PapiBindFunction(Apis, Env, TestObj, "execute", &ModuleLoaderTestExecute);
-        PapiBindFunction(Apis, Env, TestObj, "registerBuiltin", &ModuleLoaderTestRegisterBuiltin);
-        PapiBindFunction(Apis, Env, TestObj, "forceReload", &ModuleLoaderTestForceReload);
-        PapiBindFunction(Apis, Env, TestObj, "getModuleByUrl", &ModuleLoaderTestGetModuleByUrl);
-        Apis->set_property(Env, PapiGlobal, "__puerModuleLoaderTest", TestObj);
+        pesapi_value OrgRequire = Apis->get_property(Env, PapiGlobal, "require");
+        if (Apis->is_function(Env, OrgRequire))
+        {
+            NodeRequire.Reset(Apis, Env, OrgRequire);
+        }
     }
+#endif
+    // the module system of puerts, implemented by the module loader of the backend
+    papi_v8::RegisterBuiltinModule(Env, "puerts", PapiPuertsObj);
+    Apis->set_property(Env, PapiGlobal, "require", papi_v8::CreateRequire(Env, ""));
+    PapiBindFunction(Apis, Env, PapiPuertsObj, "genRequire", &ModuleGenRequire);
+    PapiBindFunction(Apis, Env, PapiPuertsObj, "registerBuildinModule", &ModuleRegisterBuiltin);
+    PapiMethodBindingHelper<&FJsEnvImpl::ForceReloadModule>::Bind(Apis, Env, PapiPuertsObj, "forceReload", this);
+    PapiBindFunction(Apis, Env, PapiPuertsObj, "getModuleByUrl", &ModuleGetByUrl);
 #endif
     // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names, and the
     // definitions must be kept alive while the templates are
@@ -642,7 +643,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/polyfill.js");
 #endif
     ExecuteModule("puerts/log.js");
-    ExecuteModule("puerts/modular.js");
     ExecuteModule("puerts/uelazyload.js");
     ExecuteModule("puerts/events.js");
     ExecuteModule("puerts/promises.js");
@@ -650,11 +650,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/jit_stub.js");
     ExecuteModule("puerts/hot_reload.js");
     ExecuteModule("puerts/pesaddon.js");
-
-    Require.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
-
-    GetESMMain.Reset(
-        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "getESMMain")).ToLocalChecked().As<v8::Function>());
 
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 #if !PUERTS_FORCE_CPP_UFUNCTION
@@ -665,10 +660,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
 
     GenListApply.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__genListApply"));
-#if defined(WITH_V8_BYTECODE)
-    GenEmptyCode.Reset(
-        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "generateEmptyCode")).ToLocalChecked().As<v8::Function>());
-#endif
 
     DelegateProxiesCheckerHandler =
         FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
@@ -743,15 +734,6 @@ FJsEnvImpl::~FJsEnvImpl()
     StopPolling();
 #endif
 
-#ifndef WITH_QUICKJS
-    for (auto& KV : HashToModuleInfo)
-    {
-        delete KV.second;
-    }
-    HashToModuleInfo.clear();
-    PathToModule.Empty();
-#endif
-
     for (auto& KV : ManualReleaseCallbacks)
     {
         if (KV.Value.IsValid(true))
@@ -762,8 +744,6 @@ FJsEnvImpl::~FJsEnvImpl()
     ManualReleaseCallbacks.Empty();
     ManualReleaseCallbackMap.Reset();
     InspectorMessageHandler.Reset();
-    Require.Reset();
-    GetESMMain.Reset();
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
@@ -842,6 +822,9 @@ FJsEnvImpl::~FJsEnvImpl()
         FNameFixingProxy.Reset();
 
 #if !defined(WITH_QUICKJS)
+#if defined(WITH_NODEJS)
+        NodeRequire.Reset();
+#endif
         papi_v8::DestroyModuleLoader(PapiModuleLoader);
         PapiModuleLoader = nullptr;
 #endif
@@ -901,9 +884,6 @@ FJsEnvImpl::~FJsEnvImpl()
 
 #if !PUERTS_FORCE_CPP_UFUNCTION
         MergePrototype.Reset();
-#endif
-#if defined(WITH_V8_BYTECODE)
-        GenEmptyCode.Reset();
 #endif
     }
 
@@ -1302,8 +1282,7 @@ void FJsEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_s
         BindInfoMap.Emplace(TypeScriptGeneratedClass, std::move(BindInfo));
     }
 
-    pesapi_value RequireArgs[] = {PapiUtils::FromFString(Apis, Env, ModuleName)};
-    pesapi_value Ret = Apis->call_function(Env, papi_bridge::ToPapi(Require.Get(MainIsolate)), nullptr, 1, RequireArgs);
+    pesapi_value Ret = RequireModule(Apis, Env, ModuleName);
     if (Apis->has_caught(Scope))
     {
         return;
@@ -3657,8 +3636,7 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
         pesapi_env_ref EnvRef = Apis->create_env_ref(Env);
         pesapi_scope_memory ScopeMemory;
         pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-        pesapi_value RequireArgs[] = {PapiUtils::FromFString(Apis, Env, ModuleNameOrScript)};
-        Apis->call_function(Env, papi_bridge::ToPapi(Require.Get(Isolate)), Apis->create_undefined(Env), 1, RequireArgs);
+        RequireModule(Apis, Env, ModuleNameOrScript);
         if (Apis->has_caught(Scope))
         {
             Logger->Error(UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true)));
@@ -3688,271 +3666,6 @@ bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName
     return true;
 }
 
-#ifndef WITH_QUICKJS
-std::unordered_multimap<int, FJsEnvImpl::FModuleInfo*>::iterator FJsEnvImpl::FindModuleInfo(v8::Local<v8::Module> Module)
-{
-    auto Range = HashToModuleInfo.equal_range(Module->GetIdentityHash());
-    for (auto It = Range.first; It != Range.second; ++It)
-    {
-        if (It->second->Module == Module)
-        {
-            return It;
-        }
-    }
-    return HashToModuleInfo.end();
-}
-
-v8::MaybeLocal<v8::Module> FJsEnvImpl::ResolveModuleCallback(v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier,
-#if V8_MAJOR_VERSION >= 9
-    v8::Local<v8::FixedArray> ImportAttributes,    // not implement yet
-#endif
-    v8::Local<v8::Module> Referrer)
-{
-    auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Context->GetIsolate()));
-    const auto ItModuleInfo = Self->FindModuleInfo(Referrer);
-    check(ItModuleInfo != Self->HashToModuleInfo.end());
-    const auto RefModuleName = FV8Utils::ToFString(Context->GetIsolate(), Specifier);
-    auto ItRefModule = ItModuleInfo->second->ResolveCache.Find(RefModuleName);
-    check(ItRefModule);
-    return (*ItRefModule).Get(Context->GetIsolate());
-}
-
-v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Context> Context, const FString& ModuleName)
-{
-#if V8_MAJOR_VERSION < 8
-    FV8Utils::ThrowException(
-        MainIsolate, FString::Printf(TEXT("V8_MAJOR_VERSION < 8 not support fetch CJS module [%s] from ESM"), *ModuleName));
-    return v8::MaybeLocal<v8::Module>();
-#else
-    const auto Isolate = Context->GetIsolate();
-
-    Logger->Info(FString::Printf(TEXT("ESM Fetch CJS Module: %s"), *ModuleName));
-
-    v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, ModuleName)};
-
-    auto MaybeRet = Require.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args);
-
-    if (MaybeRet.IsEmpty())
-    {
-        return v8::MaybeLocal<v8::Module>();
-    }
-
-    auto CJSValue = MaybeRet.ToLocalChecked();
-    std::vector<v8::Local<v8::String>> ExportNames = {
-        v8::String::NewFromUtf8(Isolate, "default", v8::NewStringType::kNormal).ToLocalChecked()};
-
-    if (CJSValue->IsObject())
-    {
-        auto JsObject = CJSValue->ToObject(Context).ToLocalChecked();
-        auto Keys = JsObject->GetOwnPropertyNames(Context).ToLocalChecked();
-        for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
-        {
-            v8::Local<v8::Value> Key;
-            if (Keys->Get(Context, i).ToLocal(&Key))
-            {
-                // UE_LOG(LogTemp, Warning, TEXT("---'%s' '%s'"), *ModuleName, *FV8Utils::ToFString(Isolate, Key));
-                ExportNames.push_back(Key->ToString(Context).ToLocalChecked());
-            }
-        }
-    }
-
-    v8::Local<v8::Module> SyntheticModule =
-#if defined(V8_HAS_WRAP_API_WITHOUT_STL)
-        v8::Module_CreateSyntheticModule_Without_Stl(Isolate, FV8Utils::ToV8String(Isolate, ModuleName), ExportNames.data(),
-            ExportNames.size(),
-#else
-        v8::Module::CreateSyntheticModule(Isolate, FV8Utils::ToV8String(Isolate, ModuleName), ExportNames,
-#endif
-            [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
-            {
-                const auto IsolateInner = ContextInner->GetIsolate();
-                auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(IsolateInner));
-
-                const auto ModuleInfoIt = Self->FindModuleInfo(Module);
-                check(ModuleInfoIt != Self->HashToModuleInfo.end());
-                auto CJSValueInner = ModuleInfoIt->second->CJSValue.Get(IsolateInner);
-
-                __USE(Module->SetSyntheticModuleExport(IsolateInner,
-                    v8::String::NewFromUtf8(IsolateInner, "default", v8::NewStringType::kNormal).ToLocalChecked(), CJSValueInner));
-
-                if (CJSValueInner->IsObject())
-                {
-                    auto JsObjectInner = CJSValueInner->ToObject(ContextInner).ToLocalChecked();
-                    auto KeysInner = JsObjectInner->GetOwnPropertyNames(ContextInner).ToLocalChecked();
-                    for (decltype(KeysInner->Length()) ii = 0; ii < KeysInner->Length(); ++ii)
-                    {
-                        v8::Local<v8::Value> KeyInner;
-                        v8::Local<v8::Value> ValueInner;
-                        if (KeysInner->Get(ContextInner, ii).ToLocal(&KeyInner) &&
-                            JsObjectInner->Get(ContextInner, KeyInner).ToLocal(&ValueInner))
-                        {
-                            // UE_LOG(LogTemp, Warning, TEXT("-----set '%s'"), *FV8Utils::ToFString(IsolateInner, KeyInner));
-                            __USE(Module->SetSyntheticModuleExport(
-                                IsolateInner, KeyInner->ToString(ContextInner).ToLocalChecked(), ValueInner));
-                        }
-                    }
-                }
-
-                return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
-            });
-
-    FModuleInfo* Info = new FModuleInfo;
-    Info->Module.Reset(Isolate, SyntheticModule);
-    Info->CJSValue.Reset(Isolate, CJSValue);
-    HashToModuleInfo.emplace(SyntheticModule->GetIdentityHash(), Info);
-
-    return SyntheticModule;
-#endif
-}
-
-v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> Context, const FString& FileName)
-{
-    const auto Isolate = Context->GetIsolate();
-    if (PathToModule.Contains(FileName))
-    {
-        return PathToModule[FileName].Get(Isolate);
-    }
-
-    Logger->Info(FString::Printf(TEXT("Fetch ES Module: %s"), *FileName));
-    TArray<uint8> Data;
-    if (!ModuleLoader->Load(FileName, Data))
-    {
-        FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not load [%s]"), *FileName));
-        return v8::MaybeLocal<v8::Module>();
-    }
-
-    v8::Local<v8::String> Source;
-
-    v8::ScriptCompiler::CachedData* CachedCode = nullptr;
-    v8::ScriptCompiler::CompileOptions Options = v8::ScriptCompiler::CompileOptions::kNoCompileOptions;
-#if defined(WITH_V8_BYTECODE)
-    if (FileName.EndsWith(TEXT(".mbc")))
-    {
-        FCodeCacheHeader* CodeCacheHeader = (FCodeCacheHeader*) Data.GetData();
-        if (CodeCacheHeader->FlagHash != Expect_FlagHash)
-        {
-            UE_LOG(Puerts, Warning, TEXT("FlagHash not match expect %u, but got %u"), Expect_FlagHash, CodeCacheHeader->FlagHash);
-            CodeCacheHeader->FlagHash = Expect_FlagHash;
-        }
-#if V8_MAJOR_VERSION >= 11
-        if (CodeCacheHeader->ReadOnlySnapshotChecksum != Expect_ReadOnlySnapshotChecksum)
-        {
-            UE_LOG(Puerts, Warning, TEXT("ReadOnlySnapshotChecksum not match expect %u, but got %u"),
-                Expect_ReadOnlySnapshotChecksum, CodeCacheHeader->ReadOnlySnapshotChecksum);
-            CodeCacheHeader->ReadOnlySnapshotChecksum = Expect_ReadOnlySnapshotChecksum;
-        }
-#endif
-        static constexpr uint32_t kModuleFlagMask = (1 << 31);
-        uint32_t Len = CodeCacheHeader->SourceHash & ~kModuleFlagMask;
-        v8::Local<v8::Value> Args[] = {v8::Integer::New(Isolate, Len)};
-        v8::Local<v8::Value> Ret;
-        if (!GenEmptyCode.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args).ToLocal(&Ret) || !Ret->IsString())
-        {
-            FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("generate code for bytecode [%s] fail!"), *FileName));
-            return v8::MaybeLocal<v8::Module>();
-        }
-        CachedCode = new v8::ScriptCompiler::CachedData(Data.GetData(), Data.Num());    // will delete by ~Source
-        Options = v8::ScriptCompiler::CompileOptions::kConsumeCodeCache;
-        Source = Ret.As<v8::String>();
-    }
-    else
-#endif
-    {
-        FString Script;
-        FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
-        Source = FV8Utils::ToV8String(Isolate, Script);
-    }
-
-#if V8_MAJOR_VERSION > 8
-    v8::ScriptOrigin Origin(
-        Isolate, FV8Utils::ToV8String(Isolate, FileName), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
-#else
-    v8::ScriptOrigin Origin(FV8Utils::ToV8String(Isolate, FileName), v8::Local<v8::Integer>(), v8::Local<v8::Integer>(),
-        v8::Local<v8::Boolean>(), v8::Local<v8::Integer>(), v8::Local<v8::Value>(), v8::Local<v8::Boolean>(),
-        v8::Local<v8::Boolean>(), v8::True(Isolate));
-#endif
-    v8::ScriptCompiler::Source ScriptSource(Source, Origin, CachedCode);
-
-    v8::Local<v8::Module> Module;
-    if (!v8::ScriptCompiler::CompileModule(Isolate, &ScriptSource, Options).ToLocal(&Module))
-    {
-        return v8::MaybeLocal<v8::Module>();
-    }
-
-    PathToModule.Add(FileName, v8::Global<v8::Module>(Isolate, Module));
-    FModuleInfo* Info = new FModuleInfo;
-    Info->Module.Reset(Isolate, Module);
-    HashToModuleInfo.emplace(Module->GetIdentityHash(), Info);
-
-    auto DirName = FPaths::GetPath(FileName);
-
-#if V8_MAJOR_VERSION >= 9
-    v8::Local<v8::FixedArray> module_requests = Module->GetModuleRequests();
-    for (int i = 0, Length = module_requests->Length(); i < Length; ++i)
-    {
-        v8::Local<v8::ModuleRequest> module_request = module_requests->Get(Context, i).As<v8::ModuleRequest>();
-        auto RefModuleName = FV8Utils::ToFString(Isolate, module_request->GetSpecifier());
-#else
-    for (int i = 0, Length = Module->GetModuleRequestsLength(); i < Length; ++i)
-    {
-        auto RefModuleName = FV8Utils::ToFString(Isolate, Module->GetModuleRequest(i));
-#endif
-        FString OutPath;
-        FString OutDebugPath;
-        if (ModuleLoader->Search(DirName, RefModuleName, OutPath, OutDebugPath))
-        {
-            if (OutPath.EndsWith(TEXT("package.json")))
-            {
-                TArray<uint8> PackageData;
-                if (ModuleLoader->Load(OutPath, PackageData))
-                {
-                    FString PackageScript;
-                    FFileHelper::BufferToString(PackageScript, PackageData.GetData(), PackageData.Num());
-                    v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, PackageScript)};
-
-                    auto MaybeRet = GetESMMain.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args);
-
-                    v8::Local<v8::Value> ESMMainValue;
-                    if (MaybeRet.ToLocal(&ESMMainValue) && ESMMainValue->IsString())
-                    {
-                        FString ESMMain = FV8Utils::ToFString(Isolate, ESMMainValue);
-                        FString ESMMainOutPath;
-                        FString ESMMainOutDebugPath;
-                        if (ModuleLoader->Search(FPaths::GetPath(OutPath), ESMMain, ESMMainOutPath, ESMMainOutDebugPath))
-                        {
-                            OutPath = ESMMainOutPath;
-                        }
-                    }
-                }
-            }
-            if (OutPath.EndsWith(TEXT(".mjs")) || OutPath.EndsWith(TEXT(".js")))
-            {
-                auto RefModule = FetchESModuleTree(Context, OutPath);
-                if (RefModule.IsEmpty())
-                {
-                    return v8::MaybeLocal<v8::Module>();
-                }
-                Info->ResolveCache.Add(RefModuleName, v8::Global<v8::Module>(Isolate, RefModule.ToLocalChecked()));
-                continue;
-            }
-        }
-
-        auto RefModule = FetchCJSModuleAsESModule(Context, OutPath.EndsWith(TEXT(".cjs")) ? OutPath : RefModuleName);
-
-        if (RefModule.IsEmpty())
-        {
-            FV8Utils::ThrowException(
-                MainIsolate, FString::Printf(TEXT("can not resolve [%s], import by [%s]"), *RefModuleName, *FileName));
-            return v8::MaybeLocal<v8::Module>();
-        }
-
-        Info->ResolveCache.Add(RefModuleName, v8::Global<v8::Module>(Isolate, RefModule.ToLocalChecked()));
-    }
-
-    return Module;
-}
-#endif
-
 void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
 {
     FString OutPath;
@@ -3966,131 +3679,31 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
         return;
     }
 
-    // #if UE_BUILD_DEBUG || UE_BUILD_DEVELOPMENT
-    //     if (!DebugPath.IsEmpty())
-    //         OutPath = DebugPath;
-    // #endif
-
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
     v8::Context::Scope ContextScope(Context);
+    v8::TryCatch TryCatch(Isolate);
 #ifndef WITH_QUICKJS
     if (OutPath.EndsWith(".mjs"))
     {
-        v8::TryCatch TryCatch(Isolate);
-        v8::Local<v8::Module> RootModule;
-
-        if (!FetchESModuleTree(Context, OutPath).ToLocal(&RootModule))
-        {
-            check(TryCatch.HasCaught());
-            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-            return;
-        }
-
-        if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
-        {
-            __USE(RootModule->Evaluate(Context));
-        }
-
-        if (TryCatch.HasCaught())
+        // an esm is evaluated by the module loader of the backend
+        if (!papi_v8::ExecuteModule(papi_bridge::ToPapi(Context), TCHAR_TO_UTF8(*ModuleName), "", true))
         {
             Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-            return;
         }
-    }
-    else
-#endif
-    {
-        v8::Local<v8::String> Source = FV8Utils::ToV8StringFromFileContent(Isolate, Data);
-
-#if PLATFORM_WINDOWS
-        // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
-        FString FormattedScriptUrl = DebugPath.Replace(TEXT("/"), TEXT("\\"));
-#else
-        FString FormattedScriptUrl = DebugPath;
-#endif
-        v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
-#if V8_MAJOR_VERSION > 8
-        v8::ScriptOrigin Origin(Isolate, Name);
-#else
-        v8::ScriptOrigin Origin(Name);
-#endif
-        v8::TryCatch TryCatch(Isolate);
-
-        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
-        if (CompiledScript.IsEmpty())
-        {
-            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-            return;
-        }
-        (void) (CompiledScript.ToLocalChecked()->Run(Context));
-        if (TryCatch.HasCaught())
-        {
-            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-            return;
-        }
-    }
-}
-
-void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-#ifndef WITH_QUICKJS
-    bool IsESM = Info[2]->BooleanValue(Isolate);
-
-    if (IsESM)
-    {
-        FString FullPath = FV8Utils::ToFString(Isolate, Info[3]);
-        v8::Local<v8::Module> RootModule;
-
-        if (!FetchESModuleTree(Context, FullPath).ToLocal(&RootModule))
-        {
-            return;
-        }
-
-        if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
-        {
-            auto MaybeResult = RootModule->Evaluate(Context);
-            v8::Local<v8::Value> Result;
-            if (MaybeResult.ToLocal(&Result))
-            {
-                if (Result->IsPromise())
-                {
-                    v8::Local<v8::Promise> ResultPromise(Result.As<v8::Promise>());
-                    while (ResultPromise->State() == v8::Promise::kPending)
-                    {
-                        Isolate->PerformMicrotaskCheckpoint();
-                    }
-
-                    if (ResultPromise->State() == v8::Promise::kRejected)
-                    {
-                        ResultPromise->MarkAsHandled();
-                        Isolate->ThrowException(ResultPromise->Result());
-                        return;
-                    }
-                }
-                Info.GetReturnValue().Set(RootModule->GetModuleNamespace());
-            }
-        }
-
         return;
     }
 #endif
+    // the bootstrap scripts (puerts/*.js) are classic scripts, their top-level declarations (`var global`) are globals
+    v8::Local<v8::String> Source = FV8Utils::ToV8StringFromFileContent(Isolate, Data);
 
-    v8::String::Utf8Value UrlArg(Isolate, Info[1]);
-    FString ScriptUrl = UTF8_TO_TCHAR(*UrlArg);
 #if PLATFORM_WINDOWS
     // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
-    FString FormattedScriptUrl = ScriptUrl.Replace(TEXT("/"), TEXT("\\"));
+    FString FormattedScriptUrl = DebugPath.Replace(TEXT("/"), TEXT("\\"));
 #else
-    FString FormattedScriptUrl = ScriptUrl;
+    FString FormattedScriptUrl = DebugPath;
 #endif
     v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
 #if V8_MAJOR_VERSION > 8
@@ -4098,70 +3711,28 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
 #else
     v8::ScriptOrigin Origin(Name);
 #endif
-    v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
-
-#if defined(WITH_V8_BYTECODE)
-    v8::ScriptCompiler::CachedData* CachedCode = nullptr;
-    uint8_t* Cache = nullptr;
-    v8::ScriptCompiler::CompileOptions Options = v8::ScriptCompiler::CompileOptions::kNoCompileOptions;
-    if (Info.Length() > 4)
+    auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
+    if (CompiledScript.IsEmpty())
     {
-        if (Info[4]->IsArrayBuffer())
-        {
-            auto AB = Info[4].As<v8::ArrayBuffer>();
-            auto Length = AB->ByteLength();
-            Cache = new uint8_t[Length];
-            memcpy(Cache, DataTransfer::GetArrayBufferData(AB), Length);
-            CachedCode = new v8::ScriptCompiler::CachedData(Cache, Length);    // will delete by ~Source
-            Options = v8::ScriptCompiler::CompileOptions::kConsumeCodeCache;
-            FCodeCacheHeader* CodeCacheHeader = (FCodeCacheHeader*) CachedCode->data;
-            if (CodeCacheHeader->FlagHash != Expect_FlagHash)
-            {
-                UE_LOG(
-                    Puerts, Warning, TEXT("FlagHash not match expect %u, but got %u"), Expect_FlagHash, CodeCacheHeader->FlagHash);
-                CodeCacheHeader->FlagHash = Expect_FlagHash;
-            }
-#if V8_MAJOR_VERSION >= 11
-            if (CodeCacheHeader->ReadOnlySnapshotChecksum != Expect_ReadOnlySnapshotChecksum)
-            {
-                UE_LOG(Puerts, Warning, TEXT("ReadOnlySnapshotChecksum not match expect %u, but got %u"),
-                    Expect_ReadOnlySnapshotChecksum, CodeCacheHeader->ReadOnlySnapshotChecksum);
-                CodeCacheHeader->ReadOnlySnapshotChecksum = Expect_ReadOnlySnapshotChecksum;
-            }
-#endif
-        }
+        Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+        return;
     }
-
-    v8::ScriptCompiler::Source ScriptSource(Source, Origin, CachedCode);
-    auto Script = v8::ScriptCompiler::Compile(Context, &ScriptSource, Options);
-    if (CachedCode)
+    (void) (CompiledScript.ToLocalChecked()->Run(Context));
+    if (TryCatch.HasCaught())
     {
-        delete Cache;
-        if (CachedCode->rejected)
-        {
-            FV8Utils::ThrowException(Isolate, TEXT("invalid bytecode"));
-            return;
-        }
+        Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
     }
+}
+
+pesapi_value FJsEnvImpl::RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName)
+{
+#ifndef WITH_QUICKJS
+    return papi_v8::ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", false);
 #else
-    auto Script = v8::Script::Compile(Context, Source, &Origin);
+    // the module system is not supported by quickjs (frozen) until it is a papi backend
+    FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not require [%s], no module system"), *ModuleName));
+    return nullptr;
 #endif
-
-    if (Script.IsEmpty())
-    {
-        return;
-    }
-    auto Result = Script.ToLocalChecked()->Run(Context);
-    if (Result.IsEmpty())
-    {
-        return;
-    }
-    Info.GetReturnValue().Set(Result.ToLocalChecked());
-
-    if (OnSourceLoadedCallback)
-    {
-        OnSourceLoadedCallback(FormattedScriptUrl);
-    }
 }
 
 void FJsEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -4186,25 +3757,6 @@ void FJsEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         default:
             Logger->Log(Msg);
             break;
-    }
-}
-
-void FJsEnvImpl::SearchModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgString, EArgString);
-
-    pesapi_env Env = Apis->get_env(Info);
-    FString ModuleName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    FString RequiringDir = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
-    FString OutPath;
-    FString OutDebugPath;
-
-    if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath))
-    {
-        pesapi_value Result = Apis->create_array(Env);
-        Apis->set_property_uint32(Env, Result, 0, PapiUtils::FromFString(Apis, Env, OutPath));
-        Apis->set_property_uint32(Env, Result, 1, PapiUtils::FromFString(Apis, Env, OutDebugPath));
-        Apis->add_return(Info, Result);
     }
 }
 
@@ -4260,6 +3812,31 @@ void FJsEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info
     FString Specifier = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
     FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     bool ByRequire = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 2)) == TEXT("require");
+#if defined(WITH_NODEJS)
+    // the require of node first (its builtin and node_modules), as modular.js did, a bare name only since it is
+    // registered as a builtin module
+    if (ByRequire && NodeRequire && !Specifier.StartsWith(TEXT(".")) && !Specifier.StartsWith(TEXT("/")))
+    {
+        bool Found = false;
+        pesapi_env_ref EnvRef = Apis->create_env_ref(Env);
+        pesapi_scope_memory ScopeMemory;
+        pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
+        pesapi_value Arg = Apis->get_arg(Info, 0);
+        pesapi_value Exports = Apis->call_function(Env, NodeRequire.Get(Env), nullptr, 1, &Arg);
+        if (!Apis->has_caught(Scope) && Exports)
+        {
+            papi_v8::RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Specifier), Exports);
+            Found = true;
+        }
+        Apis->close_scope_placement(Scope);
+        Apis->release_env_ref(EnvRef);
+        if (Found)
+        {
+            Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Specifier));
+            return;
+        }
+    }
+#endif
     if (ByRequire && Specifier.StartsWith(TEXT("./")))
     {
         Specifier = Specifier.Mid(2);
@@ -4412,23 +3989,33 @@ void FJsEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info In
     }
 }
 
-// temporary entry for tests/module_loader.js, removed when the loader replaces modular.js (M7-2)
-static void ModuleLoaderTestExecute(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+// the url of puerts.forceReload / getModuleByUrl, "./" is ignored as by require
+static FString NormalizeModuleUrl(const FString& Url)
 {
-    PAPI_CHECK_ARGS(EArgString, EArgString);
+    return Url.StartsWith(TEXT("./")) ? Url.Mid(2) : Url;
+}
+
+// puerts.genRequire(dir): a require resolving relative to dir
+static void ModuleGenRequire(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
-    FString Specifier = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
-    bool ByImport = Apis->get_args_len(Info) > 2 && Apis->get_value_bool(Env, Apis->get_arg(Info, 2));
-    pesapi_value Result = papi_v8::ExecuteModule(Env, TCHAR_TO_UTF8(*Specifier), TCHAR_TO_UTF8(*Referrer), ByImport);
-    if (Result)
+    FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    // the referrer is the url of a module, one in the directory
+    if (!Referrer.IsEmpty() && !Referrer.EndsWith(TEXT("/")) && !Referrer.EndsWith(TEXT("\\")))
     {
-        Apis->add_return(Info, Result);
+        Referrer += TEXT("/");
+    }
+    pesapi_value Require = papi_v8::CreateRequire(Env, TCHAR_TO_UTF8(*Referrer));
+    if (Require)
+    {
+        Apis->add_return(Info, Require);
     }
 }
 
-static void ModuleLoaderTestRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+// puerts.registerBuildinModule(name, value)
+static void ModuleRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgString);
 
@@ -4437,23 +4024,32 @@ static void ModuleLoaderTestRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_call
     papi_v8::RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Name), Apis->get_arg(Info, 1));
 }
 
-static void ModuleLoaderTestForceReload(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+// puerts.forceReload(url?): the next require of the cjs module (all if no url) executes it again
+void FJsEnvImpl::ForceReloadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
     FString Url;
     if (Apis->get_args_len(Info) > 0 && Apis->is_string(Env, Apis->get_arg(Info, 0)))
     {
-        Url = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+        Url = NormalizeModuleUrl(PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
     }
-    Apis->add_return(Info, Apis->create_boolean(Env, papi_v8::ForceReload(Env, TCHAR_TO_UTF8(*Url))));
+    bool Reloaded = papi_v8::ForceReload(Env, TCHAR_TO_UTF8(*Url));
+    if (!Reloaded && !Url.IsEmpty())
+    {
+        Logger->Warn(FString::Printf(TEXT("reload not loaded module: %s!"), *Url));
+    }
+    Apis->add_return(Info, Apis->create_boolean(Env, Reloaded));
 }
 
-static void ModuleLoaderTestGetModuleByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+// puerts.getModuleByUrl(url): the `module` object of a loaded cjs module
+static void ModuleGetByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    PAPI_CHECK_ARGS(EArgString);
-
     pesapi_env Env = Apis->get_env(Info);
-    FString Url = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    if (Apis->get_args_len(Info) < 1 || !Apis->is_string(Env, Apis->get_arg(Info, 0)))
+    {
+        return;
+    }
+    FString Url = NormalizeModuleUrl(PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
     pesapi_value Module = papi_v8::GetModuleByUrl(Env, TCHAR_TO_UTF8(*Url));
     if (Module)
     {
@@ -4827,30 +4423,6 @@ void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     Apis->add_return(Info, FindOrAdd(Env, New->GetClass(), New));
 }
 #endif
-
-void FJsEnvImpl::FindModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgString);
-
-    pesapi_env Env = Apis->get_env(Info);
-    size_t Len = 0;
-    pesapi_value Arg = Apis->get_arg(Info, 0);
-    Apis->get_value_string_utf8(Env, Arg, nullptr, &Len);
-    TArray<char> Buf;
-    Buf.SetNumUninitialized(static_cast<int32>(Len));
-    Apis->get_value_string_utf8(Env, Arg, Buf.GetData(), &Len);
-    PString Name(Buf.GetData(), Len);
-
-    auto Func = FindAddonRegisterFunc(Name);
-
-    if (Func)
-    {
-        // AddonRegisterFunc is a public v8 signature, kept for existing addons
-        pesapi_value Exports = Apis->create_object(Env);
-        Func(papi_bridge::ToV8(Env), papi_bridge::ToV8(Exports).As<v8::Object>());
-        Apis->add_return(Info, Exports);
-    }
-}
 
 void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {

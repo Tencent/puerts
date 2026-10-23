@@ -79,7 +79,7 @@ var global = global || (function () { return this; }());
         if (scriptId) {
             if (typeof source === "string") {
                 let orgSourceInfo = await sendCommand("Debugger.getScriptSource", {scriptId:"" + scriptId});
-                source = ("(function (exports, require, module, __filename, __dirname) { " + source + "\n});");
+                // a cjs module is compiled as a function by the backend, its script source is the source without wrapper
                 if (orgSourceInfo.scriptSource == source) {
                     console.log(`source not changed, skip ${url}`);
                     return;
