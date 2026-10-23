@@ -3584,52 +3584,53 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
     v8::Context::Scope ContextScope(Context);
 
-    auto MaybeTGameTGJS = Context->Global()->Get(Context, FV8Utils::ToV8String(Isolate, "puerts"));
+    // v8 locker and scopes above are the env entry, they move to BackendEnv in M7
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    pesapi_env Env = papi_bridge::ToPapi(Context);
 
-    if (MaybeTGameTGJS.IsEmpty() || !MaybeTGameTGJS.ToLocalChecked()->IsObject())
+    pesapi_value TGJS = Apis->get_property(Env, Apis->global(Env), "puerts");
+    if (!Apis->is_object(Env, TGJS))
     {
         Logger->Error("global.puerts not found!");
         return;
     }
 
-    auto TGJS = MaybeTGameTGJS.ToLocalChecked()->ToObject(Context).ToLocalChecked();
-
-    auto MaybeArgv = TGJS->Get(Context, FV8Utils::ToV8String(Isolate, "argv"));
-
-    if (MaybeArgv.IsEmpty() || !MaybeArgv.ToLocalChecked()->IsObject())
+    pesapi_value Argv = Apis->get_property(Env, TGJS, "argv");
+    if (!Apis->is_object(Env, Argv))
     {
         Logger->Error("global.puerts.argv not found!");
         return;
     }
 
-    auto Argv = MaybeArgv.ToLocalChecked()->ToObject(Context).ToLocalChecked();
-
-    auto MaybeArgvAdd = Argv->Get(Context, FV8Utils::ToV8String(Isolate, "add"));
-
-    if (MaybeArgvAdd.IsEmpty() || !MaybeArgvAdd.ToLocalChecked()->IsFunction())
+    pesapi_value ArgvAdd = Apis->get_property(Env, Argv, "add");
+    if (!Apis->is_function(Env, ArgvAdd))
     {
         Logger->Error("global.puerts.argv.add not found!");
         return;
     }
 
-    auto ArgvAdd = MaybeArgvAdd.ToLocalChecked().As<v8::Function>();
-
     for (int i = 0; i < Arguments.Num(); i++)
     {
         auto Object = Arguments[i].Value;
-        v8::Local<v8::Value> Args[2] = {
-            FV8Utils::ToV8String(Isolate, Arguments[i].Key), FindOrAdd(Isolate, Context, Object->GetClass(), Object)};
-        (void) (ArgvAdd->Call(Context, Argv, 2, Args));
+        pesapi_value Args[2] = {
+            PapiUtils::FromFString(Apis, Env, Arguments[i].Key), PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object)};
+        Apis->call_function(Env, ArgvAdd, Argv, 2, Args);
     }
 
-    v8::TryCatch TryCatch(Isolate);
-    v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, ModuleNameOrScript)};
-    __USE(Require.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args));
-    if (TryCatch.HasCaught())
     {
-        Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+        // the scope catches the exception thrown by require
+        pesapi_env_ref EnvRef = Apis->create_env_ref(Env);
+        pesapi_scope_memory ScopeMemory;
+        pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
+        pesapi_value RequireArgs[] = {PapiUtils::FromFString(Apis, Env, ModuleNameOrScript)};
+        Apis->call_function(Env, papi_bridge::ToPapi(Require.Get(Isolate)), Apis->create_undefined(Env), 1, RequireArgs);
+        if (Apis->has_caught(Scope))
+        {
+            Logger->Error(UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true)));
+        }
+        Apis->close_scope_placement(Scope);
+        Apis->release_env_ref(EnvRef);
     }
-
     Started = true;
 }
 

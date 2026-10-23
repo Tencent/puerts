@@ -240,6 +240,8 @@ M5 落地情况（分批进行）：
 - M5-2e：`__tgjsUEClassToJSClass`（`blueprint.tojs`）和 `__tgjsNewContainer`（`UE.NewArray/NewSet/NewMap`）改为 papi 实现，测试先在 `tests/containers.js` 补齐。`UETypeToJsClass` 仍基于 v8 模板，经桥接调用，等 M4-6 收进 registry。补测试时发现 `UE.NewSet(-1)` 越界读 `BuiltinProperty[-1]` 导致编辑器挂死，已单独修复（下界检查）。
 - M5-2f：先补测试（不同编码的脚本文件、加载失败、`puerts.loadUEType` 的各类参数），再把 `__tgjsSearchModule`、`__tgjsLoadModule`、`__tgjsFindModule`、`puerts.loadUEType` 改为 papi 实现。文件内容转字符串的逻辑（UTF-16 BOM、跳过 UTF-8 BOM）移到 `PapiUtils::FromFileContent`，字节码用 `create_binary_by_value`。`AddonRegisterFunc` 是对外的 v8 签名，`FindModule` 经桥接调用，保持兼容。
 - M5-2g：`puerts.load`（`LoadPesapiDll`）和 `puerts.dll_ext` 改为 papi。`releaseManualReleaseDelegate` 依赖“JS 函数到 `UDynamicDelegateProxy`”的身份映射（v8::Map），且代理里持有 v8 函数，随 M6 的蓝图调用 JS 一起迁移；`MakeWeakObjectPtr` 依赖带内部字段和弱回调的模板，并入 M4-6。
+- M5-2h：`Start()` 的主体（查找 `puerts.argv.add` 注入启动参数、调用 `require`）改为 papi，`require` 的异常经 `open_scope_placement` 的 scope 捕获并记日志。函数入口的 v8 Locker 和作用域属于 env 入口，随 M7 的 BackendEnv 一起替换。
+- M5 收尾：其余仍为 v8 绑定的全局函数按归属延后，`__tgjsEvalScript`（含 ESM、字节码缓存、Inspector 用的 URL）和 `__tgjsSetInspectorCallback`、`__tgjsDispatchProtocolMessage`、`__tgjsSetPromiseRejectCallback` 归 M7；`__tgjsMakeUClass`、`__tgjsMixin`、`puerts.loadCPPType`（`ICppObjectMapper`）、`releaseManualReleaseDelegate` 归 M6；`__tgjsMakeWeakObjectPtr` 归 M4-6；Wasm3 归 M8。`IObjectMapper` 的 papi override 中依赖对象缓存和模板的（UObject、Struct、容器、Soft、`IsInstanceOf`）随 M4-6 改为真实现，委托相关的随 M6。
   - 行为变化：`setJsTakeRef` 传入非 UObject 时原来会空指针崩溃，现在抛出 "passing a invalid object"。
   - `MakeWeakObjectPtr` 依赖 v8 FunctionTemplate 和按 internal field 的弱回调，等 weak ptr wrapper 改为 registry 注册的类时一并迁移。
 
