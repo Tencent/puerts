@@ -644,10 +644,10 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
             UObject* Outer = GetTransientPackage();
             FName Name = NAME_None;
             EObjectFlags ObjectFlags = RF_NoFlags;
-            if (Info.Length() > 0)
+            if (Info.Length() > 0 && !Info[0]->IsNullOrUndefined())
             {
                 Outer = FV8Utils::GetUObject(Context, Info[0]);
-                if (FV8Utils::IsReleasedPtr(Outer))
+                if (!Outer || FV8Utils::IsReleasedPtr(Outer))
                 {
                     FV8Utils::ThrowException(Isolate, "passing a invalid object");
                     return;

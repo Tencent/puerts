@@ -1085,7 +1085,7 @@ void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info 
         if (IsSet(1))
         {
             Outer = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 1));
-            if (FV8Utils::IsReleasedPtr(Outer))
+            if (!Outer || FV8Utils::IsReleasedPtr(Outer))
             {
                 Apis->throw_by_string(Info, "passing a invalid object");
                 return;
