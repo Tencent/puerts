@@ -18,6 +18,7 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include "DynamicInvoker.h"
+#include "pesapi.h"
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
@@ -33,10 +34,17 @@ class UDynamicDelegateProxy : public UObject
 public:
     virtual UWorld* GetWorld() const override;
 
+    virtual void BeginDestroy() override;
+
     UFUNCTION(BlueprintCallable, Category = "TGameJS")
     void Fire();
 
     void ProcessEvent(UFunction*, void* Parms) override;
+
+    // keeps a strong papi reference to Function, the previous one is released
+    void SetJsFunction(struct pesapi_ffi* InApis, pesapi_env Env, pesapi_value Function);
+
+    void ResetJsFunction();
 
     TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
@@ -45,7 +53,9 @@ public:
     // So, only uobject's delelgate is supported!
     TWeakObjectPtr<UObject> Owner;
 
-    v8::UniquePersistent<v8::Function> JsFunction;
+    struct pesapi_ffi* Apis = nullptr;
+
+    pesapi_value_ref JsFunction = nullptr;
 
 #ifdef THREAD_SAFE
     v8::Isolate* Isolate;

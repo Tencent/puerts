@@ -719,7 +719,7 @@ FJsEnvImpl::~FJsEnvImpl()
     {
         if (ManualReleaseCallbackList[i].IsValid(true))
         {
-            ManualReleaseCallbackList[i].Get()->JsFunction.Reset();
+            ManualReleaseCallbackList[i].Get()->ResetJsFunction();
         }
     }
     ManualReleaseCallbackMap.Reset();
@@ -748,6 +748,25 @@ FJsEnvImpl::~FJsEnvImpl()
             FUETicker::GetCoreTicker().RemoveTicker(Iter->Value.TickerHandle);
         }
         TimerInfos.Empty();
+
+        for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
+        {
+            if (Iter->second.Proxy.IsValid(true))
+            {
+                Iter->second.Proxy->ResetJsFunction();
+            }
+        }
+
+        for (auto& KV : AutoReleaseCallbacksMap)
+        {
+            for (auto& Callback : KV.Value)
+            {
+                if (Callback.IsValid(true))
+                {
+                    Callback->ResetJsFunction();
+                }
+            }
+        }
 
         CppObjectMapper.UnInitialize(Isolate);
 
@@ -797,27 +816,12 @@ FJsEnvImpl::~FJsEnvImpl()
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
             Iter->second.JSObject.Reset();
-            if (Iter->second.Proxy.IsValid(true))
-            {
-                Iter->second.Proxy->JsFunction.Reset();
-            }
 
             if (!Iter->second.PassByPointer)
             {
                 delete ((FScriptDelegate*) Iter->first);
             }
             Iter->second.JsCallbacks.Reset();
-        }
-
-        for (auto& KV : AutoReleaseCallbacksMap)
-        {
-            for (auto& Callback : KV.Value)
-            {
-                if (Callback.IsValid(true))
-                {
-                    Callback->JsFunction.Reset();
-                }
-            }
         }
 
         TsFunctionMap.Empty();
@@ -2009,20 +2013,24 @@ void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Para
         }
     }
 
-    auto Isolate = MainIsolate;
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto Context = DefaultContext.Get(Isolate);
-    v8::Context::Scope ContextScope(Context);
-
-    v8::TryCatch TryCatch(Isolate);
-
-    Iter->second->CallJs(Isolate, Context, Proxy->JsFunction.Get(Isolate), Context->Global(), Params);
-
-    if (TryCatch.HasCaught())
+    if (!Proxy->JsFunction)
     {
-        Logger->Error(FString::Printf(TEXT("js callback exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+        return;
     }
+
+    struct pesapi_ffi* Apis = Proxy->Apis;
+    pesapi_env_ref EnvRef = Apis->get_ref_associated_env(Proxy->JsFunction);
+    pesapi_scope_memory ScopeMemory;
+    pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
+    pesapi_env Env = Apis->get_env_from_ref(EnvRef);
+
+    Iter->second->CallJs(Apis, Env, Apis->get_value_from_ref(Env, Proxy->JsFunction), Apis->global(Env), Params);
+
+    if (Apis->has_caught(Scope))
+    {
+        Logger->Error(FString::Printf(TEXT("js callback exception %s"), UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
+    }
+    Apis->close_scope_placement(Scope);
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -2185,7 +2193,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
         {
             if (Callback.IsValid())
             {
-                Callback.Get()->JsFunction.Reset();
+                Callback.Get()->ResetJsFunction();
             }
             SysObjectRetainer.Release(Callback.Get());
         }
@@ -2571,7 +2579,7 @@ bool FJsEnvImpl::AddToDelegate(
             Logger->Error(FString::Printf(TEXT("gen callback apply fail: %s"), *ErrMsg));
             return false;
         }
-        DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(Apply));
+        DelegateProxy->SetJsFunction(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Apply));
     }
 
     bool bSingleDelegate = Iter->second.DelegateProperty != nullptr;
@@ -2628,7 +2636,7 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
         DelegateProxy->Owner = Owner;
         DelegateProxy->SignatureFunction = SignatureFunction;
         DelegateProxy->DynamicInvoker = DynamicInvoker;
-        DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
+        DelegateProxy->SetJsFunction(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction));
 
         SysObjectRetainer.Retain(DelegateProxy);
         Callbacks.Add(DelegateProxy);
@@ -2647,7 +2655,7 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
             DelegateProxy->Owner = DelegateProxy;
             DelegateProxy->SignatureFunction = SignatureFunction;
             DelegateProxy->DynamicInvoker = DynamicInvoker;
-            DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
+            DelegateProxy->SetJsFunction(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction));
 
             SysObjectRetainer.Retain(DelegateProxy);
             __USE(CallbacksMap->Set(Context, JsFunction, v8::External::New(Context->GetIsolate(), DelegateProxy)));
@@ -2698,7 +2706,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
             }
             else if (it->Get() == DelegateProxy)
             {
-                DelegateProxy->JsFunction.Reset();
+                DelegateProxy->ResetJsFunction();
                 it = ManualReleaseCallbackList.erase(it);
                 SysObjectRetainer.Release(DelegateProxy);
             }
@@ -2763,7 +2771,7 @@ bool FJsEnvImpl::RemoveFromDelegate(
             }
 
             SysObjectRetainer.Release(DelegateProxy);
-            DelegateProxy->JsFunction.Reset();
+            DelegateProxy->ResetJsFunction();
             Iter->second.Proxy.Reset();
         }
     }
@@ -2809,7 +2817,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     }
     if (Iter->second.Proxy.IsValid())
     {
-        Iter->second.Proxy->JsFunction.Reset();
+        Iter->second.Proxy->ResetJsFunction();
         SysObjectRetainer.Release(Iter->second.Proxy.Get());
         Iter->second.Proxy.Reset();
     }

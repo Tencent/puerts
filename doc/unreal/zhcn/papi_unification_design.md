@@ -246,6 +246,10 @@ M5 落地情况（分批进行）：
   - `MakeWeakObjectPtr` 依赖 v8 FunctionTemplate 和按 internal field 的弱回调，等 weak ptr wrapper 改为 registry 注册的类时一并迁移。
 - M5 基准（每阶段取多轮最小值，M5 跑了 4 轮）：相对 M4-5，ufunction、property、容器、new、delegate、mixin 的指标在 -15% 到 +7% 之间，整体持平或略快；单轮看到的 return_struct、new.* 偏慢 15% 到 20%，多跑几轮后消失，属于噪声。M5 没有改动这些热路径，与预期一致。
 - 已知退化：cpp.*（模板绑定的 C++ 类）自 M1-3c(2/2) 起比 baseline 慢约 4ns 到 8ns 每次调用（method_noop 14.3 到 18.5，method_int 18.1 到 24.7，static 13.4 到 18.1，overload 36.8 到 40.0）。M1-3a、M1-3b 与 baseline 持平，可以确认来源是模板绑定默认切到 `PesapiBackend.hpp`：每个参数和返回值都要经 `pesapi_ffi` 函数指针跨模块调用，无法内联，原来的 v8 后端是内联的 v8 调用。这是“共用同一个 papi 实现”的固有开销，Unity 走的也是这条路径。列为待优化项，可选方向：给高频的类型判断和取值做批量或快速路径接口（需新增 papi API，且必须与引擎和语言无关），或在静态链接时用直接调用代替函数表。在此之前不回退默认后端。
+- M6-0：先补委托和 mixin 的测试（直接传函数的 manual release 代理、`[owner, fn]`、`[obj, "UFuncName"]`、按值返回和拷贝的委托、multicast 的重复添加和移除、owner 销毁后的委托；mixin 的错误参数、inherit、objectTakeByNative）。
+  - 现有行为（未修改）：委托 a 拷贝给 b 后两者共享同一个代理，a.Unbind 经 `ClearDelegate` 重置代理的 JS 函数，之后执行 b 会触发 ensure "Invalid JS Function"。测试只观察 IsBound，不执行 b。
+- M6-1：`UDynamicDelegateProxy` 的 JS 函数从 `v8::UniquePersistent<v8::Function>` 改为 `pesapi_value_ref`（加上所属的 `pesapi_ffi`），`InvokeDelegateCallback` 改为 papi 作用域（与计时器回调同一写法）。代理在 `BeginDestroy` 时释放 ref；env 析构时在 `CppObjectMapper.UnInitialize` 之前释放所有代理的 ref。
+  - 基准（同机 A/B，各 2 轮取最小值）：delegate.cpp_to_js 191 到 222，每次回调多约 30ns（+16%），其他指标在噪声内。来源是 papi 作用域序列：约 7 次 ffi 间接调用、2 次 env 生命周期检查、3 次 context 的 Global 到 Local 转换，原来的 v8 写法是内联的。与 cpp.* 的退化同属 ffi 间接调用开销，一并列为待优化项（例如提供一次调用完成“按 value ref 打开作用域并取值”的接口）。
 
 ### 5.6 UObject 生命周期
 

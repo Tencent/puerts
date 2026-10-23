@@ -17,6 +17,29 @@ UWorld* UDynamicDelegateProxy::GetWorld() const
     return UObject::GetWorld();
 }
 
+void UDynamicDelegateProxy::BeginDestroy()
+{
+    ResetJsFunction();
+    Super::BeginDestroy();
+}
+
+void UDynamicDelegateProxy::SetJsFunction(struct pesapi_ffi* InApis, pesapi_env Env, pesapi_value Function)
+{
+    ResetJsFunction();
+    Apis = InApis;
+    JsFunction = Apis->create_value_ref(Env, Function, 0);
+}
+
+void UDynamicDelegateProxy::ResetJsFunction()
+{
+    if (JsFunction)
+    {
+        // safe after the env is gone: the ref only frees its memory then
+        Apis->release_value_ref(JsFunction);
+        JsFunction = nullptr;
+    }
+}
+
 void UDynamicDelegateProxy::Fire()
 {
     // Do Nothing
@@ -30,7 +53,7 @@ void UDynamicDelegateProxy::ProcessEvent(UFunction*, void* Params)
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker && Owner.IsValid())
     {
-        if (ensureAlwaysMsgf(!JsFunction.IsEmpty(), TEXT("Invalid JS Function")))
+        if (ensureAlwaysMsgf(JsFunction, TEXT("Invalid JS Function")))
         {
             PinedDynamicInvoker->InvokeDelegateCallback(this, Params);
         }
