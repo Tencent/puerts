@@ -125,6 +125,20 @@ test('weak/soft object', () => {
     obj.WeakObject = other;
     assert(obj.WeakObject === other, 'weak ptr returns same object');
     observe('soft object default', () => obj.SoftObject);
+    const soft = obj.SoftObject;
+    eq(soft.Get(), undefined);
+    eq(soft.LoadSynchronous(), undefined);
+    obj.SoftObject = soft;
+    eq(obj.SoftObject.Get(), undefined);
+    observe('soft object wrapper identity', () => obj.SoftObject === soft);
+    // only soft object wrappers can be assigned to a soft object property
+    observe('assign uobject to soft object', () => {
+        obj.SoftObject = other;
+    });
+    observe('assign plain object to soft object', () => {
+        obj.SoftObject = {};
+    });
+    observe('soft Get on plain object', () => soft.Get.call({}));
 });
 
 test('fixed array', () => {

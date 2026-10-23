@@ -6,6 +6,10 @@ struct property get then modify: 99
 struct property get twice identical: true
 object property null assign: undefined
 soft object default: {}
+soft object wrapper identity: false
+assign uobject to soft object: throws Error: passing a invalid object for FSoftObjectPtr
+assign plain object to soft object: throws Error: passing a invalid object for FSoftObjectPtr
+soft Get on plain object: throws Error: passing a invalid object for FSoftObjectPtr
 typeof class: "function"
 instanceof Object: true
 instanceof PuertsTestObject: true
