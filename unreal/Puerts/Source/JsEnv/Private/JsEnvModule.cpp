@@ -22,6 +22,7 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "libplatform/libplatform.h"
 #pragma warning(pop)
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "StructWrapper.h"
 
 class FMallocWrapper final : public FMalloc
 {
@@ -247,6 +248,7 @@ void FJsEnvModule::ShutdownModule()
 {
     // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
     // we call this function before unloading the module.
+    PUERTS_NAMESPACE::FStructWrapper::ReleaseAll();
     v8::V8::Dispose();
 #if V8_MAJOR_VERSION > 9
     v8::V8::DisposePlatform();

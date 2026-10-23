@@ -141,9 +141,11 @@ public:
 public:
     bool IsTypeScriptGeneratedClass(UClass* Class);
 
-    void SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper);
+    void SetJsTakeRef(UObject* UEObject, UClass* Class);
 
     void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject);
+
+    void Bind(UClass* Class, bool ClassIsNativeTakeJsRef, UObject* UEObject, v8::Local<v8::Object> JSObject);
 
     virtual void UnBind(UClass* Class, UObject* UEObject) override;
 
@@ -385,12 +387,19 @@ private:
 
     void NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct, bool& IsReuseTemplate);
+    std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct);
 
     struct FTemplateInfo
     {
         v8::UniquePersistent<v8::FunctionTemplate> Template;
         std::shared_ptr<FStructWrapper> StructWrapper;
+        // per env flags (the wrapper is shared by envs), IsNativeTakeJsRef can be changed by mixin
+#if PUERTS_KEEP_UOBJECT_REFERENCE
+        bool IsNativeTakeJsRef = false;
+#else
+        bool IsNativeTakeJsRef = true;
+#endif
+        bool IsTypeScriptGeneratedClass = false;
     };
 
     FTemplateInfo* GetTemplateInfoOfType(UStruct* Class, bool& Existed);
@@ -660,7 +669,10 @@ private:
 
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
-    TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
+#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
+    // templates of the (process wide) struct wrappers in this env, reused when a type is released and loaded again
+    TMap<FStructWrapper*, v8::UniquePersistent<v8::FunctionTemplate>> CachedTemplates;
+#endif
 
     // A UObject wrapper stores a FUObjectBinding (a FUObjectHandle) in internal field 0. The binding lives as long as the js
     // object: when the UObject is destroyed first, the binding is detached (see UnBind) and moved to ReleasedObjectBindings

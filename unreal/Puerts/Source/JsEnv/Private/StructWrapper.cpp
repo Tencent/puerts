@@ -7,6 +7,7 @@
  */
 
 #include "StructWrapper.h"
+#include <algorithm>
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "PathEscape.h"
@@ -20,9 +21,49 @@ void FExternalFinalizer::operator()(void* Ptr) const
     ClassThunks::Finalize(Finalize, Ptr, ClassData, nullptr);
 }
 
+static TMap<FString, std::shared_ptr<FStructWrapper>>& StructWrappers()
+{
+    static TMap<FString, std::shared_ptr<FStructWrapper>> Wrappers;
+    return Wrappers;
+}
+
+std::shared_ptr<FStructWrapper> FStructWrapper::FindOrAdd(UStruct* InStruct)
+{
+    const auto FullName = InStruct->GetFullName();
+    auto& Wrappers = StructWrappers();
+    if (auto Existed = Wrappers.Find(FullName))
+    {
+        (*Existed)->Struct = InStruct;
+        return *Existed;
+    }
+    std::shared_ptr<FStructWrapper> Ret;
+    if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
+    {
+        Ret = std::make_shared<FScriptStructWrapper>(ScriptStruct);
+    }
+    else
+    {
+        Ret = std::make_shared<FClassWrapper>(CastChecked<UClass>(InStruct));
+    }
+    Wrappers.Add(FullName, Ret);
+    return Ret;
+}
+
+void FStructWrapper::ReleaseAll()
+{
+    StructWrappers().Empty();
+}
+
 void FStructWrapper::AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods)
 {
-    ExtensionMethods.insert(ExtensionMethods.end(), InExtensionMethods.begin(), InExtensionMethods.end());
+    // the wrapper is shared by envs, each env adds the extension methods it found
+    for (auto Function : InExtensionMethods)
+    {
+        if (std::find(ExtensionMethods.begin(), ExtensionMethods.end(), Function) == ExtensionMethods.end())
+        {
+            ExtensionMethods.push_back(Function);
+        }
+    }
 }
 
 std::shared_ptr<FPropertyTranslator> FStructWrapper::GetPropertyTranslator(PropertyMacro* InProperty)
@@ -39,6 +80,11 @@ std::shared_ptr<FPropertyTranslator> FStructWrapper::GetPropertyTranslator(Prope
         return PropertyTranslator;
     }
     FPropertyTranslator::CreateOn(InProperty, Iter->get());
+    // Properties is cleared when the template is rebuilt (see Init), keep the declaration order for the struct constructor
+    if (std::find(Properties.begin(), Properties.end(), *Iter) == Properties.end())
+    {
+        Properties.push_back(*Iter);
+    }
     return *Iter;
 }
 
@@ -145,25 +191,19 @@ void FStructWrapper::InitTemplateProperties(
     }
 }
 
-v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* Isolate, v8::FunctionCallback Construtor)
+v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(
+    v8::Isolate* Isolate, v8::FunctionCallback Construtor, v8::UniquePersistent<v8::FunctionTemplate>& Cache)
 {
     auto ClassDefinition = FindClassByType(Struct.Get());
-    bool IsReuseTemplate = false;
-#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-    IsReuseTemplate = true;
-    if (CachedFunctionTemplate.IsEmpty())
+    bool IsReuseTemplate = true;
+    if (Cache.IsEmpty())
     {
         IsReuseTemplate = false;
         auto Temp = v8::FunctionTemplate::New(Isolate, Construtor, v8::External::New(Isolate, this));
         Temp->InstanceTemplate()->SetInternalFieldCount(4);
-        CachedFunctionTemplate.Reset(Isolate, Temp);
+        Cache.Reset(Isolate, Temp);
     }
-    auto Result = CachedFunctionTemplate.Get(Isolate);
-#else
-    auto Result = v8::FunctionTemplate::New(
-        Isolate, Construtor, v8::External::New(Isolate, this));    // 和class的区别就这里传的函数不一样，后续尽量重用
-    Result->InstanceTemplate()->SetInternalFieldCount(4);
-#endif
+    auto Result = Cache.Get(Isolate);
 
     TSet<FName> AddedMethods;
     TSet<FName> AddedFunctions;

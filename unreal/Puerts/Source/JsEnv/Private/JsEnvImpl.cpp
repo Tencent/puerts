@@ -915,10 +915,7 @@ FJsEnvImpl::~FJsEnvImpl()
 #endif
 
 #if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-    for (auto Iter = TypeReflectionMap.CreateIterator(); Iter; ++Iter)
-    {
-        Iter->Value->CachedFunctionTemplate.Reset();
-    }
+    CachedTemplates.Empty();
 #endif
 
     DefaultContext.Reset();
@@ -1113,9 +1110,7 @@ void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info 
         }
         if (NeedJsTakeRef)
         {
-            bool Existed;
-            auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
-            SetJsTakeRef(Object, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
+            SetJsTakeRef(Object, Class);
         }
 #endif
         Apis->add_return(Info, Result);
@@ -1827,10 +1822,17 @@ bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
 void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
     v8::Local<v8::Object> JSObject)    // Just call in FClassReflection::Call, new a Object
 {
+    auto Class = static_cast<UClass*>(ClassWrapper->Struct.Get());
+    bool Existed;
+    Bind(Class, GetTemplateInfoOfType(Class, Existed)->IsNativeTakeJsRef, UEObject, JSObject);
+}
+
+void FJsEnvImpl::Bind(UClass* Class, bool ClassIsNativeTakeJsRef, UObject* UEObject, v8::Local<v8::Object> JSObject)
+{
 #if PUERTS_KEEP_UOBJECT_REFERENCE
-    const bool IsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;
+    const bool IsNativeTakeJsRef = ClassIsNativeTakeJsRef;
 #else
-    const bool ClassWrapperIsNativeTakeJsRef = ClassWrapper->IsNativeTakeJsRef;    //这个值只有mixin会进行设置
+    const bool ClassWrapperIsNativeTakeJsRef = ClassIsNativeTakeJsRef;    //这个值只有mixin会进行设置
     const bool IsUClass = UEObject->IsA<UClass>();
     const bool IsCDO = UEObject->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
     const bool IsNativeTakeJsRef = (IsCDO || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
@@ -1848,15 +1850,14 @@ void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
 
     if (!IsNativeTakeJsRef)
     {
-        SetJsTakeRef(UEObject, ClassWrapper);
+        SetJsTakeRef(UEObject, Class);
     }
 }
 
-void FJsEnvImpl::SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper)
+void FJsEnvImpl::SetJsTakeRef(UObject* UEObject, UClass* Class)
 {
     UserObjectRetainer.Retain(UEObject);
-    ObjectMap[UEObject]->JsObject.SetWeak<UClass>(
-        Cast<UClass>(ClassWrapper->Struct.Get()), FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+    ObjectMap[UEObject]->JsObject.SetWeak<UClass>(Class, FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::OnReleasedObjectBindingGarbageCollected(const v8::WeakCallbackInfo<FUObjectBinding>& Data)
@@ -1913,9 +1914,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(
         auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
 
         auto Result = TemplateInfoPtr->Template.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-        auto ClassWrapper = static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get());
-        Bind(ClassWrapper, UEObject, Result);
-        if (!SkipTypeScriptInitial && ClassWrapper->IsTypeScriptGeneratedClass)
+        Bind(Class, TemplateInfoPtr->IsNativeTakeJsRef, UEObject, Result);
+        if (!SkipTypeScriptInitial && TemplateInfoPtr->IsTypeScriptGeneratedClass)
         {
             TypeScriptInitial(UEObject->GetClass(), UEObject);
         }
@@ -3063,7 +3063,7 @@ void FJsEnvImpl::BindStruct(
                 MainIsolate, Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
                 [](void* Data, size_t Length, void* DeleterData)
                 {
-                    // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
+                    // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
                     FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
                     FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
                 },
@@ -3075,7 +3075,7 @@ void FJsEnvImpl::BindStruct(
                 Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
                 [](void* Data, size_t Length, void* DeleterData)
                 {
-                    // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
+                    // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
                     FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
                     FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
                 },
@@ -3179,26 +3179,9 @@ void FJsEnvImpl::UnBindContainer(void* Ptr)
     ContainerCache.Remove(Ptr);
 }
 
-std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct, bool& IsReuseTemplate)
+std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
 {
-    const auto FullName = InStruct->GetFullName();
-    auto TypeReflectionPtr = TypeReflectionMap.Find(FullName);
-    if (!TypeReflectionPtr)
-    {
-        auto Ret = std::make_shared<FStructWrapper>(InStruct);
-        TypeReflectionMap.Add(FullName, Ret);
-        // UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper new %s // %s"), *InStruct->GetName(), *FullName);
-        return Ret;
-    }
-    else
-    {
-#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-        IsReuseTemplate = true;
-#endif
-        // UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper existed %s // %s"), *InStruct->GetName(), *FullName);
-        (*TypeReflectionPtr)->Init(InStruct, IsReuseTemplate);
-        return (*TypeReflectionPtr);
-    }
+    return FStructWrapper::FindOrAdd(InStruct);
 }
 
 FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, bool& Existed)
@@ -3213,8 +3196,15 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         }
         v8::Local<v8::FunctionTemplate> Template;
 
-        bool IsReuseTemplate = false;
-        auto StructWrapper = GetStructWrapper(InStruct, IsReuseTemplate);
+        auto StructWrapper = GetStructWrapper(InStruct);
+#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
+        auto& TemplateCache = CachedTemplates.FindOrAdd(StructWrapper.get());
+#else
+        v8::UniquePersistent<v8::FunctionTemplate> TemplateCache;
+#endif
+        // the template of this env is reused, only the translators are refreshed
+        const bool IsReuseTemplate = !TemplateCache.IsEmpty();
+        StructWrapper->Init(InStruct, IsReuseTemplate);
 
         auto ExtensionMethodsIter = ExtensionMethodsMap.find(InStruct);
         if (ExtensionMethodsIter != ExtensionMethodsMap.end())
@@ -3223,11 +3213,14 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
             ExtensionMethodsMap.erase(ExtensionMethodsIter);
         }
 
+        FTemplateInfo TemplateInfo;
+        TemplateInfo.StructWrapper = StructWrapper;
+
         if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
         {
             // Logger->Warn(FString::Printf(TEXT("UScriptStruct: %s"), *InStruct->GetName()));
 
-            Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New);
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New, TemplateCache);
             if (!IsReuseTemplate)
             {
 #if WITH_EDITOR
@@ -3259,7 +3252,7 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         {
             auto Class = Cast<UClass>(InStruct);
             check(Class);
-            Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New);
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New, TemplateCache);
             if (!IsReuseTemplate)
             {
 #if WITH_EDITOR
@@ -3273,7 +3266,7 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
 #endif
             }
 #if PUERTS_KEEP_UOBJECT_REFERENCE
-            StructWrapper->IsNativeTakeJsRef = StructWrapper->IsTypeScriptGeneratedClass = IsTypeScriptGeneratedClass(Class);
+            TemplateInfo.IsNativeTakeJsRef = TemplateInfo.IsTypeScriptGeneratedClass = IsTypeScriptGeneratedClass(Class);
 #endif
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)
@@ -3284,15 +3277,16 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
                 {
                     Template->Inherit(SuperTemplateInfo->Template.Get(Isolate));
                 }
-                if (SuperTemplateInfo->StructWrapper->IsNativeTakeJsRef)
+                if (SuperTemplateInfo->IsNativeTakeJsRef)
                 {
-                    StructWrapper->IsNativeTakeJsRef = true;
+                    TemplateInfo.IsNativeTakeJsRef = true;
                 }
             }
         }
 
         Existed = false;
-        return &TypeToTemplateInfoMap.Add(InStruct, {v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template), StructWrapper});
+        TemplateInfo.Template.Reset(Isolate, Template);
+        return &TypeToTemplateInfoMap.Add(InStruct, MoveTemp(TemplateInfo));
     }
     else
     {
@@ -3591,9 +3585,7 @@ void FJsEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info 
         return;
     }
 
-    bool Existed;
-    auto TemplateInfoPtr = GetTemplateInfoOfType(Object->GetClass(), Existed);
-    SetJsTakeRef(Object, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
+    SetJsTakeRef(Object, Object->GetClass());
 }
 
 bool FJsEnvImpl::GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr)
@@ -4645,8 +4637,7 @@ void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     else
     {
         To->ClearFunctionMapsCaches();
-        bool IsReuseTemplate = false;
-        auto StructWrapper = GetStructWrapper(To, IsReuseTemplate);
+        auto StructWrapper = GetStructWrapper(To);
         for (int i = 0; i < ReplaceMethodNames.Num(); i++)
         {
             StructWrapper->RefreshMethod(To->FindFunctionByName(ReplaceMethodNames[i]));
@@ -4655,15 +4646,12 @@ void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     MixinClasses.Add(New);
 
     bool Existed = false;
-    __USE(GetTemplateInfoOfType(New, Existed));
-    bool IsReuseTemplate = false;
-    auto StructWrapper = GetStructWrapper(New, IsReuseTemplate);
-    StructWrapper->IsNativeTakeJsRef = TakeJsObjectRef;
+    GetTemplateInfoOfType(New, Existed)->IsNativeTakeJsRef = TakeJsObjectRef;
     for (auto& KV : TypeToTemplateInfoMap)
     {
         if (New != KV.Key && KV.Key->IsChildOf(New))
         {
-            KV.Value.StructWrapper->IsNativeTakeJsRef = TakeJsObjectRef;
+            KV.Value.IsNativeTakeJsRef = TakeJsObjectRef;
         }
     }
     Apis->add_return(Info, FindOrAdd(Env, New->GetClass(), New));

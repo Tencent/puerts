@@ -230,6 +230,11 @@ M4 落地情况（分批进行）：
 - M4-6a：补反射绑定的功能测试（tests/reflection.js），固定生成类的 JS 可见形态：原型成员和描述符、类上的静态成员（`StaticClass` / `StaticStruct` / `Find` / `Load`）、类名（编辑器下为路径名）、构造参数（UObject 的 Outer / Name，结构体按属性顺序）、扩展方法、接口方法、FName 大小写修正。测试工程新增 `UPuertsTestReflectTarget`（实现 `UPuertsTestInterface`）和 `UPuertsTestExtension`。
   - 基线中记录了几处现有的特殊行为，迁移后需要保持或逐条评审：命名属性拦截器让 `hasOwnProperty` 对原型成员也返回 true；静态 UFunction 不随子类继承，子类构造函数的 `__proto__` 也不指向父类；大小写修正后的成员会以请求的名字缓存到原型上。
   - 修了一个上游既有问题：类构造函数和 `UE.NewObject` 的 Outer 传入非 UObject 值（如数字）时得到空 Outer，`NewObject` 直接 fatal。现在 null / undefined 退回 TransientPackage，其它值抛 "passing a invalid object"。
+- M4-6b：`FStructWrapper`（含各类翻译器）改为进程级共享，为 `on_class_not_found` 不带 userdata 做准备。`FStructWrapper::FindOrAdd` 按 `GetFullName` 维护一张进程级表，模块卸载时 `ReleaseAll`；原来放在 wrapper 上的 env 状态移走：函数模板缓存改为每个 env 的 `CachedTemplates`（`PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE` 下按 wrapper 缓存），`IsNativeTakeJsRef`（mixin 只影响当前 env）和 `IsTypeScriptGeneratedClass` 改放在每个 env 的 `FTemplateInfo` 上。
+  - 是否复用模板改为看当前 env 的缓存是否已有模板，而不是看进程表里是否已有 wrapper，因此第二个 env 首次使用某类型时仍会完整生成模板。
+  - 非复用重建时只清 `ExternalInitialize`、`ExternalFinalize`、`Properties`，`GetPropertyTranslator` 命中已有翻译器时会把它补回 `Properties`，避免 struct 构造参数丢失；扩展方法加入时去重。
+  - 已知遗留：同一 FullName 换了新的 UStruct*（如蓝图重编译生成新类）时仍沿用原有行为，由 M4-6e 的类定义失效 API 处理。
+  - 测试：两条路径 14 个用例全过（其中 5 个带 warning，都是用例有意触发的日志）。基准：与同时段 HEAD 对照持平（new.uobject 1614ns / 1751ns，tsclass.new 2190ns / 2239ns），之前基线的偏差是机器状态漂移。
 
 M5 落地情况（分批进行）：
 

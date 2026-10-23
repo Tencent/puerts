@@ -44,6 +44,8 @@ struct FExternalFinalizer
     void operator()(void* Ptr) const;
 };
 
+// FStructWrapper (and the translators it owns) is shared by all js envs in the process, keyed by the full name of the
+// UStruct, it only holds engine side data, js templates are cached by each env.
 class FStructWrapper
 {
 public:
@@ -58,6 +60,12 @@ public:
         LoadInfo.Data = this;
     }
 
+    // find (and point it to InStruct) or create the process wide wrapper of InStruct
+    static std::shared_ptr<FStructWrapper> FindOrAdd(UStruct* InStruct);
+
+    // called when the module shuts down
+    static void ReleaseAll();
+
     FORCEINLINE void Init(UStruct* InStruct, bool IsReuseTemplate)
     {
         Struct = InStruct;
@@ -65,19 +73,13 @@ public:
         {
             ExternalInitialize = nullptr;
             ExternalFinalize.Reset();
+            // translators are kept in PropertiesMap (templates of other envs may still reference them), Properties is
+            // refilled in InitTemplateProperties
             Properties.clear();
-            ExtensionMethods.clear();
-#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-            CachedFunctionTemplate.Reset();
-#endif
         }
     }
 
     void AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods);
-
-#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-    v8::UniquePersistent<v8::FunctionTemplate> CachedFunctionTemplate;
-#endif
 
 protected:
     std::vector<std::shared_ptr<FPropertyTranslator>> Properties;
@@ -99,7 +101,9 @@ protected:
     void InitTemplateProperties(
         v8::Isolate* Isolate, UStruct* InStruct, v8::Local<v8::FunctionTemplate> Template, bool IsReuseTemplate);
 
-    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate, v8::FunctionCallback Construtor);
+    // Cache is the template slot of the calling env, an existing template in it is reused (only the translators are refreshed)
+    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(
+        v8::Isolate* Isolate, v8::FunctionCallback Construtor, v8::UniquePersistent<v8::FunctionTemplate>& Cache);
 
     std::vector<UFunction*> ExtensionMethods;
 
@@ -108,14 +112,6 @@ protected:
     FExternalFinalizer ExternalFinalize;
 
     TWeakObjectPtr<UStruct> Struct;
-
-#if PUERTS_KEEP_UOBJECT_REFERENCE
-    bool IsNativeTakeJsRef = false;
-#else
-    bool IsNativeTakeJsRef = true;
-#endif
-
-    bool IsTypeScriptGeneratedClass = false;
 
     JSFunctionInfo StaticClassInfo;
 
