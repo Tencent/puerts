@@ -250,6 +250,10 @@ M5 落地情况（分批进行）：
   - 现有行为（未修改）：委托 a 拷贝给 b 后两者共享同一个代理，a.Unbind 经 `ClearDelegate` 重置代理的 JS 函数，之后执行 b 会触发 ensure "Invalid JS Function"。测试只观察 IsBound，不执行 b。
 - M6-1：`UDynamicDelegateProxy` 的 JS 函数从 `v8::UniquePersistent<v8::Function>` 改为 `pesapi_value_ref`（加上所属的 `pesapi_ffi`），`InvokeDelegateCallback` 改为 papi 作用域（与计时器回调同一写法）。代理在 `BeginDestroy` 时释放 ref；env 析构时在 `CppObjectMapper.UnInitialize` 之前释放所有代理的 ref。
   - 基准（同机 A/B，各 2 轮取最小值）：delegate.cpp_to_js 191 到 222，每次回调多约 30ns（+16%），其他指标在噪声内。来源是 papi 作用域序列：约 7 次 ffi 间接调用、2 次 env 生命周期检查、3 次 context 的 Global 到 Local 转换，原来的 v8 写法是内联的。与 cpp.* 的退化同属 ffi 间接调用开销，一并列为待优化项（例如提供一次调用完成“按 value ref 打开作用域并取值”的接口）。
+- M6-2a：`AddToDelegate`、`RemoveFromDelegate`、`ClearDelegate` 改为 papi 签名和实现；`DelegateObjectInfo::JsCallbacks`、`__removeListItem`、`__genListApply` 改为 `FPapiValueRef`（只能移动的 `pesapi_value_ref` 包装，析构时自动释放）。`DelegateObjectInfo::JSObject` 和委托对象的模板仍是 v8，等 M4-6。
+  - 委托 JS 对象原来 internal field 0 上挂的 v8::Map 没有任何读取方，已删除。
+  - 行为变化：`__genListApply` 抛出的异常原来被吞掉只打日志，现在会传给 JS 调用方（同时打 "gen callback apply fail"）。
+- M6-2b：`NewDelegate`、`releaseManualReleaseDelegate` 改为 papi。manual release 代理原来用 v8::Map 把 JS 函数映射到 `v8::External`（代理指针），再用一个 vector 记录弱引用；papi 没有 external，改为 JS Map 把函数映射到 uint32 id，C++ 侧用 `TMap<uint32, TWeakObjectPtr<UDynamicDelegateProxy>>` 按 id 找代理。Map 用 `eval("new Map()")` 创建，`get`/`set`/`delete` 经 `call_function` 调用。释放时直接按 id 删除，不再遍历整个列表。
 
 ### 5.6 UObject 生命周期
 

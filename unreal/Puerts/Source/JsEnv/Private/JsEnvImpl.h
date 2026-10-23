@@ -210,10 +210,10 @@ public:
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
 
-    FScriptDelegate NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-        v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction);
+    virtual FScriptDelegate NewDelegate(
+        pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction) override;
 
-    void ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     virtual bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
 
@@ -291,14 +291,6 @@ public:
     {
         auto Context = papi_bridge::ToV8(Env);
         return papi_bridge::ToPapi(FindOrAddDelegate(Context->GetIsolate(), Context, Owner, Property, DelegatePtr, PassByPointer));
-    }
-
-    virtual FScriptDelegate NewDelegate(
-        pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return NewDelegate(
-            Context->GetIsolate(), Context, Owner, papi_bridge::ToV8(JsFunction).As<v8::Function>(), SignatureFunction);
     }
 
     virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) override
@@ -835,9 +827,12 @@ private:
 
     FContainerMeta ContainerMeta;
 
-    v8::Global<v8::Map> ManualReleaseCallbackMap;
+    // js Map: function -> id in ManualReleaseCallbacks
+    FPapiValueRef ManualReleaseCallbackMap;
 
-    std::vector<TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbackList;
+    uint32_t ManualReleaseCallbackId = 0;
+
+    TMap<uint32_t, TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbacks;
 
     TMap<UObject*, TArray<TWeakObjectPtr<UDynamicDelegateProxy>>> AutoReleaseCallbacksMap;
 

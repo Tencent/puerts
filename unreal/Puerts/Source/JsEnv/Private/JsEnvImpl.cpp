@@ -579,8 +579,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #endif
     Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiUtils::FromFString(Apis, Env, DllExt));
 
-    MethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(
-        Isolate, Context, PuertsObj, "releaseManualReleaseDelegate", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(
+        Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
 
     ArrayTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FScriptArrayWrapper::ToFunctionTemplate(Isolate));
 
@@ -645,7 +645,11 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     DelegateProxiesCheckerHandler =
         FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
 
-    ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
+    {
+        static const char MapCode[] = "new Map()";
+        ManualReleaseCallbackMap.Reset(Apis, Env,
+            Apis->eval(Env, reinterpret_cast<const uint8_t*>(MapCode), sizeof(MapCode) - 1, "puerts/manual_release_map"));
+    }
 
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
@@ -713,13 +717,14 @@ FJsEnvImpl::~FJsEnvImpl()
     PathToModule.Empty();
 #endif
 
-    for (int i = 0; i < ManualReleaseCallbackList.size(); i++)
+    for (auto& KV : ManualReleaseCallbacks)
     {
-        if (ManualReleaseCallbackList[i].IsValid(true))
+        if (KV.Value.IsValid(true))
         {
-            ManualReleaseCallbackList[i].Get()->ResetJsFunction();
+            KV.Value.Get()->ResetJsFunction();
         }
     }
+    ManualReleaseCallbacks.Empty();
     ManualReleaseCallbackMap.Reset();
     InspectorMessageHandler.Reset();
     Require.Reset();
@@ -2614,9 +2619,15 @@ PropertyMacro* FJsEnvImpl::FindDelegateProperty(void* DelegatePtr)
                                          : (PropertyMacro*) Iter->second.MulticastDelegateProperty;
 }
 
-FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-    v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction)
+static pesapi_value CallJsMapMethod(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Map, const char* Method, int Argc, pesapi_value* Argv)
 {
+    return Apis->call_function(Env, Apis->get_property(Env, Map, Method), Map, Argc, Argv);
+}
+
+FScriptDelegate FJsEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
+{
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
     UDynamicDelegateProxy* DelegateProxy = nullptr;
     if (Owner)
     {
@@ -2624,41 +2635,47 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
 
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
 #ifdef THREAD_SAFE
-        DelegateProxy->Isolate = Isolate;
+        DelegateProxy->Isolate = MainIsolate;
 #endif
         DelegateProxy->Owner = Owner;
         DelegateProxy->SignatureFunction = SignatureFunction;
         DelegateProxy->DynamicInvoker = DynamicInvoker;
-        DelegateProxy->SetJsFunction(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction));
+        DelegateProxy->SetJsFunction(Apis, Env, JsFunction);
 
         SysObjectRetainer.Retain(DelegateProxy);
         Callbacks.Add(DelegateProxy);
     }
     else
     {
-        auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
-        auto MaybeProxy = CallbacksMap->Get(Context, JsFunction);
+        pesapi_value CallbacksMap = ManualReleaseCallbackMap.Get(Env);
+        pesapi_value GetArgs[] = {JsFunction};
+        pesapi_value Id = CallJsMapMethod(Apis, Env, CallbacksMap, "get", 1, GetArgs);
+        TWeakObjectPtr<UDynamicDelegateProxy>* Found =
+            (Id && Apis->is_uint32(Env, Id)) ? ManualReleaseCallbacks.Find(Apis->get_value_uint32(Env, Id)) : nullptr;
 
-        if (MaybeProxy.IsEmpty() || !MaybeProxy.ToLocalChecked()->IsExternal())
+        if (!Found || !Found->IsValid())
         {
             DelegateProxy = NewObject<UDynamicDelegateProxy>();
 #ifdef THREAD_SAFE
-            DelegateProxy->Isolate = Isolate;
+            DelegateProxy->Isolate = MainIsolate;
 #endif
             DelegateProxy->Owner = DelegateProxy;
             DelegateProxy->SignatureFunction = SignatureFunction;
             DelegateProxy->DynamicInvoker = DynamicInvoker;
-            DelegateProxy->SetJsFunction(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction));
+            DelegateProxy->SetJsFunction(Apis, Env, JsFunction);
 
             SysObjectRetainer.Retain(DelegateProxy);
-            __USE(CallbacksMap->Set(Context, JsFunction, v8::External::New(Context->GetIsolate(), DelegateProxy)));
 
-            ManualReleaseCallbackList.push_back(DelegateProxy);
+            while (!(++ManualReleaseCallbackId) || ManualReleaseCallbacks.Contains(ManualReleaseCallbackId))    // id > 0 and unused
+            {
+            }
+            ManualReleaseCallbacks.Add(ManualReleaseCallbackId, DelegateProxy);
+            pesapi_value SetArgs[] = {JsFunction, Apis->create_uint32(Env, ManualReleaseCallbackId)};
+            CallJsMapMethod(Apis, Env, CallbacksMap, "set", 2, SetArgs);
         }
         else
         {
-            DelegateProxy = Cast<UDynamicDelegateProxy>(
-                static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
+            DelegateProxy = Found->Get();
             if (DelegateProxy->SignatureFunction.Get() != SignatureFunction)
             {
                 Logger->Error(TEXT("aleady bind to another delegate pleace release first!"));
@@ -2674,39 +2691,22 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
     return Delegate;
 }
 
-void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgFunction);
 
-    CHECK_V8_ARGS(EArgFunction);
-
-    auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
-    auto MaybeProxy = CallbacksMap->Get(Context, Info[0]);
-    if (!MaybeProxy.IsEmpty() && MaybeProxy.ToLocalChecked()->IsExternal())
+    pesapi_env Env = Apis->get_env(Info);
+    pesapi_value CallbacksMap = ManualReleaseCallbackMap.Get(Env);
+    pesapi_value Args[] = {Apis->get_arg(Info, 0)};
+    pesapi_value Id = CallJsMapMethod(Apis, Env, CallbacksMap, "get", 1, Args);
+    if (Id && Apis->is_uint32(Env, Id))
     {
-        __USE(CallbacksMap->Delete(Context, Info[0]));
-        auto DelegateProxy =
-            Cast<UDynamicDelegateProxy>(static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
-        for (auto it = ManualReleaseCallbackList.begin(); it != ManualReleaseCallbackList.end();)
+        CallJsMapMethod(Apis, Env, CallbacksMap, "delete", 1, Args);
+        TWeakObjectPtr<UDynamicDelegateProxy> DelegateProxy;
+        if (ManualReleaseCallbacks.RemoveAndCopyValue(Apis->get_value_uint32(Env, Id), DelegateProxy) && DelegateProxy.IsValid())
         {
-            if (!it->IsValid())
-            {
-                it = ManualReleaseCallbackList.erase(it);
-            }
-            else if (it->Get() == DelegateProxy)
-            {
-                DelegateProxy->ResetJsFunction();
-                it = ManualReleaseCallbackList.erase(it);
-                SysObjectRetainer.Release(DelegateProxy);
-            }
-            else
-            {
-                ++it;
-            }
+            DelegateProxy->ResetJsFunction();
+            SysObjectRetainer.Release(DelegateProxy.Get());
         }
     }
 }
