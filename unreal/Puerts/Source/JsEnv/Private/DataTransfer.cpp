@@ -10,6 +10,7 @@
 #include "ObjectMapper.h"
 #if USING_IN_UNREAL_ENGINE
 #include "V8Utils.h"
+#include "PapiV8Bridge.h"
 #endif
 
 namespace PUERTS_NAMESPACE
@@ -56,18 +57,21 @@ FString DataTransfer::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value
 v8::Local<v8::Value> DataTransfer::FindOrAddObject(
     v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject)
 {
-    return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Class, UEObject);
+    return papi_bridge::ToV8(
+        FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(papi_bridge::ToPapi(Context), Class, UEObject));
 }
 
 v8::Local<v8::Value> DataTransfer::FindOrAddStruct(
     v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
-    return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer);
+    return papi_bridge::ToV8(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
+        papi_bridge::ToPapi(Context), ScriptStruct, Ptr, PassByPointer));
 }
 
 bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local<v8::Value> JsObject)
 {
-    return JsObject->IsObject() && FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(Struct, JsObject.As<v8::Object>());
+    return JsObject->IsObject() && FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(
+                                       papi_bridge::ToPapi(Isolate->GetCurrentContext()), Struct, papi_bridge::ToPapi(JsObject));
 }
 
 void DataTransfer::ThrowException(v8::Isolate* Isolate, const char* Message)

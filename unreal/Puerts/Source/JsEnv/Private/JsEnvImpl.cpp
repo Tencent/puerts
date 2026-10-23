@@ -1094,7 +1094,7 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
-        auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
+        auto Result = FindOrAdd(Isolate, Context, Object->GetClass(), Object);
 #if !PUERTS_KEEP_UOBJECT_REFERENCE
         bool NeedJsTakeRef = true;
         if (Info.Length() > 4 && !Info[4]->IsNullOrUndefined())
@@ -1142,8 +1142,7 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
     {
         void* Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
 
-        Info.GetReturnValue().Set(
-            FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, false));
+        Info.GetReturnValue().Set(FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, false));
     }
     else
     {

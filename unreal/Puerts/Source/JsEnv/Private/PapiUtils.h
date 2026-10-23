@@ -50,8 +50,7 @@ FORCEINLINE UObject* GetUObject(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_
     return DataTransfer::GetUObjectOfNativePtr(Apis->get_native_object_ptr(Env, Value));
 }
 
-// IObjectMapper keeps its v8 interface until FJsEnvImpl is migrated (M5), the papi based code reaches it only through the
-// helpers below, so the bridge is confined to this header
+// the IObjectMapper of an env, it is the isolate data of the v8 backend (the only backend of the plugin for now)
 FORCEINLINE IObjectMapper* ObjectMapperOf(pesapi_env Env)
 {
     return FV8Utils::IsolateData<IObjectMapper>(papi_bridge::IsolateOf(Env));
@@ -70,92 +69,71 @@ FORCEINLINE void ThrowException(pesapi_env Env, const FString& Message)
 
 FORCEINLINE pesapi_value FindOrAddUObject(pesapi_env Env, UClass* Class, UObject* Object)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return papi_bridge::ToPapi(ObjectMapperOf(Env)->FindOrAdd(Context->GetIsolate(), Context, Class, Object));
+    return ObjectMapperOf(Env)->FindOrAdd(Env, Class, Object);
 }
 
 FORCEINLINE pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return papi_bridge::ToPapi(
-        ObjectMapperOf(Env)->FindOrAddStruct(Context->GetIsolate(), Context, ScriptStruct, Ptr, PassByPointer));
+    return ObjectMapperOf(Env)->FindOrAddStruct(Env, ScriptStruct, Ptr, PassByPointer);
 }
 
 FORCEINLINE void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    ObjectMapperOf(Env)->Merge(Context->GetIsolate(), Context, papi_bridge::ToV8(Src).As<v8::Object>(), DesType, Des);
+    ObjectMapperOf(Env)->Merge(Env, Src, DesType, Des);
 }
 
 template <typename TContainer>
 FORCEINLINE pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, TContainer* Ptr, bool PassByPointer)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return papi_bridge::ToPapi(
-        ObjectMapperOf(Env)->FindOrAddContainer(Context->GetIsolate(), Context, Property, Ptr, PassByPointer));
+    return ObjectMapperOf(Env)->FindOrAddContainer(Env, Property, Ptr, PassByPointer);
 }
 
 FORCEINLINE pesapi_value FindOrAddContainer(
     pesapi_env Env, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return papi_bridge::ToPapi(
-        ObjectMapperOf(Env)->FindOrAddContainer(Context->GetIsolate(), Context, KeyProperty, ValueProperty, Ptr, PassByPointer));
+    return ObjectMapperOf(Env)->FindOrAddContainer(Env, KeyProperty, ValueProperty, Ptr, PassByPointer);
 }
 
 FORCEINLINE pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Inner, void* ArrayPtr)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return papi_bridge::ToPapi(ObjectMapperOf(Env)->CreateArray(Context->GetIsolate(), Context, Inner, ArrayPtr));
+    return ObjectMapperOf(Env)->CreateArray(Env, Inner, ArrayPtr);
 }
 
 FORCEINLINE pesapi_value AddSoftObjectPtr(pesapi_env Env, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return papi_bridge::ToPapi(
-        ObjectMapperOf(Env)->AddSoftObjectPtr(Context->GetIsolate(), Context, SoftObjectPtr, Class, IsSoftClass));
+    return ObjectMapperOf(Env)->AddSoftObjectPtr(Env, SoftObjectPtr, Class, IsSoftClass);
 }
 
 FORCEINLINE pesapi_value FindOrAddDelegate(
     pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return papi_bridge::ToPapi(
-        ObjectMapperOf(Env)->FindOrAddDelegate(Context->GetIsolate(), Context, Owner, Property, DelegatePtr, PassByPointer));
+    return ObjectMapperOf(Env)->FindOrAddDelegate(Env, Owner, Property, DelegatePtr, PassByPointer);
 }
 
 // JsFunction must be a function
 FORCEINLINE FScriptDelegate NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return ObjectMapperOf(Env)->NewDelegate(
-        Context->GetIsolate(), Context, Owner, papi_bridge::ToV8(JsFunction).As<v8::Function>(), SignatureFunction);
+    return ObjectMapperOf(Env)->NewDelegate(Env, Owner, JsFunction, SignatureFunction);
 }
 
 FORCEINLINE bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return ObjectMapperOf(Env)->AddToDelegate(
-        Context->GetIsolate(), Context, DelegatePtr, papi_bridge::ToV8(JsFunction).As<v8::Function>());
+    return ObjectMapperOf(Env)->AddToDelegate(Env, DelegatePtr, JsFunction);
 }
 
 FORCEINLINE bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return ObjectMapperOf(Env)->RemoveFromDelegate(
-        Context->GetIsolate(), Context, DelegatePtr, papi_bridge::ToV8(JsFunction).As<v8::Function>());
+    return ObjectMapperOf(Env)->RemoveFromDelegate(Env, DelegatePtr, JsFunction);
 }
 
 FORCEINLINE bool ClearDelegate(pesapi_env Env, void* DelegatePtr)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    return ObjectMapperOf(Env)->ClearDelegate(Context->GetIsolate(), Context, DelegatePtr);
+    return ObjectMapperOf(Env)->ClearDelegate(Env, DelegatePtr);
 }
 
 FORCEINLINE void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
 {
-    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
-    ObjectMapperOf(Env)->ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
+    ObjectMapperOf(Env)->ExecuteDelegate(Env, Info, DelegatePtr);
 }
 
 FORCEINLINE PropertyMacro* FindDelegateProperty(pesapi_env Env, void* DelegatePtr)

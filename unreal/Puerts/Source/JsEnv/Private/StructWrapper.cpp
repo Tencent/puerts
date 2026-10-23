@@ -562,7 +562,8 @@ void FScriptStructWrapper::New(
                 }
             }
         }
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, false);
+        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(
+            papi_bridge::ToPapi(Context), this, Memory, papi_bridge::ToPapi(Self), false);
     }
     else
     {
@@ -663,7 +664,7 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
             Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
         }
 
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->Bind(this, Object, Self);
+        FV8Utils::IsolateData<IObjectMapper>(Isolate)->Bind(papi_bridge::ToPapi(Context), this, Object, papi_bridge::ToPapi(Self));
     }
     else
     {

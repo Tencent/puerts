@@ -14,6 +14,7 @@
 #include "StructWrapper.h"
 #endif
 #include "JSClassRegister.h"
+#include "pesapi.h"
 
 #include "NamespaceDef.h"
 
@@ -64,66 +65,61 @@ public:
 };
 
 #if USING_IN_UNREAL_ENGINE
+// the object mapping of an UE env (see PapiUtils::ObjectMapperOf), all js values are papi values so the callers do not
+// depend on the script backend
 class IObjectMapper : public ICppObjectMapper
 {
 public:
-    virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) = 0;
+    virtual void Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) = 0;
 
     virtual void UnBind(UClass* Class, UObject* UEObject) = 0;
 
-    virtual v8::Local<v8::Value> FindOrAdd(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject) = 0;
+    virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) = 0;
 
     virtual void BindStruct(
-        FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) = 0;
+        pesapi_env Env, FScriptStructWrapper* ScriptStructWrapper, void* Ptr, pesapi_value JSObject, bool PassByPointer) = 0;
 
     virtual void UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr) = 0;
 
     // PassByPointer为false代表需要在js对象释放时，free相应的内存
     // 相关信息见该issue：https://github.com/Tencent/puerts/issues/693
-    virtual v8::Local<v8::Value> FindOrAddStruct(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) = 0;
+    virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) = 0;
 
-    virtual void Merge(
-        v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) = 0;
+    // Src must be an object
+    virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) = 0;
 
     virtual void UnBindContainer(void* Ptr) = 0;
 
-    virtual v8::Local<v8::Value> FindOrAddContainer(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) = 0;
+    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) = 0;
 
-    virtual v8::Local<v8::Value> FindOrAddContainer(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer) = 0;
+    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer) = 0;
 
-    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-        PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer) = 0;
+    virtual pesapi_value FindOrAddContainer(
+        pesapi_env Env, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer) = 0;
 
-    virtual v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-        PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) = 0;
+    virtual pesapi_value FindOrAddDelegate(
+        pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) = 0;
 
-    virtual bool AddToDelegate(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction) = 0;
+    // JsFunction must be a function
+    virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) = 0;
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) = 0;
 
-    virtual FScriptDelegate NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-        v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) = 0;
+    // JsFunction must be a function
+    virtual FScriptDelegate NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction) = 0;
 
-    virtual bool RemoveFromDelegate(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction) = 0;
+    // JsFunction must be a function
+    virtual bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) = 0;
 
-    virtual bool ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr) = 0;
+    virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) = 0;
 
-    virtual void ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-        const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr) = 0;
+    virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) = 0;
 
-    virtual v8::Local<v8::Value> CreateArray(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) = 0;
+    virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) = 0;
 
-    virtual bool IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject) = 0;
+    virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) = 0;
 
-    virtual v8::Local<v8::Value> AddSoftObjectPtr(
-        v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) = 0;
+    virtual pesapi_value AddSoftObjectPtr(pesapi_env Env, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) = 0;
 };
 #endif
 

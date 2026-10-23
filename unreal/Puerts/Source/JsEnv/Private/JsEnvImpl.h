@@ -14,6 +14,7 @@
 #include "CppObjectMapper.h"
 #include "V8Utils.h"
 #include "ObjectMapper.h"
+#include "PapiV8Bridge.h"
 #include "JSLogger.h"
 #include "ObjectRetainer.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -140,7 +141,7 @@ public:
 
     void SetJsTakeRef(UObject* UEObject, FClassWrapper* ClassWrapper);
 
-    virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) override;
+    void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject);
 
     virtual void UnBind(UClass* Class, UObject* UEObject) override;
 
@@ -149,18 +150,16 @@ public:
     v8::Local<v8::Value> FindOrAdd(
         v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial);
 
-    virtual v8::Local<v8::Value> FindOrAdd(
-        v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject) override;
+    v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject);
 
-    virtual void BindStruct(
-        FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
+    void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer);
 
     virtual void UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr) override;
 
     virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
 
-    virtual v8::Local<v8::Value> FindOrAddStruct(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;
+    v8::Local<v8::Value> FindOrAddStruct(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer);
 
     virtual void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void* Ptr,
         v8::Local<v8::Object> JSObject, bool PassByPointer) override;
@@ -179,8 +178,7 @@ public:
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
 
-    virtual void Merge(
-        v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) override;
+    void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des);
 
     enum ContainerType
     {
@@ -194,37 +192,37 @@ public:
 
     virtual void UnBindContainer(void* Ptr) override;
 
-    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property,
-        FScriptArray* Ptr, bool PassByPointer) override;
+    v8::Local<v8::Value> FindOrAddContainer(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer);
 
-    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property,
-        FScriptSet* Ptr, bool PassByPointer) override;
+    v8::Local<v8::Value> FindOrAddContainer(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer);
 
-    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-        PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer) override;
+    v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* KeyProperty,
+        PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer);
 
-    virtual v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-        PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) override;
+    v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
+        PropertyMacro* Property, void* DelegatePtr, bool PassByPointer);
 
-    virtual bool AddToDelegate(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction) override;
+    bool AddToDelegate(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction);
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
 
-    virtual FScriptDelegate NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-        v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) override;
+    FScriptDelegate NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
+        v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction);
 
     void ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    virtual bool RemoveFromDelegate(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction) override;
+    bool RemoveFromDelegate(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction);
 
-    virtual bool ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr) override;
+    bool ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr);
 
-    virtual void ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-        const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr) override;
+    void ExecuteDelegate(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr);
 
-    virtual bool IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject) override;
+    bool IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject);
 
     virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) override;
 
@@ -234,13 +232,120 @@ public:
 
     virtual ScriptClassRegistry* GetRegistry() override;
 
-    virtual v8::Local<v8::Value> AddSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
-        FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) override;
+    v8::Local<v8::Value> AddSoftObjectPtr(
+        v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass);
+
+    // IObjectMapper, the papi interface used by the backend independent code. Forward to the v8 implementations above until
+    // they are migrated
+    virtual void Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override
+    {
+        Bind(ClassWrapper, UEObject, papi_bridge::ToV8(JSObject).As<v8::Object>());
+    }
+
+    virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(FindOrAdd(Context->GetIsolate(), Context, Class, UEObject));
+    }
+
+    virtual void BindStruct(
+        pesapi_env Env, FScriptStructWrapper* ScriptStructWrapper, void* Ptr, pesapi_value JSObject, bool PassByPointer) override
+    {
+        BindStruct(ScriptStructWrapper, Ptr, papi_bridge::ToV8(JSObject).As<v8::Object>(), PassByPointer);
+    }
+
+    virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(FindOrAddStruct(Context->GetIsolate(), Context, ScriptStruct, Ptr, PassByPointer));
+    }
+
+    virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        Merge(Context->GetIsolate(), Context, papi_bridge::ToV8(Src).As<v8::Object>(), DesType, Des);
+    }
+
+    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(FindOrAddContainer(Context->GetIsolate(), Context, Property, Ptr, PassByPointer));
+    }
+
+    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(FindOrAddContainer(Context->GetIsolate(), Context, Property, Ptr, PassByPointer));
+    }
+
+    virtual pesapi_value FindOrAddContainer(
+        pesapi_env Env, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(
+            FindOrAddContainer(Context->GetIsolate(), Context, KeyProperty, ValueProperty, Ptr, PassByPointer));
+    }
+
+    virtual pesapi_value FindOrAddDelegate(
+        pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(FindOrAddDelegate(Context->GetIsolate(), Context, Owner, Property, DelegatePtr, PassByPointer));
+    }
+
+    virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return AddToDelegate(Context->GetIsolate(), Context, DelegatePtr, papi_bridge::ToV8(JsFunction).As<v8::Function>());
+    }
+
+    virtual FScriptDelegate NewDelegate(
+        pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return NewDelegate(
+            Context->GetIsolate(), Context, Owner, papi_bridge::ToV8(JsFunction).As<v8::Function>(), SignatureFunction);
+    }
+
+    virtual bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return RemoveFromDelegate(Context->GetIsolate(), Context, DelegatePtr, papi_bridge::ToV8(JsFunction).As<v8::Function>());
+    }
+
+    virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return ClearDelegate(Context->GetIsolate(), Context, DelegatePtr);
+    }
+
+    virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
+    }
+
+    virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(CreateArray(Context->GetIsolate(), Context, Property, ArrayPtr));
+    }
+
+    virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) override
+    {
+        return IsInstanceOf(Struct, papi_bridge::ToV8(JsObject).As<v8::Object>());
+    }
+
+    virtual pesapi_value AddSoftObjectPtr(pesapi_env Env, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) override
+    {
+        auto Context = papi_bridge::ToV8(Env);
+        return papi_bridge::ToPapi(AddSoftObjectPtr(Context->GetIsolate(), Context, SoftObjectPtr, Class, IsSoftClass));
+    }
 
     bool CheckDelegateProxies(float Tick);
 
-    virtual v8::Local<v8::Value> CreateArray(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
+    v8::Local<v8::Value> CreateArray(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr);
 
     void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
