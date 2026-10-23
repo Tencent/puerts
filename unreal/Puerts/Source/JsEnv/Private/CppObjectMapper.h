@@ -125,7 +125,15 @@ private:
 private:
     std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
 
-    std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>, PointerHash, PointerEqual> TypeIdToTemplateMap;
+    struct FTemplateEntry
+    {
+        v8::UniquePersistent<v8::FunctionTemplate> Template;
+        // the definition the template is built from (the callbacks of the template refer to it), objects created with the
+        // template are bound with it
+        const JSClassDefinition* ClassDefinition;
+    };
+
+    std::unordered_map<const void*, FTemplateEntry, PointerHash, PointerEqual> TypeIdToTemplateMap;
 
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 

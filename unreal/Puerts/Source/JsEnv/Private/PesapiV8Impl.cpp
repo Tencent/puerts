@@ -459,8 +459,10 @@ int pesapi_is_array(pesapi_env env, pesapi_value pvalue)
 pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, int call_finalize)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto isolate = context->GetIsolate();
     return v8impl::PesapiValueFromV8LocalValue(
-        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, type_id, object_ptr, !call_finalize));
+        puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(isolate)->FindOrAddCppObject(
+            isolate, context, type_id, object_ptr, !call_finalize));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)

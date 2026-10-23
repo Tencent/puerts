@@ -165,7 +165,14 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
         }
     }
 
-    // create and link
+    // create and link, a built class takes one lookup
+    auto Iter = TypeIdToTemplateMap.find(TypeId);
+    if (Iter != TypeIdToTemplateMap.end())
+    {
+        auto Result = Iter->second.Template.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+        BindCppObject(Isolate, const_cast<JSClassDefinition*>(Iter->second.ClassDefinition), Ptr, Result, PassByPointer);
+        return Result;
+    }
     auto ClassDefinition = LoadClassByID(Registry, TypeId);
     if (ClassDefinition)
     {
@@ -294,13 +301,14 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         }
 #endif
 
-        TypeIdToTemplateMap[ClassDefinition->TypeId] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
+        TypeIdToTemplateMap[ClassDefinition->TypeId] =
+            FTemplateEntry{v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template), ClassDefinition};
 
         return Template;
     }
     else
     {
-        return v8::Local<v8::FunctionTemplate>::New(Isolate, Iter->second);
+        return v8::Local<v8::FunctionTemplate>::New(Isolate, Iter->second.Template);
     }
 }
 MSVC_PRAGMA(warning(pop))
