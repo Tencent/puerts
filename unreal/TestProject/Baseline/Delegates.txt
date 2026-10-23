@@ -5,6 +5,7 @@ releaseManualReleaseDelegate(1): throws Error: Bad parameters #0, expect a funct
 releaseManualReleaseDelegate(unknown fn): undefined
 ufunction bound IsBound: true
 copy IsBound after source unbind: true
+IsBound after passing an UObject as delegate: false
 returned delegate is the property view: false
 unbound GetIntDelegate: undefined
 execute unbound single: throws Error: can not execute an unbound delegate!

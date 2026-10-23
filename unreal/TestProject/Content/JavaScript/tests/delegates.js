@@ -115,6 +115,15 @@ test('delegate object argument copies', () => {
     b.IntDelegate.Unbind();
 });
 
+test('non-delegate wrapper argument', () => {
+    const o = new UE.PuertsTestObject();
+    o.IntDelegate.Bind((v) => v);
+    // only a delegate wrapper is copied, other wrappers (an UObject here) leave the parameter empty
+    o.SetIntDelegate(new UE.PuertsTestObject());
+    observe('IsBound after passing an UObject as delegate', () => o.IntDelegate.IsBound());
+    o.IntDelegate.Unbind();
+});
+
 test('delegate returned by value', () => {
     const o = new UE.PuertsTestObject();
     o.IntDelegate.Bind((v) => v * 10);
