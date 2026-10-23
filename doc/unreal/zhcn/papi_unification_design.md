@@ -282,6 +282,12 @@ M4 落地情况（分批进行）：
   - `MergeObject`：type id 变化后，原来“type id 为空即 UObject”的判断失效，改为先 `FromTypeId` 后 `Cast<UScriptStruct>` 判定 struct，否则经 `GetUObject` 判定 UObject（已释放时抛 invalid）。
   - 测试：两条路径用例全过。基准与 HEAD 交替跑三轮（取最小）：new.uobject 1536ns -> 1702ns（+11%），makeuclass.new 2017ns -> 2337ns、tsclass.new 2009ns -> 2391ns（+16% 到 +19%），其余项持平。额外插入一次 value ref 的创建和 `set_ref_weak` 的实验表明 value ref 本身约 70 到 100ns（`operator new`、context 和 value 两个 Global、tracker 的 weak_ptr 拷贝）；其余来自 `CppObjectMapper` 对象缓存的插入和删除（UObject 身份由 `ObjectMap` 保证，这一层缓存对 UObject 是冗余的）以及 Finalize 多出的跨模块调用。这两项都属于 v8 后端的通用开销，留到后续统一优化（value ref 改为内联存储或池化；为“身份由宿主维护”的类定义提供跳过对象缓存的选项）。
   - 剩余：委托的 `FindOrAddDelegate` / `ExecuteDelegate` 和委托模板；`FClassWrapper::New` 中取 `this` 的桥接。
+- M4-6i：委托包装改为 papi。
+  - `FDelegateWrapper`、`FMulticastDelegateWrapper` 的 v8 模板（`FJsEnvImpl::DelegateTemplate` / `MulticastDelegateTemplate`）删除，改为固定 type id 的进程级类定义，经 `FindReflectedClass` 对 registry 可见。native 对象就是 `FScriptDelegate` / `FMulticastScriptDelegate`，不归 JS 对象所有（类定义没有 Finalize），由 `native_object_to_value(..., call_finalize = false)` 创建；JS 对象由 `DelegateMap` 以强引用的 `FPapiValueRef` 持有（原为 v8 persistent），条目释放时一并释放，复制出来的单播委托仍在条目释放时删除。env 析构时这些 value ref 改在 `CppObjectMapper.UnInitialize` 之前释放。
+  - `FindOrAddDelegate`、`ExecuteDelegate` 改为 papi，`IObjectMapper` 中的桥接转发删除；`ExecuteDelegate` 改用 `FFunctionTranslator` 的 papi 版 `Call`，并只查一次 `JsCallbackPrototypeMap`。
+  - 行为变化：委托属性的 `JsToUE` 只接受委托包装（按 type id 判断），其他包装（UObject、struct 等）不再被当作 `FScriptDelegate` 读取，参数保持为空委托。补测试 `non-delegate wrapper argument`，Delegates 基线只新增这一条。`constructor.name` 仍为空串（非反射类不设置类名）。
+  - 测试：两条路径用例全过。基准与 HEAD 对比持平（delegate.cpp_to_js 238ns / 250ns，其余差异在 10% 以内且出现在未改动的路径上）。
+  - 剩余：`FClassWrapper::New` 中取 `this` 的桥接；M4-6 其余收尾（`IObjectMapper` 中仍以 v8 类型出现的接口）随 M6、M7 处理。
 
 M5 落地情况（分批进行）：
 
