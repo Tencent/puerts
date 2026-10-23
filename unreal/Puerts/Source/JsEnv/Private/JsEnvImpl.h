@@ -729,7 +729,7 @@ private:
 
     struct TsFunctionInfo
     {
-        v8::UniquePersistent<v8::Function> JsFunction;
+        FPapiValueRef JsFunction;
 
         std::unique_ptr<FFunctionTranslator> FunctionTranslator;
     };
@@ -773,8 +773,8 @@ private:
     struct FBindInfo
     {
         FName Name;
-        v8::UniquePersistent<v8::Function> Constructor;
-        v8::UniquePersistent<v8::Object> Prototype;
+        FPapiValueRef Constructor;
+        FPapiValueRef Prototype;
         bool InjectNotFinished;
     };
 
@@ -783,6 +783,10 @@ private:
     void FinishInjection(UClass* InClass);
 
     void MakeSureInject(UTypeScriptGeneratedClass* Class, bool ForceReinject, bool RebindObject);
+
+    // the exceptions are left in Scope for the caller
+    void InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_scope Scope, UTypeScriptGeneratedClass* Class,
+        UTypeScriptGeneratedClass* SuperClass, const FString& ModuleName, bool PrototypeLinked, bool RebindObject);
 #endif
     TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
 
@@ -802,8 +806,16 @@ private:
 
     TMap<UFunction*, FPapiValueRef> MixinFunctionMap;
 
-    // Object.setPrototypeOf, cached by the first makeUClass for JsConstruct
+    // papi has no prototype / own property api, use the js builtins, cached by GetCachedJsFunction
     FPapiValueRef ObjectSetPrototypeOf;
+
+    FPapiValueRef ObjectGetPrototypeOf;
+
+    FPapiValueRef ObjectHasOwn;
+
+    // evals Code once and caches the function, returns nullptr with the exception pending if the eval fails
+    pesapi_value GetCachedJsFunction(
+        struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path);
 
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 

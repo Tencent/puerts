@@ -259,6 +259,12 @@ M5 落地情况（分批进行）：
 - M6-4a：补 makeUClass 功能测试（tests/make_uclass.js）。修了一个上游既有问题：`interceptClass` 给 `UE.xxx` 类挂的 proxy 截断了原型链，类上取不到 `hasOwnProperty`，`makeUClass` 对继承 `UE.xxx` 的类一直报错；改为用 `Object.prototype.hasOwnProperty.call`。
 - M6-4b：`__tgjsMakeUClass`、`JsConstruct`、`InvokeJsMethod` 改为 papi。`UJSGeneratedClass` / `UJSWidgetGeneratedClass` 的 Constructor、Prototype 和 `UJSGeneratedFunction::JsFunction` 改为 `FPapiValueRef`，去掉了 THREAD_SAFE 下的 Isolate 成员和 StaticConstructor 里的 Locker（papi 作用域自带）。`IDynamicInvoker::JsConstruct` 改为接收 `pesapi_value_ref`，公共头 DynamicInvoker.h 不再包含 v8.h。papi 没有 set_prototype，用首次 makeUClass 时缓存的 `Object.setPrototypeOf`。env 析构时生成类的 Release 移到 `CppObjectMapper.UnInitialize` 之前。ObjectMap 中 binding 的 JsObject 仍是 v8，经 bridge 转换，等 M4-6。
   - 基准（同机 A/B，各 2 轮取最小值）：makeuclass.cpp_to_js 319 到 352（+33ns，+10%），来源同 M6-1；makeuclass.new 2054 到 2008，在噪声内。
+- M6-5a：补 TS 生成类的功能测试和基准。测试工程不依赖 TS 编译和蓝图资源，`UPuertsTestTsTarget::CreateTsClass(Module)` 在 `/Game/Blueprints/TypeScript/<Module>` 包下用代码生成一个 `UTypeScriptGeneratedClass`（复制父类的 BlueprintEvent），JS 模块用 `exports.default` 导出继承 `UE.PuertsTestTsTarget` 的类；`RunScript` 增加 `bBindTsClasses` 参数，注册 UObject 创建监听器转发到 `FJsEnv::TryBindJs`，模拟 FPuertsModule 的行为。覆盖 CDO 和实例构造、`Constructor`、BlueprintImplementableEvent / BlueprintNativeEvent 的 C++ 和 JS 两侧调用、非 UFunction 方法、对象间字段隔离、覆写抛异常。
+- M6-5b：TS 生成类改为 papi。`FBindInfo` 的 Constructor、Prototype 和 `TsFunctionInfo::JsFunction` 改为 `FPapiValueRef`；`MakeSureInject` 的注入逻辑抽到 `InjectTsClass`，在 papi 作用域里执行（require、取 default / prototype / Constructor、按 BlueprintEvent 收集覆写、链原型、`__mergePrototype`），异常统一记 "load module [%s] exception"；`TsConstruct`、`InvokeTsMethod`、`GetJsClass` 中的原型设置改为 papi。
+  - papi 没有 set_prototype、get_prototype、has_own_property，新增 `GetCachedJsFunction`，按需 eval 并缓存 `Object.setPrototypeOf`、`Object.getPrototypeOf`、`Function.prototype.call.bind(Object.prototype.hasOwnProperty)`，makeUClass 也改用它。
+  - `TsFunctionMap`、`BindInfoMap` 和上述缓存在 `CppObjectMapper.UnInitialize` 之前释放。父类没有 BindInfo 时不再用 `operator[]` 插入空项，改为退回原生原型。`InvokeTsMethod` 在 `FindOrAdd` 之前取出函数和 translator，避免注入导致 `TsFunctionMap` rehash 后访问悬空指针。
+  - 入口的 v8 Locker / Isolate / Context 作用域保留，随 M7 替换；RebindObject 和对象首次绑定仍走 v8 版 `FindOrAdd(..., SkipTypeScriptInitial)`，等 M4-6。
+  - 基准（同机 A/B，旧 1 轮、新 3 轮取最小值）：tsclass.cpp_to_js 349.5 到 381.3（+32ns，+9%），来源同 M6-1；tsclass.new 1932 到 1987，在噪声内。
 
 ### 5.6 UObject 生命周期
 
