@@ -1,0 +1,18 @@
+esm result: {x: 1, d: "dep-default", cjsName: "c", name: "c", fnResult: 42, answer: 42, list: [1, 2], builtinV: 7, v: 7}
+esm namespace keys: ["depNs", "result"]
+flaky esm: Error: flaky esm
+flaky esm parent: Error: flaky esm dep
+flaky cjs: Error: flaky cjs
+tla timer: Error: [Puer004] top-level await of <js-root>/tests/module_loader_data/tla_timer.mjs can not be settled synchronously
+require missing: Error: can not find tests/module_loader_data/not_exist_xyz in 
+import missing: Error: can not resolve [tests/module_loader_data/not_exist_xyz.mjs], import by []
+esm import missing: Error: can not resolve [./not_exist_dep_xyz.mjs], import by [<js-root>/tests/module_loader_data/esm_missing.mjs]
+esm syntax error: SyntaxError: Unexpected token '='
+esm syntax error again: SyntaxError: Unexpected token '='
+cjs throws: Error: cjs boom
+bad specifier: Error: Bad parameters #0, expect a string.
+require cjs package: {name: "pkg_cjs", hasModule: true}
+import cjs package: {name: "pkg_cjs", hasModule: true}
+require esm package: ["pkg_esm", "pkg_esm_default"]
+import esm package: ["pkg_esm", "pkg_esm_default"]
+require esm package without require entry: Error: can not require a esm in cjs module!

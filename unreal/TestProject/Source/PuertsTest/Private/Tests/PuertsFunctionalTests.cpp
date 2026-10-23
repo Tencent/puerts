@@ -26,6 +26,7 @@ PUERTS_SCRIPT_TEST(Errors, "tests/errors")
 PUERTS_SCRIPT_TEST(Modules, "tests/modules")
 PUERTS_SCRIPT_TEST(Objects, "tests/objects")
 PUERTS_SCRIPT_TEST(Reflection, "tests/reflection")
+PUERTS_SCRIPT_TEST(ModuleLoader, "tests/module_loader")
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_Timers, "Puerts.Functional.Timers", PUERTS_TEST_FLAGS)
 bool FPuertsTest_Timers::RunTest(const FString& Parameters)
