@@ -14,6 +14,10 @@ missing type: Error: can not find type:NoSuchType_xyz
 no args: Error: Bad parameters, the function expect 1, but  0 provided.
 number arg: Error: Bad parameters #0, expect a string.
 UE missing: Error: can not find type:NoSuchType_xyz
+number: TypeError: path.match is not a function
+no args: TypeError: Cannot read properties of undefined (reading 'match')
+missing dll: Error: dlopen fail for not_exist_dir\not_exist_addon_xyz.dll
+missing dll again: Error: dlopen fail for not_exist_dir\not_exist_addon_xyz.dll
 setTimeout: "function"
 setInterval: "function"
 console.log: "function"

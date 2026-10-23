@@ -57,6 +57,13 @@ test('loadUEType', () => {
     note('UE missing', catchError(() => UE.NoSuchType_xyz));
 });
 
+test('puerts.load errors', () => {
+    note('number', catchError(() => puerts.load(1)));
+    note('no args', catchError(() => puerts.load()));
+    note('missing dll', catchError(() => puerts.load('not_exist_dir/not_exist_addon_xyz')));
+    note('missing dll again', catchError(() => puerts.load('not_exist_dir/not_exist_addon_xyz')));
+});
+
 test('globals', () => {
     observe('setTimeout', () => typeof setTimeout);
     observe('setInterval', () => typeof setInterval);
