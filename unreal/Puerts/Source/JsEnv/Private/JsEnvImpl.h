@@ -181,8 +181,6 @@ public:
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
 
-    void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des);
-
     // a wrapper of the container class (ClassDefinition), the wrapper of a borrowed container (PassByPointer) is cached by the
     // container, an owned one (deleted with the wrapper) is always new
     pesapi_value FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, PropertyMacro* KeyProperty,
@@ -206,8 +204,6 @@ public:
 
     void ExecuteDelegate(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr);
-
-    bool IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject);
 
     virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) override;
 
@@ -244,11 +240,7 @@ public:
         return papi_bridge::ToPapi(FindOrAddStruct(Context->GetIsolate(), Context, ScriptStruct, Ptr, PassByPointer));
     }
 
-    virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        Merge(Context->GetIsolate(), Context, papi_bridge::ToV8(Src).As<v8::Object>(), DesType, Des);
-    }
+    virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) override;
 
     virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) override
     {
@@ -281,10 +273,7 @@ public:
 
     virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) override;
 
-    virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) override
-    {
-        return IsInstanceOf(Struct, papi_bridge::ToV8(JsObject).As<v8::Object>());
-    }
+    virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) override;
 
     bool CheckDelegateProxies(float Tick);
 
@@ -453,57 +442,9 @@ private:
             }
         }
 
-        void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> JsObject, void* Ptr)
-        {
-            if (auto Class = Cast<UClass>(Struct))
-            {
-                UObject* Object = reinterpret_cast<UObject*>(Ptr);
-                if (!Object->IsValidLowLevel() || UEObjectIsPendingKill(Object) || Object->GetClass() != Class ||
-                    FV8Utils::GetPointer(JsObject))
-                {
-                    return;
-                }
-            }
-            auto Keys = JsObject->GetOwnPropertyNames(Context).ToLocalChecked();
-            for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
-            {
-                auto Key = Keys->Get(Context, i).ToLocalChecked();
-                auto Iter = Fields.find(*v8::String::Utf8Value(Isolate, Key));
-                if (Iter != Fields.end())
-                {
-                    auto MaybeValue = JsObject->Get(Context, Key);
-                    if (!MaybeValue.IsEmpty())
-                    {
-                        auto Value = MaybeValue.ToLocalChecked();
-                        if (Value->IsObject())
-                        {
-                            auto JsObjectField = Value->ToObject(Context).ToLocalChecked();
-                            if (!FV8Utils::GetPointerFast<void>(JsObjectField))
-                            {
-                                UStruct* FieldStruct = nullptr;
-                                if (auto ObjectPropertyBase = CastFieldMacro<ObjectPropertyBaseMacro>(Iter->second->Property))
-                                {
-                                    FieldStruct = ObjectPropertyBase->PropertyClass;
-                                }
-                                else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Iter->second->Property))
-                                {
-                                    FieldStruct = StructProperty->Struct;
-                                }
-                                if (FieldStruct)
-                                {
-                                    Parent->GetObjectMerger(FieldStruct)
-                                        ->Merge(Isolate, Context, JsObjectField,
-                                            Iter->second->Property->ContainerPtrToValuePtr<void>(Ptr));
-                                }
-                                continue;
-                            }
-                        }
-                        if (!Value->IsUndefined())
-                            Iter->second->JsToUEInContainer(Isolate, Context, Value, Ptr, true);
-                    }
-                }
-            }
-        }
+        // merges the own enumerable properties of JsObject into the fields of Ptr, a plain object value of an object / struct
+        // field is merged recursively
+        void Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsObject, void* Ptr);
     };
 
     friend ObjectMerger;
@@ -772,6 +713,9 @@ private:
     FPapiValueRef ObjectGetPrototypeOf;
 
     FPapiValueRef ObjectHasOwn;
+
+    // used by ObjectMerger (the js to struct conversion of a plain object)
+    FPapiValueRef ObjectKeys;
 
     // proxy at the end of the prototype chains of reflected classes (set as the prototype of the root prototypes), it fixes
     // the case of member names by FName when a member is not found

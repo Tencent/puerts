@@ -814,6 +814,7 @@ FJsEnvImpl::~FJsEnvImpl()
         ObjectSetPrototypeOf.Reset();
         ObjectGetPrototypeOf.Reset();
         ObjectHasOwn.Reset();
+        ObjectKeys.Reset();
         FNameFixingProxy.Reset();
 
         CppObjectMapper.UnInitialize(Isolate);
@@ -924,9 +925,85 @@ std::unique_ptr<FJsEnvImpl::ObjectMerger>& FJsEnvImpl::GetObjectMerger(UStruct* 
     return ObjectMergers[Struct];
 }
 
-void FJsEnvImpl::Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des)
+void FJsEnvImpl::Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
 {
-    GetObjectMerger(DesType)->Merge(Isolate, Context, Src, Des);
+    GetObjectMerger(DesType)->Merge(&v8impl::g_pesapi_ffi, Env, Src, Des);
+}
+
+void FJsEnvImpl::ObjectMerger::Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsObject, void* Ptr)
+{
+    if (auto Class = Cast<UClass>(Struct))
+    {
+        UObject* Object = reinterpret_cast<UObject*>(Ptr);
+        if (!Object->IsValidLowLevel() || UEObjectIsPendingKill(Object) || Object->GetClass() != Class ||
+            Apis->get_native_object_ptr(Env, JsObject))
+        {
+            return;
+        }
+    }
+    // papi has no own property enumeration, Object.keys gives the same keys as v8::Object::GetOwnPropertyNames (own,
+    // enumerable, no symbols)
+    pesapi_value Keys = Parent->GetCachedJsFunction(Apis, Env, Parent->ObjectKeys, "Object.keys", "puerts/object_keys");
+    if (!Keys)
+    {
+        return;    // the exception propagates to the js caller
+    }
+    pesapi_value KeysArgs[] = {JsObject};
+    Keys = Apis->call_function(Env, Keys, nullptr, 1, KeysArgs);
+    if (!Keys)
+    {
+        return;
+    }
+    const uint32_t KeysLen = Apis->get_array_length(Env, Keys);
+    char StackBuf[128];
+    TArray<char> HeapBuf;
+    for (uint32_t i = 0; i < KeysLen; ++i)
+    {
+        pesapi_value Key = Apis->get_property_uint32(Env, Keys, i);
+        size_t KeyLen = 0;
+        Apis->get_value_string_utf8(Env, Key, nullptr, &KeyLen);
+        char* KeyBuf = StackBuf;
+        if (KeyLen >= sizeof(StackBuf))
+        {
+            HeapBuf.SetNumUninitialized(static_cast<int32>(KeyLen) + 1);
+            KeyBuf = HeapBuf.GetData();
+        }
+        Apis->get_value_string_utf8(Env, Key, KeyBuf, &KeyLen);
+        KeyBuf[KeyLen] = '\0';
+
+        auto Iter = Fields.find(KeyBuf);
+        if (Iter == Fields.end())
+        {
+            continue;
+        }
+        pesapi_value Value = Apis->get_property(Env, JsObject, KeyBuf);
+        if (!Value)
+        {
+            continue;
+        }
+        if (Apis->is_object(Env, Value) && !Apis->get_native_object_ptr(Env, Value))
+        {
+            UStruct* FieldStruct = nullptr;
+            if (auto ObjectPropertyBase = CastFieldMacro<ObjectPropertyBaseMacro>(Iter->second->Property))
+            {
+                FieldStruct = ObjectPropertyBase->PropertyClass;
+            }
+            else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Iter->second->Property))
+            {
+                FieldStruct = StructProperty->Struct;
+            }
+            if (FieldStruct)
+            {
+                Parent->GetObjectMerger(FieldStruct)
+                    ->Merge(Apis, Env, Value, Iter->second->Property->ContainerPtrToValuePtr<void>(Ptr));
+            }
+            continue;
+        }
+        if (!Apis->is_undefined(Env, Value))
+        {
+            Iter->second->JsToUEInContainer(Apis, Env, Value, Ptr, true);
+        }
+    }
 }
 
 void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -3165,19 +3242,19 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::
     return Ret;
 }
 
-bool FJsEnvImpl::IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject)
+bool FJsEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject)
 {
-    //这里如果外面传一个非uobject或者ustructsrcipt的object,可能会有问题
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
     if (Cast<UScriptStruct>(Struct))
     {
         // the type id of a struct object is its wrapper
-        auto Wrapper = FStructWrapper::FromTypeId(FV8Utils::GetPointer(JsObject, 1));
+        auto Wrapper = FStructWrapper::FromTypeId(Apis->get_native_object_typeid(Env, JsObject));
         UStruct* ObjectStruct = Wrapper ? Wrapper->GetStruct() : nullptr;
         return ObjectStruct && ObjectStruct->IsChildOf(Struct);
     }
     else
     {
-        UObject* Object = FV8Utils::GetUObject(JsObject);
+        UObject* Object = PapiUtils::GetUObject(Apis, Env, JsObject);
         if (!Object || Object == RELEASED_UOBJECT)
         {
             return false;
