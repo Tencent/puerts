@@ -336,12 +336,13 @@ papi-v8 的实现（PesapiV8Impl、CppObjectMapper、BackendEnv、DataTransfer�
 
 - Unity：`BackendJs.OnEnter` 先 `Eval` 一段 `esm_bootstrap.cjs`，由它在 global 上定义 `__puer_resolve_module_url__` / `__puer_resolve_module_content__`，C++ 再按名字取来用。启动依赖 Eval 源码。
 - UE：ESM 的模块图在 `FJsEnvImpl`（`FetchESModuleTree` 等）里，直接用 `IJSModuleLoader`；CJS 在 `modular.js` 里把源码拼成 `(function (exports, require, module, __filename, __dirname) {...})` 再 `__tgjsEvalScript`；内置的 `puerts/*.js` 按经典脚本 `Script::Compile`。字节码的空源码由 JS 的 `generateEmptyCode` 生成；没有动态 `import()` 和 `import.meta`。
-- 后续安全方向是只支持字节码，所有解析 JS 源码的入口（含 eval，甚至改 v8 去掉源码编译）都要能去掉。两边现有实现都依赖运行期源码拼接或 Eval，无法满足。
+- 后续安全方向是发行版只支持字节码：会修改 v8 去掉源码编译，但保留接口，调用时抛异常；开发调试版仍保留源码加载。因此发行版下加载链路上不能有任何必经的源码编译（bootstrap Eval、CJS 源码拼接、JS 生成占位源码）。两边现有实现都依赖这些，无法满足。
 
 #### 5.10.2 目标
 
 - 模块的编译、链接、求值、缓存、动态 import、`import.meta` 全部在后端 C++ 实现，参考 d8 与 Node 的结构，不依赖任何 bootstrap JS。
-- 输入既可以是源码也可以是字节码；提供编译期开关 `PUERTS_MODULE_BYTECODE_ONLY`，打开后拒绝源码输入，后端里不再出现源码编译调用。
+- 输入既可以是源码也可以是字节码，由宿主按内容决定，后端不设“只允许字节码”的开关。源码路径照常调用 v8 的源码编译接口，发行版 v8 去掉源码编译后，这些接口抛出的异常原样透传给调用方。
+- 只加载字节码时，整条链路（启动、内置脚本、CJS、ESM、互操作）不调用任何源码编译接口。
 - 宿主契约与 JS 引擎无关：宿主是 .NET、Unity 或 UE，后端是 V8、QuickJS 或自研 VM，契约都一样；每个后端用自己引擎的模块 API 实现。
 - 第一阶段只在 UE 落地，不改 `unity/`；跑稳定后再同步回 Unity，替换 `esm_bootstrap.cjs`。
 
@@ -393,21 +394,21 @@ __puer_host_load__(url: string): {
   - JSON：作为 `default` 导出的 SyntheticModule；CJS 中 require 直接返回解析结果。
 - 动态 import：`SetHostImportModuleDynamicallyCallback`，在微任务里加载，结果用 Promise 返回；`SetHostInitializeImportMetaObjectCallback` 设置 `url` 和 `resolve`。
 - 入口：后端给宿主一个 C 接口 `execute_module(env, specifier, referrer, out_exception) -> pesapi_value`（namespace 或 exports）。第一阶段放在 UE 侧 papi-v8 的头文件里，第二阶段并入 6.3 的 `pesapi_backend_api`。宿主的同步入口遇到顶层 await 时，跑微任务直到 Promise 结束；仍未结束（比如在等定时器）则返回明确错误，不再像现在这样死循环。
-- 字节码下 JSON 怎么办：JSON 不是 JS 源码，解析用 `v8::JSON::Parse`，不受 `PUERTS_MODULE_BYTECODE_ONLY` 影响。
+- JSON：不是 JS 源码，解析用 `v8::JSON::Parse`，发行版去掉源码编译后仍可用。
 
 #### 5.10.6 UE 宿主侧
 
 - `__puer_host_resolve__` / `__puer_host_load__` 基于现有 `IJSModuleLoader::Search` / `Load` 实现，package.json 的 type / main / exports 用 UE 的 Json 模块解析，替代 `getESMMain`。
 - Windows 下调试路径的反斜杠转换（Inspector 断点匹配需要）放在宿主的 `debugPath` 里完成。
 - 内置脚本 `puerts/*.js` 改为通过加载器按 cjs 加载，打包时可以和业务脚本一样产出字节码。
-- `puerts.evalScript` / `__tgjsEvalScript` 等源码入口在 `PUERTS_MODULE_BYTECODE_ONLY` 下不注册。
+- `puerts.evalScript` / `__tgjsEvalScript` 等源码入口照常保留，供开发调试使用；发行版 v8 去掉源码编译后由 v8 抛异常。
 
 #### 5.10.7 提交拆分
 
 1. M7-1：加载器核心（ESM、CJS、JSON、内置模块、错误回滚）与 UE 宿主函数，先不接入，单独用新的功能测试 `tests/modules.js` 覆盖：相对与裸 specifier、循环依赖、ESM 与 CJS 互操作、JSON、加载失败后重试、顶层 await。
 2. M7-2：`ExecuteModule`、全局 `require`、`puerts.*` 模块函数切到新加载器，删除旧实现；原有功能测试与基线保持一致。
 3. M7-3：动态 `import()`、`import.meta`。
-4. M7-4：字节码路径与 `PUERTS_MODULE_BYTECODE_ONLY` 开关，测试工程增加字节码用例（离线生成 .mbc / .cbc）。
+4. M7-4：字节码路径，测试工程增加字节码用例（离线生成 .mbc / .cbc），并验证纯字节码加载时整条链路不调用源码编译接口。
 5. M7-5 及以后：原 M7 的 Inspector、Promise 拒绝回调、env 入口的 v8 作用域替换、Websocket 改用 wsppaddon。
 
 ### 5.11 V8 专属快速路径（M8）
@@ -532,7 +533,7 @@ flowchart LR
 
 已决策（2026-10-23）：
 
-1. M7 抛开 Unity 现有的 `esm_bootstrap.cjs` 方案，参考 d8 / Node 在后端 C++ 实现模块加载，宿主通过 `create_function` 注册约定名的全局函数提供读文件等能力，后端用 `v8::Global` 持有；目标是最终只支持字节码。先在 UE 落地，稳定后再同步回 Unity。具体契约见 5.10，待确认后开工。
+1. M7 抛开 Unity 现有的 `esm_bootstrap.cjs` 方案，参考 d8 / Node 在后端 C++ 实现模块加载，宿主通过 `create_function` 注册约定名的全局函数提供读文件等能力，后端用 `v8::Global` 持有；目标是发行版只支持字节码（改 v8 去掉源码编译但保留接口、调用时抛异常），开发调试仍可加载源码，不设只允许字节码的开关。先在 UE 落地，稳定后再同步回 Unity。具体契约见 5.10，待确认后开工。
 2. M8 不清理 V8Backend.hpp、V8Object.hpp、V8FastCall.hpp，保留为 V8 专属快速路径（5.11）。
 
 待决策：
