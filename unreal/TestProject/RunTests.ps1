@@ -15,7 +15,8 @@ param(
     [switch]$UpdateBaseline,
     [switch]$Bench,
     [string]$BenchLabel = 'latest',
-    [string]$Configuration = 'Development'
+    [string]$Configuration = 'Development',
+    [int]$TimeoutSec = 600
 )
 
 $ErrorActionPreference = 'Stop'
@@ -64,9 +65,16 @@ $EditorArgs = @(
 if ($UpdateBaseline) { $EditorArgs += '-PuertsUpdateBaseline' }
 if ($Bench) { $EditorArgs += "-PuertsBenchLabel=$BenchLabel" }
 
-Write-Host "running: $Filter"
-& $EditorCmd @EditorArgs | Out-Null
-$EditorExit = $LASTEXITCODE
+Write-Host "running: $Filter (timeout ${TimeoutSec}s)"
+$Quoted = $EditorArgs | ForEach-Object { if ($_ -match '[\s;]') { '"' + $_ + '"' } else { $_ } }
+$Proc = Start-Process -FilePath $EditorCmd -ArgumentList $Quoted -PassThru -NoNewWindow -RedirectStandardOutput (Join-Path $ProjectDir 'Saved\Logs\RunTests.stdout.txt')
+if (-not $Proc.WaitForExit($TimeoutSec * 1000)) {
+    Stop-Process -Id $Proc.Id -Force -ErrorAction SilentlyContinue
+    Write-Host "TIMEOUT after ${TimeoutSec}s, editor killed. Last log lines:"
+    Get-Content $LogFile -Tail 15 | ForEach-Object { Write-Host "  $_" }
+    exit 2
+}
+$EditorExit = $Proc.ExitCode
 
 # 5. report
 $Index = Join-Path $ReportDir 'index.json'
