@@ -424,21 +424,22 @@ papi-v8 的实现（PesapiV8Impl、CppObjectMapper、BackendEnv、DataTransfer�
 宿主在 env 创建后、执行第一个模块前，用 `pesapi_create_function` 创建并设置到 global 上。后端首次用到时按名字取出，用 `v8::Global` 持有（QuickJS 后端用 JSValue 引用），随后从 global 上删除，避免业务脚本调用或篡改。
 
 ```js
+// by: "import"（ESM 静态 / 动态 import）或 "require"（CJS require、宿主以 require 语义执行的入口）。
 // 解析：返回规范化后的模块 url（同一模块必须返回同一字符串，后端以它作为缓存键）。
 // 找不到返回 undefined，后端抛 "[Puer002] import xxx failed: module not found"；宿主抛异常则原样透传。
-__puer_host_resolve__(specifier: string, referrerUrl: string /* 入口为 "" */): string | undefined
+__puer_host_resolve__(specifier: string, referrerUrl: string /* 入口为 "" */, by: "import" | "require"): string | undefined
 
-// 读取：按 url 读内容。
-__puer_host_load__(url: string): {
+// 读取：按 url 读内容，同一 (by, url) 后端只调用一次。
+__puer_host_load__(url: string, by: "import" | "require"): {
     kind: "esm" | "cjs" | "json",
     content: string | ArrayBuffer,  // ArrayBuffer 表示字节码
     debugPath?: string,             // Inspector / 异常栈使用的路径，不给则用 url
-} | undefined
+}
 ```
 
 - 两个函数都是同步的。异步加载（比如 WebGL 下走网络）将来以可选的 `__puer_host_load_async__` 追加，不影响现有约定。
-- `kind` 由宿主决定，后端不看扩展名，把 `.mjs` / `.cjs` / `.mbc` / `.cbc` / package.json type 这些规则留在宿主。UE 侧沿用现有规则：`.mjs`、`.mbc` 为 esm；`.cjs`、`.cbc` 为 cjs；`.js` 被 import 时为 esm、被 require 时为 cjs；`.json` 为 json。
-- 内置模块（`puerts`、`ue`、addon 等）不经过宿主，通过后端接口 `register_builtin_module(name, value)` 注册，解析时最先匹配。
+- `kind` 由宿主决定，后端不看扩展名，把 `.mjs` / `.cjs` / `.mbc` / `.cbc` / package.json type 这些规则留在宿主。UE 侧沿用现有规则：`.mjs`、`.mbc` 为 esm；`.cjs`、`.cbc` 为 cjs；`.js` 被 import 时为 esm、被 require 时为 cjs；`.json` 为 json。同一文件 `.js` 被 import 与被 require 是两条记录，因此 `by` 要传给两个函数；后端记录键为 kind 加 url。
+- 内置模块（`puerts`、`ue` 等）不经过宿主，通过后端接口 `register_builtin_module(name, value)` 注册，解析时最先匹配。宿主也可以在 resolve 里懒注册（UE 的 addon 在首次用到时注册），再返回模块名，后端在 resolve 之后会再查一次内置模块。
 
 #### 5.10.5 后端实现要点（papi-v8）
 
@@ -468,6 +469,19 @@ __puer_host_load__(url: string): {
 3. M7-3：动态 `import()`、`import.meta`。
 4. M7-4：字节码路径，测试工程增加字节码用例（离线生成 .mbc / .cbc），并验证纯字节码加载时整条链路不调用源码编译接口。
 5. M7-5 及以后：原 M7 的 Inspector、Promise 拒绝回调、env 入口的 v8 作用域替换、Websocket 改用 wsppaddon。
+
+#### 5.10.8 M7-1 落地记录
+
+- 后端：`PapiV8ModuleLoader.h/.cpp`，`papi_v8::CreateModuleLoader / DestroyModuleLoader / ExecuteModule(env, specifier, referrer, byImport) / RegisterBuiltinModule / ForceReload / GetModuleByUrl / SetCodeCacheExpect`。加载器挂在 isolate 数据槽 2（0 为 mapper，1 为 PESAPI_PRIVATE）。`ExecuteModule` 失败返回 nullptr，异常留在 isolate 上由调用方处理。
+- 记录与缓存：记录键为 kind 字符加 url；解析缓存键为 by、referrer、`\0`、specifier；加载缓存键为 by 加 url。记录被删除（失败回滚、forceReload）后缓存自然失效，下次重新走宿主。
+- 回滚：嵌套加载用计数的 `FLoadScope`，失败时删除本次新增且未求值完成的 ESM 记录；CJS 执行失败删除该记录。加载失败后可以重试（Unity issue 1670）。
+- 顶层 await：同步入口只跑一次微任务检查点，仍 pending 报 `[Puer004] top-level await of <url> can not be settled synchronously`，不再死循环。求值 Promise 被拒绝时挂一个空处理器再抛出，避免 promises.js 误报 unhandledRejection。
+- 互操作与旧行为的差异：JSON 与内置模块被 import 时也把自有属性作为具名导出（与 CJS 一致）；合成模块的导出名在创建时确定。
+- CJS 字节码：已有的 `.cbc` 是对整段包装源码 `(function (exports, require, module, __filename, __dirname) {...\n});` 用 Script 生成的 code cache，所以字节码仍走 Script 加 `kConsumeCodeCache`，执行后取到函数；源码走 `CompileFunction`（V8 11 以下 `CompileFunctionInContext`）。
+- 字节码头的 FlagHash / ReadOnlySnapshotChecksum 目前沿用 `FJsEnvImpl` 编译空脚本取得的期望值（`SetCodeCacheExpect`），这一步本身是源码编译，M7-4 再解决。
+- UE 宿主：`FJsEnvImpl::HostResolveModule / HostLoadModule`。require 时去掉开头的 `./`；找不到时 require 报 `can not find X in DIR`、import 报 `can not resolve [X], import by [file]`；package.json 用 UE Json 解析，esm 包被 require 时按 `exports["."]` 取 require 入口并强制按 esm 加载，cjs 包被 import 时按 require 规则加载；debugPath 以 `Pak: ` 开头时用 url，Windows 下转反斜杠；`OnSourceLoadedCallback` 在 load 时调用。
+- 测试：临时全局入口 `__puerModuleLoaderTest`（不放在 `puerts` 上，避免影响 Modules 基线的 puerts keys），功能测试 `tests/module_loader.js`、数据 `tests/module_loader_data/`，基线 `Baseline/ModuleLoader.txt`。M7-2 接入后删除临时入口，用例改为直接 require / import。
+- M7-2 待处理：`hot_reload.js` 对 CJS 用包装后的源码做 `setScriptSource`，改用 `CompileFunction` 后要去掉包装；内置 `puerts/*.js` 按 cjs 加载时检查对顶层 `var` / 全局变量的依赖；Node 下保留 `org_require` 优先。
 
 ### 5.11 V8 专属快速路径（M8）
 
