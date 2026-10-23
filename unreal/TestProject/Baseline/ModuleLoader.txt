@@ -4,13 +4,13 @@ flaky esm: Error: flaky esm
 flaky esm parent: Error: flaky esm dep
 flaky cjs: Error: flaky cjs
 tla timer: Error: [Puer004] top-level await of <js-root>/tests/module_loader_data/tla_timer.mjs can not be settled synchronously
-require missing: Error: can not find tests/module_loader_data/not_exist_xyz in 
-import missing: Error: can not resolve [tests/module_loader_data/not_exist_xyz.mjs], import by []
+require missing: Error: can not find module_loader_data/not_exist_xyz in <js-root>/tests
+import missing: Error: can not find module_loader_data/not_exist_xyz.mjs in <js-root>/tests
 esm import missing: Error: can not resolve [./not_exist_dep_xyz.mjs], import by [<js-root>/tests/module_loader_data/esm_missing.mjs]
 esm syntax error: SyntaxError: Unexpected token '='
 esm syntax error again: SyntaxError: Unexpected token '='
 cjs throws: Error: cjs boom
-bad specifier: Error: Bad parameters #0, expect a string.
+bad specifier: TypeError: the module name must be a string
 require cjs package: {name: "pkg_cjs", hasModule: true}
 import cjs package: {name: "pkg_cjs", hasModule: true}
 require esm package: ["pkg_esm", "pkg_esm_default"]

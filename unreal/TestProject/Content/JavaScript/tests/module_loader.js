@@ -1,24 +1,23 @@
 'use strict';
-// the module loader of the backend (PapiV8ModuleLoader), driven by the temporary entry __puerModuleLoaderTest until it
-// replaces modular.js
+// the module loader of the backend (PapiV8ModuleLoader), the require of every module since it replaces modular.js (M7-2)
 const { test, eq, assert, note, observe, catchError, run } = require('./framework');
 
-const loader = globalThis.__puerModuleLoaderTest;
-const D = 'tests/module_loader_data/';
+const D = './module_loader_data/';
 
 function req(spec) {
-    return loader.execute(D + spec, '', false);
+    return require(D + spec);
 }
 
+// an esm required until the dynamic import (M7-3)
 function imp(spec) {
-    return loader.execute(D + spec, '', true);
+    return require(D + spec);
 }
 
 function slash(s) {
     return s.replace(/\\/g, '/');
 }
 
-loader.registerBuiltin('ml_builtin', { v: 7 });
+puerts.registerBuildinModule('ml_builtin', { v: 7 });
 
 test('cjs', () => {
     const a = req('cjs_a');
@@ -62,8 +61,7 @@ test('json', () => {
 });
 
 test('builtin module', () => {
-    eq(loader.execute('ml_builtin', '', false).v, 7);
-    eq(loader.execute('ml_builtin', '', true).v, 7);
+    eq(require('ml_builtin').v, 7);
 });
 
 test('retry after failure', () => {
@@ -89,7 +87,7 @@ test('errors', () => {
     note('esm syntax error', catchError(() => imp('syntax_err.mjs')));
     note('esm syntax error again', catchError(() => imp('syntax_err.mjs')));
     note('cjs throws', catchError(() => req('throws')));
-    note('bad specifier', catchError(() => loader.execute(1, '', false)));
+    note('bad specifier', catchError(() => require(1)));
 });
 
 test('package.json', () => {
@@ -107,13 +105,13 @@ test('forceReload', () => {
     const first = req('reload');
     assert(req('reload') === first, 'cached');
     const url = first.url;
-    eq(loader.forceReload(url), true);
+    eq(puerts.forceReload(url), true);
     const second = req('reload');
     assert(second !== first, 'reloaded');
     eq(second.n, first.n + 1);
-    eq(loader.forceReload('not/loaded.js'), false);
-    eq(loader.getModuleByUrl(url).exports === second, true, 'getModuleByUrl');
-    eq(loader.getModuleByUrl('not/loaded.js'), undefined);
+    eq(puerts.forceReload('not/loaded.js'), false);
+    eq(puerts.getModuleByUrl(url).exports === second, true, 'getModuleByUrl');
+    eq(puerts.getModuleByUrl('not/loaded.js'), undefined);
 });
 
 test('bom', () => {
