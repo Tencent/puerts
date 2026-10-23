@@ -7,5 +7,5 @@ impl event without override: 0
 method typeof: "function"
 method length: 0
 method name: "Add"
-method own property: true
+method own property: false
 GameplayStatics available: true

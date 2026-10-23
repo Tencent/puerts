@@ -3,7 +3,7 @@ struct prototype own names: "Arr,ExtStructDouble,S,X,constructor"
 property descriptor: "get:function set:function enumerable:true configurable:false"
 method descriptor: "value:function writable:true enumerable:true configurable:true"
 instance own keys: ""
-hasOwnProperty of prototype member: true
+hasOwnProperty of prototype member: false
 class statics: "Find,Load,StaticClass,arguments,caller,length,name,prototype"
 struct statics: "StaticClass,StaticStruct,arguments,caller,length,name,prototype"
 static inherited by subclass: "undefined"
@@ -12,7 +12,9 @@ struct Find: "undefined"
 class name: "/Script/PuertsTest.PuertsTestReflectTarget"
 struct name: "/Script/PuertsTest.PuertsTestStruct"
 class constructor chain: false
-struct without super: true
+struct without super: false
+struct root proto chain ends at Object.prototype: true
+instanceof Object: true
 toString tag: "[object Object]"
 call without new: Error: only call as Construct is supported!
 invalid outer: Error: passing a invalid object
@@ -33,3 +35,9 @@ struct lower case get: 6
 unknown member: undefined
 symbol member: undefined
 lower case cached on prototype: true
+in after cached: true
+in unknown: false
+Object.prototype member: "function"
+expando own: true
+expando not shared: undefined
+then member: "undefined"

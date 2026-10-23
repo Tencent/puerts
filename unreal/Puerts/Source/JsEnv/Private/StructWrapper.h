@@ -113,7 +113,7 @@ public:
     // are re-pointed to the current properties / functions (by name)
     const JSClassDefinition* GetClassDefinition(UStruct* InStruct, bool Refresh);
 
-    // CppObjectMapper hook: class name and FName case fixing interceptor of the templates of reflected classes
+    // CppObjectMapper hook: class name of the templates of reflected classes
     static void OnTemplateCreated(
         v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template);
 

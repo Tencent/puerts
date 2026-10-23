@@ -158,6 +158,22 @@ static void GetFNameString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, RequiredFName.ToString()));
 }
 
+// the name with the case of the comparison entry (the first registered case), ToString keeps the case of the display entry
+static void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    pesapi_env Env = Apis->get_env(Info);
+    FName RequiredFName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
+    const FNameEntry* Entry = RequiredFName.GetComparisonNameEntry();
+    FString Out;
+    Entry->AppendNameToString(Out);
+    if (RequiredFName.GetNumber() != NAME_NO_NUMBER_INTERNAL)
+    {
+        Out += TEXT('_');
+        Out.AppendInt(NAME_INTERNAL_TO_EXTERNAL(RequiredFName.GetNumber()));
+    }
+    Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Out));
+}
+
 #if defined(WITH_NODEJS)
 void FJsEnvImpl::StartPolling()
 {
@@ -804,6 +820,7 @@ FJsEnvImpl::~FJsEnvImpl()
         ObjectSetPrototypeOf.Reset();
         ObjectGetPrototypeOf.Reset();
         ObjectHasOwn.Reset();
+        FNameFixingProxy.Reset();
 
         CppObjectMapper.UnInitialize(Isolate);
 
@@ -3166,6 +3183,10 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
                 bool Dummy;
                 __USE(GetTemplateInfoOfType(SuperStruct, Dummy));
             }
+            else
+            {
+                InstallFNameFixing(Template);
+            }
         }
         else
         {
@@ -3183,6 +3204,10 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
                     TemplateInfo.IsNativeTakeJsRef = true;
                 }
             }
+            else
+            {
+                InstallFNameFixing(Template);
+            }
         }
 
         Existed = false;
@@ -3194,6 +3219,88 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         Existed = true;
         return TemplateInfoPtr;
     }
+}
+
+// a js name may differ from the FName only in case (FName is case insensitive), the proxy at the end of the prototype chain
+// fixes the name by FName when a member is not found, and caches the member on its owner by the requested name
+static const char* FNameFixingProxyFactory = R"((function (fixName) {
+    var getProto = Object.getPrototypeOf, getDesc = Object.getOwnPropertyDescriptor, define = Object.defineProperty;
+    var proxy;
+    function fix(receiver, key) {
+        if (typeof key !== 'string' || key.length === 0 || key.length >= 1024) return undefined;
+        var fixed = fixName(key);
+        if (fixed === key) return undefined;
+        for (var p = receiver; p !== null && p !== proxy; p = getProto(p)) {
+            var d = getDesc(p, fixed);
+            if (d) {
+                if (p !== receiver) {
+                    define(p, key, ('get' in d) ? {get: d.get, set: d.set, enumerable: true, configurable: true}
+                        : {value: d.value, writable: d.writable, enumerable: true, configurable: true});
+                }
+                return fixed;
+            }
+        }
+        return undefined;
+    }
+    proxy = new Proxy({}, {
+        get: function (t, key, receiver) {
+            if (!(key in t)) {
+                var fixed = fix(receiver, key);
+                if (fixed !== undefined) return receiver[fixed];
+            }
+            return Reflect.get(t, key, receiver);
+        },
+        set: function (t, key, value, receiver) {
+            if (!(key in t)) {
+                var fixed = fix(receiver, key);
+                if (fixed !== undefined) {
+                    receiver[fixed] = value;
+                    return true;
+                }
+            }
+            return Reflect.set(t, key, value, receiver);
+        }
+    });
+    return proxy;
+}))";
+
+void FJsEnvImpl::InstallFNameFixing(v8::Local<v8::FunctionTemplate> Template)
+{
+#ifndef WITH_QUICKJS
+    auto Context = DefaultContext.Get(MainIsolate);
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    pesapi_env Env = papi_bridge::ToPapi(Context);
+    if (!FNameFixingProxy)
+    {
+        FPapiValueRef Factory;
+        pesapi_value FactoryFunc = GetCachedJsFunction(Apis, Env, Factory, FNameFixingProxyFactory, "puerts/fname_fixing_proxy");
+        if (!FactoryFunc)
+        {
+            return;
+        }
+        pesapi_value Args[] = {Apis->create_function(Env, &FixFNameCase, nullptr, nullptr)};
+        pesapi_value Proxy = Apis->call_function(Env, FactoryFunc, nullptr, 1, Args);
+        Factory.Reset();
+        if (!Proxy || !Apis->is_object(Env, Proxy))
+        {
+            return;
+        }
+        FNameFixingProxy.Reset(Apis, Env, Proxy);
+    }
+    pesapi_value SetPrototypeOf =
+        GetCachedJsFunction(Apis, Env, ObjectSetPrototypeOf, "Object.setPrototypeOf", "puerts/object_set_prototype_of");
+    if (!SetPrototypeOf)
+    {
+        return;
+    }
+    auto Func = Template->GetFunction(Context).ToLocalChecked();
+    pesapi_value Proto = Apis->get_property(Env, papi_bridge::ToPapi(Func), "prototype");
+    if (Apis->is_object(Env, Proto))
+    {
+        pesapi_value Args[] = {Proto, FNameFixingProxy.Get(Env)};
+        Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
+    }
+#endif
 }
 
 v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::Context> Context)

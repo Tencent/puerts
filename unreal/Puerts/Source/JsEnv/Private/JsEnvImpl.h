@@ -820,6 +820,12 @@ private:
 
     FPapiValueRef ObjectHasOwn;
 
+    // proxy at the end of the prototype chains of reflected classes (set as the prototype of the root prototypes), it fixes
+    // the case of member names by FName when a member is not found
+    FPapiValueRef FNameFixingProxy;
+
+    void InstallFNameFixing(v8::Local<v8::FunctionTemplate> Template);
+
     // evals Code once and caches the function, returns nullptr with the exception pending if the eval fails
     pesapi_value GetCachedJsFunction(
         struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path);

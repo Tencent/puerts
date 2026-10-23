@@ -19,7 +19,7 @@ test('prototype members', () => {
     const t = new UE.PuertsTestReflectTarget();
     observe('instance own keys', () => Object.keys(t).join(','));
     eq('Value' in t, true);
-    // the named property interceptor answers own property queries for prototype members too
+    // prototype members are not own properties of instances (the old named property interceptor answered true)
     observe('hasOwnProperty of prototype member', () => Object.prototype.hasOwnProperty.call(t, 'Value'));
 });
 
@@ -39,6 +39,9 @@ test('inheritance', () => {
     assert(Object.getPrototypeOf(UE.PuertsTestDerived.prototype) === UE.PuertsTestObject.prototype, 'class proto chain');
     observe('class constructor chain', () => Object.getPrototypeOf(UE.PuertsTestDerived) === UE.PuertsTestObject);
     observe('struct without super', () => Object.getPrototypeOf(UE.PuertsTestStruct.prototype) === Object.prototype);
+    observe('struct root proto chain ends at Object.prototype', () =>
+        Object.getPrototypeOf(Object.getPrototypeOf(UE.PuertsTestStruct.prototype)) === Object.prototype);
+    observe('instanceof Object', () => new UE.PuertsTestStruct() instanceof Object && new UE.PuertsTestObject() instanceof Object);
     const t = new UE.PuertsTestReflectTarget();
     assert(t instanceof UE.Object, 'instanceof UE.Object');
     assert(t.constructor === UE.PuertsTestReflectTarget, 'constructor');
@@ -104,6 +107,13 @@ test('FName case fixing', () => {
     observe('symbol member', () => o[Symbol.iterator]);
     observe('lower case cached on prototype', () =>
         Object.prototype.hasOwnProperty.call(UE.PuertsTestObject.prototype, 'intvalue'));
+    observe('in after cached', () => 'intvalue' in o);
+    observe('in unknown', () => 'nosuchmember' in o);
+    observe('Object.prototype member', () => typeof o.hasOwnProperty);
+    o.MyExpando = 7;
+    observe('expando own', () => Object.prototype.hasOwnProperty.call(o, 'MyExpando') && o.MyExpando === 7);
+    observe('expando not shared', () => new UE.PuertsTestObject().MyExpando);
+    observe('then member', () => typeof o.then);
 });
 
 run();
