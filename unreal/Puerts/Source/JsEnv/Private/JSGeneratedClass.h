@@ -39,7 +39,7 @@ public:
     static void Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
         TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative);
 
-    static UFunction* Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
+    static UFunction* Mixin(UClass* Class, UFunction* Super,
         TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning);
 
     static void Restore(UClass* Class);

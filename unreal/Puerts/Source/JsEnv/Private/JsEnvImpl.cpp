@@ -519,7 +519,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     MethodBindingHelper<&FJsEnvImpl::MakeUClass>::Bind(Isolate, Context, Global, "__tgjsMakeUClass", This);
 
-    MethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Isolate, Context, Global, "__tgjsMixin", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
 #endif
 
     PapiMethodBindingHelper<&FJsEnvImpl::FindModule>::Bind(Apis, Env, PapiGlobal, "__tgjsFindModule", this);
@@ -774,6 +774,8 @@ FJsEnvImpl::~FJsEnvImpl()
             }
         }
 
+        MixinFunctionMap.Empty();
+
         CppObjectMapper.UnInitialize(Isolate);
 
         for (auto& KV : ObjectMap)
@@ -830,7 +832,6 @@ FJsEnvImpl::~FJsEnvImpl()
         }
 
         TsFunctionMap.Empty();
-        MixinFunctionMap.Empty();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         TsDynamicInvoker.Reset();
@@ -2296,19 +2297,8 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    auto Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto Context = DefaultContext.Get(Isolate);
-    v8::Context::Scope ContextScope(Context);
-
-    v8::Local<v8::Value> Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
-
     auto JsFuncPtr = MixinFunctionMap.Find(Function);
-    if (!JsFuncPtr)
+    if (!JsFuncPtr || !*JsFuncPtr)
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
             *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
@@ -2316,15 +2306,22 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
         return;
     }
 
-    v8::TryCatch TryCatch(Isolate);
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    pesapi_env_ref EnvRef = Apis->get_ref_associated_env(JsFuncPtr->GetRef());
+    pesapi_scope_memory ScopeMemory;
+    pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
+    pesapi_env Env = Apis->get_env_from_ref(EnvRef);
 
-    Function->FunctionTranslator->CallJs(Isolate, Context, JsFuncPtr->Get(Isolate), Self, ContextObject, Stack, RESULT_PARAM);
+    pesapi_value Self = FindOrAdd(Env, ContextObject->GetClass(), ContextObject);
 
-    if (TryCatch.HasCaught())
+    Function->FunctionTranslator->CallJs(Apis, Env, JsFuncPtr->Get(Env), Self, ContextObject, Stack, RESULT_PARAM);
+
+    if (Apis->has_caught(Scope))
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
-            *Function->GetName(), ContextObject, *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+            *Function->GetName(), ContextObject, UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
     }
+    Apis->close_scope_placement(Scope);
 }
 
 void FJsEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object, const bool TypeScriptClassFound)
@@ -4408,19 +4405,18 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Info.GetReturnValue().Set(Result);
 }
 
-void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CHECK_ARGS(EArgObject, EArgObject);
 
-    CHECK_V8_ARGS(EArgObject, EArgObject);
+    pesapi_env Env = Apis->get_env(Info);
 
     UClass* To = nullptr;
-    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
         To = Cast<UClass>(Object);
@@ -4428,12 +4424,18 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (!To)
     {
-        FV8Utils::ThrowException(Isolate, "#0 parameter expect a Blueprint UClass");
+        Apis->throw_by_string(Info, "#0 parameter expect a Blueprint UClass");
         return;
     }
 
+    auto BoolArg = [Apis, Env, Info](int Index)
+    {
+        pesapi_value Arg = Apis->get_arg(Info, Index);
+        return Apis->is_boolean(Env, Arg) && Apis->get_value_bool(Env, Arg);
+    };
+
     // release
-    if (Info[5]->IsBoolean() && Info[5]->BooleanValue(Isolate))
+    if (BoolArg(5))
     {
         MixinClasses.Remove(To);
         UJSGeneratedClass::Restore(To);
@@ -4442,29 +4444,17 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (MixinClasses.Contains(To))
     {
-        FV8Utils::ThrowException(Isolate, "had mixin");
+        Apis->throw_by_string(Info, "had mixin");
         return;
     }
 
-    auto MixinMethods = Info[1]->ToObject(Context).ToLocalChecked();
+    pesapi_value MixinMethods = Apis->get_arg(Info, 1);
 
-    bool TakeJsObjectRef = false;
-    if (Info[2]->IsBoolean())
-    {
-        TakeJsObjectRef = Info[2]->BooleanValue(Isolate);
-    }
+    bool TakeJsObjectRef = BoolArg(2);
 
-    bool Inherit = false;
-    if (Info[3]->IsBoolean())
-    {
-        Inherit = Info[3]->BooleanValue(Isolate);
-    }
+    bool Inherit = BoolArg(3);
 
-    bool NoWarning = false;
-    if (Info[4]->IsBoolean())
-    {
-        NoWarning = Info[4]->BooleanValue(Isolate);
-    }
+    bool NoWarning = BoolArg(4);
 
     UClass* New = To;
 
@@ -4484,19 +4474,33 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         New->SetSuperStruct(To);
     }
 
-    auto Keys = MixinMethods->GetOwnPropertyNames(Context).ToLocalChecked();
-    TArray<FName> ReplaceMethodNames;
-    for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
+    // papi has no own property enumeration, use Object.getOwnPropertyNames (mixin is not a hot path)
+    static const char GetNamesCode[] = "Object.getOwnPropertyNames";
+    pesapi_value GetNames = Apis->eval(Env, (const uint8_t*) GetNamesCode, sizeof(GetNamesCode) - 1, "puerts/mixin_names");
+    pesapi_value GetNamesArgs[] = {MixinMethods};
+    pesapi_value Keys = GetNames ? Apis->call_function(Env, GetNames, nullptr, 1, GetNamesArgs) : nullptr;
+    if (!Keys)
     {
-        auto Key = Keys->Get(Context, i).ToLocalChecked();
-        auto MethodName = FV8Utils::ToFName(Isolate, Key);
+        return;    // the exception propagates to the js caller
+    }
+    TArray<FName> ReplaceMethodNames;
+    const uint32_t KeysLen = Apis->get_array_length(Env, Keys);
+    TArray<char> KeyBuf;
+    for (uint32_t i = 0; i < KeysLen; ++i)
+    {
+        pesapi_value Key = Apis->get_property_uint32(Env, Keys, i);
+        size_t KeyLen = 0;
+        Apis->get_value_string_utf8(Env, Key, nullptr, &KeyLen);
+        KeyBuf.SetNumUninitialized(static_cast<int32>(KeyLen) + 1);
+        Apis->get_value_string_utf8(Env, Key, KeyBuf.GetData(), &KeyLen);
+        KeyBuf[static_cast<int32>(KeyLen)] = '\0';
+        FName MethodName = UTF8_TO_TCHAR(KeyBuf.GetData());
         auto Function = To->FindFunctionByName(MethodName);
         if (Function)
         {
-            auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
-            auto MixinedFunc = UJSGeneratedClass::Mixin(Isolate, New, Function, MixinInvoker, TakeJsObjectRef, !NoWarning);
-            MixinFunctionMap.Emplace(
-                MixinedFunc, v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(JsFunc)));
+            pesapi_value JsFunc = Apis->get_property(Env, MixinMethods, KeyBuf.GetData());
+            auto MixinedFunc = UJSGeneratedClass::Mixin(New, Function, MixinInvoker, TakeJsObjectRef, !NoWarning);
+            MixinFunctionMap.Emplace(MixinedFunc, FPapiValueRef(Apis, Env, JsFunc));
             ReplaceMethodNames.Add(MethodName);
         }
     }
@@ -4553,7 +4557,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
             KV.Value.StructWrapper->IsNativeTakeJsRef = TakeJsObjectRef;
         }
     }
-    Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, New->GetClass(), New));
+    Apis->add_return(Info, FindOrAdd(Env, New->GetClass(), New));
 }
 #endif
 

@@ -254,6 +254,8 @@ M5 落地情况（分批进行）：
   - 委托 JS 对象原来 internal field 0 上挂的 v8::Map 没有任何读取方，已删除。
   - 行为变化：`__genListApply` 抛出的异常原来被吞掉只打日志，现在会传给 JS 调用方（同时打 "gen callback apply fail"）。
 - M6-2b：`NewDelegate`、`releaseManualReleaseDelegate` 改为 papi。manual release 代理原来用 v8::Map 把 JS 函数映射到 `v8::External`（代理指针），再用一个 vector 记录弱引用；papi 没有 external，改为 JS Map 把函数映射到 uint32 id，C++ 侧用 `TMap<uint32, TWeakObjectPtr<UDynamicDelegateProxy>>` 按 id 找代理。Map 用 `eval("new Map()")` 创建，`get`/`set`/`delete` 经 `call_function` 调用。释放时直接按 id 删除，不再遍历整个列表。
+- M6-3：`__tgjsMixin` 和 `InvokeMixinMethod` 改为 papi，`MixinFunctionMap` 改为 `FPapiValueRef`，在 `CppObjectMapper.UnInitialize` 之前释放；`UJSGeneratedClass::Mixin` 去掉了没用到的 Isolate 参数。papi 没有枚举自有属性的接口，mixin 方法名改为经 `eval("Object.getOwnPropertyNames")` 加 `call_function` 获取（mixin 注册不是热路径，不缓存）。
+  - 基准（同机 A/B，各 3 轮）：mixin.cpp_to_js 旧 350/319/410，新 390/390/434，取最小值 319 到 390，每次调用多约 40ns 到 70ns。来源与 M6-1 相同（papi 作用域序列），一并列入待优化项。
 
 ### 5.6 UObject 生命周期
 

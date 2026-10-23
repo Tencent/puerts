@@ -184,7 +184,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     }
 }
 
-UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
+UFunction* UJSGeneratedClass::Mixin(UClass* Class, UFunction* Super,
     TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
 {
     bool Existed = Super->GetOuter() == Class;

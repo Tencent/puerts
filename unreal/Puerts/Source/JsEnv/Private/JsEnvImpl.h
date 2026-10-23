@@ -424,7 +424,7 @@ private:
     void MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     TArray<TWeakObjectPtr<UClass>> MixinClasses;
-    void Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
     void FindModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -802,7 +802,7 @@ private:
 
     TMap<UFunction*, TsFunctionInfo> TsFunctionMap;
 
-    TMap<UFunction*, v8::UniquePersistent<v8::Function>> MixinFunctionMap;
+    TMap<UFunction*, FPapiValueRef> MixinFunctionMap;
 
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 
