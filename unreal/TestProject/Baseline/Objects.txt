@@ -1,0 +1,23 @@
+derived WhoAmI: "Derived"
+named GetName: "PuertsNewObjectNamed"
+NewObject no args: Error: invalid argument
+NewObject number: Error: invalid argument
+NewObject plain object: Error: invalid argument
+NewObject not a class: Error: invalid argument
+NewObject struct type: Error: invalid argument
+NewStruct no args: Error: invalid argument
+NewStruct number: Error: invalid argument
+NewStruct class type: Error: invalid argument
+merge no args: Error: Bad parameters, the function expect 2, but  0 provided.
+merge number des: Error: Bad parameters #0, expect a object.
+merge number src: Error: Bad parameters #1, expect a object.
+merge plain des: Error: Bad parameters #1, expect a native object.
+weak typeof: "object"
+weak of plain object IsValid: false
+setJsTakeRef: <no throw>
+setJsTakeRef no args: Error: Bad parameters, the function expect 1, but  0 provided.
+weak of destroyed object IsValid: false
+weak of destroyed object Get: undefined
+NewObject with destroyed outer: Error: passing a invalid object
+merge into destroyed: Error: passing a invalid object
+object without js take ref after gc: <no throw>
