@@ -889,6 +889,18 @@ pesapi_value ExecuteModule(pesapi_env Env, const char* Specifier, const char* Re
     return ToPapi(Result);
 }
 
+pesapi_value CreateRequire(pesapi_env Env, const char* Referrer)
+{
+    auto Context = ToV8(Env);
+    auto Loader = FModuleLoader::Get(Context->GetIsolate());
+    v8::Local<v8::Function> Func;
+    if (!Loader->NewRequire(Context, Referrer ? Referrer : "").ToLocal(&Func))
+    {
+        return nullptr;
+    }
+    return ToPapi(Func.As<v8::Value>());
+}
+
 void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value)
 {
     auto Context = ToV8(Env);

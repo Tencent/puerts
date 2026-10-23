@@ -44,6 +44,9 @@ void DestroyModuleLoader(FModuleLoader* Loader);
 // the exception thrown to js on failure (a top-level await which can not be settled synchronously is a failure).
 pesapi_value ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport);
 
+// a require function resolving relative to Referrer (a url, "" for the root), the same as the `require` of a cjs module
+pesapi_value CreateRequire(pesapi_env Env, const char* Referrer);
+
 void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value);
 
 // the next require of the cjs module (all cjs modules if Url is null or empty) executes it again, returns false if not loaded
