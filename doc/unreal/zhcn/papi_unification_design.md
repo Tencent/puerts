@@ -227,6 +227,9 @@ M4 落地情况（分批进行）：
 - M4-6（延后到 M6 之后）：UClass / UScriptStruct 的模板收进 registry。内容包括：在已有的 `on_class_not_found` 回调中按 UStruct 生成类定义；构造函数改为 papi（需要 `get_this`，见 5.7）；命名属性拦截、类名、热重载重新注册通过 UE 专用的 `CppObjectMapper` 钩子实现；UObject、Struct、容器的对象缓存从 `FJsEnvImpl` 迁到 `CppObjectMapper`，弱回调改用 finalize；容器的翻译器放进 native 包装对象。
   - 延后原因：这些改动依赖 `FJsEnvImpl` 的对象映射，等 M5、M6 把 `FJsEnvImpl` 的大部分改为 papi 后再做，改动面更小。M5 不依赖 M4-6。
   - `on_class_not_found` 的回调签名是 `int (*)(const void* type_id)`，不带 userdata，多个 env 共用一个 registry 时需要另行取得 env 上下文，届时再决定是否增加带 userdata 的变体。
+- M4-6a：补反射绑定的功能测试（tests/reflection.js），固定生成类的 JS 可见形态：原型成员和描述符、类上的静态成员（`StaticClass` / `StaticStruct` / `Find` / `Load`）、类名（编辑器下为路径名）、构造参数（UObject 的 Outer / Name，结构体按属性顺序）、扩展方法、接口方法、FName 大小写修正。测试工程新增 `UPuertsTestReflectTarget`（实现 `UPuertsTestInterface`）和 `UPuertsTestExtension`。
+  - 基线中记录了几处现有的特殊行为，迁移后需要保持或逐条评审：命名属性拦截器让 `hasOwnProperty` 对原型成员也返回 true；静态 UFunction 不随子类继承，子类构造函数的 `__proto__` 也不指向父类；大小写修正后的成员会以请求的名字缓存到原型上。
+  - 修了一个上游既有问题：类构造函数和 `UE.NewObject` 的 Outer 传入非 UObject 值（如数字）时得到空 Outer，`NewObject` 直接 fatal。现在 null / undefined 退回 TransientPackage，其它值抛 "passing a invalid object"。
 
 M5 落地情况（分批进行）：
 

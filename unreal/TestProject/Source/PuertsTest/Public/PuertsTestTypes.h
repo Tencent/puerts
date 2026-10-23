@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "UObject/SoftObjectPtr.h"
+#include "ExtensionMethods.h"
 #include "PuertsTestTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -326,6 +327,47 @@ public:
     // Needs a test env that forwards UObject creation to FJsEnv::TryBindJs.
     UFUNCTION(BlueprintCallable)
     static UClass* CreateTsClass(const FString& Module);
+};
+
+UINTERFACE(BlueprintType)
+class PUERTSTEST_API UPuertsTestInterface : public UInterface
+{
+    GENERATED_BODY()
+};
+
+class PUERTSTEST_API IPuertsTestInterface
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+    int32 InterfacePing(int32 Value);
+};
+
+// Used only by reflection binding tests: implements an interface, extension methods are declared in UPuertsTestExtension.
+UCLASS(BlueprintType)
+class PUERTSTEST_API UPuertsTestReflectTarget : public UObject, public IPuertsTestInterface
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(BlueprintReadWrite)
+    int32 Value = 1;
+
+    virtual int32 InterfacePing_Implementation(int32 InValue) override;
+};
+
+UCLASS()
+class PUERTSTEST_API UPuertsTestExtension : public UExtensionMethods
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintCallable)
+    static int32 ExtTriple(UPuertsTestReflectTarget* Target);
+
+    UFUNCTION(BlueprintCallable)
+    static int32 ExtStructDouble(const FPuertsTestStruct& S);
 };
 
 USTRUCT()

@@ -397,3 +397,18 @@ bool UPuertsTestReporter::IsAlive(UObject* Obj)
 {
     return IsValid(Obj);
 }
+
+int32 UPuertsTestReflectTarget::InterfacePing_Implementation(int32 InValue)
+{
+    return InValue + Value;
+}
+
+int32 UPuertsTestExtension::ExtTriple(UPuertsTestReflectTarget* Target)
+{
+    return Target ? Target->Value * 3 : -1;
+}
+
+int32 UPuertsTestExtension::ExtStructDouble(const FPuertsTestStruct& S)
+{
+    return S.X * 2;
+}
