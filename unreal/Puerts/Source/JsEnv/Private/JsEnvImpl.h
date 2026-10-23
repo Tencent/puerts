@@ -40,6 +40,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "NamespaceDef.h"
 
 #include "PapiValueRef.h"
+#include "PapiV8ModuleLoader.h"
 
 #include "V8InspectorImpl.h"
 
@@ -297,6 +298,13 @@ private:
 
     void LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
+#ifndef WITH_QUICKJS
+    // the host side of the module loader of the backend (PapiV8ModuleLoader): finds and reads a module
+    void HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    void HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+#endif
+
     v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
 
     void LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -477,6 +485,16 @@ private:
     FObjectRetainer SysObjectRetainer;
 
     std::shared_ptr<IJSModuleLoader> ModuleLoader;
+
+#ifndef WITH_QUICKJS
+    papi_v8::FModuleLoader* PapiModuleLoader = nullptr;
+
+    // "<by><path>" -> kind, the modules whose kind is decided by the package.json requiring them
+    TMap<FString, FString> ForcedModuleKinds;
+
+    // path -> debug path, filled by HostResolveModule
+    TMap<FString, FString> ModuleDebugPaths;
+#endif
 
     std::shared_ptr<ILogger> Logger;
 

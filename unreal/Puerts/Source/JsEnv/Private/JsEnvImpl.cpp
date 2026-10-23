@@ -10,6 +10,9 @@
 #include "JsEnvModule.h"
 #include "DynamicDelegateProxy.h"
 #include "Misc/FileHelper.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "Misc/Paths.h"
 #include "StructWrapper.h"
 #include "PapiUtils.h"
@@ -96,6 +99,11 @@ namespace PUERTS_NAMESPACE
 {
 #if !defined(WITH_QUICKJS)
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+static void ModuleLoaderTestExecute(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+static void ModuleLoaderTestRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+static void ModuleLoaderTestForceReload(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+static void ModuleLoaderTestGetModuleByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
@@ -599,6 +607,19 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
 
     CppObjectMapper.Initialize(Isolate, Context);
+#if !defined(WITH_QUICKJS)
+    PapiModuleLoader = papi_v8::CreateModuleLoader(Env);
+    PapiMethodBindingHelper<&FJsEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
+    PapiMethodBindingHelper<&FJsEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
+    {
+        pesapi_value TestObj = Apis->create_object(Env);
+        PapiBindFunction(Apis, Env, TestObj, "execute", &ModuleLoaderTestExecute);
+        PapiBindFunction(Apis, Env, TestObj, "registerBuiltin", &ModuleLoaderTestRegisterBuiltin);
+        PapiBindFunction(Apis, Env, TestObj, "forceReload", &ModuleLoaderTestForceReload);
+        PapiBindFunction(Apis, Env, TestObj, "getModuleByUrl", &ModuleLoaderTestGetModuleByUrl);
+        Apis->set_property(Env, PapiGlobal, "__puerModuleLoaderTest", TestObj);
+    }
+#endif
     // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names, and the
     // definitions must be kept alive while the templates are
     CppObjectMapper.OnTemplateCreated =
@@ -679,6 +700,13 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if V8_MAJOR_VERSION >= 11
     Expect_ReadOnlySnapshotChecksum = CodeCacheHeader->ReadOnlySnapshotChecksum;
 #endif
+    papi_v8::SetCodeCacheExpect(Env, Expect_FlagHash,
+#if V8_MAJOR_VERSION >= 11
+        Expect_ReadOnlySnapshotChecksum
+#else
+        0
+#endif
+    );
 #if !WITH_EDITOR
     delete CachedCode;    //编辑器下是v8.dll分配的，ue里的delete被重载了，这delete会有问题
 #endif
@@ -812,6 +840,11 @@ FJsEnvImpl::~FJsEnvImpl()
         ObjectHasOwn.Reset();
         ObjectKeys.Reset();
         FNameFixingProxy.Reset();
+
+#if !defined(WITH_QUICKJS)
+        papi_v8::DestroyModuleLoader(PapiModuleLoader);
+        PapiModuleLoader = nullptr;
+#endif
 
         CppObjectMapper.UnInitialize(Isolate);
 
@@ -4198,6 +4231,236 @@ void FJsEnvImpl::LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         Apis->add_return(Info, PapiUtils::FromFileContent(Apis, Env, Data));
     }
 }
+
+#ifndef WITH_QUICKJS
+// the kind of a module by its extension, a .js is an esm when imported and a cjs when required
+static const TCHAR* ModuleKindOfPath(const FString& Path, bool ByRequire)
+{
+    if (Path.EndsWith(TEXT(".mjs")) || Path.EndsWith(TEXT(".mbc")))
+    {
+        return TEXT("esm");
+    }
+    if (Path.EndsWith(TEXT(".cjs")) || Path.EndsWith(TEXT(".cbc")))
+    {
+        return TEXT("cjs");
+    }
+    if (Path.EndsWith(TEXT(".json")))
+    {
+        return TEXT("json");
+    }
+    return ByRequire ? TEXT("cjs") : TEXT("esm");
+}
+
+// __puer_host_resolve__(specifier, referrer, by): the url (path) of the module, or the name of a builtin module
+void FJsEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgString, EArgString, EArgString);
+
+    pesapi_env Env = Apis->get_env(Info);
+    FString Specifier = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
+    bool ByRequire = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 2)) == TEXT("require");
+    if (ByRequire && Specifier.StartsWith(TEXT("./")))
+    {
+        Specifier = Specifier.Mid(2);
+    }
+
+    // addons are registered as builtin modules on their first use
+    {
+        FTCHARToUTF8 NameUtf8(*Specifier);
+        PString Name(NameUtf8.Get(), NameUtf8.Length());
+        auto Func = FindAddonRegisterFunc(Name);
+        if (Func)
+        {
+            // AddonRegisterFunc is a public v8 signature, kept for existing addons
+            pesapi_value Exports = Apis->create_object(Env);
+            Func(papi_bridge::ToV8(Env), papi_bridge::ToV8(Exports).As<v8::Object>());
+            papi_v8::RegisterBuiltinModule(Env, NameUtf8.Get(), Exports);
+            Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Specifier));
+            return;
+        }
+    }
+
+    FString Dir = FPaths::GetPath(Referrer);
+    FString Path;
+    FString DebugPath;
+    if (!ModuleLoader->Search(Dir, Specifier, Path, DebugPath))
+    {
+        FString Message = ByRequire ? FString::Printf(TEXT("can not find %s in %s"), *Specifier, *Dir)
+                                    : FString::Printf(TEXT("can not resolve [%s], import by [%s]"), *Specifier, *Referrer);
+        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*Message));
+        return;
+    }
+
+    if (Path.EndsWith(TEXT("package.json")))
+    {
+        TArray<uint8> Data;
+        if (!ModuleLoader->Load(Path, Data))
+        {
+            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not load [%s]"), *Path)));
+            return;
+        }
+        FString Text;
+        FFileHelper::BufferToString(Text, Data.GetData(), Data.Num());
+        TSharedPtr<FJsonObject> Package;
+        auto Reader = TJsonReaderFactory<>::Create(Text);
+        if (!FJsonSerializer::Deserialize(Reader, Package) || !Package.IsValid())
+        {
+            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("invalid package.json: %s"), *Path)));
+            return;
+        }
+        FString Type;
+        Package->TryGetStringField(TEXT("type"), Type);
+        bool IsModule = Type == TEXT("module");
+        FString Entry;
+        Package->TryGetStringField(TEXT("main"), Entry);
+        if (Entry.IsEmpty())
+        {
+            Entry = TEXT("index.js");
+        }
+        if (ByRequire && IsModule)
+        {
+            // the esm package required: exports["."] must have an entry for require
+            Entry.Empty();
+            const TSharedPtr<FJsonObject>* Exports = nullptr;
+            const TSharedPtr<FJsonObject>* Dot = nullptr;
+            if (Package->TryGetObjectField(TEXT("exports"), Exports) && (*Exports)->TryGetObjectField(TEXT("."), Dot))
+            {
+                const TSharedPtr<FJsonObject>* Sub = nullptr;
+                if (!((*Dot)->TryGetObjectField(TEXT("default"), Sub) && (*Sub)->TryGetStringField(TEXT("require"), Entry)) &&
+                    !((*Dot)->TryGetObjectField(TEXT("require"), Sub) && (*Sub)->TryGetStringField(TEXT("default"), Entry)))
+                {
+                    (*Dot)->TryGetStringField(TEXT("require"), Entry);
+                }
+            }
+            if (Entry.IsEmpty())
+            {
+                Apis->throw_by_string(Info, "can not require a esm in cjs module!");
+                return;
+            }
+        }
+        FString PackageDir = FPaths::GetPath(Path);
+        FString EntryPath;
+        FString EntryDebugPath;
+        if (!ModuleLoader->Search(PackageDir, Entry, EntryPath, EntryDebugPath))
+        {
+            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not find %s in %s"), *Entry, *PackageDir)));
+            return;
+        }
+        // an esm package required is loaded as esm, a cjs package imported is loaded by the rules of require
+        const TCHAR* ForcedKind =
+            ByRequire ? (IsModule ? TEXT("esm") : nullptr) : (IsModule ? nullptr : ModuleKindOfPath(EntryPath, true));
+        if (ForcedKind)
+        {
+            ForcedModuleKinds.Add((ByRequire ? TEXT("r") : TEXT("i")) + EntryPath, ForcedKind);
+        }
+        Path = EntryPath;
+        DebugPath = EntryDebugPath;
+    }
+
+    ModuleDebugPaths.Add(Path, DebugPath);
+    Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Path));
+}
+
+// __puer_host_load__(url, by): {kind, content, debugPath}
+void FJsEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgString, EArgString);
+
+    pesapi_env Env = Apis->get_env(Info);
+    FString Url = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    bool ByRequire = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1)) == TEXT("require");
+    TArray<uint8> Data;
+    if (!ModuleLoader->Load(Url, Data))
+    {
+        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not load [%s]"), *Url)));
+        return;
+    }
+
+    const FString* Forced = ForcedModuleKinds.Find((ByRequire ? TEXT("r") : TEXT("i")) + Url);
+    FString Kind = Forced ? *Forced : FString(ModuleKindOfPath(Url, ByRequire));
+
+    FString DebugPath = ModuleDebugPaths.FindRef(Url);
+    if (DebugPath.IsEmpty() || DebugPath.StartsWith(TEXT("Pak: ")))
+    {
+        DebugPath = Url;
+    }
+#if PLATFORM_WINDOWS
+    // the inspector matches the urls of breakpoints with backslashes
+    DebugPath = DebugPath.Replace(TEXT("/"), TEXT("\\"));
+#endif
+
+    pesapi_value Content;
+    if (Url.EndsWith(TEXT(".mbc")) || Url.EndsWith(TEXT(".cbc")))
+    {
+        Content = Apis->create_binary_by_value(Env, Data.GetData(), Data.Num());
+    }
+    else
+    {
+        Content = PapiUtils::FromFileContent(Apis, Env, Data);
+    }
+
+    pesapi_value Result = Apis->create_object(Env);
+    Apis->set_property(Env, Result, "kind", PapiUtils::FromFString(Apis, Env, Kind));
+    Apis->set_property(Env, Result, "content", Content);
+    Apis->set_property(Env, Result, "debugPath", PapiUtils::FromFString(Apis, Env, DebugPath));
+    Apis->add_return(Info, Result);
+
+    if (OnSourceLoadedCallback)
+    {
+        OnSourceLoadedCallback(DebugPath);
+    }
+}
+
+// temporary entry for tests/module_loader.js, removed when the loader replaces modular.js (M7-2)
+static void ModuleLoaderTestExecute(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgString, EArgString);
+
+    pesapi_env Env = Apis->get_env(Info);
+    FString Specifier = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
+    bool ByImport = Apis->get_args_len(Info) > 2 && Apis->get_value_bool(Env, Apis->get_arg(Info, 2));
+    pesapi_value Result = papi_v8::ExecuteModule(Env, TCHAR_TO_UTF8(*Specifier), TCHAR_TO_UTF8(*Referrer), ByImport);
+    if (Result)
+    {
+        Apis->add_return(Info, Result);
+    }
+}
+
+static void ModuleLoaderTestRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgString);
+
+    pesapi_env Env = Apis->get_env(Info);
+    FString Name = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    papi_v8::RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Name), Apis->get_arg(Info, 1));
+}
+
+static void ModuleLoaderTestForceReload(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    pesapi_env Env = Apis->get_env(Info);
+    FString Url;
+    if (Apis->get_args_len(Info) > 0 && Apis->is_string(Env, Apis->get_arg(Info, 0)))
+    {
+        Url = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    }
+    Apis->add_return(Info, Apis->create_boolean(Env, papi_v8::ForceReload(Env, TCHAR_TO_UTF8(*Url))));
+}
+
+static void ModuleLoaderTestGetModuleByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgString);
+
+    pesapi_env Env = Apis->get_env(Info);
+    FString Url = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    pesapi_value Module = papi_v8::GetModuleByUrl(Env, TCHAR_TO_UTF8(*Url));
+    if (Module)
+    {
+        Apis->add_return(Info, Module);
+    }
+}
+#endif
 
 void FJsEnvImpl::SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
