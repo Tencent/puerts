@@ -221,9 +221,12 @@ var global = global || (function () { return this; }());
     function defaultUeConstructor(){};
     
     function makeUClass(cls) {
-        if (typeof cls === 'function' && !cls.hasOwnProperty('arguments')
+        // classes from UE.xxx have a proxy (see interceptClass) instead of Function.prototype in their
+        // prototype chain, so Object.prototype methods are not reachable through cls itself
+        const hasOwn = Object.prototype.hasOwnProperty;
+        if (typeof cls === 'function' && !hasOwn.call(cls, 'arguments')
             && typeof cls.StaticClass === 'function'
-            && !cls.hasOwnProperty('StaticClass')) {
+            && !hasOwn.call(cls, 'StaticClass')) {
             //let parentClass = Object.getPrototypeOf(cls.prototype).constructor;
             let proto = cls.prototype;
             let methods = Object.create(null);
