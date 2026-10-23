@@ -76,6 +76,17 @@ test('merge', () => {
 
     puerts.merge(o, { StructValue: { X: 4 } });
     eq(o.StructValue.X, 4);
+
+    // only own enumerable properties are merged, undefined values are skipped
+    const src = Object.create({ IntValue: 100 });
+    Object.defineProperty(src, 'StringValue', { value: 'hidden', enumerable: false });
+    src.X = undefined;
+    puerts.merge(o, src);
+    eq(o.IntValue, 5);
+    eq(o.StringValue, 'merged');
+    puerts.merge(s, { X: undefined, S: 'st2' });
+    eq(s.X, 9);
+    eq(s.S, 'st2');
 });
 
 test('merge bad arguments', () => {
