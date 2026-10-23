@@ -234,6 +234,8 @@ public:
 
     virtual ScriptClassRegistry* GetRegistry() override;
 
+    virtual void InvalidateClass(const void* TypeId) override;
+
     v8::Local<v8::Value> AddSoftObjectPtr(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass);
 
@@ -668,6 +670,15 @@ private:
 #endif
 
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
+
+    // the class definitions (of FStructWrapper) the templates of this env are built from, keyed by type id. The templates
+    // reference the definitions and are not collected while the isolate is alive, so a definition dropped by
+    // InvalidateClass is kept in RetiredClasses, both are released after the isolate is disposed
+    std::unordered_map<const void*, std::shared_ptr<FReflectedClass>> ClassesBuilt;
+
+    std::vector<std::shared_ptr<FReflectedClass>> RetiredClasses;
+
+    void OnReflectedTemplateCreated(const JSClassDefinition* ClassDefinition);
 
     // A UObject wrapper stores a FUObjectBinding (a FUObjectHandle) in internal field 0. The binding lives as long as the js
     // object: when the UObject is destroyed first, the binding is detached (see UnBind) and moved to ReleasedObjectBindings

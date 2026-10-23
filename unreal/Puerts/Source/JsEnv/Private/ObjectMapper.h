@@ -59,6 +59,9 @@ public:
 
     virtual ScriptClassRegistry* GetRegistry() = 0;
 
+    // pesapi invalidate_class: drop the cached script class of TypeId, the next use rebuilds it
+    virtual void InvalidateClass(const void* TypeId) = 0;
+
     virtual ~ICppObjectMapper()
     {
     }

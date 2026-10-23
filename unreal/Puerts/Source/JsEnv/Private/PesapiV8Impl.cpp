@@ -950,6 +950,12 @@ void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
         ->SetRegistry(reinterpret_cast<puerts::ScriptClassRegistry*>(registry));
 }
 
+void pesapi_invalidate_class(pesapi_env env, const void* type_id)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->InvalidateClass(type_id);
+}
+
 pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_create_boolean, &pesapi_create_int32,
     &pesapi_create_uint32, &pesapi_create_int64, &pesapi_create_uint64, &pesapi_create_double, &pesapi_create_string_utf8,
     &pesapi_create_string_utf16, &pesapi_create_binary, &pesapi_create_binary_by_value, &pesapi_create_array, &pesapi_create_object,
@@ -967,7 +973,7 @@ pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_c
     &pesapi_release_value_ref, &pesapi_get_value_from_ref, &pesapi_set_ref_weak, &pesapi_set_owner, &pesapi_get_ref_associated_env,
     &pesapi_get_ref_internal_fields, &pesapi_get_property, &pesapi_set_property, &pesapi_get_private, &pesapi_set_private,
     &pesapi_get_property_uint32, &pesapi_set_property_uint32, &pesapi_call_function, &pesapi_eval, &pesapi_global,
-    &pesapi_get_env_private, &pesapi_set_env_private, &pesapi_set_registry};
+    &pesapi_get_env_private, &pesapi_set_env_private, &pesapi_set_registry, &pesapi_invalidate_class};
 
 }    // namespace v8impl
 

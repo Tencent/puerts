@@ -16,6 +16,7 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(pop)
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
+#include <functional>
 #include <unordered_map>
 #include <vector>
 #include "JSClassRegister.h"
@@ -60,6 +61,11 @@ public:
         return Registry;
     }
 
+    virtual void InvalidateClass(const void* TypeId) override
+    {
+        TypeIdToTemplateMap.erase(TypeId);
+    }
+
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
 
@@ -85,11 +91,12 @@ public:
 
 #if USING_IN_UNREAL_ENGINE
     // unreal only: called when the template of a class is created (members and super class are set, not instantiated yet),
-    // used by reflected classes to set the class name
-    typedef void (*FTemplateCreatedHook)(
-        v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template);
+    // used by reflected classes to set the class name and keep the definition alive
+    typedef std::function<void(
+        v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)>
+        FTemplateCreatedHook;
 
-    FTemplateCreatedHook OnTemplateCreated = nullptr;
+    FTemplateCreatedHook OnTemplateCreated;
 #endif
 
 #ifndef WITH_QUICKJS

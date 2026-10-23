@@ -219,13 +219,13 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
 
     Struct = InStruct;
 
-    if (!ReflectedClasses.empty() && ReflectedClasses.back()->Struct.Get() == InStruct)
+    if (CurrentClass && CurrentClass->Struct.Get() == InStruct)
     {
         if (Refresh)
         {
             CollectMembers(InStruct, nullptr);
         }
-        return &ReflectedClasses.back()->Definition;
+        return &CurrentClass->Definition;
     }
 
     const void* SuperTypeId = nullptr;
@@ -241,7 +241,7 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
     // translators are kept in the maps (definitions built before may still reference them), Properties is refilled below
     Properties.clear();
 
-    auto Out = std::make_unique<FReflectedClass>();
+    auto Out = std::make_shared<FReflectedClass>();
     Out->Struct = InStruct;
 #if WITH_EDITOR
     Out->ClassName = TCHAR_TO_UTF8(*InStruct->GetPathName());
@@ -268,7 +268,8 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
     Definition.Data = this;
 
     ReflectedClassMap()[this] = &Definition;
-    ReflectedClasses.push_back(std::move(Out));
+    // the previous definition is released here unless an env holds it
+    CurrentClass = std::move(Out);
     return &Definition;
 }
 

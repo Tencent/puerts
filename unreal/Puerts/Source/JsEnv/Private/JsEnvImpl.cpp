@@ -607,8 +607,14 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     FixSizeArrayTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FFixSizeArrayWrapper::ToFunctionTemplate(Isolate));
 
     CppObjectMapper.Initialize(Isolate, Context);
-    // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names and FName fixing
-    CppObjectMapper.OnTemplateCreated = &FStructWrapper::OnTemplateCreated;
+    // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names, and the
+    // definitions must be kept alive while the templates are
+    CppObjectMapper.OnTemplateCreated =
+        [this](v8::Isolate* InIsolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)
+    {
+        FStructWrapper::OnTemplateCreated(InIsolate, ClassDefinition, Template);
+        OnReflectedTemplateCreated(ClassDefinition);
+    };
 
     DelegateTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FDelegateWrapper::ToFunctionTemplate(Isolate));
 
@@ -937,6 +943,10 @@ FJsEnvImpl::~FJsEnvImpl()
     MainIsolate->Dispose();
     MainIsolate = nullptr;
     delete CreateParams.array_buffer_allocator;
+
+    // referenced by the templates, released after the isolate
+    ClassesBuilt.clear();
+    RetiredClasses.clear();
 
     GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
@@ -3162,13 +3172,35 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
     auto TemplateInfoPtr = TypeToTemplateInfoMap.Find(InStruct);
     if (!TemplateInfoPtr)
     {
+        FTemplateInfo TemplateInfo;
+
+        // the super type first, so that (when templates are not reused) it is rebuilt before the template of InStruct
+        // inherits it
+        if (auto SuperStruct = InStruct->GetSuperStruct())
+        {
+            bool Dummy;
+            auto SuperTemplateInfo = GetTemplateInfoOfType(SuperStruct, Dummy);
+            if (InStruct->IsA<UClass>() && SuperTemplateInfo->IsNativeTakeJsRef)
+            {
+                TemplateInfo.IsNativeTakeJsRef = true;
+            }
+        }
+
         auto StructWrapper = GetStructWrapper(InStruct);
+#if !PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
+        // the template info was released (TryReleaseType), rebuild the js class
+        if (ClassesBuilt.find(StructWrapper.get()) != ClassesBuilt.end())
+        {
+            auto Context = DefaultContext.Get(Isolate);
+            v8impl::g_pesapi_ffi.invalidate_class(papi_bridge::ToPapi(Context), StructWrapper.get());
+        }
+#endif
         // the definition is shared by envs, the first use of a type in this env refreshes the translators
         auto ClassDefinition = StructWrapper->GetClassDefinition(InStruct, true);
-        // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env
+        // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env unless
+        // PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE is 0
         auto Template = CppObjectMapper.GetTemplateOfClass(Isolate, ClassDefinition);
 
-        FTemplateInfo TemplateInfo;
         TemplateInfo.StructWrapper = StructWrapper;
 
         if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
@@ -3177,37 +3209,24 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
             {
                 SysObjectRetainer.Retain(ScriptStruct);
             }
-
-            if (auto SuperStruct = ScriptStruct->GetSuperStruct())
-            {
-                bool Dummy;
-                __USE(GetTemplateInfoOfType(SuperStruct, Dummy));
-            }
-            else
-            {
-                InstallFNameFixing(Template);
-            }
         }
         else
         {
             auto Class = Cast<UClass>(InStruct);
             check(Class);
 #if PUERTS_KEEP_UOBJECT_REFERENCE
-            TemplateInfo.IsNativeTakeJsRef = TemplateInfo.IsTypeScriptGeneratedClass = IsTypeScriptGeneratedClass(Class);
+            const bool IsTsClass = IsTypeScriptGeneratedClass(Class);
+            TemplateInfo.IsTypeScriptGeneratedClass = IsTsClass;
+            if (IsTsClass)
+            {
+                TemplateInfo.IsNativeTakeJsRef = true;
+            }
 #endif
-            if (auto SuperClass = Class->GetSuperClass())
-            {
-                bool Dummy;
-                auto SuperTemplateInfo = GetTemplateInfoOfType(SuperClass, Dummy);
-                if (SuperTemplateInfo->IsNativeTakeJsRef)
-                {
-                    TemplateInfo.IsNativeTakeJsRef = true;
-                }
-            }
-            else
-            {
-                InstallFNameFixing(Template);
-            }
+        }
+
+        if (!InStruct->GetSuperStruct())
+        {
+            InstallFNameFixing(Template);
         }
 
         Existed = false;
@@ -3379,6 +3398,45 @@ void FJsEnvImpl::SetRegistry(ScriptClassRegistry* InRegistry)
 ScriptClassRegistry* FJsEnvImpl::GetRegistry()
 {
     return CppObjectMapper.GetRegistry();
+}
+
+void FJsEnvImpl::InvalidateClass(const void* TypeId)
+{
+    // the UE side caches of the type (keyed by UStruct) are dropped too, so the next use goes through the registry
+    for (auto Iter = TypeToTemplateInfoMap.CreateIterator(); Iter; ++Iter)
+    {
+        if (Iter->Value.StructWrapper.get() == TypeId)
+        {
+            Iter.RemoveCurrent();
+        }
+    }
+    auto Built = ClassesBuilt.find(TypeId);
+    if (Built != ClassesBuilt.end())
+    {
+        // the old template (and js class) is still alive
+        RetiredClasses.push_back(std::move(Built->second));
+        ClassesBuilt.erase(Built);
+    }
+    CppObjectMapper.InvalidateClass(TypeId);
+}
+
+void FJsEnvImpl::OnReflectedTemplateCreated(const JSClassDefinition* ClassDefinition)
+{
+    if (ClassDefinition->Initialize != &FStructWrapper::ReflectedConstruct)
+    {
+        return;
+    }
+    // the type id of a reflected class is its wrapper, and the template is always built from the current definition
+    auto& Current = static_cast<const FStructWrapper*>(ClassDefinition->TypeId)->GetCurrentClass();
+    if (ensure(Current && &Current->Definition == ClassDefinition))
+    {
+        auto& Holder = ClassesBuilt[ClassDefinition->TypeId];
+        if (Holder && Holder != Current)
+        {
+            RetiredClasses.push_back(std::move(Holder));
+        }
+        Holder = Current;
+    }
 }
 
 v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(

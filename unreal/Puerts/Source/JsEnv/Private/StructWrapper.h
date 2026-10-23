@@ -21,6 +21,13 @@
 #include "JSClassRegister.h"
 #include "NamespaceDef.h"
 
+// 1: a new UStruct with the same full name (e.g. a regenerated class) keeps the js class of the env (the template is reused,
+// only the translators are refreshed). 0: the js class is rebuilt (pesapi invalidate_class) when the type is used again
+// after its template info is released (TryReleaseType)
+#ifndef PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
+#define PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE 1
+#endif
+
 namespace PUERTS_NAMESPACE
 {
 // finalizer of a UScriptStruct registered by static binding (pesapi style)
@@ -82,8 +89,9 @@ struct FReflectedClass
 // UStruct, it only holds engine side data.
 // The js class of a UStruct is described by a class definition (FReflectedClass) whose type id is the wrapper, the templates
 // are created from it by the CppObjectMapper of each env. Since the wrapper is kept for a full name, a new UStruct with the
-// same full name (e.g. a regenerated class) keeps the js class of the env (the template is cached by type id), only the
-// translators are refreshed.
+// same full name (e.g. a regenerated class) keeps the js class of the env (the template is cached by type id) unless
+// PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE is 0, only the translators are refreshed.
+// Only the current definition is held by the wrapper, the envs hold the definitions their templates are built from.
 class FStructWrapper
 {
 public:
@@ -112,6 +120,12 @@ public:
     // or when the wrapper is pointed to a new UStruct. With Refresh an existing definition is kept and only the translators
     // are re-pointed to the current properties / functions (by name)
     const JSClassDefinition* GetClassDefinition(UStruct* InStruct, bool Refresh);
+
+    // the holder of the current class definition (the last one returned by GetClassDefinition), may be null
+    const std::shared_ptr<FReflectedClass>& GetCurrentClass() const
+    {
+        return CurrentClass;
+    }
 
     // CppObjectMapper hook: class name of the templates of reflected classes
     static void OnTemplateCreated(
@@ -156,9 +170,9 @@ protected:
 
     JSFunctionInfo LoadInfo;
 
-    // every definition built by this wrapper, the last one is the current one, older ones are still referenced by the
-    // templates (and js functions) created from them, so they live as long as the wrapper
-    std::vector<std::unique_ptr<FReflectedClass>> ReflectedClasses;
+    // the current definition, the templates (and js functions) created from a definition reference it, so the env that
+    // creates a template holds the definition (see GetCurrentClass) until the env is disposed
+    std::shared_ptr<FReflectedClass> CurrentClass;
 
     static void StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 

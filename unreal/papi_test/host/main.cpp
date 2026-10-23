@@ -116,6 +116,21 @@ static void UseEmptyRegistry(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Info.GetReturnValue().Set(Found);
 }
 
+// puerts.invalidateClass(name): pesapi invalidate_class on hello.<name> of the default registry
+static void InvalidateClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    std::string Name = ToStdString(Isolate, Info[0]);
+    const void* TypeId = pesapi::regimpl::g_reg_apis.find_type_id(pesapi::regimpl::GetDefaultRegistry(), "hello", Name.c_str());
+    if (!TypeId)
+    {
+        ThrowError(Isolate, "can not find hello." + Name);
+        return;
+    }
+    v8impl::g_pesapi_ffi.invalidate_class(reinterpret_cast<pesapi_env>(*Context), TypeId);
+}
+
 static void Print(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -206,6 +221,7 @@ int main(int argc, char* argv[])
         SetFunction(Context, Puerts, "loadAddon", LoadAddon);
         SetFunction(Context, Puerts, "loadCPPType", LoadCppType);
         SetFunction(Context, Puerts, "useEmptyRegistry", UseEmptyRegistry);
+        SetFunction(Context, Puerts, "invalidateClass", InvalidateClass);
         SetFunction(Context, Global, "print", Print);
         SetFunction(Context, Global, "gc", Gc);
         (void) Global->Set(Context, v8::String::NewFromUtf8(Isolate, "ADDON_PATH").ToLocalChecked(),
