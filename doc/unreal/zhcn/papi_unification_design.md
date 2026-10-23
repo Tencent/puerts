@@ -273,6 +273,15 @@ M4 落地情况（分批进行）：
   - 后端优化（v8 后端内部，与引擎无关）：`CppObjectMapper::TypeIdToTemplateMap` 的条目同时记下生成模板的那份类定义（模板的回调本来就引用它），`FindOrAddCppObject` 对已生成模板的类只查一次表，不再走 `LoadClassByID`（UE 下反射类要先查 registry、再查 `ReflectedClassMap`）；`pesapi_native_object_to_value` 直接调 mapper，少一层转发。
   - 测试：两条路径用例全过。基准与 HEAD 交替对比：new.struct、return_struct、struct_param 持平；property.get_struct 由 52 到 55ns 变为约 58ns，差距来自 papi 调用中 `Context::GetIsolate` 的跨模块调用（直接查缓存的实验版本为 52ns），属于 v8 后端的通用开销，后续统一优化。
   - 剩余：UObject 的 `Bind` / `FindOrAdd`（依赖 `ObjectMap` 的 v8 persistent、v8 模板和 `FClassWrapper::New`），委托的 `FindOrAddDelegate` / `ExecuteDelegate` 和委托模板。
+- M4-6h：UObject 的绑定、缓存和构造改为 papi。
+  - 包装形态：UObject 的 JS 对象改为由 `FClassWrapper` 的类定义创建的 native object，native 指针是 `FUObjectBinding`（继承 `FUObjectHandle`，额外记录所属 env 和 JS 对象的 `FPapiValueRef`），internal field 1 的 type id 由 nullptr 改为 `FClassWrapper`（与 struct 一致，`FStructWrapper::FromTypeId` 可反查）。对象由 `CppObjectMapper` 以 owned 方式绑定，类定义的 Finalize（`FClassWrapper::ReflectedFinalize`）经 `FUObjectHandle::Finalize` 回调到 env 释放 binding。`FUObjectHandle` 新增 `Finalize` 函数指针，handle 的布局其余不变。
+  - 引用强弱：`FUObjectBinding::JsObject` 默认是强引用（native 持有 JS，对应 `IsNativeTakeJsRef`），`SetJsTakeRef` 时 Retain UObject 并对 value ref 调 `set_ref_weak`，由 JS 持有 UObject。判定逻辑（含 `PUERTS_KEEP_UOBJECT_REFERENCE` 的两种取值）不变。
+  - 生命周期：UObject 先销毁时（`NotifyUObjectDeleted` -> `UnBind`）从 `ObjectMap` 摘除、释放 retainer 和 value ref，handle 的 `Object` 置空后放入 `ReleasedObjectBindings`，JS 侧再访问报 invalid object；wrapper 被 GC 时由 Finalize 从 `ObjectMap` 或 `ReleasedObjectBindings` 中摘除并删除 binding。env 析构时 `CppObjectMapper.UnInitialize` 对存活的 wrapper 调 Finalize，之后只清理残留条目。原来的 v8 弱回调 `OnGarbageCollected`、`OnReleasedObjectBindingGarbageCollected` 删除。
+  - 接口：`FJsEnvImpl` 的 v8 版 `Bind` ×2、`UnBind` ×2、`FindOrAdd` ×2 删除，统一为 `FindOrAdd(pesapi_env, UClass*, UObject*, SkipTypeScriptInitial)`、`SetJsTakeRef(pesapi_env, UObject*)`、`UnBind(UObject*)`；`IObjectMapper::Bind` 改为返回 handle 交给后端绑定，`IObjectMapper::UnBind(UClass*, UObject*)` 删除。`JsConstruct`、`TsConstruct`、`InvokeJsMethod`、`RebindObject`、编辑器下的 GeneratedObjects 重建、`UETypeToJsClass` 中的 enum 对象都改走 papi 版本。
+  - 构造：`FClassWrapper::New` 改为 papi（Outer、Name、Flags 三个参数的校验和报错文案不变），与 struct 相同由 `ReflectedConstruct` 返回 handle、`CDataNew` 绑定。papi 没有取正在构造的 `this` 的接口，`New` 中仍经桥接 `ToV8(Info).This()` 取得 JS 对象，交给 `Bind` 记录到 value ref，属于剩余的 v8 依赖。
+  - `MergeObject`：type id 变化后，原来“type id 为空即 UObject”的判断失效，改为先 `FromTypeId` 后 `Cast<UScriptStruct>` 判定 struct，否则经 `GetUObject` 判定 UObject（已释放时抛 invalid）。
+  - 测试：两条路径用例全过。基准与 HEAD 交替跑三轮（取最小）：new.uobject 1536ns -> 1702ns（+11%），makeuclass.new 2017ns -> 2337ns、tsclass.new 2009ns -> 2391ns（+16% 到 +19%），其余项持平。额外插入一次 value ref 的创建和 `set_ref_weak` 的实验表明 value ref 本身约 70 到 100ns（`operator new`、context 和 value 两个 Global、tracker 的 weak_ptr 拷贝）；其余来自 `CppObjectMapper` 对象缓存的插入和删除（UObject 身份由 `ObjectMap` 保证，这一层缓存对 UObject 是冗余的）以及 Finalize 多出的跨模块调用。这两项都属于 v8 后端的通用开销，留到后续统一优化（value ref 改为内联存储或池化；为“身份由宿主维护”的类定义提供跳过对象缓存的选项）。
+  - 剩余：委托的 `FindOrAddDelegate` / `ExecuteDelegate` 和委托模板；`FClassWrapper::New` 中取 `this` 的桥接。
 
 M5 落地情况（分批进行）：
 
