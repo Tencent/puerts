@@ -159,6 +159,8 @@ public:
     std::unordered_map<std::string, std::string> ResolveCache;
     // "<by><url>" -> key of the record
     std::unordered_map<std::string, std::string> LoadCache;
+    // the resource name (debug path) of the scripts -> url, the referrer of a dynamic import is known by the resource name
+    std::unordered_map<std::string, std::string> DebugPathToUrl;
     // keys of the esm records added by the running loads, the ones not evaluated are removed if the load fails
     std::vector<std::string> PendingEsm;
     int LoadDepth = 0;
@@ -222,6 +224,10 @@ public:
         if (Kind == EKind::Esm)
         {
             PendingEsm.push_back(Key);
+        }
+        if (Kind == EKind::Esm || Kind == EKind::Cjs)
+        {
+            DebugPathToUrl[DebugPath] = Url;
         }
         return Ptr;
     }
@@ -295,6 +301,47 @@ public:
         return true;
     }
 
+    // the url (a string) returned by the host, EnsureHost is called before
+    v8::MaybeLocal<v8::Value> CallHostResolve(
+        v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer, v8::Local<v8::String> By)
+    {
+        v8::Local<v8::Value> ResolveArgs[] = {Str(Isolate, Specifier), Str(Isolate, Referrer), By};
+        v8::Local<v8::Value> UrlValue;
+        if (!HostResolve.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 3, ResolveArgs).ToLocal(&UrlValue))
+        {
+            return v8::MaybeLocal<v8::Value>();
+        }
+        if (!UrlValue->IsString())
+        {
+            Throw(Isolate, "[Puer002] import " + Specifier + " failed: module not found");
+            return v8::MaybeLocal<v8::Value>();
+        }
+        return UrlValue;
+    }
+
+    // import.meta.resolve: the url of the specifier imported by Referrer, without loading it
+    v8::MaybeLocal<v8::Value> ResolveUrl(v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer)
+    {
+        if (Records.find(MakeKey(EKind::Builtin, Specifier)) != Records.end())
+        {
+            return Str(Isolate, Specifier).As<v8::Value>();
+        }
+        std::string CacheKey(1, 'i');
+        CacheKey += Referrer;
+        CacheKey.push_back('\0');
+        CacheKey += Specifier;
+        auto CacheIt = ResolveCache.find(CacheKey);
+        if (CacheIt != ResolveCache.end() && Records.find(CacheIt->second) != Records.end())
+        {
+            return Str(Isolate, CacheIt->second.substr(1)).As<v8::Value>();
+        }
+        if (!EnsureHost(Context))
+        {
+            return v8::MaybeLocal<v8::Value>();
+        }
+        return CallHostResolve(Context, Specifier, Referrer, Str(Isolate, "import"));
+    }
+
     // resolves and loads (compiles for esm, without evaluating) the module, returns nullptr with an exception thrown
     FRecord* Resolve(v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer, bool ByImport)
     {
@@ -324,15 +371,9 @@ public:
         }
 
         auto By = Str(Isolate, ByImport ? "import" : "require");
-        v8::Local<v8::Value> ResolveArgs[] = {Str(Isolate, Specifier), Str(Isolate, Referrer), By};
         v8::Local<v8::Value> UrlValue;
-        if (!HostResolve.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 3, ResolveArgs).ToLocal(&UrlValue))
+        if (!CallHostResolve(Context, Specifier, Referrer, By).ToLocal(&UrlValue))
         {
-            return nullptr;
-        }
-        if (!UrlValue->IsString())
-        {
-            Throw(Isolate, "[Puer002] import " + Specifier + " failed: module not found");
             return nullptr;
         }
         std::string Url = ToStd(Isolate, UrlValue);
@@ -855,6 +896,182 @@ public:
         EraseRecord(Key);
         return v8::MaybeLocal<v8::Value>();
     }
+
+    static void ReturnData(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        Info.GetReturnValue().Set(Info.Data());
+    }
+
+    // import semantics (dynamic import): the namespace, or a promise of it when the module has a top-level await
+    v8::MaybeLocal<v8::Value> Import(v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer)
+    {
+        FLoadScope Scope(this);
+        auto Record = Resolve(Context, Specifier, Referrer, true);
+        v8::Local<v8::Module> Module;
+        if (!Record || !ModuleForImport(Context, Record).ToLocal(&Module))
+        {
+            return v8::MaybeLocal<v8::Value>();
+        }
+        if (Module->GetStatus() == v8::Module::kUninstantiated &&
+            !Module->InstantiateModule(Context, &ResolveModuleCallback).FromMaybe(false))
+        {
+            return v8::MaybeLocal<v8::Value>();
+        }
+        v8::Local<v8::Value> Result;
+        if (!Module->Evaluate(Context).ToLocal(&Result))
+        {
+            return v8::MaybeLocal<v8::Value>();
+        }
+        Scope.Succeeded = true;
+        auto Namespace = Module->GetModuleNamespace();
+        if (Result->IsPromise())
+        {
+            v8::Local<v8::Function> OnFulfilled;
+            v8::Local<v8::Promise> Chained;
+            if (!v8::Function::New(Context, &ReturnData, Namespace).ToLocal(&OnFulfilled) ||
+                !Result.As<v8::Promise>()->Then(Context, OnFulfilled).ToLocal(&Chained))
+            {
+                return v8::MaybeLocal<v8::Value>();
+            }
+            return Chained;
+        }
+        return Namespace;
+    }
+
+    struct FDynamicImport
+    {
+        v8::Isolate* Isolate;
+        v8::Global<v8::Context> Context;
+        v8::Global<v8::Promise::Resolver> Resolver;
+        std::string Specifier;
+        std::string Referrer;
+    };
+
+    // runs in a microtask as d8 / node, the host is not called inside the callback of v8
+    static void DoImportDynamically(void* Data)
+    {
+        std::unique_ptr<FDynamicImport> Import(static_cast<FDynamicImport*>(Data));
+        auto Isolate = Import->Isolate;
+        auto Loader = Get(Isolate);
+        if (!Loader)
+        {
+            return;
+        }
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = Import->Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        auto Resolver = Import->Resolver.Get(Isolate);
+        v8::TryCatch TryCatch(Isolate);
+        v8::Local<v8::Value> Result;
+        if (Loader->Import(Context, Import->Specifier, Import->Referrer).ToLocal(&Result))
+        {
+            (void) Resolver->Resolve(Context, Result);
+            return;
+        }
+        if (TryCatch.HasTerminated())
+        {
+            return;
+        }
+        v8::Local<v8::Value> Exception = TryCatch.HasCaught()
+                                             ? TryCatch.Exception()
+                                             : v8::Exception::Error(Str(Isolate, "import " + Import->Specifier + " failed"));
+        TryCatch.Reset();
+        (void) Resolver->Reject(Context, Exception);
+    }
+
+    static v8::MaybeLocal<v8::Promise> ImportDynamically(
+        v8::Local<v8::Context> Context, v8::Local<v8::Value> ResourceName, v8::Local<v8::String> Specifier)
+    {
+        auto Isolate = Context->GetIsolate();
+        auto Loader = Get(Isolate);
+        v8::Local<v8::Promise::Resolver> Resolver;
+        if (!v8::Promise::Resolver::New(Context).ToLocal(&Resolver))
+        {
+            return v8::MaybeLocal<v8::Promise>();
+        }
+        if (!Loader)
+        {
+            (void) Resolver->Reject(Context, v8::Exception::Error(Str(Isolate, "[Puer001] the module loader is destroyed")));
+            return Resolver->GetPromise();
+        }
+        auto Import = new FDynamicImport();
+        Import->Isolate = Isolate;
+        Import->Context.Reset(Isolate, Context);
+        Import->Resolver.Reset(Isolate, Resolver);
+        Import->Specifier = ToStd(Isolate, Specifier);
+        // a script not loaded as a module (the bootstrap scripts, eval) imports relative to the root
+        if (!ResourceName.IsEmpty() && ResourceName->IsString())
+        {
+            auto It = Loader->DebugPathToUrl.find(ToStd(Isolate, ResourceName));
+            if (It != Loader->DebugPathToUrl.end())
+            {
+                Import->Referrer = It->second;
+            }
+        }
+        Isolate->EnqueueMicrotask(&DoImportDynamically, Import);
+        return Resolver->GetPromise();
+    }
+
+#if V8_MAJOR_VERSION >= 10
+    static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(v8::Local<v8::Context> Context,
+        v8::Local<v8::Data> HostDefinedOptions, v8::Local<v8::Value> ResourceName, v8::Local<v8::String> Specifier,
+        v8::Local<v8::FixedArray> ImportAttributes)
+    {
+        return ImportDynamically(Context, ResourceName, Specifier);
+    }
+#elif V8_MAJOR_VERSION >= 9
+    static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(v8::Local<v8::Context> Context,
+        v8::Local<v8::ScriptOrModule> Referrer, v8::Local<v8::String> Specifier, v8::Local<v8::FixedArray> ImportAssertions)
+    {
+        return ImportDynamically(Context, Referrer->GetResourceName(), Specifier);
+    }
+#else
+static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+    v8::Local<v8::Context> Context, v8::Local<v8::ScriptOrModule> Referrer, v8::Local<v8::String> Specifier)
+{
+    return ImportDynamically(Context, Referrer->GetResourceName(), Specifier);
+}
+#endif
+
+    static void MetaResolveCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+    {
+        const auto& V8Info = *reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(Info);
+        auto Isolate = V8Info.GetIsolate();
+        auto Context = Isolate->GetCurrentContext();
+        if (V8Info.Length() < 1 || !V8Info[0]->IsString())
+        {
+            Isolate->ThrowException(v8::Exception::TypeError(Str(Isolate, "the module name must be a string")));
+            return;
+        }
+        auto Referrer = static_cast<std::string*>(Apis->get_userdata(Info));
+        auto Loader = Get(Isolate);
+        v8::Local<v8::Value> Url;
+        if (Loader && Loader->ResolveUrl(Context, ToStd(Isolate, V8Info[0]), *Referrer).ToLocal(&Url))
+        {
+            V8Info.GetReturnValue().Set(Url);
+        }
+    }
+
+    // import.meta: url (the url given by the host) and resolve(specifier)
+    static void HostInitializeImportMeta(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> Meta)
+    {
+        auto Isolate = Context->GetIsolate();
+        auto Loader = Get(Isolate);
+        auto Record = Loader ? Loader->FindRecord(Module) : nullptr;
+        if (!Record)
+        {
+            return;
+        }
+        (void) Meta->CreateDataProperty(Context, Str(Isolate, "url"), Str(Isolate, Record->Url));
+        auto Data = new std::string(Record->Url);
+        auto Func = v8impl::g_pesapi_ffi.create_function(ToPapi(Context), &MetaResolveCallback, Data, &RequireFinalize);
+        if (!Func)
+        {
+            delete Data;
+            return;
+        }
+        (void) Meta->CreateDataProperty(Context, Str(Isolate, "resolve"), ToV8(Func));
+    }
 };
 
 FModuleLoader* CreateModuleLoader(pesapi_env Env)
@@ -862,6 +1079,8 @@ FModuleLoader* CreateModuleLoader(pesapi_env Env)
     auto Isolate = ToV8(Env)->GetIsolate();
     auto Loader = new FModuleLoader(Isolate);
     Isolate->SetData(PUERTS_MODULE_LOADER_DATA_POS_IN_ISOLATE, Loader);
+    Isolate->SetHostImportModuleDynamicallyCallback(&FModuleLoader::HostImportModuleDynamically);
+    Isolate->SetHostInitializeImportMetaObjectCallback(&FModuleLoader::HostInitializeImportMeta);
     return Loader;
 }
 
