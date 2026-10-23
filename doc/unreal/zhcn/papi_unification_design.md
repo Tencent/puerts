@@ -483,6 +483,17 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 - 测试：临时全局入口 `__puerModuleLoaderTest`（不放在 `puerts` 上，避免影响 Modules 基线的 puerts keys），功能测试 `tests/module_loader.js`、数据 `tests/module_loader_data/`，基线 `Baseline/ModuleLoader.txt`。M7-2 接入后删除临时入口，用例改为直接 require / import。
 - M7-2 待处理：`hot_reload.js` 对 CJS 用包装后的源码做 `setScriptSource`，改用 `CompileFunction` 后要去掉包装；内置 `puerts/*.js` 按 cjs 加载时检查对顶层 `var` / 全局变量的依赖；Node 下保留 `org_require` 优先。
 
+#### 5.10.9 M7-2 落地记录
+
+- 删除 `puerts/modular.js` 及 `FJsEnvImpl` 中的旧实现：`EvalScript`、`SearchModule`、`FindModule`、ESM 模块树（`FetchESModuleTree`、`ResolveModuleCallback`、`HashToModuleInfo` 等）、`Require` / `GetESMMain` / `GenEmptyCode`。原生 addon 在 `HostResolveModule` 中首次使用时注册为内置模块。
+- 全局 `require` 为后端 `papi_v8::CreateRequire(env, "")`（新增，与 CJS 模块内的 require 相同，根目录相对）。`puerts` 上的模块函数：`genRequire(dir)`（dir 补 `/` 作为 referrer）、`registerBuildinModule`、`forceReload(url?)`（未加载时 warn `reload not loaded module`）、`getModuleByUrl`，url 开头的 `./` 忽略；`puerts` 本身注册为内置模块 `puerts`。
+- puerts keys 去掉 `__require`、`generateEmptyCode`、`getESMMain`、`getModuleBySID`（Modules 基线已更新）。
+- `FJsEnvImpl::ExecuteModule`：`.mjs` 交给后端按 ESM 执行；其余（启动脚本 `puerts/*.js`）仍按经典脚本执行，它们依赖顶层 `var global` 等全局声明。`Start`、`InjectTsClass` 改用 `RequireModule`（后端 require）。
+- QuickJS（冻结）下没有模块系统：`RequireModule` 抛 `can not require [X], no module system`。
+- Node：初始化时保存 Node 原来的全局 `require`（是函数时），require 一个非 `.`、`/` 开头的名字时先交给它，成功则把结果注册为同名内置模块；相对路径不再先试 Node（旧实现会试，但结果按名字全局缓存，有串用风险）。
+- `hot_reload.js`：CJS 由 `CompileFunction` 编译，inspector 拿到的 scriptSource 是不带包装的原始源码，直接比较、`setScriptSource` 原始源码。
+- 测试：`tests/module_loader.js` 改为直接用 require 与 `puerts.*`；ESM 用例在 M7-3（动态 import）前暂时也走 require。路径类报错变为 require 的文案（`can not find module_loader_data/X in <js-root>/tests`），非字符串参数报 `TypeError: the module name must be a string`。默认与 `v8_impl` 两条路径全部通过。
+
 ### 5.11 V8 专属快速路径（M8）
 
 `V8Backend.hpp`、`V8Object.hpp`、`V8FastCall.hpp` 不废弃，作为“确定 JS 引擎是 V8 时”的可选快速路径保留：业务可以直接用 V8 API 写绑定，省去 papi 函数表的间接调用。
