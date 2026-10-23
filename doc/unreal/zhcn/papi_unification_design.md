@@ -244,6 +244,8 @@ M5 落地情况（分批进行）：
 - M5 收尾：其余仍为 v8 绑定的全局函数按归属延后，`__tgjsEvalScript`（含 ESM、字节码缓存、Inspector 用的 URL）和 `__tgjsSetInspectorCallback`、`__tgjsDispatchProtocolMessage`、`__tgjsSetPromiseRejectCallback` 归 M7；`__tgjsMakeUClass`、`__tgjsMixin`、`puerts.loadCPPType`（`ICppObjectMapper`）、`releaseManualReleaseDelegate` 归 M6；`__tgjsMakeWeakObjectPtr` 归 M4-6；Wasm3 归 M8。`IObjectMapper` 的 papi override 中依赖对象缓存和模板的（UObject、Struct、容器、Soft、`IsInstanceOf`）随 M4-6 改为真实现，委托相关的随 M6。
   - 行为变化：`setJsTakeRef` 传入非 UObject 时原来会空指针崩溃，现在抛出 "passing a invalid object"。
   - `MakeWeakObjectPtr` 依赖 v8 FunctionTemplate 和按 internal field 的弱回调，等 weak ptr wrapper 改为 registry 注册的类时一并迁移。
+- M5 基准（每阶段取多轮最小值，M5 跑了 4 轮）：相对 M4-5，ufunction、property、容器、new、delegate、mixin 的指标在 -15% 到 +7% 之间，整体持平或略快；单轮看到的 return_struct、new.* 偏慢 15% 到 20%，多跑几轮后消失，属于噪声。M5 没有改动这些热路径，与预期一致。
+- 已知退化：cpp.*（模板绑定的 C++ 类）自 M1-3c(2/2) 起比 baseline 慢约 4ns 到 8ns 每次调用（method_noop 14.3 到 18.5，method_int 18.1 到 24.7，static 13.4 到 18.1，overload 36.8 到 40.0）。M1-3a、M1-3b 与 baseline 持平，可以确认来源是模板绑定默认切到 `PesapiBackend.hpp`：每个参数和返回值都要经 `pesapi_ffi` 函数指针跨模块调用，无法内联，原来的 v8 后端是内联的 v8 调用。这是“共用同一个 papi 实现”的固有开销，Unity 走的也是这条路径。列为待优化项，可选方向：给高频的类型判断和取值做批量或快速路径接口（需新增 papi API，且必须与引擎和语言无关），或在静态链接时用直接调用代替函数表。在此之前不回退默认后端。
 
 ### 5.6 UObject 生命周期
 
