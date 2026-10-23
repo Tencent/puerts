@@ -11,7 +11,7 @@
 #include "pesapi.h"
 #include "CoreMinimal.h"
 #include "Misc/Paths.h"
-#include "V8Utils.h"
+#include "PapiUtils.h"
 #include "PString.h"
 #include "PesapiImpl.h"
 
@@ -80,26 +80,28 @@ static FString PesapiModuleNameFromPath(const FString& Path)
 
 namespace puerts
 {
-void LoadPesapiDll(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    if (!Info[0]->IsString())
+    pesapi_env Env = Apis->get_env(Info);
+    pesapi_value PathArg = Apis->get_arg(Info, 0);
+    if (!Apis->is_string(Env, PathArg))
     {
-        FV8Utils::ThrowException(Info.GetIsolate(), "#0 argument expect a string");
+        Apis->throw_by_string(Info, "#0 argument expect a string");
         return;
     }
-    FString Path = FV8Utils::ToFString(Info.GetIsolate(), Info[0]);
+    FString Path = PapiUtils::ToFString(Apis, Env, PathArg);
 
     auto Iter = LoadedPesapiModules.find(TCHAR_TO_UTF8(*Path));
     if (Iter != LoadedPesapiModules.end())
     {
-        Info.GetReturnValue().Set(FV8Utils::ToV8String(Info.GetIsolate(), Iter->second.c_str()));
+        Apis->add_return(Info, Apis->create_string_utf8(Env, Iter->second.c_str(), Iter->second.size()));
         return;
     }
 
     FString PreferModuleName;
-    if (Info.Length() > 1 && Info[1]->IsString())
+    if (Apis->get_args_len(Info) > 1 && Apis->is_string(Env, Apis->get_arg(Info, 1)))
     {
-        PreferModuleName = FV8Utils::ToFString(Info.GetIsolate(), Info[1]);
+        PreferModuleName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     }
     if (PreferModuleName.IsEmpty())
     {
@@ -109,7 +111,7 @@ void LoadPesapiDll(const v8::FunctionCallbackInfo<v8::Value>& Info)
     void* DllHandle = FPlatformProcess::GetDllHandle(*Path);
     if (!DllHandle)
     {
-        FV8Utils::ThrowException(Info.GetIsolate(), FString(TEXT("dlopen fail for ")) + Path);
+        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*(FString(TEXT("dlopen fail for ")) + Path)));
         return;
     }
 
@@ -120,19 +122,20 @@ void LoadPesapiDll(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         PesapiCallAddonRegister(Init, ModuleName);
         LoadedPesapiModules[TCHAR_TO_UTF8(*Path)] = TCHAR_TO_UTF8(*ModuleName);
-        Info.GetReturnValue().Set(FV8Utils::ToV8String(Info.GetIsolate(), *ModuleName));
+        Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, ModuleName));
     }
     else
     {
         if (PesapiIsLegacyAddon(DllHandle))
         {
-            FV8Utils::ThrowException(Info.GetIsolate(),
-                FString::Printf(TEXT("addon %s is built with legacy pesapi abi, please rebuild it with current pesapi.h"), *Path));
+            Apis->throw_by_string(
+                Info, TCHAR_TO_UTF8(*FString::Printf(
+                          TEXT("addon %s is built with legacy pesapi abi, please rebuild it with current pesapi.h"), *Path)));
         }
         else
         {
-            FV8Utils::ThrowException(Info.GetIsolate(),
-                FString::Printf(TEXT("can not find entry %s in %s"), *PesapiAddonEntryName(PreferModuleName), *Path));
+            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(
+                                            TEXT("can not find entry %s in %s"), *PesapiAddonEntryName(PreferModuleName), *Path)));
         }
         FPlatformProcess::FreeDllHandle(DllHandle);
     }

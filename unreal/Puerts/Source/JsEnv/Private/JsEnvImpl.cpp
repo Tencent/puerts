@@ -95,7 +95,7 @@ void InitWebsocketPPWrap(v8::Local<v8::Context> Context);
 namespace PUERTS_NAMESPACE
 {
 #if !defined(WITH_QUICKJS)
-void LoadPesapiDll(const v8::FunctionCallbackInfo<v8::Value>& Info);
+void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
@@ -566,10 +566,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &ToCPtrArray);
 
 #if !defined(WITH_QUICKJS)
-    PuertsObj
-        ->Set(Context, FV8Utils::ToV8String(Isolate, "load"),
-            v8::FunctionTemplate::New(Isolate, LoadPesapiDll)->GetFunction(Context).ToLocalChecked())
-        .Check();
+    PapiBindFunction(Apis, Env, PapiPuertsObj, "load", &LoadPesapiDll);
 #endif
 
     FString DllExt =
@@ -580,7 +577,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #else
         TEXT(".so");
 #endif
-    PuertsObj->Set(Context, FV8Utils::ToV8String(Isolate, "dll_ext"), FV8Utils::ToV8String(Isolate, DllExt)).Check();
+    Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiUtils::FromFString(Apis, Env, DllExt));
 
     MethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(
         Isolate, Context, PuertsObj, "releaseManualReleaseDelegate", This);

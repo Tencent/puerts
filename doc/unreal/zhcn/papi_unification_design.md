@@ -239,6 +239,7 @@ M5 落地情况（分批进行）：
 - M5-2d：先补测试 `tests/objects.js`（`UE.NewObject`、`UE.NewStruct`、`puerts.merge`、`UE.MakeWeakObjectPtr`、`puerts.setJsTakeRef`），再把 `__tgjsMergeObject`、`__tgjsNewObject`、`__tgjsNewStruct`、`__tgjsSetJsTakeRef` 改为 papi 实现。`merge` 用 `get_native_object_typeid` 区分 struct（type id 即 UScriptStruct）和 UObject。
 - M5-2e：`__tgjsUEClassToJSClass`（`blueprint.tojs`）和 `__tgjsNewContainer`（`UE.NewArray/NewSet/NewMap`）改为 papi 实现，测试先在 `tests/containers.js` 补齐。`UETypeToJsClass` 仍基于 v8 模板，经桥接调用，等 M4-6 收进 registry。补测试时发现 `UE.NewSet(-1)` 越界读 `BuiltinProperty[-1]` 导致编辑器挂死，已单独修复（下界检查）。
 - M5-2f：先补测试（不同编码的脚本文件、加载失败、`puerts.loadUEType` 的各类参数），再把 `__tgjsSearchModule`、`__tgjsLoadModule`、`__tgjsFindModule`、`puerts.loadUEType` 改为 papi 实现。文件内容转字符串的逻辑（UTF-16 BOM、跳过 UTF-8 BOM）移到 `PapiUtils::FromFileContent`，字节码用 `create_binary_by_value`。`AddonRegisterFunc` 是对外的 v8 签名，`FindModule` 经桥接调用，保持兼容。
+- M5-2g：`puerts.load`（`LoadPesapiDll`）和 `puerts.dll_ext` 改为 papi。`releaseManualReleaseDelegate` 依赖“JS 函数到 `UDynamicDelegateProxy`”的身份映射（v8::Map），且代理里持有 v8 函数，随 M6 的蓝图调用 JS 一起迁移；`MakeWeakObjectPtr` 依赖带内部字段和弱回调的模板，并入 M4-6。
   - 行为变化：`setJsTakeRef` 传入非 UObject 时原来会空指针崩溃，现在抛出 "passing a invalid object"。
   - `MakeWeakObjectPtr` 依赖 v8 FunctionTemplate 和按 internal field 的弱回调，等 weak ptr wrapper 改为 registry 注册的类时一并迁移。
 
