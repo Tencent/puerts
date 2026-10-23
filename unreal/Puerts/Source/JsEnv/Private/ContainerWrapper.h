@@ -235,30 +235,68 @@ struct ContainerExTypeMapper<FScriptMap>
     using Type = FScriptMapEx;
 };
 
+// the native object of a container wrapper (TArray / TSet / TMap / fixed size array), the js object is a registry class (see
+// the GetClassDefinition of the wrappers), the holder is freed by the Finalize of the class together with the js object
+struct FContainerHolder
+{
+    void* Container;
+    const void* TypeId;            // the container class
+    FPropertyTranslator* Inner;    // the element, the key of a map
+    FPropertyTranslator* Value;    // the value of a map
+    PropertyMacro* InnerProperty;
+    PropertyMacro* ValueProperty;
+    // the container -> holder map of the env if the holder is registered in it (it is removed from the map on finalize)
+    TMap<void*, FContainerHolder*>* Cache;
+    bool Owned;    // the container is deleted on finalize
+
+    FORCEINLINE void Unregister()
+    {
+        if (Cache)
+        {
+            auto Existed = Cache->Find(Container);
+            if (Existed && *Existed == this)
+            {
+                Cache->Remove(Container);
+            }
+            Cache = nullptr;
+        }
+    }
+};
+
+// the container of a js value if it is a wrapper of the class (TypeId of a container class), otherwise nullptr
+FORCEINLINE void* ContainerOfValue(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, const void* TypeId)
+{
+    if (Apis->get_native_object_typeid(Env, Value) != TypeId)
+    {
+        return nullptr;
+    }
+    auto Holder = static_cast<FContainerHolder*>(Apis->get_native_object_ptr(Env, Value));
+    return Holder ? Holder->Container : nullptr;
+}
+
+// module internal: the class definitions of the containers, visible to every registry (see FindReflectedClass)
+const JSClassDefinition* FindContainerClass(const void* TypeId);
+
 template <typename T>
 class FContainerWrapper
 {
 public:
-    static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<void>& Data)
+    static void Finalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
     {
         typedef typename ContainerExTypeMapper<T>::Type ET;
-        ET* Container =
-            static_cast<ET*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
-        FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindContainer(Container);
-        delete Container;
+        auto Holder = static_cast<FContainerHolder*>(Ptr);
+        Holder->Unregister();
+        if (Holder->Owned)
+        {
+            delete static_cast<ET*>(Holder->Container);
+        }
+        delete Holder;
     }
 
-    static void OnGarbageCollected(const v8::WeakCallbackInfo<void>& Data)
+    static void* New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     {
-        T* Container =
-            static_cast<T*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
-        FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindContainer(Container);
-    }
-
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        FV8Utils::ThrowException(Isolate, "Container Constructor no support yet");
+        Apis->throw_by_string(Info, "Container Constructor no support yet");
+        return nullptr;
     }
 
     // TODO - 用doxygen注释
@@ -266,7 +304,7 @@ public:
     // 返回：容器内元素总数
     static void Num(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     {
-        auto Self = static_cast<T*>(Apis->get_native_holder_ptr(Info));
+        auto Self = static_cast<T*>(static_cast<FContainerHolder*>(Apis->get_native_holder_ptr(Info))->Container);
         Apis->add_return(Info, Apis->create_int32(Apis->get_env(Info), Self->Num()));
     }
 };
@@ -274,7 +312,7 @@ public:
 class FScriptArrayWrapper : public FContainerWrapper<FScriptArray>
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
 
 private:
     // 参数：一到多个容器元素
@@ -336,7 +374,7 @@ private:
 class FScriptSetWrapper : public FContainerWrapper<FScriptSet>
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
 
 private:
     static void Add(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -365,7 +403,7 @@ private:
 class FScriptMapWrapper : public FContainerWrapper<FScriptMap>
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
 
 private:
     static void Add(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -394,11 +432,15 @@ private:
 class FFixSizeArrayWrapper
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
 
 private:
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    // the array is owned by its outer, only the holder is freed
+    static void Finalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
     {
+        auto Holder = static_cast<FContainerHolder*>(Ptr);
+        Holder->Unregister();
+        delete Holder;
     }
 
     static void Num(struct pesapi_ffi* Apis, pesapi_callback_info Info);

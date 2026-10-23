@@ -91,8 +91,6 @@ public:
     // Src must be an object
     virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) = 0;
 
-    virtual void UnBindContainer(void* Ptr) = 0;
-
     virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) = 0;
 
     virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer) = 0;

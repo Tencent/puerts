@@ -8,28 +8,30 @@
 
 #include "ContainerWrapper.h"
 #include "PropertyTranslator.h"
-#include "PesapiClassThunks.h"
 #include "PapiV8Bridge.h"
 
 namespace PUERTS_NAMESPACE
 {
-// internal field 0 of a container wrapper is the container, field 1 is the translator of the element (of the key for a map),
-// they are the native pointer and type id slots of papi
+// internal field 0 of a container wrapper is its FContainerHolder, field 1 is the type id of the container class
+static FORCEINLINE FContainerHolder* ContainerHolderOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    return static_cast<FContainerHolder*>(Apis->get_native_holder_ptr(Info));
+}
+
 template <typename T>
 static FORCEINLINE T* ContainerSelfOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return static_cast<T*>(Apis->get_native_holder_ptr(Info));
+    return static_cast<T*>(ContainerHolderOf(Apis, Info)->Container);
 }
 
 static FORCEINLINE FPropertyTranslator* ContainerInnerOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return static_cast<FPropertyTranslator*>(const_cast<void*>(Apis->get_native_holder_typeid(Info)));
+    return ContainerHolderOf(Apis, Info)->Inner;
 }
 
-// papi exposes only two internal fields, the value translator of a map (field 2) is still read through the bridge
-static FORCEINLINE FPropertyTranslator* ContainerMapValueOf(pesapi_callback_info Info)
+static FORCEINLINE FPropertyTranslator* ContainerMapValueOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return DataTransfer::GetPointerFast<FPropertyTranslator>(papi_bridge::HolderOf(Info), 2);
+    return ContainerHolderOf(Apis, Info)->Value;
 }
 
 static FORCEINLINE bool ContainerCheckArgsLen(struct pesapi_ffi* Apis, pesapi_callback_info Info, int Length)
@@ -50,18 +52,35 @@ static FORCEINLINE void ContainerLinkOuter(pesapi_env Env, pesapi_callback_info 
     LinkOuterImpl(papi_bridge::ToV8(Env), papi_bridge::HolderOf(Info), papi_bridge::ToV8(Inner));
 }
 
-static v8::Local<v8::FunctionTemplate> ContainerTemplate(
-    v8::Isolate* Isolate, v8::FunctionCallback Constructor, int InternalFieldCount, const JSFunctionInfo* Methods, int MethodCount)
+// the type ids of the container classes
+static const char ArrayTypeTag = 0;
+static const char SetTypeTag = 0;
+static const char MapTypeTag = 0;
+static const char FixSizeArrayTypeTag = 0;
+
+static JSClassDefinition MakeContainerDefinition(
+    const void* TypeId, const char* Name, JSInitializeFunc Initialize, JSFinalizeFunc Finalize, JSFunctionInfo* Methods)
 {
-    v8::Isolate::Scope Isolatescope(Isolate);
-    auto Result = v8::FunctionTemplate::New(Isolate, Constructor);
-    Result->InstanceTemplate()->SetInternalFieldCount(InternalFieldCount);
-    for (int i = 0; i < MethodCount; ++i)
-    {
-        Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, Methods[i].Name),
-            ClassThunks::MethodTemplate(Isolate, &Methods[i], v8::ConstructorBehavior::kAllow));
-    }
-    return Result;
+    JSClassDefinition Definition = JSClassEmptyDefinition;
+    Definition.TypeId = TypeId;
+    Definition.ScriptName = Name;
+    Definition.Initialize = Initialize;
+    Definition.Finalize = Finalize;
+    Definition.Methods = Methods;
+    return Definition;
+}
+
+const JSClassDefinition* FindContainerClass(const void* TypeId)
+{
+    if (TypeId == &ArrayTypeTag)
+        return FScriptArrayWrapper::GetClassDefinition();
+    if (TypeId == &SetTypeTag)
+        return FScriptSetWrapper::GetClassDefinition();
+    if (TypeId == &MapTypeTag)
+        return FScriptMapWrapper::GetClassDefinition();
+    if (TypeId == &FixSizeArrayTypeTag)
+        return FFixSizeArrayWrapper::GetClassDefinition();
+    return nullptr;
 }
 
 #define PAPI_CONTAINER_CHECK_ARGS_LEN(Length)       \
@@ -70,13 +89,14 @@ static v8::Local<v8::FunctionTemplate> ContainerTemplate(
         return;                                     \
     }
 
-v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+const JSClassDefinition* FScriptArrayWrapper::GetClassDefinition()
 {
-    // the entries are referenced by the function templates, so they must have static storage
-    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
+    // the method tables are referenced by the templates, so they have static storage (with an end mark)
+    static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
         {"Contains", &Contains}, {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"IsValidIndex", &IsValidIndex},
-        {"Empty", &Empty}};
-    return ContainerTemplate(Isolate, New, 4, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1 Property
+        {"Empty", &Empty}, JSFunctionInfo()};
+    static const JSClassDefinition Definition = MakeContainerDefinition(&ArrayTypeTag, "TArray", &New, &Finalize, Methods);
+    return &Definition;
 }
 
 void FScriptArrayWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -291,12 +311,13 @@ int32 FScriptArrayWrapper::FindIndexInner(struct pesapi_ffi* Apis, pesapi_callba
 
 //---------------------------------------Set-----------------------------------------------
 
-v8::Local<v8::FunctionTemplate> FScriptSetWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+const JSClassDefinition* FScriptSetWrapper::GetClassDefinition()
 {
-    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef},
-        {"Contains", &Contains}, {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"GetMaxIndex", &GetMaxIndex},
-        {"IsValidIndex", &IsValidIndex}, {"Empty", &Empty}};
-    return ContainerTemplate(Isolate, New, 4, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1 Property
+    static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Contains", &Contains},
+        {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex},
+        {"Empty", &Empty}, JSFunctionInfo()};
+    static const JSClassDefinition Definition = MakeContainerDefinition(&SetTypeTag, "TSet", &New, &Finalize, Methods);
+    return &Definition;
 }
 
 void FScriptSetWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -472,12 +493,13 @@ int32 FScriptSetWrapper::FindIndexInner(struct pesapi_ffi* Apis, pesapi_callback
 }
 
 //---------------------------------------Map-----------------------------------------------
-v8::Local<v8::FunctionTemplate> FScriptMapWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+const JSClassDefinition* FScriptMapWrapper::GetClassDefinition()
 {
-    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
-        {"Remove", &Remove}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex}, {"GetKey", &GetKey},
-        {"Empty", &Empty}};
-    return ContainerTemplate(Isolate, New, 6, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1-2 Property
+    static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
+        {"Remove", &Remove}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex}, {"GetKey", &GetKey}, {"Empty", &Empty},
+        JSFunctionInfo()};
+    static const JSClassDefinition Definition = MakeContainerDefinition(&MapTypeTag, "TMap", &New, &Finalize, Methods);
+    return &Definition;
 }
 
 void FScriptMapWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -488,7 +510,7 @@ void FScriptMapWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
     auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Apis, Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
@@ -536,7 +558,7 @@ void FScriptMapWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_inf
     auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
     auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Apis, Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
@@ -590,7 +612,7 @@ void FScriptMapWrapper::Remove(struct pesapi_ffi* Apis, pesapi_callback_info Inf
     auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
     auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Apis, Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
@@ -650,7 +672,7 @@ void FScriptMapWrapper::GetKey(struct pesapi_ffi* Apis, pesapi_callback_info Inf
     {
         auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
         auto KeyProperty = KeyPropertyTranslator->Property;
-        auto ValuePropertyTranslator = ContainerMapValueOf(Info);
+        auto ValuePropertyTranslator = ContainerMapValueOf(Apis, Info);
         auto ValueProperty = ValuePropertyTranslator->Property;
         if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
         {
@@ -670,7 +692,7 @@ void FScriptMapWrapper::Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info
     auto Self = ContainerSelfOf<FScriptMap>(Apis, Info);
     auto KeyPropertyTranslator = ContainerInnerOf(Apis, Info);
     auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = ContainerMapValueOf(Info);
+    auto ValuePropertyTranslator = ContainerMapValueOf(Apis, Info);
     auto ValueProperty = ValuePropertyTranslator->Property;
     if (!KeyPropertyTranslator->IsPropertyValid() || !ValuePropertyTranslator->IsPropertyValid())
     {
@@ -688,10 +710,12 @@ FScriptMapLayout FScriptMapWrapper::GetScriptLayout(const PropertyMacro* KeyProp
 }
 
 //---------------------------------------Fix Size Array-----------------------------------------------
-v8::Local<v8::FunctionTemplate> FFixSizeArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+const JSClassDefinition* FFixSizeArrayWrapper::GetClassDefinition()
 {
-    static const JSFunctionInfo Methods[] = {{"Num", &Num}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set}};
-    return ContainerTemplate(Isolate, New, 4, Methods, UE_ARRAY_COUNT(Methods));    // 0 Ptr, 1 Property
+    static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set}, JSFunctionInfo()};
+    static const JSClassDefinition Definition =
+        MakeContainerDefinition(&FixSizeArrayTypeTag, "FixSizeArray", nullptr, &Finalize, Methods);
+    return &Definition;
 }
 
 void FFixSizeArrayWrapper::Num(struct pesapi_ffi* Apis, pesapi_callback_info Info)

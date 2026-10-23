@@ -187,7 +187,7 @@ public:
         }
         auto Iter = CDataIdToClassDefinition.find(TypeId);
 #if USING_IN_UNREAL_ENGINE
-        // reflected classes (UClass / UScriptStruct) are process wide and visible to every registry
+        // reflected classes (UClass / UScriptStruct) and container classes are process wide and visible to every registry
         return Iter == CDataIdToClassDefinition.end() ? FindReflectedClass(TypeId) : Iter->second;
 #else
         return Iter == CDataIdToClassDefinition.end() ? nullptr : Iter->second;

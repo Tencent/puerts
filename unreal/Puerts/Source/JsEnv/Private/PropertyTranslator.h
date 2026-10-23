@@ -65,6 +65,12 @@ public:
         return true;
     }
 
+    // the native value (of the property type) wrapped by a js value, nullptr if there is none
+    virtual void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const
+    {
+        return Apis->get_native_object_ptr(Env, Value);
+    }
+
     FORCEINLINE pesapi_value UEToJsInContainer(
         struct pesapi_ffi* Apis, pesapi_env Env, const void* ContainerPtr, bool PassByPointer = false) const
     {

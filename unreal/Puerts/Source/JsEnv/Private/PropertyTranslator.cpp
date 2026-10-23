@@ -637,7 +637,7 @@ public:
 
     bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const override
     {
-        void* Ptr = Apis->get_native_object_ptr(Env, Value);
+        void* Ptr = NativeValueOf(Apis, Env, Value);
 
         if (Ptr)
         {
@@ -844,9 +844,14 @@ public:
         return PapiUtils::FindOrAddContainer(Env, ArrayProperty->Inner, ScriptArray, ByPointer);
     }
 
+    void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
+    {
+        return ContainerOfValue(Apis, Env, Value, FScriptArrayWrapper::GetClassDefinition()->TypeId);
+    }
+
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = Apis->get_native_object_ptr(Env, Value);
+        auto Ptr = NativeValueOf(Apis, Env, Value);
         if (Ptr)
         {
             if (DeepCopy || !ParamShallowCopySize)
@@ -890,9 +895,14 @@ public:
         return PapiUtils::FindOrAddContainer(Env, SetProperty->ElementProp, ScriptSet, ByPointer);
     }
 
+    void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
+    {
+        return ContainerOfValue(Apis, Env, Value, FScriptSetWrapper::GetClassDefinition()->TypeId);
+    }
+
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = Apis->get_native_object_ptr(Env, Value);
+        auto Ptr = NativeValueOf(Apis, Env, Value);
         if (Ptr)
         {
             if (DeepCopy || !ParamShallowCopySize)
@@ -936,9 +946,14 @@ public:
         return PapiUtils::FindOrAddContainer(Env, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
     }
 
+    void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
+    {
+        return ContainerOfValue(Apis, Env, Value, FScriptMapWrapper::GetClassDefinition()->TypeId);
+    }
+
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = Apis->get_native_object_ptr(Env, Value);
+        auto Ptr = NativeValueOf(Apis, Env, Value);
         if (Ptr)
         {
             if (DeepCopy || !ParamShallowCopySize)
@@ -1120,7 +1135,7 @@ public:
             if (Inner->ParamShallowCopySize)
             {
                 auto Realvalue = Apis->get_property_uint32(Env, Value, 0);
-                auto Ptr = Apis->get_native_object_ptr(Env, Realvalue);
+                auto Ptr = Inner->NativeValueOf(Apis, Env, Realvalue);
                 if (Ptr && Ptr != ValuePtr)
                 {
                     FMemory::Memcpy(Ptr, ValuePtr, ParamShallowCopySize);

@@ -22,6 +22,7 @@
 #endif
 #include "UECompatible.h"
 #include "ContainerMeta.h"
+#include "ContainerWrapper.h"
 #include "ObjectCacheNode.h"
 #include <unordered_map>
 
@@ -182,26 +183,10 @@ public:
 
     void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des);
 
-    enum ContainerType
-    {
-        EArray,
-        EMap,
-        ESet
-    };
-
-    void BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data),
-        bool PassByPointer, ContainerType Type, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty);
-
-    virtual void UnBindContainer(void* Ptr) override;
-
-    v8::Local<v8::Value> FindOrAddContainer(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer);
-
-    v8::Local<v8::Value> FindOrAddContainer(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer);
-
-    v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* KeyProperty,
-        PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer);
+    // a wrapper of the container class (ClassDefinition), the wrapper of a borrowed container (PassByPointer) is cached by the
+    // container, an owned one (deleted with the wrapper) is always new
+    pesapi_value FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, PropertyMacro* KeyProperty,
+        PropertyMacro* ValueProperty, bool PassByPointer);
 
     v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
         PropertyMacro* Property, void* DelegatePtr, bool PassByPointer);
@@ -270,22 +255,18 @@ public:
 
     virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) override
     {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(FindOrAddContainer(Context->GetIsolate(), Context, Property, Ptr, PassByPointer));
+        return FindOrAddContainer(Env, FScriptArrayWrapper::GetClassDefinition(), Ptr, Property, nullptr, PassByPointer);
     }
 
     virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer) override
     {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(FindOrAddContainer(Context->GetIsolate(), Context, Property, Ptr, PassByPointer));
+        return FindOrAddContainer(Env, FScriptSetWrapper::GetClassDefinition(), Ptr, Property, nullptr, PassByPointer);
     }
 
     virtual pesapi_value FindOrAddContainer(
         pesapi_env Env, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer) override
     {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(
-            FindOrAddContainer(Context->GetIsolate(), Context, KeyProperty, ValueProperty, Ptr, PassByPointer));
+        return FindOrAddContainer(Env, FScriptMapWrapper::GetClassDefinition(), Ptr, KeyProperty, ValueProperty, PassByPointer);
     }
 
     virtual pesapi_value FindOrAddDelegate(
@@ -301,11 +282,7 @@ public:
         ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
     }
 
-    virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(CreateArray(Context->GetIsolate(), Context, Property, ArrayPtr));
-    }
+    virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) override;
 
     virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) override
     {
@@ -319,9 +296,6 @@ public:
     }
 
     bool CheckDelegateProxies(float Tick);
-
-    v8::Local<v8::Value> CreateArray(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr);
 
     void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
@@ -694,26 +668,11 @@ private:
 
     TSet<FUObjectBinding*> ReleasedObjectBindings;
 
-    struct ContainerCacheItem
-    {
-        v8::UniquePersistent<v8::Value> Container;
-        bool NeedRelease;
-        ContainerType Type;
-        PropertyMacro* KeyProperty;
-        PropertyMacro* ValueProperty;
-    };
-
-    TMap<void*, ContainerCacheItem> ContainerCache;
+    // container -> holder of the cached (borrowed) container wrappers, the holders are freed by the finalizer of the container
+    // classes (on gc or CppObjectMapper.UnInitialize), so the map must outlive CppObjectMapper
+    TMap<void*, FContainerHolder*> ContainerHolders;
 
     FCppObjectMapper CppObjectMapper;
-
-    v8::UniquePersistent<v8::FunctionTemplate> ArrayTemplate;
-
-    v8::UniquePersistent<v8::FunctionTemplate> SetTemplate;
-
-    v8::UniquePersistent<v8::FunctionTemplate> MapTemplate;
-
-    v8::UniquePersistent<v8::FunctionTemplate> FixSizeArrayTemplate;
 
     struct ContainerPropertyInfo
     {

@@ -16,6 +16,7 @@
 #include "PapiUtils.h"
 #include "PapiV8Bridge.h"
 #include "ExtensionMethods.h"
+#include "ContainerWrapper.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -41,12 +42,17 @@ const JSClassDefinition* FindReflectedClass(const void* TypeId)
 {
     auto& Map = ReflectedClassMap();
     auto Iter = Map.find(TypeId);
-    return Iter == Map.end() ? nullptr : Iter->second;
+    return Iter == Map.end() ? FindContainerClass(TypeId) : Iter->second;
 }
 
 FStructWrapper* FStructWrapper::FromTypeId(const void* TypeId)
 {
-    return TypeId && FindReflectedClass(TypeId) ? static_cast<FStructWrapper*>(const_cast<void*>(TypeId)) : nullptr;
+    if (!TypeId)
+    {
+        return nullptr;
+    }
+    auto& Map = ReflectedClassMap();
+    return Map.find(TypeId) != Map.end() ? static_cast<FStructWrapper*>(const_cast<void*>(TypeId)) : nullptr;
 }
 
 // extension methods found by the last scan, taken by the wrapper of the struct when its class definition is built

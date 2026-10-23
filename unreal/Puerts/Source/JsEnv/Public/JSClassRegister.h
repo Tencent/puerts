@@ -219,9 +219,10 @@ void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
-// module internal: the process wide definitions of reflected classes (UClass / UScriptStruct), keyed by their FStructWrapper,
-// they are not in the name tables (so not visible to ForeachRegisterClass / loadCPPType) but FindClassByID / LoadClassByID of
-// every registry fall back to them, see StructWrapper.cpp
+// module internal: the process wide definitions of reflected classes (UClass / UScriptStruct, keyed by their FStructWrapper)
+// and of the container classes (TArray / TSet / TMap / fixed size array, see ContainerWrapper.cpp), they are not in the name
+// tables (so not visible to ForeachRegisterClass / loadCPPType) but FindClassByID / LoadClassByID of every registry fall back
+// to them, see StructWrapper.cpp
 const JSClassDefinition* FindReflectedClass(const void* TypeId);
 
 JSENV_API bool IsEditorOnlyUFunction(const UFunction* Func);
