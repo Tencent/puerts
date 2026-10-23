@@ -15,13 +15,11 @@ void UJSWidgetGeneratedClass::StaticConstructor(const FObjectInitializer& Object
     auto Object = ObjectInitializer.GetObj();
     Class->GetSuperClass()->ClassConstructor(ObjectInitializer);
 
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Class->Isolate);
-#endif
+    // the papi scope opened by JsConstruct takes the v8::Locker in THREAD_SAFE builds
     auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {
-        PinedDynamicInvoker->JsConstruct(Class, Object, Class->Constructor, Class->Prototype);
+        PinedDynamicInvoker->JsConstruct(Class, Object, Class->Constructor.GetRef(), Class->Prototype.GetRef());
     }
 }
 

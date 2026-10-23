@@ -11,13 +11,7 @@
 #include <memory>
 
 #include "NamespaceDef.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "PapiValueRef.h"
 
 #include "DynamicInvoker.h"
 #include "FunctionTranslator.h"
@@ -39,7 +33,8 @@ public:
 
     DECLARE_FUNCTION(execCallMixin);
 
-    v8::UniquePersistent<v8::Function> JsFunction;
+    // the override of a makeUClass class, mixin functions keep theirs in FJsEnvImpl::MixinFunctionMap
+    PUERTS_NAMESPACE::FPapiValueRef JsFunction;
 
     TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 

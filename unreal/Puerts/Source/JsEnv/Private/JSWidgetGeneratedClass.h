@@ -9,13 +9,8 @@
 #pragma once
 
 #include "NamespaceDef.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "pesapi.h"
+#include "PapiValueRef.h"
 
 #include "DynamicInvoker.h"
 
@@ -36,16 +31,13 @@ public:
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 
+    // must be called while the env is alive
     void Release();
 
 public:
-    v8::UniquePersistent<v8::Function> Constructor;
+    PUERTS_NAMESPACE::FPapiValueRef Constructor;
 
-    v8::UniquePersistent<v8::Object> Prototype;
+    PUERTS_NAMESPACE::FPapiValueRef Prototype;
 
     TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
-
-#ifdef THREAD_SAFE
-    v8::Isolate* Isolate;
-#endif
 };

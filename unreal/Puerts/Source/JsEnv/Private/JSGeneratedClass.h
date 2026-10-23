@@ -9,13 +9,8 @@
 #pragma once
 
 #include "NamespaceDef.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "pesapi.h"
+#include "PapiValueRef.h"
 
 #include "DynamicInvoker.h"
 
@@ -33,10 +28,10 @@ class UJSGeneratedClass : public UBlueprintGeneratedClass
 
 public:
     static UClass* Create(const FString& Name, UClass* Parent,
-        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, v8::Isolate* Isolate,
-        v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype);
+        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, struct pesapi_ffi* Apis, pesapi_env Env,
+        pesapi_value Constructor, pesapi_value Prototype);
 
-    static void Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
+    static void Override(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UFunction* Super, pesapi_value JSImpl,
         TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative);
 
     static UFunction* Mixin(UClass* Class, UFunction* Super,
@@ -46,18 +41,15 @@ public:
 
     void InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr) override;
 
+    // must be called while the env is alive
     void Release();
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 
 public:
-    v8::UniquePersistent<v8::Function> Constructor;
+    PUERTS_NAMESPACE::FPapiValueRef Constructor;
 
-    v8::UniquePersistent<v8::Object> Prototype;
+    PUERTS_NAMESPACE::FPapiValueRef Prototype;
 
     TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
-
-#ifdef THREAD_SAFE
-    v8::Isolate* Isolate;
-#endif
 };

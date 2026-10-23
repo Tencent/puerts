@@ -24,32 +24,26 @@
 #define MIXIN_METHOD_SUFFIX "__puerts_mixin__"
 
 UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent,
-    TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, v8::Isolate* Isolate,
-    v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
+    TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, struct pesapi_ffi* Apis, pesapi_env Env,
+    pesapi_value Constructor, pesapi_value Prototype)
 {
     auto Outer = GetTransientPackage();
     UClass* Class = nullptr;
     if (Cast<UWidgetBlueprintGeneratedClass>(Parent))
     {
         auto JSGeneratedClass = NewObject<UJSWidgetGeneratedClass>(Outer, *Name, RF_Public);
-#ifdef THREAD_SAFE
-        JSGeneratedClass->Isolate = Isolate;
-#endif
         JSGeneratedClass->DynamicInvoker = DynamicInvoker;
-        JSGeneratedClass->Constructor = v8::UniquePersistent<v8::Function>(Isolate, Constructor);
-        JSGeneratedClass->Prototype = v8::UniquePersistent<v8::Object>(Isolate, Prototype);
+        JSGeneratedClass->Constructor.Reset(Apis, Env, Constructor);
+        JSGeneratedClass->Prototype.Reset(Apis, Env, Prototype);
         JSGeneratedClass->ClassConstructor = &UJSWidgetGeneratedClass::StaticConstructor;
         Class = JSGeneratedClass;
     }
     else
     {
         auto JSGeneratedClass = NewObject<UJSGeneratedClass>(Outer, *Name, RF_Public);
-#ifdef THREAD_SAFE
-        JSGeneratedClass->Isolate = Isolate;
-#endif
         JSGeneratedClass->DynamicInvoker = DynamicInvoker;
-        JSGeneratedClass->Constructor = v8::UniquePersistent<v8::Function>(Isolate, Constructor);
-        JSGeneratedClass->Prototype = v8::UniquePersistent<v8::Object>(Isolate, Prototype);
+        JSGeneratedClass->Constructor.Reset(Apis, Env, Constructor);
+        JSGeneratedClass->Prototype.Reset(Apis, Env, Prototype);
         JSGeneratedClass->ClassConstructor = &UJSGeneratedClass::StaticConstructor;
         Class = JSGeneratedClass;
     }
@@ -81,18 +75,17 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
 
     if (auto JSGeneratedClass = Cast<UJSGeneratedClass>(Class))
     {
-#ifdef THREAD_SAFE
-        v8::Locker Locker(JSGeneratedClass->Isolate);
-#endif
+        // the papi scope opened by JsConstruct takes the v8::Locker in THREAD_SAFE builds
         auto PinedDynamicInvoker = JSGeneratedClass->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
-            PinedDynamicInvoker->JsConstruct(JSGeneratedClass, Object, JSGeneratedClass->Constructor, JSGeneratedClass->Prototype);
+            PinedDynamicInvoker->JsConstruct(
+                JSGeneratedClass, Object, JSGeneratedClass->Constructor.GetRef(), JSGeneratedClass->Prototype.GetRef());
         }
     }
 }
 
-void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
+void UJSGeneratedClass::Override(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UFunction* Super, pesapi_value JSImpl,
     TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative)
 {
     bool Existed = Super->GetOuter() == Class;
@@ -103,7 +96,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
         {
             MaybeJSFunction->DynamicInvoker = DynamicInvoker;
             MaybeJSFunction->FunctionTranslator = std::make_unique<PUERTS_NAMESPACE::FFunctionTranslator>(Super, false);
-            MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
+            MaybeJSFunction->JsFunction.Reset(Apis, Env, JSImpl);
             MaybeJSFunction->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
             return;
         }
@@ -149,7 +142,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
 
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
 
-    Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
+    Function->JsFunction.Reset(Apis, Env, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<PUERTS_NAMESPACE::FFunctionTranslator>(Function, false);
 

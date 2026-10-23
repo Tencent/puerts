@@ -65,8 +65,7 @@ public:
         ensureMsgf(false, TEXT("InvokeDelegateCallback in GroupDynamicInvoker"));
     }
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    virtual void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
-        const v8::UniquePersistent<v8::Object>& Prototype) override
+    virtual void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype) override
     {
         ensureMsgf(false, TEXT("JsConstruct in GroupDynamicInvoker"));
     }

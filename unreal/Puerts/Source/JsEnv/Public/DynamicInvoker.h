@@ -11,12 +11,7 @@
 #include "NamespaceDef.h"
 
 #include "CoreUObject.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "pesapi.h"
 
 class UDynamicDelegateProxy;
 class UJSGeneratedFunction;
@@ -28,8 +23,8 @@ public:
     virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) = 0;
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    virtual void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
-        const v8::UniquePersistent<v8::Object>& Prototype) = 0;
+    // Constructor / Prototype are strong refs owned by the generated class, either may be null
+    virtual void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype) = 0;
 
     virtual void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) = 0;
 

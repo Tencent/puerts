@@ -256,6 +256,9 @@ M5 落地情况（分批进行）：
 - M6-2b：`NewDelegate`、`releaseManualReleaseDelegate` 改为 papi。manual release 代理原来用 v8::Map 把 JS 函数映射到 `v8::External`（代理指针），再用一个 vector 记录弱引用；papi 没有 external，改为 JS Map 把函数映射到 uint32 id，C++ 侧用 `TMap<uint32, TWeakObjectPtr<UDynamicDelegateProxy>>` 按 id 找代理。Map 用 `eval("new Map()")` 创建，`get`/`set`/`delete` 经 `call_function` 调用。释放时直接按 id 删除，不再遍历整个列表。
 - M6-3：`__tgjsMixin` 和 `InvokeMixinMethod` 改为 papi，`MixinFunctionMap` 改为 `FPapiValueRef`，在 `CppObjectMapper.UnInitialize` 之前释放；`UJSGeneratedClass::Mixin` 去掉了没用到的 Isolate 参数。papi 没有枚举自有属性的接口，mixin 方法名改为经 `eval("Object.getOwnPropertyNames")` 加 `call_function` 获取（mixin 注册不是热路径，不缓存）。
   - 基准（同机 A/B，各 3 轮）：mixin.cpp_to_js 旧 350/319/410，新 390/390/434，取最小值 319 到 390，每次调用多约 40ns 到 70ns。来源与 M6-1 相同（papi 作用域序列），一并列入待优化项。
+- M6-4a：补 makeUClass 功能测试（tests/make_uclass.js）。修了一个上游既有问题：`interceptClass` 给 `UE.xxx` 类挂的 proxy 截断了原型链，类上取不到 `hasOwnProperty`，`makeUClass` 对继承 `UE.xxx` 的类一直报错；改为用 `Object.prototype.hasOwnProperty.call`。
+- M6-4b：`__tgjsMakeUClass`、`JsConstruct`、`InvokeJsMethod` 改为 papi。`UJSGeneratedClass` / `UJSWidgetGeneratedClass` 的 Constructor、Prototype 和 `UJSGeneratedFunction::JsFunction` 改为 `FPapiValueRef`，去掉了 THREAD_SAFE 下的 Isolate 成员和 StaticConstructor 里的 Locker（papi 作用域自带）。`IDynamicInvoker::JsConstruct` 改为接收 `pesapi_value_ref`，公共头 DynamicInvoker.h 不再包含 v8.h。papi 没有 set_prototype，用首次 makeUClass 时缓存的 `Object.setPrototypeOf`。env 析构时生成类的 Release 移到 `CppObjectMapper.UnInitialize` 之前。ObjectMap 中 binding 的 JsObject 仍是 v8，经 bridge 转换，等 M4-6。
+  - 基准（同机 A/B，各 2 轮取最小值）：makeuclass.cpp_to_js 319 到 352（+33ns，+10%），来源同 M6-1；makeuclass.new 2054 到 2008，在噪声内。
 
 ### 5.6 UObject 生命周期
 

@@ -324,8 +324,7 @@ public:
     void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
-        const v8::UniquePersistent<v8::Object>& Prototype);
+    void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype);
 
     void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object);
 
@@ -421,7 +420,7 @@ private:
     void MakeWeakObjectPtr(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    void MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     TArray<TWeakObjectPtr<UClass>> MixinClasses;
     void Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -748,8 +747,7 @@ private:
                 Parent->InvokeDelegateCallback(Proxy, Params);
         }
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        virtual void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
-            const v8::UniquePersistent<v8::Object>& Prototype) override
+        virtual void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype) override
         {
             if (Parent)
                 Parent->JsConstruct(Class, Object, Constructor, Prototype);
@@ -803,6 +801,9 @@ private:
     TMap<UFunction*, TsFunctionInfo> TsFunctionMap;
 
     TMap<UFunction*, FPapiValueRef> MixinFunctionMap;
+
+    // Object.setPrototypeOf, cached by the first makeUClass for JsConstruct
+    FPapiValueRef ObjectSetPrototypeOf;
 
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 
