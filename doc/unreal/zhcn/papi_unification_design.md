@@ -494,6 +494,14 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 - `hot_reload.js`：CJS 由 `CompileFunction` 编译，inspector 拿到的 scriptSource 是不带包装的原始源码，直接比较、`setScriptSource` 原始源码。
 - 测试：`tests/module_loader.js` 改为直接用 require 与 `puerts.*`；ESM 用例在 M7-3（动态 import）前暂时也走 require。路径类报错变为 require 的文案（`can not find module_loader_data/X in <js-root>/tests`），非字符串参数报 `TypeError: the module name must be a string`。默认与 `v8_impl` 两条路径全部通过。
 
+#### 5.10.10 M7-3 落地记录
+
+- 动态 `import()`：`SetHostImportModuleDynamicallyCallback`（V8 10 及以上为 host_defined_options 加 resource_name 的签名，V8 9 用 WithImportAssertions 版本，更低版本用三参数版本）。回调里只创建 Promise，加载放到 `EnqueueMicrotask` 的微任务里执行（同 d8 / Node），按 import 语义 resolve（by 为 `import`），非 ESM 记录用合成模块，结果为模块命名空间；模块有顶层 await 时返回 `Evaluate` 的 Promise 链上命名空间，不再要求同步 settle。
+- referrer：由脚本的 resource name（即 debugPath）经 `DebugPathToUrl`（ESM、CJS 记录创建时登记）反查 url；不是由加载器加载的脚本（启动脚本、eval）按根目录解析。
+- `import.meta`：`SetHostInitializeImportMetaObjectCallback`，`url` 为宿主给出的 url（UE 下是文件路径，与 Unity 的 `puer:` 前缀不同），`resolve(specifier)` 只调用宿主 resolve（by 为 `import`）返回 url，不加载；内置模块返回其名字。
+- Node 下加载器会覆盖 Node 自己设置的这两个回调，UE 脚本的 import 统一走加载器。
+- 测试：第一步发起各类动态 import，下一步（中间跑定时器和微任务）检查结果，覆盖缓存共享、cjs / json / 内置模块、顶层 await（含定时器）、ESM 内的动态 import、`import.meta.url / resolve` 及错误；同步用例仍以 require 语义执行 ESM。
+
 ### 5.11 V8 专属快速路径（M8）
 
 `V8Backend.hpp`、`V8Object.hpp`、`V8FastCall.hpp` 不废弃，作为“确定 JS 引擎是 V8 时”的可选快速路径保留：业务可以直接用 V8 API 写绑定，省去 papi 函数表的间接调用。
