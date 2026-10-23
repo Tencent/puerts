@@ -29,7 +29,10 @@ struct PointerHash
 {
     std::size_t operator()(const void* ptr) const
     {
-        return reinterpret_cast<std::size_t>(ptr);
+        // the low bits of (heap) addresses are zero because of the alignment, and std::unordered_map may take the low bits
+        // of the hash as the bucket index (msvc), so they are shifted out and mixed with the higher bits
+        const auto Value = reinterpret_cast<std::uintptr_t>(ptr);
+        return static_cast<std::size_t>((Value >> 4) ^ (Value >> 16));
     }
 };
 
@@ -68,6 +71,9 @@ public:
 
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
+
+    // the cached js object of (Ptr, TypeId), empty if there is none
+    v8::Local<v8::Value> FindCppObject(v8::Isolate* Isolate, const void* TypeId, void* Ptr);
 
     virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
 

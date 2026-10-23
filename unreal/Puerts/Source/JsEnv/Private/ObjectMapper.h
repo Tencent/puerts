@@ -79,10 +79,10 @@ public:
 
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) = 0;
 
+    // ClassDefinition is the class definition (of an UScriptStruct) the template of JSObject is built from, the object is
+    // cached and finalized by the CppObjectMapper
     virtual void BindStruct(
-        pesapi_env Env, FScriptStructWrapper* ScriptStructWrapper, void* Ptr, pesapi_value JSObject, bool PassByPointer) = 0;
-
-    virtual void UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr) = 0;
+        pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, pesapi_value JSObject, bool PassByPointer) = 0;
 
     // PassByPointer为false代表需要在js对象释放时，free相应的内存
     // 相关信息见该issue：https://github.com/Tencent/puerts/issues/693

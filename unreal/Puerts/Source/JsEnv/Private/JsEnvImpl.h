@@ -156,9 +156,7 @@ public:
 
     v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject);
 
-    void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer);
-
-    virtual void UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr) override;
+    void BindStruct(const JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer);
 
     virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
 
@@ -253,9 +251,9 @@ public:
     }
 
     virtual void BindStruct(
-        pesapi_env Env, FScriptStructWrapper* ScriptStructWrapper, void* Ptr, pesapi_value JSObject, bool PassByPointer) override
+        pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, pesapi_value JSObject, bool PassByPointer) override
     {
-        BindStruct(ScriptStructWrapper, Ptr, papi_bridge::ToV8(JSObject).As<v8::Object>(), PassByPointer);
+        BindStruct(ClassDefinition, Ptr, papi_bridge::ToV8(JSObject).As<v8::Object>(), PassByPointer);
     }
 
     virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override
@@ -395,6 +393,8 @@ private:
     {
         v8::UniquePersistent<v8::FunctionTemplate> Template;
         std::shared_ptr<FStructWrapper> StructWrapper;
+        // the class definition Template is built from (held by ClassesBuilt / RetiredClasses)
+        const JSClassDefinition* ClassDefinition = nullptr;
         // per env flags (the wrapper is shared by envs), IsNativeTakeJsRef can be changed by mixin
 #if PUERTS_KEEP_UOBJECT_REFERENCE
         bool IsNativeTakeJsRef = false;
@@ -693,8 +693,6 @@ private:
     TMap<UObject*, FUObjectBinding*> ObjectMap;
 
     TSet<FUObjectBinding*> ReleasedObjectBindings;
-
-    TMap<void*, FObjectCacheNode> StructCache;
 
     struct ContainerCacheItem
     {

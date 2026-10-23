@@ -134,6 +134,20 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
 #endif
 }
 
+v8::Local<v8::Value> FCppObjectMapper::FindCppObject(v8::Isolate* Isolate, const void* TypeId, void* Ptr)
+{
+    auto Iter = CDataCache.find(Ptr);
+    if (Iter != CDataCache.end())
+    {
+        auto CacheNodePtr = Iter->second.Find(TypeId);
+        if (CacheNodePtr)
+        {
+            return CacheNodePtr->Value.Get(Isolate);
+        }
+    }
+    return v8::Local<v8::Value>();
+}
+
 v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer)
 {
@@ -144,14 +158,10 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
 
     if (PassByPointer)
     {
-        auto Iter = CDataCache.find(Ptr);
-        if (Iter != CDataCache.end())
+        auto Cached = FindCppObject(Isolate, TypeId, Ptr);
+        if (!Cached.IsEmpty())
         {
-            auto CacheNodePtr = Iter->second.Find(TypeId);
-            if (CacheNodePtr)
-            {
-                return CacheNodePtr->Value.Get(Isolate);
-            }
+            return Cached;
         }
     }
 
@@ -396,7 +406,7 @@ void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* 
         auto Removed = Iter->second.Remove(ClassDefinition->TypeId, true);
         if (!Iter->second.TypeId)    // last one
         {
-            CDataCache.erase(Ptr);
+            CDataCache.erase(Iter);
         }
     }
 }

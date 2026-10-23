@@ -44,6 +44,11 @@ const JSClassDefinition* FindReflectedClass(const void* TypeId)
     return Iter == Map.end() ? nullptr : Iter->second;
 }
 
+FStructWrapper* FStructWrapper::FromTypeId(const void* TypeId)
+{
+    return TypeId && FindReflectedClass(TypeId) ? static_cast<FStructWrapper*>(const_cast<void*>(TypeId)) : nullptr;
+}
+
 // extension methods found by the last scan, taken by the wrapper of the struct when its class definition is built
 static std::map<UStruct*, std::vector<UFunction*>>& PendingExtensionMethods()
 {
@@ -261,6 +266,10 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
     Definition.SuperTypeId = SuperTypeId;
     Definition.ScriptName = Out->ClassName.c_str();
     Definition.Initialize = &FStructWrapper::ReflectedConstruct;
+    if (InStruct->IsA<UScriptStruct>())
+    {
+        Definition.Finalize = &FScriptStructWrapper::ReflectedFinalize;
+    }
     Definition.Methods = Out->Methods.data();
     Definition.Functions = Out->Functions.data();
     Definition.Properties = Out->Properties.data();
@@ -456,7 +465,7 @@ void* FStructWrapper::ReflectedConstruct(struct pesapi_ffi* Apis, pesapi_callbac
     }
     else
     {
-        static_cast<FScriptStructWrapper*>(This)->New(Isolate, Context, V8Info);
+        static_cast<FScriptStructWrapper*>(This)->New(Isolate, Context, V8Info, ClassThunks::ClassDefinitionOf(V8Info));
     }
     // the object is bound by the wrapper
     return nullptr;
@@ -589,8 +598,8 @@ void FStructWrapper::Load(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
 }
 
-void FScriptStructWrapper::New(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FScriptStructWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+    const v8::FunctionCallbackInfo<v8::Value>& Info, const JSClassDefinition* ClassDefinition)
 {
     if (Info.IsConstructCall())
     {
@@ -617,7 +626,7 @@ void FScriptStructWrapper::New(
             }
         }
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(
-            papi_bridge::ToPapi(Context), this, Memory, papi_bridge::ToPapi(Self), false);
+            papi_bridge::ToPapi(Context), ClassDefinition, Memory, papi_bridge::ToPapi(Self), false);
     }
     else
     {
@@ -646,18 +655,10 @@ void FScriptStructWrapper::Free(TWeakObjectPtr<UStruct> InStruct, const FExterna
     }
 }
 
-void FScriptStructWrapper::OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data)
+void FScriptStructWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
 {
-    FScriptStructWrapper* ScriptStructWrapper = Data.GetParameter();
-    void* ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructWrapper, ScriptStructMemory);
-    Free(ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize, ScriptStructMemory);
-}
-
-void FScriptStructWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data)
-{
-    void* ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(Data.GetParameter(), ScriptStructMemory);
+    // the class data of a reflected class is its wrapper, it is process wide and outlives the envs
+    static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Free(Ptr);
 }
 
 void FClassWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data)

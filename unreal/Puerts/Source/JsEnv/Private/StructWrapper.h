@@ -131,6 +131,14 @@ public:
     static void OnTemplateCreated(
         v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template);
 
+    // the wrapper if TypeId is the type id of a reflected class (UClass / UScriptStruct), otherwise nullptr
+    static FStructWrapper* FromTypeId(const void* TypeId);
+
+    UStruct* GetStruct() const
+    {
+        return Struct.Get();
+    }
+
 protected:
     std::vector<std::shared_ptr<FPropertyTranslator>> Properties;
 
@@ -190,9 +198,9 @@ public:
     {
     }
 
-    static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data);
-
-    static void OnGarbageCollected(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data);
+    // Finalize of the class definitions of UScriptStructs, the memory of an object owned by js is freed by the
+    // CppObjectMapper through it
+    static void ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate);
 
     static void* Alloc(UScriptStruct* InScriptStruct);
 
@@ -203,7 +211,9 @@ public:
         Free(Struct, ExternalFinalize, Ptr);
     }
 
-    void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+    // ClassDefinition is the definition the template of the constructor is built from
+    void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
+        const JSClassDefinition* ClassDefinition);
 };
 
 class FClassWrapper : public FStructWrapper
