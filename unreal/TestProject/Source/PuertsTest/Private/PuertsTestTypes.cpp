@@ -1,5 +1,9 @@
 #include "PuertsTestTypes.h"
 #include "HAL/PlatformTime.h"
+#include "Engine/Blueprint.h"
+#include "Misc/Paths.h"
+#include "TypeScriptGeneratedClass.h"
+#include "UObject/Package.h"
 
 int32 UPuertsTestObject::LiveCount = 0;
 
@@ -267,6 +271,89 @@ int32 UPuertsTestMakeClassTarget::LoopImplEvent(int32 Count)
         Sum += ImplEvent(i);
     }
     return Sum;
+}
+
+FString UPuertsTestTsTarget::NativeEvent_Implementation(const FString& S)
+{
+    return TEXT("native:") + S;
+}
+
+int32 UPuertsTestTsTarget::CallImplEvent(int32 Value)
+{
+    return ImplEvent(Value);
+}
+
+FString UPuertsTestTsTarget::CallNativeEvent(const FString& S)
+{
+    return NativeEvent(S);
+}
+
+int32 UPuertsTestTsTarget::LoopImplEvent(int32 Count)
+{
+    int32 Sum = 0;
+    for (int32 i = 0; i < Count; ++i)
+    {
+        Sum += ImplEvent(i);
+    }
+    return Sum;
+}
+
+UClass* UPuertsTestTsTarget::CreateTsClass(const FString& Module)
+{
+    // the env finds the js module from the package path, see FJsEnvImpl::MakeSureInject
+    const FString PackageName = FString(TEXT("/Game" TS_BLUEPRINT_PATH)) + Module;
+    UPackage* Package = CreatePackage(*PackageName);
+    Package->SetFlags(RF_Transient);
+
+    UClass* Parent = UPuertsTestTsTarget::StaticClass();
+    const FName ClassName = MakeUniqueObjectName(
+        Package, UTypeScriptGeneratedClass::StaticClass(), FName(*(FPaths::GetBaseFilename(Module) + TEXT("_C"))));
+    auto Class = NewObject<UTypeScriptGeneratedClass>(Package, ClassName, RF_Public | RF_Transient);
+    Class->HasConstructor = false;
+
+#if ENGINE_MAJOR_VERSION < 5 || WITH_EDITOR
+    auto Blueprint = NewObject<UBlueprint>(Package, NAME_None, RF_Transient);
+    Blueprint->GeneratedClass = Class;
+    Class->ClassGeneratedBy = Blueprint;
+#endif
+
+    Class->PropertyLink = Parent->PropertyLink;
+    Class->ClassWithin = Parent->ClassWithin;
+    Class->ClassConfigName = Parent->ClassConfigName;
+    Class->SetSuperStruct(Parent);
+    Class->ClassFlags |= (Parent->ClassFlags & (CLASS_Inherit | CLASS_ScriptInherit)) | CLASS_CompiledFromBlueprint;
+    Class->ClassCastFlags |= Parent->ClassCastFlags;
+
+    // a compiled blueprint declares the events it implements in its own class
+    for (const TCHAR* Name : {TEXT("ImplEvent"), TEXT("NativeEvent")})
+    {
+        UFunction* Super = Parent->FindFunctionByName(Name);
+        check(Super);
+        if (Super->HasAnyFunctionFlags(FUNC_Native))
+        {
+            // the duplicate is bound while still native, give it something to bind to
+            Class->AddNativeFunction(Name, Super->GetNativeFunc());
+        }
+        UFunction* Function =
+            CastChecked<UFunction>(StaticDuplicateObject(Super, Class, Super->GetFName(), RF_Transient, UFunction::StaticClass()));
+        Function->ClearInternalFlags(EInternalObjectFlags::Native);
+        Function->FunctionFlags &= ~FUNC_Native;
+        Function->SetSuperStruct(Super);
+        Function->Next = Class->Children;
+        Class->Children = Function;
+        Function->Bind();
+        Function->StaticLink(true);
+        Class->AddFunctionToFunctionMap(Function, Function->GetFName());
+    }
+
+    Class->Bind();
+    Class->StaticLink(true);
+
+    // creating the CDO lets the env take over the class (TryBindJs) and load the js module (TsConstruct)
+    (void) Class->GetDefaultObject();
+    // what the blueprint compiler does after the CDO is made, InitPropertiesFromCustomList ensures it for instances
+    Class->UpdateCustomPropertyListForPostConstruction();
+    return Class;
 }
 
 void UPuertsTestReporter::Pass(const FString& Name)

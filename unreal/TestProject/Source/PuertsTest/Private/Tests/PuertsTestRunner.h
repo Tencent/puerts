@@ -13,7 +13,10 @@ namespace PuertsTest
 // Notes reported by the script are compared with Baseline/<BaselineName>.txt (written instead when running with
 // -PuertsUpdateBaseline or when the file does not exist yet).
 // Returns the reporter (rooted, caller must call RemoveFromRoot) or nullptr.
-UPuertsTestReporter* RunScript(FAutomationTestBase& Test, const FString& Module, const FString& BaselineName);
+// bBindTsClasses forwards UObject creation to FJsEnv::TryBindJs while the env lives, as FPuertsModule does for its env,
+// which TypeScript generated classes need.
+UPuertsTestReporter* RunScript(
+    FAutomationTestBase& Test, const FString& Module, const FString& BaselineName, bool bBindTsClasses = false);
 
 void CollectAllGarbage();
 }    // namespace PuertsTest

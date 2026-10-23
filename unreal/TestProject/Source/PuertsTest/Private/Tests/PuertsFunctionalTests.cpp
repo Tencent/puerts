@@ -48,4 +48,14 @@ bool FPuertsTest_MakeUClass::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_TsClass, "Puerts.Functional.TsClass", PUERTS_TEST_FLAGS)
+bool FPuertsTest_TsClass::RunTest(const FString& Parameters)
+{
+    // tests/ts_class.js throws in a ts override once
+    AddExpectedError(TEXT("tsclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
+    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/ts_class"), TEXT("TsClass"), true);
+    Reporter->RemoveFromRoot();
+    return !HasAnyErrors();
+}
+
 #endif

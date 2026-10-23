@@ -7,6 +7,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "UObject/UObjectArray.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace PuertsTest
@@ -72,13 +73,37 @@ static void CompareBaseline(FAutomationTestBase& Test, const FString& BaselineNa
     Test.AddInfo(FString::Printf(TEXT("actual notes saved to %s"), *ActualFile));
 }
 
-UPuertsTestReporter* RunScript(FAutomationTestBase& Test, const FString& Module, const FString& BaselineName)
+struct FTsBindListener : public FUObjectArray::FUObjectCreateListener
+{
+    PUERTS_NAMESPACE::FJsEnv* Env = nullptr;
+
+    virtual void NotifyUObjectCreated(const UObjectBase* Object, int32 Index) override
+    {
+        if (Env)
+        {
+            Env->TryBindJs(Object);
+        }
+    }
+
+    virtual void OnUObjectArrayShutdown() override
+    {
+        GUObjectArray.RemoveUObjectCreateListener(this);
+    }
+};
+
+UPuertsTestReporter* RunScript(FAutomationTestBase& Test, const FString& Module, const FString& BaselineName, bool bBindTsClasses)
 {
     UPuertsTestReporter* Reporter = NewObject<UPuertsTestReporter>();
     Reporter->AddToRoot();
 
     {
         auto Env = MakeUnique<PUERTS_NAMESPACE::FJsEnv>();
+        FTsBindListener TsBindListener;
+        if (bBindTsClasses)
+        {
+            TsBindListener.Env = Env.Get();
+            GUObjectArray.AddUObjectCreateListener(&TsBindListener);
+        }
         TArray<TPair<FString, UObject*>> Arguments;
         Arguments.Add(TPair<FString, UObject*>(TEXT("Reporter"), Reporter));
         Env->Start(Module, Arguments);
@@ -97,6 +122,10 @@ UPuertsTestReporter* RunScript(FAutomationTestBase& Test, const FString& Module,
         }
 
         Reporter->OnStep.Clear();
+        if (bBindTsClasses)
+        {
+            GUObjectArray.RemoveUObjectCreateListener(&TsBindListener);
+        }
         Env.Reset();
     }
     CollectAllGarbage();
