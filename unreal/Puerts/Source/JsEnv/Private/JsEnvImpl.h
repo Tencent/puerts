@@ -219,9 +219,6 @@ public:
 
     virtual void InvalidateClass(const void* TypeId) override;
 
-    v8::Local<v8::Value> AddSoftObjectPtr(
-        v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass);
-
     // IObjectMapper, the papi interface used by the backend independent code. Forward to the v8 implementations above until
     // they are migrated
     virtual void Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override
@@ -287,12 +284,6 @@ public:
     virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) override
     {
         return IsInstanceOf(Struct, papi_bridge::ToV8(JsObject).As<v8::Object>());
-    }
-
-    virtual pesapi_value AddSoftObjectPtr(pesapi_env Env, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(AddSoftObjectPtr(Context->GetIsolate(), Context, SoftObjectPtr, Class, IsSoftClass));
     }
 
     bool CheckDelegateProxies(float Tick);
@@ -401,8 +392,6 @@ private:
     void NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    void MakeWeakObjectPtr(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     void MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -770,10 +759,6 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> DelegateTemplate;
 
     v8::UniquePersistent<v8::FunctionTemplate> MulticastDelegateTemplate;
-
-    v8::UniquePersistent<v8::FunctionTemplate> SoftObjectPtrTemplate;
-
-    v8::UniquePersistent<v8::FunctionTemplate> WeakObjectPtrTemplate;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 

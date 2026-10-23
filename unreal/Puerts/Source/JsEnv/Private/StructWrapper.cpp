@@ -17,6 +17,8 @@
 #include "PapiV8Bridge.h"
 #include "ExtensionMethods.h"
 #include "ContainerWrapper.h"
+#include "SoftObjectWrapper.h"
+#include "WeakObjectPtrWrapper.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -42,7 +44,19 @@ const JSClassDefinition* FindReflectedClass(const void* TypeId)
 {
     auto& Map = ReflectedClassMap();
     auto Iter = Map.find(TypeId);
-    return Iter == Map.end() ? FindContainerClass(TypeId) : Iter->second;
+    if (Iter != Map.end())
+    {
+        return Iter->second;
+    }
+    if (TypeId == FWeakObjectPtrWrapper::TypeId())
+    {
+        return FWeakObjectPtrWrapper::GetClassDefinition();
+    }
+    if (TypeId == FSoftObjectWrapper::TypeId())
+    {
+        return FSoftObjectWrapper::GetClassDefinition();
+    }
+    return FindContainerClass(TypeId);
 }
 
 FStructWrapper* FStructWrapper::FromTypeId(const void* TypeId)

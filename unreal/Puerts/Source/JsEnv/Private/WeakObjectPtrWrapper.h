@@ -12,24 +12,26 @@
 
 #include "NamespaceDef.h"
 #include "pesapi.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "JSClassRegister.h"
 
 namespace PUERTS_NAMESPACE
 {
+// a registry class (process wide, fixed type id), the native object is a TWeakObjectPtr<UObject> owned by the js object
 class FWeakObjectPtrWrapper
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
+
+    static const void* TypeId();
+
+    // UE.MakeWeakObjectPtr(obj)
+    static void Make(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
 private:
     static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void IsValid(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    static void Finalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate);
 };
 }    // namespace PUERTS_NAMESPACE

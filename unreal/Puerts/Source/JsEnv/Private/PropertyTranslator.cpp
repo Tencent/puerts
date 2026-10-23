@@ -19,6 +19,7 @@
 #endif
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
+#include "SoftObjectWrapper.h"
 #include "JsObject.h"
 #include "PesapiClassThunks.h"
 #include "PapiUtils.h"
@@ -512,12 +513,12 @@ public:
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
-        return PapiUtils::AddSoftObjectPtr(Env, new FSoftObjectPtr(*Ptr), SoftObjectProperty->PropertyClass, false);
+        return FSoftObjectWrapper::Wrap(Apis, Env, *Ptr, SoftObjectProperty->PropertyClass, false);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(Apis->get_native_object_ptr(Env, Value));
+        FSoftObjectPtr* Ptr = FSoftObjectWrapper::SoftObjectPtrOf(Apis, Env, Value);
         if (!Ptr)
         {
             PapiUtils::ThrowException(Env, "passing a invalid object for FSoftObjectPtr");
@@ -540,12 +541,12 @@ public:
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
-        return PapiUtils::AddSoftObjectPtr(Env, new FSoftObjectPtr(*Ptr), SoftClassProperty->MetaClass, true);
+        return FSoftObjectWrapper::Wrap(Apis, Env, *Ptr, SoftClassProperty->MetaClass, true);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
-        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(Apis->get_native_object_ptr(Env, Value));
+        FSoftObjectPtr* Ptr = FSoftObjectWrapper::SoftObjectPtrOf(Apis, Env, Value);
         if (!Ptr)
         {
             PapiUtils::ThrowException(Env, "passing a invalid object for FSoftObjectPtr");

@@ -129,11 +129,6 @@ FORCEINLINE pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Inner,
     return ObjectMapperOf(Env)->CreateArray(Env, Inner, ArrayPtr);
 }
 
-FORCEINLINE pesapi_value AddSoftObjectPtr(pesapi_env Env, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass)
-{
-    return ObjectMapperOf(Env)->AddSoftObjectPtr(Env, SoftObjectPtr, Class, IsSoftClass);
-}
-
 FORCEINLINE pesapi_value FindOrAddDelegate(
     pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {

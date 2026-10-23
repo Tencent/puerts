@@ -530,7 +530,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     PapiMethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Apis, Env, PapiGlobal, "__tgjsNewStruct", this);
 
-    MethodBindingHelper<&FJsEnvImpl::MakeWeakObjectPtr>::Bind(Isolate, Context, Global, "__tgjsMakeWeakObjectPtr", This);
+    PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     PapiMethodBindingHelper<&FJsEnvImpl::MakeUClass>::Bind(Apis, Env, PapiGlobal, "__tgjsMakeUClass", this);
@@ -612,10 +612,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MulticastDelegateTemplate =
         v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FMulticastDelegateWrapper::ToFunctionTemplate(Isolate));
-
-    SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
-
-    WeakObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FWeakObjectPtrWrapper::ToFunctionTemplate(Isolate));
 
     DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
     MixinInvoker = DynamicInvoker;
@@ -875,8 +871,6 @@ FJsEnvImpl::~FJsEnvImpl()
         DynamicInvoker.Reset();
         MixinInvoker.Reset();
 
-        WeakObjectPtrTemplate.Reset();
-        SoftObjectPtrTemplate.Reset();
         MulticastDelegateTemplate.Reset();
         DelegateTemplate.Reset();
 #if !PUERTS_FORCE_CPP_UFUNCTION
@@ -1065,43 +1059,6 @@ void FJsEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callbac
     {
         Apis->throw_by_string(Info, "invalid argument");
     }
-}
-
-void FJsEnvImpl::MakeWeakObjectPtr(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    UObject* Object = nullptr;
-    if (Info[0]->IsObject())
-    {
-        Object = DataTransfer::GetUObjectOfWrapper(Info[0].As<v8::Object>(), true);
-    }
-    if (FV8Utils::IsReleasedPtr(Object))
-    {
-        Object = nullptr;
-    }
-
-    TWeakObjectPtr<UObject>* WeakPtr = new TWeakObjectPtr<UObject>(Object);
-
-    const auto JSObject = WeakObjectPtrTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    DataTransfer::SetPointer(Isolate, JSObject, WeakPtr, 0);
-
-    v8::Global<v8::Object>* GlobalPtr = new v8::Global<v8::Object>(Isolate, JSObject);
-    GlobalPtr->SetWeak<v8::Global<v8::Object>>(
-        GlobalPtr,
-        [](const v8::WeakCallbackInfo<v8::Global<v8::Object>>& Data)
-        {
-            void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-            delete static_cast<TWeakObjectPtr<UObject>*>(Ptr);
-            delete Data.GetParameter();
-        },
-        v8::WeakCallbackType::kInternalFields);
-
-    Info.GetReturnValue().Set(JSObject);
 }
 
 bool FJsEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
@@ -3286,26 +3243,6 @@ void FJsEnvImpl::OnReflectedTemplateCreated(const JSClassDefinition* ClassDefini
         }
         Holder = Current;
     }
-}
-
-v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(
-    v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass)
-{
-    const auto JSObject = SoftObjectPtrTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    DataTransfer::SetPointer(Isolate, JSObject, SoftObjectPtr, 0);
-    DataTransfer::SetPointer(Isolate, JSObject, Class, IsSoftClass ? 2 : 1);
-    DataTransfer::SetPointer(Isolate, JSObject, nullptr, IsSoftClass ? 1 : 2);
-    v8::Global<v8::Object>* GlobalPtr = new v8::Global<v8::Object>(Isolate, JSObject);
-    GlobalPtr->SetWeak<v8::Global<v8::Object>>(
-        GlobalPtr,
-        [](const v8::WeakCallbackInfo<v8::Global<v8::Object>>& Data)
-        {
-            void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-            delete static_cast<FSoftObjectPtr*>(Ptr);
-            delete Data.GetParameter();
-        },
-        v8::WeakCallbackType::kInternalFields);
-    return JSObject;
 }
 
 v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type)

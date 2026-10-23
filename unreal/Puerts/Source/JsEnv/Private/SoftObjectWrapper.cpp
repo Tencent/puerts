@@ -1,78 +1,89 @@
 #include "SoftObjectWrapper.h"
-#include "V8Utils.h"
 #include "ObjectMapper.h"
-#include "PesapiClassThunks.h"
 #include "PapiUtils.h"
 
 namespace PUERTS_NAMESPACE
 {
-v8::Local<v8::FunctionTemplate> FSoftObjectWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+// the type id of the soft object ptr class (soft object and soft class wrappers share it)
+static const char SoftObjectPtrTypeTag = 0;
+
+const void* FSoftObjectWrapper::TypeId()
 {
-    // the entries are referenced by the function templates, so they must have static storage
-    static const JSFunctionInfo Methods[] = {{"LoadSynchronous", &LoadSynchronous}, {"Get", &Get}};
-    auto Result = v8::FunctionTemplate::New(Isolate);
-    Result->InstanceTemplate()->SetInternalFieldCount(6);
-    for (const auto& Method : Methods)
+    return &SoftObjectPtrTypeTag;
+}
+
+const JSClassDefinition* FSoftObjectWrapper::GetClassDefinition()
+{
+    // the entries are referenced by the class definition, so they must have static storage
+    static JSFunctionInfo Methods[] = {{"LoadSynchronous", &LoadSynchronous}, {"Get", &Get}, JSFunctionInfo()};
+    static const JSClassDefinition Definition = []()
     {
-        Result->PrototypeTemplate()->Set(FV8Utils::ToV8String(Isolate, Method.Name),
-            ClassThunks::MethodTemplate(Isolate, &Method, v8::ConstructorBehavior::kAllow));
+        JSClassDefinition Result = JSClassEmptyDefinition;
+        Result.TypeId = &SoftObjectPtrTypeTag;
+        Result.ScriptName = "TSoftObjectPtr";
+        Result.Finalize = &Finalize;
+        Result.Methods = Methods;
+        return Result;
+    }();
+    return &Definition;
+}
+
+void FSoftObjectWrapper::Finalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
+{
+    delete static_cast<FSoftObjectHolder*>(Ptr);
+}
+
+pesapi_value FSoftObjectWrapper::Wrap(
+    struct pesapi_ffi* Apis, pesapi_env Env, const FSoftObjectPtr& SoftObjectPtr, UClass* Class, bool IsSoftClass)
+{
+    auto Holder = new FSoftObjectHolder{SoftObjectPtr, Class, IsSoftClass};
+    return Apis->native_object_to_value(Env, &SoftObjectPtrTypeTag, Holder, true);
+}
+
+FSoftObjectPtr* FSoftObjectWrapper::SoftObjectPtrOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
+{
+    if (Apis->get_native_object_typeid(Env, Value) != &SoftObjectPtrTypeTag)
+    {
+        return nullptr;
     }
-    return Result;
+    auto Holder = static_cast<FSoftObjectHolder*>(Apis->get_native_object_ptr(Env, Value));
+    return Holder ? &Holder->Ptr : nullptr;
 }
 
 typedef UObject* (*FSoftObjectPtrObjectGetter)(FSoftObjectPtr* Ptr);
 
-// internal field 1 (the type id slot of papi) is the class of the property, field 2 is the meta class, both are raw pointers
 static void GenericObjectGet(struct pesapi_ffi* Apis, pesapi_callback_info Info, FSoftObjectPtrObjectGetter Getter)
 {
-    FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(Apis->get_native_holder_ptr(Info));
-    if (!Ptr)
+    FSoftObjectHolder* Holder = Apis->get_native_holder_typeid(Info) == FSoftObjectWrapper::TypeId()
+                                    ? static_cast<FSoftObjectHolder*>(Apis->get_native_holder_ptr(Info))
+                                    : nullptr;
+    if (!Holder)
     {
         Apis->throw_by_string(Info, "passing a invalid object for FSoftObjectPtr");
         return;
     }
-    auto Obj = Getter(Ptr);
+    auto Obj = Getter(&Holder->Ptr);
 
     if (Obj)
     {
-        UClass* PropertyClass = nullptr;
-        if (UObject* Object = static_cast<UObject*>(const_cast<void*>(Apis->get_native_holder_typeid(Info))))
+        if (Holder->Class.IsStale())
         {
-            if (FV8Utils::IsReleasedPtr(Object))
-            {
-                Apis->throw_by_string(Info, "passing a invalid object");
-                return;
-            }
-            PropertyClass = Cast<UClass>(Object);
-        }
-
-        UClass* MetaClass = nullptr;
-        // papi exposes only two internal fields, field 2 is still read through the bridge
-        if (UObject* Object = FV8Utils::GetUObject(papi_bridge::HolderOf(Info), 2))
-        {
-            if (FV8Utils::IsReleasedPtr(Object))
-            {
-                Apis->throw_by_string(Info, "passing a invalid object");
-                return;
-            }
-            MetaClass = Cast<UClass>(Object);
-        }
-
-        if (PropertyClass && !Obj->GetClass()->IsChildOf(PropertyClass))
-        {
+            Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
-        if (MetaClass)
+        UClass* Class = Holder->Class.Get();
+
+        if (Class && Holder->IsSoftClass)
         {
-            auto Class = Cast<UClass>(Obj);
-            if (!Class)
+            auto ObjClass = Cast<UClass>(Obj);
+            if (!ObjClass || !ObjClass->IsChildOf(Class))
             {
                 return;
             }
-            if (!Class->IsChildOf(MetaClass))
-            {
-                return;
-            }
+        }
+        else if (Class && !Obj->GetClass()->IsChildOf(Class))
+        {
+            return;
         }
 
         Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis->get_env(Info), Obj->GetClass(), Obj));

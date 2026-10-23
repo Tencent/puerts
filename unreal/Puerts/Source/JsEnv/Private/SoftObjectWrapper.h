@@ -9,27 +9,43 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/SoftObjectPtr.h"
 
 #include "NamespaceDef.h"
 #include "pesapi.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "JSClassRegister.h"
 
 namespace PUERTS_NAMESPACE
 {
+// the native object of a soft object / soft class wrapper, owned by the js object
+struct FSoftObjectHolder
+{
+    FSoftObjectPtr Ptr;
+    // the class of a soft object property or the meta class of a soft class property
+    TWeakObjectPtr<UClass> Class;
+    bool IsSoftClass;
+};
+
+// a registry class (process wide, fixed type id), the native object is an FSoftObjectHolder
 class FSoftObjectWrapper
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
+
+    static const void* TypeId();
+
+    // a new js object holding a copy of SoftObjectPtr
+    static pesapi_value Wrap(
+        struct pesapi_ffi* Apis, pesapi_env Env, const FSoftObjectPtr& SoftObjectPtr, UClass* Class, bool IsSoftClass);
+
+    // the FSoftObjectPtr held by a soft object / soft class wrapper, nullptr for other values
+    static FSoftObjectPtr* SoftObjectPtrOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value);
 
 private:
     static void LoadSynchronous(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    static void Finalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate);
 };
 }    // namespace PUERTS_NAMESPACE
