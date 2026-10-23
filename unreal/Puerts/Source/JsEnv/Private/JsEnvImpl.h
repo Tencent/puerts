@@ -157,12 +157,15 @@ public:
 
     v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject);
 
-    void BindStruct(const JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    // an owned POD struct, the memory is freed with an ArrayBuffer (gced on a v8 worker thread) instead of the finalizer of
+    // the class definition, the object is not cached
+    static bool IsTriviallyFreed(FScriptStructWrapper* Wrapper);
+
+    void BindPodStruct(FScriptStructWrapper* Wrapper, void* Ptr, v8::Local<v8::Object> JSObject);
+#endif
 
     virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
-
-    v8::Local<v8::Value> FindOrAddStruct(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer);
 
     virtual void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void* Ptr,
         v8::Local<v8::Object> JSObject, bool PassByPointer) override;
@@ -228,17 +231,9 @@ public:
         return papi_bridge::ToPapi(FindOrAdd(Context->GetIsolate(), Context, Class, UEObject));
     }
 
-    virtual void BindStruct(
-        pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, pesapi_value JSObject, bool PassByPointer) override
-    {
-        BindStruct(ClassDefinition, Ptr, papi_bridge::ToV8(JSObject).As<v8::Object>(), PassByPointer);
-    }
+    virtual bool TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr) override;
 
-    virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(FindOrAddStruct(Context->GetIsolate(), Context, ScriptStruct, Ptr, PassByPointer));
-    }
+    virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;
 
     virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) override;
 

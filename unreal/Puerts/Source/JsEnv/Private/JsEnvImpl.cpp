@@ -1885,27 +1885,30 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
     return FindOrAdd(Isolate, Context, Class, UEObject, false);
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
+pesapi_value FJsEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
     if (!Ptr)
     {
-        return v8::Null(Isolate);
+        return Apis->create_null(Env);
     }
 
-    // the type id of the object is the wrapper
+    // builds the js class of the type in this env (if not yet)
     bool Existed;
     auto TemplateInfoPtr = GetTemplateInfoOfType(ScriptStruct, Existed);
-    auto Cached = CppObjectMapper.FindCppObject(Isolate, TemplateInfoPtr->StructWrapper.get(), Ptr);
-    if (!Cached.IsEmpty())
+    auto Wrapper = static_cast<FScriptStructWrapper*>(TemplateInfoPtr->StructWrapper.get());
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    if (!PassByPointer && IsTriviallyFreed(Wrapper))
     {
-        return Cached;
+        auto Context = papi_bridge::ToV8(Env);
+        auto Result = TemplateInfoPtr->Template.Get(MainIsolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+        BindPodStruct(Wrapper, Ptr, Result);
+        return papi_bridge::ToPapi(Result);
     }
-
-    // create and link
-    auto Result = TemplateInfoPtr->Template.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    BindStruct(TemplateInfoPtr->ClassDefinition, Ptr, Result, PassByPointer);
-    return Result;
+#endif
+    // the type id of the object is the wrapper, a borrowed struct is cached, the memory of an owned one is freed by the
+    // finalizer of the class definition (FScriptStructWrapper::ReflectedFinalize)
+    return Apis->native_object_to_value(Env, static_cast<FStructWrapper*>(Wrapper), Ptr, !PassByPointer);
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddCppObject(
@@ -2950,59 +2953,57 @@ pesapi_value FJsEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDefinit
     return Apis->native_object_to_value(Env, Holder->TypeId, Holder, true);
 }
 
-void FJsEnvImpl::BindStruct(const JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+bool FJsEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
 {
-    // the class data of a reflected class is its wrapper
-    FScriptStructWrapper* ScriptStructWrapper =
-        static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassDefinition->Data));
+    UScriptStruct* Struct = Wrapper->Struct.IsValid() ? Cast<UScriptStruct>(Wrapper->Struct.Get()) : nullptr;
+    return Struct && (Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
+}
 
-    if (!PassByPointer)
-    {
 // Optimization branch:
 // ArrayBuffer will be gced on v8 worker thread
 // for pod ustruct it's safe to use it
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
-        bool bStructTriviallyFreed = false;
-        if (ScriptStructWrapper->Struct.IsValid())
-        {
-            UScriptStruct* Struct = Cast<UScriptStruct>(ScriptStructWrapper->Struct.Get());
-            bStructTriviallyFreed = Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData;
-        }
-        if (bStructTriviallyFreed)
-        {
-            // not cached, the memory is freed with the ArrayBuffer
-            DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-            DataTransfer::SetPointer(MainIsolate, JSObject, ClassDefinition->TypeId, 1);
+void FJsEnvImpl::BindPodStruct(FScriptStructWrapper* Wrapper, void* Ptr, v8::Local<v8::Object> JSObject)
+{
+    // not cached, the memory is freed with the ArrayBuffer, the type id is the wrapper
+    DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
+    DataTransfer::SetPointer(MainIsolate, JSObject, static_cast<FStructWrapper*>(Wrapper), 1);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(
-                MainIsolate, Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
-                [](void* Data, size_t Length, void* DeleterData)
-                {
-                    // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
-                    FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
-                    FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
-                },
-                ScriptStructWrapper);
+    auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(
+        MainIsolate, Ptr, Wrapper->Struct->GetStructureSize(),
+        [](void* Data, size_t Length, void* DeleterData)
+        {
+            // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
+            FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+            FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
+        },
+        Wrapper);
 #else
-            auto Backing = v8::ArrayBuffer::NewBackingStore(
-                Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
-                [](void* Data, size_t Length, void* DeleterData)
-                {
-                    // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
-                    FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
-                    FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
-                },
-                ScriptStructWrapper);
-            auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
+    auto Backing = v8::ArrayBuffer::NewBackingStore(
+        Ptr, Wrapper->Struct->GetStructureSize(),
+        [](void* Data, size_t Length, void* DeleterData)
+        {
+            // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
+            FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+            FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
+        },
+        Wrapper);
+    auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
 #endif
-            __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
-            return;    // early return
-        }
+    __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
+}
 #endif
-    }
 
-    // the memory of an object owned by js is freed by the Finalize of the definition (FScriptStructWrapper::ReflectedFinalize)
-    CppObjectMapper.BindCppObject(MainIsolate, const_cast<JSClassDefinition*>(ClassDefinition), Ptr, JSObject, PassByPointer);
+bool FJsEnvImpl::TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr)
+{
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    if (IsTriviallyFreed(Wrapper))
+    {
+        BindPodStruct(Wrapper, Ptr, papi_bridge::ToV8(Info).This());
+        return true;
+    }
+#endif
+    return false;
 }
 
 void FJsEnvImpl::BindCppObject(

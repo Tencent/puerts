@@ -476,17 +476,14 @@ void* FStructWrapper::ReflectedConstruct(struct pesapi_ffi* Apis, pesapi_callbac
         Apis->throw_by_string(Info, "Associated UStruct had been GC");
         return nullptr;
     }
+    if (!This->Struct->IsA<UClass>())
+    {
+        return static_cast<FScriptStructWrapper*>(This)->New(Apis, Info);
+    }
     const auto& V8Info = papi_bridge::ToV8(Info);
     auto Isolate = V8Info.GetIsolate();
     auto Context = Isolate->GetCurrentContext();
-    if (This->Struct->IsA<UClass>())
-    {
-        static_cast<FClassWrapper*>(This)->New(Isolate, Context, V8Info);
-    }
-    else
-    {
-        static_cast<FScriptStructWrapper*>(This)->New(Isolate, Context, V8Info, ClassThunks::ClassDefinitionOf(V8Info));
-    }
+    static_cast<FClassWrapper*>(This)->New(Isolate, Context, V8Info);
     // the object is bound by the wrapper
     return nullptr;
 }
@@ -618,40 +615,40 @@ void FStructWrapper::Load(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
 }
 
-void FScriptStructWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-    const v8::FunctionCallbackInfo<v8::Value>& Info, const JSClassDefinition* ClassDefinition)
+void* FScriptStructWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    if (Info.IsConstructCall())
+    void* Memory = nullptr;
+    UScriptStruct* ScriptStruct = static_cast<UScriptStruct*>(Struct.Get());
+    if (ExternalInitialize)
     {
-        auto Self = Info.This();
-        void* Memory = nullptr;
-
+        Memory = ExternalInitialize(Apis, Info);
+        if (!Memory)    // do not bind nullptr
         {
-            if (ExternalInitialize)
-            {
-                Memory = ClassThunks::Construct(ExternalInitialize, Info);
-                if (!Memory)    // do not bind nullptr
-                {
-                    return;
-                }
-            }
-            else
-            {
-                Memory = Alloc(static_cast<UScriptStruct*>(Struct.Get()));
-                const int Count = Info.Length() < Properties.size() ? Info.Length() : Properties.size();
-                for (int i = 0; i < Count; ++i)
-                {
-                    Properties[i]->JsToUEInContainer(Isolate, Context, Info[i], Memory, false);
-                }
-            }
+            return nullptr;
         }
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(
-            papi_bridge::ToPapi(Context), ClassDefinition, Memory, papi_bridge::ToPapi(Self), false);
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, "only call as Construct is supported!");
+        Memory = Alloc(ScriptStruct);
+        const int ArgsLen = Apis->get_args_len(Info);
+        const int Count = ArgsLen < static_cast<int>(Properties.size()) ? ArgsLen : static_cast<int>(Properties.size());
+        if (Count > 0)
+        {
+            pesapi_env Env = Apis->get_env(Info);
+            for (int i = 0; i < Count; ++i)
+            {
+                Properties[i]->JsToUEInContainer(Apis, Env, Apis->get_arg(Info, i), Memory, false);
+            }
+        }
     }
+    // only a pod struct may be bound in a backend specific way
+    if ((ScriptStruct->StructFlags & EStructFlags::STRUCT_IsPlainOldData) &&
+        PapiUtils::ObjectMapperOf(Apis->get_env(Info))->TryBindOwnedStruct(Info, this, Memory))
+    {
+        return nullptr;
+    }
+    // bound by the backend, the memory is freed by ReflectedFinalize
+    return Memory;
 }
 
 void* FScriptStructWrapper::Alloc(UScriptStruct* InScriptStruct)

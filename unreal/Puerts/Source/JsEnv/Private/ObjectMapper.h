@@ -79,10 +79,10 @@ public:
 
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) = 0;
 
-    // ClassDefinition is the class definition (of an UScriptStruct) the template of JSObject is built from, the object is
-    // cached and finalized by the CppObjectMapper
-    virtual void BindStruct(
-        pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, pesapi_value JSObject, bool PassByPointer) = 0;
+    // an owned struct created by a constructor (Info), returns true if it is bound to the object being constructed by a
+    // backend specific way (e.g. a POD struct freed with an ArrayBuffer on v8), false to let the backend bind the pointer
+    // returned by the constructor
+    virtual bool TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr) = 0;
 
     // PassByPointer为false代表需要在js对象释放时，free相应的内存
     // 相关信息见该issue：https://github.com/Tencent/puerts/issues/693

@@ -211,9 +211,9 @@ public:
         Free(Struct, ExternalFinalize, Ptr);
     }
 
-    // ClassDefinition is the definition the template of the constructor is built from
-    void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
-        const JSClassDefinition* ClassDefinition);
+    // the constructor (called by FStructWrapper::ReflectedConstruct), returns the memory for the backend to bind (freed by
+    // ReflectedFinalize), or nullptr if the object is bound already (IObjectMapper::TryBindOwnedStruct) or on failure
+    void* New(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 };
 
 class FClassWrapper : public FStructWrapper
