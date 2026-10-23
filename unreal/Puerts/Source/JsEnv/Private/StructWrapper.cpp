@@ -17,6 +17,7 @@
 #include "PapiV8Bridge.h"
 #include "ExtensionMethods.h"
 #include "ContainerWrapper.h"
+#include "DelegateWrapper.h"
 #include "SoftObjectWrapper.h"
 #include "WeakObjectPtrWrapper.h"
 
@@ -55,6 +56,14 @@ const JSClassDefinition* FindReflectedClass(const void* TypeId)
     if (TypeId == FSoftObjectWrapper::TypeId())
     {
         return FSoftObjectWrapper::GetClassDefinition();
+    }
+    if (TypeId == FDelegateWrapper::TypeId())
+    {
+        return FDelegateWrapper::GetClassDefinition();
+    }
+    if (TypeId == FMulticastDelegateWrapper::TypeId())
+    {
+        return FMulticastDelegateWrapper::GetClassDefinition();
     }
     return FindContainerClass(TypeId);
 }

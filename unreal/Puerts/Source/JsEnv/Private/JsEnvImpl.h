@@ -181,9 +181,6 @@ public:
     pesapi_value FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, PropertyMacro* KeyProperty,
         PropertyMacro* ValueProperty, bool PassByPointer);
 
-    v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-        PropertyMacro* Property, void* DelegatePtr, bool PassByPointer);
-
     virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
@@ -196,9 +193,6 @@ public:
     virtual bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
 
     virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override;
-
-    void ExecuteDelegate(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr);
 
     virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) override;
 
@@ -241,18 +235,11 @@ public:
         return FindOrAddContainer(Env, FScriptMapWrapper::GetClassDefinition(), Ptr, KeyProperty, ValueProperty, PassByPointer);
     }
 
+    // the wrapper of a delegate is held by DelegateMap (strong) until the delegate is released
     virtual pesapi_value FindOrAddDelegate(
-        pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(FindOrAddDelegate(Context->GetIsolate(), Context, Owner, Property, DelegatePtr, PassByPointer));
-    }
+        pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) override;
 
-    virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        ExecuteDelegate(Context->GetIsolate(), Context, papi_bridge::ToV8(Info), DelegatePtr);
-    }
+    virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) override;
 
     virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) override;
 
@@ -616,8 +603,8 @@ private:
 
     struct DelegateObjectInfo
     {
-        v8::UniquePersistent<v8::Object> JSObject;    // function to proxy save here
-        TWeakObjectPtr<UObject> Owner;                //可用于自动清理
+        FPapiValueRef JSObject;           // the wrapper of the delegate (strong), function to proxy save here
+        TWeakObjectPtr<UObject> Owner;    //可用于自动清理
         DelegatePropertyMacro* DelegateProperty;
         MulticastDelegatePropertyMacro* MulticastDelegateProperty;
         UFunction* SignatureFunction;
@@ -690,10 +677,6 @@ private:
     TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
 
     TSet<UClass*> GeneratedClasses;
-
-    v8::UniquePersistent<v8::FunctionTemplate> DelegateTemplate;
-
-    v8::UniquePersistent<v8::FunctionTemplate> MulticastDelegateTemplate;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 

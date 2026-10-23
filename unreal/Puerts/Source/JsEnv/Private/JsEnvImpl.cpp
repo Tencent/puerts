@@ -608,11 +608,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         OnReflectedTemplateCreated(ClassDefinition);
     };
 
-    DelegateTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FDelegateWrapper::ToFunctionTemplate(Isolate));
-
-    MulticastDelegateTemplate =
-        v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FMulticastDelegateWrapper::ToFunctionTemplate(Isolate));
-
     DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
     MixinInvoker = DynamicInvoker;
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -771,6 +766,7 @@ FJsEnvImpl::~FJsEnvImpl()
                 Iter->second.Proxy->ResetJsFunction();
             }
             Iter->second.JsCallbacks.Reset();
+            Iter->second.JSObject.Reset();
         }
         RemoveListItem.Reset();
         GenListApply.Reset();
@@ -834,8 +830,6 @@ FJsEnvImpl::~FJsEnvImpl()
 
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
-            Iter->second.JSObject.Reset();
-
             if (!Iter->second.PassByPointer)
             {
                 delete ((FScriptDelegate*) Iter->first);
@@ -872,8 +866,6 @@ FJsEnvImpl::~FJsEnvImpl()
         DynamicInvoker.Reset();
         MixinInvoker.Reset();
 
-        MulticastDelegateTemplate.Reset();
-        DelegateTemplate.Reset();
 #if !PUERTS_FORCE_CPP_UFUNCTION
         MergePrototype.Reset();
 #endif
@@ -1908,10 +1900,11 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddCppObject(
     return CppObjectMapper.FindOrAddCppObject(Isolate, Context, TypeId, Ptr, PassByPointer);
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
-    PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
+pesapi_value FJsEnvImpl::FindOrAddDelegate(
+    pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {
     check(DelegatePtr);    // must not null
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
 
     if (PassByPointer)
     {
@@ -1920,11 +1913,11 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
         {
             if (Iter->second.Owner.IsValid())
             {
-                return Iter->second.JSObject.Get(Isolate);
+                return Iter->second.JSObject.Get(Env);
             }
             else
             {
-                ClearDelegate(papi_bridge::ToPapi(Context), DelegatePtr);
+                ClearDelegate(Env, DelegatePtr);
             }
         }
     }
@@ -1938,18 +1931,17 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
         }
         else    // do not support MulticastDelegate
         {
-            return v8::Undefined(Isolate);
+            return Apis->create_undefined(Env);
         }
     }
 
     {
         // UE_LOG(LogTemp, Warning, TEXT("FindOrAddDelegate -- new %s"), *Property->GetName());
-        auto Constructor = (Property->IsA<DelegatePropertyMacro>() ? DelegateTemplate : MulticastDelegateTemplate)
-                               .Get(Isolate)
-                               ->GetFunction(Context)
-                               .ToLocalChecked();
-        auto JSObject = Constructor->NewInstance(Context).ToLocalChecked();
-        DataTransfer::SetPointer(Isolate, JSObject, DelegatePtr, 0);
+        // the delegate is not owned by the wrapper, the wrapper is held by DelegateMap and the delegate (if copied) is deleted
+        // when the entry is released
+        const void* TypeId =
+            Property->IsA<DelegatePropertyMacro>() ? FDelegateWrapper::TypeId() : FMulticastDelegateWrapper::TypeId();
+        pesapi_value JSObject = Apis->native_object_to_value(Env, TypeId, DelegatePtr, false);
         UFunction* Function = nullptr;
         DelegatePropertyMacro* DelegateProperty = CastFieldMacro<DelegatePropertyMacro>(Property);
         MulticastDelegatePropertyMacro* MulticastDelegateProperty = CastFieldMacro<MulticastDelegatePropertyMacro>(Property);
@@ -1961,10 +1953,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
         {
             Function = MulticastDelegateProperty->SignatureFunction;
         }
-        pesapi_env Env = papi_bridge::ToPapi(Context);
-        DelegateMap[DelegatePtr] = {v8::UniquePersistent<v8::Object>(Isolate, JSObject), TWeakObjectPtr<UObject>(Owner),
-            DelegateProperty, MulticastDelegateProperty, Function, PassByPointer, nullptr,
-            FPapiValueRef(&v8impl::g_pesapi_ffi, Env, v8impl::g_pesapi_ffi.create_array(Env))};
+        DelegateMap[DelegatePtr] = {FPapiValueRef(Apis, Env, JSObject), TWeakObjectPtr<UObject>(Owner), DelegateProperty,
+            MulticastDelegateProperty, Function, PassByPointer, nullptr, FPapiValueRef(Apis, Env, Apis->create_array(Env))};
         return JSObject;
     }
 }
@@ -2458,36 +2448,37 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 }
 #endif
 
-void FJsEnvImpl::ExecuteDelegate(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr)
+void FJsEnvImpl::ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
 {
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
     {
-        FV8Utils::ThrowException(Isolate, "can not find the delegate!");
+        Apis->throw_by_string(Info, "can not find the delegate!");
         return;
     }
     if (Iter->second.DelegateProperty && !static_cast<FScriptDelegate*>(DelegatePtr)->IsBound())
     {
         // FScriptDelegate::ProcessDelegate asserts on an unbound (or stale) delegate
-        FV8Utils::ThrowException(Isolate, "can not execute an unbound delegate!");
+        Apis->throw_by_string(Info, "can not execute an unbound delegate!");
         return;
     }
     auto SignatureFunction = Iter->second.SignatureFunction;
-    if (JsCallbackPrototypeMap.find(SignatureFunction) == JsCallbackPrototypeMap.end())
+    auto& Translator = JsCallbackPrototypeMap[SignatureFunction];
+    if (!Translator)
     {
-        JsCallbackPrototypeMap[SignatureFunction] = std::make_unique<FFunctionTranslator>(SignatureFunction, true);
+        Translator = std::make_unique<FFunctionTranslator>(SignatureFunction, true);
     }
 
     if (Iter->second.DelegateProperty)
     {
-        JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
+        Translator->Call(Apis, Info,
             [ScriptDelegate = static_cast<FScriptDelegate*>(DelegatePtr)](void* Params)
             { ScriptDelegate->ProcessDelegate<UObject>(Params); });
     }
     else
     {
-        JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
+        Translator->Call(Apis, Info,
             [MulticastScriptDelegate = static_cast<FMulticastScriptDelegate*>(DelegatePtr)](void* Params)
             {
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 8

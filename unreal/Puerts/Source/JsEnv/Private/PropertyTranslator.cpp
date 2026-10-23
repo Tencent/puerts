@@ -19,6 +19,7 @@
 #endif
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
+#include "DelegateWrapper.h"
 #include "SoftObjectWrapper.h"
 #include "JsObject.h"
 #include "PesapiClassThunks.h"
@@ -1051,7 +1052,10 @@ public:
         }
         else
         {
-            auto Src = static_cast<FScriptDelegate*>(Apis->get_native_object_ptr(Env, Value));
+            // only a delegate wrapper (the other wrappers were misread as a FScriptDelegate before)
+            auto Src = Apis->get_native_object_typeid(Env, Value) == FDelegateWrapper::TypeId()
+                           ? static_cast<FScriptDelegate*>(Apis->get_native_object_ptr(Env, Value))
+                           : nullptr;
             if (Des && Src)
             {
                 *Des = *Src;

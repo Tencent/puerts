@@ -10,31 +10,23 @@
 
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
-#include <memory>
-#include <vector>
-#include "PropertyTranslator.h"
-#include "FunctionTranslator.h"
 
 #include "NamespaceDef.h"
 #include "pesapi.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "JSClassRegister.h"
 
 namespace PUERTS_NAMESPACE
 {
+// registry classes (process wide, fixed type id), the native object is the FScriptDelegate / FMulticastScriptDelegate, which is
+// not owned by the js object: the wrapper is held by the DelegateMap of the env and the delegate is released there
 class FDelegateWrapper
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
+
+    static const void* TypeId();
 
 private:
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
     static void Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void IsBound(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -47,11 +39,11 @@ private:
 class FMulticastDelegateWrapper
 {
 public:
-    static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+    static const JSClassDefinition* GetClassDefinition();
+
+    static const void* TypeId();
 
 private:
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
     static void Add(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void Remove(struct pesapi_ffi* Apis, pesapi_callback_info Info);

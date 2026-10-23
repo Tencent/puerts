@@ -9,33 +9,36 @@
 #include "DelegateWrapper.h"
 #include "ObjectMapper.h"
 #include "V8Utils.h"
-#include "PesapiClassThunks.h"
 #include "PapiUtils.h"
 
 namespace PUERTS_NAMESPACE
 {
-static v8::Local<v8::FunctionTemplate> DelegateTemplate(
-    v8::Isolate* Isolate, v8::FunctionCallback Constructor, const JSFunctionInfo* Methods, int MethodCount)
+// the type ids of the delegate classes (different values, so identical constants folding can not merge them)
+static const char DelegateTypeTag = 'D';
+
+static const char MulticastDelegateTypeTag = 'M';
+
+static JSClassDefinition DelegateClassDefinition(const void* TypeId, const char* ScriptName, JSFunctionInfo* Methods)
 {
-    auto Result = v8::FunctionTemplate::New(Isolate, Constructor);
-    Result->InstanceTemplate()->SetInternalFieldCount(2);
-    for (int i = 0; i < MethodCount; ++i)
-    {
-        Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, Methods[i].Name),
-            ClassThunks::MethodTemplate(Isolate, &Methods[i], v8::ConstructorBehavior::kAllow));
-    }
+    JSClassDefinition Result = JSClassEmptyDefinition;
+    Result.TypeId = TypeId;
+    Result.ScriptName = ScriptName;
+    Result.Methods = Methods;
     return Result;
 }
 
-v8::Local<v8::FunctionTemplate> FDelegateWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+const void* FDelegateWrapper::TypeId()
 {
-    // the entries are referenced by the function templates, so they must have static storage
-    static const JSFunctionInfo Methods[] = {{"Bind", &Bind}, {"IsBound", &IsBound}, {"Unbind", &Unbind}, {"Execute", &Execute}};
-    return DelegateTemplate(Isolate, New, Methods, UE_ARRAY_COUNT(Methods));
+    return &DelegateTypeTag;
 }
 
-void FDelegateWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)
+const JSClassDefinition* FDelegateWrapper::GetClassDefinition()
 {
+    // the entries are referenced by the class definition, so they must have static storage
+    static JSFunctionInfo Methods[] = {
+        {"Bind", &Bind}, {"IsBound", &IsBound}, {"Unbind", &Unbind}, {"Execute", &Execute}, JSFunctionInfo()};
+    static const JSClassDefinition Definition = DelegateClassDefinition(&DelegateTypeTag, "FScriptDelegate", Methods);
+    return &Definition;
 }
 
 void FDelegateWrapper::IsBound(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -87,14 +90,18 @@ void FDelegateWrapper::Execute(struct pesapi_ffi* Apis, pesapi_callback_info Inf
     PapiUtils::ExecuteDelegate(Env, Info, DelegatePtr);
 }
 
-v8::Local<v8::FunctionTemplate> FMulticastDelegateWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
+const void* FMulticastDelegateWrapper::TypeId()
 {
-    static const JSFunctionInfo Methods[] = {{"Add", &Add}, {"Remove", &Remove}, {"Clear", &Clear}, {"Broadcast", &Broadcast}};
-    return DelegateTemplate(Isolate, New, Methods, UE_ARRAY_COUNT(Methods));
+    return &MulticastDelegateTypeTag;
 }
 
-void FMulticastDelegateWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)
+const JSClassDefinition* FMulticastDelegateWrapper::GetClassDefinition()
 {
+    static JSFunctionInfo Methods[] = {
+        {"Add", &Add}, {"Remove", &Remove}, {"Clear", &Clear}, {"Broadcast", &Broadcast}, JSFunctionInfo()};
+    static const JSClassDefinition Definition =
+        DelegateClassDefinition(&MulticastDelegateTypeTag, "FMulticastScriptDelegate", Methods);
+    return &Definition;
 }
 
 void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
