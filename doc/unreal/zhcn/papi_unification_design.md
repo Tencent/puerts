@@ -264,6 +264,15 @@ M4 落地情况（分批进行）：
   - 行为变化：容器方法改由 registry 生成模板，`ConstructorBehavior` 跟随 `CppObjectMapper` 的默认值；`JsToUE` 和 FastCall 对 type id 不匹配的值不再当作容器（原来任何带 field 0 的包装都会被当作容器读取）；Soft 属性只接受 Soft 包装，传入 UObject 或普通对象时抛 "passing a invalid object for FSoftObjectPtr"（原来 UObject 的句柄会被误读成 `FSoftObjectPtr`）。
   - 测试：两条路径用例全过，Properties 基线只新增 Soft 的 4 条；BuildPlugin 通过。基准与 HEAD 背靠背对比（各两轮取最小，机器有漂移）：struct 一批 new.struct -15%、return_struct -8%；容器一批 array.* 持平，map.get -7% 到 -17%；cpp.overload、property.set_int 两次分别偏高 10% 到 25%，但这两条路径都没有改动，交替重跑 HEAD 后差距缩小，判定为代码布局或机器漂移。
   - 剩余：`IObjectMapper` 中 UObject 的 `Bind` / `FindOrAdd`、struct 的 `BindStruct` / `FindOrAddStruct`、`Merge`、`IsInstanceOf` 仍在桥接层转调 v8 实现（依赖 `ObjectMap` 的 v8 persistent 和 v8 模板），委托包装的模板和 `DelegateObjectInfo::JSObject` 仍是 v8，随后续批次处理。
+- M4-6g：`IsInstanceOf`、`Merge`、struct 的创建和构造改为 papi。
+  - `IsInstanceOf`：struct 用 `FStructWrapper::FromTypeId(get_native_object_typeid)` 判断后 `IsChildOf`，UObject 经 `PapiUtils::GetUObject`（排除 null 和 `RELEASED_UOBJECT`）。删除 v8 版本。
+  - `Merge`（`ObjectMerger`）：papi 没有枚举自有属性的接口，用缓存的 `Object.keys`（`FJsEnvImpl::ObjectKeys`，自有、可枚举、不含 symbol，与原来 v8 默认的 `GetOwnPropertyNames` 一致）取 key，逐个 `get_property` 后按字段 `JsToUEInContainer`；值为普通对象且字段是 UObject / struct 时递归合并，值为 undefined 时跳过。补测试：原型链上的属性、不可枚举属性不合并，undefined 不覆盖。
+  - `FindOrAddStruct`：改为 `native_object_to_value(env, wrapper, ptr, !PassByPointer)`，借用的 struct 由 `CppObjectMapper` 缓存，持有的由类定义的 Finalize 释放；持有的 struct 不再查缓存（原来会先查一次）。`IObjectMapper::BindStruct` 删除。
+  - 构造：`FScriptStructWrapper::New` 改为 papi，返回内存交给后端 `CDataNew` 绑定（与普通 C++ 类相同），`IsConstructCall` 的检查也由 `CDataNew` 负责。
+  - POD 优化分支（ArrayBuffer 在 v8 工作线程 GC 时释放内存，只在 `HAS_ARRAYBUFFER_NEW_WITHOUT_STL || WITH_BACKING_STORE_AUTO_FREE` 时启用）是剩余的 v8 依赖，隔离为 `FJsEnvImpl::BindPodStruct`；构造时经 `IObjectMapper::TryBindOwnedStruct(Info, wrapper, ptr)` 由后端决定是否走这条路，只有 POD struct 才调用。编辑器构建中该宏为 0，临时强制为 1 编译并跑测试通过。
+  - 后端优化（v8 后端内部，与引擎无关）：`CppObjectMapper::TypeIdToTemplateMap` 的条目同时记下生成模板的那份类定义（模板的回调本来就引用它），`FindOrAddCppObject` 对已生成模板的类只查一次表，不再走 `LoadClassByID`（UE 下反射类要先查 registry、再查 `ReflectedClassMap`）；`pesapi_native_object_to_value` 直接调 mapper，少一层转发。
+  - 测试：两条路径用例全过。基准与 HEAD 交替对比：new.struct、return_struct、struct_param 持平；property.get_struct 由 52 到 55ns 变为约 58ns，差距来自 papi 调用中 `Context::GetIsolate` 的跨模块调用（直接查缓存的实验版本为 52ns），属于 v8 后端的通用开销，后续统一优化。
+  - 剩余：UObject 的 `Bind` / `FindOrAdd`（依赖 `ObjectMap` 的 v8 persistent、v8 模板和 `FClassWrapper::New`），委托的 `FindOrAddDelegate` / `ExecuteDelegate` 和委托模板。
 
 M5 落地情况（分批进行）：
 
