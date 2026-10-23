@@ -502,9 +502,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &GetFNameString);
 
-    MethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Isolate, Context, Global, "__tgjsUEClassToJSClass", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Apis, Env, PapiGlobal, "__tgjsUEClassToJSClass", this);
 
-    MethodBindingHelper<&FJsEnvImpl::NewContainer>::Bind(Isolate, Context, Global, "__tgjsNewContainer", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::NewContainer>::Bind(Apis, Env, PapiGlobal, "__tgjsNewContainer", this);
 
     PapiMethodBindingHelper<&FJsEnvImpl::MergeObject>::Bind(Apis, Env, PapiGlobal, "__tgjsMergeObject", this);
 
@@ -3453,22 +3453,17 @@ void FJsEnvImpl::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     CppObjectMapper.LoadCppType(Info);
 }
 
-void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgObject);
 
-    CHECK_V8_ARGS(EArgObject);
-
+    pesapi_env Env = Apis->get_env(Info);
     UField* Type = nullptr;
-    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
         Type = Cast<UField>(Object);
@@ -3476,11 +3471,13 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
 
     if (Type)
     {
-        Info.GetReturnValue().Set(UETypeToJsClass(Isolate, Context, Type));
+        // the js class of a UStruct is still built from a v8 template (see M4-6)
+        auto Context = papi_bridge::ToV8(Env);
+        Apis->add_return(Info, papi_bridge::ToPapi(UETypeToJsClass(Context->GetIsolate(), Context, Type)));
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("argument #0 expect a UField")));
+        Apis->throw_by_string(Info, "argument #0 expect a UField");
     }
 }
 
@@ -3501,11 +3498,11 @@ void FJsEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info 
     SetJsTakeRef(Object, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
 }
 
-bool FJsEnvImpl::GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro** PropertyPtr)
+bool FJsEnvImpl::GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr)
 {
-    if (Value->IsInt32())
+    if (Apis->is_int32(Env, Value))
     {
-        int Type = Value->Int32Value(Context).ToChecked();
+        int Type = Apis->get_value_int32(Env, Value);
         if (Type < 0 || Type >= MaxBuiltinType)
         {
             *PropertyPtr = nullptr;
@@ -3514,7 +3511,7 @@ bool FJsEnvImpl::GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Lo
         *PropertyPtr = ContainerMeta.GetBuiltinProperty((BuiltinType) Type);
         return true;
     }
-    else if (auto Field = Cast<UField>(FV8Utils::GetUObject(Context, Value)))
+    else if (auto Field = Cast<UField>(PapiUtils::GetUObject(Apis, Env, Value)))
     {
         *PropertyPtr = ContainerMeta.GetObjectProperty(Field);
         return *PropertyPtr != nullptr;
@@ -3526,55 +3523,49 @@ bool FJsEnvImpl::GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Lo
     }
 }
 
-void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgInt32);
 
-    CHECK_V8_ARGS(EArgInt32);
-
-    int ContainerType = Info[0]->Int32Value(Context).ToChecked();
+    pesapi_env Env = Apis->get_env(Info);
+    int ContainerType = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
 
     PropertyMacro* Property1 = nullptr;
     PropertyMacro* Property2 = nullptr;
-    FScriptArray* ScriptArray = nullptr;
-    FScriptSet* ScriptSet = nullptr;
-    FScriptMap* ScriptMap = nullptr;
 
-    if (!GetContainerTypeProperty(Context, Info[1], &Property1))
+    if (!GetContainerTypeProperty(Apis, Env, Apis->get_arg(Info, 1), &Property1))
     {
-        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("can not get first type for %d"), ContainerType));
+        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not get first type for %d"), ContainerType)));
         return;
     }
 
     switch (ContainerType)
     {
         case 0:    // Array
-            ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));
-            // Logger->Info(FString::Printf(TEXT("Array %s"), *Property1->GetClass()->GetName()));
-            Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, ScriptArray, false));
+        {
+            auto ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));
+            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Env, Property1, ScriptArray, false));
             break;
+        }
         case 1:    // Set
-            ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(Property1));
-            // Logger->Info(FString::Printf(TEXT("Set %s"), *Property1->GetClass()->GetName()));
-            Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, ScriptSet, false));
+        {
+            auto ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(Property1));
+            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Env, Property1, ScriptSet, false));
             break;
+        }
         case 2:    // Map
-            if (!GetContainerTypeProperty(Context, Info[2], &Property2))
+        {
+            if (!GetContainerTypeProperty(Apis, Env, Apis->get_arg(Info, 2), &Property2))
             {
-                FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("can not get second type for %d"), ContainerType));
+                Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not get second type for %d"), ContainerType)));
                 return;
             }
-            // Logger->Info(FString::Printf(TEXT("Map %s %s"), *Property1->GetClass()->GetName(),
-            // *Property2->GetClass()->GetName()));
-            ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(Property1, Property2));
-            Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, Property2, ScriptMap, false));
+            auto ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(Property1, Property2));
+            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Env, Property1, Property2, ScriptMap, false));
             break;
+        }
         default:
-            FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("invalid container type %d"), ContainerType));
+            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("invalid container type %d"), ContainerType)));
     }
 }
 

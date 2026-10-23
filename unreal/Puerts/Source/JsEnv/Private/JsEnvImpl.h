@@ -404,13 +404,13 @@ private:
 
     void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    bool GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro** PropertyPtr);
+    bool GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr);
 
-    void NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct, bool& IsReuseTemplate);
 
