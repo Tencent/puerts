@@ -233,12 +233,12 @@ M4 落地情况（分批进行）：
 - M4-6b：`FStructWrapper`（含各类翻译器）改为进程级共享，为 `on_class_not_found` 不带 userdata 做准备。`FStructWrapper::FindOrAdd` 按 `GetFullName` 维护一张进程级表，模块卸载时 `ReleaseAll`；原来放在 wrapper 上的 env 状态移走：函数模板缓存改为每个 env 的 `CachedTemplates`（`PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE` 下按 wrapper 缓存），`IsNativeTakeJsRef`（mixin 只影响当前 env）和 `IsTypeScriptGeneratedClass` 改放在每个 env 的 `FTemplateInfo` 上。
   - 是否复用模板改为看当前 env 的缓存是否已有模板，而不是看进程表里是否已有 wrapper，因此第二个 env 首次使用某类型时仍会完整生成模板。
   - 非复用重建时只清 `ExternalInitialize`、`ExternalFinalize`、`Properties`，`GetPropertyTranslator` 命中已有翻译器时会把它补回 `Properties`，避免 struct 构造参数丢失；扩展方法加入时去重。
-  - 已知遗留：同一 FullName 换了新的 UStruct*（如蓝图重编译生成新类）时仍沿用原有行为，由 M4-6e 的类定义失效 API 处理。
+  - 已知遗留：同一 FullName 换了新的 UStruct*（如蓝图重编译生成新类）时仍沿用原有行为，M4-6e 新增类定义失效 API，默认仍保持该行为（见 M4-6e）。
   - 测试：两条路径 14 个用例全过（其中 5 个带 warning，都是用例有意触发的日志）。基准：与同时段 HEAD 对照持平（new.uobject 1614ns / 1751ns，tsclass.new 2190ns / 2239ns），之前基线的偏差是机器状态漂移。
 - M4-6c：UClass / UScriptStruct 的模板改由 `CppObjectMapper::GetTemplateOfClass` 按类定义生成，删除 `FStructWrapper::ToFunctionTemplate`、`InitTemplateProperties`、`FFunctionTranslator::ToFunctionTemplate`、`FPropertyTranslator::SetAccessor`、每个 env 的 `CachedTemplates` 和 `PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE`。
   - 类定义：`FStructWrapper::GetClassDefinition` 生成 `FReflectedClass`（持有 `JSClassDefinition` 及其方法、属性数组和名字），`TypeId` 是 wrapper 本身，`SuperTypeId` 是父类的 wrapper（构建时先递归构建父类），`Data` 是 wrapper，`Initialize` 是 `ReflectedConstruct`：取出 wrapper 后按类型调用原有的 `FClassWrapper::New` / `FScriptStructWrapper::New` 完成创建和绑定，返回 nullptr 让 `CDataNew` 不再绑定。条目直接复用翻译器上的 `CallbackInfo` / `AccessorInfo`（复制后填名字），成员顺序和过滤规则与原 `ToFunctionTemplate` 一致。
   - 查找：registry 的 `FindClassByID` 在注册表找不到时回退到进程级的反射类表（wrapper -> 当前一代定义），因此 `Inherit` 走 `LoadClassByID` 即可找到父类。原设计中“在 `on_class_not_found` 里按 UStruct 生成定义”改为由 UE 侧显式构建，原因是无法安全判断任意 `type_id` 是否为 `UStruct*`；随之 `LoadClassByID` 只能找到已经构建过的 UE 类型定义。
-  - 身份：模板按 `TypeId` 缓存在每个 env 的 `CppObjectMapper` 中，wrapper 按 FullName 保留，所以同一 FullName 换了新的 UStruct* 时生成新一代定义（只用于还没创建过该类模板的 env），已经创建过的 env 继续使用原来的 JS 类，只刷新翻译器，等价于原来的模板复用语义。旧一代定义仍被已有模板引用，随 wrapper 一起保留，有少量内存累积，由 M4-6e 的类定义失效 API 处理。另一个 env 首次使用已有定义的类型时只刷新翻译器，不重建定义。
+  - 身份：模板按 `TypeId` 缓存在每个 env 的 `CppObjectMapper` 中，wrapper 按 FullName 保留，所以同一 FullName 换了新的 UStruct* 时生成新一代定义（只用于还没创建过该类模板的 env），已经创建过的 env 继续使用原来的 JS 类，只刷新翻译器，等价于原来的模板复用语义。旧一代定义仍被已有模板引用，随 wrapper 一起保留，有少量内存累积（M4-6e 改为由用到它的 env 持有，已解决）。另一个 env 首次使用已有定义的类型时只刷新翻译器，不重建定义。
   - UE 专用钩子 `FCppObjectMapper::OnTemplateCreated`：对 `Initialize == ReflectedConstruct` 的模板设置类名（`ScriptName`，编辑器下为路径名）并挂 FName 大小写修正的命名属性拦截器（代码原样搬自旧实现，M4-6d 已改为 Proxy，钩子现在只设置类名）。`CppObjectMapper` 生成模板时属性名、方法名统一改为 internalized 字符串。
   - 扩展方法表从每个 env 的 `ExtensionMethodsMap` 移到进程级（`FStructWrapper::InitExtensionMethodsMap`），构建定义时取用后删除；`FJsEnvImpl::InitExtensionMethodsMap` 转调它。
   - 行为变化：UFunction 方法、静态函数和 `StaticClass` / `Find` / `Load` 由 `ConstructorBehavior::kAllow` 变为 `kThrow`，这些函数不再带 `prototype` 属性，也不能被 `new`；扩展静态绑定（`FindClassByType`）的 `Initialize` 拿到的 userdata 现在是 wrapper（原来不是其类定义的 `Data`）；原型上访问器和方法的定义顺序变为“属性在前、方法在后”（`Object.getOwnPropertyNames` 的顺序变化，基线按排序比较不受影响）。
@@ -248,6 +248,12 @@ M4 落地情况（分批进行）：
   - 语义：只有成员在整条原型链上都找不到、且 key 不在 `Object.prototype` 上时才进入 trap。key 为非空字符串（长度小于 1024）时用 `fixName` 修正：取 FName 的 comparison entry（首次注册的大小写，与旧实现的 `FV8Utils::ToV8String(FName)` 一致；`FName::ToString` 走 display entry，会保留请求的大小写，不能用）。修正后的名字与原名不同且能在 receiver 的原型链上找到时，在拥有它的原型上用 `defineProperty` 以请求的名字缓存（访问器保留 get/set，数据属性保留 value/writable，都为 enumerable、configurable），然后转到修正后的名字读写；否则走 `Reflect.get` / `Reflect.set`，给实例新增的属性仍是实例自身的数据属性。QuickJS 下与原来一样不挂（冻结）。
   - 行为变化：`Object.prototype.hasOwnProperty.call(instance, '原型成员')` 由 true 变为 false（旧拦截器对原型成员也答“自有”）；没有父类的 struct 的 `Object.getPrototypeOf(S.prototype)` 不再是 `Object.prototype` 而是 Proxy（再往上才是 `Object.prototype`）。Reflection 补了 `instanceof Object`、`in`、`Object.prototype` 成员、实例新增属性、`then` 等观测。
   - 测试：两条路径 14 个用例全过，Functions、Reflection 基线只有上述两处预期变化；BuildPlugin 通过。基准与 M4-6c 持平，实例模板去掉拦截器后 property.struct_field 由 57ns 降到 47ns / 46ns，array.property_access 也略有下降；new.struct 两轮 283ns / 302ns，其余项在噪声范围内。
+- M4-6e：新增类定义失效 API `pesapi_ffi.invalidate_class(env, type_id)`，追加在函数表末尾。
+  - 语义：丢弃该 env 中 `type_id` 对应的脚本类缓存，下次使用时从 registry 重建；已有对象和已经拿到的旧类继续使用旧类（旧对象 `instanceof` 新类不成立）；不连带子类失效，已经生成的子类仍继承旧类。概念上对应 lua / python 中丢弃缓存的 metatable / 类型对象，与引擎和语言无关。v8 实现转给 `ICppObjectMapper::InvalidateClass`：`FCppObjectMapper` 从 `TypeIdToTemplateMap` 中删除该项；UE 的 `FJsEnvImpl` 还会删除 `TypeToTemplateInfoMap` 中该 wrapper 的项。papi_test 补了对应用例。
+  - 版本：暂不提升 `PESAPI_VERSION`。插件入口名带版本号（`pesapi_register_<mod>_v<ver>`），提升会让已编译的插件全部失效，第一阶段新增的 API 都只追加不提升，到统一时一次性提升（待决策项 1 按此执行）。
+  - 定义生命周期：`FStructWrapper` 只持有当前一代定义（`std::shared_ptr<FReflectedClass>`）。`CppObjectMapper::OnTemplateCreated` 改为 `std::function`，`FJsEnvImpl` 在钩子中把生成模板所用的定义存入本 env 的 `ClassesBuilt`，失效时移入 `RetiredClasses`；v8 的 FunctionTemplate 在 isolate 内不会被回收，两者都在 isolate Dispose 之后才释放。这样没有被任何 env 用过的旧一代定义在被替换时立即释放，M4-6c 的定义累积问题解决。
+  - UE 策略：恢复宏 `PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE`（`StructWrapper.h`，默认 1，与上游一致）。为 1 时行为不变：同一 FullName 的新 UStruct 沿用原来的 JS 类，只刷新翻译器。为 0 时，`TryReleaseType` 之后再次使用该类型（本 env 的 `ClassesBuilt` 已有该 wrapper）会先 `invalidate_class` 再重建，新成员可见、`instanceof` 旧类不再成立。`GetTemplateInfoOfType` 改为先处理父类再生成本类模板，保证父类先失效、先重建。
+  - 测试：默认配置两条路径 14 个用例全过；宏临时改为 0 再跑一遍也全过（TsClass、MakeUClass 经过 `TryReleaseType` 后的重建路径）；BuildPlugin 通过。基准与 M4-6d 持平（两轮取最小：new.uobject 1568ns，new.struct 293ns，tsclass.new 2004ns），array.property_access 的差异来自 M4-6d 第二轮的偏低值。
 
 M5 落地情况（分批进行）：
 
@@ -329,7 +335,7 @@ M2 落地情况：
 | 外部内存上报 | 大对象（容器、结构体）提示 GC | 桥接层 | 新增可选 API |
 | Symbol、Proxy | `UE` 命名空间代理等 | 用 JS 辅助脚本实现 | 同左 |
 
-新增 API 统一以“追加到函数表末尾、提升 `PESAPI_VERSION`”的方式进行。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
+新增 API 统一以“追加到函数表末尾”的方式进行，第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
 
 新增 API 必须与具体引擎、具体语言无关：papi 不只跨 JS 引擎（v8、quickjs），还跨脚本语言（目前有 js、lua、python）。判断标准是这个概念在 lua、python 里也能自然实现，比如 `get_this` 对应 lua 的 self、python 的 self，`get_own_property_names` 对应 table 的 key、dict 的 key。不满足的能力不进 `pesapi_ffi`，按以下方式处理：
 - UE 宿主专属的（FName 属性名修正、类名、热重载重新注册等）：做成 UE 侧 `CppObjectMapper` 的钩子。
@@ -558,5 +564,5 @@ flowchart LR
 
 待决策：
 
-1. 第 5.7 节新增 API 的命名与是否一次性提升 `PESAPI_VERSION`（第一阶段只在 UE 侧，可边做边定）。
+1. 第 5.7 节新增 API 的命名（第一阶段只在 UE 侧，可边做边定）；`PESAPI_VERSION` 已定为第一阶段不提升、统一时一次性提升。
 2. 性能回退阈值与基准测试运行环境（是否需要自托管 runner）。
