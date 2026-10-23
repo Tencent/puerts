@@ -38,6 +38,8 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include "NamespaceDef.h"
 
+#include "PapiValueRef.h"
+
 #include "V8InspectorImpl.h"
 
 #if defined(WITH_NODEJS)
@@ -204,8 +206,7 @@ public:
     v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
         PropertyMacro* Property, void* DelegatePtr, bool PassByPointer);
 
-    bool AddToDelegate(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction);
+    virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
 
@@ -214,10 +215,9 @@ public:
 
     void ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    bool RemoveFromDelegate(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction);
+    virtual bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
 
-    bool ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr);
+    virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override;
 
     void ExecuteDelegate(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr);
@@ -293,30 +293,12 @@ public:
         return papi_bridge::ToPapi(FindOrAddDelegate(Context->GetIsolate(), Context, Owner, Property, DelegatePtr, PassByPointer));
     }
 
-    virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return AddToDelegate(Context->GetIsolate(), Context, DelegatePtr, papi_bridge::ToV8(JsFunction).As<v8::Function>());
-    }
-
     virtual FScriptDelegate NewDelegate(
         pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction) override
     {
         auto Context = papi_bridge::ToV8(Env);
         return NewDelegate(
             Context->GetIsolate(), Context, Owner, papi_bridge::ToV8(JsFunction).As<v8::Function>(), SignatureFunction);
-    }
-
-    virtual bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return RemoveFromDelegate(Context->GetIsolate(), Context, DelegatePtr, papi_bridge::ToV8(JsFunction).As<v8::Function>());
-    }
-
-    virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override
-    {
-        auto Context = papi_bridge::ToV8(Env);
-        return ClearDelegate(Context->GetIsolate(), Context, DelegatePtr);
     }
 
     virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) override
@@ -677,9 +659,9 @@ private:
     v8::Global<v8::Function> MergePrototype;
 #endif
 
-    v8::Global<v8::Function> RemoveListItem;
+    FPapiValueRef RemoveListItem;
 
-    v8::Global<v8::Function> GenListApply;
+    FPapiValueRef GenListApply;
 
 #if defined(WITH_V8_BYTECODE)
     v8::Global<v8::Function> GenEmptyCode;
@@ -751,7 +733,7 @@ private:
         UFunction* SignatureFunction;
         bool PassByPointer;
         TWeakObjectPtr<UDynamicDelegateProxy> Proxy;
-        v8::UniquePersistent<v8::Array> JsCallbacks;
+        FPapiValueRef JsCallbacks;    // js array of the bound functions, the proxy's apply function reads it
     };
 
     struct TsFunctionInfo

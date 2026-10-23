@@ -634,11 +634,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__mergePrototype")).ToLocalChecked().As<v8::Function>());
 #endif
 
-    RemoveListItem.Reset(
-        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__removeListItem")).ToLocalChecked().As<v8::Function>());
+    RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
 
-    GenListApply.Reset(
-        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__genListApply")).ToLocalChecked().As<v8::Function>());
+    GenListApply.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__genListApply"));
 #if defined(WITH_V8_BYTECODE)
     GenEmptyCode.Reset(
         Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "generateEmptyCode")).ToLocalChecked().As<v8::Function>());
@@ -755,7 +753,10 @@ FJsEnvImpl::~FJsEnvImpl()
             {
                 Iter->second.Proxy->ResetJsFunction();
             }
+            Iter->second.JsCallbacks.Reset();
         }
+        RemoveListItem.Reset();
+        GenListApply.Reset();
 
         for (auto& KV : AutoReleaseCallbacksMap)
         {
@@ -821,7 +822,6 @@ FJsEnvImpl::~FJsEnvImpl()
             {
                 delete ((FScriptDelegate*) Iter->first);
             }
-            Iter->second.JsCallbacks.Reset();
         }
 
         TsFunctionMap.Empty();
@@ -888,8 +888,6 @@ FJsEnvImpl::~FJsEnvImpl()
 #if !PUERTS_FORCE_CPP_UFUNCTION
         MergePrototype.Reset();
 #endif
-        RemoveListItem.Reset();
-        GenListApply.Reset();
 #if defined(WITH_V8_BYTECODE)
         GenEmptyCode.Reset();
 #endif
@@ -1925,7 +1923,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
             }
             else
             {
-                ClearDelegate(Isolate, Context, DelegatePtr);
+                ClearDelegate(papi_bridge::ToPapi(Context), DelegatePtr);
             }
         }
     }
@@ -1951,7 +1949,6 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
                                .ToLocalChecked();
         auto JSObject = Constructor->NewInstance(Context).ToLocalChecked();
         DataTransfer::SetPointer(Isolate, JSObject, DelegatePtr, 0);
-        (void) (JSObject->Set(Context, 0, v8::Map::New(Isolate)));
         UFunction* Function = nullptr;
         DelegatePropertyMacro* DelegateProperty = CastFieldMacro<DelegatePropertyMacro>(Property);
         MulticastDelegatePropertyMacro* MulticastDelegateProperty = CastFieldMacro<MulticastDelegatePropertyMacro>(Property);
@@ -1963,9 +1960,10 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
         {
             Function = MulticastDelegateProperty->SignatureFunction;
         }
+        pesapi_env Env = papi_bridge::ToPapi(Context);
         DelegateMap[DelegatePtr] = {v8::UniquePersistent<v8::Object>(Isolate, JSObject), TWeakObjectPtr<UObject>(Owner),
             DelegateProperty, MulticastDelegateProperty, Function, PassByPointer, nullptr,
-            v8::UniquePersistent<v8::Array>(Isolate, v8::Array::New(Isolate))};
+            FPapiValueRef(&v8impl::g_pesapi_ffi, Env, v8impl::g_pesapi_ffi.create_array(Env))};
         return JSObject;
     }
 }
@@ -2478,9 +2476,9 @@ void FJsEnvImpl::ExecuteDelegate(
 
 static FName NAME_Fire("Fire");
 
-bool FJsEnvImpl::AddToDelegate(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction)
+bool FJsEnvImpl::AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
     // UE_LOG(LogTemp, Warning, TEXT("add delegate proxy"));
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
@@ -2490,7 +2488,7 @@ bool FJsEnvImpl::AddToDelegate(
     if (!Iter->second.Owner.IsValid())
     {
         Logger->Warn("try to bind a delegate with invalid owner!");
-        ClearDelegate(Isolate, Context, DelegatePtr);
+        ClearDelegate(Env, DelegatePtr);
         if (!Iter->second.PassByPointer)
         {
             delete ((FScriptDelegate*) Iter->first);
@@ -2499,7 +2497,7 @@ bool FJsEnvImpl::AddToDelegate(
         return false;
     }
 
-    auto JsCallbacks = Iter->second.JsCallbacks.Get(Isolate);
+    pesapi_value JsCallbacks = Iter->second.JsCallbacks.Get(Env);
 
     UDynamicDelegateProxy* DelegateProxy = nullptr;
     bool InitApplyFunc = false;
@@ -2535,10 +2533,10 @@ bool FJsEnvImpl::AddToDelegate(
         }
         if (InitApplyFunc)
         {
-            if (JsCallbacks->Length() > 0)
+            if (Apis->get_array_length(Env, JsCallbacks) > 0)
             {
-                JsCallbacks = v8::Array::New(Isolate);
-                Iter->second.JsCallbacks.Reset(Isolate, JsCallbacks);
+                JsCallbacks = Apis->create_array(Env);
+                Iter->second.JsCallbacks.Reset(Apis, Env, JsCallbacks);
             }
             else
             {
@@ -2551,7 +2549,7 @@ bool FJsEnvImpl::AddToDelegate(
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
 
 #ifdef THREAD_SAFE
-        DelegateProxy->Isolate = Isolate;
+        DelegateProxy->Isolate = MainIsolate;
 #endif
         DelegateProxy->Owner = Iter->second.Owner;
         DelegateProxy->SignatureFunction = Iter->second.SignatureFunction;
@@ -2565,25 +2563,20 @@ bool FJsEnvImpl::AddToDelegate(
 
     if (InitApplyFunc)
     {
-        v8::TryCatch TryCatch(Isolate);
-        v8::Local<v8::Value> Args[] = {JsCallbacks};
-
-        v8::Local<v8::Value> Apply;
-        if (!GenListApply.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args).ToLocal(&Apply) || !Apply->IsFunction())
+        // __genListApply is a puerts internal function, exceptions (if any) propagate to the js caller
+        pesapi_value Args[] = {JsCallbacks};
+        pesapi_value Apply = Apis->call_function(Env, GenListApply.Get(Env), nullptr, 1, Args);
+        if (!Apply || !Apis->is_function(Env, Apply))
         {
-            FString ErrMsg = TEXT("Unknow");
-            if (TryCatch.HasCaught())
-            {
-                ErrMsg = FV8Utils::TryCatchToString(Isolate, &TryCatch);
-            }
-            Logger->Error(FString::Printf(TEXT("gen callback apply fail: %s"), *ErrMsg));
+            Logger->Error(TEXT("gen callback apply fail"));
             return false;
         }
-        DelegateProxy->SetJsFunction(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Apply));
+        DelegateProxy->SetJsFunction(Apis, Env, Apply);
     }
 
     bool bSingleDelegate = Iter->second.DelegateProperty != nullptr;
-    (void) (JsCallbacks->Set(Context, bSingleDelegate ? 0 : JsCallbacks->Length(), JsFunction));    // push
+    Apis->set_property_uint32(
+        Env, JsCallbacks, bSingleDelegate ? 0 : Apis->get_array_length(Env, JsCallbacks), JsFunction);    // push
 
     FScriptDelegate Delegate;
     Delegate.BindUFunction(DelegateProxy, NAME_Fire);
@@ -2718,9 +2711,9 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
     }
 }
 
-bool FJsEnvImpl::RemoveFromDelegate(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr, v8::Local<v8::Function> JsFunction)
+bool FJsEnvImpl::RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
     {
@@ -2730,7 +2723,7 @@ bool FJsEnvImpl::RemoveFromDelegate(
     if (!Iter->second.Owner.IsValid())
     {
         Logger->Warn("try to unbind a delegate with invalid owner!");
-        ClearDelegate(Isolate, Context, DelegatePtr);
+        ClearDelegate(Env, DelegatePtr);
         if (!Iter->second.PassByPointer)
         {
             delete ((FScriptDelegate*) Iter->first);
@@ -2743,17 +2736,17 @@ bool FJsEnvImpl::RemoveFromDelegate(
 
     if (Iter->second.DelegateProperty)
     {
-        return ClearDelegate(Isolate, Context, DelegatePtr);
+        return ClearDelegate(Env, DelegatePtr);
     }
     else if (Iter->second.MulticastDelegateProperty)
     {
-        auto JsCallbacks = Iter->second.JsCallbacks.Get(Isolate);
+        pesapi_value JsCallbacks = Iter->second.JsCallbacks.Get(Env);
 
-        v8::Local<v8::Value> Args[] = {JsCallbacks, JsFunction};
+        pesapi_value Args[] = {JsCallbacks, JsFunction};
 
-        __USE(RemoveListItem.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 2, Args));
+        Apis->call_function(Env, RemoveListItem.Get(Env), nullptr, 2, Args);
 
-        if (JsCallbacks->Length() == 0 && Iter->second.Proxy.IsValid())
+        if (Apis->get_array_length(Env, JsCallbacks) == 0 && Iter->second.Proxy.IsValid())
         {
             auto DelegateProxy = Iter->second.Proxy.Get();
 
@@ -2779,17 +2772,13 @@ bool FJsEnvImpl::RemoveFromDelegate(
     return true;
 }
 
-bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void* DelegatePtr)
+bool FJsEnvImpl::ClearDelegate(pesapi_env Env, void* DelegatePtr)
 {
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
     {
         return false;
     }
-
-    auto JSObject = Iter->second.JSObject.Get(Isolate);
-    auto Map = v8::Local<v8::Map>::Cast(JSObject->Get(Context, 0).ToLocalChecked());
-    Map->Clear();
 
     if (Iter->second.DelegateProperty)
     {
@@ -2822,7 +2811,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         Iter->second.Proxy.Reset();
     }
 
-    Iter->second.JsCallbacks.Reset(Isolate, v8::Array::New(Isolate));
+    Iter->second.JsCallbacks.Reset(&v8impl::g_pesapi_ffi, Env, v8impl::g_pesapi_ffi.create_array(Env));
     return true;
 }
 
@@ -2853,7 +2842,7 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
         v8::Context::Scope ContextScope(Context);
         for (int i = 0; i < PendingToRemove.size(); ++i)
         {
-            ClearDelegate(Isolate, Context, PendingToRemove[i]);
+            ClearDelegate(papi_bridge::ToPapi(Context), PendingToRemove[i]);
             if (!DelegateMap[PendingToRemove[i]].PassByPointer)
             {
                 delete ((FScriptDelegate*) PendingToRemove[i]);
