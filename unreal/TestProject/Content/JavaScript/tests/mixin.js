@@ -1,5 +1,5 @@
 'use strict';
-const { UE, puerts, test, eq, observe, run } = require('./framework');
+const { UE, puerts, reporter, test, step, eq, observe, run } = require('./framework');
 const { blueprint } = puerts;
 
 class MixinImpl {
@@ -50,6 +50,65 @@ test('unmixin', () => {
 
 test('makeUClass presence', () => {
     observe('makeUClass type', () => typeof puerts.makeUClass);
+});
+
+test('mixin bad arguments', () => {
+    observe('mixin to a non class', () => blueprint.mixin({ StaticClass: () => new UE.PuertsTestObject() }, MixinImpl));
+    observe('mixin to a number', () => blueprint.mixin({ StaticClass: () => 1 }, MixinImpl));
+    observe('mixin unknown method only', () => {
+        class OnlyUnknown {
+            NotAUFunction() {
+                return 1;
+            }
+        }
+        const cls = blueprint.mixin(UE.PuertsTestMixinTarget, OnlyUnknown);
+        const o = new UE.PuertsTestMixinTarget();
+        const r = [o.CallImplEvent(1), typeof o.NotAUFunction];
+        blueprint.unmixin(UE.PuertsTestMixinTarget);
+        return r.concat(cls === UE.PuertsTestMixinTarget);
+    });
+});
+
+test('mixin inherit', () => {
+    const config = { inherit: true };
+    const Cls = blueprint.mixin(UE.PuertsTestMixinTarget, MixinImpl, config);
+    observe('inherit generatedClass is a new class', () => config.generatedClass !== UE.PuertsTestMixinTarget.StaticClass());
+    observe('inherit returned class is the base', () => Cls === UE.PuertsTestMixinTarget);
+    const o = UE.NewObject(config.generatedClass);
+    eq(o.CallImplEvent(5), 105, 'override on the generated class');
+    const base = new UE.PuertsTestMixinTarget();
+    observe('base class is not affected', () => base.CallImplEvent(5));
+});
+
+class TakeRefImpl {
+    ImplEvent(v) {
+        this.counter = (this.counter || 0) + v;
+        return this.counter;
+    }
+}
+
+const takeRefState = {};
+
+test('mixin objectTakeByNative', () => {
+    const config = { inherit: true, objectTakeByNative: true };
+    blueprint.mixin(UE.PuertsTestMixinTarget, TakeRefImpl, config);
+    const o = UE.NewObject(config.generatedClass);
+    eq(o.CallImplEvent(2), 2);
+    eq(o.CallImplEvent(3), 5, 'js state on the object');
+    o.expando = 'kept';
+    // only the native side keeps the UObject
+    reporter.Holder = o;
+    takeRefState.ref = new WeakRef(o);
+});
+
+step(() => {
+    test('mixin objectTakeByNative keeps js state', () => {
+        const o = reporter.Holder;
+        observe('same js object after gc', () => o === takeRefState.ref.deref());
+        observe('expando after gc', () => o.expando);
+        observe('js state after gc', () => o.CallImplEvent(1));
+        reporter.Holder = undefined;
+    });
 });
 
 run();

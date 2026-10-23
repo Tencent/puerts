@@ -137,6 +137,26 @@ int32 UPuertsTestObject::CallIntDelegate(int32 Value)
     return IntDelegate.IsBound() ? IntDelegate.Execute(Value) : -1;
 }
 
+void UPuertsTestObject::SetIntDelegate(FPuertsTestIntDelegate InDelegate)
+{
+    IntDelegate = InDelegate;
+}
+
+FPuertsTestIntDelegate UPuertsTestObject::GetIntDelegate()
+{
+    return IntDelegate;
+}
+
+void UPuertsTestObject::SetStepDelegate(FPuertsTestStepDelegate InDelegate)
+{
+    StepDelegate = InDelegate;
+}
+
+bool UPuertsTestObject::CallStepDelegate(int32 Step)
+{
+    return StepDelegate.ExecuteIfBound(Step);
+}
+
 void UPuertsTestObject::BroadcastMulticast(const FString& Msg)
 {
     Multicast.Broadcast(Msg);

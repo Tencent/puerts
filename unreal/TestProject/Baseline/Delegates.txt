@@ -1,4 +1,23 @@
 multicast IsBound after clear: throws TypeError: obj.Multicast.IsBound is not a function
 delegate ctor: ""
 delegate same view: true
+releaseManualReleaseDelegate(1): throws Error: Bad parameters #0, expect a function.
+releaseManualReleaseDelegate(unknown fn): undefined
+ufunction bound IsBound: true
+copy IsBound after source unbind: true
+returned delegate is the property view: false
+unbound GetIntDelegate: undefined
+execute unbound single: throws Error: can not execute an unbound delegate!
+broadcast empty multicast: undefined
+same function added twice: ["twice", "twice"]
+after removing an unknown function: 4
+after removing once: 5
+after removing twice: 5
+multicast IsBound after removing all: throws TypeError: o.Multicast.IsBound is not a function
+after re-add: "re-add"
 toManualReleaseDelegate type: "function"
+manual released call: -1
+manual released call (2nd user): -1
+auto release call: -1
+bind on destroyed owner: undefined
+add on destroyed owner: undefined

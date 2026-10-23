@@ -170,6 +170,23 @@ public:
     UFUNCTION(BlueprintCallable)
     int32 CallIntDelegate(int32 Value);
 
+    // a js function argument becomes a delegate bound to a manual release proxy, [Owner, Function] binds to Owner
+    UFUNCTION(BlueprintCallable)
+    void SetIntDelegate(FPuertsTestIntDelegate InDelegate);
+
+    // returned by value: the js side gets a copy (PassByPointer == false)
+    UFUNCTION(BlueprintCallable)
+    FPuertsTestIntDelegate GetIntDelegate();
+
+    UPROPERTY()
+    FPuertsTestStepDelegate StepDelegate;
+
+    UFUNCTION(BlueprintCallable)
+    void SetStepDelegate(FPuertsTestStepDelegate InDelegate);
+
+    UFUNCTION(BlueprintCallable)
+    bool CallStepDelegate(int32 Step);
+
     UFUNCTION(BlueprintCallable)
     void BroadcastMulticast(const FString& Msg);
 

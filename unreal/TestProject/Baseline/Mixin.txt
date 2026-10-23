@@ -5,3 +5,12 @@ mixin returned class: true
 mixin twice: throws Error: had mixin
 impl event after unmixin: 0
 makeUClass type: "function"
+mixin to a non class: throws Error: #0 parameter expect a Blueprint UClass
+mixin to a number: throws Error: Bad parameters #0, expect a object.
+mixin unknown method only: [0, "function", true]
+inherit generatedClass is a new class: true
+inherit returned class is the base: false
+base class is not affected: 0
+same js object after gc: true
+expando after gc: "kept"
+js state after gc: 6
