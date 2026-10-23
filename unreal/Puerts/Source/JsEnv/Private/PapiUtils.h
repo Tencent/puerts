@@ -44,6 +44,26 @@ FORCEINLINE pesapi_value FromFString(struct pesapi_ffi* Apis, pesapi_env Env, co
     return Apis->create_string_utf16(Env, reinterpret_cast<const uint16_t*>(*Str), static_cast<size_t>(Str.Len()));
 }
 
+// same as FV8Utils::ToV8StringFromFileContent: UTF-16 with BOM, otherwise UTF-8 (BOM skipped)
+inline pesapi_value FromFileContent(struct pesapi_ffi* Apis, pesapi_env Env, const TArray<uint8>& FileContent)
+{
+    const uint8* Buffer = FileContent.GetData();
+    int32 Size = FileContent.Num();
+
+    if (Size >= 2 && !(Size & 1) && ((Buffer[0] == 0xff && Buffer[1] == 0xfe) || (Buffer[0] == 0xfe && Buffer[1] == 0xff)))
+    {
+        FString Content;
+        FFileHelper::BufferToString(Content, Buffer, Size);
+        return FromFString(Apis, Env, Content);
+    }
+    if (Size >= 3 && Buffer[0] == 0xef && Buffer[1] == 0xbb && Buffer[2] == 0xbf)
+    {
+        Buffer += 3;
+        Size -= 3;
+    }
+    return Apis->create_string_utf8(Env, reinterpret_cast<const char*>(Buffer), static_cast<size_t>(Size));
+}
+
 // same as FV8Utils::GetUObject(Context, Value): nullptr for a non object value, RELEASED_UOBJECT for a released one
 FORCEINLINE UObject* GetUObject(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
 {

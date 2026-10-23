@@ -492,11 +492,11 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     PapiMethodBindingHelper<&FJsEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
 
-    MethodBindingHelper<&FJsEnvImpl::SearchModule>::Bind(Isolate, Context, Global, "__tgjsSearchModule", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::SearchModule>::Bind(Apis, Env, PapiGlobal, "__tgjsSearchModule", this);
 
-    MethodBindingHelper<&FJsEnvImpl::LoadModule>::Bind(Isolate, Context, Global, "__tgjsLoadModule", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::LoadModule>::Bind(Apis, Env, PapiGlobal, "__tgjsLoadModule", this);
 
-    MethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Isolate, Context, PuertsObj, "loadUEType", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
 
     MethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Isolate, Context, PuertsObj, "loadCPPType", This);
 
@@ -522,7 +522,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     MethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Isolate, Context, Global, "__tgjsMixin", This);
 #endif
 
-    MethodBindingHelper<&FJsEnvImpl::FindModule>::Bind(Isolate, Context, Global, "__tgjsFindModule", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::FindModule>::Bind(Apis, Env, PapiGlobal, "__tgjsFindModule", this);
 
     MethodBindingHelper<&FJsEnvImpl::SetInspectorCallback>::Bind(Isolate, Context, Global, "__tgjsSetInspectorCallback", This);
 
@@ -3390,17 +3390,12 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
     return v8::Undefined(Isolate);
 }
 
-void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgString);
 
-    CHECK_V8_ARGS(EArgString);
-
-    const FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
+    pesapi_env Env = Apis->get_env(Info);
+    const FString TypeName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
 
     UField* Type = FindAnyType<UClass>(TypeName);
 
@@ -3431,20 +3426,23 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (Type && !Type->IsNative())
     {
-        FV8Utils::ThrowException(Isolate,
-            FString::Printf(TEXT("%s is blueprint type, load it using UE.Class.Load('path/to/your/blueprint/file')."), *TypeName));
+        Apis->throw_by_string(
+            Info, TCHAR_TO_UTF8(*FString::Printf(
+                      TEXT("%s is blueprint type, load it using UE.Class.Load('path/to/your/blueprint/file')."), *TypeName)));
         return;
     }
 
-    auto Result = UETypeToJsClass(Isolate, Context, Type);
+    // the js class of a UStruct is still built from a v8 template (see M4-6)
+    auto Context = papi_bridge::ToV8(Env);
+    pesapi_value Result = papi_bridge::ToPapi(UETypeToJsClass(Context->GetIsolate(), Context, Type));
 
-    if (Result->IsUndefined())
+    if (Apis->is_undefined(Env, Result))
     {
-        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("can not find type:%s"), *TypeName));
+        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not find type:%s"), *TypeName)));
     }
     else
     {
-        Info.GetReturnValue().Set(Result);
+        Apis->add_return(Info, Result);
     }
 }
 
@@ -4158,56 +4156,46 @@ void FJsEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
 }
 
-void FJsEnvImpl::SearchModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::SearchModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    PAPI_CHECK_ARGS(EArgString, EArgString);
 
-    CHECK_V8_ARGS(EArgString, EArgString);
-
-    FString ModuleName = FV8Utils::ToFString(Isolate, Info[0]);
-    FString RequiringDir = FV8Utils::ToFString(Isolate, Info[1]);
+    pesapi_env Env = Apis->get_env(Info);
+    FString ModuleName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    FString RequiringDir = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     FString OutPath;
     FString OutDebugPath;
 
     if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath))
     {
-        auto Result = v8::Array::New(Isolate);
-        Result->Set(Context, 0, FV8Utils::ToV8String(Isolate, OutPath)).Check();
-        Result->Set(Context, 1, FV8Utils::ToV8String(Isolate, OutDebugPath)).Check();
-        Info.GetReturnValue().Set(Result);
+        pesapi_value Result = Apis->create_array(Env);
+        Apis->set_property_uint32(Env, Result, 0, PapiUtils::FromFString(Apis, Env, OutPath));
+        Apis->set_property_uint32(Env, Result, 1, PapiUtils::FromFString(Apis, Env, OutDebugPath));
+        Apis->add_return(Info, Result);
     }
 }
 
-void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgString);
 
-    CHECK_V8_ARGS(EArgString);
-
-    FString Path = FV8Utils::ToFString(Isolate, Info[0]);
+    pesapi_env Env = Apis->get_env(Info);
+    FString Path = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
     TArray<uint8> Data;
     if (!ModuleLoader->Load(Path, Data))
     {
-        FV8Utils::ThrowException(Isolate, "can not load module");
+        Apis->throw_by_string(Info, "can not load module");
         return;
     }
 #if defined(WITH_V8_BYTECODE)
     if (Path.EndsWith(TEXT(".cbc")) || Path.EndsWith(TEXT(".mbc")))
     {
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), Data.Num());
-        void* Buff = DataTransfer::GetArrayBufferData(Ab);
-        ::memcpy(Buff, Data.GetData(), Data.Num());
-        Info.GetReturnValue().Set(Ab);
+        Apis->add_return(Info, Apis->create_binary_by_value(Env, Data.GetData(), Data.Num()));
     }
     else
 #endif
     {
-        Info.GetReturnValue().Set(FV8Utils::ToV8StringFromFileContent(Isolate, Data));
+        Apis->add_return(Info, PapiUtils::FromFileContent(Apis, Env, Data));
     }
 }
 
@@ -4574,25 +4562,27 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 }
 #endif
 
-void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::FindModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgString);
 
-    CHECK_V8_ARGS(EArgString);
-
-    PString Name = *(v8::String::Utf8Value(Isolate, Info[0]));
+    pesapi_env Env = Apis->get_env(Info);
+    size_t Len = 0;
+    pesapi_value Arg = Apis->get_arg(Info, 0);
+    Apis->get_value_string_utf8(Env, Arg, nullptr, &Len);
+    TArray<char> Buf;
+    Buf.SetNumUninitialized(static_cast<int32>(Len));
+    Apis->get_value_string_utf8(Env, Arg, Buf.GetData(), &Len);
+    PString Name(Buf.GetData(), Len);
 
     auto Func = FindAddonRegisterFunc(Name);
 
     if (Func)
     {
-        auto Exports = v8::Object::New(Isolate);
-        Func(Context, Exports);
-        Info.GetReturnValue().Set(Exports);
+        // AddonRegisterFunc is a public v8 signature, kept for existing addons
+        pesapi_value Exports = Apis->create_object(Env);
+        Func(papi_bridge::ToV8(Env), papi_bridge::ToV8(Exports).As<v8::Object>());
+        Apis->add_return(Info, Exports);
     }
 }
 

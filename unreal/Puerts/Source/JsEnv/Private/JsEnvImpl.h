@@ -394,13 +394,13 @@ private:
 
     void Log(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void SearchModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void SearchModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
 
-    void LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -453,7 +453,7 @@ private:
     void Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info);
 #endif
 
-    void FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void FindModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
