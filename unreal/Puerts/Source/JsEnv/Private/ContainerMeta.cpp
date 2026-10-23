@@ -60,7 +60,7 @@ PropertyMacro* FContainerMeta::GetBuiltinProperty(BuiltinType type)
 {
     PropertyMacro* Ret = nullptr;
 
-    if (type < MaxBuiltinType)
+    if (type >= 0 && type < MaxBuiltinType)
     {
         if (BuiltinProperty[type])
         {

@@ -3506,7 +3506,7 @@ bool FJsEnvImpl::GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Lo
     if (Value->IsInt32())
     {
         int Type = Value->Int32Value(Context).ToChecked();
-        if (Type >= MaxBuiltinType)
+        if (Type < 0 || Type >= MaxBuiltinType)
         {
             *PropertyPtr = nullptr;
             return false;

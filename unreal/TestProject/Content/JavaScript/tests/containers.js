@@ -1,5 +1,5 @@
 'use strict';
-const { UE, test, eq, assert, observe, run } = require('./framework');
+const { UE, test, eq, assert, note, observe, catchError, run } = require('./framework');
 
 const obj = new UE.PuertsTestObject();
 
@@ -121,6 +121,26 @@ test('container shape', () => {
     observe('array ctor', () => obj.IntArray.constructor.name);
     observe('array keys', () => Object.keys(obj.IntArray));
     observe('array typeof index', () => obj.IntArray[0]);
+});
+
+test('new container bad types', () => {
+    note('NewArray unknown builtin', catchError(() => UE.NewArray(9999)));
+    note('NewSet unknown builtin', catchError(() => UE.NewSet(-1)));
+    note('NewMap unknown value type', catchError(() => UE.NewMap(UE.BuiltinInt, 9999)));
+    note('NewArray of non type', catchError(() => UE.NewArray({ StaticClass: () => 1 })));
+    observe('NewArray of struct', () => UE.NewArray(UE.PuertsTestStruct).Num());
+    observe('NewSet of object', () => UE.NewSet(UE.PuertsTestObject).Num());
+});
+
+test('blueprint.tojs', () => {
+    const tojs = require('puerts').blueprint.tojs;
+    assert(tojs(UE.PuertsTestObject.StaticClass()) === UE.PuertsTestObject, 'class');
+    assert(tojs(UE.PuertsTestStruct.StaticClass()) === UE.PuertsTestStruct, 'struct');
+    observe('enum tojs typeof', () => typeof tojs(UE.Enum.Load('/Script/PuertsTest.EPuertsTestEnum')));
+    note('tojs no args', catchError(() => tojs()));
+    note('tojs number', catchError(() => tojs(1)));
+    note('tojs plain object', catchError(() => tojs({})));
+    note('tojs non field', catchError(() => tojs(new UE.PuertsTestObject())));
 });
 
 run();

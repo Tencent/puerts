@@ -8,3 +8,14 @@ map iterable: [["k", 1]]
 array ctor: ""
 array keys: []
 array typeof index: undefined
+NewArray unknown builtin: Error: can not get first type for 0
+NewSet unknown builtin: Error: can not get first type for 1
+NewMap unknown value type: Error: can not get second type for 2
+NewArray of non type: <no throw>
+NewArray of struct: 0
+NewSet of object: 0
+enum tojs typeof: throws Error: Bad parameters #0, expect a object.
+tojs no args: Error: Bad parameters, the function expect 1, but  0 provided.
+tojs number: Error: Bad parameters #0, expect a object.
+tojs plain object: Error: argument #0 expect a UField
+tojs non field: Error: argument #0 expect a UField
