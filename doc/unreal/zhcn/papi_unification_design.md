@@ -235,6 +235,14 @@ M4 落地情况（分批进行）：
   - 非复用重建时只清 `ExternalInitialize`、`ExternalFinalize`、`Properties`，`GetPropertyTranslator` 命中已有翻译器时会把它补回 `Properties`，避免 struct 构造参数丢失；扩展方法加入时去重。
   - 已知遗留：同一 FullName 换了新的 UStruct*（如蓝图重编译生成新类）时仍沿用原有行为，由 M4-6e 的类定义失效 API 处理。
   - 测试：两条路径 14 个用例全过（其中 5 个带 warning，都是用例有意触发的日志）。基准：与同时段 HEAD 对照持平（new.uobject 1614ns / 1751ns，tsclass.new 2190ns / 2239ns），之前基线的偏差是机器状态漂移。
+- M4-6c：UClass / UScriptStruct 的模板改由 `CppObjectMapper::GetTemplateOfClass` 按类定义生成，删除 `FStructWrapper::ToFunctionTemplate`、`InitTemplateProperties`、`FFunctionTranslator::ToFunctionTemplate`、`FPropertyTranslator::SetAccessor`、每个 env 的 `CachedTemplates` 和 `PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE`。
+  - 类定义：`FStructWrapper::GetClassDefinition` 生成 `FReflectedClass`（持有 `JSClassDefinition` 及其方法、属性数组和名字），`TypeId` 是 wrapper 本身，`SuperTypeId` 是父类的 wrapper（构建时先递归构建父类），`Data` 是 wrapper，`Initialize` 是 `ReflectedConstruct`：取出 wrapper 后按类型调用原有的 `FClassWrapper::New` / `FScriptStructWrapper::New` 完成创建和绑定，返回 nullptr 让 `CDataNew` 不再绑定。条目直接复用翻译器上的 `CallbackInfo` / `AccessorInfo`（复制后填名字），成员顺序和过滤规则与原 `ToFunctionTemplate` 一致。
+  - 查找：registry 的 `FindClassByID` 在注册表找不到时回退到进程级的反射类表（wrapper -> 当前一代定义），因此 `Inherit` 走 `LoadClassByID` 即可找到父类。原设计中“在 `on_class_not_found` 里按 UStruct 生成定义”改为由 UE 侧显式构建，原因是无法安全判断任意 `type_id` 是否为 `UStruct*`；随之 `LoadClassByID` 只能找到已经构建过的 UE 类型定义。
+  - 身份：模板按 `TypeId` 缓存在每个 env 的 `CppObjectMapper` 中，wrapper 按 FullName 保留，所以同一 FullName 换了新的 UStruct* 时生成新一代定义（只用于还没创建过该类模板的 env），已经创建过的 env 继续使用原来的 JS 类，只刷新翻译器，等价于原来的模板复用语义。旧一代定义仍被已有模板引用，随 wrapper 一起保留，有少量内存累积，由 M4-6e 的类定义失效 API 处理。另一个 env 首次使用已有定义的类型时只刷新翻译器，不重建定义。
+  - UE 专用钩子 `FCppObjectMapper::OnTemplateCreated`：对 `Initialize == ReflectedConstruct` 的模板设置类名（`ScriptName`，编辑器下为路径名）并挂 FName 大小写修正的命名属性拦截器（代码原样搬自旧实现，M4-6d 改为 Proxy）。`CppObjectMapper` 生成模板时属性名、方法名统一改为 internalized 字符串。
+  - 扩展方法表从每个 env 的 `ExtensionMethodsMap` 移到进程级（`FStructWrapper::InitExtensionMethodsMap`），构建定义时取用后删除；`FJsEnvImpl::InitExtensionMethodsMap` 转调它。
+  - 行为变化：UFunction 方法、静态函数和 `StaticClass` / `Find` / `Load` 由 `ConstructorBehavior::kAllow` 变为 `kThrow`，这些函数不再带 `prototype` 属性，也不能被 `new`；扩展静态绑定（`FindClassByType`）的 `Initialize` 拿到的 userdata 现在是 wrapper（原来不是其类定义的 `Data`）；原型上访问器和方法的定义顺序变为“属性在前、方法在后”（`Object.getOwnPropertyNames` 的顺序变化，基线按排序比较不受影响）。
+  - 测试：两条路径 14 个用例全过，Reflection 基线无差异；BuildPlugin 通过。基准：两轮 new.struct 为 283ns / 276ns（M4-6b 为 251ns / 264ns），多出的是 `CDataNew` -> `ReflectedConstruct` 的一次跳转，约 5%~10%；其余项与 M4-6b 持平（new.uobject 1688ns / 1547ns，tsclass.new 2067ns）。
 
 M5 落地情况（分批进行）：
 
