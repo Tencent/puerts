@@ -12,6 +12,8 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "StructWrapper.h"
+#include "PapiUtils.h"
+#include "PesapiImpl.h"
 #include "DelegateWrapper.h"
 #include "ContainerWrapper.h"
 #include "SoftObjectWrapper.h"
@@ -102,65 +104,58 @@ FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
 {
 }
 
-static void FNameToArrayBuffer(const v8::FunctionCallbackInfo<v8::Value>& Info)
+static void FNameToArrayBuffer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
-    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
-    void* Buff = DataTransfer::GetArrayBufferData(Ab);
-    ::memcpy(Buff, &Name, sizeof(FName));
-    Info.GetReturnValue().Set(Ab);
+    pesapi_env Env = Apis->get_env(Info);
+    // ToFName tells a raw FName buffer from a string, which papi can not express
+    FName Name = FV8Utils::ToFName(papi_bridge::IsolateOf(Env), papi_bridge::ToV8(Apis->get_arg(Info, 0)));
+    Apis->add_return(Info, Apis->create_binary_by_value(Env, &Name, sizeof(FName)));
 }
 
-static void ToCString(const v8::FunctionCallbackInfo<v8::Value>& Info)
+static void ToCString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    auto Isolate = Info.GetIsolate();
-    if (!Info[0]->IsString())
+    pesapi_env Env = Apis->get_env(Info);
+    pesapi_value Str = Apis->get_arg(Info, 0);
+    if (!Apis->is_string(Env, Str))
     {
-        FV8Utils::ThrowException(Isolate, "expect a string");
+        Apis->throw_by_string(Info, "expect a string");
         return;
     }
 
-    v8::Local<v8::String> Str = Info[0]->ToString(Isolate->GetCurrentContext()).ToLocalChecked();
-
-    const size_t Length = Str->Utf8Length(Isolate);
-    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), Length + 1);
-    char* Buff = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
-    Str->WriteUtf8(Isolate, Buff);
+    size_t Length = 0;
+    Apis->get_value_string_utf8(Env, Str, nullptr, &Length);
+    TArray<char> Buff;
+    Buff.SetNumUninitialized(Length + 1);
+    Apis->get_value_string_utf8(Env, Str, Buff.GetData(), &Length);
     Buff[Length] = '\0';
-    Info.GetReturnValue().Set(Ab);
+    Apis->add_return(Info, Apis->create_binary_by_value(Env, Buff.GetData(), Length + 1));
 }
 
-static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
+static void ToCPtrArray(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    const size_t Length = sizeof(void*) * Info.Length();
+    pesapi_env Env = Apis->get_env(Info);
+    const int Num = Apis->get_args_len(Info);
 
-    v8::Local<v8::ArrayBuffer> Ret = v8::ArrayBuffer::New(Info.GetIsolate(), Length);
-    void** Buff = static_cast<void**>(DataTransfer::GetArrayBufferData(Ret));
-
-    for (int i = 0; i < Info.Length(); i++)
+    TArray<void*> Buff;
+    Buff.SetNumZeroed(Num);
+    for (int i = 0; i < Num; i++)
     {
-        auto Val = Info[i];
-        void* Ptr = nullptr;
-        if (Val->IsArrayBufferView())
+        pesapi_value Val = Apis->get_arg(Info, i);
+        // an ArrayBuffer or an ArrayBufferView
+        if (Apis->is_binary(Env, Val))
         {
-            v8::Local<v8::ArrayBufferView> BuffView = Val.As<v8::ArrayBufferView>();
-            auto Ab = BuffView->Buffer();
-            Ptr = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
+            size_t Unused = 0;
+            Buff[i] = Apis->get_value_binary(Env, Val, &Unused);
         }
-        else if (Val->IsArrayBuffer())
-        {
-            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Val);
-            Ptr = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
-        }
-        Buff[i] = Ptr;
     }
-    Info.GetReturnValue().Set(Ret);
+    Apis->add_return(Info, Apis->create_binary_by_value(Env, Buff.GetData(), sizeof(void*) * Num));
 }
 
-static void GetFNameString(const v8::FunctionCallbackInfo<v8::Value>& Info)
+static void GetFNameString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    FName RequiredFName(*FV8Utils::ToFString(Info.GetIsolate(), Info[0]));
-    Info.GetReturnValue().Set(FV8Utils::ToV8String(Info.GetIsolate(), RequiredFName));
+    pesapi_env Env = Apis->get_env(Info);
+    FName RequiredFName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
+    Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, RequiredFName.ToString()));
 }
 
 #if defined(WITH_NODEJS)
@@ -487,9 +482,15 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     auto This = v8::External::New(Isolate, this);
 
+    // functions migrated to papi are bound through create_function
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    pesapi_env Env = papi_bridge::ToPapi(Context);
+    pesapi_value PapiGlobal = papi_bridge::ToPapi(Global);
+    pesapi_value PapiPuertsObj = papi_bridge::ToPapi(PuertsObj);
+
     MethodBindingHelper<&FJsEnvImpl::EvalScript>::Bind(Isolate, Context, Global, "__tgjsEvalScript", This);
 
-    MethodBindingHelper<&FJsEnvImpl::Log>::Bind(Isolate, Context, Global, "__tgjsLog", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
 
     MethodBindingHelper<&FJsEnvImpl::SearchModule>::Bind(Isolate, Context, Global, "__tgjsSearchModule", This);
 
@@ -499,10 +500,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Isolate, Context, PuertsObj, "loadCPPType", This);
 
-    PuertsObj
-        ->Set(Context, FV8Utils::ToV8String(Isolate, "getFNameString"),
-            v8::FunctionTemplate::New(Isolate, GetFNameString)->GetFunction(Context).ToLocalChecked())
-        .Check();
+    PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &GetFNameString);
 
     MethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Isolate, Context, Global, "__tgjsUEClassToJSClass", This);
 
@@ -559,22 +557,13 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Isolate, Context, Global, "__tgjsWasm_OverrideWebAssembly", This);
 #endif
 
-    MethodBindingHelper<&FJsEnvImpl::DumpStatisticsLog>::Bind(Isolate, Context, Global, "dumpStatisticsLog", This);
-    MethodBindingHelper<&FJsEnvImpl::IsQuickJS>::Bind(Isolate, Context, Global, "isQuickJS", This);
-    Global
-        ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFNameToArrayBuffer"),
-            v8::FunctionTemplate::New(Isolate, FNameToArrayBuffer)->GetFunction(Context).ToLocalChecked())
-        .Check();
+    PapiMethodBindingHelper<&FJsEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
+    PapiMethodBindingHelper<&FJsEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
+    PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &FNameToArrayBuffer);
 
-    PuertsObj
-        ->Set(Context, FV8Utils::ToV8String(Isolate, "toCString"),
-            v8::FunctionTemplate::New(Isolate, ToCString)->GetFunction(Context).ToLocalChecked())
-        .Check();
+    PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &ToCString);
 
-    PuertsObj
-        ->Set(Context, FV8Utils::ToV8String(Isolate, "toCPtrArray"),
-            v8::FunctionTemplate::New(Isolate, ToCPtrArray)->GetFunction(Context).ToLocalChecked())
-        .Check();
+    PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &ToCPtrArray);
 
 #if !defined(WITH_QUICKJS)
     PuertsObj
@@ -4156,19 +4145,14 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
-void FJsEnvImpl::Log(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgInt32, EArgString);
 
-    CHECK_V8_ARGS(EArgInt32, EArgString);
+    pesapi_env Env = Apis->get_env(Info);
+    auto Level = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
 
-    auto Level = Info[0]->Int32Value(Context).ToChecked();
-
-    FString Msg = FV8Utils::ToFString(Isolate, Info[1]);
+    FString Msg = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     switch (Level)
     {
         case 1:
@@ -4360,12 +4344,12 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     SetFTickerDelegate(Info, true);
 }
 
-void FJsEnvImpl::IsQuickJS(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
 #ifdef WITH_QUICKJS
-    Info.GetReturnValue().Set(v8::Boolean::New(Info.GetIsolate(), true));
+    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), true));
 #else
-    Info.GetReturnValue().Set(v8::Boolean::New(Info.GetIsolate(), false));
+    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), false));
 #endif
 }
 
@@ -4693,16 +4677,13 @@ void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Valu
 #endif    // !WITH_QUICKJS
 }
 
-void FJsEnvImpl::DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
 #ifndef WITH_QUICKJS
     v8::HeapStatistics Statistics;
 
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    // heap statistics are v8 specific
+    v8::Isolate* Isolate = papi_bridge::IsolateOf(Apis->get_env(Info));
 
     Isolate->GetHeapStatistics(&Statistics);
 

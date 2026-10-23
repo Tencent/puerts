@@ -16,6 +16,7 @@
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "PapiV8Bridge.h"
+#include <initializer_list>
 
 // helpers shared by the papi based code of the plugin
 namespace PUERTS_NAMESPACE
@@ -161,5 +162,64 @@ FORCEINLINE PropertyMacro* FindDelegateProperty(pesapi_env Env, void* DelegatePt
 {
     return ObjectMapperOf(Env)->FindDelegateProperty(DelegatePtr);
 }
+
+// the same checks and messages as FV8Utils::CheckArgument
+inline bool CheckArguments(struct pesapi_ffi* Apis, pesapi_callback_info Info, std::initializer_list<ArgType> TypesExpect)
+{
+    const int Provided = Apis->get_args_len(Info);
+    if (Provided < static_cast<int>(TypesExpect.size()))
+    {
+        Apis->throw_by_string(
+            Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("Bad parameters, the function expect %d, but  %d provided."),
+                      static_cast<int>(TypesExpect.size()), Provided)));
+        return false;
+    }
+
+    pesapi_env Env = Apis->get_env(Info);
+    int i = 0;
+    for (ArgType Type : TypesExpect)
+    {
+        pesapi_value Arg = Apis->get_arg(Info, i);
+        const TCHAR* Expect = nullptr;
+        switch (Type)
+        {
+            case EArgInt32:
+                Expect = Apis->is_int32(Env, Arg) ? nullptr : TEXT("a int32");
+                break;
+            case EArgNumber:
+                Expect = Apis->is_double(Env, Arg) ? nullptr : TEXT("a int32");
+                break;
+            case EArgString:
+                Expect = Apis->is_string(Env, Arg) ? nullptr : TEXT("a string");
+                break;
+            case EArgExternal:
+                // papi has no external, only the v8 implementation creates them
+                Expect = papi_bridge::ToV8(Arg)->IsExternal() ? nullptr : TEXT("an external");
+                break;
+            case EArgFunction:
+                Expect = Apis->is_function(Env, Arg) ? nullptr : TEXT("a function");
+                break;
+            case EArgObject:
+                Expect = Apis->is_object(Env, Arg) ? nullptr : TEXT("a object");
+                break;
+            default:
+                break;
+        }
+        if (Expect)
+        {
+            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("Bad parameters #%d, expect %s."), i, Expect)));
+            return false;
+        }
+        ++i;
+    }
+    return true;
+}
 }    // namespace PapiUtils
 }    // namespace PUERTS_NAMESPACE
+
+// for callbacks with the papi signature (struct pesapi_ffi* Apis, pesapi_callback_info Info)
+#define PAPI_CHECK_ARGS(...)                                                     \
+    if (!PUERTS_NAMESPACE::PapiUtils::CheckArguments(Apis, Info, {__VA_ARGS__})) \
+    {                                                                            \
+        return;                                                                  \
+    }

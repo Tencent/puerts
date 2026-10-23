@@ -287,7 +287,7 @@ private:
 
     void EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void Log(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Log(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void SearchModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -350,13 +350,13 @@ private:
 
     void FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void IsQuickJS(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
 #ifndef WITH_QUICKJS
     v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> Context, const FString& FileName);
@@ -785,6 +785,30 @@ private:
                 .Check();
         }
     };
+
+    typedef void (FJsEnvImpl::*PapiMethodCallback)(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // binds a member function as a papi function (pesapi create_function), This is passed as the userdata
+    template <PapiMethodCallback callback>
+    struct PapiMethodBindingHelper
+    {
+        static void Callback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+        {
+            auto Self = static_cast<FJsEnvImpl*>(Apis->get_userdata(Info));
+            (Self->*callback)(Apis, Info);
+        }
+
+        static void Bind(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, FJsEnvImpl* This)
+        {
+            Apis->set_property(Env, Obj, Key, Apis->create_function(Env, &Callback, This, nullptr));
+        }
+    };
+
+    static void PapiBindFunction(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, pesapi_callback Callback)
+    {
+        Apis->set_property(Env, Obj, Key, Apis->create_function(Env, Callback, nullptr, nullptr));
+    }
 #if defined(WITH_V8_BYTECODE)
     uint32_t Expect_FlagHash = 0;
 #if V8_MAJOR_VERSION >= 11
