@@ -498,7 +498,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     PapiMethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
 
-    MethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Isolate, Context, PuertsObj, "loadCPPType", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Apis, Env, PapiPuertsObj, "loadCPPType", this);
 
     PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &GetFNameString);
 
@@ -3532,9 +3532,23 @@ void FJsEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
 }
 
-void FJsEnvImpl::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    CppObjectMapper.LoadCppType(Info);
+    PAPI_CHECK_ARGS(EArgString);
+
+    pesapi_env Env = Apis->get_env(Info);
+    const FString TypeName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+
+    auto ClassDef = FindCppTypeClassByName(CppObjectMapper.GetRegistry(), PString(TCHAR_TO_UTF8(*TypeName)));
+    pesapi_value Result = ClassDef ? Apis->create_class(Env, ClassDef->TypeId) : nullptr;
+    if (Result)
+    {
+        Apis->add_return(Info, Result);
+    }
+    else
+    {
+        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not find type: %s"), *TypeName)));
+    }
 }
 
 void FJsEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)

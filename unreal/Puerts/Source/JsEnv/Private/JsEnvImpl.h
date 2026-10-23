@@ -375,7 +375,7 @@ private:
 
     void LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 

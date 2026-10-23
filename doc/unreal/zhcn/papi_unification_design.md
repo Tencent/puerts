@@ -265,6 +265,8 @@ M5 落地情况（分批进行）：
   - `TsFunctionMap`、`BindInfoMap` 和上述缓存在 `CppObjectMapper.UnInitialize` 之前释放。父类没有 BindInfo 时不再用 `operator[]` 插入空项，改为退回原生原型。`InvokeTsMethod` 在 `FindOrAdd` 之前取出函数和 translator，避免注入导致 `TsFunctionMap` rehash 后访问悬空指针。
   - 入口的 v8 Locker / Isolate / Context 作用域保留，随 M7 替换；RebindObject 和对象首次绑定仍走 v8 版 `FindOrAdd(..., SkipTypeScriptInitial)`，等 M4-6。
   - 基准（同机 A/B，旧 1 轮、新 3 轮取最小值）：tsclass.cpp_to_js 349.5 到 381.3（+32ns，+9%），来源同 M6-1；tsclass.new 1932 到 1987，在噪声内。
+- M6-6：`puerts.loadCPPType` 改为 papi，按名字在 registry 里找到类型后用 `pesapi_create_class(env, type_id)` 创建类，找不到时抛 "can not find type: xxx"（与原错误文本一致）。`FCppObjectMapper::LoadCppType` 的 v8 版本保留，papi_test 宿主还在用。
+  - `ICppObjectMapper` 不改为 papi 签名。它是 papi-v8 后端的内部接口，使用方只有 PesapiV8Impl.cpp、DataTransfer.cpp（供 V8Object.hpp / JsObject.h 使用）和 papi_test 宿主，`FJsEnvImpl` 已经不再直接依赖它的 v8 签名。改签名没有收益，第二步换成共享的 papi dll 时随后端一起替换。
 
 ### 5.6 UObject 生命周期
 
