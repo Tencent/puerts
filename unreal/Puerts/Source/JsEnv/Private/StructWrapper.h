@@ -223,8 +223,11 @@ public:
     {
     }
 
-    static void OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data);
+    // Finalize of the class definitions of UClasses, frees the handle (the native pointer) of a UObject wrapper
+    static void ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate);
 
-    void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+    // the constructor (called by FStructWrapper::ReflectedConstruct), returns the handle of the new UObject for the backend to
+    // bind (freed by ReflectedFinalize), or nullptr on failure
+    void* New(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 };
 }    // namespace PUERTS_NAMESPACE

@@ -13,8 +13,8 @@
 
 namespace PUERTS_NAMESPACE
 {
-// Move-only owner of a strong pesapi_value_ref. Release it while the env is alive (before CppObjectMapper.UnInitialize), a
-// ref released after the env is gone only frees its memory.
+// Move-only owner of a pesapi_value_ref (strong unless SetWeak is called). Release it while the env is alive (before
+// CppObjectMapper.UnInitialize), a ref released after the env is gone only frees its memory.
 class FPapiValueRef
 {
 public:
@@ -72,6 +72,15 @@ public:
     pesapi_value Get(pesapi_env Env) const
     {
         return Ref ? Apis->get_value_from_ref(Env, Ref) : nullptr;
+    }
+
+    // the value is not kept alive by the ref from now on, Get returns nullptr after the value is garbage collected
+    void SetWeak(pesapi_env Env)
+    {
+        if (Ref)
+        {
+            Apis->set_ref_weak(Env, Ref);
+        }
     }
 
     explicit operator bool() const

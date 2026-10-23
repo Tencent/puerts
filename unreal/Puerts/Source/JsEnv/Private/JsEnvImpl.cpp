@@ -819,15 +819,15 @@ FJsEnvImpl::~FJsEnvImpl()
 
         CppObjectMapper.UnInitialize(Isolate);
 
+        // the bindings are freed by the finalizer of their classes in CppObjectMapper.UnInitialize, the rest (whose class is not
+        // found) are freed here
         for (auto& KV : ObjectMap)
         {
-            KV.Value->JsObject.Reset();
             delete KV.Value;
         }
         ObjectMap.Empty();
         for (auto Binding : ReleasedObjectBindings)
         {
-            Binding->JsObject.Reset();
             delete Binding;
         }
         ReleasedObjectBindings.Empty();
@@ -1013,31 +1013,22 @@ void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     pesapi_env Env = Apis->get_env(Info);
     pesapi_value Des = Apis->get_arg(Info, 0);
     pesapi_value Src = Apis->get_arg(Info, 1);
-    if (const void* TypeId = Apis->get_native_object_typeid(Env, Des))    // struct, the type id is its wrapper
+    // the type id of a reflected object is its wrapper (FScriptStructWrapper or FClassWrapper)
+    auto Wrapper = FStructWrapper::FromTypeId(Apis->get_native_object_typeid(Env, Des));
+    if (auto Struct = Wrapper ? Cast<UScriptStruct>(Wrapper->GetStruct()) : nullptr)
     {
-        auto Wrapper = FStructWrapper::FromTypeId(TypeId);
-        if (Wrapper && Wrapper->GetStruct())
-        {
-            if (auto Struct = Cast<UScriptStruct>(Wrapper->GetStruct()))
-            {
-                PapiUtils::Merge(Env, Src, Struct, Apis->get_native_object_ptr(Env, Des));
-                return;
-            }
-        }
+        PapiUtils::Merge(Env, Src, Struct, Apis->get_native_object_ptr(Env, Des));
+        return;
     }
-    else    // class
+    if (auto Object = PapiUtils::GetUObject(Apis, Env, Des))
     {
-        auto Object = PapiUtils::GetUObject(Apis, Env, Des);
-        if (Object)
+        if (FV8Utils::IsReleasedPtr(Object))
         {
-            if (FV8Utils::IsReleasedPtr(Object))
-            {
-                Apis->throw_by_string(Info, "passing a invalid object");
-                return;
-            }
-            PapiUtils::Merge(Env, Src, Object->GetClass(), Object);
+            Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
+        PapiUtils::Merge(Env, Src, Object->GetClass(), Object);
+        return;
     }
     Apis->throw_by_string(Info, "Bad parameters #1, expect a native object.");
 }
@@ -1100,7 +1091,7 @@ void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info 
         }
         if (NeedJsTakeRef)
         {
-            SetJsTakeRef(Object, Class);
+            SetJsTakeRef(Env, Object);
         }
 #endif
         Apis->add_return(Info, Result);
@@ -1479,7 +1470,7 @@ void FJsEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_s
             //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
             //后面看是否能参照蓝图的组件初始化进行改造
             // TsConstruct(TypeScriptGeneratedClass, Object);
-            __USE(FindOrAdd(MainIsolate, Context, Object->GetClass(), Object, true));
+            __USE(FindOrAdd(Env, Object->GetClass(), Object, true));
         }
     }
 
@@ -1772,15 +1763,16 @@ bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
     return false;
 }
 
-void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
-    v8::Local<v8::Object> JSObject)    // Just call in FClassReflection::Call, new a Object
+void* FJsEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject)
 {
+    // called by FClassWrapper::New, JSObject is the object being constructed
     auto Class = static_cast<UClass*>(ClassWrapper->Struct.Get());
     bool Existed;
-    Bind(Class, GetTemplateInfoOfType(Class, Existed)->IsNativeTakeJsRef, UEObject, JSObject);
+    return AddBinding(Env, ClassWrapper, GetTemplateInfoOfType(Class, Existed)->IsNativeTakeJsRef, UEObject, JSObject);
 }
 
-void FJsEnvImpl::Bind(UClass* Class, bool ClassIsNativeTakeJsRef, UObject* UEObject, v8::Local<v8::Object> JSObject)
+FJsEnvImpl::FUObjectBinding* FJsEnvImpl::AddBinding(
+    pesapi_env Env, FClassWrapper* ClassWrapper, bool ClassIsNativeTakeJsRef, UObject* UEObject, pesapi_value& JSObject)
 {
 #if PUERTS_KEEP_UOBJECT_REFERENCE
     const bool IsNativeTakeJsRef = ClassIsNativeTakeJsRef;
@@ -1790,99 +1782,98 @@ void FJsEnvImpl::Bind(UClass* Class, bool ClassIsNativeTakeJsRef, UObject* UEObj
     const bool IsCDO = UEObject->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
     const bool IsNativeTakeJsRef = (IsCDO || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
 #endif
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
 
     auto Binding = new FUObjectBinding();
     Binding->Object = UEObject;
     Binding->WeakObject = UEObject;
     Binding->Class = UEObject->GetClass();
-    Binding->JsObject.Reset(MainIsolate, JSObject);
-
-    DataTransfer::SetPointer(MainIsolate, JSObject, Binding, 0);
-    DataTransfer::SetPointer(MainIsolate, JSObject, nullptr, 1);
+    Binding->Finalize = &OnBindingFinalize;
+    Binding->Owner = this;
+    if (!JSObject)
+    {
+        // the binding is owned by the wrapper, freed by the finalizer of the class (FClassWrapper::ReflectedFinalize)
+        JSObject = Apis->native_object_to_value(Env, static_cast<FStructWrapper*>(ClassWrapper), Binding, true);
+    }
+    Binding->JsObject.Reset(Apis, Env, JSObject);
     ObjectMap.Emplace(UEObject, Binding);
 
     if (!IsNativeTakeJsRef)
     {
-        SetJsTakeRef(UEObject, Class);
+        SetJsTakeRef(Env, UEObject);
+    }
+    return Binding;
+}
+
+void FJsEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
+{
+    if (auto BindingPtr = ObjectMap.Find(UEObject))
+    {
+        UserObjectRetainer.Retain(UEObject);
+        (*BindingPtr)->JsObject.SetWeak(Env);
     }
 }
 
-void FJsEnvImpl::SetJsTakeRef(UObject* UEObject, UClass* Class)
+void FJsEnvImpl::OnBindingFinalize(FUObjectHandle* Handle)
 {
-    UserObjectRetainer.Retain(UEObject);
-    ObjectMap[UEObject]->JsObject.SetWeak<UClass>(Class, FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
-}
-
-void FJsEnvImpl::OnReleasedObjectBindingGarbageCollected(const v8::WeakCallbackInfo<FUObjectBinding>& Data)
-{
-    FUObjectBinding* Binding = Data.GetParameter();
-    auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate()));
-    Self->ReleasedObjectBindings.Remove(Binding);
-    Binding->JsObject.Reset();
+    // the wrapper is garbage collected (or the env is disposed)
+    auto Binding = static_cast<FUObjectBinding*>(Handle);
+    auto Self = Binding->Owner;
+    if (Binding->Object)
+    {
+        auto BindingPtr = Self->ObjectMap.Find(Binding->Object);
+        if (BindingPtr && *BindingPtr == Binding)
+        {
+            Self->ObjectMap.Remove(Binding->Object);
+            Self->UserObjectRetainer.Release(Binding->Object);
+        }
+    }
+    else
+    {
+        Self->ReleasedObjectBindings.Remove(Binding);
+    }
     delete Binding;
 }
 
-void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)
+void FJsEnvImpl::UnBind(UObject* UEObject)
 {
     FUObjectBinding* Binding = nullptr;
     if (ObjectMap.RemoveAndCopyValue(UEObject, Binding))
     {
         UserObjectRetainer.Release(UEObject);
-        if (ResetPointer)
-        {
-            // the UObject is destroyed while the js object is still alive: detach the handle (any access from js reports an
-            // invalid object from now on) and keep it until the js object is garbage collected
-            Binding->Object = nullptr;
-            Binding->WeakObject.Reset();
-            Binding->JsObject.SetWeak<FUObjectBinding>(
-                Binding, OnReleasedObjectBindingGarbageCollected, v8::WeakCallbackType::kParameter);
-            ReleasedObjectBindings.Add(Binding);
-        }
-        else
-        {
-            // the js object is garbage collected
-            Binding->JsObject.Reset();
-            delete Binding;
-        }
+        // the UObject is destroyed while the js object may be still alive: detach the handle (any access from js reports an
+        // invalid object from now on) and keep it until the wrapper is garbage collected
+        Binding->Object = nullptr;
+        Binding->WeakObject.Reset();
+        Binding->JsObject.Reset();
+        ReleasedObjectBindings.Add(Binding);
     }
 }
 
-void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject)
-{
-    UnBind(Class, UEObject, false);
-}
-
-v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial)
+pesapi_value FJsEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial)
 {
     if (!UEObject)
     {
-        return v8::Null(Isolate);
+        return v8impl::g_pesapi_ffi.create_null(Env);
     }
 
-    auto PersistentValuePtr = ObjectMap.Find(UEObject);
-    if (!PersistentValuePtr)    // create and link
+    if (auto BindingPtr = ObjectMap.Find(UEObject))
     {
-        bool Existed;
-        auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
-
-        auto Result = TemplateInfoPtr->Template.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-        Bind(Class, TemplateInfoPtr->IsNativeTakeJsRef, UEObject, Result);
-        if (!SkipTypeScriptInitial && TemplateInfoPtr->IsTypeScriptGeneratedClass)
-        {
-            TypeScriptInitial(UEObject->GetClass(), UEObject);
-        }
-        return Result;
+        return (*BindingPtr)->JsObject.Get(Env);
     }
-    else
+
+    // create and link
+    bool Existed;
+    auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
+    const bool IsTypeScriptGeneratedClass = TemplateInfoPtr->IsTypeScriptGeneratedClass;
+    pesapi_value Result = nullptr;
+    AddBinding(Env, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()), TemplateInfoPtr->IsNativeTakeJsRef, UEObject,
+        Result);
+    if (!SkipTypeScriptInitial && IsTypeScriptGeneratedClass)
     {
-        return v8::Local<v8::Value>::New(Isolate, (*PersistentValuePtr)->JsObject);
+        TypeScriptInitial(UEObject->GetClass(), UEObject);
     }
-}
-
-v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject)
-{
-    return FindOrAdd(Isolate, Context, Class, UEObject, false);
+    return Result;
 }
 
 pesapi_value FJsEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
@@ -2063,7 +2054,7 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Co
     if (auto BindingPtr = ObjectMap.Find(Object))
     {
         UserObjectRetainer.Release(Object);
-        (*BindingPtr)->JsObject.Reset(MainIsolate, papi_bridge::ToV8(JSObject));
+        (*BindingPtr)->JsObject.Reset(Apis, Env, JSObject);
     }
 
     if (Prototype && ObjectSetPrototypeOf)
@@ -2142,15 +2133,14 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         auto BindingPtr = ObjectMap.Find(Object);
         if (!BindingPtr)
         {
-            auto Context = papi_bridge::ToV8(Env);
-            JSObject = papi_bridge::ToPapi(FindOrAdd(MainIsolate, Context, Object->GetClass(), Object, true));
+            JSObject = FindOrAdd(Env, Object->GetClass(), Object, true);
 
             // FindOrAdd may change BindInfoMap, cause a rehash
             BindInfoPtr = BindInfoMap.Find(Class);
         }
         else
         {
-            JSObject = papi_bridge::ToPapi((*BindingPtr)->JsObject.Get(MainIsolate));
+            JSObject = (*BindingPtr)->JsObject.Get(Env);
         }
 
         if (BindInfoPtr)
@@ -2202,7 +2192,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     BindInfoMap.Remove((UTypeScriptGeneratedClass*) ObjectBase);
 #endif
 
-    UnBind(nullptr, (UObject*) ObjectBase, true);
+    UnBind((UObject*) ObjectBase);
 
     GeneratedClasses.Remove((UClass*) ObjectBase);
 
@@ -2295,11 +2285,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Fu
     if (GeneratedObjectPtr)
     {
         // the binding of a makeUClass object holds its js object strongly (see JsConstruct)
-        auto JsObject = (*GeneratedObjectPtr)->JsObject.Get(MainIsolate);
-        if (!JsObject.IsEmpty())
-        {
-            Self = papi_bridge::ToPapi(JsObject);
-        }
+        Self = (*GeneratedObjectPtr)->JsObject.Get(Env);
     }
 
     if (!Self)
@@ -2452,7 +2438,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
                 continue;
             if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                 continue;    //跳过父类重新编译后临时状态的对象
-            __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object, true));
+            __USE(FindOrAdd(papi_bridge::ToPapi(Context), Object->GetClass(), Object, true));
 
             UTypeScriptGeneratedClass* ClassMayNeedReBind = nullptr;
             auto TempClass = Object->GetClass();
@@ -3350,8 +3336,8 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
             __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
             __USE(Result->Set(Context, v8::Number::New(Isolate, Value), FV8Utils::ToV8String(Isolate, Name)));
         }
-        __USE(Result->Set(
-            Context, FV8Utils::ToV8String(Isolate, "__puerts_ufield"), FindOrAdd(Isolate, Context, Enum->GetClass(), Enum)));
+        __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, "__puerts_ufield"),
+            papi_bridge::ToV8(FindOrAdd(papi_bridge::ToPapi(Context), Enum->GetClass(), Enum, false))));
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         if (Enum == StaticEnum<EObjectTypeQuery>())
         {
@@ -3515,7 +3501,7 @@ void FJsEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info 
         return;
     }
 
-    SetJsTakeRef(Object, Object->GetClass());
+    SetJsTakeRef(Env, Object);
 }
 
 bool FJsEnvImpl::GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr)

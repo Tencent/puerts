@@ -73,9 +73,9 @@ public:
 class IObjectMapper : public ICppObjectMapper
 {
 public:
-    virtual void Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) = 0;
-
-    virtual void UnBind(UClass* Class, UObject* UEObject) = 0;
+    // binds UEObject to JSObject, the object being constructed by the js class of ClassWrapper, returns the native pointer (the
+    // handle of UEObject) for the backend to bind to JSObject
+    virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) = 0;
 
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) = 0;
 

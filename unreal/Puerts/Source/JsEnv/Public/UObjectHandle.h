@@ -35,6 +35,10 @@ struct FUObjectHandle
 
     UClass* Class = nullptr;
 
+    // frees the handle, called by the finalizer of the js class (FClassWrapper::ReflectedFinalize) when the wrapper is garbage
+    // collected or the env is disposed
+    void (*Finalize)(FUObjectHandle* Handle) = nullptr;
+
     FORCEINLINE static bool IsHandle(const void* Ptr)
     {
         return Ptr && static_cast<const FUObjectHandle*>(Ptr)->Magic == MagicValue;

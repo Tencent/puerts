@@ -142,20 +142,12 @@ public:
 public:
     bool IsTypeScriptGeneratedClass(UClass* Class);
 
-    void SetJsTakeRef(UObject* UEObject, UClass* Class);
+    void SetJsTakeRef(pesapi_env Env, UObject* UEObject);
 
-    void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject);
+    // the UObject was destroyed, the binding (if any) is detached
+    void UnBind(UObject* UEObject);
 
-    void Bind(UClass* Class, bool ClassIsNativeTakeJsRef, UObject* UEObject, v8::Local<v8::Object> JSObject);
-
-    virtual void UnBind(UClass* Class, UObject* UEObject) override;
-
-    virtual void UnBind(UClass* Class, UObject* UEObject, bool ResetPointer);
-
-    v8::Local<v8::Value> FindOrAdd(
-        v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial);
-
-    v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject);
+    pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial);
 
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
     // an owned POD struct, the memory is freed with an ArrayBuffer (gced on a v8 worker thread) instead of the finalizer of
@@ -220,15 +212,11 @@ public:
 
     // IObjectMapper, the papi interface used by the backend independent code. Forward to the v8 implementations above until
     // they are migrated
-    virtual void Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override
-    {
-        Bind(ClassWrapper, UEObject, papi_bridge::ToV8(JSObject).As<v8::Object>());
-    }
+    virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override;
 
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) override
     {
-        auto Context = papi_bridge::ToV8(Env);
-        return papi_bridge::ToPapi(FindOrAdd(Context->GetIsolate(), Context, Class, UEObject));
+        return FindOrAdd(Env, Class, UEObject, false);
     }
 
     virtual bool TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr) override;
@@ -579,15 +567,26 @@ private:
 
     void OnReflectedTemplateCreated(const JSClassDefinition* ClassDefinition);
 
-    // A UObject wrapper stores a FUObjectBinding (a FUObjectHandle) in internal field 0. The binding lives as long as the js
-    // object: when the UObject is destroyed first, the binding is detached (see UnBind) and moved to ReleasedObjectBindings
-    // until the js object is garbage collected.
+    // A UObject wrapper is a native object of the class definition of its UClass (the type id is the FClassWrapper), the native
+    // pointer is a FUObjectBinding (a FUObjectHandle) owned by the wrapper: it is freed by the finalizer of the class
+    // (OnBindingFinalize) when the wrapper is garbage collected. When the UObject is destroyed first, the binding is detached (see
+    // UnBind) and moved to ReleasedObjectBindings until then.
     struct FUObjectBinding : FUObjectHandle
     {
-        v8::UniquePersistent<v8::Value> JsObject;
+        FJsEnvImpl* Owner = nullptr;
+
+        // the wrapper, strong if native holds the js object, weak if the js object holds the UObject (SetJsTakeRef), released
+        // after the UObject is destroyed
+        FPapiValueRef JsObject;
     };
 
-    static void OnReleasedObjectBindingGarbageCollected(const v8::WeakCallbackInfo<FUObjectBinding>& Data);
+    static void OnBindingFinalize(FUObjectHandle* Handle);
+
+    // creates the binding of UEObject and adds it to ObjectMap. A null JSObject is set to a new wrapper (a native object of
+    // ClassWrapper owning the binding), otherwise it is the object being constructed, which the backend binds the returned
+    // binding to. The wrapper is held weakly and holds UEObject unless the class is native take js ref
+    FUObjectBinding* AddBinding(
+        pesapi_env Env, FClassWrapper* ClassWrapper, bool ClassIsNativeTakeJsRef, UObject* UEObject, pesapi_value& JSObject);
 
     TMap<UObject*, FUObjectBinding*> ObjectMap;
 

@@ -290,6 +290,10 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
     {
         Definition.Finalize = &FScriptStructWrapper::ReflectedFinalize;
     }
+    else
+    {
+        Definition.Finalize = &FClassWrapper::ReflectedFinalize;
+    }
     Definition.Methods = Out->Methods.data();
     Definition.Functions = Out->Functions.data();
     Definition.Properties = Out->Properties.data();
@@ -480,12 +484,7 @@ void* FStructWrapper::ReflectedConstruct(struct pesapi_ffi* Apis, pesapi_callbac
     {
         return static_cast<FScriptStructWrapper*>(This)->New(Apis, Info);
     }
-    const auto& V8Info = papi_bridge::ToV8(Info);
-    auto Isolate = V8Info.GetIsolate();
-    auto Context = Isolate->GetCurrentContext();
-    static_cast<FClassWrapper*>(This)->New(Isolate, Context, V8Info);
-    // the object is bound by the wrapper
-    return nullptr;
+    return static_cast<FClassWrapper*>(This)->New(Apis, Info);
 }
 
 void FStructWrapper::OnTemplateCreated(
@@ -678,52 +677,51 @@ void FScriptStructWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr,
     static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Free(Ptr);
 }
 
-void FClassWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data)
+void FClassWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
 {
-    // internal field 0 of a UObject wrapper holds a FUObjectHandle, the raw UObject* in it is the key of the object map
-    auto Handle = static_cast<FUObjectHandle*>(
-        DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
-    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBind(Data.GetParameter(), Handle->Object);
+    // the native pointer of a UObject wrapper is a handle owned by the wrapper
+    auto Handle = static_cast<FUObjectHandle*>(Ptr);
+    if (FUObjectHandle::IsHandle(Handle) && Handle->Finalize)
+    {
+        Handle->Finalize(Handle);
+    }
 }
 
-void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
+void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    if (Info.IsConstructCall())
+    pesapi_env Env = Apis->get_env(Info);
+    const int ArgsLen = Apis->get_args_len(Info);
+    auto Class = static_cast<UClass*>(Struct.Get());
+
+    UObject* Outer = GetTransientPackage();
+    FName Name = NAME_None;
+    EObjectFlags ObjectFlags = RF_NoFlags;
+    if (ArgsLen > 0)
     {
-        auto Self = Info.This();
-
-        UObject* Object = nullptr;
-        auto Class = static_cast<UClass*>(Struct.Get());
-
+        pesapi_value OuterValue = Apis->get_arg(Info, 0);
+        if (!Apis->is_null(Env, OuterValue) && !Apis->is_undefined(Env, OuterValue))
         {
-            UObject* Outer = GetTransientPackage();
-            FName Name = NAME_None;
-            EObjectFlags ObjectFlags = RF_NoFlags;
-            if (Info.Length() > 0 && !Info[0]->IsNullOrUndefined())
+            Outer = PapiUtils::GetUObject(Apis, Env, OuterValue);
+            if (!Outer || FV8Utils::IsReleasedPtr(Outer))
             {
-                Outer = FV8Utils::GetUObject(Context, Info[0]);
-                if (!Outer || FV8Utils::IsReleasedPtr(Outer))
-                {
-                    FV8Utils::ThrowException(Isolate, "passing a invalid object");
-                    return;
-                }
+                Apis->throw_by_string(Info, "passing a invalid object");
+                return nullptr;
             }
-            if (Info.Length() > 1)
-            {
-                Name = FName(*FV8Utils::ToFString(Isolate, Info[1]));
-            }
-            if (Info.Length() > 2)
-            {
-                ObjectFlags = (EObjectFlags) (Info[2]->Int32Value(Context).ToChecked());
-            }
-            Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
         }
-
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->Bind(papi_bridge::ToPapi(Context), this, Object, papi_bridge::ToPapi(Self));
     }
-    else
+    if (ArgsLen > 1)
     {
-        FV8Utils::ThrowException(Isolate, "only call as Construct is supported!");
+        Name = FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1)));
     }
+    if (ArgsLen > 2)
+    {
+        ObjectFlags = (EObjectFlags) (Apis->get_value_int32(Env, Apis->get_arg(Info, 2)));
+    }
+    UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
+
+    // the object being constructed, papi has no accessor of it
+    pesapi_value Self = papi_bridge::ToPapi(papi_bridge::ToV8(Info).This());
+    // the handle is bound to the object by the backend, freed by ReflectedFinalize
+    return PapiUtils::ObjectMapperOf(Env)->Bind(Env, this, Object, Self);
 }
 }    // namespace PUERTS_NAMESPACE
