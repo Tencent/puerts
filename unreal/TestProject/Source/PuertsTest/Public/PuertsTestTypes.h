@@ -289,6 +289,10 @@ public:
 
     UFUNCTION(BlueprintCallable)
     FString CallNativeEvent(const FString& S);
+
+    // C++ -> JS call loop through a makeUClass override
+    UFUNCTION(BlueprintCallable)
+    int32 LoopImplEvent(int32 Count);
 };
 
 USTRUCT()

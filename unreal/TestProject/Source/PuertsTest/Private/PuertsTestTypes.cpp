@@ -259,6 +259,16 @@ FString UPuertsTestMakeClassTarget::CallNativeEvent(const FString& S)
     return NativeEvent(S);
 }
 
+int32 UPuertsTestMakeClassTarget::LoopImplEvent(int32 Count)
+{
+    int32 Sum = 0;
+    for (int32 i = 0; i < Count; ++i)
+    {
+        Sum += ImplEvent(i);
+    }
+    return Sum;
+}
+
 void UPuertsTestReporter::Pass(const FString& Name)
 {
     Passed.Add(Name);
