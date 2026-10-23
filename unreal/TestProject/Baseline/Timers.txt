@@ -1,0 +1,11 @@
+timeout id type: "number"
+setTimeout no args: Error: Bad parameters #1, expect a int32.
+setTimeout string callback: <no throw>
+setTimeout no delay: Error: Bad parameters #1, expect a int32.
+setInterval string delay: Error: Bad parameters #1, expect a int32.
+clearTimeout undefined: <no throw>
+clearTimeout null: <no throw>
+clearTimeout unknown id: <no throw>
+clearTimeout string: Error: Bad parameters #0, expect a int32.
+extra args passed to callback: 2
+callback this is globalThis: false

@@ -2,6 +2,7 @@
 
 #include "JsEnv.h"
 #include "PuertsTestTypes.h"
+#include "Containers/Ticker.h"
 #include "HAL/FileManager.h"
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
@@ -84,6 +85,8 @@ UPuertsTestReporter* RunScript(FAutomationTestBase& Test, const FString& Module,
 
         for (int32 Step = 1; Step < Reporter->StepCount; ++Step)
         {
+            // timers (setTimeout / setInterval) are core ticker delegates, let them fire before the next step
+            FTSTicker::GetCoreTicker().Tick(0.1f);
             FullGC(*Env);
             if (!Reporter->OnStep.IsBound())
             {
