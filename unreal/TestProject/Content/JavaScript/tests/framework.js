@@ -123,4 +123,4 @@ function run() {
     runStep(0);
 }
 
-module.exports = { puerts, UE, reporter, test, step, eq, near, assert, catchError, note, observe, fmt, run };
+module.exports = { puerts, UE, reporter, test, step, eq, near, assert, catchError, note, observe, fmt, normalizePath, run };

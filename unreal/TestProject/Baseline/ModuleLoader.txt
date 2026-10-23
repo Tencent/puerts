@@ -16,3 +16,8 @@ import cjs package: {name: "pkg_cjs", hasModule: true}
 require esm package: ["pkg_esm", "pkg_esm_default"]
 import esm package: ["pkg_esm", "pkg_esm_default"]
 require esm package without require entry: Error: can not require a esm in cjs module!
+dynamic esm result: {x: 1, d: "dep-default", cjsName: "c", name: "c", fnResult: 42, answer: 42, list: [1, 2], builtinV: 7, v: 7}
+import.meta.resolve missing: Error: can not resolve [./not_exist_meta_xyz.mjs], import by [<js-root>/tests/module_loader_data/meta.mjs]
+dynamic import missing: Error: can not resolve [./module_loader_data/not_exist_xyz.mjs], import by [<js-root>/tests/module_loader.js]
+dynamic import dep missing: Error: can not resolve [./not_exist_dep_xyz.mjs], import by [<js-root>/tests/module_loader_data/esm_missing.mjs]
+dynamic import syntax error: SyntaxError: Unexpected token '='

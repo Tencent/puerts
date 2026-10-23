@@ -1,6 +1,6 @@
 'use strict';
 // the module loader of the backend (PapiV8ModuleLoader), the require of every module since it replaces modular.js (M7-2)
-const { test, eq, assert, note, observe, catchError, run } = require('./framework');
+const { test, step, eq, assert, note, observe, catchError, normalizePath, run } = require('./framework');
 
 const D = './module_loader_data/';
 
@@ -8,7 +8,7 @@ function req(spec) {
     return require(D + spec);
 }
 
-// an esm required until the dynamic import (M7-3)
+// an esm evaluated synchronously (require semantics), the dynamic import is checked in the next step
 function imp(spec) {
     return require(D + spec);
 }
@@ -116,6 +116,80 @@ test('forceReload', () => {
 
 test('bom', () => {
     eq(req('bom'), 'bom');
+});
+
+// dynamic import: started in the first step, checked in the next one (timers fire and microtasks run in between)
+const dyn = Object.create(null);
+
+function dynImport(key, spec) {
+    dyn[key] = { state: 'pending' };
+    import(spec).then(
+        (ns) => {
+            dyn[key] = { state: 'fulfilled', ns };
+        },
+        (e) => {
+            dyn[key] = { state: 'rejected', error: e instanceof Error ? `${e.name}: ${e.message}` : String(e) };
+        }
+    );
+}
+
+function settled(key) {
+    const r = dyn[key];
+    assert(r.state === 'fulfilled', `${key}: ${r.state} ${r.error || ''}`);
+    return r.ns;
+}
+
+function rejected(key) {
+    const r = dyn[key];
+    return r.state === 'rejected' ? normalizePath(r.error) : `<${r.state}>`;
+}
+
+test('dynamic import start', () => {
+    dynImport('esm', D + 'esm_main.mjs');
+    dynImport('esm again', D + 'esm_main.mjs');
+    dynImport('cjs', D + 'cjs_c.cjs');
+    dynImport('json', D + 'data.json');
+    dynImport('builtin', 'ml_builtin');
+    dynImport('tla', D + 'tla_ok.mjs');
+    dynImport('tla timer', D + 'tla_timer.mjs');
+    dynImport('meta', D + 'meta.mjs');
+    dynImport('nested', D + 'dyn.mjs');
+    dynImport('missing', D + 'not_exist_xyz.mjs');
+    dynImport('dep missing', D + 'esm_missing.mjs');
+    dynImport('syntax error', D + 'syntax_err.mjs');
+    eq(dyn.esm.state, 'pending', 'settled asynchronously');
+});
+
+step(() => {
+    test('dynamic import', () => {
+        const ns = settled('esm');
+        observe('dynamic esm result', () => ns.result);
+        assert(settled('esm again') === ns, 'module cache');
+        assert(imp('esm_main.mjs') === ns, 'shared with require');
+        const cjs = settled('cjs');
+        assert(cjs.default === req('cjs_c.cjs'), 'cjs default');
+        eq(cjs.name, 'c');
+        eq(settled('json').answer, 42);
+        eq(settled('builtin').v, 7);
+        eq(settled('tla').value, 5);
+        eq(settled('tla timer').value, 1, 'top-level await of a timer');
+        eq(settled('nested').dep.x, 1, 'dynamic import in esm');
+        assert(settled('nested').dep === imp('esm_dep.mjs'), 'nested shared');
+    });
+
+    test('import.meta', () => {
+        const m = settled('meta');
+        eq(slash(m.url).endsWith('tests/module_loader_data/meta.mjs'), true, 'url');
+        eq(slash(m.resolved).endsWith('tests/module_loader_data/esm_dep.mjs'), true, 'resolve');
+        eq(m.builtin, 'ml_builtin');
+        note('import.meta.resolve missing', normalizePath(m.resolveMissing));
+    });
+
+    test('dynamic import errors', () => {
+        note('dynamic import missing', rejected('missing'));
+        note('dynamic import dep missing', rejected('dep missing'));
+        note('dynamic import syntax error', rejected('syntax error'));
+    });
 });
 
 run();
