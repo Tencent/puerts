@@ -16,6 +16,8 @@ weak typeof: "object"
 weak of plain object IsValid: false
 setJsTakeRef: <no throw>
 setJsTakeRef no args: Error: Bad parameters, the function expect 1, but  0 provided.
+setJsTakeRef plain object: Error: passing a invalid object
+setJsTakeRef struct: Error: passing a invalid object
 weak of destroyed object IsValid: false
 weak of destroyed object Get: undefined
 NewObject with destroyed outer: Error: passing a invalid object

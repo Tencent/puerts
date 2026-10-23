@@ -406,7 +406,7 @@ private:
 
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void SetJsTakeRefInTs(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     bool GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro** PropertyPtr);
 
@@ -438,11 +438,11 @@ private:
 
     void ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void MakeWeakObjectPtr(const v8::FunctionCallbackInfo<v8::Value>& Info);
 

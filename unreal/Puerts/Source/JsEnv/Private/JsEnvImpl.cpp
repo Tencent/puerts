@@ -506,13 +506,13 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MethodBindingHelper<&FJsEnvImpl::NewContainer>::Bind(Isolate, Context, Global, "__tgjsNewContainer", This);
 
-    MethodBindingHelper<&FJsEnvImpl::MergeObject>::Bind(Isolate, Context, Global, "__tgjsMergeObject", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::MergeObject>::Bind(Apis, Env, PapiGlobal, "__tgjsMergeObject", this);
 
-    MethodBindingHelper<&FJsEnvImpl::NewObjectByClass>::Bind(Isolate, Context, Global, "__tgjsNewObject", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
 
-    MethodBindingHelper<&FJsEnvImpl::SetJsTakeRefInTs>::Bind(Isolate, Context, Global, "__tgjsSetJsTakeRef", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
 
-    MethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Isolate, Context, Global, "__tgjsNewStruct", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Apis, Env, PapiGlobal, "__tgjsNewStruct", this);
 
     MethodBindingHelper<&FJsEnvImpl::MakeWeakObjectPtr>::Bind(Isolate, Context, Global, "__tgjsMakeWeakObjectPtr", This);
 
@@ -1004,70 +1004,67 @@ void FJsEnvImpl::Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8:
     GetObjectMerger(DesType)->Merge(Isolate, Context, Src, Des);
 }
 
-void FJsEnvImpl::MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgObject, EArgObject);
 
-    CHECK_V8_ARGS(EArgObject, EArgObject);
-
-    auto Des = Info[0]->ToObject(Context).ToLocalChecked();
-    auto Src = Info[1]->ToObject(Context).ToLocalChecked();
-    if (FV8Utils::GetPointerFast<void>(Des, 1))    // struct
+    pesapi_env Env = Apis->get_env(Info);
+    pesapi_value Des = Apis->get_arg(Info, 0);
+    pesapi_value Src = Apis->get_arg(Info, 1);
+    if (const void* TypeId = Apis->get_native_object_typeid(Env, Des))    // struct, the type id is its UScriptStruct
     {
-        if (auto Object = FV8Utils::GetUObject(Des, 1))
+        if (auto Object = PapiUtils::ToUObjectChecked(TypeId))
         {
             if (FV8Utils::IsReleasedPtr(Object))
             {
-                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                Apis->throw_by_string(Info, "passing a invalid object");
                 return;
             }
             auto Struct = Cast<UScriptStruct>(Object);
             if (Struct)
             {
-                Merge(Isolate, Context, Src, Struct, FV8Utils::GetPointer(Des));
+                PapiUtils::Merge(Env, Src, Struct, Apis->get_native_object_ptr(Env, Des));
                 return;
             }
         }
     }
     else    // class
     {
-        auto Object = FV8Utils::GetUObject(Des);
+        auto Object = PapiUtils::GetUObject(Apis, Env, Des);
         if (Object)
         {
             if (FV8Utils::IsReleasedPtr(Object))
             {
-                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                Apis->throw_by_string(Info, "passing a invalid object");
                 return;
             }
-            Merge(Isolate, Context, Src, Object->GetClass(), Object);
+            PapiUtils::Merge(Env, Src, Object->GetClass(), Object);
             return;
         }
     }
-    FV8Utils::ThrowException(Isolate, "Bad parameters #1, expect a native object.");
+    Apis->throw_by_string(Info, "Bad parameters #1, expect a native object.");
 }
 
-void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    pesapi_env Env = Apis->get_env(Info);
+    const int ArgsLen = Apis->get_args_len(Info);
+    auto IsSet = [&](int Index)
+    {
+        return ArgsLen > Index && !Apis->is_null(Env, Apis->get_arg(Info, Index)) &&
+               !Apis->is_undefined(Env, Apis->get_arg(Info, Index));
+    };
 
     UObject* Outer = GetTransientPackage();
     FName Name = NAME_None;
     EObjectFlags ObjectFlags = RF_NoFlags;
 
     UClass* Class = nullptr;
-    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
         Class = Cast<UClass>(Object);
@@ -1075,31 +1072,31 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
 
     if (Class)
     {
-        if (Info.Length() > 1 && !Info[1]->IsNullOrUndefined())
+        if (IsSet(1))
         {
-            Outer = FV8Utils::GetUObject(Context, Info[1]);
+            Outer = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 1));
             if (FV8Utils::IsReleasedPtr(Outer))
             {
-                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                Apis->throw_by_string(Info, "passing a invalid object");
                 return;
             }
         }
-        if (Info.Length() > 2 && !Info[2]->IsNullOrUndefined())
+        if (IsSet(2))
         {
-            Name = FName(*FV8Utils::ToFString(Isolate, Info[2]));
+            Name = FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 2)));
         }
-        if (Info.Length() > 3 && !Info[3]->IsNullOrUndefined())
+        if (IsSet(3))
         {
-            ObjectFlags = (EObjectFlags) (Info[3]->Int32Value(Context).ToChecked());
+            ObjectFlags = (EObjectFlags) (Apis->get_value_int32(Env, Apis->get_arg(Info, 3)));
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
-        auto Result = FindOrAdd(Isolate, Context, Object->GetClass(), Object);
+        auto Result = PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object);
 #if !PUERTS_KEEP_UOBJECT_REFERENCE
         bool NeedJsTakeRef = true;
-        if (Info.Length() > 4 && !Info[4]->IsNullOrUndefined())
+        if (IsSet(4))
         {
-            if (!Info[4]->BooleanValue(Isolate))
+            if (!Apis->get_value_bool(Env, Apis->get_arg(Info, 4)))
             {
                 NeedJsTakeRef = false;
             }
@@ -1111,28 +1108,24 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
             SetJsTakeRef(Object, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()));
         }
 #endif
-        Info.GetReturnValue().Set(Result);
+        Apis->add_return(Info, Result);
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, "invalid argument");
+        Apis->throw_by_string(Info, "invalid argument");
     }
 }
 
-void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    pesapi_env Env = Apis->get_env(Info);
 
     UScriptStruct* ScriptStruct = nullptr;
-    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (FV8Utils::IsReleasedPtr(Object))
         {
-            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
         ScriptStruct = Cast<UScriptStruct>(Object);
@@ -1142,11 +1135,11 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
     {
         void* Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
 
-        Info.GetReturnValue().Set(FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, false));
+        Apis->add_return(Info, PapiUtils::FindOrAddStruct(Env, ScriptStruct, Ptr, false));
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, "invalid argument");
+        Apis->throw_by_string(Info, "invalid argument");
     }
 }
 
@@ -3491,13 +3484,17 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
     }
 }
 
-void FJsEnvImpl::SetJsTakeRefInTs(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    CHECK_V8_ARGS(EArgObject);
+    PAPI_CHECK_ARGS(EArgObject);
 
-    UObject* Object = FV8Utils::GetUObject(Context, Info[0]);
+    pesapi_env Env = Apis->get_env(Info);
+    UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0));
+    if (!Object || FV8Utils::IsReleasedPtr(Object))
+    {
+        Apis->throw_by_string(Info, "passing a invalid object");
+        return;
+    }
 
     bool Existed;
     auto TemplateInfoPtr = GetTemplateInfoOfType(Object->GetClass(), Existed);

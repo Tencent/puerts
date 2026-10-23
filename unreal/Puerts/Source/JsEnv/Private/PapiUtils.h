@@ -50,6 +50,16 @@ FORCEINLINE UObject* GetUObject(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_
     return DataTransfer::GetUObjectOfNativePtr(Apis->get_native_object_ptr(Env, Value));
 }
 
+// a raw UObject pointer (e.g. the type id of a struct wrapper, which is its UScriptStruct), same as FV8Utils::GetUObject with
+// a non zero index: RELEASED_UOBJECT if the UObject is destroyed / pending kill
+FORCEINLINE UObject* ToUObjectChecked(const void* Ptr)
+{
+    auto UEObject = static_cast<UObject*>(const_cast<void*>(Ptr));
+    return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject)))
+               ? UEObject
+               : RELEASED_UOBJECT;
+}
+
 // the IObjectMapper of an env, it is the isolate data of the v8 backend (the only backend of the plugin for now)
 FORCEINLINE IObjectMapper* ObjectMapperOf(pesapi_env Env)
 {

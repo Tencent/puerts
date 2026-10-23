@@ -106,6 +106,8 @@ test('setJsTakeRef', () => {
     const o = UE.NewObject(UE.PuertsTestObject.StaticClass(), undefined, undefined, undefined, false);
     note('setJsTakeRef', catchError(() => puerts.setJsTakeRef(o)));
     note('setJsTakeRef no args', catchError(() => puerts.setJsTakeRef()));
+    note('setJsTakeRef plain object', catchError(() => puerts.setJsTakeRef({})));
+    note('setJsTakeRef struct', catchError(() => puerts.setJsTakeRef(new UE.PuertsTestStruct())));
 });
 
 step(() => {
