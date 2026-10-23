@@ -175,8 +175,8 @@ virtual bool JsToUE(pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* 
 | M4 | StructWrapper 改为 registry 注册，ContainerWrapper、DelegateWrapper、Soft / Weak 包装 | L | M3 |
 | M5 | JsEnvImpl 全局函数（puerts.*、UE 代理、计时器、日志、加载器回调）改为 `create_function` | M | M4 |
 | M6 | Mixin、TS 生成类、蓝图调用 JS（InvokeJsMethod 等） | M | M5 |
-| M7 | ESM、Inspector、热重载切换到 papi-v8 的 BackendEnv / 导出接口；Websocket 改用 wsppaddon | M | M5 |
-| M8 | 清理：V8Backend.hpp、V8Object.hpp、V8FastCall.hpp 标记废弃；FFI、Wasm3 改为基于 papi 的可选 addon 或保留 V8 专属 | S | M6 |
+| M7 | 模块加载器重做（见 5.10）：ESM / CJS 的编译、链接、求值全部在后端 C++ 实现，宿主只通过约定名的全局函数提供解析与读取；之后再做 Inspector、Promise 拒绝回调、env 入口作用域、Websocket 改用 wsppaddon | L | M5 |
+| M8 | 收尾：V8Backend.hpp、V8Object.hpp、V8FastCall.hpp 保留为 V8 专属快速路径（不废弃，见 5.11）；FFI、Wasm3 改为基于 papi 的可选 addon 或保留 V8 专属 | S | M6 |
 
 第一阶段完成判据：除 PesapiV8Impl、桥接层与白名单中的 V8 专属可选功能外，JsEnv 内不再 include `v8.h`。
 
@@ -330,6 +330,96 @@ papi-v8 的实现（PesapiV8Impl、CppObjectMapper、BackendEnv、DataTransfer�
 
 第二阶段开始后，UE 不再编译这部分源码，它只属于后端动态库。
 
+### 5.10 M7：模块加载器重做
+
+#### 5.10.1 现状问题
+
+- Unity：`BackendJs.OnEnter` 先 `Eval` 一段 `esm_bootstrap.cjs`，由它在 global 上定义 `__puer_resolve_module_url__` / `__puer_resolve_module_content__`，C++ 再按名字取来用。启动依赖 Eval 源码。
+- UE：ESM 的模块图在 `FJsEnvImpl`（`FetchESModuleTree` 等）里，直接用 `IJSModuleLoader`；CJS 在 `modular.js` 里把源码拼成 `(function (exports, require, module, __filename, __dirname) {...})` 再 `__tgjsEvalScript`；内置的 `puerts/*.js` 按经典脚本 `Script::Compile`。字节码的空源码由 JS 的 `generateEmptyCode` 生成；没有动态 `import()` 和 `import.meta`。
+- 后续安全方向是只支持字节码，所有解析 JS 源码的入口（含 eval，甚至改 v8 去掉源码编译）都要能去掉。两边现有实现都依赖运行期源码拼接或 Eval，无法满足。
+
+#### 5.10.2 目标
+
+- 模块的编译、链接、求值、缓存、动态 import、`import.meta` 全部在后端 C++ 实现，参考 d8 与 Node 的结构，不依赖任何 bootstrap JS。
+- 输入既可以是源码也可以是字节码；提供编译期开关 `PUERTS_MODULE_BYTECODE_ONLY`，打开后拒绝源码输入，后端里不再出现源码编译调用。
+- 宿主契约与 JS 引擎无关：宿主是 .NET、Unity 或 UE，后端是 V8、QuickJS 或自研 VM，契约都一样；每个后端用自己引擎的模块 API 实现。
+- 第一阶段只在 UE 落地，不改 `unity/`；跑稳定后再同步回 Unity，替换 `esm_bootstrap.cjs`。
+
+#### 5.10.3 分工
+
+宿主只负责“找”和“读”，其余都在后端：
+
+| 职责 | 宿主 | 后端 C++ |
+| --- | --- | --- |
+| specifier 解析：相对路径、扩展名补全、目录 index、node_modules、package.json 的 type / main / exports | 是 | |
+| 读取内容、决定是源码还是字节码、给出调试路径 | 是 | |
+| 模块记录表、解析缓存、循环依赖、错误回滚 | | 是 |
+| ESM 编译 / 链接 / 求值、顶层 await | | 是 |
+| CJS 编译（函数包装）与 `require` 语义：缓存、循环依赖、`module.exports` | | 是 |
+| ESM 与 CJS 互操作、JSON、内置模块 | | 是 |
+| 动态 `import()`、`import.meta.url`、`import.meta.resolve` | | 是 |
+| 字节码头校验、占位源码生成 | | 是 |
+
+#### 5.10.4 宿主契约（约定名的全局函数）
+
+宿主在 env 创建后、执行第一个模块前，用 `pesapi_create_function` 创建并设置到 global 上。后端首次用到时按名字取出，用 `v8::Global` 持有（QuickJS 后端用 JSValue 引用），随后从 global 上删除，避免业务脚本调用或篡改。
+
+```js
+// 解析：返回规范化后的模块 url（同一模块必须返回同一字符串，后端以它作为缓存键）。
+// 找不到返回 undefined，后端抛 "[Puer002] import xxx failed: module not found"；宿主抛异常则原样透传。
+__puer_host_resolve__(specifier: string, referrerUrl: string /* 入口为 "" */): string | undefined
+
+// 读取：按 url 读内容。
+__puer_host_load__(url: string): {
+    kind: "esm" | "cjs" | "json",
+    content: string | ArrayBuffer,  // ArrayBuffer 表示字节码
+    debugPath?: string,             // Inspector / 异常栈使用的路径，不给则用 url
+} | undefined
+```
+
+- 两个函数都是同步的。异步加载（比如 WebGL 下走网络）将来以可选的 `__puer_host_load_async__` 追加，不影响现有约定。
+- `kind` 由宿主决定，后端不看扩展名，把 `.mjs` / `.cjs` / `.mbc` / `.cbc` / package.json type 这些规则留在宿主。UE 侧沿用现有规则：`.mjs`、`.mbc` 为 esm；`.cjs`、`.cbc` 为 cjs；`.js` 被 import 时为 esm、被 require 时为 cjs；`.json` 为 json。
+- 内置模块（`puerts`、`ue`、addon 等）不经过宿主，通过后端接口 `register_builtin_module(name, value)` 注册，解析时最先匹配。
+
+#### 5.10.5 后端实现要点（papi-v8）
+
+- 新文件 `PapiV8ModuleLoader.cpp/.h`，属于 UE 自己维护的 papi-v8 部分，后续随 5.9 一起收敛。`FJsEnvImpl` 里的 `FetchESModuleTree`、`FetchCJSModuleAsESModule`、`ResolveModuleCallback`、`GenEmptyCode`、`GetESMMain` 删除。
+- 模块记录：`url -> { kind, v8::Global<Module 或 exports>, ResolveCache, debugPath }`，并用 `ScriptId` 反查 url，供 `ResolveModuleCallback`、`import.meta` 和动态 import 的 referrer 使用。
+- ESM：`ScriptCompiler::CompileModule`；字节码走 `kConsumeCodeCache`，占位源码长度从字节码头读出，在 C++ 生成；`rejected` 时报 "invalid bytecode"。树加载失败时回滚本次新增的记录（Unity issue 1670 的处理）。
+- CJS：`ScriptCompiler::CompileFunction`，参数为 `exports, require, module, __filename, __dirname`，取代源码拼接加 eval，同样支持 code cache。每个模块的 `require` 是 `create_function` 创建的 native 函数，referrer 放在函数数据里。保留 `puerts.forceReload`、`puerts.getModuleByUrl`、`puerts.registerBuildinModule` 的行为，`modular.js` 只剩薄壳或删除。
+- 互操作：
+  - ESM import CJS：SyntheticModule，`default` 为 `module.exports`，自有属性作为具名导出（与 UE 现状一致）。
+  - CJS require ESM：同步求值后返回 namespace；遇到未完成的顶层 await 抛错（与 Node 22 的 require(esm) 一致）。
+  - JSON：作为 `default` 导出的 SyntheticModule；CJS 中 require 直接返回解析结果。
+- 动态 import：`SetHostImportModuleDynamicallyCallback`，在微任务里加载，结果用 Promise 返回；`SetHostInitializeImportMetaObjectCallback` 设置 `url` 和 `resolve`。
+- 入口：后端给宿主一个 C 接口 `execute_module(env, specifier, referrer, out_exception) -> pesapi_value`（namespace 或 exports）。第一阶段放在 UE 侧 papi-v8 的头文件里，第二阶段并入 6.3 的 `pesapi_backend_api`。宿主的同步入口遇到顶层 await 时，跑微任务直到 Promise 结束；仍未结束（比如在等定时器）则返回明确错误，不再像现在这样死循环。
+- 字节码下 JSON 怎么办：JSON 不是 JS 源码，解析用 `v8::JSON::Parse`，不受 `PUERTS_MODULE_BYTECODE_ONLY` 影响。
+
+#### 5.10.6 UE 宿主侧
+
+- `__puer_host_resolve__` / `__puer_host_load__` 基于现有 `IJSModuleLoader::Search` / `Load` 实现，package.json 的 type / main / exports 用 UE 的 Json 模块解析，替代 `getESMMain`。
+- Windows 下调试路径的反斜杠转换（Inspector 断点匹配需要）放在宿主的 `debugPath` 里完成。
+- 内置脚本 `puerts/*.js` 改为通过加载器按 cjs 加载，打包时可以和业务脚本一样产出字节码。
+- `puerts.evalScript` / `__tgjsEvalScript` 等源码入口在 `PUERTS_MODULE_BYTECODE_ONLY` 下不注册。
+
+#### 5.10.7 提交拆分
+
+1. M7-1：加载器核心（ESM、CJS、JSON、内置模块、错误回滚）与 UE 宿主函数，先不接入，单独用新的功能测试 `tests/modules.js` 覆盖：相对与裸 specifier、循环依赖、ESM 与 CJS 互操作、JSON、加载失败后重试、顶层 await。
+2. M7-2：`ExecuteModule`、全局 `require`、`puerts.*` 模块函数切到新加载器，删除旧实现；原有功能测试与基线保持一致。
+3. M7-3：动态 `import()`、`import.meta`。
+4. M7-4：字节码路径与 `PUERTS_MODULE_BYTECODE_ONLY` 开关，测试工程增加字节码用例（离线生成 .mbc / .cbc）。
+5. M7-5 及以后：原 M7 的 Inspector、Promise 拒绝回调、env 入口的 v8 作用域替换、Websocket 改用 wsppaddon。
+
+### 5.11 V8 专属快速路径（M8）
+
+`V8Backend.hpp`、`V8Object.hpp`、`V8FastCall.hpp` 不废弃，作为“确定 JS 引擎是 V8 时”的可选快速路径保留：业务可以直接用 V8 API 写绑定，省去 papi 函数表的间接调用。
+
+- 默认绑定仍是 `PesapiBackend.hpp`。V8 快速路径只在 V8 后端下可用，选用它的代码不能切换到 QuickJS 等后端，文档中写明。
+- 第一阶段：保持现状可编译、可用，测试工程保留 `PUERTS_BINDING_IMPL=v8_impl` 这条测试路径。
+- 第二阶段（共用动态库）的约束：
+  - 后端动态库要导出 V8 符号，插件编译用的 V8 头文件必须与动态库内的 V8 版本和构建开关一致，版本校验纳入 6.5。
+  - 快速路径里对象映射（查找、创建 JS 包装对象）改为经 papi 函数表完成（`pesapi_value` 与 `v8::Local` 互转零开销），不再跨库直接用 `ICppObjectMapper` 的 C++ 虚表，避免跨库 C++ ABI 依赖；值转换、函数调用这类热路径仍直接用 V8 API。
+
 ## 6. 第二阶段：UE 与 Unity 共用动态库
 
 ### 6.1 前提
@@ -410,7 +500,7 @@ flowchart LR
     M3 --> M4["M4 结构体 容器 委托"]
     M4 --> M5["M5 全局函数"]
     M5 --> M6["M6 Mixin 与生成类"]
-    M5 --> M7["M7 ESM Inspector Websocket"]
+    M5 --> M7["M7 模块加载器 Inspector Websocket"]
     M6 --> M8["M8 清理"]
     M7 --> M8
     M8 --> S2A["二阶段: registry 与后端管理接口补齐"]
@@ -440,8 +530,13 @@ flowchart LR
 3. 第一阶段 UE 自己维护一份 papi 实现，新增的 papi API 也只在 UE 侧实现，不同步回 Unity。整个任务期间不改动 `unity/` 目录，全部完成后再统一（届时再处理 5.9 的源码收敛）。
 4. 每个批次单独提交，批次内容多时拆成多个便于 review 的 commit；提交前在 WSL 下用 clang-format 12 格式化 `unreal/Puerts/Source`。
 
+已决策（2026-10-23）：
+
+1. M7 抛开 Unity 现有的 `esm_bootstrap.cjs` 方案，参考 d8 / Node 在后端 C++ 实现模块加载，宿主通过 `create_function` 注册约定名的全局函数提供读文件等能力，后端用 `v8::Global` 持有；目标是最终只支持字节码。先在 UE 落地，稳定后再同步回 Unity。具体契约见 5.10，待确认后开工。
+2. M8 不清理 V8Backend.hpp、V8Object.hpp、V8FastCall.hpp，保留为 V8 专属快速路径（5.11）。
+
 待决策：
 
 1. 第 5.7 节新增 API 的命名与是否一次性提升 `PESAPI_VERSION`（第一阶段只在 UE 侧，可边做边定）。
 2. 性能回退阈值与基准测试运行环境（是否需要自托管 runner）。
-3. UE 模板绑定的 V8Backend.hpp 何时正式废弃（建议第一阶段 M1 起默认改用 PesapiBackend.hpp，M8 标记废弃）。
+3. 5.10.4 的宿主契约（函数名、返回结构）与 5.10.5 中 CJS 一并迁入 C++ 的范围。
