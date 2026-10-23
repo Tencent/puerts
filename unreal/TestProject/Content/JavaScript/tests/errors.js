@@ -34,7 +34,7 @@ test('lookup errors', () => {
     note('unknown class', catchError(() => UE.NoSuchClassXYZ.StaticClass()));
     note('unknown member', String(obj.NoSuchMember));
     note('unknown cpp class', catchError(() => require('cpp').NoSuchCppClass.Foo()));
-    note('require missing module', catchError(() => require('./no_such_module')).replace(/[A-Za-z]:[\\/].*?JavaScript/g, '<js-root>'));
+    note('require missing module', catchError(() => require('./no_such_module')));
 });
 
 test('container errors', () => {

@@ -34,6 +34,29 @@ test('esm', () => {
     });
 });
 
+test('file encodings', () => {
+    observe('utf8 bom', () => require('./modules_data/bom_utf8').text);
+    observe('utf8 bom length', () => require('./modules_data/bom_utf8').len);
+    observe('utf16 bom', () => require('./modules_data/bom_utf16').text);
+    observe('no bom', () => require('./modules_data/no_bom').text);
+});
+
+test('loader errors', () => {
+    note('require missing', catchError(() => require('./modules_data/not_exist_xyz')));
+    note('require missing bare', catchError(() => require('not_exist_module_xyz')));
+});
+
+test('loadUEType', () => {
+    assert(puerts.loadUEType('PuertsTestObject') === UE.PuertsTestObject, 'class');
+    assert(puerts.loadUEType('PuertsTestStruct') === UE.PuertsTestStruct, 'struct');
+    observe('enum', () => typeof puerts.loadUEType('EPuertsTestEnum'));
+    observe('by path', () => puerts.loadUEType('/Script/PuertsTest.PuertsTestObject') === UE.PuertsTestObject);
+    note('missing type', catchError(() => puerts.loadUEType('NoSuchType_xyz')));
+    note('no args', catchError(() => puerts.loadUEType()));
+    note('number arg', catchError(() => puerts.loadUEType(1)));
+    note('UE missing', catchError(() => UE.NoSuchType_xyz));
+});
+
 test('globals', () => {
     observe('setTimeout', () => typeof setTimeout);
     observe('setInterval', () => typeof setInterval);

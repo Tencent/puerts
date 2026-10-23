@@ -2,6 +2,18 @@ require json: 42
 cpp module typeof: "object"
 require mjs: <no throw>
 dynamic import type: "function"
+utf8 bom: "中文 utf8 bom"
+utf8 bom length: 2
+utf16 bom: "中文 utf16 bom"
+no bom: "中文 no bom"
+require missing: Error: can not find modules_data/not_exist_xyz in <js-root>/tests
+require missing bare: Error: can not find not_exist_module_xyz in <js-root>/tests
+enum: "object"
+by path: true
+missing type: Error: can not find type:NoSuchType_xyz
+no args: Error: Bad parameters, the function expect 1, but  0 provided.
+number arg: Error: Bad parameters #0, expect a string.
+UE missing: Error: can not find type:NoSuchType_xyz
 setTimeout: "function"
 setInterval: "function"
 console.log: "function"

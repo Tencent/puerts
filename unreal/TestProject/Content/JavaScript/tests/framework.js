@@ -74,11 +74,15 @@ function assert(cond, msg) {
 }
 
 // returns "<ErrorName>: <message>" of the thrown error, or "<no throw>"
+function normalizePath(s) {
+    return s.replace(/(?:[A-Za-z]:)?[\\/][^\s'"]*?[\\/]JavaScript(?=[\\/\s]|$)/g, '<js-root>');
+}
+
 function catchError(fn) {
     try {
         fn();
     } catch (e) {
-        if (e instanceof Error) return `${e.name}: ${e.message}`;
+        if (e instanceof Error) return normalizePath(`${e.name}: ${e.message}`);
         return `<thrown ${fmt(e)}>`;
     }
     return '<no throw>';
