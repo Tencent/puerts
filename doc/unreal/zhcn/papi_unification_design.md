@@ -533,11 +533,12 @@ flowchart LR
 
 已决策（2026-10-23）：
 
-1. M7 抛开 Unity 现有的 `esm_bootstrap.cjs` 方案，参考 d8 / Node 在后端 C++ 实现模块加载，宿主通过 `create_function` 注册约定名的全局函数提供读文件等能力，后端用 `v8::Global` 持有；目标是发行版只支持字节码（改 v8 去掉源码编译但保留接口、调用时抛异常），开发调试仍可加载源码，不设只允许字节码的开关。先在 UE 落地，稳定后再同步回 Unity。具体契约见 5.10，待确认后开工。
+1. M7 抛开 Unity 现有的 `esm_bootstrap.cjs` 方案，参考 d8 / Node 在后端 C++ 实现模块加载，宿主通过 `create_function` 注册约定名的全局函数提供读文件等能力，后端用 `v8::Global` 持有；目标是发行版只支持字节码（改 v8 去掉源码编译但保留接口、调用时抛异常），开发调试仍可加载源码，不设只允许字节码的开关。先在 UE 落地，稳定后再同步回 Unity。具体契约见 5.10（2026-10-23 已确认）。
 2. M8 不清理 V8Backend.hpp、V8Object.hpp、V8FastCall.hpp，保留为 V8 专属快速路径（5.11）。
+3. 5.10.4 的宿主契约（`__puer_host_resolve__` / `__puer_host_load__` 及返回结构）按文档执行；CJS 的编译与 require 语义（缓存、循环依赖、forceReload）一并迁入 C++，`modular.js` 只留薄壳或删除；内置 `puerts/*.js` 在打包时与业务脚本一样产出字节码。
+4. M4-6 主体：FName 大小写修正改为在 `UE.Object.prototype` 等原型链末端挂 JS Proxy（只在成员找不到时进入，`hasOwnProperty` 对原型成员返回 true 的怪行为随之消失）；`FStructWrapper` 与翻译器改为进程级共享，`on_class_not_found` 不需要 userdata；蓝图重编译和热重载新增与引擎无关的“类定义失效”papi API，由 registry 和后端配合重建类。
 
 待决策：
 
 1. 第 5.7 节新增 API 的命名与是否一次性提升 `PESAPI_VERSION`（第一阶段只在 UE 侧，可边做边定）。
 2. 性能回退阈值与基准测试运行环境（是否需要自托管 runner）。
-3. 5.10.4 的宿主契约（函数名、返回结构）与 5.10.5 中 CJS 一并迁入 C++ 的范围。
