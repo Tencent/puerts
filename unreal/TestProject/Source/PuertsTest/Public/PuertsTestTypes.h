@@ -29,6 +29,35 @@ struct PUERTSTEST_API FPuertsTestStruct
     TArray<int32> Arr;
 };
 
+// counts its live instances, used by the struct lifetime tests
+USTRUCT(BlueprintType)
+struct PUERTSTEST_API FPuertsTestCountedStruct
+{
+    GENERATED_BODY()
+
+    FPuertsTestCountedStruct()
+    {
+        ++LiveCount;
+    }
+
+    FPuertsTestCountedStruct(const FPuertsTestCountedStruct& Other) : V(Other.V)
+    {
+        ++LiveCount;
+    }
+
+    FPuertsTestCountedStruct& operator=(const FPuertsTestCountedStruct& Other) = default;
+
+    ~FPuertsTestCountedStruct()
+    {
+        --LiveCount;
+    }
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 V = 0;
+
+    static int32 LiveCount;
+};
+
 DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(int32, FPuertsTestIntDelegate, int32, Value);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPuertsTestMulticastDelegate, const FString&, Msg);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FPuertsTestStepDelegate, int32, Step);
@@ -227,6 +256,13 @@ public:
     static int32 GetLiveCount();
 
     static int32 LiveCount;
+
+    // ---------- struct lifetime helpers ----------
+    UFUNCTION(BlueprintCallable)
+    FPuertsTestCountedStruct MakeCounted(int32 V);
+
+    UFUNCTION(BlueprintCallable)
+    static int32 GetCountedLiveCount();
 };
 
 UCLASS(BlueprintType, Blueprintable)

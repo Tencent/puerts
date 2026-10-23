@@ -218,6 +218,20 @@ int32 UPuertsTestObject::GetLiveCount()
     return LiveCount;
 }
 
+int32 FPuertsTestCountedStruct::LiveCount = 0;
+
+FPuertsTestCountedStruct UPuertsTestObject::MakeCounted(int32 V)
+{
+    FPuertsTestCountedStruct Ret;
+    Ret.V = V;
+    return Ret;
+}
+
+int32 UPuertsTestObject::GetCountedLiveCount()
+{
+    return FPuertsTestCountedStruct::LiveCount;
+}
+
 FString UPuertsTestDerived::WhoAmI()
 {
     return TEXT("Derived");

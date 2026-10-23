@@ -1,10 +1,21 @@
+struct property identity: true
+struct property is a reference: 6
+struct element identity: false
+array property identity: true
+set property identity: true
+map property identity: true
+returned struct is a new object: true
+struct instanceof: true
+counted live before gc: 27
 marked garbage IsAlive: throws Error: passing a invalid object
 marked garbage read before gc: throws Error: access a invalid object
-live delta after gc: 1
+live delta after gc: -1
 destroyed IsAlive: throws Error: passing a invalid object
 destroyed read: Error: access a invalid object
 destroyed call: Error: access a invalid object
 destroyed write: Error: access a invalid object
 aliased fresh objects: 0
+counted live after gc: 2
 holder identity after gc: false
 collected after release: 202
+counted live after release: 0
