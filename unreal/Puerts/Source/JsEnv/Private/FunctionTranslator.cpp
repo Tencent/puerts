@@ -227,11 +227,6 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
     }
 }
 
-v8::Local<v8::FunctionTemplate> FFunctionTranslator::ToFunctionTemplate(v8::Isolate* Isolate)
-{
-    return ClassThunks::MethodTemplate(Isolate, &CallbackInfo, v8::ConstructorBehavior::kAllow);
-}
-
 void FFunctionTranslator::CallThunk(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     static_cast<FFunctionTranslator*>(Apis->get_userdata(Info))->Call(Apis, Info);

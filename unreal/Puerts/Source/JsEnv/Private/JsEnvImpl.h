@@ -669,11 +669,6 @@ private:
 
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
-#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-    // templates of the (process wide) struct wrappers in this env, reused when a type is released and loaded again
-    TMap<FStructWrapper*, v8::UniquePersistent<v8::FunctionTemplate>> CachedTemplates;
-#endif
-
     // A UObject wrapper stores a FUObjectBinding (a FUObjectHandle) in internal field 0. The binding lives as long as the js
     // object: when the UObject is destroyed first, the binding is detached (see UnBind) and moved to ReleasedObjectBindings
     // until the js object is garbage collected.
@@ -828,10 +823,6 @@ private:
     // evals Code once and caches the function, returns nullptr with the exception pending if the eval fails
     pesapi_value GetCachedJsFunction(
         struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path);
-
-    std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
-
-    bool ExtensionMethodsMapInited = false;
 
     struct FTimerInfo
     {

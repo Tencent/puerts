@@ -40,10 +40,7 @@ public:
         }
     }
 
-    // the v8 function template is still used for registration until the registry migration, it is created from CallbackInfo
-    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
-
-    // registry style entry of this function, the userdata is the translator
+    // registry style entry of this function (used by the class definition of the owner), the userdata is the translator
     JSFunctionInfo CallbackInfo;
 
     // papi entries

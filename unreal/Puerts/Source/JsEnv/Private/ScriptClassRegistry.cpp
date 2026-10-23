@@ -186,7 +186,12 @@ public:
             return nullptr;
         }
         auto Iter = CDataIdToClassDefinition.find(TypeId);
+#if USING_IN_UNREAL_ENGINE
+        // reflected classes (UClass / UScriptStruct) are process wide and visible to every registry
+        return Iter == CDataIdToClassDefinition.end() ? FindReflectedClass(TypeId) : Iter->second;
+#else
         return Iter == CDataIdToClassDefinition.end() ? nullptr : Iter->second;
+#endif
     }
 
     void OnClassNotFound(pesapi_class_not_found_callback InCallback)

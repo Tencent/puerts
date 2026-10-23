@@ -168,44 +168,37 @@ void FPropertyTranslator::DelegateGetter(struct pesapi_ffi* Apis, pesapi_callbac
         Info, PapiUtils::FindOrAddDelegate(Apis->get_env(Info), Object, PropertyTranslator->Property, DelegatePtr, true));
 }
 
-void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template)
+bool FPropertyTranslator::GetAccessorName(FString& OutName) const
 {
     if (IsDelegatePropertyForAccessor(Property))
     {
-        if (Property->GetOwnerStruct()->IsA<UClass>())    // only uobject support
+        // only uobject support, the accessor is read only (AccessorInfo has no setter)
+        if (!Property->GetOwnerStruct()->IsA<UClass>())
         {
-            Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, Property->GetName()),
-                ClassThunks::GetterTemplate(Isolate, &AccessorInfo), v8::Local<v8::FunctionTemplate>(),
-                (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
+            return false;
         }
+        OutName = Property->GetName();
+        return true;
     }
-    else
-    {
-        auto OwnerStruct = Property->GetOwnerStruct();
-        auto GetterTemplate = ClassThunks::GetterTemplate(Isolate, &AccessorInfo);
-        auto SetterTemplate = ClassThunks::SetterTemplate(Isolate, &AccessorInfo);
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        FString PropertyName = OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
+    auto OwnerStruct = Property->GetOwnerStruct();
+    OutName = OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-                                                                                     Property->GetAuthoredName()
+                                                                    Property->GetAuthoredName()
 #else
-                                                                                     Property->GetDisplayNameText().ToString()
+                                                                    Property->GetDisplayNameText().ToString()
 #endif
-                                                                                     : Property->GetName();
+                                                                    : Property->GetName();
 #ifdef PUERTS_WITH_EDITOR_SUFFIX
-        if (Property->IsEditorOnlyProperty())
-        {
-            PropertyName += EditorOnlyPropertySuffix;
-        }
-#endif
-
-        Template->PrototypeTemplate()->SetAccessorProperty(
-            FV8Utils::InternalString(Isolate, PropertyName), GetterTemplate, SetterTemplate, v8::DontDelete);
-#else
-        Template->PrototypeTemplate()->SetAccessorProperty(
-            FV8Utils::InternalString(Isolate, Property->GetName()), GetterTemplate, SetterTemplate, v8::DontDelete);
-#endif
+    if (Property->IsEditorOnlyProperty())
+    {
+        OutName += EditorOnlyPropertySuffix;
     }
+#endif
+#else
+    OutName = Property->GetName();
+#endif
+    return true;
 }
 
 // helpers of the papi based translators

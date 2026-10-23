@@ -8,7 +8,9 @@
 
 #pragma once
 
+#include <deque>
 #include <memory>
+#include <string>
 #include <vector>
 #include <map>
 
@@ -18,8 +20,6 @@
 #include "FunctionTranslator.h"
 #include "JSClassRegister.h"
 #include "NamespaceDef.h"
-
-#define PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE 1
 
 namespace PUERTS_NAMESPACE
 {
@@ -44,14 +44,52 @@ struct FExternalFinalizer
     void operator()(void* Ptr) const;
 };
 
+// class definition of a UClass / UScriptStruct, the arrays and names are owned here, Definition points to them
+struct FReflectedClass
+{
+    JSClassDefinition Definition = JSClassEmptyDefinition;
+
+    // the UStruct this definition is built for
+    TWeakObjectPtr<UStruct> Struct;
+
+    std::string ClassName;
+
+    // a deque does not move its elements, so the c strings of the names stay valid while names are added
+    std::deque<std::string> Names;
+
+    std::vector<JSFunctionInfo> Methods;
+
+    std::vector<JSFunctionInfo> Functions;
+
+    std::vector<JSPropertyInfo> Properties;
+
+    std::vector<JSPropertyInfo> Variables;
+
+    const char* AddName(const FString& Name)
+    {
+        Names.emplace_back(TCHAR_TO_UTF8(*Name));
+        return Names.back().c_str();
+    }
+
+    const char* AddName(const char* Name)
+    {
+        Names.emplace_back(Name);
+        return Names.back().c_str();
+    }
+};
+
 // FStructWrapper (and the translators it owns) is shared by all js envs in the process, keyed by the full name of the
-// UStruct, it only holds engine side data, js templates are cached by each env.
+// UStruct, it only holds engine side data.
+// The js class of a UStruct is described by a class definition (FReflectedClass) whose type id is the wrapper, the templates
+// are created from it by the CppObjectMapper of each env. Since the wrapper is kept for a full name, a new UStruct with the
+// same full name (e.g. a regenerated class) keeps the js class of the env (the template is cached by type id), only the
+// translators are refreshed.
 class FStructWrapper
 {
 public:
     explicit FStructWrapper(UStruct* InStruct) : ExternalInitialize(nullptr), Struct(InStruct)
     {
-        // the entries are referenced by the function templates, so they are filled once and never move
+        // the entries are copied into the class definitions, the userdata is the wrapper
         StaticClassInfo.Callback = &StaticClass;
         StaticClassInfo.Data = this;
         FindInfo.Callback = &Find;
@@ -66,20 +104,18 @@ public:
     // called when the module shuts down
     static void ReleaseAll();
 
-    FORCEINLINE void Init(UStruct* InStruct, bool IsReuseTemplate)
-    {
-        Struct = InStruct;
-        if (!IsReuseTemplate)
-        {
-            ExternalInitialize = nullptr;
-            ExternalFinalize.Reset();
-            // translators are kept in PropertiesMap (templates of other envs may still reference them), Properties is
-            // refilled in InitTemplateProperties
-            Properties.clear();
-        }
-    }
+    // (re)scan the extension methods (static functions of UExtensionMethods subclasses), they are added to the class
+    // definitions built afterwards
+    static void InitExtensionMethodsMap();
 
-    void AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods);
+    // the class definition of InStruct (this wrapper must be the one returned by FindOrAdd(InStruct)), built on first use
+    // or when the wrapper is pointed to a new UStruct. With Refresh an existing definition is kept and only the translators
+    // are re-pointed to the current properties / functions (by name)
+    const JSClassDefinition* GetClassDefinition(UStruct* InStruct, bool Refresh);
+
+    // CppObjectMapper hook: class name and FName case fixing interceptor of the templates of reflected classes
+    static void OnTemplateCreated(
+        v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template);
 
 protected:
     std::vector<std::shared_ptr<FPropertyTranslator>> Properties;
@@ -98,12 +134,13 @@ protected:
 
     void RefreshMethod(UFunction* InFunction);
 
-    void InitTemplateProperties(
-        v8::Isolate* Isolate, UStruct* InStruct, v8::Local<v8::FunctionTemplate> Template, bool IsReuseTemplate);
+    void AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods);
 
-    // Cache is the template slot of the calling env, an existing template in it is reused (only the translators are refreshed)
-    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(
-        v8::Isolate* Isolate, v8::FunctionCallback Construtor, v8::UniquePersistent<v8::FunctionTemplate>& Cache);
+    // refresh the translators of InStruct, and fill the members of Out if it is not null
+    void CollectMembers(UStruct* InStruct, FReflectedClass* Out);
+
+    // Initialize of the class definitions, the object is created and bound by the wrapper, so nullptr is returned
+    static void* ReflectedConstruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     std::vector<UFunction*> ExtensionMethods;
 
@@ -118,6 +155,10 @@ protected:
     JSFunctionInfo FindInfo;
 
     JSFunctionInfo LoadInfo;
+
+    // every definition built by this wrapper, the last one is the current one, older ones are still referenced by the
+    // templates (and js functions) created from them, so they live as long as the wrapper
+    std::vector<std::unique_ptr<FReflectedClass>> ReflectedClasses;
 
     static void StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -148,8 +189,6 @@ public:
         Free(Struct, ExternalFinalize, Ptr);
     }
 
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
     void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
 
@@ -161,8 +200,6 @@ public:
     }
 
     static void OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data);
-
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
 };

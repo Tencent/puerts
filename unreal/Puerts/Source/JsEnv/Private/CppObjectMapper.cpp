@@ -234,7 +234,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             if (!PropertyInfo->Setter)
                 PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
             Template->PrototypeTemplate()->SetAccessorProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kInternalized).ToLocalChecked(),
                 ClassThunks::GetterTemplate(Isolate, PropertyInfo), ClassThunks::SetterTemplate(Isolate, PropertyInfo),
                 PropertyAttribute);
             ++PropertyInfo;
@@ -247,7 +247,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             if (!PropertyInfo->Setter)
                 PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
             Template->SetAccessorProperty(
-                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kInternalized).ToLocalChecked(),
                 ClassThunks::GetterTemplate(Isolate, PropertyInfo), ClassThunks::SetterTemplate(Isolate, PropertyInfo),
                 PropertyAttribute);
             ++PropertyInfo;
@@ -257,14 +257,14 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
             Template->PrototypeTemplate()->Set(
-                v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kInternalized).ToLocalChecked(),
                 ClassThunks::MethodTemplate(Isolate, FunctionInfo, v8::ConstructorBehavior::kThrow));
             ++FunctionInfo;
         }
         FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-            Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+            Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kInternalized).ToLocalChecked(),
                 ClassThunks::MethodTemplate(Isolate, FunctionInfo, v8::ConstructorBehavior::kThrow));
             ++FunctionInfo;
         }
@@ -276,6 +276,13 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                 Template->Inherit(GetTemplateOfClass(Isolate, SuperDefinition));
             }
         }
+
+#if USING_IN_UNREAL_ENGINE
+        if (OnTemplateCreated)
+        {
+            OnTemplateCreated(Isolate, ClassDefinition, Template);
+        }
+#endif
 
         TypeIdToTemplateMap[ClassDefinition->TypeId] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
 

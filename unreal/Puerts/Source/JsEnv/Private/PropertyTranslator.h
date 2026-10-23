@@ -239,7 +239,8 @@ public:
 
     static void DelegateGetter(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template);
+    // name of the accessor on the prototype of the owner class, false if the property is not exposed as an accessor
+    bool GetAccessorName(FString& OutName) const;
 
     // registry style accessor entry, filled on construction (also by CreateOn), so templates created before a
     // CreateOn still dispatch to this translator

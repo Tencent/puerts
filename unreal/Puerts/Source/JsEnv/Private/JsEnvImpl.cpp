@@ -591,6 +591,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     FixSizeArrayTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FFixSizeArrayWrapper::ToFunctionTemplate(Isolate));
 
     CppObjectMapper.Initialize(Isolate, Context);
+    // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names and FName fixing
+    CppObjectMapper.OnTemplateCreated = &FStructWrapper::OnTemplateCreated;
 
     DelegateTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FDelegateWrapper::ToFunctionTemplate(Isolate));
 
@@ -914,10 +916,6 @@ FJsEnvImpl::~FJsEnvImpl()
     }
 #endif
 
-#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-    CachedTemplates.Empty();
-#endif
-
     DefaultContext.Reset();
     MainIsolate->Dispose();
     MainIsolate = nullptr;
@@ -950,51 +948,8 @@ void FJsEnvImpl::InitExtensionMethodsMap()
 #ifdef THREAD_SAFE
     v8::Locker Locker(MainIsolate);
 #endif
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    for (TObjectIterator<UClass> It; It; ++It)
-    {
-        UClass* Class = *It;
-        if (Class->IsChildOf<UExtensionMethods>() && Class->IsNative())
-        {
-            for (TFieldIterator<UFunction> FuncIt(Class, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
-            {
-                UFunction* Function = *FuncIt;
-
-                if (Function->HasAnyFunctionFlags(FUNC_Static))
-                {
-                    TFieldIterator<PropertyMacro> ParamIt(Function);
-                    if (ParamIt &&
-                        ((ParamIt->PropertyFlags & (CPF_Parm | CPF_ReturnParm)) == CPF_Parm))    // has at least one param
-                    {
-                        UStruct* Struct = nullptr;
-                        if (auto ObjectPropertyBase = CastFieldMacro<ObjectPropertyBaseMacro>(*ParamIt))
-                        {
-                            Struct = ObjectPropertyBase->PropertyClass;
-                        }
-                        else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(*ParamIt))
-                        {
-                            Struct = StructProperty->Struct;
-                        }
-                        if (Struct)
-                        {
-                            if (ExtensionMethodsMap.find(Struct) == ExtensionMethodsMap.end())
-                            {
-                                ExtensionMethodsMap[Struct] = std::vector<UFunction*>();
-                            }
-                            auto Iter = ExtensionMethodsMap.find(Struct);
-
-                            if (std::find(Iter->second.begin(), Iter->second.end(), Function) == Iter->second.end())
-                            {
-                                Iter->second.push_back(Function);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-#endif
-    ExtensionMethodsMapInited = true;
+    // the extension methods are kept by the process wide struct wrappers
+    FStructWrapper::InitExtensionMethodsMap();
 }
 
 std::unique_ptr<FJsEnvImpl::ObjectMerger>& FJsEnvImpl::GetObjectMerger(UStruct* Struct)
@@ -3190,93 +3145,39 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
     auto TemplateInfoPtr = TypeToTemplateInfoMap.Find(InStruct);
     if (!TemplateInfoPtr)
     {
-        if (!ExtensionMethodsMapInited)
-        {
-            InitExtensionMethodsMap();
-        }
-        v8::Local<v8::FunctionTemplate> Template;
-
         auto StructWrapper = GetStructWrapper(InStruct);
-#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-        auto& TemplateCache = CachedTemplates.FindOrAdd(StructWrapper.get());
-#else
-        v8::UniquePersistent<v8::FunctionTemplate> TemplateCache;
-#endif
-        // the template of this env is reused, only the translators are refreshed
-        const bool IsReuseTemplate = !TemplateCache.IsEmpty();
-        StructWrapper->Init(InStruct, IsReuseTemplate);
-
-        auto ExtensionMethodsIter = ExtensionMethodsMap.find(InStruct);
-        if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-        {
-            StructWrapper->AddExtensionMethods(ExtensionMethodsIter->second);
-            ExtensionMethodsMap.erase(ExtensionMethodsIter);
-        }
+        // the definition is shared by envs, the first use of a type in this env refreshes the translators
+        auto ClassDefinition = StructWrapper->GetClassDefinition(InStruct, true);
+        // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env
+        auto Template = CppObjectMapper.GetTemplateOfClass(Isolate, ClassDefinition);
 
         FTemplateInfo TemplateInfo;
         TemplateInfo.StructWrapper = StructWrapper;
 
         if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
         {
-            // Logger->Warn(FString::Printf(TEXT("UScriptStruct: %s"), *InStruct->GetName()));
-
-            Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New, TemplateCache);
-            if (!IsReuseTemplate)
-            {
-#if WITH_EDITOR
-                Template->SetClassName(
-                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal)
-                        .ToLocalChecked());
-#elif !defined(UE_SHIPPING)
-                Template->SetClassName(
-                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetName()), v8::NewStringType::kNormal)
-                        .ToLocalChecked());
-#endif
-            }
             if (!ScriptStruct->IsNative())    //非原生的结构体，可能在实例没有的时候会释放
             {
                 SysObjectRetainer.Retain(ScriptStruct);
             }
 
-            auto SuperStruct = ScriptStruct->GetSuperStruct();
-            if (SuperStruct)
+            if (auto SuperStruct = ScriptStruct->GetSuperStruct())
             {
                 bool Dummy;
-                if (IsReuseTemplate)
-                    __USE(GetTemplateInfoOfType(SuperStruct, Dummy));
-                else
-                    Template->Inherit(GetTemplateInfoOfType(SuperStruct, Dummy)->Template.Get(Isolate));
+                __USE(GetTemplateInfoOfType(SuperStruct, Dummy));
             }
         }
         else
         {
             auto Class = Cast<UClass>(InStruct);
             check(Class);
-            Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New, TemplateCache);
-            if (!IsReuseTemplate)
-            {
-#if WITH_EDITOR
-                Template->SetClassName(
-                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal)
-                        .ToLocalChecked());
-#elif !defined(UE_SHIPPING)
-                Template->SetClassName(
-                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetName()), v8::NewStringType::kNormal)
-                        .ToLocalChecked());
-#endif
-            }
 #if PUERTS_KEEP_UOBJECT_REFERENCE
             TemplateInfo.IsNativeTakeJsRef = TemplateInfo.IsTypeScriptGeneratedClass = IsTypeScriptGeneratedClass(Class);
 #endif
-            auto SuperClass = Class->GetSuperClass();
-            if (SuperClass)
+            if (auto SuperClass = Class->GetSuperClass())
             {
                 bool Dummy;
                 auto SuperTemplateInfo = GetTemplateInfoOfType(SuperClass, Dummy);
-                if (!IsReuseTemplate)
-                {
-                    Template->Inherit(SuperTemplateInfo->Template.Get(Isolate));
-                }
                 if (SuperTemplateInfo->IsNativeTakeJsRef)
                 {
                     TemplateInfo.IsNativeTakeJsRef = true;
