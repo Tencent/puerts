@@ -536,13 +536,13 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         .Check();
 
     //#if !defined(WITH_NODEJS)
-    MethodBindingHelper<&FJsEnvImpl::SetTimeout>::Bind(Isolate, Context, Global, "setTimeout", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::SetTimeout>::Bind(Apis, Env, PapiGlobal, "setTimeout", this);
 
-    MethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Isolate, Context, Global, "clearTimeout", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearTimeout", this);
 
-    MethodBindingHelper<&FJsEnvImpl::SetInterval>::Bind(Isolate, Context, Global, "setInterval", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::SetInterval>::Bind(Apis, Env, PapiGlobal, "setInterval", this);
 
-    MethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Isolate, Context, Global, "clearInterval", This);
+    PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearInterval", this);
     //#endif
 
 #if USE_WASM3
@@ -744,6 +744,14 @@ FJsEnvImpl::~FJsEnvImpl()
 
         TypeToTemplateInfoMap.Empty();
 
+        // value refs must be released while the env is alive (before CppObjectMapper.UnInitialize)
+        for (auto Iter = TimerInfos.CreateIterator(); Iter; ++Iter)
+        {
+            v8impl::g_pesapi_ffi.release_value_ref(Iter->Value.Callback);
+            FUETicker::GetCoreTicker().RemoveTicker(Iter->Value.TickerHandle);
+        }
+        TimerInfos.Empty();
+
         CppObjectMapper.UnInitialize(Isolate);
 
         for (auto& KV : ObjectMap)
@@ -822,13 +830,6 @@ FJsEnvImpl::~FJsEnvImpl()
         TsDynamicInvoker.Reset();
         BindInfoMap.Empty();
 #endif
-
-        for (auto Iter = TimerInfos.CreateIterator(); Iter; ++Iter)
-        {
-            Iter->Value.Callback.Reset();
-            FUETicker::GetCoreTicker().RemoveTicker(Iter->Value.TickerHandle);
-        }
-        TimerInfos.Empty();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         for (auto& GeneratedClass : GeneratedClasses)
@@ -4223,26 +4224,27 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
-void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    CHECK_V8_ARGS(EArgFunction, EArgNumber);
+    PAPI_CHECK_ARGS(EArgFunction, EArgNumber);
 
-    SetFTickerDelegate(Info, false);
+    SetFTickerDelegate(Apis, Info, false);
 }
 
-void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info, bool Continue)
+void FJsEnvImpl::SetFTickerDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool Continue)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    pesapi_env Env = Apis->get_env(Info);
 
     while (!(++TimerID))    // TimerID > 0
     {
     }
     uint32_t DelegateHandleId = TimerID;
+    // the id wrapped around and is still in use
+    RemoveFTickerDelegateHandle(DelegateHandleId);
     FTimerInfo& TimerInfo = TimerInfos.Emplace(DelegateHandleId, FTimerInfo());
-    TimerInfo.Callback.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
+    TimerInfo.Callback = Apis->create_value_ref(Env, Apis->get_arg(Info, 0), 0);
 
-    float Millisecond = Info[1]->NumberValue(Context).ToChecked();
+    float Millisecond = Apis->get_value_double(Env, Apis->get_arg(Info, 1));
     float Delay = Millisecond / 1000.f;
 
     TimerInfo.TickerHandle =
@@ -4250,23 +4252,14 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
                                                  { return this->TimerCallback(DelegateHandleId, Continue); }),
             Delay);
 
-    Info.GetReturnValue().Set(DelegateHandleId);
+    Apis->add_return(Info, Apis->create_uint32(Env, DelegateHandleId));
 }
 
 bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
 {
-    v8::Isolate* Isolate = MainIsolate;
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
-
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = DefaultContext.Get(Isolate);
-    v8::Context::Scope ContextScope(Context);
 
     FTimerInfo* PTimeInfo = TimerInfos.Find(DelegateHandleId);
     if (!PTimeInfo)
@@ -4276,16 +4269,24 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
     }
 
     auto OriginHandle = PTimeInfo->TickerHandle;
-    v8::Local<v8::Function> Function = TimerInfos[DelegateHandleId].Callback.Get(Isolate);
 
-    v8::TryCatch TryCatch(Isolate);
-    (void) (Function->Call(Context, Context->Global(), 0, nullptr));
-
-    if (TryCatch.HasCaught())
     {
-        FString Message =
-            FString::Printf(TEXT("Exception in Timer Callback: %s"), *(FV8Utils::TryCatchToString(Isolate, &TryCatch)));
-        Logger->Error(Message);
+        struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+        pesapi_env_ref EnvRef = Apis->get_ref_associated_env(PTimeInfo->Callback);
+        pesapi_scope_memory ScopeMemory;
+        // locks the isolate (THREAD_SAFE), enters the context of the timer and catches exceptions
+        pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
+        pesapi_env Env = Apis->get_env_from_ref(EnvRef);
+        pesapi_value Function = Apis->get_value_from_ref(Env, PTimeInfo->Callback);
+
+        Apis->call_function(Env, Function, Apis->global(Env), 0, nullptr);
+
+        if (Apis->has_caught(Scope))
+        {
+            Logger->Error(FString::Printf(
+                TEXT("Exception in Timer Callback: %s"), UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
+        }
+        Apis->close_scope_placement(Scope);
     }
 
     auto ClearInCallback = !TimerInfos.Contains(DelegateHandleId) || (OriginHandle != TimerInfos[DelegateHandleId].TickerHandle);
@@ -4300,48 +4301,43 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
 
 void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
 {
-    if (!TimerInfos.Contains(DelegateHandleId))
+    FTimerInfo* PTimeInfo = TimerInfos.Find(DelegateHandleId);
+    if (!PTimeInfo)
     {
         return;
     }
-    FUETicker::GetCoreTicker().RemoveTicker(TimerInfos[DelegateHandleId].TickerHandle);
+    FUETicker::GetCoreTicker().RemoveTicker(PTimeInfo->TickerHandle);
+    v8impl::g_pesapi_ffi.release_value_ref(PTimeInfo->Callback);
     TimerInfos.Remove(DelegateHandleId);
 }
 
-void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    pesapi_env Env = Apis->get_env(Info);
 
     // todo - mocha 7.0.1，当reporter为JSON，调用clearTimeout时，可能不传值，或传Null、Undefined过来。暂将其忽略
-    if (Info.Length() == 0)
+    if (Apis->get_args_len(Info) == 0)
     {
         Logger->Warn(TEXT("Calling ClearInterval with 0 argument."));
     }
-    else if (Info[0]->IsNullOrUndefined())
+    else if (Apis->is_null(Env, Apis->get_arg(Info, 0)) || Apis->is_undefined(Env, Apis->get_arg(Info, 0)))
     {
         // 屏蔽这条只在mocha中出现的警告
         // Logger->Warn(TEXT("Calling ClearInterval with a Null or Undefined."));
     }
     else
     {
-        CHECK_V8_ARGS(EArgInt32);
-        int HandleId = Info[0]->Int32Value(Context).ToChecked();
+        PAPI_CHECK_ARGS(EArgInt32);
+        int HandleId = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
         RemoveFTickerDelegateHandle(HandleId);
     }
 }
 
-void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FJsEnvImpl::SetInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
+    PAPI_CHECK_ARGS(EArgFunction, EArgNumber);
 
-    CHECK_V8_ARGS(EArgFunction, EArgNumber);
-
-    SetFTickerDelegate(Info, true);
+    SetFTickerDelegate(Apis, Info, true);
 }
 
 void FJsEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)

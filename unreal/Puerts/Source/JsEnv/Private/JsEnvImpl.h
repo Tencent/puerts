@@ -321,17 +321,17 @@ private:
 
     FPropertyTranslator* GetContainerPropertyTranslator(PropertyMacro* Property);
 
-    void SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info, bool Continue);
+    void SetFTickerDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool Continue);
 
     bool TimerCallback(int DelegateHandleId, bool Continue);
 
     void RemoveFTickerDelegateHandle(int HandleId);
 
-    void SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void SetInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -731,7 +731,8 @@ private:
 
     struct FTimerInfo
     {
-        v8::Global<v8::Function> Callback;
+        // released by RemoveFTickerDelegateHandle or the destructor
+        pesapi_value_ref Callback = nullptr;
         FUETickDelegateHandle TickerHandle;
     };
     uint32_t TimerID = 0;
