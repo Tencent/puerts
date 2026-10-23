@@ -155,6 +155,15 @@ test('c++ -> js', () => {
     bench('makeuclass.new', 50000, (n) => {
         for (let i = 0; i < n; ++i) UE.NewObject(MadeClass);
     });
+
+    const TsClass = UE.PuertsTestTsTarget.CreateTsClass('tests/ts_bench_impl');
+    const ts = UE.NewObject(TsClass);
+    bench('tsclass.cpp_to_js', 500000, (n) => {
+        eq(ts.LoopImplEvent(n), n);
+    });
+    bench('tsclass.new', 50000, (n) => {
+        for (let i = 0; i < n; ++i) UE.NewObject(TsClass);
+    });
 });
 
 run();
