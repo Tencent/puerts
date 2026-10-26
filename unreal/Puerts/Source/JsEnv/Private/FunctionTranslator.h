@@ -52,28 +52,6 @@ public:
 
     void Call(struct pesapi_ffi* Apis, pesapi_callback_info Info, std::function<void(void*)> OnCall);
 
-    // v8 adapters for the callers not migrated yet
-
-    FORCEINLINE void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
-        v8::Local<v8::Value> This, void* Params)
-    {
-        CallJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction), papi_bridge::ToPapi(This),
-            Params);
-    }
-
-    FORCEINLINE void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
-        v8::Local<v8::Value> This, UObject* ContextObject, FFrame& Stack, void* RESULT_PARAM)
-    {
-        CallJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(JsFunction), papi_bridge::ToPapi(This),
-            ContextObject, Stack, RESULT_PARAM);
-    }
-
-    FORCEINLINE void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
-        std::function<void(void*)> OnCall)
-    {
-        Call(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Info), std::move(OnCall));
-    }
-
     bool IsValid() const;
 
 protected:

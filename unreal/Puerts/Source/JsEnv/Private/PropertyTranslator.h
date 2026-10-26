@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -24,7 +24,6 @@
 #include "JsObject.h"
 #include "pesapi.h"
 #include "PapiV8Bridge.h"
-#include "PesapiImpl.h"
 #include "JSClassRegister.h"
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
@@ -99,68 +98,6 @@ public:
         struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ContainerPtr, bool PassByPointer) const
     {
         return JsToUEOut(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
-    }
-
-    // v8 adapters for the callers not migrated yet, zero cost since pesapi_value/pesapi_env are reinterpreted v8 handles
-
-    FORCEINLINE v8::Local<v8::Value> UEToJs(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
-    {
-        return papi_bridge::ToV8(UEToJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), ValuePtr, PassByPointer));
-    }
-
-    FORCEINLINE bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* ValuePtr, bool DeepCopy) const
-    {
-        return JsToUE(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), ValuePtr, DeepCopy);
-    }
-
-    FORCEINLINE bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* TempBuff, void** OutValuePtr) const
-    {
-        return JsToUEFast(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), TempBuff, OutValuePtr);
-    }
-
-    FORCEINLINE void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        const void* ValuePtr, bool PassByPointer) const
-    {
-        UEOutToJs(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), ValuePtr, PassByPointer);
-    }
-
-    FORCEINLINE bool JsToUEOut(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* ValuePtr, bool DeepCopy) const
-    {
-        return JsToUEOut(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), papi_bridge::ToPapi(Value), ValuePtr, DeepCopy);
-    }
-
-    FORCEINLINE v8::Local<v8::Value> UEToJsInContainer(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ContainerPtr, bool PassByPointer = false) const
-    {
-        return UEToJs(Isolate, Context, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
-    }
-
-    FORCEINLINE bool JsToUEInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* ContainerPtr, bool DeepCopy) const
-    {
-        return JsToUE(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), DeepCopy);
-    }
-
-    FORCEINLINE bool JsToUEFastInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* TempBuff, void** OutValuePtr) const
-    {
-        return JsToUEFast(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(TempBuff), OutValuePtr);
-    }
-
-    FORCEINLINE void UEOutToJsInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        const void* ContainerPtr, bool PassByPointer) const
-    {
-        UEOutToJs(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
-    }
-
-    FORCEINLINE bool JsToUEOutInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* ContainerPtr, bool PassByPointer) const
-    {
-        return JsToUEOut(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
     virtual void Cleanup(void* ContainerPtr) const
