@@ -512,6 +512,18 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 - M7-5b（Promise 拒绝）：后端 `PapiV8PromiseReject.h/.cpp`，`papi_v8::CreatePromiseRejectTracker(env, onHandlerError, userData) / DestroyPromiseRejectTracker / SetPromiseRejectHandler(env, handler)`，挂在 isolate 数据槽 3（最后一个槽）。回调参数为 `(event, promise, value)`，event 0 为未处理拒绝、1 为后加处理器（value 为 undefined）、2 / 3 为 settle 两次；处理器抛出的异常交给 `onHandlerError`（UE 下记 `promise reject handler exception`）。`__tgjsSetPromiseRejectCallback` 改为 papi 绑定，QuickJS（冻结）保留旧实现。
 - 测试：新增 `tests/promises.js` 与 `Baseline/Promises.txt`（未处理拒绝的各类 reason、同步与微任务内处理、晚加 catch、settle 两次、off 后无监听的 warn、重新 on）。默认与 `v8_impl` 两条路径全部通过，BuildPlugin 通过，bench 与改动前持平。
 
+#### 5.10.12 后端抽象（宿主与引擎解耦）
+
+参考 Unity 的 `Backend` / `BackendJs` / `BackendV8` 与 `ScriptEnv`，宿主（`FJsEnvImpl`）不再直接引用 `v8impl::g_pesapi_ffi`，也不再负责 JS 特有的初始化：
+
+- `IPapiBackend`（`PapiBackend.h`，与引擎、语言无关）：`GetApiVersion / GetApi / CreateEnvRef / DestroyEnvRef`，`OnEnter / OnExit`（语言运行时的启动与停止），`ExecuteModule / RegisterBuiltinModule`（宿主的 require、addon 与 Node 内置模块注册），GC 通知。宿主实现 `IPapiScriptHost::ExecuteModule`，供后端执行启动脚本。
+- `FPapiBackendJs`（`PapiBackendJs.h/.cpp`，JS 语言层，与 JS 引擎无关）：`OnEnter` 中启动运行时，把 `puerts` 注册为内置模块，绑定 `require`、`puerts.genRequire / registerBuildinModule / forceReload / getModuleByUrl`、`__tgjsSetPromiseRejectCallback`，再按顺序执行 `puerts/first_run.js` 到 `puerts/pesaddon.js` 等启动脚本。对应 Unity `BackendJs.OnEnter`。
+- `FPapiBackendV8`（`PapiBackendV8.h/.cpp`，V8 引擎层）：isolate / context 的创建与销毁（`--max-old-space-size`、NativesBlob），`CppObjectMapper.Initialize` 后创建 env ref，模块加载器、Promise 拒绝追踪、字节码头校验参数，GC。Node 下 isolate 与 context 由宿主创建（Node 环境要在其上建立），以 `ExternalIsolate / ExternalContext` 交给后端，后端不 Dispose。
+- 宿主流程与 `ScriptEnv` 一致：`CreateEnvRef` → 校验 `GetApiVersion` → 宿主绑定（含 `__puer_host_resolve__ / __puer_host_load__`，Node 下先保存 Node 的 `require`）→ `OnEnter` → … → 释放宿主持有的引用 → `OnExit` → `DestroyEnvRef`。`DestroyEnvRef` 在 `UnInitialize` 之后、isolate Dispose 之前回调宿主的 `OnEnvReleased`（未找到类的绑定对象、Node 环境、Inspector、Mixin 还原），保持原有析构顺序。
+- 选择后端只在构造函数一处；其余代码通过 `MainApis`（`Backend->GetApi()`）访问 papi。宿主中仍为 V8 专属的部分（Inspector、Wasm、`DelegateProxy`、`CurrentStackTrace` 等）继续通过 `MainIsolate` 使用，留待 M8 / 第二阶段。`PropertyTranslator.h`、`FunctionTranslator.h` 中基于 `g_pesapi_ffi` 的 v8 适配重载已无调用方，删除。
+- 与 6.3 的关系：`IPapiBackend` 是第一阶段 UE 内的 C++ 形态，第二阶段后端在动态库中时，`FPapiBackendV8` 改为包装 `pesapi_backend_api` 的导出（与 Unity `BackendV8` 包装 `PapiV8Native` 相同），宿主与 `FPapiBackendJs` 不变。
+- 测试：默认与 `v8_impl` 两条路径全部通过，BuildPlugin 通过。
+
 ### 5.11 V8 专属快速路径（M8）
 
 `V8Backend.hpp`、`V8Object.hpp`、`V8FastCall.hpp` 不废弃，作为“确定 JS 引擎是 V8 时”的可选快速路径保留：业务可以直接用 V8 API 写绑定，省去 papi 函数表的间接调用。
