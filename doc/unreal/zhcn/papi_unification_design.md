@@ -537,9 +537,9 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 顺序：先在单一的 JsEnv 模块内把通用代码的 V8 依赖清干净（每步可测试），最后一次性拆模块，避免为过渡临时建 V8 External 模块、同一批文件搬两次。清理项：
 
 1. 删除 FFI（libffi 绑定，默认关闭）与 Wasm3（`WasmCore` 模块、`PuertsWasm`、`wasm3_helper.js`、示例与文档）。两者都直接基于 V8 编写且很少使用，需要时再基于 papi 实现。（已完成）
-2. `ICppObjectMapper` 的 V8 签名接口由宿主实现改为后端自己实现，宿主只通过 papi 化的 `IObjectMapper` 与钩子参与（POD struct 随 ArrayBuffer 释放改为后端钩子）。
+2. `ICppObjectMapper` 的 V8 签名接口由宿主实现改为后端自己实现，宿主只通过 papi 化的 `IObjectMapper` 与钩子参与。（已完成）`FPapiBackendV8` 持有 `FCppObjectMapper` 并放进 isolate 槽 0；宿主的 `IObjectMapper` 在创建 env 后用 `set_env_private` 发布（槽 1，class 的 `OnEnter / Finalize` 拿到的 env private 也是它），`PapiUtils::ObjectMapperOf(Apis, Env)` 经 `get_env_private` 取回；`invalidate_class` 经 `FParams::OnClassInvalidated` 通知宿主清 UE 侧缓存。反射类模板（`GetTemplateOfClass / OnTemplateCreated`）暂经 `FPapiBackendV8::GetCppObjectMapper()` 访问，归第 4 步。
 3. 参照 Unity `Backend.cs` 扩展 `IPapiBackend`：`OpenRemoteDebugger / DebuggerTick / CloseRemoteDebugger / LowMemoryNotification / OnTick`、堆统计、调用栈；Inspector 整体移入 V8 后端。
-4. 宿主中剩余的 Isolate / Context / Locker / HandleScope 与 `InstallFNameFixing(FunctionTemplate)` 等改走 papi。
+4. 宿主中剩余的 Isolate / Context / Locker / HandleScope、`InstallFNameFixing(FunctionTemplate)`、反射类模板的创建与命名、POD struct 随 ArrayBuffer 释放（改为后端钩子）等改走 papi。
 5. WebSocket 用 papi 重写，留在 `ScriptEnv`。
 6. `FJsObject` 改为持有 papi 值引用，`v8::Local` 构造函数移到 PapiV8 作为辅助函数。
 7. 公开头文件拆分：`DataTransfer.h`、`V8Utils.h`、`PromiseRejectCallback.hpp` 归 PapiV8；`UEDataBinding.hpp` 的 pesapi Converter 改为不委托 `v8_impl`；`JSClassRegister.h`、`TypeInfo.hpp`、`JsEnv.h` 中零星 V8 类型改不透明指针或移走。
