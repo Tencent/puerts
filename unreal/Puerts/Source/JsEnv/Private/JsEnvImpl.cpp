@@ -7,7 +7,6 @@
  */
 
 #include "JsEnvImpl.h"
-#include "JsEnvModule.h"
 #include "DynamicDelegateProxy.h"
 #include "Misc/FileHelper.h"
 #include "Dom/JsonObject.h"
@@ -16,12 +15,10 @@
 #include "Misc/Paths.h"
 #include "StructWrapper.h"
 #include "PapiUtils.h"
-#include "PapiBackendV8.h"
 #include "DelegateWrapper.h"
 #include "ContainerWrapper.h"
 #include "SoftObjectWrapper.h"
 #include "WeakObjectPtrWrapper.h"
-#include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -37,6 +34,10 @@
 #include "ContainerMeta.h"
 
 #if defined(WITH_NODEJS)
+// the node build creates the isolate and the context itself and hands them to a v8 backend
+#include "JsEnvModule.h"
+#include "PapiBackendV8.h"
+#include "V8Utils.h"
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if PLATFORM_WINDOWS
 #include <windows.h>
@@ -65,9 +66,9 @@ namespace PUERTS_NAMESPACE
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
-FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
-    : FJsEnvImpl(std::make_shared<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, FString(),
-          nullptr, nullptr)
+FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot)
+    : FJsEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
+          std::make_shared<FDefaultLogger>(), -1, nullptr, FString(), nullptr, nullptr)
 {
 }
 
@@ -298,9 +299,9 @@ void FJsEnvImpl::StopPolling()
 
 #endif
 
-FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
-    std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
-    void* InExternalContext)
+FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+    std::shared_ptr<ILogger> InLogger, int InDebugPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
+    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
@@ -310,9 +311,13 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     Logger = InLogger;
     OnSourceLoadedCallback = InOnSourceLoadedCallback;
 
-    // the backend of the env, the only place the engine is chosen (see PapiBackend.h), the rest of the host uses the papi
+    // the backend of the env, created by the factory given by the caller (see PapiBackend.h), the host only uses the papi
     // table it provides (MainApis)
+#if !defined(WITH_NODEJS)
+    FPapiBackendParams BackendParams;
+#else
     FPapiBackendV8::FParams BackendParams;
+#endif
     BackendParams.Logger = Logger;
     BackendParams.Flags = InFlags;
     BackendParams.OnEnvReleased = [this]() { OnEnvReleased(); };
@@ -393,7 +398,13 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     BackendParams.OnClassCreated = [this](const JSClassDefinition* ClassDefinition)
     { return OnReflectedClassCreated(ClassDefinition); };
 
+#if !defined(WITH_NODEJS)
+    check(InBackendFactory);
+    Backend = InBackendFactory(BackendParams);
+#else
+    // the node build hands the isolate and the context of node to a v8 backend
     Backend = std::make_unique<FPapiBackendV8>(BackendParams);
+#endif
     MainApis = Backend->GetApi();
     checkf(Backend->GetApiVersion() == PESAPI_VERSION, TEXT("papi version mismatch, expect %d, got %d"), PESAPI_VERSION,
         Backend->GetApiVersion());

@@ -178,9 +178,11 @@ JSENV_API bool TraceObjectLifecycle(
 JSENV_API const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type);
 #endif
 
-// ---------------------------------------------------------------- pesapi entries of the plugin (v8impl)
-// used by PesapiBackend.hpp when binding inside the plugin (not in a pesapi addon)
+// ---------------------------------------------------------------- pesapi entries of the plugin
+// the pesapi function table of the script backend in use, registered by the backend module via SetPesapiFFI
 JSENV_API struct pesapi_ffi* GetPesapiFFI();
+
+JSENV_API void SetPesapiFFI(struct pesapi_ffi* InFFI);
 
 JSENV_API struct pesapi_registry_api* GetPesapiRegistryApi();
 

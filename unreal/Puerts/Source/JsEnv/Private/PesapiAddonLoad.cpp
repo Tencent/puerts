@@ -13,7 +13,7 @@
 #include "Misc/Paths.h"
 #include "PapiUtils.h"
 #include "PString.h"
-#include "PesapiImpl.h"
+#include "PesapiRegistryImpl.h"
 
 #include <map>
 #include <string>

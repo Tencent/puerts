@@ -23,6 +23,8 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(pop)
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "StructWrapper.h"
+#include "JSClassRegister.h"
+#include "PesapiImpl.h"
 
 class FMallocWrapper final : public FMalloc
 {
@@ -228,6 +230,10 @@ void FJsEnvModule::StartupModule()
 #endif
     v8::V8::Initialize();
 
+#ifndef WITH_QUICKJS
+    PUERTS_NAMESPACE::SetPesapiFFI(&v8impl::g_pesapi_ffi);
+#endif
+
 #if defined(WITH_NODEJS)
     int Argc = 1;
     char* ArgvIn[1];
@@ -249,6 +255,9 @@ void FJsEnvModule::ShutdownModule()
     // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
     // we call this function before unloading the module.
     PUERTS_NAMESPACE::FStructWrapper::ReleaseAll();
+#ifndef WITH_QUICKJS
+    PUERTS_NAMESPACE::SetPesapiFFI(nullptr);
+#endif
     v8::V8::Dispose();
 #if V8_MAJOR_VERSION > 9
     v8::V8::DisposePlatform();

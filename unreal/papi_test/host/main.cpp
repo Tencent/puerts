@@ -23,6 +23,8 @@
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
 #include "PesapiImpl.h"
+#include "PesapiRegistryImpl.h"
+#include "JSClassRegister.h"
 
 #pragma warning(push, 0)
 #include "libplatform/libplatform.h"
@@ -206,6 +208,7 @@ int main(int argc, char* argv[])
     std::unique_ptr<v8::Platform> Platform = v8::platform::NewDefaultPlatform();
     v8::V8::InitializePlatform(Platform.get());
     v8::V8::Initialize();
+    puerts::SetPesapiFFI(&v8impl::g_pesapi_ffi);
 
     v8::Isolate::CreateParams CreateParams;
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();

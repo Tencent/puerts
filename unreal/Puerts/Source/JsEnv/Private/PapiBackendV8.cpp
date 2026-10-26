@@ -73,6 +73,11 @@ FPapiBackendV8::~FPapiBackendV8()
     check(!Isolate);
 }
 
+std::unique_ptr<IPapiBackend> FPapiBackendV8::Create(const FPapiBackendParams& InParams)
+{
+    return std::make_unique<FPapiBackendV8>(FParams(InParams));
+}
+
 int FPapiBackendV8::GetApiVersion()
 {
     return PESAPI_VERSION;

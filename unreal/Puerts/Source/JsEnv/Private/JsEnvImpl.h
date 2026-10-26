@@ -20,7 +20,6 @@
 #include "UECompatible.h"
 #include "ContainerMeta.h"
 #include "ContainerWrapper.h"
-#include "ObjectCacheNode.h"
 #include <unordered_map>
 
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
@@ -62,11 +61,12 @@ public:
 class FJsEnvImpl : public IJsEnv, IObjectMapper, public FUObjectArray::FUObjectDeleteListener, public IPapiScriptHost
 {
 public:
-    explicit FJsEnvImpl(const FString& ScriptRoot);
+    FJsEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot);
 
-    FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
-        std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
-        void* InExternalContext);
+    // InExternalRuntime / InExternalContext: the isolate and the context of node, only supported by the node build
+    FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+        std::shared_ptr<ILogger> InLogger, int InPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
+        const FString InFlags, void* InExternalRuntime, void* InExternalContext);
 
     virtual ~FJsEnvImpl() override;
 

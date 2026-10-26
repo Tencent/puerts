@@ -22,10 +22,37 @@
 #include "CoreMinimal.h"
 #include "pesapi.h"
 #include "NamespaceDef.h"
+#include <functional>
+#include <memory>
 
 namespace PUERTS_NAMESPACE
 {
 class ScriptClassRegistry;
+class ILogger;
+struct JSClassDefinition;
+class IPapiBackend;
+
+// the engine independent parameters of a backend, given by the env to the factory of the backend
+struct FPapiBackendParams
+{
+    std::shared_ptr<ILogger> Logger;
+
+    // flags of the engine instance (for v8 only --max-old-space-size=<MB> is used)
+    FString Flags;
+
+    // called when a class is invalidated (pesapi invalidate_class) before the backend drops it
+    std::function<void(const void* TypeId)> OnClassInvalidated;
+
+    // called when the script class of a definition is created, the definition must be kept alive while the env is,
+    // returns whether the class is named by its ScriptName
+    std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
+
+    // the cleanup of the host run by DestroyEnvRef after the env is released and before the engine instance is disposed
+    std::function<void()> OnEnvReleased;
+};
+
+// creates the backend of an env, the only place the script engine is chosen (FJsEnv of the JsEnv module creates a v8 one)
+using FPapiBackendFactory = std::function<std::unique_ptr<IPapiBackend>(const FPapiBackendParams& Params)>;
 
 // the env a backend is entered into (ScriptEnv of unity)
 class IPapiScriptHost

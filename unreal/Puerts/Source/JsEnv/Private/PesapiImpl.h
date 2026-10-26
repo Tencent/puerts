@@ -18,19 +18,4 @@ namespace v8impl
 extern pesapi_ffi g_pesapi_ffi;
 }    // namespace v8impl
 
-namespace pesapi
-{
-namespace regimpl
-{
-// registry api implemented by PesapiRegister.cpp
-extern pesapi_registry_api g_reg_apis;
-
-// set module name here during loading, set nullptr after module loaded
-extern const char* GPesapiModuleName;
-
-// handle of the default class registry (a ScriptClassRegistry*), passed to addons and used by all unreal envs
-pesapi_registry GetDefaultRegistry();
-}    // namespace regimpl
-}    // namespace pesapi
-
 #endif

@@ -41,31 +41,23 @@ class FPromiseRejectTracker;
 class FPapiBackendV8 : public FPapiBackendJs
 {
 public:
-    struct FParams
+    struct FParams : public FPapiBackendParams
     {
-        std::shared_ptr<ILogger> Logger;
+        FParams() = default;
 
-        // v8 flags of the isolate, only --max-old-space-size=<MB> is used
-        FString Flags;
-
-        // called when a class is invalidated (pesapi invalidate_class) before the backend drops it, see
-        // FCppObjectMapper::OnClassInvalidated
-        std::function<void(const void* TypeId)> OnClassInvalidated;
-
-        // called when the script class of a definition is created, the definition must be kept alive while the env is,
-        // returns whether the class is named by its ScriptName
-        std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
+        explicit FParams(const FPapiBackendParams& InParams) : FPapiBackendParams(InParams)
+        {
+        }
 
         // an isolate and a context created by the host (node), adopted but not disposed by the backend
         v8::Isolate* ExternalIsolate = nullptr;
         v8::Local<v8::Context> ExternalContext;
-
-        // the cleanup of the host run by DestroyEnvRef after the env is released and before the isolate is disposed (inside
-        // the isolate scope): the leftovers of the mapper, the node environment...
-        std::function<void()> OnEnvReleased;
     };
 
     explicit FPapiBackendV8(const FParams& InParams);
+
+    // the factory creating v8 backends for FScriptEnv / FJsEnv
+    static std::unique_ptr<IPapiBackend> Create(const FPapiBackendParams& InParams);
 
     virtual ~FPapiBackendV8() override;
 

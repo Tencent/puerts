@@ -9,6 +9,7 @@
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JsEnvGroup.h"
 #include "JsEnvImpl.h"
+#include "PapiBackendV8.h"
 #include "TsDynamicInvoker.h"
 #include "DynamicInvoker.h"
 #include "PuertsNamespaceDef.h"
@@ -96,7 +97,7 @@ FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot)
     check(Size > 1);
     for (int i = 0; i < Size; i++)
     {
-        JsEnvList.push_back(std::make_shared<FJsEnvImpl>(ScriptRoot));
+        JsEnvList.push_back(std::make_shared<FJsEnvImpl>(&FPapiBackendV8::Create, ScriptRoot));
     }
     Init();
 }
@@ -109,8 +110,8 @@ FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoad
     std::shared_ptr<IJSModuleLoader> SharedModuleLoader = std::move(InModuleLoader);
     for (int i = 0; i < Size; i++)
     {
-        JsEnvList.push_back(std::make_shared<FJsEnvImpl>(SharedModuleLoader, InLogger, InDebugStartPort + i,
-            InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext));
+        JsEnvList.push_back(std::make_shared<FJsEnvImpl>(&FPapiBackendV8::Create, SharedModuleLoader, InLogger,
+            InDebugStartPort + i, InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext));
     }
     Init();
 }

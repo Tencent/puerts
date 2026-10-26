@@ -12,13 +12,7 @@
 #include "JSClassRegister.h"
 #include "TypeInfo.hpp"
 #include "PString.h"
-#include "PesapiImpl.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#include "PesapiRegistryImpl.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -273,9 +267,17 @@ namespace PUERTS_NAMESPACE
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 
+// the pesapi function table of the script backend, registered by the backend module (PapiV8 registers v8impl::g_pesapi_ffi)
+static pesapi_ffi* GPesapiFFI = nullptr;
+
 pesapi_ffi* GetPesapiFFI()
 {
-    return &v8impl::g_pesapi_ffi;
+    return GPesapiFFI;
+}
+
+void SetPesapiFFI(pesapi_ffi* InFFI)
+{
+    GPesapiFFI = InFFI;
 }
 
 pesapi_registry_api* GetPesapiRegistryApi()
