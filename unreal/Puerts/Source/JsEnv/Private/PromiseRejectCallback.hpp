@@ -70,4 +70,53 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
     JsEngine->JsPromiseRejectCallback.Reset(Isolate, Args[0].As<v8::Function>());
 }
 
+#if defined(UE_GAME) || defined(UE_EDITOR) || defined(UE_SERVER) || defined(USING_IN_UNREAL_ENGINE)
+#define PUERTS_PROMISE_REJECT_CALLBACK_USING_UE 1
+#else
+#define PUERTS_PROMISE_REJECT_CALLBACK_USING_UE 0
+#endif
+
+// TODO: rename this file
+// used by unity (papi-v8 / papi-nodejs), the unreal plugin has its own copy in PapiBackendV8.cpp
+#if !PUERTS_PROMISE_REJECT_CALLBACK_USING_UE && !defined(WITH_QUICKJS)
+PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
+{
+    std::ostringstream stm;
+    for (int i = 0; i < InStack->GetFrameCount(); i++)
+    {
+        v8::Local<v8::StackFrame> StackFrame = InStack->GetFrame(InIsolate, i);
+        v8::String::Utf8Value FuncName(InIsolate, StackFrame->GetFunctionName());
+        v8::String::Utf8Value ScriptName(InIsolate, StackFrame->GetScriptName());
+        const int LineNumber = StackFrame->GetLineNumber();
+        const int Column = StackFrame->GetColumn();
+
+        if (StackFrame->IsEval())
+        {
+            if (StackFrame->GetScriptId() == v8::Message::kNoScriptIdInfo)
+            {
+                stm << "    at [eval]:" << LineNumber << ":" << Column << std::endl;
+            }
+            else
+            {
+                stm << "    at [eval] (" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << ")"
+                    << std::endl;
+            }
+            break;
+        }
+
+        if (FuncName.length() == 0)
+        {
+            stm << "    at " << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << std::endl;
+        }
+        else
+        {
+            stm << "    at " << *FuncName << "(" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column
+                << ")" << std::endl;
+        }
+    }
+    return stm.str().c_str();
+}
+#endif
+#undef PUERTS_PROMISE_REJECT_CALLBACK_USING_UE
+
 }    // namespace PUERTS_NAMESPACE
