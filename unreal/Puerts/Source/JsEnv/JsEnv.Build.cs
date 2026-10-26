@@ -35,8 +35,6 @@ public class JsEnv : ModuleRules
 
     private bool QjsNamespaceSuffix = false;
 
-    private bool WithFFI = false;
-    
     private bool ForceStaticLibInEditor = false;
 
     private bool ThreadSafe = false;
@@ -168,8 +166,6 @@ public class JsEnv : ModuleRules
         {
             OldThirdParty(Target);
         }
-        
-        if (WithFFI) AddFFI(Target);
 
         string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content"));
         string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Content"));
@@ -290,8 +286,6 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
-
-            //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
@@ -326,35 +320,6 @@ public class JsEnv : ModuleRules
         string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "websocketpp") });
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "asio") });
-    }
-
-    void AddFFI(ReadOnlyTargetRules Target)
-    {
-        string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
-        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Library"));
-        if (Target.Platform == UnrealTargetPlatform.Win64)
-        {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "Win64")});
-            PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "Win64", "ffi.lib"));
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Mac)
-        {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "macOS")});
-            PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "macOS", "libffi.a"));
-        }
-        else if (Target.Platform == UnrealTargetPlatform.IOS)
-        {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "iOS")});
-            PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "iOS", "libffi.a"));
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Android)
-        {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "Android")});
-            PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "Android", "armeabi-v7a", "libffi.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "Android", "arm64-v8a", "libffi.a"));
-        }
-
-        PrivateDefinitions.Add("WITH_FFI");
     }
 
     void AddRuntimeDependencies(string[] DllNames, string LibraryPath, bool Delay)
