@@ -617,6 +617,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
 
     CppObjectMapper.Initialize(Isolate, Context);
+    // after CppObjectMapper.Initialize: the ref tracks the life cycle of the env, which starts there
+    MainEnvRef = Apis->create_env_ref(Env);
 #if !defined(WITH_QUICKJS)
     PapiModuleLoader = papi_v8::CreateModuleLoader(Env);
     PapiMethodBindingHelper<&FJsEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
@@ -668,10 +670,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/hot_reload.js");
     ExecuteModule("puerts/pesaddon.js");
 
-    ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
+    ReloadJs.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__reload"));
 #if !PUERTS_FORCE_CPP_UFUNCTION
-    MergePrototype.Reset(
-        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__mergePrototype")).ToLocalChecked().As<v8::Function>());
+    MergePrototype.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__mergePrototype"));
 #endif
 
     RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
@@ -849,6 +850,14 @@ FJsEnvImpl::~FJsEnvImpl()
         papi_v8::DestroyModuleLoader(PapiModuleLoader);
         PapiModuleLoader = nullptr;
 #endif
+#if !PUERTS_FORCE_CPP_UFUNCTION
+        MergePrototype.Reset();
+#endif
+        if (MainEnvRef)
+        {
+            v8impl::g_pesapi_ffi.release_env_ref(MainEnvRef);
+            MainEnvRef = nullptr;
+        }
 
         CppObjectMapper.UnInitialize(Isolate);
 
@@ -902,10 +911,6 @@ FJsEnvImpl::~FJsEnvImpl()
 
         DynamicInvoker.Reset();
         MixinInvoker.Reset();
-
-#if !PUERTS_FORCE_CPP_UFUNCTION
-        MergePrototype.Reset();
-#endif
     }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -1261,27 +1266,21 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
             FString ModuleName = PackageName.Mid(PrefixPos + PackageNamePrefix.Len());
             Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
 
-            // the v8 scopes are the env entry, they move to BackendEnv in M7
-            auto Isolate = MainIsolate;
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            auto Context = DefaultContext.Get(Isolate);
-            v8::Context::Scope ContextScope(Context);
-
             struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
-            pesapi_env Env = papi_bridge::ToPapi(Context);
-            pesapi_env_ref EnvRef = Apis->create_env_ref(Env);
-            pesapi_scope_memory ScopeMemory;
-            pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
+            FPapiEnvScope EnvScope(Apis, MainEnvRef);
+            if (!EnvScope)
+            {
+                return;
+            }
+            pesapi_env Env = EnvScope.GetEnv();
             // the prototype chain of an existing BindInfo (ForceReinject must be true here) is linked already
-            InjectTsClass(Apis, Env, Scope, TypeScriptGeneratedClass, SuperClass, ModuleName, BindInfoPtr != nullptr, RebindObject);
-            if (Apis->has_caught(Scope))
+            InjectTsClass(Apis, Env, EnvScope.GetScope(), TypeScriptGeneratedClass, SuperClass, ModuleName, BindInfoPtr != nullptr,
+                RebindObject);
+            if (EnvScope.HasCaught())
             {
                 Logger->Error(FString::Printf(
-                    TEXT("load module [%s] exception %s"), *ModuleName, UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
+                    TEXT("load module [%s] exception %s"), *ModuleName, UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
             }
-            Apis->close_scope_placement(Scope);
-            Apis->release_env_ref(EnvRef);
         }
         else
         {
@@ -1472,7 +1471,7 @@ void FJsEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_s
 
 #if !PUERTS_FORCE_CPP_UFUNCTION
             pesapi_value MergeArgs[] = {Proto, NativeProto, NetMethods};
-            Apis->call_function(Env, papi_bridge::ToPapi(MergePrototype.Get(MainIsolate)), nullptr, 3, MergeArgs);
+            Apis->call_function(Env, MergePrototype.Get(Env), nullptr, 3, MergeArgs);
 #endif
         }
         else
@@ -1526,29 +1525,22 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    auto Isolate = MainIsolate;
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto Context = DefaultContext.Get(Isolate);
-    v8::Context::Scope ContextScope(Context);
-    auto LocalReloadJs = ReloadJs.Get(Isolate);
-
     FString OutPath, OutDebugPath;
 
     if (ModuleLoader->Search(TEXT(""), ModuleName.ToString(), OutPath, OutDebugPath))
     {
         OutPath = FPaths::ConvertRelativePathToFull(OutPath);
         Logger->Info(FString::Printf(TEXT("reload js module [%s]"), *OutPath));
-        v8::TryCatch TryCatch(Isolate);
-        v8::Handle<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, ModuleName), FV8Utils::ToV8String(Isolate, OutPath),
-            FV8Utils::ToV8String(Isolate, JsSource)};
-
-        (void) (LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args));
-
-        if (TryCatch.HasCaught())
+        struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+        FPapiEnvScope EnvScope(Apis, MainEnvRef);
+        if (!EnvScope)
         {
-            Logger->Error(FString::Printf(TEXT("reload module exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+            return;
         }
+        pesapi_env Env = EnvScope.GetEnv();
+        pesapi_value Args[] = {PapiUtils::FromFString(Apis, Env, ModuleName.ToString()), PapiUtils::FromFString(Apis, Env, OutPath),
+            PapiUtils::FromFString(Apis, Env, JsSource)};
+        CallReloadJs(EnvScope, Args);
     }
     else
     {
@@ -1557,13 +1549,21 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
     }
 }
 
+void FJsEnvImpl::CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args)[3])
+{
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    pesapi_env Env = EnvScope.GetEnv();
+    Apis->call_function(Env, ReloadJs.Get(Env), nullptr, 3, Args);
+    if (EnvScope.HasCaught())
+    {
+        Logger->Error(FString::Printf(TEXT("reload module exception %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
+    }
+}
+
 void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
 #endif
     // Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     JsHotReload(ModuleName, JsSource);
@@ -1574,27 +1574,17 @@ void FJsEnvImpl::ReloadSource(const FString& Path, const PString& JsSource)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
-    auto Isolate = MainIsolate;
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto Context = DefaultContext.Get(Isolate);
-    v8::Context::Scope ContextScope(Context);
-    auto LocalReloadJs = ReloadJs.Get(Isolate);
-
     Logger->Info(FString::Printf(TEXT("reload js [%s]"), *Path));
-    v8::TryCatch TryCatch(Isolate);
-    v8::Handle<v8::Value> Args[] = {
-        v8::Undefined(Isolate), FV8Utils::ToV8String(Isolate, Path), FV8Utils::ToV8String(Isolate, JsSource.c_str())};
-
-    (void) (LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args));
-
-    if (TryCatch.HasCaught())
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
     {
-        Logger->Error(FString::Printf(TEXT("reload module exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+        return;
     }
+    pesapi_env Env = EnvScope.GetEnv();
+    pesapi_value Args[] = {Apis->create_undefined(Env), PapiUtils::FromFString(Apis, Env, Path),
+        Apis->create_string_utf8(Env, JsSource.c_str(), JsSource.size())};
+    CallReloadJs(EnvScope, Args);
 }
 
 void FJsEnvImpl::OnSourceLoaded(std::function<void(const FString&)> Callback)
@@ -1673,9 +1663,11 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
 
 void FJsEnvImpl::RebindJs()
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
+    FPapiEnvScope EnvScope(&v8impl::g_pesapi_ffi, MainEnvRef);
+    if (!EnvScope)
+    {
+        return;
+    }
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
@@ -2100,9 +2092,7 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Co
 
 void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#else
+#ifndef THREAD_SAFE
     if (!IsInGameThread())
     {
         Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), Object));
@@ -2111,6 +2101,12 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
+    {
+        return;
+    }
     bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
 
     UObject* CDO = Class->GetDefaultObject(false);
@@ -2145,12 +2141,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 
     if (BindInfoPtr && BindInfoPtr->Prototype)
     {
-        // the v8 locker above is the env entry
-        struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
-        pesapi_env_ref EnvRef = Apis->get_ref_associated_env(BindInfoPtr->Prototype.GetRef());
-        pesapi_scope_memory ScopeMemory;
-        pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-        pesapi_env Env = Apis->get_env_from_ref(EnvRef);
+        pesapi_env Env = EnvScope.GetEnv();
 
         pesapi_value JSObject;
         auto BindingPtr = ObjectMap.Find(Object);
@@ -2186,12 +2177,10 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
             }
         }
 
-        if (Apis->has_caught(Scope))
+        if (EnvScope.HasCaught())
         {
-            Logger->Error(
-                FString::Printf(TEXT("js callback exception %s"), UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
+            Logger->Error(FString::Printf(TEXT("js callback exception %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
         }
-        Apis->close_scope_placement(Scope);
     }
     else if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
     {
@@ -2380,9 +2369,13 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
+    {
+        SkipFunction(Stack, RESULT_PARAM, Function);
+        return;
+    }
     auto FuncInfo = TsFunctionMap.Find(Function);
     if (!FuncInfo)
     {
@@ -2407,12 +2400,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
         return;
     }
 
-    // the v8 locker above is the env entry
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
-    pesapi_env_ref EnvRef = Apis->get_ref_associated_env(FuncInfo->JsFunction.GetRef());
-    pesapi_scope_memory ScopeMemory;
-    pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-    pesapi_env Env = Apis->get_env_from_ref(EnvRef);
+    pesapi_env Env = EnvScope.GetEnv();
 
     // FindOrAdd may inject a ts class and rehash TsFunctionMap, read FuncInfo before it
     pesapi_value JsFunction = FuncInfo->JsFunction.Get(Env);
@@ -2426,20 +2414,21 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
     FunctionTranslator->CallJs(Apis, Env, JsFunction, Self, ContextObject, Stack, RESULT_PARAM);
 
-    if (Apis->has_caught(Scope))
+    if (EnvScope.HasCaught())
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
-            *Function->GetName(), ContextObject, UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
+            *Function->GetName(), ContextObject, UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
     }
-    Apis->close_scope_placement(Scope);
 }
 
 void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
-    auto Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
+    {
+        return;
+    }
     MakeSureInject(Class, false, false);
     FinishInjection(Class);
 
@@ -2449,10 +2438,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
         Class = SuperCls;
     }
     {
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        auto Context = DefaultContext.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
+        pesapi_env Env = EnvScope.GetEnv();
 
         for (TWeakObjectPtr<UObject>& Iter : Class->GeneratedObjects)
         {
@@ -2461,7 +2447,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
                 continue;
             if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                 continue;    //跳过父类重新编译后临时状态的对象
-            __USE(FindOrAdd(papi_bridge::ToPapi(Context), Object->GetClass(), Object, true));
+            __USE(FindOrAdd(Env, Object->GetClass(), Object, true));
 
             UTypeScriptGeneratedClass* ClassMayNeedReBind = nullptr;
             auto TempClass = Object->GetClass();
@@ -2478,6 +2464,10 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
         }
     }
 #endif
+    if (EnvScope.HasCaught())
+    {
+        Logger->Error(FString::Printf(TEXT("rebind exception %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
+    }
 }
 #endif
 
@@ -2864,10 +2854,12 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    auto Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
+    {
+        return true;
+    }
 
     std::vector<void*> PendingToRemove;
     for (auto& KV : DelegateMap)
@@ -2880,13 +2872,10 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 
     if (PendingToRemove.size() > 0)
     {
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = DefaultContext.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
+        pesapi_env Env = EnvScope.GetEnv();
         for (int i = 0; i < PendingToRemove.size(); ++i)
         {
-            ClearDelegate(papi_bridge::ToPapi(Context), PendingToRemove[i]);
+            ClearDelegate(Env, PendingToRemove[i]);
             if (!DelegateMap[PendingToRemove[i]].PassByPointer)
             {
                 delete ((FScriptDelegate*) PendingToRemove[i]);
@@ -3610,18 +3599,15 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
         return;
     }
 
-    auto Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
-    v8::Context::Scope ContextScope(Context);
-
-    // v8 locker and scopes above are the env entry, they move to BackendEnv in M7
     struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
-    pesapi_env Env = papi_bridge::ToPapi(Context);
+    // the scope also catches the exception thrown by require
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
+    {
+        Logger->Error("the env is gone!");
+        return;
+    }
+    pesapi_env Env = EnvScope.GetEnv();
 
     pesapi_value TGJS = Apis->get_property(Env, Apis->global(Env), "puerts");
     if (!Apis->is_object(Env, TGJS))
@@ -3652,18 +3638,10 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
         Apis->call_function(Env, ArgvAdd, Argv, 2, Args);
     }
 
+    RequireModule(Apis, Env, ModuleNameOrScript);
+    if (EnvScope.HasCaught())
     {
-        // the scope catches the exception thrown by require
-        pesapi_env_ref EnvRef = Apis->create_env_ref(Env);
-        pesapi_scope_memory ScopeMemory;
-        pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-        RequireModule(Apis, Env, ModuleNameOrScript);
-        if (Apis->has_caught(Scope))
-        {
-            Logger->Error(UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true)));
-        }
-        Apis->close_scope_placement(Scope);
-        Apis->release_env_ref(EnvRef);
+        Logger->Error(UTF8_TO_TCHAR(EnvScope.GetExceptionAsString()));
     }
     Started = true;
 }
@@ -3700,48 +3678,36 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
         return;
     }
 
-    auto Isolate = MainIsolate;
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
-    v8::Context::Scope ContextScope(Context);
-    v8::TryCatch TryCatch(Isolate);
+    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
+    {
+        return;
+    }
+    pesapi_env Env = EnvScope.GetEnv();
 #ifndef WITH_QUICKJS
     if (OutPath.EndsWith(".mjs"))
     {
         // an esm is evaluated by the module loader of the backend
-        if (!papi_v8::ExecuteModule(papi_bridge::ToPapi(Context), TCHAR_TO_UTF8(*ModuleName), "", true))
+        if (!papi_v8::ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", true) || EnvScope.HasCaught())
         {
-            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            Logger->Error(EnvScope.HasCaught() ? FString(UTF8_TO_TCHAR(EnvScope.GetExceptionAsString()))
+                                               : FString::Printf(TEXT("execute module [%s] fail"), *ModuleName));
         }
         return;
     }
 #endif
     // the bootstrap scripts (puerts/*.js) are classic scripts, their top-level declarations (`var global`) are globals
-    v8::Local<v8::String> Source = FV8Utils::ToV8StringFromFileContent(Isolate, Data);
-
 #if PLATFORM_WINDOWS
     // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
     FString FormattedScriptUrl = DebugPath.Replace(TEXT("/"), TEXT("\\"));
 #else
     FString FormattedScriptUrl = DebugPath;
 #endif
-    v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
-#if V8_MAJOR_VERSION > 8
-    v8::ScriptOrigin Origin(Isolate, Name);
-#else
-    v8::ScriptOrigin Origin(Name);
-#endif
-    auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
-    if (CompiledScript.IsEmpty())
+    PapiUtils::EvalFileContent(Apis, Env, Data, TCHAR_TO_UTF8(*FormattedScriptUrl));
+    if (EnvScope.HasCaught())
     {
-        Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-        return;
-    }
-    (void) (CompiledScript.ToLocalChecked()->Run(Context));
-    if (TryCatch.HasCaught())
-    {
-        Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+        Logger->Error(UTF8_TO_TCHAR(EnvScope.GetExceptionAsString()));
     }
 }
 

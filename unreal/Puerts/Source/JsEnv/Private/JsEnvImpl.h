@@ -40,6 +40,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "NamespaceDef.h"
 
 #include "PapiValueRef.h"
+#include "PapiEnvScope.h"
 #include "PapiV8ModuleLoader.h"
 #include "PapiV8PromiseReject.h"
 
@@ -132,6 +133,9 @@ public:
     virtual void InitExtensionMethodsMap() override;
 
     void JsHotReload(FName ModuleName, const FString& JsSource);
+
+    // calls puerts.__reload with (module name or undefined, path, source) and logs its exception
+    void CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args)[3]);
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
 
@@ -532,10 +536,13 @@ private:
 
     v8::Global<v8::Context> DefaultContext;
 
-    v8::Global<v8::Function> ReloadJs;
+    // the ref of the default env, the entries from the host open their papi scopes with it (FPapiEnvScope)
+    pesapi_env_ref MainEnvRef = nullptr;
+
+    FPapiValueRef ReloadJs;
 
 #if !PUERTS_FORCE_CPP_UFUNCTION
-    v8::Global<v8::Function> MergePrototype;
+    FPapiValueRef MergePrototype;
 #endif
 
     FPapiValueRef RemoveListItem;
