@@ -468,7 +468,8 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 2. M7-2：`ExecuteModule`、全局 `require`、`puerts.*` 模块函数切到新加载器，删除旧实现；原有功能测试与基线保持一致。
 3. M7-3：动态 `import()`、`import.meta`。
 4. M7-4：字节码路径，测试工程增加字节码用例（离线生成 .mbc / .cbc），并验证纯字节码加载时整条链路不调用源码编译接口。
-5. M7-5 及以后：原 M7 的 Inspector、Promise 拒绝回调、env 入口的 v8 作用域替换、Websocket 改用 wsppaddon。
+5. M7-5：M7-5a env 入口的 v8 作用域替换为 papi scope；M7-5b Promise 拒绝回调移到后端。
+6. M7-6 及以后：原 M7 的 Inspector、Websocket 改用 wsppaddon。
 
 #### 5.10.8 M7-1 落地记录
 
@@ -501,6 +502,15 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 - `import.meta`：`SetHostInitializeImportMetaObjectCallback`，`url` 为宿主给出的 url（UE 下是文件路径，与 Unity 的 `puer:` 前缀不同），`resolve(specifier)` 只调用宿主 resolve（by 为 `import`）返回 url，不加载；内置模块返回其名字。
 - Node 下加载器会覆盖 Node 自己设置的这两个回调，UE 脚本的 import 统一走加载器。
 - 测试：第一步发起各类动态 import，下一步（中间跑定时器和微任务）检查结果，覆盖缓存共享、cjs / json / 内置模块、顶层 await（含定时器）、ESM 内的动态 import、`import.meta.url / resolve` 及错误；同步用例仍以 require 语义执行 ESM。
+
+#### 5.10.11 M7-5a / M7-5b 落地记录
+
+- M7-5a（env 入口）：新增 `FPapiEnvScope`（`PapiEnvScope.h`，只依赖 pesapi），在 env ref 上用 `open_scope_placement` 打开 scope（内存是成员，嵌套入口各用一块），env 已失效时不打开，用 `operator bool` 判断；提供 env、scope、`HasCaught`、`GetExceptionAsString`。`FJsEnvImpl` 长期持有 `MainEnvRef`（`CppObjectMapper.Initialize` 之后创建，`UnInitialize` 之前释放）。
+  - 改为 `FPapiEnvScope` 的入口：`MakeSureInject`、`JsHotReload`、`ReloadSource`、`TsConstruct`、`InvokeTsMethod`（env 失效时 `SkipFunction`）、`NotifyReBind`（新增 `rebind exception` 日志）、`CheckDelegateProxies`、`RebindJs`、`Start`（去掉内层嵌套 scope）、`ExecuteModule`。原来的 v8 Locker、Isolate / HandleScope / Context scope 与 `v8::TryCatch` 都由 scope 承担；`ReloadModule` 去掉 Locker。
+  - `ReloadJs`、`MergePrototype` 改为 `FPapiValueRef`，在 `UnInitialize` 之前释放；reload 调用统一为 `CallReloadJs`。启动脚本（经典脚本）改为 `pesapi eval`，`PapiUtils::EvalFileContent` 的编码判断与 `FromFileContent` 一致（UTF-16 BOM 转 UTF-8，跳过 UTF-8 BOM），Windows 下脚本名仍转反斜杠。
+  - 保留为后端特定代码：只加锁、不碰 JS 的 `InitExtensionMethodsMap`、`NotifyUObjectDeleted`（热路径）、GC 通知，v8 专属的 `CurrentStackTrace`，构造与析构里 isolate 的创建销毁，Inspector、Wasm、Node 的 `UvRunOnce`；在调用方 scope 内取 `DefaultContext` 的 `invalidate_class`、`InstallFNameFixing`。
+- M7-5b（Promise 拒绝）：后端 `PapiV8PromiseReject.h/.cpp`，`papi_v8::CreatePromiseRejectTracker(env, onHandlerError, userData) / DestroyPromiseRejectTracker / SetPromiseRejectHandler(env, handler)`，挂在 isolate 数据槽 3（最后一个槽）。回调参数为 `(event, promise, value)`，event 0 为未处理拒绝、1 为后加处理器（value 为 undefined）、2 / 3 为 settle 两次；处理器抛出的异常交给 `onHandlerError`（UE 下记 `promise reject handler exception`）。`__tgjsSetPromiseRejectCallback` 改为 papi 绑定，QuickJS（冻结）保留旧实现。
+- 测试：新增 `tests/promises.js` 与 `Baseline/Promises.txt`（未处理拒绝的各类 reason、同步与微任务内处理、晚加 catch、settle 两次、off 后无监听的 warn、重新 on）。默认与 `v8_impl` 两条路径全部通过，BuildPlugin 通过，bench 与改动前持平。
 
 ### 5.11 V8 专属快速路径（M8）
 
