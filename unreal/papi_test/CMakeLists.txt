@@ -7,8 +7,8 @@ project(papi_test LANGUAGES C CXX)
 #   hello        : pesapi addon built with BUILDING_PES_EXTENSION, using Binding.hpp static binding (PesapiBackend.hpp)
 #   papi_test_host : minimal v8 host built from unreal JsEnv sources (PesapiV8Impl.cpp, PesapiRegister.cpp, ...)
 #                    without unreal engine, loads the addon and runs test.js
-#   papi_test_host_v8 : the same host with the addon sources linked in and built with PUERTS_BINDING_IMPL=v8_impl
-#                    (V8Backend.hpp), runs the same test.js
+#   papi_test_host_v8 / papi_test_host_static : the same host with the addon sources linked in, built with the v8_impl
+#                    (V8Backend.hpp) / pesapi_impl (PesapiBackend.hpp) binding, runs the same test.js
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -83,20 +83,26 @@ set(HOST_SOURCES
     ${JSENV_DIR}/Private/DataTransfer.cpp
 )
 
-# papi_test_host   : loads the pesapi addon (PesapiBackend.hpp)
-# papi_test_host_v8: the addon sources are linked into the host and built with PUERTS_BINDING_IMPL=v8_impl (V8Backend.hpp),
-#                    the same test.js runs against both bindings
-add_executable(papi_test_host ${HOST_SOURCES})
-add_executable(papi_test_host_v8 ${HOST_SOURCES}
+# the addon sources (hello.cc uses PUERTS_MODULE) are the same for all hosts, only the build options differ:
+# papi_test_host        : loads them as a pesapi addon (BUILDING_PES_EXTENSION, PesapiBackend.hpp)
+# papi_test_host_static : links them into the host with the default pesapi_impl binding (PesapiBackend.hpp)
+# papi_test_host_v8     : links them into the host with PUERTS_BINDING_IMPL=v8_impl (V8Backend.hpp)
+set(MODULE_SOURCES
     addon/hello.cc
     addon/TestClass.cc
     addon/AdvanceTestClass.cc
 )
-target_include_directories(papi_test_host_v8 PRIVATE addon)
-target_compile_definitions(papi_test_host_v8 PRIVATE PAPI_TEST_STATIC_BINDING PUERTS_BINDING_IMPL=v8_impl)
+add_executable(papi_test_host ${HOST_SOURCES})
+target_compile_definitions(papi_test_host PRIVATE "PAPI_TEST_NAME=\"pesapi addon\"")
+add_executable(papi_test_host_static ${HOST_SOURCES} ${MODULE_SOURCES})
+target_compile_definitions(papi_test_host_static PRIVATE PAPI_TEST_LINKED_MODULE
+    "PAPI_TEST_NAME=\"linked into the host, pesapi_impl\"")
+add_executable(papi_test_host_v8 ${HOST_SOURCES} ${MODULE_SOURCES})
+target_compile_definitions(papi_test_host_v8 PRIVATE PAPI_TEST_LINKED_MODULE PUERTS_BINDING_IMPL=v8_impl
+    "PAPI_TEST_NAME=\"linked into the host, v8_impl\"")
 
-foreach(HOST papi_test_host papi_test_host_v8)
-    target_include_directories(${HOST} PRIVATE ${JSENV_DIR}/Public ${JSENV_DIR}/Private ${V8_ROOT}/Inc)
+foreach(HOST papi_test_host papi_test_host_static papi_test_host_v8)
+    target_include_directories(${HOST} PRIVATE ${JSENV_DIR}/Public ${JSENV_DIR}/Private ${V8_ROOT}/Inc addon)
     target_link_libraries(${HOST} PRIVATE ${V8_LIB})
 
     if(WIN32)
@@ -116,6 +122,9 @@ enable_testing()
 add_test(NAME papi_test
     COMMAND papi_test_host $<TARGET_FILE:hello> ${CMAKE_CURRENT_SOURCE_DIR}/test.js
 )
+add_test(NAME papi_test_static
+    COMMAND papi_test_host_static linked ${CMAKE_CURRENT_SOURCE_DIR}/test.js
+)
 add_test(NAME papi_test_v8
-    COMMAND papi_test_host_v8 static ${CMAKE_CURRENT_SOURCE_DIR}/test.js
+    COMMAND papi_test_host_v8 linked ${CMAKE_CURRENT_SOURCE_DIR}/test.js
 )

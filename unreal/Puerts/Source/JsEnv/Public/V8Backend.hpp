@@ -13,6 +13,7 @@
 #include <functional>
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
+#include "TypeInfo.hpp"
 
 #define __DefObjectType_v8_impl(CLS)                  \
     namespace PUERTS_NAMESPACE                        \
@@ -263,6 +264,8 @@ struct API
 
         JSClassDefinition ClassDef = JSClassEmptyDefinition;
 
+        // the registry copies ScriptName, a temporary string is fine
+        PString ScriptNameWithModuleName;
         if (isUEType)
         {
             ClassDef.UETypeName = Cdb.className_;
@@ -270,6 +273,14 @@ struct API
         else
         {
             ClassDef.ScriptName = Cdb.className_;
+            const char* ModuleName = ::PUERTS_NAMESPACE::RegisteringModuleName();
+            if (ModuleName && ModuleName[0] != '\0')
+            {
+                ScriptNameWithModuleName = ModuleName;
+                ScriptNameWithModuleName += ".";
+                ScriptNameWithModuleName += Cdb.className_;
+                ClassDef.ScriptName = ScriptNameWithModuleName.c_str();
+            }
             ClassDef.TypeId = StaticTypeId<T>::get();
             ClassDef.SuperTypeId = Cdb.superTypeId_;
         }

@@ -88,6 +88,11 @@
 
 namespace PUERTS_NAMESPACE
 {
+#if !PUERTS_PESAPI_IN_UE_PLUGIN && !defined(BUILDING_PES_EXTENSION)
+// linked into a host built from the plugin sources outside unreal (e.g. unreal/papi_test), defined in PesapiRegister.cpp
+struct pesapi_registry_api* GetPesapiRegistryApi();
+#endif
+
 namespace pesapi_impl
 {
 // Lightweight call context: bundles the pesapi_ffi* (function table) with the pesapi_env.
@@ -124,7 +129,8 @@ inline void SetRegistry(struct pesapi_registry_api* registry_api, pesapi_registr
 
 inline struct pesapi_registry_api* GetRegistryApi()
 {
-#if PUERTS_PESAPI_IN_UE_PLUGIN
+#if !defined(BUILDING_PES_EXTENSION)
+    // not an addon: the classes are registered into the registry of the host it is linked into
     auto registry_api = RegistryHolder::Api();
     return registry_api ? registry_api : ::PUERTS_NAMESPACE::GetPesapiRegistryApi();
 #else
@@ -299,6 +305,8 @@ struct API
     {
         ::PUERTS_NAMESPACE::ScriptClassDefinition ClassDef = JSClassEmptyDefinition;
 
+        // the registry copies ScriptName, a temporary string is fine
+        ::PUERTS_NAMESPACE::PString ScriptNameWithModuleName;
         if (is_uetype<T>::value)
         {
             ClassDef.UETypeName = Cdb.className_;
@@ -306,6 +314,14 @@ struct API
         else
         {
             ClassDef.ScriptName = Cdb.className_;
+            const char* ModuleName = ::PUERTS_NAMESPACE::RegisteringModuleName();
+            if (ModuleName && ModuleName[0] != '\0')
+            {
+                ScriptNameWithModuleName = ModuleName;
+                ScriptNameWithModuleName += ".";
+                ScriptNameWithModuleName += Cdb.className_;
+                ClassDef.ScriptName = ScriptNameWithModuleName.c_str();
+            }
             ClassDef.TypeId = StaticTypeId<T>::get();
             ClassDef.SuperTypeId = Cdb.superTypeId_;
         }
@@ -389,8 +405,8 @@ struct API
         }
         const void* type_id = StaticTypeId<T>::get();
 
-        registry_api->define_class(
-            registry, type_id, Cdb.superTypeId_, nullptr, Cdb.className_, Cdb.constructor_, Finalize, nullptr, false);
+        registry_api->define_class(registry, type_id, Cdb.superTypeId_, ::PUERTS_NAMESPACE::RegisteringModuleName(), Cdb.className_,
+            Cdb.constructor_, Finalize, nullptr, false);
 
         registry_api->set_property_info_size(registry, type_id, static_cast<int>(Cdb.methods_.size()),
             static_cast<int>(Cdb.functions_.size()), static_cast<int>(Cdb.properties_.size()),

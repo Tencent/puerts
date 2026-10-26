@@ -33,25 +33,9 @@ typedef void (*PesapiAddonRegisterFunc)(struct pesapi_registry_api* registry_api
 
 static puerts::FCppObjectMapper* GMapper = nullptr;
 
-#if defined(PAPI_TEST_STATIC_BINDING)
-// the classes are compiled into this host with PUERTS_BINDING_IMPL=v8_impl (V8Backend.hpp) and registered into the default
-// registry by RegisterJSClass, their script names have no module prefix
-void PapiTestStaticInit();
-static const char* GModulePrefix = "";
-#define PAPI_TEST_BINDING_NAME "V8Backend.hpp, linked into the host"
-#else
-// the classes are in a pesapi addon (PesapiBackend.hpp), registered with the module name as prefix
-static const char* GModulePrefix = "hello.";
-#define PAPI_TEST_BINDING_NAME "PesapiBackend.hpp, pesapi addon"
+#ifndef PAPI_TEST_NAME
+#define PAPI_TEST_NAME "pesapi addon"
 #endif
-
-// find a class of the test addon by its name (without module prefix) in Registry
-static const void* FindTestTypeId(pesapi_registry Registry, const char* Name)
-{
-    std::string FullName = std::string(GModulePrefix) + Name;
-    auto ClassDef = puerts::FindCppTypeClassByName(reinterpret_cast<puerts::ScriptClassRegistry*>(Registry), FullName.c_str());
-    return ClassDef ? ClassDef->TypeId : nullptr;
-}
 
 static void ThrowError(v8::Isolate* Isolate, const std::string& Msg)
 {
@@ -94,13 +78,8 @@ static void LoadAddon(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
     std::string Path = ToStdString(Isolate, Info[0]);
     std::string ModuleName = ToStdString(Isolate, Info[1]);
-#if defined(PAPI_TEST_STATIC_BINDING)
-    static bool Inited = false;
-    if (!Inited)
-    {
-        Inited = true;
-        PapiTestStaticInit();
-    }
+#if defined(PAPI_TEST_LINKED_MODULE)
+    // the module is linked into this host, PUERTS_MODULE registered its classes during static initialization
     return;
 #endif
     void* Handle = OpenLibrary(Path.c_str());
@@ -141,17 +120,17 @@ static void UseEmptyRegistry(const v8::FunctionCallbackInfo<v8::Value>& Info)
     bool UseEmpty = Info.Length() > 0 && Info[0]->BooleanValue(Isolate);
     pesapi_registry Registry = UseEmpty ? GEmptyRegistry : pesapi::regimpl::GetDefaultRegistry();
     v8impl::g_pesapi_ffi.set_registry(reinterpret_cast<pesapi_env>(*Context), Registry);
-    bool Found = FindTestTypeId(Registry, "TestClass") != nullptr;
+    bool Found = pesapi::regimpl::g_reg_apis.find_type_id(Registry, "hello", "TestClass") != nullptr;
     Info.GetReturnValue().Set(Found);
 }
 
-// puerts.invalidateClass(name): pesapi invalidate_class on the test class <name> of the default registry
+// puerts.invalidateClass(name): pesapi invalidate_class on hello.<name> of the default registry
 static void InvalidateClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     std::string Name = ToStdString(Isolate, Info[0]);
-    const void* TypeId = FindTestTypeId(pesapi::regimpl::GetDefaultRegistry(), Name.c_str());
+    const void* TypeId = pesapi::regimpl::g_reg_apis.find_type_id(pesapi::regimpl::GetDefaultRegistry(), "hello", Name.c_str());
     if (!TypeId)
     {
         ThrowError(Isolate, "can not find hello." + Name);
@@ -255,8 +234,6 @@ int main(int argc, char* argv[])
         SetFunction(Context, Global, "gc", Gc);
         (void) Global->Set(Context, v8::String::NewFromUtf8(Isolate, "ADDON_PATH").ToLocalChecked(),
             v8::String::NewFromUtf8(Isolate, argv[1]).ToLocalChecked());
-        (void) Global->Set(Context, v8::String::NewFromUtf8(Isolate, "MODULE_PREFIX").ToLocalChecked(),
-            v8::String::NewFromUtf8(Isolate, GModulePrefix).ToLocalChecked());
 
         {
             v8::TryCatch TryCatch(Isolate);
@@ -283,6 +260,6 @@ int main(int argc, char* argv[])
     v8::V8::ShutdownPlatform();
     delete CreateParams.array_buffer_allocator;
 
-    printf(ExitCode == 0 ? "papi test passed (%s)\n" : "papi test failed (%s)\n", PAPI_TEST_BINDING_NAME);
+    printf(ExitCode == 0 ? "papi test passed (%s)\n" : "papi test failed (%s)\n", PAPI_TEST_NAME);
     return ExitCode;
 }

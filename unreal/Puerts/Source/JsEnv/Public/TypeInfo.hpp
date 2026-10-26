@@ -45,6 +45,15 @@ class CFunction;
 
 namespace PUERTS_NAMESPACE
 {
+// Name of the module whose initializer is being run by PUERTS_MODULE when the module is linked into the host (not built as a
+// pesapi addon). Register() of both backends prefixes the script name with it ("<module>.<class>"), so the classes are found by
+// the same name as in a pesapi addon. Each binary has its own copy, which is fine: it is set and read in the same binary.
+inline const char*& RegisteringModuleName()
+{
+    static const char* Name = nullptr;
+    return Name;
+}
+
 namespace internal
 {
 template <std::size_t N>

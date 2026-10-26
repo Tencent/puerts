@@ -171,17 +171,41 @@
     }                                                                                       \
     UsingNamedCppType(CLS, CLS)
 
-// Declare a pesapi addon module whose initializer takes no argument, the registry passed in by the host is
-// saved (pesapi_impl::SetRegistry) before calling the initializer, so DefineClass<T>().Register() can be used
-// directly in it. Use PESAPI_MODULE directly if the initializer wants to handle the registry by itself.
-#define PUERTS_PESAPI_MODULE(modname, initfunc)                                                                                \
+// Declare a module whose initializer takes no argument and registers classes by DefineClass<T>().Register(). The same code
+// works for every build of the module, the business code does not need to know which one is used:
+//  - built as a pesapi addon (BUILDING_PES_EXTENSION): exports the pesapi module entry, the registry passed in by the host is
+//    saved (pesapi_impl::SetRegistry) before calling the initializer. Use PESAPI_MODULE directly if the initializer wants to
+//    handle the registry by itself.
+//  - linked into the host (pesapi_impl or v8_impl binding, selected by PUERTS_BINDING_IMPL): the initializer is called during
+//    static initialization and the classes are registered into the default registry of the host.
+// In both cases the script name of a class is "<modname>.<class>".
+#define PUERTS_MODULE(modname, initfunc)                                                                                       \
     static void PUERTS_PESAPI_MODULE_INITIALIZER_##modname(struct pesapi_registry_api* registry_api, pesapi_registry registry) \
     {                                                                                                                          \
         ::PUERTS_NAMESPACE::pesapi_impl::SetRegistry(registry_api, registry);                                                  \
         initfunc();                                                                                                            \
     }                                                                                                                          \
     PESAPI_MODULE(modname, PUERTS_PESAPI_MODULE_INITIALIZER_##modname)
+#else
+#define PUERTS_MODULE(modname, initfunc)                                               \
+    namespace                                                                          \
+    {                                                                                  \
+    struct PuertsModuleRegister_##modname                                              \
+    {                                                                                  \
+        PuertsModuleRegister_##modname()                                               \
+        {                                                                              \
+            const char* SavedModuleName = ::PUERTS_NAMESPACE::RegisteringModuleName(); \
+            ::PUERTS_NAMESPACE::RegisteringModuleName() = #modname;                    \
+            initfunc();                                                                \
+            ::PUERTS_NAMESPACE::RegisteringModuleName() = SavedModuleName;             \
+        }                                                                              \
+    };                                                                                 \
+    PuertsModuleRegister_##modname PuertsModuleRegisterInstance_##modname;             \
+    }
 #endif
+
+// kept for the addons written before PUERTS_MODULE
+#define PUERTS_PESAPI_MODULE(modname, initfunc) PUERTS_MODULE(modname, initfunc)
 
 namespace PUERTS_NAMESPACE
 {

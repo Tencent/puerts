@@ -1,6 +1,6 @@
 // pesapi + static binding test, ported from puerts_node/test/test.js
-// run by papi_test_host (PesapiBackend.hpp, the classes are in a pesapi addon) and papi_test_host_v8 (V8Backend.hpp,
-// the same classes are linked into the host): <host> <addon path> test.js, MODULE_PREFIX is "hello." / ""
+// run by papi_test_host (pesapi addon), papi_test_host_static (linked in, pesapi_impl) and papi_test_host_v8 (linked in,
+// v8_impl): <host> <addon path> test.js
 
 const $ref = (x) => [x];
 const $unref = (r) => r[0];
@@ -27,13 +27,13 @@ function assertThrows(fn, msg) {
 }
 
 puerts.loadAddon(ADDON_PATH, "hello");
-const TestClass = puerts.loadCPPType(MODULE_PREFIX + "TestClass");
-const BaseClass = puerts.loadCPPType(MODULE_PREFIX + "BaseClass");
-const AdvanceTestClass = puerts.loadCPPType(MODULE_PREFIX + "AdvanceTestClass");
-const LifeCycleClass = puerts.loadCPPType(MODULE_PREFIX + "LifeCycleClass");
-const NoDeleteClass = puerts.loadCPPType(MODULE_PREFIX + "NoDeleteClass");
+const TestClass = puerts.loadCPPType("hello.TestClass");
+const BaseClass = puerts.loadCPPType("hello.BaseClass");
+const AdvanceTestClass = puerts.loadCPPType("hello.AdvanceTestClass");
+const LifeCycleClass = puerts.loadCPPType("hello.LifeCycleClass");
+const NoDeleteClass = puerts.loadCPPType("hello.NoDeleteClass");
 
-assertThrows(() => puerts.loadCPPType(MODULE_PREFIX + "NotExist"), "load not exist type");
+assertThrows(() => puerts.loadCPPType("hello.NotExist"), "load not exist type");
 
 // static function
 assertEq(TestClass.Add(12, 34), 46, "static function");
@@ -137,21 +137,21 @@ assert(LifeCycleClass.GetAliveCount() < 100, "finalize called after gc, alive: "
 
 // class registry: an env bound to a new registry (create_registry + set_registry) can not see classes of the default one
 assertEq(puerts.useEmptyRegistry(true), false, "TestClass not in a new registry");
-assertThrows(() => puerts.loadCPPType(MODULE_PREFIX + "TestClass"), "load type from an empty registry");
+assertThrows(() => puerts.loadCPPType("hello.TestClass"), "load type from an empty registry");
 assertEq(puerts.useEmptyRegistry(false), true, "TestClass in the default registry");
-assertEq(puerts.loadCPPType(MODULE_PREFIX + "TestClass"), TestClass, "load type after switching back to the default registry");
+assertEq(puerts.loadCPPType("hello.TestClass"), TestClass, "load type after switching back to the default registry");
 
 // invalidate_class: the next load rebuilds the class, existing objects keep the old one, the super class is not rebuilt
 puerts.invalidateClass("TestClass");
-const TestClass2 = puerts.loadCPPType(MODULE_PREFIX + "TestClass");
+const TestClass2 = puerts.loadCPPType("hello.TestClass");
 assert(TestClass2 !== TestClass, "class rebuilt after invalidate_class");
-assertEq(puerts.loadCPPType(MODULE_PREFIX + "TestClass"), TestClass2, "rebuilt class is cached");
+assertEq(puerts.loadCPPType("hello.TestClass"), TestClass2, "rebuilt class is cached");
 assert(obj instanceof TestClass, "old object still instanceof old class");
 assertEq(obj.X, 96, "old object still works");
 const obj3 = new TestClass2(3, 4);
 assertEq(obj3.X + obj3.Y, 7, "object of rebuilt class");
 assert(obj3 instanceof TestClass2, "instanceof rebuilt class");
 assert(obj3 instanceof BaseClass, "super class kept");
-assertEq(puerts.loadCPPType(MODULE_PREFIX + "BaseClass"), BaseClass, "super class not invalidated");
+assertEq(puerts.loadCPPType("hello.BaseClass"), BaseClass, "super class not invalidated");
 
 print("all " + passed + " assertions passed");
