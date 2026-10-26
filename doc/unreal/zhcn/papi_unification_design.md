@@ -524,6 +524,27 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 - 与 6.3 的关系：`IPapiBackend` 是第一阶段 UE 内的 C++ 形态，第二阶段后端在动态库中时，`FPapiBackendV8` 改为包装 `pesapi_backend_api` 的导出（与 Unity `BackendV8` 包装 `PapiV8Native` 相同），宿主与 `FPapiBackendJs` 不变。
 - 测试：默认与 `v8_impl` 两条路径全部通过，BuildPlugin 通过。
 
+#### 5.10.13 模块拆分（ScriptEnv / PapiV8 / JsEnv）
+
+目标结构对应 Unity 的 core 与 V8 程序集，依赖方向是 V8 依赖通用层：
+
+- `ScriptEnv`：通用宿主逻辑，`FJsEnvImpl` 改名 `FScriptEnv`（`FJsEnvGroup` 一并改为 Script 前缀），包含 `IPapiBackend`、`FPapiBackendJs`、注册表、翻译器、各类 wrapper 以及 UE 反射类型（`TypeScriptGeneratedClass`、`FJsObject` 等）。完成判据：Build.cs 不引用任何 V8 头文件路径与库，编译通过即证明不依赖 V8。
+- `PapiV8`：依赖 `ScriptEnv`，包含 `PesapiV8Impl`、`CppObjectMapper`、`PapiBackendV8`、模块加载器、Promise 追踪、Inspector、V8 第三方库的链接与 V8 平台初始化，公开 `V8Backend.hpp / V8Object.hpp / V8FastCall.hpp / V8Utils.h / PapiV8Bridge.h`。
+- `JsEnv`：兼容老业务的薄封装，Public 依赖前两者（老业务 include 不变），`FJsEnv` 内部以 `FPapiBackendV8` 构造 `FScriptEnv`。新业务直接用 `ScriptEnv`。日志类别 `LogJsEnv` 不改名。
+- UE 反射类型包路径由 `/Script/JsEnv` 变为 `/Script/ScriptEnv`，用 `[CoreRedirects]` 的 `PackageRedirects` 兼容已有资产。
+- 拆分后 QuickJS / Node 编译路径暂时断开，以后做 `PapiQuickJS` 等模块时恢复。
+
+顺序：先在单一的 JsEnv 模块内把通用代码的 V8 依赖清干净（每步可测试），最后一次性拆模块，避免为过渡临时建 V8 External 模块、同一批文件搬两次。清理项：
+
+1. 删除 FFI（libffi 绑定，默认关闭）与 Wasm3（`WasmCore` 模块、`PuertsWasm`、`wasm3_helper.js`、示例与文档）。两者都直接基于 V8 编写且很少使用，需要时再基于 papi 实现。（已完成）
+2. `ICppObjectMapper` 的 V8 签名接口由宿主实现改为后端自己实现，宿主只通过 papi 化的 `IObjectMapper` 与钩子参与（POD struct 随 ArrayBuffer 释放改为后端钩子）。
+3. 参照 Unity `Backend.cs` 扩展 `IPapiBackend`：`OpenRemoteDebugger / DebuggerTick / CloseRemoteDebugger / LowMemoryNotification / OnTick`、堆统计、调用栈；Inspector 整体移入 V8 后端。
+4. 宿主中剩余的 Isolate / Context / Locker / HandleScope 与 `InstallFNameFixing(FunctionTemplate)` 等改走 papi。
+5. WebSocket 用 papi 重写，留在 `ScriptEnv`。
+6. `FJsObject` 改为持有 papi 值引用，`v8::Local` 构造函数移到 PapiV8 作为辅助函数。
+7. 公开头文件拆分：`DataTransfer.h`、`V8Utils.h`、`PromiseRejectCallback.hpp` 归 PapiV8；`UEDataBinding.hpp` 的 pesapi Converter 改为不委托 `v8_impl`；`JSClassRegister.h`、`TypeInfo.hpp`、`JsEnv.h` 中零星 V8 类型改不透明指针或移走。
+8. 拆模块、改名、CoreRedirects、其他模块依赖切换。
+
 ### 5.11 V8 专属快速路径（M8）
 
 `V8Backend.hpp`、`V8Object.hpp`、`V8FastCall.hpp` 不废弃，作为“确定 JS 引擎是 V8 时”的可选快速路径保留：业务可以直接用 V8 API 写绑定，省去 papi 函数表的间接调用。
@@ -633,7 +654,7 @@ flowchart LR
 | QuickJS / Node 后端在第一阶段无法同步迁移 | 桥接层依赖 V8 类型，QuickJS 兼容层下可能不成立 | 第一阶段冻结这两个后端（维持现状或暂停支持），第二阶段以 papi-quickjs / papi-nodejs 恢复 |
 | 跨库 CRT 与 STL 差异 | 崩溃或内存损坏 | 边界只用 C ABI；谁分配谁释放；字符串返回值由被调方持有 |
 | 第一阶段周期长导致分叉 | 合并冲突 | 增量合入主干；桥接层保证每步可编译 |
-| FFI、Wasm3 等小众功能 | 迁移收益低 | 改为可选 addon，或明确为“仅自带 V8 模式” |
+| FFI、Wasm3 等小众功能 | 迁移收益低 | 已删除（2026-10-26，见 5.10.13），需要时基于 papi 重新实现 |
 
 ## 9. 决策记录
 
@@ -650,6 +671,11 @@ flowchart LR
 2. M8 不清理 V8Backend.hpp、V8Object.hpp、V8FastCall.hpp，保留为 V8 专属快速路径（5.11）。
 3. 5.10.4 的宿主契约（`__puer_host_resolve__` / `__puer_host_load__` 及返回结构）按文档执行；CJS 的编译与 require 语义（缓存、循环依赖、forceReload）一并迁入 C++，`modular.js` 只留薄壳或删除；内置 `puerts/*.js` 在打包时与业务脚本一样产出字节码。
 4. M4-6 主体：FName 大小写修正改为在 `UE.Object.prototype` 等原型链末端挂 JS Proxy（只在成员找不到时进入，`hasOwnProperty` 对原型成员返回 true 的怪行为随之消失）；`FStructWrapper` 与翻译器改为进程级共享，`on_class_not_found` 不需要 userdata；蓝图重编译和热重载新增与引擎无关的“类定义失效”papi API，由 registry 和后端配合重建类。
+
+已决策（2026-10-26）：
+
+1. 模块拆分为 `ScriptEnv`（通用，完全不依赖 V8）、`PapiV8`（V8 实现）、`JsEnv`（兼容薄封装），具体见 5.10.13。`FJsEnv` 改名 `FScriptEnv`、`FJsEnvGroup` 一并改名，日志类别不改；反射类型包路径变化用 `PackageRedirects` 兼容；拆分后 QuickJS / Node 编译路径暂时断开。
+2. 删除 FFI 与 Wasm3。
 
 待决策：
 
