@@ -1,4 +1,5 @@
 #include "PuertsTestTypes.h"
+#include "UEDataBinding.hpp"
 #include "HAL/PlatformTime.h"
 #include "Engine/Blueprint.h"
 #include "Misc/Paths.h"
@@ -415,6 +416,56 @@ bool UPuertsTestReporter::IsAlive(UObject* Obj)
 int32 UPuertsTestReflectTarget::InterfacePing_Implementation(int32 InValue)
 {
     return InValue + Value;
+}
+
+void UPuertsTestJsObjectHolder::SetValue(const FJsObject& In)
+{
+    Value = In;
+}
+
+FJsObject UPuertsTestJsObjectHolder::GetValue() const
+{
+    return Value;
+}
+
+int32 UPuertsTestJsObjectHolder::GetInt(const FString& Key) const
+{
+    return Value.Get<int32>(TCHAR_TO_UTF8(*Key));
+}
+
+FString UPuertsTestJsObjectHolder::GetString(const FString& Key) const
+{
+    return Value.Get<FString>(TCHAR_TO_UTF8(*Key));
+}
+
+FJsObject UPuertsTestJsObjectHolder::GetObject(const FString& Key) const
+{
+    return Value.Get<FJsObject>(TCHAR_TO_UTF8(*Key));
+}
+
+void UPuertsTestJsObjectHolder::SetInt(const FString& Key, int32 V) const
+{
+    Value.Set<int32>(TCHAR_TO_UTF8(*Key), V);
+}
+
+int32 UPuertsTestJsObjectHolder::CallFunc(int32 A, int32 B) const
+{
+    return Value.Func<int32>(A, B);
+}
+
+void UPuertsTestJsObjectHolder::CallAction(const FString& S) const
+{
+    Value.Action(S);
+}
+
+int32 UPuertsTestJsObjectHolder::CopyAndRead(const FString& Key) const
+{
+    FJsObject Copied(Value);
+    FJsObject Assigned;
+    Assigned = Copied;
+    const FJsObject& Self = Assigned;
+    Assigned = Self;
+    return Copied.Get<int32>(TCHAR_TO_UTF8(*Key)) + Assigned.Get<int32>(TCHAR_TO_UTF8(*Key));
 }
 
 int32 UPuertsTestExtension::ExtTriple(UPuertsTestReflectTarget* Target)

@@ -4,6 +4,7 @@
 #include "UObject/Object.h"
 #include "UObject/SoftObjectPtr.h"
 #include "ExtensionMethods.h"
+#include "JsObject.h"
 #include "PuertsTestTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -369,6 +370,45 @@ UINTERFACE(BlueprintType)
 class PUERTSTEST_API UPuertsTestInterface : public UInterface
 {
     GENERATED_BODY()
+};
+
+// Used only by FJsObject tests (tests/js_object.js and FPuertsTest_JsObject).
+UCLASS(BlueprintType)
+class PUERTSTEST_API UPuertsTestJsObjectHolder : public UObject
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(BlueprintReadWrite)
+    FJsObject Value;
+
+    UFUNCTION(BlueprintCallable)
+    void SetValue(const FJsObject& In);
+
+    UFUNCTION(BlueprintCallable)
+    FJsObject GetValue() const;
+
+    UFUNCTION(BlueprintCallable)
+    int32 GetInt(const FString& Key) const;
+
+    UFUNCTION(BlueprintCallable)
+    FString GetString(const FString& Key) const;
+
+    UFUNCTION(BlueprintCallable)
+    FJsObject GetObject(const FString& Key) const;
+
+    UFUNCTION(BlueprintCallable)
+    void SetInt(const FString& Key, int32 V) const;
+
+    UFUNCTION(BlueprintCallable)
+    int32 CallFunc(int32 A, int32 B) const;
+
+    UFUNCTION(BlueprintCallable)
+    void CallAction(const FString& S) const;
+
+    // reads Key through a copy constructed and a copy assigned FJsObject, returns the sum
+    UFUNCTION(BlueprintCallable)
+    int32 CopyAndRead(const FString& Key) const;
 };
 
 class PUERTSTEST_API IPuertsTestInterface

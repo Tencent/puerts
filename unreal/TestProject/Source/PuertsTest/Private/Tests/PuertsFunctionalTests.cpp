@@ -70,4 +70,30 @@ bool FPuertsTest_TsClass::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_JsObject, "Puerts.Functional.JsObject", PUERTS_TEST_FLAGS)
+bool FPuertsTest_JsObject::RunTest(const FString& Parameters)
+{
+    // tests/js_object.js calls a non function object once and a throwing function twice
+    AddExpectedError(TEXT("call a non-function object!"), EAutomationExpectedErrorFlags::Contains, 1);
+    AddExpectedError(TEXT("jsobject boom"), EAutomationExpectedErrorFlags::Contains, 2);
+    // the holder outlives the env: GetInt, CopyAndRead (two reads) and CallFunc
+    AddExpectedError(TEXT("JsEnv associated had release!"), EAutomationExpectedErrorFlags::Contains, 4);
+    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/js_object"), FString());
+
+    UPuertsTestJsObjectHolder* Holder = Cast<UPuertsTestJsObjectHolder>(Reporter->Holder);
+    if (TestNotNull(TEXT("holder kept by the reporter"), Holder))
+    {
+        TestEqual(TEXT("Get after the env is destroyed"), Holder->GetInt(TEXT("x")), 0);
+        TestEqual(TEXT("copies after the env is destroyed"), Holder->CopyAndRead(TEXT("x")), 0);
+        TestEqual(TEXT("Func after the env is destroyed"), Holder->CallFunc(1, 2), 0);
+        FJsObject Copied = Holder->GetValue();
+        Copied = FJsObject();
+    }
+    // the holder (and the FJsObject in it) is destroyed after the env
+    Reporter->Holder = nullptr;
+    Reporter->RemoveFromRoot();
+    PuertsTest::CollectAllGarbage();
+    return !HasAnyErrors();
+}
+
 #endif

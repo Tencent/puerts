@@ -86,6 +86,16 @@ public:
         Shared.X = InX;
         return &Shared;
     }
+
+    static int ReadJsObjectX(FJsObject Obj)
+    {
+        return Obj.Get<int>("x");
+    }
+
+    static FJsObject EchoJsObject(FJsObject Obj)
+    {
+        return Obj;
+    }
 };
 
 int FPuertsTestCppClass::InstanceCount = 0;
@@ -113,6 +123,8 @@ struct FAutoRegisterPuertsTestCppClass
             .Function("StaticMul", MakeFunction(&FPuertsTestCppClass::StaticMul))
             .Function("GetInstanceCount", MakeFunction(&FPuertsTestCppClass::GetInstanceCount))
             .Function("CreateRaw", MakeFunction(&FPuertsTestCppClass::CreateRaw))
+            .Function("ReadJsObjectX", MakeFunction(&FPuertsTestCppClass::ReadJsObjectX))
+            .Function("EchoJsObject", MakeFunction(&FPuertsTestCppClass::EchoJsObject))
             .Register();
     }
 };

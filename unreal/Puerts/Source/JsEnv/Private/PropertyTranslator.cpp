@@ -774,21 +774,18 @@ public:
     {
     }
 
-    // FJsObject holds a v8 persistent handle, it stays v8 specific (see M8), so it is converted through the bridge
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
         if (!ValuePtr)
             return Apis->create_undefined(Env);
-        const FJsObject* JsObject = static_cast<const FJsObject*>(ValuePtr);
-        return papi_bridge::ToPapi(v8::Local<v8::Value>(JsObject->GetJsObject()));
+        return static_cast<const FJsObject*>(ValuePtr)->GetValue(Apis, Env);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         if (Apis->is_object(Env, Value))
         {
-            FJsObject JsObject(papi_bridge::ToV8(Env), papi_bridge::ToV8(Value).As<v8::Object>());
-            *static_cast<FJsObject*>(ValuePtr) = JsObject;
+            *static_cast<FJsObject*>(ValuePtr) = FJsObject(Apis, Env, Value);
         }
 
         return true;
