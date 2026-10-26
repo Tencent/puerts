@@ -318,8 +318,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
     Started = false;
-    Inspector = nullptr;
-    InspectorChannel = nullptr;
 
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
@@ -463,11 +461,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         PapiMethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
 #endif
 
-        MethodBindingHelper<&FJsEnvImpl::SetInspectorCallback>::Bind(Isolate, Context, Global, "__tgjsSetInspectorCallback", This);
-
-        MethodBindingHelper<&FJsEnvImpl::DispatchProtocolMessage>::Bind(
-            Isolate, Context, Global, "__tgjsDispatchProtocolMessage", This);
-
 #ifdef WITH_QUICKJS
         Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FJsEnvImpl>);
         Global
@@ -538,9 +531,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl, ESPMode::ThreadSafe>(this);
 #endif
-
-        Inspector = CreateV8Inspector(InDebugPort, &Context);
     }
+
+    // before the bootstrap scripts, so the inspector sees all the scripts (hot reload looks them up by url)
+    Backend->OpenRemoteDebugger(InDebugPort);
 
     // the js runtime of the backend (module system, promise rejection tracking) and its bootstrap scripts
     Backend->OnEnter(this);
@@ -607,7 +601,6 @@ FJsEnvImpl::~FJsEnvImpl()
     }
     ManualReleaseCallbacks.Empty();
     ManualReleaseCallbackMap.Reset();
-    InspectorMessageHandler.Reset();
     ReloadJs.Reset();
 #ifdef WITH_QUICKJS
     JsPromiseRejectCallback.Reset();
@@ -754,18 +747,6 @@ void FJsEnvImpl::OnEnvReleased()
     auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
     Platform->UnregisterIsolate(MainIsolate);
 #endif
-
-    if (InspectorChannel)
-    {
-        delete InspectorChannel;
-        InspectorChannel = nullptr;
-    }
-
-    if (Inspector)
-    {
-        delete Inspector;
-        Inspector = nullptr;
-    }
 
     DynamicInvoker.Reset();
     MixinInvoker.Reset();
@@ -1579,19 +1560,7 @@ void FJsEnvImpl::RebindJs()
 
 FString FJsEnvImpl::CurrentStackTrace()
 {
-#ifndef WITH_QUICKJS
-    v8::Isolate* Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-
-    PString StackTrace = StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
-    return UTF8_TO_TCHAR(StackTrace.c_str());
-#else
-    return TEXT("");
-#endif
+    return Backend->CurrentStackTrace();
 }
 
 bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
@@ -4115,102 +4084,9 @@ void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 }
 #endif
 
-void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-#ifndef WITH_QUICKJS
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    if (!Inspector)
-        return;
-
-    CHECK_V8_ARGS(EArgFunction);
-
-    if (!InspectorChannel)
-    {
-        InspectorChannel = Inspector->CreateV8InspectorChannel();
-        InspectorChannel->OnMessage(
-            [this](std::string Message)
-            {
-                // UE_LOG(LogTemp, Warning, TEXT("<-- %s"), UTF8_TO_TCHAR(Message.c_str()));
-                v8::Isolate::Scope IsolatescopeObject(MainIsolate);
-                v8::HandleScope HandleScopeObject(MainIsolate);
-                v8::Local<v8::Context> ContextInner = DefaultContext.Get(MainIsolate);
-                v8::Context::Scope ContextScopeObject(ContextInner);
-
-                auto Handler = InspectorMessageHandler.Get(MainIsolate);
-
-                v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(MainIsolate, Message.c_str())};
-
-                v8::TryCatch TryCatch(MainIsolate);
-                __USE(Handler->Call(ContextInner, ContextInner->Global(), 1, Args));
-                if (TryCatch.HasCaught())
-                {
-                    Logger->Error(FString::Printf(
-                        TEXT("inspector callback exception %s"), *FV8Utils::TryCatchToString(MainIsolate, &TryCatch)));
-                }
-            });
-    }
-
-    InspectorMessageHandler.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
-#endif    // !WITH_QUICKJS
-}
-
-void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-#ifndef WITH_QUICKJS
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    CHECK_V8_ARGS(EArgString);
-
-    if (InspectorChannel)
-    {
-        FString Message = FV8Utils::ToFString(Isolate, Info[0]);
-        // UE_LOG(LogTemp, Warning, TEXT("--> %s"), *Message);
-        InspectorChannel->DispatchProtocolMessage(TCHAR_TO_UTF8(*Message));
-    }
-#endif    // !WITH_QUICKJS
-}
-
 void FJsEnvImpl::DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-#ifndef WITH_QUICKJS
-    v8::HeapStatistics Statistics;
-
-    // heap statistics are v8 specific
-    v8::Isolate* Isolate = papi_bridge::IsolateOf(Apis->get_env(Info));
-
-    Isolate->GetHeapStatistics(&Statistics);
-
-    FString StatisticsLog = FString::Printf(TEXT("------------------------\n"
-                                                 "Dump Statistics of V8:\n"
-                                                 "total_heap_size: %llu\n"
-                                                 "total_heap_size_executable: %llu\n"
-                                                 "total_physical_size: %llu\n"
-                                                 "total_available_size: %llu\n"
-                                                 "used_heap_size: %llu\n"
-                                                 "heap_size_limit: %llu\n"
-                                                 "malloced_memory: %llu\n"
-                                                 "external_memory: %llu\n"
-                                                 "peak_malloced_memory: %llu\n"
-                                                 "number_of_native_contexts: %llu\n"
-                                                 "number_of_detached_contexts: %llu\n"
-                                                 "does_zap_garbage: %llu\n"
-                                                 "------------------------\n"),
-        Statistics.total_heap_size(), Statistics.total_heap_size_executable(), Statistics.total_physical_size(),
-        Statistics.total_available_size(), Statistics.used_heap_size(), Statistics.heap_size_limit(), Statistics.malloced_memory(),
-        Statistics.external_memory(), Statistics.peak_malloced_memory(), Statistics.number_of_native_contexts(),
-        Statistics.number_of_detached_contexts(), Statistics.does_zap_garbage());
-
-    Logger->Info(StatisticsLog);
-#endif    // !WITH_QUICKJS
+    Logger->Info(Backend->GetStatisticsLog());
 }
 
 }    // namespace PUERTS_NAMESPACE

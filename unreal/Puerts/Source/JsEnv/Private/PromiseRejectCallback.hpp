@@ -70,45 +70,4 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
     JsEngine->JsPromiseRejectCallback.Reset(Isolate, Args[0].As<v8::Function>());
 }
 
-// TODO: rename this file
-#ifndef WITH_QUICKJS
-PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
-{
-    std::ostringstream stm;
-    for (int i = 0; i < InStack->GetFrameCount(); i++)
-    {
-        v8::Local<v8::StackFrame> StackFrame = InStack->GetFrame(InIsolate, i);
-        v8::String::Utf8Value FuncName(InIsolate, StackFrame->GetFunctionName());
-        v8::String::Utf8Value ScriptName(InIsolate, StackFrame->GetScriptName());
-        const int LineNumber = StackFrame->GetLineNumber();
-        const int Column = StackFrame->GetColumn();
-
-        if (StackFrame->IsEval())
-        {
-            if (StackFrame->GetScriptId() == v8::Message::kNoScriptIdInfo)
-            {
-                stm << "    at [eval]:" << LineNumber << ":" << Column << std::endl;
-            }
-            else
-            {
-                stm << "    at [eval] (" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << ")"
-                    << std::endl;
-            }
-            break;
-        }
-
-        if (FuncName.length() == 0)
-        {
-            stm << "    at " << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << std::endl;
-        }
-        else
-        {
-            stm << "    at " << *FuncName << "(" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column
-                << ")" << std::endl;
-        }
-    }
-    return stm.str().c_str();
-}
-#endif
-
 }    // namespace PUERTS_NAMESPACE

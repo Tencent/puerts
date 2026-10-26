@@ -118,6 +118,29 @@ test('bom', () => {
     eq(req('bom'), 'bom');
 });
 
+// hot reload (puerts/hot_reload.js) goes through the in-process inspector session of the backend: started here, checked in
+// the next step
+const hotReload = { state: 'pending' };
+
+test('hot reload start', () => {
+    const m = req('hot_reload');
+    eq(m.get(), 1);
+    hotReload.module = m;
+    const source = 'module.exports = { get() { return 1; }, url: __filename };\n';
+    puerts.__reload('hot_reload', m.url, source.replace('return 1', 'return 2')).then(
+        () => {
+            hotReload.state = 'fulfilled';
+        },
+        (e) => {
+            hotReload.state = `rejected: ${e}`;
+        }
+    );
+});
+
+test('dumpStatisticsLog', () => {
+    dumpStatisticsLog();
+});
+
 // dynamic import: started in the first step, checked in the next one (timers fire and microtasks run in between)
 const dyn = Object.create(null);
 
@@ -189,6 +212,11 @@ step(() => {
         note('dynamic import missing', rejected('missing'));
         note('dynamic import dep missing', rejected('dep missing'));
         note('dynamic import syntax error', rejected('syntax error'));
+    });
+
+    test('hot reload', () => {
+        eq(hotReload.state, 'fulfilled');
+        eq(hotReload.module.get(), 2, 'function replaced by Debugger.setScriptSource');
     });
 });
 

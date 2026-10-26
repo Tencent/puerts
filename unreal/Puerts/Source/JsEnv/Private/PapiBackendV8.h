@@ -11,9 +11,11 @@
 #ifndef WITH_QUICKJS
 
 #include "PapiBackendJs.h"
+#include "PapiValueRef.h"
 #include "NamespaceDef.h"
 #include <functional>
 #include <memory>
+#include <string>
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -24,6 +26,8 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 namespace PUERTS_NAMESPACE
 {
 class FCppObjectMapper;
+class V8Inspector;
+class V8InspectorChannel;
 
 namespace papi_v8
 {
@@ -52,7 +56,7 @@ public:
         v8::Local<v8::Context> ExternalContext;
 
         // the cleanup of the host run by DestroyEnvRef after the env is released and before the isolate is disposed (inside
-        // the isolate scope): the leftovers of the mapper, the node environment, the inspector...
+        // the isolate scope): the leftovers of the mapper, the node environment...
         std::function<void()> OnEnvReleased;
     };
 
@@ -79,6 +83,16 @@ public:
     virtual void RequestMinorGarbageCollectionForTesting() override;
 
     virtual void RequestFullGarbageCollectionForTesting() override;
+
+    virtual void OpenRemoteDebugger(int32 Port) override;
+
+    virtual bool DebuggerTick() override;
+
+    virtual void CloseRemoteDebugger() override;
+
+    virtual FString GetStatisticsLog() override;
+
+    virtual FString CurrentStackTrace() override;
 
     v8::Isolate* GetIsolate() const
     {
@@ -108,6 +122,14 @@ protected:
 private:
     static void OnPromiseRejectHandlerError(void* UserData, const char* Error);
 
+    // __tgjsSetInspectorCallback(handler) and __tgjsDispatchProtocolMessage(message): the in-process session of the inspector,
+    // used by puerts/hot_reload.js
+    static void SetInspectorCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    static void DispatchProtocolMessage(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    void OnInspectorMessage(const std::string& Message);
+
     FParams Params;
 
     std::unique_ptr<FCppObjectMapper> CppObjectMapper;
@@ -121,6 +143,12 @@ private:
     papi_v8::FModuleLoader* ModuleLoader = nullptr;
 
     papi_v8::FPromiseRejectTracker* PromiseRejectTracker = nullptr;
+
+    V8Inspector* Inspector = nullptr;
+
+    V8InspectorChannel* InspectorChannel = nullptr;
+
+    FPapiValueRef InspectorMessageHandler;
 };
 }    // namespace PUERTS_NAMESPACE
 

@@ -75,5 +75,37 @@ public:
     virtual void RequestMinorGarbageCollectionForTesting() = 0;
 
     virtual void RequestFullGarbageCollectionForTesting() = 0;
+
+    // debugging of the engine instance (Backend.OpenRemoteDebugger/DebuggerTick/CloseRemoteDebugger of unity), called outside
+    // of any scope, after CreateEnvRef and before DestroyEnvRef. Port < 0 opens no remote server, but the in-process session
+    // used by hot reload is still available. Closed by DestroyEnvRef if not closed
+    virtual void OpenRemoteDebugger(int32 Port)
+    {
+    }
+
+    // processes the pending messages of the remote debugger. Returns false while waiting for a debugger to connect, true once
+    // connected or if no debugger is opened (nothing to wait for)
+    virtual bool DebuggerTick()
+    {
+        return true;
+    }
+
+    virtual void CloseRemoteDebugger()
+    {
+    }
+
+    // diagnostics, called outside of any scope
+
+    // the heap statistics of the engine instance in text
+    virtual FString GetStatisticsLog()
+    {
+        return FString();
+    }
+
+    // the stack of the running script in text, empty if no script is running
+    virtual FString CurrentStackTrace()
+    {
+        return FString();
+    }
 };
 }    // namespace PUERTS_NAMESPACE

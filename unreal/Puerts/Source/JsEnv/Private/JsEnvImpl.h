@@ -44,8 +44,6 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "PapiBackend.h"
 #include <memory>
 
-#include "V8InspectorImpl.h"
-
 #if defined(WITH_NODEJS)
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -100,11 +98,8 @@ public:
 
     virtual void WaitDebugger(double timeout) override
     {
-#ifdef THREAD_SAFE
-        v8::Locker Locker(MainIsolate);
-#endif
         const auto startTime = FDateTime::Now();
-        while (Inspector && !Inspector->Tick())
+        while (!Backend->DebuggerTick())
         {
             if (timeout > 0)
             {
@@ -349,10 +344,6 @@ private:
 #endif
 
     void DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    void SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
-    void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -671,12 +662,6 @@ private:
     TMap<uint32_t, FTimerInfo> TimerInfos;
 
     FUETickDelegateHandle DelegateProxiesCheckerHandler;
-
-    V8Inspector* Inspector;
-
-    V8InspectorChannel* InspectorChannel;
-
-    v8::Global<v8::Function> InspectorMessageHandler;
 
     FContainerMeta ContainerMeta;
 
