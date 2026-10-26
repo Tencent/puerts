@@ -64,6 +64,27 @@ inline pesapi_value FromFileContent(struct pesapi_ffi* Apis, pesapi_env Env, con
     return Apis->create_string_utf8(Env, reinterpret_cast<const char*>(Buffer), static_cast<size_t>(Size));
 }
 
+// evaluates a classic script, the encoding of FileContent is detected as FromFileContent does (pesapi eval takes UTF-8)
+inline pesapi_value EvalFileContent(struct pesapi_ffi* Apis, pesapi_env Env, const TArray<uint8>& FileContent, const char* Path)
+{
+    const uint8* Buffer = FileContent.GetData();
+    int32 Size = FileContent.Num();
+
+    if (Size >= 2 && !(Size & 1) && ((Buffer[0] == 0xff && Buffer[1] == 0xfe) || (Buffer[0] == 0xfe && Buffer[1] == 0xff)))
+    {
+        FString Content;
+        FFileHelper::BufferToString(Content, Buffer, Size);
+        FTCHARToUTF8 Utf8(*Content);
+        return Apis->eval(Env, reinterpret_cast<const uint8_t*>(Utf8.Get()), static_cast<size_t>(Utf8.Length()), Path);
+    }
+    if (Size >= 3 && Buffer[0] == 0xef && Buffer[1] == 0xbb && Buffer[2] == 0xbf)
+    {
+        Buffer += 3;
+        Size -= 3;
+    }
+    return Apis->eval(Env, reinterpret_cast<const uint8_t*>(Buffer), static_cast<size_t>(Size), Path);
+}
+
 // same as FV8Utils::GetUObject(Context, Value): nullptr for a non object value, RELEASED_UOBJECT for a released one
 FORCEINLINE UObject* GetUObject(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
 {
