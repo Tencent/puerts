@@ -103,6 +103,18 @@ void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 static void ModuleGenRequire(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 static void ModuleRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 static void ModuleGetByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+// __tgjsSetPromiseRejectCallback(handler), called by puerts/promises.js
+static void SetPromiseRejectHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    pesapi_env Env = Apis->get_env(Info);
+    papi_v8::SetPromiseRejectHandler(Env, Apis->get_args_len(Info) > 0 ? Apis->get_arg(Info, 0) : nullptr);
+}
+
+static void OnPromiseRejectHandlerError(void* UserData, const char* Error)
+{
+    static_cast<ILogger*>(UserData)->Error(FString::Printf(TEXT("promise reject handler exception %s"), UTF8_TO_TCHAR(Error)));
+}
 #endif
 
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
@@ -546,11 +558,16 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     MethodBindingHelper<&FJsEnvImpl::DispatchProtocolMessage>::Bind(
         Isolate, Context, Global, "__tgjsDispatchProtocolMessage", This);
 
+#ifndef WITH_QUICKJS
+    PapiPromiseRejectTracker = papi_v8::CreatePromiseRejectTracker(Env, &OnPromiseRejectHandlerError, Logger.get());
+    PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsSetPromiseRejectCallback", &SetPromiseRejectHandler);
+#else
     Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FJsEnvImpl>);
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetPromiseRejectCallback"),
             v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FJsEnvImpl>)->GetFunction(Context).ToLocalChecked())
         .Check();
+#endif
 
     //#if !defined(WITH_NODEJS)
     PapiMethodBindingHelper<&FJsEnvImpl::SetTimeout>::Bind(Apis, Env, PapiGlobal, "setTimeout", this);
@@ -745,7 +762,9 @@ FJsEnvImpl::~FJsEnvImpl()
     ManualReleaseCallbackMap.Reset();
     InspectorMessageHandler.Reset();
     ReloadJs.Reset();
+#ifdef WITH_QUICKJS
     JsPromiseRejectCallback.Reset();
+#endif
 
     FUETicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
 
@@ -825,6 +844,8 @@ FJsEnvImpl::~FJsEnvImpl()
 #if defined(WITH_NODEJS)
         NodeRequire.Reset();
 #endif
+        papi_v8::DestroyPromiseRejectTracker(PapiPromiseRejectTracker);
+        PapiPromiseRejectTracker = nullptr;
         papi_v8::DestroyModuleLoader(PapiModuleLoader);
         PapiModuleLoader = nullptr;
 #endif

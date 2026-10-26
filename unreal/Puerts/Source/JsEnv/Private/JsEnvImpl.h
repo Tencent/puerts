@@ -41,6 +41,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include "PapiValueRef.h"
 #include "PapiV8ModuleLoader.h"
+#include "PapiV8PromiseReject.h"
 
 #include "V8InspectorImpl.h"
 
@@ -266,7 +267,9 @@ public:
     void NotifyReBind(UTypeScriptGeneratedClass* Class);
 #endif
 
+#ifdef WITH_QUICKJS
     v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
+#endif
 
     V8_INLINE static FJsEnvImpl* Get(v8::Isolate* Isolate)
     {
@@ -467,6 +470,8 @@ private:
 
 #ifndef WITH_QUICKJS
     papi_v8::FModuleLoader* PapiModuleLoader = nullptr;
+
+    papi_v8::FPromiseRejectTracker* PapiPromiseRejectTracker = nullptr;
 
     // "<by><path>" -> kind, the modules whose kind is decided by the package.json requiring them
     TMap<FString, FString> ForcedModuleKinds;
