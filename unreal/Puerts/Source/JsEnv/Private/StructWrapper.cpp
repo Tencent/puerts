@@ -524,7 +524,7 @@ void FStructWrapper::StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info I
         return;
     }
 
-    Apis->add_return(Info, PapiUtils::FindOrAddUObject(Env, This->Struct->GetClass(), This->Struct.Get()));
+    Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Env, This->Struct->GetClass(), This->Struct.Get()));
 }
 
 void FStructWrapper::Find(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -566,7 +566,7 @@ void FStructWrapper::Find(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 
         if (Object)
         {
-            Apis->add_return(Info, PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object));
+            Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object));
         }
         else
         {
@@ -609,7 +609,7 @@ void FStructWrapper::Load(struct pesapi_ffi* Apis, pesapi_callback_info Info)
                 StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
             if (Object)
             {
-                Apis->add_return(Info, PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object));
+                Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object));
             }
         }
         else
@@ -651,7 +651,7 @@ void* FScriptStructWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info In
     }
     // only a pod struct may be bound in a backend specific way
     if ((ScriptStruct->StructFlags & EStructFlags::STRUCT_IsPlainOldData) &&
-        PapiUtils::ObjectMapperOf(Apis->get_env(Info))->TryBindOwnedStruct(Info, this, Memory))
+        PapiUtils::ObjectMapperOf(Apis, Apis->get_env(Info))->TryBindOwnedStruct(Info, this, Memory))
     {
         return nullptr;
     }
@@ -731,6 +731,6 @@ void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     // the object being constructed, papi has no accessor of it
     pesapi_value Self = papi_bridge::ToPapi(papi_bridge::ToV8(Info).This());
     // the handle is bound to the object by the backend, freed by ReflectedFinalize
-    return PapiUtils::ObjectMapperOf(Env)->Bind(Env, this, Object, Self);
+    return PapiUtils::ObjectMapperOf(Apis, Env)->Bind(Env, this, Object, Self);
 }
 }    // namespace PUERTS_NAMESPACE

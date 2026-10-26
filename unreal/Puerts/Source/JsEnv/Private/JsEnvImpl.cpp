@@ -330,9 +330,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     FPapiBackendV8::FParams BackendParams;
     BackendParams.Logger = Logger;
     BackendParams.Flags = InFlags;
-    BackendParams.IsolateMapper = static_cast<IObjectMapper*>(this);    //直接传this会有问题，强转后地址会变
-    BackendParams.CppObjectMapper = &CppObjectMapper;
     BackendParams.OnEnvReleased = [this]() { OnEnvReleased(); };
+    BackendParams.OnClassInvalidated = [this](const void* TypeId) { OnClassInvalidated(TypeId); };
 #if !defined(WITH_NODEJS)
     check(!InExternalRuntime && !InExternalContext);
 #else
@@ -357,7 +356,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #ifdef THREAD_SAFE
     v8::Locker NodeLocker(MainIsolate);
 #endif
-    MainIsolate->SetData(0, static_cast<IObjectMapper*>(this));    //直接传this会有问题，强转后地址会变
 
     // v8::Locker locker(Isolate);
     // difference from embedding example, if lock, blow check fail:
@@ -419,6 +417,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         FPapiEnvScope EnvScope(MainApis, MainEnvRef);
         struct pesapi_ffi* Apis = MainApis;
         pesapi_env Env = EnvScope.GetEnv();
+        // the object mapping of UE types, used by the translators and wrappers (PapiUtils::ObjectMapperOf)
+        Apis->set_env_private(Env, static_cast<IObjectMapper*>(this));
         v8::Isolate* Isolate = MainIsolate;
         v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
 
@@ -526,7 +526,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #endif
         // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names, and the
         // definitions must be kept alive while the templates are
-        CppObjectMapper.OnTemplateCreated =
+        CppObjectMapperOf().OnTemplateCreated =
             [this](v8::Isolate* InIsolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)
         {
             FStructWrapper::OnTemplateCreated(InIsolate, ClassDefinition, Template);
@@ -896,7 +896,7 @@ void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     auto Wrapper = FStructWrapper::FromTypeId(Apis->get_native_object_typeid(Env, Des));
     if (auto Struct = Wrapper ? Cast<UScriptStruct>(Wrapper->GetStruct()) : nullptr)
     {
-        PapiUtils::Merge(Env, Src, Struct, Apis->get_native_object_ptr(Env, Des));
+        PapiUtils::Merge(Apis, Env, Src, Struct, Apis->get_native_object_ptr(Env, Des));
         return;
     }
     if (auto Object = PapiUtils::GetUObject(Apis, Env, Des))
@@ -906,7 +906,7 @@ void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
-        PapiUtils::Merge(Env, Src, Object->GetClass(), Object);
+        PapiUtils::Merge(Apis, Env, Src, Object->GetClass(), Object);
         return;
     }
     Apis->throw_by_string(Info, "Bad parameters #1, expect a native object.");
@@ -958,7 +958,7 @@ void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info 
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
-        auto Result = PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object);
+        auto Result = PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object);
 #if !PUERTS_KEEP_UOBJECT_REFERENCE
         bool NeedJsTakeRef = true;
         if (IsSet(4))
@@ -1000,7 +1000,7 @@ void FJsEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callbac
     {
         void* Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
 
-        Apis->add_return(Info, PapiUtils::FindOrAddStruct(Env, ScriptStruct, Ptr, false));
+        Apis->add_return(Info, PapiUtils::FindOrAddStruct(Apis, Env, ScriptStruct, Ptr, false));
     }
     else
     {
@@ -1745,12 +1745,6 @@ pesapi_value FJsEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptSt
     // the type id of the object is the wrapper, a borrowed struct is cached, the memory of an owned one is freed by the
     // finalizer of the class definition (FScriptStructWrapper::ReflectedFinalize)
     return Apis->native_object_to_value(Env, static_cast<FStructWrapper*>(Wrapper), Ptr, !PassByPointer);
-}
-
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddCppObject(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer)
-{
-    return CppObjectMapper.FindOrAddCppObject(Isolate, Context, TypeId, Ptr, PassByPointer);
 }
 
 pesapi_value FJsEnvImpl::FindOrAddDelegate(
@@ -2833,40 +2827,6 @@ bool FJsEnvImpl::TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrap
     return false;
 }
 
-void FJsEnvImpl::BindCppObject(
-    v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
-{
-    CppObjectMapper.BindCppObject(InIsolate, ClassDefinition, Ptr, JSObject, PassByPointer);
-}
-
-void* FJsEnvImpl::GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject)
-{
-    return CppObjectMapper.GetPrivateData(Context, JSObject);
-}
-
-void FJsEnvImpl::SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr)
-{
-    CppObjectMapper.SetPrivateData(Context, JSObject, Ptr);
-}
-
-v8::MaybeLocal<v8::Function> FJsEnvImpl::LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId)
-{
-    return CppObjectMapper.LoadTypeById(Context, TypeId);
-}
-
-#ifndef WITH_QUICKJS
-v8::MaybeLocal<v8::Function> FJsEnvImpl::CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
-    pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize)
-{
-    return CppObjectMapper.CreateFunction(Context, Apis, Callback, Data, Finalize);
-}
-#endif
-
-void FJsEnvImpl::UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr)
-{
-    CppObjectMapper.UnBindCppObject(Isolate, ClassDefinition, Ptr);
-}
-
 std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
 {
     return FStructWrapper::FindOrAdd(InStruct);
@@ -2905,7 +2865,7 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         auto ClassDefinition = StructWrapper->GetClassDefinition(InStruct, true);
         // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env unless
         // PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE is 0
-        auto Template = CppObjectMapper.GetTemplateOfClass(Isolate, ClassDefinition);
+        auto Template = CppObjectMapperOf().GetTemplateOfClass(Isolate, ClassDefinition);
 
         TemplateInfo.StructWrapper = StructWrapper;
         // the template may be built from a previous definition (kept by this env)
@@ -3091,27 +3051,12 @@ bool FJsEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsOb
     }
 }
 
-bool FJsEnvImpl::IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
+FCppObjectMapper& FJsEnvImpl::CppObjectMapperOf() const
 {
-    return CppObjectMapper.IsInstanceOfCppObject(Isolate, TypeId, JsObject);
+    return static_cast<FPapiBackendV8*>(Backend.get())->GetCppObjectMapper();
 }
 
-std::weak_ptr<int> FJsEnvImpl::GetJsEnvLifeCycleTracker()
-{
-    return CppObjectMapper.GetJsEnvLifeCycleTracker();
-}
-
-void FJsEnvImpl::SetRegistry(ScriptClassRegistry* InRegistry)
-{
-    CppObjectMapper.SetRegistry(InRegistry);
-}
-
-ScriptClassRegistry* FJsEnvImpl::GetRegistry()
-{
-    return CppObjectMapper.GetRegistry();
-}
-
-void FJsEnvImpl::InvalidateClass(const void* TypeId)
+void FJsEnvImpl::OnClassInvalidated(const void* TypeId)
 {
     // the UE side caches of the type (keyed by UStruct) are dropped too, so the next use goes through the registry
     for (auto Iter = TypeToTemplateInfoMap.CreateIterator(); Iter; ++Iter)
@@ -3128,7 +3073,6 @@ void FJsEnvImpl::InvalidateClass(const void* TypeId)
         RetiredClasses.push_back(std::move(Built->second));
         ClassesBuilt.erase(Built);
     }
-    CppObjectMapper.InvalidateClass(TypeId);
 }
 
 void FJsEnvImpl::OnReflectedTemplateCreated(const JSClassDefinition* ClassDefinition)
@@ -3290,7 +3234,7 @@ void FJsEnvImpl::LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     pesapi_env Env = Apis->get_env(Info);
     const FString TypeName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
 
-    auto ClassDef = FindCppTypeClassByName(CppObjectMapper.GetRegistry(), PString(TCHAR_TO_UTF8(*TypeName)));
+    auto ClassDef = FindCppTypeClassByName(CppObjectMapperOf().GetRegistry(), PString(TCHAR_TO_UTF8(*TypeName)));
     pesapi_value Result = ClassDef ? Apis->create_class(Env, ClassDef->TypeId) : nullptr;
     if (Result)
     {
@@ -3391,13 +3335,13 @@ void FJsEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info
         case 0:    // Array
         {
             auto ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));
-            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Env, Property1, ScriptArray, false));
+            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Apis, Env, Property1, ScriptArray, false));
             break;
         }
         case 1:    // Set
         {
             auto ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(Property1));
-            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Env, Property1, ScriptSet, false));
+            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Apis, Env, Property1, ScriptSet, false));
             break;
         }
         case 2:    // Map
@@ -3408,7 +3352,7 @@ void FJsEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info
                 return;
             }
             auto ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(Property1, Property2));
-            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Env, Property1, Property2, ScriptMap, false));
+            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Apis, Env, Property1, Property2, ScriptMap, false));
             break;
         }
         default:
@@ -3461,8 +3405,8 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
     for (int i = 0; i < Arguments.Num(); i++)
     {
         auto Object = Arguments[i].Value;
-        pesapi_value Args[2] = {
-            PapiUtils::FromFString(Apis, Env, Arguments[i].Key), PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object)};
+        pesapi_value Args[2] = {PapiUtils::FromFString(Apis, Env, Arguments[i].Key),
+            PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object)};
         Apis->call_function(Env, ArgvAdd, Argv, 2, Args);
     }
 

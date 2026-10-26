@@ -101,10 +101,10 @@ FORCEINLINE UObject* ToUObjectChecked(const void* Ptr)
                : RELEASED_UOBJECT;
 }
 
-// the IObjectMapper of an env, it is the isolate data of the v8 backend (the only backend of the plugin for now)
-FORCEINLINE IObjectMapper* ObjectMapperOf(pesapi_env Env)
+// the IObjectMapper of an env, the host publishes it as the env private (pesapi set_env_private) when the env is created
+FORCEINLINE IObjectMapper* ObjectMapperOf(struct pesapi_ffi* Apis, pesapi_env Env)
 {
-    return FV8Utils::IsolateData<IObjectMapper>(papi_bridge::IsolateOf(Env));
+    return static_cast<IObjectMapper*>(const_cast<void*>(Apis->get_env_private(Env)));
 }
 
 // pesapi_throw_by_string needs the callback info, which translators do not have
@@ -118,73 +118,76 @@ FORCEINLINE void ThrowException(pesapi_env Env, const FString& Message)
     FV8Utils::ThrowException(papi_bridge::IsolateOf(Env), Message);
 }
 
-FORCEINLINE pesapi_value FindOrAddUObject(pesapi_env Env, UClass* Class, UObject* Object)
+FORCEINLINE pesapi_value FindOrAddUObject(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UObject* Object)
 {
-    return ObjectMapperOf(Env)->FindOrAdd(Env, Class, Object);
+    return ObjectMapperOf(Apis, Env)->FindOrAdd(Env, Class, Object);
 }
 
-FORCEINLINE pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
+FORCEINLINE pesapi_value FindOrAddStruct(
+    struct pesapi_ffi* Apis, pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
-    return ObjectMapperOf(Env)->FindOrAddStruct(Env, ScriptStruct, Ptr, PassByPointer);
+    return ObjectMapperOf(Apis, Env)->FindOrAddStruct(Env, ScriptStruct, Ptr, PassByPointer);
 }
 
-FORCEINLINE void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
+FORCEINLINE void Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
 {
-    ObjectMapperOf(Env)->Merge(Env, Src, DesType, Des);
+    ObjectMapperOf(Apis, Env)->Merge(Env, Src, DesType, Des);
 }
 
 template <typename TContainer>
-FORCEINLINE pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, TContainer* Ptr, bool PassByPointer)
-{
-    return ObjectMapperOf(Env)->FindOrAddContainer(Env, Property, Ptr, PassByPointer);
-}
-
 FORCEINLINE pesapi_value FindOrAddContainer(
-    pesapi_env Env, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer)
+    struct pesapi_ffi* Apis, pesapi_env Env, PropertyMacro* Property, TContainer* Ptr, bool PassByPointer)
 {
-    return ObjectMapperOf(Env)->FindOrAddContainer(Env, KeyProperty, ValueProperty, Ptr, PassByPointer);
+    return ObjectMapperOf(Apis, Env)->FindOrAddContainer(Env, Property, Ptr, PassByPointer);
 }
 
-FORCEINLINE pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Inner, void* ArrayPtr)
+FORCEINLINE pesapi_value FindOrAddContainer(struct pesapi_ffi* Apis, pesapi_env Env, PropertyMacro* KeyProperty,
+    PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer)
 {
-    return ObjectMapperOf(Env)->CreateArray(Env, Inner, ArrayPtr);
+    return ObjectMapperOf(Apis, Env)->FindOrAddContainer(Env, KeyProperty, ValueProperty, Ptr, PassByPointer);
+}
+
+FORCEINLINE pesapi_value CreateArray(struct pesapi_ffi* Apis, pesapi_env Env, FPropertyTranslator* Inner, void* ArrayPtr)
+{
+    return ObjectMapperOf(Apis, Env)->CreateArray(Env, Inner, ArrayPtr);
 }
 
 FORCEINLINE pesapi_value FindOrAddDelegate(
-    pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
+    struct pesapi_ffi* Apis, pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {
-    return ObjectMapperOf(Env)->FindOrAddDelegate(Env, Owner, Property, DelegatePtr, PassByPointer);
+    return ObjectMapperOf(Apis, Env)->FindOrAddDelegate(Env, Owner, Property, DelegatePtr, PassByPointer);
 }
 
 // JsFunction must be a function
-FORCEINLINE FScriptDelegate NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
+FORCEINLINE FScriptDelegate NewDelegate(
+    struct pesapi_ffi* Apis, pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
 {
-    return ObjectMapperOf(Env)->NewDelegate(Env, Owner, JsFunction, SignatureFunction);
+    return ObjectMapperOf(Apis, Env)->NewDelegate(Env, Owner, JsFunction, SignatureFunction);
 }
 
-FORCEINLINE bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
+FORCEINLINE bool AddToDelegate(struct pesapi_ffi* Apis, pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
-    return ObjectMapperOf(Env)->AddToDelegate(Env, DelegatePtr, JsFunction);
+    return ObjectMapperOf(Apis, Env)->AddToDelegate(Env, DelegatePtr, JsFunction);
 }
 
-FORCEINLINE bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
+FORCEINLINE bool RemoveFromDelegate(struct pesapi_ffi* Apis, pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
-    return ObjectMapperOf(Env)->RemoveFromDelegate(Env, DelegatePtr, JsFunction);
+    return ObjectMapperOf(Apis, Env)->RemoveFromDelegate(Env, DelegatePtr, JsFunction);
 }
 
-FORCEINLINE bool ClearDelegate(pesapi_env Env, void* DelegatePtr)
+FORCEINLINE bool ClearDelegate(struct pesapi_ffi* Apis, pesapi_env Env, void* DelegatePtr)
 {
-    return ObjectMapperOf(Env)->ClearDelegate(Env, DelegatePtr);
+    return ObjectMapperOf(Apis, Env)->ClearDelegate(Env, DelegatePtr);
 }
 
-FORCEINLINE void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
+FORCEINLINE void ExecuteDelegate(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
 {
-    ObjectMapperOf(Env)->ExecuteDelegate(Env, Info, DelegatePtr);
+    ObjectMapperOf(Apis, Env)->ExecuteDelegate(Env, Info, DelegatePtr);
 }
 
-FORCEINLINE PropertyMacro* FindDelegateProperty(pesapi_env Env, void* DelegatePtr)
+FORCEINLINE PropertyMacro* FindDelegateProperty(struct pesapi_ffi* Apis, pesapi_env Env, void* DelegatePtr)
 {
-    return ObjectMapperOf(Env)->FindDelegateProperty(DelegatePtr);
+    return ObjectMapperOf(Apis, Env)->FindDelegateProperty(DelegatePtr);
 }
 
 // the same checks and messages as FV8Utils::CheckArgument

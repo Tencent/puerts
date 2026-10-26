@@ -54,7 +54,7 @@ void FDelegateWrapper::Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     if (ArgCount == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
         auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-        PapiUtils::AddToDelegate(Env, DelegatePtr, Apis->get_arg(Info, 0));
+        PapiUtils::AddToDelegate(Apis, Env, DelegatePtr, Apis->get_arg(Info, 0));
         return;
     }
     if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
@@ -80,14 +80,14 @@ void FDelegateWrapper::Unbind(struct pesapi_ffi* Apis, pesapi_callback_info Info
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    PapiUtils::ClearDelegate(Env, DelegatePtr);
+    PapiUtils::ClearDelegate(Apis, Env, DelegatePtr);
 }
 
 void FDelegateWrapper::Execute(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    PapiUtils::ExecuteDelegate(Env, Info, DelegatePtr);
+    PapiUtils::ExecuteDelegate(Apis, Env, Info, DelegatePtr);
 }
 
 const void* FMulticastDelegateWrapper::TypeId()
@@ -111,7 +111,7 @@ void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_inf
     if (ArgCount == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
         auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-        PapiUtils::AddToDelegate(Env, DelegatePtr, Apis->get_arg(Info, 0));
+        PapiUtils::AddToDelegate(Apis, Env, DelegatePtr, Apis->get_arg(Info, 0));
         return;
     }
     if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
@@ -124,7 +124,8 @@ void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_inf
                 return;
             }
             auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-            if (auto Property = CastFieldMacro<MulticastDelegatePropertyMacro>(PapiUtils::FindDelegateProperty(Env, DelegatePtr)))
+            if (auto Property =
+                    CastFieldMacro<MulticastDelegatePropertyMacro>(PapiUtils::FindDelegateProperty(Apis, Env, DelegatePtr)))
             {
                 FScriptDelegate Delegate;
                 Delegate.BindUFunction(Object, FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
@@ -152,7 +153,7 @@ void FMulticastDelegateWrapper::Remove(struct pesapi_ffi* Apis, pesapi_callback_
     if (Apis->get_args_len(Info) == 1 && Apis->is_function(Env, Apis->get_arg(Info, 0)))
     {
         auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-        PapiUtils::RemoveFromDelegate(Env, DelegatePtr, Apis->get_arg(Info, 0));
+        PapiUtils::RemoveFromDelegate(Apis, Env, DelegatePtr, Apis->get_arg(Info, 0));
     }
     else
     {
@@ -164,13 +165,13 @@ void FMulticastDelegateWrapper::Clear(struct pesapi_ffi* Apis, pesapi_callback_i
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    PapiUtils::ClearDelegate(Env, DelegatePtr);
+    PapiUtils::ClearDelegate(Apis, Env, DelegatePtr);
 }
 
 void FMulticastDelegateWrapper::Broadcast(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
     auto DelegatePtr = Apis->get_native_holder_ptr(Info);
-    PapiUtils::ExecuteDelegate(Env, Info, DelegatePtr);
+    PapiUtils::ExecuteDelegate(Apis, Env, Info, DelegatePtr);
 }
 }    // namespace PUERTS_NAMESPACE

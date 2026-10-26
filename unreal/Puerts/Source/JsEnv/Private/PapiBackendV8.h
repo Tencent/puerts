@@ -13,6 +13,7 @@
 #include "PapiBackendJs.h"
 #include "NamespaceDef.h"
 #include <functional>
+#include <memory>
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #pragma warning(push, 0)
@@ -42,10 +43,9 @@ public:
         // v8 flags of the isolate, only --max-old-space-size=<MB> is used
         FString Flags;
 
-        // legacy: the object mapper set to the isolate (data slot 0) and the class template mapper it forwards to, owned by
-        // the host until the IObjectMapper of the host is removed
-        void* IsolateMapper = nullptr;
-        FCppObjectMapper* CppObjectMapper = nullptr;
+        // called when a class is invalidated (pesapi invalidate_class) before the backend drops it, see
+        // FCppObjectMapper::OnClassInvalidated
+        std::function<void(const void* TypeId)> OnClassInvalidated;
 
         // an isolate and a context created by the host (node), adopted but not disposed by the backend
         v8::Isolate* ExternalIsolate = nullptr;
@@ -85,6 +85,13 @@ public:
         return Isolate;
     }
 
+    // the object mapping of the backend (isolate data slot 0). Only for the v8 specific parts of the host that are not
+    // migrated yet (the templates of reflected classes)
+    FCppObjectMapper& GetCppObjectMapper() const
+    {
+        return *CppObjectMapper;
+    }
+
 protected:
     virtual void StartRuntime(pesapi_env Env) override;
 
@@ -102,6 +109,8 @@ private:
     static void OnPromiseRejectHandlerError(void* UserData, const char* Error);
 
     FParams Params;
+
+    std::unique_ptr<FCppObjectMapper> CppObjectMapper;
 
     v8::Isolate::CreateParams CreateParams;
 

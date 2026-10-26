@@ -11,7 +11,7 @@
 #include "pesapi.h"
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
-#include "ObjectMapper.h"
+#include "CppObjectMapper.h"
 #include "PesapiImpl.h"
 
 #include <string>

@@ -158,25 +158,6 @@ public:
     void BindPodStruct(FScriptStructWrapper* Wrapper, void* Ptr, v8::Local<v8::Object> JSObject);
 #endif
 
-    virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) override;
-
-    virtual void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void* Ptr,
-        v8::Local<v8::Object> JSObject, bool PassByPointer) override;
-
-    virtual void* GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject) override;
-
-    virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) override;
-
-    virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) override;
-
-#ifndef WITH_QUICKJS
-    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
-        pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) override;
-#endif
-
-    virtual v8::Local<v8::Value> FindOrAddCppObject(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
-
     // a wrapper of the container class (ClassDefinition), the wrapper of a borrowed container (PassByPointer) is cached by the
     // container, an owned one (deleted with the wrapper) is always new
     pesapi_value FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, PropertyMacro* KeyProperty,
@@ -195,18 +176,13 @@ public:
 
     virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override;
 
-    virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) override;
+    // the class of TypeId is invalidated (pesapi invalidate_class), drops the UE side caches of it
+    void OnClassInvalidated(const void* TypeId);
 
-    virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() override;
+    // the object mapping of the v8 backend, used by the templates of reflected classes until they are built by papi
+    FCppObjectMapper& CppObjectMapperOf() const;
 
-    virtual void SetRegistry(ScriptClassRegistry* InRegistry) override;
-
-    virtual ScriptClassRegistry* GetRegistry() override;
-
-    virtual void InvalidateClass(const void* TypeId) override;
-
-    // IObjectMapper, the papi interface used by the backend independent code. Forward to the v8 implementations above until
-    // they are migrated
+    // IObjectMapper, the papi interface used by the backend independent code
     virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override;
 
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) override
@@ -272,7 +248,7 @@ public:
 
     V8_INLINE static FJsEnvImpl* Get(v8::Isolate* Isolate)
     {
-        return static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Isolate));
+        return static_cast<FJsEnvImpl*>(static_cast<IObjectMapper*>(DataTransfer::GetIsolatePrivateData(Isolate)));
     }
 
 public:
@@ -563,10 +539,8 @@ private:
     TSet<FUObjectBinding*> ReleasedObjectBindings;
 
     // container -> holder of the cached (borrowed) container wrappers, the holders are freed by the finalizer of the container
-    // classes (on gc or CppObjectMapper.UnInitialize), so the map must outlive CppObjectMapper
+    // classes (on gc or when the env is released by the backend), so the map must outlive the env
     TMap<void*, FContainerHolder*> ContainerHolders;
-
-    FCppObjectMapper CppObjectMapper;
 
     struct ContainerPropertyInfo
     {

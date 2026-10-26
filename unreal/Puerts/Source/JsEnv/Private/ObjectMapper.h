@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -13,64 +13,17 @@
 #include "PropertyTranslator.h"
 #include "StructWrapper.h"
 #endif
-#include "JSClassRegister.h"
 #include "pesapi.h"
 
 #include "NamespaceDef.h"
 
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
-
-#include <memory>
-
 namespace PUERTS_NAMESPACE
 {
-class ICppObjectMapper
-{
-public:
-    virtual void BindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject,
-        bool PassByPointer) = 0;
-
-    virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) = 0;
-
-    virtual v8::Local<v8::Value> FindOrAddCppObject(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
-
-    virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
-
-    virtual void* GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject) = 0;
-
-    virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) = 0;
-
-    virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) = 0;
-
-#ifndef WITH_QUICKJS
-    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
-        pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) = 0;
-#endif
-
-    virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
-
-    // class registry used by this env (pesapi set_registry), nullptr resets to the default registry
-    virtual void SetRegistry(ScriptClassRegistry* InRegistry) = 0;
-
-    virtual ScriptClassRegistry* GetRegistry() = 0;
-
-    // pesapi invalidate_class: drop the cached script class of TypeId, the next use rebuilds it
-    virtual void InvalidateClass(const void* TypeId) = 0;
-
-    virtual ~ICppObjectMapper()
-    {
-    }
-};
-
 #if USING_IN_UNREAL_ENGINE
-// the object mapping of an UE env (see PapiUtils::ObjectMapperOf), all js values are papi values so the callers do not
-// depend on the script backend
-class IObjectMapper : public ICppObjectMapper
+// the object mapping of an UE env, implemented by the host and published as the env private (pesapi set_env_private, see
+// PapiUtils::ObjectMapperOf). All js values are papi values so neither the callers nor the implementation depend on the script
+// backend. The mapping of the backend itself (native objects of class definitions) is internal to the backend.
+class IObjectMapper
 {
 public:
     // binds UEObject to JSObject, the object being constructed by the js class of ClassWrapper, returns the native pointer (the
@@ -119,6 +72,10 @@ public:
     virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) = 0;
 
     virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) = 0;
+
+    virtual ~IObjectMapper()
+    {
+    }
 };
 #endif
 

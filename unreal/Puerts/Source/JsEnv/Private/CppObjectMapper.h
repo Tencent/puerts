@@ -17,14 +17,56 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 #include "JSClassRegister.h"
 #include "ObjectCacheNode.h"
-#include "ObjectMapper.h"
+#include "pesapi.h"
 
 namespace PUERTS_NAMESPACE
 {
+// the object mapping of the v8 backend (native objects of class definitions), it is the isolate data (MAPPER_ISOLATE_DATA_POS)
+// used by the v8 implementation of pesapi. Internal to the backend, the host does not implement it
+class ICppObjectMapper
+{
+public:
+    virtual void BindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject,
+        bool PassByPointer) = 0;
+
+    virtual void UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr) = 0;
+
+    virtual v8::Local<v8::Value> FindOrAddCppObject(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
+
+    virtual bool IsInstanceOfCppObject(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
+
+    virtual void* GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject) = 0;
+
+    virtual void SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr) = 0;
+
+    virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) = 0;
+
+#ifndef WITH_QUICKJS
+    virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
+        pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) = 0;
+#endif
+
+    virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
+
+    // class registry used by this env (pesapi set_registry), nullptr resets to the default registry
+    virtual void SetRegistry(ScriptClassRegistry* InRegistry) = 0;
+
+    virtual ScriptClassRegistry* GetRegistry() = 0;
+
+    // pesapi invalidate_class: drop the cached script class of TypeId, the next use rebuilds it
+    virtual void InvalidateClass(const void* TypeId) = 0;
+
+    virtual ~ICppObjectMapper()
+    {
+    }
+};
+
 struct PointerHash
 {
     std::size_t operator()(const void* ptr) const
@@ -66,8 +108,15 @@ public:
 
     virtual void InvalidateClass(const void* TypeId) override
     {
+        if (OnClassInvalidated)
+        {
+            OnClassInvalidated(TypeId);
+        }
         TypeIdToTemplateMap.erase(TypeId);
     }
+
+    // called by InvalidateClass before the cached class is dropped, lets the host drop its caches of the type
+    std::function<void(const void* TypeId)> OnClassInvalidated;
 
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;

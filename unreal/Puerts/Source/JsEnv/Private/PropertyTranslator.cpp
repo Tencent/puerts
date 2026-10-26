@@ -167,7 +167,7 @@ void FPropertyTranslator::DelegateGetter(struct pesapi_ffi* Apis, pesapi_callbac
     auto DelegatePtr = PropertyTranslator->Property->ContainerPtrToValuePtr<void>(Object);
 
     Apis->add_return(
-        Info, PapiUtils::FindOrAddDelegate(Apis->get_env(Info), Object, PropertyTranslator->Property, DelegatePtr, true));
+        Info, PapiUtils::FindOrAddDelegate(Apis, Apis->get_env(Info), Object, PropertyTranslator->Property, DelegatePtr, true));
 }
 
 bool FPropertyTranslator::GetAccessorName(FString& OutName) const
@@ -486,7 +486,7 @@ public:
         {
             return Apis->create_undefined(Env);
         }
-        return PapiUtils::FindOrAddUObject(Env, UEObject->GetClass(), UEObject);
+        return PapiUtils::FindOrAddUObject(Apis, Env, UEObject->GetClass(), UEObject);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
@@ -612,7 +612,7 @@ public:
         {
             return Apis->create_undefined(Env);
         }
-        return PapiUtils::FindOrAddUObject(Env, Object->GetClass(), Object);
+        return PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
@@ -669,7 +669,7 @@ public:
             Ptr = FScriptStructWrapper::Alloc(StructProperty->Struct);
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
-        return PapiUtils::FindOrAddStruct(Env, StructProperty->Struct, Ptr, PassByPointer);
+        return PapiUtils::FindOrAddStruct(Apis, Env, StructProperty->Struct, Ptr, PassByPointer);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
@@ -689,7 +689,7 @@ public:
         }
         else if (Apis->is_object(Env, Value))
         {
-            PapiUtils::Merge(Env, Value, StructProperty->Struct, ValuePtr);
+            PapiUtils::Merge(Apis, Env, Value, StructProperty->Struct, ValuePtr);
         }
         return true;
     }
@@ -843,7 +843,7 @@ public:
             ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
             ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
         }
-        return PapiUtils::FindOrAddContainer(Env, ArrayProperty->Inner, ScriptArray, ByPointer);
+        return PapiUtils::FindOrAddContainer(Apis, Env, ArrayProperty->Inner, ScriptArray, ByPointer);
     }
 
     void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
@@ -894,7 +894,7 @@ public:
             ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
             SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
         }
-        return PapiUtils::FindOrAddContainer(Env, SetProperty->ElementProp, ScriptSet, ByPointer);
+        return PapiUtils::FindOrAddContainer(Apis, Env, SetProperty->ElementProp, ScriptSet, ByPointer);
     }
 
     void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
@@ -945,7 +945,7 @@ public:
             ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
             MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
         }
-        return PapiUtils::FindOrAddContainer(Env, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
+        return PapiUtils::FindOrAddContainer(Apis, Env, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
     }
 
     void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
@@ -1005,7 +1005,7 @@ public:
 
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        return PapiUtils::CreateArray(Env, Inner.get(), const_cast<void*>(ValuePtr));
+        return PapiUtils::CreateArray(Apis, Env, Inner.get(), const_cast<void*>(ValuePtr));
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
@@ -1037,7 +1037,7 @@ public:
             UObject* UEObject = DelegatePtr->GetUObject();
             if (UEObject && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject))
             {
-                return PapiUtils::FindOrAddDelegate(Env, UEObject, DelegateProperty, DelegatePtr, PassByPointer);
+                return PapiUtils::FindOrAddDelegate(Apis, Env, UEObject, DelegateProperty, DelegatePtr, PassByPointer);
             }
         }
         return Apis->create_undefined(Env);
@@ -1048,7 +1048,7 @@ public:
         FScriptDelegate* Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
         if (Apis->is_function(Env, Value))
         {
-            *Des = PapiUtils::NewDelegate(Env, nullptr, Value, DelegateProperty->SignatureFunction);
+            *Des = PapiUtils::NewDelegate(Apis, Env, nullptr, Value, DelegateProperty->SignatureFunction);
         }
         else
         {
@@ -1080,7 +1080,7 @@ public:
                     }
                     else if (Apis->is_function(Env, Func))
                     {
-                        *Des = PapiUtils::NewDelegate(Env, Obj, Func, DelegateProperty->SignatureFunction);
+                        *Des = PapiUtils::NewDelegate(Apis, Env, Obj, Func, DelegateProperty->SignatureFunction);
                     }
                 }
             }

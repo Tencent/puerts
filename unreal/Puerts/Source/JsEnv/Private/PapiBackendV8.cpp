@@ -14,6 +14,7 @@
 #include "PapiV8ModuleLoader.h"
 #include "PapiV8PromiseReject.h"
 #include "CppObjectMapper.h"
+#include "DataTransfer.h"
 
 #if !defined(WITH_NODEJS) && V8_MAJOR_VERSION < 8
 #if PLATFORM_WINDOWS
@@ -48,8 +49,10 @@ struct FCodeCacheHeader
 };
 #endif
 
-FPapiBackendV8::FPapiBackendV8(const FParams& InParams) : FPapiBackendJs(InParams.Logger), Params(InParams)
+FPapiBackendV8::FPapiBackendV8(const FParams& InParams)
+    : FPapiBackendJs(InParams.Logger), Params(InParams), CppObjectMapper(std::make_unique<FCppObjectMapper>())
 {
+    CppObjectMapper->OnClassInvalidated = Params.OnClassInvalidated;
 }
 
 FPapiBackendV8::~FPapiBackendV8()
@@ -69,7 +72,7 @@ struct pesapi_ffi* FPapiBackendV8::GetApi()
 
 pesapi_env_ref FPapiBackendV8::CreateEnvRef()
 {
-    check(!Isolate && Params.CppObjectMapper);
+    check(!Isolate);
     // a local of the scope of the host, only valid during this call
     v8::Local<v8::Context> ExternalContext = Params.ExternalContext;
     Params.ExternalContext.Clear();
@@ -106,15 +109,15 @@ pesapi_env_ref FPapiBackendV8::CreateEnvRef()
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
 #endif
-    // the address of the mapper is passed as is, it is cast to its interface by the host
-    Isolate->SetData(0, Params.IsolateMapper);
+    // the object mapping used by the v8 implementation of pesapi
+    Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(CppObjectMapper.get()));
 
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = ExternalContext.IsEmpty() ? v8::Context::New(Isolate) : ExternalContext;
     v8::Context::Scope ContextScope(Context);
 
-    Params.CppObjectMapper->Initialize(Isolate, Context);
+    CppObjectMapper->Initialize(Isolate, Context);
     // after the mapper is initialized: the ref tracks the life cycle of the env, which starts there
     MainEnvRef = v8impl::g_pesapi_ffi.create_env_ref(papi_bridge::ToPapi(Context));
     return MainEnvRef;
@@ -138,7 +141,7 @@ void FPapiBackendV8::DestroyEnvRef(pesapi_env_ref EnvRef)
         }
         MainEnvRef = nullptr;
         // invalidates the refs of the env
-        Params.CppObjectMapper->UnInitialize(Isolate);
+        CppObjectMapper->UnInitialize(Isolate);
         if (Params.OnEnvReleased)
         {
             Params.OnEnvReleased();

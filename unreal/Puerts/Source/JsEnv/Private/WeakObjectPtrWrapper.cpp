@@ -73,7 +73,7 @@ void FWeakObjectPtrWrapper::Get(struct pesapi_ffi* Apis, pesapi_callback_info In
     UObject* Obj = Ptr->Get();
     if (Obj && Obj->IsValidLowLevelFast() && !UEObjectIsPendingKill(Obj))
     {
-        Apis->add_return(Info, PapiUtils::FindOrAddUObject(Env, Obj->GetClass(), Obj));
+        Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Env, Obj->GetClass(), Obj));
     }
     else
     {
