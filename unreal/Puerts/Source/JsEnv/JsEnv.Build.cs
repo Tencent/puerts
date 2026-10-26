@@ -126,27 +126,9 @@ public class JsEnv : ModuleRules
             PublicDefinitions.Add("PUERTS_KEEP_UOBJECT_REFERENCE=0");
         }
 
-        bool UseWasm = false;
-        if (UseWasm)
-        {
-            PublicDefinitions.Add("USE_WASM3=1");
-        }
-        else
-        {
-            PublicDefinitions.Add("USE_WASM3=0");
-        }
-        bool OverrideWebAssembly = false;
-        if (OverrideWebAssembly)
-        {
-            PublicDefinitions.Add("WASM3_OVERRIDE_WEBASSEMBLY=1");
-        }
-        else
-        {
-            PublicDefinitions.Add("WASM3_OVERRIDE_WEBASSEMBLY=0");
-        }
         PublicDependencyModuleNames.AddRange(new string[]
             {
-                "WasmCore", "Json"
+                "Json"
             });
 
         if (UseNodejs)
