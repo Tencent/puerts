@@ -4,6 +4,7 @@ pesapi (papi) + static binding test for the unreal plugin, runs without unreal e
 
 - `addon/`: a pesapi addon (`hello`), built with `BUILDING_PES_EXTENSION`, classes are registered by `puerts::DefineClass<T>()...Register()` (`PesapiBackend.hpp`) and exported by `PUERTS_PESAPI_MODULE(hello, Init)`.
 - `host/`: a minimal v8 host built from `Puerts/Source/JsEnv` sources (`PesapiV8Impl.cpp`, `PesapiRegister.cpp`, `CppObjectMapper.cpp`, `JSClassRegister.cpp`, `DataTransfer.cpp`), it loads the addon the same way as `PesapiAddonLoad.cpp` and runs `test.js`.
+- `papi_test_host_v8`: the same host with the `addon/` sources linked in and built with `PUERTS_BINDING_IMPL=v8_impl`, so the same classes are bound by `V8Backend.hpp`. `test.js` runs against both bindings (ctest `papi_test` and `papi_test_v8`), class names are prefixed by `MODULE_PREFIX` (`hello.` for the addon, empty for the v8 binding).
 - `test.js`: test cases with assertions, ported from `puerts_node/test`.
 
 ## build & run

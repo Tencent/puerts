@@ -7,6 +7,8 @@ project(papi_test LANGUAGES C CXX)
 #   hello        : pesapi addon built with BUILDING_PES_EXTENSION, using Binding.hpp static binding (PesapiBackend.hpp)
 #   papi_test_host : minimal v8 host built from unreal JsEnv sources (PesapiV8Impl.cpp, PesapiRegister.cpp, ...)
 #                    without unreal engine, loads the addon and runs test.js
+#   papi_test_host_v8 : the same host with the addon sources linked in and built with PUERTS_BINDING_IMPL=v8_impl
+#                    (V8Backend.hpp), runs the same test.js
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -71,7 +73,7 @@ if(NOT WIN32)
 endif()
 
 # ---------------------------------------------------------------- host
-add_executable(papi_test_host
+set(HOST_SOURCES
     host/main.cpp
     ${JSENV_DIR}/Private/PesapiV8Impl.cpp
     ${JSENV_DIR}/Private/PesapiRegister.cpp
@@ -80,22 +82,40 @@ add_executable(papi_test_host
     ${JSENV_DIR}/Private/ScriptClassRegistry.cpp
     ${JSENV_DIR}/Private/DataTransfer.cpp
 )
-target_include_directories(papi_test_host PRIVATE ${JSENV_DIR}/Public ${JSENV_DIR}/Private ${V8_ROOT}/Inc)
-target_link_libraries(papi_test_host PRIVATE ${V8_LIB})
 
-if(WIN32)
-    target_link_libraries(papi_test_host PRIVATE winmm.lib dbghelp.lib shlwapi.lib)
-    target_compile_definitions(papi_test_host PRIVATE PLATFORM_WINDOWS NOMINMAX WIN32_LEAN_AND_MEAN)
-elseif(APPLE)
-    target_compile_definitions(papi_test_host PRIVATE PLATFORM_MAC)
-else()
-    target_link_libraries(papi_test_host PRIVATE pthread dl)
-    target_compile_definitions(papi_test_host PRIVATE PLATFORM_LINUX)
-endif()
+# papi_test_host   : loads the pesapi addon (PesapiBackend.hpp)
+# papi_test_host_v8: the addon sources are linked into the host and built with PUERTS_BINDING_IMPL=v8_impl (V8Backend.hpp),
+#                    the same test.js runs against both bindings
+add_executable(papi_test_host ${HOST_SOURCES})
+add_executable(papi_test_host_v8 ${HOST_SOURCES}
+    addon/hello.cc
+    addon/TestClass.cc
+    addon/AdvanceTestClass.cc
+)
+target_include_directories(papi_test_host_v8 PRIVATE addon)
+target_compile_definitions(papi_test_host_v8 PRIVATE PAPI_TEST_STATIC_BINDING PUERTS_BINDING_IMPL=v8_impl)
+
+foreach(HOST papi_test_host papi_test_host_v8)
+    target_include_directories(${HOST} PRIVATE ${JSENV_DIR}/Public ${JSENV_DIR}/Private ${V8_ROOT}/Inc)
+    target_link_libraries(${HOST} PRIVATE ${V8_LIB})
+
+    if(WIN32)
+        target_link_libraries(${HOST} PRIVATE winmm.lib dbghelp.lib shlwapi.lib)
+        target_compile_definitions(${HOST} PRIVATE PLATFORM_WINDOWS NOMINMAX WIN32_LEAN_AND_MEAN)
+    elseif(APPLE)
+        target_compile_definitions(${HOST} PRIVATE PLATFORM_MAC)
+    else()
+        target_link_libraries(${HOST} PRIVATE pthread dl)
+        target_compile_definitions(${HOST} PRIVATE PLATFORM_LINUX)
+    endif()
+endforeach()
 
 add_dependencies(papi_test_host hello)
 
 enable_testing()
 add_test(NAME papi_test
     COMMAND papi_test_host $<TARGET_FILE:hello> ${CMAKE_CURRENT_SOURCE_DIR}/test.js
+)
+add_test(NAME papi_test_v8
+    COMMAND papi_test_host_v8 static ${CMAKE_CURRENT_SOURCE_DIR}/test.js
 )
