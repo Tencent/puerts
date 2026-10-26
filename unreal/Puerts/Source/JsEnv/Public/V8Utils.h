@@ -16,6 +16,7 @@
 #include "DataTransfer.h"
 #include "UECompatible.h"
 #include "ArgType.h"
+#include "PString.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -311,7 +312,26 @@ public:
         return true;
     }
 };
+
+// ---------------------------------------------------------------- v8 addons
+// A v8 addon registers a function that fills the exports with v8 api, it is loaded by require(Name) (see
+// FPapiBackendV8::LoadAddon). Addons are registered by static initializers of each module, not bound to a class registry.
+// The pesapi based module (PUERTS_PESAPI_MODULE in ScriptBackend.hpp) works with every script engine and is recommended.
+typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
+
+JSENV_API AddonRegisterFunc FindAddonRegisterFunc(const PString& Name);
+
+JSENV_API void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 }    // namespace PUERTS_NAMESPACE
+
+#define PUERTS_MODULE(Name, RegFunc)                           \
+    static struct FAutoRegisterFor##Name                       \
+    {                                                          \
+        FAutoRegisterFor##Name()                               \
+        {                                                      \
+            PUERTS_NAMESPACE::RegisterAddon(#Name, (RegFunc)); \
+        }                                                      \
+    } _AutoRegisterFor##Name
 
 #define CHECK_V8_ARGS_LEN(Length)                     \
     if (!FV8Utils::CheckArgumentLength(Info, Length)) \

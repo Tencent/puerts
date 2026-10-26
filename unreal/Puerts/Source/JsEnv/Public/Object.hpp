@@ -8,8 +8,9 @@
 
 #pragma once
 
+#include "BindingImpl.h"
 #include "PesapiObject.hpp"
-#if !defined(BUILDING_PES_EXTENSION)
+#if !PUERTS_BINDING_IS_PESAPI
 #include "V8Object.hpp"
 #endif
 

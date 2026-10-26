@@ -86,25 +86,6 @@ bool IsEditorOnlyUFunction(const UFunction* Func)
     return false;
 }
 
-// v8 addons (PUERTS_MODULE) are registered by static initializers of each module, they are not bound to a class registry
-static std::map<PString, AddonRegisterFunc>& GetAddonRegisterInfos()
-{
-    static std::map<PString, AddonRegisterFunc> S_AddonRegisterInfos;
-    return S_AddonRegisterInfos;
-}
-
-void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
-{
-    GetAddonRegisterInfos()[Name] = RegisterFunc;
-}
-
-AddonRegisterFunc FindAddonRegisterFunc(const PString& Name)
-{
-    auto& AddonRegisterInfos = GetAddonRegisterInfos();
-    auto Iter = AddonRegisterInfos.find(Name);
-    return Iter == AddonRegisterInfos.end() ? nullptr : Iter->second;
-}
-
 const JSClassDefinition* FindClassByType(UStruct* Type)
 {
     return FindClassByType(GetDefaultClassRegistry(), Type);

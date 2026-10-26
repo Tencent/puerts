@@ -12,29 +12,14 @@
 #error "PES_EXTENSION_WITH_V8_API is no longer supported, the pesapi based extension can only use the pesapi backend"
 #endif
 
-#if defined(BUILDING_PES_EXTENSION)
+#include "BindingImpl.h"
+
 #include "PesapiBackend.hpp"
-#else
-// inside the unreal plugin both backends are available, V8Backend.hpp is still used by the plugin internals (and can be
-// selected for the template binding by defining PUERTS_BINDING_IMPL as v8_impl), PesapiBackend.hpp is the default one
+#if !PUERTS_BINDING_IS_PESAPI
+// the v8_impl binding (only when PUERTS_BINDING_IMPL is defined as v8_impl, not available in a pesapi addon)
 #include "V8Backend.hpp"
-#include "PesapiBackend.hpp"
 #endif
 #include "Object.hpp"
-
-#ifndef PUERTS_BINDING_IMPL
-#define PUERTS_BINDING_IMPL pesapi_impl
-#define PUERTS_BINDING_IS_PESAPI 1
-#endif
-
-// PUERTS_BINDING_IMPL defined by user without PUERTS_BINDING_IS_PESAPI: only v8_impl is supported besides pesapi_impl
-#ifndef PUERTS_BINDING_IS_PESAPI
-#define PUERTS_BINDING_IS_PESAPI 0
-#endif
-
-#if defined(BUILDING_PES_EXTENSION) && !PUERTS_BINDING_IS_PESAPI
-#error "the pesapi based extension can only use the pesapi backend"
-#endif
 
 #define PUERTS_BINDING_API ::PUERTS_NAMESPACE::PUERTS_BINDING_IMPL::API
 
@@ -179,7 +164,8 @@
 //  - linked into the host (pesapi_impl or v8_impl binding, selected by PUERTS_BINDING_IMPL): the initializer is called during
 //    static initialization and the classes are registered into the default registry of the host.
 // In both cases the script name of a class is "<modname>.<class>".
-#define PUERTS_MODULE(modname, initfunc)                                                                                       \
+// Not to be confused with the legacy PUERTS_MODULE(Name, RegFunc) of v8 addons (V8Utils.h), whose RegFunc takes v8 handles.
+#define PUERTS_PESAPI_MODULE(modname, initfunc)                                                                                \
     static void PUERTS_PESAPI_MODULE_INITIALIZER_##modname(struct pesapi_registry_api* registry_api, pesapi_registry registry) \
     {                                                                                                                          \
         ::PUERTS_NAMESPACE::pesapi_impl::SetRegistry(registry_api, registry);                                                  \
@@ -187,7 +173,7 @@
     }                                                                                                                          \
     PESAPI_MODULE(modname, PUERTS_PESAPI_MODULE_INITIALIZER_##modname)
 #else
-#define PUERTS_MODULE(modname, initfunc)                                               \
+#define PUERTS_PESAPI_MODULE(modname, initfunc)                                        \
     namespace                                                                          \
     {                                                                                  \
     struct PuertsModuleRegister_##modname                                              \
@@ -203,9 +189,6 @@
     PuertsModuleRegister_##modname PuertsModuleRegisterInstance_##modname;             \
     }
 #endif
-
-// kept for the addons written before PUERTS_MODULE
-#define PUERTS_PESAPI_MODULE(modname, initfunc) PUERTS_MODULE(modname, initfunc)
 
 namespace PUERTS_NAMESPACE
 {

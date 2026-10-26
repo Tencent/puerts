@@ -61,4 +61,4 @@ static void Init()
 
 // the same for all builds: a pesapi addon (papi_test_host), or linked into the host with the pesapi_impl binding
 // (papi_test_host_static) or the v8_impl binding (papi_test_host_v8)
-PUERTS_MODULE(hello, Init)
+PUERTS_PESAPI_MODULE(hello, Init)

@@ -15,6 +15,7 @@
 #include "PapiV8PromiseReject.h"
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
+#include "V8Utils.h"
 #include "PapiEnvScope.h"
 #include "PString.h"
 #include "V8InspectorImpl.h"

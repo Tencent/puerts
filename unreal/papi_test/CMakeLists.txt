@@ -83,7 +83,7 @@ set(HOST_SOURCES
     ${JSENV_DIR}/Private/DataTransfer.cpp
 )
 
-# the addon sources (hello.cc uses PUERTS_MODULE) are the same for all hosts, only the build options differ:
+# the addon sources (hello.cc uses PUERTS_PESAPI_MODULE) are the same for all hosts, only the build options differ:
 # papi_test_host        : loads them as a pesapi addon (BUILDING_PES_EXTENSION, PesapiBackend.hpp)
 # papi_test_host_static : links them into the host with the default pesapi_impl binding (PesapiBackend.hpp)
 # papi_test_host_v8     : links them into the host with PUERTS_BINDING_IMPL=v8_impl (V8Backend.hpp)

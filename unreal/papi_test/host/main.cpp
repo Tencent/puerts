@@ -79,7 +79,7 @@ static void LoadAddon(const v8::FunctionCallbackInfo<v8::Value>& Info)
     std::string Path = ToStdString(Isolate, Info[0]);
     std::string ModuleName = ToStdString(Isolate, Info[1]);
 #if defined(PAPI_TEST_LINKED_MODULE)
-    // the module is linked into this host, PUERTS_MODULE registered its classes during static initialization
+    // the module is linked into this host, PUERTS_PESAPI_MODULE registered its classes during static initialization
     return;
 #endif
     void* Handle = OpenLibrary(Path.c_str());

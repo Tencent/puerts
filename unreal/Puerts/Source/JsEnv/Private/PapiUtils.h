@@ -13,6 +13,7 @@
 #include "NamespaceDef.h"
 #include "pesapi.h"
 #include "PapiDataTransfer.h"
+#include "UECompatible.h"
 #include "ArgType.h"
 #include "ObjectMapper.h"
 #include <initializer_list>

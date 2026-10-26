@@ -1,4 +1,5 @@
 #include <V8Utils.h>
+#include <map>
 
 v8::Local<v8::String> puerts::FV8Utils::ToV8String(v8::Isolate* Isolate, const TCHAR* String)
 {
@@ -39,3 +40,24 @@ FString puerts::FV8Utils::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> V
     return TEXT("");
 #endif
 }
+namespace PUERTS_NAMESPACE
+{
+// v8 addons (PUERTS_MODULE) are registered by static initializers of each module, they are not bound to a class registry
+static std::map<PString, AddonRegisterFunc>& GetAddonRegisterInfos()
+{
+    static std::map<PString, AddonRegisterFunc> S_AddonRegisterInfos;
+    return S_AddonRegisterInfos;
+}
+
+void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
+{
+    GetAddonRegisterInfos()[Name] = RegisterFunc;
+}
+
+AddonRegisterFunc FindAddonRegisterFunc(const PString& Name)
+{
+    auto& AddonRegisterInfos = GetAddonRegisterInfos();
+    auto Iter = AddonRegisterInfos.find(Name);
+    return Iter == AddonRegisterInfos.end() ? nullptr : Iter->second;
+}
+}    // namespace PUERTS_NAMESPACE

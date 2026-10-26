@@ -12,15 +12,11 @@
 
 #if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
-
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #else
 #define JSENV_API
-#define FORCEINLINE V8_INLINE
+#ifndef FORCEINLINE
+#define FORCEINLINE inline
+#endif
 #define UPTRINT uintptr_t
 #endif
 
@@ -211,12 +207,6 @@ JSENV_API const JSClassDefinition* FindCppTypeClassByName(const PString& Name);
 JSENV_API bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
 
 #if USING_IN_UNREAL_ENGINE
-typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
-
-AddonRegisterFunc FindAddonRegisterFunc(const PString& Name);
-
-void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
-
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
 // module internal: the process wide definitions of reflected classes (UClass / UScriptStruct, keyed by their FStructWrapper)
@@ -230,12 +220,3 @@ JSENV_API bool IsEditorOnlyUFunction(const UFunction* Func);
 #endif
 
 }    // namespace PUERTS_NAMESPACE
-
-#define PUERTS_MODULE(Name, RegFunc)                           \
-    static struct FAutoRegisterFor##Name                       \
-    {                                                          \
-        FAutoRegisterFor##Name()                               \
-        {                                                      \
-            PUERTS_NAMESPACE::RegisterAddon(#Name, (RegFunc)); \
-        }                                                      \
-    } _AutoRegisterFor##Name

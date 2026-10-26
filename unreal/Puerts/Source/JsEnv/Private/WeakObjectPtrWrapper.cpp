@@ -42,7 +42,7 @@ void FWeakObjectPtrWrapper::Make(struct pesapi_ffi* Apis, pesapi_callback_info I
         pesapi_value Arg = Apis->get_arg(Info, 0);
         if (Apis->is_object(Env, Arg))
         {
-            Object = DataTransfer::GetUObjectOfNativePtr(Apis->get_native_object_ptr(Env, Arg), true);
+            Object = PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_object_ptr(Env, Arg), true);
         }
     }
     if (Object == RELEASED_UOBJECT)
