@@ -10,7 +10,7 @@
 
 #include "ScriptBackend.hpp"
 #include "PesapiBackend.hpp"
-#include "DataTransfer.h"
+#include "PapiDataTransfer.h"
 #include "ArrayBuffer.h"
 #include "UECompatible.h"
 #include "PuertsNamespaceDef.h"
@@ -120,249 +120,6 @@ struct TSharedPtrExtension
 
 namespace PUERTS_NAMESPACE
 {
-namespace v8_impl
-{
-class TCharStringHolder
-{
-public:
-    TCharStringHolder()
-    {
-    }
-
-    TCharStringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value)
-    {
-        Str = FV8Utils::ToFString(context->GetIsolate(), value);
-    }
-
-    const TCHAR* Data() const
-    {
-        return *Str;
-    }
-
-private:
-    FString Str;
-};
-
-template <>
-struct CustomArgumentBufferType<const TCHAR*>
-{
-    using type = TCharStringHolder;
-    static constexpr bool enable = true;
-};
-
-template <>
-struct Converter<FString>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FString value)
-    {
-        return FV8Utils::ToV8String(context->GetIsolate(), value);
-    }
-
-    static FString toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return FV8Utils::ToFString(context->GetIsolate(), value);
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsString();
-    }
-};
-
-template <>
-struct Converter<FName>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FName value)
-    {
-        return FV8Utils::ToV8String(context->GetIsolate(), value.ToString());
-    }
-
-    static FName toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        if (value->IsArrayBuffer())
-        {
-            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-            size_t ByteLength;
-            auto Data = DataTransfer::GetArrayBufferData(Ab, ByteLength);
-            if (ByteLength == sizeof(FName))
-            {
-                return *static_cast<FName*>(Data);
-            }
-        }
-        return FV8Utils::ToFName(context->GetIsolate(), value);
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsString();
-    }
-};
-
-template <>
-struct Converter<const TCHAR*>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const TCHAR* value)
-    {
-        return FV8Utils::ToV8String(context->GetIsolate(), value);
-    }
-
-    static TCharStringHolder toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return TCharStringHolder(context, value);
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsString();
-    }
-};
-
-#ifndef PUERTS_FTEXT_AS_OBJECT
-template <>
-struct Converter<FText>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FText value)
-    {
-        return FV8Utils::ToV8String(context->GetIsolate(), value.ToString());
-    }
-
-    static FText toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return FText::FromString(FV8Utils::ToFString(context->GetIsolate(), value));
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsString();
-    }
-};
-#endif
-
-template <>
-struct Converter<FArrayBuffer>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBuffer value)
-    {
-        return DataTransfer::NewArrayBuffer(context, value.Data, value.Length);
-    }
-
-    static FArrayBuffer toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        FArrayBuffer Ret = {nullptr, 0};
-        if (value->IsArrayBufferView())
-        {
-            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
-            auto Ab = BuffView->Buffer();
-            Ret.Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
-            Ret.Length = BuffView->ByteLength();
-        }
-        else if (value->IsArrayBuffer())
-        {
-            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-            size_t ByteLength;
-            Ret.Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab, ByteLength));
-            Ret.Length = ByteLength;
-        }
-        return Ret;
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsArrayBuffer() || value->IsArrayBufferView();
-    }
-};
-
-template <>
-struct Converter<FArrayBufferValue>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBufferValue& value)
-    {
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(context->GetIsolate(), value.Data.Num());
-        void* Buff = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
-        ::memcpy(Buff, value.Data.GetData(), value.Data.Num());
-        return Ab;
-    }
-
-    static FArrayBufferValue toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        FArrayBufferValue Ret;
-        size_t Len = 0;
-        void* Data = nullptr;
-        if (value->IsArrayBufferView())
-        {
-            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
-            auto Ab = BuffView->Buffer();
-            Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
-            Len = BuffView->ByteLength();
-        }
-        else if (value->IsArrayBuffer())
-        {
-            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-            Data = DataTransfer::GetArrayBufferData(Ab, Len);
-        }
-        if (Len > 0 && Data)
-        {
-            Ret.Data.AddUninitialized(Len);
-            ::memcpy(Ret.Data.GetData(), Data, Len);
-        }
-
-        return Ret;
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsArrayBuffer() || value->IsArrayBufferView();
-    }
-};
-
-template <typename T>
-struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObject*>::value>::type>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
-    {
-        using TypeWithoutConst = typename std::remove_const<T>::type;
-        return DataTransfer::FindOrAddObject<TypeWithoutConst>(context->GetIsolate(), context, (TypeWithoutConst*) (value));
-    }
-
-    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        // a released / pending kill UObject (or a non-UObject wrapper) is returned as nullptr
-        UObject* Ret = DataTransfer::GetUObjectOfWrapper(value.As<v8::Object>());
-        return V8_LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(Ret) : nullptr;
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        if (value.As<v8::Object>()->IsNullOrUndefined())
-            return true;
-        return DataTransfer::IsInstanceOf(context->GetIsolate(), T::StaticClass(), value.As<v8::Object>());
-    }
-};
-
-template <typename T>
-struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObject*>::value &&
-                                             std::is_convertible<T*, const UObjectBase*>::value>::type>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
-    {
-        return DataTransfer::FindOrAddObject<UObject>(context->GetIsolate(), context, static_cast<UObject*>(value));
-    }
-
-    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        // pending kill objects are still accessible through UObjectBase (the same as before)
-        UObject* Ret = DataTransfer::GetUObjectOfWrapper(value.As<v8::Object>(), true);
-        return V8_LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(static_cast<UObjectBase*>(Ret)) : nullptr;
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return DataTransfer::IsInstanceOf(context->GetIsolate(), UObject::StaticClass(), value.As<v8::Object>());
-    }
-};
-
-}    // namespace v8_impl
-
 template <>
 struct ScriptTypeName<FString>
 {
@@ -515,62 +272,6 @@ struct IsUStructHelper<T, Void_t<decltype(&TScriptStructTraits<T>::Get)>> : std:
 };
 }    // namespace internal
 
-namespace v8_impl
-{
-template <typename T>
-struct Converter<T*, typename std::enable_if<!std::is_const<T>::value && !std::is_convertible<T*, const UObject*>::value &&
-                                             internal::IsUStructHelper<T>::value>::type>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T* value)
-    {
-        return DataTransfer::FindOrAddStruct<T>(context->GetIsolate(), context, (void*) value, true);
-    }
-
-    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return DataTransfer::IsInstanceOf<T>(context->GetIsolate(), value.As<v8::Object>());
-    }
-};
-
-template <typename T>
-struct Converter<const T*,
-    typename std::enable_if<!std::is_convertible<T*, const UObject*>::value && internal::IsUStructHelper<T>::value>::type>
-    : Converter<T*>
-{
-};
-
-template <typename T>
-struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T value)
-    {
-        return DataTransfer::FindOrAddStruct<T>(context->GetIsolate(), context, new T(value), false);
-    }
-
-    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        T* ptr = DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
-        return ptr ? *ptr : T{};
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return DataTransfer::IsInstanceOf<T>(context->GetIsolate(), value.As<v8::Object>());
-    }
-};
-
-template <typename T>
-struct Converter<const T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : Converter<T>
-{
-};
-
-}    // namespace v8_impl
-
 template <typename T>
 struct ScriptTypeName<const T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : ScriptTypeName<T>
 {
@@ -579,29 +280,8 @@ struct ScriptTypeName<const T, typename std::enable_if<internal::IsUStructHelper
 #if PUERTS_PESAPI_IN_UE_PLUGIN
 namespace pesapi_impl
 {
-// Converters of UE types for the pesapi backend. Inside the plugin pesapi_value/pesapi_env are reinterpreted v8 handles
-// (see PapiV8Bridge.h), so they just delegate to the v8_impl converters above with no extra overhead and the same behavior.
-template <typename T>
-struct V8DelegateConverter
-{
-    template <typename U>
-    static pesapi_value toScript(PApiCallbackEnv env, U&& value)
-    {
-        return papi_bridge::ToPapi(
-            v8::Local<v8::Value>(v8_impl::Converter<T>::toScript(papi_bridge::ToV8(env.env), std::forward<U>(value))));
-    }
-
-    static decltype(auto) toCpp(PApiCallbackEnv env, pesapi_value value)
-    {
-        return v8_impl::Converter<T>::toCpp(papi_bridge::ToV8(env.env), papi_bridge::ToV8(value));
-    }
-
-    static bool accept(PApiCallbackEnv env, pesapi_value value)
-    {
-        return v8_impl::Converter<T>::accept(papi_bridge::ToV8(env.env), papi_bridge::ToV8(value));
-    }
-};
-
+// Converters of UE types for the pesapi backend, the same behavior as the v8_impl ones (see UEDataBindingV8.h). UObjects and
+// UStructs are mapped by the IObjectMapper of the host (the env private), see PapiDataTransfer.h.
 class TCharStringHolder
 {
 public:
@@ -611,7 +291,7 @@ public:
 
     TCharStringHolder(PApiCallbackEnv env, pesapi_value value)
     {
-        Str = FV8Utils::ToFString(papi_bridge::IsolateOf(env.env), papi_bridge::ToV8(value));
+        Str = PapiDataTransfer::ToFString(env.apis, env.env, value);
     }
 
     const TCHAR* Data() const
@@ -631,13 +311,52 @@ struct CustomArgumentBufferType<const TCHAR*>
 };
 
 template <>
-struct Converter<FString> : V8DelegateConverter<FString>
+struct Converter<FString>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, const FString& value)
+    {
+        return PapiDataTransfer::FromFString(env.apis, env.env, value);
+    }
+
+    static FString toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        return PapiDataTransfer::ToFString(env.apis, env.env, value);
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return env.apis->is_string(env.env, value) != 0;
+    }
 };
 
 template <>
-struct Converter<FName> : V8DelegateConverter<FName>
+struct Converter<FName>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, FName value)
+    {
+        return PapiDataTransfer::FromFString(env.apis, env.env, value.ToString());
+    }
+
+    static FName toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        // a FName passed by value (ArrayBuffer of sizeof(FName)), only a plain ArrayBuffer (a view has a buffer property)
+        if (env.apis->is_binary(env.env, value) &&
+            env.apis->is_undefined(env.env, env.apis->get_property(env.env, value, "buffer")))
+        {
+            size_t ByteLength = 0;
+            void* Data = env.apis->get_value_binary(env.env, value, &ByteLength);
+            if (ByteLength == sizeof(FName))
+            {
+                return *static_cast<FName*>(Data);
+            }
+        }
+        return FName(*PapiDataTransfer::ToFString(env.apis, env.env, value));
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return env.apis->is_string(env.env, value) != 0;
+    }
 };
 
 template <>
@@ -645,7 +364,9 @@ struct Converter<const TCHAR*>
 {
     static pesapi_value toScript(PApiCallbackEnv env, const TCHAR* value)
     {
-        return papi_bridge::ToPapi(v8::Local<v8::Value>(FV8Utils::ToV8String(papi_bridge::IsolateOf(env.env), value)));
+        static_assert(sizeof(TCHAR) == sizeof(uint16_t), "TCHAR must be UTF-16");
+        return env.apis->create_string_utf16(
+            env.env, reinterpret_cast<const uint16_t*>(value ? value : TEXT("")), value ? FCString::Strlen(value) : 0);
     }
 
     static TCharStringHolder toCpp(PApiCallbackEnv env, pesapi_value value)
@@ -661,31 +382,145 @@ struct Converter<const TCHAR*>
 
 #ifndef PUERTS_FTEXT_AS_OBJECT
 template <>
-struct Converter<FText> : V8DelegateConverter<FText>
+struct Converter<FText>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, const FText& value)
+    {
+        return PapiDataTransfer::FromFString(env.apis, env.env, value.ToString());
+    }
+
+    static FText toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        return FText::FromString(PapiDataTransfer::ToFString(env.apis, env.env, value));
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return env.apis->is_string(env.env, value) != 0;
+    }
 };
 #endif
 
 template <>
-struct Converter<FArrayBuffer> : V8DelegateConverter<FArrayBuffer>
+struct Converter<FArrayBuffer>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, FArrayBuffer value)
+    {
+        return env.apis->create_binary(env.env, value.Data, value.Length);
+    }
+
+    static FArrayBuffer toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        FArrayBuffer Ret = {nullptr, 0};
+        size_t Len = 0;
+        void* Data = env.apis->get_value_binary(env.env, value, &Len);
+        if (Data)
+        {
+            Ret.Data = Data;
+            Ret.Length = Len;
+        }
+        return Ret;
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return env.apis->is_binary(env.env, value) != 0;
+    }
 };
 
 template <>
-struct Converter<FArrayBufferValue> : V8DelegateConverter<FArrayBufferValue>
+struct Converter<FArrayBufferValue>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, FArrayBufferValue& value)
+    {
+        return env.apis->create_binary_by_value(env.env, value.Data.GetData(), value.Data.Num());
+    }
+
+    static FArrayBufferValue toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        FArrayBufferValue Ret;
+        size_t Len = 0;
+        void* Data = env.apis->get_value_binary(env.env, value, &Len);
+        if (Len > 0 && Data)
+        {
+            Ret.Data.AddUninitialized(Len);
+            ::memcpy(Ret.Data.GetData(), Data, Len);
+        }
+        return Ret;
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return env.apis->is_binary(env.env, value) != 0;
+    }
 };
 
-// UObject and UObjectBase derived (both const and non-const)
+// UObject derived (both const and non-const)
 template <typename T>
-struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObjectBase*>::value>::type> : V8DelegateConverter<T*>
+struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObject*>::value>::type>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, T* value)
+    {
+        using TypeWithoutConst = typename std::remove_const<T>::type;
+        return PapiDataTransfer::FindOrAddObject<TypeWithoutConst>(env.apis, env.env, (TypeWithoutConst*) (value));
+    }
+
+    static T* toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        // a released / pending kill UObject (or a non-UObject wrapper) is returned as nullptr
+        UObject* Ret = PapiDataTransfer::GetUObjectOfNativePtr(env.apis->get_native_object_ptr(env.env, value));
+        return LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(Ret) : nullptr;
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        if (env.apis->is_null(env.env, value) || env.apis->is_undefined(env.env, value))
+            return true;
+        return PapiDataTransfer::IsInstanceOf(env.apis, env.env, T::StaticClass(), value);
+    }
+};
+
+// UObjectBase derived but not UObject derived
+template <typename T>
+struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObject*>::value &&
+                                             std::is_convertible<T*, const UObjectBase*>::value>::type>
+{
+    static pesapi_value toScript(PApiCallbackEnv env, T* value)
+    {
+        return PapiDataTransfer::FindOrAddObject<UObject>(env.apis, env.env, static_cast<UObject*>(value));
+    }
+
+    static T* toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        // pending kill objects are still accessible through UObjectBase (the same as before)
+        UObject* Ret = PapiDataTransfer::GetUObjectOfNativePtr(env.apis->get_native_object_ptr(env.env, value), true);
+        return LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(static_cast<UObjectBase*>(Ret)) : nullptr;
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return PapiDataTransfer::IsInstanceOf(env.apis, env.env, UObject::StaticClass(), value);
+    }
 };
 
 template <typename T>
 struct Converter<T*, typename std::enable_if<!std::is_const<T>::value && !std::is_convertible<T*, const UObject*>::value &&
-                                             internal::IsUStructHelper<T>::value>::type> : V8DelegateConverter<T*>
+                                             internal::IsUStructHelper<T>::value>::type>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, const T* value)
+    {
+        return PapiDataTransfer::FindOrAddStruct<T>(env.apis, env.env, (void*) value, true);
+    }
+
+    static T* toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        return static_cast<T*>(env.apis->get_native_object_ptr(env.env, value));
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return PapiDataTransfer::IsInstanceOf<T>(env.apis, env.env, value);
+    }
 };
 
 template <typename T>
@@ -696,8 +531,23 @@ struct Converter<const T*,
 };
 
 template <typename T>
-struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> : V8DelegateConverter<T>
+struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type>
 {
+    static pesapi_value toScript(PApiCallbackEnv env, const T value)
+    {
+        return PapiDataTransfer::FindOrAddStruct<T>(env.apis, env.env, new T(value), false);
+    }
+
+    static T toCpp(PApiCallbackEnv env, pesapi_value value)
+    {
+        T* ptr = static_cast<T*>(env.apis->get_native_object_ptr(env.env, value));
+        return ptr ? *ptr : T{};
+    }
+
+    static bool accept(PApiCallbackEnv env, pesapi_value value)
+    {
+        return PapiDataTransfer::IsInstanceOf<T>(env.apis, env.env, value);
+    }
 };
 
 template <typename T>
@@ -711,7 +561,9 @@ struct SelfChecker<T, typename std::enable_if<std::is_convertible<T*, const UObj
 {
     static T* Get(PApiCallbackEnv env, pesapi_callback_info info)
     {
-        return v8_impl::Converter<T*>::toCpp(papi_bridge::ToV8(env.env), papi_bridge::HolderOf(info));
+        UObject* Ret = PapiDataTransfer::GetUObjectOfNativePtr(
+            env.apis->get_native_holder_ptr(info), !std::is_convertible<T*, const UObject*>::value);
+        return LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(static_cast<UObjectBase*>(Ret)) : nullptr;
     }
 };
 }    // namespace pesapi_impl
@@ -722,4 +574,8 @@ struct SelfChecker<T, typename std::enable_if<std::is_convertible<T*, const UObj
 #ifdef PUERTS_FTEXT_AS_OBJECT
 // FText is bound as a cpp object (registered in UEExtension.cpp), it is used by the generated wrappers too (e.g. FVector::ToText)
 UsingCppType(FText);
+#endif
+
+#if !PUERTS_BINDING_IS_PESAPI
+#include "UEDataBindingV8.h"
 #endif

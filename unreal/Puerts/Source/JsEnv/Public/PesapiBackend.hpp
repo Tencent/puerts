@@ -16,8 +16,8 @@
 #include "pesapi.h"
 #include "TypeInfo.hpp"
 
-// Inside the unreal plugin (JsEnv and the modules depending on it, not a pesapi addon), the pesapi implementation is v8impl,
-// classes are registered into the plugin registry directly and UE types (UStruct/UClass) can be handled through PapiV8Bridge.h.
+// Inside the unreal plugin (JsEnv and the modules depending on it, not a pesapi addon), classes are registered into the plugin
+// registry directly and UE types (UStruct/UClass) are handled through the IObjectMapper of the host (see PapiDataTransfer.h).
 #if defined(USING_IN_UNREAL_ENGINE) && !defined(BUILDING_PES_EXTENSION)
 #define PUERTS_PESAPI_IN_UE_PLUGIN 1
 #else
@@ -26,8 +26,7 @@
 
 #if PUERTS_PESAPI_IN_UE_PLUGIN
 #include "JSClassRegister.h"
-#include "DataTransfer.h"
-#include "PapiV8Bridge.h"
+#include "PapiDataTransfer.h"
 #endif
 
 #define __DefObjectType_pesapi_impl(CLS)              \
@@ -239,7 +238,7 @@ struct API
     {
 #if PUERTS_PESAPI_IN_UE_PLUGIN
         // the holder may be a UStruct/UObject whose type id is not a registered c++ type id, link the holder object itself
-        LinkOuterImpl(papi_bridge::ToV8(env.env), papi_bridge::HolderOf(info), papi_bridge::ToV8(inner));
+        PapiDataTransfer::LinkOuter(env.apis, env.env, env.apis->get_this(info), inner);
 #else
         auto outer_ptr = env.apis->get_native_holder_ptr(info);
         auto outer_type_id = env.apis->get_native_holder_typeid(info);
