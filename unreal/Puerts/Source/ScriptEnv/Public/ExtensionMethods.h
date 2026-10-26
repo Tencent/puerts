@@ -9,19 +9,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/Blueprint.h"
-#include "TypeScriptBlueprint.generated.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "ExtensionMethods.generated.h"
 
 /**
  *
  */
 UCLASS()
-class JSENV_API UTypeScriptBlueprint : public UBlueprint
+class SCRIPTENV_API UExtensionMethods : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
-
-public:
-#if WITH_EDITOR
-    virtual UClass* GetBlueprintClass() const override;
-#endif
 };

@@ -6,6 +6,9 @@
  * which is part of this source code package.
  */
 
+// This copy stays here for the unity build (unity/native/papi-*/CMakeLists.txt), ue compiles the one in PapiV8.
+#if !defined(PUERTS_JSENV_SKIP_UNITY_SHARED_SOURCES)
+
 // TODO: 静态库11.8 window调试崩溃
 
 #if defined(UE_GAME) || defined(UE_EDITOR) || defined(UE_SERVER) || defined(USING_IN_UNREAL_ENGINE)
@@ -609,3 +612,5 @@ V8Inspector* CreateV8Inspector(int32_t Port, void* InContextPtr)
 };    // namespace PUERTS_NAMESPACE
 
 #endif    // WITH_EDITOR && (PLATFORM_WINDOWS || PLATFORM_MAC)
+
+#endif    // !PUERTS_JSENV_SKIP_UNITY_SHARED_SOURCES

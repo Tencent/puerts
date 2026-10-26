@@ -59,7 +59,7 @@ public:
 // default value. It holds a papi value reference only, so it does not depend on the script engine (the v8::Local based
 // helpers are in JsObjectV8.h).
 USTRUCT(BlueprintType)
-struct JSENV_API FJsObject
+struct SCRIPTENV_API FJsObject
 {
 public:
     GENERATED_USTRUCT_BODY()

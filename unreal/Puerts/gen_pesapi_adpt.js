@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require("path");
 
-const pesapi_header_path = path.resolve(__dirname, 'Source/JsEnv/Public/pesapi.h')
+const pesapi_header_path = path.resolve(__dirname, 'Source/ScriptEnv/Public/pesapi.h')
 
 var lines = fs.readFileSync(pesapi_header_path, 'utf8').split(/[\n\r]/);
 var funcIndex = 0;

@@ -7,89 +7,35 @@
  */
 
 #include "JsEnv.h"
-#include "JsEnvImpl.h"
+#include "JsEnvGroup.h"
 #include "PapiBackendV8.h"
 
 namespace PUERTS_NAMESPACE
 {
-FJsEnv::FJsEnv(const FString& ScriptRoot)
+FJsEnv::FJsEnv(const FString& ScriptRoot) : FScriptEnv(&FPapiBackendV8::Create, ScriptRoot)
 {
-    GameScript = std::make_unique<FJsEnvImpl>(&FPapiBackendV8::Create, ScriptRoot);
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
     std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
     void* InExternalContext)
+    : FScriptEnv(&FPapiBackendV8::Create, std::move(InModuleLoader), InLogger, InDebugPort, InOnSourceLoadedCallback, InFlags,
+          InExternalRuntime, InExternalContext)
 {
-    GameScript = std::make_unique<FJsEnvImpl>(&FPapiBackendV8::Create, std::move(InModuleLoader), InLogger, InDebugPort,
-        InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext);
-}
-
-void FJsEnv::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments)
-{
-    GameScript->Start(ModuleName, Arguments);
-}
-
-bool FJsEnv::IdleNotificationDeadline(double DeadlineInSeconds)
-{
-    return GameScript->IdleNotificationDeadline(DeadlineInSeconds);
-}
-
-void FJsEnv::LowMemoryNotification()
-{
-    GameScript->LowMemoryNotification();
-}
-
-void FJsEnv::RequestMinorGarbageCollectionForTesting()
-{
-    GameScript->RequestMinorGarbageCollectionForTesting();
-}
-
-void FJsEnv::RequestFullGarbageCollectionForTesting()
-{
-    GameScript->RequestFullGarbageCollectionForTesting();
-}
-
-void FJsEnv::WaitDebugger(double timeout)
-{
-    GameScript->WaitDebugger(timeout);
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnv::TryBindJs(const class UObjectBase* InObject)
+FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot) : FScriptEnvGroup(&FPapiBackendV8::Create, Size, ScriptRoot)
 {
-    GameScript->TryBindJs(InObject);
 }
 
-void FJsEnv::RebindJs()
+FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
+    int InDebugStartPort, std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags,
+    void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::move(InModuleLoader), InLogger, InDebugStartPort,
+          InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext)
 {
-    GameScript->RebindJs();
 }
 #endif
-
-FString FJsEnv::CurrentStackTrace()
-{
-    return GameScript->CurrentStackTrace();
-}
-
-void FJsEnv::InitExtensionMethodsMap()
-{
-    GameScript->InitExtensionMethodsMap();
-}
-
-void FJsEnv::ReloadModule(FName ModuleName, const FString& JsSource)
-{
-    GameScript->ReloadModule(ModuleName, JsSource);
-}
-
-void FJsEnv::ReloadSource(const FString& Path, const PString& JsSource)
-{
-    GameScript->ReloadSource(Path, JsSource);
-}
-
-void FJsEnv::OnSourceLoaded(std::function<void(const FString&)> Callback)
-{
-    GameScript->OnSourceLoaded(Callback);
-}
 
 }    // namespace PUERTS_NAMESPACE

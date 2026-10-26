@@ -7,9 +7,8 @@
  */
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "JsEnvGroup.h"
-#include "JsEnvImpl.h"
-#include "PapiBackendV8.h"
+#include "ScriptEnvGroup.h"
+#include "ScriptEnvImpl.h"
 #include "TsDynamicInvoker.h"
 #include "DynamicInvoker.h"
 #include "PuertsNamespaceDef.h"
@@ -19,7 +18,7 @@ namespace PUERTS_NAMESPACE
 class FGroupDynamicInvoker : public ITsDynamicInvoker, public IDynamicInvoker
 {
 public:
-    FGroupDynamicInvoker(std::vector<FJsEnvImpl*> InJsEnvs) : JsEnvs(InJsEnvs)
+    FGroupDynamicInvoker(std::vector<FScriptEnvImpl*> InJsEnvs) : JsEnvs(InJsEnvs)
     {
     }
 
@@ -83,7 +82,7 @@ public:
     }
 #endif
 
-    std::vector<FJsEnvImpl*> JsEnvs;
+    std::vector<FScriptEnvImpl*> JsEnvs;
 
     std::function<int(UObject*, int)> Selector;
 
@@ -92,36 +91,36 @@ public:
     }
 };
 
-FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot)
+FScriptEnvGroup::FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, const FString& ScriptRoot)
 {
     check(Size > 1);
     for (int i = 0; i < Size; i++)
     {
-        JsEnvList.push_back(std::make_shared<FJsEnvImpl>(&FPapiBackendV8::Create, ScriptRoot));
+        JsEnvList.push_back(std::make_shared<FScriptEnvImpl>(InBackendFactory, ScriptRoot));
     }
     Init();
 }
 
-FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
-    int InDebugStartPort, std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags,
-    void* InExternalRuntime, void* InExternalContext)
+FScriptEnvGroup::FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+    std::shared_ptr<ILogger> InLogger, int InDebugStartPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
+    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
     check(Size > 1);
     std::shared_ptr<IJSModuleLoader> SharedModuleLoader = std::move(InModuleLoader);
     for (int i = 0; i < Size; i++)
     {
-        JsEnvList.push_back(std::make_shared<FJsEnvImpl>(&FPapiBackendV8::Create, SharedModuleLoader, InLogger,
-            InDebugStartPort + i, InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext));
+        JsEnvList.push_back(std::make_shared<FScriptEnvImpl>(InBackendFactory, SharedModuleLoader, InLogger, InDebugStartPort + i,
+            InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext));
     }
     Init();
 }
 
-void FJsEnvGroup::Init()
+void FScriptEnvGroup::Init()
 {
-    std::vector<FJsEnvImpl*> JsEnvs;
+    std::vector<FScriptEnvImpl*> JsEnvs;
     for (int i = 0; i < JsEnvList.size(); i++)
     {
-        JsEnvs.push_back(static_cast<FJsEnvImpl*>(JsEnvList[i].get()));
+        JsEnvs.push_back(static_cast<FScriptEnvImpl*>(JsEnvList[i].get()));
     }
     auto GroupDynamicInvoker = MakeShared<FGroupDynamicInvoker, ESPMode::ThreadSafe>(JsEnvs);
     for (int i = 0; i < JsEnvs.size(); i++)
@@ -131,12 +130,12 @@ void FJsEnvGroup::Init()
     }
 }
 
-FJsEnvGroup::~FJsEnvGroup()
+FScriptEnvGroup::~FScriptEnvGroup()
 {
     JsEnvList.clear();
 }
 
-void FJsEnvGroup::TryBindJs(const class UObjectBase* InObject)
+void FScriptEnvGroup::TryBindJs(const class UObjectBase* InObject)
 {
     for (int i = 0; i < JsEnvList.size(); i++)
     {
@@ -144,7 +143,7 @@ void FJsEnvGroup::TryBindJs(const class UObjectBase* InObject)
     }
 }
 
-void FJsEnvGroup::RebindJs()
+void FScriptEnvGroup::RebindJs()
 {
     for (int i = 0; i < JsEnvList.size(); i++)
     {
@@ -152,7 +151,7 @@ void FJsEnvGroup::RebindJs()
     }
 }
 
-void FJsEnvGroup::InitExtensionMethodsMap()
+void FScriptEnvGroup::InitExtensionMethodsMap()
 {
     for (int i = 0; i < JsEnvList.size(); i++)
     {
@@ -160,7 +159,7 @@ void FJsEnvGroup::InitExtensionMethodsMap()
     }
 }
 
-void FJsEnvGroup::ReloadModule(FName ModuleName, const FString& JsSource)
+void FScriptEnvGroup::ReloadModule(FName ModuleName, const FString& JsSource)
 {
     for (int i = 0; i < JsEnvList.size(); i++)
     {
@@ -168,14 +167,14 @@ void FJsEnvGroup::ReloadModule(FName ModuleName, const FString& JsSource)
     }
 }
 
-std::shared_ptr<IJsEnv> FJsEnvGroup::Get(int Index)
+std::shared_ptr<IScriptEnv> FScriptEnvGroup::Get(int Index)
 {
     return JsEnvList[Index];
 }
 
-void FJsEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)
+void FScriptEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)
 {
-    auto DynamicInvoker = static_cast<FJsEnvImpl*>(JsEnvList[0].get())->TsDynamicInvoker;
+    auto DynamicInvoker = static_cast<FScriptEnvImpl*>(JsEnvList[0].get())->TsDynamicInvoker;
     if (DynamicInvoker.IsValid())
     {
         static_cast<FGroupDynamicInvoker*>(DynamicInvoker.Get())->Selector = InSelector;

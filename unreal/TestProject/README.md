@@ -29,7 +29,7 @@ What `RunTests.ps1` does:
 
 Do not pass `-NoShaderCompile`: on UE 5.8 the editor dereferences null shader compiler stats during init and crashes.
 
-Because the plugin is built in place, `JsEnv.Build.cs` copies `Content/` and `Typing/` to `<plugin>/../../`, i.e. the repository root. Those folders are ignored in the root `.gitignore`.
+Because the plugin is built in place, `ScriptEnv.Build.cs` copies `Content/` and `Typing/` to `<plugin>/../../`, i.e. the repository root. Those folders are ignored in the root `.gitignore`.
 
 ## Layout
 

@@ -33,7 +33,7 @@ public:
 
     DECLARE_FUNCTION(execCallMixin);
 
-    // the override of a makeUClass class, mixin functions keep theirs in FJsEnvImpl::MixinFunctionMap
+    // the override of a makeUClass class, mixin functions keep theirs in FScriptEnvImpl::MixinFunctionMap
     PUERTS_NAMESPACE::FPapiValueRef JsFunction;
 
     TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;

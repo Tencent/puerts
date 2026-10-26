@@ -16,7 +16,7 @@
 
 namespace PUERTS_NAMESPACE
 {
-class JSENV_API FSourceFileWatcher
+class SCRIPTENV_API FSourceFileWatcher
 {
 public:
     FSourceFileWatcher(std::function<void(const FString&)> InOnWatchedFileChanged);

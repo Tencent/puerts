@@ -28,6 +28,7 @@ public class PuertsEditor : ModuleRules
                 "InputCore",
                 "Projects",
                 "JsEnv",
+                "ScriptEnv",
                 "Puerts",
                 "DirectoryWatcher",
                 "AssetRegistry",

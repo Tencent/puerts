@@ -9,14 +9,22 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
-#include "ExtensionMethods.generated.h"
+#include "Modules/ModuleInterface.h"
+#include "Modules/ModuleManager.h"
 
-/**
- *
- */
-UCLASS()
-class JSENV_API UExtensionMethods : public UBlueprintFunctionLibrary
+// the v8 backend: owns the v8 platform and registers the v8 pesapi implementation
+class IPapiV8Module : public IModuleInterface
 {
-    GENERATED_BODY()
+public:
+    static inline IPapiV8Module& Get()
+    {
+        return FModuleManager::LoadModuleChecked<IPapiV8Module>("PapiV8");
+    }
+
+    static inline bool IsAvailable()
+    {
+        return FModuleManager::Get().IsModuleLoaded("PapiV8");
+    }
+
+    virtual void* GetV8Platform() = 0;
 };

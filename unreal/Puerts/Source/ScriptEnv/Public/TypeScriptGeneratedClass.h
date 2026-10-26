@@ -28,7 +28,7 @@ struct PendingConstructJobInfo
  *
  */
 UCLASS()
-class JSENV_API UTypeScriptGeneratedClass : public UBlueprintGeneratedClass
+class SCRIPTENV_API UTypeScriptGeneratedClass : public UBlueprintGeneratedClass
 {
     GENERATED_BODY()
 

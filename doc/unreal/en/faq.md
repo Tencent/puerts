@@ -251,7 +251,7 @@ This usually comes from illegal characters (unsupported by TS) in Blueprint path
 If this happens **occasionally** (not always), it’s likely due to multi-threaded access to `FJsEnv`.
 
 **Solution:**  
-Add `THREAD_SAFE` macro to `JsEnv.Build.cs`.
+Add `THREAD_SAFE` macro to `ScriptEnv.Build.cs`.
 
 **Note:**
 - On V8 backend, this resolves multi-threading issues.

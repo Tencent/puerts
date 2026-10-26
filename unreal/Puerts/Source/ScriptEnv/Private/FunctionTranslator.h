@@ -126,7 +126,7 @@ private:
     void Init(UFunction* InFunction, bool IsDelegate);
 
     friend class FStructWrapper;
-    friend class FJsEnvImpl;
+    friend class FScriptEnvImpl;
 };
 
 class FExtensionMethodTranslator : public FFunctionTranslator

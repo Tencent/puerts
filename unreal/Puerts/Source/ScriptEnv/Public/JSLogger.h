@@ -12,11 +12,11 @@
 
 #include "CoreMinimal.h"
 
-JSENV_API DECLARE_LOG_CATEGORY_EXTERN(Puerts, Log, All);
+SCRIPTENV_API DECLARE_LOG_CATEGORY_EXTERN(Puerts, Log, All);
 
 namespace PUERTS_NAMESPACE
 {
-class JSENV_API ILogger
+class SCRIPTENV_API ILogger
 {
 public:
     virtual void Log(const FString& Message) const = 0;
@@ -25,7 +25,7 @@ public:
     virtual void Error(const FString& Message) const = 0;
 };
 
-class JSENV_API FDefaultLogger : public ILogger
+class SCRIPTENV_API FDefaultLogger : public ILogger
 {
 public:
     virtual ~FDefaultLogger()

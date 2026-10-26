@@ -28,7 +28,7 @@ public:
     }
 };
 
-class JSENV_API DefaultJSModuleLoader : public IJSModuleLoader
+class SCRIPTENV_API DefaultJSModuleLoader : public IJSModuleLoader
 {
 public:
     explicit DefaultJSModuleLoader(const FString& InScriptRoot) : ScriptRoot(InScriptRoot)

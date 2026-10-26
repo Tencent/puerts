@@ -20,7 +20,7 @@
 
 namespace PUERTS_NAMESPACE
 {
-class JSENV_API FV8Utils
+class PAPIV8_API FV8Utils
 {
 public:
     FORCEINLINE static void ThrowException(v8::Isolate* Isolate, const FString& Message)
@@ -319,9 +319,9 @@ public:
 // The pesapi based module (PUERTS_PESAPI_MODULE in ScriptBackend.hpp) works with every script engine and is recommended.
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
-JSENV_API AddonRegisterFunc FindAddonRegisterFunc(const PString& Name);
+PAPIV8_API AddonRegisterFunc FindAddonRegisterFunc(const PString& Name);
 
-JSENV_API void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
+PAPIV8_API void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 }    // namespace PUERTS_NAMESPACE
 
 #define PUERTS_MODULE(Name, RegFunc)                           \

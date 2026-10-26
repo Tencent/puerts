@@ -47,4 +47,4 @@ nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases)
 
 解压到`YouProject/Plugins/Puerts/ThirdParty`
 
-修改[JsEnv.Build.cs](https://github.com/Tencent/puerts/blob/master/unreal/Puerts/Source/JsEnv/JsEnv.Build.cs) ，UseQuickjs为true表示用quickjs后端，UseNodejs表示用nodejs后端。
+修改[PapiV8.Build.cs](https://github.com/Tencent/puerts/blob/master/unreal/Puerts/Source/PapiV8/PapiV8.Build.cs) ，UseQuickjs为true表示用quickjs后端，UseNodejs表示用nodejs后端。

@@ -26,7 +26,7 @@ class Isolate;
 
 namespace PUERTS_NAMESPACE
 {
-class JSENV_API FObjectRetainer : public FGCObject
+class SCRIPTENV_API FObjectRetainer : public FGCObject
 {
 public:
     void Retain(UObject* Object);

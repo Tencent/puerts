@@ -6,7 +6,7 @@
  * which is part of this source code package.
  */
 
-#include "JsEnvImpl.h"
+#include "ScriptEnvImpl.h"
 #include "DynamicDelegateProxy.h"
 #include "Misc/FileHelper.h"
 #include "Dom/JsonObject.h"
@@ -66,8 +66,8 @@ namespace PUERTS_NAMESPACE
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
-FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot)
-    : FJsEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
+FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot)
+    : FScriptEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
           std::make_shared<FDefaultLogger>(), -1, nullptr, FString(), nullptr, nullptr)
 {
 }
@@ -142,7 +142,7 @@ static void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 }
 
 #if defined(WITH_NODEJS)
-void FJsEnvImpl::StartPolling()
+void FScriptEnvImpl::StartPolling()
 {
     uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
     uv_sem_init(&PollingSem, 0);
@@ -150,7 +150,7 @@ void FJsEnvImpl::StartPolling()
         &PollingThread,
         [](void* arg)
         {
-            auto* self = static_cast<FJsEnvImpl*>(arg);
+            auto* self = static_cast<FScriptEnvImpl*>(arg);
             while (true)
             {
                 uv_sem_wait(&self->PollingSem);
@@ -195,7 +195,7 @@ void FJsEnvImpl::StartPolling()
     UvRunOnce();
 }
 
-void FJsEnvImpl::UvRunOnce()
+void FScriptEnvImpl::UvRunOnce()
 {
     FPapiEnvScope EnvScope(MainApis, MainEnvRef);
 
@@ -216,7 +216,7 @@ void FJsEnvImpl::UvRunOnce()
     uv_sem_post(&PollingSem);
 }
 
-void FJsEnvImpl::PollEvents()
+void FScriptEnvImpl::PollEvents()
 {
 #if PLATFORM_WINDOWS
     DWORD bytes;
@@ -266,20 +266,20 @@ void FJsEnvImpl::PollEvents()
 #endif
 }
 
-void FJsEnvImpl::OnWatcherQueueChanged(uv_loop_t* loop)
+void FScriptEnvImpl::OnWatcherQueueChanged(uv_loop_t* loop)
 {
 #if !PLATFORM_WINDOWS
-    FJsEnvImpl* self = static_cast<FJsEnvImpl*>(loop->data);
+    FScriptEnvImpl* self = static_cast<FScriptEnvImpl*>(loop->data);
     self->WakeupPollingThread();
 #endif
 }
 
-void FJsEnvImpl::WakeupPollingThread()
+void FScriptEnvImpl::WakeupPollingThread()
 {
     uv_async_send(&DummyUVHandle);
 }
 
-void FJsEnvImpl::StopPolling()
+void FScriptEnvImpl::StopPolling()
 {
     PollingClosed = true;
 
@@ -299,7 +299,7 @@ void FJsEnvImpl::StopPolling()
 
 #endif
 
-FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
     std::shared_ptr<ILogger> InLogger, int InDebugPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
     const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
@@ -422,48 +422,48 @@ FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJS
         pesapi_value PapiPuertsObj = Apis->create_object(Env);
         Apis->set_property(Env, PapiGlobal, "puerts", PapiPuertsObj);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::LoadModule>::Bind(Apis, Env, PapiPuertsObj, "loadModule", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::LoadModule>::Bind(Apis, Env, PapiPuertsObj, "loadModule", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Apis, Env, PapiPuertsObj, "loadCPPType", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::LoadCppType>::Bind(Apis, Env, PapiPuertsObj, "loadCPPType", this);
 
         PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &GetFNameString);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Apis, Env, PapiGlobal, "__tgjsUEClassToJSClass", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::UEClassToJSClass>::Bind(Apis, Env, PapiGlobal, "__tgjsUEClassToJSClass", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::NewContainer>::Bind(Apis, Env, PapiGlobal, "__tgjsNewContainer", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::NewContainer>::Bind(Apis, Env, PapiGlobal, "__tgjsNewContainer", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::MergeObject>::Bind(Apis, Env, PapiGlobal, "__tgjsMergeObject", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::MergeObject>::Bind(Apis, Env, PapiGlobal, "__tgjsMergeObject", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Apis, Env, PapiGlobal, "__tgjsNewStruct", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::NewStructByScriptStruct>::Bind(Apis, Env, PapiGlobal, "__tgjsNewStruct", this);
 
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        PapiMethodBindingHelper<&FJsEnvImpl::MakeUClass>::Bind(Apis, Env, PapiGlobal, "__tgjsMakeUClass", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::MakeUClass>::Bind(Apis, Env, PapiGlobal, "__tgjsMakeUClass", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
 #endif
 
         //#if !defined(WITH_NODEJS)
-        PapiMethodBindingHelper<&FJsEnvImpl::SetTimeout>::Bind(Apis, Env, PapiGlobal, "setTimeout", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::SetTimeout>::Bind(Apis, Env, PapiGlobal, "setTimeout", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearTimeout", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearTimeout", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::SetInterval>::Bind(Apis, Env, PapiGlobal, "setInterval", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::SetInterval>::Bind(Apis, Env, PapiGlobal, "setInterval", this);
 
-        PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearInterval", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearInterval", this);
         //#endif
 
-        PapiMethodBindingHelper<&FJsEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
-        PapiMethodBindingHelper<&FJsEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &FNameToArrayBuffer);
 
         PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &ToCString);
@@ -484,12 +484,12 @@ FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJS
 #endif
         Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiUtils::FromFString(Apis, Env, DllExt));
 
-        PapiMethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(
+        PapiMethodBindingHelper<&FScriptEnvImpl::ReleaseManualReleaseDelegate>::Bind(
             Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
 
         // the host part of the module system: resolving and loading the source, the rest is done by the backend
-        PapiMethodBindingHelper<&FJsEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
-        PapiMethodBindingHelper<&FJsEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
+        PapiMethodBindingHelper<&FScriptEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
 #if defined(WITH_NODEJS)
         {
             // saved before the backend replaces it with the require of puerts
@@ -535,7 +535,7 @@ FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJS
     }
 
     DelegateProxiesCheckerHandler =
-        FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
+        FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FScriptEnvImpl::CheckDelegateProxies), 1);
 
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
@@ -555,7 +555,7 @@ FJsEnvImpl::FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJS
 }
 
 // #lizard forgives
-FJsEnvImpl::~FJsEnvImpl()
+FScriptEnvImpl::~FScriptEnvImpl()
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -674,7 +674,7 @@ FJsEnvImpl::~FJsEnvImpl()
     GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 }
 
-void FJsEnvImpl::OnEnvReleased()
+void FScriptEnvImpl::OnEnvReleased()
 {
     // the bindings are freed by the finalizer of their classes in CppObjectMapper.UnInitialize, the rest (whose class is not
     // found) are freed here
@@ -726,7 +726,7 @@ void FJsEnvImpl::OnEnvReleased()
 #endif
 }
 
-void FJsEnvImpl::InitExtensionMethodsMap()
+void FScriptEnvImpl::InitExtensionMethodsMap()
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -738,7 +738,7 @@ void FJsEnvImpl::InitExtensionMethodsMap()
     FStructWrapper::InitExtensionMethodsMap();
 }
 
-std::unique_ptr<FJsEnvImpl::ObjectMerger>& FJsEnvImpl::GetObjectMerger(UStruct* Struct)
+std::unique_ptr<FScriptEnvImpl::ObjectMerger>& FScriptEnvImpl::GetObjectMerger(UStruct* Struct)
 {
     if (ObjectMergers.find(Struct) == ObjectMergers.end())
     {
@@ -747,12 +747,12 @@ std::unique_ptr<FJsEnvImpl::ObjectMerger>& FJsEnvImpl::GetObjectMerger(UStruct* 
     return ObjectMergers[Struct];
 }
 
-void FJsEnvImpl::Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
+void FScriptEnvImpl::Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
 {
     GetObjectMerger(DesType)->Merge(MainApis, Env, Src, Des);
 }
 
-void FJsEnvImpl::ObjectMerger::Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsObject, void* Ptr)
+void FScriptEnvImpl::ObjectMerger::Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsObject, void* Ptr)
 {
     if (auto Class = Cast<UClass>(Struct))
     {
@@ -828,7 +828,7 @@ void FJsEnvImpl::ObjectMerger::Merge(struct pesapi_ffi* Apis, pesapi_env Env, pe
     }
 }
 
-void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgObject, EArgObject);
 
@@ -855,7 +855,7 @@ void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     Apis->throw_by_string(Info, "Bad parameters #1, expect a native object.");
 }
 
-void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
     const int ArgsLen = Apis->get_args_len(Info);
@@ -924,7 +924,7 @@ void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info 
     }
 }
 
-void FJsEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
 
@@ -951,12 +951,12 @@ void FJsEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callbac
     }
 }
 
-bool FJsEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
+bool FScriptEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
 {
     return Backend->IdleNotificationDeadline(DeadlineInSeconds);
 }
 
-void FJsEnvImpl::LowMemoryNotification()
+void FScriptEnvImpl::LowMemoryNotification()
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -964,18 +964,18 @@ void FJsEnvImpl::LowMemoryNotification()
     Backend->LowMemoryNotification();
 }
 
-void FJsEnvImpl::RequestMinorGarbageCollectionForTesting()
+void FScriptEnvImpl::RequestMinorGarbageCollectionForTesting()
 {
     Backend->RequestMinorGarbageCollectionForTesting();
 }
 
-void FJsEnvImpl::RequestFullGarbageCollectionForTesting()
+void FScriptEnvImpl::RequestFullGarbageCollectionForTesting()
 {
     Backend->RequestFullGarbageCollectionForTesting();
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnvImpl::FinishInjection(UClass* InClass)
+void FScriptEnvImpl::FinishInjection(UClass* InClass)
 {
     while (InClass && !InClass->IsNative())
     {
@@ -993,7 +993,7 @@ void FJsEnvImpl::FinishInjection(UClass* InClass)
     }
 }
 
-void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject, bool RebindObject)
+void FScriptEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject, bool RebindObject)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1060,7 +1060,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
     }
 }
 
-void FJsEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_scope Scope,
+void FScriptEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_scope Scope,
     UTypeScriptGeneratedClass* TypeScriptGeneratedClass, UTypeScriptGeneratedClass* SuperClass, const FString& ModuleName,
     bool PrototypeLinked, bool RebindObject)
 {
@@ -1275,7 +1275,7 @@ void FJsEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_s
 }
 #endif
 
-pesapi_value FJsEnvImpl::GetCachedJsFunction(
+pesapi_value FScriptEnvImpl::GetCachedJsFunction(
     struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path)
 {
     if (Cache)
@@ -1290,7 +1290,7 @@ pesapi_value FJsEnvImpl::GetCachedJsFunction(
     return Func;
 }
 
-void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
+void FScriptEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1319,7 +1319,7 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
     }
 }
 
-void FJsEnvImpl::CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args)[3])
+void FScriptEnvImpl::CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args)[3])
 {
     struct pesapi_ffi* Apis = MainApis;
     pesapi_env Env = EnvScope.GetEnv();
@@ -1330,7 +1330,7 @@ void FJsEnvImpl::CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args
     }
 }
 
-void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
+void FScriptEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1339,7 +1339,7 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
     JsHotReload(ModuleName, JsSource);
 }
 
-void FJsEnvImpl::ReloadSource(const FString& Path, const PString& JsSource)
+void FScriptEnvImpl::ReloadSource(const FString& Path, const PString& JsSource)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1357,13 +1357,13 @@ void FJsEnvImpl::ReloadSource(const FString& Path, const PString& JsSource)
     CallReloadJs(EnvScope, Args);
 }
 
-void FJsEnvImpl::OnSourceLoaded(std::function<void(const FString&)> Callback)
+void FScriptEnvImpl::OnSourceLoaded(std::function<void(const FString&)> Callback)
 {
     OnSourceLoadedCallback = Callback;
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
+void FScriptEnvImpl::TryBindJs(const class UObjectBase* InObject)
 {
     UObjectBaseUtility* Object = static_cast<UObjectBaseUtility*>(const_cast<UObjectBase*>(InObject));
 
@@ -1431,7 +1431,7 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
     }
 }
 
-void FJsEnvImpl::RebindJs()
+void FScriptEnvImpl::RebindJs()
 {
     FPapiEnvScope EnvScope(MainApis, MainEnvRef);
     if (!EnvScope)
@@ -1519,12 +1519,12 @@ void FJsEnvImpl::RebindJs()
 }
 #endif
 
-FString FJsEnvImpl::CurrentStackTrace()
+FString FScriptEnvImpl::CurrentStackTrace()
 {
     return Backend->CurrentStackTrace();
 }
 
-bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
+bool FScriptEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
 {
     while (Class)
     {
@@ -1538,7 +1538,7 @@ bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
     return false;
 }
 
-void* FJsEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject)
+void* FScriptEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject)
 {
     // called by FClassWrapper::New, JSObject is the object being constructed
     auto Class = static_cast<UClass*>(ClassWrapper->Struct.Get());
@@ -1546,7 +1546,7 @@ void* FJsEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEO
     return AddBinding(Env, ClassWrapper, GetTemplateInfoOfType(Env, Class, Existed)->IsNativeTakeJsRef, UEObject, JSObject);
 }
 
-FJsEnvImpl::FUObjectBinding* FJsEnvImpl::AddBinding(
+FScriptEnvImpl::FUObjectBinding* FScriptEnvImpl::AddBinding(
     pesapi_env Env, FClassWrapper* ClassWrapper, bool ClassIsNativeTakeJsRef, UObject* UEObject, pesapi_value& JSObject)
 {
 #if PUERTS_KEEP_UOBJECT_REFERENCE
@@ -1580,7 +1580,7 @@ FJsEnvImpl::FUObjectBinding* FJsEnvImpl::AddBinding(
     return Binding;
 }
 
-void FJsEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
+void FScriptEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
 {
     if (auto BindingPtr = ObjectMap.Find(UEObject))
     {
@@ -1589,7 +1589,7 @@ void FJsEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
     }
 }
 
-void FJsEnvImpl::OnBindingFinalize(FUObjectHandle* Handle)
+void FScriptEnvImpl::OnBindingFinalize(FUObjectHandle* Handle)
 {
     // the wrapper is garbage collected (or the env is disposed)
     auto Binding = static_cast<FUObjectBinding*>(Handle);
@@ -1610,7 +1610,7 @@ void FJsEnvImpl::OnBindingFinalize(FUObjectHandle* Handle)
     delete Binding;
 }
 
-void FJsEnvImpl::UnBind(UObject* UEObject)
+void FScriptEnvImpl::UnBind(UObject* UEObject)
 {
     FUObjectBinding* Binding = nullptr;
     if (ObjectMap.RemoveAndCopyValue(UEObject, Binding))
@@ -1625,7 +1625,7 @@ void FJsEnvImpl::UnBind(UObject* UEObject)
     }
 }
 
-pesapi_value FJsEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial)
+pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial)
 {
     if (!UEObject)
     {
@@ -1651,7 +1651,7 @@ pesapi_value FJsEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObj
     return Result;
 }
 
-pesapi_value FJsEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
+pesapi_value FScriptEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
     struct pesapi_ffi* Apis = MainApis;
     if (!Ptr)
@@ -1677,7 +1677,7 @@ pesapi_value FJsEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptSt
     return Apis->native_object_to_value(Env, static_cast<FStructWrapper*>(Wrapper), Ptr, !PassByPointer);
 }
 
-pesapi_value FJsEnvImpl::FindOrAddDelegate(
+pesapi_value FScriptEnvImpl::FindOrAddDelegate(
     pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {
     check(DelegatePtr);    // must not null
@@ -1736,7 +1736,7 @@ pesapi_value FJsEnvImpl::FindOrAddDelegate(
     }
 }
 
-pesapi_value FJsEnvImpl::CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr)
+pesapi_value FScriptEnvImpl::CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr)
 {
     // a fixed size array is a view of its outer, never cached
     auto Holder = new FContainerHolder{ArrayPtr, FFixSizeArrayWrapper::GetClassDefinition()->TypeId, Property, nullptr,
@@ -1744,7 +1744,7 @@ pesapi_value FJsEnvImpl::CreateArray(pesapi_env Env, FPropertyTranslator* Proper
     return MainApis->native_object_to_value(Env, Holder->TypeId, Holder, true);
 }
 
-void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params)
+void FScriptEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1802,7 +1802,7 @@ void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Para
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype)
+void FScriptEnvImpl::JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1845,7 +1845,7 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Co
     Apis->close_scope_placement(Scope);
 }
 
-void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
+void FScriptEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 {
 #ifndef THREAD_SAFE
     if (!IsInGameThread())
@@ -1944,7 +1944,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 }
 #endif
 
-void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32 Index)
+void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32 Index)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1982,7 +1982,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     }
 }
 
-void FJsEnvImpl::TryReleaseType(UStruct* Struct)
+void FScriptEnvImpl::TryReleaseType(UStruct* Struct)
 {
     TypeToTemplateInfoMap.Remove(Struct);
 }
@@ -2028,7 +2028,7 @@ static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
+void FScriptEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -2074,7 +2074,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Fu
     Apis->close_scope_placement(Scope);
 }
 
-void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
+void FScriptEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -2106,7 +2106,7 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
     Apis->close_scope_placement(Scope);
 }
 
-void FJsEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object, const bool TypeScriptClassFound)
+void FScriptEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object, const bool TypeScriptClassFound)
 {
     if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
     {
@@ -2119,7 +2119,7 @@ void FJsEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object, const bool Ty
     }
 }
 
-void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM)
+void FScriptEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -2176,7 +2176,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
     }
 }
 
-void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
+void FScriptEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
     struct pesapi_ffi* Apis = MainApis;
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
@@ -2226,7 +2226,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 }
 #endif
 
-void FJsEnvImpl::ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
+void FScriptEnvImpl::ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
 {
     struct pesapi_ffi* Apis = MainApis;
     auto Iter = DelegateMap.find(DelegatePtr);
@@ -2270,7 +2270,7 @@ void FJsEnvImpl::ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void
 
 static FName NAME_Fire("Fire");
 
-bool FJsEnvImpl::AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
+bool FScriptEnvImpl::AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
     struct pesapi_ffi* Apis = MainApis;
     // UE_LOG(LogTemp, Warning, TEXT("add delegate proxy"));
@@ -2394,7 +2394,7 @@ bool FJsEnvImpl::AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value J
     return true;
 }
 
-PropertyMacro* FJsEnvImpl::FindDelegateProperty(void* DelegatePtr)
+PropertyMacro* FScriptEnvImpl::FindDelegateProperty(void* DelegatePtr)
 {
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
@@ -2411,7 +2411,7 @@ static pesapi_value CallJsMapMethod(
     return Apis->call_function(Env, Apis->get_property(Env, Map, Method), Map, Argc, Argv);
 }
 
-FScriptDelegate FJsEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
+FScriptDelegate FScriptEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
 {
     struct pesapi_ffi* Apis = MainApis;
     UDynamicDelegateProxy* DelegateProxy = nullptr;
@@ -2471,7 +2471,7 @@ FScriptDelegate FJsEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_v
     return Delegate;
 }
 
-void FJsEnvImpl::ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgFunction);
 
@@ -2491,7 +2491,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesapi_ca
     }
 }
 
-bool FJsEnvImpl::RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
+bool FScriptEnvImpl::RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
     struct pesapi_ffi* Apis = MainApis;
     auto Iter = DelegateMap.find(DelegatePtr);
@@ -2552,7 +2552,7 @@ bool FJsEnvImpl::RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_va
     return true;
 }
 
-bool FJsEnvImpl::ClearDelegate(pesapi_env Env, void* DelegatePtr)
+bool FScriptEnvImpl::ClearDelegate(pesapi_env Env, void* DelegatePtr)
 {
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
@@ -2595,7 +2595,7 @@ bool FJsEnvImpl::ClearDelegate(pesapi_env Env, void* DelegatePtr)
     return true;
 }
 
-bool FJsEnvImpl::CheckDelegateProxies(float Tick)
+bool FScriptEnvImpl::CheckDelegateProxies(float Tick)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -2651,7 +2651,7 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
     return true;
 }
 
-FPropertyTranslator* FJsEnvImpl::GetContainerPropertyTranslator(PropertyMacro* Property)
+FPropertyTranslator* FScriptEnvImpl::GetContainerPropertyTranslator(PropertyMacro* Property)
 {
     auto Iter = ContainerPropertyMap.find(Property);
     // TODO: 如果脚本一直持有蓝图里头的Map，还是有可能有问题的，需要统筹考虑一套机制解决这类问题
@@ -2673,7 +2673,7 @@ FPropertyTranslator* FJsEnvImpl::GetContainerPropertyTranslator(PropertyMacro* P
     }
 }
 
-pesapi_value FJsEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr,
+pesapi_value FScriptEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr,
     PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, bool PassByPointer)
 {
     check(Ptr);    // must not null
@@ -2698,7 +2698,7 @@ pesapi_value FJsEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDefinit
     return Apis->native_object_to_value(Env, Holder->TypeId, Holder, true);
 }
 
-bool FJsEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
+bool FScriptEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
 {
     UScriptStruct* Struct = Wrapper->Struct.IsValid() ? Cast<UScriptStruct>(Wrapper->Struct.Get()) : nullptr;
     return Struct && (Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
@@ -2706,25 +2706,25 @@ bool FJsEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
 
 // the deleter of a pod struct whose memory is freed with its js object (may be called on a gc thread of the backend, safe
 // for pod), FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the env
-void FJsEnvImpl::FreeTriviallyFreedStruct(void* Ptr, size_t Size, void* DeleterData)
+void FScriptEnvImpl::FreeTriviallyFreedStruct(void* Ptr, size_t Size, void* DeleterData)
 {
     FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
     FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Ptr);
 }
 
-bool FJsEnvImpl::TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr)
+bool FScriptEnvImpl::TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr)
 {
     // not cached, the type id is the wrapper
     return IsTriviallyFreed(Wrapper) && Backend->BindTriviallyFreedObject(Info, static_cast<FStructWrapper*>(Wrapper), Ptr,
                                             Wrapper->Struct->GetStructureSize(), &FreeTriviallyFreedStruct, Wrapper);
 }
 
-std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
+std::shared_ptr<FStructWrapper> FScriptEnvImpl::GetStructWrapper(UStruct* InStruct)
 {
     return FStructWrapper::FindOrAdd(InStruct);
 }
 
-FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(pesapi_env Env, UStruct* InStruct, bool& Existed)
+FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env Env, UStruct* InStruct, bool& Existed)
 {
     auto TemplateInfoPtr = TypeToTemplateInfoMap.Find(InStruct);
     if (!TemplateInfoPtr)
@@ -2840,7 +2840,7 @@ static const char* FNameFixingProxyFactory = R"((function (fixName) {
     return proxy;
 }))";
 
-void FJsEnvImpl::InstallFNameFixing(pesapi_env Env, pesapi_value Class)
+void FScriptEnvImpl::InstallFNameFixing(pesapi_env Env, pesapi_value Class)
 {
     struct pesapi_ffi* Apis = MainApis;
     if (!Class)
@@ -2878,7 +2878,7 @@ void FJsEnvImpl::InstallFNameFixing(pesapi_env Env, pesapi_value Class)
     }
 }
 
-pesapi_value FJsEnvImpl::GetJsClass(pesapi_env Env, UStruct* InStruct)
+pesapi_value FScriptEnvImpl::GetJsClass(pesapi_env Env, UStruct* InStruct)
 {
     bool Existed;
     auto TemplateInfo = GetTemplateInfoOfType(Env, InStruct, Existed);
@@ -2917,7 +2917,7 @@ pesapi_value FJsEnvImpl::GetJsClass(pesapi_env Env, UStruct* InStruct)
     return Ret;
 }
 
-bool FJsEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject)
+bool FScriptEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject)
 {
     struct pesapi_ffi* Apis = MainApis;
     if (Cast<UScriptStruct>(Struct))
@@ -2938,7 +2938,7 @@ bool FJsEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsOb
     }
 }
 
-void FJsEnvImpl::OnClassInvalidated(const void* TypeId)
+void FScriptEnvImpl::OnClassInvalidated(const void* TypeId)
 {
     // the UE side caches of the type (keyed by UStruct) are dropped too, so the next use goes through the registry
     for (auto Iter = TypeToTemplateInfoMap.CreateIterator(); Iter; ++Iter)
@@ -2957,7 +2957,7 @@ void FJsEnvImpl::OnClassInvalidated(const void* TypeId)
     }
 }
 
-bool FJsEnvImpl::OnReflectedClassCreated(const JSClassDefinition* ClassDefinition)
+bool FScriptEnvImpl::OnReflectedClassCreated(const JSClassDefinition* ClassDefinition)
 {
     // only reflected classes are named (as before), the rest keep an empty constructor.name
     if (ClassDefinition->Initialize != &FStructWrapper::ReflectedConstruct)
@@ -2987,7 +2987,7 @@ static void SetEnumEntry(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value O
     Apis->set_property(Env, Object, ValueUtf8.Get(), Apis->create_string_utf8(Env, NameUtf8.Get(), NameUtf8.Length()));
 }
 
-pesapi_value FJsEnvImpl::UETypeToJsClass(pesapi_env Env, UField* Type)
+pesapi_value FScriptEnvImpl::UETypeToJsClass(pesapi_env Env, UField* Type)
 {
     struct pesapi_ffi* Apis = MainApis;
     if (const auto Struct = Cast<UStruct>(Type))
@@ -3060,7 +3060,7 @@ pesapi_value FJsEnvImpl::UETypeToJsClass(pesapi_env Env, UField* Type)
     return Apis->create_undefined(Env);
 }
 
-void FJsEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgString);
 
@@ -3114,7 +3114,7 @@ void FJsEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
 }
 
-void FJsEnvImpl::LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgString);
 
@@ -3138,7 +3138,7 @@ void FJsEnvImpl::LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
 }
 
-void FJsEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgObject);
 
@@ -3164,7 +3164,7 @@ void FJsEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info 
     }
 }
 
-void FJsEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgObject);
 
@@ -3179,7 +3179,8 @@ void FJsEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info 
     SetJsTakeRef(Env, Object);
 }
 
-bool FJsEnvImpl::GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr)
+bool FScriptEnvImpl::GetContainerTypeProperty(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr)
 {
     if (Apis->is_int32(Env, Value))
     {
@@ -3204,7 +3205,7 @@ bool FJsEnvImpl::GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env En
     }
 }
 
-void FJsEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgInt32);
 
@@ -3250,7 +3251,7 @@ void FJsEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info
     }
 }
 
-void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments)
+void FScriptEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -3308,7 +3309,7 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
     Started = true;
 }
 
-bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath,
+bool FScriptEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath,
     TArray<uint8>& Data, FString& ErrInfo)
 {
     if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath))
@@ -3327,7 +3328,7 @@ bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName
     return true;
 }
 
-void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
+void FScriptEnvImpl::ExecuteModule(const FString& ModuleName)
 {
     FString OutPath;
     FString DebugPath;
@@ -3373,12 +3374,12 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
     }
 }
 
-pesapi_value FJsEnvImpl::RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName)
+pesapi_value FScriptEnvImpl::RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName)
 {
     return Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", false);
 }
 
-void FJsEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgInt32, EArgString);
 
@@ -3403,7 +3404,7 @@ void FJsEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
 }
 
-void FJsEnvImpl::LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgString);
 
@@ -3447,7 +3448,7 @@ static const TCHAR* ModuleKindOfPath(const FString& Path, bool ByRequire)
 }
 
 // __puer_host_resolve__(specifier, referrer, by): the url (path) of the module, or the name of a builtin module
-void FJsEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgString, EArgString, EArgString);
 
@@ -3574,7 +3575,7 @@ void FJsEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info
 }
 
 // __puer_host_load__(url, by): {kind, content, debugPath}
-void FJsEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgString, EArgString);
 
@@ -3624,14 +3625,14 @@ void FJsEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info In
 }
 #endif
 
-void FJsEnvImpl::SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Apis, Info, false);
 }
 
-void FJsEnvImpl::SetFTickerDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool Continue)
+void FScriptEnvImpl::SetFTickerDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool Continue)
 {
     pesapi_env Env = Apis->get_env(Info);
 
@@ -3655,7 +3656,7 @@ void FJsEnvImpl::SetFTickerDelegate(struct pesapi_ffi* Apis, pesapi_callback_inf
     Apis->add_return(Info, Apis->create_uint32(Env, DelegateHandleId));
 }
 
-bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
+bool FScriptEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -3699,7 +3700,7 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
     return Continue && !ClearInCallback;
 }
 
-void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
+void FScriptEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
 {
     FTimerInfo* PTimeInfo = TimerInfos.Find(DelegateHandleId);
     if (!PTimeInfo)
@@ -3711,7 +3712,7 @@ void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
     TimerInfos.Remove(DelegateHandleId);
 }
 
-void FJsEnvImpl::ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
 
@@ -3733,14 +3734,14 @@ void FJsEnvImpl::ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Inf
     }
 }
 
-void FJsEnvImpl::SetInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::SetInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Apis, Info, true);
 }
 
-void FJsEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
 #ifdef WITH_QUICKJS
     Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), true));
@@ -3750,7 +3751,7 @@ void FJsEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnvImpl::MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgFunction, EArgObject, EArgString, EArgObject, EArgObject);
 
@@ -3838,7 +3839,7 @@ void FJsEnvImpl::MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     Apis->add_return(Info, FindOrAdd(Env, Class->GetClass(), Class));
 }
 
-void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgObject, EArgObject);
 
@@ -3990,7 +3991,7 @@ void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 }
 #endif
 
-void FJsEnvImpl::DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     Logger->Info(Backend->GetStatisticsLog());
 }

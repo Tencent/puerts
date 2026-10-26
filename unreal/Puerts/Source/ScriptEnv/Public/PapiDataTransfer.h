@@ -99,7 +99,7 @@ struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::
 };
 
 // UE value <-> papi value helpers, the env private of the env must be the IObjectMapper of the host
-class JSENV_API PapiDataTransfer
+class SCRIPTENV_API PapiDataTransfer
 {
 public:
     // UObject of the native pointer of a js wrapper (a FUObjectHandle for UObject wrappers, e.g. the result of

@@ -184,7 +184,7 @@ protected:
 
     static void Load(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    friend class FJsEnvImpl;
+    friend class FScriptEnvImpl;
 };
 
 class FScriptStructWrapper : public FStructWrapper

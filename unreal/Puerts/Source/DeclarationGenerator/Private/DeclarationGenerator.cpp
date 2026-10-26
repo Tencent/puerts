@@ -1774,7 +1774,7 @@ public:
     virtual bool ShouldExportClassesForModule(const FString& ModuleName, EBuildModuleType::Type ModuleType, const FString&
 ModuleGeneratedIncludeDirectory) const override
     {
-        return ModuleName != TEXT("JsEnv");
+        return ModuleName != TEXT("ScriptEnv") && ModuleName != TEXT("JsEnv");
     }
 
     virtual void Initialize(const FString& RootLocalPath, const FString& RootBuildPath, const FString& OutputDirectory, const

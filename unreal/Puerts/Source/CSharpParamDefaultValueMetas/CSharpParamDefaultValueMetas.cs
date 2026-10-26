@@ -23,7 +23,7 @@ namespace CSharpParamDefaultValueMetas
     [UnrealHeaderTool]
     class CSharpParamDefaultValueMetas
     {
-        [UhtExporter(Name = "Puerts", Description = "Puerts Default Values Collector", Options = UhtExporterOptions.Default, ModuleName = "JsEnv")]
+        [UhtExporter(Name = "Puerts", Description = "Puerts Default Values Collector", Options = UhtExporterOptions.Default, ModuleName = "ScriptEnv")]
         private static void UnLuaDefaultParamCollectorUbtPluginExporter(IUhtExportFactory factory)
         {
             var paramDefaultValueMetas = new CSharpParamDefaultValueMetas(factory);

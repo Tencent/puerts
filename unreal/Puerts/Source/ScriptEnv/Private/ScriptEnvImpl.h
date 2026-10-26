@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "JsEnv.h"
+#include "ScriptEnv.h"
 #include "DynamicDelegateProxy.h"
 #include "StructWrapper.h"
 #include "ObjectMapper.h"
@@ -58,17 +58,17 @@ public:
     }
 };
 
-class FJsEnvImpl : public IJsEnv, IObjectMapper, public FUObjectArray::FUObjectDeleteListener, public IPapiScriptHost
+class FScriptEnvImpl : public IScriptEnv, IObjectMapper, public FUObjectArray::FUObjectDeleteListener, public IPapiScriptHost
 {
 public:
-    FJsEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot);
+    FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot);
 
     // InExternalRuntime / InExternalContext: the isolate and the context of node, only supported by the node build
-    FJsEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+    FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
         std::shared_ptr<ILogger> InLogger, int InPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
         const FString InFlags, void* InExternalRuntime, void* InExternalContext);
 
-    virtual ~FJsEnvImpl() override;
+    virtual ~FScriptEnvImpl() override;
 
     virtual void Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments) override;
 
@@ -328,9 +328,9 @@ private:
     {
         std::map<PString, std::unique_ptr<FPropertyTranslator>> Fields;
         UStruct* Struct;
-        FJsEnvImpl* Parent;
+        FScriptEnvImpl* Parent;
 
-        ObjectMerger(FJsEnvImpl* InParent, UStruct* InStruct)
+        ObjectMerger(FScriptEnvImpl* InParent, UStruct* InStruct)
         {
             Parent = InParent;
             Struct = InStruct;
@@ -354,7 +354,7 @@ public:
     class TsDynamicInvokerImpl : public ITsDynamicInvoker
     {
     public:
-        TsDynamicInvokerImpl(FJsEnvImpl* InParent) : Parent(InParent)
+        TsDynamicInvokerImpl(FScriptEnvImpl* InParent) : Parent(InParent)
         {
         }
 
@@ -376,7 +376,7 @@ public:
                 Parent->NotifyReBind(Class);
         }
 
-        FJsEnvImpl* Parent;
+        FScriptEnvImpl* Parent;
     };
 
     TSharedPtr<ITsDynamicInvoker, ESPMode::ThreadSafe> TsDynamicInvoker;
@@ -485,7 +485,7 @@ private:
     // UnBind) and moved to ReleasedObjectBindings until then.
     struct FUObjectBinding : FUObjectHandle
     {
-        FJsEnvImpl* Owner = nullptr;
+        FScriptEnvImpl* Owner = nullptr;
 
         // the wrapper, strong if native holds the js object, weak if the js object holds the UObject (SetJsTakeRef), released
         // after the UObject is destroyed
@@ -546,7 +546,7 @@ private:
     class DynamicInvokerImpl : public IDynamicInvoker
     {
     public:
-        DynamicInvokerImpl(FJsEnvImpl* InParent) : Parent(InParent)
+        DynamicInvokerImpl(FScriptEnvImpl* InParent) : Parent(InParent)
         {
         }
 
@@ -576,7 +576,7 @@ private:
                 Parent->InvokeMixinMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 #endif
-        FJsEnvImpl* Parent;
+        FScriptEnvImpl* Parent;
     };
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     struct FBindInfo
@@ -653,7 +653,7 @@ private:
     uint32 BoundThreadId;
 #endif
 
-    typedef void (FJsEnvImpl::*PapiMethodCallback)(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+    typedef void (FScriptEnvImpl::*PapiMethodCallback)(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // binds a member function as a papi function (pesapi create_function), This is passed as the userdata
     template <PapiMethodCallback callback>
@@ -661,11 +661,11 @@ private:
     {
         static void Callback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         {
-            auto Self = static_cast<FJsEnvImpl*>(Apis->get_userdata(Info));
+            auto Self = static_cast<FScriptEnvImpl*>(Apis->get_userdata(Info));
             (Self->*callback)(Apis, Info);
         }
 
-        static void Bind(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, FJsEnvImpl* This)
+        static void Bind(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, FScriptEnvImpl* This)
         {
             Apis->set_property(Env, Obj, Key, Apis->create_function(Env, &Callback, This, nullptr));
         }

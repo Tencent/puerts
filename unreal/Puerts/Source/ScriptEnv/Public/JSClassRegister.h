@@ -13,7 +13,13 @@
 #if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
 #else
+#define SCRIPTENV_API
+#ifndef PAPIV8_API
+#define PAPIV8_API
+#endif
+#ifndef JSENV_API
 #define JSENV_API
+#endif
 #ifndef FORCEINLINE
 #define FORCEINLINE inline
 #endif
@@ -45,7 +51,7 @@ typedef pesapi_finalize JSFinalizeFunc;
 
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
-struct JSENV_API JSFunctionInfo
+struct SCRIPTENV_API JSFunctionInfo
 {
     JSFunctionInfo() : Name(nullptr), Callback(nullptr)
     {
@@ -70,7 +76,7 @@ struct JSENV_API JSFunctionInfo
     const CFunctionInfo* ReflectionInfo = nullptr;
 };
 
-struct JSENV_API JSPropertyInfo
+struct SCRIPTENV_API JSPropertyInfo
 {
     JSPropertyInfo() : Name(nullptr), Getter(nullptr), Setter(nullptr)
     {
@@ -103,7 +109,7 @@ struct JSENV_API JSPropertyInfo
 struct NamedFunctionInfo;
 struct NamedPropertyInfo;
 
-struct JSENV_API JSClassDefinition
+struct SCRIPTENV_API JSClassDefinition
 {
     const void* TypeId;
     const void* SuperTypeId;
@@ -145,71 +151,73 @@ typedef JSClassDefinition ScriptClassDefinition;
 typedef JSFunctionInfo ScriptFunctionInfo;
 typedef JSPropertyInfo ScriptPropertyInfo;
 
-JSENV_API ScriptClassRegistry* GetDefaultClassRegistry();
+SCRIPTENV_API ScriptClassRegistry* GetDefaultClassRegistry();
 
-JSENV_API ScriptClassRegistry* CreateRegistry();
+SCRIPTENV_API ScriptClassRegistry* CreateRegistry();
 
 // the default registry can not be destroyed
-JSENV_API void DestroyRegistry(ScriptClassRegistry* Registry);
+SCRIPTENV_API void DestroyRegistry(ScriptClassRegistry* Registry);
 
-JSENV_API void RegisterScriptClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
+SCRIPTENV_API void RegisterScriptClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
 
-JSENV_API void SetClassTypeInfo(ScriptClassRegistry* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
+SCRIPTENV_API void SetClassTypeInfo(ScriptClassRegistry* Registry, const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
     const NamedFunctionInfo* MethodInfos, const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos,
     const NamedPropertyInfo* VariableInfos);
 
-JSENV_API void ForeachRegisterClass(
+SCRIPTENV_API void ForeachRegisterClass(
     ScriptClassRegistry* Registry, const std::function<void(const ScriptClassDefinition* ClassDefinition)>& Callback);
 
-JSENV_API const ScriptClassDefinition* FindClassByID(ScriptClassRegistry* Registry, const void* TypeId);
+SCRIPTENV_API const ScriptClassDefinition* FindClassByID(ScriptClassRegistry* Registry, const void* TypeId);
 
-JSENV_API void OnClassNotFound(ScriptClassRegistry* Registry, pesapi_class_not_found_callback Callback);
+SCRIPTENV_API void OnClassNotFound(ScriptClassRegistry* Registry, pesapi_class_not_found_callback Callback);
 
-JSENV_API const ScriptClassDefinition* LoadClassByID(ScriptClassRegistry* Registry, const void* TypeId);
+SCRIPTENV_API const ScriptClassDefinition* LoadClassByID(ScriptClassRegistry* Registry, const void* TypeId);
 
-JSENV_API const ScriptClassDefinition* FindCppTypeClassByName(ScriptClassRegistry* Registry, const PString& Name);
+SCRIPTENV_API const ScriptClassDefinition* FindCppTypeClassByName(ScriptClassRegistry* Registry, const PString& Name);
 
-JSENV_API const ScriptClassDefinition* FindCppTypeClassByCName(ScriptClassRegistry* Registry, const char* Name);
+SCRIPTENV_API const ScriptClassDefinition* FindCppTypeClassByCName(ScriptClassRegistry* Registry, const char* Name);
 
-JSENV_API bool TraceObjectLifecycle(
+SCRIPTENV_API bool TraceObjectLifecycle(
     ScriptClassRegistry* Registry, const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
 
 #if USING_IN_UNREAL_ENGINE
-JSENV_API const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type);
+SCRIPTENV_API const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type);
 #endif
 
 // ---------------------------------------------------------------- pesapi entries of the plugin
 // the pesapi function table of the script backend in use, registered by the backend module via SetPesapiFFI
-JSENV_API struct pesapi_ffi* GetPesapiFFI();
+SCRIPTENV_API struct pesapi_ffi* GetPesapiFFI();
 
-JSENV_API void SetPesapiFFI(struct pesapi_ffi* InFFI);
+SCRIPTENV_API void SetPesapiFFI(struct pesapi_ffi* InFFI);
 
-JSENV_API struct pesapi_registry_api* GetPesapiRegistryApi();
+SCRIPTENV_API struct pesapi_registry_api* GetPesapiRegistryApi();
 
 // Same as RegisterScriptClass except that a nullptr Registry means the default registry.
 // Unlike pesapi_registry_api, UE types (UETypeName) are supported.
-JSENV_API void RegisterPesapiClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
+SCRIPTENV_API void RegisterPesapiClass(ScriptClassRegistry* Registry, const ScriptClassDefinition& ClassDefinition);
 
 // ---------------------------------------------------------------- legacy global api (default registry)
-void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
+void SCRIPTENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 
-void JSENV_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
-    const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
+void SCRIPTENV_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
+    const NamedFunctionInfo* MethodInfos, const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos,
+    const NamedPropertyInfo* VariableInfos);
 
-void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
+void SCRIPTENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
-JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId);
+SCRIPTENV_API const JSClassDefinition* FindClassByID(const void* TypeId);
 
-JSENV_API void OnClassNotFound(pesapi_class_not_found_callback Callback);
+SCRIPTENV_API void OnClassNotFound(pesapi_class_not_found_callback Callback);
 
-JSENV_API const JSClassDefinition* LoadClassByID(const void* TypeId);
+SCRIPTENV_API const JSClassDefinition* LoadClassByID(const void* TypeId);
 
-JSENV_API const JSClassDefinition* FindCppTypeClassByName(const PString& Name);
+SCRIPTENV_API const JSClassDefinition* FindCppTypeClassByName(const PString& Name);
 
-JSENV_API bool TraceObjectLifecycle(const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
+SCRIPTENV_API bool TraceObjectLifecycle(
+    const void* TypeId, pesapi_on_native_object_enter OnEnter, pesapi_on_native_object_exit OnExit);
 
 #if USING_IN_UNREAL_ENGINE
-JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
+SCRIPTENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
 // module internal: the process wide definitions of reflected classes (UClass / UScriptStruct, keyed by their FStructWrapper)
 // and of the container classes (TArray / TSet / TMap / fixed size array, see ContainerWrapper.cpp), they are not in the name
@@ -217,7 +225,7 @@ JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 // to them, see StructWrapper.cpp
 const JSClassDefinition* FindReflectedClass(const void* TypeId);
 
-JSENV_API bool IsEditorOnlyUFunction(const UFunction* Func);
+SCRIPTENV_API bool IsEditorOnlyUFunction(const UFunction* Func);
 
 #endif
 

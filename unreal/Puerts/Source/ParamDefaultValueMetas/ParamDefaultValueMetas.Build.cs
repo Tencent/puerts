@@ -29,7 +29,7 @@ namespace UnrealBuildTool.Rules
 
             PrivateIncludePaths.AddRange(
                 new string[] {
-                    "JsEnv/Public",
+                    "ScriptEnv/Public",
                 }
                 );
 

@@ -6,8 +6,12 @@
  * which is part of this source code package.
  */
 
+// This copy stays here for the unity build (unity/native/papi-v8/CMakeLists.txt), ue compiles the one in ScriptEnv.
+#if !defined(PUERTS_JSENV_SKIP_UNITY_SHARED_SOURCES)
+
 #if defined(UE_GAME) || defined(UE_EDITOR) || defined(UE_SERVER) || defined(USING_IN_UNREAL_ENGINE)
 #define PUERTS_WEBSOCKET_USING_UE 1
+
 #else
 #define PUERTS_WEBSOCKET_USING_UE 0
 #endif
@@ -1007,3 +1011,5 @@ void InitWebsocketPPWrap(v8::Local<v8::Context> Context)
 #endif    // PUERTS_WEBSOCKET_USING_UE
 
 #undef PUERTS_WEBSOCKET_USING_UE
+
+#endif    // !PUERTS_JSENV_SKIP_UNITY_SHARED_SOURCES

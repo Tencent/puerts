@@ -14,6 +14,18 @@
   "CanBeUsedWithUnrealHeaderTool" : true,
   "Modules": [
     {
+      "Name": "ScriptEnv",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
+    },
+    {
+      "Name": "PapiV8",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
+    },
+    {
       "Name": "JsEnv",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",

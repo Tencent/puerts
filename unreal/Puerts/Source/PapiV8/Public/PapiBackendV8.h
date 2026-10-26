@@ -38,7 +38,7 @@ class FPromiseRejectTracker;
 
 // the v8 engine part of a backend (BackendV8 of unity): the isolate and the context of the env, the module loader and the
 // promise rejection tracking. The only place (with the papi-v8 implementation files) the v8 pesapi table is referenced
-class FPapiBackendV8 : public FPapiBackendJs
+class PAPIV8_API FPapiBackendV8 : public FPapiBackendJs
 {
 public:
     struct FParams : public FPapiBackendParams

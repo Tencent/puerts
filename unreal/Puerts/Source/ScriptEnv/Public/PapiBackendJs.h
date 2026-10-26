@@ -16,7 +16,7 @@ namespace PUERTS_NAMESPACE
 {
 // the js language part of a backend (BackendJs of unity), engine independent: binds the module system and the promise
 // rejection handler of js to the `puerts` object (created by the host) and the global, and executes the bootstrap scripts
-class FPapiBackendJs : public IPapiBackend
+class SCRIPTENV_API FPapiBackendJs : public IPapiBackend
 {
 public:
     explicit FPapiBackendJs(std::shared_ptr<ILogger> InLogger) : Logger(std::move(InLogger))

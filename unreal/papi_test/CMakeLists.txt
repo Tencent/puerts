@@ -5,7 +5,7 @@ project(papi_test LANGUAGES C CXX)
 
 # pesapi (papi) + static binding test for unreal plugin:
 #   hello        : pesapi addon built with BUILDING_PES_EXTENSION, using Binding.hpp static binding (PesapiBackend.hpp)
-#   papi_test_host : minimal v8 host built from unreal JsEnv sources (PesapiV8Impl.cpp, PesapiRegister.cpp, ...)
+#   papi_test_host : minimal v8 host built from unreal ScriptEnv/PapiV8 sources (PesapiV8Impl.cpp, PesapiRegister.cpp, ...)
 #                    without unreal engine, loads the addon and runs test.js
 #   papi_test_host_v8 / papi_test_host_static : the same host with the addon sources linked in, built with the v8_impl
 #                    (V8Backend.hpp) / pesapi_impl (PesapiBackend.hpp) binding, runs the same test.js
@@ -14,7 +14,8 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PUERTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../Puerts)
-set(JSENV_DIR ${PUERTS_ROOT}/Source/JsEnv)
+set(SCRIPTENV_DIR ${PUERTS_ROOT}/Source/ScriptEnv)
+set(PAPIV8_DIR ${PUERTS_ROOT}/Source/PapiV8)
 
 if(NOT DEFINED V8_ROOT)
     set(V8_ROOT ${PUERTS_ROOT}/ThirdParty/v8_9.4.146.24)
@@ -61,7 +62,7 @@ add_library(hello SHARED
     addon/TestClass.cc
     addon/AdvanceTestClass.cc
 )
-target_include_directories(hello PRIVATE ${JSENV_DIR}/Public addon)
+target_include_directories(hello PRIVATE ${SCRIPTENV_DIR}/Public ${PAPIV8_DIR}/Public addon)
 target_compile_definitions(hello PRIVATE BUILDING_PES_EXTENSION)
 # load by explicit path, keep the same file name on all platforms: hello.dll / hello.so / hello.dylib
 set_target_properties(hello PROPERTIES PREFIX "")
@@ -75,12 +76,12 @@ endif()
 # ---------------------------------------------------------------- host
 set(HOST_SOURCES
     host/main.cpp
-    ${JSENV_DIR}/Private/PesapiV8Impl.cpp
-    ${JSENV_DIR}/Private/PesapiRegister.cpp
-    ${JSENV_DIR}/Private/CppObjectMapper.cpp
-    ${JSENV_DIR}/Private/JSClassRegister.cpp
-    ${JSENV_DIR}/Private/ScriptClassRegistry.cpp
-    ${JSENV_DIR}/Private/DataTransfer.cpp
+    ${PAPIV8_DIR}/Private/PesapiV8Impl.cpp
+    ${SCRIPTENV_DIR}/Private/PesapiRegister.cpp
+    ${PAPIV8_DIR}/Private/CppObjectMapper.cpp
+    ${SCRIPTENV_DIR}/Private/JSClassRegister.cpp
+    ${SCRIPTENV_DIR}/Private/ScriptClassRegistry.cpp
+    ${PAPIV8_DIR}/Private/DataTransfer.cpp
 )
 
 # the addon sources (hello.cc uses PUERTS_PESAPI_MODULE) are the same for all hosts, only the build options differ:
@@ -102,7 +103,7 @@ target_compile_definitions(papi_test_host_v8 PRIVATE PAPI_TEST_LINKED_MODULE PUE
     "PAPI_TEST_NAME=\"linked into the host, v8_impl\"")
 
 foreach(HOST papi_test_host papi_test_host_static papi_test_host_v8)
-    target_include_directories(${HOST} PRIVATE ${JSENV_DIR}/Public ${JSENV_DIR}/Private ${V8_ROOT}/Inc addon)
+    target_include_directories(${HOST} PRIVATE ${SCRIPTENV_DIR}/Public ${SCRIPTENV_DIR}/Private ${PAPIV8_DIR}/Public ${PAPIV8_DIR}/Private ${V8_ROOT}/Inc addon)
     target_link_libraries(${HOST} PRIVATE ${V8_LIB})
 
     if(WIN32)

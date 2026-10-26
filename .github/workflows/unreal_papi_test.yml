@@ -1,19 +1,21 @@
 name: unreal papi test
 
 # build the pesapi (papi) addon with static binding (Binding.hpp + PesapiBackend.hpp) and run it in a minimal
-# v8 host built from unreal JsEnv sources (PesapiV8Impl.cpp / PesapiRegister.cpp / CppObjectMapper.cpp ...),
+# v8 host built from unreal ScriptEnv/PapiV8 sources (PesapiV8Impl.cpp / PesapiRegister.cpp / CppObjectMapper.cpp ...),
 # see unreal/papi_test/CMakeLists.txt
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - unreal/Puerts/Source/JsEnv/**
+      - unreal/Puerts/Source/ScriptEnv/**
+      - unreal/Puerts/Source/PapiV8/**
       - unreal/papi_test/**
       - .github/workflows/unreal_papi_test.yml
   pull_request:
     paths:
-      - unreal/Puerts/Source/JsEnv/**
+      - unreal/Puerts/Source/ScriptEnv/**
+      - unreal/Puerts/Source/PapiV8/**
       - unreal/papi_test/**
       - .github/workflows/unreal_papi_test.yml
 
