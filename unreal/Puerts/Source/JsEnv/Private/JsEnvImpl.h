@@ -41,8 +41,8 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 
 #include "PapiValueRef.h"
 #include "PapiEnvScope.h"
-#include "PapiV8ModuleLoader.h"
-#include "PapiV8PromiseReject.h"
+#include "PapiBackend.h"
+#include <memory>
 
 #include "V8InspectorImpl.h"
 
@@ -82,7 +82,7 @@ public:
     }
 };
 
-class FJsEnvImpl : public IJsEnv, IObjectMapper, public FUObjectArray::FUObjectDeleteListener
+class FJsEnvImpl : public IJsEnv, IObjectMapper, public FUObjectArray::FUObjectDeleteListener, public IPapiScriptHost
 {
 public:
     explicit FJsEnvImpl(const FString& ScriptRoot);
@@ -295,7 +295,11 @@ private:
     bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath,
         TArray<uint8>& Data, FString& ErrInfo);
 
-    void ExecuteModule(const FString& ModuleName);
+    // IPapiScriptHost
+    virtual void ExecuteModule(const FString& ModuleName) override;
+
+    // the cleanup of the host after the env is released by the backend, before its isolate is disposed
+    void OnEnvReleased();
 
     // require of the module system (the module loader of the backend), returns nullptr with the exception pending on failure
     pesapi_value RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName);
@@ -309,9 +313,6 @@ private:
     void HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    // puerts.forceReload(url?)
-    void ForceReloadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
     v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
@@ -473,10 +474,6 @@ private:
     std::shared_ptr<IJSModuleLoader> ModuleLoader;
 
 #ifndef WITH_QUICKJS
-    papi_v8::FModuleLoader* PapiModuleLoader = nullptr;
-
-    papi_v8::FPromiseRejectTracker* PapiPromiseRejectTracker = nullptr;
-
     // "<by><path>" -> kind, the modules whose kind is decided by the package.json requiring them
     TMap<FString, FString> ForcedModuleKinds;
 
@@ -494,7 +491,10 @@ private:
     bool Started;
 
 private:
-    v8::Isolate::CreateParams CreateParams;
+    // the backend of the env (engine and language), the env only uses it and the pesapi table it returns
+    std::unique_ptr<IPapiBackend> Backend;
+
+    struct pesapi_ffi* MainApis = nullptr;
 
 #if defined(WITH_NODEJS)
     uv_loop_t NodeUVLoop;
@@ -788,12 +788,6 @@ private:
     {
         Apis->set_property(Env, Obj, Key, Apis->create_function(Env, Callback, nullptr, nullptr));
     }
-#if defined(WITH_V8_BYTECODE)
-    uint32_t Expect_FlagHash = 0;
-#if V8_MAJOR_VERSION >= 11
-    uint32_t Expect_ReadOnlySnapshotChecksum = 0;
-#endif
-#endif
 };
 
 }    // namespace PUERTS_NAMESPACE

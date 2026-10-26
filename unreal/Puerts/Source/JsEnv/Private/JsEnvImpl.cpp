@@ -16,7 +16,7 @@
 #include "Misc/Paths.h"
 #include "StructWrapper.h"
 #include "PapiUtils.h"
-#include "PesapiImpl.h"
+#include "PapiBackendV8.h"
 #include "DelegateWrapper.h"
 #include "ContainerWrapper.h"
 #include "SoftObjectWrapper.h"
@@ -42,33 +42,7 @@
 #include "WasmModuleInstance.h"
 #endif
 
-#if !defined(WITH_NODEJS)
-
-#if V8_MAJOR_VERSION < 8 && !defined(WITH_QUICKJS)
-
-#if PLATFORM_WINDOWS
-#include "Blob/Win64/NativesBlob.h"
-#include "Blob/Win64/SnapshotBlob.h"
-#elif PLATFORM_ANDROID_ARM
-#include "Blob/Android/armv7a/NativesBlob.h"
-#include "Blob/Android/armv7a/SnapshotBlob.h"
-#elif PLATFORM_ANDROID_ARM64
-#include "Blob/Android/arm64/NativesBlob.h"
-#include "Blob/Android/arm64/SnapshotBlob.h"
-#elif PLATFORM_MAC
-#include "Blob/macOS/NativesBlob.h"
-#include "Blob/macOS/SnapshotBlob.h"
-#elif PLATFORM_IOS
-#include "Blob/iOS/arm64/NativesBlob.h"
-#include "Blob/iOS/arm64/SnapshotBlob.h"
-#elif PLATFORM_LINUX
-#include "Blob/Linux/NativesBlob.h"
-#include "Blob/Linux/SnapshotBlob.h"
-#endif
-
-#endif
-
-#else
+#if defined(WITH_NODEJS)
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if PLATFORM_WINDOWS
 #include <windows.h>
@@ -99,22 +73,6 @@ namespace PUERTS_NAMESPACE
 {
 #if !defined(WITH_QUICKJS)
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-static void ModuleGenRequire(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-static void ModuleRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-static void ModuleGetByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-// __tgjsSetPromiseRejectCallback(handler), called by puerts/promises.js
-static void SetPromiseRejectHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    papi_v8::SetPromiseRejectHandler(Env, Apis->get_args_len(Info) > 0 ? Apis->get_arg(Info, 0) : nullptr);
-}
-
-static void OnPromiseRejectHandlerError(void* UserData, const char* Error)
-{
-    static_cast<ILogger*>(UserData)->Error(FString::Printf(TEXT("promise reject handler exception %s"), UTF8_TO_TCHAR(Error)));
-}
 #endif
 
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
@@ -360,43 +318,11 @@ void FJsEnvImpl::StopPolling()
 
 #endif
 
-#if defined(WITH_V8_BYTECODE)
-struct FCodeCacheHeader
-{
-    uint32_t MagicNumber;
-    uint32_t VersionHash;
-    uint32_t SourceHash;
-    uint32_t FlagHash;
-#if V8_MAJOR_VERSION >= 11
-    uint32_t ReadOnlySnapshotChecksum;
-#endif
-    uint32_t PayloadLength;
-    uint32_t Checksum;
-};
-#endif
-
 FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
     std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
     void* InExternalContext)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
-
-    if (!InFlags.IsEmpty())
-    {
-#if !defined(WITH_NODEJS) && !defined(WITH_QUICKJS)
-        TArray<FString> FlagArray;
-        InFlags.ParseIntoArray(FlagArray, TEXT(" "));
-        for (auto& Flag : FlagArray)
-        {
-            static FString Max_Old_Space_Size_Name(TEXT("--max-old-space-size="));
-            if (Flag.StartsWith(Max_Old_Space_Size_Name))
-            {
-                size_t Val = FCString::Atoi(*Flag.Mid(Max_Old_Space_Size_Name.Len()));
-                CreateParams.constraints.set_max_old_generation_size_in_bytes(Val * 1024 * 1024);
-            }
-        }
-#endif
-    }
 
     Started = false;
     Inspector = nullptr;
@@ -405,40 +331,17 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
     OnSourceLoadedCallback = InOnSourceLoadedCallback;
+
+    // the backend of the env, the only place the engine is chosen (see PapiBackend.h), the rest of the host uses the papi
+    // table it provides (MainApis)
+    FPapiBackendV8::FParams BackendParams;
+    BackendParams.Logger = Logger;
+    BackendParams.Flags = InFlags;
+    BackendParams.IsolateMapper = static_cast<IObjectMapper*>(this);    //直接传this会有问题，强转后地址会变
+    BackendParams.CppObjectMapper = &CppObjectMapper;
+    BackendParams.OnEnvReleased = [this]() { OnEnvReleased(); };
 #if !defined(WITH_NODEJS)
-#if V8_MAJOR_VERSION < 8 && !defined(WITH_QUICKJS)
-    std::unique_ptr<v8::StartupData> NativesBlob;
-    if (!NativesBlob)
-    {
-        NativesBlob = std::make_unique<v8::StartupData>();
-        NativesBlob->data = (const char*) NativesBlobCode;
-        NativesBlob->raw_size = sizeof(NativesBlobCode);
-    }
-    v8::V8::SetNativesDataBlob(NativesBlob.get());
-#endif
-
-    CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-#ifdef WITH_QUICKJS
-    MainIsolate = InExternalRuntime ? v8::Isolate::New(InExternalRuntime) : v8::Isolate::New(CreateParams);
-#else
     check(!InExternalRuntime && !InExternalContext);
-    MainIsolate = v8::Isolate::New(CreateParams);
-#endif
-    auto Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    Isolate->SetData(0, static_cast<IObjectMapper*>(this));    //直接传this会有问题，强转后地址会变
-
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-
-#ifdef WITH_QUICKJS
-    v8::Local<v8::Context> Context =
-        (InExternalRuntime && InExternalContext) ? v8::Context::New(Isolate, InExternalContext) : v8::Context::New(Isolate);
-#else
-    v8::Local<v8::Context> Context = v8::Context::New(Isolate);
-#endif
 #else
     int Argc = 1;
     const char* Argv[] = {"puerts"};
@@ -453,17 +356,15 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         return;
     }
 
-    CreateParams.array_buffer_allocator = nullptr;
     NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
 
     auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
     MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop, Platform);
 
-    auto Isolate = MainIsolate;
 #ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
+    v8::Locker NodeLocker(MainIsolate);
 #endif
-    Isolate->SetData(0, static_cast<IObjectMapper*>(this));    //直接传this会有问题，强转后地址会变
+    MainIsolate->SetData(0, static_cast<IObjectMapper*>(this));    //直接传this会有问题，强转后地址会变
 
     // v8::Locker locker(Isolate);
     // difference from embedding example, if lock, blow check fail:
@@ -474,219 +375,217 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     //"HandleScope::HandleScope",
     //"Entering the V8 API without proper locking in place");
 
-    v8::Isolate::Scope Isolatescope(Isolate);
+    v8::Isolate::Scope NodeIsolateScope(MainIsolate);
 
     NodeIsolateData =
-        node::CreateIsolateData(Isolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get());    // node::FreeIsolateData
+        node::CreateIsolateData(MainIsolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get());    // node::FreeIsolateData
 
-    v8::HandleScope HandleScope(Isolate);
+    v8::HandleScope NodeHandleScope(MainIsolate);
 
-    v8::Local<v8::Context> Context = node::NewContext(Isolate);
-
-#endif
-
-    DefaultContext.Reset(Isolate, Context);
-
-    v8::Context::Scope ContextScope(Context);
-
-    v8::Local<v8::Object> Global = Context->Global();
-#if defined(WITH_NODEJS)
-    auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
-    v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
-    // kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681
-    // CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
-    NodeEnv = CreateEnvironment(NodeIsolateData, Context, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
-    Global->Set(Context, strConsole, Console).Check();
-    v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(NodeEnv,
-        "const publicRequire ="
-        "  require('module').createRequire(process.cwd() + '/');"
-        "globalThis.require = publicRequire;");
-
-    if (LoadenvRet.IsEmpty())    // There has been a JS exception.
+    v8::Local<v8::Context> NodeContext = node::NewContext(MainIsolate);
     {
-        return;
+        v8::Context::Scope NodeContextScope(NodeContext);
+        v8::Local<v8::Object> NodeGlobal = NodeContext->Global();
+        auto strConsole = v8::String::NewFromUtf8(MainIsolate, "console").ToLocalChecked();
+        v8::Local<v8::Value> Console = NodeGlobal->Get(NodeContext, strConsole).ToLocalChecked();
+        // kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681
+        // CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
+        NodeEnv = CreateEnvironment(NodeIsolateData, NodeContext, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+        NodeGlobal->Set(NodeContext, strConsole, Console).Check();
+        v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(NodeEnv,
+            "const publicRequire ="
+            "  require('module').createRequire(process.cwd() + '/');"
+            "globalThis.require = publicRequire;");
+
+        if (LoadenvRet.IsEmpty())    // There has been a JS exception.
+        {
+            return;
+        }
     }
 
     // the same as raw v8
-    Isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
+    MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
 
     StartPolling();
+
+    // the isolate and the context of node are adopted by the backend
+    BackendParams.ExternalIsolate = MainIsolate;
+    BackendParams.ExternalContext = NodeContext;
 #endif
-    v8::Local<v8::Object> PuertsObj = v8::Object::New(Isolate);
-    Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), PuertsObj).Check();
 
-    auto This = v8::External::New(Isolate, this);
+    Backend = std::make_unique<FPapiBackendV8>(BackendParams);
+    MainApis = Backend->GetApi();
+    checkf(Backend->GetApiVersion() == PESAPI_VERSION, TEXT("papi version mismatch, expect %d, got %d"), PESAPI_VERSION,
+        Backend->GetApiVersion());
+    MainEnvRef = Backend->CreateEnvRef();
+    // the v8 specific parts of the host (inspector, wasm, the fast paths of the translators) still need the isolate
+    MainIsolate = static_cast<FPapiBackendV8*>(Backend.get())->GetIsolate();
 
-    // functions migrated to papi are bound through create_function
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
-    pesapi_env Env = papi_bridge::ToPapi(Context);
-    pesapi_value PapiGlobal = papi_bridge::ToPapi(Global);
-    pesapi_value PapiPuertsObj = papi_bridge::ToPapi(PuertsObj);
+    // the bindings of the host
+    {
+        FPapiEnvScope EnvScope(MainApis, MainEnvRef);
+        struct pesapi_ffi* Apis = MainApis;
+        pesapi_env Env = EnvScope.GetEnv();
+        v8::Isolate* Isolate = MainIsolate;
+        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
+        DefaultContext.Reset(Isolate, Context);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::LoadModule>::Bind(Apis, Env, PapiPuertsObj, "loadModule", this);
+        v8::Local<v8::Object> Global = Context->Global();
+        v8::Local<v8::Object> PuertsObj = v8::Object::New(Isolate);
+        Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), PuertsObj).Check();
 
-    PapiMethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
+        auto This = v8::External::New(Isolate, this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Apis, Env, PapiPuertsObj, "loadCPPType", this);
+        pesapi_value PapiGlobal = papi_bridge::ToPapi(Global);
+        pesapi_value PapiPuertsObj = papi_bridge::ToPapi(PuertsObj);
 
-    PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &GetFNameString);
+        PapiMethodBindingHelper<&FJsEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Apis, Env, PapiGlobal, "__tgjsUEClassToJSClass", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::LoadModule>::Bind(Apis, Env, PapiPuertsObj, "loadModule", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::NewContainer>::Bind(Apis, Env, PapiGlobal, "__tgjsNewContainer", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::MergeObject>::Bind(Apis, Env, PapiGlobal, "__tgjsMergeObject", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Apis, Env, PapiPuertsObj, "loadCPPType", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
+        PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &GetFNameString);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Apis, Env, PapiGlobal, "__tgjsUEClassToJSClass", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Apis, Env, PapiGlobal, "__tgjsNewStruct", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::NewContainer>::Bind(Apis, Env, PapiGlobal, "__tgjsNewContainer", this);
 
-    PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
+        PapiMethodBindingHelper<&FJsEnvImpl::MergeObject>::Bind(Apis, Env, PapiGlobal, "__tgjsMergeObject", this);
+
+        PapiMethodBindingHelper<&FJsEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
+
+        PapiMethodBindingHelper<&FJsEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
+
+        PapiMethodBindingHelper<&FJsEnvImpl::NewStructByScriptStruct>::Bind(Apis, Env, PapiGlobal, "__tgjsNewStruct", this);
+
+        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    PapiMethodBindingHelper<&FJsEnvImpl::MakeUClass>::Bind(Apis, Env, PapiGlobal, "__tgjsMakeUClass", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::MakeUClass>::Bind(Apis, Env, PapiGlobal, "__tgjsMakeUClass", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
 #endif
 
-    MethodBindingHelper<&FJsEnvImpl::SetInspectorCallback>::Bind(Isolate, Context, Global, "__tgjsSetInspectorCallback", This);
+        MethodBindingHelper<&FJsEnvImpl::SetInspectorCallback>::Bind(Isolate, Context, Global, "__tgjsSetInspectorCallback", This);
 
-    MethodBindingHelper<&FJsEnvImpl::DispatchProtocolMessage>::Bind(
-        Isolate, Context, Global, "__tgjsDispatchProtocolMessage", This);
+        MethodBindingHelper<&FJsEnvImpl::DispatchProtocolMessage>::Bind(
+            Isolate, Context, Global, "__tgjsDispatchProtocolMessage", This);
 
-#ifndef WITH_QUICKJS
-    PapiPromiseRejectTracker = papi_v8::CreatePromiseRejectTracker(Env, &OnPromiseRejectHandlerError, Logger.get());
-    PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsSetPromiseRejectCallback", &SetPromiseRejectHandler);
-#else
-    Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FJsEnvImpl>);
-    Global
-        ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetPromiseRejectCallback"),
-            v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FJsEnvImpl>)->GetFunction(Context).ToLocalChecked())
-        .Check();
+#ifdef WITH_QUICKJS
+        Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FJsEnvImpl>);
+        Global
+            ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetPromiseRejectCallback"),
+                v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FJsEnvImpl>)->GetFunction(Context).ToLocalChecked())
+            .Check();
 #endif
 
-    //#if !defined(WITH_NODEJS)
-    PapiMethodBindingHelper<&FJsEnvImpl::SetTimeout>::Bind(Apis, Env, PapiGlobal, "setTimeout", this);
+        //#if !defined(WITH_NODEJS)
+        PapiMethodBindingHelper<&FJsEnvImpl::SetTimeout>::Bind(Apis, Env, PapiGlobal, "setTimeout", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearTimeout", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearTimeout", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::SetInterval>::Bind(Apis, Env, PapiGlobal, "setInterval", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::SetInterval>::Bind(Apis, Env, PapiGlobal, "setInterval", this);
 
-    PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearInterval", this);
-    //#endif
+        PapiMethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearInterval", this);
+        //#endif
 
 #if USE_WASM3
-    MethodBindingHelper<&FJsEnvImpl::Wasm_NewMemory>::Bind(Isolate, Context, Global, "__tgjsWasm_NewMemory", This);
-    MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryGrowth>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryGrowth", This);
-    MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryBuffer>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryBuffer", This);
-    MethodBindingHelper<&FJsEnvImpl::Wasm_TableGrowth>::Bind(Isolate, Context, Global, "__tgjsWasm_TableGrow", This);
-    MethodBindingHelper<&FJsEnvImpl::Wasm_TableSet>::Bind(Isolate, Context, Global, "__tgjsWasm_TableSet", This);
-    MethodBindingHelper<&FJsEnvImpl::Wasm_TableLen>::Bind(Isolate, Context, Global, "__tgjsWasm_TableLen", This);
-    MethodBindingHelper<&FJsEnvImpl::Wasm_Instance>::Bind(Isolate, Context, Global, "__tgjsWasm_Instance", This);
-    MethodBindingHelper<&FJsEnvImpl::Wasm_OverrideWebAssembly>::Bind(
-        Isolate, Context, Global, "__tgjsWasm_OverrideWebAssembly", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_NewMemory>::Bind(Isolate, Context, Global, "__tgjsWasm_NewMemory", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryGrowth>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryGrowth", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryBuffer>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryBuffer", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_TableGrowth>::Bind(Isolate, Context, Global, "__tgjsWasm_TableGrow", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_TableSet>::Bind(Isolate, Context, Global, "__tgjsWasm_TableSet", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_TableLen>::Bind(Isolate, Context, Global, "__tgjsWasm_TableLen", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_Instance>::Bind(Isolate, Context, Global, "__tgjsWasm_Instance", This);
+        MethodBindingHelper<&FJsEnvImpl::Wasm_OverrideWebAssembly>::Bind(
+            Isolate, Context, Global, "__tgjsWasm_OverrideWebAssembly", This);
 #endif
 
-    PapiMethodBindingHelper<&FJsEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
-    PapiMethodBindingHelper<&FJsEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
-    PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &FNameToArrayBuffer);
+        PapiMethodBindingHelper<&FJsEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
+        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &FNameToArrayBuffer);
 
-    PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &ToCString);
+        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &ToCString);
 
-    PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &ToCPtrArray);
+        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &ToCPtrArray);
 
 #if !defined(WITH_QUICKJS)
-    PapiBindFunction(Apis, Env, PapiPuertsObj, "load", &LoadPesapiDll);
+        PapiBindFunction(Apis, Env, PapiPuertsObj, "load", &LoadPesapiDll);
 #endif
 
-    FString DllExt =
+        FString DllExt =
 #if PLATFORM_WINDOWS
-        TEXT(".dll");
+            TEXT(".dll");
 #elif PLATFORM_MAC || PLATFORM_IOS
-        TEXT(".dylib");
+            TEXT(".dylib");
 #else
-        TEXT(".so");
+            TEXT(".so");
 #endif
-    Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiUtils::FromFString(Apis, Env, DllExt));
+        Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiUtils::FromFString(Apis, Env, DllExt));
 
-    PapiMethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(
-        Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(
+            Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
 
-    CppObjectMapper.Initialize(Isolate, Context);
-    // after CppObjectMapper.Initialize: the ref tracks the life cycle of the env, which starts there
-    MainEnvRef = Apis->create_env_ref(Env);
-#if !defined(WITH_QUICKJS)
-    PapiModuleLoader = papi_v8::CreateModuleLoader(Env);
-    PapiMethodBindingHelper<&FJsEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
-    PapiMethodBindingHelper<&FJsEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
+        // the host part of the module system: resolving and loading the source, the rest is done by the backend
+        PapiMethodBindingHelper<&FJsEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
+        PapiMethodBindingHelper<&FJsEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
 #if defined(WITH_NODEJS)
-    {
-        pesapi_value OrgRequire = Apis->get_property(Env, PapiGlobal, "require");
-        if (Apis->is_function(Env, OrgRequire))
         {
-            NodeRequire.Reset(Apis, Env, OrgRequire);
+            // saved before the backend replaces it with the require of puerts
+            pesapi_value OrgRequire = Apis->get_property(Env, PapiGlobal, "require");
+            if (Apis->is_function(Env, OrgRequire))
+            {
+                NodeRequire.Reset(Apis, Env, OrgRequire);
+            }
         }
-    }
 #endif
-    // the module system of puerts, implemented by the module loader of the backend
-    papi_v8::RegisterBuiltinModule(Env, "puerts", PapiPuertsObj);
-    Apis->set_property(Env, PapiGlobal, "require", papi_v8::CreateRequire(Env, ""));
-    PapiBindFunction(Apis, Env, PapiPuertsObj, "genRequire", &ModuleGenRequire);
-    PapiBindFunction(Apis, Env, PapiPuertsObj, "registerBuildinModule", &ModuleRegisterBuiltin);
-    PapiMethodBindingHelper<&FJsEnvImpl::ForceReloadModule>::Bind(Apis, Env, PapiPuertsObj, "forceReload", this);
-    PapiBindFunction(Apis, Env, PapiPuertsObj, "getModuleByUrl", &ModuleGetByUrl);
-#endif
-    // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names, and the
-    // definitions must be kept alive while the templates are
-    CppObjectMapper.OnTemplateCreated =
-        [this](v8::Isolate* InIsolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)
-    {
-        FStructWrapper::OnTemplateCreated(InIsolate, ClassDefinition, Template);
-        OnReflectedTemplateCreated(ClassDefinition);
-    };
+        // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names, and the
+        // definitions must be kept alive while the templates are
+        CppObjectMapper.OnTemplateCreated =
+            [this](v8::Isolate* InIsolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)
+        {
+            FStructWrapper::OnTemplateCreated(InIsolate, ClassDefinition, Template);
+            OnReflectedTemplateCreated(ClassDefinition);
+        };
 
-    DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
-    MixinInvoker = DynamicInvoker;
+        DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
+        MixinInvoker = DynamicInvoker;
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl, ESPMode::ThreadSafe>(this);
+        TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl, ESPMode::ThreadSafe>(this);
 #endif
 
-    Inspector = CreateV8Inspector(InDebugPort, &Context);
+        Inspector = CreateV8Inspector(InDebugPort, &Context);
+    }
 
-    ExecuteModule("puerts/first_run.js");
-#if !defined(WITH_NODEJS)
-    ExecuteModule("puerts/polyfill.js");
-#endif
-    ExecuteModule("puerts/log.js");
-    ExecuteModule("puerts/uelazyload.js");
-    ExecuteModule("puerts/events.js");
-    ExecuteModule("puerts/promises.js");
-    ExecuteModule("puerts/argv.js");
-    ExecuteModule("puerts/jit_stub.js");
-    ExecuteModule("puerts/hot_reload.js");
-    ExecuteModule("puerts/pesaddon.js");
-
-    ReloadJs.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__reload"));
-#if !PUERTS_FORCE_CPP_UFUNCTION
-    MergePrototype.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__mergePrototype"));
-#endif
-
-    RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
-
-    GenListApply.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__genListApply"));
-
-    DelegateProxiesCheckerHandler =
-        FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
+    // the js runtime of the backend (module system, promise rejection tracking) and its bootstrap scripts
+    Backend->OnEnter(this);
 
     {
+        FPapiEnvScope EnvScope(MainApis, MainEnvRef);
+        struct pesapi_ffi* Apis = MainApis;
+        pesapi_env Env = EnvScope.GetEnv();
+        pesapi_value PapiPuertsObj = Apis->get_property(Env, Apis->global(Env), "puerts");
+
+        ReloadJs.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__reload"));
+#if !PUERTS_FORCE_CPP_UFUNCTION
+        MergePrototype.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__mergePrototype"));
+#endif
+
+        RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
+
+        GenListApply.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__genListApply"));
+
         static const char MapCode[] = "new Map()";
         ManualReleaseCallbackMap.Reset(Apis, Env,
             Apis->eval(Env, reinterpret_cast<const uint8_t*>(MapCode), sizeof(MapCode) - 1, "puerts/manual_release_map"));
     }
+
+    DelegateProxiesCheckerHandler =
+        FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
 
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
@@ -701,32 +600,16 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     PuertsWasmRuntimeList.Add(std::make_shared<WasmRuntime>(PuertsWasmEnv.get()));
     ExecuteModule("puerts/wasm3_helper.js");
 #endif
-#if defined(WITH_V8_BYTECODE)
-    auto Script = v8::Script::Compile(Context, FV8Utils::ToV8String(Isolate, "")).ToLocalChecked();
-    auto CachedCode = v8::ScriptCompiler::CreateCodeCache(Script->GetUnboundScript());
-    const FCodeCacheHeader* CodeCacheHeader = (const FCodeCacheHeader*) CachedCode->data;
-    Expect_FlagHash = CodeCacheHeader->FlagHash;    // get FlagHash
-#if V8_MAJOR_VERSION >= 11
-    Expect_ReadOnlySnapshotChecksum = CodeCacheHeader->ReadOnlySnapshotChecksum;
-#endif
-    papi_v8::SetCodeCacheExpect(Env, Expect_FlagHash,
-#if V8_MAJOR_VERSION >= 11
-        Expect_ReadOnlySnapshotChecksum
-#else
-        0
-#endif
-    );
-#if !WITH_EDITOR
-    delete CachedCode;    //编辑器下是v8.dll分配的，ue里的delete被重载了，这delete会有问题
-#endif
-#endif
 
 #if defined(WITH_WEBSOCKET)
-    InitWebsocketPPWrap(Context);
+    {
+        FPapiEnvScope EnvScope(MainApis, MainEnvRef);
+        InitWebsocketPPWrap(papi_bridge::ToV8(EnvScope.GetEnv()));
+    }
     ExecuteModule("puerts/websocketpp.js");
 #endif
 #ifdef WITH_QUICKJS
-    auto rt = Isolate->runtime_;
+    auto rt = MainIsolate->runtime_;
     JS_SetMaxStackSize(rt, 1024 * 1024);
 #endif
 }
@@ -782,7 +665,7 @@ FJsEnvImpl::~FJsEnvImpl()
         // value refs must be released while the env is alive (before CppObjectMapper.UnInitialize)
         for (auto Iter = TimerInfos.CreateIterator(); Iter; ++Iter)
         {
-            v8impl::g_pesapi_ffi.release_value_ref(Iter->Value.Callback);
+            MainApis->release_value_ref(Iter->Value.Callback);
             FUETicker::GetCoreTicker().RemoveTicker(Iter->Value.TickerHandle);
         }
         TimerInfos.Empty();
@@ -845,73 +728,84 @@ FJsEnvImpl::~FJsEnvImpl()
 #if defined(WITH_NODEJS)
         NodeRequire.Reset();
 #endif
-        papi_v8::DestroyPromiseRejectTracker(PapiPromiseRejectTracker);
-        PapiPromiseRejectTracker = nullptr;
-        papi_v8::DestroyModuleLoader(PapiModuleLoader);
-        PapiModuleLoader = nullptr;
 #endif
 #if !PUERTS_FORCE_CPP_UFUNCTION
         MergePrototype.Reset();
 #endif
-        if (MainEnvRef)
-        {
-            v8impl::g_pesapi_ffi.release_env_ref(MainEnvRef);
-            MainEnvRef = nullptr;
-        }
+        // the js runtime of the backend stops before the env is released
+        Backend->OnExit(this);
+    }
 
-        CppObjectMapper.UnInitialize(Isolate);
+    // the cleanup that needs the env released (but the isolate alive) is done in OnEnvReleased
+    Backend->DestroyEnvRef(MainEnvRef);
+    MainEnvRef = nullptr;
+#if defined(WITH_NODEJS)
+    // the isolate of node is created by the host
+    MainIsolate->Dispose();
+#endif
+    MainIsolate = nullptr;
+    Backend.reset();
+    MainApis = nullptr;
 
-        // the bindings are freed by the finalizer of their classes in CppObjectMapper.UnInitialize, the rest (whose class is not
-        // found) are freed here
-        for (auto& KV : ObjectMap)
-        {
-            delete KV.Value;
-        }
-        ObjectMap.Empty();
-        for (auto Binding : ReleasedObjectBindings)
-        {
-            delete Binding;
-        }
-        ReleasedObjectBindings.Empty();
+    // referenced by the templates, released after the isolate
+    ClassesBuilt.clear();
+    RetiredClasses.clear();
 
-        for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
-        {
-            if (!Iter->second.PassByPointer)
-            {
-                delete ((FScriptDelegate*) Iter->first);
-            }
-        }
+    GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+}
 
-        // TsFunctionMap and BindInfoMap hold papi refs, they are released before CppObjectMapper.UnInitialize
+void FJsEnvImpl::OnEnvReleased()
+{
+    // the bindings are freed by the finalizer of their classes in CppObjectMapper.UnInitialize, the rest (whose class is not
+    // found) are freed here
+    for (auto& KV : ObjectMap)
+    {
+        delete KV.Value;
+    }
+    ObjectMap.Empty();
+    for (auto Binding : ReleasedObjectBindings)
+    {
+        delete Binding;
+    }
+    ReleasedObjectBindings.Empty();
+
+    for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
+    {
+        if (!Iter->second.PassByPointer)
+        {
+            delete ((FScriptDelegate*) Iter->first);
+        }
+    }
+
+    // TsFunctionMap and BindInfoMap hold papi refs, they are released before CppObjectMapper.UnInitialize
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        TsDynamicInvoker.Reset();
+    TsDynamicInvoker.Reset();
 #endif
 
 #if defined(WITH_NODEJS)
-        node::EmitExit(NodeEnv);
-        node::Stop(NodeEnv);
-        node::FreeEnvironment(NodeEnv);
-        node::FreeIsolateData(NodeIsolateData);
+    node::EmitExit(NodeEnv);
+    node::Stop(NodeEnv);
+    node::FreeEnvironment(NodeEnv);
+    node::FreeIsolateData(NodeIsolateData);
 
-        auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
-        Platform->UnregisterIsolate(Isolate);
+    auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
+    Platform->UnregisterIsolate(MainIsolate);
 #endif
 
-        if (InspectorChannel)
-        {
-            delete InspectorChannel;
-            InspectorChannel = nullptr;
-        }
-
-        if (Inspector)
-        {
-            delete Inspector;
-            Inspector = nullptr;
-        }
-
-        DynamicInvoker.Reset();
-        MixinInvoker.Reset();
+    if (InspectorChannel)
+    {
+        delete InspectorChannel;
+        InspectorChannel = nullptr;
     }
+
+    if (Inspector)
+    {
+        delete Inspector;
+        Inspector = nullptr;
+    }
+
+    DynamicInvoker.Reset();
+    MixinInvoker.Reset();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     for (size_t i = 0; i < MixinClasses.Num(); i++)
@@ -924,15 +818,6 @@ FJsEnvImpl::~FJsEnvImpl()
 #endif
 
     DefaultContext.Reset();
-    MainIsolate->Dispose();
-    MainIsolate = nullptr;
-    delete CreateParams.array_buffer_allocator;
-
-    // referenced by the templates, released after the isolate
-    ClassesBuilt.clear();
-    RetiredClasses.clear();
-
-    GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 }
 
 void FJsEnvImpl::InitExtensionMethodsMap()
@@ -958,7 +843,7 @@ std::unique_ptr<FJsEnvImpl::ObjectMerger>& FJsEnvImpl::GetObjectMerger(UStruct* 
 
 void FJsEnvImpl::Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
 {
-    GetObjectMerger(DesType)->Merge(&v8impl::g_pesapi_ffi, Env, Src, Des);
+    GetObjectMerger(DesType)->Merge(MainApis, Env, Src, Des);
 }
 
 void FJsEnvImpl::ObjectMerger::Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsObject, void* Ptr)
@@ -1162,14 +1047,7 @@ void FJsEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callbac
 
 bool FJsEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
-#ifndef WITH_QUICKJS
-    return MainIsolate->IdleNotificationDeadline(DeadlineInSeconds);
-#else
-    return true;
-#endif
+    return Backend->IdleNotificationDeadline(DeadlineInSeconds);
 }
 
 void FJsEnvImpl::LowMemoryNotification()
@@ -1177,30 +1055,17 @@ void FJsEnvImpl::LowMemoryNotification()
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
-    MainIsolate->LowMemoryNotification();
+    Backend->LowMemoryNotification();
 }
 
 void FJsEnvImpl::RequestMinorGarbageCollectionForTesting()
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
-#ifndef WITH_QUICKJS
-    MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
-#endif
+    Backend->RequestMinorGarbageCollectionForTesting();
 }
 
 void FJsEnvImpl::RequestFullGarbageCollectionForTesting()
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
-#endif
-#ifndef WITH_QUICKJS
-    MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
-#endif
+    Backend->RequestFullGarbageCollectionForTesting();
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -1266,7 +1131,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
             FString ModuleName = PackageName.Mid(PrefixPos + PackageNamePrefix.Len());
             Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
 
-            struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+            struct pesapi_ffi* Apis = MainApis;
             FPapiEnvScope EnvScope(Apis, MainEnvRef);
             if (!EnvScope)
             {
@@ -1531,7 +1396,7 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
     {
         OutPath = FPaths::ConvertRelativePathToFull(OutPath);
         Logger->Info(FString::Printf(TEXT("reload js module [%s]"), *OutPath));
-        struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+        struct pesapi_ffi* Apis = MainApis;
         FPapiEnvScope EnvScope(Apis, MainEnvRef);
         if (!EnvScope)
         {
@@ -1551,7 +1416,7 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 
 void FJsEnvImpl::CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args)[3])
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     pesapi_env Env = EnvScope.GetEnv();
     Apis->call_function(Env, ReloadJs.Get(Env), nullptr, 3, Args);
     if (EnvScope.HasCaught())
@@ -1575,7 +1440,7 @@ void FJsEnvImpl::ReloadSource(const FString& Path, const PString& JsSource)
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
     Logger->Info(FString::Printf(TEXT("reload js [%s]"), *Path));
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (!EnvScope)
     {
@@ -1663,7 +1528,7 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
 
 void FJsEnvImpl::RebindJs()
 {
-    FPapiEnvScope EnvScope(&v8impl::g_pesapi_ffi, MainEnvRef);
+    FPapiEnvScope EnvScope(MainApis, MainEnvRef);
     if (!EnvScope)
     {
         return;
@@ -1799,7 +1664,7 @@ FJsEnvImpl::FUObjectBinding* FJsEnvImpl::AddBinding(
     const bool IsCDO = UEObject->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
     const bool IsNativeTakeJsRef = (IsCDO || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
 #endif
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
 
     auto Binding = new FUObjectBinding();
     Binding->Object = UEObject;
@@ -1871,7 +1736,7 @@ pesapi_value FJsEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObj
 {
     if (!UEObject)
     {
-        return v8impl::g_pesapi_ffi.create_null(Env);
+        return MainApis->create_null(Env);
     }
 
     if (auto BindingPtr = ObjectMap.Find(UEObject))
@@ -1895,7 +1760,7 @@ pesapi_value FJsEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObj
 
 pesapi_value FJsEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     if (!Ptr)
     {
         return Apis->create_null(Env);
@@ -1929,7 +1794,7 @@ pesapi_value FJsEnvImpl::FindOrAddDelegate(
     pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {
     check(DelegatePtr);    // must not null
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
 
     if (PassByPointer)
     {
@@ -1989,7 +1854,7 @@ pesapi_value FJsEnvImpl::CreateArray(pesapi_env Env, FPropertyTranslator* Proper
     // a fixed size array is a view of its outer, never cached
     auto Holder = new FContainerHolder{ArrayPtr, FFixSizeArrayWrapper::GetClassDefinition()->TypeId, Property, nullptr,
         Property->Property, nullptr, nullptr, false};
-    return v8impl::g_pesapi_ffi.native_object_to_value(Env, Holder->TypeId, Holder, true);
+    return MainApis->native_object_to_value(Env, Holder->TypeId, Holder, true);
 }
 
 void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params)
@@ -2058,7 +1923,7 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Co
         return;    // released, the env is shutting down
     }
 
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     pesapi_env_ref EnvRef = Apis->get_ref_associated_env(AnyRef);
     pesapi_scope_memory ScopeMemory;
     pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
@@ -2101,7 +1966,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (!EnvScope)
     {
@@ -2286,7 +2151,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Fu
         return;
     }
 
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     pesapi_env_ref EnvRef = Apis->get_ref_associated_env(Function->JsFunction.GetRef());
     pesapi_scope_memory ScopeMemory;
     pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
@@ -2333,7 +2198,7 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
         return;
     }
 
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     pesapi_env_ref EnvRef = Apis->get_ref_associated_env(JsFuncPtr->GetRef());
     pesapi_scope_memory ScopeMemory;
     pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
@@ -2369,7 +2234,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (!EnvScope)
     {
@@ -2423,7 +2288,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
 void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (!EnvScope)
     {
@@ -2473,7 +2338,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 
 void FJsEnvImpl::ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
     {
@@ -2517,7 +2382,7 @@ static FName NAME_Fire("Fire");
 
 bool FJsEnvImpl::AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     // UE_LOG(LogTemp, Warning, TEXT("add delegate proxy"));
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
@@ -2661,7 +2526,7 @@ static pesapi_value CallJsMapMethod(
 
 FScriptDelegate FJsEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     UDynamicDelegateProxy* DelegateProxy = nullptr;
     if (Owner)
     {
@@ -2747,7 +2612,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesapi_ca
 
 bool FJsEnvImpl::RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction)
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     auto Iter = DelegateMap.find(DelegatePtr);
     if (Iter == DelegateMap.end())
     {
@@ -2845,7 +2710,7 @@ bool FJsEnvImpl::ClearDelegate(pesapi_env Env, void* DelegatePtr)
         Iter->second.Proxy.Reset();
     }
 
-    Iter->second.JsCallbacks.Reset(&v8impl::g_pesapi_ffi, Env, v8impl::g_pesapi_ffi.create_array(Env));
+    Iter->second.JsCallbacks.Reset(MainApis, Env, MainApis->create_array(Env));
     return true;
 }
 
@@ -2854,7 +2719,7 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (!EnvScope)
     {
@@ -2931,7 +2796,7 @@ pesapi_value FJsEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDefinit
     PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, bool PassByPointer)
 {
     check(Ptr);    // must not null
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
 
     auto Existed = ContainerHolders.Find(Ptr);
     if (Existed)
@@ -3070,7 +2935,7 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         if (ClassesBuilt.find(StructWrapper.get()) != ClassesBuilt.end())
         {
             auto Context = DefaultContext.Get(Isolate);
-            v8impl::g_pesapi_ffi.invalidate_class(papi_bridge::ToPapi(Context), StructWrapper.get());
+            MainApis->invalidate_class(papi_bridge::ToPapi(Context), StructWrapper.get());
         }
 #endif
         // the definition is shared by envs, the first use of a type in this env refreshes the translators
@@ -3168,7 +3033,7 @@ void FJsEnvImpl::InstallFNameFixing(v8::Local<v8::FunctionTemplate> Template)
 {
 #ifndef WITH_QUICKJS
     auto Context = DefaultContext.Get(MainIsolate);
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     pesapi_env Env = papi_bridge::ToPapi(Context);
     if (!FNameFixingProxy)
     {
@@ -3221,7 +3086,7 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::
                 auto SuperBindInfo = BindInfoMap.Find(SuperClass);
                 if (SuperBindInfo && SuperBindInfo->Prototype)
                 {
-                    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+                    struct pesapi_ffi* Apis = MainApis;
                     pesapi_env Env = papi_bridge::ToPapi(Context);
                     pesapi_value Proto = Apis->get_property(Env, papi_bridge::ToPapi(Ret), "prototype");
                     pesapi_value SetPrototypeOf = Apis->is_object(Env, Proto)
@@ -3244,7 +3109,7 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::
 
 bool FJsEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject)
 {
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     if (Cast<UScriptStruct>(Struct))
     {
         // the type id of a struct object is its wrapper
@@ -3599,7 +3464,7 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
         return;
     }
 
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     // the scope also catches the exception thrown by require
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (!EnvScope)
@@ -3678,7 +3543,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
         return;
     }
 
-    struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+    struct pesapi_ffi* Apis = MainApis;
     FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (!EnvScope)
     {
@@ -3689,7 +3554,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
     if (OutPath.EndsWith(".mjs"))
     {
         // an esm is evaluated by the module loader of the backend
-        if (!papi_v8::ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", true) || EnvScope.HasCaught())
+        if (!Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", true) || EnvScope.HasCaught())
         {
             Logger->Error(EnvScope.HasCaught() ? FString(UTF8_TO_TCHAR(EnvScope.GetExceptionAsString()))
                                                : FString::Printf(TEXT("execute module [%s] fail"), *ModuleName));
@@ -3714,7 +3579,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
 pesapi_value FJsEnvImpl::RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName)
 {
 #ifndef WITH_QUICKJS
-    return papi_v8::ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", false);
+    return Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", false);
 #else
     // the module system is not supported by quickjs (frozen) until it is a papi backend
     FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not require [%s], no module system"), *ModuleName));
@@ -3812,7 +3677,7 @@ void FJsEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info
         pesapi_value Exports = Apis->call_function(Env, NodeRequire.Get(Env), nullptr, 1, &Arg);
         if (!Apis->has_caught(Scope) && Exports)
         {
-            papi_v8::RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Specifier), Exports);
+            Backend->RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Specifier), Exports);
             Found = true;
         }
         Apis->close_scope_placement(Scope);
@@ -3839,7 +3704,7 @@ void FJsEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info
             // AddonRegisterFunc is a public v8 signature, kept for existing addons
             pesapi_value Exports = Apis->create_object(Env);
             Func(papi_bridge::ToV8(Env), papi_bridge::ToV8(Exports).As<v8::Object>());
-            papi_v8::RegisterBuiltinModule(Env, NameUtf8.Get(), Exports);
+            Backend->RegisterBuiltinModule(Env, NameUtf8.Get(), Exports);
             Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Specifier));
             return;
         }
@@ -3975,74 +3840,6 @@ void FJsEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info In
         OnSourceLoadedCallback(DebugPath);
     }
 }
-
-// the url of puerts.forceReload / getModuleByUrl, "./" is ignored as by require
-static FString NormalizeModuleUrl(const FString& Url)
-{
-    return Url.StartsWith(TEXT("./")) ? Url.Mid(2) : Url;
-}
-
-// puerts.genRequire(dir): a require resolving relative to dir
-static void ModuleGenRequire(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgString);
-
-    pesapi_env Env = Apis->get_env(Info);
-    FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    // the referrer is the url of a module, one in the directory
-    if (!Referrer.IsEmpty() && !Referrer.EndsWith(TEXT("/")) && !Referrer.EndsWith(TEXT("\\")))
-    {
-        Referrer += TEXT("/");
-    }
-    pesapi_value Require = papi_v8::CreateRequire(Env, TCHAR_TO_UTF8(*Referrer));
-    if (Require)
-    {
-        Apis->add_return(Info, Require);
-    }
-}
-
-// puerts.registerBuildinModule(name, value)
-static void ModuleRegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgString);
-
-    pesapi_env Env = Apis->get_env(Info);
-    FString Name = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    papi_v8::RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Name), Apis->get_arg(Info, 1));
-}
-
-// puerts.forceReload(url?): the next require of the cjs module (all if no url) executes it again
-void FJsEnvImpl::ForceReloadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    FString Url;
-    if (Apis->get_args_len(Info) > 0 && Apis->is_string(Env, Apis->get_arg(Info, 0)))
-    {
-        Url = NormalizeModuleUrl(PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    }
-    bool Reloaded = papi_v8::ForceReload(Env, TCHAR_TO_UTF8(*Url));
-    if (!Reloaded && !Url.IsEmpty())
-    {
-        Logger->Warn(FString::Printf(TEXT("reload not loaded module: %s!"), *Url));
-    }
-    Apis->add_return(Info, Apis->create_boolean(Env, Reloaded));
-}
-
-// puerts.getModuleByUrl(url): the `module` object of a loaded cjs module
-static void ModuleGetByUrl(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    if (Apis->get_args_len(Info) < 1 || !Apis->is_string(Env, Apis->get_arg(Info, 0)))
-    {
-        return;
-    }
-    FString Url = NormalizeModuleUrl(PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    pesapi_value Module = papi_v8::GetModuleByUrl(Env, TCHAR_TO_UTF8(*Url));
-    if (Module)
-    {
-        Apis->add_return(Info, Module);
-    }
-}
 #endif
 
 void FJsEnvImpl::SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -4092,7 +3889,7 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
     auto OriginHandle = PTimeInfo->TickerHandle;
 
     {
-        struct pesapi_ffi* Apis = &v8impl::g_pesapi_ffi;
+        struct pesapi_ffi* Apis = MainApis;
         pesapi_env_ref EnvRef = Apis->get_ref_associated_env(PTimeInfo->Callback);
         pesapi_scope_memory ScopeMemory;
         // locks the isolate (THREAD_SAFE), enters the context of the timer and catches exceptions
@@ -4128,7 +3925,7 @@ void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
         return;
     }
     FUETicker::GetCoreTicker().RemoveTicker(PTimeInfo->TickerHandle);
-    v8impl::g_pesapi_ffi.release_value_ref(PTimeInfo->Callback);
+    MainApis->release_value_ref(PTimeInfo->Callback);
     TimerInfos.Remove(DelegateHandleId);
 }
 
