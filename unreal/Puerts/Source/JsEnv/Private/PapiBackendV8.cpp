@@ -20,6 +20,13 @@
 #include "V8InspectorImpl.h"
 #include <sstream>
 
+// the memory of a pod struct can be freed with the backing store of an ArrayBuffer (see CreateTriviallyFreedObject)
+#if V8_MAJOR_VERSION < 8 || defined(WITH_NODEJS) || (WITH_EDITOR && !defined(FORCE_USE_STATIC_V8_LIB))
+#define WITH_BACKING_STORE_AUTO_FREE 0
+#else
+#define WITH_BACKING_STORE_AUTO_FREE 1
+#endif
+
 #if !defined(WITH_NODEJS) && V8_MAJOR_VERSION < 8
 #if PLATFORM_WINDOWS
 #include "Blob/Win64/NativesBlob.h"
@@ -57,6 +64,7 @@ FPapiBackendV8::FPapiBackendV8(const FParams& InParams)
     : FPapiBackendJs(InParams.Logger), Params(InParams), CppObjectMapper(std::make_unique<FCppObjectMapper>())
 {
     CppObjectMapper->OnClassInvalidated = Params.OnClassInvalidated;
+    CppObjectMapper->OnClassCreated = Params.OnClassCreated;
 }
 
 FPapiBackendV8::~FPapiBackendV8()
@@ -328,6 +336,77 @@ FString FPapiBackendV8::CurrentStackTrace()
 
     PString StackTrace = StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
     return UTF8_TO_TCHAR(StackTrace.c_str());
+}
+
+ScriptClassRegistry* FPapiBackendV8::GetRegistry()
+{
+    return CppObjectMapper->GetRegistry();
+}
+
+bool FPapiBackendV8::LoadAddon(pesapi_env Env, const char* Name)
+{
+    auto Func = FindAddonRegisterFunc(Name);
+    if (!Func)
+    {
+        return false;
+    }
+    struct pesapi_ffi* Apis = GetApi();
+    pesapi_value Exports = Apis->create_object(Env);
+    Func(papi_bridge::ToV8(Env), papi_bridge::ToV8(Exports).As<v8::Object>());
+    RegisterBuiltinModule(Env, Name, Exports);
+    return true;
+}
+
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+// not cached: the pointer and the type id are set as a native object of the class (so the class callbacks work), and the
+// memory is held by an ArrayBuffer (at index 0) which is freed with the object, possibly on a v8 worker thread
+static void BindTriviallyFreed(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject,
+    const void* TypeId, void* Ptr, size_t Size, IPapiBackend::FTriviallyFreedDeleter Deleter, void* DeleterData)
+{
+    DataTransfer::SetPointer(Isolate, JSObject, Ptr, 0);
+    DataTransfer::SetPointer(Isolate, JSObject, TypeId, 1);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(Isolate, Ptr, Size, Deleter, DeleterData);
+#else
+    auto Backing = v8::ArrayBuffer::NewBackingStore(Ptr, Size, Deleter, DeleterData);
+    auto MemoryHolder = v8::ArrayBuffer::New(Isolate, std::move(Backing));
+#endif
+    (void) JSObject->Set(Context, 0, MemoryHolder);
+}
+#endif
+
+pesapi_value FPapiBackendV8::CreateTriviallyFreedObject(
+    pesapi_env Env, const void* TypeId, void* Ptr, size_t Size, FTriviallyFreedDeleter Deleter, void* DeleterData)
+{
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    auto ClassDefinition = LoadClassByID(CppObjectMapper->GetRegistry(), TypeId);
+    if (!ClassDefinition)
+    {
+        return nullptr;
+    }
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+    v8::Local<v8::Object> Result;
+    if (!CppObjectMapper->GetTemplateOfClass(Isolate, ClassDefinition)->InstanceTemplate()->NewInstance(Context).ToLocal(&Result))
+    {
+        return nullptr;
+    }
+    BindTriviallyFreed(Isolate, Context, Result, TypeId, Ptr, Size, Deleter, DeleterData);
+    return papi_bridge::ToPapi(Result);
+#else
+    return nullptr;
+#endif
+}
+
+bool FPapiBackendV8::BindTriviallyFreedObject(
+    pesapi_callback_info Info, const void* TypeId, void* Ptr, size_t Size, FTriviallyFreedDeleter Deleter, void* DeleterData)
+{
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    const v8::FunctionCallbackInfo<v8::Value>& CallbackInfo = papi_bridge::ToV8(Info);
+    BindTriviallyFreed(Isolate, Isolate->GetCurrentContext(), CallbackInfo.This(), TypeId, Ptr, Size, Deleter, DeleterData);
+    return true;
+#else
+    return false;
+#endif
 }
 
 void FPapiBackendV8::SetInspectorCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info)

@@ -10,13 +10,6 @@
 
 #include "NamespaceDef.h"
 
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
-
 #include "DynamicInvoker.h"
 #include "pesapi.h"
 
@@ -56,8 +49,4 @@ public:
     struct pesapi_ffi* Apis = nullptr;
 
     pesapi_value_ref JsFunction = nullptr;
-
-#ifdef THREAD_SAFE
-    v8::Isolate* Isolate;
-#endif
 };

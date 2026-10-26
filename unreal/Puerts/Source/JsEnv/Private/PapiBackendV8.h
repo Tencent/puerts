@@ -12,6 +12,7 @@
 
 #include "PapiBackendJs.h"
 #include "PapiValueRef.h"
+#include "JSClassRegister.h"
 #include "NamespaceDef.h"
 #include <functional>
 #include <memory>
@@ -50,6 +51,10 @@ public:
         // called when a class is invalidated (pesapi invalidate_class) before the backend drops it, see
         // FCppObjectMapper::OnClassInvalidated
         std::function<void(const void* TypeId)> OnClassInvalidated;
+
+        // called when the script class of a definition is created, the definition must be kept alive while the env is,
+        // returns whether the class is named by its ScriptName
+        std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
 
         // an isolate and a context created by the host (node), adopted but not disposed by the backend
         v8::Isolate* ExternalIsolate = nullptr;
@@ -94,16 +99,19 @@ public:
 
     virtual FString CurrentStackTrace() override;
 
+    virtual ScriptClassRegistry* GetRegistry() override;
+
+    virtual bool LoadAddon(pesapi_env Env, const char* Name) override;
+
+    virtual pesapi_value CreateTriviallyFreedObject(
+        pesapi_env Env, const void* TypeId, void* Ptr, size_t Size, FTriviallyFreedDeleter Deleter, void* DeleterData) override;
+
+    virtual bool BindTriviallyFreedObject(pesapi_callback_info Info, const void* TypeId, void* Ptr, size_t Size,
+        FTriviallyFreedDeleter Deleter, void* DeleterData) override;
+
     v8::Isolate* GetIsolate() const
     {
         return Isolate;
-    }
-
-    // the object mapping of the backend (isolate data slot 0). Only for the v8 specific parts of the host that are not
-    // migrated yet (the templates of reflected classes)
-    FCppObjectMapper& GetCppObjectMapper() const
-    {
-        return *CppObjectMapper;
     }
 
 protected:

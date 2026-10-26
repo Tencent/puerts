@@ -30,14 +30,11 @@
 #include "JSGeneratedFunction.h"
 #endif
 #include "JSClassRegister.h"
-#include "PromiseRejectCallback.hpp"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "TypeScriptGeneratedClass.h"
 #include "Engine/UserDefinedEnum.h"
 #endif
 #include "ContainerMeta.h"
-
-#include "V8InspectorImpl.h"
 
 #if defined(WITH_NODEJS)
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
@@ -200,26 +197,17 @@ void FJsEnvImpl::StartPolling()
 
 void FJsEnvImpl::UvRunOnce()
 {
-    auto Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
-    v8::Context::Scope ContextScope(Context);
+    FPapiEnvScope EnvScope(MainApis, MainEnvRef);
 
     // TODO: catch uv_run可以让脚本错误不至于进程退出，但这不知道会不会对node有什么副作用
-    v8::TryCatch TryCatch(Isolate);
-
     uv_run(&NodeUVLoop, UV_RUN_NOWAIT);
-    if (TryCatch.HasCaught())
+    if (EnvScope.HasCaught())
     {
-        Logger->Error(FString::Printf(TEXT("uv_run throw: %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+        Logger->Error(FString::Printf(TEXT("uv_run throw: %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
     }
     else
     {
-        static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform())->DrainTasks(Isolate);
+        static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform())->DrainTasks(NodeIsolate);
     }
 
     LastJob = nullptr;
@@ -349,10 +337,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
 
     auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
-    MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop, Platform);
+    NodeIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop, Platform);
 
 #ifdef THREAD_SAFE
-    v8::Locker NodeLocker(MainIsolate);
+    v8::Locker NodeLocker(NodeIsolate);
 #endif
 
     // v8::Locker locker(Isolate);
@@ -364,18 +352,18 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     //"HandleScope::HandleScope",
     //"Entering the V8 API without proper locking in place");
 
-    v8::Isolate::Scope NodeIsolateScope(MainIsolate);
+    v8::Isolate::Scope NodeIsolateScope(NodeIsolate);
 
     NodeIsolateData =
-        node::CreateIsolateData(MainIsolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get());    // node::FreeIsolateData
+        node::CreateIsolateData(NodeIsolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get());    // node::FreeIsolateData
 
-    v8::HandleScope NodeHandleScope(MainIsolate);
+    v8::HandleScope NodeHandleScope(NodeIsolate);
 
-    v8::Local<v8::Context> NodeContext = node::NewContext(MainIsolate);
+    v8::Local<v8::Context> NodeContext = node::NewContext(NodeIsolate);
     {
         v8::Context::Scope NodeContextScope(NodeContext);
         v8::Local<v8::Object> NodeGlobal = NodeContext->Global();
-        auto strConsole = v8::String::NewFromUtf8(MainIsolate, "console").ToLocalChecked();
+        auto strConsole = v8::String::NewFromUtf8(NodeIsolate, "console").ToLocalChecked();
         v8::Local<v8::Value> Console = NodeGlobal->Get(NodeContext, strConsole).ToLocalChecked();
         // kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681
         // CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
@@ -393,22 +381,24 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     }
 
     // the same as raw v8
-    MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
+    NodeIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
 
     StartPolling();
 
     // the isolate and the context of node are adopted by the backend
-    BackendParams.ExternalIsolate = MainIsolate;
+    BackendParams.ExternalIsolate = NodeIsolate;
     BackendParams.ExternalContext = NodeContext;
 #endif
+    // the classes of reflected types (built from the class definitions of FStructWrapper) must be kept alive while the
+    // classes are, and they are named by the backend
+    BackendParams.OnClassCreated = [this](const JSClassDefinition* ClassDefinition)
+    { return OnReflectedClassCreated(ClassDefinition); };
 
     Backend = std::make_unique<FPapiBackendV8>(BackendParams);
     MainApis = Backend->GetApi();
     checkf(Backend->GetApiVersion() == PESAPI_VERSION, TEXT("papi version mismatch, expect %d, got %d"), PESAPI_VERSION,
         Backend->GetApiVersion());
     MainEnvRef = Backend->CreateEnvRef();
-    // the v8 specific parts of the host (inspector, the fast paths of the translators) still need the isolate
-    MainIsolate = static_cast<FPapiBackendV8*>(Backend.get())->GetIsolate();
 
     // the bindings of the host
     {
@@ -417,19 +407,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         pesapi_env Env = EnvScope.GetEnv();
         // the object mapping of UE types, used by the translators and wrappers (PapiUtils::ObjectMapperOf)
         Apis->set_env_private(Env, static_cast<IObjectMapper*>(this));
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
 
-        DefaultContext.Reset(Isolate, Context);
-
-        v8::Local<v8::Object> Global = Context->Global();
-        v8::Local<v8::Object> PuertsObj = v8::Object::New(Isolate);
-        Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), PuertsObj).Check();
-
-        auto This = v8::External::New(Isolate, this);
-
-        pesapi_value PapiGlobal = papi_bridge::ToPapi(Global);
-        pesapi_value PapiPuertsObj = papi_bridge::ToPapi(PuertsObj);
+        pesapi_value PapiGlobal = Apis->global(Env);
+        pesapi_value PapiPuertsObj = Apis->create_object(Env);
+        Apis->set_property(Env, PapiGlobal, "puerts", PapiPuertsObj);
 
         PapiMethodBindingHelper<&FJsEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
 
@@ -459,14 +440,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         PapiMethodBindingHelper<&FJsEnvImpl::MakeUClass>::Bind(Apis, Env, PapiGlobal, "__tgjsMakeUClass", this);
 
         PapiMethodBindingHelper<&FJsEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
-#endif
-
-#ifdef WITH_QUICKJS
-        Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FJsEnvImpl>);
-        Global
-            ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetPromiseRejectCallback"),
-                v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FJsEnvImpl>)->GetFunction(Context).ToLocalChecked())
-            .Check();
 #endif
 
         //#if !defined(WITH_NODEJS)
@@ -517,14 +490,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
             }
         }
 #endif
-        // the templates of reflected classes (built from the class definitions of FStructWrapper) need class names, and the
-        // definitions must be kept alive while the templates are
-        CppObjectMapperOf().OnTemplateCreated =
-            [this](v8::Isolate* InIsolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)
-        {
-            FStructWrapper::OnTemplateCreated(InIsolate, ClassDefinition, Template);
-            OnReflectedTemplateCreated(ClassDefinition);
-        };
 
         DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
         MixinInvoker = DynamicInvoker;
@@ -576,10 +541,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     }
     ExecuteModule("puerts/websocketpp.js");
 #endif
-#ifdef WITH_QUICKJS
-    auto rt = MainIsolate->runtime_;
-    JS_SetMaxStackSize(rt, 1024 * 1024);
-#endif
 }
 
 // #lizard forgives
@@ -602,19 +563,11 @@ FJsEnvImpl::~FJsEnvImpl()
     ManualReleaseCallbacks.Empty();
     ManualReleaseCallbackMap.Reset();
     ReloadJs.Reset();
-#ifdef WITH_QUICKJS
-    JsPromiseRejectCallback.Reset();
-#endif
 
     FUETicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
 
     {
-        auto Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
+        FPapiEnvScope EnvScope(MainApis, MainEnvRef);
 
         TypeToTemplateInfoMap.Empty();
 
@@ -697,9 +650,9 @@ FJsEnvImpl::~FJsEnvImpl()
     MainEnvRef = nullptr;
 #if defined(WITH_NODEJS)
     // the isolate of node is created by the host
-    MainIsolate->Dispose();
+    NodeIsolate->Dispose();
+    NodeIsolate = nullptr;
 #endif
-    MainIsolate = nullptr;
     Backend.reset();
     MainApis = nullptr;
 
@@ -745,7 +698,7 @@ void FJsEnvImpl::OnEnvReleased()
     node::FreeIsolateData(NodeIsolateData);
 
     auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
-    Platform->UnregisterIsolate(MainIsolate);
+    Platform->UnregisterIsolate(NodeIsolate);
 #endif
 
     DynamicInvoker.Reset();
@@ -760,8 +713,6 @@ void FJsEnvImpl::OnEnvReleased()
         }
     }
 #endif
-
-    DefaultContext.Reset();
 }
 
 void FJsEnvImpl::InitExtensionMethodsMap()
@@ -770,7 +721,7 @@ void FJsEnvImpl::InitExtensionMethodsMap()
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
 #ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
+    FPapiEnvScope ThreadSafeScope(MainApis, MainEnvRef);
 #endif
     // the extension methods are kept by the process wide struct wrappers
     FStructWrapper::InitExtensionMethodsMap();
@@ -882,7 +833,7 @@ void FJsEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
     if (auto Object = PapiUtils::GetUObject(Apis, Env, Des))
     {
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
@@ -910,7 +861,7 @@ void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info 
     UClass* Class = nullptr;
     if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
@@ -923,7 +874,7 @@ void FJsEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info 
         if (IsSet(1))
         {
             Outer = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 1));
-            if (!Outer || FV8Utils::IsReleasedPtr(Outer))
+            if (!Outer || PapiUtils::IsReleasedPtr(Outer))
             {
                 Apis->throw_by_string(Info, "passing a invalid object");
                 return;
@@ -969,7 +920,7 @@ void FJsEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callbac
     UScriptStruct* ScriptStruct = nullptr;
     if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
@@ -1237,8 +1188,7 @@ void FJsEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_s
 #endif
 
     TryReleaseType(TypeScriptGeneratedClass);
-    auto Context = papi_bridge::ToV8(Env);
-    pesapi_value NativeCtor = papi_bridge::ToPapi(GetJsClass(TypeScriptGeneratedClass, Context));
+    pesapi_value NativeCtor = GetJsClass(Env, TypeScriptGeneratedClass);
     if (!PrototypeLinked)
     {
         pesapi_value SetPrototypeOf =
@@ -1303,7 +1253,7 @@ void FJsEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_s
             //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
             //后面看是否能参照蓝图的组件初始化进行改造
             // TsConstruct(TypeScriptGeneratedClass, Object);
-            __USE(FindOrAdd(Env, Object->GetClass(), Object, true));
+            (void) FindOrAdd(Env, Object->GetClass(), Object, true);
         }
     }
 
@@ -1582,7 +1532,7 @@ void* FJsEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEO
     // called by FClassWrapper::New, JSObject is the object being constructed
     auto Class = static_cast<UClass*>(ClassWrapper->Struct.Get());
     bool Existed;
-    return AddBinding(Env, ClassWrapper, GetTemplateInfoOfType(Class, Existed)->IsNativeTakeJsRef, UEObject, JSObject);
+    return AddBinding(Env, ClassWrapper, GetTemplateInfoOfType(Env, Class, Existed)->IsNativeTakeJsRef, UEObject, JSObject);
 }
 
 FJsEnvImpl::FUObjectBinding* FJsEnvImpl::AddBinding(
@@ -1678,7 +1628,7 @@ pesapi_value FJsEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObj
 
     // create and link
     bool Existed;
-    auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
+    auto TemplateInfoPtr = GetTemplateInfoOfType(Env, Class, Existed);
     const bool IsTypeScriptGeneratedClass = TemplateInfoPtr->IsTypeScriptGeneratedClass;
     pesapi_value Result = nullptr;
     AddBinding(Env, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()), TemplateInfoPtr->IsNativeTakeJsRef, UEObject,
@@ -1700,17 +1650,17 @@ pesapi_value FJsEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptSt
 
     // builds the js class of the type in this env (if not yet)
     bool Existed;
-    auto TemplateInfoPtr = GetTemplateInfoOfType(ScriptStruct, Existed);
+    auto TemplateInfoPtr = GetTemplateInfoOfType(Env, ScriptStruct, Existed);
     auto Wrapper = static_cast<FScriptStructWrapper*>(TemplateInfoPtr->StructWrapper.get());
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    // the memory of an owned pod struct is freed with the object by the backend (if supported)
     if (!PassByPointer && IsTriviallyFreed(Wrapper))
     {
-        auto Context = papi_bridge::ToV8(Env);
-        auto Result = TemplateInfoPtr->Template.Get(MainIsolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-        BindPodStruct(Wrapper, Ptr, Result);
-        return papi_bridge::ToPapi(Result);
+        if (auto Result = Backend->CreateTriviallyFreedObject(Env, static_cast<FStructWrapper*>(Wrapper), Ptr,
+                Wrapper->Struct->GetStructureSize(), &FreeTriviallyFreedStruct, Wrapper))
+        {
+            return Result;
+        }
     }
-#endif
     // the type id of the object is the wrapper, a borrowed struct is cached, the memory of an owned one is freed by the
     // finalizer of the class definition (FScriptStructWrapper::ReflectedFinalize)
     return Apis->native_object_to_value(Env, static_cast<FStructWrapper*>(Wrapper), Ptr, !PassByPointer);
@@ -1787,6 +1737,9 @@ void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Para
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
+#ifdef THREAD_SAFE
+    FPapiEnvScope ThreadSafeScope(MainApis, MainEnvRef);
 #endif
     auto SignatureFunction = Proxy->SignatureFunction;
     auto Iter = JsCallbackPrototypeMap.find(SignatureFunction.Get());
@@ -1986,7 +1939,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
 #ifdef THREAD_SAFE
-    v8::Locker Locker(MainIsolate);
+    FPapiEnvScope ThreadSafeScope(MainApis, MainEnvRef);
 #endif
 
     TryReleaseType((UStruct*) ObjectBase);
@@ -2238,7 +2191,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
                 continue;
             if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                 continue;    //跳过父类重新编译后临时状态的对象
-            __USE(FindOrAdd(Env, Object->GetClass(), Object, true));
+            (void) FindOrAdd(Env, Object->GetClass(), Object, true);
 
             UTypeScriptGeneratedClass* ClassMayNeedReBind = nullptr;
             auto TempClass = Object->GetClass();
@@ -2378,9 +2331,6 @@ bool FJsEnvImpl::AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value J
     {
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
 
-#ifdef THREAD_SAFE
-        DelegateProxy->Isolate = MainIsolate;
-#endif
         DelegateProxy->Owner = Iter->second.Owner;
         DelegateProxy->SignatureFunction = Iter->second.SignatureFunction;
         DelegateProxy->DynamicInvoker = DynamicInvoker;
@@ -2459,9 +2409,6 @@ FScriptDelegate FJsEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_v
         TArray<TWeakObjectPtr<UDynamicDelegateProxy>>& Callbacks = AutoReleaseCallbacksMap.FindOrAdd(Owner);
 
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
-#ifdef THREAD_SAFE
-        DelegateProxy->Isolate = MainIsolate;
-#endif
         DelegateProxy->Owner = Owner;
         DelegateProxy->SignatureFunction = SignatureFunction;
         DelegateProxy->DynamicInvoker = DynamicInvoker;
@@ -2481,9 +2428,6 @@ FScriptDelegate FJsEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_v
         if (!Found || !Found->IsValid())
         {
             DelegateProxy = NewObject<UDynamicDelegateProxy>();
-#ifdef THREAD_SAFE
-            DelegateProxy->Isolate = MainIsolate;
-#endif
             DelegateProxy->Owner = DelegateProxy;
             DelegateProxy->SignatureFunction = SignatureFunction;
             DelegateProxy->DynamicInvoker = DynamicInvoker;
@@ -2743,57 +2687,25 @@ pesapi_value FJsEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDefinit
     return Apis->native_object_to_value(Env, Holder->TypeId, Holder, true);
 }
 
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
 bool FJsEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
 {
     UScriptStruct* Struct = Wrapper->Struct.IsValid() ? Cast<UScriptStruct>(Wrapper->Struct.Get()) : nullptr;
     return Struct && (Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
 }
 
-// Optimization branch:
-// ArrayBuffer will be gced on v8 worker thread
-// for pod ustruct it's safe to use it
-void FJsEnvImpl::BindPodStruct(FScriptStructWrapper* Wrapper, void* Ptr, v8::Local<v8::Object> JSObject)
+// the deleter of a pod struct whose memory is freed with its js object (may be called on a gc thread of the backend, safe
+// for pod), FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the env
+void FJsEnvImpl::FreeTriviallyFreedStruct(void* Ptr, size_t Size, void* DeleterData)
 {
-    // not cached, the memory is freed with the ArrayBuffer, the type id is the wrapper
-    DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    DataTransfer::SetPointer(MainIsolate, JSObject, static_cast<FStructWrapper*>(Wrapper), 1);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(
-        MainIsolate, Ptr, Wrapper->Struct->GetStructureSize(),
-        [](void* Data, size_t Length, void* DeleterData)
-        {
-            // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
-            FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
-            FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
-        },
-        Wrapper);
-#else
-    auto Backing = v8::ArrayBuffer::NewBackingStore(
-        Ptr, Wrapper->Struct->GetStructureSize(),
-        [](void* Data, size_t Length, void* DeleterData)
-        {
-            // FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the isolate
-            FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
-            FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
-        },
-        Wrapper);
-    auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
-#endif
-    __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
+    FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+    FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Ptr);
 }
-#endif
 
 bool FJsEnvImpl::TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr)
 {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
-    if (IsTriviallyFreed(Wrapper))
-    {
-        BindPodStruct(Wrapper, Ptr, papi_bridge::ToV8(Info).This());
-        return true;
-    }
-#endif
-    return false;
+    // not cached, the type id is the wrapper
+    return IsTriviallyFreed(Wrapper) && Backend->BindTriviallyFreedObject(Info, static_cast<FStructWrapper*>(Wrapper), Ptr,
+                                            Wrapper->Struct->GetStructureSize(), &FreeTriviallyFreedStruct, Wrapper);
 }
 
 std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
@@ -2801,20 +2713,18 @@ std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
     return FStructWrapper::FindOrAdd(InStruct);
 }
 
-FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, bool& Existed)
+FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(pesapi_env Env, UStruct* InStruct, bool& Existed)
 {
-    auto Isolate = MainIsolate;
     auto TemplateInfoPtr = TypeToTemplateInfoMap.Find(InStruct);
     if (!TemplateInfoPtr)
     {
         FTemplateInfo TemplateInfo;
 
-        // the super type first, so that (when templates are not reused) it is rebuilt before the template of InStruct
-        // inherits it
+        // the super type first, so that (when classes are not reused) it is rebuilt before the class of InStruct inherits it
         if (auto SuperStruct = InStruct->GetSuperStruct())
         {
             bool Dummy;
-            auto SuperTemplateInfo = GetTemplateInfoOfType(SuperStruct, Dummy);
+            auto SuperTemplateInfo = GetTemplateInfoOfType(Env, SuperStruct, Dummy);
             if (InStruct->IsA<UClass>() && SuperTemplateInfo->IsNativeTakeJsRef)
             {
                 TemplateInfo.IsNativeTakeJsRef = true;
@@ -2826,18 +2736,17 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         // the template info was released (TryReleaseType), rebuild the js class
         if (ClassesBuilt.find(StructWrapper.get()) != ClassesBuilt.end())
         {
-            auto Context = DefaultContext.Get(Isolate);
-            MainApis->invalidate_class(papi_bridge::ToPapi(Context), StructWrapper.get());
+            MainApis->invalidate_class(Env, StructWrapper.get());
         }
 #endif
         // the definition is shared by envs, the first use of a type in this env refreshes the translators
         auto ClassDefinition = StructWrapper->GetClassDefinition(InStruct, true);
         // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env unless
         // PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE is 0
-        auto Template = CppObjectMapperOf().GetTemplateOfClass(Isolate, ClassDefinition);
+        pesapi_value JsClass = MainApis->create_class(Env, StructWrapper.get());
 
         TemplateInfo.StructWrapper = StructWrapper;
-        // the template may be built from a previous definition (kept by this env)
+        // the class may be built from a previous definition (kept by this env)
         auto Built = ClassesBuilt.find(StructWrapper.get());
         TemplateInfo.ClassDefinition = ensure(Built != ClassesBuilt.end()) ? &Built->second->Definition : ClassDefinition;
 
@@ -2864,11 +2773,10 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
 
         if (!InStruct->GetSuperStruct())
         {
-            InstallFNameFixing(Template);
+            InstallFNameFixing(Env, JsClass);
         }
 
         Existed = false;
-        TemplateInfo.Template.Reset(Isolate, Template);
         return &TypeToTemplateInfoMap.Add(InStruct, MoveTemp(TemplateInfo));
     }
     else
@@ -2921,12 +2829,13 @@ static const char* FNameFixingProxyFactory = R"((function (fixName) {
     return proxy;
 }))";
 
-void FJsEnvImpl::InstallFNameFixing(v8::Local<v8::FunctionTemplate> Template)
+void FJsEnvImpl::InstallFNameFixing(pesapi_env Env, pesapi_value Class)
 {
-#ifndef WITH_QUICKJS
-    auto Context = DefaultContext.Get(MainIsolate);
     struct pesapi_ffi* Apis = MainApis;
-    pesapi_env Env = papi_bridge::ToPapi(Context);
+    if (!Class)
+    {
+        return;
+    }
     if (!FNameFixingProxy)
     {
         FPapiValueRef Factory;
@@ -2950,22 +2859,21 @@ void FJsEnvImpl::InstallFNameFixing(v8::Local<v8::FunctionTemplate> Template)
     {
         return;
     }
-    auto Func = Template->GetFunction(Context).ToLocalChecked();
-    pesapi_value Proto = Apis->get_property(Env, papi_bridge::ToPapi(Func), "prototype");
+    pesapi_value Proto = Apis->get_property(Env, Class, "prototype");
     if (Apis->is_object(Env, Proto))
     {
         pesapi_value Args[] = {Proto, FNameFixingProxy.Get(Env)};
         Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
     }
-#endif
 }
 
-v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::Context> Context)
+pesapi_value FJsEnvImpl::GetJsClass(pesapi_env Env, UStruct* InStruct)
 {
     bool Existed;
-    auto Ret = GetTemplateInfoOfType(InStruct, Existed)->Template.Get(MainIsolate)->GetFunction(Context).ToLocalChecked();
+    auto TemplateInfo = GetTemplateInfoOfType(Env, InStruct, Existed);
+    pesapi_value Ret = MainApis->create_class(Env, TemplateInfo->StructWrapper.get());
 
-    if (UNLIKELY(!Existed))    // first create
+    if (UNLIKELY(!Existed) && Ret)    // first create
     {
         auto Class = Cast<UClass>(InStruct);
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -2979,8 +2887,7 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::
                 if (SuperBindInfo && SuperBindInfo->Prototype)
                 {
                     struct pesapi_ffi* Apis = MainApis;
-                    pesapi_env Env = papi_bridge::ToPapi(Context);
-                    pesapi_value Proto = Apis->get_property(Env, papi_bridge::ToPapi(Ret), "prototype");
+                    pesapi_value Proto = Apis->get_property(Env, Ret, "prototype");
                     pesapi_value SetPrototypeOf = Apis->is_object(Env, Proto)
                                                       ? GetCachedJsFunction(Apis, Env, ObjectSetPrototypeOf,
                                                             "Object.setPrototypeOf", "puerts/object_set_prototype_of")
@@ -3020,11 +2927,6 @@ bool FJsEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsOb
     }
 }
 
-FCppObjectMapper& FJsEnvImpl::CppObjectMapperOf() const
-{
-    return static_cast<FPapiBackendV8*>(Backend.get())->GetCppObjectMapper();
-}
-
 void FJsEnvImpl::OnClassInvalidated(const void* TypeId)
 {
     // the UE side caches of the type (keyed by UStruct) are dropped too, so the next use goes through the registry
@@ -3044,13 +2946,14 @@ void FJsEnvImpl::OnClassInvalidated(const void* TypeId)
     }
 }
 
-void FJsEnvImpl::OnReflectedTemplateCreated(const JSClassDefinition* ClassDefinition)
+bool FJsEnvImpl::OnReflectedClassCreated(const JSClassDefinition* ClassDefinition)
 {
+    // only reflected classes are named (as before), the rest keep an empty constructor.name
     if (ClassDefinition->Initialize != &FStructWrapper::ReflectedConstruct)
     {
-        return;
+        return false;
     }
-    // the type id of a reflected class is its wrapper, and the template is always built from the current definition
+    // the type id of a reflected class is its wrapper, and the class is always built from the current definition
     auto& Current = static_cast<const FStructWrapper*>(ClassDefinition->TypeId)->GetCurrentClass();
     if (ensure(Current && &Current->Definition == ClassDefinition))
     {
@@ -3061,18 +2964,29 @@ void FJsEnvImpl::OnReflectedTemplateCreated(const JSClassDefinition* ClassDefini
         }
         Holder = Current;
     }
+    return true;
 }
 
-v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type)
+// the name -> value and value -> name entries of an enum like object (a number key is the same as its string form in js)
+static void SetEnumEntry(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Object, const FString& Name, int64 Value)
 {
+    FTCHARToUTF8 NameUtf8(*Name);
+    Apis->set_property(Env, Object, NameUtf8.Get(), Apis->create_double(Env, static_cast<double>(Value)));
+    FTCHARToUTF8 ValueUtf8(*FString::Printf(TEXT("%lld"), static_cast<long long>(Value)));
+    Apis->set_property(Env, Object, ValueUtf8.Get(), Apis->create_string_utf8(Env, NameUtf8.Get(), NameUtf8.Length()));
+}
+
+pesapi_value FJsEnvImpl::UETypeToJsClass(pesapi_env Env, UField* Type)
+{
+    struct pesapi_ffi* Apis = MainApis;
     if (const auto Struct = Cast<UStruct>(Type))
     {
-        return GetJsClass(Struct, Context);
+        return GetJsClass(Env, Struct);
     }
 
     if (const auto Enum = Cast<UEnum>(Type))
     {
-        auto Result = v8::Object::New(Isolate);
+        pesapi_value Result = Apis->create_object(Env);
         for (int i = 0; i < Enum->NumEnums(); ++i)
         {
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -3086,12 +3000,9 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
 #else
             auto Name = Enum->GetNameStringByIndex(i);
 #endif
-            auto Value = Enum->GetValueByIndex(i);
-            __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
-            __USE(Result->Set(Context, v8::Number::New(Isolate, Value), FV8Utils::ToV8String(Isolate, Name)));
+            SetEnumEntry(Apis, Env, Result, Name, Enum->GetValueByIndex(i));
         }
-        __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, "__puerts_ufield"),
-            papi_bridge::ToV8(FindOrAdd(papi_bridge::ToPapi(Context), Enum->GetClass(), Enum, false))));
+        Apis->set_property(Env, Result, "__puerts_ufield", FindOrAdd(Env, Enum->GetClass(), Enum, false));
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         if (Enum == StaticEnum<EObjectTypeQuery>())
         {
@@ -3107,8 +3018,7 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
                 auto ObjectType = CollisionProfile->ConvertToObjectType((ECollisionChannel) ContainerIndex);
                 if (ObjectType != EObjectTypeQuery::ObjectTypeQuery_MAX)
                 {
-                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, ObjectType)));
-                    __USE(Result->Set(Context, v8::Number::New(Isolate, ObjectType), FV8Utils::ToV8String(Isolate, ChannelName)));
+                    SetEnumEntry(Apis, Env, Result, ChannelName.ToString(), ObjectType);
                 }
                 ContainerIndex++;
             }
@@ -3127,8 +3037,7 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
                 auto TraceType = CollisionProfile->ConvertToTraceType((ECollisionChannel) ContainerIndex);
                 if (TraceType != ETraceTypeQuery::TraceTypeQuery_MAX)
                 {
-                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, TraceType)));
-                    __USE(Result->Set(Context, v8::Number::New(Isolate, TraceType), FV8Utils::ToV8String(Isolate, ChannelName)));
+                    SetEnumEntry(Apis, Env, Result, ChannelName.ToString(), TraceType);
                 }
                 ContainerIndex++;
             }
@@ -3137,7 +3046,7 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
         return Result;
     }
 
-    return v8::Undefined(Isolate);
+    return Apis->create_undefined(Env);
 }
 
 void FJsEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -3182,9 +3091,7 @@ void FJsEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         return;
     }
 
-    // the js class of a UStruct is still built from a v8 template (see M4-6)
-    auto Context = papi_bridge::ToV8(Env);
-    pesapi_value Result = papi_bridge::ToPapi(UETypeToJsClass(Context->GetIsolate(), Context, Type));
+    pesapi_value Result = UETypeToJsClass(Env, Type);
 
     if (Apis->is_undefined(Env, Result))
     {
@@ -3203,7 +3110,12 @@ void FJsEnvImpl::LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     pesapi_env Env = Apis->get_env(Info);
     const FString TypeName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
 
-    auto ClassDef = FindCppTypeClassByName(CppObjectMapperOf().GetRegistry(), PString(TCHAR_TO_UTF8(*TypeName)));
+    ScriptClassRegistry* Registry = Backend->GetRegistry();
+    if (!Registry)
+    {
+        Registry = GetDefaultClassRegistry();
+    }
+    auto ClassDef = FindCppTypeClassByName(Registry, PString(TCHAR_TO_UTF8(*TypeName)));
     pesapi_value Result = ClassDef ? Apis->create_class(Env, ClassDef->TypeId) : nullptr;
     if (Result)
     {
@@ -3223,7 +3135,7 @@ void FJsEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info 
     UField* Type = nullptr;
     if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
@@ -3233,9 +3145,7 @@ void FJsEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info 
 
     if (Type)
     {
-        // the js class of a UStruct is still built from a v8 template (see M4-6)
-        auto Context = papi_bridge::ToV8(Env);
-        Apis->add_return(Info, papi_bridge::ToPapi(UETypeToJsClass(Context->GetIsolate(), Context, Type)));
+        Apis->add_return(Info, UETypeToJsClass(Env, Type));
     }
     else
     {
@@ -3249,7 +3159,7 @@ void FJsEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info 
 
     pesapi_env Env = Apis->get_env(Info);
     UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0));
-    if (!Object || FV8Utils::IsReleasedPtr(Object))
+    if (!Object || PapiUtils::IsReleasedPtr(Object))
     {
         Apis->throw_by_string(Info, "passing a invalid object");
         return;
@@ -3454,13 +3364,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
 
 pesapi_value FJsEnvImpl::RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName)
 {
-#ifndef WITH_QUICKJS
     return Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", false);
-#else
-    // the module system is not supported by quickjs (frozen) until it is a papi backend
-    FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not require [%s], no module system"), *ModuleName));
-    return nullptr;
-#endif
 }
 
 void FJsEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -3571,19 +3475,10 @@ void FJsEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info
     }
 
     // addons are registered as builtin modules on their first use
+    if (Backend->LoadAddon(Env, TCHAR_TO_UTF8(*Specifier)))
     {
-        FTCHARToUTF8 NameUtf8(*Specifier);
-        PString Name(NameUtf8.Get(), NameUtf8.Length());
-        auto Func = FindAddonRegisterFunc(Name);
-        if (Func)
-        {
-            // AddonRegisterFunc is a public v8 signature, kept for existing addons
-            pesapi_value Exports = Apis->create_object(Env);
-            Func(papi_bridge::ToV8(Env), papi_bridge::ToV8(Exports).As<v8::Object>());
-            Backend->RegisterBuiltinModule(Env, NameUtf8.Get(), Exports);
-            Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Specifier));
-            return;
-        }
+        Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Specifier));
+        return;
     }
 
     FString Dir = FPaths::GetPath(Referrer);
@@ -3858,7 +3753,7 @@ void FJsEnvImpl::MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     UClass* ParentUClass = nullptr;
     if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 4)))
     {
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
@@ -3941,7 +3836,7 @@ void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     UClass* To = nullptr;
     if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
     {
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
@@ -4072,7 +3967,7 @@ void FJsEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     MixinClasses.Add(New);
 
     bool Existed = false;
-    GetTemplateInfoOfType(New, Existed)->IsNativeTakeJsRef = TakeJsObjectRef;
+    GetTemplateInfoOfType(Env, New, Existed)->IsNativeTakeJsRef = TakeJsObjectRef;
     for (auto& KV : TypeToTemplateInfoMap)
     {
         if (New != KV.Key && KV.Key->IsChildOf(New))

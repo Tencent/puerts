@@ -101,6 +101,12 @@ FORCEINLINE UObject* ToUObjectChecked(const void* Ptr)
                : RELEASED_UOBJECT;
 }
 
+// the member pointer of a released UObject (see RELEASED_UOBJECT_MEMBER)
+FORCEINLINE bool IsReleasedPtr(void* Ptr)
+{
+    return RELEASED_UOBJECT_MEMBER == Ptr;
+}
+
 // the IObjectMapper of an env, the host publishes it as the env private (pesapi set_env_private) when the env is created
 FORCEINLINE IObjectMapper* ObjectMapperOf(struct pesapi_ffi* Apis, pesapi_env Env)
 {

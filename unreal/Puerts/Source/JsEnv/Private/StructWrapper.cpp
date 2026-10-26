@@ -496,23 +496,6 @@ void* FStructWrapper::ReflectedConstruct(struct pesapi_ffi* Apis, pesapi_callbac
     return static_cast<FClassWrapper*>(This)->New(Apis, Info);
 }
 
-void FStructWrapper::OnTemplateCreated(
-    v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)
-{
-    if (ClassDefinition->Initialize != &FStructWrapper::ReflectedConstruct)
-    {
-        return;
-    }
-
-#if WITH_EDITOR || !defined(UE_SHIPPING)
-    if (ClassDefinition->ScriptName)
-    {
-        Template->SetClassName(
-            v8::String::NewFromUtf8(Isolate, ClassDefinition->ScriptName, v8::NewStringType::kNormal).ToLocalChecked());
-    }
-#endif
-}
-
 void FStructWrapper::StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     FStructWrapper* This = static_cast<FStructWrapper*>(Apis->get_userdata(Info));

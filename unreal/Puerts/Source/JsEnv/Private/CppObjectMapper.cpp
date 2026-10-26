@@ -294,12 +294,16 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             }
         }
 
-#if USING_IN_UNREAL_ENGINE
-        if (OnTemplateCreated)
+        if (OnClassCreated && OnClassCreated(ClassDefinition))
         {
-            OnTemplateCreated(Isolate, ClassDefinition, Template);
-        }
+#if WITH_EDITOR || !defined(UE_SHIPPING)
+            if (ClassDefinition->ScriptName)
+            {
+                Template->SetClassName(
+                    v8::String::NewFromUtf8(Isolate, ClassDefinition->ScriptName, v8::NewStringType::kNormal).ToLocalChecked());
+            }
 #endif
+        }
 
         TypeIdToTemplateMap[ClassDefinition->TypeId] =
             FTemplateEntry{v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template), ClassDefinition};

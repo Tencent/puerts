@@ -47,9 +47,7 @@ void UDynamicDelegateProxy::Fire()
 
 void UDynamicDelegateProxy::ProcessEvent(UFunction*, void* Params)
 {
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
+    // the lock of the backend (THREAD_SAFE) is taken by the env scope in InvokeDelegateCallback
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker && Owner.IsValid())
     {

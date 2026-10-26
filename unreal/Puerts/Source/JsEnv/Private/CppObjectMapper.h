@@ -144,15 +144,10 @@ public:
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition);
 
-#if USING_IN_UNREAL_ENGINE
-    // unreal only: called when the template of a class is created (members and super class are set, not instantiated yet),
-    // used by reflected classes to set the class name and keep the definition alive
-    typedef std::function<void(
-        v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template)>
-        FTemplateCreatedHook;
-
-    FTemplateCreatedHook OnTemplateCreated;
-#endif
+    // called when the script class of a definition is created (the template keeps referring to the definition), used by the
+    // host to keep the definitions of reflected classes alive, returns whether the class is named by its ScriptName (the name
+    // shown by debuggers and as constructor.name)
+    std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
 
 #ifndef WITH_QUICKJS
     struct FPesapiFunctionData

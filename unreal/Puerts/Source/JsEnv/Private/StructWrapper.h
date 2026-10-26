@@ -127,10 +127,6 @@ public:
         return CurrentClass;
     }
 
-    // CppObjectMapper hook: class name of the templates of reflected classes
-    static void OnTemplateCreated(
-        v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition, v8::Local<v8::FunctionTemplate> Template);
-
     // the wrapper if TypeId is the type id of a reflected class (UClass / UScriptStruct), otherwise nullptr
     static FStructWrapper* FromTypeId(const void* TypeId);
 

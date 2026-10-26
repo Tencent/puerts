@@ -25,6 +25,8 @@
 
 namespace PUERTS_NAMESPACE
 {
+class ScriptClassRegistry;
+
 // the env a backend is entered into (ScriptEnv of unity)
 class IPapiScriptHost
 {
@@ -106,6 +108,40 @@ public:
     virtual FString CurrentStackTrace()
     {
         return FString();
+    }
+
+    // the class registry used by the env (pesapi set_registry), nullptr for the default registry
+    virtual ScriptClassRegistry* GetRegistry()
+    {
+        return nullptr;
+    }
+
+    // native addons of the engine (RegisterAddon, the register function has a signature of the engine), called inside a scope
+    // of the env. If an addon of the name is found, its exports are registered as a builtin module of the name and true is
+    // returned
+    virtual bool LoadAddon(pesapi_env Env, const char* Name)
+    {
+        return false;
+    }
+
+    // native objects of the class TypeId whose memory (Ptr, Size bytes) is owned by the script object and only needs
+    // Deleter(Ptr, Size, DeleterData) to be freed, which may be called on any thread once the object is collected. The engine
+    // may count the memory and free it off the main thread. The object is not cached (a later native_object_to_value of Ptr
+    // creates another one). Called inside a scope of the env, nullptr / false if not supported (the host falls back to
+    // native_object_to_value then)
+    typedef void (*FTriviallyFreedDeleter)(void* Ptr, size_t Size, void* DeleterData);
+
+    virtual pesapi_value CreateTriviallyFreedObject(
+        pesapi_env Env, const void* TypeId, void* Ptr, size_t Size, FTriviallyFreedDeleter Deleter, void* DeleterData)
+    {
+        return nullptr;
+    }
+
+    // the same for the object being constructed by a constructor of a class (the this of Info)
+    virtual bool BindTriviallyFreedObject(
+        pesapi_callback_info Info, const void* TypeId, void* Ptr, size_t Size, FTriviallyFreedDeleter Deleter, void* DeleterData)
+    {
+        return false;
     }
 };
 }    // namespace PUERTS_NAMESPACE

@@ -11,7 +11,6 @@
 #include "JsEnv.h"
 #include "DynamicDelegateProxy.h"
 #include "StructWrapper.h"
-#include "CppObjectMapper.h"
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "PapiV8Bridge.h"
@@ -30,13 +29,6 @@
 #include "UObject/WeakFieldPtr.h"
 #endif
 
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
-
 #include "NamespaceDef.h"
 
 #include "PapiValueRef.h"
@@ -51,12 +43,6 @@ PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "uv.h"
 #pragma warning(pop)
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#endif
-
-#if V8_MAJOR_VERSION < 8 || defined(WITH_QUICKJS) || defined(WITH_NODEJS) || (WITH_EDITOR && !defined(FORCE_USE_STATIC_V8_LIB))
-#define WITH_BACKING_STORE_AUTO_FREE 0
-#else
-#define WITH_BACKING_STORE_AUTO_FREE 1
 #endif
 
 namespace PUERTS_NAMESPACE
@@ -145,13 +131,11 @@ public:
 
     pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial);
 
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
-    // an owned POD struct, the memory is freed with an ArrayBuffer (gced on a v8 worker thread) instead of the finalizer of
-    // the class definition, the object is not cached
+    // an owned POD struct, the memory may be freed with the script object by the backend (IPapiBackend::
+    // CreateTriviallyFreedObject) instead of the finalizer of the class definition
     static bool IsTriviallyFreed(FScriptStructWrapper* Wrapper);
 
-    void BindPodStruct(FScriptStructWrapper* Wrapper, void* Ptr, v8::Local<v8::Object> JSObject);
-#endif
+    static void FreeTriviallyFreedStruct(void* Ptr, size_t Size, void* DeleterData);
 
     // a wrapper of the container class (ClassDefinition), the wrapper of a borrowed container (PassByPointer) is cached by the
     // container, an owned one (deleted with the wrapper) is always new
@@ -173,9 +157,6 @@ public:
 
     // the class of TypeId is invalidated (pesapi invalidate_class), drops the UE side caches of it
     void OnClassInvalidated(const void* TypeId);
-
-    // the object mapping of the v8 backend, used by the templates of reflected classes until they are built by papi
-    FCppObjectMapper& CppObjectMapperOf() const;
 
     // IObjectMapper, the papi interface used by the backend independent code
     virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override;
@@ -237,15 +218,6 @@ public:
     void NotifyReBind(UTypeScriptGeneratedClass* Class);
 #endif
 
-#ifdef WITH_QUICKJS
-    v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
-#endif
-
-    V8_INLINE static FJsEnvImpl* Get(v8::Isolate* Isolate)
-    {
-        return static_cast<FJsEnvImpl*>(static_cast<IObjectMapper*>(DataTransfer::GetIsolatePrivateData(Isolate)));
-    }
-
 public:
 #if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
     virtual void OnUObjectArrayShutdown() override
@@ -281,7 +253,8 @@ private:
     void HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
-    v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
+    // the js class of a UStruct, an object of the values for a UEnum, undefined otherwise
+    pesapi_value UETypeToJsClass(pesapi_env Env, UField* Type);
 
     void LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -297,11 +270,12 @@ private:
 
     std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct);
 
+    // the per env info of a UStruct whose js class is built in this env (the class itself is cached by the backend, keyed by
+    // the type id, see pesapi create_class)
     struct FTemplateInfo
     {
-        v8::UniquePersistent<v8::FunctionTemplate> Template;
         std::shared_ptr<FStructWrapper> StructWrapper;
-        // the class definition Template is built from (held by ClassesBuilt / RetiredClasses)
+        // the class definition the js class is built from (held by ClassesBuilt / RetiredClasses)
         const JSClassDefinition* ClassDefinition = nullptr;
         // per env flags (the wrapper is shared by envs), IsNativeTakeJsRef can be changed by mixin
 #if PUERTS_KEEP_UOBJECT_REFERENCE
@@ -312,9 +286,10 @@ private:
         bool IsTypeScriptGeneratedClass = false;
     };
 
-    FTemplateInfo* GetTemplateInfoOfType(UStruct* Class, bool& Existed);
+    // builds the js class of the type in this env if not yet (called inside a scope of the env)
+    FTemplateInfo* GetTemplateInfoOfType(pesapi_env Env, UStruct* Class, bool& Existed);
 
-    v8::Local<v8::Function> GetJsClass(UStruct* Class, v8::Local<v8::Context> Context);
+    pesapi_value GetJsClass(pesapi_env Env, UStruct* Class);
 
     FPropertyTranslator* GetContainerPropertyTranslator(PropertyMacro* Property);
 
@@ -476,9 +451,10 @@ private:
     void StopPolling();
 #endif
 
-    v8::Isolate* MainIsolate;
-
-    v8::Global<v8::Context> DefaultContext;
+#if defined(WITH_NODEJS)
+    // the isolate of node, created and disposed by the host (adopted by the backend)
+    v8::Isolate* NodeIsolate = nullptr;
+#endif
 
     // the ref of the default env, the entries from the host open their papi scopes with it (FPapiEnvScope)
     pesapi_env_ref MainEnvRef = nullptr;
@@ -495,14 +471,15 @@ private:
 
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
-    // the class definitions (of FStructWrapper) the templates of this env are built from, keyed by type id. The templates
-    // reference the definitions and are not collected while the isolate is alive, so a definition dropped by
-    // InvalidateClass is kept in RetiredClasses, both are released after the isolate is disposed
+    // the class definitions (of FStructWrapper) the js classes of this env are built from, keyed by type id. The classes
+    // reference the definitions and are not collected while the env is alive, so a definition dropped by InvalidateClass is
+    // kept in RetiredClasses, both are released after the env is destroyed
     std::unordered_map<const void*, std::shared_ptr<FReflectedClass>> ClassesBuilt;
 
     std::vector<std::shared_ptr<FReflectedClass>> RetiredClasses;
 
-    void OnReflectedTemplateCreated(const JSClassDefinition* ClassDefinition);
+    // IPapiBackend OnClassCreated
+    bool OnReflectedClassCreated(const JSClassDefinition* ClassDefinition);
 
     // A UObject wrapper is a native object of the class definition of its UClass (the type id is the FClassWrapper), the native
     // pointer is a FUObjectBinding (a FUObjectHandle) owned by the wrapper: it is freed by the finalizer of the class
@@ -646,7 +623,7 @@ private:
     // the case of member names by FName when a member is not found
     FPapiValueRef FNameFixingProxy;
 
-    void InstallFNameFixing(v8::Local<v8::FunctionTemplate> Template);
+    void InstallFNameFixing(pesapi_env Env, pesapi_value Class);
 
     // evals Code once and caches the function, returns nullptr with the exception pending if the eval fails
     pesapi_value GetCachedJsFunction(
@@ -677,29 +654,6 @@ private:
 #ifdef SINGLE_THREAD_VERIFY
     uint32 BoundThreadId;
 #endif
-
-    typedef void (FJsEnvImpl::*V8MethodCallback)(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
-    template <V8MethodCallback callback>
-    struct MethodBindingHelper
-    {
-        static void Bind(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj, const char* Key,
-            v8::Local<v8::External> This)
-        {
-            Obj->Set(Context, FV8Utils::ToV8String(Isolate, Key),
-                   v8::FunctionTemplate::New(
-                       Isolate,
-                       [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-                       {
-                           auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-                           (Self->*callback)(Info);
-                       },
-                       This)
-                       ->GetFunction(Context)
-                       .ToLocalChecked())
-                .Check();
-        }
-    };
 
     typedef void (FJsEnvImpl::*PapiMethodCallback)(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
