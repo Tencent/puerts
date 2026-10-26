@@ -8,7 +8,7 @@
 
 #include "ContainerWrapper.h"
 #include "PropertyTranslator.h"
-#include "PapiV8Bridge.h"
+#include "PapiDataTransfer.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -46,10 +46,9 @@ static FORCEINLINE bool ContainerCheckArgsLen(struct pesapi_ffi* Apis, pesapi_ca
     return true;
 }
 
-// the holder value is not reachable through papi yet
-static FORCEINLINE void ContainerLinkOuter(pesapi_env Env, pesapi_callback_info Info, pesapi_value Inner)
+static FORCEINLINE void ContainerLinkOuter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Inner)
 {
-    LinkOuterImpl(papi_bridge::ToV8(Env), papi_bridge::HolderOf(Info), papi_bridge::ToV8(Inner));
+    PapiDataTransfer::LinkOuter(Apis, Env, Apis->get_this(Info), Inner);
 }
 
 // the type ids of the container classes
@@ -148,7 +147,7 @@ void FScriptArrayWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_i
     auto Ret = Inner->UEToJs(Apis, Env, DataPtr, PassByPointer);
     if (Inner->NeedLinkOuter && PassByPointer)
     {
-        ContainerLinkOuter(Env, Info, Ret);
+        ContainerLinkOuter(Apis, Env, Info, Ret);
     }
     Apis->add_return(Info, Ret);
 }
@@ -377,7 +376,7 @@ void FScriptSetWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_inf
         auto Ret = Inner->UEToJs(Apis, Env, Data, PassByPointer);
         if (Inner->NeedLinkOuter && PassByPointer)
         {
-            ContainerLinkOuter(Env, Info, Ret);
+            ContainerLinkOuter(Apis, Env, Info, Ret);
         }
         Apis->add_return(Info, Ret);
     }
@@ -582,7 +581,7 @@ void FScriptMapWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_inf
         auto Ret = ValuePropertyTranslator->UEToJs(Apis, Env, ValuePtr, PassByPointer);
         if (ValuePropertyTranslator->NeedLinkOuter && PassByPointer)
         {
-            ContainerLinkOuter(Env, Info, Ret);
+            ContainerLinkOuter(Apis, Env, Info, Ret);
         }
         Apis->add_return(Info, Ret);
     }
@@ -764,7 +763,7 @@ void FFixSizeArrayWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_
     auto Ret = Inner->UEToJs(Apis, Env, Ptr, PassByPointer);
     if (Inner->NeedLinkOuter && PassByPointer)
     {
-        ContainerLinkOuter(Env, Info, Ret);
+        ContainerLinkOuter(Apis, Env, Info, Ret);
     }
     Apis->add_return(Info, Ret);
 }

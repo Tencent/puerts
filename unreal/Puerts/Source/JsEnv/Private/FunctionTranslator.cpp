@@ -7,8 +7,7 @@
  */
 
 #include "FunctionTranslator.h"
-#include "V8Utils.h"
-#include "PesapiClassThunks.h"
+#include "PapiUtils.h"
 #include "Misc/DefaultValueHelper.h"
 #include <mutex>
 
@@ -234,7 +233,7 @@ void FFunctionTranslator::CallThunk(struct pesapi_ffi* Apis, pesapi_callback_inf
 
 void FFunctionTranslator::Call(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    UObject* CallObject = IsStatic ? BindObject.Get() : DataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
+    UObject* CallObject = IsStatic ? BindObject.Get() : PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
     if (!CallObject)
     {
         if (IsStatic)    //延时初始化
@@ -248,7 +247,7 @@ void FFunctionTranslator::Call(struct pesapi_ffi* Apis, pesapi_callback_info Inf
             return;
         }
     }
-    if (FV8Utils::IsReleasedPtr(CallObject))
+    if (PapiUtils::IsReleasedPtr(CallObject))
     {
         Apis->throw_by_string(Info, "access a invalid object");
         return;
@@ -694,7 +693,7 @@ void FExtensionMethodTranslator::CallExtension(struct pesapi_ffi* Apis, pesapi_c
     pesapi_env Env = Apis->get_env(Info);
 
     // the receiver is passed as the first argument of the extension method, there is no pesapi to get it as a value yet
-    if (!Arguments[0]->JsToUEInContainer(Apis, Env, papi_bridge::ToPapi(papi_bridge::HolderOf(Info)), Params, false))
+    if (!Arguments[0]->JsToUEInContainer(Apis, Env, Apis->get_this(Info), Params, false))
     {
         if (Params)
         {

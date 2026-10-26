@@ -13,6 +13,7 @@
 #include "UObject/Package.h"
 #include "UObject/Class.h"
 #include "UObjectHandle.h"
+#include "PapiDataTransfer.h"
 #else
 #include "JSClassRegister.h"
 #endif
@@ -33,8 +34,12 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #define PESAPI_PRIVATE_DATA_POS_IN_ISOLATE (MAPPER_ISOLATE_DATA_POS + 1)
 #endif
 
+#ifndef RELEASED_UOBJECT
 #define RELEASED_UOBJECT ((UObject*) 12)
+#endif
+#ifndef RELEASED_UOBJECT_MEMBER
 #define RELEASED_UOBJECT_MEMBER ((void*) 12)
+#endif
 
 namespace PUERTS_NAMESPACE
 {
@@ -54,174 +59,6 @@ V8_INLINE void LinkOuterImpl(v8::Local<v8::Context> Context, v8::Local<v8::Value
 }
 
 #if USING_IN_UNREAL_ENGINE
-FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR* Name)
-{
-    static UPackage* CoreUObjectPkg = FindObjectChecked<UPackage>(nullptr, TEXT("/Script/CoreUObject"));
-    return FindObjectChecked<UScriptStruct>(CoreUObjectPkg, Name);
-}
-
-template <class T, typename Enable = void>
-struct TScriptStructTraits
-{
-};
-
-template <>
-struct TScriptStructTraits<FVector>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FVector>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FVector2D>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FVector2D>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FVector4>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FVector4>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FRotator>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FRotator>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FQuat>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FQuat>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FTransform>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FTransform>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FLinearColor>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FLinearColor>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FColor>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FColor>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FGuid>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FGuid>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FBox2D>
-{
-    static UScriptStruct* Get()
-    {
-        return TBaseStructure<FBox2D>::Get();
-    }
-};
-
-template <>
-struct TScriptStructTraits<FIntPoint>
-{
-    static UScriptStruct* Get()
-    {
-        return GetScriptStructInCoreUObject(TEXT("IntPoint"));
-    }
-};
-
-template <>
-struct TScriptStructTraits<FIntVector>
-{
-    static UScriptStruct* Get()
-    {
-        return GetScriptStructInCoreUObject(TEXT("IntVector"));
-    }
-};
-
-template <>
-struct TScriptStructTraits<FPlane>
-{
-    static UScriptStruct* Get()
-    {
-        return GetScriptStructInCoreUObject(TEXT("Plane"));
-    }
-};
-
-template <>
-struct TScriptStructTraits<FMatrix>
-{
-    static UScriptStruct* Get()
-    {
-        return GetScriptStructInCoreUObject(TEXT("Matrix"));
-    }
-};
-
-template <>
-struct TScriptStructTraits<FIntVector4>
-{
-    static UScriptStruct* Get()
-    {
-        return GetScriptStructInCoreUObject(TEXT("IntVector4"));
-    }
-};
-
-template <class...>
-using ToVoid = void;
-
-template <typename T, typename = void>
-struct HasStaticStructHelper : std::false_type
-{
-};
-
-template <typename T>
-struct HasStaticStructHelper<T, ToVoid<decltype(&T::StaticStruct)>> : std::true_type
-{
-};
-
-template <typename T>
-struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::value>::type>
-{
-    static UScriptStruct* Get()
-    {
-        return T::StaticStruct();
-    }
-};
-
 template <typename T, typename FT>
 struct TOuterLinker<T, FT, ToVoid<decltype(&TScriptStructTraits<FT>::Get)>>
 {
@@ -279,17 +116,7 @@ public:
     // destroyed / pending kill, or the pointer is not a FUObjectHandle
     FORCEINLINE static UObject* GetUObjectOfNativePtr(void* Ptr, bool EvenIfPendingKill = false)
     {
-        if (!Ptr)
-        {
-            return nullptr;
-        }
-        if (V8_UNLIKELY(!FUObjectHandle::IsHandle(Ptr)))
-        {
-            return RELEASED_UOBJECT;
-        }
-        auto Handle = static_cast<FUObjectHandle*>(Ptr);
-        UObject* Ret = EvenIfPendingKill ? Handle->GetEvenIfPendingKill() : Handle->Get();
-        return V8_LIKELY(Ret) ? Ret : RELEASED_UOBJECT;
+        return PapiDataTransfer::GetUObjectOfNativePtr(Ptr, EvenIfPendingKill);
     }
 
     // UObject of a js wrapper (whose native pointer is a FUObjectHandle): nullptr if the js object holds no native pointer,

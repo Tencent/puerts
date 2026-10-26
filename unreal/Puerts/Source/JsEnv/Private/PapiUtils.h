@@ -12,10 +12,9 @@
 #include "CoreUObject.h"
 #include "NamespaceDef.h"
 #include "pesapi.h"
-#include "DataTransfer.h"
-#include "V8Utils.h"
+#include "PapiDataTransfer.h"
+#include "ArgType.h"
 #include "ObjectMapper.h"
-#include "PapiV8Bridge.h"
 #include <initializer_list>
 
 // helpers shared by the papi based code of the plugin
@@ -25,23 +24,12 @@ namespace PapiUtils
 {
 FORCEINLINE FString ToFString(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
 {
-    FString Ret;
-    size_t Len = 0;
-    Apis->get_value_string_utf16(Env, Value, nullptr, &Len);
-    if (Len > 0)
-    {
-        TArray<TCHAR>& CharArray = Ret.GetCharArray();
-        CharArray.SetNumUninitialized(static_cast<int32>(Len) + 1);
-        Apis->get_value_string_utf16(Env, Value, reinterpret_cast<uint16_t*>(CharArray.GetData()), &Len);
-        CharArray[static_cast<int32>(Len)] = TEXT('\0');
-    }
-    return Ret;
+    return PapiDataTransfer::ToFString(Apis, Env, Value);
 }
 
 FORCEINLINE pesapi_value FromFString(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Str)
 {
-    static_assert(sizeof(TCHAR) == sizeof(uint16_t), "TCHAR must be UTF-16");
-    return Apis->create_string_utf16(Env, reinterpret_cast<const uint16_t*>(*Str), static_cast<size_t>(Str.Len()));
+    return PapiDataTransfer::FromFString(Apis, Env, Str);
 }
 
 // same as FV8Utils::ToV8StringFromFileContent: UTF-16 with BOM, otherwise UTF-8 (BOM skipped)
@@ -88,7 +76,7 @@ inline pesapi_value EvalFileContent(struct pesapi_ffi* Apis, pesapi_env Env, con
 // same as FV8Utils::GetUObject(Context, Value): nullptr for a non object value, RELEASED_UOBJECT for a released one
 FORCEINLINE UObject* GetUObject(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
 {
-    return DataTransfer::GetUObjectOfNativePtr(Apis->get_native_object_ptr(Env, Value));
+    return PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_object_ptr(Env, Value));
 }
 
 // a raw UObject pointer (e.g. the type id of a struct wrapper, which is its UScriptStruct), same as FV8Utils::GetUObject with
@@ -114,14 +102,14 @@ FORCEINLINE IObjectMapper* ObjectMapperOf(struct pesapi_ffi* Apis, pesapi_env En
 }
 
 // pesapi_throw_by_string needs the callback info, which translators do not have
-FORCEINLINE void ThrowException(pesapi_env Env, const char* Message)
+FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, const char* Message)
 {
-    FV8Utils::ThrowException(papi_bridge::IsolateOf(Env), Message);
+    Apis->throw_error(Env, Message);
 }
 
-FORCEINLINE void ThrowException(pesapi_env Env, const FString& Message)
+FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Message)
 {
-    FV8Utils::ThrowException(papi_bridge::IsolateOf(Env), Message);
+    Apis->throw_error(Env, TCHAR_TO_UTF8(*Message));
 }
 
 FORCEINLINE pesapi_value FindOrAddUObject(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UObject* Object)
@@ -226,8 +214,8 @@ inline bool CheckArguments(struct pesapi_ffi* Apis, pesapi_callback_info Info, s
                 Expect = Apis->is_string(Env, Arg) ? nullptr : TEXT("a string");
                 break;
             case EArgExternal:
-                // papi has no external, only the v8 implementation creates them
-                Expect = papi_bridge::ToV8(Arg)->IsExternal() ? nullptr : TEXT("an external");
+                // papi has no external, nothing created by papi can be one
+                Expect = TEXT("an external");
                 break;
             case EArgFunction:
                 Expect = Apis->is_function(Env, Arg) ? nullptr : TEXT("a function");

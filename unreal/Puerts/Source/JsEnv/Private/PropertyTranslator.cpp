@@ -7,7 +7,6 @@
  */
 
 #include "PropertyTranslator.h"
-#include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "StructWrapper.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -22,7 +21,6 @@
 #include "DelegateWrapper.h"
 #include "SoftObjectWrapper.h"
 #include "JsObject.h"
-#include "PesapiClassThunks.h"
 #include "PapiUtils.h"
 #ifdef PUERTS_FTEXT_AS_OBJECT
 #include "TypeInfo.hpp"
@@ -74,13 +72,13 @@ void FPropertyTranslator::Getter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
 
     if (OwnerIsClass)
     {
-        UObject* Object = DataTransfer::GetUObjectOfNativePtr(HolderPtr);
+        UObject* Object = PapiDataTransfer::GetUObjectOfNativePtr(HolderPtr);
         if (!Object)
         {
             Apis->throw_by_string(Info, "access a null object");
             return;
         }
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "access a invalid object");
             return;
@@ -98,7 +96,7 @@ void FPropertyTranslator::Getter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
     }
     if (NeedLinkOuter)
     {
-        LinkOuterImpl(papi_bridge::ToV8(Env), papi_bridge::HolderOf(Info), papi_bridge::ToV8(Ret));
+        PapiDataTransfer::LinkOuter(Apis, Env, Apis->get_this(Info), Ret);
     }
     Apis->add_return(Info, Ret);
 }
@@ -120,13 +118,13 @@ void FPropertyTranslator::Setter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
 
     if (OwnerIsClass)
     {
-        UObject* Object = DataTransfer::GetUObjectOfNativePtr(HolderPtr);
+        UObject* Object = PapiDataTransfer::GetUObjectOfNativePtr(HolderPtr);
         if (!Object)
         {
             Apis->throw_by_string(Info, "access a null object");
             return;
         }
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
             Apis->throw_by_string(Info, "access a invalid object");
             return;
@@ -153,13 +151,13 @@ void FPropertyTranslator::DelegateGetter(struct pesapi_ffi* Apis, pesapi_callbac
         return;
     }
 
-    auto Object = DataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
+    auto Object = PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
     if (!Object)
     {
         Apis->throw_by_string(Info, "access a null object");
         return;
     }
-    if (FV8Utils::IsReleasedPtr(Object))
+    if (PapiUtils::IsReleasedPtr(Object))
     {
         Apis->throw_by_string(Info, "access a invalid object");
         return;
@@ -426,7 +424,7 @@ public:
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         // a FName passed by value (ArrayBuffer of sizeof(FName)), only a plain ArrayBuffer, not a view
-        if (papi_bridge::ToV8(Value)->IsArrayBuffer())
+        if (Apis->is_binary(Env, Value) && Apis->is_undefined(Env, Apis->get_property(Env, Value, "buffer")))
         {
             size_t ByteLength = 0;
             auto Data = Apis->get_value_binary(Env, Value, &ByteLength);
@@ -492,9 +490,9 @@ public:
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         auto Object = PapiUtils::GetUObject(Apis, Env, Value);
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
-            PapiUtils::ThrowException(Env, "passing a invalid object");
+            PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
             return false;
         }
         ObjectBaseProperty->SetObjectPropertyValue(ValuePtr, Object);
@@ -522,7 +520,7 @@ public:
         FSoftObjectPtr* Ptr = FSoftObjectWrapper::SoftObjectPtrOf(Apis, Env, Value);
         if (!Ptr)
         {
-            PapiUtils::ThrowException(Env, "passing a invalid object for FSoftObjectPtr");
+            PapiUtils::ThrowException(Apis, Env, "passing a invalid object for FSoftObjectPtr");
             return false;
         }
 
@@ -550,7 +548,7 @@ public:
         FSoftObjectPtr* Ptr = FSoftObjectWrapper::SoftObjectPtrOf(Apis, Env, Value);
         if (!Ptr)
         {
-            PapiUtils::ThrowException(Env, "passing a invalid object for FSoftObjectPtr");
+            PapiUtils::ThrowException(Apis, Env, "passing a invalid object for FSoftObjectPtr");
             return false;
         }
 
@@ -581,7 +579,7 @@ public:
 
         if (!FieldPath.GetTyped(FieldPathProperty->PropertyClass))
         {
-            PapiUtils::ThrowException(Env, FString::Printf(TEXT("invalid FieldPath: %s"), *Path));
+            PapiUtils::ThrowException(Apis, Env, FString::Printf(TEXT("invalid FieldPath: %s"), *Path));
             return false;
         }
 
@@ -618,9 +616,9 @@ public:
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         UObject* Object = PapiUtils::GetUObject(Apis, Env, Value);
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
-            PapiUtils::ThrowException(Env, "passing a invalid object");
+            PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
             return false;
         }
         FScriptInterface* Interface = reinterpret_cast<FScriptInterface*>(ValuePtr);
@@ -802,9 +800,9 @@ public:
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
     {
         auto Object = PapiUtils::GetUObject(Apis, Env, Value);
-        if (FV8Utils::IsReleasedPtr(Object))
+        if (PapiUtils::IsReleasedPtr(Object))
         {
-            PapiUtils::ThrowException(Env, "passing a invalid object");
+            PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
             return false;
         }
         UClass* Class = Cast<UClass>(Object);
@@ -1062,9 +1060,9 @@ public:
                 auto Obj = PapiUtils::GetUObject(Apis, Env, Apis->get_property_uint32(Env, Value, 0));
                 if (Obj)
                 {
-                    if (FV8Utils::IsReleasedPtr(Obj))
+                    if (PapiUtils::IsReleasedPtr(Obj))
                     {
-                        PapiUtils::ThrowException(Env, "passing a invalid object");
+                        PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
                         return false;
                     }
 

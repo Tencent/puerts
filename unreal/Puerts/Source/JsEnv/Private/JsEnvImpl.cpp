@@ -74,8 +74,7 @@ FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
 static void FNameToArrayBuffer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
-    // ToFName tells a raw FName buffer from a string, which papi can not express
-    FName Name = FV8Utils::ToFName(papi_bridge::IsolateOf(Env), papi_bridge::ToV8(Apis->get_arg(Info, 0)));
+    FName Name(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
     Apis->add_return(Info, Apis->create_binary_by_value(Env, &Name, sizeof(FName)));
 }
 

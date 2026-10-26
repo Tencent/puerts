@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -958,6 +958,24 @@ void pesapi_invalidate_class(pesapi_env env, const void* type_id)
     puerts::DataTransfer::IsolateData<puerts::ICppObjectMapper>(context->GetIsolate())->InvalidateClass(type_id);
 }
 
+pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+#if V8_MAJOR_VERSION > 13 || (V8_MAJOR_VERSION == 13 && V8_MINOR_VERSION >= 6)
+    return v8impl::PesapiValueFromV8LocalValue((*info).This());
+#else
+    return v8impl::PesapiValueFromV8LocalValue((*info).Holder());
+#endif
+}
+
+void pesapi_throw_error(pesapi_env env, const char* msg)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    v8::Isolate* isolate = context->GetIsolate();
+    isolate->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
+}
+
 pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_create_boolean, &pesapi_create_int32,
     &pesapi_create_uint32, &pesapi_create_int64, &pesapi_create_uint64, &pesapi_create_double, &pesapi_create_string_utf8,
     &pesapi_create_string_utf16, &pesapi_create_binary, &pesapi_create_binary_by_value, &pesapi_create_array, &pesapi_create_object,
@@ -975,7 +993,8 @@ pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_c
     &pesapi_release_value_ref, &pesapi_get_value_from_ref, &pesapi_set_ref_weak, &pesapi_set_owner, &pesapi_get_ref_associated_env,
     &pesapi_get_ref_internal_fields, &pesapi_get_property, &pesapi_set_property, &pesapi_get_private, &pesapi_set_private,
     &pesapi_get_property_uint32, &pesapi_set_property_uint32, &pesapi_call_function, &pesapi_eval, &pesapi_global,
-    &pesapi_get_env_private, &pesapi_set_env_private, &pesapi_set_registry, &pesapi_invalidate_class};
+    &pesapi_get_env_private, &pesapi_set_env_private, &pesapi_set_registry, &pesapi_invalidate_class, &pesapi_get_this,
+    &pesapi_throw_error};
 
 }    // namespace v8impl
 

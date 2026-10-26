@@ -8,7 +8,6 @@
 
 #include "DelegateWrapper.h"
 #include "ObjectMapper.h"
-#include "V8Utils.h"
 #include "PapiUtils.h"
 
 namespace PUERTS_NAMESPACE
@@ -61,7 +60,7 @@ void FDelegateWrapper::Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     {
         if (auto Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
         {
-            if (FV8Utils::IsReleasedPtr(Object))
+            if (PapiUtils::IsReleasedPtr(Object))
             {
                 Apis->throw_by_string(Info, "passing a invalid object");
                 return;
@@ -118,7 +117,7 @@ void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_inf
     {
         if (auto Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
         {
-            if (FV8Utils::IsReleasedPtr(Object))
+            if (PapiUtils::IsReleasedPtr(Object))
             {
                 Apis->throw_by_string(Info, "passing a invalid object");
                 return;

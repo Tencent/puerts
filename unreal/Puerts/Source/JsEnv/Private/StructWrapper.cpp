@@ -9,12 +9,9 @@
 #include "StructWrapper.h"
 #include <algorithm>
 #include <unordered_map>
-#include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "PathEscape.h"
-#include "PesapiClassThunks.h"
 #include "PapiUtils.h"
-#include "PapiV8Bridge.h"
 #include "ExtensionMethods.h"
 #include "ContainerWrapper.h"
 #include "DelegateWrapper.h"
@@ -25,7 +22,7 @@ namespace PUERTS_NAMESPACE
 {
 void FExternalFinalizer::operator()(void* Ptr) const
 {
-    ClassThunks::Finalize(Finalize, Ptr, ClassData, nullptr);
+    Finalize(GetPesapiFFI(), Ptr, ClassData, nullptr);
 }
 
 static TMap<FString, std::shared_ptr<FStructWrapper>>& StructWrappers()
@@ -694,7 +691,7 @@ void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         if (!Apis->is_null(Env, OuterValue) && !Apis->is_undefined(Env, OuterValue))
         {
             Outer = PapiUtils::GetUObject(Apis, Env, OuterValue);
-            if (!Outer || FV8Utils::IsReleasedPtr(Outer))
+            if (!Outer || PapiUtils::IsReleasedPtr(Outer))
             {
                 Apis->throw_by_string(Info, "passing a invalid object");
                 return nullptr;
@@ -712,7 +709,7 @@ void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
     // the object being constructed, papi has no accessor of it
-    pesapi_value Self = papi_bridge::ToPapi(papi_bridge::ToV8(Info).This());
+    pesapi_value Self = Apis->get_this(Info);
     // the handle is bound to the object by the backend, freed by ReflectedFinalize
     return PapiUtils::ObjectMapperOf(Apis, Env)->Bind(Env, this, Object, Self);
 }

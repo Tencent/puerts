@@ -15,19 +15,10 @@
 #include "NamespaceDef.h"
 #include "DataTransfer.h"
 #include "UECompatible.h"
+#include "ArgType.h"
 
 namespace PUERTS_NAMESPACE
 {
-enum ArgType
-{
-    EArgInt32,
-    EArgNumber,
-    EArgString,
-    EArgExternal,
-    EArgFunction,
-    EArgObject
-};
-
 class JSENV_API FV8Utils
 {
 public:

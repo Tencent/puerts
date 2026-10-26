@@ -235,6 +235,12 @@ typedef void (*pesapi_set_registry_func)(pesapi_env env, pesapi_registry registr
 // references to the old class keep using it, sub classes are not invalidated
 typedef void (*pesapi_invalidate_class_func)(pesapi_env env, const void* type_id);
 
+// the receiver (this) of a callback, for a constructor callback it is the object being constructed
+typedef pesapi_value (*pesapi_get_this_func)(pesapi_callback_info info);
+
+// throw an Error with msg, the same as throw_by_string but for code that has an env only (e.g. value converters)
+typedef void (*pesapi_throw_error_func)(pesapi_env env, const char* msg);
+
 struct pesapi_ffi
 {
     pesapi_create_null_func create_null;
@@ -324,6 +330,8 @@ struct pesapi_ffi
     pesapi_set_env_private_func set_env_private;
     pesapi_set_registry_func set_registry;
     pesapi_invalidate_class_func invalidate_class;
+    pesapi_get_this_func get_this;
+    pesapi_throw_error_func throw_error;
 };
 
 typedef pesapi_registry (*pesapi_create_registry_func)();
