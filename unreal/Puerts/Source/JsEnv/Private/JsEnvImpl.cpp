@@ -56,7 +56,7 @@ PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #endif
 
 #if defined(WITH_WEBSOCKET)
-void InitWebsocketPPWrap(v8::Local<v8::Context> Context);
+void InitWebsocketPPWrap(pesapi_ffi* Apis, pesapi_env Env, PUERTS_NAMESPACE::ScriptClassRegistry* Registry);
 #endif
 
 namespace PUERTS_NAMESPACE
@@ -537,7 +537,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if defined(WITH_WEBSOCKET)
     {
         FPapiEnvScope EnvScope(MainApis, MainEnvRef);
-        InitWebsocketPPWrap(papi_bridge::ToV8(EnvScope.GetEnv()));
+        ScriptClassRegistry* Registry = Backend->GetRegistry();
+        InitWebsocketPPWrap(MainApis, EnvScope.GetEnv(), Registry ? Registry : GetDefaultClassRegistry());
     }
     ExecuteModule("puerts/websocketpp.js");
 #endif

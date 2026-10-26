@@ -29,6 +29,15 @@ PUERTS_SCRIPT_TEST(Reflection, "tests/reflection")
 PUERTS_SCRIPT_TEST(ModuleLoader, "tests/module_loader")
 PUERTS_SCRIPT_TEST(Promises, "tests/promises")
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_WebSocket, "Puerts.Functional.WebSocket", PUERTS_TEST_FLAGS)
+bool FPuertsTest_WebSocket::RunTest(const FString& Parameters)
+{
+    // no baseline, tests/websocket.js only checks WebSocketPP when the plugin is built with WITH_WEBSOCKET
+    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/websocket"), FString());
+    Reporter->RemoveFromRoot();
+    return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_Timers, "Puerts.Functional.Timers", PUERTS_TEST_FLAGS)
 bool FPuertsTest_Timers::RunTest(const FString& Parameters)
 {
