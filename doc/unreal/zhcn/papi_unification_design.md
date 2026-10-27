@@ -295,7 +295,7 @@ M5 落地情况（分批进行）：
   - 仍走桥接的部分：`__tgjsFNameToArrayBuffer` 用 `FV8Utils::ToFName` 区分 FName 原始缓冲和字符串；`dumpStatisticsLog` 读 v8 堆统计，属于 v8 专属能力，留在桥接层。
   - `toCString`、`toCPtrArray` 先在临时缓冲区里组装结果，再用 `create_binary_by_value` 拷贝出去，比原来多一次拷贝。这两个函数不在热点路径上。
 - M5-2a：新增计时器的功能测试 `tests/timers.js`（注册、错误参数、触发、清除、额外参数、回调的 this），先固定现有行为作为基线。测试 runner 在每个 step 前 tick 一次 core ticker，计时器才能在测试中触发。
-- M5-2b：`setTimeout`、`clearTimeout`、`setInterval`、`clearInterval` 改为 papi 实现。回调用 `pesapi_value_ref` 持有，触发时经 `get_ref_associated_env` 加 `open_scope_placement` 建立作用域，`call_function` 调用，异常用 `has_caught` 和 `get_exception_as_string` 取出并记日志。析构时在 `CppObjectMapper.UnInitialize` 之前释放这些 ref。
+- M5-2b：`setTimeout`、`clearTimeout`、`setInterval`、`clearInterval` 改为 papi 实现。回调用 `pesapi_value_ref` 持有，触发时经 `get_ref_associated_env` 加 `open_scope_placement` 建立作用域，`call_function` 调用，异常用 `has_caught` 和 `get_exception_as_string` 取出并记日志。析构时在 `CppObjectMapper.UnInitialize` 之前释放这些 ref。（已被替代：2026-10-27 改为原生只提供 tick、timer 纯 JS 实现，见决策记录。）
 - M5-2c：`IObjectMapper` 改为 papi 签名（`pesapi_env`、`pesapi_value`、`pesapi_callback_info`），`PapiUtils` 的 helper 直接调用它，不再做 v8 转换。`FJsEnvImpl` 原来的 v8 版本方法去掉 virtual，作为内部实现保留，papi 版本的 override 在桥接层转调它们，后续逐个改成真正的 papi 实现。`ICppObjectMapper` 暂时保持 v8 签名，等 M6 处理。
 - M5-2d：先补测试 `tests/objects.js`（`UE.NewObject`、`UE.NewStruct`、`puerts.merge`、`UE.MakeWeakObjectPtr`、`puerts.setJsTakeRef`），再把 `__tgjsMergeObject`、`__tgjsNewObject`、`__tgjsNewStruct`、`__tgjsSetJsTakeRef` 改为 papi 实现。`merge` 用 `get_native_object_typeid` 区分 struct（type id 即 UScriptStruct）和 UObject。
 - M5-2e：`__tgjsUEClassToJSClass`（`blueprint.tojs`）和 `__tgjsNewContainer`（`UE.NewArray/NewSet/NewMap`）改为 papi 实现，测试先在 `tests/containers.js` 补齐。`UETypeToJsClass` 仍基于 v8 模板，经桥接调用，等 M4-6 收进 registry。补测试时发现 `UE.NewSet(-1)` 越界读 `BuiltinProperty[-1]` 导致编辑器挂死，已单独修复（下界检查）。
@@ -704,6 +704,7 @@ flowchart LR
 
 1. 参考 Unity 新增 `PapiQuickjs` 模块，quickjs-ng 以源码方式编译，提前恢复 QuickJS 后端（见 5.12）；TestProject 的功能用例在 V8 和 QuickJS 下各跑一遍，引擎差异用 `Baseline/Quickjs` 专属基线记录。
 2. 删除 UE 的 JS 热重载，与 Unity 统一：去掉 `hot_reload.js`、`puerts.__reload / forceReload / getModuleByUrl`、后端进程内 Inspector 会话（`__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage`）、`IScriptEnv::ReloadModule / ReloadSource / OnSourceLoaded`、`IPuertsModule::ReloadModule`、`FSourceFileWatcher`、`UFileSystemOperation::PuertsNotifyChange` 及对应用例。热重载改由外部程序经 Inspector 协议 live-edit（V8 原生的 `Debugger.setScriptSource`）。保留远程调试用的 `V8InspectorImpl`、UE C++ 模块热重载（`WITH_HOT_RELOAD` 委托、`HOTRELOADED_` 类）和蓝图重编译用的 `invalidate_class`。
+3. timer 与 Unity 统一：原生侧只提供 tick。宿主绑定 `__tgjsRegisterTickHandler(fn)`，每个 env 注册一个每帧触发的 core ticker 调用这些 handler（每个 handler 单独开 scope，异常记 `Exception in Tick Handler` 日志）；`setTimeout / setInterval / clearTimeout / clearInterval` 由 `puerts/timer.js` 纯 JS 实现（复制自 Unity `timer.mjs`，由 `FPapiBackendJs` 在 `events.js` 之后加载）。相对 Unity 版本只改了一处：逐个回调 try/catch，一个回调抛异常不影响本帧其他到期 timer（记 `Exception in Timer Callback` 日志）。行为变化：按 `Date.now()` 计时；`setInterval` 最小间隔 10ms；非函数回调在调用时就抛异常；延时缺省或非数字、`clearTimeout` 传非数字不再抛异常。`promises.js` 中给 timer 补额外参数的包装已删除。
 
 待决策：
 
