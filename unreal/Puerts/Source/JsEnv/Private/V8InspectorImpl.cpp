@@ -31,12 +31,14 @@
 #include <codecvt>
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-MSVC_PRAGMA(warning(push))
-MSVC_PRAGMA(warning(disable : 4251))
+#pragma warning(push)
+#if defined(_MSC_VER)
+#pragma warning(disable : 4251)
+#endif
 #include "v8.h"
 #include "v8-inspector.h"
 #include "libplatform/libplatform.h"
-MSVC_PRAGMA(warning(pop))
+#pragma warning(pop)
 
 #define ASIO_NO_TYPEID    // UE需避免使用RTTI功能
 
