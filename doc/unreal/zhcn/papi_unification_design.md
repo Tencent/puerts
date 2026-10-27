@@ -365,7 +365,7 @@ M2 落地情况：
 | 枚举对象自有属性 | JS 对象转 TMap、对象合并（Merge） | 桥接层 | 新增 `get_own_property_names`，或用 JS 辅助函数加 `call_function` |
 | Promise 拒绝回调、微任务 | 未处理 Promise 报错、Tick 驱动 | 桥接层 | 后端管理接口 |
 | ESM 模块、动态 import | `ExecuteModule` | 复用 papi-v8 BackendEnv | 后端内部实现 |
-| Inspector、热重载 | 调试、`JsHotReload` | 桥接层 | 后端管理接口（热重载走 Inspector 协议） |
+| Inspector | 调试 | 桥接层 | 后端管理接口（JS 热重载已移除，由外部程序经 Inspector 协议 live-edit） |
 | 外部内存上报 | 大对象（容器、结构体）提示 GC | 桥接层 | 新增可选 API |
 | Symbol、Proxy | `UE` 命名空间代理等 | 用 JS 辅助脚本实现 | 同左 |
 
@@ -446,7 +446,7 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 - 新文件 `PapiV8ModuleLoader.cpp/.h`，属于 UE 自己维护的 papi-v8 部分，后续随 5.9 一起收敛。`FJsEnvImpl` 里的 `FetchESModuleTree`、`FetchCJSModuleAsESModule`、`ResolveModuleCallback`、`GenEmptyCode`、`GetESMMain` 删除。
 - 模块记录：`url -> { kind, v8::Global<Module 或 exports>, ResolveCache, debugPath }`，并用 `ScriptId` 反查 url，供 `ResolveModuleCallback`、`import.meta` 和动态 import 的 referrer 使用。
 - ESM：`ScriptCompiler::CompileModule`；字节码走 `kConsumeCodeCache`，占位源码长度从字节码头读出，在 C++ 生成；`rejected` 时报 "invalid bytecode"。树加载失败时回滚本次新增的记录（Unity issue 1670 的处理）。
-- CJS：`ScriptCompiler::CompileFunction`，参数为 `exports, require, module, __filename, __dirname`，取代源码拼接加 eval，同样支持 code cache。每个模块的 `require` 是 `create_function` 创建的 native 函数，referrer 放在函数数据里。保留 `puerts.forceReload`、`puerts.getModuleByUrl`、`puerts.registerBuildinModule` 的行为，`modular.js` 只剩薄壳或删除。
+- CJS：`ScriptCompiler::CompileFunction`，参数为 `exports, require, module, __filename, __dirname`，取代源码拼接加 eval，同样支持 code cache。每个模块的 `require` 是 `create_function` 创建的 native 函数，referrer 放在函数数据里。保留 `puerts.registerBuildinModule` 的行为（`puerts.forceReload`、`puerts.getModuleByUrl` 随 JS 热重载移除，与 Unity 一致），`modular.js` 只剩薄壳或删除。
 - 互操作：
   - ESM import CJS：SyntheticModule，`default` 为 `module.exports`，自有属性作为具名导出（与 UE 现状一致）。
   - CJS require ESM：同步求值后返回 namespace；遇到未完成的顶层 await 抛错（与 Node 22 的 require(esm) 一致）。
@@ -473,26 +473,26 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 
 #### 5.10.8 M7-1 落地记录
 
-- 后端：`PapiV8ModuleLoader.h/.cpp`，`papi_v8::CreateModuleLoader / DestroyModuleLoader / ExecuteModule(env, specifier, referrer, byImport) / RegisterBuiltinModule / ForceReload / GetModuleByUrl / SetCodeCacheExpect`。加载器挂在 isolate 数据槽 2（0 为 mapper，1 为 PESAPI_PRIVATE）。`ExecuteModule` 失败返回 nullptr，异常留在 isolate 上由调用方处理。
-- 记录与缓存：记录键为 kind 字符加 url；解析缓存键为 by、referrer、`\0`、specifier；加载缓存键为 by 加 url。记录被删除（失败回滚、forceReload）后缓存自然失效，下次重新走宿主。
+- 后端：`PapiV8ModuleLoader.h/.cpp`，`papi_v8::CreateModuleLoader / DestroyModuleLoader / ExecuteModule(env, specifier, referrer, byImport) / RegisterBuiltinModule / SetCodeCacheExpect`。加载器挂在 isolate 数据槽 2（0 为 mapper，1 为 PESAPI_PRIVATE）。`ExecuteModule` 失败返回 nullptr，异常留在 isolate 上由调用方处理。
+- 记录与缓存：记录键为 kind 字符加 url；解析缓存键为 by、referrer、`\0`、specifier；加载缓存键为 by 加 url。记录被删除（失败回滚）后缓存自然失效，下次重新走宿主。
 - 回滚：嵌套加载用计数的 `FLoadScope`，失败时删除本次新增且未求值完成的 ESM 记录；CJS 执行失败删除该记录。加载失败后可以重试（Unity issue 1670）。
 - 顶层 await：同步入口只跑一次微任务检查点，仍 pending 报 `[Puer004] top-level await of <url> can not be settled synchronously`，不再死循环。求值 Promise 被拒绝时挂一个空处理器再抛出，避免 promises.js 误报 unhandledRejection。
 - 互操作与旧行为的差异：JSON 与内置模块被 import 时也把自有属性作为具名导出（与 CJS 一致）；合成模块的导出名在创建时确定。
 - CJS 字节码：已有的 `.cbc` 是对整段包装源码 `(function (exports, require, module, __filename, __dirname) {...\n});` 用 Script 生成的 code cache，所以字节码仍走 Script 加 `kConsumeCodeCache`，执行后取到函数；源码走 `CompileFunction`（V8 11 以下 `CompileFunctionInContext`）。
 - 字节码头的 FlagHash / ReadOnlySnapshotChecksum 目前沿用 `FJsEnvImpl` 编译空脚本取得的期望值（`SetCodeCacheExpect`），这一步本身是源码编译，M7-4 再解决。
-- UE 宿主：`FJsEnvImpl::HostResolveModule / HostLoadModule`。require 时去掉开头的 `./`；找不到时 require 报 `can not find X in DIR`、import 报 `can not resolve [X], import by [file]`；package.json 用 UE Json 解析，esm 包被 require 时按 `exports["."]` 取 require 入口并强制按 esm 加载，cjs 包被 import 时按 require 规则加载；debugPath 以 `Pak: ` 开头时用 url，Windows 下转反斜杠；`OnSourceLoadedCallback` 在 load 时调用。
+- UE 宿主：`FJsEnvImpl::HostResolveModule / HostLoadModule`。require 时去掉开头的 `./`；找不到时 require 报 `can not find X in DIR`、import 报 `can not resolve [X], import by [file]`；package.json 用 UE Json 解析，esm 包被 require 时按 `exports["."]` 取 require 入口并强制按 esm 加载，cjs 包被 import 时按 require 规则加载；debugPath 以 `Pak: ` 开头时用 url，Windows 下转反斜杠。
 - 测试：临时全局入口 `__puerModuleLoaderTest`（不放在 `puerts` 上，避免影响 Modules 基线的 puerts keys），功能测试 `tests/module_loader.js`、数据 `tests/module_loader_data/`，基线 `Baseline/ModuleLoader.txt`。M7-2 接入后删除临时入口，用例改为直接 require / import。
-- M7-2 待处理：`hot_reload.js` 对 CJS 用包装后的源码做 `setScriptSource`，改用 `CompileFunction` 后要去掉包装；内置 `puerts/*.js` 按 cjs 加载时检查对顶层 `var` / 全局变量的依赖；Node 下保留 `org_require` 优先。
+- M7-2 待处理：内置 `puerts/*.js` 按 cjs 加载时检查对顶层 `var` / 全局变量的依赖；Node 下保留 `org_require` 优先。
 
 #### 5.10.9 M7-2 落地记录
 
 - 删除 `puerts/modular.js` 及 `FJsEnvImpl` 中的旧实现：`EvalScript`、`SearchModule`、`FindModule`、ESM 模块树（`FetchESModuleTree`、`ResolveModuleCallback`、`HashToModuleInfo` 等）、`Require` / `GetESMMain` / `GenEmptyCode`。原生 addon 在 `HostResolveModule` 中首次使用时注册为内置模块。
-- 全局 `require` 为后端 `papi_v8::CreateRequire(env, "")`（新增，与 CJS 模块内的 require 相同，根目录相对）。`puerts` 上的模块函数：`genRequire(dir)`（dir 补 `/` 作为 referrer）、`registerBuildinModule`、`forceReload(url?)`（未加载时 warn `reload not loaded module`）、`getModuleByUrl`，url 开头的 `./` 忽略；`puerts` 本身注册为内置模块 `puerts`。
+- 全局 `require` 为后端 `papi_v8::CreateRequire(env, "")`（新增，与 CJS 模块内的 require 相同，根目录相对）。`puerts` 上的模块函数：`genRequire(dir)`（dir 补 `/` 作为 referrer）、`registerBuildinModule`；`puerts` 本身注册为内置模块 `puerts`。
 - puerts keys 去掉 `__require`、`generateEmptyCode`、`getESMMain`、`getModuleBySID`（Modules 基线已更新）。
 - `FJsEnvImpl::ExecuteModule`：`.mjs` 交给后端按 ESM 执行；其余（启动脚本 `puerts/*.js`）仍按经典脚本执行，它们依赖顶层 `var global` 等全局声明。`Start`、`InjectTsClass` 改用 `RequireModule`（后端 require）。
 - QuickJS（冻结）下没有模块系统：`RequireModule` 抛 `can not require [X], no module system`。
 - Node：初始化时保存 Node 原来的全局 `require`（是函数时），require 一个非 `.`、`/` 开头的名字时先交给它，成功则把结果注册为同名内置模块；相对路径不再先试 Node（旧实现会试，但结果按名字全局缓存，有串用风险）。
-- `hot_reload.js`：CJS 由 `CompileFunction` 编译，inspector 拿到的 scriptSource 是不带包装的原始源码，直接比较、`setScriptSource` 原始源码。
+- 热重载：CJS 由 `CompileFunction` 编译，inspector 拿到的 scriptSource 是不带包装的原始源码，外部程序经 Inspector 协议 `Debugger.setScriptSource` 原始源码即可（JS 热重载已移除，见决策记录）。
 - 测试：`tests/module_loader.js` 改为直接用 require 与 `puerts.*`；ESM 用例在 M7-3（动态 import）前暂时也走 require。路径类报错变为 require 的文案（`can not find module_loader_data/X in <js-root>/tests`），非字符串参数报 `TypeError: the module name must be a string`。默认与 `v8_impl` 两条路径全部通过。
 
 #### 5.10.10 M7-3 落地记录
@@ -506,7 +506,7 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 #### 5.10.11 M7-5a / M7-5b 落地记录
 
 - M7-5a（env 入口）：新增 `FPapiEnvScope`（`PapiEnvScope.h`，只依赖 pesapi），在 env ref 上用 `open_scope_placement` 打开 scope（内存是成员，嵌套入口各用一块），env 已失效时不打开，用 `operator bool` 判断；提供 env、scope、`HasCaught`、`GetExceptionAsString`。`FJsEnvImpl` 长期持有 `MainEnvRef`（`CppObjectMapper.Initialize` 之后创建，`UnInitialize` 之前释放）。
-  - 改为 `FPapiEnvScope` 的入口：`MakeSureInject`、`JsHotReload`、`ReloadSource`、`TsConstruct`、`InvokeTsMethod`（env 失效时 `SkipFunction`）、`NotifyReBind`（新增 `rebind exception` 日志）、`CheckDelegateProxies`、`RebindJs`、`Start`（去掉内层嵌套 scope）、`ExecuteModule`。原来的 v8 Locker、Isolate / HandleScope / Context scope 与 `v8::TryCatch` 都由 scope 承担；`ReloadModule` 去掉 Locker。
+  - 改为 `FPapiEnvScope` 的入口：`MakeSureInject`、`TsConstruct`、`InvokeTsMethod`（env 失效时 `SkipFunction`）、`NotifyReBind`（新增 `rebind exception` 日志）、`CheckDelegateProxies`、`RebindJs`、`Start`（去掉内层嵌套 scope）、`ExecuteModule`。原来的 v8 Locker、Isolate / HandleScope / Context scope 与 `v8::TryCatch` 都由 scope 承担。
   - `ReloadJs`、`MergePrototype` 改为 `FPapiValueRef`，在 `UnInitialize` 之前释放；reload 调用统一为 `CallReloadJs`。启动脚本（经典脚本）改为 `pesapi eval`，`PapiUtils::EvalFileContent` 的编码判断与 `FromFileContent` 一致（UTF-16 BOM 转 UTF-8，跳过 UTF-8 BOM），Windows 下脚本名仍转反斜杠。
   - 保留为后端特定代码：只加锁、不碰 JS 的 `InitExtensionMethodsMap`、`NotifyUObjectDeleted`（热路径）、GC 通知，v8 专属的 `CurrentStackTrace`，构造与析构里 isolate 的创建销毁，Inspector、Wasm、Node 的 `UvRunOnce`；在调用方 scope 内取 `DefaultContext` 的 `invalidate_class`、`InstallFNameFixing`。
 - M7-5b（Promise 拒绝）：后端 `PapiV8PromiseReject.h/.cpp`，`papi_v8::CreatePromiseRejectTracker(env, onHandlerError, userData) / DestroyPromiseRejectTracker / SetPromiseRejectHandler(env, handler)`，挂在 isolate 数据槽 3（最后一个槽）。回调参数为 `(event, promise, value)`，event 0 为未处理拒绝、1 为后加处理器（value 为 undefined）、2 / 3 为 settle 两次；处理器抛出的异常交给 `onHandlerError`（UE 下记 `promise reject handler exception`）。`__tgjsSetPromiseRejectCallback` 改为 papi 绑定，QuickJS（冻结）保留旧实现。
@@ -517,7 +517,7 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 参考 Unity 的 `Backend` / `BackendJs` / `BackendV8` 与 `ScriptEnv`，宿主（`FJsEnvImpl`）不再直接引用 `v8impl::g_pesapi_ffi`，也不再负责 JS 特有的初始化：
 
 - `IPapiBackend`（`PapiBackend.h`，与引擎、语言无关）：`GetApiVersion / GetApi / CreateEnvRef / DestroyEnvRef`，`OnEnter / OnExit`（语言运行时的启动与停止），`ExecuteModule / RegisterBuiltinModule`（宿主的 require、addon 与 Node 内置模块注册），GC 通知。宿主实现 `IPapiScriptHost::ExecuteModule`，供后端执行启动脚本。
-- `FPapiBackendJs`（`PapiBackendJs.h/.cpp`，JS 语言层，与 JS 引擎无关）：`OnEnter` 中启动运行时，把 `puerts` 注册为内置模块，绑定 `require`、`puerts.genRequire / registerBuildinModule / forceReload / getModuleByUrl`、`__tgjsSetPromiseRejectCallback`，再按顺序执行 `puerts/first_run.js` 到 `puerts/pesaddon.js` 等启动脚本。对应 Unity `BackendJs.OnEnter`。
+- `FPapiBackendJs`（`PapiBackendJs.h/.cpp`，JS 语言层，与 JS 引擎无关）：`OnEnter` 中启动运行时，把 `puerts` 注册为内置模块，绑定 `require`、`puerts.genRequire / registerBuildinModule`、`__tgjsSetPromiseRejectCallback`，再按顺序执行 `puerts/first_run.js` 到 `puerts/pesaddon.js` 等启动脚本。对应 Unity `BackendJs.OnEnter`。
 - `FPapiBackendV8`（`PapiBackendV8.h/.cpp`，V8 引擎层）：isolate / context 的创建与销毁（`--max-old-space-size`、NativesBlob），`CppObjectMapper.Initialize` 后创建 env ref，模块加载器、Promise 拒绝追踪、字节码头校验参数，GC。Node 下 isolate 与 context 由宿主创建（Node 环境要在其上建立），以 `ExternalIsolate / ExternalContext` 交给后端，后端不 Dispose。
 - 宿主流程与 `ScriptEnv` 一致：`CreateEnvRef` → 校验 `GetApiVersion` → 宿主绑定（含 `__puer_host_resolve__ / __puer_host_load__`，Node 下先保存 Node 的 `require`）→ `OnEnter` → … → 释放宿主持有的引用 → `OnExit` → `DestroyEnvRef`。`DestroyEnvRef` 在 `UnInitialize` 之后、isolate Dispose 之前回调宿主的 `OnEnvReleased`（未找到类的绑定对象、Node 环境、Inspector、Mixin 还原），保持原有析构顺序。
 - 选择后端只在构造函数一处；其余代码通过 `MainApis`（`Backend->GetApi()`）访问 papi。宿主中仍为 V8 专属的部分（Inspector、Wasm、`DelegateProxy`、`CurrentStackTrace` 等）继续通过 `MainIsolate` 使用，留待 M8 / 第二阶段。`PropertyTranslator.h`、`FunctionTranslator.h` 中基于 `g_pesapi_ffi` 的 v8 适配重载已无调用方，删除。
@@ -538,7 +538,7 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 
 1. 删除 FFI（libffi 绑定，默认关闭）与 Wasm3（`WasmCore` 模块、`PuertsWasm`、`wasm3_helper.js`、示例与文档）。两者都直接基于 V8 编写且很少使用，需要时再基于 papi 实现。（已完成）
 2. `ICppObjectMapper` 的 V8 签名接口由宿主实现改为后端自己实现，宿主只通过 papi 化的 `IObjectMapper` 与钩子参与。（已完成）`FPapiBackendV8` 持有 `FCppObjectMapper` 并放进 isolate 槽 0；宿主的 `IObjectMapper` 在创建 env 后用 `set_env_private` 发布（槽 1，class 的 `OnEnter / Finalize` 拿到的 env private 也是它），`PapiUtils::ObjectMapperOf(Apis, Env)` 经 `get_env_private` 取回；`invalidate_class` 经 `FParams::OnClassInvalidated` 通知宿主清 UE 侧缓存。反射类模板（`GetTemplateOfClass / OnTemplateCreated`）暂经 `FPapiBackendV8::GetCppObjectMapper()` 访问，归第 4 步。
-3. 参照 Unity `Backend.cs` 扩展 `IPapiBackend`：`OpenRemoteDebugger / DebuggerTick / CloseRemoteDebugger / LowMemoryNotification / OnTick`、堆统计、调用栈；Inspector 整体移入 V8 后端。（已完成）`IPapiBackend` 新增 `OpenRemoteDebugger(Port) / DebuggerTick / CloseRemoteDebugger / GetStatisticsLog / CurrentStackTrace`（均有默认实现）。`FPapiBackendV8` 持有 Inspector、Channel 与消息回调（`FPapiValueRef`），在 `StartRuntime` 中用 papi 函数绑定 `__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage`（早于 `hot_reload.js`），`StopRuntime` 释放回调，`DestroyEnvRef` 开头关闭 Inspector。宿主在 `CreateEnvRef` 之后、`OnEnter` 之前调用 `OpenRemoteDebugger(DebugPort)`（端口小于 0 不开远程服务，但热重载用的进程内会话仍可用），`WaitDebugger` 循环 `DebuggerTick`，`dumpStatisticsLog` 与 `CurrentStackTrace` 转调后端。UE 的 Inspector 自带 ticker，`OnTick` 暂不需要。测试新增热重载用例（经 Inspector 会话的 `Debugger.setScriptSource`）。
+3. 参照 Unity `Backend.cs` 扩展 `IPapiBackend`：`OpenRemoteDebugger / DebuggerTick / CloseRemoteDebugger / LowMemoryNotification / OnTick`、堆统计、调用栈；Inspector 整体移入 V8 后端。（已完成）`IPapiBackend` 新增 `OpenRemoteDebugger(Port) / DebuggerTick / CloseRemoteDebugger / GetStatisticsLog / CurrentStackTrace`（均有默认实现）。`FPapiBackendV8` 持有 Inspector，`DestroyEnvRef` 开头关闭 Inspector（原进程内会话 `__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage` 随 JS 热重载移除）。宿主在 `CreateEnvRef` 之后、`OnEnter` 之前调用 `OpenRemoteDebugger(DebugPort)`（端口小于 0 不开远程服务），`WaitDebugger` 循环 `DebuggerTick`，`dumpStatisticsLog` 与 `CurrentStackTrace` 转调后端。UE 的 Inspector 自带 ticker，`OnTick` 暂不需要。热重载用例已随 JS 热重载移除。
 4. 宿主中剩余的 Isolate / Context / Locker / HandleScope、`InstallFNameFixing(FunctionTemplate)`、反射类模板的创建与命名、POD struct 随 ArrayBuffer 释放（改为后端钩子）等改走 papi。（已完成）反射类经 `create_class(env, FStructWrapper*)` 取类对象，取代 `GetTemplateOfClass`；类命名由后端 `FCppObjectMapper` 完成，`FParams::OnClassCreated` 改为返回 bool，宿主只对反射类返回 true（与旧行为一致，非反射类 `constructor.name` 为空），删除 `OnTemplateCreated` 与 `GetCppObjectMapper()`。`InstallFNameFixing` 改为对 `create_class` 返回的类取 `prototype` 后安装。POD struct 改走 `IPapiBackend::CreateTriviallyFreedObject / BindTriviallyFreedObject`，`WITH_BACKING_STORE_AUTO_FREE` 移入后端（宏不满足时返回空，宿主回退普通包装）；addon 改走 `LoadAddon`，`LoadCppType` 的注册表改走 `GetRegistry`；枚举 / 碰撞通道对象用 papi 构造。删除 QuickJS 的 promise reject 处理与 `MainIsolate / DefaultContext`，Node 路径改用独立的 `NodeIsolate` 成员。`DynamicDelegateProxy` 不再持有 Isolate，THREAD_SAFE 下由 `InvokeDelegateCallback` 等入口的 `FPapiEnvScope` 加锁。`IsReleasedPtr` 增加 `PapiUtils` 版本。
 5. WebSocket 用 papi 重写，留在 `ScriptEnv`。（已完成）`WebSocketPP` 改为注册到 env 所用注册表的普通 C++ 类（构造 / 析构 / 方法都是 papi 回调），`InitWebsocketPPWrap(Apis, Env, Registry)` 用 `create_class` 取类挂到全局；JS 回调存为 `pesapi_value_ref`，只在 `poll` 内调用，`poll` 用嵌套的 papi scope 吞掉回调异常（与原 TryCatch 一致）。原先靠 V8 弱引用释放，现在走类的 finalize，env 销毁时也会释放。JS 侧 `websocketpp.js` 不变。测试新增 `tests/websocket.js`（无 baseline，`WITH_WEBSOCKET` 关闭时只检查未定义）：非法 URI、未连接时 send、拒绝连接触发 fail、回调异常不外抛、`statue`、非实例调用、GC 释放；开启 `WithWebsocket` 跑过一次全量测试。
 6. `FJsObject` 改为持有 papi 值引用，`v8::Local` 构造函数移到 PapiV8 作为辅助函数。（已完成）`FJsObject` 只持有 `pesapi_ffi*` 与 `pesapi_value_ref`，env 经 `get_ref_associated_env` 取得（与 value ref 共用引用计数），`IsValid` 用 `env_ref_is_valid` 判断，取代原 `JsEnvLifeCycleTracker`。`Get / Set / Action / Func` 用 `FJsObjectScope`（`open_scope_placement`，THREAD_SAFE 下 scope 自带 Locker）进入 env，env 已释放时记 "JsEnv associated had release!" 并返回默认值；`Get` 遇到 undefined 返回默认值，调用异常记日志后返回默认值。THREAD_SAFE 下复制与释放引用时临时打开 scope 加锁。构造与翻译器只接受对象，非对象留空（属性赋非对象值时保留原值）。`pesapi_impl::Converter<FJsObject>` 不再限定插件模式；原 `v8::Local` 构造函数、`GetJsObject` 删除，改为 `JsObjectV8.h` 的 `MakeJsObject / JsObjectToV8` 与 `v8_impl::Converter<FJsObject>`（`PUERTS_BINDING_IS_PESAPI` 为 0 时由 `JsObject.h` 自动包含，拆模块时归 PapiV8）。测试新增 `tests/js_object.js`：参数 / 返回值 / 属性往返保持同一对象、Get / Set / Func / Action、异常日志、复制与自赋值、非对象值、模板绑定（两条绑定路径）、env 销毁后 C++ 继续持有时各接口安全返回。
@@ -567,7 +567,7 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 
 | 方面 | QuickJS 行为 |
 | --- | --- |
-| 不支持的能力 | 没有 inspector（因此没有 `hot_reload`）、`LoadAddon`、TriviallyFreed、Atomics；不支持字节码 |
+| 不支持的能力 | 没有 inspector、`LoadAddon`、TriviallyFreed、Atomics；不支持字节码 |
 | GC | 引用计数加环回收，对象不再被引用时立即释放，finalizer 同步执行；“创建了多少实例”“gc 前存活数”这类计数基线与 V8 不同。mapper 退出时先清空缓存、置空所有 userdata 指针再调 finalizer，防止同步 finalizer 在遍历中修改缓存 |
 | 弱引用 | 用 tracer 对象实现 |
 | 模块编译 | `JS_Eval(MODULE)` 在编译期就解析依赖、调用加载钩子，所以模块记录在编译前登记；编译失败的模块会被引擎移出已加载列表 |
@@ -692,7 +692,7 @@ flowchart LR
 
 1. M7 抛开 Unity 现有的 `esm_bootstrap.cjs` 方案，参考 d8 / Node 在后端 C++ 实现模块加载，宿主通过 `create_function` 注册约定名的全局函数提供读文件等能力，后端用 `v8::Global` 持有；目标是发行版只支持字节码（改 v8 去掉源码编译但保留接口、调用时抛异常），开发调试仍可加载源码，不设只允许字节码的开关。先在 UE 落地，稳定后再同步回 Unity。具体契约见 5.10（2026-10-23 已确认）。
 2. M8 不清理 V8Backend.hpp、V8Object.hpp、V8FastCall.hpp，保留为 V8 专属快速路径（5.11）。
-3. 5.10.4 的宿主契约（`__puer_host_resolve__` / `__puer_host_load__` 及返回结构）按文档执行；CJS 的编译与 require 语义（缓存、循环依赖、forceReload）一并迁入 C++，`modular.js` 只留薄壳或删除；内置 `puerts/*.js` 在打包时与业务脚本一样产出字节码。
+3. 5.10.4 的宿主契约（`__puer_host_resolve__` / `__puer_host_load__` 及返回结构）按文档执行；CJS 的编译与 require 语义（缓存、循环依赖）一并迁入 C++，`modular.js` 只留薄壳或删除；内置 `puerts/*.js` 在打包时与业务脚本一样产出字节码。
 4. M4-6 主体：FName 大小写修正改为在 `UE.Object.prototype` 等原型链末端挂 JS Proxy（只在成员找不到时进入，`hasOwnProperty` 对原型成员返回 true 的怪行为随之消失）；`FStructWrapper` 与翻译器改为进程级共享，`on_class_not_found` 不需要 userdata；蓝图重编译和热重载新增与引擎无关的“类定义失效”papi API，由 registry 和后端配合重建类。
 
 已决策（2026-10-26）：
@@ -703,6 +703,7 @@ flowchart LR
 已决策（2026-10-27）：
 
 1. 参考 Unity 新增 `PapiQuickjs` 模块，quickjs-ng 以源码方式编译，提前恢复 QuickJS 后端（见 5.12）；TestProject 的功能用例在 V8 和 QuickJS 下各跑一遍，引擎差异用 `Baseline/Quickjs` 专属基线记录。
+2. 删除 UE 的 JS 热重载，与 Unity 统一：去掉 `hot_reload.js`、`puerts.__reload / forceReload / getModuleByUrl`、后端进程内 Inspector 会话（`__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage`）、`IScriptEnv::ReloadModule / ReloadSource / OnSourceLoaded`、`IPuertsModule::ReloadModule`、`FSourceFileWatcher`、`UFileSystemOperation::PuertsNotifyChange` 及对应用例。热重载改由外部程序经 Inspector 协议 live-edit（V8 原生的 `Debugger.setScriptSource`）。保留远程调试用的 `V8InspectorImpl`、UE C++ 模块热重载（`WITH_HOT_RELOAD` 委托、`HOTRELOADED_` 类）和蓝图重编译用的 `invalidate_class`。
 
 待决策：
 
