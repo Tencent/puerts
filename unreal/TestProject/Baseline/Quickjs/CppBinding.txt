@@ -1,0 +1,9 @@
+overload no match: Error: invalid parameter!
+same raw pointer same js object: true
+cpp class typeof: "function"
+cpp instanceof: true
+cpp own keys: []
+cpp ctor name: ""
+wrong ctor args: Error: invalid parameter!
+instances created: 1
+instances alive after gc: 1

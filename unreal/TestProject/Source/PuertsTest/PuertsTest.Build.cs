@@ -7,7 +7,7 @@ public class PuertsTest : ModuleRules
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         bEnableExceptions = true;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "JsEnv", "ScriptEnv", "PapiV8" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "JsEnv", "ScriptEnv", "PapiV8", "PapiQuickjs" });
         PrivateDependencyModuleNames.AddRange(new string[] { "Json" });
     }
 }

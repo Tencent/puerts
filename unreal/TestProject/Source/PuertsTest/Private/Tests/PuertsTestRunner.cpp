@@ -1,6 +1,8 @@
 #include "PuertsTestRunner.h"
 
-#include "JsEnv.h"
+#include "ScriptEnv.h"
+#include "PapiBackendV8.h"
+#include "PapiBackendQuickjs.h"
 #include "PuertsTestTypes.h"
 #include "Containers/Ticker.h"
 #include "HAL/FileManager.h"
@@ -17,7 +19,7 @@ void CollectAllGarbage()
     CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS, true);
 }
 
-static void FullGC(PUERTS_NAMESPACE::FJsEnv& Env)
+static void FullGC(PUERTS_NAMESPACE::FScriptEnv& Env)
 {
     // RequestFullGarbageCollectionForTesting requires --expose-gc which the plugin does not enable,
     // LowMemoryNotification performs a full (non-incremental) GC as well.
@@ -27,17 +29,34 @@ static void FullGC(PUERTS_NAMESPACE::FJsEnv& Env)
     CollectAllGarbage();
 }
 
-static void CompareBaseline(FAutomationTestBase& Test, const FString& BaselineName, const TArray<FString>& Notes)
+static void CompareBaseline(FAutomationTestBase& Test, EBackend Backend, const FString& BaselineName, const TArray<FString>& Notes)
 {
     const FString Dir = FPaths::ProjectDir() / TEXT("Baseline");
-    const FString File = Dir / (BaselineName + TEXT(".txt"));
+    const FString SharedFile = Dir / (BaselineName + TEXT(".txt"));
+    const FString BackendFile = Backend == EBackend::V8 ? SharedFile : Dir / BackendName(Backend) / (BaselineName + TEXT(".txt"));
     const FString Actual = FString::Join(Notes, TEXT("\n")) + TEXT("\n");
 
     const bool bUpdate = FParse::Param(FCommandLine::Get(), TEXT("PuertsUpdateBaseline"));
     FString Expected;
-    if (bUpdate || !FFileHelper::LoadFileToString(Expected, *File))
+    FString File = BackendFile;
+    bool bLoaded = FFileHelper::LoadFileToString(Expected, *BackendFile);
+    if (!bLoaded && BackendFile != SharedFile)
     {
-        IFileManager::Get().MakeDirectory(*Dir, true);
+        File = SharedFile;
+        bLoaded = FFileHelper::LoadFileToString(Expected, *SharedFile);
+    }
+    if (bUpdate || !bLoaded)
+    {
+        FString Shared;
+        if (BackendFile != SharedFile && FFileHelper::LoadFileToString(Shared, *SharedFile) &&
+            Shared.Replace(TEXT("\r\n"), TEXT("\n")) == Actual)
+        {
+            // the same as the shared baseline
+            IFileManager::Get().Delete(*BackendFile, false, false, true);
+            return;
+        }
+        File = BackendFile.IsEmpty() ? SharedFile : BackendFile;
+        IFileManager::Get().MakeDirectory(*FPaths::GetPath(File), true);
         FFileHelper::SaveStringToFile(Actual, *File, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
         Test.AddInfo(FString::Printf(TEXT("baseline written: %s"), *File));
         return;
@@ -64,18 +83,19 @@ static void CompareBaseline(FAutomationTestBase& Test, const FString& BaselineNa
         if (E != A)
         {
             Test.AddError(FString::Printf(
-                TEXT("baseline mismatch [%s] line %d\n  expected: %s\n  actual:   %s"), *BaselineName, i + 1, *E, *A));
+                TEXT("baseline mismatch [%s] (%s) line %d\n  expected: %s\n  actual:   %s"), *BaselineName, *File, i + 1, *E, *A));
             ++Reported;
         }
     }
-    const FString ActualFile = FPaths::ProjectSavedDir() / TEXT("PuertsTest") / (BaselineName + TEXT(".actual.txt"));
+    const FString ActualFile =
+        FPaths::ProjectSavedDir() / TEXT("PuertsTest") / BackendName(Backend) / (BaselineName + TEXT(".actual.txt"));
     FFileHelper::SaveStringToFile(Actual, *ActualFile, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
     Test.AddInfo(FString::Printf(TEXT("actual notes saved to %s"), *ActualFile));
 }
 
 struct FTsBindListener : public FUObjectArray::FUObjectCreateListener
 {
-    PUERTS_NAMESPACE::FJsEnv* Env = nullptr;
+    PUERTS_NAMESPACE::FScriptEnv* Env = nullptr;
 
     virtual void NotifyUObjectCreated(const UObjectBase* Object, int32 Index) override
     {
@@ -91,13 +111,21 @@ struct FTsBindListener : public FUObjectArray::FUObjectCreateListener
     }
 };
 
-UPuertsTestReporter* RunScript(FAutomationTestBase& Test, const FString& Module, const FString& BaselineName, bool bBindTsClasses)
+const TCHAR* BackendName(EBackend Backend)
+{
+    return Backend == EBackend::V8 ? TEXT("V8") : TEXT("Quickjs");
+}
+
+UPuertsTestReporter* RunScript(
+    FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName, bool bBindTsClasses)
 {
     UPuertsTestReporter* Reporter = NewObject<UPuertsTestReporter>();
     Reporter->AddToRoot();
 
     {
-        auto Env = MakeUnique<PUERTS_NAMESPACE::FJsEnv>();
+        PUERTS_NAMESPACE::FPapiBackendFactory Factory =
+            Backend == EBackend::V8 ? &PUERTS_NAMESPACE::FPapiBackendV8::Create : &PUERTS_NAMESPACE::FPapiBackendQuickjs::Create;
+        auto Env = MakeUnique<PUERTS_NAMESPACE::FScriptEnv>(Factory);
         FTsBindListener TsBindListener;
         if (bBindTsClasses)
         {
@@ -144,7 +172,7 @@ UPuertsTestReporter* RunScript(FAutomationTestBase& Test, const FString& Module,
 
     if (!BaselineName.IsEmpty())
     {
-        CompareBaseline(Test, BaselineName, Reporter->Notes);
+        CompareBaseline(Test, Backend, BaselineName, Reporter->Notes);
     }
     return Reporter;
 }

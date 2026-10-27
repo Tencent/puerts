@@ -1,0 +1,29 @@
+require json: 42
+cpp module typeof: "object"
+require mjs: <no throw>
+dynamic import type: "function"
+utf8 bom: "中文 utf8 bom"
+utf8 bom length: 2
+utf16 bom: "中文 utf16 bom"
+no bom: "中文 no bom"
+require missing: Error: can not find modules_data/not_exist_xyz in <js-root>/tests
+require missing bare: Error: can not find not_exist_module_xyz in <js-root>/tests
+enum: "object"
+by path: true
+missing type: Error: can not find type:NoSuchType_xyz
+no args: Error: Bad parameters, the function expect 1, but  0 provided.
+number arg: Error: Bad parameters #0, expect a string.
+UE missing: Error: can not find type:NoSuchType_xyz
+number: TypeError: not a function
+no args: TypeError: cannot read property 'match' of undefined
+missing dll: Error: dlopen fail for not_exist_dir\not_exist_addon_xyz.dll
+missing dll again: Error: dlopen fail for not_exist_dir\not_exist_addon_xyz.dll
+setTimeout: "function"
+setInterval: "function"
+console.log: "function"
+puerts keys: ["$ref", "$set", "$unref", "__genListApply", "__mergePrototype", "__reload", "__removeListItem", "argv", "blueprint", "console", "dll_ext", "emit", "forceReload", "genRequire", "getFNameString", "getModuleByUrl", "load", "loadCPPType", "loadModule", "loadUEType", "makeUClass", "merge", "off", "on", "registerBuildinModule", "releaseManualReleaseDelegate", "requestJitModuleMethod", "setJsTakeRef", "toCPtrArray", "toCString", "toDelegate", "toManualReleaseDelegate"]
+globalThis.UE: true
+TextEncoder: "undefined"
+Promise: "function"
+WeakRef: "function"
+FinalizationRegistry: "function"

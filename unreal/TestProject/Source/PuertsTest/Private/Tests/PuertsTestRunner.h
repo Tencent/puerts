@@ -7,16 +7,27 @@ class UPuertsTestReporter;
 
 namespace PuertsTest
 {
-// Runs a JS test module (Content/JavaScript/<Module>.js) in a fresh FJsEnv.
+// the script backend a test runs with, every functional test is registered once for each
+enum class EBackend
+{
+    V8,
+    Quickjs
+};
+
+const TCHAR* BackendName(EBackend Backend);
+
+// Runs a JS test module (Content/JavaScript/<Module>.js) in a fresh FScriptEnv of the backend.
 // The script receives a UPuertsTestReporter as argv "Reporter". Between steps C++ runs a JS full GC and a UE GC,
 // then calls Reporter.OnStep(step). Failures reported by the script become automation errors.
 // Notes reported by the script are compared with Baseline/<BaselineName>.txt (written instead when running with
-// -PuertsUpdateBaseline or when the file does not exist yet).
+// -PuertsUpdateBaseline or when the file does not exist yet). A backend other than v8 compares with
+// Baseline/<Backend>/<BaselineName>.txt if it exists (the notes differ by the engine), else with the shared one; updating
+// writes the backend file only when the notes differ from the shared baseline.
 // Returns the reporter (rooted, caller must call RemoveFromRoot) or nullptr.
-// bBindTsClasses forwards UObject creation to FJsEnv::TryBindJs while the env lives, as FPuertsModule does for its env,
+// bBindTsClasses forwards UObject creation to FScriptEnv::TryBindJs while the env lives, as FPuertsModule does for its env,
 // which TypeScript generated classes need.
 UPuertsTestReporter* RunScript(
-    FAutomationTestBase& Test, const FString& Module, const FString& BaselineName, bool bBindTsClasses = false);
+    FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName, bool bBindTsClasses = false);
 
 void CollectAllGarbage();
 }    // namespace PuertsTest

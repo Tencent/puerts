@@ -21,7 +21,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FPuertsBench_All::RunTest(const FString& Parameters)
 {
     // tsclass.* needs TypeScript generated classes bound
-    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/bench"), FString(), true);
+    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, PuertsTest::EBackend::V8, TEXT("tests/bench"), FString(), true);
+    if (!Reporter)
+    {
+        return false;
+    }
 
     TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
     Root->SetStringField(TEXT("time"), FDateTime::UtcNow().ToIso8601());

@@ -6,14 +6,97 @@
 
 #define PUERTS_TEST_FLAGS (EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-#define PUERTS_SCRIPT_TEST(Name, Module)                                                                \
-    IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_##Name, "Puerts.Functional." #Name, PUERTS_TEST_FLAGS) \
-    bool FPuertsTest_##Name::RunTest(const FString& Parameters)                                         \
-    {                                                                                                   \
-        UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT(Module), TEXT(#Name));        \
-        Reporter->RemoveFromRoot();                                                                     \
-        return !HasAnyErrors();                                                                         \
+using PuertsTest::EBackend;
+
+namespace
+{
+bool Finish(FAutomationTestBase& Test, UPuertsTestReporter* Reporter)
+{
+    if (Reporter)
+    {
+        Reporter->RemoveFromRoot();
     }
+    return !Test.HasAnyErrors();
+}
+
+bool RunPlain(FAutomationTestBase& Test, EBackend Backend, const TCHAR* Module, const TCHAR* Name)
+{
+    return Finish(Test, PuertsTest::RunScript(Test, Backend, Module, Name));
+}
+
+bool RunWebSocket(FAutomationTestBase& Test, EBackend Backend)
+{
+    // no baseline, tests/websocket.js only checks WebSocketPP when the plugin is built with WITH_WEBSOCKET
+    return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/websocket"), FString()));
+}
+
+bool RunTimers(FAutomationTestBase& Test, EBackend Backend)
+{
+    // tests/timers.js throws in a timer callback on purpose, and registers a string callback which the js
+    // wrapper of setTimeout only rejects when the timer fires, the env logs both as errors
+    Test.AddExpectedError(TEXT("Exception in Timer Callback"), EAutomationExpectedErrorFlags::Contains, 2);
+    return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/timers"), TEXT("Timers")));
+}
+
+bool RunMakeUClass(FAutomationTestBase& Test, EBackend Backend)
+{
+    // tests/make_uclass.js throws in an override once, and in a Constructor which runs for the CDO and one instance
+    Test.AddExpectedError(TEXT("makeuclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
+    Test.AddExpectedError(TEXT("makeuclass ctor boom"), EAutomationExpectedErrorFlags::Contains, 2);
+    return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/make_uclass"), TEXT("MakeUClass")));
+}
+
+bool RunTsClass(FAutomationTestBase& Test, EBackend Backend)
+{
+    // tests/ts_class.js throws in a ts override once
+    Test.AddExpectedError(TEXT("tsclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
+    return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/ts_class"), TEXT("TsClass"), true));
+}
+
+bool RunJsObject(FAutomationTestBase& Test, EBackend Backend)
+{
+    // tests/js_object.js calls a non function object once and a throwing function twice
+    Test.AddExpectedError(TEXT("call a non-function object!"), EAutomationExpectedErrorFlags::Contains, 1);
+    Test.AddExpectedError(TEXT("jsobject boom"), EAutomationExpectedErrorFlags::Contains, 2);
+    // the holder outlives the env: GetInt, CopyAndRead (two reads) and CallFunc
+    Test.AddExpectedError(TEXT("JsEnv associated had release!"), EAutomationExpectedErrorFlags::Contains, 4);
+    UPuertsTestReporter* Reporter = PuertsTest::RunScript(Test, Backend, TEXT("tests/js_object"), FString());
+    if (!Reporter)
+    {
+        return false;
+    }
+
+    UPuertsTestJsObjectHolder* Holder = Cast<UPuertsTestJsObjectHolder>(Reporter->Holder);
+    if (Test.TestNotNull(TEXT("holder kept by the reporter"), Holder))
+    {
+        Test.TestEqual(TEXT("Get after the env is destroyed"), Holder->GetInt(TEXT("x")), 0);
+        Test.TestEqual(TEXT("copies after the env is destroyed"), Holder->CopyAndRead(TEXT("x")), 0);
+        Test.TestEqual(TEXT("Func after the env is destroyed"), Holder->CallFunc(1, 2), 0);
+        FJsObject Copied = Holder->GetValue();
+        Copied = FJsObject();
+    }
+    // the holder (and the FJsObject in it) is destroyed after the env
+    Reporter->Holder = nullptr;
+    Reporter->RemoveFromRoot();
+    PuertsTest::CollectAllGarbage();
+    return !Test.HasAnyErrors();
+}
+}    // namespace
+
+// every test is registered as Puerts.Functional.<Backend>.<Name>
+#define PUERTS_BACKEND_TEST(Backend, Name, Body)                                                                                 \
+    IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_##Backend##_##Name, "Puerts.Functional." #Backend "." #Name, PUERTS_TEST_FLAGS) \
+    bool FPuertsTest_##Backend##_##Name::RunTest(const FString& Parameters)                                                      \
+    {                                                                                                                            \
+        const EBackend B = EBackend::Backend;                                                                                    \
+        return Body;                                                                                                             \
+    }
+
+#define PUERTS_TEST(Name, Body)         \
+    PUERTS_BACKEND_TEST(V8, Name, Body) \
+    PUERTS_BACKEND_TEST(Quickjs, Name, Body)
+
+#define PUERTS_SCRIPT_TEST(Name, Module) PUERTS_TEST(Name, RunPlain(*this, B, TEXT(Module), TEXT(#Name)))
 
 PUERTS_SCRIPT_TEST(Properties, "tests/properties")
 PUERTS_SCRIPT_TEST(Functions, "tests/functions")
@@ -29,71 +112,10 @@ PUERTS_SCRIPT_TEST(Reflection, "tests/reflection")
 PUERTS_SCRIPT_TEST(ModuleLoader, "tests/module_loader")
 PUERTS_SCRIPT_TEST(Promises, "tests/promises")
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_WebSocket, "Puerts.Functional.WebSocket", PUERTS_TEST_FLAGS)
-bool FPuertsTest_WebSocket::RunTest(const FString& Parameters)
-{
-    // no baseline, tests/websocket.js only checks WebSocketPP when the plugin is built with WITH_WEBSOCKET
-    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/websocket"), FString());
-    Reporter->RemoveFromRoot();
-    return !HasAnyErrors();
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_Timers, "Puerts.Functional.Timers", PUERTS_TEST_FLAGS)
-bool FPuertsTest_Timers::RunTest(const FString& Parameters)
-{
-    // tests/timers.js throws in a timer callback on purpose, and registers a string callback which the js
-    // wrapper of setTimeout only rejects when the timer fires, the env logs both as errors
-    AddExpectedError(TEXT("Exception in Timer Callback"), EAutomationExpectedErrorFlags::Contains, 2);
-    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/timers"), TEXT("Timers"));
-    Reporter->RemoveFromRoot();
-    return !HasAnyErrors();
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_MakeUClass, "Puerts.Functional.MakeUClass", PUERTS_TEST_FLAGS)
-bool FPuertsTest_MakeUClass::RunTest(const FString& Parameters)
-{
-    // tests/make_uclass.js throws in an override once, and in a Constructor which runs for the CDO and one instance
-    AddExpectedError(TEXT("makeuclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
-    AddExpectedError(TEXT("makeuclass ctor boom"), EAutomationExpectedErrorFlags::Contains, 2);
-    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/make_uclass"), TEXT("MakeUClass"));
-    Reporter->RemoveFromRoot();
-    return !HasAnyErrors();
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_TsClass, "Puerts.Functional.TsClass", PUERTS_TEST_FLAGS)
-bool FPuertsTest_TsClass::RunTest(const FString& Parameters)
-{
-    // tests/ts_class.js throws in a ts override once
-    AddExpectedError(TEXT("tsclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
-    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/ts_class"), TEXT("TsClass"), true);
-    Reporter->RemoveFromRoot();
-    return !HasAnyErrors();
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPuertsTest_JsObject, "Puerts.Functional.JsObject", PUERTS_TEST_FLAGS)
-bool FPuertsTest_JsObject::RunTest(const FString& Parameters)
-{
-    // tests/js_object.js calls a non function object once and a throwing function twice
-    AddExpectedError(TEXT("call a non-function object!"), EAutomationExpectedErrorFlags::Contains, 1);
-    AddExpectedError(TEXT("jsobject boom"), EAutomationExpectedErrorFlags::Contains, 2);
-    // the holder outlives the env: GetInt, CopyAndRead (two reads) and CallFunc
-    AddExpectedError(TEXT("JsEnv associated had release!"), EAutomationExpectedErrorFlags::Contains, 4);
-    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, TEXT("tests/js_object"), FString());
-
-    UPuertsTestJsObjectHolder* Holder = Cast<UPuertsTestJsObjectHolder>(Reporter->Holder);
-    if (TestNotNull(TEXT("holder kept by the reporter"), Holder))
-    {
-        TestEqual(TEXT("Get after the env is destroyed"), Holder->GetInt(TEXT("x")), 0);
-        TestEqual(TEXT("copies after the env is destroyed"), Holder->CopyAndRead(TEXT("x")), 0);
-        TestEqual(TEXT("Func after the env is destroyed"), Holder->CallFunc(1, 2), 0);
-        FJsObject Copied = Holder->GetValue();
-        Copied = FJsObject();
-    }
-    // the holder (and the FJsObject in it) is destroyed after the env
-    Reporter->Holder = nullptr;
-    Reporter->RemoveFromRoot();
-    PuertsTest::CollectAllGarbage();
-    return !HasAnyErrors();
-}
+PUERTS_TEST(WebSocket, RunWebSocket(*this, B))
+PUERTS_TEST(Timers, RunTimers(*this, B))
+PUERTS_TEST(MakeUClass, RunMakeUClass(*this, B))
+PUERTS_TEST(TsClass, RunTsClass(*this, B))
+PUERTS_TEST(JsObject, RunJsObject(*this, B))
 
 #endif

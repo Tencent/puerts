@@ -119,10 +119,11 @@ test('bom', () => {
 });
 
 // hot reload (puerts/hot_reload.js) goes through the in-process inspector session of the backend: started here, checked in
-// the next step
+// the next step; quickjs has no inspector, so no hot reload there
 const hotReload = { state: 'pending' };
+const hasHotReload = !isQuickJS();
 
-test('hot reload start', () => {
+if (hasHotReload) test('hot reload start', () => {
     const m = req('hot_reload');
     eq(m.get(), 1);
     hotReload.module = m;
@@ -214,7 +215,7 @@ step(() => {
         note('dynamic import syntax error', rejected('syntax error'));
     });
 
-    test('hot reload', () => {
+    if (hasHotReload) test('hot reload', () => {
         eq(hotReload.state, 'fulfilled');
         eq(hotReload.module.get(), 2, 'function replaced by Debugger.setScriptSource');
     });
