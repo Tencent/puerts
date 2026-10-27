@@ -14,13 +14,16 @@ public class PapiQuickjs : ModuleRules
 {
     public PapiQuickjs(ReadOnlyTargetRules Target) : base(Target)
     {
-#if UE_5_6_OR_LATER
-        CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Warning;
-        CppCompileWarningSettings.UndefinedIdentifierWarningLevel = WarningLevel.Off;
-#else
-        ShadowVariableWarningLevel = WarningLevel.Warning;
-        bEnableUndefinedIdentifierWarnings = false;
-#endif
+        if (Target.Version.MajorVersion > 5 || (Target.Version.MajorVersion == 5 && Target.Version.MinorVersion >= 6))
+        {
+            CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Warning;
+            CppCompileWarningSettings.UndefinedIdentifierWarningLevel = WarningLevel.Off;
+        }
+        else
+        {
+            ShadowVariableWarningLevel = WarningLevel.Warning;
+            bEnableUndefinedIdentifierWarnings = false;
+        }
 
         PublicDependencyModuleNames.AddRange(new string[]
         {
