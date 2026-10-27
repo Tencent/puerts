@@ -1,0 +1,7 @@
+live count back to before: True
+weak entry after gc: None
+counted structs alive: 1
+IsAlive: throws RuntimeError: passing a invalid object
+read property of destroyed: throws RuntimeError: access a invalid object
+call method of destroyed: throws RuntimeError: access a invalid object
+counted structs alive after release: 0

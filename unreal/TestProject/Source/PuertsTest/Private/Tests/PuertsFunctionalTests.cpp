@@ -128,4 +128,15 @@ PUERTS_LUA_TEST(Lifecycle, "tests/lua/lifecycle")
 PUERTS_LUA_TEST(Modules, "tests/lua/modules")
 PUERTS_LUA_TEST(Errors, "tests/lua/errors")
 
+// the python tests (tests/python/*.py) run with the python backend only, baselines are Baseline/Python/<Name>.txt
+#define PUERTS_PYTHON_TEST(Name, Module) PUERTS_BACKEND_TEST(Python, Name, RunPlain(*this, B, TEXT(Module), TEXT(#Name)))
+
+PUERTS_PYTHON_TEST(Properties, "tests/python/properties")
+PUERTS_PYTHON_TEST(Functions, "tests/python/functions")
+PUERTS_PYTHON_TEST(Containers, "tests/python/containers")
+PUERTS_PYTHON_TEST(Delegates, "tests/python/delegates")
+PUERTS_PYTHON_TEST(Lifecycle, "tests/python/lifecycle")
+PUERTS_PYTHON_TEST(Modules, "tests/python/modules")
+PUERTS_PYTHON_TEST(Errors, "tests/python/errors")
+
 #endif

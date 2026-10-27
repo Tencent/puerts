@@ -1,0 +1,15 @@
+int64 type: 'int'
+int to double property: 3.0
+name type: 'str'
+text type: 'str'
+struct property get then modify: 99
+struct property get twice identical: True
+assign uobject to soft object: throws RuntimeError: passing a invalid object for FSoftObjectPtr
+type of class: 'PuertsMeta'
+type of object: 'PuertsTestObject'
+str class: "<class 'puerts.PuertsTestObject'>"
+mro: ['PuertsTestObject', 'Object', 'CppObject', 'object']
+StaticClass name: 'PuertsTestObject'
+unknown property: throws AttributeError: 'PuertsTestObject' object has no attribute 'NoSuchProperty'
+expando field: 5
+isinstance: True

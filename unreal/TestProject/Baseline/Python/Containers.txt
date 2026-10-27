@@ -1,0 +1,14 @@
+array struct element modify: 5
+array get out of range: throws RuntimeError: invalid index
+set Get: 'a'
+map get missing: None
+array type: 'TArray'
+array index: throws TypeError: 'TArray' object is not subscriptable
+array len: throws TypeError: object of type 'TArray' has no len()
+array iterate: throws TypeError: 'TArray' object is not iterable
+NewArray unknown builtin: RuntimeError: can not get first type for 0
+NewMap unknown value type: RuntimeError: can not get second type for 2
+NewArray of struct: 0
+NewSet of object: 0
+enum tojs type: throws RuntimeError: Bad parameters #0, expect a object.
+tojs number: RuntimeError: Bad parameters #0, expect a object.

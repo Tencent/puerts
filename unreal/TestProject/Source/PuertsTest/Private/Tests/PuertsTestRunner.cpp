@@ -4,6 +4,7 @@
 #include "PapiBackendV8.h"
 #include "PapiBackendQuickjs.h"
 #include "PapiBackendLua.h"
+#include "PapiBackendPython.h"
 #include "PuertsTestTypes.h"
 #include "Containers/Ticker.h"
 #include "HAL/FileManager.h"
@@ -33,12 +34,12 @@ static void FullGC(PUERTS_NAMESPACE::FScriptEnv& Env)
 static void CompareBaseline(FAutomationTestBase& Test, EBackend Backend, const FString& BaselineName, const TArray<FString>& Notes)
 {
     const FString Dir = FPaths::ProjectDir() / TEXT("Baseline");
-    // the lua tests are other scripts, they have their own baselines only
+    // the lua and python tests are other scripts, they have their own baselines only
+    const bool bOwnScripts = Backend == EBackend::Lua || Backend == EBackend::Python;
     const FString SharedFile =
-        Backend == EBackend::Lua ? Dir / BackendName(Backend) / (BaselineName + TEXT(".txt")) : Dir / (BaselineName + TEXT(".txt"));
-    const FString BackendFile = Backend == EBackend::V8 || Backend == EBackend::Lua
-                                    ? SharedFile
-                                    : Dir / BackendName(Backend) / (BaselineName + TEXT(".txt"));
+        bOwnScripts ? Dir / BackendName(Backend) / (BaselineName + TEXT(".txt")) : Dir / (BaselineName + TEXT(".txt"));
+    const FString BackendFile =
+        Backend == EBackend::V8 || bOwnScripts ? SharedFile : Dir / BackendName(Backend) / (BaselineName + TEXT(".txt"));
     const FString Actual = FString::Join(Notes, TEXT("\n")) + TEXT("\n");
 
     const bool bUpdate = FParse::Param(FCommandLine::Get(), TEXT("PuertsUpdateBaseline"));
@@ -126,6 +127,8 @@ const TCHAR* BackendName(EBackend Backend)
             return TEXT("Quickjs");
         case EBackend::Lua:
             return TEXT("Lua");
+        case EBackend::Python:
+            return TEXT("Python");
     }
     return TEXT("?");
 }
@@ -138,6 +141,8 @@ static PUERTS_NAMESPACE::FPapiBackendFactory BackendFactory(EBackend Backend)
             return &PUERTS_NAMESPACE::FPapiBackendQuickjs::Create;
         case EBackend::Lua:
             return &PUERTS_NAMESPACE::FPapiBackendLua::Create;
+        case EBackend::Python:
+            return &PUERTS_NAMESPACE::FPapiBackendPython::Create;
         default:
             return &PUERTS_NAMESPACE::FPapiBackendV8::Create;
     }
