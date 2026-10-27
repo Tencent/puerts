@@ -605,6 +605,36 @@ lua 下不支持或行为不同的 JS/TS 特性：
 
 已知的宿主问题（与后端无关，JS 也一样）：`FScriptStructPropertyTranslator::JsToUE` 不做类型检查，把 UObject 传给结构体参数或属性会崩溃，用例里没有覆盖这种情况。
 
+### 5.14 PapiPython 后端
+
+参考 Unity 的 PapiPython，新增 `PapiPython` 和 `PapiPythonPreload` 模块（决策记录 2026-10-27 第 5 条），作为 `ScriptEnv` 的第四个后端。
+
+- 引擎：不自带 python，直接用 UE 的 `Python3` 第三方库（当前为 3.11.8，`PythonScriptPlugin` 用的也是它）。只有 `Target.bCompilePython` 为真时 `WITH_PYTHON` 才是 1，默认只有编辑器目标满足；否则模块里所有函数都编译成桩，`FPapiBackendPython::Create` 返回 nullptr。只在 Win64、Mac、Linux 上启用。
+- 进程与 env：首次 `Create` 时用隔离配置（`PyConfig_InitIsolatedConfig`，home 指向引擎的 python 目录）初始化 python，然后释放 GIL；如果 `PythonScriptPlugin` 已经初始化过，就直接复用。每个 env 对应一个子解释器（`Py_NewInterpreter`），`DestroyEnvRef` 时 `Py_EndInterpreter`。进程内从不调用 `Py_Finalize`，以便子解释器可以再次创建。进入 env 时切换到它的线程状态，并在需要时取 GIL。
+- 预加载：引擎的 python 动态库不在 dll 搜索路径上，而 `Py_None`、类型对象这类数据符号又不能延迟加载，所以由 `PapiPythonPreload`（`EarliestPossible`）按 `UE_PYTHON_DIR` 先加载 `python3*.dll`（Linux 为 `lib/libpython3*.so.1.0`），`PapiPython`（`PreDefault`）再链接。
+- 结构：`PesapiPythonImpl` 实现 pesapi（`pesapi_value` 就是 `PyObject*`，新建的引用挂在当前 scope 上，scope 结束时统一释放），`PythonObjectMapper` 实现对象映射。每个注册类通过元类 `PuertsMeta` 用 `type()` 创建一个 python 类，类名取 ScriptName 的短名，`__module__` 为 `puerts`，继承链与 C++ 一致（如 `PuertsTestObject → Object → CppObject → object`）；方法是 `PyInstanceMethod`，静态函数是内建函数，属性是 getter / setter 描述符。类自带 `__dict__` 和 `__weakref__`，所以可以给对象加扩展字段、建弱引用。原生指针到 python 对象的缓存按类型 id 分节点，持有借用引用，对象析构时移除节点（与 Unity 的 `ObjectCacheNode` 相同）；回调统一进入 `CallNative`，再转到 pesapi 回调。`FPapiBackendPython` 直接实现 `IPapiBackend`；`ScriptEnv` 不依赖它，env 用 `FPapiBackendPython::Create` 作为后端工厂即可，可以与其他后端同时链接。
+- 启动：`OnEnter` 经宿主执行 `puerts/init.py`。全部逻辑在 `_puerts_init()` 内执行完即删除，不污染 `__main__`。它提供 `print / console`、`UE / CPP`、蓝图懒加载、容器、`puerts.ref / unref / setref`、`puerts.argv`，以及宿主要用的 `puerts.__mergePrototype / __removeListItem / __genListApply`。`global()` 返回 `builtins` 模块，宿主的 `__tgjsXXX` 和 `__puer_host_resolve__ / __puer_host_load__` 都挂在它上面，`init.py` 取走后会删除。
+- 模块：在 `sys.meta_path` 末尾追加 `PuertsFinder`。它把 `a.b` 换成 `a/b`，先找 `a/b.py`，再找 `a/b/__init__.py`，路径解析和读取都走宿主契约（5.10.4）；加载器用 `compile(content, debugPath)` 执行，不生成 `__pycache__`。包的 `submodule_search_locations` 设为空列表，以免标准库的 `PathFinder` 接管子模块，绕过宿主并写入 pyc。`builtins.require(name)` 会去掉 `.py` 后缀，再调用 `importlib.import_module`。`ExecuteModule` 调用 `require`，没有 referrer，`import` 与 `require` 相同；`RegisterBuiltinModule` 写入 `sys.modules`（`puerts`、`ue`、`cpp` 也在其中）。标准库照常可以 import。
+- 调用约定：方法用点号，`obj.GetName()`，this 隐式传入；静态函数为 `UE.KismetSystemLibrary.PrintString(...)`；调用类就是构造，例如 `UE.PuertsTestObject()`。参数只能按位置传。python 异常与宿主异常互转，错误文本格式为 `Type: msg`。
+- 测试：用例在 `Content/JavaScript/tests/python/*.py`，自带 `framework.py`，接口与 JS 的测试框架一致。注册为 `Puerts.Functional.Python.*`，共 7 项（Properties、Functions、Containers、Delegates、Lifecycle、Modules、Errors），只读 `Baseline/Python/<Name>.txt`。行为与 JS / lua 基线逐项一致，差异只在语法和下表列出的能力上；另外加了 python 专属的观察项，包括 mro、isinstance、关键字参数、包与相对导入、`__import__`、标准库，以及 `_puerts_init` 是否残留。7 项全部通过，含四个后端的 `Puerts.Functional` 全量 50 项均无失败。
+
+python 下不支持或行为不同的 JS/TS 特性：
+
+| 方面 | python 行为 |
+| --- | --- |
+| 可用范围 | 只在 `bCompilePython` 的目标上可用（默认只有编辑器），游戏和独立程序里 `Create` 返回 nullptr；不支持 Android、iOS；依赖 `PapiPythonPreload` 先加载引擎的 python 动态库 |
+| TS 类与扩展 | 不支持 TS 类注入 UE（`makeUClass`）和 `mixin`，`init.py` 中没有对应函数；FName 大小写修正（原型链末端 Proxy，`InstallNameFixing`）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主执行的 `puerts/websocketpp.js` 在 python 下会报错 |
+| 模块 | 没有 ESM（`import`、`import.meta`、顶层 await、`import()`），只有同步 `require` / `import`；点号路径要求每一级父目录都有 `__init__.py`（真实的包），否则报 `ModuleNotFoundError`；斜杠写法的 `require('a/b')` 会以 `a/b` 为键另存一份，与 `import a.b` 不是同一个实例 |
+| 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；`asyncio` 没有接入引擎 tick |
+| 值 | `null` 和 `undefined` 都是 `None`；没有 BigInt，int64 用 python int；`call_function` 的 this 参数被忽略，没有 JS 的 this 绑定 |
+| 调用 | 不支持关键字参数（抛 `TypeError: ... takes no keyword arguments`）；在类上调用方法要显式传 self |
+| ref | `puerts.ref(x)` 返回 `[x]`，值在 `[0]`，用 `puerts.unref / setref` 读写，没有 `$ref / $unref / $set` |
+| 容器 | `TArray / TSet / TMap` 不支持下标、`len()` 和迭代，只能用 `Num / Get / Set` 等方法 |
+| 委托 | 可传函数、`[owner, fn]`、`[owner, 'Name']`；`toManualReleaseDelegate` 原样返回，没有 `releaseManualReleaseDelegate`。绑定方法和内建函数不能存 private 数据，每次传入都会新建一个 proxy，并且无法释放 |
+| GC | 引用计数加循环回收；python 对象与 UObject 互相持有的 owner 循环不参与 python 的 GC，需要手动打断 |
+| 线程 | 与 `PythonScriptPlugin` 共用一个进程级 GIL：在 UE python 回调里再进入 puerts python env（或反过来）属于嵌套调用，没有覆盖；在其他线程持有 GIL 时进入 env 有死锁风险 |
+
 ## 6. 第二阶段：UE 与 Unity 共用动态库
 
 ### 6.1 前提
@@ -733,6 +763,7 @@ flowchart LR
 2. 删除 UE 的 JS 热重载，与 Unity 统一：去掉 `hot_reload.js`、`puerts.__reload / forceReload / getModuleByUrl`、后端进程内 Inspector 会话（`__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage`）、`IScriptEnv::ReloadModule / ReloadSource / OnSourceLoaded`、`IPuertsModule::ReloadModule`、`FSourceFileWatcher`、`UFileSystemOperation::PuertsNotifyChange` 及对应用例。热重载改由外部程序经 Inspector 协议 live-edit（V8 原生的 `Debugger.setScriptSource`）。保留远程调试用的 `V8InspectorImpl`、UE C++ 模块热重载（`WITH_HOT_RELOAD` 委托、`HOTRELOADED_` 类）和蓝图重编译用的 `invalidate_class`。
 3. timer 与 Unity 统一：原生侧只提供 tick。宿主绑定 `__tgjsRegisterTickHandler(fn)`，每个 env 注册一个每帧触发的 core ticker 调用这些 handler（每个 handler 单独开 scope，异常记 `Exception in Tick Handler` 日志）；`setTimeout / setInterval / clearTimeout / clearInterval` 由 `puerts/timer.js` 纯 JS 实现（复制自 Unity `timer.mjs`，由 `FPapiBackendJs` 在 `events.js` 之后加载）。相对 Unity 版本只改了一处：逐个回调 try/catch，一个回调抛异常不影响本帧其他到期 timer（记 `Exception in Timer Callback` 日志）。行为变化：按 `Date.now()` 计时；`setInterval` 最小间隔 10ms；非函数回调在调用时就抛异常；延时缺省或非数字、`clearTimeout` 传非数字不再抛异常。`promises.js` 中给 timer 补额外参数的包装已删除。
 4. 参考 Unity 新增 `PapiLua` 模块，lua 5.4.8 以源码方式编译，作为 `ScriptEnv` 的第三个后端（见 5.13）；TestProject 增加 lua 版功能用例（`tests/lua`，基线在 `Baseline/Lua`），lua 不支持的 JS/TS 特性列在 5.13。
+5. 参考 Unity 新增 `PapiPython` 模块（加上加载引擎 python 动态库的 `PapiPythonPreload`），作为 `ScriptEnv` 的第四个后端（见 5.14）：不自带 python，复用 UE 的 Python3，每个 env 一个子解释器，进程内不 `Py_Finalize`；只在 `bCompilePython` 的目标（默认只有编辑器）且 Win64 / Mac / Linux 上可用。模块由 `puerts/init.py` 在 `sys.meta_path` 末尾追加的 finder 经宿主契约加载。TestProject 增加 python 版功能用例（`tests/python`，基线在 `Baseline/Python`），python 不支持的 JS/TS 特性列在 5.14。
 
 待决策：
 
