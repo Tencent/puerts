@@ -11,15 +11,15 @@
 #include "NamespaceDef.h"
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #if defined(WITH_NODEJS)
-#pragma warning(push, 0)
+MSVC_PRAGMA(warning(push, 0))
 #include "node.h"
 #include "uv.h"
-#pragma warning(pop)
+MSVC_PRAGMA(warning(pop))
 #endif
-#pragma warning(push, 0)
+MSVC_PRAGMA(warning(push, 0))
 #include "v8.h"
 #include "libplatform/libplatform.h"
-#pragma warning(pop)
+MSVC_PRAGMA(warning(pop))
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #include "JSClassRegister.h"
 #include "PesapiImpl.h"

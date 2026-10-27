@@ -17,9 +17,9 @@
 
 #if USING_IN_UNREAL_ENGINE
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push, 0)
+MSVC_PRAGMA(warning(push, 0))
 #include "v8.h"
-#pragma warning(pop)
+MSVC_PRAGMA(warning(pop))
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
 #else
 #include "v8.h"

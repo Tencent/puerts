@@ -8,9 +8,11 @@
 
 #pragma once
 
-#pragma warning(push, 0)
+#include "NamespaceDef.h"
+
+MSVC_PRAGMA(warning(push, 0))
 #include <v8-fast-api-calls.h>
-#pragma warning(pop)
+MSVC_PRAGMA(warning(pop))
 #include "DataTransfer.h"
 
 namespace PUERTS_NAMESPACE

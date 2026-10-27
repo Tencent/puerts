@@ -539,12 +539,10 @@ void InitWebsocketPPWrap(pesapi_ffi* Apis, pesapi_env Env, PUERTS_NAMESPACE::Scr
 #endif
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#pragma warning(push)
-#if defined(_MSC_VER)
-#pragma warning(disable : 4251)
-#endif
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4251))
 #include "v8.h"
-#pragma warning(pop)
+MSVC_PRAGMA(warning(pop))
 
 #define ASIO_NO_TYPEID    // UE需避免使用RTTI功能
 
