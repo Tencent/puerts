@@ -519,10 +519,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
 
         GenListApply.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__genListApply"));
-
-        static const char MapCode[] = "new Map()";
-        ManualReleaseCallbackMap.Reset(Apis, Env,
-            Apis->eval(Env, reinterpret_cast<const uint8_t*>(MapCode), sizeof(MapCode) - 1, "puerts/manual_release_map"));
     }
 
     DelegateProxiesCheckerHandler =
@@ -566,7 +562,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
         }
     }
     ManualReleaseCallbacks.Empty();
-    ManualReleaseCallbackMap.Reset();
 
     FUETicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
     FUETicker::GetCoreTicker().RemoveTicker(TickHandle);
@@ -631,7 +626,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
         ObjectGetPrototypeOf.Reset();
         ObjectHasOwn.Reset();
         ObjectKeys.Reset();
-        FNameFixingProxy.Reset();
 
 #if !defined(WITH_QUICKJS)
 #if defined(WITH_NODEJS)
@@ -2322,10 +2316,15 @@ PropertyMacro* FScriptEnvImpl::FindDelegateProperty(void* DelegatePtr)
                                          : (PropertyMacro*) Iter->second.MulticastDelegateProperty;
 }
 
-static pesapi_value CallJsMapMethod(
-    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Map, const char* Method, int Argc, pesapi_value* Argv)
+// the id of a manually released callback in ManualReleaseCallbacks is the private data of the script function (0 if none)
+static uint32_t GetManualReleaseId(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsFunction)
 {
-    return Apis->call_function(Env, Apis->get_property(Env, Map, Method), Map, Argc, Argv);
+    void* Ptr = nullptr;
+    if (!Apis->get_private(Env, JsFunction, &Ptr))
+    {
+        return 0;
+    }
+    return static_cast<uint32_t>(reinterpret_cast<uintptr_t>(Ptr));
 }
 
 FScriptDelegate FScriptEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction)
@@ -2347,11 +2346,8 @@ FScriptDelegate FScriptEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesa
     }
     else
     {
-        pesapi_value CallbacksMap = ManualReleaseCallbackMap.Get(Env);
-        pesapi_value GetArgs[] = {JsFunction};
-        pesapi_value Id = CallJsMapMethod(Apis, Env, CallbacksMap, "get", 1, GetArgs);
-        TWeakObjectPtr<UDynamicDelegateProxy>* Found =
-            (Id && Apis->is_uint32(Env, Id)) ? ManualReleaseCallbacks.Find(Apis->get_value_uint32(Env, Id)) : nullptr;
+        const uint32_t Id = GetManualReleaseId(Apis, Env, JsFunction);
+        TWeakObjectPtr<UDynamicDelegateProxy>* Found = Id ? ManualReleaseCallbacks.Find(Id) : nullptr;
 
         if (!Found || !Found->IsValid())
         {
@@ -2367,8 +2363,7 @@ FScriptDelegate FScriptEnvImpl::NewDelegate(pesapi_env Env, UObject* Owner, pesa
             {
             }
             ManualReleaseCallbacks.Add(ManualReleaseCallbackId, DelegateProxy);
-            pesapi_value SetArgs[] = {JsFunction, Apis->create_uint32(Env, ManualReleaseCallbackId)};
-            CallJsMapMethod(Apis, Env, CallbacksMap, "set", 2, SetArgs);
+            Apis->set_private(Env, JsFunction, reinterpret_cast<void*>(static_cast<uintptr_t>(ManualReleaseCallbackId)));
         }
         else
         {
@@ -2393,14 +2388,13 @@ void FScriptEnvImpl::ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesap
     PAPI_CHECK_ARGS(EArgFunction);
 
     pesapi_env Env = Apis->get_env(Info);
-    pesapi_value CallbacksMap = ManualReleaseCallbackMap.Get(Env);
-    pesapi_value Args[] = {Apis->get_arg(Info, 0)};
-    pesapi_value Id = CallJsMapMethod(Apis, Env, CallbacksMap, "get", 1, Args);
-    if (Id && Apis->is_uint32(Env, Id))
+    pesapi_value JsFunction = Apis->get_arg(Info, 0);
+    const uint32_t Id = GetManualReleaseId(Apis, Env, JsFunction);
+    if (Id)
     {
-        CallJsMapMethod(Apis, Env, CallbacksMap, "delete", 1, Args);
+        Apis->set_private(Env, JsFunction, nullptr);
         TWeakObjectPtr<UDynamicDelegateProxy> DelegateProxy;
-        if (ManualReleaseCallbacks.RemoveAndCopyValue(Apis->get_value_uint32(Env, Id), DelegateProxy) && DelegateProxy.IsValid())
+        if (ManualReleaseCallbacks.RemoveAndCopyValue(Id, DelegateProxy) && DelegateProxy.IsValid())
         {
             DelegateProxy->ResetJsFunction();
             SysObjectRetainer.Release(DelegateProxy.Get());
@@ -2714,85 +2708,11 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
     }
 }
 
-// a js name may differ from the FName only in case (FName is case insensitive), the proxy at the end of the prototype chain
-// fixes the name by FName when a member is not found, and caches the member on its owner by the requested name
-static const char* FNameFixingProxyFactory = R"((function (fixName) {
-    var getProto = Object.getPrototypeOf, getDesc = Object.getOwnPropertyDescriptor, define = Object.defineProperty;
-    var proxy;
-    function fix(receiver, key) {
-        if (typeof key !== 'string' || key.length === 0 || key.length >= 1024) return undefined;
-        var fixed = fixName(key);
-        if (fixed === key) return undefined;
-        for (var p = receiver; p !== null && p !== proxy; p = getProto(p)) {
-            var d = getDesc(p, fixed);
-            if (d) {
-                if (p !== receiver) {
-                    define(p, key, ('get' in d) ? {get: d.get, set: d.set, enumerable: true, configurable: true}
-                        : {value: d.value, writable: d.writable, enumerable: true, configurable: true});
-                }
-                return fixed;
-            }
-        }
-        return undefined;
-    }
-    proxy = new Proxy({}, {
-        get: function (t, key, receiver) {
-            if (!(key in t)) {
-                var fixed = fix(receiver, key);
-                if (fixed !== undefined) return receiver[fixed];
-            }
-            return Reflect.get(t, key, receiver);
-        },
-        set: function (t, key, value, receiver) {
-            if (!(key in t)) {
-                var fixed = fix(receiver, key);
-                if (fixed !== undefined) {
-                    receiver[fixed] = value;
-                    return true;
-                }
-            }
-            return Reflect.set(t, key, value, receiver);
-        }
-    });
-    return proxy;
-}))";
-
+// a script name may differ from the FName only in case (FName is case insensitive), the backend fixes the name by FName when a
+// member is not found (a js Proxy at the end of the prototype chain)
 void FScriptEnvImpl::InstallFNameFixing(pesapi_env Env, pesapi_value Class)
 {
-    struct pesapi_ffi* Apis = MainApis;
-    if (!Class)
-    {
-        return;
-    }
-    if (!FNameFixingProxy)
-    {
-        FPapiValueRef Factory;
-        pesapi_value FactoryFunc = GetCachedJsFunction(Apis, Env, Factory, FNameFixingProxyFactory, "puerts/fname_fixing_proxy");
-        if (!FactoryFunc)
-        {
-            return;
-        }
-        pesapi_value Args[] = {Apis->create_function(Env, &FixFNameCase, nullptr, nullptr)};
-        pesapi_value Proxy = Apis->call_function(Env, FactoryFunc, nullptr, 1, Args);
-        Factory.Reset();
-        if (!Proxy || !Apis->is_object(Env, Proxy))
-        {
-            return;
-        }
-        FNameFixingProxy.Reset(Apis, Env, Proxy);
-    }
-    pesapi_value SetPrototypeOf =
-        GetCachedJsFunction(Apis, Env, ObjectSetPrototypeOf, "Object.setPrototypeOf", "puerts/object_set_prototype_of");
-    if (!SetPrototypeOf)
-    {
-        return;
-    }
-    pesapi_value Proto = Apis->get_property(Env, Class, "prototype");
-    if (Apis->is_object(Env, Proto))
-    {
-        pesapi_value Args[] = {Proto, FNameFixingProxy.Get(Env)};
-        Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
-    }
+    Backend->InstallNameFixing(Env, Class, &FixFNameCase);
 }
 
 pesapi_value FScriptEnvImpl::GetJsClass(pesapi_env Env, UStruct* InStruct)

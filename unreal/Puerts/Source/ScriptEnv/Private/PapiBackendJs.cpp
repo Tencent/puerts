@@ -92,10 +92,107 @@ void FPapiBackendJs::OnEnter(IPapiScriptHost* Host)
 
 void FPapiBackendJs::OnExit(IPapiScriptHost* Host)
 {
-    FPapiEnvScope EnvScope(GetApi(), MainEnvRef);
+    struct pesapi_ffi* Apis = GetApi();
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
     if (EnvScope)
     {
         StopRuntime();
+    }
+    // the refs are released while the env is alive
+    if (NameFixingProxy)
+    {
+        Apis->release_value_ref(NameFixingProxy);
+        NameFixingProxy = nullptr;
+    }
+    if (SetPrototypeOf)
+    {
+        Apis->release_value_ref(SetPrototypeOf);
+        SetPrototypeOf = nullptr;
+    }
+}
+
+// the proxy at the end of the prototype chain fixes the name by fixName when a member is not found, and caches the member on its
+// owner by the requested name
+static const char NameFixingProxyFactory[] = R"((function (fixName) {
+    var getProto = Object.getPrototypeOf, getDesc = Object.getOwnPropertyDescriptor, define = Object.defineProperty;
+    var proxy;
+    function fix(receiver, key) {
+        if (typeof key !== 'string' || key.length === 0 || key.length >= 1024) return undefined;
+        var fixed = fixName(key);
+        if (fixed === key) return undefined;
+        for (var p = receiver; p !== null && p !== proxy; p = getProto(p)) {
+            var d = getDesc(p, fixed);
+            if (d) {
+                if (p !== receiver) {
+                    define(p, key, ('get' in d) ? {get: d.get, set: d.set, enumerable: true, configurable: true}
+                        : {value: d.value, writable: d.writable, enumerable: true, configurable: true});
+                }
+                return fixed;
+            }
+        }
+        return undefined;
+    }
+    proxy = new Proxy({}, {
+        get: function (t, key, receiver) {
+            if (!(key in t)) {
+                var fixed = fix(receiver, key);
+                if (fixed !== undefined) return receiver[fixed];
+            }
+            return Reflect.get(t, key, receiver);
+        },
+        set: function (t, key, value, receiver) {
+            if (!(key in t)) {
+                var fixed = fix(receiver, key);
+                if (fixed !== undefined) {
+                    receiver[fixed] = value;
+                    return true;
+                }
+            }
+            return Reflect.set(t, key, value, receiver);
+        }
+    });
+    return proxy;
+}))";
+
+void FPapiBackendJs::InstallNameFixing(pesapi_env Env, pesapi_value Class, pesapi_callback FixName)
+{
+    struct pesapi_ffi* Apis = GetApi();
+    if (!Class)
+    {
+        return;
+    }
+    if (!SetPrototypeOf)
+    {
+        static const char Code[] = "Object.setPrototypeOf";
+        pesapi_value Func =
+            Apis->eval(Env, reinterpret_cast<const uint8_t*>(Code), sizeof(Code) - 1, "puerts/object_set_prototype_of");
+        if (!Func)
+        {
+            return;
+        }
+        SetPrototypeOf = Apis->create_value_ref(Env, Func, 0);
+    }
+    if (!NameFixingProxy)
+    {
+        pesapi_value Factory = Apis->eval(Env, reinterpret_cast<const uint8_t*>(NameFixingProxyFactory),
+            sizeof(NameFixingProxyFactory) - 1, "puerts/fname_fixing_proxy");
+        if (!Factory)
+        {
+            return;
+        }
+        pesapi_value Args[] = {Apis->create_function(Env, FixName, nullptr, nullptr)};
+        pesapi_value Proxy = Apis->call_function(Env, Factory, nullptr, 1, Args);
+        if (!Proxy || !Apis->is_object(Env, Proxy))
+        {
+            return;
+        }
+        NameFixingProxy = Apis->create_value_ref(Env, Proxy, 0);
+    }
+    pesapi_value Proto = Apis->get_property(Env, Class, "prototype");
+    if (Apis->is_object(Env, Proto))
+    {
+        pesapi_value Args[] = {Proto, Apis->get_value_from_ref(Env, NameFixingProxy)};
+        Apis->call_function(Env, Apis->get_value_from_ref(Env, SetPrototypeOf), nullptr, 2, Args);
     }
 }
 

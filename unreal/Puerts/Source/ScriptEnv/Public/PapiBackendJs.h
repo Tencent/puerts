@@ -27,6 +27,9 @@ public:
 
     virtual void OnExit(IPapiScriptHost* Host) override;
 
+    // a js Proxy at the end of the prototype chain of the class
+    virtual void InstallNameFixing(pesapi_env Env, pesapi_value Class, pesapi_callback FixName) override;
+
 protected:
     // the engine part of the js runtime, called inside a scope of the env
 
@@ -53,5 +56,10 @@ private:
     static void RegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void SetPromiseRejectHandlerCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // the cached functions of InstallNameFixing, released by OnExit
+    pesapi_value_ref NameFixingProxy = nullptr;
+
+    pesapi_value_ref SetPrototypeOf = nullptr;
 };
 }    // namespace PUERTS_NAMESPACE

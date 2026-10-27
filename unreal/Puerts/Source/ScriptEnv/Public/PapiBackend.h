@@ -176,5 +176,12 @@ public:
     {
         return false;
     }
+
+    // the members of the objects of the script class Class (a root class, created by create_class) whose name is not found
+    // are looked up again by the name FixName returns (FixName(name) -> the fixed name, or the name itself if it can not be
+    // fixed), called inside a scope of the env. A backend which does not support it does nothing
+    virtual void InstallNameFixing(pesapi_env Env, pesapi_value Class, pesapi_callback FixName)
+    {
+    }
 };
 }    // namespace PUERTS_NAMESPACE

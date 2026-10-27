@@ -594,10 +594,6 @@ private:
     // used by ObjectMerger (the js to struct conversion of a plain object)
     FPapiValueRef ObjectKeys;
 
-    // proxy at the end of the prototype chains of reflected classes (set as the prototype of the root prototypes), it fixes
-    // the case of member names by FName when a member is not found
-    FPapiValueRef FNameFixingProxy;
-
     void InstallFNameFixing(pesapi_env Env, pesapi_value Class);
 
     // evals Code once and caches the function, returns nullptr with the exception pending if the eval fails
@@ -611,9 +607,6 @@ private:
     FUETickDelegateHandle DelegateProxiesCheckerHandler;
 
     FContainerMeta ContainerMeta;
-
-    // js Map: function -> id in ManualReleaseCallbacks
-    FPapiValueRef ManualReleaseCallbackMap;
 
     uint32_t ManualReleaseCallbackId = 0;
 
