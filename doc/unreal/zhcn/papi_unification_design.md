@@ -578,6 +578,33 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 | 异常文本 | 格式与 V8 不同（如 `not a function`、`variable name expected`） |
 | 函数自有属性 | 普通函数没有 `arguments`、`caller`；`JS_NewCFunctionData` 创建的方法需要手动定义 `name` |
 
+### 5.13 PapiLua 后端
+
+参考 Unity 的 PapiLua，新增 `PapiLua` 模块（决策记录 2026-10-27 第 4 条），让同一套宿主（`ScriptEnv`）也能跑 lua 脚本。
+
+- 引擎：lua 5.4.8 以源码方式放在 `PapiLua/Private/lua`，按 C 编译，不格式化（clang-format CI 已排除该目录）。对源码只改了 `lprefix.h`：MSVC 下关掉 UE 当作错误的告警（`lua_error` 后的不可达代码等）。
+- 结构：`PesapiLuaImpl` 实现 pesapi（`pesapi_env` 就是 `lua_State*`，`pesapi_value` 是栈索引），`LuaObjectMapper` 实现对象映射（userdata + 弱表缓存，方法表、getter / setter 与 uservalue 里的 expando 字段）；`FPapiBackendLua` 直接实现 `IPapiBackend`，不继承 `FPapiBackendJs`。`ScriptEnv` 不依赖它，env 用 `FPapiBackendLua::Create` 作为后端工厂即可，可以与 `PapiV8`、`PapiQuickjs` 同时链接。
+- 启动：`OnEnter` 经宿主执行 `puerts/init.lua`，作用相当于 `log.js`、`argv.js`、`uelazyload.js`：`print / console`、`UE / CPP`、蓝图懒加载、容器、`puerts.ref / unref / setref`、`puerts.argv`，以及宿主要用的 `puerts.__mergePrototype` 等辅助函数。模块走 lua 自己的 `require`：`package.path / cpath` 清空，searchers 只留 preload 和 puerts searcher，后者调宿主契约（5.10.4）的 `__puer_host_resolve__ / __puer_host_load__` 读源码。`ExecuteModule` 就是调全局 `require`，没有 referrer，`import` 与 `require` 相同；`RegisterBuiltinModule` 写入 `package.loaded`。
+- 调用约定：方法用冒号（`obj:GetName()`，第一个参数作 this），静态函数和 `puerts.*` 用点号（`UE.KismetSystemLibrary.PrintString(...)`），类表的 `__call` 是构造函数（`UE.PuertsTestObject()`）。宿主在 getter / setter 中报错时，位置取最近一层 lua 帧，不是 C 函数本身。
+- 测试：用例在 `Content/JavaScript/tests/lua/*.lua`（自带 `framework.lua`，接口与 JS 的测试框架一致），注册为 `Puerts.Functional.Lua.*`（Properties、Functions、Containers、Delegates、Lifecycle、Modules、Errors），只读 `Baseline/Lua/<Name>.txt`。行为与 JS 基线逐项比对一致，差异只在语法和下表列出的能力上。
+
+lua 下不支持或行为不同的 JS/TS 特性：
+
+| 方面 | lua 行为 |
+| --- | --- |
+| TS 类与扩展 | 不支持 TS 类注入 UE（`makeUClass`）和 `mixin`，相关全局函数在 `init.lua` 中置空；FName 大小写修正（原型链末端 Proxy）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主会执行 `puerts/websocketpp.js`，lua 下会报错 |
+| 模块 | 没有 ESM（`import`、`import.meta`、顶层 await），只有同步 `require`；循环 `require` 不受保护（lua 原生行为）；点号与斜杠写法解析到同一文件，但在 `package.loaded` 中是两条记录，会各执行一次、得到两个实例 |
+| 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；在协程里回调宿主属于未覆盖的边缘情况 |
+| 值 | `null` 和 `undefined` 都是 `nil`；没有 BigInt，int64 用 lua 整数；`call_function` 的 this 参数被忽略 |
+| ref | `puerts.ref(x)` 返回 `{x}`，值在 `[1]`，用 `puerts.unref / setref` 读写，没有 `$ref / $unref / $set` |
+| 容器 | `TArray / TSet / TMap` 没有迭代器，不支持 `#` 和 `[i]`，只能用 `Num / Get / Set` 等方法 |
+| 委托 | 可传函数、`{owner, fn}`、`{owner, 'Name'}`；`toManualReleaseDelegate` 原样返回，没有 `releaseManualReleaseDelegate` |
+| GC | 增量 GC，对象回收但尚未 finalize 时同一指针被重新绑定属于边缘情况 |
+| 链接 | lua 以 C 符号直接编进模块，和其他自带 lua 的插件同时使用可能有符号冲突 |
+
+已知的宿主问题（与后端无关，JS 也一样）：`FScriptStructPropertyTranslator::JsToUE` 不做类型检查，把 UObject 传给结构体参数或属性会崩溃，用例里没有覆盖这种情况。
+
 ## 6. 第二阶段：UE 与 Unity 共用动态库
 
 ### 6.1 前提
@@ -705,6 +732,7 @@ flowchart LR
 1. 参考 Unity 新增 `PapiQuickjs` 模块，quickjs-ng 以源码方式编译，提前恢复 QuickJS 后端（见 5.12）；TestProject 的功能用例在 V8 和 QuickJS 下各跑一遍，引擎差异用 `Baseline/Quickjs` 专属基线记录。
 2. 删除 UE 的 JS 热重载，与 Unity 统一：去掉 `hot_reload.js`、`puerts.__reload / forceReload / getModuleByUrl`、后端进程内 Inspector 会话（`__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage`）、`IScriptEnv::ReloadModule / ReloadSource / OnSourceLoaded`、`IPuertsModule::ReloadModule`、`FSourceFileWatcher`、`UFileSystemOperation::PuertsNotifyChange` 及对应用例。热重载改由外部程序经 Inspector 协议 live-edit（V8 原生的 `Debugger.setScriptSource`）。保留远程调试用的 `V8InspectorImpl`、UE C++ 模块热重载（`WITH_HOT_RELOAD` 委托、`HOTRELOADED_` 类）和蓝图重编译用的 `invalidate_class`。
 3. timer 与 Unity 统一：原生侧只提供 tick。宿主绑定 `__tgjsRegisterTickHandler(fn)`，每个 env 注册一个每帧触发的 core ticker 调用这些 handler（每个 handler 单独开 scope，异常记 `Exception in Tick Handler` 日志）；`setTimeout / setInterval / clearTimeout / clearInterval` 由 `puerts/timer.js` 纯 JS 实现（复制自 Unity `timer.mjs`，由 `FPapiBackendJs` 在 `events.js` 之后加载）。相对 Unity 版本只改了一处：逐个回调 try/catch，一个回调抛异常不影响本帧其他到期 timer（记 `Exception in Timer Callback` 日志）。行为变化：按 `Date.now()` 计时；`setInterval` 最小间隔 10ms；非函数回调在调用时就抛异常；延时缺省或非数字、`clearTimeout` 传非数字不再抛异常。`promises.js` 中给 timer 补额外参数的包装已删除。
+4. 参考 Unity 新增 `PapiLua` 模块，lua 5.4.8 以源码方式编译，作为 `ScriptEnv` 的第三个后端（见 5.13）；TestProject 增加 lua 版功能用例（`tests/lua`，基线在 `Baseline/Lua`），lua 不支持的 JS/TS 特性列在 5.13。
 
 待决策：
 
