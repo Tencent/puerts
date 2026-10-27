@@ -13,7 +13,6 @@
 #include "PuertsModule.h"
 #include "TypeScriptCompilerContext.h"
 #include "TypeScriptBlueprint.h"
-#include "SourceFileWatcher.h"
 #include "JSLogger.h"
 #include "JSModuleLoader.h"
 #include "Binding.hpp"
@@ -47,8 +46,6 @@ private:
     void OnPostEngineInit();
 
     TSharedPtr<PUERTS_NAMESPACE::FJsEnv> JsEnv;
-
-    TSharedPtr<PUERTS_NAMESPACE::FSourceFileWatcher> SourceFileWatcher;
 
     bool Enabled = false;
 
@@ -119,33 +116,8 @@ void FPuertsEditorModule::OnPostEngineInit()
     {
         FKismetCompilerContext::RegisterCompilerForBP(UTypeScriptBlueprint::StaticClass(), &MakeCompiler);
 
-        SourceFileWatcher = MakeShared<PUERTS_NAMESPACE::FSourceFileWatcher>(
-            [this](const FString& InPath)
-            {
-                if (JsEnv.IsValid())
-                {
-                    TArray<uint8> Source;
-                    if (FFileHelper::LoadFileToArray(Source, *InPath))
-                    {
-                        JsEnv->ReloadSource(InPath, puerts::PString((const char*) Source.GetData(), Source.Num()));
-                    }
-                    else
-                    {
-                        UE_LOG(Puerts, Error, TEXT("read file fail for %s"), *InPath);
-                    }
-                }
-            });
-        JsEnv = MakeShared<PUERTS_NAMESPACE::FJsEnv>(
-            std::make_shared<PUERTS_NAMESPACE::DefaultJSModuleLoader>(TEXT("JavaScript")),
-            std::make_shared<PUERTS_NAMESPACE::FDefaultLogger>(), -1,
-            [this](const FString& InPath)
-            {
-                if (SourceFileWatcher.IsValid())
-                {
-                    SourceFileWatcher->OnSourceLoaded(InPath);
-                }
-            },
-            TEXT("--max-old-space-size=2048"));
+        JsEnv = MakeShared<PUERTS_NAMESPACE::FJsEnv>(std::make_shared<PUERTS_NAMESPACE::DefaultJSModuleLoader>(TEXT("JavaScript")),
+            std::make_shared<PUERTS_NAMESPACE::FDefaultLogger>(), -1, TEXT("--max-old-space-size=2048"));
 
         JsEnv->Start("PuertsEditor/CodeAnalyze");
     }
@@ -157,10 +129,6 @@ void FPuertsEditorModule::ShutdownModule()
     if (JsEnv.IsValid())
     {
         JsEnv.Reset();
-    }
-    if (SourceFileWatcher.IsValid())
-    {
-        SourceFileWatcher.Reset();
     }
 }
 

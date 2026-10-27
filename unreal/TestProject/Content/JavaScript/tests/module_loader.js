@@ -101,41 +101,8 @@ test('package.json', () => {
     note('require esm package without require entry', catchError(() => req('pkg_esm_noreq')));
 });
 
-test('forceReload', () => {
-    const first = req('reload');
-    assert(req('reload') === first, 'cached');
-    const url = first.url;
-    eq(puerts.forceReload(url), true);
-    const second = req('reload');
-    assert(second !== first, 'reloaded');
-    eq(second.n, first.n + 1);
-    eq(puerts.forceReload('not/loaded.js'), false);
-    eq(puerts.getModuleByUrl(url).exports === second, true, 'getModuleByUrl');
-    eq(puerts.getModuleByUrl('not/loaded.js'), undefined);
-});
-
 test('bom', () => {
     eq(req('bom'), 'bom');
-});
-
-// hot reload (puerts/hot_reload.js) goes through the in-process inspector session of the backend: started here, checked in
-// the next step; quickjs has no inspector, so no hot reload there
-const hotReload = { state: 'pending' };
-const hasHotReload = !isQuickJS();
-
-if (hasHotReload) test('hot reload start', () => {
-    const m = req('hot_reload');
-    eq(m.get(), 1);
-    hotReload.module = m;
-    const source = 'module.exports = { get() { return 1; }, url: __filename };\n';
-    puerts.__reload('hot_reload', m.url, source.replace('return 1', 'return 2')).then(
-        () => {
-            hotReload.state = 'fulfilled';
-        },
-        (e) => {
-            hotReload.state = `rejected: ${e}`;
-        }
-    );
 });
 
 test('dumpStatisticsLog', () => {
@@ -213,11 +180,6 @@ step(() => {
         note('dynamic import missing', rejected('missing'));
         note('dynamic import dep missing', rejected('dep missing'));
         note('dynamic import syntax error', rejected('syntax error'));
-    });
-
-    if (hasHotReload) test('hot reload', () => {
-        eq(hotReload.state, 'fulfilled');
-        eq(hotReload.module.get(), 2, 'function replaced by Debugger.setScriptSource');
     });
 });
 

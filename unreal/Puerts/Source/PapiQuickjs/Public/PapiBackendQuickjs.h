@@ -78,10 +78,6 @@ protected:
 
     virtual pesapi_value CreateRequire(pesapi_env Env, const char* Referrer) override;
 
-    virtual bool ForceReload(pesapi_env Env, const char* Url) override;
-
-    virtual pesapi_value GetModuleByUrl(pesapi_env Env, const char* Url) override;
-
     virtual void SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler) override;
 
 private:

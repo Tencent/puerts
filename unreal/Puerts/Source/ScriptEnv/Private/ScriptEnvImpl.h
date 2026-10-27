@@ -65,8 +65,7 @@ public:
 
     // InExternalRuntime / InExternalContext: the isolate and the context of node, only supported by the node build
     FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
-        std::shared_ptr<ILogger> InLogger, int InPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
-        const FString InFlags, void* InExternalRuntime, void* InExternalContext);
+        std::shared_ptr<ILogger> InLogger, int InPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext);
 
     virtual ~FScriptEnvImpl() override;
 
@@ -105,19 +104,6 @@ public:
     virtual FString CurrentStackTrace() override;
 
     virtual void InitExtensionMethodsMap() override;
-
-    void JsHotReload(FName ModuleName, const FString& JsSource);
-
-    // calls puerts.__reload with (module name or undefined, path, source) and logs its exception
-    void CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args)[3]);
-
-    virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
-
-    virtual void ReloadSource(const FString& Path, const PString& JsSource) override;
-
-    std::function<void(const FString&)> OnSourceLoadedCallback;
-
-    virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) override;
 
 public:
     bool IsTypeScriptGeneratedClass(UClass* Class);
@@ -456,8 +442,6 @@ private:
 
     // the ref of the default env, the entries from the host open their papi scopes with it (FPapiEnvScope)
     pesapi_env_ref MainEnvRef = nullptr;
-
-    FPapiValueRef ReloadJs;
 
 #if !PUERTS_FORCE_CPP_UFUNCTION
     FPapiValueRef MergePrototype;

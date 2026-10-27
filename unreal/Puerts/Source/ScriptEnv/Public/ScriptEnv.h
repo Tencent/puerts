@@ -44,12 +44,6 @@ public:
     virtual void RebindJs() = 0;
 #endif
 
-    virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
-
-    virtual void ReloadSource(const FString& Path, const PString& JsSource) = 0;
-
-    virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) = 0;
-
     virtual FString CurrentStackTrace() = 0;
 
     virtual void InitExtensionMethodsMap() = 0;
@@ -66,8 +60,8 @@ public:
     explicit FScriptEnv(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot = TEXT("JavaScript"));
 
     FScriptEnv(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
-        std::shared_ptr<ILogger> InLogger, int InDebugPort, std::function<void(const FString&)> InOnSourceLoadedCallback = nullptr,
-        const FString InFlags = FString(), void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
+        std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags = FString(), void* InExternalRuntime = nullptr,
+        void* InExternalContext = nullptr);
 
     void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments = TArray<TPair<FString, UObject*>>());
 
@@ -85,12 +79,6 @@ public:
     void WaitDebugger(double Timeout = 0);
 
     void TryBindJs(const class UObjectBase* InObject);
-
-    void ReloadModule(FName ModuleName, const FString& JsSource);
-
-    void ReloadSource(const FString& Path, const PString& JsSource);
-
-    void OnSourceLoaded(std::function<void(const FString&)> Callback);
 
     void RebindJs();
 

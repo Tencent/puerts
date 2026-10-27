@@ -78,23 +78,6 @@ public:
         return Enabled && WatchEnabled;
     }
 
-    void ReloadModule(FName ModuleName, const FString& JsSource) override
-    {
-        if (Enabled)
-        {
-            if (JsEnv.IsValid())
-            {
-                // UE_LOG(PuertsModule, Warning, TEXT("Normal Mode ReloadModule"));
-                JsEnv->ReloadModule(ModuleName, JsSource);
-            }
-            else if (NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
-            {
-                // UE_LOG(PuertsModule, Warning, TEXT("Group Mode ReloadModule"));
-                JsEnvGroup->ReloadModule(ModuleName, JsSource);
-            }
-        }
-    }
-
     void InitExtensionMethodsMap() override
     {
         if (Enabled)

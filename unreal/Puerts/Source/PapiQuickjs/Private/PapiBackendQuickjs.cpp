@@ -203,16 +203,6 @@ pesapi_value FPapiBackendQuickjs::CreateRequire(pesapi_env Env, const char* Refe
     return papi_qjs::CreateRequire(Env, Referrer);
 }
 
-bool FPapiBackendQuickjs::ForceReload(pesapi_env Env, const char* Url)
-{
-    return papi_qjs::ForceReload(Env, Url);
-}
-
-pesapi_value FPapiBackendQuickjs::GetModuleByUrl(pesapi_env Env, const char* Url)
-{
-    return papi_qjs::GetModuleByUrl(Env, Url);
-}
-
 void FPapiBackendQuickjs::SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler)
 {
     papi_qjs::SetPromiseRejectHandler(Env, Handler);

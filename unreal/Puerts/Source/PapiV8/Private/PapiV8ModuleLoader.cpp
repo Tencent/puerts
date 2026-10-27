@@ -1130,47 +1130,6 @@ void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value)
     Record->Value.Reset(Loader->Isolate, ToV8(Value));
 }
 
-bool ForceReload(pesapi_env Env, const char* Url)
-{
-    auto Context = ToV8(Env);
-    auto Loader = FModuleLoader::Get(Context->GetIsolate());
-    if (!Url || !*Url)
-    {
-        std::vector<std::string> Keys;
-        for (auto& KV : Loader->Records)
-        {
-            if (KV.second->Kind == EKind::Cjs)
-            {
-                Keys.push_back(KV.first);
-            }
-        }
-        for (auto& Key : Keys)
-        {
-            Loader->EraseRecord(Key);
-        }
-        return !Keys.empty();
-    }
-    auto Key = MakeKey(EKind::Cjs, Url);
-    if (Loader->Records.find(Key) == Loader->Records.end())
-    {
-        return false;
-    }
-    Loader->EraseRecord(Key);
-    return true;
-}
-
-pesapi_value GetModuleByUrl(pesapi_env Env, const char* Url)
-{
-    auto Context = ToV8(Env);
-    auto Loader = FModuleLoader::Get(Context->GetIsolate());
-    auto It = Loader->Records.find(MakeKey(EKind::Cjs, Url ? Url : ""));
-    if (It == Loader->Records.end() || It->second->CjsModule.IsEmpty())
-    {
-        return nullptr;
-    }
-    return ToPapi(It->second->CjsModule.Get(Loader->Isolate).As<v8::Value>());
-}
-
 void SetCodeCacheExpect(pesapi_env Env, uint32_t FlagHash, uint32_t ReadOnlySnapshotChecksum)
 {
     auto Loader = FModuleLoader::Get(ToV8(Env)->GetIsolate());

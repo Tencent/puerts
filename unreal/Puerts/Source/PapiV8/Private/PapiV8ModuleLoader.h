@@ -49,12 +49,6 @@ pesapi_value CreateRequire(pesapi_env Env, const char* Referrer);
 
 void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value);
 
-// the next require of the cjs module (all cjs modules if Url is null or empty) executes it again, returns false if not loaded
-bool ForceReload(pesapi_env Env, const char* Url);
-
-// the `module` object of a loaded cjs module, nullptr if not loaded
-pesapi_value GetModuleByUrl(pesapi_env Env, const char* Url);
-
 // the bytecode header fields which must match the running v8, bytecode with other values is patched before consumed
 void SetCodeCacheExpect(pesapi_env Env, uint32_t FlagHash, uint32_t ReadOnlySnapshotChecksum);
 }    // namespace papi_v8

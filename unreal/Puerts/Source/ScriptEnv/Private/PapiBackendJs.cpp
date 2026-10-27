@@ -39,12 +39,6 @@ static bool GetStringArg(struct pesapi_ffi* Apis, pesapi_callback_info Info, int
     return true;
 }
 
-// the url of puerts.forceReload / getModuleByUrl, "./" is ignored as by require
-static FString NormalizeModuleUrl(const FString& Url)
-{
-    return Url.StartsWith(TEXT("./")) ? Url.Mid(2) : Url;
-}
-
 static void BindFunction(
     struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, pesapi_callback Callback, FPapiBackendJs* Backend)
 {
@@ -71,8 +65,6 @@ void FPapiBackendJs::OnEnter(IPapiScriptHost* Host)
             RegisterBuiltinModule(Env, "puerts", PuertsObj);
             BindFunction(Apis, Env, PuertsObj, "genRequire", &GenRequire, this);
             BindFunction(Apis, Env, PuertsObj, "registerBuildinModule", &RegisterBuiltin, this);
-            BindFunction(Apis, Env, PuertsObj, "forceReload", &ForceReloadCallback, this);
-            BindFunction(Apis, Env, PuertsObj, "getModuleByUrl", &GetModuleByUrlCallback, this);
         }
         Apis->set_property(Env, Global, "require", CreateRequire(Env, ""));
         // called by puerts/promises.js
@@ -93,7 +85,6 @@ void FPapiBackendJs::OnEnter(IPapiScriptHost* Host)
     Host->ExecuteModule(TEXT("puerts/promises.js"));
     Host->ExecuteModule(TEXT("puerts/argv.js"));
     Host->ExecuteModule(TEXT("puerts/jit_stub.js"));
-    Host->ExecuteModule(TEXT("puerts/hot_reload.js"));
     Host->ExecuteModule(TEXT("puerts/pesaddon.js"));
 }
 
@@ -139,41 +130,6 @@ void FPapiBackendJs::RegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_in
         return;
     }
     Self->RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Name), Apis->get_arg(Info, 1));
-}
-
-// puerts.forceReload(url?): the next require of the cjs module (all if no url) executes it again
-void FPapiBackendJs::ForceReloadCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    auto Self = static_cast<FPapiBackendJs*>(Apis->get_userdata(Info));
-    pesapi_env Env = Apis->get_env(Info);
-    FString Url;
-    if (Apis->get_args_len(Info) > 0 && Apis->is_string(Env, Apis->get_arg(Info, 0)))
-    {
-        Url = NormalizeModuleUrl(ArgToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    }
-    bool Reloaded = Self->ForceReload(Env, TCHAR_TO_UTF8(*Url));
-    if (!Reloaded && !Url.IsEmpty())
-    {
-        Self->Logger->Warn(FString::Printf(TEXT("reload not loaded module: %s!"), *Url));
-    }
-    Apis->add_return(Info, Apis->create_boolean(Env, Reloaded));
-}
-
-// puerts.getModuleByUrl(url): the `module` object of a loaded cjs module
-void FPapiBackendJs::GetModuleByUrlCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    auto Self = static_cast<FPapiBackendJs*>(Apis->get_userdata(Info));
-    pesapi_env Env = Apis->get_env(Info);
-    if (Apis->get_args_len(Info) < 1 || !Apis->is_string(Env, Apis->get_arg(Info, 0)))
-    {
-        return;
-    }
-    FString Url = NormalizeModuleUrl(ArgToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    pesapi_value Module = Self->GetModuleByUrl(Env, TCHAR_TO_UTF8(*Url));
-    if (Module)
-    {
-        Apis->add_return(Info, Module);
-    }
 }
 
 // __tgjsSetPromiseRejectCallback(handler)

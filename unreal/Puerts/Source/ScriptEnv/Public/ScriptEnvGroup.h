@@ -21,15 +21,12 @@ public:
     explicit FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, const FString& ScriptRoot = TEXT("JavaScript"));
 
     FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader,
-        std::shared_ptr<ILogger> InLogger, int InDebugStartPort,
-        std::function<void(const FString&)> InOnSourceLoadedCallback = nullptr, const FString InFlags = FString(),
+        std::shared_ptr<ILogger> InLogger, int InDebugStartPort, const FString InFlags = FString(),
         void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 
     ~FScriptEnvGroup();
 
     void TryBindJs(const class UObjectBase* InObject);
-
-    void ReloadModule(FName ModuleName, const FString& JsSource);
 
     void RebindJs();
 

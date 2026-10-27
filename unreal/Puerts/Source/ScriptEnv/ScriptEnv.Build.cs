@@ -63,11 +63,6 @@ public class ScriptEnv : ModuleRules
             "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas", "UMG", "Json"
         });
 
-        if (Target.bBuildEditor)
-        {
-            PublicDependencyModuleNames.AddRange(new string[] { "DirectoryWatcher", });
-        }
-
         bEnableExceptions = true;
         var ContextField = GetType().GetField("Context", BindingFlags.Instance | BindingFlags.NonPublic);
         if (ContextField != null)

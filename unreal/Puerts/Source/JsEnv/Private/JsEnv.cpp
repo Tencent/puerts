@@ -17,10 +17,9 @@ FJsEnv::FJsEnv(const FString& ScriptRoot) : FScriptEnv(&FPapiBackendV8::Create, 
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
-    std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
-    void* InExternalContext)
-    : FScriptEnv(&FPapiBackendV8::Create, std::move(InModuleLoader), InLogger, InDebugPort, InOnSourceLoadedCallback, InFlags,
-          InExternalRuntime, InExternalContext)
+    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnv(
+          &FPapiBackendV8::Create, std::move(InModuleLoader), InLogger, InDebugPort, InFlags, InExternalRuntime, InExternalContext)
 {
 }
 
@@ -30,10 +29,9 @@ FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot) : FScriptEnvGroup(
 }
 
 FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
-    int InDebugStartPort, std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags,
-    void* InExternalRuntime, void* InExternalContext)
-    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::move(InModuleLoader), InLogger, InDebugStartPort,
-          InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext)
+    int InDebugStartPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::move(InModuleLoader), InLogger, InDebugStartPort, InFlags,
+          InExternalRuntime, InExternalContext)
 {
 }
 #endif

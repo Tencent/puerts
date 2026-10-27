@@ -39,12 +39,6 @@ protected:
     // a require function resolving relative to Referrer (a url, "" for the root)
     virtual pesapi_value CreateRequire(pesapi_env Env, const char* Referrer) = 0;
 
-    // the next require of the cjs module (all if Url is empty) executes it again, returns false if not loaded
-    virtual bool ForceReload(pesapi_env Env, const char* Url) = 0;
-
-    // the `module` object of a loaded cjs module, nullptr if not loaded
-    virtual pesapi_value GetModuleByUrl(pesapi_env Env, const char* Url) = 0;
-
     // handler(event, promise, value), a value which is not a function clears it
     virtual void SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler) = 0;
 
@@ -57,10 +51,6 @@ private:
     static void GenRequire(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void RegisterBuiltin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    static void ForceReloadCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    static void GetModuleByUrlCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void SetPromiseRejectHandlerCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 };

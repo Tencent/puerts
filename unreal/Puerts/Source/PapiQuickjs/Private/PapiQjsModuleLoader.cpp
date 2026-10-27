@@ -977,48 +977,5 @@ void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value)
     FRecord* Record = Loader->AddRecord(EKind::Builtin, Name, "");
     Record->Value = Value ? JS_DupValue(Ctx, *reinterpret_cast<JSValue*>(Value)) : JS_UNDEFINED;
 }
-
-bool ForceReload(pesapi_env Env, const char* Url)
-{
-    JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
-    FModuleLoader* Loader = FindLoader(Ctx);
-    if (!Loader)
-    {
-        return false;
-    }
-    if (Url && *Url)
-    {
-        return Loader->EraseRecord(MakeKey(EKind::Cjs, Url));
-    }
-    std::vector<std::string> Keys;
-    for (auto& Pair : Loader->Records)
-    {
-        if (Pair.second->Kind == EKind::Cjs)
-        {
-            Keys.push_back(Pair.first);
-        }
-    }
-    for (auto& Key : Keys)
-    {
-        Loader->EraseRecord(Key);
-    }
-    return !Keys.empty();
-}
-
-pesapi_value GetModuleByUrl(pesapi_env Env, const char* Url)
-{
-    JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
-    FModuleLoader* Loader = FindLoader(Ctx);
-    if (!Loader || !Url)
-    {
-        return nullptr;
-    }
-    FRecord* Record = Loader->FindRecord(MakeKey(EKind::Cjs, Url));
-    if (!Record || JS_IsUndefined(Record->CjsModule))
-    {
-        return nullptr;
-    }
-    return ToPesapi(Ctx, JS_DupValue(Ctx, Record->CjsModule));
-}
 }    // namespace papi_qjs
 }    // namespace PUERTS_NAMESPACE

@@ -68,7 +68,7 @@ void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot)
     : FScriptEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
-          std::make_shared<FDefaultLogger>(), -1, nullptr, FString(), nullptr, nullptr)
+          std::make_shared<FDefaultLogger>(), -1, FString(), nullptr, nullptr)
 {
 }
 
@@ -300,8 +300,7 @@ void FScriptEnvImpl::StopPolling()
 #endif
 
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
-    std::shared_ptr<ILogger> InLogger, int InDebugPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
-    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
@@ -309,7 +308,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
-    OnSourceLoadedCallback = InOnSourceLoadedCallback;
 
     // the backend of the env, created by the factory given by the caller (see PapiBackend.h), the host only uses the papi
     // table it provides (MainApis)
@@ -520,7 +518,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         pesapi_env Env = EnvScope.GetEnv();
         pesapi_value PapiPuertsObj = Apis->get_property(Env, Apis->global(Env), "puerts");
 
-        ReloadJs.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__reload"));
 #if !PUERTS_FORCE_CPP_UFUNCTION
         MergePrototype.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__mergePrototype"));
 #endif
@@ -573,7 +570,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
     }
     ManualReleaseCallbacks.Empty();
     ManualReleaseCallbackMap.Reset();
-    ReloadJs.Reset();
 
     FUETicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
 
@@ -1288,78 +1284,6 @@ pesapi_value FScriptEnvImpl::GetCachedJsFunction(
         Cache.Reset(Apis, Env, Func);
     }
     return Func;
-}
-
-void FScriptEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    FString OutPath, OutDebugPath;
-
-    if (ModuleLoader->Search(TEXT(""), ModuleName.ToString(), OutPath, OutDebugPath))
-    {
-        OutPath = FPaths::ConvertRelativePathToFull(OutPath);
-        Logger->Info(FString::Printf(TEXT("reload js module [%s]"), *OutPath));
-        struct pesapi_ffi* Apis = MainApis;
-        FPapiEnvScope EnvScope(Apis, MainEnvRef);
-        if (!EnvScope)
-        {
-            return;
-        }
-        pesapi_env Env = EnvScope.GetEnv();
-        pesapi_value Args[] = {PapiUtils::FromFString(Apis, Env, ModuleName.ToString()), PapiUtils::FromFString(Apis, Env, OutPath),
-            PapiUtils::FromFString(Apis, Env, JsSource)};
-        CallReloadJs(EnvScope, Args);
-    }
-    else
-    {
-        Logger->Warn(FString::Printf(TEXT("not find js module [%s]"), *ModuleName.ToString()));
-        return;
-    }
-}
-
-void FScriptEnvImpl::CallReloadJs(const FPapiEnvScope& EnvScope, pesapi_value (&Args)[3])
-{
-    struct pesapi_ffi* Apis = MainApis;
-    pesapi_env Env = EnvScope.GetEnv();
-    Apis->call_function(Env, ReloadJs.Get(Env), nullptr, 3, Args);
-    if (EnvScope.HasCaught())
-    {
-        Logger->Error(FString::Printf(TEXT("reload module exception %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
-    }
-}
-
-void FScriptEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    // Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
-    JsHotReload(ModuleName, JsSource);
-}
-
-void FScriptEnvImpl::ReloadSource(const FString& Path, const PString& JsSource)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    Logger->Info(FString::Printf(TEXT("reload js [%s]"), *Path));
-    struct pesapi_ffi* Apis = MainApis;
-    FPapiEnvScope EnvScope(Apis, MainEnvRef);
-    if (!EnvScope)
-    {
-        return;
-    }
-    pesapi_env Env = EnvScope.GetEnv();
-    pesapi_value Args[] = {Apis->create_undefined(Env), PapiUtils::FromFString(Apis, Env, Path),
-        Apis->create_string_utf8(Env, JsSource.c_str(), JsSource.size())};
-    CallReloadJs(EnvScope, Args);
-}
-
-void FScriptEnvImpl::OnSourceLoaded(std::function<void(const FString&)> Callback)
-{
-    OnSourceLoadedCallback = Callback;
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -3617,11 +3541,6 @@ void FScriptEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_inf
     Apis->set_property(Env, Result, "content", Content);
     Apis->set_property(Env, Result, "debugPath", PapiUtils::FromFString(Apis, Env, DebugPath));
     Apis->add_return(Info, Result);
-
-    if (OnSourceLoadedCallback)
-    {
-        OnSourceLoadedCallback(DebugPath);
-    }
 }
 #endif
 

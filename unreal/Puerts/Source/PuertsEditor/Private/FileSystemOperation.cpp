@@ -96,11 +96,6 @@ TArray<FString> UFileSystemOperation::GetFiles(FString Path)
     return Dirs;
 }
 
-void UFileSystemOperation::PuertsNotifyChange(FString Path, FString Source)
-{
-    IPuertsModule::Get().ReloadModule(*Path, Source);
-}
-
 FString UFileSystemOperation::FileMD5Hash(FString Path)
 {
     FMD5Hash Hash = FMD5Hash::HashFile(*Path);

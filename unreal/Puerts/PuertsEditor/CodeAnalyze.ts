@@ -580,9 +580,6 @@ function watch(configFilePath:string) {
                                 }
                             }
                         });
-                        if (moduleFileName && reload) {
-                            UE.FileSystemOperation.PuertsNotifyChange(moduleFileName, jsSource);
-                        }
 
                         if (!doEmitBP) return;
 

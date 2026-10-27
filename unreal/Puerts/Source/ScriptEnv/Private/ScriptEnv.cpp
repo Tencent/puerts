@@ -17,11 +17,10 @@ FScriptEnv::FScriptEnv(FPapiBackendFactory InBackendFactory, const FString& Scri
 }
 
 FScriptEnv::FScriptEnv(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
-    std::shared_ptr<ILogger> InLogger, int InDebugPort, std::function<void(const FString&)> InOnSourceLoadedCallback,
-    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
     GameScript = std::make_unique<FScriptEnvImpl>(std::move(InBackendFactory), std::move(InModuleLoader), InLogger, InDebugPort,
-        InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext);
+        InFlags, InExternalRuntime, InExternalContext);
 }
 
 void FScriptEnv::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments)
@@ -74,21 +73,6 @@ FString FScriptEnv::CurrentStackTrace()
 void FScriptEnv::InitExtensionMethodsMap()
 {
     GameScript->InitExtensionMethodsMap();
-}
-
-void FScriptEnv::ReloadModule(FName ModuleName, const FString& JsSource)
-{
-    GameScript->ReloadModule(ModuleName, JsSource);
-}
-
-void FScriptEnv::ReloadSource(const FString& Path, const PString& JsSource)
-{
-    GameScript->ReloadSource(Path, JsSource);
-}
-
-void FScriptEnv::OnSourceLoaded(std::function<void(const FString&)> Callback)
-{
-    GameScript->OnSourceLoaded(Callback);
 }
 
 }    // namespace PUERTS_NAMESPACE

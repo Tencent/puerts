@@ -257,9 +257,6 @@ void FPapiBackendV8::CloseRemoteDebugger()
 #endif
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
-    // the session of the channel is connected to the inspector
-    delete InspectorChannel;
-    InspectorChannel = nullptr;
     delete Inspector;
     Inspector = nullptr;
 }
@@ -415,88 +412,10 @@ bool FPapiBackendV8::BindTriviallyFreedObject(
 #endif
 }
 
-void FPapiBackendV8::SetInspectorCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    auto Self = static_cast<FPapiBackendV8*>(Apis->get_userdata(Info));
-    pesapi_env Env = Apis->get_env(Info);
-    if (!Self->Inspector)
-    {
-        return;
-    }
-    if (Apis->get_args_len(Info) < 1 || !Apis->is_function(Env, Apis->get_arg(Info, 0)))
-    {
-        Apis->throw_by_string(Info, "Bad parameters #0, expect a function.");
-        return;
-    }
-
-    if (!Self->InspectorChannel)
-    {
-        Self->InspectorChannel = Self->Inspector->CreateV8InspectorChannel();
-        Self->InspectorChannel->OnMessage([Self](const std::string& Message) { Self->OnInspectorMessage(Message); });
-    }
-
-    Self->InspectorMessageHandler.Reset(Apis, Env, Apis->get_arg(Info, 0));
-}
-
-void FPapiBackendV8::DispatchProtocolMessage(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    auto Self = static_cast<FPapiBackendV8*>(Apis->get_userdata(Info));
-    pesapi_env Env = Apis->get_env(Info);
-    if (Apis->get_args_len(Info) < 1 || !Apis->is_string(Env, Apis->get_arg(Info, 0)))
-    {
-        Apis->throw_by_string(Info, "Bad parameters #0, expect a string.");
-        return;
-    }
-
-    if (Self->InspectorChannel)
-    {
-        pesapi_value Arg = Apis->get_arg(Info, 0);
-        size_t Len = 0;
-        Apis->get_value_string_utf8(Env, Arg, nullptr, &Len);
-        std::string Message(Len, '\0');
-        if (Len > 0)
-        {
-            Apis->get_value_string_utf8(Env, Arg, &Message[0], &Len);
-        }
-        Self->InspectorChannel->DispatchProtocolMessage(Message);
-    }
-}
-
-// a message of the in-process session: a response (inside DispatchProtocolMessage) or a notification (any time the inspector
-// is running), passed to the handler set by __tgjsSetInspectorCallback
-void FPapiBackendV8::OnInspectorMessage(const std::string& Message)
-{
-    struct pesapi_ffi* Apis = GetApi();
-    FPapiEnvScope EnvScope(Apis, MainEnvRef);
-    if (!EnvScope)
-    {
-        return;
-    }
-    pesapi_env Env = EnvScope.GetEnv();
-    pesapi_value Handler = InspectorMessageHandler.Get(Env);
-    if (!Handler)
-    {
-        return;
-    }
-    pesapi_value Args[] = {Apis->create_string_utf8(Env, Message.c_str(), Message.size())};
-    Apis->call_function(Env, Handler, Apis->global(Env), 1, Args);
-    if (EnvScope.HasCaught())
-    {
-        Logger->Error(FString::Printf(TEXT("inspector callback exception %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
-    }
-}
-
 void FPapiBackendV8::StartRuntime(pesapi_env Env)
 {
     ModuleLoader = papi_v8::CreateModuleLoader(Env);
     PromiseRejectTracker = papi_v8::CreatePromiseRejectTracker(Env, &OnPromiseRejectHandlerError, Logger.get());
-
-    // taken (and removed from the global) by puerts/hot_reload.js
-    struct pesapi_ffi* Apis = GetApi();
-    pesapi_value Global = Apis->global(Env);
-    Apis->set_property(Env, Global, "__tgjsSetInspectorCallback", Apis->create_function(Env, &SetInspectorCallback, this, nullptr));
-    Apis->set_property(
-        Env, Global, "__tgjsDispatchProtocolMessage", Apis->create_function(Env, &DispatchProtocolMessage, this, nullptr));
 
 #if defined(WITH_V8_BYTECODE)
     // the header fields of the bytecode the running v8 accepts, taken from the code cache of an empty script
@@ -519,7 +438,6 @@ void FPapiBackendV8::StartRuntime(pesapi_env Env)
 
 void FPapiBackendV8::StopRuntime()
 {
-    InspectorMessageHandler.Reset();
     papi_v8::DestroyPromiseRejectTracker(PromiseRejectTracker);
     PromiseRejectTracker = nullptr;
     papi_v8::DestroyModuleLoader(ModuleLoader);
@@ -529,16 +447,6 @@ void FPapiBackendV8::StopRuntime()
 pesapi_value FPapiBackendV8::CreateRequire(pesapi_env Env, const char* Referrer)
 {
     return papi_v8::CreateRequire(Env, Referrer);
-}
-
-bool FPapiBackendV8::ForceReload(pesapi_env Env, const char* Url)
-{
-    return papi_v8::ForceReload(Env, Url);
-}
-
-pesapi_value FPapiBackendV8::GetModuleByUrl(pesapi_env Env, const char* Url)
-{
-    return papi_v8::GetModuleByUrl(Env, Url);
 }
 
 void FPapiBackendV8::SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler)

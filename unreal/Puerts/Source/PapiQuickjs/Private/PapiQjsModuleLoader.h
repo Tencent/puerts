@@ -40,9 +40,5 @@ pesapi_value ExecuteModule(pesapi_env Env, const char* Specifier, const char* Re
 pesapi_value CreateRequire(pesapi_env Env, const char* Referrer);
 
 void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value);
-
-bool ForceReload(pesapi_env Env, const char* Url);
-
-pesapi_value GetModuleByUrl(pesapi_env Env, const char* Url);
 }    // namespace papi_qjs
 }    // namespace PUERTS_NAMESPACE

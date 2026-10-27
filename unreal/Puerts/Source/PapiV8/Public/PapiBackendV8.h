@@ -28,7 +28,6 @@ namespace PUERTS_NAMESPACE
 {
 class FCppObjectMapper;
 class V8Inspector;
-class V8InspectorChannel;
 
 namespace papi_v8
 {
@@ -113,22 +112,10 @@ protected:
 
     virtual pesapi_value CreateRequire(pesapi_env Env, const char* Referrer) override;
 
-    virtual bool ForceReload(pesapi_env Env, const char* Url) override;
-
-    virtual pesapi_value GetModuleByUrl(pesapi_env Env, const char* Url) override;
-
     virtual void SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler) override;
 
 private:
     static void OnPromiseRejectHandlerError(void* UserData, const char* Error);
-
-    // __tgjsSetInspectorCallback(handler) and __tgjsDispatchProtocolMessage(message): the in-process session of the inspector,
-    // used by puerts/hot_reload.js
-    static void SetInspectorCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    static void DispatchProtocolMessage(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    void OnInspectorMessage(const std::string& Message);
 
     FParams Params;
 
@@ -145,10 +132,6 @@ private:
     papi_v8::FPromiseRejectTracker* PromiseRejectTracker = nullptr;
 
     V8Inspector* Inspector = nullptr;
-
-    V8InspectorChannel* InspectorChannel = nullptr;
-
-    FPapiValueRef InspectorMessageHandler;
 };
 }    // namespace PUERTS_NAMESPACE
 
