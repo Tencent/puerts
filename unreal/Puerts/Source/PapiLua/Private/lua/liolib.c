@@ -119,9 +119,23 @@ static int l_checkmode (const char *mode) {
 
 #include <sys/types.h>
 
+#if defined(__ANDROID__)	/* { */
+
+/* bionic only declares fseeko/ftello when _LARGEFILE_SOURCE or _XOPEN_SOURCE is honoured before
+** <stdio.h> is included, which is not guaranteed by the android toolchain of UnrealBuildTool,
+** so fall back to the ISO C entry points there
+*/
+#define l_fseek(f,o,w)		fseek(f,o,w)
+#define l_ftell(f)		ftell(f)
+#define l_seeknum		long
+
+#else				/* }{ */
+
 #define l_fseek(f,o,w)		fseeko(f,o,w)
 #define l_ftell(f)		ftello(f)
 #define l_seeknum		off_t
+
+#endif				/* } */
 
 #elif defined(LUA_USE_WINDOWS) && !defined(_CRTIMP_TYPEINFO) \
    && defined(_MSC_VER) && (_MSC_VER >= 1400)	/* }{ */
