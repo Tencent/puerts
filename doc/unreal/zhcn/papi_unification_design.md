@@ -245,7 +245,7 @@ M4 落地情况（分批进行）：
   - 测试：两条路径 14 个用例全过，Reflection 基线无差异；BuildPlugin 通过。基准：两轮 new.struct 为 283ns / 276ns（M4-6b 为 251ns / 264ns），多出的是 `CDataNew` -> `ReflectedConstruct` 的一次跳转，约 5%~10%；其余项与 M4-6b 持平（new.uobject 1688ns / 1547ns，tsclass.new 2067ns）。
 - M4-6d：FName 大小写修正从实例模板上的命名属性拦截器（`kNonMasking`，只有 v8 能表达）改为 JS Proxy，`StructWrapper.cpp` 中搬过来的拦截器代码删除。
   - 结构：每个 env 一个 Proxy（`new Proxy({}, {get, set})`，target 是空对象，所以 Proxy 的原型仍是 `Object.prototype`，`instanceof Object` 和 `Object.prototype` 上的成员不受影响），在 `GetTemplateInfoOfType` 中对没有父类的反射类型（`UObject` 和每个没有 super 的 UScriptStruct）用 `Object.setPrototypeOf(fn.prototype, proxy)` 挂到原型链末端。工厂代码经 eval 得到（路径 `puerts/fname_fixing_proxy`），引擎相关的部分只有传给它的 `fixName` 回调。
-  - 语义：只有成员在整条原型链上都找不到、且 key 不在 `Object.prototype` 上时才进入 trap。key 为非空字符串（长度小于 1024）时用 `fixName` 修正：取 FName 的 comparison entry（首次注册的大小写，与旧实现的 `FV8Utils::ToV8String(FName)` 一致；`FName::ToString` 走 display entry，会保留请求的大小写，不能用）。修正后的名字与原名不同且能在 receiver 的原型链上找到时，在拥有它的原型上用 `defineProperty` 以请求的名字缓存（访问器保留 get/set，数据属性保留 value/writable，都为 enumerable、configurable），然后转到修正后的名字读写；否则走 `Reflect.get` / `Reflect.set`，给实例新增的属性仍是实例自身的数据属性。QuickJS 下与原来一样不挂（冻结）。
+  - 语义：只有成员在整条原型链上都找不到、且 key 不在 `Object.prototype` 上时才进入 trap。key 为非空字符串（长度小于 1024）时用 `fixName` 修正：取 FName 的 comparison entry（首次注册的大小写，与旧实现的 `FV8Utils::ToV8String(FName)` 一致；`FName::ToString` 走 display entry，会保留请求的大小写，不能用）。修正后的名字与原名不同且能在 receiver 的原型链上找到时，在拥有它的原型上用 `defineProperty` 以请求的名字缓存（访问器保留 get/set，数据属性保留 value/writable，都为 enumerable、configurable），然后转到修正后的名字读写；否则走 `Reflect.get` / `Reflect.set`，给实例新增的属性仍是实例自身的数据属性。PapiQuickjs 后端同样挂这个 Proxy；`uelazyload.js` 里原来只在 QuickJS 下执行的 JS 版修正（`interceptClassProto`，把 `Object.prototype` 包成 Proxy 挂到链尾）已删除，否则链尾会变成那个 Proxy，`instanceof Object` 为 false。
   - 行为变化：`Object.prototype.hasOwnProperty.call(instance, '原型成员')` 由 true 变为 false（旧拦截器对原型成员也答“自有”）；没有父类的 struct 的 `Object.getPrototypeOf(S.prototype)` 不再是 `Object.prototype` 而是 Proxy（再往上才是 `Object.prototype`）。Reflection 补了 `instanceof Object`、`in`、`Object.prototype` 成员、实例新增属性、`then` 等观测。
   - 测试：两条路径 14 个用例全过，Functions、Reflection 基线只有上述两处预期变化；BuildPlugin 通过。基准与 M4-6c 持平，实例模板去掉拦截器后 property.struct_field 由 57ns 降到 47ns / 46ns，array.property_access 也略有下降；new.struct 两轮 283ns / 302ns，其余项在噪声范围内。
 - M4-6e：新增类定义失效 API `pesapi_ffi.invalidate_class(env, type_id)`，追加在函数表末尾。
@@ -555,6 +555,29 @@ __puer_host_load__(url: string, by: "import" | "require"): {
   - 后端动态库要导出 V8 符号，插件编译用的 V8 头文件必须与动态库内的 V8 版本和构建开关一致，版本校验纳入 6.5。
   - 快速路径里对象映射（查找、创建 JS 包装对象）改为经 papi 函数表完成（`pesapi_value` 与 `v8::Local` 互转零开销），不再跨库直接用 `ICppObjectMapper` 的 C++ 虚表，避免跨库 C++ ABI 依赖；值转换、函数调用这类热路径仍直接用 V8 API。
 
+### 5.12 PapiQuickjs 后端
+
+参考 Unity 的 PapiQuickjs，新增 `PapiQuickjs` 模块，提前恢复第一阶段冻结的 QuickJS 后端（决策记录 2026-10-27）。
+
+- 引擎：quickjs-ng（与 Unity 同版本）以源码方式放在 `PapiQuickjs/Private/quickjs`，随模块编译，不预编译、不格式化。对源码的改动只有两处：关掉 MSVC 的 C4702（UE 把它当错误），以及在文件末尾加了模块加载器要用的扩展（`JS_GetModuleStatus`、`JS_ModuleHasException`、`JS_FreeModuleDef`、`JS_IsLoadedModule`、`JS_RenameModule`）。不用 Atomics（`__STDC_NO_ATOMICS__`）。
+- 结构：`PesapiQuickjsImpl` 实现 pesapi（`pesapi_env` 就是 `JSContext*`），`QjsObjectMapper` 实现对象映射；`FPapiBackendQuickjs` 继承 `FPapiBackendJs`，负责 runtime / context、C++ 模块加载器（`PapiQjsModuleLoader`，宿主契约与 5.10.4 一致）、Promise 拒绝跟踪、GC 与栈信息。`ScriptEnv` 不依赖它，env 用 `FPapiBackendQuickjs::Create` 作为后端工厂即可，可以与 `PapiV8` 同时链接。`isQuickJS()` 改为运行时由后端回答，不再是编译宏。
+- 测试：TestProject 的每个功能用例注册两次（`Puerts.Functional.V8.*`、`Puerts.Functional.Quickjs.*`），脚本完全相同。QuickJS 优先读 `Baseline/Quickjs/<Name>.txt`，没有则用共享基线；专属基线只记录下面这些引擎差异。基准测试固定用 V8。
+
+与 V8 后端的差异：
+
+| 方面 | QuickJS 行为 |
+| --- | --- |
+| 不支持的能力 | 没有 inspector（因此没有 `hot_reload`）、`LoadAddon`、TriviallyFreed、Atomics；不支持字节码 |
+| GC | 引用计数加环回收，对象不再被引用时立即释放，finalizer 同步执行；“创建了多少实例”“gc 前存活数”这类计数基线与 V8 不同。mapper 退出时先清空缓存、置空所有 userdata 指针再调 finalizer，防止同步 finalizer 在遍历中修改缓存 |
+| 弱引用 | 用 tracer 对象实现 |
+| 模块编译 | `JS_Eval(MODULE)` 在编译期就解析依赖、调用加载钩子，所以模块记录在编译前登记；编译失败的模块会被引擎移出已加载列表 |
+| 模块回滚 | 失败的模块用改名方式回滚；求值抛异常的模块（状态仍是 evaluated，带异常标记）整体丢弃，重试时重新加载而不是重抛旧异常 |
+| CJS | 被 `import` 时包成 C 模块；首行列号有偏移 |
+| 循环引用 | 取到的 namespace 处于 TDZ |
+| Promise 拒绝事件 | 只有 0（reject 无 handler）和 1（之后加 handler），没有 resolve/reject after resolved |
+| 异常文本 | 格式与 V8 不同（如 `not a function`、`variable name expected`） |
+| 函数自有属性 | 普通函数没有 `arguments`、`caller`；`JS_NewCFunctionData` 创建的方法需要手动定义 `name` |
+
 ## 6. 第二阶段：UE 与 Unity 共用动态库
 
 ### 6.1 前提
@@ -676,6 +699,10 @@ flowchart LR
 
 1. 模块拆分为 `ScriptEnv`（通用，完全不依赖 V8）、`PapiV8`（V8 实现）、`JsEnv`（兼容薄封装），具体见 5.10.13。`FJsEnv` 改名 `FScriptEnv`、`FJsEnvGroup` 一并改名，日志类别不改；反射类型包路径变化用 `PackageRedirects` 兼容；拆分后 QuickJS / Node 编译路径暂时断开。
 2. 删除 FFI 与 Wasm3。
+
+已决策（2026-10-27）：
+
+1. 参考 Unity 新增 `PapiQuickjs` 模块，quickjs-ng 以源码方式编译，提前恢复 QuickJS 后端（见 5.12）；TestProject 的功能用例在 V8 和 QuickJS 下各跑一遍，引擎差异用 `Baseline/Quickjs` 专属基线记录。
 
 待决策：
 
