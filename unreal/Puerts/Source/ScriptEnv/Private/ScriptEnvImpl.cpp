@@ -3743,11 +3743,7 @@ void FScriptEnvImpl::SetInterval(struct pesapi_ffi* Apis, pesapi_callback_info I
 
 void FScriptEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-#ifdef WITH_QUICKJS
-    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), true));
-#else
-    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), false));
-#endif
+    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), Backend->IsQuickJS()));
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)

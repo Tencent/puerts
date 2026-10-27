@@ -143,6 +143,12 @@ public:
         return nullptr;
     }
 
+    // whether the script engine is quickjs (the global isQuickJS() of the scripts)
+    virtual bool IsQuickJS()
+    {
+        return false;
+    }
+
     // native addons of the engine (RegisterAddon, the register function has a signature of the engine), called inside a scope
     // of the env. If an addon of the name is found, its exports are registered as a builtin module of the name and true is
     // returned
