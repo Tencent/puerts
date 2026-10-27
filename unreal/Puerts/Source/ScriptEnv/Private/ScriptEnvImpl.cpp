@@ -450,15 +450,9 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         PapiMethodBindingHelper<&FScriptEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
 #endif
 
-        //#if !defined(WITH_NODEJS)
-        PapiMethodBindingHelper<&FScriptEnvImpl::SetTimeout>::Bind(Apis, Env, PapiGlobal, "setTimeout", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearTimeout", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::SetInterval>::Bind(Apis, Env, PapiGlobal, "setInterval", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::ClearInterval>::Bind(Apis, Env, PapiGlobal, "clearInterval", this);
-        //#endif
+        // the timers are implemented in js (puerts/timer.js) on the tick, as unity
+        PapiMethodBindingHelper<&FScriptEnvImpl::RegisterTickHandler>::Bind(
+            Apis, Env, PapiGlobal, "__tgjsRegisterTickHandler", this);
 
         PapiMethodBindingHelper<&FScriptEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
         PapiMethodBindingHelper<&FScriptEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
@@ -534,6 +528,9 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
     DelegateProxiesCheckerHandler =
         FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FScriptEnvImpl::CheckDelegateProxies), 1);
 
+    // every frame, calls the tick handlers (the timers of puerts/timer.js)
+    TickHandle = FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FScriptEnvImpl::Tick), 0);
+
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
 
@@ -572,6 +569,7 @@ FScriptEnvImpl::~FScriptEnvImpl()
     ManualReleaseCallbackMap.Reset();
 
     FUETicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
+    FUETicker::GetCoreTicker().RemoveTicker(TickHandle);
 
     {
         FPapiEnvScope EnvScope(MainApis, MainEnvRef);
@@ -579,12 +577,7 @@ FScriptEnvImpl::~FScriptEnvImpl()
         TypeToTemplateInfoMap.Empty();
 
         // value refs must be released while the env is alive (before CppObjectMapper.UnInitialize)
-        for (auto Iter = TimerInfos.CreateIterator(); Iter; ++Iter)
-        {
-            MainApis->release_value_ref(Iter->Value.Callback);
-            FUETicker::GetCoreTicker().RemoveTicker(Iter->Value.TickerHandle);
-        }
-        TimerInfos.Empty();
+        TickHandlers.Empty();
 
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
@@ -3544,120 +3537,37 @@ void FScriptEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_inf
 }
 #endif
 
-void FScriptEnvImpl::SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::RegisterTickHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    PAPI_CHECK_ARGS(EArgFunction, EArgNumber);
+    PAPI_CHECK_ARGS(EArgFunction);
 
-    SetFTickerDelegate(Apis, Info, false);
+    TickHandlers.Emplace(Apis, Apis->get_env(Info), Apis->get_arg(Info, 0));
 }
 
-void FScriptEnvImpl::SetFTickerDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool Continue)
-{
-    pesapi_env Env = Apis->get_env(Info);
-
-    while (!(++TimerID))    // TimerID > 0
-    {
-    }
-    uint32_t DelegateHandleId = TimerID;
-    // the id wrapped around and is still in use
-    RemoveFTickerDelegateHandle(DelegateHandleId);
-    FTimerInfo& TimerInfo = TimerInfos.Emplace(DelegateHandleId, FTimerInfo());
-    TimerInfo.Callback = Apis->create_value_ref(Env, Apis->get_arg(Info, 0), 0);
-
-    float Millisecond = Apis->get_value_double(Env, Apis->get_arg(Info, 1));
-    float Delay = Millisecond / 1000.f;
-
-    TimerInfo.TickerHandle =
-        FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this, DelegateHandleId, Continue](float)
-                                                 { return this->TimerCallback(DelegateHandleId, Continue); }),
-            Delay);
-
-    Apis->add_return(Info, Apis->create_uint32(Env, DelegateHandleId));
-}
-
-bool FScriptEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
+bool FScriptEnvImpl::Tick(float DeltaTime)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-
-    FTimerInfo* PTimeInfo = TimerInfos.Find(DelegateHandleId);
-    if (!PTimeInfo)
+    // a handler may register another one, it runs from the next frame
+    const int32 Num = TickHandlers.Num();
+    for (int32 i = 0; i < Num; ++i)
     {
-        Logger->Warn(FString::Printf(TEXT("Try to callback a invalid timer: %d"), DelegateHandleId));
-        return false;
-    }
-
-    auto OriginHandle = PTimeInfo->TickerHandle;
-
-    {
-        struct pesapi_ffi* Apis = MainApis;
-        pesapi_env_ref EnvRef = Apis->get_ref_associated_env(PTimeInfo->Callback);
-        pesapi_scope_memory ScopeMemory;
-        // locks the isolate (THREAD_SAFE), enters the context of the timer and catches exceptions
-        pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-        pesapi_env Env = Apis->get_env_from_ref(EnvRef);
-        pesapi_value Function = Apis->get_value_from_ref(Env, PTimeInfo->Callback);
-
-        Apis->call_function(Env, Function, Apis->global(Env), 0, nullptr);
-
-        if (Apis->has_caught(Scope))
+        // a scope for each handler: locks the isolate (THREAD_SAFE), enters the context and catches the exception of it
+        FPapiEnvScope EnvScope(MainApis, MainEnvRef);
+        if (!EnvScope)
         {
-            Logger->Error(FString::Printf(
-                TEXT("Exception in Timer Callback: %s"), UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
+            break;
         }
-        Apis->close_scope_placement(Scope);
+        struct pesapi_ffi* Apis = MainApis;
+        pesapi_env Env = EnvScope.GetEnv();
+        Apis->call_function(Env, TickHandlers[i].Get(Env), Apis->global(Env), 0, nullptr);
+        if (EnvScope.HasCaught())
+        {
+            Logger->Error(FString::Printf(TEXT("Exception in Tick Handler: %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
+        }
     }
-
-    auto ClearInCallback = !TimerInfos.Contains(DelegateHandleId) || (OriginHandle != TimerInfos[DelegateHandleId].TickerHandle);
-
-    if (!Continue && !ClearInCallback)
-    {
-        RemoveFTickerDelegateHandle(DelegateHandleId);
-    }
-
-    return Continue && !ClearInCallback;
-}
-
-void FScriptEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
-{
-    FTimerInfo* PTimeInfo = TimerInfos.Find(DelegateHandleId);
-    if (!PTimeInfo)
-    {
-        return;
-    }
-    FUETicker::GetCoreTicker().RemoveTicker(PTimeInfo->TickerHandle);
-    MainApis->release_value_ref(PTimeInfo->Callback);
-    TimerInfos.Remove(DelegateHandleId);
-}
-
-void FScriptEnvImpl::ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-
-    // todo - mocha 7.0.1，当reporter为JSON，调用clearTimeout时，可能不传值，或传Null、Undefined过来。暂将其忽略
-    if (Apis->get_args_len(Info) == 0)
-    {
-        Logger->Warn(TEXT("Calling ClearInterval with 0 argument."));
-    }
-    else if (Apis->is_null(Env, Apis->get_arg(Info, 0)) || Apis->is_undefined(Env, Apis->get_arg(Info, 0)))
-    {
-        // 屏蔽这条只在mocha中出现的警告
-        // Logger->Warn(TEXT("Calling ClearInterval with a Null or Undefined."));
-    }
-    else
-    {
-        PAPI_CHECK_ARGS(EArgInt32);
-        int HandleId = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
-        RemoveFTickerDelegateHandle(HandleId);
-    }
-}
-
-void FScriptEnvImpl::SetInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgFunction, EArgNumber);
-
-    SetFTickerDelegate(Apis, Info, true);
+    return true;
 }
 
 void FScriptEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)

@@ -138,7 +138,9 @@ UPuertsTestReporter* RunScript(
 
         for (int32 Step = 1; Step < Reporter->StepCount; ++Step)
         {
-            // timers (setTimeout / setInterval) are core ticker delegates, let them fire before the next step
+            // timers (puerts/timer.js) are js, checked against Date.now() on the tick of the env (a core ticker delegate),
+            // wait a little real time (more than the 10ms minimum of setInterval) and tick, so they fire before the next step
+            FPlatformProcess::Sleep(0.05f);
             FTSTicker::GetCoreTicker().Tick(0.1f);
             FullGC(*Env);
             if (!Reporter->OnStep.IsBound())

@@ -277,17 +277,10 @@ private:
 
     FPropertyTranslator* GetContainerPropertyTranslator(PropertyMacro* Property);
 
-    void SetTimeout(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+    // __tgjsRegisterTickHandler(fn): fn is called every frame (puerts/timer.js implements the timers on it), as unity
+    void RegisterTickHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    void SetFTickerDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info, bool Continue);
-
-    bool TimerCallback(int DelegateHandleId, bool Continue);
-
-    void RemoveFTickerDelegateHandle(int HandleId);
-
-    void SetInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    void ClearInterval(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+    bool Tick(float DeltaTime);
 
     void MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -611,14 +604,9 @@ private:
     pesapi_value GetCachedJsFunction(
         struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path);
 
-    struct FTimerInfo
-    {
-        // released by RemoveFTickerDelegateHandle or the destructor
-        pesapi_value_ref Callback = nullptr;
-        FUETickDelegateHandle TickerHandle;
-    };
-    uint32_t TimerID = 0;
-    TMap<uint32_t, FTimerInfo> TimerInfos;
+    // released before CppObjectMapper.UnInitialize
+    TArray<FPapiValueRef> TickHandlers;
+    FUETickDelegateHandle TickHandle;
 
     FUETickDelegateHandle DelegateProxiesCheckerHandler;
 

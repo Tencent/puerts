@@ -82,6 +82,8 @@ void FPapiBackendJs::OnEnter(IPapiScriptHost* Host)
     Host->ExecuteModule(TEXT("puerts/log.js"));
     Host->ExecuteModule(TEXT("puerts/uelazyload.js"));
     Host->ExecuteModule(TEXT("puerts/events.js"));
+    // setTimeout/setInterval in js, driven by the tick handler of the host (__tgjsRegisterTickHandler), as unity
+    Host->ExecuteModule(TEXT("puerts/timer.js"));
     Host->ExecuteModule(TEXT("puerts/promises.js"));
     Host->ExecuteModule(TEXT("puerts/argv.js"));
     Host->ExecuteModule(TEXT("puerts/jit_stub.js"));

@@ -32,9 +32,8 @@ bool RunWebSocket(FAutomationTestBase& Test, EBackend Backend)
 
 bool RunTimers(FAutomationTestBase& Test, EBackend Backend)
 {
-    // tests/timers.js throws in a timer callback on purpose, and registers a string callback which the js
-    // wrapper of setTimeout only rejects when the timer fires, the env logs both as errors
-    Test.AddExpectedError(TEXT("Exception in Timer Callback"), EAutomationExpectedErrorFlags::Contains, 2);
+    // tests/timers.js throws in a timer callback on purpose, puerts/timer.js logs it and goes on with the other timers
+    Test.AddExpectedError(TEXT("Exception in Timer Callback"), EAutomationExpectedErrorFlags::Contains, 1);
     return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/timers"), TEXT("Timers")));
 }
 
