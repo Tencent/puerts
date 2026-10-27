@@ -117,4 +117,15 @@ PUERTS_TEST(MakeUClass, RunMakeUClass(*this, B))
 PUERTS_TEST(TsClass, RunTsClass(*this, B))
 PUERTS_TEST(JsObject, RunJsObject(*this, B))
 
+// the lua tests (tests/lua/*.lua) run with the lua backend only, baselines are Baseline/Lua/<Name>.txt
+#define PUERTS_LUA_TEST(Name, Module) PUERTS_BACKEND_TEST(Lua, Name, RunPlain(*this, B, TEXT(Module), TEXT(#Name)))
+
+PUERTS_LUA_TEST(Properties, "tests/lua/properties")
+PUERTS_LUA_TEST(Functions, "tests/lua/functions")
+PUERTS_LUA_TEST(Containers, "tests/lua/containers")
+PUERTS_LUA_TEST(Delegates, "tests/lua/delegates")
+PUERTS_LUA_TEST(Lifecycle, "tests/lua/lifecycle")
+PUERTS_LUA_TEST(Modules, "tests/lua/modules")
+PUERTS_LUA_TEST(Errors, "tests/lua/errors")
+
 #endif

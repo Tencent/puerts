@@ -1,0 +1,11 @@
+dotted and slash names are different entries: false
+require with .lua: 2
+path: <js-root>/tests/lua/modules_data/args.lua
+missing: <js-root>/tests/lua/modules.lua:42: module 'tests/lua/modules_data/no_such_module' not found: | no field package.preload['tests/lua/modules_data/no_such_module'] | [puerts] <js-root>/puerts/init.lua:53: can not find tests/lua/modules_data/no_such_module.lua in 
+syntax error: <js-root>/tests/lua/modules_data/syntax_err.lua:1: unexpected symbol near '='
+throws: <js-root>/tests/lua/modules_data/throws.lua:1: module boom
+not cached after throw: nil
+package.path: ""
+searchers count: 2
+console: "function"
+host globals removed: [true, true, true]

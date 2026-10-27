@@ -3,6 +3,7 @@
 #include "ScriptEnv.h"
 #include "PapiBackendV8.h"
 #include "PapiBackendQuickjs.h"
+#include "PapiBackendLua.h"
 #include "PuertsTestTypes.h"
 #include "Containers/Ticker.h"
 #include "HAL/FileManager.h"
@@ -32,8 +33,12 @@ static void FullGC(PUERTS_NAMESPACE::FScriptEnv& Env)
 static void CompareBaseline(FAutomationTestBase& Test, EBackend Backend, const FString& BaselineName, const TArray<FString>& Notes)
 {
     const FString Dir = FPaths::ProjectDir() / TEXT("Baseline");
-    const FString SharedFile = Dir / (BaselineName + TEXT(".txt"));
-    const FString BackendFile = Backend == EBackend::V8 ? SharedFile : Dir / BackendName(Backend) / (BaselineName + TEXT(".txt"));
+    // the lua tests are other scripts, they have their own baselines only
+    const FString SharedFile =
+        Backend == EBackend::Lua ? Dir / BackendName(Backend) / (BaselineName + TEXT(".txt")) : Dir / (BaselineName + TEXT(".txt"));
+    const FString BackendFile = Backend == EBackend::V8 || Backend == EBackend::Lua
+                                    ? SharedFile
+                                    : Dir / BackendName(Backend) / (BaselineName + TEXT(".txt"));
     const FString Actual = FString::Join(Notes, TEXT("\n")) + TEXT("\n");
 
     const bool bUpdate = FParse::Param(FCommandLine::Get(), TEXT("PuertsUpdateBaseline"));
@@ -113,7 +118,29 @@ struct FTsBindListener : public FUObjectArray::FUObjectCreateListener
 
 const TCHAR* BackendName(EBackend Backend)
 {
-    return Backend == EBackend::V8 ? TEXT("V8") : TEXT("Quickjs");
+    switch (Backend)
+    {
+        case EBackend::V8:
+            return TEXT("V8");
+        case EBackend::Quickjs:
+            return TEXT("Quickjs");
+        case EBackend::Lua:
+            return TEXT("Lua");
+    }
+    return TEXT("?");
+}
+
+static PUERTS_NAMESPACE::FPapiBackendFactory BackendFactory(EBackend Backend)
+{
+    switch (Backend)
+    {
+        case EBackend::Quickjs:
+            return &PUERTS_NAMESPACE::FPapiBackendQuickjs::Create;
+        case EBackend::Lua:
+            return &PUERTS_NAMESPACE::FPapiBackendLua::Create;
+        default:
+            return &PUERTS_NAMESPACE::FPapiBackendV8::Create;
+    }
 }
 
 UPuertsTestReporter* RunScript(
@@ -123,9 +150,7 @@ UPuertsTestReporter* RunScript(
     Reporter->AddToRoot();
 
     {
-        PUERTS_NAMESPACE::FPapiBackendFactory Factory =
-            Backend == EBackend::V8 ? &PUERTS_NAMESPACE::FPapiBackendV8::Create : &PUERTS_NAMESPACE::FPapiBackendQuickjs::Create;
-        auto Env = MakeUnique<PUERTS_NAMESPACE::FScriptEnv>(Factory);
+        auto Env = MakeUnique<PUERTS_NAMESPACE::FScriptEnv>(BackendFactory(Backend));
         FTsBindListener TsBindListener;
         if (bBindTsClasses)
         {

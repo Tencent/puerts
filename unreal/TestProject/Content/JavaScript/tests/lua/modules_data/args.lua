@@ -1,0 +1,3 @@
+local name, path = ...
+
+return { name = name, path = path }

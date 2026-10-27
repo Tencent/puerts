@@ -1,0 +1,13 @@
+int64 math.type: "integer"
+int to double property: 3.0
+name type: "string"
+text type: "string"
+struct property get then modify: 99
+struct property get twice identical: true
+assign uobject to soft object: throws <js-root>/tests/lua/properties.lua:135: passing a invalid object for FSoftObjectPtr
+type of class: "table"
+type of object: "userdata"
+tostring class: "class /Script/PuertsTest.PuertsTestObject"
+StaticClass name: "PuertsTestObject"
+unknown property: nil
+expando field: 5

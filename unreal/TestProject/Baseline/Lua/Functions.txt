@@ -1,0 +1,7 @@
+static via instance: "nil"
+out struct ref nil: 9
+default param omitted: 305
+impl event without override: 0
+method type: "function"
+method called with a dot: throws <js-root>/tests/lua/functions.lua:115: access a null object
+GameplayStatics available: true

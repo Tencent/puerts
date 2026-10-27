@@ -1,0 +1,7 @@
+live count back to before: true
+weak entry after gc: nil
+counted structs alive: 1
+IsAlive: throws <js-root>/tests/lua/lifecycle.lua:76: passing a invalid object
+read property of destroyed: throws <js-root>/tests/lua/lifecycle.lua:79: access a invalid object
+call method of destroyed: throws <js-root>/tests/lua/lifecycle.lua:82: access a invalid object
+counted structs alive after release: 0

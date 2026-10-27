@@ -1,0 +1,9 @@
+multicast IsBound after clear: throws <js-root>/tests/lua/delegates.lua:49: attempt to call a nil value (method 'IsBound')
+delegate same view: true
+ufunction bound IsBound: true
+execute unbound single: throws <js-root>/tests/lua/delegates.lua:137: can not execute an unbound delegate!
+broadcast empty multicast: nil
+same function added twice: 2
+after removing once: 3
+multicast IsBound after removing all: throws <js-root>/tests/lua/delegates.lua:163: attempt to call a nil value (method 'IsBound')
+auto release call: -1

@@ -11,7 +11,9 @@ namespace PuertsTest
 enum class EBackend
 {
     V8,
-    Quickjs
+    Quickjs,
+    // lua (PapiLua), runs the lua test modules (Content/JavaScript/tests/lua/*.lua) only
+    Lua
 };
 
 const TCHAR* BackendName(EBackend Backend);
@@ -22,7 +24,8 @@ const TCHAR* BackendName(EBackend Backend);
 // Notes reported by the script are compared with Baseline/<BaselineName>.txt (written instead when running with
 // -PuertsUpdateBaseline or when the file does not exist yet). A backend other than v8 compares with
 // Baseline/<Backend>/<BaselineName>.txt if it exists (the notes differ by the engine), else with the shared one; updating
-// writes the backend file only when the notes differ from the shared baseline.
+// writes the backend file only when the notes differ from the shared baseline. Lua (another language) only uses
+// Baseline/Lua/<BaselineName>.txt.
 // Returns the reporter (rooted, caller must call RemoveFromRoot) or nullptr.
 // bBindTsClasses forwards UObject creation to FScriptEnv::TryBindJs while the env lives, as FPuertsModule does for its env,
 // which TypeScript generated classes need.
