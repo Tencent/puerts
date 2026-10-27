@@ -38,6 +38,18 @@
       "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
     },
     {
+      "Name": "PapiPythonPreload",
+      "Type": "Runtime",
+      "LoadingPhase": "EarliestPossible",
+      "WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
+    },
+    {
+      "Name": "PapiPython",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
+    },
+    {
       "Name": "JsEnv",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",

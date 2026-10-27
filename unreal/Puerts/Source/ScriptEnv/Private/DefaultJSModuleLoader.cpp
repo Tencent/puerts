@@ -70,7 +70,7 @@ bool DefaultJSModuleLoader::SearchModuleInDir(
 {
     FString Extension = FPaths::GetExtension(RequiredModule);
     bool IsJs = Extension == TEXT("js") || Extension == TEXT("mjs") || Extension == TEXT("cjs") || Extension == TEXT("json") ||
-                Extension == TEXT("lua");
+                Extension == TEXT("lua") || Extension == TEXT("py");
     if (IsJs && SearchModuleWithExtInDir(Dir, RequiredModule, Path, AbsolutePath))
         return true;
     return SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
