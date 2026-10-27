@@ -7717,6 +7717,8 @@ static int num_keys_cmp(const void *p1, const void *p2, void *opaque)
     uint32_t v1, v2;
     BOOL atom1_is_integer, atom2_is_integer;
 
+    (void)atom1_is_integer; /* only used by the assert below, which is compiled out in release builds */
+    (void)atom2_is_integer;
     atom1_is_integer = JS_AtomIsArrayIndex(ctx, &v1, atom1);
     atom2_is_integer = JS_AtomIsArrayIndex(ctx, &v2, atom2);
     assert(atom1_is_integer && atom2_is_integer);
@@ -55392,6 +55394,8 @@ static void reset_weak_ref(JSRuntime *rt, JSWeakRefRecord **first_weak_ref)
     JSMapRecord *mr;
     JSMapState *s;
     JSFinRecEntry *fre;
+
+    (void)s; /* only used by the assert below, which is compiled out in release builds */
 
     /* first pass to remove the records from the WeakMap/WeakSet
        lists */
