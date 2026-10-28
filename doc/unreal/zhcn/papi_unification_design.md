@@ -592,7 +592,7 @@ lua 下不支持或行为不同的 JS/TS 特性：
 
 | 方面 | lua 行为 |
 | --- | --- |
-| TS 类与扩展 | 不支持 TS 类注入 UE（`makeUClass`）和 `mixin`，相关全局函数在 `init.lua` 中置空；FName 大小写修正（原型链末端 Proxy）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| TS 类与扩展 | 不支持 TS 类注入 UE 和 `mixin`（`makeUClass` 已删除，见决策记录 2026-10-28），`__tgjsMixin` 在 `init.lua` 中置空；FName 大小写修正（原型链末端 Proxy）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
 | 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主会执行 `puerts/websocketpp.js`，lua 下会报错 |
 | 模块 | 没有 ESM（`import`、`import.meta`、顶层 await），只有同步 `require`；循环 `require` 不受保护（lua 原生行为）；点号与斜杠写法解析到同一文件，但在 `package.loaded` 中是两条记录，会各执行一次、得到两个实例 |
 | 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；在协程里回调宿主属于未覆盖的边缘情况 |
@@ -623,7 +623,7 @@ python 下不支持或行为不同的 JS/TS 特性：
 | 方面 | python 行为 |
 | --- | --- |
 | 可用范围 | 只在 `bCompilePython` 的目标上可用（默认只有编辑器），游戏和独立程序里 `Create` 返回 nullptr；不支持 Android、iOS；依赖 `PapiPythonPreload` 先加载引擎的 python 动态库 |
-| TS 类与扩展 | 不支持 TS 类注入 UE（`makeUClass`）和 `mixin`，`init.py` 中没有对应函数；FName 大小写修正（原型链末端 Proxy，`InstallNameFixing`）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| TS 类与扩展 | 不支持 TS 类注入 UE 和 `mixin`（`makeUClass` 已删除，见决策记录 2026-10-28），`init.py` 中没有对应函数；FName 大小写修正（原型链末端 Proxy，`InstallNameFixing`）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
 | 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主执行的 `puerts/websocketpp.js` 在 python 下会报错 |
 | 模块 | 没有 ESM（`import`、`import.meta`、顶层 await、`import()`），只有同步 `require` / `import`；点号路径要求每一级父目录都有 `__init__.py`（真实的包），否则报 `ModuleNotFoundError`；斜杠写法的 `require('a/b')` 会以 `a/b` 为键另存一份，与 `import a.b` 不是同一个实例 |
 | 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；`asyncio` 没有接入引擎 tick |
@@ -764,6 +764,10 @@ flowchart LR
 3. timer 与 Unity 统一：原生侧只提供 tick。宿主绑定 `__tgjsRegisterTickHandler(fn)`，每个 env 注册一个每帧触发的 core ticker 调用这些 handler（每个 handler 单独开 scope，异常记 `Exception in Tick Handler` 日志）；`setTimeout / setInterval / clearTimeout / clearInterval` 由 `puerts/timer.js` 纯 JS 实现（复制自 Unity `timer.mjs`，由 `FPapiBackendJs` 在 `events.js` 之后加载）。相对 Unity 版本只改了一处：逐个回调 try/catch，一个回调抛异常不影响本帧其他到期 timer（记 `Exception in Timer Callback` 日志）。行为变化：按 `Date.now()` 计时；`setInterval` 最小间隔 10ms；非函数回调在调用时就抛异常；延时缺省或非数字、`clearTimeout` 传非数字不再抛异常。`promises.js` 中给 timer 补额外参数的包装已删除。
 4. 参考 Unity 新增 `PapiLua` 模块，lua 5.4.8 以源码方式编译，作为 `ScriptEnv` 的第三个后端（见 5.13）；TestProject 增加 lua 版功能用例（`tests/lua`，基线在 `Baseline/Lua`），lua 不支持的 JS/TS 特性列在 5.13。
 5. 参考 Unity 新增 `PapiPython` 模块（加上加载引擎 python 动态库的 `PapiPythonPreload`），作为 `ScriptEnv` 的第四个后端（见 5.14）：不自带 python，复用 UE 的 Python3，每个 env 一个子解释器，进程内不 `Py_Finalize`；只在 `bCompilePython` 的目标（默认只有编辑器）且 Win64 / Mac / Linux 上可用。模块由 `puerts/init.py` 在 `sys.meta_path` 末尾追加的 finder 经宿主契约加载。TestProject 增加 python 版功能用例（`tests/python`，基线在 `Baseline/Python`），python 不支持的 JS/TS 特性列在 5.14。
+
+已决策（2026-10-28）：
+
+1. 删除已废弃的 `makeUClass`，与 Unity 统一，改用 `blueprint.mixin` 或 TS 类（`UTypeScriptGeneratedClass`）。去掉 `puerts.makeUClass` 及其类型声明、`__tgjsMakeUClass`、`FScriptEnvImpl::MakeUClass`、`IDynamicInvoker::JsConstruct / InvokeJsMethod`、`UJSWidgetGeneratedClass`、`UJSGeneratedClass` 的 Create / Override / StaticConstructor / Release、`UJSGeneratedFunction::execCallJS / JsFunction`，以及 `make_uclass.js` 用例、`UPuertsTestMakeClassTarget` 测试类型和 bench 中的 makeuclass 项。`UJSGeneratedClass` 只保留 mixin 用的 `Mixin / Restore`（UCLASS 保留，兼容 CoreRedirects），`UJSGeneratedFunction` 只保留 mixin 路径（`execCallMixin`）。
 
 待决策：
 

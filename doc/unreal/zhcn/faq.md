@@ -79,13 +79,11 @@ sudo xattr -r -d com.apple.quarantine *.dylib
     
     - 如果进一步在ts也没有引用该stub对象，该stub对象会被gc
 
-“ue对象持有stub对象”，在ts持有并不能阻止ue的gc，有三种情况会产生这种类型的对象：
+“ue对象持有stub对象”，在ts持有并不能阻止ue的gc，有两种情况会产生这种类型的对象：
 
 * ts继承ue类型
 
 * mixin中参数指明objectTakeByNative
-
-* makeUClass（这功能已经废弃，不建议使用）
 
 其它情况均为“stub对象持有ue对象”，这种类型的对象可以通过ts持有可以阻止ue对象的gc。
     

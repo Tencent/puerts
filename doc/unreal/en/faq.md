@@ -137,7 +137,6 @@ When a UE object is passed to TypeScript, Puerts creates a stub object that prox
 
 - TS class inherits a UE class
 - Using `mixin` with `objectTakeByNative`
-- Using deprecated `makeUClass`
 
 In other cases, the stub usually owns the UE object and keeps it alive from the JS side.
 
