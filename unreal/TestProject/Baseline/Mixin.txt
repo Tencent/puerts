@@ -13,3 +13,6 @@ base class is not affected: 0
 same js object after gc: true
 expando after gc: "kept"
 js state after gc: 6
+destroyed objectTakeByNative call: throws Error: access a invalid object
+destroyed objectTakeByNative expando: "doomed"
+js object released after the UObject is collected: true

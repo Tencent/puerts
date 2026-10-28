@@ -298,7 +298,10 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
     }
     else
     {
-        Definition.Finalize = &FClassWrapper::ReflectedFinalize;
+        // a UObject is never owned by js, the env keeps it alive while it is bound
+        Definition.Finalize = nullptr;
+        Definition.OnEnter = &FClassWrapper::ReflectedOnEnter;
+        Definition.OnExit = &FClassWrapper::ReflectedOnExit;
     }
     Definition.Methods = Out->Methods.data();
     Definition.Functions = Out->Functions.data();
@@ -666,13 +669,20 @@ void FScriptStructWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr,
     static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Free(Ptr);
 }
 
-void FClassWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
+void* FClassWrapper::ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate)
 {
-    // the native pointer of a UObject wrapper is a handle owned by the wrapper
-    auto Handle = static_cast<FUObjectHandle*>(Ptr);
-    if (FUObjectHandle::IsHandle(Handle) && Handle->Finalize)
+    if (auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate))
     {
-        Handle->Finalize(Handle);
+        ObjectMapper->OnUObjectEnter(static_cast<UObject*>(Ptr));
+    }
+    return nullptr;
+}
+
+void FClassWrapper::ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData)
+{
+    if (auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate))
+    {
+        ObjectMapper->OnUObjectExit(static_cast<UObject*>(Ptr));
     }
 }
 
@@ -710,7 +720,7 @@ void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 
     // the object being constructed, papi has no accessor of it
     pesapi_value Self = Apis->get_this(Info);
-    // the handle is bound to the object by the backend, freed by ReflectedFinalize
+    // the object is bound to Self by the backend (not owned by js)
     return PapiUtils::ObjectMapperOf(Apis, Env)->Bind(Env, this, Object, Self);
 }
 }    // namespace PUERTS_NAMESPACE

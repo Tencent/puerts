@@ -19,6 +19,7 @@
 #include "PropertyTranslator.h"
 #include "FunctionTranslator.h"
 #include "JSClassRegister.h"
+#include "PapiDataTransfer.h"
 #include "NamespaceDef.h"
 
 // 1: a new UStruct with the same full name (e.g. a regenerated class) keeps the js class of the env (the template is reused,
@@ -92,7 +93,9 @@ struct FReflectedClass
 // same full name (e.g. a regenerated class) keeps the js class of the env (the template is cached by type id) unless
 // PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE is 0, only the translators are refreshed.
 // Only the current definition is held by the wrapper, the envs hold the definitions their templates are built from.
-class FStructWrapper
+// The type tag is the first base, so a type id (the wrapper) can be checked to be a UClass one (FReflectedTypeTag::IsUClass)
+// without a lookup.
+class FStructWrapper : public FReflectedTypeTag
 {
 public:
     explicit FStructWrapper(UStruct* InStruct) : ExternalInitialize(nullptr), Struct(InStruct)
@@ -217,13 +220,19 @@ class FClassWrapper : public FStructWrapper
 public:
     explicit FClassWrapper(UClass* InClass) : FStructWrapper(InClass)
     {
+        check(static_cast<FReflectedTypeTag*>(this) == static_cast<void*>(static_cast<FStructWrapper*>(this)));
+        Magic = FReflectedTypeTag::UClassMagic;
     }
 
-    // Finalize of the class definitions of UClasses, frees the handle (the native pointer) of a UObject wrapper
-    static void ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate);
+    // OnEnter / OnExit of the class definitions of UClasses: the native pointer of a UObject wrapper is the UObject itself,
+    // it is not owned by js (no finalize), the env (IObjectMapper, the env private) keeps it alive while it is bound
+    static void* ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate);
 
-    // the constructor (called by FStructWrapper::ReflectedConstruct), returns the handle of the new UObject for the backend to
-    // bind (freed by ReflectedFinalize), or nullptr on failure
+    // may be called when the UObject is being destroyed (IObjectMapper::UnBind), the object must not be dereferenced
+    static void ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData);
+
+    // the constructor (called by FStructWrapper::ReflectedConstruct), returns the new UObject for the backend to bind, or
+    // nullptr on failure
     void* New(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 };
 }    // namespace PUERTS_NAMESPACE

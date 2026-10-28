@@ -233,7 +233,7 @@ void FFunctionTranslator::CallThunk(struct pesapi_ffi* Apis, pesapi_callback_inf
 
 void FFunctionTranslator::Call(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    UObject* CallObject = IsStatic ? BindObject.Get() : PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
+    UObject* CallObject = IsStatic ? BindObject.Get() : PapiDataTransfer::GetUObjectOfHolder(Apis, Info);
     if (!CallObject)
     {
         if (IsStatic)    //延时初始化

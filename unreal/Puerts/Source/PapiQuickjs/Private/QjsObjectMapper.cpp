@@ -473,6 +473,20 @@ void FCppObjectMapper::UnBindCppObject(const JSClassDefinition* ClassDefinition,
 
 bool FCppObjectMapper::UnbindNativeObject(const void* TypeId, void* Ptr)
 {
+    if (!TypeId)
+    {
+        // every type Ptr is bound as, the entry is looked up again after each unbind (on_exit may change the cache)
+        bool Unbound = false;
+        for (auto Iter = CDataCache.find(Ptr); Iter != CDataCache.end(); Iter = CDataCache.find(Ptr))
+        {
+            if (!UnbindNativeObject(Iter->second.TypeId, Ptr))
+            {
+                break;
+            }
+            Unbound = true;
+        }
+        return Unbound;
+    }
     auto Iter = CDataCache.find(Ptr);
     if (Iter == CDataCache.end())
     {

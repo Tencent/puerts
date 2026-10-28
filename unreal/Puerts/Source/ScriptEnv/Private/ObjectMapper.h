@@ -27,10 +27,18 @@ class IObjectMapper
 {
 public:
     // binds UEObject to JSObject, the object being constructed by the js class of ClassWrapper, returns the native pointer (the
-    // handle of UEObject) for the backend to bind to JSObject
+    // UObject itself) for the backend to bind to JSObject
     virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) = 0;
 
+    // the js object of UEObject (a native object of the class definition of UEObject->GetClass(), Class is only used for a null
+    // UEObject), created on first use
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) = 0;
+
+    // UEObject is bound to / unbound from its js object by the backend (on_enter / on_exit of the class definitions of UClasses,
+    // see FClassWrapper), unbound when the js object is garbage collected, the UObject is destroyed or the env is released
+    virtual void OnUObjectEnter(UObject* UEObject) = 0;
+
+    virtual void OnUObjectExit(UObject* UEObject) = 0;
 
     // an owned struct created by a constructor (Info), returns true if it is bound to the object being constructed by a
     // backend specific way (e.g. a POD struct freed with an ArrayBuffer on v8), false to let the backend bind the pointer

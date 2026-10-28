@@ -103,7 +103,7 @@ public:
 public:
     void SetJsTakeRef(pesapi_env Env, UObject* UEObject);
 
-    // the UObject was destroyed, the binding (if any) is detached
+    // the UObject was destroyed, it is unbound from its wrapper (if any)
     void UnBind(UObject* UEObject);
 
     // an owned POD struct, the memory may be freed with the script object by the backend (IPapiBackend::
@@ -396,29 +396,23 @@ private:
     bool OnReflectedClassCreated(const JSClassDefinition* ClassDefinition);
 
     // A UObject wrapper is a native object of the class definition of its UClass (the type id is the FClassWrapper), the native
-    // pointer is a FUObjectBinding (a FUObjectHandle) owned by the wrapper: it is freed by the finalizer of the class
-    // (OnBindingFinalize) when the wrapper is garbage collected. When the UObject is destroyed first, the binding is detached (see
-    // UnBind) and moved to ReleasedObjectBindings until then.
-    struct FUObjectBinding : FUObjectHandle
-    {
-        FScriptEnvImpl* Owner = nullptr;
+    // pointer is the UObject itself and it is not owned by js. The backend caches the wrapper (weakly) by the pointer, and calls
+    // OnUObjectEnter / OnUObjectExit when it is bound / unbound: while bound, the UObject is held by UserObjectRetainer, unless
+    // the class is native take js ref (mixin), then the wrapper is held strongly by NativeTakeJsRefObjects instead. When the
+    // UObject is destroyed it is unbound from its wrapper (UnBind, pesapi unbind_native_object), a later access of the wrapper
+    // sees a released object.
+    virtual void OnUObjectEnter(UObject* UEObject) override;
 
-        // the wrapper, strong if native holds the js object, weak if the js object holds the UObject (SetJsTakeRef), released
-        // after the UObject is destroyed
-        FPapiValueRef JsObject;
-    };
+    virtual void OnUObjectExit(UObject* UEObject) override;
 
-    static void OnBindingFinalize(FUObjectHandle* Handle);
+    // whether the wrapper of Obj (whose class info is Info) is held by native (the UObject does not hold the wrapper)
+    static bool IsNativeTakeJsRefObject(UObject* Obj, const FTemplateInfo* Info);
 
-    // creates the binding of UEObject and adds it to ObjectMap. A null JSObject is set to a new wrapper (a native object of
-    // ClassWrapper owning the binding), otherwise it is the object being constructed, which the backend binds the returned
-    // binding to. The wrapper is held weakly and holds UEObject unless the class is native take js ref
-    FUObjectBinding* AddBinding(
-        pesapi_env Env, FClassWrapper* ClassWrapper, bool ClassIsNativeTakeJsRef, UObject* UEObject, pesapi_value& JSObject);
+    // the wrappers held strongly by native (see SetJsTakeRef), released when the UObject is destroyed or the env is released
+    TMap<UObject*, FPapiValueRef> NativeTakeJsRefObjects;
 
-    TMap<UObject*, FUObjectBinding*> ObjectMap;
-
-    TSet<FUObjectBinding*> ReleasedObjectBindings;
+    // the last UObject bound by the backend (set by OnUObjectEnter), tells FindOrAdd whether the wrapper is new
+    UObject* EnteredUObject = nullptr;
 
     // container -> holder of the cached (borrowed) container wrappers, the holders are freed by the finalizer of the container
     // classes (on gc or when the env is released by the backend), so the map must outlive the env

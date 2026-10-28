@@ -12,7 +12,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Package.h"
 #include "UObject/Class.h"
-#include "UObjectHandle.h"
+#include "UECompatible.h"
 #include "NamespaceDef.h"
 #include "pesapi.h"
 #include <type_traits>
@@ -98,26 +98,62 @@ struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::
     }
 };
 
+// The type id of the class definition of a reflected type (UClass / UScriptStruct) is its process wide wrapper (FStructWrapper),
+// which starts with this tag, so the script objects of UObjects can be told by their type ids (see doc/unreal/zhcn/
+// papi_unification_design.md 5.6). Any type id may be passed to IsUClass: a type id is the address of a static or heap object
+// of at least the size of a pointer, and the magic is only set in the wrappers of UClasses.
+struct FReflectedTypeTag
+{
+    static constexpr uint64 UClassMagic = 0x53534C4355455550ull;    // "PUEUCLSS"
+
+    uint64 Magic = 0;
+
+    FORCEINLINE static bool IsUClass(const void* TypeId)
+    {
+        return TypeId && static_cast<const FReflectedTypeTag*>(TypeId)->Magic == UClassMagic;
+    }
+};
+
 // UE value <-> papi value helpers, the env private of the env must be the IObjectMapper of the host
 class SCRIPTENV_API PapiDataTransfer
 {
 public:
-    // UObject of the native pointer of a js wrapper (a FUObjectHandle for UObject wrappers, e.g. the result of
-    // pesapi get_native_object_ptr / get_native_holder_ptr): nullptr if no native pointer, RELEASED_UOBJECT if the UObject is
-    // destroyed / pending kill, or the pointer is not a FUObjectHandle
-    FORCEINLINE static UObject* GetUObjectOfNativePtr(void* Ptr, bool EvenIfPendingKill = false)
+    // UObject of a script object by its type id and native pointer (pesapi get_native_object_typeid / get_native_object_ptr, or
+    // get_native_holder_typeid / get_native_holder_ptr). The native pointer of the object of a UObject is the UObject itself
+    // (the type id is the wrapper of a UClass), it is unbound (the pointer becomes null) by the env when the UObject is
+    // destroyed. Returns nullptr if the value is not a native object, RELEASED_UOBJECT if the UObject is destroyed, unreachable
+    // or pending kill (unless EvenIfPendingKill), or the object is not the object of a UObject
+    FORCEINLINE static UObject* GetUObjectOfNativePtr(const void* TypeId, void* Ptr, bool EvenIfPendingKill = false)
     {
-        if (!Ptr)
+        if (UNLIKELY(!Ptr))
         {
-            return nullptr;
+            return TypeId ? RELEASED_UOBJECT : nullptr;
         }
-        if (UNLIKELY(!FUObjectHandle::IsHandle(Ptr)))
+        if (UNLIKELY(!FReflectedTypeTag::IsUClass(TypeId)))
         {
             return RELEASED_UOBJECT;
         }
-        auto Handle = static_cast<FUObjectHandle*>(Ptr);
-        UObject* Ret = EvenIfPendingKill ? Handle->GetEvenIfPendingKill() : Handle->Get();
-        return LIKELY(Ret) ? Ret : RELEASED_UOBJECT;
+        UObject* Ret = static_cast<UObject*>(Ptr);
+        if (UNLIKELY(Ret->IsUnreachable() || (!EvenIfPendingKill && UEObjectIsPendingKill(Ret))))
+        {
+            return RELEASED_UOBJECT;
+        }
+        return Ret;
+    }
+
+    // UObject of a script object, see GetUObjectOfNativePtr
+    FORCEINLINE static UObject* GetUObjectOfValue(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, bool EvenIfPendingKill = false)
+    {
+        return GetUObjectOfNativePtr(
+            Apis->get_native_object_typeid(Env, Value), Apis->get_native_object_ptr(Env, Value), EvenIfPendingKill);
+    }
+
+    // UObject of the holder (this) of a callback, see GetUObjectOfNativePtr
+    FORCEINLINE static UObject* GetUObjectOfHolder(
+        struct pesapi_ffi* Apis, pesapi_callback_info Info, bool EvenIfPendingKill = false)
+    {
+        return GetUObjectOfNativePtr(Apis->get_native_holder_typeid(Info), Apis->get_native_holder_ptr(Info), EvenIfPendingKill);
     }
 
     FORCEINLINE static FString ToFString(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)

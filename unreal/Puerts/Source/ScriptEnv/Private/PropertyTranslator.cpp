@@ -72,7 +72,7 @@ void FPropertyTranslator::Getter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
 
     if (OwnerIsClass)
     {
-        UObject* Object = PapiDataTransfer::GetUObjectOfNativePtr(HolderPtr);
+        UObject* Object = PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_typeid(Info), HolderPtr);
         if (!Object)
         {
             Apis->throw_by_string(Info, "access a null object");
@@ -118,7 +118,7 @@ void FPropertyTranslator::Setter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
 
     if (OwnerIsClass)
     {
-        UObject* Object = PapiDataTransfer::GetUObjectOfNativePtr(HolderPtr);
+        UObject* Object = PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_typeid(Info), HolderPtr);
         if (!Object)
         {
             Apis->throw_by_string(Info, "access a null object");
@@ -151,7 +151,7 @@ void FPropertyTranslator::DelegateGetter(struct pesapi_ffi* Apis, pesapi_callbac
         return;
     }
 
-    auto Object = PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_holder_ptr(Info));
+    auto Object = PapiDataTransfer::GetUObjectOfHolder(Apis, Info);
     if (!Object)
     {
         Apis->throw_by_string(Info, "access a null object");

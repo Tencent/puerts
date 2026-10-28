@@ -591,6 +591,9 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
         ObjectKeys.Reset();
 
+        // the wrappers held by native, the UObjects are released by OnUObjectExit when the backend unbinds them
+        NativeTakeJsRefObjects.Empty();
+
 #if !defined(WITH_QUICKJS)
 #if defined(WITH_NODEJS)
         NodeRequire.Reset();
@@ -620,19 +623,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
 void FScriptEnvImpl::OnEnvReleased()
 {
-    // the bindings are freed by the finalizer of their classes in CppObjectMapper.UnInitialize, the rest (whose class is not
-    // found) are freed here
-    for (auto& KV : ObjectMap)
-    {
-        delete KV.Value;
-    }
-    ObjectMap.Empty();
-    for (auto Binding : ReleasedObjectBindings)
-    {
-        delete Binding;
-    }
-    ReleasedObjectBindings.Empty();
-
     for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
     {
         if (!Iter->second.PassByPointer)
@@ -935,89 +925,77 @@ FString FScriptEnvImpl::CurrentStackTrace()
 
 void* FScriptEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject)
 {
-    // called by FClassWrapper::New, JSObject is the object being constructed
+    // called by FClassWrapper::New, JSObject is the object being constructed, the backend binds UEObject to it after the
+    // return (and calls OnUObjectEnter)
     auto Class = static_cast<UClass*>(ClassWrapper->Struct.Get());
     bool Existed;
-    return AddBinding(Env, ClassWrapper, GetTemplateInfoOfType(Env, Class, Existed)->IsNativeTakeJsRef, UEObject, JSObject);
+    if (IsNativeTakeJsRefObject(UEObject, GetTemplateInfoOfType(Env, Class, Existed)))
+    {
+        NativeTakeJsRefObjects.Emplace(UEObject, FPapiValueRef(MainApis, Env, JSObject));
+    }
+    return UEObject;
 }
 
-FScriptEnvImpl::FUObjectBinding* FScriptEnvImpl::AddBinding(
-    pesapi_env Env, FClassWrapper* ClassWrapper, bool ClassIsNativeTakeJsRef, UObject* UEObject, pesapi_value& JSObject)
+bool FScriptEnvImpl::IsNativeTakeJsRefObject(UObject* Obj, const FTemplateInfo* Info)
 {
+    if (!Info)
+    {
+        return false;
+    }
 #if PUERTS_KEEP_UOBJECT_REFERENCE
-    const bool IsNativeTakeJsRef = ClassIsNativeTakeJsRef;
+    return Info->IsNativeTakeJsRef;
 #else
-    const bool ClassWrapperIsNativeTakeJsRef = ClassIsNativeTakeJsRef;    //这个值只有mixin会进行设置
-    const bool IsUClass = UEObject->IsA<UClass>();
-    const bool IsCDO = UEObject->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
-    const bool IsNativeTakeJsRef = (IsCDO || IsUClass) ? false : ClassWrapperIsNativeTakeJsRef;
+    // the flag of the class is only set by mixin
+    if (Obj->IsA<UClass>() || Obj->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+    {
+        return false;
+    }
+    return Info->IsNativeTakeJsRef;
 #endif
-    struct pesapi_ffi* Apis = MainApis;
+}
 
-    auto Binding = new FUObjectBinding();
-    Binding->Object = UEObject;
-    Binding->WeakObject = UEObject;
-    Binding->Class = UEObject->GetClass();
-    Binding->Finalize = &OnBindingFinalize;
-    Binding->Owner = this;
-    if (!JSObject)
+void FScriptEnvImpl::OnUObjectEnter(UObject* UEObject)
+{
+    EnteredUObject = UEObject;
+    if (!IsNativeTakeJsRefObject(UEObject, TypeToTemplateInfoMap.Find(UEObject->GetClass())))
     {
-        // the binding is owned by the wrapper, freed by the finalizer of the class (FClassWrapper::ReflectedFinalize)
-        JSObject = Apis->native_object_to_value(Env, static_cast<FStructWrapper*>(ClassWrapper), Binding, true);
+        // the wrapper holds the UObject
+        UserObjectRetainer.Retain(UEObject);
     }
-    Binding->JsObject.Reset(Apis, Env, JSObject);
-    ObjectMap.Emplace(UEObject, Binding);
+}
 
-    if (!IsNativeTakeJsRef)
-    {
-        SetJsTakeRef(Env, UEObject);
-    }
-    return Binding;
+void FScriptEnvImpl::OnUObjectExit(UObject* UEObject)
+{
+    // UEObject may be being destroyed (UnBind), do not dereference it. Release is a no-op if it is not retained
+    UserObjectRetainer.Release(UEObject);
 }
 
 void FScriptEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
 {
-    if (auto BindingPtr = ObjectMap.Find(UEObject))
+    // a bound object is either retained already or its wrapper is held by native, an unbound one is left alone. Retained
+    // before the ref is released: the wrapper may be freed synchronously (quickjs), then OnUObjectExit releases it
+    if (NativeTakeJsRefObjects.Contains(UEObject))
     {
         UserObjectRetainer.Retain(UEObject);
-        (*BindingPtr)->JsObject.SetWeak(Env);
+        NativeTakeJsRefObjects.Remove(UEObject);
     }
-}
-
-void FScriptEnvImpl::OnBindingFinalize(FUObjectHandle* Handle)
-{
-    // the wrapper is garbage collected (or the env is disposed)
-    auto Binding = static_cast<FUObjectBinding*>(Handle);
-    auto Self = Binding->Owner;
-    if (Binding->Object)
-    {
-        auto BindingPtr = Self->ObjectMap.Find(Binding->Object);
-        if (BindingPtr && *BindingPtr == Binding)
-        {
-            Self->ObjectMap.Remove(Binding->Object);
-            Self->UserObjectRetainer.Release(Binding->Object);
-        }
-    }
-    else
-    {
-        Self->ReleasedObjectBindings.Remove(Binding);
-    }
-    delete Binding;
 }
 
 void FScriptEnvImpl::UnBind(UObject* UEObject)
 {
-    FUObjectBinding* Binding = nullptr;
-    if (ObjectMap.RemoveAndCopyValue(UEObject, Binding))
+    // the UObject is destroyed while its wrapper may be still alive: unbind it (any access from js reports an invalid object
+    // from now on), OnUObjectExit releases the UObject
+    if (!MainEnvRef || !MainApis)
     {
-        UserObjectRetainer.Release(UEObject);
-        // the UObject is destroyed while the js object may be still alive: detach the handle (any access from js reports an
-        // invalid object from now on) and keep it until the wrapper is garbage collected
-        Binding->Object = nullptr;
-        Binding->WeakObject.Reset();
-        Binding->JsObject.Reset();
-        ReleasedObjectBindings.Add(Binding);
+        return;
     }
+    FPapiEnvScope EnvScope(MainApis, MainEnvRef);
+    if (!EnvScope)
+    {
+        return;
+    }
+    MainApis->unbind_native_object(EnvScope.GetEnv(), nullptr, UEObject);
+    NativeTakeJsRefObjects.Remove(UEObject);
 }
 
 pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject)
@@ -1027,17 +1005,16 @@ pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* U
         return MainApis->create_null(Env);
     }
 
-    if (auto BindingPtr = ObjectMap.Find(UEObject))
-    {
-        return (*BindingPtr)->JsObject.Get(Env);
-    }
-
-    // create and link
     bool Existed;
-    auto TemplateInfoPtr = GetTemplateInfoOfType(Env, Class, Existed);
-    pesapi_value Result = nullptr;
-    AddBinding(Env, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()), TemplateInfoPtr->IsNativeTakeJsRef, UEObject,
-        Result);
+    auto TemplateInfoPtr = GetTemplateInfoOfType(Env, UEObject->GetClass(), Existed);
+    EnteredUObject = nullptr;
+    // the backend returns the cached wrapper, or creates one (not owned by js) and calls OnUObjectEnter
+    pesapi_value Result = MainApis->native_object_to_value(Env, TemplateInfoPtr->StructWrapper.get(), UEObject, false);
+    if (EnteredUObject == UEObject && IsNativeTakeJsRefObject(UEObject, TemplateInfoPtr))
+    {
+        NativeTakeJsRefObjects.Emplace(UEObject, FPapiValueRef(MainApis, Env, Result));
+    }
+    EnteredUObject = nullptr;
     return Result;
 }
 

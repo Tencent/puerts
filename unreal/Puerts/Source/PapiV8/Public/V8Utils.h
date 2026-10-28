@@ -59,8 +59,8 @@ public:
         return DataTransfer::GetPointerFast<T>(Object, Index);
     }
 
-    // Index 0 reads the UObject of a UObject wrapper (through its FUObjectHandle), other indexes read a raw UObject pointer stored
-    // in the internal fields of other wrappers (e.g. the class of a soft object / struct wrapper)
+    // Index 0 reads the UObject of the js object of a UObject (checked by its type id), other indexes read a raw UObject pointer
+    // stored in the internal fields of other wrappers (e.g. the class of a soft object / struct wrapper)
     FORCEINLINE static UObject* GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
         if (Value.IsEmpty() || !Value->IsObject())

@@ -12,7 +12,6 @@
 #include "CoreMinimal.h"
 #include "UObject/Package.h"
 #include "UObject/Class.h"
-#include "UObjectHandle.h"
 #include "PapiDataTransfer.h"
 #else
 #include "JSClassRegister.h"
@@ -111,19 +110,18 @@ public:
     }
 
 #if USING_IN_UNREAL_ENGINE
-    // UObject of the native pointer of a js wrapper (a FUObjectHandle for UObject wrappers, e.g. the result of
-    // pesapi get_native_object_ptr / get_native_holder_ptr): nullptr if no native pointer, RELEASED_UOBJECT if the UObject is
-    // destroyed / pending kill, or the pointer is not a FUObjectHandle
-    FORCEINLINE static UObject* GetUObjectOfNativePtr(void* Ptr, bool EvenIfPendingKill = false)
+    // see PapiDataTransfer::GetUObjectOfNativePtr
+    FORCEINLINE static UObject* GetUObjectOfNativePtr(const void* TypeId, void* Ptr, bool EvenIfPendingKill = false)
     {
-        return PapiDataTransfer::GetUObjectOfNativePtr(Ptr, EvenIfPendingKill);
+        return PapiDataTransfer::GetUObjectOfNativePtr(TypeId, Ptr, EvenIfPendingKill);
     }
 
-    // UObject of a js wrapper (whose native pointer is a FUObjectHandle): nullptr if the js object holds no native pointer,
-    // RELEASED_UOBJECT if the UObject is destroyed / pending kill, or the js object is not a UObject wrapper
+    // UObject of a js object (the native pointer is the UObject, the type id is the wrapper of its UClass): nullptr if the js
+    // object is not a native object, RELEASED_UOBJECT if the UObject is destroyed / pending kill, or the js object is not the
+    // object of a UObject
     FORCEINLINE static UObject* GetUObjectOfWrapper(v8::Local<v8::Object> Object, bool EvenIfPendingKill = false)
     {
-        return GetUObjectOfNativePtr(GetPointerFast<void>(Object), EvenIfPendingKill);
+        return GetUObjectOfNativePtr(GetPointerFast<void>(Object, 1), GetPointerFast<void>(Object), EvenIfPendingKill);
     }
 #endif
 

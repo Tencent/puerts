@@ -189,4 +189,20 @@ gc();
 gc();
 assertEq(LifeCycleClass.GetAliveCount(), aliveBase, "finalized after the ownership is handed back");
 
+// a null type id unbinds every type the pointer is bound as (the memory of the pointer is gone)
+(function () {
+    const o = new TestClass(7, 8);
+    const [ptr, typeId] = puerts.nativeInfo(o);
+    // the same pointer viewed as another type (never called)
+    const other = puerts.nativeObjectToValue(lcTypeId, ptr, false);
+    assert(other !== o, "a pointer bound as two types");
+    assertEq(puerts.unbindNativeObject(0n, ptr), true, "unbind every type of a pointer");
+    assertEq(puerts.nativeInfo(o)[0], 0n, "pointer of the first type cleared");
+    assertEq(puerts.nativeInfo(other)[0], 0n, "pointer of the second type cleared");
+    assertEq(puerts.unbindNativeObject(0n, ptr), false, "unbind every type of an unbound pointer");
+    assertEq(puerts.unbindNativeObject(typeId, ptr), false, "no type left after unbinding every type");
+    // owned by the host now, handed back to be freed
+    puerts.nativeObjectToValue(typeId, ptr, true);
+})();
+
 print("all " + passed + " assertions passed");

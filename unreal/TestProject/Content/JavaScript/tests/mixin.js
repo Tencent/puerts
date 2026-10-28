@@ -95,6 +95,15 @@ test('mixin objectTakeByNative', () => {
     // only the native side keeps the UObject
     reporter.Holder = o;
     takeRefState.ref = new WeakRef(o);
+    takeRefState.cls = config.generatedClass;
+});
+
+test('setup: mixin objectTakeByNative destroyed', () => {
+    const o = UE.NewObject(takeRefState.cls);
+    o.expando = 'doomed';
+    o.CallImplEvent(4);
+    takeRefState.doomed = o;
+    UE.PuertsTestReporter.MarkGarbage(o);
 });
 
 step(() => {
@@ -104,6 +113,19 @@ step(() => {
         observe('expando after gc', () => o.expando);
         observe('js state after gc', () => o.CallImplEvent(1));
         reporter.Holder = undefined;
+    });
+
+    test('mixin objectTakeByNative destroyed access', () => {
+        observe('destroyed objectTakeByNative call', () => takeRefState.doomed.CallImplEvent(1));
+        observe('destroyed objectTakeByNative expando', () => takeRefState.doomed.expando);
+        takeRefState.doomed = undefined;
+    });
+});
+
+step(() => {
+    test('mixin objectTakeByNative released with the UObject', () => {
+        // the UObject is collected once native drops it, then the js object is no longer held
+        observe('js object released after the UObject is collected', () => takeRefState.ref.deref() === undefined);
     });
 });
 

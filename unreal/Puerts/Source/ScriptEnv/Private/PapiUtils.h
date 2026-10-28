@@ -77,7 +77,7 @@ inline pesapi_value EvalFileContent(struct pesapi_ffi* Apis, pesapi_env Env, con
 // same as FV8Utils::GetUObject(Context, Value): nullptr for a non object value, RELEASED_UOBJECT for a released one
 FORCEINLINE UObject* GetUObject(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
 {
-    return PapiDataTransfer::GetUObjectOfNativePtr(Apis->get_native_object_ptr(Env, Value));
+    return PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value);
 }
 
 // a raw UObject pointer (e.g. the type id of a struct wrapper, which is its UScriptStruct), same as FV8Utils::GetUObject with

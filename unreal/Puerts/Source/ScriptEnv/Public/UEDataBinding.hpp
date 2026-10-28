@@ -468,7 +468,7 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
     static T* toCpp(PApiCallbackEnv env, pesapi_value value)
     {
         // a released / pending kill UObject (or a non-UObject wrapper) is returned as nullptr
-        UObject* Ret = PapiDataTransfer::GetUObjectOfNativePtr(env.apis->get_native_object_ptr(env.env, value));
+        UObject* Ret = PapiDataTransfer::GetUObjectOfValue(env.apis, env.env, value);
         return LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(Ret) : nullptr;
     }
 
@@ -493,7 +493,7 @@ struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObj
     static T* toCpp(PApiCallbackEnv env, pesapi_value value)
     {
         // pending kill objects are still accessible through UObjectBase (the same as before)
-        UObject* Ret = PapiDataTransfer::GetUObjectOfNativePtr(env.apis->get_native_object_ptr(env.env, value), true);
+        UObject* Ret = PapiDataTransfer::GetUObjectOfValue(env.apis, env.env, value, true);
         return LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(static_cast<UObjectBase*>(Ret)) : nullptr;
     }
 
@@ -561,8 +561,7 @@ struct SelfChecker<T, typename std::enable_if<std::is_convertible<T*, const UObj
 {
     static T* Get(PApiCallbackEnv env, pesapi_callback_info info)
     {
-        UObject* Ret = PapiDataTransfer::GetUObjectOfNativePtr(
-            env.apis->get_native_holder_ptr(info), !std::is_convertible<T*, const UObject*>::value);
+        UObject* Ret = PapiDataTransfer::GetUObjectOfHolder(env.apis, info, !std::is_convertible<T*, const UObject*>::value);
         return LIKELY(Ret != RELEASED_UOBJECT) ? static_cast<T*>(static_cast<UObjectBase*>(Ret)) : nullptr;
     }
 };
