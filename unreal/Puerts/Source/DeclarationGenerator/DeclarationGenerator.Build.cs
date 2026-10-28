@@ -34,7 +34,6 @@ public class DeclarationGenerator : ModuleRules
                 "Projects",
                 "JsEnv",
                 "ScriptEnv",
-                "Settings",
 #if UE_5_0_OR_LATER
                 "ToolMenus",
 #endif
@@ -51,6 +50,9 @@ public class DeclarationGenerator : ModuleRules
             );
         }
         
+        // ISettingsModule is used through its interface only, the header is enough (no link to the Settings module)
+        PrivateIncludePathModuleNames.Add("Settings");
+
         if (JsEnv.WithSourceControl)
         {
             PrivateDependencyModuleNames.Add("SourceControl");
