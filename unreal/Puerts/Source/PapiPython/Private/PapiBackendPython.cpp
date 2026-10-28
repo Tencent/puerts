@@ -9,6 +9,8 @@
 #include "PapiBackendPython.h"
 #include "PesapiPythonImpl.h"
 #include "PythonInclude.h"
+// GetDefaultClassRegistry / ScriptClassRegistry are used by the stub (WITH_PYTHON is 0) as well
+#include "JSClassRegister.h"
 
 #if WITH_PYTHON
 
