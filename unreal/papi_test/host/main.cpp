@@ -141,6 +141,59 @@ static void InvalidateClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8impl::g_pesapi_ffi.invalidate_class(reinterpret_cast<pesapi_env>(*Context), TypeId);
 }
 
+static pesapi_value ToPesapiValue(v8::Local<v8::Value> Value)
+{
+    return reinterpret_cast<pesapi_value>(*Value);
+}
+
+static v8::Local<v8::Value> FromPesapiValue(pesapi_value Value)
+{
+    v8::Local<v8::Value> Local;
+    *reinterpret_cast<pesapi_value*>(&Local) = Value;
+    return Local;
+}
+
+static void* BigIntToPtr(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value)
+{
+    v8::Local<v8::BigInt> BigInt;
+    return Value->ToBigInt(Context).ToLocal(&BigInt) ? reinterpret_cast<void*>(static_cast<uintptr_t>(BigInt->Uint64Value()))
+                                                     : nullptr;
+}
+
+// puerts.nativeInfo(obj): [ptr, typeId] (BigInt) of a native object by pesapi get_native_object_ptr/get_native_object_typeid
+static void NativeInfo(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    pesapi_env Env = reinterpret_cast<pesapi_env>(*Context);
+    void* Ptr = v8impl::g_pesapi_ffi.get_native_object_ptr(Env, ToPesapiValue(Info[0]));
+    const void* TypeId = v8impl::g_pesapi_ffi.get_native_object_typeid(Env, ToPesapiValue(Info[0]));
+    v8::Local<v8::Array> Ret = v8::Array::New(Isolate, 2);
+    (void) Ret->Set(Context, 0, v8::BigInt::NewFromUnsigned(Isolate, reinterpret_cast<uintptr_t>(Ptr)));
+    (void) Ret->Set(Context, 1, v8::BigInt::NewFromUnsigned(Isolate, reinterpret_cast<uintptr_t>(TypeId)));
+    Info.GetReturnValue().Set(Ret);
+}
+
+// puerts.nativeObjectToValue(typeId, ptr, callFinalize): pesapi native_object_to_value
+static void NativeObjectToValue(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    pesapi_value Ret = v8impl::g_pesapi_ffi.native_object_to_value(reinterpret_cast<pesapi_env>(*Context),
+        BigIntToPtr(Context, Info[0]), BigIntToPtr(Context, Info[1]), Info[2]->BooleanValue(Isolate));
+    Info.GetReturnValue().Set(FromPesapiValue(Ret));
+}
+
+// puerts.unbindNativeObject(typeId, ptr): pesapi unbind_native_object
+static void UnbindNativeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    int Ret = v8impl::g_pesapi_ffi.unbind_native_object(
+        reinterpret_cast<pesapi_env>(*Context), BigIntToPtr(Context, Info[0]), BigIntToPtr(Context, Info[1]));
+    Info.GetReturnValue().Set(Ret != 0);
+}
+
 static void Print(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -233,6 +286,9 @@ int main(int argc, char* argv[])
         SetFunction(Context, Puerts, "loadCPPType", LoadCppType);
         SetFunction(Context, Puerts, "useEmptyRegistry", UseEmptyRegistry);
         SetFunction(Context, Puerts, "invalidateClass", InvalidateClass);
+        SetFunction(Context, Puerts, "nativeInfo", NativeInfo);
+        SetFunction(Context, Puerts, "nativeObjectToValue", NativeObjectToValue);
+        SetFunction(Context, Puerts, "unbindNativeObject", UnbindNativeObject);
         SetFunction(Context, Global, "print", Print);
         SetFunction(Context, Global, "gc", Gc);
         (void) Global->Set(Context, v8::String::NewFromUtf8(Isolate, "ADDON_PATH").ToLocalChecked(),

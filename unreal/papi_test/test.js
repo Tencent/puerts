@@ -154,4 +154,39 @@ assert(obj3 instanceof TestClass2, "instanceof rebuilt class");
 assert(obj3 instanceof BaseClass, "super class kept");
 assertEq(puerts.loadCPPType("hello.BaseClass"), BaseClass, "super class not invalidated");
 
+// unbind_native_object: the script object is detached from (ptr, type_id), the host owns ptr
+(function () {
+    const o = new TestClass(5, 6);
+    const [ptr, typeId] = puerts.nativeInfo(o);
+    assert(ptr !== 0n && typeId !== 0n, "native info of a bound object");
+    assertEq(puerts.nativeObjectToValue(typeId, ptr, false), o, "native_object_to_value returns the cached object");
+    assertEq(puerts.unbindNativeObject(typeId, ptr), true, "unbind a bound object");
+    assertEq(puerts.unbindNativeObject(typeId, ptr), false, "unbind an unbound object");
+    assertEq(puerts.nativeInfo(o)[0], 0n, "pointer cleared after unbind");
+    assertThrows(() => o.OverloadMethod(), "call a method of an unbound object");
+    // the ownership is handed back to the new object (finalized with it)
+    const o2 = puerts.nativeObjectToValue(typeId, ptr, true);
+    assert(o2 !== o, "a new object after unbind");
+    assertEq(o2.X + o2.Y, 11, "the new object refers to the native object");
+})();
+
+gc();
+gc();
+const aliveBase = LifeCycleClass.GetAliveCount();
+let lcPtr, lcTypeId;
+(function () {
+    const lc = new LifeCycleClass();
+    [lcPtr, lcTypeId] = puerts.nativeInfo(lc);
+    assertEq(puerts.unbindNativeObject(lcTypeId, lcPtr), true, "unbind an owned object");
+})();
+gc();
+gc();
+assertEq(LifeCycleClass.GetAliveCount(), aliveBase + 1, "an unbound object is not finalized");
+(function () {
+    puerts.nativeObjectToValue(lcTypeId, lcPtr, true);
+})();
+gc();
+gc();
+assertEq(LifeCycleClass.GetAliveCount(), aliveBase, "finalized after the ownership is handed back");
+
 print("all " + passed + " assertions passed");

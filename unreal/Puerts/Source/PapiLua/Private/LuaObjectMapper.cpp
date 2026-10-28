@@ -920,12 +920,66 @@ void FCppObjectMapper::UnBindCppObject(const JSClassDefinition* ClassDefinition,
     }
 }
 
+bool FCppObjectMapper::UnbindNativeObject(lua_State* L, const void* TypeId, void* Ptr)
+{
+    auto Iter = CDataCache.find(Ptr);
+    if (Iter == CDataCache.end())
+    {
+        return false;
+    }
+    auto Node = Iter->second.Find(TypeId);
+    if (!Node)
+    {
+        return false;
+    }
+    const int64_t CacheId = Node->Value;
+    lua_checkstack(L, 4);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, CacheTableRef);
+    lua_rawgeti(L, -1, CacheId);
+    if (FLuaCppObject* Obj = GetCppObject(L, lua_gettop(L)))
+    {
+        // the object stays alive, its __gc does nothing
+        Obj->Ptr = nullptr;
+        Obj->CallFinalize = false;
+        Obj->CacheId = 0;
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        lua_rawseti(L, -2, CacheId);
+        lua_pop(L, 1);
+    }
+    else
+    {
+        // collected but waiting for __gc (removed from the weak table first), its __gc skips it
+        lua_pop(L, 2);
+        UnboundCacheIds.insert(CacheId);
+    }
+    void* UserData = Node->UserData;
+    Iter->second.Remove(TypeId, true);
+    if (!Iter->second.TypeId)    // last one
+    {
+        CDataCache.erase(Iter);
+    }
+    auto ClassIter = TypeIdToClassMap.find(TypeId);
+    const JSClassDefinition* ClassDefinition =
+        ClassIter != TypeIdToClassMap.end() ? ClassIter->second.ClassDefinition : FindClassByID(Registry, TypeId);
+    if (ClassDefinition && ClassDefinition->OnExit)
+    {
+        ClassDefinition->OnExit(Ptr, ClassDefinition->Data, const_cast<void*>(GetEnvPrivate()), UserData);
+    }
+    return true;
+}
+
 void FCppObjectMapper::OnObjectGc(FLuaCppObject* Obj)
 {
     const JSClassDefinition* ClassDefinition = Obj->ClassDefinition;
     void* Ptr = Obj->Ptr;
     Obj->Ptr = nullptr;
     if (!ClassDefinition || ClassDefinition == &PtrClassDef)
+    {
+        return;
+    }
+    // unbound while it was waiting for __gc (no longer in the weak table): the host owns the pointer now
+    if (Obj->CacheId && UnboundCacheIds.erase(Obj->CacheId))
     {
         return;
     }
@@ -1022,6 +1076,7 @@ void FCppObjectMapper::UnInitialize()
         }
     }
     Cache.clear();
+    UnboundCacheIds.clear();
 
     for (FFuncFinalizeData* Data : FuncFinalizeDatas)
     {

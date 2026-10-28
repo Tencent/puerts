@@ -171,6 +171,9 @@ public:
 
     void UnBindCppObject(const JSClassDefinition* ClassDefinition, void* Ptr);
 
+    // pesapi unbind_native_object: detach (Ptr, TypeId) from its cached python object, false if it is not bound
+    bool UnbindNativeObject(const void* TypeId, void* Ptr);
+
     // the dealloc of a native object
     void OnObjectDealloc(FPyCppObject* Obj);
 

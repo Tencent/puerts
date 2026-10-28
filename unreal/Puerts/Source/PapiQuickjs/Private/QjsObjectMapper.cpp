@@ -471,6 +471,42 @@ void FCppObjectMapper::UnBindCppObject(const JSClassDefinition* ClassDefinition,
     }
 }
 
+bool FCppObjectMapper::UnbindNativeObject(const void* TypeId, void* Ptr)
+{
+    auto Iter = CDataCache.find(Ptr);
+    if (Iter == CDataCache.end())
+    {
+        return false;
+    }
+    auto Node = Iter->second.Find(TypeId);
+    if (!Node)
+    {
+        return false;
+    }
+    // the object stays alive (the cache does not count it), its finalizer only frees the opaque
+    if (ObjectUserData* object_udata = GetObjectUserData(Node->Value))
+    {
+        object_udata->ptr = nullptr;
+        object_udata->callFinalize = false;
+        object_udata->cached = false;
+    }
+    void* UserData = Node->UserData;
+    Iter->second.Remove(TypeId, true);
+    if (!Iter->second.TypeId)    // last one
+    {
+        CDataCache.erase(Iter);
+    }
+    // OnExit runs after the cache is updated, it may free js values whose finalizers run synchronously
+    auto ClassIter = TypeIdToFunctionMap.find(TypeId);
+    const JSClassDefinition* ClassDefinition =
+        ClassIter != TypeIdToFunctionMap.end() ? ClassIter->second.ClassDefinition : FindClassByID(Registry, TypeId);
+    if (ClassDefinition && ClassDefinition->OnExit)
+    {
+        ClassDefinition->OnExit(Ptr, ClassDefinition->Data, (void*) GetEnvPrivate(), UserData);
+    }
+    return true;
+}
+
 bool FCppObjectMapper::GetPrivate(JSValue val, void** outPtr) const
 {
     *outPtr = nullptr;

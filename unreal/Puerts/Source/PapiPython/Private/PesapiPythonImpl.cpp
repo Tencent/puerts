@@ -1389,6 +1389,12 @@ static void pesapi_throw_error(pesapi_env env, const char* msg)
     }
 }
 
+static int pesapi_unbind_native_object(pesapi_env env, const void* type_id, void* ptr)
+{
+    auto Mapper = MapperOf(env);
+    return Mapper ? Mapper->UnbindNativeObject(type_id, ptr) : false;
+}
+
 pesapi_ffi g_pesapi_ffi{
     &pesapi_create_null,
     &pesapi_create_undefined,
@@ -1479,6 +1485,7 @@ pesapi_ffi g_pesapi_ffi{
     &pesapi_invalidate_class,
     &pesapi_get_this,
     &pesapi_throw_error,
+    &pesapi_unbind_native_object,
 };
 
 }    // namespace pyimpl

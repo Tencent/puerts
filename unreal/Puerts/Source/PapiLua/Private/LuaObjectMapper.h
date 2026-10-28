@@ -149,6 +149,9 @@ public:
 
     void UnBindCppObject(const JSClassDefinition* ClassDefinition, void* Ptr);
 
+    // pesapi unbind_native_object: detach (Ptr, TypeId) from its cached lua object, false if it is not bound
+    bool UnbindNativeObject(lua_State* L, const void* TypeId, void* Ptr);
+
     // the __gc of a native object
     void OnObjectGc(FLuaCppObject* Obj);
 
@@ -226,6 +229,9 @@ private:
     // the weak value table of the cached objects
     int CacheTableRef = LUA_NOREF;
     int64_t NextCacheId = 0;
+
+    // the cache ids of the objects unbound while waiting for __gc
+    std::unordered_set<int64_t> UnboundCacheIds;
 
     // the weak key table of the private data
     int PrivateTableRef = LUA_NOREF;

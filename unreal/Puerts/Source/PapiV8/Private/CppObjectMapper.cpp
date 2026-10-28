@@ -410,17 +410,60 @@ void FCppObjectMapper::UnBindCppObject(v8::Isolate* Isolate, JSClassDefinition* 
     auto Iter = CDataCache.find(Ptr);
     if (Iter != CDataCache.end())
     {
+        auto Node = Iter->second.Find(ClassDefinition->TypeId);
+        if (!Node)
+        {
+            return;
+        }
         if (ClassDefinition->OnExit)
         {
-            ClassDefinition->OnExit(
-                Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Iter->second.UserData);
+            ClassDefinition->OnExit(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), Node->UserData);
         }
-        auto Removed = Iter->second.Remove(ClassDefinition->TypeId, true);
+        Iter->second.Remove(ClassDefinition->TypeId, true);
         if (!Iter->second.TypeId)    // last one
         {
             CDataCache.erase(Iter);
         }
     }
+}
+
+bool FCppObjectMapper::UnbindNativeObject(v8::Isolate* Isolate, const void* TypeId, void* Ptr)
+{
+    auto Iter = CDataCache.find(Ptr);
+    if (Iter == CDataCache.end())
+    {
+        return false;
+    }
+    auto Node = Iter->second.Find(TypeId);
+    if (!Node)
+    {
+        return false;
+    }
+    {
+        v8::HandleScope HandleScope(Isolate);
+        auto Value = Node->Value.Get(Isolate);
+        if (!Value.IsEmpty() && Value->IsObject())
+        {
+            DataTransfer::SetPointer(Isolate, Value.As<v8::Object>(), nullptr, 0);
+        }
+    }
+    void* UserData = Node->UserData;
+    // the weak callback (finalize / unbind on collection) is dropped with the persistent handle
+    Iter->second.Remove(TypeId, true);
+    if (!Iter->second.TypeId)    // last one
+    {
+        CDataCache.erase(Iter);
+    }
+
+    // the definition the object is bound with, on_exit is called after the entry is removed (it may use the mapper)
+    auto TemplateIter = TypeIdToTemplateMap.find(TypeId);
+    const JSClassDefinition* ClassDefinition =
+        TemplateIter != TypeIdToTemplateMap.end() ? TemplateIter->second.ClassDefinition : FindClassByID(Registry, TypeId);
+    if (ClassDefinition && ClassDefinition->OnExit)
+    {
+        ClassDefinition->OnExit(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate), UserData);
+    }
+    return true;
 }
 
 void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)

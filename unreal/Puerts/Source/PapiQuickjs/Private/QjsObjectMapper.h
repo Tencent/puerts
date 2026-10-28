@@ -147,6 +147,9 @@ public:
 
     void UnBindCppObject(const JSClassDefinition* ClassDefinition, void* Ptr);
 
+    // pesapi unbind_native_object: detach (Ptr, TypeId) from its cached js object, false if it is not bound
+    bool UnbindNativeObject(const void* TypeId, void* Ptr);
+
     inline void AddStrongRefObject(JSValue* obj)
     {
         StrongRefObjects.insert(obj);

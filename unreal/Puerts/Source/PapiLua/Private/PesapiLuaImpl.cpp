@@ -1399,6 +1399,13 @@ static void pesapi_throw_error(pesapi_env env, const char* msg)
     }
 }
 
+static int pesapi_unbind_native_object(pesapi_env env, const void* type_id, void* ptr)
+{
+    lua_State* L = StateOf(env);
+    auto Mapper = GetMapper(L);
+    return Mapper ? Mapper->UnbindNativeObject(L, type_id, ptr) : false;
+}
+
 pesapi_ffi g_pesapi_ffi{
     &pesapi_create_null,
     &pesapi_create_undefined,
@@ -1489,6 +1496,7 @@ pesapi_ffi g_pesapi_ffi{
     &pesapi_invalidate_class,
     &pesapi_get_this,
     &pesapi_throw_error,
+    &pesapi_unbind_native_object,
 };
 
 }    // namespace luaimpl

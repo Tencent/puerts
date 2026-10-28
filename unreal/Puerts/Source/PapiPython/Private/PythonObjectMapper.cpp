@@ -965,6 +965,40 @@ void FCppObjectMapper::UnBindCppObject(const JSClassDefinition* ClassDefinition,
     }
 }
 
+bool FCppObjectMapper::UnbindNativeObject(const void* TypeId, void* Ptr)
+{
+    auto Iter = CDataCache.find(Ptr);
+    if (Iter == CDataCache.end())
+    {
+        return false;
+    }
+    auto Node = Iter->second.Find(TypeId);
+    if (!Node)
+    {
+        return false;
+    }
+    // the object stays alive (borrowed by the cache, removed before its dealloc), its dealloc does nothing
+    if (FPyCppObject* Obj = GetCppObject(static_cast<PyObject*>(Node->Value)))
+    {
+        Obj->Ptr = nullptr;
+        Obj->CallFinalize = false;
+    }
+    void* UserData = Node->UserData;
+    Iter->second.Remove(TypeId, true);
+    if (!Iter->second.TypeId)    // last one
+    {
+        CDataCache.erase(Iter);
+    }
+    auto ClassIter = TypeIdToClassMap.find(TypeId);
+    const JSClassDefinition* ClassDefinition =
+        ClassIter != TypeIdToClassMap.end() ? ClassIter->second.ClassDefinition : FindClassByID(Registry, TypeId);
+    if (ClassDefinition && ClassDefinition->OnExit)
+    {
+        ClassDefinition->OnExit(Ptr, ClassDefinition->Data, const_cast<void*>(GetEnvPrivate()), UserData);
+    }
+    return true;
+}
+
 void FCppObjectMapper::OnObjectDealloc(FPyCppObject* Obj)
 {
     const JSClassDefinition* ClassDefinition = Obj->ClassDefinition;

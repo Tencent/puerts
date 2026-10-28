@@ -1092,6 +1092,11 @@ static void pesapi_throw_error(pesapi_env env, const char* msg)
     JS_Throw(ctx, newError(ctx, msg));
 }
 
+static int pesapi_unbind_native_object(pesapi_env env, const void* type_id, void* ptr)
+{
+    return FCppObjectMapper::Get(qjsContextFromPesapiEnv(env))->UnbindNativeObject(type_id, ptr);
+}
+
 pesapi_ffi g_pesapi_ffi{
     &pesapi_create_null,
     &pesapi_create_undefined,
@@ -1182,6 +1187,7 @@ pesapi_ffi g_pesapi_ffi{
     &pesapi_invalidate_class,
     &pesapi_get_this,
     &pesapi_throw_error,
+    &pesapi_unbind_native_object,
 };
 
 }    // namespace qjsimpl
