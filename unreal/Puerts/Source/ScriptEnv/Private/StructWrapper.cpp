@@ -410,7 +410,7 @@ void FStructWrapper::CollectMembers(UStruct* InStruct, FReflectedClass* Out)
                 auto& Infos = IsStatic ? Out->Functions : Out->Methods;
                 AddMethod(Infos, FunctionTranslator.get(), FuncName);
 #ifdef PUERTS_WITH_EDITOR_SUFFIX
-                // 这里同时绑定带Suffix和不带Suffix的后缀是为了兼容现有的一些js写的代码(PuertsEditor)
+                // 这里同时绑定带Suffix和不带Suffix的后缀是为了兼容现有的一些不带Suffix的js代码
                 if (puerts::IsEditorOnlyUFunction(Function))
                 {
                     AddMethod(Infos, FunctionTranslator.get(), FuncName + EditorOnlyPropertySuffix.GetData());

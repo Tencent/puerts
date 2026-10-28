@@ -53,18 +53,6 @@ void FScriptEnv::WaitDebugger(double timeout)
     GameScript->WaitDebugger(timeout);
 }
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnv::TryBindJs(const class UObjectBase* InObject)
-{
-    GameScript->TryBindJs(InObject);
-}
-
-void FScriptEnv::RebindJs()
-{
-    GameScript->RebindJs();
-}
-#endif
-
 FString FScriptEnv::CurrentStackTrace()
 {
     return GameScript->CurrentStackTrace();

@@ -37,13 +37,6 @@ bool RunTimers(FAutomationTestBase& Test, EBackend Backend)
     return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/timers"), TEXT("Timers")));
 }
 
-bool RunTsClass(FAutomationTestBase& Test, EBackend Backend)
-{
-    // tests/ts_class.js throws in a ts override once
-    Test.AddExpectedError(TEXT("tsclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
-    return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/ts_class"), TEXT("TsClass"), true));
-}
-
 bool RunJsObject(FAutomationTestBase& Test, EBackend Backend)
 {
     // tests/js_object.js calls a non function object once and a throwing function twice
@@ -105,7 +98,6 @@ PUERTS_SCRIPT_TEST(Promises, "tests/promises")
 
 PUERTS_TEST(WebSocket, RunWebSocket(*this, B))
 PUERTS_TEST(Timers, RunTimers(*this, B))
-PUERTS_TEST(TsClass, RunTsClass(*this, B))
 PUERTS_TEST(JsObject, RunJsObject(*this, B))
 
 // the lua tests (tests/lua/*.lua) run with the lua backend only, baselines are Baseline/Lua/<Name>.txt

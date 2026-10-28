@@ -15,7 +15,8 @@
 #include "JSLogger.h"
 #include "ObjectRetainer.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "TypeScriptGeneratedClass.h"
+#include "DynamicInvoker.h"
+#include "JSGeneratedFunction.h"
 #endif
 #include "UECompatible.h"
 #include "ContainerMeta.h"
@@ -95,25 +96,15 @@ public:
         }
     }
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    virtual void TryBindJs(const class UObjectBase* InObject) override;
-
-    virtual void RebindJs() override;
-#endif
-
     virtual FString CurrentStackTrace() override;
 
     virtual void InitExtensionMethodsMap() override;
 
 public:
-    bool IsTypeScriptGeneratedClass(UClass* Class);
-
     void SetJsTakeRef(pesapi_env Env, UObject* UEObject);
 
     // the UObject was destroyed, the binding (if any) is detached
     void UnBind(UObject* UEObject);
-
-    pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial);
 
     // an owned POD struct, the memory may be freed with the script object by the backend (IPapiBackend::
     // CreateTriviallyFreedObject) instead of the finalizer of the class definition
@@ -145,10 +136,7 @@ public:
     // IObjectMapper, the papi interface used by the backend independent code
     virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override;
 
-    virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) override
-    {
-        return FindOrAdd(Env, Class, UEObject, false);
-    }
+    virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) override;
 
     virtual bool TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr) override;
 
@@ -187,15 +175,7 @@ public:
     void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object);
-
     void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
-
-    void TypeScriptInitial(UClass* Class, UObject* Object, const bool TypeScriptClassFound = false);
-
-    void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM);
-
-    void NotifyReBind(UTypeScriptGeneratedClass* Class);
 #endif
 
 public:
@@ -263,7 +243,6 @@ private:
 #else
         bool IsNativeTakeJsRef = true;
 #endif
-        bool IsTypeScriptGeneratedClass = false;
     };
 
     // builds the js class of the type in this env if not yet (called inside a scope of the env)
@@ -324,36 +303,6 @@ private:
 
 public:
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    class TsDynamicInvokerImpl : public ITsDynamicInvoker
-    {
-    public:
-        TsDynamicInvokerImpl(FScriptEnvImpl* InParent) : Parent(InParent)
-        {
-        }
-
-        virtual void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) override
-        {
-            if (Parent)
-                Parent->TsConstruct(Class, Object);
-        }
-
-        virtual void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
-        {
-            if (Parent)
-                Parent->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
-        }
-
-        virtual void NotifyReBind(UTypeScriptGeneratedClass* Class) override
-        {
-            if (Parent)
-                Parent->NotifyReBind(Class);
-        }
-
-        FScriptEnvImpl* Parent;
-    };
-
-    TSharedPtr<ITsDynamicInvoker, ESPMode::ThreadSafe> TsDynamicInvoker;
-
     TSharedPtr<IDynamicInvoker, ESPMode::ThreadSafe> MixinInvoker;
 #endif
 private:
@@ -430,10 +379,6 @@ private:
     // the ref of the default env, the entries from the host open their papi scopes with it (FPapiEnvScope)
     pesapi_env_ref MainEnvRef = nullptr;
 
-#if !PUERTS_FORCE_CPP_UFUNCTION
-    FPapiValueRef MergePrototype;
-#endif
-
     FPapiValueRef RemoveListItem;
 
     FPapiValueRef GenListApply;
@@ -507,13 +452,6 @@ private:
         FPapiValueRef JsCallbacks;    // js array of the bound functions, the proxy's apply function reads it
     };
 
-    struct TsFunctionInfo
-    {
-        FPapiValueRef JsFunction;
-
-        std::unique_ptr<FFunctionTranslator> FunctionTranslator;
-    };
-
     class DynamicInvokerImpl : public IDynamicInvoker
     {
     public:
@@ -536,41 +474,13 @@ private:
 #endif
         FScriptEnvImpl* Parent;
     };
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    struct FBindInfo
-    {
-        FName Name;
-        FPapiValueRef Constructor;
-        FPapiValueRef Prototype;
-        bool InjectNotFinished;
-    };
-
-    TMap<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
-
-    void FinishInjection(UClass* InClass);
-
-    void MakeSureInject(UTypeScriptGeneratedClass* Class, bool ForceReinject, bool RebindObject);
-
-    // the exceptions are left in Scope for the caller
-    void InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_scope Scope, UTypeScriptGeneratedClass* Class,
-        UTypeScriptGeneratedClass* SuperClass, const FString& ModuleName, bool PrototypeLinked, bool RebindObject);
-#endif
     TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 
-    TMap<UFunction*, TsFunctionInfo> TsFunctionMap;
-
     TMap<UFunction*, FPapiValueRef> MixinFunctionMap;
 
-    // papi has no prototype / own property api, use the js builtins, cached by GetCachedJsFunction
-    FPapiValueRef ObjectSetPrototypeOf;
-
-    FPapiValueRef ObjectGetPrototypeOf;
-
-    FPapiValueRef ObjectHasOwn;
-
-    // used by ObjectMerger (the js to struct conversion of a plain object)
+    // used by ObjectMerger (the js to struct conversion of a plain object), cached by GetCachedJsFunction
     FPapiValueRef ObjectKeys;
 
     void InstallFNameFixing(pesapi_env Env, pesapi_value Class);

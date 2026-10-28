@@ -31,8 +31,6 @@ public class ScriptEnv : ModuleRules
         // 保证所有模块看到的模板展开一致，否则会有 ODR 问题。
         //PublicDefinitions.Add("WITH_V8_FAST_CALL");
 
-        PublicDefinitions.Add("TS_BLUEPRINT_PATH=\"/Blueprints/TypeScript/\"");
-
         PublicDefinitions.Add(ThreadSafe ? "THREAD_SAFE" : "NOT_THREAD_SAFE");
 
         if (bEditorSuffix)
@@ -73,9 +71,6 @@ public class ScriptEnv : ModuleRules
                 bCanHotReloadField.SetValue(ContextField.GetValue(this), false);
             }
         }
-
-        bool bForceAllUFunctionInCPP = false;
-        PublicDefinitions.Add(bForceAllUFunctionInCPP ? "PUERTS_FORCE_CPP_UFUNCTION=1" : "PUERTS_FORCE_CPP_UFUNCTION=0");
 
         bool bKeepUObjectReference = true;
         PublicDefinitions.Add(bKeepUObjectReference ? "PUERTS_KEEP_UOBJECT_REFERENCE=1" : "PUERTS_KEEP_UOBJECT_REFERENCE=0");

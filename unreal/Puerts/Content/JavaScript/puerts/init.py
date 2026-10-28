@@ -289,17 +289,6 @@ def _puerts_init():
     # -------------------------------------------------------------------------------------------------------------------
     # the helpers used by the host
     # -------------------------------------------------------------------------------------------------------------------
-    def merge_prototype(src, dst, exclude):
-        items = getattr(src, '__dict__', None)
-        if items is None:
-            return
-        for k, v in list(items.items()):
-            if k.startswith('__'):
-                continue
-            if exclude is not None and getattr(exclude, k, None) is not None:
-                continue
-            setattr(dst, k, v)
-
     # the list of the functions bound to a multicast delegate
     def remove_list_item(lst, item):
         for i, v in enumerate(lst):
@@ -316,7 +305,6 @@ def _puerts_init():
 
         return apply
 
-    puerts.__mergePrototype = merge_prototype
     puerts.__removeListItem = remove_list_item
     puerts.__genListApply = gen_list_apply
 

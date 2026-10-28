@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -6,4 +6,12 @@
  * which is part of this source code package.
  */
 
-#include "PuertsSetting.h"
+#pragma once
+
+#include "CoreMinimal.h"
+
+namespace PuertsDeclarationGenerator
+{
+// make the generated file writable when it is under source control (PUERTS_WITH_SOURCE_CONTROL only, otherwise does nothing)
+void MakeFileWritable(const FString& FilePath);
+}    // namespace PuertsDeclarationGenerator

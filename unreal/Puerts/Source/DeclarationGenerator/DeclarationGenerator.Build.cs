@@ -34,7 +34,7 @@ public class DeclarationGenerator : ModuleRules
                 "Projects",
                 "JsEnv",
                 "ScriptEnv",
-                "Puerts",
+                "Settings",
 #if UE_5_0_OR_LATER
                 "ToolMenus",
 #endif
@@ -53,7 +53,8 @@ public class DeclarationGenerator : ModuleRules
         
         if (JsEnv.WithSourceControl)
         {
-            PrivateDependencyModuleNames.Add("PuertsEditor");
+            PrivateDependencyModuleNames.Add("SourceControl");
+            PrivateDefinitions.Add("PUERTS_WITH_SOURCE_CONTROL");
         }
 
         //PublicDefinitions.Add(string.Format("DECL_OUTPUT_PATH={0}", Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content", "Scripts"))));

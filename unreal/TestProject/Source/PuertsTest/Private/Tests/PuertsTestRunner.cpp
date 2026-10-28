@@ -99,24 +99,6 @@ static void CompareBaseline(FAutomationTestBase& Test, EBackend Backend, const F
     Test.AddInfo(FString::Printf(TEXT("actual notes saved to %s"), *ActualFile));
 }
 
-struct FTsBindListener : public FUObjectArray::FUObjectCreateListener
-{
-    PUERTS_NAMESPACE::FScriptEnv* Env = nullptr;
-
-    virtual void NotifyUObjectCreated(const UObjectBase* Object, int32 Index) override
-    {
-        if (Env)
-        {
-            Env->TryBindJs(Object);
-        }
-    }
-
-    virtual void OnUObjectArrayShutdown() override
-    {
-        GUObjectArray.RemoveUObjectCreateListener(this);
-    }
-};
-
 const TCHAR* BackendName(EBackend Backend)
 {
     switch (Backend)
@@ -148,20 +130,13 @@ static PUERTS_NAMESPACE::FPapiBackendFactory BackendFactory(EBackend Backend)
     }
 }
 
-UPuertsTestReporter* RunScript(
-    FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName, bool bBindTsClasses)
+UPuertsTestReporter* RunScript(FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName)
 {
     UPuertsTestReporter* Reporter = NewObject<UPuertsTestReporter>();
     Reporter->AddToRoot();
 
     {
         auto Env = MakeUnique<PUERTS_NAMESPACE::FScriptEnv>(BackendFactory(Backend));
-        FTsBindListener TsBindListener;
-        if (bBindTsClasses)
-        {
-            TsBindListener.Env = Env.Get();
-            GUObjectArray.AddUObjectCreateListener(&TsBindListener);
-        }
         TArray<TPair<FString, UObject*>> Arguments;
         Arguments.Add(TPair<FString, UObject*>(TEXT("Reporter"), Reporter));
         Env->Start(Module, Arguments);
@@ -182,10 +157,6 @@ UPuertsTestReporter* RunScript(
         }
 
         Reporter->OnStep.Clear();
-        if (bBindTsClasses)
-        {
-            GUObjectArray.RemoveUObjectCreateListener(&TsBindListener);
-        }
         Env.Reset();
     }
     CollectAllGarbage();

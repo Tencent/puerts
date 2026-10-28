@@ -28,7 +28,6 @@
 #endif
 #include "JSClassRegister.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "TypeScriptGeneratedClass.h"
 #include "Engine/UserDefinedEnum.h"
 #endif
 #include "ContainerMeta.h"
@@ -493,9 +492,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
         DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
         MixinInvoker = DynamicInvoker;
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl, ESPMode::ThreadSafe>(this);
-#endif
     }
 
     // before the bootstrap scripts, so the inspector sees all the scripts (hot reload looks them up by url)
@@ -509,10 +505,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         struct pesapi_ffi* Apis = MainApis;
         pesapi_env Env = EnvScope.GetEnv();
         pesapi_value PapiPuertsObj = Apis->get_property(Env, Apis->global(Env), "puerts");
-
-#if !PUERTS_FORCE_CPP_UFUNCTION
-        MergePrototype.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__mergePrototype"));
-#endif
 
         RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
 
@@ -597,22 +589,12 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
         MixinFunctionMap.Empty();
 
-        TsFunctionMap.Empty();
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        BindInfoMap.Empty();
-#endif
-        ObjectSetPrototypeOf.Reset();
-        ObjectGetPrototypeOf.Reset();
-        ObjectHasOwn.Reset();
         ObjectKeys.Reset();
 
 #if !defined(WITH_QUICKJS)
 #if defined(WITH_NODEJS)
         NodeRequire.Reset();
 #endif
-#endif
-#if !PUERTS_FORCE_CPP_UFUNCTION
-        MergePrototype.Reset();
 #endif
         // the js runtime of the backend stops before the env is released
         Backend->OnExit(this);
@@ -658,11 +640,6 @@ void FScriptEnvImpl::OnEnvReleased()
             delete ((FScriptDelegate*) Iter->first);
         }
     }
-
-    // TsFunctionMap and BindInfoMap hold papi refs, they are released before CppObjectMapper.UnInitialize
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    TsDynamicInvoker.Reset();
-#endif
 
 #if defined(WITH_NODEJS)
     node::EmitExit(NodeEnv);
@@ -936,307 +913,6 @@ void FScriptEnvImpl::RequestFullGarbageCollectionForTesting()
     Backend->RequestFullGarbageCollectionForTesting();
 }
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::FinishInjection(UClass* InClass)
-{
-    while (InClass && !InClass->IsNative())
-    {
-        auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
-        if (TempTypeScriptGeneratedClass)    // InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
-        {
-            auto BindInfoPtr = BindInfoMap.Find(TempTypeScriptGeneratedClass);
-            if (BindInfoPtr && BindInfoPtr->InjectNotFinished)
-            {
-                TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish();
-                BindInfoPtr->InjectNotFinished = false;
-            }
-        }
-        InClass = InClass->GetSuperClass();
-    }
-}
-
-void FScriptEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject, bool RebindObject)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-
-#if WITH_EDITOR
-    if (TypeScriptGeneratedClass->NeedReBind)
-    {
-        UTypeScriptGeneratedClass::NotifyRebind(TypeScriptGeneratedClass);
-    }
-#endif
-
-    auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
-
-    if (!BindInfoPtr || ForceReinject)    // create and link
-    {
-        auto Package = Cast<UPackage>(TypeScriptGeneratedClass->GetOuter());
-        if (!Package || TypeScriptGeneratedClass->NotSupportInject())
-        {
-            return;
-        }
-
-        auto PackageName = Package->GetName();
-
-        static FString PackageNamePrefix(TEXT(TS_BLUEPRINT_PATH));
-
-        auto PrefixPos = PackageName.Find(PackageNamePrefix);
-
-        if (PrefixPos != INDEX_NONE)
-        {
-            auto SuperClass = Cast<UTypeScriptGeneratedClass>(TypeScriptGeneratedClass->GetSuperClass());
-            if (SuperClass && SuperClass->GetName().StartsWith(TEXT("REINST_")))
-            {
-                //中间状态，父类修改，子类可能有个中间状态，其父类可能被修改为一个REINST_前缀的临时类
-                return;
-            }
-            if (SuperClass)
-            {
-                MakeSureInject(SuperClass, false, RebindObject);
-            }
-            FString ModuleName = PackageName.Mid(PrefixPos + PackageNamePrefix.Len());
-            Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
-
-            struct pesapi_ffi* Apis = MainApis;
-            FPapiEnvScope EnvScope(Apis, MainEnvRef);
-            if (!EnvScope)
-            {
-                return;
-            }
-            pesapi_env Env = EnvScope.GetEnv();
-            // the prototype chain of an existing BindInfo (ForceReinject must be true here) is linked already
-            InjectTsClass(Apis, Env, EnvScope.GetScope(), TypeScriptGeneratedClass, SuperClass, ModuleName, BindInfoPtr != nullptr,
-                RebindObject);
-            if (EnvScope.HasCaught())
-            {
-                Logger->Error(FString::Printf(
-                    TEXT("load module [%s] exception %s"), *ModuleName, UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
-            }
-        }
-        else
-        {
-            Logger->Warn(FString::Printf(TEXT("not find module info for [%s]"), *TypeScriptGeneratedClass->GetName()));
-        }
-    }
-}
-
-void FScriptEnvImpl::InjectTsClass(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_scope Scope,
-    UTypeScriptGeneratedClass* TypeScriptGeneratedClass, UTypeScriptGeneratedClass* SuperClass, const FString& ModuleName,
-    bool PrototypeLinked, bool RebindObject)
-{
-    if (!PrototypeLinked)
-    {
-        FBindInfo BindInfo;
-        BindInfo.Name = *ModuleName;
-        BindInfo.Prototype.Reset(Apis, Env, Apis->create_object(Env));
-        BindInfo.InjectNotFinished = true;
-        BindInfoMap.Emplace(TypeScriptGeneratedClass, std::move(BindInfo));
-    }
-
-    pesapi_value Ret = RequireModule(Apis, Env, ModuleName);
-    if (Apis->has_caught(Scope))
-    {
-        return;
-    }
-    if (!Ret || !Apis->is_object(Env, Ret))
-    {
-        Logger->Error(FString::Printf(TEXT("module [%s] invalid"), *ModuleName));
-        return;
-    }
-
-    pesapi_value Func = Apis->get_property(Env, Ret, "default");
-    if (!Apis->is_function(Env, Func))
-    {
-        return;
-    }
-    pesapi_value Proto = Apis->get_property(Env, Func, "prototype");
-    if (!Apis->is_object(Env, Proto))
-    {
-        return;
-    }
-
-    pesapi_value HasOwn = GetCachedJsFunction(
-        Apis, Env, ObjectHasOwn, "Function.prototype.call.bind(Object.prototype.hasOwnProperty)", "puerts/object_has_own");
-    if (!HasOwn)
-    {
-        return;
-    }
-
-    TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
-    TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-
-    pesapi_value Ctor = Apis->get_property(Env, Proto, "Constructor");
-    if (Apis->is_function(Env, Ctor))
-    {
-        BindInfoMap[TypeScriptGeneratedClass].Constructor.Reset(Apis, Env, Ctor);
-    }
-
-    // implement by js
-    TypeScriptGeneratedClass->FunctionToRedirect.Empty();
-
-#if !PUERTS_FORCE_CPP_UFUNCTION
-    pesapi_value NetMethods = Apis->create_object(Env);
-#endif
-
-    for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper,
-             EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces);
-         It; ++It)
-    {
-        UFunction* Function = *It;
-        auto FunctionFName = Function->GetFName();
-        if (!Function->HasAnyFunctionFlags(FUNC_BlueprintEvent) ||
-            TypeScriptGeneratedClass->FunctionToRedirect.Contains(FunctionFName))
-        {
-            continue;
-        }
-        FString FunctionName = Function->GetName();
-
-        // FString::Printf(TEXT("InpAxisEvt_%s_%s"), *InputAxisName.ToString(), *GetName())
-        static FString AxisPrefix(TEXT("InpAxisEvt_"));
-        if (FunctionName.StartsWith(AxisPrefix))
-        {
-            auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
-            int32 SubPos;
-            if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
-            {
-                FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
-            }
-        }
-        static FString ActionPrefix(TEXT("InpActEvt_"));
-        if (FunctionName.StartsWith(ActionPrefix))
-        {
-            auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
-            int32 SubPos;
-            if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
-            {
-                FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
-            }
-        }
-
-        FTCHARToUTF8 FunctionNameUtf8(*FunctionName);
-        pesapi_value FuncsObj = Function->HasAnyFunctionFlags(FUNC_Static) ? Func : Proto;
-        pesapi_value HasOwnArgs[] = {FuncsObj, Apis->create_string_utf8(Env, FunctionNameUtf8.Get(), FunctionNameUtf8.Length())};
-        pesapi_value IsOwn = Apis->call_function(Env, HasOwn, nullptr, 2, HasOwnArgs);
-        if (!IsOwn)
-        {
-            return;
-        }
-        if (!Apis->get_value_bool(Env, IsOwn))
-        {
-            continue;
-        }
-        pesapi_value JsFunction = Apis->get_property(Env, FuncsObj, FunctionNameUtf8.Get());
-        if (!Apis->is_function(Env, JsFunction))
-        {
-            continue;
-        }
-
-        auto FuncInfo = TsFunctionMap.Find(Function);
-        if (!FuncInfo)
-        {
-            TsFunctionMap.Add(
-                Function, {FPapiValueRef(Apis, Env, JsFunction), std::make_unique<FFunctionTranslator>(Function, false)});
-        }
-        else
-        {
-            FuncInfo->FunctionTranslator->Init(Function, false);
-            FuncInfo->JsFunction.Reset(Apis, Env, JsFunction);
-        }
-
-#if !PUERTS_FORCE_CPP_UFUNCTION
-        if (Function->HasAnyFunctionFlags(FUNC_Net))
-        {
-            Apis->set_property(Env, NetMethods, FunctionNameUtf8.Get(), Apis->create_boolean(Env, true));
-        }
-#endif
-
-        TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
-        TypeScriptGeneratedClass->RedirectToTypeScript(Function);
-    }
-    TypeScriptGeneratedClass->RedirectedToTypeScript = true;
-#if WITH_EDITOR
-    TypeScriptGeneratedClass->FunctionToRedirectInitialized = true;
-#endif
-
-    TryReleaseType(TypeScriptGeneratedClass);
-    pesapi_value NativeCtor = GetJsClass(Env, TypeScriptGeneratedClass);
-    if (!PrototypeLinked)
-    {
-        pesapi_value SetPrototypeOf =
-            GetCachedJsFunction(Apis, Env, ObjectSetPrototypeOf, "Object.setPrototypeOf", "puerts/object_set_prototype_of");
-        if (!SetPrototypeOf)
-        {
-            return;
-        }
-        pesapi_value Prototype = BindInfoMap[TypeScriptGeneratedClass].Prototype.Get(Env);
-        pesapi_value NativeProto = Apis->get_property(Env, NativeCtor, "prototype");
-        if (Apis->is_object(Env, NativeProto))
-        {
-            //{} -> Native Prototype -> Js Prototype -> Super Prototype
-            pesapi_value Args[] = {Prototype, NativeProto};
-            Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
-
-            auto SuperBindInfo = SuperClass ? BindInfoMap.Find(SuperClass) : nullptr;
-            pesapi_value ProtoParent = (SuperBindInfo && SuperBindInfo->Prototype) ? SuperBindInfo->Prototype.Get(Env) : nullptr;
-            if (!ProtoParent)
-            {
-                pesapi_value GetPrototypeOf =
-                    GetCachedJsFunction(Apis, Env, ObjectGetPrototypeOf, "Object.getPrototypeOf", "puerts/object_get_prototype_of");
-                if (!GetPrototypeOf)
-                {
-                    return;
-                }
-                ProtoParent = Apis->call_function(Env, GetPrototypeOf, nullptr, 1, &NativeProto);
-                if (!ProtoParent)
-                {
-                    return;
-                }
-            }
-            Args[0] = Proto;
-            Args[1] = ProtoParent;
-            Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
-            Args[0] = NativeProto;
-            Args[1] = Proto;
-            Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
-
-#if !PUERTS_FORCE_CPP_UFUNCTION
-            pesapi_value MergeArgs[] = {Proto, NativeProto, NetMethods};
-            Apis->call_function(Env, MergePrototype.Get(Env), nullptr, 3, MergeArgs);
-#endif
-        }
-        else
-        {
-            pesapi_value Args[] = {Prototype, Proto};
-            Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
-        }
-    }
-
-    if (RebindObject)
-    {
-        for (FUEObjectIterator It(TypeScriptGeneratedClass); It; ++It)
-        {
-            auto Object = *It;
-            if (ObjectMap.Find(Object))
-                continue;
-            if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
-                continue;    //跳过父类重新编译后临时状态的对象
-            //在编辑器下重启虚拟机，如果TS带构造函数，不重新执行的话，新虚拟机上逻辑上少执行了逻辑（比如对js对象一些字段的初始化）
-            //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
-            //后面看是否能参照蓝图的组件初始化进行改造
-            // TsConstruct(TypeScriptGeneratedClass, Object);
-            (void) FindOrAdd(Env, Object->GetClass(), Object, true);
-        }
-    }
-
-    if (TypeScriptGeneratedClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
-    {
-        FinishInjection(TypeScriptGeneratedClass);
-    }
-}
-#endif
-
 pesapi_value FScriptEnvImpl::GetCachedJsFunction(
     struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path)
 {
@@ -1252,180 +928,9 @@ pesapi_value FScriptEnvImpl::GetCachedJsFunction(
     return Func;
 }
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::TryBindJs(const class UObjectBase* InObject)
-{
-    UObjectBaseUtility* Object = static_cast<UObjectBaseUtility*>(const_cast<UObjectBase*>(InObject));
-
-    const bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
-
-    // if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
-    {
-        UClass* Class = InObject->GetClass();
-
-        auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class);
-
-        if (UNLIKELY(TypeScriptGeneratedClass))
-        {
-            if (UNLIKELY(IsCDO))
-            {
-                if (TypeScriptGeneratedClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
-                {
-                    TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
-                    TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                    for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt;
-                         ++FuncIt)
-                    {
-                        auto Function = *FuncIt;
-                        if (!Function->HasAllFunctionFlags(FUNC_Static) || Function->HasAnyFunctionFlags(FUNC_Native))
-                        {
-                            continue;
-                        }
-                        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
-                        Function->SetNativeFunc(&UTypeScriptGeneratedClass::execLazyLoadCallJS);
-                        TypeScriptGeneratedClass->AddNativeFunction(
-                            *Function->GetName(), &UTypeScriptGeneratedClass::execLazyLoadCallJS);
-                    }
-                }
-                else
-                {
-                    // MakeSureInject(TypeScriptGeneratedClass, true, true);
-                    TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
-                    TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                    if (IsInGameThread())
-                    {
-                        // 其实目前在编辑器下Start后才启动虚拟机，这部分本来防止蓝图刷新的代码其实用不上了
-                        auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
-                        if (BindInfoPtr)
-                        {
-                            BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
-                        }
-                    }
-                }
-            }
-        }
-        else if (UNLIKELY(!IsCDO && Class == UTypeScriptGeneratedClass::StaticClass()))
-        {
-            TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
-            TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
-            TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-            if (IsInGameThread())
-            {
-                auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
-                if (BindInfoPtr)
-                {
-                    BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
-                }
-            }
-        }
-    }
-}
-
-void FScriptEnvImpl::RebindJs()
-{
-    FPapiEnvScope EnvScope(MainApis, MainEnvRef);
-    if (!EnvScope)
-    {
-        return;
-    }
-    for (TObjectIterator<UClass> It; It; ++It)
-    {
-        UClass* Class = *It;
-        if (!Class->IsNative())
-        {
-            if (auto TsClass = Cast<UTypeScriptGeneratedClass>(Class))
-            {
-                if (!TsClass->NotSupportInject())
-                {
-#if WITH_EDITOR
-                    if (TsClass->FunctionToRedirectInitialized && !TsClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
-                    {
-                        TsClass->DynamicInvoker = TsDynamicInvoker;
-                        TsClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                        TsClass->NeedReBind = true;
-                        TsClass->GeneratedObjects.Empty(TsClass->GeneratedObjects.Num());
-                        TsClass->LazyLoadRedirect();
-                    }
-                    else
-#endif
-                    {
-                        MakeSureInject(TsClass, false, true);
-                        FinishInjection(TsClass);
-                    }
-                }
-            }
-            else
-            {
-                auto IsTsSubclass = [](UClass* InnerClass)
-                {
-                    while (InnerClass)
-                    {
-                        if (InnerClass->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor ||
-                            Cast<UTypeScriptGeneratedClass>(InnerClass))
-                            return true;
-                        InnerClass = InnerClass->GetSuperClass();
-                    }
-
-                    return false;
-                };
-                if (IsTsSubclass(Class))
-                {
-                    Class->ClassConstructor = UTypeScriptGeneratedClass::StaticConstructor;
-                }
-            }
-        }
-    }
-
-    //如果在notifyrebind的时候去遍历,那么多次遍历会明显拉低性能
-    //改为rebindjs的时候一次性找到全部需要rebind的object
-    //在遍历之后创建的uobject,虽然不会被GeneratedObjects记录,但是因为会走TypeScript::ObjectInialize,所以也不用担心没有被bind
-#if WITH_EDITOR
-    for (TObjectIterator<UObject> It; It; ++It)
-    {
-        if (It->GetClass()->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor)
-        {
-            UClass* Cls = It->GetClass();
-            while (Cls)
-            {
-                if (Cast<UTypeScriptGeneratedClass>(Cls))
-                    break;
-                Cls = Cls->GetSuperClass();
-            }
-            while (Cls)
-            {
-                if (UTypeScriptGeneratedClass* TsClass = Cast<UTypeScriptGeneratedClass>(Cls))
-                {
-                    TsClass->GeneratedObjects.Add(*It);
-                    Cls = Cls->GetSuperClass();
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-    }
-#endif
-}
-#endif
-
 FString FScriptEnvImpl::CurrentStackTrace()
 {
     return Backend->CurrentStackTrace();
-}
-
-bool FScriptEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
-{
-    while (Class)
-    {
-        if (Class->GetClass() == UTypeScriptGeneratedClass::StaticClass())
-        {
-            return true;
-        }
-
-        Class = Class->GetSuperClass();
-    }
-    return false;
 }
 
 void* FScriptEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject)
@@ -1515,7 +1020,7 @@ void FScriptEnvImpl::UnBind(UObject* UEObject)
     }
 }
 
-pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial)
+pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject)
 {
     if (!UEObject)
     {
@@ -1530,14 +1035,9 @@ pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* U
     // create and link
     bool Existed;
     auto TemplateInfoPtr = GetTemplateInfoOfType(Env, Class, Existed);
-    const bool IsTypeScriptGeneratedClass = TemplateInfoPtr->IsTypeScriptGeneratedClass;
     pesapi_value Result = nullptr;
     AddBinding(Env, static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()), TemplateInfoPtr->IsNativeTakeJsRef, UEObject,
         Result);
-    if (!SkipTypeScriptInitial && IsTypeScriptGeneratedClass)
-    {
-        TypeScriptInitial(UEObject->GetClass(), UEObject);
-    }
     return Result;
 }
 
@@ -1691,106 +1191,6 @@ void FScriptEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* 
     Apis->close_scope_placement(Scope);
 }
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
-{
-#ifndef THREAD_SAFE
-    if (!IsInGameThread())
-    {
-        Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), Object));
-    }
-#endif
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    struct pesapi_ffi* Apis = MainApis;
-    FPapiEnvScope EnvScope(Apis, MainEnvRef);
-    if (!EnvScope)
-    {
-        return;
-    }
-    bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
-
-    UObject* CDO = Class->GetDefaultObject(false);
-    if (CDO != Object && IsCDO)    // blueprint extend a ts
-    {
-        UClass* ObjClass = Object->GetClass();
-
-        while (ObjClass && !ObjClass->IsNative() && !static_cast<UObject*>(ObjClass)->IsA<UTypeScriptGeneratedClass>())
-        {
-            // Logger->Warn(FString::Printf(TEXT("release %s in  %s(%p) construct"), *ObjClass->GetName(), *Object->GetName(),
-            // Object));
-            TryReleaseType(ObjClass);
-            ObjClass = ObjClass->GetSuperClass();
-        }
-    }
-
-    auto BindInfoPtr = BindInfoMap.Find(Class);
-
-    if (!BindInfoPtr || BindInfoPtr->InjectNotFinished)
-    {
-        // Logger->Warn(FString::Printf(TEXT("force %s injection in %s(%p) construct"), *Class->GetName(), *Object->GetName(),
-        // Object));
-        MakeSureInject(Class, true, false);
-        if (!IsCDO)    // finish inject in first non-CDO construct
-        {
-            // Logger->Warn(FString::Printf(TEXT("finish %s injection in %s(%p) construct"), *Class->GetName(), *Object->GetName(),
-            // Object));
-            FinishInjection(Class);
-        }
-        BindInfoPtr = BindInfoMap.Find(Class);
-    }
-
-    if (BindInfoPtr && BindInfoPtr->Prototype)
-    {
-        pesapi_env Env = EnvScope.GetEnv();
-
-        pesapi_value JSObject;
-        auto BindingPtr = ObjectMap.Find(Object);
-        if (!BindingPtr)
-        {
-            JSObject = FindOrAdd(Env, Object->GetClass(), Object, true);
-
-            // FindOrAdd may change BindInfoMap, cause a rehash
-            BindInfoPtr = BindInfoMap.Find(Class);
-        }
-        else
-        {
-            JSObject = (*BindingPtr)->JsObject.Get(Env);
-        }
-
-        if (BindInfoPtr)
-        {
-            //假如是UTypeScriptGeneratedClass的对象，设置成间接Prototype，后续刷新代码对象会自动更新
-            if (Object->GetClass() == Class)
-            {
-                pesapi_value SetPrototypeOf =
-                    GetCachedJsFunction(Apis, Env, ObjectSetPrototypeOf, "Object.setPrototypeOf", "puerts/object_set_prototype_of");
-                if (SetPrototypeOf)
-                {
-                    pesapi_value Args[] = {JSObject, BindInfoPtr->Prototype.Get(Env)};
-                    Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
-                }
-            }
-
-            if (BindInfoPtr->Constructor)
-            {
-                Apis->call_function(Env, BindInfoPtr->Constructor.Get(Env), JSObject, 0, nullptr);
-            }
-        }
-
-        if (EnvScope.HasCaught())
-        {
-            Logger->Error(FString::Printf(TEXT("js callback exception %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
-        }
-    }
-    else if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
-    {
-        Logger->Error(FString::Printf(TEXT("Construct TypeScript Object fail for %s"), *Class->GetName()));
-    }
-}
-#endif
-
 void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32 Index)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -1802,13 +1202,8 @@ void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, i
 
     TryReleaseType((UStruct*) ObjectBase);
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    BindInfoMap.Remove((UTypeScriptGeneratedClass*) ObjectBase);
-#endif
-
     UnBind((UObject*) ObjectBase);
 
-    TsFunctionMap.Remove((UFunction*) ObjectBase);
     MixinFunctionMap.Remove((UFunction*) ObjectBase);
     ContainerMeta.NotifyElementTypeDeleted((UField*) ObjectBase);
 
@@ -1903,125 +1298,6 @@ void FScriptEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunct
             *Function->GetName(), ContextObject, UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
     }
     Apis->close_scope_placement(Scope);
-}
-
-void FScriptEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object, const bool TypeScriptClassFound)
-{
-    if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
-    {
-        TypeScriptInitial(Class->GetSuperClass(), Object, true);
-        TsConstruct(TypeScriptGeneratedClass, Object);
-    }
-    else if (!TypeScriptClassFound)
-    {
-        TypeScriptInitial(Class->GetSuperClass(), Object, false);
-    }
-}
-
-void FScriptEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    struct pesapi_ffi* Apis = MainApis;
-    FPapiEnvScope EnvScope(Apis, MainEnvRef);
-    if (!EnvScope)
-    {
-        SkipFunction(Stack, RESULT_PARAM, Function);
-        return;
-    }
-    auto FuncInfo = TsFunctionMap.Find(Function);
-    if (!FuncInfo)
-    {
-        auto Class = Cast<UTypeScriptGeneratedClass>(Function->GetOuterUClassUnchecked());
-        MakeSureInject(Class, true, false);
-        FinishInjection(Class);
-        FuncInfo = TsFunctionMap.Find(Function);
-        if (!FuncInfo)
-        {
-            Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
-                *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-            SkipFunction(Stack, RESULT_PARAM, Function);
-            return;
-        }
-    }
-
-    if (!FuncInfo->JsFunction)
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
-            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-        SkipFunction(Stack, RESULT_PARAM, Function);
-        return;
-    }
-
-    pesapi_env Env = EnvScope.GetEnv();
-
-    // FindOrAdd may inject a ts class and rehash TsFunctionMap, read FuncInfo before it
-    pesapi_value JsFunction = FuncInfo->JsFunction.Get(Env);
-    FFunctionTranslator* FunctionTranslator = FuncInfo->FunctionTranslator.get();
-
-    pesapi_value Self = nullptr;
-    if (!Function->HasAnyFunctionFlags(FUNC_Static))
-    {
-        Self = FindOrAdd(Env, ContextObject->GetClass(), ContextObject);
-    }
-
-    FunctionTranslator->CallJs(Apis, Env, JsFunction, Self, ContextObject, Stack, RESULT_PARAM);
-
-    if (EnvScope.HasCaught())
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
-            *Function->GetName(), ContextObject, UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
-    }
-}
-
-void FScriptEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
-{
-    struct pesapi_ffi* Apis = MainApis;
-    FPapiEnvScope EnvScope(Apis, MainEnvRef);
-    if (!EnvScope)
-    {
-        return;
-    }
-    MakeSureInject(Class, false, false);
-    FinishInjection(Class);
-
-#if WITH_EDITOR
-    while (UTypeScriptGeneratedClass* SuperCls = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass()))
-    {
-        Class = SuperCls;
-    }
-    {
-        pesapi_env Env = EnvScope.GetEnv();
-
-        for (TWeakObjectPtr<UObject>& Iter : Class->GeneratedObjects)
-        {
-            auto Object = Iter.Get();
-            if (!Object || ObjectMap.Find(Object))
-                continue;
-            if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
-                continue;    //跳过父类重新编译后临时状态的对象
-            (void) FindOrAdd(Env, Object->GetClass(), Object, true);
-
-            UTypeScriptGeneratedClass* ClassMayNeedReBind = nullptr;
-            auto TempClass = Object->GetClass();
-
-            while (TempClass && (TempClass != Class) && (!ClassMayNeedReBind))
-            {
-                ClassMayNeedReBind = Cast<UTypeScriptGeneratedClass>(TempClass);
-                TempClass = TempClass->GetSuperClass();
-            }
-            if (ClassMayNeedReBind)
-            {
-                MakeSureInject(ClassMayNeedReBind, false, false);
-            }
-        }
-    }
-#endif
-    if (EnvScope.HasCaught())
-    {
-        Logger->Error(FString::Printf(TEXT("rebind exception %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
-    }
 }
 #endif
 
@@ -2567,19 +1843,6 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
                 SysObjectRetainer.Retain(ScriptStruct);
             }
         }
-        else
-        {
-            auto Class = Cast<UClass>(InStruct);
-            check(Class);
-#if PUERTS_KEEP_UOBJECT_REFERENCE
-            const bool IsTsClass = IsTypeScriptGeneratedClass(Class);
-            TemplateInfo.IsTypeScriptGeneratedClass = IsTsClass;
-            if (IsTsClass)
-            {
-                TemplateInfo.IsNativeTakeJsRef = true;
-            }
-#endif
-        }
 
         if (!InStruct->GetSuperStruct())
         {
@@ -2607,39 +1870,7 @@ pesapi_value FScriptEnvImpl::GetJsClass(pesapi_env Env, UStruct* InStruct)
 {
     bool Existed;
     auto TemplateInfo = GetTemplateInfoOfType(Env, InStruct, Existed);
-    pesapi_value Ret = MainApis->create_class(Env, TemplateInfo->StructWrapper.get());
-
-    if (UNLIKELY(!Existed) && Ret)    // first create
-    {
-        auto Class = Cast<UClass>(InStruct);
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        if (Class && !Class->IsNative() && !InStruct->IsA<UTypeScriptGeneratedClass>())
-        {
-            auto SuperClass = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass());
-            if (SuperClass)
-            {
-                MakeSureInject(SuperClass, false, false);
-                auto SuperBindInfo = BindInfoMap.Find(SuperClass);
-                if (SuperBindInfo && SuperBindInfo->Prototype)
-                {
-                    struct pesapi_ffi* Apis = MainApis;
-                    pesapi_value Proto = Apis->get_property(Env, Ret, "prototype");
-                    pesapi_value SetPrototypeOf = Apis->is_object(Env, Proto)
-                                                      ? GetCachedJsFunction(Apis, Env, ObjectSetPrototypeOf,
-                                                            "Object.setPrototypeOf", "puerts/object_set_prototype_of")
-                                                      : nullptr;
-                    if (SetPrototypeOf)
-                    {
-                        pesapi_value Args[] = {Proto, SuperBindInfo->Prototype.Get(Env)};
-                        Apis->call_function(Env, SetPrototypeOf, nullptr, 2, Args);
-                    }
-                }
-            }
-        }
-#endif
-    }
-
-    return Ret;
+    return MainApis->create_class(Env, TemplateInfo->StructWrapper.get());
 }
 
 bool FScriptEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject)
@@ -2738,7 +1969,7 @@ pesapi_value FScriptEnvImpl::UETypeToJsClass(pesapi_env Env, UField* Type)
 #endif
             SetEnumEntry(Apis, Env, Result, Name, Enum->GetValueByIndex(i));
         }
-        Apis->set_property(Env, Result, "__puerts_ufield", FindOrAdd(Env, Enum->GetClass(), Enum, false));
+        Apis->set_property(Env, Result, "__puerts_ufield", FindOrAdd(Env, Enum->GetClass(), Enum));
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         if (Enum == StaticEnum<EObjectTypeQuery>())
         {

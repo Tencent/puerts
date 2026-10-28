@@ -64,17 +64,6 @@
       "Name": "ParamDefaultValueMetas",
       "Type": "Program",
       "LoadingPhase": "PostConfigInit"
-    },
-    {
-      "Name": "Puerts",
-      "Type": "Runtime",
-      "LoadingPhase": "PostEngineInit",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
-    },
-    {
-      "Name": "PuertsEditor",
-      "Type": "Editor",
-      "LoadingPhase": "PostEngineInit"
     }
   ]
 }

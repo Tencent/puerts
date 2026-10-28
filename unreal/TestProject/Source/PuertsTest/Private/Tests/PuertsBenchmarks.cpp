@@ -20,8 +20,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FPuertsBench_All::RunTest(const FString& Parameters)
 {
-    // tsclass.* needs TypeScript generated classes bound
-    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, PuertsTest::EBackend::V8, TEXT("tests/bench"), FString(), true);
+    UPuertsTestReporter* Reporter = PuertsTest::RunScript(*this, PuertsTest::EBackend::V8, TEXT("tests/bench"), FString());
     if (!Reporter)
     {
         return false;

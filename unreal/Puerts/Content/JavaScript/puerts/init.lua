@@ -273,14 +273,6 @@ puerts.toDelegate = function(o, k) return { o, k } end
 ---------------------------------------------------------------------------------------------------------------------------
 -- the helpers used by the host
 ---------------------------------------------------------------------------------------------------------------------------
-function puerts.__mergePrototype(from, to, exclude)
-    for k, v in pairs(from) do
-        if exclude == nil or exclude[k] == nil then
-            rawset(to, k, v)
-        end
-    end
-end
-
 -- the list of the functions bound to a multicast delegate (a sequence)
 function puerts.__removeListItem(list, item)
     for i = 1, #list do

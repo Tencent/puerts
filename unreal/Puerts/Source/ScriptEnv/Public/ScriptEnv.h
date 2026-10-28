@@ -38,12 +38,6 @@ public:
 
     virtual void WaitDebugger(double Timeout) = 0;
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    virtual void TryBindJs(const class UObjectBase* InObject) = 0;
-
-    virtual void RebindJs() = 0;
-#endif
-
     virtual FString CurrentStackTrace() = 0;
 
     virtual void InitExtensionMethodsMap() = 0;
@@ -77,10 +71,6 @@ public:
     void RequestFullGarbageCollectionForTesting();
 
     void WaitDebugger(double Timeout = 0);
-
-    void TryBindJs(const class UObjectBase* InObject);
-
-    void RebindJs();
 
     FString CurrentStackTrace();
 

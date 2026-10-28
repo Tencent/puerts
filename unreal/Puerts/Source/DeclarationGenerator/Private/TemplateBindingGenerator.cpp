@@ -4,9 +4,7 @@
 #include "JSClassRegister.h"
 #include "Interfaces/IPluginManager.h"
 #include "CoreUObject.h"
-#ifdef PUERTS_WITH_SOURCE_CONTROL
-#include "FileSystemOperation.h"
-#endif
+#include "DeclarationGeneratorUtils.h"
 
 struct FGenImp
 {
@@ -209,9 +207,7 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 
     const FString FilePath = FPaths::ProjectDir() / TEXT("Typing/cpp/index.d.ts");
 
-#ifdef PUERTS_WITH_SOURCE_CONTROL
-    PuertsSourceControlUtils::MakeSourceControlFileWritable(FilePath);
-#endif
+    PuertsDeclarationGenerator::MakeFileWritable(FilePath);
 
     FFileHelper::SaveStringToFile(Gen.Output.Buffer, *FilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }

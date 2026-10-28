@@ -26,10 +26,6 @@ public:
 
     ~FScriptEnvGroup();
 
-    void TryBindJs(const class UObjectBase* InObject);
-
-    void RebindJs();
-
     void InitExtensionMethodsMap();
 
     std::shared_ptr<IScriptEnv> Get(int Index);

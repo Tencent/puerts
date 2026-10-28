@@ -9,13 +9,12 @@
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "ScriptEnvGroup.h"
 #include "ScriptEnvImpl.h"
-#include "TsDynamicInvoker.h"
 #include "DynamicInvoker.h"
 #include "PuertsNamespaceDef.h"
 
 namespace PUERTS_NAMESPACE
 {
-class FGroupDynamicInvoker : public ITsDynamicInvoker, public IDynamicInvoker
+class FGroupDynamicInvoker : public IDynamicInvoker
 {
 public:
     FGroupDynamicInvoker(std::vector<FScriptEnvImpl*> InJsEnvs) : JsEnvs(InJsEnvs)
@@ -27,37 +26,6 @@ public:
         int Size = JsEnvs.size();
         int Index = Selector ? Selector(Object, Size) : 0;
         return (Index > 0 && Index < Size) ? Index : 0;
-    }
-
-    void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) override
-    {
-        // 对于cdo,应该在所有的虚拟机中调用construct,因为cdo并没有明确的jsenv
-        // 不过不大确定cdo的这样判断够不够
-        // JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
-        if (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_WasLoaded))
-        {
-            for (int i = 0; i < JsEnvs.size(); i++)
-            {
-                JsEnvs[i]->TsConstruct(Class, Object);
-            }
-        }
-        else
-        {
-            JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
-        }
-    }
-
-    void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
-    {
-        JsEnvs[GetSelectIndex(ContextObject)]->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
-    }
-
-    void NotifyReBind(UTypeScriptGeneratedClass* Class) override
-    {
-        for (int i = 0; i < JsEnvs.size(); i++)
-        {
-            JsEnvs[i]->NotifyReBind(Class);
-        }
     }
 
     virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) override
@@ -115,7 +83,6 @@ void FScriptEnvGroup::Init()
     auto GroupDynamicInvoker = MakeShared<FGroupDynamicInvoker, ESPMode::ThreadSafe>(JsEnvs);
     for (int i = 0; i < JsEnvs.size(); i++)
     {
-        JsEnvs[i]->TsDynamicInvoker = GroupDynamicInvoker;
         JsEnvs[i]->MixinInvoker = GroupDynamicInvoker;
     }
 }
@@ -123,22 +90,6 @@ void FScriptEnvGroup::Init()
 FScriptEnvGroup::~FScriptEnvGroup()
 {
     JsEnvList.clear();
-}
-
-void FScriptEnvGroup::TryBindJs(const class UObjectBase* InObject)
-{
-    for (int i = 0; i < JsEnvList.size(); i++)
-    {
-        JsEnvList[i]->TryBindJs(InObject);
-    }
-}
-
-void FScriptEnvGroup::RebindJs()
-{
-    for (int i = 0; i < JsEnvList.size(); i++)
-    {
-        JsEnvList[i]->RebindJs();
-    }
 }
 
 void FScriptEnvGroup::InitExtensionMethodsMap()
@@ -156,7 +107,7 @@ std::shared_ptr<IScriptEnv> FScriptEnvGroup::Get(int Index)
 
 void FScriptEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)
 {
-    auto DynamicInvoker = static_cast<FScriptEnvImpl*>(JsEnvList[0].get())->TsDynamicInvoker;
+    auto DynamicInvoker = static_cast<FScriptEnvImpl*>(JsEnvList[0].get())->MixinInvoker;
     if (DynamicInvoker.IsValid())
     {
         static_cast<FGroupDynamicInvoker*>(DynamicInvoker.Get())->Selector = InSelector;

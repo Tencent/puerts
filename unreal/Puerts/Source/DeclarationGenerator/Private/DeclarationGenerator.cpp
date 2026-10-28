@@ -43,10 +43,9 @@
 #include "ToolMenus.h"
 #endif
 #include "Internationalization/Regex.h"
-#include "PuertsModule.h"
-#ifdef PUERTS_WITH_SOURCE_CONTROL
-#include "FileSystemOperation.h"
-#endif
+#include "DeclarationGeneratorSetting.h"
+#include "DeclarationGeneratorUtils.h"
+#include "ISettingsModule.h"
 #include "PathEscape.h"
 
 #define STRINGIZE(x) #x
@@ -387,7 +386,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
     {
         UObject* Class = SortedClasses[i];
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
-        const TArray<FString>& IgnoreClassListOnDTS = IPuertsModule::Get().GetIgnoreClassListOnDTS();
+        const TArray<FString>& IgnoreClassListOnDTS = GetDefault<UDeclarationGeneratorSetting>()->IgnoreClassListOnDTS;
         if (IgnoreClassListOnDTS.Contains(Class->GetName()))
         {
             continue;
@@ -448,9 +447,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 
     const FString UEDeclarationFilePath = FPaths::ProjectDir() / TEXT("Typing/ue/ue.d.ts");
 
-#ifdef PUERTS_WITH_SOURCE_CONTROL
-    PuertsSourceControlUtils::MakeSourceControlFileWritable(UEDeclarationFilePath);
-#endif
+    PuertsDeclarationGenerator::MakeFileWritable(UEDeclarationFilePath);
 
     FFileHelper::SaveStringToFile(ToString(), *UEDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
@@ -475,9 +472,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 
     const FString BPDeclarationFilePath = FPaths::ProjectDir() / TEXT("Typing/ue/ue_bp.d.ts");
 
-#ifdef PUERTS_WITH_SOURCE_CONTROL
-    PuertsSourceControlUtils::MakeSourceControlFileWritable(BPDeclarationFilePath);
-#endif
+    PuertsDeclarationGenerator::MakeFileWritable(BPDeclarationFilePath);
 
     FFileHelper::SaveStringToFile(ToString(), *BPDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
@@ -841,7 +836,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
             StructProperty->Struct->GetName() != TEXT("ArrayBufferValue") && StructProperty->Struct->GetName() != TEXT("JsObject"))
         {
             const FString& Name = GetNameWithNamespace(StructProperty->Struct);
-            const TArray<FString>& IgnoreStructListOnDTS = IPuertsModule::Get().GetIgnoreStructListOnDTS();
+            const TArray<FString>& IgnoreStructListOnDTS = GetDefault<UDeclarationGeneratorSetting>()->IgnoreStructListOnDTS;
             if (IgnoreStructListOnDTS.Contains(Name))
             {
                 return false;
@@ -896,7 +891,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     else if (auto ObjectProperty = CastFieldMacro<ObjectPropertyMacro>(Property))
     {
         const FString& Name = GetNameWithNamespace(ObjectProperty->PropertyClass);
-        const TArray<FString>& IgnoreClassListOnDTS = IPuertsModule::Get().GetIgnoreClassListOnDTS();
+        const TArray<FString>& IgnoreClassListOnDTS = GetDefault<UDeclarationGeneratorSetting>()->IgnoreClassListOnDTS;
         if (IgnoreClassListOnDTS.Contains(Name))
         {
             return false;
@@ -1678,6 +1673,13 @@ public:
     void StartupModule() override
     {
         // IModularFeatures::Get().RegisterModularFeature(TEXT("ScriptGenerator"), this);
+        if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+        {
+            SettingsModule->RegisterSettings("Project", "Plugins", "Puerts", LOCTEXT("PuertsSettingsName", "Puerts Settings"),
+                LOCTEXT("PuertsSettingsDescription", "Configure the d.ts generator of Puerts plugin."),
+                GetMutableDefault<UDeclarationGeneratorSetting>());
+        }
+
         FGenDTSStyle::Initialize();
         FGenDTSStyle::ReloadTextures();
 
@@ -1728,6 +1730,10 @@ public:
     void ShutdownModule() override
     {
         // IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"), this);
+        if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+        {
+            SettingsModule->UnregisterSettings("Project", "Plugins", "Puerts");
+        }
 #if (ENGINE_MAJOR_VERSION >= 5)
         UToolMenus::UnRegisterStartupCallback(this);
 #endif

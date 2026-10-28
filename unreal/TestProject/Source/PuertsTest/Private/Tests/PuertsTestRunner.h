@@ -29,10 +29,7 @@ const TCHAR* BackendName(EBackend Backend);
 // writes the backend file only when the notes differ from the shared baseline. Lua and Python (other languages) only use
 // Baseline/<Backend>/<BaselineName>.txt.
 // Returns the reporter (rooted, caller must call RemoveFromRoot) or nullptr.
-// bBindTsClasses forwards UObject creation to FScriptEnv::TryBindJs while the env lives, as FPuertsModule does for its env,
-// which TypeScript generated classes need.
-UPuertsTestReporter* RunScript(
-    FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName, bool bBindTsClasses = false);
+UPuertsTestReporter* RunScript(FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName);
 
 void CollectAllGarbage();
 }    // namespace PuertsTest
