@@ -17,6 +17,10 @@ public class PapiQuickjs : ModuleRules
 #if UE_5_6_OR_LATER
         CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Warning;
         CppCompileWarningSettings.UndefinedIdentifierWarningLevel = WarningLevel.Off;
+#if UE_5_8_OR_LATER
+        // third-party c sources, UE5.8 (BuildSettingsVersion.V7) turns unreachable code into an error by default
+        CppCompileWarningSettings.UnreachableCodeWarningLevel = WarningLevel.Warning;
+#endif
 #else
         ShadowVariableWarningLevel = WarningLevel.Warning;
         bEnableUndefinedIdentifierWarnings = false;
