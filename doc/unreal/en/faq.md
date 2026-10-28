@@ -2,20 +2,14 @@
 
 ## Table Of Contents
 - [Warning: `new (std::nothrow) int[0]` Returns `nullptr`, Try Fixing It!](#warning-new-stdnothrow-int0-returns-nullptr-try-fixing-it)
-- [Some Extension Functions Are Unavailable in Auto-Binding Mode](#some-extension-functions-are-unavailable-in-auto-binding-mode)
-- [App Hangs When "Wait for Debugger" Option Is Checked](#app-hangs-when-wait-for-debugger-option-is-checked)
-- [`StaticClass` Returns Unexpected `UClass` in TypeScript-Generated Blueprints](#staticclass-returns-unexpected-uclass-in-typescript-generated-blueprints)
 - [macOS Error: "Cannot open libv8.dylib because the developer cannot be verified"](#macos-error-cannot-open-libv8dylib-because-the-developer-cannot-be-verified)
 - ["XXXProject could not be compiled" Error in Blueprint-Only Projects](#xxxproject-could-not-be-compiled-error-in-blueprint-only-projects)
 - [Runtime Errors About Missing Fields After Packaging](#runtime-errors-about-missing-fields-after-packaging)
-- [Error in UE5: "Construct TypeScript Object TestActor_C_1(...) on illegal thread!"](#error-in-ue5-construct-typescript-object-testactor_c_1-on-illegal-thread)
 - [Avoiding "Access Invalid Object" Exceptions](#avoiding-access-invalid-object-exceptions)
 - [Garbage Collection (GC) Behavior](#garbage-collection-gc-behavior)
 - [UE Object Is Held by `Puerts_UserObjectRetainer`](#ue-object-is-held-by-puerts_userobjectretainer)
 - [Scripts Not Running After Packaging (Mobile/PC)](#scripts-not-running-after-packaging-mobilepc)
-- [TypeScript Version Upgrade](#typescript-version-upgrade)
 - [`ue_bp.d.ts` Errors, Regeneration Doesn’t Help](#ue_bpdts-errors-regeneration-doesnt-help)
-- [TS Class Inheritance Doesn’t Generate Proxy Blueprints](#ts-class-inheritance-doesnt-generate-proxy-blueprints)
 - [Syntax Errors in `ue_bp.d.ts`](#syntax-errors-in-ue_bpdts)
 - [Intermittent "Maximum Call Stack Size Exceeded" Error](#intermittent-maximum-call-stack-size-exceeded-error)
 
@@ -30,46 +24,6 @@ This issue is confirmed by Epic and currently only observed on Windows.
 Puerts will detect this issue and patch the memory allocation behavior. When it does, it logs the warning:  
 **“new (std::nothrow) int[0] return nullptr, try fix it!”**  
 This is just an informational warning and does not impact functionality.
-
----
-
-## Some Extension Functions Are Unavailable in Auto-Binding Mode
-
-This happens because the Puerts module initializes early and cannot discover extension functions defined in modules that load afterward.
-
-**Solution:**  
-After all modules are initialized, call the following API to re-scan for extension methods:
-
-```cpp
-IPuertsModule::Get().InitExtensionMethodsMap();
-```
-
----
-
-## App Hangs When "Wait for Debugger" Option Is Checked
-
-This option deliberately pauses the process to wait for a debugger to attach. Once a debugger connects, execution continues.
-
-If you enabled it by accident and haven't configured a debugger, you can terminate the process and set the value to `False` in the following config file:
-
-```
-Config/DefaultPuerts.ini
-```
-
----
-
-## `StaticClass` Returns Unexpected `UClass` in TypeScript-Generated Blueprints
-
-TypeScript classes do not have a `StaticClass()` method. When called, it returns the first class in the inheritance chain that does have this method, along with its `UClass`.
-
-This can cause confusion—like missing subclass methods or `CreateDefaultSubobject` errors stating the class is abstract.
-
-**Correct Usage:**  
-Use the following to load a blueprint:
-
-```ts
-UE.Class.Load("path/to/your/blueprint/file")
-```
 
 ---
 
@@ -100,14 +54,6 @@ So your script accessing `count` will fail because the actual field is `Count`.
 
 ---
 
-## Error in UE5: "Construct TypeScript Object TestActor_C_1(...) on illegal thread!"
-
-This is caused by UE5 enabling `AsyncLoadingThreadEnabled` by default.
-
-**Solution:** Disable this setting to avoid the issue.
-
----
-
 ## Avoiding "Access Invalid Object" Exceptions
 
 This exception is thrown by Puerts when it detects calls on an invalidated object. Any such call (including `UObject::IsValid`) will raise the exception.
@@ -133,10 +79,7 @@ When a UE object is passed to TypeScript, Puerts creates a stub object that prox
 - If UE GC collects the UE object, it also drops the stub reference.
 - If JS has no remaining references to the stub, JS GC will collect it.
 
-**Scenarios where UE owns stub:**
-
-- TS class inherits a UE class
-- Using `mixin` with `objectTakeByNative`
+**Scenario where UE owns stub:** using `mixin` with `objectTakeByNative`.
 
 In other cases, the stub usually owns the UE object and keeps it alive from the JS side.
 
@@ -173,28 +116,6 @@ Go to **Project Settings → Packaging → Additional Non-Asset Directories to P
 
 ---
 
-## TypeScript Version Upgrade
-
-If UE class inheritance is enabled, Puerts uses the TypeScript compiler.
-
-Installed under:  
-`YourProject/Plugins/Puerts/Content/JavaScript/PuertsEditor`  
-(and copied to `YourProject/Content/JavaScript/PuertsEditor`)
-
-To upgrade:
-1. Modify `package.json` in both locations.
-2. Run `npm install .` in those directories.
-
-**Version Compatibility:**
-
-- Long-term stable: `3.4.5`, `4.4.4`, `4.7.4`
-- Tested and works: `4.8.2`
-- Not supported: `>4.8.3`
-
-If UE class inheritance is **not** enabled, these version restrictions don't apply.
-
----
-
 ## `ue_bp.d.ts` Errors, Regeneration Doesn’t Help
 
 Blueprint declaration files are generated incrementally. If dependencies change or the file is altered by version control, try full regeneration:
@@ -205,39 +126,12 @@ Puerts.Gen FULL
 
 ---
 
-## TS Class Inheritance Doesn’t Generate Proxy Blueprints
-
-### Troubleshooting:
-
-1. In UE Command Line, run:
-   ```bash
-   puerts ls
-   ```
-   If it returns `Puerts command not initialized`, your setup might be incorrect. Check the installation steps.
-
-2. To find a specific TS class:
-   ```bash
-   puerts ls TsTestActor
-   ```
-   - If it doesn't show, it’s not in the TS project. Check `tsconfig.json`.
-
-3. If found, check `isBP` and `processed` columns:
-   - If `isBP = false` and `processed = true`, format is incorrect. Refer to Puerts’ "Inheriting Engine Classes" documentation.
-
-4. You can manually trigger compilation with:
-   ```bash
-   puerts compile <file-id>
-   ```
-   Replace `<file-id>` with the ID from `puerts ls`.
-
----
-
 ## Syntax Errors in `ue_bp.d.ts`
 
 This usually comes from illegal characters (unsupported by TS) in Blueprint paths, field names, or parameters.
 
 **Solutions:**
-- If only a few Blueprints are affected, blacklist them in **Project Settings → Puerts**.
+- If only a few Blueprints are affected, blacklist them in **Project Settings → Plugins → Puerts** (stored in `Config/DefaultPuerts.ini`, section `[/Script/DeclarationGenerator.DeclarationGeneratorSetting]`).
 - For many invalid Blueprints, place valid ones in a separate directory and generate types for that path:
   ```bash
   Puerts.Gen PATH=/Game/StarterContent

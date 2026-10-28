@@ -14,7 +14,6 @@ Puerts does not re-define the engine. It simply defines a set of methods for Typ
 - [Install](./install.md)
 - [Setup](./dev_environment.md)
 - [Getting Started](./getting_started.md)
-    - [Automatic Binding Mode](./uclass_extends.md)
     - [Manually Starting A JavasScript Virtual Machine](./start_a_virtual_machine.md)
 - [Interacting With TypeScript From C++](./engine_call_script.md)
 - [Interacting With C++ From TypeScript](./script_call_uclass.md)

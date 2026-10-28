@@ -9,7 +9,6 @@ Example use cases include:
 ## Table Of Contents
 - [Usage](#usage)
 - [API Reference](#api-reference)
-- [Automatic Binding Mode](#automatic-binding-mode)
 
 ## Usage
 To start a new JavaScript virtual environment, a suitable entry point should be identified.
@@ -149,6 +148,3 @@ JsEnv->Start(/*...*/);
 ```
 
 **Note: If you do not wait for the debugger, breakpoints will be skipped prior to attachment.**
-
-## Automatic Binding Mode
-Now that you know how to start your own JavaScript virtual machine, it's important to know how to [define and extend Unreal Engine classes inside of TypeScript](./uclass_extends.md).

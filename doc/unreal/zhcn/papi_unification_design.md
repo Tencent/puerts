@@ -584,7 +584,7 @@ __puer_host_load__(url: string, by: "import" | "require"): {
 
 - 引擎：lua 5.4.8 以源码方式放在 `PapiLua/Private/lua`，按 C 编译，不格式化（clang-format CI 已排除该目录）。对源码只改了 `lprefix.h`：MSVC 下关掉 UE 当作错误的告警（`lua_error` 后的不可达代码等）。
 - 结构：`PesapiLuaImpl` 实现 pesapi（`pesapi_env` 就是 `lua_State*`，`pesapi_value` 是栈索引），`LuaObjectMapper` 实现对象映射（userdata + 弱表缓存，方法表、getter / setter 与 uservalue 里的 expando 字段）；`FPapiBackendLua` 直接实现 `IPapiBackend`，不继承 `FPapiBackendJs`。`ScriptEnv` 不依赖它，env 用 `FPapiBackendLua::Create` 作为后端工厂即可，可以与 `PapiV8`、`PapiQuickjs` 同时链接。
-- 启动：`OnEnter` 经宿主执行 `puerts/init.lua`，作用相当于 `log.js`、`argv.js`、`uelazyload.js`：`print / console`、`UE / CPP`、蓝图懒加载、容器、`puerts.ref / unref / setref`、`puerts.argv`，以及宿主要用的 `puerts.__mergePrototype` 等辅助函数。模块走 lua 自己的 `require`：`package.path / cpath` 清空，searchers 只留 preload 和 puerts searcher，后者调宿主契约（5.10.4）的 `__puer_host_resolve__ / __puer_host_load__` 读源码。`ExecuteModule` 就是调全局 `require`，没有 referrer，`import` 与 `require` 相同；`RegisterBuiltinModule` 写入 `package.loaded`。
+- 启动：`OnEnter` 经宿主执行 `puerts/init.lua`，作用相当于 `log.js`、`argv.js`、`uelazyload.js`：`print / console`、`UE / CPP`、蓝图懒加载、容器、`puerts.ref / unref / setref`、`puerts.argv`，以及宿主要用的 `puerts.__removeListItem / __genListApply`。模块走 lua 自己的 `require`：`package.path / cpath` 清空，searchers 只留 preload 和 puerts searcher，后者调宿主契约（5.10.4）的 `__puer_host_resolve__ / __puer_host_load__` 读源码。`ExecuteModule` 就是调全局 `require`，没有 referrer，`import` 与 `require` 相同；`RegisterBuiltinModule` 写入 `package.loaded`。
 - 调用约定：方法用冒号（`obj:GetName()`，第一个参数作 this），静态函数和 `puerts.*` 用点号（`UE.KismetSystemLibrary.PrintString(...)`），类表的 `__call` 是构造函数（`UE.PuertsTestObject()`）。宿主在 getter / setter 中报错时，位置取最近一层 lua 帧，不是 C 函数本身。
 - 测试：用例在 `Content/JavaScript/tests/lua/*.lua`（自带 `framework.lua`，接口与 JS 的测试框架一致），注册为 `Puerts.Functional.Lua.*`（Properties、Functions、Containers、Delegates、Lifecycle、Modules、Errors），只读 `Baseline/Lua/<Name>.txt`。行为与 JS 基线逐项比对一致，差异只在语法和下表列出的能力上。
 
@@ -592,7 +592,7 @@ lua 下不支持或行为不同的 JS/TS 特性：
 
 | 方面 | lua 行为 |
 | --- | --- |
-| TS 类与扩展 | 不支持 TS 类注入 UE 和 `mixin`（`makeUClass` 已删除，见决策记录 2026-10-28），`__tgjsMixin` 在 `init.lua` 中置空；FName 大小写修正（原型链末端 Proxy）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| TS 类与扩展 | 不支持 `mixin`（TS 继承 UE 类与 `makeUClass` 已删除，见决策记录 2026-10-28），`__tgjsMixin` 在 `init.lua` 中置空；FName 大小写修正（原型链末端 Proxy）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
 | 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主会执行 `puerts/websocketpp.js`，lua 下会报错 |
 | 模块 | 没有 ESM（`import`、`import.meta`、顶层 await），只有同步 `require`；循环 `require` 不受保护（lua 原生行为）；点号与斜杠写法解析到同一文件，但在 `package.loaded` 中是两条记录，会各执行一次、得到两个实例 |
 | 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；在协程里回调宿主属于未覆盖的边缘情况 |
@@ -613,7 +613,7 @@ lua 下不支持或行为不同的 JS/TS 特性：
 - 进程与 env：首次 `Create` 时用隔离配置（`PyConfig_InitIsolatedConfig`，home 指向引擎的 python 目录）初始化 python，然后释放 GIL；如果 `PythonScriptPlugin` 已经初始化过，就直接复用。每个 env 对应一个子解释器（`Py_NewInterpreter`），`DestroyEnvRef` 时 `Py_EndInterpreter`。进程内从不调用 `Py_Finalize`，以便子解释器可以再次创建。进入 env 时切换到它的线程状态，并在需要时取 GIL。
 - 预加载：引擎的 python 动态库不在 dll 搜索路径上，而 `Py_None`、类型对象这类数据符号又不能延迟加载，所以由 `PapiPythonPreload`（`EarliestPossible`）按 `UE_PYTHON_DIR` 先加载 `python3*.dll`（Linux 为 `lib/libpython3*.so.1.0`），`PapiPython`（`PreDefault`）再链接。
 - 结构：`PesapiPythonImpl` 实现 pesapi（`pesapi_value` 就是 `PyObject*`，新建的引用挂在当前 scope 上，scope 结束时统一释放），`PythonObjectMapper` 实现对象映射。每个注册类通过元类 `PuertsMeta` 用 `type()` 创建一个 python 类，类名取 ScriptName 的短名，`__module__` 为 `puerts`，继承链与 C++ 一致（如 `PuertsTestObject → Object → CppObject → object`）；方法是 `PyInstanceMethod`，静态函数是内建函数，属性是 getter / setter 描述符。类自带 `__dict__` 和 `__weakref__`，所以可以给对象加扩展字段、建弱引用。原生指针到 python 对象的缓存按类型 id 分节点，持有借用引用，对象析构时移除节点（与 Unity 的 `ObjectCacheNode` 相同）；回调统一进入 `CallNative`，再转到 pesapi 回调。`FPapiBackendPython` 直接实现 `IPapiBackend`；`ScriptEnv` 不依赖它，env 用 `FPapiBackendPython::Create` 作为后端工厂即可，可以与其他后端同时链接。
-- 启动：`OnEnter` 经宿主执行 `puerts/init.py`。全部逻辑在 `_puerts_init()` 内执行完即删除，不污染 `__main__`。它提供 `print / console`、`UE / CPP`、蓝图懒加载、容器、`puerts.ref / unref / setref`、`puerts.argv`，以及宿主要用的 `puerts.__mergePrototype / __removeListItem / __genListApply`。`global()` 返回 `builtins` 模块，宿主的 `__tgjsXXX` 和 `__puer_host_resolve__ / __puer_host_load__` 都挂在它上面，`init.py` 取走后会删除。
+- 启动：`OnEnter` 经宿主执行 `puerts/init.py`。全部逻辑在 `_puerts_init()` 内执行完即删除，不污染 `__main__`。它提供 `print / console`、`UE / CPP`、蓝图懒加载、容器、`puerts.ref / unref / setref`、`puerts.argv`，以及宿主要用的 `puerts.__removeListItem / __genListApply`。`global()` 返回 `builtins` 模块，宿主的 `__tgjsXXX` 和 `__puer_host_resolve__ / __puer_host_load__` 都挂在它上面，`init.py` 取走后会删除。
 - 模块：在 `sys.meta_path` 末尾追加 `PuertsFinder`。它把 `a.b` 换成 `a/b`，先找 `a/b.py`，再找 `a/b/__init__.py`，路径解析和读取都走宿主契约（5.10.4）；加载器用 `compile(content, debugPath)` 执行，不生成 `__pycache__`。包的 `submodule_search_locations` 设为空列表，以免标准库的 `PathFinder` 接管子模块，绕过宿主并写入 pyc。`builtins.require(name)` 会去掉 `.py` 后缀，再调用 `importlib.import_module`。`ExecuteModule` 调用 `require`，没有 referrer，`import` 与 `require` 相同；`RegisterBuiltinModule` 写入 `sys.modules`（`puerts`、`ue`、`cpp` 也在其中）。标准库照常可以 import。
 - 调用约定：方法用点号，`obj.GetName()`，this 隐式传入；静态函数为 `UE.KismetSystemLibrary.PrintString(...)`；调用类就是构造，例如 `UE.PuertsTestObject()`。参数只能按位置传。python 异常与宿主异常互转，错误文本格式为 `Type: msg`。
 - 测试：用例在 `Content/JavaScript/tests/python/*.py`，自带 `framework.py`，接口与 JS 的测试框架一致。注册为 `Puerts.Functional.Python.*`，共 7 项（Properties、Functions、Containers、Delegates、Lifecycle、Modules、Errors），只读 `Baseline/Python/<Name>.txt`。行为与 JS / lua 基线逐项一致，差异只在语法和下表列出的能力上；另外加了 python 专属的观察项，包括 mro、isinstance、关键字参数、包与相对导入、`__import__`、标准库，以及 `_puerts_init` 是否残留。7 项全部通过，含四个后端的 `Puerts.Functional` 全量 50 项均无失败。
@@ -623,7 +623,7 @@ python 下不支持或行为不同的 JS/TS 特性：
 | 方面 | python 行为 |
 | --- | --- |
 | 可用范围 | 只在 `bCompilePython` 的目标上可用（默认只有编辑器），游戏和独立程序里 `Create` 返回 nullptr；不支持 Android、iOS；依赖 `PapiPythonPreload` 先加载引擎的 python 动态库 |
-| TS 类与扩展 | 不支持 TS 类注入 UE 和 `mixin`（`makeUClass` 已删除，见决策记录 2026-10-28），`init.py` 中没有对应函数；FName 大小写修正（原型链末端 Proxy，`InstallNameFixing`）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| TS 类与扩展 | 不支持 `mixin`（TS 继承 UE 类与 `makeUClass` 已删除，见决策记录 2026-10-28），`init.py` 中没有对应函数；FName 大小写修正（原型链末端 Proxy，`InstallNameFixing`）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
 | 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主执行的 `puerts/websocketpp.js` 在 python 下会报错 |
 | 模块 | 没有 ESM（`import`、`import.meta`、顶层 await、`import()`），只有同步 `require` / `import`；点号路径要求每一级父目录都有 `__init__.py`（真实的包），否则报 `ModuleNotFoundError`；斜杠写法的 `require('a/b')` 会以 `a/b` 为键另存一份，与 `import a.b` 不是同一个实例 |
 | 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；`asyncio` 没有接入引擎 tick |
@@ -767,7 +767,13 @@ flowchart LR
 
 已决策（2026-10-28）：
 
-1. 删除已废弃的 `makeUClass`，与 Unity 统一，改用 `blueprint.mixin` 或 TS 类（`UTypeScriptGeneratedClass`）。去掉 `puerts.makeUClass` 及其类型声明、`__tgjsMakeUClass`、`FScriptEnvImpl::MakeUClass`、`IDynamicInvoker::JsConstruct / InvokeJsMethod`、`UJSWidgetGeneratedClass`、`UJSGeneratedClass` 的 Create / Override / StaticConstructor / Release、`UJSGeneratedFunction::execCallJS / JsFunction`，以及 `make_uclass.js` 用例、`UPuertsTestMakeClassTarget` 测试类型和 bench 中的 makeuclass 项。`UJSGeneratedClass` 只保留 mixin 用的 `Mixin / Restore`（UCLASS 保留，兼容 CoreRedirects），`UJSGeneratedFunction` 只保留 mixin 路径（`execCallMixin`）。
+1. 删除已废弃的 `makeUClass`，与 Unity 统一，改用 `blueprint.mixin`。去掉 `puerts.makeUClass` 及其类型声明、`__tgjsMakeUClass`、`FScriptEnvImpl::MakeUClass`、`IDynamicInvoker::JsConstruct / InvokeJsMethod`、`UJSWidgetGeneratedClass`、`UJSGeneratedClass` 的 Create / Override / StaticConstructor / Release、`UJSGeneratedFunction::execCallJS / JsFunction`，以及 `make_uclass.js` 用例、`UPuertsTestMakeClassTarget` 测试类型和 bench 中的 makeuclass 项。`UJSGeneratedClass` 只保留 mixin 用的 `Mixin / Restore`（UCLASS 保留，兼容 CoreRedirects），`UJSGeneratedFunction` 只保留 mixin 路径（`execCallMixin`）。
+2. 删除 TS 继承 UE 类（自动绑定模式），UE 调用脚本只保留 `mixin` 和 DYNAMIC_DELEGATE 两条路径。理由：该功能依赖编辑器内的 TS 编译服务和代理蓝图，与 papi 多后端（lua / python 无法支持）不兼容，FScriptEnvImpl 为它维护了与 FCppObjectMapper 重复的对象映射，且实际多被滥用为“另一种蓝图”。删除范围：
+   - 模块：`PuertsEditor`（含 `Content/JavaScript/PuertsEditor` 与插件根下的 `PuertsEditor` 目录）、`Puerts`（`FPuertsModule`、默认虚拟机、`IPuertsModule`、`UPuertsSetting`）；`enable_puerts_module.js` 只保留拷贝 JS、生成 `tsconfig.json` 和 `TypeScript` 目录，不再 npm install 编译服务、不写 `DefaultPuerts.ini`。
+   - 运行时：`UTypeScriptGeneratedClass`、`TryBindJs`、`InjectTsClass`、`IsTypeScriptGeneratedClass` 等，JS 侧的装饰器、`puerts.__mergePrototype`（`uelazyload.js`、`init.lua`、`init.py`）与 `puerts_decorators.d.ts`。
+   - 测试：`UPuertsTestTsTarget`、`TsClass` 用例与基线、bench 中的 tsclass 项。
+   - 文档：`uclass_extends.md`（中英文）及 FAQ、入门、调试、示例中的相关章节。
+   - d.ts 生成的忽略列表配置迁到 `DeclarationGenerator` 的 `UDeclarationGeneratorSetting`（项目设置 Plugins -> Puerts），ini 段由 `[/Script/Puerts.PuertsSetting]` 改为 `[/Script/DeclarationGenerator.DeclarationGeneratorSetting]`，不做兼容读取，3.0 升级时需手动迁移 `IgnoreClassListOnDTS / IgnoreStructListOnDTS`；`DebugEnable / WaitDebugger` 等默认虚拟机配置随模块一并删除，自建虚拟机用 `FJsEnv` 构造参数和 `WaitDebugger()` 调试。
 
 待决策：
 

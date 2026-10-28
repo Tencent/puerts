@@ -156,40 +156,7 @@ obj2.StdFunctionTest((x:number, y:number) => {
 
 C++章节介绍的DYNAMIC_DELEGATE也是可用的
 
-### 静态脚本方法
-
-！注意，这种方式需要开启[继承UE类功能](uclass_extends.md)
-
-~~~typescript
-import * as UE from "ue";
-
-class TsUtils extends UE.BlueprintFunctionLibrary {
-  public static Sum(a: number, b: number, c: number): number {
-    return a + b + c
-  }
-  
-  public static GetBool() :boolean {
-    return true;
-  }
-}
-
-export default TsUtils
-
-~~~
-
-上述TsUtils在蓝图里可以像普通的蓝图函数库一样使用。
-
-### 成员脚本方法
-
-！注意，这种方式需要开启[继承UE类功能](uclass_extends.md)
-
-成功后，就可以像普通蓝图类那样使用该ts类
-
-具体操作见[继承UE类功能](uclass_extends.md)。
-
 ### 基于Mixin成员方法调用
-
-有没开启继承UE类功能均可使用该功能。
 
 mixin后，蓝图方法将会被同名ts方法覆盖。
 

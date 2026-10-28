@@ -5,30 +5,6 @@
 Unreal重载了new，而且处理不符合C++规范：用no-throw方式new一个长度为0的数组，返回了nullptr，标准应该是返回有效值，只有OOM时才返回nullptr，这让遵从规范的V8误以为是OOM了，进而abort。目前只发现Window有该问题，而且该问题也经epic官方确认了。
 Puerts如果发现引擎有该bug，会通过覆盖内存分配行为修复该问题，并打印“new (std::nothrow) int[0] return nullptr, try fix it!”告警。该告警只是提示下当前UE版本存在该Bug，没什么影响。
 
-## 自动绑定模式有些扩展函数用不了
-
-这是由于puerts模块启动得比较早，它启动的时候遍历Class遍历不了比它后启动的模块里的扩展函数。
-解决办法：你所有模块启动完，调用下如下api就可以让它重新查找扩展函数。
-
-~~~c++
-IPuertsModule::Get().InitExtensionMethodsMap();
-~~~
-
-## 勾选Wait Debugger选项启动卡住
-
-这个选项就是卡住进程来等待调试器连接，连上了就往下走了。
-
-如果你还没配置好调试器，又不小心选了这个选项，也就没办法进入把这个选项去掉，此时可以关闭进程，打开Config\DefaultPuerts.ini把WaitDebugger改为False。
-
-
-## ts生成蓝图的StaticClass调用，返回UClass使用不符合预期
-
-ts类是没有StaticClass方法的，所以StaticClass调用其实是继承链上第一个有StaticClass方法的类，返回的也是该StaticClass方法所在类的UClass。
-
-没理解这点可能会导致一些误解：比如我创建的对象为啥没子类方法，必然CreateDefaultSubobject报错说类是abstract的，无法创建等。
-
-正确的做法应该是通过UE.Class.Load("path/to/your/blueprint/file")去加载。
-
 ## mac下提示“无法打开libv8.dylib，因为无法验证开发者”
 
 进入该dylib文件所在目录（通常是：youproject/Plugins/Puerts/ThirdParty/v8/Lib/macOSdylib），执行如下命令：
@@ -50,10 +26,6 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 而打包后，如果在你访问这个蓝图前，已经有另外一个地方初始化了一个“Count”字段，那么你访问这个蓝图时，该字段会是"Count"，因为FName.ToString返回的是第一次构造该FName输入的字符串，后面只要转成小写后和第一次一样的FName，都是重用第一次的。
 
 所以你在脚本访问的count字段会不存在（变成了Count字段）。
-
-## UE5下报 Construct TypeScript Object TestActor_C_1(000001E5057BD300) on illegal thread!
-
-关闭AsyncLoadingThreadEnabled选项（该选项ue4默认关闭, ue5默认打开了）
 
 ## 应如何避免"access a invalid object"异常
 
@@ -79,11 +51,7 @@ sudo xattr -r -d com.apple.quarantine *.dylib
     
     - 如果进一步在ts也没有引用该stub对象，该stub对象会被gc
 
-“ue对象持有stub对象”，在ts持有并不能阻止ue的gc，有两种情况会产生这种类型的对象：
-
-* ts继承ue类型
-
-* mixin中参数指明objectTakeByNative
+“ue对象持有stub对象”，在ts持有并不能阻止ue的gc，mixin中参数指明objectTakeByNative时会产生这种类型的对象。
 
 其它情况均为“stub对象持有ue对象”，这种类型的对象可以通过ts持有可以阻止ue对象的gc。
     
@@ -104,39 +72,15 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 到“项目设置/打包/Additional Not-Asset Directories to Package”，把Content下的“JavaScript”目录添加进去。
 
-## typesceript版本升级
-
-开启继承ue类功能后，puerts会调用typescript库编译ts。安装于`YourProject/Plugins/Puerts/Content/JavaScript/PuertsEditor`，该目录还会拷贝到`YourProject/Content/JavaScript/PuertsEditor`，版本号package.json配置文件（如上两个目录都有）。
-
-要升级版本号只需要修改package.json（两个都要改）、到该文件所在目录执行`npm install .`即可，但要注意并不是所有typescript版本都支持，而且随着puerts的修改版本支持情况可能会发生变动，版本支持情况我会更新到这条faq下
-
-有项目长期使用到版本：3.4.5、4.4.4、4.7.4
-
-有项目简单测试可以的版本：4.8.2
-
-不支持的版本：（高于）4.8.3
-
-若未开启继承ue类功能，则不需要类似继承模式那样要用typescript库去分析语法，因此没有上述的typescript版本特定要求
-
 ## ue_bp.d.ts报错，重新生成无效
 
-蓝图声明文件默认增量生成（文件不发生变化不生成），有时其依赖的类型发生了变化，或者被版本管理工具修改，此时可以试试全量生成，控>制台执行`Puerts.Gen FULL`
-
-## ts继承ue类后不生成代理蓝图的定位
-
-* 在UE命令行界面输入`puerts ls`，如果报“Puerts command not initialized”，很可能是因为没安装好环境，或者插件该功能没启用，请按安装文档检查又没操作失误
-
-* 如果继承ue类功能正常启用`puerts ls`能看到所有被纳入增量编译的文件，如果想查找具体ts文件，比如TsTestActor，可以输入`puerts ls TsTestActor`进行查找，如果查找不到你的文件，表面该文件可能没被纳入到ts工程里，请检查“tsconfig.json”文件的配置，该配置是一个标准的ts工程配置，如何配置请查看typescript官方文档
-
-* 如果`puerts ls TsTestActor`找到了你的文件，看isBP栏，如果为false而且processed栏为true，表明格式不正确，请参考puerts的《继承引擎类功能》文档
-
-* 可以尝试在命令行单独编译该ts文件，输入编译命令`puerts compile e9050088932a23f720713a9a5073986e`触发该文件的编译（其中e9050088932a23f720713a9a5073986e是`puerts ls TsTestActor`返回的id），如果有编译错误就解决，没有编译错误正常能生成相应的代理蓝图。
+蓝图声明文件默认增量生成（文件不发生变化不生成），有时其依赖的类型发生了变化，或者被版本管理工具修改，此时可以试试全量生成，控制台执行`Puerts.Gen FULL`
 
 ## 生成的ue_bp.d.ts报语法错误
 
 这一般是蓝图的路径，字段，参数名等含ts不支持的字符所致，解决办法：
 
-* 如果这种蓝图的量比较小，可以加入到黑名单（项目配置->Puerts）。
+* 如果这种蓝图的量比较小，可以加入到黑名单（项目设置->Plugins->Puerts，保存在`Config/DefaultPuerts.ini`的`[/Script/DeclarationGenerator.DeclarationGeneratorSetting]`段）。
 
 * 如果这种蓝图数量比较大，可以把需要在代码访问的、合法的蓝图放入一个目录，然后在编辑器控制台下输入命令来生成，这种方式可以指定蓝图搜索的路径，比如 ·Puerts.Gen PATH=/Game/StarterContent· 只会搜索"Content\StarterContent"目录。
 
@@ -146,3 +90,4 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 ps：以上是v8后端的的现象和解决方案，qjs后端如果多线程访问有可能会抛个没有文件信息的异常`<unknow>:-1`，而且qjs后端目前不支持多线程
 ps：如果是必报，应该是js代码中有递归死循环了。
+
