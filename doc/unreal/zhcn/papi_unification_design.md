@@ -250,7 +250,7 @@ M4 落地情况（分批进行）：
   - 测试：两条路径 14 个用例全过，Functions、Reflection 基线只有上述两处预期变化；BuildPlugin 通过。基准与 M4-6c 持平，实例模板去掉拦截器后 property.struct_field 由 57ns 降到 47ns / 46ns，array.property_access 也略有下降；new.struct 两轮 283ns / 302ns，其余项在噪声范围内。
 - M4-6e：新增类定义失效 API `pesapi_ffi.invalidate_class(env, type_id)`，追加在函数表末尾。
   - 语义：丢弃该 env 中 `type_id` 对应的脚本类缓存，下次使用时从 registry 重建；已有对象和已经拿到的旧类继续使用旧类（旧对象 `instanceof` 新类不成立）；不连带子类失效，已经生成的子类仍继承旧类。概念上对应 lua / python 中丢弃缓存的 metatable / 类型对象，与引擎和语言无关。v8 实现转给 `ICppObjectMapper::InvalidateClass`：`FCppObjectMapper` 从 `TypeIdToTemplateMap` 中删除该项；UE 的 `FJsEnvImpl` 还会删除 `TypeToTemplateInfoMap` 中该 wrapper 的项。papi_test 补了对应用例。
-  - 版本：暂不提升 `PESAPI_VERSION`。插件入口名带版本号（`pesapi_register_<mod>_v<ver>`），提升会让已编译的插件全部失效，第一阶段新增的 API 都只追加不提升，到统一时一次性提升（待决策项 1 按此执行）。
+  - 版本：暂不提升 `PESAPI_VERSION`。插件入口名带版本号（`pesapi_register_<mod>_v<ver>`），提升会让已编译的插件全部失效，第一阶段新增的 API 都只追加不提升，到统一时一次性提升（待决策项 1 按此执行）。（已调整：2026-10-28 新增 `unbind_native_object` 时提升到 12，见 5.6、5.7。）
   - 定义生命周期：`FStructWrapper` 只持有当前一代定义（`std::shared_ptr<FReflectedClass>`）。`CppObjectMapper::OnTemplateCreated` 改为 `std::function`，`FJsEnvImpl` 在钩子中把生成模板所用的定义存入本 env 的 `ClassesBuilt`，失效时移入 `RetiredClasses`；v8 的 FunctionTemplate 在 isolate 内不会被回收，两者都在 isolate Dispose 之后才释放。这样没有被任何 env 用过的旧一代定义在被替换时立即释放，M4-6c 的定义累积问题解决。
   - UE 策略：恢复宏 `PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE`（`StructWrapper.h`，默认 1，与上游一致）。为 1 时行为不变：同一 FullName 的新 UStruct 沿用原来的 JS 类，只刷新翻译器。为 0 时，`TryReleaseType` 之后再次使用该类型（本 env 的 `ClassesBuilt` 已有该 wrapper）会先 `invalidate_class` 再重建，新成员可见、`instanceof` 旧类不再成立。`GetTemplateInfoOfType` 改为先处理父类再生成本类模板，保证父类先失效、先重建。
   - 测试：默认配置两条路径 14 个用例全过；宏临时改为 0 再跑一遍也全过（TsClass、MakeUClass 经过 `TryReleaseType` 后的重建路径）；BuildPlugin 通过。基准与 M4-6d 持平（两轮取最小：new.uobject 1568ns，new.struct 293ns，tsclass.new 2004ns），array.property_access 的差异来自 M4-6d 第二轮的偏低值。
@@ -273,7 +273,7 @@ M4 落地情况（分批进行）：
   - 后端优化（v8 后端内部，与引擎无关）：`CppObjectMapper::TypeIdToTemplateMap` 的条目同时记下生成模板的那份类定义（模板的回调本来就引用它），`FindOrAddCppObject` 对已生成模板的类只查一次表，不再走 `LoadClassByID`（UE 下反射类要先查 registry、再查 `ReflectedClassMap`）；`pesapi_native_object_to_value` 直接调 mapper，少一层转发。
   - 测试：两条路径用例全过。基准与 HEAD 交替对比：new.struct、return_struct、struct_param 持平；property.get_struct 由 52 到 55ns 变为约 58ns，差距来自 papi 调用中 `Context::GetIsolate` 的跨模块调用（直接查缓存的实验版本为 52ns），属于 v8 后端的通用开销，后续统一优化。
   - 剩余：UObject 的 `Bind` / `FindOrAdd`（依赖 `ObjectMap` 的 v8 persistent、v8 模板和 `FClassWrapper::New`），委托的 `FindOrAddDelegate` / `ExecuteDelegate` 和委托模板。
-- M4-6h：UObject 的绑定、缓存和构造改为 papi。
+- M4-6h：UObject 的绑定、缓存和构造改为 papi。（包装形态、引用强弱、生命周期三项已被 2026-10-28 的方案 B 取代，见 5.6。）
   - 包装形态：UObject 的 JS 对象改为由 `FClassWrapper` 的类定义创建的 native object，native 指针是 `FUObjectBinding`（继承 `FUObjectHandle`，额外记录所属 env 和 JS 对象的 `FPapiValueRef`），internal field 1 的 type id 由 nullptr 改为 `FClassWrapper`（与 struct 一致，`FStructWrapper::FromTypeId` 可反查）。对象由 `CppObjectMapper` 以 owned 方式绑定，类定义的 Finalize（`FClassWrapper::ReflectedFinalize`）经 `FUObjectHandle::Finalize` 回调到 env 释放 binding。`FUObjectHandle` 新增 `Finalize` 函数指针，handle 的布局其余不变。
   - 引用强弱：`FUObjectBinding::JsObject` 默认是强引用（native 持有 JS，对应 `IsNativeTakeJsRef`），`SetJsTakeRef` 时 Retain UObject 并对 value ref 调 `set_ref_weak`，由 JS 持有 UObject。判定逻辑（含 `PUERTS_KEEP_UOBJECT_REFERENCE` 的两种取值）不变。
   - 生命周期：UObject 先销毁时（`NotifyUObjectDeleted` -> `UnBind`）从 `ObjectMap` 摘除、释放 retainer 和 value ref，handle 的 `Object` 置空后放入 `ReleasedObjectBindings`，JS 侧再访问报 invalid object；wrapper 被 GC 时由 Finalize 从 `ObjectMap` 或 `ReleasedObjectBindings` 中摘除并删除 binding。env 析构时 `CppObjectMapper.UnInitialize` 对存活的 wrapper 调 Finalize，之后只清理残留条目。原来的 v8 弱回调 `OnGarbageCollected`、`OnReleasedObjectBindingGarbageCollected` 删除。
@@ -333,7 +333,7 @@ M5 落地情况（分批进行）：
 
 UE 与 C# 的关键差异：UObject 可被显式销毁（Destroy、关卡卸载），且销毁后地址会被复用。如果直接把 `UObject*` 作为 papi 的 native 指针，papi-v8 的对象缓存（按指针加 type_id 查找）会在地址复用时返回过期的 JS 对象。
 
-方案 A（推荐，无需新增 API）：句柄化，与 C# 的做法一致。
+方案 A（无需新增 API）：句柄化，与 C# 的做法一致。
 
 - native 指针不是 `UObject*`，而是 UE 侧分配的 `FUObjectHandle { TWeakObjectPtr<UObject> Obj; UClass* Class; }`，UE 侧维护 `UObject* -> FUObjectHandle*` 的映射。
 - `trace_native_object_lifecycle` 的 on_enter 在 JS 包装对象创建时把 UObject 加入 GC 引用集合（对应 `PUERTS_KEEP_UOBJECT_REFERENCE`），on_exit 在 JS 对象被回收时移除并释放句柄。
@@ -342,9 +342,20 @@ UE 与 C# 的关键差异：UObject 可被显式销毁（Destroy、关卡卸载�
 
 方案 B：新增 `pesapi_unbind_native_object(env, type_id, ptr)`，在 UObject 销毁时从缓存中摘除并清空 JS 对象内的指针。改动小、开销低，但需要 papi 增加 API，且 Unity 侧也要实现。
 
-已决策：采用方案 A。方案 B 仅作为基准测试显示句柄开销不可接受时的备选。
+原决策（2026-10-22）：采用方案 A，方案 B 作为备选。
 
-M2 落地情况：
+现决策（2026-10-28）：改为方案 B，方案 A 的实现（`FUObjectHandle`、`FUObjectBinding`、`ObjectMap`、`ReleasedObjectBindings`）全部删除。理由：3.0 是大版本，合理性优先。方案 A 下 UObject 身份由宿主的 `ObjectMap` 和后端的对象缓存各维护一份，两层映射重复（M4-6h 的基准已经显示后端缓存对 UObject 是冗余开销），每个包装还要额外分配 handle 和一个 value ref；方案 B 只保留后端对象缓存这一层，与 struct、容器等其他 native 对象走同一套机制。新增的 API 只是“摘除缓存并清空指针”，lua、python 中同样自然成立，满足 5.7 的引擎、语言无关要求。
+
+方案 B 落地情况（2026-10-28，取代下面 M2 的句柄化实现）：
+
+- papi：新增 `pesapi_unbind_native_object(env, type_id, ptr)`，追加到函数表末尾，`PESAPI_VERSION` 由 11 提升到 12（3.0 本来就会让已编译插件失效，不再沿用“第一阶段不提升”）。语义：从缓存中摘除 (ptr, type_id) 并调用类的 on_exit，脚本对象内的指针清空（之后调用按空对象报错），不会再 Finalize（ptr 归宿主所有），回收时什么也不做；下次 `native_object_to_value` 会创建新的脚本对象。`type_id` 传空时摘除 ptr 以任何类型绑定的条目（用于 ptr 的内存即将释放、宿主不关心绑定类型的场景）。未绑定时返回 false。v8、quickjs、lua、python 四个后端都已实现，papi_test 补了对应用例。
+- 包装形态：UObject 包装的 native 指针就是 `UObject*`，type id 是该 UClass 进程级的 `FClassWrapper`。`FStructWrapper` 以 `FReflectedTypeTag`（带 magic）作为第一个基类，UClass 的 wrapper 设置 `UClassMagic`，于是 `PapiDataTransfer::GetUObjectOfNativePtr(TypeId, Ptr)` 可以只凭 type id 判定是否为 UObject 包装（取代原来 handle 上的 magic），struct、容器等包装传给 UObject 参数仍被拒绝。读取点统一改为同时取 type id 和指针（`GetUObjectOfValue` / `GetUObjectOfHolder`）；pending kill 语义不变（unreachable 或 garbage 返回 `RELEASED_UOBJECT`，`EvenIfPendingKill` 只排除 unreachable）。`pesapi_get_native_object_ptr` 对 UObject 包装直接返回 `UObject*`。
+- 引用强弱：UClass 的类定义不再有 Finalize（UObject 不归 JS 所有），改用 OnEnter / OnExit，经 env private（`IObjectMapper`）回调宿主。OnEnter 时，除 native 持有 JS 的对象（`IsNativeTakeJsRef`，判定逻辑与 `PUERTS_KEEP_UOBJECT_REFERENCE` 的两种取值不变）外都 Retain 到 `UserObjectRetainer`；OnExit 时 Release。native 持有 JS 的对象由 `NativeTakeJsRefObjects`（`UObject* -> FPapiValueRef`）强引用 JS 对象，`SetJsTakeRef` 时先 Retain UObject 再删除该条目，由 JS 持有 UObject。这是宿主唯一保留的 UObject 相关映射，只记录少数 mixin 的 objectTakeByNative 对象，不参与身份查找。
+- 生命周期：UObject 先销毁时，`NotifyUObjectDeleted` -> `UnBind` 打开主 env 作用域调用 `unbind_native_object(env, nullptr, obj)`（后端触发 OnExit 释放 retainer），再删除 `NativeTakeJsRefObjects` 中的条目；JS 侧再访问报 "access a invalid object"，JS 侧的 expando 状态仍保留，JS 对象之后正常回收。JS 对象先被回收：后端经 OnExit 释放 retainer。env 析构时 `NativeTakeJsRefObjects` 在 `CppObjectMapper.UnInitialize` 之前清空，后端对存活对象调用 OnExit。地址复用不会命中过期对象，因为条目在 UObject 销毁时已经摘除。
+- 测试：mixin 用例新增 objectTakeByNative 对象被销毁后的访问（调用抛 invalid、expando 保留）以及 UObject 回收后 JS 对象随之释放，Mixin 基线追加三行；其余用例与基线不变，Functional 全部 35 项通过。
+- 基准（同机与 HEAD 对比）：new.uobject 1744 到 1528/1712ns、mixin.cpp_to_js 405 到 365/411ns、delegate.cpp_to_js 248 到 211ns，少了 handle 分配、value ref 和宿主映射的插入删除；return_self 等命中缓存的路径持平。property.get_int / set_int 由 51/52ns 变为 59 到 64 / 58ns，历史波动范围是 52 到 58ns，可确认的新增开销是 getter / setter 多一次 `get_native_holder_typeid` 的 ffi 调用（用于拒绝伪造的 `this`），与 cpp.* 同属 ffi 间接调用开销，一并列入待优化项（例如一次取回指针和 type id 的接口）。
+
+M2 落地情况（已被方案 B 取代，保留作为记录）：
 
 - 对象映射：UE 版 `FCppObjectMapper` 已与 Unity 版基本对齐（含 OnEnter / OnExit），差异只剩依赖 V8 >= 13 的 `PUERTS_LAZYLOAD`，暂不移植。M2 的主体是 UObject 句柄。
 - 句柄定义见 `JsEnv/Public/UObjectHandle.h`：`FUObjectHandle { Magic; UObject* Object; FWeakObjectPtr WeakObject; UClass* Class; }`。`Object` 是原始指针，只作为映射的身份键，UObject 销毁后置空；`Magic` 用于拒绝把 struct、容器等非 UObject 包装传给 UObject 参数。
@@ -361,7 +372,7 @@ M2 落地情况：
 | 回调中取 JS this 对象 | Mixin、TS 生成类、`super` 调用 | 桥接层取 V8 FunctionCallbackInfo | 新增 `get_this` |
 | 抛出任意 JS 值 / Error 对象 | 保留异常类型与堆栈 | 桥接层 | 新增 `throw_value` |
 | 弱引用被回收的回调 | 委托、Mixin 中 JS 函数的清理 | 桥接层或 `create_function` 的 finalize 间接实现 | 视情况新增 `set_ref_weak_with_callback` |
-| UObject 失效 | 见 5.6 | 方案 A | 方案 A 或 B |
+| UObject 失效 | 见 5.6 | 方案 B（`unbind_native_object`，已实现） | 同左 |
 | 枚举对象自有属性 | JS 对象转 TMap、对象合并（Merge） | 桥接层 | 新增 `get_own_property_names`，或用 JS 辅助函数加 `call_function` |
 | Promise 拒绝回调、微任务 | 未处理 Promise 报错、Tick 驱动 | 桥接层 | 后端管理接口 |
 | ESM 模块、动态 import | `ExecuteModule` | 复用 papi-v8 BackendEnv | 后端内部实现 |
@@ -369,7 +380,7 @@ M2 落地情况：
 | 外部内存上报 | 大对象（容器、结构体）提示 GC | 桥接层 | 新增可选 API |
 | Symbol、Proxy | `UE` 命名空间代理等 | 用 JS 辅助脚本实现 | 同左 |
 
-新增 API 统一以“追加到函数表末尾”的方式进行，第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
+新增 API 统一以“追加到函数表末尾”的方式进行。原定第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升；3.0 本身就是不兼容的大版本，2026-10-28 新增 `unbind_native_object` 时已提升到 12，之后新增 API 照常追加，是否再提升在统一时一并决定。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
 
 新增 API 必须与具体引擎、具体语言无关：papi 不只跨 JS 引擎（v8、quickjs），还跨脚本语言（目前有 js、lua、python）。判断标准是这个概念在 lua、python 里也能自然实现，比如 `get_this` 对应 lua 的 self、python 的 self，`get_own_property_names` 对应 table 的 key、dict 的 key。不满足的能力不进 `pesapi_ffi`，按以下方式处理：
 - UE 宿主专属的（FName 属性名修正、类名、热重载重新注册等）：做成 UE 侧 `CppObjectMapper` 的钩子。
@@ -729,7 +740,7 @@ flowchart LR
 | --- | --- | --- |
 | 热路径性能回退 | UFunction 调用、属性访问是每帧开销 | 基准测试门禁；专用 thunk；Apis / Env 下传；必要时增加批量 API |
 | JS 可见行为变化 | 用户 TS 代码依赖原型链、属性枚举、`toString` 等细节 | 迁移前建立行为基线测试；差异逐条评审 |
-| UObject 地址复用 | 返回过期 JS 对象，难排查 | 5.6 方案 A 句柄化 |
+| UObject 地址复用 | 返回过期 JS 对象，难排查 | 5.6 方案 B：UObject 销毁时 `unbind_native_object` 摘除缓存 |
 | 静态初始化期注册 | 动态库未加载时注册丢失 | 6.2 的注册队列 |
 | QuickJS / Node 后端在第一阶段无法同步迁移 | 桥接层依赖 V8 类型，QuickJS 兼容层下可能不成立 | 第一阶段冻结这两个后端（维持现状或暂停支持），第二阶段以 papi-quickjs / papi-nodejs 恢复 |
 | 跨库 CRT 与 STL 差异 | 崩溃或内存损坏 | 边界只用 C ABI；谁分配谁释放；字符串返回值由被调方持有 |
@@ -740,7 +751,7 @@ flowchart LR
 
 已决策（2026-10-22）：
 
-1. UObject 生命周期采用方案 A（句柄化）。
+1. UObject 生命周期采用方案 A（句柄化）。（已被 2026-10-28 第 3 条取代，改为方案 B。）
 2. 第一阶段期间 QuickJS 与 Node.js 后端冻结、暂停支持，第二阶段以 papi-quickjs / papi-nodejs 恢复。
 3. 第一阶段 UE 自己维护一份 papi 实现，新增的 papi API 也只在 UE 侧实现，不同步回 Unity。整个任务期间不改动 `unity/` 目录，全部完成后再统一（届时再处理 5.9 的源码收敛）。
 4. 每个批次单独提交，批次内容多时拆成多个便于 review 的 commit；提交前在 WSL 下用 clang-format 12 格式化 `unreal/Puerts/Source`。
@@ -774,8 +785,9 @@ flowchart LR
    - 测试：`UPuertsTestTsTarget`、`TsClass` 用例与基线、bench 中的 tsclass 项。
    - 文档：`uclass_extends.md`（中英文）及 FAQ、入门、调试、示例中的相关章节。
    - d.ts 生成的忽略列表配置迁到 `DeclarationGenerator` 的 `UDeclarationGeneratorSetting`（项目设置 Plugins -> Puerts），ini 段由 `[/Script/Puerts.PuertsSetting]` 改为 `[/Script/DeclarationGenerator.DeclarationGeneratorSetting]`，不做兼容读取，3.0 升级时需手动迁移 `IgnoreClassListOnDTS / IgnoreStructListOnDTS`；`DebugEnable / WaitDebugger` 等默认虚拟机配置随模块一并删除，自建虚拟机用 `FJsEnv` 构造参数和 `WaitDebugger()` 调试。
+3. UObject 生命周期由方案 A 改为方案 B（见 5.6），去掉 FScriptEnvImpl 中与后端对象缓存重复的 UObject 映射，mixin 保留。新增 `pesapi_unbind_native_object`（`type_id` 可为空，表示摘除所有类型的绑定），四个后端都实现，`PESAPI_VERSION` 提升到 12。删除 `UObjectHandle.h`（`FUObjectHandle`）、`FUObjectBinding`、`ObjectMap`、`ReleasedObjectBindings`；宿主只保留 native 持有 JS 的 `NativeTakeJsRefObjects`。
 
 待决策：
 
-1. 第 5.7 节新增 API 的命名（第一阶段只在 UE 侧，可边做边定）；`PESAPI_VERSION` 已定为第一阶段不提升、统一时一次性提升。
+1. 第 5.7 节新增 API 的命名（第一阶段只在 UE 侧，可边做边定）；`PESAPI_VERSION` 原定第一阶段不提升，已于 2026-10-28 提升到 12，后续是否再提升在统一时决定。
 2. 性能回退阈值与基准测试运行环境（是否需要自托管 runner）。
