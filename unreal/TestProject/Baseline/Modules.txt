@@ -21,7 +21,7 @@ missing dll again: Error: dlopen fail for not_exist_dir\not_exist_addon_xyz.dll
 setTimeout: "function"
 setInterval: "function"
 console.log: "function"
-puerts keys: ["$ref", "$set", "$unref", "__genListApply", "__mergePrototype", "__removeListItem", "argv", "blueprint", "console", "dll_ext", "emit", "genRequire", "getFNameString", "load", "loadCPPType", "loadModule", "loadUEType", "makeUClass", "merge", "off", "on", "registerBuildinModule", "releaseManualReleaseDelegate", "requestJitModuleMethod", "setJsTakeRef", "toCPtrArray", "toCString", "toDelegate", "toManualReleaseDelegate"]
+puerts keys: ["$ref", "$set", "$unref", "__genListApply", "__mergePrototype", "__removeListItem", "argv", "blueprint", "console", "dll_ext", "emit", "genRequire", "getFNameString", "load", "loadCPPType", "loadModule", "loadUEType", "merge", "off", "on", "registerBuildinModule", "releaseManualReleaseDelegate", "requestJitModuleMethod", "setJsTakeRef", "toCPtrArray", "toCString", "toDelegate", "toManualReleaseDelegate"]
 globalThis.UE: true
 TextEncoder: "undefined"
 Promise: "function"

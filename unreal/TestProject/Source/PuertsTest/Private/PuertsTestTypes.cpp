@@ -263,31 +263,6 @@ int32 UPuertsTestMixinTarget::LoopImplEvent(int32 Count)
     return Sum;
 }
 
-FString UPuertsTestMakeClassTarget::NativeEvent_Implementation(const FString& S)
-{
-    return TEXT("native:") + S;
-}
-
-int32 UPuertsTestMakeClassTarget::CallImplEvent(int32 Value)
-{
-    return ImplEvent(Value);
-}
-
-FString UPuertsTestMakeClassTarget::CallNativeEvent(const FString& S)
-{
-    return NativeEvent(S);
-}
-
-int32 UPuertsTestMakeClassTarget::LoopImplEvent(int32 Count)
-{
-    int32 Sum = 0;
-    for (int32 i = 0; i < Count; ++i)
-    {
-        Sum += ImplEvent(i);
-    }
-    return Sum;
-}
-
 FString UPuertsTestTsTarget::NativeEvent_Implementation(const FString& S)
 {
     return TEXT("native:") + S;

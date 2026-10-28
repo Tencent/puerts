@@ -4,7 +4,6 @@ mixin extra method on base instance: "function"
 mixin returned class: true
 mixin twice: throws Error: had mixin
 impl event after unmixin: 0
-makeUClass type: "function"
 mixin to a non class: throws Error: #0 parameter expect a Blueprint UClass
 mixin to a number: throws Error: Bad parameters #0, expect a object.
 mixin unknown method only: [0, "function", true]

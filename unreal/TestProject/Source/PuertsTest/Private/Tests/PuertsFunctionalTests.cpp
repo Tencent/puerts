@@ -37,14 +37,6 @@ bool RunTimers(FAutomationTestBase& Test, EBackend Backend)
     return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/timers"), TEXT("Timers")));
 }
 
-bool RunMakeUClass(FAutomationTestBase& Test, EBackend Backend)
-{
-    // tests/make_uclass.js throws in an override once, and in a Constructor which runs for the CDO and one instance
-    Test.AddExpectedError(TEXT("makeuclass boom"), EAutomationExpectedErrorFlags::Contains, 1);
-    Test.AddExpectedError(TEXT("makeuclass ctor boom"), EAutomationExpectedErrorFlags::Contains, 2);
-    return Finish(Test, PuertsTest::RunScript(Test, Backend, TEXT("tests/make_uclass"), TEXT("MakeUClass")));
-}
-
 bool RunTsClass(FAutomationTestBase& Test, EBackend Backend)
 {
     // tests/ts_class.js throws in a ts override once
@@ -113,7 +105,6 @@ PUERTS_SCRIPT_TEST(Promises, "tests/promises")
 
 PUERTS_TEST(WebSocket, RunWebSocket(*this, B))
 PUERTS_TEST(Timers, RunTimers(*this, B))
-PUERTS_TEST(MakeUClass, RunMakeUClass(*this, B))
 PUERTS_TEST(TsClass, RunTsClass(*this, B))
 PUERTS_TEST(JsObject, RunJsObject(*this, B))
 

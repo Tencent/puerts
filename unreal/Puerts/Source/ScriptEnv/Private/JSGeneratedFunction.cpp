@@ -8,24 +8,6 @@
 
 #include "JSGeneratedFunction.h"
 
-DEFINE_FUNCTION(UJSGeneratedFunction::execCallJS)
-{
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    UJSGeneratedFunction* Func = Cast<UJSGeneratedFunction>(Stack.CurrentNativeFunction ? Stack.CurrentNativeFunction : Stack.Node);
-    check(Func);
-    // UE_LOG(LogTemp, Warning, TEXT("overrided function called, %s(%p)"), *Func->GetName(), Func);
-
-    if (Func)
-    {
-        auto PinedDynamicInvoker = Func->DynamicInvoker.Pin();
-        if (PinedDynamicInvoker)
-        {
-            PinedDynamicInvoker->InvokeJsMethod(Context, Func, Stack, RESULT_PARAM);
-        }
-    }
-#endif
-}
-
 DEFINE_FUNCTION(UJSGeneratedFunction::execCallMixin)
 {
 #if !defined(ENGINE_INDEPENDENT_JSENV)

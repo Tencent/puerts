@@ -168,8 +168,7 @@ def _puerts_init():
 
     puerts.merge = take('__tgjsMergeObject')
     puerts.setJsTakeRef = take('__tgjsSetJsTakeRef')
-    # classes of the script can not be injected into UE in python
-    take('__tgjsMakeUClass')
+    # classes of the script can not be injected into UE in python (no mixin)
     take('__tgjsMixin')
 
     ue_class_to_js_class = take('__tgjsUEClassToJSClass')

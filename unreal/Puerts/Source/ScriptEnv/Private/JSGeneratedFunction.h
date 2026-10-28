@@ -11,7 +11,6 @@
 #include <memory>
 
 #include "NamespaceDef.h"
-#include "PapiValueRef.h"
 
 #include "DynamicInvoker.h"
 #include "FunctionTranslator.h"
@@ -29,13 +28,9 @@ class UJSGeneratedFunction : public UFunction
     GENERATED_BODY()
 
 public:
-    DECLARE_FUNCTION(execCallJS);
-
     DECLARE_FUNCTION(execCallMixin);
 
-    // the override of a makeUClass class, mixin functions keep theirs in FScriptEnvImpl::MixinFunctionMap
-    PUERTS_NAMESPACE::FPapiValueRef JsFunction;
-
+    // the js functions of mixin are kept in FScriptEnvImpl::MixinFunctionMap
     TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
     std::unique_ptr<PUERTS_NAMESPACE::FFunctionTranslator> FunctionTranslator;

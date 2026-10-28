@@ -94,7 +94,6 @@ def t_globals():
     observe('finder', lambda: type(sys.meta_path[-1]).__name__)
     observe('console', lambda: type(console.log).__name__)
     observe('host globals removed', lambda: [not hasattr(builtins, '__tgjsNewObject'),
-                                             not hasattr(builtins, '__tgjsMakeUClass'),
                                              not hasattr(builtins, '__tgjsMixin')])
     observe('_puerts_init left in __main__', lambda: hasattr(sys.modules['__main__'], '_puerts_init'))
 

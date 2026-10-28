@@ -69,7 +69,7 @@ test('globals', function()
         return type(console.log)
     end)
     observe('host globals removed', function()
-        return { __tgjsNewObject == nil, __tgjsMakeUClass == nil, __tgjsMixin == nil }
+        return { __tgjsNewObject == nil, __tgjsMixin == nil }
     end)
 end)
 

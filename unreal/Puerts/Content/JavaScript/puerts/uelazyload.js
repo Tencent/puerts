@@ -148,48 +148,9 @@ var global = global || (function () { return this; }());
     
     rawSet(UE, 'FNameLiteral', global.__tgjsFNameToArrayBuffer);
     global.__tgjsFNameToArrayBuffer = undefined;
-    
-    let rawmakeclass = global.__tgjsMakeUClass
-    global.__tgjsMakeUClass = undefined;
 
     puerts.setJsTakeRef = global.__tgjsSetJsTakeRef
     global.__tgjsSetJsTakeRef = undefined
-    
-    function defaultUeConstructor(){};
-    
-    function makeUClass(cls) {
-        // classes from UE.xxx have a proxy (see interceptClass) instead of Function.prototype in their
-        // prototype chain, so Object.prototype methods are not reachable through cls itself
-        const hasOwn = Object.prototype.hasOwnProperty;
-        if (typeof cls === 'function' && !hasOwn.call(cls, 'arguments')
-            && typeof cls.StaticClass === 'function'
-            && !hasOwn.call(cls, 'StaticClass')) {
-            //let parentClass = Object.getPrototypeOf(cls.prototype).constructor;
-            let proto = cls.prototype;
-            let methods = Object.create(null);
-            
-            let names = Object.getOwnPropertyNames(proto);
-            let ueConstructor = defaultUeConstructor;
-            for(var i = 0; i < names.length; ++i) {
-                let name = names[i];
-                let descriptor = Object.getOwnPropertyDescriptor(proto, name);
-                if (typeof descriptor.value === 'function' && name != "constructor") {
-                    if (name === 'Constructor') {
-                        ueConstructor = proto[name];
-                    } else {
-                        methods[name] = proto[name];
-                    }
-                }
-            }
-            
-            return rawmakeclass(ueConstructor, proto, `${cls.name}_C`, methods, cls.StaticClass());
-            
-        } else {
-            throw new Error("invalid class");
-        }
-    }
-    
-    puerts.makeUClass = makeUClass;
     
     let UEClassToJSClass = global.__tgjsUEClassToJSClass;
     global.__tgjsUEClassToJSClass = undefined;

@@ -5,8 +5,8 @@ map get missing: nil
 array type: "userdata"
 array index: nil
 array length operator: throws <js-root>/tests/lua/containers.lua:117: attempt to get length of a TArray value (field 'IntArray')
-NewArray unknown builtin: <js-root>/puerts/init.lua:266: can not get first type for 0
-NewMap unknown value type: <js-root>/puerts/init.lua:268: can not get second type for 2
+NewArray unknown builtin: <js-root>/puerts/init.lua:265: can not get first type for 0
+NewMap unknown value type: <js-root>/puerts/init.lua:267: can not get second type for 2
 NewArray of struct: 0
 NewSet of object: 0
 enum tojs type: throws <js-root>/tests/lua/containers.lua:141: Bad parameters #0, expect a object.

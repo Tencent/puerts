@@ -48,10 +48,6 @@ test('unmixin', () => {
     observe('impl event after unmixin', () => o.CallImplEvent(1));
 });
 
-test('makeUClass presence', () => {
-    observe('makeUClass type', () => typeof puerts.makeUClass);
-});
-
 test('mixin bad arguments', () => {
     observe('mixin to a non class', () => blueprint.mixin({ StaticClass: () => new UE.PuertsTestObject() }, MixinImpl));
     observe('mixin to a number', () => blueprint.mixin({ StaticClass: () => 1 }, MixinImpl));

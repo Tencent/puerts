@@ -7,9 +7,7 @@
  */
 
 #include "JSGeneratedClass.h"
-#include "Engine/Blueprint.h"
 #include "JSGeneratedFunction.h"
-#include "JSWidgetGeneratedClass.h"
 #include "JSLogger.h"
 
 // UE 5.8 deprecates REN_ForceNoResetLoaders: UObject::Rename no longer calls ResetLoaders, so the flag has no effect
@@ -20,162 +18,7 @@
 #define PUERTS_RENAME_FLAGS (REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders)
 #endif
 
-#define OLD_METHOD_PREFIX "__puerts_old__"
 #define MIXIN_METHOD_SUFFIX "__puerts_mixin__"
-
-UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent,
-    TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, struct pesapi_ffi* Apis, pesapi_env Env,
-    pesapi_value Constructor, pesapi_value Prototype)
-{
-    auto Outer = GetTransientPackage();
-    UClass* Class = nullptr;
-    if (Cast<UWidgetBlueprintGeneratedClass>(Parent))
-    {
-        auto JSGeneratedClass = NewObject<UJSWidgetGeneratedClass>(Outer, *Name, RF_Public);
-        JSGeneratedClass->DynamicInvoker = DynamicInvoker;
-        JSGeneratedClass->Constructor.Reset(Apis, Env, Constructor);
-        JSGeneratedClass->Prototype.Reset(Apis, Env, Prototype);
-        JSGeneratedClass->ClassConstructor = &UJSWidgetGeneratedClass::StaticConstructor;
-        Class = JSGeneratedClass;
-    }
-    else
-    {
-        auto JSGeneratedClass = NewObject<UJSGeneratedClass>(Outer, *Name, RF_Public);
-        JSGeneratedClass->DynamicInvoker = DynamicInvoker;
-        JSGeneratedClass->Constructor.Reset(Apis, Env, Constructor);
-        JSGeneratedClass->Prototype.Reset(Apis, Env, Prototype);
-        JSGeneratedClass->ClassConstructor = &UJSGeneratedClass::StaticConstructor;
-        Class = JSGeneratedClass;
-    }
-
-    auto Blueprint = NewObject<UBlueprint>(Outer);
-    Blueprint->GeneratedClass = Class;
-#if ENGINE_MAJOR_VERSION < 5 || WITH_EDITOR
-    Class->ClassGeneratedBy = Blueprint;
-#endif
-
-    // Set properties we need to regenerate the class with
-    Class->PropertyLink = Parent->PropertyLink;
-    Class->ClassWithin = Parent->ClassWithin;
-    Class->ClassConfigName = Parent->ClassConfigName;
-
-    Class->SetSuperStruct(Parent);
-    Class->ClassFlags |= (Parent->ClassFlags & (CLASS_Inherit | CLASS_ScriptInherit | CLASS_CompiledFromBlueprint));
-    Class->ClassFlags |= CLASS_CompiledFromBlueprint;    // AActor::Tick只有有这标记时，才会调用ReceiveTick
-    Class->ClassCastFlags |= Parent->ClassCastFlags;
-
-    return Class;
-}
-
-void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitializer)
-{
-    auto Class = ObjectInitializer.GetClass();
-    auto Object = ObjectInitializer.GetObj();
-    Class->GetSuperClass()->ClassConstructor(ObjectInitializer);
-
-    if (auto JSGeneratedClass = Cast<UJSGeneratedClass>(Class))
-    {
-        // the papi scope opened by JsConstruct takes the v8::Locker in THREAD_SAFE builds
-        auto PinedDynamicInvoker = JSGeneratedClass->DynamicInvoker.Pin();
-        if (PinedDynamicInvoker)
-        {
-            PinedDynamicInvoker->JsConstruct(
-                JSGeneratedClass, Object, JSGeneratedClass->Constructor.GetRef(), JSGeneratedClass->Prototype.GetRef());
-        }
-    }
-}
-
-void UJSGeneratedClass::Override(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UFunction* Super, pesapi_value JSImpl,
-    TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative)
-{
-    bool Existed = Super->GetOuter() == Class;
-    FName FunctionName = Super->GetFName();
-    if (Existed)
-    {
-        if (auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super))    //这种情况只需简单替换下js函数
-        {
-            MaybeJSFunction->DynamicInvoker = DynamicInvoker;
-            MaybeJSFunction->FunctionTranslator = std::make_unique<PUERTS_NAMESPACE::FFunctionTranslator>(Super, false);
-            MaybeJSFunction->JsFunction.Reset(Apis, Env, JSImpl);
-            MaybeJSFunction->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
-            return;
-        }
-        // UE_LOG(LogTemp, Error, TEXT("replace %s of %s"), *Super->GetName(), *Class->GetName());
-        //同一Outer下的同名对象只能有一个...
-        Super->Rename(*FString::Printf(TEXT("%s%s"), TEXT(OLD_METHOD_PREFIX), *Super->GetName()), Class, PUERTS_RENAME_FLAGS);
-        Class->AddFunctionToFunctionMap(Super, Super->GetFName());
-        // UE_LOG(LogTemp, Error, TEXT("rename to %s"), *Super->GetName());
-    }
-
-    // UE_LOG(LogTemp, Error, TEXT("new function name %s"), *FunctionName.ToString());
-    UJSGeneratedFunction* Function = Cast<UJSGeneratedFunction>(
-        StaticDuplicateObject(Super, Class, FunctionName, RF_Transient, UJSGeneratedFunction::StaticClass()));
-
-    for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated,
-             EFieldIteratorFlags::IncludeInterfaces);
-         It; ++It)
-    {
-        if (*It == Function)
-        {
-            return;
-        }
-    }
-
-    if (!Existed)
-    {
-        // UE_LOG(LogTemp, Error, TEXT("new function %s"), *FunctionName.ToString());
-        Function->SetSuperStruct(Super);
-    }
-    else
-    {
-        // UE_LOG(LogTemp, Error, TEXT("replace function %s"), *FunctionName.ToString());
-        Function->SetSuperStruct(Super->GetSuperStruct());
-    }
-
-    Function->Bind();
-    Function->StaticLink(true);
-
-    if (IsNative)
-    {
-        Function->FunctionFlags |= FUNC_Native;    //让UE不走解析
-    }
-
-    Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
-
-    Function->JsFunction.Reset(Apis, Env, JSImpl);
-    Function->DynamicInvoker = DynamicInvoker;
-    Function->FunctionTranslator = std::make_unique<PUERTS_NAMESPACE::FFunctionTranslator>(Function, false);
-
-    if (Existed)
-    {
-        Function->Next = Super->Next;
-        if (Class->Children == Super)    // first one
-        {
-            Class->Children = Function;
-        }
-        else
-        {
-            auto P = Class->Children;
-            while (P && P->Next != Super)
-                P = P->Next;
-            check(P);
-            P->Next = Function;
-        }
-        Class->RemoveFunctionFromFunctionMap(Super);
-    }
-    else
-    {
-        Function->Next = Class->Children;
-        Class->Children = Function;
-    }
-    Class->AddFunctionToFunctionMap(Function, Function->GetFName());
-
-    if (Class->HasAnyInternalFlags(EInternalObjectFlags::RootSet) || GUObjectArray.IsDisregardForGC(Class))
-    {
-        Function->AddToRoot();
-        Super->AddToRoot();
-    }
-}
 
 UFunction* UJSGeneratedClass::Mixin(UClass* Class, UFunction* Super,
     TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
@@ -304,7 +147,6 @@ void UJSGeneratedClass::Restore(UClass* Class)
                 Class->AddNativeFunction(*JGF->Original->GetName(), JGF->OriginalFunc);
                 JGF->Original->FunctionFlags = JGF->OriginalFunctionFlags;
             }
-            JGF->JsFunction.Reset();
 
             *PP = JGF->Next;
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2 && ENGINE_MINOR_VERSION < 7
@@ -327,24 +169,6 @@ void UJSGeneratedClass::Restore(UClass* Class)
             PP = &(*PP)->Next;
         }
     }
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2 && ENGINE_MINOR_VERSION < 7
-    PP = &ChildrenPtr;
-#else
-    PP = &Class->Children;
-#endif
-    while (*PP)
-    {
-        if (auto Function = Cast<UFunction>(*PP))
-        {
-            if (Function->GetName().StartsWith(TEXT(OLD_METHOD_PREFIX)))
-            {
-                Class->RemoveFunctionFromFunctionMap(Function);
-                Function->Rename(*Function->GetName().Mid(strlen(OLD_METHOD_PREFIX)), Class, PUERTS_RENAME_FLAGS);
-                Class->AddFunctionToFunctionMap(Function, Function->GetFName());
-            }
-        }
-        PP = &(*PP)->Next;
-    }
     Class->ClearFunctionMapsCaches();
     for (TObjectIterator<UClass> It; It; ++It)
     {
@@ -354,31 +178,6 @@ void UJSGeneratedClass::Restore(UClass* Class)
             It->ClearFunctionMapsCaches();
         }
     }
-}
-
-void UJSGeneratedClass::InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr)
-{
-    if (const FCustomPropertyListNode* CustomPropertyList = GetCustomPropertyListForPostConstruction())
-    {
-        UBlueprintGeneratedClass::InitPropertiesFromCustomList(CustomPropertyList, this, DataPtr, DefaultDataPtr);
-    }
-}
-
-void UJSGeneratedClass::Release()
-{
-    for (TFieldIterator<UFunction> It(this, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated,
-             EFieldIteratorFlags::IncludeInterfaces);
-         It; ++It)
-    {
-        if (auto Function = Cast<UJSGeneratedFunction>(*It))
-        {
-            // UE_LOG(LogTemp, Warning, TEXT("release: %s"), *Function->GetName());
-            Function->JsFunction.Reset();
-        }
-    }
-
-    Constructor.Reset();
-    Prototype.Reset();
 }
 
 #undef PUERTS_RENAME_FLAGS

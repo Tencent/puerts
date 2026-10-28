@@ -65,16 +65,6 @@ public:
         ensureMsgf(false, TEXT("InvokeDelegateCallback in GroupDynamicInvoker"));
     }
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    virtual void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype) override
-    {
-        ensureMsgf(false, TEXT("JsConstruct in GroupDynamicInvoker"));
-    }
-
-    virtual void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
-    {
-        ensureMsgf(false, TEXT("InvokeJsMethod in GroupDynamicInvoker"));
-    }
-
     virtual void InvokeMixinMethod(
         UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
     {

@@ -306,33 +306,6 @@ public:
     int32 LoopImplEvent(int32 Count);
 };
 
-// A separate class used only by makeUClass tests.
-UCLASS(BlueprintType, Blueprintable)
-class PUERTSTEST_API UPuertsTestMakeClassTarget : public UObject
-{
-    GENERATED_BODY()
-
-public:
-    UPROPERTY(BlueprintReadWrite)
-    int32 Base = 100;
-
-    UFUNCTION(BlueprintImplementableEvent)
-    int32 ImplEvent(int32 Value);
-
-    UFUNCTION(BlueprintNativeEvent)
-    FString NativeEvent(const FString& S);
-
-    UFUNCTION(BlueprintCallable)
-    int32 CallImplEvent(int32 Value);
-
-    UFUNCTION(BlueprintCallable)
-    FString CallNativeEvent(const FString& S);
-
-    // C++ -> JS call loop through a makeUClass override
-    UFUNCTION(BlueprintCallable)
-    int32 LoopImplEvent(int32 Count);
-};
-
 // A separate class used only by TypeScript generated class tests.
 UCLASS(BlueprintType, Blueprintable)
 class PUERTSTEST_API UPuertsTestTsTarget : public UObject

@@ -9,8 +9,6 @@
 #pragma once
 
 #include "NamespaceDef.h"
-#include "pesapi.h"
-#include "PapiValueRef.h"
 
 #include "DynamicInvoker.h"
 
@@ -19,7 +17,7 @@
 #include "JSGeneratedClass.generated.h"
 
 /**
- *
+ * the helpers of blueprint.mixin: redirects the functions of an existing class to js, and restores them
  */
 UCLASS()
 class UJSGeneratedClass : public UBlueprintGeneratedClass
@@ -27,29 +25,8 @@ class UJSGeneratedClass : public UBlueprintGeneratedClass
     GENERATED_BODY()
 
 public:
-    static UClass* Create(const FString& Name, UClass* Parent,
-        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, struct pesapi_ffi* Apis, pesapi_env Env,
-        pesapi_value Constructor, pesapi_value Prototype);
-
-    static void Override(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UFunction* Super, pesapi_value JSImpl,
-        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative);
-
     static UFunction* Mixin(UClass* Class, UFunction* Super,
         TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning);
 
     static void Restore(UClass* Class);
-
-    void InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr) override;
-
-    // must be called while the env is alive
-    void Release();
-
-    static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
-
-public:
-    PUERTS_NAMESPACE::FPapiValueRef Constructor;
-
-    PUERTS_NAMESPACE::FPapiValueRef Prototype;
-
-    TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 };

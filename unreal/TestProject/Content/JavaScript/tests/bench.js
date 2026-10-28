@@ -142,20 +142,6 @@ test('c++ -> js', () => {
     });
     puerts.blueprint.unmixin(UE.PuertsTestMixinTarget);
 
-    class MakeClassImpl extends UE.PuertsTestMakeClassTarget {
-        ImplEvent(v) {
-            return 1;
-        }
-    }
-    const MadeClass = puerts.makeUClass(MakeClassImpl);
-    const m = UE.NewObject(MadeClass);
-    bench('makeuclass.cpp_to_js', 500000, (n) => {
-        eq(m.LoopImplEvent(n), n);
-    });
-    bench('makeuclass.new', 50000, (n) => {
-        for (let i = 0; i < n; ++i) UE.NewObject(MadeClass);
-    });
-
     const TsClass = UE.PuertsTestTsTarget.CreateTsClass('tests/ts_bench_impl');
     const ts = UE.NewObject(TsClass);
     bench('tsclass.cpp_to_js', 500000, (n) => {

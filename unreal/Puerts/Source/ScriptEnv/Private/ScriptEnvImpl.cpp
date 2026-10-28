@@ -23,8 +23,8 @@
 #include "JSLogger.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JSGeneratedClass.h"
-#include "JSWidgetGeneratedClass.h"
 #include "JSGeneratedFunction.h"
+#include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #endif
 #include "JSClassRegister.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -445,8 +445,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        PapiMethodBindingHelper<&FScriptEnvImpl::MakeUClass>::Bind(Apis, Env, PapiGlobal, "__tgjsMakeUClass", this);
-
         PapiMethodBindingHelper<&FScriptEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
 #endif
 
@@ -599,25 +597,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
         MixinFunctionMap.Empty();
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        for (auto& GeneratedClass : GeneratedClasses)
-        {
-            if (auto JSGeneratedClass = Cast<UJSGeneratedClass>(GeneratedClass))
-            {
-                if (JSGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSGeneratedClass))
-                {
-                    JSGeneratedClass->Release();
-                }
-            }
-            else if (auto JSWidgetGeneratedClass = Cast<UJSWidgetGeneratedClass>(GeneratedClass))
-            {
-                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSWidgetGeneratedClass))
-                {
-                    JSWidgetGeneratedClass->Release();
-                }
-            }
-        }
-#endif
         TsFunctionMap.Empty();
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         BindInfoMap.Empty();
@@ -1713,49 +1692,6 @@ void FScriptEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* 
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    pesapi_value_ref AnyRef = Prototype ? Prototype : Constructor;
-    if (!AnyRef)
-    {
-        return;    // released, the env is shutting down
-    }
-
-    struct pesapi_ffi* Apis = MainApis;
-    pesapi_env_ref EnvRef = Apis->get_ref_associated_env(AnyRef);
-    pesapi_scope_memory ScopeMemory;
-    pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-    pesapi_env Env = Apis->get_env_from_ref(EnvRef);
-
-    pesapi_value JSObject = FindOrAdd(Env, Class, Object);
-    // 过时功能(makeUClass)用不影响现有功能的方式修改: 由js持有引用改为native持有js的强引用, 句柄保持不变
-    if (auto BindingPtr = ObjectMap.Find(Object))
-    {
-        UserObjectRetainer.Release(Object);
-        (*BindingPtr)->JsObject.Reset(Apis, Env, JSObject);
-    }
-
-    if (Prototype && ObjectSetPrototypeOf)
-    {
-        pesapi_value Args[] = {JSObject, Apis->get_value_from_ref(Env, Prototype)};
-        Apis->call_function(Env, ObjectSetPrototypeOf.Get(Env), nullptr, 2, Args);
-    }
-
-    if (Constructor)
-    {
-        Apis->call_function(Env, Apis->get_value_from_ref(Env, Constructor), JSObject, 0, nullptr);
-    }
-
-    if (Apis->has_caught(Scope))
-    {
-        Logger->Error(FString::Printf(TEXT("js callback exception %s"), UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
-    }
-    Apis->close_scope_placement(Scope);
-}
-
 void FScriptEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 {
 #ifndef THREAD_SAFE
@@ -1872,8 +1808,6 @@ void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, i
 
     UnBind((UObject*) ObjectBase);
 
-    GeneratedClasses.Remove((UClass*) ObjectBase);
-
     TsFunctionMap.Remove((UFunction*) ObjectBase);
     MixinFunctionMap.Remove((UFunction*) ObjectBase);
     ContainerMeta.NotifyElementTypeDeleted((UField*) ObjectBase);
@@ -1939,52 +1873,6 @@ static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    if (!Function->JsFunction)
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
-            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-        SkipFunction(Stack, RESULT_PARAM, Function);
-        return;
-    }
-
-    struct pesapi_ffi* Apis = MainApis;
-    pesapi_env_ref EnvRef = Apis->get_ref_associated_env(Function->JsFunction.GetRef());
-    pesapi_scope_memory ScopeMemory;
-    pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-    pesapi_env Env = Apis->get_env_from_ref(EnvRef);
-
-    pesapi_value Self = nullptr;
-    auto GeneratedObjectPtr = ObjectMap.Find(ContextObject);
-    if (GeneratedObjectPtr)
-    {
-        // the binding of a makeUClass object holds its js object strongly (see JsConstruct)
-        Self = (*GeneratedObjectPtr)->JsObject.Get(Env);
-    }
-
-    if (!Self)
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"),
-            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-        SkipFunction(Stack, RESULT_PARAM, Function);
-        Apis->close_scope_placement(Scope);
-        return;
-    }
-
-    Function->FunctionTranslator->CallJs(Apis, Env, Function->JsFunction.Get(Env), Self, ContextObject, Stack, RESULT_PARAM);
-
-    if (Apis->has_caught(Scope))
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
-            *Function->GetName(), ContextObject, UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
-    }
-    Apis->close_scope_placement(Scope);
-}
-
 void FScriptEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -3496,94 +3384,6 @@ void FScriptEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Inf
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgFunction, EArgObject, EArgString, EArgObject, EArgObject);
-
-    pesapi_env Env = Apis->get_env(Info);
-
-    pesapi_value Constructor = Apis->get_arg(Info, 0);
-    pesapi_value Prototype = Apis->get_arg(Info, 1);
-    FString ClassName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 2));
-    pesapi_value Methods = Apis->get_arg(Info, 3);
-
-    UClass* ParentUClass = nullptr;
-    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 4)))
-    {
-        if (PapiUtils::IsReleasedPtr(Object))
-        {
-            Apis->throw_by_string(Info, "passing a invalid object");
-            return;
-        }
-        ParentUClass = Cast<UClass>(Object);
-    }
-
-    if (!ParentUClass)
-    {
-        Apis->throw_by_string(Info, "#4 parameter expect a UClass object");
-        return;
-    }
-
-    // papi has no set_prototype, JsConstruct uses the cached Object.setPrototypeOf
-    if (!GetCachedJsFunction(Apis, Env, ObjectSetPrototypeOf, "Object.setPrototypeOf", "puerts/object_set_prototype_of"))
-    {
-        return;    // the exception propagates to the js caller
-    }
-
-    FString GenClassName;
-    int i = 0;
-    while (true)
-    {
-        GenClassName = FString::Printf(TEXT("%s%d"), *ClassName, i);
-        if (!FindAnyType<UClass>(GenClassName))
-            break;
-        i++;
-    }
-
-    auto Class = UJSGeneratedClass::Create(GenClassName, ParentUClass, DynamicInvoker, Apis, Env, Constructor, Prototype);
-
-    TSet<FName> overrided;
-
-    for (TFieldIterator<UFunction> It(ParentUClass, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated,
-             EFieldIteratorFlags::IncludeInterfaces);
-         It; ++It)
-    {
-        UFunction* Function = *It;
-        auto FunctionFName = Function->GetFName();
-        if (!overrided.Contains(FunctionFName) && Function->HasAnyFunctionFlags(FUNC_BlueprintEvent))
-        {
-            pesapi_value Value = Apis->get_property(Env, Methods, TCHAR_TO_UTF8(*Function->GetName()));
-            if (Value && Apis->is_function(Env, Value))
-            {
-                // Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
-                UJSGeneratedClass::Override(Apis, Env, Class, Function, Value, DynamicInvoker, true);
-                overrided.Add(FunctionFName);
-            }
-        }
-    }
-
-    Class->Bind();
-    Class->StaticLink(true);
-
-    // Make sure CDO is ready for use
-    (void) (Class->GetDefaultObject());
-
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 12
-    // Assemble reference token stream for garbage collection/ RTGC.
-    if (!Class->HasAnyClassFlags(CLASS_TokenStreamAssembled))
-    {
-        Class->AssembleReferenceTokenStream();
-    }
-#endif
-    if (!GeneratedClasses.Contains(Class))
-    {
-        GeneratedClasses.Add(Class);
-    }
-    SysObjectRetainer.Retain(Class);
-
-    Apis->add_return(Info, FindOrAdd(Env, Class->GetClass(), Class));
-}
-
 void FScriptEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgObject, EArgObject);

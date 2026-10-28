@@ -187,11 +187,7 @@ public:
     void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype);
-
     void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object);
-
-    void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
     void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
@@ -289,8 +285,6 @@ private:
     void NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    void MakeUClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
     TArray<TWeakObjectPtr<UClass>> MixinClasses;
     void Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
@@ -533,19 +527,6 @@ private:
                 Parent->InvokeDelegateCallback(Proxy, Params);
         }
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        virtual void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype) override
-        {
-            if (Parent)
-                Parent->JsConstruct(Class, Object, Constructor, Prototype);
-        }
-
-        virtual void InvokeJsMethod(
-            UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
-        {
-            if (Parent)
-                Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
-        }
-
         virtual void InvokeMixinMethod(
             UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
         {
@@ -575,8 +556,6 @@ private:
         UTypeScriptGeneratedClass* SuperClass, const FString& ModuleName, bool PrototypeLinked, bool RebindObject);
 #endif
     TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
-
-    TSet<UClass*> GeneratedClasses;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 

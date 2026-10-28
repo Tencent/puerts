@@ -23,11 +23,6 @@ public:
     virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) = 0;
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    // Constructor / Prototype are strong refs owned by the generated class, either may be null
-    virtual void JsConstruct(UClass* Class, UObject* Object, pesapi_value_ref Constructor, pesapi_value_ref Prototype) = 0;
-
-    virtual void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) = 0;
-
     virtual void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) = 0;
 #endif
 };

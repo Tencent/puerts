@@ -136,8 +136,7 @@ puerts.merge = __tgjsMergeObject
 __tgjsMergeObject = nil
 puerts.setJsTakeRef = __tgjsSetJsTakeRef
 __tgjsSetJsTakeRef = nil
--- classes of the script can not be injected into UE in lua
-__tgjsMakeUClass = nil
+-- classes of the script can not be injected into UE in lua (no mixin)
 __tgjsMixin = nil
 
 local UEClassToJSClass = __tgjsUEClassToJSClass

@@ -8,4 +8,4 @@ not cached after throw: nil
 package.path: ""
 searchers count: 2
 console: "function"
-host globals removed: [true, true, true]
+host globals removed: [true, true]
