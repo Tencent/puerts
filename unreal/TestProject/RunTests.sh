@@ -15,12 +15,14 @@ set -euo pipefail
 
 find_engine() {
     local candidate
-    for candidate in $(ls -d "/Users/Shared/Epic Games"/UE_5.* 2>/dev/null | sort -V -r); do
-        if [ -x "$candidate/Engine/Build/BatchFiles/Mac/Build.sh" ]; then
+    # read line by line: the install path contains a space ("Epic Games"), so an unquoted
+    # $(ls ...) in a for list would be word split into non-existent paths
+    while IFS= read -r candidate; do
+        if [ -n "$candidate" ] && [ -x "$candidate/Engine/Build/BatchFiles/Mac/Build.sh" ]; then
             echo "$candidate"
             return 0
         fi
-    done
+    done < <(ls -d "/Users/Shared/Epic Games"/UE_5.* 2>/dev/null | sort -V -r)
     return 1
 }
 
