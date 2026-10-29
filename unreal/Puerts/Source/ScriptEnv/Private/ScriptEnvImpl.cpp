@@ -32,25 +32,6 @@
 #endif
 #include "ContainerMeta.h"
 
-#if defined(WITH_NODEJS)
-// the node build creates the isolate and the context itself and hands them to a v8 backend
-#include "JsEnvModule.h"
-#include "PapiBackendV8.h"
-#include "V8Utils.h"
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#if PLATFORM_WINDOWS
-#include <windows.h>
-#elif PLATFORM_LINUX
-#include <sys/epoll.h>
-#elif PLATFORM_MAC
-#include <sys/select.h>
-#include <sys/sysctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#endif
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#endif
-
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Engine/CollisionProfile.h"
 #endif
@@ -140,164 +121,6 @@ static void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Out));
 }
 
-#if defined(WITH_NODEJS)
-void FScriptEnvImpl::StartPolling()
-{
-    uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
-    uv_sem_init(&PollingSem, 0);
-    uv_thread_create(
-        &PollingThread,
-        [](void* arg)
-        {
-            auto* self = static_cast<FScriptEnvImpl*>(arg);
-            while (true)
-            {
-                uv_sem_wait(&self->PollingSem);
-
-                if (self->PollingClosed)
-                    break;
-
-                self->PollEvents();
-
-                if (self->PollingClosed)
-                    break;
-
-                self->LastJob = FFunctionGraphTask::CreateAndDispatchWhenReady(
-                    [self]() { self->UvRunOnce(); }, TStatId{}, nullptr, ENamedThreads::GameThread);
-            }
-        },
-        this);
-
-#if PLATFORM_WINDOWS
-    // on single-core the io comp port NumberOfConcurrentThreads needs to be 2
-    // to avoid cpu pegging likely caused by a busy loop in PollEvents
-    if (FPlatformMisc::NumberOfCores() == 1)
-    {
-        if (NodeUVLoop.iocp && NodeUVLoop.iocp != INVALID_HANDLE_VALUE)
-            CloseHandle(NodeUVLoop.iocp);
-        NodeUVLoop.iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
-    }
-#elif PLATFORM_LINUX
-    Epoll = epoll_create(1);
-    int backend_fd = uv_backend_fd(&NodeUVLoop);
-    struct epoll_event ev = {0};
-    ev.events = EPOLLIN;
-    ev.data.fd = backend_fd;
-    epoll_ctl(Epoll, EPOLL_CTL_ADD, backend_fd, &ev);
-    NodeUVLoop.data = this;
-    NodeUVLoop.on_watcher_queue_updated = OnWatcherQueueChanged;
-
-#elif PLATFORM_MAC
-    NodeUVLoop.data = this;
-    NodeUVLoop.on_watcher_queue_updated = OnWatcherQueueChanged;
-#endif
-    UvRunOnce();
-}
-
-void FScriptEnvImpl::UvRunOnce()
-{
-    FPapiEnvScope EnvScope(MainApis, MainEnvRef);
-
-    // TODO: catch uv_run可以让脚本错误不至于进程退出，但这不知道会不会对node有什么副作用
-    uv_run(&NodeUVLoop, UV_RUN_NOWAIT);
-    if (EnvScope.HasCaught())
-    {
-        Logger->Error(FString::Printf(TEXT("uv_run throw: %s"), UTF8_TO_TCHAR(EnvScope.GetExceptionAsString())));
-    }
-    else
-    {
-        static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform())->DrainTasks(NodeIsolate);
-    }
-
-    LastJob = nullptr;
-
-    // Tell the Polling thread to continue.
-    uv_sem_post(&PollingSem);
-}
-
-void FScriptEnvImpl::PollEvents()
-{
-#if PLATFORM_WINDOWS
-    DWORD bytes;
-    DWORD timeout = uv_backend_timeout(&NodeUVLoop);
-    ULONG_PTR key;
-    OVERLAPPED* overlapped;
-
-    timeout = timeout > 100 ? 100 : timeout;
-
-    GetQueuedCompletionStatus(NodeUVLoop.iocp, &bytes, &key, &overlapped, timeout);
-
-    // Give the event back so libuv can deal with it.
-    if (overlapped != NULL)
-        PostQueuedCompletionStatus(NodeUVLoop.iocp, bytes, key, overlapped);
-#elif PLATFORM_LINUX
-    int timeout = uv_backend_timeout(&NodeUVLoop);
-    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
-
-    // Wait for new libuv events.
-    int r;
-    do
-    {
-        struct epoll_event ev;
-        r = epoll_wait(Epoll, &ev, 1, timeout);
-    } while (r == -1 && errno == EINTR);
-#elif PLATFORM_MAC
-    struct timeval tv;
-    int timeout = uv_backend_timeout(&NodeUVLoop);
-    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
-    if (timeout != -1)
-    {
-        tv.tv_sec = timeout / 1000;
-        tv.tv_usec = (timeout % 1000) * 1000;
-    }
-
-    fd_set readset;
-    int fd = uv_backend_fd(&NodeUVLoop);
-    FD_ZERO(&readset);
-    FD_SET(fd, &readset);
-
-    // Wait for new libuv events.
-    int r;
-    do
-    {
-        r = select(fd + 1, &readset, nullptr, nullptr, timeout == -1 ? nullptr : &tv);
-    } while (r == -1 && errno == EINTR);
-#endif
-}
-
-void FScriptEnvImpl::OnWatcherQueueChanged(uv_loop_t* loop)
-{
-#if !PLATFORM_WINDOWS
-    FScriptEnvImpl* self = static_cast<FScriptEnvImpl*>(loop->data);
-    self->WakeupPollingThread();
-#endif
-}
-
-void FScriptEnvImpl::WakeupPollingThread()
-{
-    uv_async_send(&DummyUVHandle);
-}
-
-void FScriptEnvImpl::StopPolling()
-{
-    PollingClosed = true;
-
-    uv_sem_post(&PollingSem);
-
-    WakeupPollingThread();
-
-    uv_thread_join(&PollingThread);
-
-    if (LastJob)
-    {
-        LastJob->Wait();
-    }
-
-    uv_sem_destroy(&PollingSem);
-}
-
-#endif
-
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
     std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
@@ -310,98 +133,20 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
     // the backend of the env, created by the factory given by the caller (see PapiBackend.h), the host only uses the papi
     // table it provides (MainApis)
-#if !defined(WITH_NODEJS)
     FPapiBackendParams BackendParams;
-#else
-    FPapiBackendV8::FParams BackendParams;
-#endif
     BackendParams.Logger = Logger;
     BackendParams.Flags = InFlags;
     BackendParams.OnEnvReleased = [this]() { OnEnvReleased(); };
     BackendParams.OnClassInvalidated = [this](const void* TypeId) { OnClassInvalidated(TypeId); };
-#if !defined(WITH_NODEJS)
+    // an external engine instance is not supported, node is set up by the v8 backend (PapiV8, WITH_NODEJS)
     check(!InExternalRuntime && !InExternalContext);
-#else
-    int Argc = 1;
-    const char* Argv[] = {"puerts"};
-    std::vector<std::string> Args(Argv, Argv + Argc);
-    std::vector<std::string> ExecArgs;
-    std::vector<std::string> Errors;
-
-    const int Ret = uv_loop_init(&NodeUVLoop);
-    if (Ret != 0)
-    {
-        Logger->Error(FString::Printf(TEXT("Failed to initialize loop: %s\n"), UTF8_TO_TCHAR(uv_err_name(Ret))));
-        return;
-    }
-
-    NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
-
-    auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
-    NodeIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop, Platform);
-
-#ifdef THREAD_SAFE
-    v8::Locker NodeLocker(NodeIsolate);
-#endif
-
-    // v8::Locker locker(Isolate);
-    // difference from embedding example, if lock, blow check fail:
-    // Utils::ApiCheck(
-    //! v8::Locker::IsActive() ||
-    //    internal_isolate->thread_manager()->IsLockedByCurrentThread() ||
-    //    internal_isolate->serializer_enabled(),
-    //"HandleScope::HandleScope",
-    //"Entering the V8 API without proper locking in place");
-
-    v8::Isolate::Scope NodeIsolateScope(NodeIsolate);
-
-    NodeIsolateData =
-        node::CreateIsolateData(NodeIsolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get());    // node::FreeIsolateData
-
-    v8::HandleScope NodeHandleScope(NodeIsolate);
-
-    v8::Local<v8::Context> NodeContext = node::NewContext(NodeIsolate);
-    {
-        v8::Context::Scope NodeContextScope(NodeContext);
-        v8::Local<v8::Object> NodeGlobal = NodeContext->Global();
-        auto strConsole = v8::String::NewFromUtf8(NodeIsolate, "console").ToLocalChecked();
-        v8::Local<v8::Value> Console = NodeGlobal->Get(NodeContext, strConsole).ToLocalChecked();
-        // kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681
-        // CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
-        NodeEnv = CreateEnvironment(NodeIsolateData, NodeContext, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
-        NodeGlobal->Set(NodeContext, strConsole, Console).Check();
-        v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(NodeEnv,
-            "const publicRequire ="
-            "  require('module').createRequire(process.cwd() + '/');"
-            "globalThis.require = publicRequire;");
-
-        if (LoadenvRet.IsEmpty())    // There has been a JS exception.
-        {
-            return;
-        }
-    }
-
-    // the same as raw v8
-    NodeIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
-
-    StartPolling();
-
-    // the isolate and the context of node are adopted by the backend
-    BackendParams.ExternalIsolate = NodeIsolate;
-    BackendParams.ExternalContext = NodeContext;
-#endif
     // the classes of reflected types (built from the class definitions of FStructWrapper) must be kept alive while the
     // classes are, and they are named by the backend
     BackendParams.OnClassCreated = [this](const JSClassDefinition* ClassDefinition)
     { return OnReflectedClassCreated(ClassDefinition); };
 
-#if !defined(WITH_NODEJS)
     check(InBackendFactory);
     Backend = InBackendFactory(BackendParams);
-#else
-    // the node build hands the isolate and the context of node to a v8 backend
-    Backend = std::make_unique<FPapiBackendV8>(BackendParams);
-#endif
     MainApis = Backend->GetApi();
     checkf(Backend->GetApiVersion() == PESAPI_VERSION, TEXT("papi version mismatch, expect %d, got %d"), PESAPI_VERSION,
         Backend->GetApiVersion());
@@ -479,16 +224,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         // the host part of the module system: resolving and loading the source, the rest is done by the backend
         PapiMethodBindingHelper<&FScriptEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
         PapiMethodBindingHelper<&FScriptEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
-#if defined(WITH_NODEJS)
-        {
-            // saved before the backend replaces it with the require of puerts
-            pesapi_value OrgRequire = Apis->get_property(Env, PapiGlobal, "require");
-            if (Apis->is_function(Env, OrgRequire))
-            {
-                NodeRequire.Reset(Apis, Env, OrgRequire);
-            }
-        }
-#endif
 
         DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
         MixinInvoker = DynamicInvoker;
@@ -540,10 +275,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-#if defined(WITH_NODEJS)
-    StopPolling();
-#endif
-
     for (auto& KV : ManualReleaseCallbacks)
     {
         if (KV.Value.IsValid(true))
@@ -594,11 +325,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
         // the wrappers held by native, the UObjects are released by OnUObjectExit when the backend unbinds them
         NativeTakeJsRefObjects.Empty();
 
-#if !defined(WITH_QUICKJS)
-#if defined(WITH_NODEJS)
-        NodeRequire.Reset();
-#endif
-#endif
         // the js runtime of the backend stops before the env is released
         Backend->OnExit(this);
     }
@@ -606,11 +332,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
     // the cleanup that needs the env released (but the isolate alive) is done in OnEnvReleased
     Backend->DestroyEnvRef(MainEnvRef);
     MainEnvRef = nullptr;
-#if defined(WITH_NODEJS)
-    // the isolate of node is created by the host
-    NodeIsolate->Dispose();
-    NodeIsolate = nullptr;
-#endif
     Backend.reset();
     MainApis = nullptr;
 
@@ -630,16 +351,6 @@ void FScriptEnvImpl::OnEnvReleased()
             delete ((FScriptDelegate*) Iter->first);
         }
     }
-
-#if defined(WITH_NODEJS)
-    node::EmitExit(NodeEnv);
-    node::Stop(NodeEnv);
-    node::FreeEnvironment(NodeEnv);
-    node::FreeIsolateData(NodeIsolateData);
-
-    auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
-    Platform->UnregisterIsolate(NodeIsolate);
-#endif
 
     DynamicInvoker.Reset();
     MixinInvoker.Reset();
@@ -2389,31 +2100,6 @@ void FScriptEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_
     FString Specifier = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
     FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     bool ByRequire = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 2)) == TEXT("require");
-#if defined(WITH_NODEJS)
-    // the require of node first (its builtin and node_modules), as modular.js did, a bare name only since it is
-    // registered as a builtin module
-    if (ByRequire && NodeRequire && !Specifier.StartsWith(TEXT(".")) && !Specifier.StartsWith(TEXT("/")))
-    {
-        bool Found = false;
-        pesapi_env_ref EnvRef = Apis->create_env_ref(Env);
-        pesapi_scope_memory ScopeMemory;
-        pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-        pesapi_value Arg = Apis->get_arg(Info, 0);
-        pesapi_value Exports = Apis->call_function(Env, NodeRequire.Get(Env), nullptr, 1, &Arg);
-        if (!Apis->has_caught(Scope) && Exports)
-        {
-            Backend->RegisterBuiltinModule(Env, TCHAR_TO_UTF8(*Specifier), Exports);
-            Found = true;
-        }
-        Apis->close_scope_placement(Scope);
-        Apis->release_env_ref(EnvRef);
-        if (Found)
-        {
-            Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Specifier));
-            return;
-        }
-    }
-#endif
     if (ByRequire && Specifier.StartsWith(TEXT("./")))
     {
         Specifier = Specifier.Mid(2);

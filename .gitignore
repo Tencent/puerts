@@ -11,3 +11,6 @@ unreal/Puerts/Source/CSharpParamDefaultValueMetas/obj/
 # JsEnv.Build.cs copies Content/Typing to <plugin>/../../, which is the repo root for in-place builds
 /Content/
 /Typing/
+.tmp_cf_backup/
+build/
+unreal/Puerts/ThirdParty/nodejs_16/

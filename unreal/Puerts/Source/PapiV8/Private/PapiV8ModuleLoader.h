@@ -49,6 +49,11 @@ pesapi_value CreateRequire(pesapi_env Env, const char* Referrer);
 
 void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value);
 
+// a require function tried before the host for a bare specifier (not starting with '.' or '/') required by require, the
+// exports it returns are kept as a builtin module of the name, if it throws the host resolves the specifier. Used for the
+// require of node. A value which is not a function clears it
+void SetFallbackRequire(pesapi_env Env, pesapi_value Require);
+
 // the bytecode header fields which must match the running v8, bytecode with other values is patched before consumed
 void SetCodeCacheExpect(pesapi_env Env, uint32_t FlagHash, uint32_t ReadOnlySnapshotChecksum);
 }    // namespace papi_v8

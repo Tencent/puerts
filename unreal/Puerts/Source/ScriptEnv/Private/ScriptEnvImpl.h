@@ -34,15 +34,6 @@
 #include "PapiBackend.h"
 #include <memory>
 
-#if defined(WITH_NODEJS)
-PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
-MSVC_PRAGMA(warning(push, 0))
-#include "node.h"
-#include "uv.h"
-MSVC_PRAGMA(warning(pop))
-PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
-#endif
-
 namespace PUERTS_NAMESPACE
 {
 class JSError
@@ -64,7 +55,7 @@ class FScriptEnvImpl : public IScriptEnv, IObjectMapper, public FUObjectArray::F
 public:
     FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot);
 
-    // InExternalRuntime / InExternalContext: the isolate and the context of node, only supported by the node build
+    // InExternalRuntime / InExternalContext: not supported (must be null), node is set up by the v8 backend
     FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
         std::shared_ptr<ILogger> InLogger, int InPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext);
 
@@ -318,11 +309,6 @@ private:
 
     // path -> debug path, filled by HostResolveModule
     TMap<FString, FString> ModuleDebugPaths;
-
-#if defined(WITH_NODEJS)
-    // the require of node, tried first by require (as modular.js did)
-    FPapiValueRef NodeRequire;
-#endif
 #endif
 
     std::shared_ptr<ILogger> Logger;
@@ -334,47 +320,6 @@ private:
     std::unique_ptr<IPapiBackend> Backend;
 
     struct pesapi_ffi* MainApis = nullptr;
-
-#if defined(WITH_NODEJS)
-    uv_loop_t NodeUVLoop;
-
-    std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
-
-    node::IsolateData* NodeIsolateData;
-
-    node::Environment* NodeEnv;
-
-    uv_thread_t PollingThread;
-
-    uv_sem_t PollingSem;
-
-    uv_async_t DummyUVHandle;
-
-    bool PollingClosed = false;
-
-    FGraphEventRef LastJob;
-
-#if PLATFORM_LINUX
-    int Epoll;
-#endif
-
-    void StartPolling();
-
-    void UvRunOnce();
-
-    void PollEvents();
-
-    static void OnWatcherQueueChanged(uv_loop_t* loop);
-
-    void WakeupPollingThread();
-
-    void StopPolling();
-#endif
-
-#if defined(WITH_NODEJS)
-    // the isolate of node, created and disposed by the host (adopted by the backend)
-    v8::Isolate* NodeIsolate = nullptr;
-#endif
 
     // the ref of the default env, the entries from the host open their papi scopes with it (FPapiEnvScope)
     pesapi_env_ref MainEnvRef = nullptr;

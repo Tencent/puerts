@@ -28,6 +28,7 @@ namespace PUERTS_NAMESPACE
 {
 class FCppObjectMapper;
 class V8Inspector;
+class FPapiV8Node;
 
 namespace papi_v8
 {
@@ -47,10 +48,6 @@ public:
         explicit FParams(const FPapiBackendParams& InParams) : FPapiBackendParams(InParams)
         {
         }
-
-        // an isolate and a context created by the host (node), adopted but not disposed by the backend
-        v8::Isolate* ExternalIsolate = nullptr;
-        v8::Local<v8::Context> ExternalContext;
     };
 
     explicit FPapiBackendV8(const FParams& InParams);
@@ -132,6 +129,10 @@ private:
     papi_v8::FPromiseRejectTracker* PromiseRejectTracker = nullptr;
 
     V8Inspector* Inspector = nullptr;
+
+    // the node part (isolate, environment, uv loop) of the node build (WITH_NODEJS), always null otherwise. Declared in both
+    // builds so the layout does not depend on a private definition of the module
+    std::unique_ptr<FPapiV8Node> Node;
 };
 }    // namespace PUERTS_NAMESPACE
 

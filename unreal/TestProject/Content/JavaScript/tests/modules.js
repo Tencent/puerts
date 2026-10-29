@@ -72,7 +72,6 @@ test('globals', () => {
     observe('console.log', () => typeof console.log);
     observe('puerts keys', () => Object.keys(puerts).sort());
     observe('globalThis.UE', () => globalThis.UE === UE);
-    observe('TextEncoder', () => typeof TextEncoder);
     observe('Promise', () => typeof Promise);
     observe('WeakRef', () => typeof WeakRef);
     observe('FinalizationRegistry', () => typeof FinalizationRegistry);

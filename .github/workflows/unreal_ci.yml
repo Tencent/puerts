@@ -44,8 +44,8 @@ jobs:
             change_backend: ''
 #          - jslib_path: ${{ needs.urls.outputs.qjs }}
 #            change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
-#          - jslib_path: ${{ needs.urls.outputs.node }}
-#            change_backend: "sed -i 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
+          - jslib_path: ${{ needs.urls.outputs.node }}
+            change_backend: "sed -i 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
     steps:
     - uses: actions/checkout@v3
     - uses: msys2/setup-msys2@v2
@@ -74,8 +74,8 @@ jobs:
             change_backend: ''
 #          - jslib_path: ${{ needs.urls.outputs.qjs }}
 #            change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
-#          - jslib_path: ${{ needs.urls.outputs.node }}
-#            change_backend: "sed -i 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
+          - jslib_path: ${{ needs.urls.outputs.node }}
+            change_backend: "sed -i 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
     steps:
     - uses: actions/checkout@v3
     - uses: msys2/setup-msys2@v2
@@ -108,8 +108,8 @@ jobs:
             change_backend: ''
 #          - jslib_path: ${{ needs.urls.outputs.qjs }}
 #            change_backend: "sed -i '' 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
-#          - jslib_path: ${{ needs.urls.outputs.node }}
-#            change_backend: "sed -i '' 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
+          - jslib_path: ${{ needs.urls.outputs.node }}
+            change_backend: "sed -i '' 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/PapiV8/PapiV8.Build.cs"
     steps:
     - uses: actions/checkout@v3
     - name: Prepare

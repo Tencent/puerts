@@ -21,6 +21,18 @@
 #include "V8InspectorImpl.h"
 #include <sstream>
 
+#if defined(WITH_NODEJS)
+#include "PapiV8Node.h"
+#else
+namespace PUERTS_NAMESPACE
+{
+// never created without node, only completes the type of the member
+class FPapiV8Node
+{
+};
+}    // namespace PUERTS_NAMESPACE
+#endif
+
 // the memory of a pod struct can be freed with the backing store of an ArrayBuffer (see CreateTriviallyFreedObject)
 #if V8_MAJOR_VERSION < 8 || defined(WITH_NODEJS) || (WITH_EDITOR && !defined(FORCE_USE_STATIC_V8_LIB))
 #define WITH_BACKING_STORE_AUTO_FREE 0
@@ -91,16 +103,17 @@ struct pesapi_ffi* FPapiBackendV8::GetApi()
 pesapi_env_ref FPapiBackendV8::CreateEnvRef()
 {
     check(!Isolate);
-    // a local of the scope of the host, only valid during this call
-    v8::Local<v8::Context> ExternalContext = Params.ExternalContext;
-    Params.ExternalContext.Clear();
-
-    if (Params.ExternalIsolate)
+#if defined(WITH_NODEJS)
+    // the isolate is created by node and registered to its platform (the platform of the PapiV8 module)
+    Node = std::make_unique<FPapiV8Node>(Logger);
+    Isolate = Node->NewIsolate();
+    if (!Isolate)
     {
-        Isolate = Params.ExternalIsolate;
-        OwnsIsolate = false;
+        Node.reset();
+        return nullptr;
     }
-    else
+    OwnsIsolate = true;
+#else
     {
         TArray<FString> FlagArray;
         Params.Flags.ParseIntoArray(FlagArray, TEXT(" "));
@@ -113,7 +126,7 @@ pesapi_env_ref FPapiBackendV8::CreateEnvRef()
                 CreateParams.constraints.set_max_old_generation_size_in_bytes(Val * 1024 * 1024);
             }
         }
-#if !defined(WITH_NODEJS) && V8_MAJOR_VERSION < 8
+#if V8_MAJOR_VERSION < 8
         std::unique_ptr<v8::StartupData> NativesBlob = std::make_unique<v8::StartupData>();
         NativesBlob->data = (const char*) NativesBlobCode;
         NativesBlob->raw_size = sizeof(NativesBlobCode);
@@ -123,6 +136,7 @@ pesapi_env_ref FPapiBackendV8::CreateEnvRef()
         Isolate = v8::Isolate::New(CreateParams);
         OwnsIsolate = true;
     }
+#endif
 
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
@@ -132,12 +146,19 @@ pesapi_env_ref FPapiBackendV8::CreateEnvRef()
 
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = ExternalContext.IsEmpty() ? v8::Context::New(Isolate) : ExternalContext;
+#if defined(WITH_NODEJS)
+    v8::Local<v8::Context> Context = Node->NewContext();
+#else
+    v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+#endif
     v8::Context::Scope ContextScope(Context);
 
     CppObjectMapper->Initialize(Isolate, Context);
     // after the mapper is initialized: the ref tracks the life cycle of the env, which starts there
     MainEnvRef = v8impl::g_pesapi_ffi.create_env_ref(papi_bridge::ToPapi(Context));
+#if defined(WITH_NODEJS)
+    Node->StartPolling(&v8impl::g_pesapi_ffi, MainEnvRef);
+#endif
     return MainEnvRef;
 }
 
@@ -147,6 +168,10 @@ void FPapiBackendV8::DestroyEnvRef(pesapi_env_ref EnvRef)
     {
         return;
     }
+#if defined(WITH_NODEJS)
+    // no uv callback runs after this
+    Node->StopPolling();
+#endif
     // the inspector references the context
     CloseRemoteDebugger();
     {
@@ -166,6 +191,10 @@ void FPapiBackendV8::DestroyEnvRef(pesapi_env_ref EnvRef)
         {
             Params.OnEnvReleased();
         }
+#if defined(WITH_NODEJS)
+        // the node environment is released while the isolate is alive
+        Node->FreeEnvironment();
+#endif
     }
 
     if (OwnsIsolate)
@@ -175,6 +204,7 @@ void FPapiBackendV8::DestroyEnvRef(pesapi_env_ref EnvRef)
         CreateParams.array_buffer_allocator = nullptr;
     }
     Isolate = nullptr;
+    Node.reset();
 }
 
 pesapi_value FPapiBackendV8::ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport)
@@ -416,6 +446,17 @@ void FPapiBackendV8::StartRuntime(pesapi_env Env)
 {
     ModuleLoader = papi_v8::CreateModuleLoader(Env);
     PromiseRejectTracker = papi_v8::CreatePromiseRejectTracker(Env, &OnPromiseRejectHandlerError, Logger.get());
+#if defined(WITH_NODEJS)
+    // the require of node (its builtin modules and node_modules) is tried first for bare names, as modular.js did. Taken
+    // before the global require is replaced by the one of the loader
+    {
+        v8::Local<v8::Value> NodeRequire = Node->GetRequire(papi_bridge::ToV8(Env));
+        if (!NodeRequire.IsEmpty())
+        {
+            papi_v8::SetFallbackRequire(Env, papi_bridge::ToPapi(NodeRequire));
+        }
+    }
+#endif
 
 #if defined(WITH_V8_BYTECODE)
     // the header fields of the bytecode the running v8 accepts, taken from the code cache of an empty script

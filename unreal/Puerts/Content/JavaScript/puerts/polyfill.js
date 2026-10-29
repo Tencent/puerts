@@ -8,5 +8,8 @@
 var global = global || (function () { return this; }());
 (function (global) {
     "use strict";
-    global.process = { env: { NODE_ENV: 'development' } };
+    // node provides its own process
+    if (typeof global.process === 'undefined') {
+        global.process = { env: { NODE_ENV: 'development' } };
+    }
 }(global));

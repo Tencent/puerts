@@ -148,11 +148,15 @@ public:
         ModuleToRecord.clear();
         HostResolve.Reset();
         HostLoad.Reset();
+        FallbackRequire.Reset();
     }
 
     v8::Isolate* const Isolate;
     v8::Global<v8::Function> HostResolve;
     v8::Global<v8::Function> HostLoad;
+    // tried before the host for a bare specifier required (not imported), e.g. the require of node (its builtin modules and
+    // node_modules), see SetFallbackRequire
+    v8::Global<v8::Function> FallbackRequire;
     std::unordered_map<std::string, std::unique_ptr<FRecord>> Records;
     std::unordered_multimap<int, FRecord*> ModuleToRecord;
     // "<by><referrer>\0<specifier>" -> key of the record
@@ -368,6 +372,20 @@ public:
         if (!EnsureHost(Context))
         {
             return nullptr;
+        }
+
+        if (!ByImport && !FallbackRequire.IsEmpty() && !Specifier.empty() && Specifier[0] != '.' && Specifier[0] != '/')
+        {
+            // found by the fallback: kept as a builtin module of the name, so it is matched first next time
+            v8::TryCatch TryCatch(Isolate);
+            v8::Local<v8::Value> Arg = Str(Isolate, Specifier);
+            v8::Local<v8::Value> Exports;
+            if (FallbackRequire.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, &Arg).ToLocal(&Exports))
+            {
+                auto Record = AddRecord(EKind::Builtin, Specifier, Specifier);
+                Record->Value.Reset(Isolate, Exports);
+                return Record;
+            }
         }
 
         auto By = Str(Isolate, ByImport ? "import" : "require");
@@ -1128,6 +1146,18 @@ void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value)
     Loader->EraseRecord(Key);
     auto Record = Loader->AddRecord(EKind::Builtin, Name, Name);
     Record->Value.Reset(Loader->Isolate, ToV8(Value));
+}
+
+void SetFallbackRequire(pesapi_env Env, pesapi_value Require)
+{
+    auto Loader = FModuleLoader::Get(ToV8(Env)->GetIsolate());
+    auto Value = ToV8(Require);
+    if (Value.IsEmpty() || !Value->IsFunction())
+    {
+        Loader->FallbackRequire.Reset();
+        return;
+    }
+    Loader->FallbackRequire.Reset(Loader->Isolate, Value.As<v8::Function>());
 }
 
 void SetCodeCacheExpect(pesapi_env Env, uint32_t FlagHash, uint32_t ReadOnlySnapshotChecksum)

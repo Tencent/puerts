@@ -76,9 +76,8 @@ void FPapiBackendJs::OnEnter(IPapiScriptHost* Host)
     }
 
     Host->ExecuteModule(TEXT("puerts/first_run.js"));
-#if !defined(WITH_NODEJS)
+    // keeps the process of node
     Host->ExecuteModule(TEXT("puerts/polyfill.js"));
-#endif
     Host->ExecuteModule(TEXT("puerts/log.js"));
     Host->ExecuteModule(TEXT("puerts/uelazyload.js"));
     Host->ExecuteModule(TEXT("puerts/events.js"));
