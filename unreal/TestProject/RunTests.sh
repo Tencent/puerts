@@ -213,6 +213,10 @@ EDITOR_ARGS=(
     # is even opened and shows a modal NSAlert that ignores -unattended. GitHub macos runners (7GB,
     # VirtualMac2,1) fail it, so the editor hangs there silently until the timeout.
     -skipminspeccheck
+    # Once the editor is up, UEditorEngine::UpdateAutoLoadProject (UE4, Mac only) shows Slate modal dialogs
+    # for < 8GB RAM and < 4 cores, again ignoring -unattended. The runner has 7GB / 3 cores. Mark both as
+    # suppressed in EditorSettings via the command line override, so no user ini is touched.
+    "-ini:EditorSettings:[SuppressableDialogs]:LowRAMWarning=True,[SuppressableDialogs]:SlowCPUWarning=True"
     "-abslog=$LOG_FILE"
 )
 if [ "$UPDATE_BASELINE" -eq 1 ]; then EDITOR_ARGS+=(-PuertsUpdateBaseline); fi
