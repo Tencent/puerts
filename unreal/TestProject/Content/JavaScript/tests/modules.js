@@ -58,10 +58,12 @@ test('loadUEType', () => {
 });
 
 test('puerts.load errors', () => {
+    // puerts.load expands the name per platform: dir\name.dll, dir/libname.dylib, dir/libname.so
+    const dllName = (s) => s.replace(/([\\/])(?:lib)?(not_exist_addon_xyz)\.(?:dll|dylib|so)\b/g, '/$2<dll-ext>');
     note('number', catchError(() => puerts.load(1)));
     note('no args', catchError(() => puerts.load()));
-    note('missing dll', catchError(() => puerts.load('not_exist_dir/not_exist_addon_xyz')));
-    note('missing dll again', catchError(() => puerts.load('not_exist_dir/not_exist_addon_xyz')));
+    note('missing dll', dllName(catchError(() => puerts.load('not_exist_dir/not_exist_addon_xyz'))));
+    note('missing dll again', dllName(catchError(() => puerts.load('not_exist_dir/not_exist_addon_xyz'))));
 });
 
 test('globals', () => {

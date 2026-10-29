@@ -142,8 +142,13 @@ echo "running: $FILTER (timeout ${TIMEOUT_SEC}s)"
 # location, but dyld expands @loader_path from the resolved location, so libraries outside the
 # engine binaries (libpython3.x.dylib for PapiPython / PapiPythonPreload) are not found.
 # DYLD_FALLBACK_LIBRARY_PATH is only consulted after the normal lookup fails.
+#
+# Setting the variable replaces dyld's built-in fallback ($HOME/lib:/usr/local/lib:/usr/lib),
+# so it has to be appended explicitly: the prebuilt v8 dylibs reference @rpath/libc++.dylib,
+# which is not shipped with them and only resolves through that default /usr/lib fallback.
 PY_LIB_DIR="$ENGINE/Engine/Binaries/ThirdParty/Python3/Mac/lib"
-DYLD_FALLBACK_LIBRARY_PATH="$PY_LIB_DIR${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}" \
+DYLD_DEFAULT_FALLBACK="$HOME/lib:/usr/local/lib:/usr/lib"
+DYLD_FALLBACK_LIBRARY_PATH="$PY_LIB_DIR:${DYLD_FALLBACK_LIBRARY_PATH:-$DYLD_DEFAULT_FALLBACK}" \
     "$EDITOR_CMD" "${EDITOR_ARGS[@]}" >"$STDOUT_FILE" 2>&1 &
 EDITOR_PID=$!
 
@@ -178,7 +183,8 @@ import json
 import sys
 
 index_path, log_file, bench = sys.argv[1], sys.argv[2], sys.argv[3] == "1"
-with open(index_path, encoding="utf-8") as f:
+# UE writes index.json with a UTF-8 BOM, hence utf-8-sig.
+with open(index_path, encoding="utf-8-sig") as f:
     report = json.load(f)
 
 tests = report.get("tests") or []

@@ -74,8 +74,10 @@ function assert(cond, msg) {
 }
 
 // returns "<ErrorName>: <message>" of the thrown error, or "<no throw>"
+// the script root is absolute on Windows (D:/.../JavaScript) but relative to the engine binaries
+// on macOS (../../../../Users/.../JavaScript), so a leading "." or ".." is part of the match too
 function normalizePath(s) {
-    return s.replace(/(?:[A-Za-z]:)?[\\/][^\s'"]*?[\\/]JavaScript(?=[\\/\s]|$)/g, '<js-root>');
+    return s.replace(/(?:[A-Za-z]:|\.{1,2})?[\\/][^\s'"]*?[\\/]JavaScript(?=[\\/\s]|$)/g, '<js-root>');
 }
 
 function catchError(fn) {
