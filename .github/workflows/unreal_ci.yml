@@ -21,6 +21,8 @@ env:
   Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_new_xcode_win2022.tgz"
   # editor runtime overlay of Mini427 for running tests, made by unreal/TestProject/Tools/MakeEnginePack.ps1
   EngineRuntimeWin64: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_win64_editor_runtime.tgz"
+  # the same for macOS, made by unreal/TestProject/Tools/MakeEnginePack.sh
+  EngineRuntimeMac: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_mac_editor_runtime.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__241009/v8_bin_9.4.146.24.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
@@ -101,6 +103,55 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: unreal-test-logs-win64
+        path: |
+          unreal/TestProject/Saved/Logs
+          unreal/TestProject/Saved/AutomationReport
+        if-no-files-found: ignore
+
+  mac_test:
+    needs: urls
+    name: Mac Test
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache engine
+      id: cache-engine
+      uses: actions/cache@v4
+      with:
+        path: ue427
+        key: ue427-mac-${{ env.Engine }}-${{ env.EngineRuntimeMac }}-${{ hashFiles('unreal/TestProject/Tools/EnginePack/manifest_mac.txt') }}
+    - name: Prepare engine
+      if: steps.cache-engine.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p ue427
+        wget -O mini.tgz -q "${{ env.Engine }}"
+        wget -O runtime.tgz -q "${{ env.EngineRuntimeMac }}"
+        tar xfz mini.tgz -C ue427
+        tar xfz runtime.tgz -C ue427
+        rm mini.tgz runtime.tgz
+    - name: Prepare toolchain
+      shell: bash
+      run: |
+        # the UE4.27 editor is x86_64, UnrealBuildTool.exe needs mono (Mini427 does not ship one)
+        /usr/bin/pgrep -q oahd || sudo softwareupdate --install-rosetta --agree-to-license
+        command -v mono || brew install mono
+        mono --version | head -n 1
+        clang --version | head -n 1
+    - name: Prepare jslib
+      shell: bash
+      run: |
+        wget -O jslib.tgz -q "${{ needs.urls.outputs.v8 }}"
+        tar xfz jslib.tgz -C unreal/Puerts/ThirdParty
+    - name: Run tests
+      shell: bash
+      run: |
+        unreal/TestProject/RunTests.sh --engine "$GITHUB_WORKSPACE/ue427" --timeout 1800
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: unreal-test-logs-mac
         path: |
           unreal/TestProject/Saved/Logs
           unreal/TestProject/Saved/AutomationReport

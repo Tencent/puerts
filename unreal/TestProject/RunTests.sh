@@ -7,8 +7,10 @@
 #   ./RunTests.sh --skip-build --filter Puerts.Functional.Lifecycle
 #   ./RunTests.sh --update-baseline                # rewrite Baseline/*.txt from the current implementation
 #   ./RunTests.sh --bench --bench-label before_m1  # run Puerts.Bench, result in Saved/PuertsBench/before_m1.json
+#   ./RunTests.sh --engine "/Users/Shared/Epic Games/UE_4.27"   # UE5 and UE4.27 are both supported
+#   ./RunTests.sh --build-only --engine <Mini427>   # build with one engine, then run with another via --skip-build
 #
-# Env: UE_ROOT overrides the engine root (defaults to the newest UE_5.x under
+# Env: UE_ROOT overrides the engine root (defaults to the newest UE_5.x, then UE_4.x, under
 # /Users/Shared/Epic Games, the standard install location of the Epic Games Launcher).
 
 set -euo pipefail
@@ -18,17 +20,19 @@ find_engine() {
     # read line by line: the install path contains a space ("Epic Games"), so an unquoted
     # $(ls ...) in a for list would be word split into non-existent paths
     while IFS= read -r candidate; do
-        if [ -n "$candidate" ] && [ -x "$candidate/Engine/Build/BatchFiles/Mac/Build.sh" ]; then
+        if [ -n "$candidate" ] && [ -f "$candidate/Engine/Build/Build.version" ]; then
             echo "$candidate"
             return 0
         fi
-    done < <(ls -d "/Users/Shared/Epic Games"/UE_5.* 2>/dev/null | sort -V -r)
+    done < <({ ls -d "/Users/Shared/Epic Games"/UE_5.* 2>/dev/null | sort -V -r;
+               ls -d "/Users/Shared/Epic Games"/UE_4.* 2>/dev/null | sort -V -r; })
     return 1
 }
 
 ENGINE="${UE_ROOT:-$(find_engine || true)}"
 FILTER="Puerts.Functional"
 SKIP_BUILD=0
+BUILD_ONLY=0
 UPDATE_BASELINE=0
 BENCH=0
 BENCH_LABEL="latest"
@@ -36,7 +40,7 @@ CONFIGURATION="Development"
 TIMEOUT_SEC=600
 
 usage() {
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -47,6 +51,7 @@ while [ $# -gt 0 ]; do
         --filter)          FILTER="${2:?--filter needs a value}"; shift 2 ;;
         --filter=*)        FILTER="${1#*=}"; shift ;;
         --skip-build)      SKIP_BUILD=1; shift ;;
+        --build-only)      BUILD_ONLY=1; shift ;;
         --update-baseline) UPDATE_BASELINE=1; shift ;;
         --bench)           BENCH=1; shift ;;
         --bench-label)     BENCH_LABEL="${2:?--bench-label needs a value}"; shift 2 ;;
@@ -64,9 +69,27 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT="$PROJECT_DIR/PuertsTest.uproject"
 PLUGIN_SRC="$(cd "$PROJECT_DIR/../Puerts" && pwd)"
 
-if [ -z "$ENGINE" ] || [ ! -x "$ENGINE/Engine/Build/BatchFiles/Mac/Build.sh" ]; then
+if [ -z "$ENGINE" ] || [ ! -f "$ENGINE/Engine/Build/Build.version" ]; then
     echo "engine not found: ${ENGINE:-<none under /Users/Shared/Epic Games>} (set UE_ROOT or pass --engine)" >&2
     exit 3
+fi
+ENGINE="$(cd "$ENGINE" && pwd)"
+
+# engine version from Build.version, e.g. "4.27" / "5.8"
+ENGINE_MAJOR="$(sed -n 's/.*"MajorVersion"[^0-9]*\([0-9]*\).*/\1/p' "$ENGINE/Engine/Build/Build.version")"
+ENGINE_MINOR="$(sed -n 's/.*"MinorVersion"[^0-9]*\([0-9]*\).*/\1/p' "$ENGINE/Engine/Build/Build.version")"
+ENGINE_TAG="$ENGINE_MAJOR.$ENGINE_MINOR"
+echo "engine: $ENGINE ($ENGINE_TAG)"
+
+# 0. the rules assembly (Intermediate/Build/BuildRules) is shared by all engine versions, and the one built by
+#    another engine can not be reused, so drop it on engine switch (same as RunTests.ps1)
+RULES_DIR="$PROJECT_DIR/Intermediate/Build/BuildRules"
+RULES_STAMP="$PROJECT_DIR/Intermediate/Build/BuildRules.engine"
+LAST_ENGINE=""
+if [ -f "$RULES_STAMP" ]; then LAST_ENGINE="$(tr -d '[:space:]' < "$RULES_STAMP")"; fi
+if [ "$LAST_ENGINE" != "$ENGINE_TAG" ] && [ -d "$RULES_DIR" ]; then
+    rm -rf "$RULES_DIR"
+    echo "engine switched (${LAST_ENGINE:-?} -> $ENGINE_TAG), removed $RULES_DIR"
 fi
 
 # 1. plugin symlink (UBT only discovers the UHT exporter plugin of plugins under <Project>/Plugins)
@@ -96,25 +119,74 @@ done
 # UBT is run from the project directory (like RunTests.ps1 does) instead of through Build.sh,
 # because Build.sh cd's into the engine root and the ubtplugin derives its OutputPath from
 # the MSBuild startup directory.
-#
-# -NoUBA: Plugins/Puerts is a symlink. UBA tracks compiler outputs under the symlink path
-# while clang writes them to the resolved path, so the linker later reports the .o files as
-# missing. The plain parallel executor does not have this problem.
 if [ "$SKIP_BUILD" -eq 0 ]; then
-    # MSBuild can only create the leaf output folder below an existing directory, so on a clean
-    # tree GenerateDepsFile throws DirectoryNotFoundException unless the parent exists.
-    mkdir -p "$PROJECT_DIR/Binaries/DotNET/UnrealBuildTool/Plugins/CSharpParamDefaultValueMetas"
-    (
-        # SetupDotnet.sh probes unset variables and relies on unbound-safe semantics,
-        # so run it without nounset/errexit like UBT's own shell scripts do.
-        set +eu
-        source "$ENGINE/Engine/Build/BatchFiles/Mac/SetupEnvironment.sh" -dotnet "$ENGINE/Engine/Build/BatchFiles/Mac"
-        set -e
-        cd "$PROJECT_DIR"
-        dotnet "$ENGINE/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll" \
-            PuertsTestEditor Mac "$CONFIGURATION" -Project="$PROJECT" -WaitMutex -NoUBA
-    ) || { echo "build failed" >&2; exit 1; }
+    if [ "$ENGINE_MAJOR" -ge 5 ]; then
+        # MSBuild can only create the leaf output folder below an existing directory, so on a clean
+        # tree GenerateDepsFile throws DirectoryNotFoundException unless the parent exists.
+        mkdir -p "$PROJECT_DIR/Binaries/DotNET/UnrealBuildTool/Plugins/CSharpParamDefaultValueMetas"
+        (
+            # SetupDotnet.sh probes unset variables and relies on unbound-safe semantics,
+            # so run it without nounset/errexit like UBT's own shell scripts do.
+            set +eu
+            source "$ENGINE/Engine/Build/BatchFiles/Mac/SetupEnvironment.sh" -dotnet "$ENGINE/Engine/Build/BatchFiles/Mac"
+            set -e
+            cd "$PROJECT_DIR"
+            # -NoUBA: Plugins/Puerts is a symlink. UBA tracks compiler outputs under the symlink path
+            # while clang writes them to the resolved path, so the linker later reports the .o files as
+            # missing. The plain parallel executor does not have this problem.
+            dotnet "$ENGINE/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll" \
+                PuertsTestEditor Mac "$CONFIGURATION" -Project="$PROJECT" -WaitMutex -NoUBA
+        ) || { echo "build failed" >&2; exit 1; }
+    else
+        # UE4: UnrealBuildTool.exe on mono. The engine's SetupEnvironment.sh is not sourced: in Mini427 (the CI
+        # engine) the Mac batch files have CRLF line endings and fail in bash, so mono is located here instead:
+        # system mono (the GitHub macOS runner has one), Mono.framework, then the mono bundled with a Launcher
+        # UE4 install (Mini427 does not ship one).
+        MONO="$(command -v mono || true)"
+        if [ -z "$MONO" ] && [ -x /Library/Frameworks/Mono.framework/Versions/Current/Commands/mono ]; then
+            MONO=/Library/Frameworks/Mono.framework/Versions/Current/Commands/mono
+        fi
+        if [ -z "$MONO" ]; then
+            while IFS= read -r candidate; do
+                if [ -x "$candidate/Engine/Binaries/ThirdParty/Mono/Mac/bin/mono" ]; then
+                    MONO_DIR="$candidate/Engine/Binaries/ThirdParty/Mono/Mac"
+                    break
+                fi
+            done < <(echo "$ENGINE"; ls -d "/Users/Shared/Epic Games"/UE_4.* 2>/dev/null | sort -V -r)
+            if [ -z "${MONO_DIR:-}" ]; then echo "mono not found (install mono or a UE4 from the Launcher)" >&2; exit 1; fi
+            # same variables as Engine/Build/BatchFiles/Mac/SetupMono.sh, bin/mcs uses $UE_MONO_DIR
+            export UE_MONO_DIR="$MONO_DIR"
+            export PATH="$MONO_DIR/bin:$PATH"
+            export MONO_PATH="$MONO_DIR/lib${MONO_PATH:+:$MONO_PATH}"
+            MONO="$MONO_DIR/bin/mono"
+        fi
+        echo "mono: $MONO"
+        (
+            set +e
+            cd "$PROJECT_DIR"
+            # UE4.27 compiles with -Werror, and Mini427 patches the engine headers only as far as the Xcode 15
+            # of the GitHub macos-14 runner needs. A newer clang reports more deprecations in the engine headers
+            # (-Wdeprecated-literal-operator, ...) and rejects private member access in uninstantiated templates
+            # (ScriptInterface.h). The project specific UnrealHeaderTool (needed by the ParamDefaultValueMetas UHT
+            # plugin) compiles engine sources too, so this can not be fixed in the plugin.
+            # CCC_OVERRIDE_OPTIONS is read by the clang driver: '#' keeps it quiet, '+' appends an argument.
+            CLANG_MAJOR="$(clang --version 2>/dev/null | sed -n 's/.*clang version \([0-9]*\).*/\1/p' | head -n 1)"
+            if [ "${CLANG_MAJOR:-0}" -gt 15 ]; then
+                echo "clang $CLANG_MAJOR is newer than UE4.27 supports, building with -Wno-error -fno-access-control"
+                export CCC_OVERRIDE_OPTIONS="# +-Wno-error +-fno-access-control"
+            fi
+            "$MONO" "$ENGINE/Engine/Binaries/DotNET/UnrealBuildTool.exe" \
+                PuertsTestEditor Mac "$CONFIGURATION" -Project="$PROJECT" -WaitMutex
+            code=$?
+            # same as Engine/Build/BatchFiles/Mac/Build.sh: 2 means "target is up to date"
+            if [ $code -eq 2 ]; then code=0; fi
+            exit $code
+        ) || { echo "build failed" >&2; exit 1; }
+    fi
+    mkdir -p "$(dirname "$RULES_STAMP")"
+    printf '%s' "$ENGINE_TAG" > "$RULES_STAMP"
 fi
+if [ "$BUILD_ONLY" -eq 1 ]; then exit 0; fi
 
 # 4. run
 if [ "$BENCH" -eq 1 ]; then FILTER="Puerts.Bench"; fi
@@ -125,7 +197,12 @@ STDOUT_FILE="$PROJECT_DIR/Saved/Logs/RunTests.stdout.txt"
 mkdir -p "$(dirname "$LOG_FILE")"
 rm -f "$LOG_FILE" "$STDOUT_FILE"
 
-EDITOR_CMD="$ENGINE/Engine/Binaries/Mac/UnrealEditor-Cmd"
+if [ "$ENGINE_MAJOR" -ge 5 ]; then
+    EDITOR_CMD="$ENGINE/Engine/Binaries/Mac/UnrealEditor-Cmd"
+else
+    # UE4 on Mac has no -Cmd variant, the bundle executable runs headless with -nullrhi -unattended
+    EDITOR_CMD="$ENGINE/Engine/Binaries/Mac/UE4Editor.app/Contents/MacOS/UE4Editor"
+fi
 EDITOR_ARGS=(
     "$PROJECT"
     "-ExecCmds=Automation RunTests $FILTER;Quit"
@@ -151,6 +228,8 @@ DYLD_DEFAULT_FALLBACK="$HOME/lib:/usr/local/lib:/usr/lib"
 DYLD_FALLBACK_LIBRARY_PATH="$PY_LIB_DIR:${DYLD_FALLBACK_LIBRARY_PATH:-$DYLD_DEFAULT_FALLBACK}" \
     "$EDITOR_CMD" "${EDITOR_ARGS[@]}" >"$STDOUT_FILE" 2>&1 &
 EDITOR_PID=$!
+# for tools that watch the editor process (Tools/MakeEnginePack.sh)
+echo "$EDITOR_PID" > "$PROJECT_DIR/Saved/Logs/RunTests.pid"
 
 # Poll instead of relying on an external `timeout`, which macOS does not ship.
 elapsed=0
@@ -169,6 +248,7 @@ set +e
 wait "$EDITOR_PID"
 EDITOR_EXIT=$?
 set -e
+rm -f "$PROJECT_DIR/Saved/Logs/RunTests.pid"
 
 # 5. report
 INDEX="$REPORT_DIR/index.json"
