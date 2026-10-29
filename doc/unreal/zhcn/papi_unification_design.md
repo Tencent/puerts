@@ -614,7 +614,7 @@ lua 下不支持或行为不同的 JS/TS 特性：
 | GC | 增量 GC，对象回收但尚未 finalize 时同一指针被重新绑定属于边缘情况 |
 | 链接 | lua 以 C 符号直接编进模块，和其他自带 lua 的插件同时使用可能有符号冲突 |
 
-已知的宿主问题（与后端无关，JS 也一样）：`FScriptStructPropertyTranslator::JsToUE` 不做类型检查，把 UObject 传给结构体参数或属性会崩溃，用例里没有覆盖这种情况。
+原来的宿主问题（与后端无关，JS 也一样）：`FScriptStructPropertyTranslator::JsToUE` 不做类型检查，把 UObject 传给结构体参数或属性会崩溃。2026-10-29 已修复：`FScriptStructWrapper` 设置 `FReflectedTypeTag::UScriptStructMagic`，结构体翻译器（`JsToUE` 与 FastCall 用的 `NativeValueOf`）只接受该结构体或其派生结构体的对象（精确匹配的 type id 缓存在翻译器上），其他原生对象（UObject、其他结构体、容器、已解绑的对象等）抛 `passing a invalid object for <Struct>`，普通对象仍按字段合并。四个后端的 Errors 用例都已覆盖。代价是结构体传参多一次 `get_native_object_typeid` 调用（ufunction.struct_param 约 116 到 132ns），与 cpp.* 同属 ffi 间接调用开销，列入待优化项。
 
 ### 5.14 PapiPython 后端
 
