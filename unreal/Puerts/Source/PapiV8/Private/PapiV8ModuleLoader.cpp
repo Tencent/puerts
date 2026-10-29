@@ -6,8 +6,6 @@
  * which is part of this source code package.
  */
 
-#ifndef WITH_QUICKJS
-
 #include "PapiV8ModuleLoader.h"
 #include "DataTransfer.h"
 #include "PesapiImpl.h"
@@ -1169,5 +1167,3 @@ void SetCodeCacheExpect(pesapi_env Env, uint32_t FlagHash, uint32_t ReadOnlySnap
 }
 }    // namespace papi_v8
 }    // namespace PUERTS_NAMESPACE
-
-#endif

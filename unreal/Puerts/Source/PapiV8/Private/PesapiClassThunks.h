@@ -8,8 +8,6 @@
 
 #pragma once
 
-#ifndef WITH_QUICKJS
-
 #include <cstddef>
 
 #include "JSClassRegister.h"
@@ -113,5 +111,3 @@ FORCEINLINE void Finalize(pesapi_finalize Finalizer, void* Ptr, void* ClassData,
 #undef PUERTS_CLASS_THUNK_CONTAINER_OF
 }    // namespace ClassThunks
 }    // namespace PUERTS_NAMESPACE
-
-#endif    // WITH_QUICKJS

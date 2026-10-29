@@ -6,8 +6,6 @@
  * which is part of this source code package.
  */
 
-#ifndef WITH_QUICKJS
-
 #include "PapiV8PromiseReject.h"
 #include "DataTransfer.h"
 #include "PesapiImpl.h"
@@ -161,5 +159,3 @@ bool SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler)
 }
 }    // namespace papi_v8
 }    // namespace PUERTS_NAMESPACE
-
-#endif

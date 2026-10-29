@@ -50,10 +50,8 @@ public:
 
     virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) = 0;
 
-#ifndef WITH_QUICKJS
     virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
         pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) = 0;
-#endif
 
     virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
@@ -140,10 +138,8 @@ public:
 
     virtual v8::MaybeLocal<v8::Function> LoadTypeById(v8::Local<v8::Context> Context, const void* TypeId) override;
 
-#ifndef WITH_QUICKJS
     virtual v8::MaybeLocal<v8::Function> CreateFunction(v8::Local<v8::Context> Context, struct pesapi_ffi* Apis,
         pesapi_callback Callback, void* Data, pesapi_function_finalize Finalize) override;
-#endif
 
     void UnInitialize(v8::Isolate* InIsolate);
 
@@ -154,7 +150,6 @@ public:
     // shown by debuggers and as constructor.name)
     std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
 
-#ifndef WITH_QUICKJS
     struct FPesapiFunctionData
     {
         pesapi_callback Callback;
@@ -169,7 +164,6 @@ private:
     static void PesapiFunctionDataGarbageCollected(const v8::WeakCallbackInfo<FPesapiFunctionData>& Data);
 
     std::vector<FPesapiFunctionData*> FunctionDatas;
-#endif
 
 private:
     std::unordered_map<void*, FObjectCacheNode, PointerHash, PointerEqual> CDataCache;
@@ -186,9 +180,7 @@ private:
 
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
-#ifndef WITH_QUICKJS
     v8::Global<v8::Symbol> PrivateKey;
-#endif
 
     std::shared_ptr<int> Ref = std::make_shared<int>(0);
 

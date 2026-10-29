@@ -36,14 +36,10 @@ When it comes to selecting a JavaScript backend, its important to identify whats
 
 2. Copy the "nodejs" folder from the downloaded release `puerts_nodejs/Puerts/ThirdParty/nodejs_xx` into the puerts inside of your project `YourProject/Plugins/Puerts/ThirdParty`. 
 
-3. Change the boolean `UseNodeJs` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` to `true`.
+3. Change the boolean `UseNodejs` setting in `Puerts/Source/PapiV8/PapiV8.Build.cs` to `true`.
 
 #### QuickJS Backend
-1. Download QuickJS backend from the latest Unreal Engine release. [QuickJS Download](https://github.com/Tencent/puerts/releases)
-
-2. Copy the "quickjs" folder from the downloaded release `puerts_quickjs/Puerts/ThirdParty/quickjs` into the puerts inside of your project `YourProject/Plugins/Puerts/ThirdParty`. 
-
-3. Change the boolean `UseQuickJs` setting in `Puerts/Source/JsEnv/JsEnv.build.cs` to `true`.
+QuickJS is implemented as a separate papi backend (the `PapiQuickjs` module) and is built from source with the plugin, no download is needed. Pass its factory (`FPapiBackendQuickjs::Create`) when creating an `FScriptEnv`.
 
 ## Release Package Installation Method
 1. Navigate to the [releases page](https://github.com/Tencent/puerts/releases) and download the version that matches your UE version. 

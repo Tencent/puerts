@@ -63,7 +63,6 @@ static void PointerNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     // do nothing
 }
 
-#ifndef WITH_QUICKJS
 static void CppObjectMapperPesapiFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     auto FunctionData = reinterpret_cast<FCppObjectMapper::FPesapiFunctionData*>(
@@ -122,16 +121,13 @@ v8::MaybeLocal<v8::Function> FCppObjectMapper::CreateFunction(v8::Local<v8::Cont
     }
     return Ret;
 }
-#endif
 
 void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext)
 {
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
     LocalTemplate->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1, CDataName
     PointerTemplate = v8::UniquePersistent<v8::FunctionTemplate>(InIsolate, LocalTemplate);
-#ifndef WITH_QUICKJS
     PrivateKey.Reset(InIsolate, v8::Symbol::New(InIsolate));
-#endif
 }
 
 v8::Local<v8::Value> FCppObjectMapper::FindCppObject(v8::Isolate* Isolate, const void* TypeId, void* Ptr)
@@ -371,15 +367,9 @@ void FCppObjectMapper::BindCppObject(
     }
 }
 
-#define QJS_PRIVATE_KEY_STR "__,kp@"
-
 void* FCppObjectMapper::GetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject)
 {
-#ifndef WITH_QUICKJS
     auto Key = PrivateKey.Get(Context->GetIsolate());
-#else
-    auto Key = FV8Utils::InternalString(Context->GetIsolate(), QJS_PRIVATE_KEY_STR);
-#endif
     v8::MaybeLocal<v8::Value> maybeValue = JSObject->Get(Context, Key);
     if (maybeValue.IsEmpty())
     {
@@ -397,11 +387,7 @@ void* FCppObjectMapper::GetPrivateData(v8::Local<v8::Context> Context, v8::Local
 
 void FCppObjectMapper::SetPrivateData(v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject, void* Ptr)
 {
-#ifndef WITH_QUICKJS
     auto Key = PrivateKey.Get(Context->GetIsolate());
-#else
-    auto Key = FV8Utils::InternalString(Context->GetIsolate(), QJS_PRIVATE_KEY_STR);
-#endif
     (void) (JSObject->Set(Context, Key, v8::External::New(Context->GetIsolate(), Ptr)));
 }
 
@@ -506,7 +492,6 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         }
     }
     CDataCache.clear();
-#ifndef WITH_QUICKJS
     for (auto FunctionData : FunctionDatas)
     {
         FunctionData->JsFunction.Reset();
@@ -517,11 +502,8 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
         delete FunctionData;
     }
     FunctionDatas.clear();
-#endif
     TypeIdToTemplateMap.clear();
-#ifndef WITH_QUICKJS
     PrivateKey.Reset();
-#endif
     PointerTemplate.Reset();
 }
 

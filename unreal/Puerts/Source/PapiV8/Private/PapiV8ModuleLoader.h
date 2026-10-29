@@ -21,8 +21,6 @@
 //
 // Engine independent interface, only pesapi types are used, it will be merged into the backend api of the shared papi dll.
 
-#ifndef WITH_QUICKJS
-
 #include "pesapi.h"
 #include "NamespaceDef.h"
 #include <cstdint>
@@ -58,5 +56,3 @@ void SetFallbackRequire(pesapi_env Env, pesapi_value Require);
 void SetCodeCacheExpect(pesapi_env Env, uint32_t FlagHash, uint32_t ReadOnlySnapshotChecksum);
 }    // namespace papi_v8
 }    // namespace PUERTS_NAMESPACE
-
-#endif

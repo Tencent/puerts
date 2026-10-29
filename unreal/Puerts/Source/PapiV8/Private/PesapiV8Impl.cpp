@@ -6,8 +6,6 @@
  * which is part of this source code package.
  */
 
-#ifndef WITH_QUICKJS
-
 #include "pesapi.h"
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
@@ -1004,5 +1002,3 @@ pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_c
     &pesapi_throw_error, &pesapi_unbind_native_object};
 
 }    // namespace v8impl
-
-#endif    // WITH_QUICKJS

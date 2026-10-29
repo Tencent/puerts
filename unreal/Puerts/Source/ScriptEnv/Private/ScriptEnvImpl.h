@@ -197,12 +197,10 @@ private:
 
     void LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-#ifndef WITH_QUICKJS
     // the host side of the module loader of the backend (PapiV8ModuleLoader): finds and reads a module
     void HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-#endif
 
     // the js class of a UStruct, an object of the values for a UEnum, undefined otherwise
     pesapi_value UETypeToJsClass(pesapi_env Env, UField* Type);
@@ -303,13 +301,11 @@ private:
 
     std::shared_ptr<IJSModuleLoader> ModuleLoader;
 
-#ifndef WITH_QUICKJS
     // "<by><path>" -> kind, the modules whose kind is decided by the package.json requiring them
     TMap<FString, FString> ForcedModuleKinds;
 
     // path -> debug path, filled by HostResolveModule
     TMap<FString, FString> ModuleDebugPaths;
-#endif
 
     std::shared_ptr<ILogger> Logger;
 

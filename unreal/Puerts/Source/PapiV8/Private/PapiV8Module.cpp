@@ -89,9 +89,7 @@ void FPapiV8Module::StartupModule()
 #endif
     v8::V8::Initialize();
 
-#ifndef WITH_QUICKJS
     PUERTS_NAMESPACE::SetPesapiFFI(&v8impl::g_pesapi_ffi);
-#endif
 
 #if defined(WITH_NODEJS)
     int Argc = 1;
@@ -116,9 +114,7 @@ void FPapiV8Module::ShutdownModule()
     {
         ScriptEnvModule->ReleaseGlobalCaches();
     }
-#ifndef WITH_QUICKJS
     PUERTS_NAMESPACE::SetPesapiFFI(nullptr);
-#endif
     v8::V8::Dispose();
 #if V8_MAJOR_VERSION > 9
     v8::V8::DisposePlatform();

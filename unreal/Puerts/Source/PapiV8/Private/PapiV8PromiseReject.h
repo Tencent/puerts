@@ -23,8 +23,6 @@
 //
 // Engine independent interface, only pesapi types are used, it will be merged into the backend api of the shared papi dll.
 
-#ifndef WITH_QUICKJS
-
 #include "pesapi.h"
 #include "NamespaceDef.h"
 
@@ -48,5 +46,3 @@ void DestroyPromiseRejectTracker(FPromiseRejectTracker* Tracker);
 bool SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler);
 }    // namespace papi_v8
 }    // namespace PUERTS_NAMESPACE
-
-#endif

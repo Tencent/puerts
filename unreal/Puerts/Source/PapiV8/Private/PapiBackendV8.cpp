@@ -6,8 +6,6 @@
  * which is part of this source code package.
  */
 
-#ifndef WITH_QUICKJS
-
 #include "PapiBackendV8.h"
 #include "PesapiImpl.h"
 #include "PapiV8Bridge.h"
@@ -500,5 +498,3 @@ void FPapiBackendV8::OnPromiseRejectHandlerError(void* UserData, const char* Err
     static_cast<ILogger*>(UserData)->Error(FString::Printf(TEXT("promise reject handler exception %s"), UTF8_TO_TCHAR(Error)));
 }
 }    // namespace PUERTS_NAMESPACE
-
-#endif

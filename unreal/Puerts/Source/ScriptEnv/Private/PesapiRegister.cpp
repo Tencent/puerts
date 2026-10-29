@@ -6,8 +6,6 @@
  * which is part of this source code package.
  */
 
-#ifndef WITH_QUICKJS
-
 #include "pesapi.h"
 #include "JSClassRegister.h"
 #include "TypeInfo.hpp"
@@ -292,5 +290,3 @@ void RegisterPesapiClass(ScriptClassRegistry* Registry, const ScriptClassDefinit
 
 MSVC_PRAGMA(warning(pop))
 }    // namespace PUERTS_NAMESPACE
-
-#endif    // WITH_QUICKJS

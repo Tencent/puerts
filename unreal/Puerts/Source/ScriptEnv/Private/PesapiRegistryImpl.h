@@ -8,8 +8,6 @@
 
 #pragma once
 
-#ifndef WITH_QUICKJS
-
 #include "pesapi.h"
 
 // script engine independent part of the pesapi implementation: the class registry api
@@ -27,5 +25,3 @@ extern const char* GPesapiModuleName;
 pesapi_registry GetDefaultRegistry();
 }    // namespace regimpl
 }    // namespace pesapi
-
-#endif

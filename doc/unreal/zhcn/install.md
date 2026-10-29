@@ -35,16 +35,12 @@ find . -name "*.dylib" | xargs sudo xattr -r -d com.apple.quarantine
 
 ### 虚拟机切换
 
-puerts支持多种脚本后端：V8，quickjs，nodejs
+puerts支持多种脚本后端：V8，nodejs，quickjs，lua，python
 
 * v8提供了纯净的ECMAScript实现
-* 对于包大小苛刻的场景，可以选用quickjs
 * nodejs相比v8版本，可以使用更多的npm模块，但包体比v8还要大些
+* 对于包大小苛刻的场景，可以选用quickjs
 
-quickjs后端[下载](https://github.com/puerts/backend-quickjs/releases)
+v8和nodejs由PapiV8模块提供，二选一：nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases)，解压到`YouProject/Plugins/Puerts/ThirdParty`，然后把[PapiV8.Build.cs](https://github.com/Tencent/puerts/blob/master/unreal/Puerts/Source/PapiV8/PapiV8.Build.cs)中的UseNodejs改为true。
 
-nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases)
-
-解压到`YouProject/Plugins/Puerts/ThirdParty`
-
-修改[PapiV8.Build.cs](https://github.com/Tencent/puerts/blob/master/unreal/Puerts/Source/PapiV8/PapiV8.Build.cs) ，UseQuickjs为true表示用quickjs后端，UseNodejs表示用nodejs后端。
+quickjs（PapiQuickjs模块）、lua（PapiLua模块）、python（PapiPython模块）都以独立模块的方式实现papi，quickjs和lua随插件源码编译，不需要另外下载，创建FScriptEnv时传入对应后端的工厂（如`FPapiBackendQuickjs::Create`）即可。

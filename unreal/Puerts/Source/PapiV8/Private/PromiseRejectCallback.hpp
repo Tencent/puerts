@@ -2,11 +2,7 @@
 #include <sstream>
 #include "PString.h"
 #if !defined(PUERTS_NAMESPACE)
-#if defined(WITH_QJS_NAMESPACE_SUFFIX)
-#define PUERTS_NAMESPACE puerts_qjs
-#else
 #define PUERTS_NAMESPACE puerts
-#endif
 #endif
 
 namespace PUERTS_NAMESPACE
@@ -78,7 +74,7 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
 
 // TODO: rename this file
 // used by unity (papi-v8 / papi-nodejs), the unreal plugin has its own copy in PapiBackendV8.cpp
-#if !PUERTS_PROMISE_REJECT_CALLBACK_USING_UE && !defined(WITH_QUICKJS)
+#if !PUERTS_PROMISE_REJECT_CALLBACK_USING_UE
 PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
     std::ostringstream stm;

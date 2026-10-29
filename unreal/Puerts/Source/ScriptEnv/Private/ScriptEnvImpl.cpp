@@ -42,9 +42,7 @@ void InitWebsocketPPWrap(pesapi_ffi* Apis, pesapi_env Env, PUERTS_NAMESPACE::Scr
 
 namespace PUERTS_NAMESPACE
 {
-#if !defined(WITH_QUICKJS)
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-#endif
 
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot)
     : FScriptEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
@@ -204,9 +202,7 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
         PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &ToCPtrArray);
 
-#if !defined(WITH_QUICKJS)
         PapiBindFunction(Apis, Env, PapiPuertsObj, "load", &LoadPesapiDll);
-#endif
 
         FString DllExt =
 #if PLATFORM_WINDOWS
@@ -1992,7 +1988,6 @@ void FScriptEnvImpl::ExecuteModule(const FString& ModuleName)
         return;
     }
     pesapi_env Env = EnvScope.GetEnv();
-#ifndef WITH_QUICKJS
     if (OutPath.EndsWith(".mjs"))
     {
         // an esm is evaluated by the module loader of the backend
@@ -2003,7 +1998,6 @@ void FScriptEnvImpl::ExecuteModule(const FString& ModuleName)
         }
         return;
     }
-#endif
     // the bootstrap scripts (puerts/*.js) are classic scripts, their top-level declarations (`var global`) are globals
 #if PLATFORM_WINDOWS
     // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
@@ -2072,7 +2066,6 @@ void FScriptEnvImpl::LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info In
     }
 }
 
-#ifndef WITH_QUICKJS
 // the kind of a module by its extension, a .js is an esm when imported and a cjs when required
 static const TCHAR* ModuleKindOfPath(const FString& Path, bool ByRequire)
 {
@@ -2237,7 +2230,6 @@ void FScriptEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_inf
     Apis->set_property(Env, Result, "debugPath", PapiUtils::FromFString(Apis, Env, DebugPath));
     Apis->add_return(Info, Result);
 }
-#endif
 
 void FScriptEnvImpl::RegisterTickHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {

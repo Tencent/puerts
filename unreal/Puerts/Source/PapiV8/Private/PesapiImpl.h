@@ -8,8 +8,6 @@
 
 #pragma once
 
-#ifndef WITH_QUICKJS
-
 #include "pesapi.h"
 
 namespace v8impl
@@ -17,5 +15,3 @@ namespace v8impl
 // pesapi function table implemented by PesapiV8Impl.cpp
 extern pesapi_ffi g_pesapi_ffi;
 }    // namespace v8impl
-
-#endif

@@ -8,8 +8,6 @@
 
 #pragma once
 
-#ifndef WITH_QUICKJS
-
 #include "PapiBackendJs.h"
 #include "PapiValueRef.h"
 #include "JSClassRegister.h"
@@ -135,5 +133,3 @@ private:
     std::unique_ptr<FPapiV8Node> Node;
 };
 }    // namespace PUERTS_NAMESPACE
-
-#endif
