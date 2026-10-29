@@ -92,6 +92,8 @@ Windows 清单可以作为对照：Content、Config、Shaders、Slate、ICU 这�
 
 如果 verify 失败，按缺什么补什么的思路处理：补充白名单或修正 collect 逻辑，然后重新生成清单。不要直接把整个大目录塞进去。
 
+本机通过不代表 runner 上能通过：Windows 版第一次上 CI 时，编辑器启动就报 0xC0000135（找不到 DLL）。原因是引擎依赖的旧版 DirectX 和 VC2010 运行库（如 xinput1_3.dll）由 UE4PrereqSetup 装在本机 System32 里，collect 只记录了引擎目录下的文件，所以没采到；本地 verify 时又能从 System32 找到，于是也没发现。现在 ps1 会把它们作为 `System32\<name>` 条目打包到 exe 旁边，verify 还会静态扫描二进制里引用的这类 DLL 名。Mac 上要做同样的检查：对清单里所有 dylib 和可执行文件运行 `otool -L`，凡是不在 `/usr/lib`、`/System/Library` 下、也不在引擎目录里的依赖（比如 `/usr/local`、Homebrew、Xcode 目录，或者只能靠本机环境解析的 `@rpath`），都必须处理掉。macos-14 runner 是干净的系统加 Xcode。
+
 ## 8. CI job
 
 参照 `window_test`，在 `unreal_ci.yml` 中新增 `mac_test`：

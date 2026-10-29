@@ -47,6 +47,13 @@ $WhitelistFiles = @(
 )
 $PackageExts = @('.uasset', '.umap', '.uexp', '.ubulk', '.uptnl')
 
+# Runtime dlls the engine expects in System32, installed there by UE4PrereqSetup (legacy DirectX redist, VC++ 2010).
+# They are missing on a clean machine such as a GitHub runner, and xinput1_3.dll is a static import of
+# UE4Editor-ApplicationCore.dll, so without it the editor fails to start with 0xC0000135 (STATUS_DLL_NOT_FOUND).
+# They are shipped app-local next to the editor exe, as manifest entries 'System32\<name>' -> Engine\Binaries\Win64\<name>.
+$RedistPattern = '^(xinput1_3|x3daudio1_\d+|xapofx1_\d+|d3dcompiler_4[0-3]|d3dx\w+|msvc[pr]1[01]0)\.dll$'
+$RedistDir = 'Engine\Binaries\Win64'
+
 function Rel([string]$Path) { $Path.Substring($FullEngine.Length + 1) }
 
 function Invoke-Editor([string]$Engine, [string]$Log, [string]$ExecCmds) {
@@ -73,9 +80,16 @@ function Step-Collect {
         -RedirectStandardOutput $out
     $null = $rt.Handle
     $dlls = @{}
+    $redist = @{}
+    $sys32 = Join-Path $env:WINDIR 'System32'
     while (-not $rt.HasExited) {
         foreach ($p in Get-Process -Name 'UE4Editor-Cmd' -ErrorAction SilentlyContinue) {
-            try { foreach ($m in $p.Modules) { if ($m.FileName.StartsWith($FullEngine + '\')) { $dlls[(Rel $m.FileName)] = 1 } } } catch {}
+            try {
+                foreach ($m in $p.Modules) {
+                    if ($m.FileName.StartsWith($FullEngine + '\')) { $dlls[(Rel $m.FileName)] = 1 }
+                    elseif ($m.FileName.StartsWith($sys32 + '\', 'OrdinalIgnoreCase') -and $m.ModuleName -match $RedistPattern) { $redist["System32\$($m.ModuleName.ToLower())"] = 1 }
+                }
+            } catch {}
         }
         Start-Sleep -Milliseconds 300
     }
@@ -119,6 +133,8 @@ function Step-Collect {
 
     foreach ($w in $WhitelistDirs) { Get-ChildItem (Join-Path $FullEngine $w) -Recurse -File | ForEach-Object { $files[(Rel $_.FullName)] = 1 } }
     foreach ($w in $WhitelistFiles) { $files[$w] = 1 }
+    foreach ($r in $redist.Keys) { $files[$r] = 1 }
+    Write-Host "system redist dlls: $($redist.Keys -join ', ')"
 
     $list = [string[]]($files.Keys | Where-Object { $_ -notlike '*.pdb' } | Sort-Object)
     New-Item -ItemType Directory -Force -Path (Split-Path $Manifest) | Out-Null
@@ -131,7 +147,12 @@ function Step-Pack {
     if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
     $added = 0; $bytes = 0
     foreach ($rel in Get-Content $Manifest) {
-        $src = Join-Path $FullEngine $rel
+        if ($rel -like 'System32\*') {
+            $src = Join-Path $env:WINDIR $rel
+            $rel = Join-Path $RedistDir (Split-Path $rel -Leaf)
+        } else {
+            $src = Join-Path $FullEngine $rel
+        }
         if (-not (Test-Path -LiteralPath $src)) { Write-Host "missing in full engine: $rel"; continue }
         $mini = Join-Path $MiniEngine $rel
         $si = Get-Item -LiteralPath $src
@@ -156,6 +177,21 @@ function Step-Verify {
     robocopy (Join-Path $MiniEngine 'Engine') (Join-Path $engine 'Engine') /E /NFL /NDL /NJH /NJS /NP | Out-Null
     tar -xzf ((Join-Path $WorkDir "$Name.tgz") -replace '\\', '/') -C ($engine -replace '\\', '/')
     if ($LASTEXITCODE -ne 0) { throw 'untar failed' }
+
+    # The machine running verify usually has the prerequisites in System32, which would hide a missing redist dll.
+    # So check statically: every redist dll named in a manifest binary must be shipped next to the editor exe.
+    $scanPattern = $RedistPattern.TrimStart('^').TrimEnd('$')
+    $needed = @{}
+    foreach ($rel in Get-Content $Manifest | Where-Object { $_ -match '\.(dll|exe)$' -and $_ -notlike 'System32\*' }) {
+        $bin = Join-Path $engine $rel
+        if (-not (Test-Path -LiteralPath $bin)) { continue }
+        $text = [System.Text.Encoding]::GetEncoding(28591).GetString([System.IO.File]::ReadAllBytes($bin))
+        foreach ($m in [regex]::Matches($text, "(?i)\b$scanPattern")) { $needed[$m.Value.ToLower()] = $rel }
+    }
+    $lack = $needed.Keys | Where-Object { -not (Test-Path (Join-Path $engine (Join-Path $RedistDir $_))) }
+    if ($lack) { throw "redist dlls referenced but not shipped (add 'System32\<name>' to the manifest): $(($lack | ForEach-Object { "$_ <- $($needed[$_])" }) -join '; ')" }
+    Write-Host "redist dlls shipped: $(($needed.Keys | Sort-Object) -join ', ')"
+
     & $RunTests -Engine $engine -TimeoutSec $TimeoutSec
     $code = $LASTEXITCODE
     $log = Join-Path $ProjectDir 'Saved\Logs\RunTests.log'

@@ -5126,3 +5126,9 @@ Engine\Shaders\StandaloneRenderer\OpenGL\SlateElementPixelShader.glsl
 Engine\Shaders\StandaloneRenderer\OpenGL\SlateVertexShader.glsl
 Engine\Shaders\StandaloneRenderer\OpenGL\SplashFragmentShader.glsl
 Engine\Shaders\StandaloneRenderer\OpenGL\SplashVertexShader.glsl
+System32\d3dcompiler_43.dll
+System32\msvcp100.dll
+System32\msvcr100.dll
+System32\x3daudio1_7.dll
+System32\xapofx1_5.dll
+System32\xinput1_3.dll

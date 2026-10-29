@@ -74,7 +74,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ue427
-        key: ue427-${{ env.Engine }}-${{ env.EngineRuntimeWin64 }}
+key: ue427-${{ env.Engine }}-${{ env.EngineRuntimeWin64 }}-${{ hashFiles('unreal/TestProject/Tools/EnginePack/manifest_win64.txt') }}
     - uses: msys2/setup-msys2@v2
       if: steps.cache-engine.outputs.cache-hit != 'true'
     - name: Prepare engine
