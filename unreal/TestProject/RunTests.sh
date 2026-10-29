@@ -209,6 +209,10 @@ EDITOR_ARGS=(
     "-TestExit=Automation Test Queue Empty"
     "-ReportExportPath=$REPORT_DIR"
     -unattended -nullrhi -nosplash -nosound -NoP4 -stdout -FullStdOutLogOutput
+    # The Mac editor checks the hardware against a min spec (>= 8GB RAM, known Mac models) before the log
+    # is even opened and shows a modal NSAlert that ignores -unattended. GitHub macos runners (7GB,
+    # VirtualMac2,1) fail it, so the editor hangs there silently until the timeout.
+    -skipminspeccheck
     "-abslog=$LOG_FILE"
 )
 if [ "$UPDATE_BASELINE" -eq 1 ]; then EDITOR_ARGS+=(-PuertsUpdateBaseline); fi
@@ -239,6 +243,9 @@ elapsed=0
 complete_at=-1
 while kill -0 "$EDITOR_PID" 2>/dev/null; do
     if [ "$elapsed" -ge "$TIMEOUT_SEC" ]; then
+        echo "TIMEOUT after ${TIMEOUT_SEC}s, main thread stack of the editor:"
+        sample "$EDITOR_PID" 2 -file "$PROJECT_DIR/Saved/Logs/RunTests.sample.txt" >/dev/null 2>&1 || true
+        grep -m1 -A40 'Thread_.*DispatchQueue_1' "$PROJECT_DIR/Saved/Logs/RunTests.sample.txt" 2>/dev/null | sed 's/^/  /' || true
         kill -9 "$EDITOR_PID" 2>/dev/null || true
         wait "$EDITOR_PID" 2>/dev/null || true
         echo "TIMEOUT after ${TIMEOUT_SEC}s, editor killed. Last log lines:"
