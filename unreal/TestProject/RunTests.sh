@@ -232,14 +232,35 @@ EDITOR_PID=$!
 echo "$EDITOR_PID" > "$PROJECT_DIR/Saved/Logs/RunTests.pid"
 
 # Poll instead of relying on an external `timeout`, which macOS does not ship.
+# A heartbeat with the last log line is printed every minute, so a stuck run on CI shows where it is.
+# Once the log says the tests are complete, the editor gets 60s to exit before it is killed (the report is
+# already written by then), UE4 can hang in its shutdown.
 elapsed=0
+complete_at=-1
 while kill -0 "$EDITOR_PID" 2>/dev/null; do
     if [ "$elapsed" -ge "$TIMEOUT_SEC" ]; then
         kill -9 "$EDITOR_PID" 2>/dev/null || true
         wait "$EDITOR_PID" 2>/dev/null || true
         echo "TIMEOUT after ${TIMEOUT_SEC}s, editor killed. Last log lines:"
-        tail -n 15 "$LOG_FILE" 2>/dev/null | sed 's/^/  /' || true
+        tail -n 40 "$LOG_FILE" 2>/dev/null | sed 's/^/  /' || true
+        echo "Last stdout lines:"
+        tail -n 20 "$STDOUT_FILE" 2>/dev/null | sed 's/^/  /' || true
         exit 2
+    fi
+    if [ "$complete_at" -lt 0 ] && grep -q 'TEST COMPLETE\. EXIT CODE' "$LOG_FILE" 2>/dev/null; then
+        complete_at=$elapsed
+    fi
+    if [ "$complete_at" -ge 0 ] && [ $((elapsed - complete_at)) -ge 60 ]; then
+        echo "tests complete but the editor did not exit within 60s, killing it"
+        kill -9 "$EDITOR_PID" 2>/dev/null || true
+        break
+    fi
+    if [ "$elapsed" -gt 0 ] && [ $((elapsed % 60)) -eq 0 ]; then
+        if [ -f "$LOG_FILE" ]; then
+            echo "[${elapsed}s] $(tail -n 1 "$LOG_FILE" 2>/dev/null | cut -c1-200)"
+        else
+            echo "[${elapsed}s] no log yet; stdout: $(tail -n 1 "$STDOUT_FILE" 2>/dev/null | cut -c1-200)"
+        fi
     fi
     sleep 1
     elapsed=$((elapsed + 1))
