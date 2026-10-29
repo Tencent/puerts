@@ -6,15 +6,21 @@ on:
     paths: 
       - unreal/Puerts/Source/**
       - unreal/Puerts/ThirdParty/**
+      - unreal/Puerts/Content/**
+      - unreal/TestProject/**
       - .github/workflows/unreal_ci.yml
   pull_request:
     paths: 
       - unreal/Puerts/Source/**
       - unreal/Puerts/ThirdParty/**
+      - unreal/Puerts/Content/**
+      - unreal/TestProject/**
       - .github/workflows/unreal_ci.yml
 
 env:
   Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_new_xcode_win2022.tgz"
+  # editor runtime overlay of Mini427 for running tests, made by unreal/TestProject/Tools/MakeEnginePack.ps1
+  EngineRuntimeWin64: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_win64_editor_runtime.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__241009/v8_bin_9.4.146.24.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
@@ -56,8 +62,50 @@ jobs:
     - name: Build
       run: |
         Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64 -VS2019
-        
-        
+
+  window_test:
+    needs: urls
+    name: Windows Test
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache engine
+      id: cache-engine
+      uses: actions/cache@v4
+      with:
+        path: ue427
+        key: ue427-${{ env.Engine }}-${{ env.EngineRuntimeWin64 }}
+    - uses: msys2/setup-msys2@v2
+      if: steps.cache-engine.outputs.cache-hit != 'true'
+    - name: Prepare engine
+      if: steps.cache-engine.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      run: |
+        mkdir -p ue427
+        wget -O mini.tgz -q "${{ env.Engine }}"
+        wget -O runtime.tgz -q "${{ env.EngineRuntimeWin64 }}"
+        tar xfz mini.tgz -C ue427
+        tar xfz runtime.tgz -C ue427
+        rm mini.tgz runtime.tgz
+    - name: Prepare jslib
+      shell: pwsh
+      run: |
+        curl.exe -sSfL -o jslib.tgz "${{ needs.urls.outputs.v8 }}"
+        tar -xzf jslib.tgz -C unreal/Puerts/ThirdParty
+    - name: Run tests
+      shell: pwsh
+      run: |
+        unreal\TestProject\RunTests.ps1 -Engine "$env:GITHUB_WORKSPACE\ue427" -TimeoutSec 1800
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: unreal-test-logs-win64
+        path: |
+          unreal/TestProject/Saved/Logs
+          unreal/TestProject/Saved/AutomationReport
+        if-no-files-found: ignore
+
   android_ci:
     needs: urls
     name: Android

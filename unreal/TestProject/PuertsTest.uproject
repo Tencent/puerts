@@ -3,6 +3,7 @@
 	"EngineAssociation": "",
 	"Category": "",
 	"Description": "Host project for PuerTS automation tests and benchmarks. Plugins/Puerts is a junction to ../Puerts created by RunTests.ps1",
+	"DisableEnginePluginsByDefault": true,
 	"Modules": [
 		{
 			"Name": "PuertsTest",
