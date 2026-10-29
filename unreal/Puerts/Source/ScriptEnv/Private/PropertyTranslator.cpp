@@ -676,6 +676,11 @@ public:
 
         if (Ptr)
         {
+            if (UNLIKELY(!IsStructValue(Apis->get_native_object_typeid(Env, Value))))
+            {
+                ThrowInvalidValue(Apis, Env);
+                return false;
+            }
             if (DeepCopy || !ParamShallowCopySize)
             {
                 StructProperty->CopySingleValue(ValuePtr, Ptr);
@@ -687,10 +692,54 @@ public:
         }
         else if (Apis->is_object(Env, Value))
         {
+            // a native object without pointer (e.g. the object of a destroyed UObject) is not merged as a plain object
+            if (UNLIKELY(Apis->get_native_object_typeid(Env, Value) != nullptr))
+            {
+                ThrowInvalidValue(Apis, Env);
+                return false;
+            }
             PapiUtils::Merge(Apis, Env, Value, StructProperty->Struct, ValuePtr);
         }
         return true;
     }
+
+    void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
+    {
+        void* Ptr = Apis->get_native_object_ptr(Env, Value);
+        // a mismatched object is rejected by JsToUE
+        return Ptr && IsStructValue(Apis->get_native_object_typeid(Env, Value)) ? Ptr : nullptr;
+    }
+
+private:
+    // the native object of a value can be read as the struct if it is an object of the struct or a derived one. A wrapper
+    // lives until the module shuts down (FStructWrapper::ReleaseAll, the translators are released with it), the exact match
+    // is cached
+    bool IsStructValue(const void* TypeId) const
+    {
+        if (LIKELY(TypeId == MatchedTypeId))
+        {
+            return true;
+        }
+        const FScriptStructWrapper* Wrapper = FScriptStructWrapper::FromStructTypeId(TypeId);
+        UStruct* Struct = Wrapper ? Wrapper->GetStruct() : nullptr;
+        if (!Struct || !Struct->IsChildOf(StructProperty->Struct))
+        {
+            return false;
+        }
+        if (Struct == StructProperty->Struct)
+        {
+            MatchedTypeId = TypeId;
+        }
+        return true;
+    }
+
+    void ThrowInvalidValue(struct pesapi_ffi* Apis, pesapi_env Env) const
+    {
+        PapiUtils::ThrowException(
+            Apis, Env, FString::Printf(TEXT("passing a invalid object for %s"), *StructProperty->Struct->GetName()));
+    }
+
+    mutable const void* MatchedTypeId = nullptr;
 };
 
 class FArrayBufferPropertyTranslator : public FPropertyWithDestructorReflection

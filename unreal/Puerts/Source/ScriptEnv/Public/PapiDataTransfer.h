@@ -100,17 +100,23 @@ struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::
 
 // The type id of the class definition of a reflected type (UClass / UScriptStruct) is its process wide wrapper (FStructWrapper),
 // which starts with this tag, so the script objects of UObjects can be told by their type ids (see doc/unreal/zhcn/
-// papi_unification_design.md 5.6). Any type id may be passed to IsUClass: a type id is the address of a static or heap object
-// of at least the size of a pointer, and the magic is only set in the wrappers of UClasses.
+// papi_unification_design.md 5.6). Any type id may be passed to IsUClass / IsUScriptStruct: a type id is the address of a static
+// or heap object of at least the size of a pointer, and the magics are only set in the wrappers of UClasses / UScriptStructs.
 struct FReflectedTypeTag
 {
-    static constexpr uint64 UClassMagic = 0x53534C4355455550ull;    // "PUEUCLSS"
+    static constexpr uint64 UClassMagic = 0x53534C4355455550ull;           // "PUEUCLSS"
+    static constexpr uint64 UScriptStructMagic = 0x5452545355455550ull;    // "PUEUSTRT"
 
     uint64 Magic = 0;
 
     FORCEINLINE static bool IsUClass(const void* TypeId)
     {
         return TypeId && static_cast<const FReflectedTypeTag*>(TypeId)->Magic == UClassMagic;
+    }
+
+    FORCEINLINE static bool IsUScriptStruct(const void* TypeId)
+    {
+        return TypeId && static_cast<const FReflectedTypeTag*>(TypeId)->Magic == UScriptStructMagic;
     }
 };
 

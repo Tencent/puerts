@@ -11,6 +11,10 @@ test('argument errors', () => {
     note('object from number', catchError(() => (obj.ObjectValue = 1)));
     note('object of wrong class', catchError(() => (obj.ObjectValue = UE.PuertsTestObject.StaticClass())));
     note('struct from number', catchError(() => obj.StructSum(1)));
+    note('struct from UObject', catchError(() => obj.StructSum(obj)));
+    note('struct of other type', catchError(() => obj.StructSum(new UE.Vector(1, 2, 3))));
+    note('struct property from UObject', catchError(() => (obj.StructValue = obj)));
+    note('struct property from container', catchError(() => (obj.StructValue = obj.IntArray)));
     note('out param without ref', catchError(() => obj.OutParams(0, '', new UE.PuertsTestStruct())));
     note('ref param without ref', catchError(() => obj.IncRef(1)));
     note('enum out of range', catchError(() => (obj.EnumValue = 3)));

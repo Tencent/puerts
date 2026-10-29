@@ -195,6 +195,15 @@ class FScriptStructWrapper : public FStructWrapper
 public:
     explicit FScriptStructWrapper(UScriptStruct* InScriptStruct) : FStructWrapper(InScriptStruct)
     {
+        Magic = FReflectedTypeTag::UScriptStructMagic;
+    }
+
+    // the wrapper if TypeId is the type id of a UScriptStruct value (see FReflectedTypeTag), otherwise nullptr
+    FORCEINLINE static const FScriptStructWrapper* FromStructTypeId(const void* TypeId)
+    {
+        return FReflectedTypeTag::IsUScriptStruct(TypeId)
+                   ? static_cast<const FScriptStructWrapper*>(static_cast<const FReflectedTypeTag*>(TypeId))
+                   : nullptr;
     }
 
     // Finalize of the class definitions of UScriptStructs, the memory of an object owned by js is freed by the

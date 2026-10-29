@@ -3,6 +3,8 @@ too few args: <no throw>
 static with wrong args: <no throw>
 int from string: <no throw>
 object from number: <no throw>
+struct from UObject: RuntimeError: passing a invalid object for PuertsTestStruct
+struct arg from UObject: RuntimeError: passing a invalid object for PuertsTestStruct
 call missing method: AttributeError: 'PuertsTestObject' object has no attribute 'NoSuchMethod'
 unknown class: RuntimeError: can not find type:NoSuchClassAnywhere
 error with args: ValueError: {'code': 1}

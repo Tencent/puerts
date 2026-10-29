@@ -4,6 +4,10 @@ extra args: <no throw>
 object from number: <no throw>
 object of wrong class: <no throw>
 struct from number: <no throw>
+struct from UObject: Error: passing a invalid object for PuertsTestStruct
+struct of other type: Error: passing a invalid object for PuertsTestStruct
+struct property from UObject: Error: passing a invalid object for PuertsTestStruct
+struct property from container: Error: passing a invalid object for PuertsTestStruct
 out param without ref: <no throw>
 ref param without ref: <no throw>
 enum out of range: <no throw>

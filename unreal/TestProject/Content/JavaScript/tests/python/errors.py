@@ -20,8 +20,13 @@ def t_wrong_property_values():
     def object_from_number():
         obj.ObjectValue = 1
 
+    def struct_from_uobject():
+        obj.StructValue = obj
+
     note('int from string', catchError(int_from_string))
     note('object from number', catchError(object_from_number))
+    note('struct from UObject', catchError(struct_from_uobject))
+    note('struct arg from UObject', catchError(lambda: obj.StructSum(obj)))
 
 
 test('wrong property values', t_wrong_property_values)

@@ -22,6 +22,12 @@ test('wrong property values', function()
     note('object from number', catchError(function()
         obj.ObjectValue = 1
     end))
+    note('struct from UObject', catchError(function()
+        obj.StructValue = obj
+    end))
+    note('struct arg from UObject', catchError(function()
+        return obj:StructSum(obj)
+    end))
 end)
 
 test('missing members', function()
