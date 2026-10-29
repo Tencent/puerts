@@ -20,8 +20,10 @@ test('mixin', () => {
     Mixed = blueprint.mixin(UE.PuertsTestMixinTarget, MixinImpl);
     const o = new UE.PuertsTestMixinTarget();
     eq(o.CallImplEvent(5), 105, 'BlueprintImplementableEvent overridden');
-    // Current behaviour: mixin on a native class does not redirect C++ calls of a BlueprintNativeEvent.
-    observe('BlueprintNativeEvent via C++ after mixin', () => o.CallNativeEvent('a'));
+    // The generated C++ thunk of a BlueprintNativeEvent: UE5 calls the _Implementation directly when the function belongs to a
+    // native class, UE4 always goes through ProcessEvent, so mixin on a native class redirects the C++ call on UE4 only.
+    const redirected = UE.KismetSystemLibrary.GetEngineVersion().startsWith('4.');
+    eq(o.CallNativeEvent('a'), redirected ? 'js:a' : 'native:a', 'BlueprintNativeEvent via C++ after mixin');
     observe('BlueprintNativeEvent via js after mixin', () => o.NativeEvent('a'));
     eq(o.ImplEvent(1), 101, 'call override from js');
     observe('mixin extra method on base instance', () => typeof o.Extra);

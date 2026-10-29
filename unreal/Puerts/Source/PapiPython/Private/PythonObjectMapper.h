@@ -10,7 +10,7 @@
 
 #include "PythonInclude.h"
 
-#if WITH_PYTHON
+#if PUERTS_PAPI_PYTHON
 
 #include "NamespaceDef.h"
 #include "pesapi.h"
@@ -258,4 +258,4 @@ private:
 }    // namespace pyimpl
 }    // namespace PUERTS_NAMESPACE
 
-#endif    // WITH_PYTHON
+#endif    // PUERTS_PAPI_PYTHON

@@ -25,7 +25,8 @@ class FCppObjectMapper;
 // the python backend (BackendPython of unity): a sub interpreter of the python of the engine (initialized by the backend if
 // PythonScriptPlugin did not), the module system is the import of python (a finder of sys.meta_path) with the sources
 // resolved and loaded by the host, bootstrapped by puerts/init.py. No inspector, addons, trivially freed objects or name fixing.
-// Create returns nullptr if python is not available (WITH_PYTHON is 0 or the initialization failed)
+// Create returns nullptr if python is not available (WITH_PYTHON is 0, the python of the engine is older than 3.9, or the
+// initialization failed)
 class PAPIPYTHON_API FPapiBackendPython : public IPapiBackend
 {
 public:
@@ -33,6 +34,9 @@ public:
 
     // the factory creating python backends for FScriptEnv
     static std::unique_ptr<IPapiBackend> Create(const FPapiBackendParams& InParams);
+
+    // false if python is not available (the backend is a stub, or python failed to initialize), Create returns nullptr then
+    static bool IsAvailable();
 
     virtual ~FPapiBackendPython() override;
 

@@ -7,6 +7,7 @@
 #include "PapiBackendPython.h"
 #include "PuertsTestTypes.h"
 #include "Containers/Ticker.h"
+#include "UECompatible.h"
 #include "HAL/FileManager.h"
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
@@ -146,7 +147,7 @@ UPuertsTestReporter* RunScript(FAutomationTestBase& Test, EBackend Backend, cons
             // timers (puerts/timer.js) are js, checked against Date.now() on the tick of the env (a core ticker delegate),
             // wait a little real time (more than the 10ms minimum of setInterval) and tick, so they fire before the next step
             FPlatformProcess::Sleep(0.05f);
-            FTSTicker::GetCoreTicker().Tick(0.1f);
+            FUETicker::GetCoreTicker().Tick(0.1f);
             FullGC(*Env);
             if (!Reporter->OnStep.IsBound())
             {

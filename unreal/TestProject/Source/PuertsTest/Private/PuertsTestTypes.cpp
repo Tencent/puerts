@@ -293,7 +293,11 @@ void UPuertsTestReporter::MarkGarbage(UObject* Obj)
 {
     if (IsValid(Obj))
     {
+#if ENGINE_MAJOR_VERSION >= 5
         Obj->MarkAsGarbage();
+#else
+        Obj->MarkPendingKill();
+#endif
     }
 }
 

@@ -12,7 +12,7 @@
 #include "PesapiPythonImpl.h"
 #include "PythonInclude.h"
 
-#if WITH_PYTHON
+#if PUERTS_PAPI_PYTHON
 
 #include "PythonPapiData.h"
 #include "PythonObjectMapper.h"
@@ -1491,7 +1491,7 @@ pesapi_ffi g_pesapi_ffi{
 }    // namespace pyimpl
 }    // namespace PUERTS_NAMESPACE
 
-#else    // WITH_PYTHON
+#else    // PUERTS_PAPI_PYTHON
 
 namespace PUERTS_NAMESPACE
 {
@@ -1501,4 +1501,4 @@ pesapi_ffi g_pesapi_ffi{};
 }    // namespace pyimpl
 }    // namespace PUERTS_NAMESPACE
 
-#endif    // WITH_PYTHON
+#endif    // PUERTS_PAPI_PYTHON

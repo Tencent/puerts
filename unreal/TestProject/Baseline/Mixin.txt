@@ -1,4 +1,3 @@
-BlueprintNativeEvent via C++ after mixin: "native:a"
 BlueprintNativeEvent via js after mixin: "js:a"
 mixin extra method on base instance: "function"
 mixin returned class: true

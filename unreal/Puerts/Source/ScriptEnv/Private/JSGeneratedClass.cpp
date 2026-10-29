@@ -27,6 +27,11 @@ UFunction* UJSGeneratedClass::Mixin(UClass* Class, UFunction* Super,
 
     if (!Existed)
     {
+        // the duplicate binds its native function by name on the class (UE4 warns "Failed to bind native function" otherwise)
+        if (Super->HasAnyFunctionFlags(FUNC_Native))
+        {
+            Class->AddNativeFunction(*Super->GetName(), Super->GetNativeFunc());
+        }
         UFunction* Tmp =
             Cast<UFunction>(StaticDuplicateObject(Super, Class, Super->GetFName(), RF_AllFlags, UFunction::StaticClass()));
         Tmp->SetSuperStruct(Super);

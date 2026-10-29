@@ -1,4 +1,5 @@
 #include "Misc/AutomationTest.h"
+#include "PapiBackendPython.h"
 #include "PuertsTestRunner.h"
 #include "PuertsTestTypes.h"
 
@@ -22,6 +23,16 @@ bool Finish(FAutomationTestBase& Test, UPuertsTestReporter* Reporter)
 bool RunPlain(FAutomationTestBase& Test, EBackend Backend, const TCHAR* Module, const TCHAR* Name)
 {
     return Finish(Test, PuertsTest::RunScript(Test, Backend, Module, Name));
+}
+
+bool RunPython(FAutomationTestBase& Test, const TCHAR* Module, const TCHAR* Name)
+{
+    if (!PUERTS_NAMESPACE::FPapiBackendPython::IsAvailable())
+    {
+        Test.AddWarning(TEXT("python backend is not available (needs the Python3 module with python 3.9+), skipped"));
+        return true;
+    }
+    return RunPlain(Test, EBackend::Python, Module, Name);
 }
 
 bool RunWebSocket(FAutomationTestBase& Test, EBackend Backend)
@@ -111,8 +122,9 @@ PUERTS_LUA_TEST(Lifecycle, "tests/lua/lifecycle")
 PUERTS_LUA_TEST(Modules, "tests/lua/modules")
 PUERTS_LUA_TEST(Errors, "tests/lua/errors")
 
-// the python tests (tests/python/*.py) run with the python backend only, baselines are Baseline/Python/<Name>.txt
-#define PUERTS_PYTHON_TEST(Name, Module) PUERTS_BACKEND_TEST(Python, Name, RunPlain(*this, B, TEXT(Module), TEXT(#Name)))
+// the python tests (tests/python/*.py) run with the python backend only, baselines are Baseline/Python/<Name>.txt; skipped
+// (with a warning) if python is not available, e.g. UE4 (python 3.7) or an engine without the Python3 module
+#define PUERTS_PYTHON_TEST(Name, Module) PUERTS_BACKEND_TEST(Python, Name, RunPython(*this, TEXT(Module), TEXT(#Name)))
 
 PUERTS_PYTHON_TEST(Properties, "tests/python/properties")
 PUERTS_PYTHON_TEST(Functions, "tests/python/functions")

@@ -9,10 +9,10 @@
 #include "PapiBackendPython.h"
 #include "PesapiPythonImpl.h"
 #include "PythonInclude.h"
-// GetDefaultClassRegistry / ScriptClassRegistry are used by the stub (WITH_PYTHON is 0) as well
+// GetDefaultClassRegistry / ScriptClassRegistry are used by the stub (PUERTS_PAPI_PYTHON is 0) as well
 #include "JSClassRegister.h"
 
-#if WITH_PYTHON
+#if PUERTS_PAPI_PYTHON
 
 #include "PythonObjectMapper.h"
 #include "PythonPapiData.h"
@@ -106,6 +106,11 @@ std::unique_ptr<IPapiBackend> FPapiBackendPython::Create(const FPapiBackendParam
         return nullptr;
     }
     return std::make_unique<FPapiBackendPython>(InParams);
+}
+
+bool FPapiBackendPython::IsAvailable()
+{
+    return EnsurePythonInitialized();
 }
 
 int FPapiBackendPython::GetApiVersion()
@@ -315,7 +320,7 @@ ScriptClassRegistry* FPapiBackendPython::GetRegistry()
 }
 }    // namespace PUERTS_NAMESPACE
 
-#else    // WITH_PYTHON
+#else    // PUERTS_PAPI_PYTHON
 
 namespace PUERTS_NAMESPACE
 {
@@ -337,6 +342,11 @@ FPapiBackendPython::~FPapiBackendPython()
 std::unique_ptr<IPapiBackend> FPapiBackendPython::Create(const FPapiBackendParams& InParams)
 {
     return nullptr;
+}
+
+bool FPapiBackendPython::IsAvailable()
+{
+    return false;
 }
 
 int FPapiBackendPython::GetApiVersion()
@@ -408,4 +418,4 @@ ScriptClassRegistry* FPapiBackendPython::GetRegistry()
 }
 }    // namespace PUERTS_NAMESPACE
 
-#endif    // WITH_PYTHON
+#endif    // PUERTS_PAPI_PYTHON

@@ -145,6 +145,7 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
     check(InBackendFactory);
     Backend = InBackendFactory(BackendParams);
+    checkf(Backend, TEXT("the backend factory returned null (the backend is not available on this build)"));
     MainApis = Backend->GetApi();
     checkf(Backend->GetApiVersion() == PESAPI_VERSION, TEXT("papi version mismatch, expect %d, got %d"), PESAPI_VERSION,
         Backend->GetApiVersion());

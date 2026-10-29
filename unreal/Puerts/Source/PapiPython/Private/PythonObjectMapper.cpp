@@ -8,7 +8,7 @@
 
 #include "PythonObjectMapper.h"
 
-#if WITH_PYTHON
+#if PUERTS_PAPI_PYTHON
 
 #include "PythonPapiData.h"
 #include "PesapiPythonImpl.h"
@@ -1136,4 +1136,4 @@ void FCppObjectMapper::UnInitialize()
 }    // namespace pyimpl
 }    // namespace PUERTS_NAMESPACE
 
-#endif    // WITH_PYTHON
+#endif    // PUERTS_PAPI_PYTHON

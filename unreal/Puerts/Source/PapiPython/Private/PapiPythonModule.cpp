@@ -10,6 +10,7 @@
 #include "ScriptEnvModule.h"
 #include "JSClassRegister.h"
 #include "PesapiPythonImpl.h"
+#include "PythonInclude.h"
 
 class FPapiPythonModule : public IPapiPythonModule
 {
@@ -24,7 +25,7 @@ IMPLEMENT_MODULE(FPapiPythonModule, PapiPython)
 
 void FPapiPythonModule::StartupModule()
 {
-#if WITH_PYTHON
+#if PUERTS_PAPI_PYTHON
     if (!PUERTS_NAMESPACE::GetPesapiFFI())
     {
         PUERTS_NAMESPACE::SetPesapiFFI(&PUERTS_NAMESPACE::pyimpl::g_pesapi_ffi);

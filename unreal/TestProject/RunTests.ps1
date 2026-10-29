@@ -24,6 +24,20 @@ $ProjectDir = $PSScriptRoot
 $Project = Join-Path $ProjectDir 'PuertsTest.uproject'
 $PluginSrc = (Resolve-Path (Join-Path $ProjectDir '..\Puerts')).Path
 
+$EngineVersion = Get-Content -Raw (Join-Path $Engine 'Engine\Build\Build.version') | ConvertFrom-Json
+$EngineTag = '{0}.{1}' -f $EngineVersion.MajorVersion, $EngineVersion.MinorVersion
+$EditorName = if ($EngineVersion.MajorVersion -ge 5) { 'UnrealEditor' } else { 'UE4Editor' }
+
+# 0. the rules assembly (Intermediate/Build/BuildRules) is shared by all engine versions, and the one built by another
+#    engine can not be overwritten (e.g. UE4.27 fails with CS0042 on the pdb written by UE5), so drop it on engine switch
+$RulesDir = Join-Path $ProjectDir 'Intermediate\Build\BuildRules'
+$RulesStamp = Join-Path $ProjectDir 'Intermediate\Build\BuildRules.engine'
+$LastEngine = if (Test-Path $RulesStamp) { (Get-Content -Raw $RulesStamp).Trim() } else { '' }
+if ($LastEngine -ne $EngineTag -and (Test-Path $RulesDir)) {
+    Remove-Item -Recurse -Force $RulesDir
+    Write-Host "engine switched ($LastEngine -> $EngineTag), removed $RulesDir"
+}
+
 # 1. plugin junction (UBT only discovers the UHT exporter plugin of plugins under <Project>/Plugins)
 $PluginLink = Join-Path $ProjectDir 'Plugins\Puerts'
 if (-not (Test-Path $PluginLink)) {
@@ -44,6 +58,8 @@ Get-ChildItem (Join-Path $PluginSrc 'Content\JavaScript') -Directory | ForEach-O
 if (-not $SkipBuild) {
     & (Join-Path $Engine 'Engine\Build\BatchFiles\Build.bat') PuertsTestEditor Win64 $Configuration "-Project=$Project" -WaitMutex
     if ($LASTEXITCODE -ne 0) { throw "build failed ($LASTEXITCODE)" }
+    New-Item -ItemType Directory -Force -Path (Split-Path $RulesStamp) | Out-Null
+    [System.IO.File]::WriteAllText($RulesStamp, $EngineTag)
 }
 
 # 4. run
@@ -53,7 +69,7 @@ if (Test-Path $ReportDir) { Remove-Item -Recurse -Force $ReportDir }
 $LogFile = Join-Path $ProjectDir 'Saved\Logs\RunTests.log'
 New-Item -ItemType Directory -Force -Path (Split-Path $LogFile) | Out-Null
 
-$EditorCmd = Join-Path $Engine 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe'
+$EditorCmd = Join-Path $Engine "Engine\Binaries\Win64\$EditorName-Cmd.exe"
 $EditorArgs = @(
     $Project,
     "-ExecCmds=Automation RunTests $Filter;Quit",

@@ -95,7 +95,8 @@ public:
     UPROPERTY(BlueprintReadWrite)
     float FloatValue = 0.f;
 
-    UPROPERTY(BlueprintReadWrite)
+    // not BlueprintReadWrite: blueprint does not support double before UE5 (puerts exposes it via reflection anyway)
+    UPROPERTY()
     double DoubleValue = 0.0;
 
     UPROPERTY(BlueprintReadWrite)
@@ -117,7 +118,7 @@ public:
     FPuertsTestStruct StructValue;
 
     UPROPERTY(BlueprintReadWrite)
-    TObjectPtr<UPuertsTestObject> ObjectValue;
+    UPuertsTestObject* ObjectValue = nullptr;
 
     UPROPERTY(BlueprintReadWrite)
     TSubclassOf<UObject> ClassValue;
@@ -312,6 +313,15 @@ class PUERTSTEST_API UPuertsTestInterface : public UInterface
     GENERATED_BODY()
 };
 
+class PUERTSTEST_API IPuertsTestInterface
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+    int32 InterfacePing(int32 Value);
+};
+
 // Used only by FJsObject tests (tests/js_object.js and FPuertsTest_JsObject).
 UCLASS(BlueprintType)
 class PUERTSTEST_API UPuertsTestJsObjectHolder : public UObject
@@ -349,15 +359,6 @@ public:
     // reads Key through a copy constructed and a copy assigned FJsObject, returns the sum
     UFUNCTION(BlueprintCallable)
     int32 CopyAndRead(const FString& Key) const;
-};
-
-class PUERTSTEST_API IPuertsTestInterface
-{
-    GENERATED_BODY()
-
-public:
-    UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-    int32 InterfacePing(int32 Value);
 };
 
 // Used only by reflection binding tests: implements an interface, extension methods are declared in UPuertsTestExtension.
@@ -433,7 +434,7 @@ public:
 
     // lets scripts keep objects alive from the C++ side across steps
     UPROPERTY(BlueprintReadWrite)
-    TObjectPtr<UObject> Holder;
+    UObject* Holder = nullptr;
 
     UPROPERTY()
     TArray<FString> Passed;
@@ -453,14 +454,15 @@ public:
     UFUNCTION(BlueprintCallable)
     void Fail(const FString& Name, const FString& Message);
 
-    UFUNCTION(BlueprintCallable)
+    // double functions are not BlueprintCallable: blueprint does not support double before UE5
+    UFUNCTION()
     void Metric(const FString& Name, double Value, const FString& Unit);
 
     // free-form observation that becomes part of the baseline (e.g. an exception message)
     UFUNCTION(BlueprintCallable)
     void Note(const FString& Text);
 
-    UFUNCTION(BlueprintCallable)
+    UFUNCTION()
     static double NowSeconds();
 
     // simulates an explicit destroy (Actor::Destroy, level unload): object becomes garbage on the next UE GC
