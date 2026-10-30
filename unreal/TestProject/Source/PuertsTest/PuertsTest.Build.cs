@@ -13,7 +13,7 @@ public class PuertsTest : ModuleRules
         if (Target.bBuildEditor)
         {
             // PuertsTestBlueprintUtils: creates, changes and compiles blueprints and user defined structs
-            PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "BlueprintGraph", "KismetCompiler", "Kismet" });
+            PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "BlueprintGraph", "KismetCompiler" });
         }
     }
 }
