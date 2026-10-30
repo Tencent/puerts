@@ -9,6 +9,7 @@
 #   ./RunTests.sh --bench --bench-label before_m1  # run Puerts.Bench, result in Saved/PuertsBench/before_m1.json
 #   ./RunTests.sh --engine "/Users/Shared/Epic Games/UE_4.27"   # UE5 and UE4.27 are both supported
 #   ./RunTests.sh --build-only --engine <Mini427>   # build with one engine, then run with another via --skip-build
+#   ./RunTests.sh --editor-arg -ddc=Cold           # extra editor arguments (repeatable), e.g. an empty DDC like CI
 #
 # Env: UE_ROOT overrides the engine root (defaults to the newest UE_5.x, then UE_4.x, under
 # /Users/Shared/Epic Games, the standard install location of the Epic Games Launcher).
@@ -38,9 +39,10 @@ BENCH=0
 BENCH_LABEL="latest"
 CONFIGURATION="Development"
 TIMEOUT_SEC=600
+EXTRA_EDITOR_ARGS=()
 
 usage() {
-    sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -60,6 +62,8 @@ while [ $# -gt 0 ]; do
         --configuration=*) CONFIGURATION="${1#*=}"; shift ;;
         --timeout)         TIMEOUT_SEC="${2:?--timeout needs a value}"; shift 2 ;;
         --timeout=*)       TIMEOUT_SEC="${1#*=}"; shift ;;
+        --editor-arg)      EXTRA_EDITOR_ARGS+=("${2:?--editor-arg needs a value}"); shift 2 ;;
+        --editor-arg=*)    EXTRA_EDITOR_ARGS+=("${1#*=}"); shift ;;
         -h|--help)         usage 0 ;;
         *) echo "unknown argument: $1" >&2; usage 1 ;;
     esac
@@ -221,6 +225,8 @@ EDITOR_ARGS=(
 )
 if [ "$UPDATE_BASELINE" -eq 1 ]; then EDITOR_ARGS+=(-PuertsUpdateBaseline); fi
 if [ "$BENCH" -eq 1 ]; then EDITOR_ARGS+=("-PuertsBenchLabel=$BENCH_LABEL"); fi
+# bash 3.2 (macOS) treats "${arr[@]}" of an empty array as unbound under set -u
+if [ "${#EXTRA_EDITOR_ARGS[@]}" -gt 0 ]; then EDITOR_ARGS+=("${EXTRA_EDITOR_ARGS[@]}"); fi
 
 echo "running: $FILTER (timeout ${TIMEOUT_SEC}s)"
 # Plugins/Puerts is a symlink. UBT bakes rpaths of the plugin dylibs relative to the symlinked

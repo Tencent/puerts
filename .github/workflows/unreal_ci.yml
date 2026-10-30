@@ -23,6 +23,8 @@ env:
   EngineRuntimeWin64: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_win64_editor_runtime.tgz"
   # the same for macOS, made by unreal/TestProject/Tools/MakeEnginePack.sh
   EngineRuntimeMac: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_mac_editor_runtime.tgz"
+  # stand-alone mini UE5.8 for macOS (arm64), made by unreal/TestProject/Tools/MakeMiniEngine.sh
+  EngineMac58: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini58_mac.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__241009/v8_bin_9.4.146.24.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
@@ -152,6 +154,52 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: unreal-test-logs-mac
+        path: |
+          unreal/TestProject/Saved/Logs
+          unreal/TestProject/Saved/AutomationReport
+        if-no-files-found: ignore
+
+  mac_test_ue58:
+    needs: urls
+    name: Mac Test (UE5.8)
+    # arm64 runner: the mini engine is thinned to arm64; UE5.8 needs Xcode >= 15.2 (Engine/Config/Apple/Apple_SDK.json)
+    runs-on: macos-15
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache engine
+      id: cache-engine
+      uses: actions/cache@v4
+      with:
+        path: ue58
+        key: ue58-mac-${{ env.EngineMac58 }}-${{ hashFiles('unreal/TestProject/Tools/EnginePack/manifest_mac_5.8.txt') }}
+    - name: Prepare engine
+      if: steps.cache-engine.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p ue58
+        wget -O mini.tgz -q "${{ env.EngineMac58 }}"
+        tar xfz mini.tgz -C ue58
+        rm mini.tgz
+    - name: Prepare toolchain
+      shell: bash
+      run: |
+        # UBT runs on the dotnet bundled in the mini engine, only Xcode is needed
+        xcodebuild -version
+        clang --version | head -n 1
+    - name: Prepare jslib
+      shell: bash
+      run: |
+        wget -O jslib.tgz -q "${{ needs.urls.outputs.v8 }}"
+        tar xfz jslib.tgz -C unreal/Puerts/ThirdParty
+    - name: Run tests
+      shell: bash
+      run: |
+        unreal/TestProject/RunTests.sh --engine "$GITHUB_WORKSPACE/ue58" --timeout 1200
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: unreal-test-logs-mac-ue58
         path: |
           unreal/TestProject/Saved/Logs
           unreal/TestProject/Saved/AutomationReport
