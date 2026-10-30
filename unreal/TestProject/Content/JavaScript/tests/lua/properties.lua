@@ -174,4 +174,48 @@ test('derived', function()
     eq(d:Add(1, 2), 3)
 end)
 
+test('merge', function()
+    local puerts = f.puerts
+    local o = UE.PuertsTestObject()
+    puerts.merge(o, { IntValue = 5, StringValue = 'merged', NoSuchField = 1 })
+    eq(o.IntValue, 5)
+    eq(o.StringValue, 'merged')
+
+    local s = UE.PuertsTestStruct()
+    puerts.merge(s, { X = 9, S = 'st' })
+    eq(s.X, 9)
+    eq(s.S, 'st')
+
+    -- a nested table is merged into the struct property
+    puerts.merge(o, { StructValue = { X = 4 } })
+    eq(o.StructValue.X, 4)
+
+    -- the integer keys and the keys of the metatable are not merged
+    puerts.merge(o, setmetatable({ 1, 2, [3] = 'x' }, { __index = { IntValue = 100 } }))
+    eq(o.IntValue, 5)
+    observe('merge empty table', function()
+        puerts.merge(o, {})
+        return o.IntValue
+    end)
+    observe('merge number src', function()
+        puerts.merge(o, 1)
+        return o.IntValue
+    end)
+end)
+
+test('table to struct', function()
+    local o = UE.PuertsTestObject()
+    o.StructValue = { X = 6, S = 'tbl' }
+    eq(o.StructValue.X, 6)
+    eq(o.StructValue.S, 'tbl')
+    local arr = o.StructArray
+    arr:Add({ X = 7, S = 'a' })
+    eq(arr:Num(), 1)
+    eq(arr:Get(0).X, 7)
+    eq(arr:Get(0).S, 'a')
+    observe('struct parameter from table', function()
+        return o:StructSum({ X = 8, S = 'e' })
+    end)
+end)
+
 f.run()

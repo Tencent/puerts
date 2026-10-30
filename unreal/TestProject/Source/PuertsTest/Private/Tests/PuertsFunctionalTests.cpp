@@ -106,6 +106,8 @@ PUERTS_SCRIPT_TEST(Objects, "tests/objects")
 PUERTS_SCRIPT_TEST(Reflection, "tests/reflection")
 PUERTS_SCRIPT_TEST(ModuleLoader, "tests/module_loader")
 PUERTS_SCRIPT_TEST(Promises, "tests/promises")
+// blueprints and user defined structs changed and recompiled, needs the editor
+PUERTS_SCRIPT_TEST(Blueprint, "tests/blueprint")
 
 PUERTS_TEST(WebSocket, RunWebSocket(*this, B))
 PUERTS_TEST(Timers, RunTimers(*this, B))
@@ -121,6 +123,7 @@ PUERTS_LUA_TEST(Delegates, "tests/lua/delegates")
 PUERTS_LUA_TEST(Lifecycle, "tests/lua/lifecycle")
 PUERTS_LUA_TEST(Modules, "tests/lua/modules")
 PUERTS_LUA_TEST(Errors, "tests/lua/errors")
+PUERTS_LUA_TEST(Blueprint, "tests/lua/blueprint")
 
 // the python tests (tests/python/*.py) run with the python backend only, baselines are Baseline/Python/<Name>.txt; skipped
 // (with a warning) if python is not available, e.g. UE4 (python 3.7) or an engine without the Python3 module
@@ -133,5 +136,6 @@ PUERTS_PYTHON_TEST(Delegates, "tests/python/delegates")
 PUERTS_PYTHON_TEST(Lifecycle, "tests/python/lifecycle")
 PUERTS_PYTHON_TEST(Modules, "tests/python/modules")
 PUERTS_PYTHON_TEST(Errors, "tests/python/errors")
+PUERTS_PYTHON_TEST(Blueprint, "tests/python/blueprint")
 
 #endif

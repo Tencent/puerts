@@ -220,4 +220,66 @@ def t_derived():
 
 test('derived', t_derived)
 
+
+def t_merge():
+    puerts = f.puerts
+    o = UE.PuertsTestObject()
+    puerts.merge(o, {'IntValue': 5, 'StringValue': 'merged', 'NoSuchField': 1})
+    eq(o.IntValue, 5)
+    eq(o.StringValue, 'merged')
+
+    s = UE.PuertsTestStruct()
+    puerts.merge(s, {'X': 9, 'S': 'st'})
+    eq(s.X, 9)
+    eq(s.S, 'st')
+
+    # a nested dict is merged into the struct property
+    puerts.merge(o, {'StructValue': {'X': 4}})
+    eq(o.StructValue.X, 4)
+
+    # the keys which are not str are not merged
+    puerts.merge(o, {1: 2, ('IntValue',): 100})
+    eq(o.IntValue, 5)
+
+    def merge_empty():
+        puerts.merge(o, {})
+        return o.IntValue
+
+    observe('merge empty dict', merge_empty)
+
+    def merge_number():
+        puerts.merge(o, 1)
+        return o.IntValue
+
+    observe('merge number src', merge_number)
+
+    class Plain:
+        def __init__(self):
+            self.IntValue = 100
+
+    def merge_plain_object():
+        puerts.merge(o, Plain())
+        return o.IntValue
+
+    observe('merge plain object src', merge_plain_object)
+
+
+test('merge', t_merge)
+
+
+def t_dict_to_struct():
+    o = UE.PuertsTestObject()
+    o.StructValue = {'X': 6, 'S': 'dct'}
+    eq(o.StructValue.X, 6)
+    eq(o.StructValue.S, 'dct')
+    arr = o.StructArray
+    arr.Add({'X': 7, 'S': 'a'})
+    eq(arr.Num(), 1)
+    eq(arr.Get(0).X, 7)
+    eq(arr.Get(0).S, 'a')
+    observe('struct parameter from dict', lambda: o.StructSum({'X': 8, 'S': 'e'}))
+
+
+test('dict to struct', t_dict_to_struct)
+
 f.run()

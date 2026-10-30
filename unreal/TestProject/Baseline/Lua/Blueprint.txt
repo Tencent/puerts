@@ -1,0 +1,60 @@
+class: add variable keeps the UClass: true
+class: tojs is cached: true
+class: StaticClass: true
+class: instance GetClass: true
+class: merge: <no throw>
+class: merged: [10, 11]
+struct: tojs is cached: true
+struct: default Value: 0
+struct: copied into array: 7
+struct: table into array: <no throw>
+struct: table element: 3
+struct: merge: <no throw>
+struct: merged: 21
+recompile: same UClass: true
+recompile: same lua class: true
+recompile: old instance alive: throws <js-root>/tests/lua/blueprint.lua:72: passing a invalid object
+recompile: old instance Score: throws <js-root>/tests/lua/blueprint.lua:75: access a invalid object
+add: same lua class: true
+add: has Label: true
+add: new instance Score: 7
+add: new instance Label: nil
+add: write Label: <no throw>
+add: read Label after write: "hello"
+add: merge after recompile: <no throw>
+add: merged: [12, 13]
+add: derived new instance Score: 8
+gc: first instance Score: throws <js-root>/tests/lua/blueprint.lua:123: access a invalid object
+gc: second instance Score: 7
+gc: derived instance alive: throws <js-root>/tests/lua/blueprint.lua:129: passing a invalid object
+remove: same lua class: true
+remove: new instance read Score: throws <js-root>/tests/lua/blueprint.lua:140: Property is invalid!
+remove: new instance write Score: <js-root>/tests/lua/blueprint.lua:143: Property is invalid!
+remove: kept instance read Score: throws <js-root>/tests/lua/blueprint.lua:146: Property is invalid!
+remove: merge: <no throw>
+remove: merged IntValue: 2
+change type: property type: "IntProperty"
+change type: write int: <no throw>
+change type: read: 12
+add back: property type: "FloatProperty"
+add back: write: <js-root>/tests/lua/blueprint.lua:180: Property is invalid!
+add back: read: throws <js-root>/tests/lua/blueprint.lua:183: Property is invalid!
+end: tojs: true
+end: derived tojs: true
+end: derived GetClass: true
+struct add: same lua class: true
+struct add: Value: 2
+struct add: Extra: nil
+struct add: table into array: <no throw>
+struct add: element Value: 4
+struct add: many elements: "1,2,3,4,5,6,7,8"
+struct add: many elements after remove: "2,3,4,5,6,7,8,9"
+struct add: emptied: 0
+struct add: map values: "10,20,30,40"
+struct rename: Value: throws <js-root>/tests/lua/blueprint.lua:306: Property is invalid!
+struct rename: Amount: nil
+struct rename: merge: <no throw>
+struct remove: has Extra: false
+struct remove: Value: throws <js-root>/tests/lua/blueprint.lua:326: Property is invalid!
+struct remove: table into array: <no throw>
+struct remove: array length: 1

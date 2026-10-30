@@ -1,0 +1,64 @@
+class: add variable keeps the UClass: True
+class: tojs is cached: True
+class: StaticClass: True
+class: subclass of parent: True
+class: isinstance: True
+class: instance GetClass: True
+class: merge: <no throw>
+class: merged: [10, 11]
+derived: subclass of base blueprint: True
+struct: tojs is cached: True
+struct: default Value: 0
+struct: copied into array: 7
+struct: dict into array: <no throw>
+struct: dict element: 3
+struct: merge: <no throw>
+struct: merged: 21
+recompile: same UClass: True
+recompile: same python class: True
+recompile: old instance alive: throws RuntimeError: passing a invalid object
+recompile: old instance Score: throws RuntimeError: access a invalid object
+add: same python class: True
+add: has Label: True
+add: Label on python class: False
+add: new instance Score: 7
+add: new instance Label: '<missing>'
+add: write Label: <no throw>
+add: read Label after write: 'hello'
+add: merge after recompile: <no throw>
+add: merged: [12, 13]
+add: derived new instance Score: 8
+gc: first instance Score: throws RuntimeError: access a invalid object
+gc: second instance Score: 7
+gc: derived instance alive: throws RuntimeError: passing a invalid object
+remove: same python class: True
+remove: new instance read Score: throws RuntimeError: Property is invalid!
+remove: new instance write Score: RuntimeError: Property is invalid!
+remove: kept instance read Score: throws RuntimeError: Property is invalid!
+remove: merge: <no throw>
+remove: merged IntValue: 2
+change type: property type: 'IntProperty'
+change type: write int: <no throw>
+change type: read: 12
+add back: property type: 'FloatProperty'
+add back: write: RuntimeError: Property is invalid!
+add back: read: throws RuntimeError: Property is invalid!
+end: tojs: True
+end: derived tojs: True
+end: derived GetClass: True
+struct add: same python class: True
+struct add: Value: 2
+struct add: Extra: '<missing>'
+struct add: dict into array: <no throw>
+struct add: element Value: 4
+struct add: many elements: '1,2,3,4,5,6,7,8'
+struct add: many elements after remove: '2,3,4,5,6,7,8,9'
+struct add: emptied: 0
+struct add: map values: '10,20,30,40'
+struct rename: Value: throws RuntimeError: Property is invalid!
+struct rename: Amount: '<missing>'
+struct rename: merge: <no throw>
+struct remove: has Extra: False
+struct remove: Value: throws RuntimeError: Property is invalid!
+struct remove: dict into array: <no throw>
+struct remove: array length: 1

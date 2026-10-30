@@ -11,3 +11,6 @@ tostring class: "class /Script/PuertsTest.PuertsTestObject"
 StaticClass name: "PuertsTestObject"
 unknown property: nil
 expando field: 5
+merge empty table: 5
+merge number src: throws <js-root>/tests/lua/properties.lua:201: Bad parameters #1, expect a object.
+struct parameter from table: 8
