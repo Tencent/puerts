@@ -85,6 +85,10 @@ ENGINE_MINOR="$(sed -n 's/.*"MinorVersion"[^0-9]*\([0-9]*\).*/\1/p' "$ENGINE/Eng
 ENGINE_TAG="$ENGINE_MAJOR.$ENGINE_MINOR"
 echo "engine: $ENGINE ($ENGINE_TAG)"
 
+# dotnet's first run (fresh CI runner, no ~/.dotnet sentinels) generates an ASP.NET dev certificate, which loads
+# assemblies the mini engines leave out and pokes the keychain; nothing here needs it
+export DOTNET_GENERATE_ASPNET_CERTIFICATE=false DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
+
 # 0. the rules assembly (Intermediate/Build/BuildRules) is shared by all engine versions, and the one built by
 #    another engine can not be reused, so drop it on engine switch (same as RunTests.ps1)
 RULES_DIR="$PROJECT_DIR/Intermediate/Build/BuildRules"

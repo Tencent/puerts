@@ -40,6 +40,7 @@ Tools/MakeMiniEngine.sh --full-engine "/Users/Shared/Epic Games/UE_5.8" --steps 
   - include 目录、静态库和 RuntimeDependencies 在 UBT 里只做存在性检查。
   - Python 只有在 `.py` 存在时才会用 `__pycache__` 里的 pyc，`os.py` 还是 getpath 定位标准库的标志文件。
 - 用 lipo 瘦身会破坏 Epic 的签名，arm64 代码必须重签才能运行。
+- 开发机的 `~/.dotnet` 里有首次运行标记，全新的 CI runner 上没有，dotnet 首次运行时会生成 ASP.NET 开发证书，需要加载包里没有的 `Microsoft.AspNetCore.DeveloperCertificates.XPlat.dll`。处理办法：`RunTests.sh` 设置 `DOTNET_GENERATE_ASPNET_CERTIFICATE=false` 跳过证书生成；collect 和 verify 都使用临时的 `DOTNET_CLI_HOME`，让本地也走首次运行的路径。
 
 ## 结果（5.8.4）
 

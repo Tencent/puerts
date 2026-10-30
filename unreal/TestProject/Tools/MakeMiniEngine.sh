@@ -129,6 +129,17 @@ is_macho() { file -b "$1" | grep -q 'Mach-O'; }
 # manifest entries ending in '/' are directories (created empty), the others files
 manifest_files() { grep -v '/$' "$MANIFEST" || true; }
 
+# RunTests with an empty dotnet user dir, like a fresh CI runner: with the ~/.dotnet first-use sentinels of a dev
+# machine, dotnet's first-run code (and the files it loads) would never be exercised by collect / verify
+RUN_TESTS_FRESH=run_tests_fresh
+run_tests_fresh() {
+    local home code=0
+    home="$(mktemp -d "${TMPDIR:-/tmp}/dotnet_home.XXXXXX")"
+    DOTNET_CLI_HOME="$home" "$RUN_TESTS" "$@" || code=$?
+    rm -rf "$home"
+    return "$code"
+}
+
 step_collect() {
     local tmp="$WORK_DIR/collect_ue${VER_TAG}"
     rm -rf "$tmp"
@@ -138,7 +149,7 @@ step_collect() {
     reset_atime "$SRC_ENGINE" "$marker"
     clean_project
     local code=0
-    "$RUN_TESTS" --engine "$SRC_ENGINE" --timeout "$TIMEOUT_SEC" "${EDITOR_ARGS[@]}" > "$tmp/runtests.log" 2>&1 || code=$?
+    "$RUN_TESTS_FRESH" --engine "$SRC_ENGINE" --timeout "$TIMEOUT_SEC" "${EDITOR_ARGS[@]}" > "$tmp/runtests.log" 2>&1 || code=$?
     grep 'succeeded=' "$tmp/runtests.log" | sed 's/^/full engine: /' || true
     [ "$code" -eq 0 ] || die "RunTests on the full engine failed ($code), see $tmp/runtests.log"
 
@@ -311,7 +322,7 @@ step_verify() {
     reset_atime "$SRC_ENGINE" "$marker"
     clean_project
     local code=0
-    "$RUN_TESTS" --engine "$MINI_DIR" --timeout "$TIMEOUT_SEC" "${EDITOR_ARGS[@]}" || code=$?
+    "$RUN_TESTS_FRESH" --engine "$MINI_DIR" --timeout "$TIMEOUT_SEC" "${EDITOR_ARGS[@]}" || code=$?
 
     local leaked="$WORK_DIR/verify_leaked_ue${VER_TAG}.txt"
     files_read_since "$SRC_ENGINE" "$marker" > "$leaked"
