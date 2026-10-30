@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 12
+#define PESAPI_VERSION 13
 
 #define PESAPI_EXTERN
 
@@ -238,9 +238,6 @@ typedef void (*pesapi_invalidate_class_func)(pesapi_env env, const void* type_id
 // the receiver (this) of a callback, for a constructor callback it is the object being constructed
 typedef pesapi_value (*pesapi_get_this_func)(pesapi_callback_info info);
 
-// throw an Error with msg, the same as throw_by_string but for code that has an env only (e.g. value converters)
-typedef void (*pesapi_throw_error_func)(pesapi_env env, const char* msg);
-
 // detach the native object (ptr, type_id) from its cached script object, for a native object destroyed (or taken over) by the
 // host: the cache entry is removed and on_exit of the class is called, the pointer in the script object is cleared (calls on it
 // fail as a null object), it is never finalized (the host owns ptr now) and its collection does nothing. The next
@@ -338,7 +335,6 @@ struct pesapi_ffi
     pesapi_set_registry_func set_registry;
     pesapi_invalidate_class_func invalidate_class;
     pesapi_get_this_func get_this;
-    pesapi_throw_error_func throw_error;
     pesapi_unbind_native_object_func unbind_native_object;
 };
 

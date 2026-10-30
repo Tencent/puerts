@@ -129,7 +129,7 @@ void FPropertyTranslator::Setter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
             Apis->throw_by_string(Info, "access a invalid object");
             return;
         }
-        JsToUEInContainer(Apis, Env, Value, Object, true);
+        JsToUEInContainer(Apis, Env, Info, Value, Object, true);
     }
     else
     {
@@ -138,7 +138,7 @@ void FPropertyTranslator::Setter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
             Apis->throw_by_string(Info, "access a null struct");
             return;
         }
-        JsToUEInContainer(Apis, Env, Value, HolderPtr, true);
+        JsToUEInContainer(Apis, Env, Info, Value, HolderPtr, true);
     }
 }
 
@@ -246,7 +246,8 @@ public:
         return Apis->create_int32(Env, static_cast<int32>(NumericProperty->GetSignedIntPropertyValue(ValuePtr)));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Apis->get_value_int32(Env, Value)));
         return true;
@@ -265,7 +266,8 @@ public:
         return Apis->create_uint32(Env, static_cast<uint32>(NumericProperty->GetUnsignedIntPropertyValue(ValuePtr)));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Apis->get_value_uint32(Env, Value)));
         return true;
@@ -284,7 +286,8 @@ public:
         return Apis->create_int64(Env, NumericProperty->GetSignedIntPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Apis->is_int64(Env, Value))    // keep the value untouched if not a BigInt
         {
@@ -306,7 +309,8 @@ public:
         return Apis->create_uint64(Env, NumericProperty->GetUnsignedIntPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Apis->is_int64(Env, Value))    // keep the value untouched if not a BigInt
         {
@@ -328,7 +332,8 @@ public:
         return Apis->create_double(Env, NumericProperty->GetFloatingPointPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         NumericProperty->SetFloatingPointPropertyValue(ValuePtr, Apis->get_value_double(Env, Value));
         return true;
@@ -347,7 +352,8 @@ public:
         return Apis->create_boolean(Env, BoolProperty->GetPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         BoolProperty->SetPropertyValue(ValuePtr, Apis->get_value_bool(Env, Value) != 0);
         return true;
@@ -367,7 +373,8 @@ public:
             Env, static_cast<int32>(EnumProperty->GetUnderlyingProperty()->GetSignedIntPropertyValue(ValuePtr)));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         EnumProperty->GetUnderlyingProperty()->SetIntPropertyValue(
             ValuePtr, static_cast<uint64>(Apis->get_value_int32(Env, Value)));
@@ -402,7 +409,8 @@ public:
         return PapiFromFString(Apis, Env, StringProperty->GetPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         StringProperty->SetPropertyValue(ValuePtr, PapiToFString(Apis, Env, Value));
         return true;
@@ -421,7 +429,8 @@ public:
         return PapiFromFString(Apis, Env, NameToFString(NameProperty->GetPropertyValue(ValuePtr)));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         // a FName passed by value (ArrayBuffer of sizeof(FName)), only a plain ArrayBuffer, not a view
         if (Apis->is_binary(Env, Value) && Apis->is_undefined(Env, Apis->get_property(Env, Value, "buffer")))
@@ -456,7 +465,8 @@ public:
 #endif
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
 #ifndef PUERTS_FTEXT_AS_OBJECT
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(PapiToFString(Apis, Env, Value)));
@@ -487,12 +497,13 @@ public:
         return PapiUtils::FindOrAddUObject(Apis, Env, UEObject->GetClass(), UEObject);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Object = PapiUtils::GetUObject(Apis, Env, Value);
         if (PapiUtils::IsReleasedPtr(Object))
         {
-            PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
+            PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object");
             return false;
         }
         ObjectBaseProperty->SetObjectPropertyValue(ValuePtr, Object);
@@ -515,12 +526,13 @@ public:
         return FSoftObjectWrapper::Wrap(Apis, Env, *Ptr, SoftObjectProperty->PropertyClass, false);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FSoftObjectPtr* Ptr = FSoftObjectWrapper::SoftObjectPtrOf(Apis, Env, Value);
         if (!Ptr)
         {
-            PapiUtils::ThrowException(Apis, Env, "passing a invalid object for FSoftObjectPtr");
+            PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object for FSoftObjectPtr");
             return false;
         }
 
@@ -543,12 +555,13 @@ public:
         return FSoftObjectWrapper::Wrap(Apis, Env, *Ptr, SoftClassProperty->MetaClass, true);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FSoftObjectPtr* Ptr = FSoftObjectWrapper::SoftObjectPtrOf(Apis, Env, Value);
         if (!Ptr)
         {
-            PapiUtils::ThrowException(Apis, Env, "passing a invalid object for FSoftObjectPtr");
+            PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object for FSoftObjectPtr");
             return false;
         }
 
@@ -571,7 +584,8 @@ public:
         return PapiFromFString(Apis, Env, FieldPathProperty->GetPropertyValuePtr(ValuePtr)->ToString());
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Path = PapiToFString(Apis, Env, Value);
         FFieldPath FieldPath;
@@ -579,7 +593,7 @@ public:
 
         if (!FieldPath.GetTyped(FieldPathProperty->PropertyClass))
         {
-            PapiUtils::ThrowException(Apis, Env, FString::Printf(TEXT("invalid FieldPath: %s"), *Path));
+            PapiUtils::ThrowException(Apis, Env, Info, FString::Printf(TEXT("invalid FieldPath: %s"), *Path));
             return false;
         }
 
@@ -613,12 +627,13 @@ public:
         return PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         UObject* Object = PapiUtils::GetUObject(Apis, Env, Value);
         if (PapiUtils::IsReleasedPtr(Object))
         {
-            PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
+            PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object");
             return false;
         }
         FScriptInterface* Interface = reinterpret_cast<FScriptInterface*>(ValuePtr);
@@ -635,7 +650,8 @@ public:
     {
     }
 
-    bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const override
+    bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* TempBuff,
+        void** OutValuePtr) const override
     {
         void* Ptr = NativeValueOf(Apis, Env, Value);
 
@@ -645,7 +661,7 @@ public:
             return true;
         }
         *OutValuePtr = TempBuff;
-        return JsToUE(Apis, Env, Value, TempBuff, false);
+        return JsToUE(Apis, Env, Info, Value, TempBuff, false);
     }
 };
 
@@ -670,7 +686,8 @@ public:
         return PapiUtils::FindOrAddStruct(Apis, Env, StructProperty->Struct, Ptr, PassByPointer);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         void* Ptr = Apis->get_native_object_ptr(Env, Value);
 
@@ -678,7 +695,7 @@ public:
         {
             if (UNLIKELY(!IsStructValue(Apis->get_native_object_typeid(Env, Value))))
             {
-                ThrowInvalidValue(Apis, Env);
+                ThrowInvalidValue(Apis, Env, Info);
                 return false;
             }
             if (DeepCopy || !ParamShallowCopySize)
@@ -695,10 +712,10 @@ public:
             // a native object without pointer (e.g. the object of a destroyed UObject) is not merged as a plain object
             if (UNLIKELY(Apis->get_native_object_typeid(Env, Value) != nullptr))
             {
-                ThrowInvalidValue(Apis, Env);
+                ThrowInvalidValue(Apis, Env, Info);
                 return false;
             }
-            PapiUtils::Merge(Apis, Env, Value, StructProperty->Struct, ValuePtr);
+            PapiUtils::Merge(Apis, Env, Info, Value, StructProperty->Struct, ValuePtr);
         }
         return true;
     }
@@ -733,10 +750,10 @@ private:
         return true;
     }
 
-    void ThrowInvalidValue(struct pesapi_ffi* Apis, pesapi_env Env) const
+    void ThrowInvalidValue(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info) const
     {
         PapiUtils::ThrowException(
-            Apis, Env, FString::Printf(TEXT("passing a invalid object for %s"), *StructProperty->Struct->GetName()));
+            Apis, Env, Info, FString::Printf(TEXT("passing a invalid object for %s"), *StructProperty->Struct->GetName()));
     }
 
     mutable const void* MatchedTypeId = nullptr;
@@ -759,7 +776,8 @@ public:
         return Apis->create_binary(Env, ArrayBuffer->Data, ArrayBuffer->Length);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FArrayBuffer ArrayBuffer;
         // an ArrayBuffer or an ArrayBufferView
@@ -789,7 +807,8 @@ public:
         return Apis->create_binary_by_value(Env, ArrayBuffer->Data.GetData(), static_cast<size_t>(ArrayBuffer->Data.Num()));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FArrayBufferValue* ArrayBuffer = static_cast<FArrayBufferValue*>(ValuePtr);
         size_t Len = 0;
@@ -828,7 +847,8 @@ public:
         return static_cast<const FJsObject*>(ValuePtr)->GetValue(Apis, Env);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Apis->is_object(Env, Value))
         {
@@ -846,12 +866,13 @@ public:
     {
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Object = PapiUtils::GetUObject(Apis, Env, Value);
         if (PapiUtils::IsReleasedPtr(Object))
         {
-            PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
+            PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object");
             return false;
         }
         UClass* Class = Cast<UClass>(Object);
@@ -895,7 +916,8 @@ public:
         return ContainerOfValue(Apis, Env, Value, FScriptArrayWrapper::GetClassDefinition()->TypeId);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Ptr = NativeValueOf(Apis, Env, Value);
         if (Ptr)
@@ -946,7 +968,8 @@ public:
         return ContainerOfValue(Apis, Env, Value, FScriptSetWrapper::GetClassDefinition()->TypeId);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Ptr = NativeValueOf(Apis, Env, Value);
         if (Ptr)
@@ -997,7 +1020,8 @@ public:
         return ContainerOfValue(Apis, Env, Value, FScriptMapWrapper::GetClassDefinition()->TypeId);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Ptr = NativeValueOf(Apis, Env, Value);
         if (Ptr)
@@ -1032,7 +1056,8 @@ public:
         return Apis->create_undefined(Env);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         return true;
     }
@@ -1052,7 +1077,8 @@ public:
         return PapiUtils::CreateArray(Apis, Env, Inner.get(), const_cast<void*>(ValuePtr));
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         // Fix Size Array do not assignable
         return true;
@@ -1087,7 +1113,8 @@ public:
         return Apis->create_undefined(Env);
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FScriptDelegate* Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
         if (Apis->is_function(Env, Value))
@@ -1111,7 +1138,7 @@ public:
                 {
                     if (PapiUtils::IsReleasedPtr(Obj))
                     {
-                        PapiUtils::ThrowException(Apis, Env, "passing a invalid object");
+                        PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object");
                         return false;
                     }
 
@@ -1155,22 +1182,24 @@ public:
         return Result;
     }
 
-    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Apis->is_object(Env, Value))
         {
             auto Realvalue = Apis->get_property_uint32(Env, Value, 0);
-            return Inner->JsToUE(Apis, Env, Realvalue, ValuePtr, DeepCopy);
+            return Inner->JsToUE(Apis, Env, Info, Realvalue, ValuePtr, DeepCopy);
         }
         return true;
     }
 
-    bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const override
+    bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* TempBuff,
+        void** OutValuePtr) const override
     {
         if (Apis->is_object(Env, Value))
         {
             auto Realvalue = Apis->get_property_uint32(Env, Value, 0);
-            return Inner->JsToUEFast(Apis, Env, Realvalue, TempBuff, OutValuePtr);
+            return Inner->JsToUEFast(Apis, Env, Info, Realvalue, TempBuff, OutValuePtr);
         }
         *OutValuePtr = TempBuff;
         return true;
@@ -1200,9 +1229,10 @@ public:
         }
     }
 
-    bool JsToUEOut(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const override
+    bool JsToUEOut(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
-        return JsToUE(Apis, Env, Value, ValuePtr, DeepCopy);
+        return JsToUE(Apis, Env, Info, Value, ValuePtr, DeepCopy);
     }
 
     bool IsOut() const override

@@ -628,7 +628,7 @@ void* FScriptStructWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info In
             pesapi_env Env = Apis->get_env(Info);
             for (int i = 0; i < Count; ++i)
             {
-                Properties[i]->JsToUEInContainer(Apis, Env, Apis->get_arg(Info, i), Memory, false);
+                Properties[i]->JsToUEInContainer(Apis, Env, Info, Apis->get_arg(Info, i), Memory, false);
             }
         }
     }

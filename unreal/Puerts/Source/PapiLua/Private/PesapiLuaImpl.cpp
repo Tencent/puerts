@@ -949,24 +949,6 @@ static pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct 
     return reinterpret_cast<pesapi_scope>(new (memory) pesapi_scope__(EnvRef->L, GetMapper(EnvRef->L)));
 }
 
-// an error thrown by throw_error is caught by the scope
-static void TakePendingError(pesapi_scope__* Scope)
-{
-    FCppObjectMapper* Mapper = Scope->Mapper;
-    if (!Mapper || !Mapper->HasPendingError)
-    {
-        return;
-    }
-    Mapper->HasPendingError = false;
-    if (!Scope->Caught)
-    {
-        Reserve(Scope->L);
-        lua_pushlstring(Scope->L, Mapper->PendingError.data(), Mapper->PendingError.size());
-        Scope->SetCaught(luaL_ref(Scope->L, LUA_REGISTRYINDEX), std::string());
-    }
-    Mapper->PendingError.clear();
-}
-
 static int pesapi_has_caught(pesapi_scope pscope)
 {
     auto Scope = ScopeOf(pscope);
@@ -974,7 +956,6 @@ static int pesapi_has_caught(pesapi_scope pscope)
     {
         return false;
     }
-    TakePendingError(Scope);
     return Scope->Caught != nullptr;
 }
 
@@ -985,7 +966,6 @@ static const char* pesapi_get_exception_as_string(pesapi_scope pscope, int with_
     {
         return nullptr;
     }
-    TakePendingError(Scope);
     if (!Scope->Caught)
     {
         return nullptr;
@@ -1390,15 +1370,6 @@ static pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
     return Top(Info->L);
 }
 
-static void pesapi_throw_error(pesapi_env env, const char* msg)
-{
-    auto Mapper = GetMapper(StateOf(env));
-    if (Mapper)
-    {
-        Mapper->SetPendingError(msg);
-    }
-}
-
 static int pesapi_unbind_native_object(pesapi_env env, const void* type_id, void* ptr)
 {
     lua_State* L = StateOf(env);
@@ -1495,7 +1466,6 @@ pesapi_ffi g_pesapi_ffi{
     &pesapi_set_registry,
     &pesapi_invalidate_class,
     &pesapi_get_this,
-    &pesapi_throw_error,
     &pesapi_unbind_native_object,
 };
 

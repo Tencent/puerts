@@ -677,7 +677,7 @@ static pesapi_scope pesapi_open_scope_placement(pesapi_env_ref penv_ref, struct 
     return reinterpret_cast<pesapi_scope>(new (memory) pesapi_scope__(env_ref->context_persistent));
 }
 
-// a pending exception (thrown by throw_error or an api that failed) is caught by the scope
+// a pending exception (thrown by an api that failed) is caught by the scope
 static void takePendingException(pesapi_scope__* scope)
 {
     if (!scope->caught && JS_HasException(scope->ctx))
@@ -1086,12 +1086,6 @@ static pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
     return pesapiValueFromQjsValue(&infoFromPesapi(pinfo)->this_val);
 }
 
-static void pesapi_throw_error(pesapi_env env, const char* msg)
-{
-    auto ctx = qjsContextFromPesapiEnv(env);
-    JS_Throw(ctx, newError(ctx, msg));
-}
-
 static int pesapi_unbind_native_object(pesapi_env env, const void* type_id, void* ptr)
 {
     return FCppObjectMapper::Get(qjsContextFromPesapiEnv(env))->UnbindNativeObject(type_id, ptr);
@@ -1186,7 +1180,6 @@ pesapi_ffi g_pesapi_ffi{
     &pesapi_set_registry,
     &pesapi_invalidate_class,
     &pesapi_get_this,
-    &pesapi_throw_error,
     &pesapi_unbind_native_object,
 };
 

@@ -185,14 +185,10 @@ void FPapiBackendPython::OnExit(IPapiScriptHost* Host)
 
 pesapi_value FPapiBackendPython::ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport)
 {
-    // the import of python: the modules are global (no referrer), import is the same as require
+    // the import of python: the modules are global (no referrer), import is the same as require. A missing require fails in
+    // call_function (not callable) and is caught by the scope of the host
     struct pesapi_ffi* Apis = GetApi();
     pesapi_value Require = Apis->get_property(Env, Apis->global(Env), "require");
-    if (!Apis->is_function(Env, Require))
-    {
-        Apis->throw_error(Env, "require is not a function");
-        return nullptr;
-    }
     pesapi_value Args[] = {Apis->create_string_utf8(Env, Specifier, strlen(Specifier))};
     return Apis->call_function(Env, Require, nullptr, 1, Args);
 }

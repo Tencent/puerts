@@ -65,7 +65,7 @@ protected:
             {
                 Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
             }
-            else if (!Arguments[i]->JsToUEInContainer(Apis, Env, Arg, Params, false))
+            else if (!Arguments[i]->JsToUEInContainer(Apis, Env, Info, Arg, Params, false))
             {
                 return false;
             }

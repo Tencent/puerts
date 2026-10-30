@@ -49,8 +49,8 @@ public:
     // 相关信息见该issue：https://github.com/Tencent/puerts/issues/693
     virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) = 0;
 
-    // Src must be an object
-    virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) = 0;
+    // Src must be an object, Info is the native callback the merge is done in (nullptr if none), for the errors
+    virtual void Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des) = 0;
 
     virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) = 0;
 

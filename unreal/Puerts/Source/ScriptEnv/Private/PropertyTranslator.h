@@ -38,12 +38,14 @@ public:
 
     virtual pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const = 0;
 
-    virtual bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const = 0;
+    virtual bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
+        bool DeepCopy) const = 0;
 
-    virtual bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const
+    virtual bool JsToUEFast(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* TempBuff,
+        void** OutValuePtr) const
     {
         *OutValuePtr = TempBuff;    // using temp buffer by default
-        return JsToUE(Apis, Env, Value, TempBuff, false);
+        return JsToUE(Apis, Env, Info, Value, TempBuff, false);
     }
 
     virtual void UEOutToJs(
@@ -51,7 +53,8 @@ public:
     {
     }
 
-    virtual bool JsToUEOut(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ValuePtr, bool DeepCopy) const
+    virtual bool JsToUEOut(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr, bool DeepCopy) const
     {
         return true;
     }
@@ -68,16 +71,16 @@ public:
         return UEToJs(Apis, Env, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
-    FORCEINLINE bool JsToUEInContainer(
-        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ContainerPtr, bool DeepCopy) const
+    FORCEINLINE bool JsToUEInContainer(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value,
+        void* ContainerPtr, bool DeepCopy) const
     {
-        return JsToUE(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), DeepCopy);
+        return JsToUE(Apis, Env, Info, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), DeepCopy);
     }
 
-    FORCEINLINE bool JsToUEFastInContainer(
-        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* TempBuff, void** OutValuePtr) const
+    FORCEINLINE bool JsToUEFastInContainer(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value,
+        void* TempBuff, void** OutValuePtr) const
     {
-        return JsToUEFast(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(TempBuff), OutValuePtr);
+        return JsToUEFast(Apis, Env, Info, Value, Property->ContainerPtrToValuePtr<void>(TempBuff), OutValuePtr);
     }
 
     FORCEINLINE void UEOutToJsInContainer(
@@ -86,10 +89,10 @@ public:
         UEOutToJs(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
-    FORCEINLINE bool JsToUEOutInContainer(
-        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, void* ContainerPtr, bool PassByPointer) const
+    FORCEINLINE bool JsToUEOutInContainer(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value,
+        void* ContainerPtr, bool PassByPointer) const
     {
-        return JsToUEOut(Apis, Env, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
+        return JsToUEOut(Apis, Env, Info, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
     virtual void Cleanup(void* ContainerPtr) const

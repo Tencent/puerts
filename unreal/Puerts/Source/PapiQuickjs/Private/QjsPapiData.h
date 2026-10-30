@@ -207,7 +207,7 @@ struct pesapi_callback_info__
     JSValue ex;
 };
 
-// the result of a native callback: the exception thrown by throw_by_string / throw_error first, then a pending exception of the
+// the result of a native callback: the exception thrown by throw_by_string first, then a pending exception of the
 // context, then the exception caught in the callback scope (the v8 backend rethrows it as well), else the return value
 inline JSValue finish_callback(JSContext* ctx, pesapi_scope__& scope, pesapi_callback_info__& info)
 {

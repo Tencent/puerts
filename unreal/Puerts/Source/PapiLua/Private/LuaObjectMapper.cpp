@@ -1111,8 +1111,6 @@ void FCppObjectMapper::UnInitialize()
     SetMapper(L, nullptr);
     MainL = nullptr;
     CurrentScope = nullptr;
-    HasPendingError = false;
-    PendingError.clear();
 
     Ref.reset();
 }

@@ -384,12 +384,13 @@ std::unique_ptr<FScriptEnvImpl::ObjectMerger>& FScriptEnvImpl::GetObjectMerger(U
     return ObjectMergers[Struct];
 }
 
-void FScriptEnvImpl::Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
+void FScriptEnvImpl::Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des)
 {
-    GetObjectMerger(DesType)->Merge(MainApis, Env, Src, Des);
+    GetObjectMerger(DesType)->Merge(MainApis, Env, Info, Src, Des);
 }
 
-void FScriptEnvImpl::ObjectMerger::Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsObject, void* Ptr)
+void FScriptEnvImpl::ObjectMerger::Merge(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value JsObject, void* Ptr)
 {
     if (auto Class = Cast<UClass>(Struct))
     {
@@ -454,13 +455,13 @@ void FScriptEnvImpl::ObjectMerger::Merge(struct pesapi_ffi* Apis, pesapi_env Env
             if (FieldStruct)
             {
                 Parent->GetObjectMerger(FieldStruct)
-                    ->Merge(Apis, Env, Value, Iter->second->Property->ContainerPtrToValuePtr<void>(Ptr));
+                    ->Merge(Apis, Env, Info, Value, Iter->second->Property->ContainerPtrToValuePtr<void>(Ptr));
             }
             continue;
         }
         if (!Apis->is_undefined(Env, Value))
         {
-            Iter->second->JsToUEInContainer(Apis, Env, Value, Ptr, true);
+            Iter->second->JsToUEInContainer(Apis, Env, Info, Value, Ptr, true);
         }
     }
 }
@@ -476,7 +477,7 @@ void FScriptEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info I
     auto Wrapper = FStructWrapper::FromTypeId(Apis->get_native_object_typeid(Env, Des));
     if (auto Struct = Wrapper ? Cast<UScriptStruct>(Wrapper->GetStruct()) : nullptr)
     {
-        PapiUtils::Merge(Apis, Env, Src, Struct, Apis->get_native_object_ptr(Env, Des));
+        PapiUtils::Merge(Apis, Env, Info, Src, Struct, Apis->get_native_object_ptr(Env, Des));
         return;
     }
     if (auto Object = PapiUtils::GetUObject(Apis, Env, Des))
@@ -486,7 +487,7 @@ void FScriptEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info I
             Apis->throw_by_string(Info, "passing a invalid object");
             return;
         }
-        PapiUtils::Merge(Apis, Env, Src, Object->GetClass(), Object);
+        PapiUtils::Merge(Apis, Env, Info, Src, Object->GetClass(), Object);
         return;
     }
     Apis->throw_by_string(Info, "Bad parameters #1, expect a native object.");

@@ -390,14 +390,15 @@ void FFunctionTranslator::FastCall(
             Property->InitializeValue_InContainer(Params);
             if (Property->HasAnyPropertyFlags(CPF_OutParm))
             {
-                if (!Arguments[Index]->JsToUEFastInContainer(Apis, Env, Arg, Params, reinterpret_cast<void**>(&(Out->PropAddr))))
+                if (!Arguments[Index]->JsToUEFastInContainer(
+                        Apis, Env, Info, Arg, Params, reinterpret_cast<void**>(&(Out->PropAddr))))
                 {
                     return;
                 }
             }
             else
             {
-                if (!Arguments[Index]->JsToUEInContainer(Apis, Env, Arg, Params, false))
+                if (!Arguments[Index]->JsToUEInContainer(Apis, Env, Info, Arg, Params, false))
                 {
                     return;
                 }
@@ -490,14 +491,15 @@ void FFunctionTranslator::CallJs(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
 
     if (Result)    // nullptr mean exception
     {
+        // called by the engine, there is no script caller to throw a conversion error to, it is logged (Info is nullptr)
         if (Return)
         {
-            Return->JsToUEInContainer(Apis, Env, Result, Params, true);
+            Return->JsToUEInContainer(Apis, Env, nullptr, Result, Params, true);
         }
 
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            Arguments[i]->JsToUEOutInContainer(Apis, Env, Args[i], Params, true);
+            Arguments[i]->JsToUEOutInContainer(Apis, Env, nullptr, Args[i], Params, true);
         }
     }
 }
@@ -627,9 +629,10 @@ void FFunctionTranslator::CallJs(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
 
     if (Result)    // nullptr mean exception
     {
+        // called by the engine, there is no script caller to throw a conversion error to, it is logged (Info is nullptr)
         if (Return)
         {
-            Return->JsToUE(Apis, Env, Result, RESULT_PARAM, true);
+            Return->JsToUE(Apis, Env, nullptr, Result, RESULT_PARAM, true);
         }
 
         auto OutParms = NewOutParms ? NewOutParms : Stack.OutParms;
@@ -641,7 +644,7 @@ void FFunctionTranslator::CallJs(struct pesapi_ffi* Apis, pesapi_env Env, pesapi
                 auto OutParmRec = GetMatchOutParmRec(OutParms, Arguments[i]->Property);
                 if (OutParmRec)
                 {
-                    Arguments[i]->JsToUEOut(Apis, Env, Args[i], OutParmRec->PropAddr, true);
+                    Arguments[i]->JsToUEOut(Apis, Env, nullptr, Args[i], OutParmRec->PropAddr, true);
                 }
             }
         }
@@ -693,7 +696,7 @@ void FExtensionMethodTranslator::CallExtension(struct pesapi_ffi* Apis, pesapi_c
     pesapi_env Env = Apis->get_env(Info);
 
     // the receiver is passed as the first argument of the extension method, there is no pesapi to get it as a value yet
-    if (!Arguments[0]->JsToUEInContainer(Apis, Env, Apis->get_this(Info), Params, false))
+    if (!Arguments[0]->JsToUEInContainer(Apis, Env, Info, Apis->get_this(Info), Params, false))
     {
         if (Params)
         {
@@ -716,7 +719,7 @@ void FExtensionMethodTranslator::CallExtension(struct pesapi_ffi* Apis, pesapi_c
         {
             Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
         }
-        else if (!Arguments[i]->JsToUEInContainer(Apis, Env, Arg, Params, false))
+        else if (!Arguments[i]->JsToUEInContainer(Apis, Env, Info, Arg, Params, false))
         {
             return;
         }

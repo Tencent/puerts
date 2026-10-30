@@ -118,7 +118,7 @@ void FScriptArrayWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info
         {
             uint8* DataPtr = GetData(Self, ElementSize, Index + i);
             Inner->Property->InitializeValue(DataPtr);    //使用之前必须得初始化，即使是设置也要
-            Inner->JsToUE(Apis, Env, Apis->get_arg(Info, i), DataPtr, false);
+            Inner->JsToUE(Apis, Env, Info, Apis->get_arg(Info, i), DataPtr, false);
         }
         Apis->add_return(Info, Apis->create_int32(Env, Index));
     }
@@ -182,7 +182,7 @@ void FScriptArrayWrapper::Set(struct pesapi_ffi* Apis, pesapi_callback_info Info
         return;
     }
     uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index);
-    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 1), DataPtr, false);
+    Inner->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 1), DataPtr, false);
 }
 
 void FScriptArrayWrapper::Contains(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -291,7 +291,7 @@ int32 FScriptArrayWrapper::FindIndexInner(struct pesapi_ffi* Apis, pesapi_callba
 
     void* Dest = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(Dest);
-    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 0), Dest, false);
+    Inner->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 0), Dest, false);
 
     const int32 Num = Self->Num();
     int32 Result = INDEX_NONE;
@@ -335,7 +335,7 @@ void FScriptSetWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 
     void* DataPtr = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(DataPtr);
-    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 0), DataPtr, false);
+    Inner->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 0), DataPtr, false);
 
     auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
     Self->Add(
@@ -480,7 +480,7 @@ int32 FScriptSetWrapper::FindIndexInner(struct pesapi_ffi* Apis, pesapi_callback
     void* DataPtr = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(DataPtr);
 
-    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 0), DataPtr, false);
+    Inner->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 0), DataPtr, false);
 
     auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
 
@@ -523,8 +523,8 @@ void FScriptMapWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     void* ValuePtr = FMemory_Alloca(GetSizeWithAlignment(ValueProperty));
     ValueProperty->InitializeValue(ValuePtr);
 
-    KeyPropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 0), KeyPtr, false);
-    ValuePropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 1), ValuePtr, false);
+    KeyPropertyTranslator->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 0), KeyPtr, false);
+    ValuePropertyTranslator->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 1), ValuePtr, false);
 
     auto ScriptLayout = FScriptMap::GetScriptLayout(
         KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
@@ -567,7 +567,7 @@ void FScriptMapWrapper::InternalGet(struct pesapi_ffi* Apis, pesapi_callback_inf
 
     void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
     KeyProperty->InitializeValue(KeyPtr);
-    KeyPropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 0), KeyPtr, false);
+    KeyPropertyTranslator->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 0), KeyPtr, false);
 
     auto ScriptLayout = FScriptMap::GetScriptLayout(
         KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
@@ -621,7 +621,7 @@ void FScriptMapWrapper::Remove(struct pesapi_ffi* Apis, pesapi_callback_info Inf
 
     void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
     KeyProperty->InitializeValue(KeyPtr);
-    KeyPropertyTranslator->JsToUE(Apis, Env, Apis->get_arg(Info, 0), KeyPtr, false);
+    KeyPropertyTranslator->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 0), KeyPtr, false);
 
     auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
     int32 Index = Self->FindPairIndex(
@@ -803,7 +803,7 @@ void FFixSizeArrayWrapper::Set(struct pesapi_ffi* Apis, pesapi_callback_info Inf
     auto Ptr = Self + Property->ElementSize * Index;
 #endif
 
-    Inner->JsToUE(Apis, Env, Apis->get_arg(Info, 1), Ptr, true);
+    Inner->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 1), Ptr, true);
 }
 
 #undef PAPI_CONTAINER_CHECK_ARGS_LEN

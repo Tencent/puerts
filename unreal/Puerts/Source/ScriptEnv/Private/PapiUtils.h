@@ -16,6 +16,7 @@
 #include "UECompatible.h"
 #include "ArgType.h"
 #include "ObjectMapper.h"
+#include "JSLogger.h"
 #include <initializer_list>
 
 // helpers shared by the papi based code of the plugin
@@ -102,15 +103,23 @@ FORCEINLINE IObjectMapper* ObjectMapperOf(struct pesapi_ffi* Apis, pesapi_env En
     return static_cast<IObjectMapper*>(const_cast<void*>(Apis->get_env_private(Env)));
 }
 
-// pesapi_throw_by_string needs the callback info, which translators do not have
-FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, const char* Message)
+// a translator (JsToUE ...) error: thrown to the script caller when it is called from a native callback (Info), logged when it
+// converts the result of a script function called by the engine (no Info, no script caller to throw to)
+FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, const char* Message)
 {
-    Apis->throw_error(Env, Message);
+    if (Info)
+    {
+        Apis->throw_by_string(Info, Message);
+    }
+    else
+    {
+        UE_LOG(Puerts, Error, TEXT("%s"), UTF8_TO_TCHAR(Message));
+    }
 }
 
-FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Message)
+FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, const FString& Message)
 {
-    Apis->throw_error(Env, TCHAR_TO_UTF8(*Message));
+    ThrowException(Apis, Env, Info, TCHAR_TO_UTF8(*Message));
 }
 
 FORCEINLINE pesapi_value FindOrAddUObject(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UObject* Object)
@@ -124,9 +133,10 @@ FORCEINLINE pesapi_value FindOrAddStruct(
     return ObjectMapperOf(Apis, Env)->FindOrAddStruct(Env, ScriptStruct, Ptr, PassByPointer);
 }
 
-FORCEINLINE void Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des)
+FORCEINLINE void Merge(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des)
 {
-    ObjectMapperOf(Apis, Env)->Merge(Env, Src, DesType, Des);
+    ObjectMapperOf(Apis, Env)->Merge(Env, Info, Src, DesType, Des);
 }
 
 template <typename TContainer>

@@ -169,22 +169,12 @@ public:
     // pops the error on the top into the current scope
     void CatchError(lua_State* L);
 
-    void SetPendingError(const char* Msg)
-    {
-        PendingError = Msg ? Msg : "";
-        HasPendingError = true;
-    }
-
     lua_State* MainL = nullptr;
 
     pesapi_scope__* CurrentScope = nullptr;
 
     // the traceback of the last error caught by ProtectedCall
     std::string LastTraceback;
-
-    // an error thrown by throw_error, raised by the callback or caught by the scope
-    bool HasPendingError = false;
-    std::string PendingError;
 
     // the weak value table of the weak value refs
     int WeakRefTableRef = LUA_NOREF;

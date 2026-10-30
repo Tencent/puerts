@@ -191,22 +191,12 @@ public:
     // calls a native callback with the arguments in a scope, returns a new reference or nullptr with the python error set
     PyObject* Invoke(pesapi_callback Callback, void* Data, PyObject* This, PyObject* const* Args, Py_ssize_t Argc);
 
-    void SetPendingError(const char* Msg)
-    {
-        PendingError = Msg ? Msg : "";
-        HasPendingError = true;
-    }
-
     // the class entry of a type (or of its nearest base created by a mapper)
     static FClassEntry* FindEntryOfType(PyTypeObject* Type);
 
     PyThreadState* TState = nullptr;
 
     pesapi_scope__* CurrentScope = nullptr;
-
-    // an error thrown by throw_error, raised by the callback or caught by the scope
-    bool HasPendingError = false;
-    std::string PendingError;
 
     // the dict of builtins (the global of pesapi), the dict of __main__ (the globals of eval)
     PyObject* Builtins = nullptr;

@@ -966,14 +966,6 @@ pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
 #endif
 }
 
-void pesapi_throw_error(pesapi_env env, const char* msg)
-{
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    v8::Isolate* isolate = context->GetIsolate();
-    isolate->ThrowException(
-        v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
-}
-
 int pesapi_unbind_native_object(pesapi_env env, const void* type_id, void* ptr)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -999,6 +991,6 @@ pesapi_ffi g_pesapi_ffi{&pesapi_create_null, &pesapi_create_undefined, &pesapi_c
     &pesapi_get_ref_internal_fields, &pesapi_get_property, &pesapi_set_property, &pesapi_get_private, &pesapi_set_private,
     &pesapi_get_property_uint32, &pesapi_set_property_uint32, &pesapi_call_function, &pesapi_eval, &pesapi_global,
     &pesapi_get_env_private, &pesapi_set_env_private, &pesapi_set_registry, &pesapi_invalidate_class, &pesapi_get_this,
-    &pesapi_throw_error, &pesapi_unbind_native_object};
+    &pesapi_unbind_native_object};
 
 }    // namespace v8impl

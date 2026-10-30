@@ -133,7 +133,7 @@ public:
 
     virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;
 
-    virtual void Merge(pesapi_env Env, pesapi_value Src, UStruct* DesType, void* Des) override;
+    virtual void Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des) override;
 
     virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) override
     {
@@ -285,7 +285,7 @@ private:
 
         // merges the own enumerable properties of JsObject into the fields of Ptr, a plain object value of an object / struct
         // field is merged recursively
-        void Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value JsObject, void* Ptr);
+        void Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value JsObject, void* Ptr);
     };
 
     friend ObjectMerger;

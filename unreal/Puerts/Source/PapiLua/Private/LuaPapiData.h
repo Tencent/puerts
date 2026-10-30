@@ -139,27 +139,13 @@ struct pesapi_callback_info__
 };
 
 // the result of a native callback (the same order as the quickjs backend): the error thrown by throw_by_string, then the one
-// thrown by throw_error, then the one caught in the callback scope, else the return value. The error or the return value is
-// put in RetSlot, returns -1 for an error message (the position is prepended by the caller), -2 for an error value, 1 for the
-// return value
+// caught in the callback scope, else the return value. The error or the return value is put in RetSlot, returns -1 for an error
+// message (the position is prepended by the caller), -2 for an error value, 1 for the return value
 inline int FinishCallback(lua_State* L, pesapi_scope__& Scope, pesapi_callback_info__& Info)
 {
-    FCppObjectMapper* Mapper = Scope.Mapper;
     if (Info.HasEx)
     {
-        if (Mapper)
-        {
-            Mapper->HasPendingError = false;
-        }
         lua_pushlstring(L, Info.ExMsg.data(), Info.ExMsg.size());
-        lua_replace(L, Info.RetSlot);
-        return -1;
-    }
-    if (Mapper && Mapper->HasPendingError)
-    {
-        Mapper->HasPendingError = false;
-        lua_pushlstring(L, Mapper->PendingError.data(), Mapper->PendingError.size());
-        Mapper->PendingError.clear();
         lua_replace(L, Info.RetSlot);
         return -1;
     }

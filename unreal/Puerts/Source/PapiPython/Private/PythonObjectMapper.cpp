@@ -56,7 +56,7 @@ FClassEntry* FCppObjectMapper::FindEntryOfType(PyTypeObject* Type)
 }
 
 // calls a native callback (Call) in a scope, returns a new reference of the return value, or nullptr with the python error set
-// (thrown by throw_by_string / throw_error, or caught by the scope)
+// (thrown by throw_by_string, or caught by the scope)
 template <typename F>
 static PyObject* CallNative(FCppObjectMapper* Mapper, void* Data, PyObject* This, PyObject* const* Args, Py_ssize_t Argc, F&& Call)
 {
@@ -86,15 +86,6 @@ static PyObject* CallNative(FCppObjectMapper* Mapper, void* Data, PyObject* This
         {
             Kind = 1;
             Msg = Info.ExMsg;
-            Mapper->HasPendingError = false;
-            Mapper->PendingError.clear();
-        }
-        else if (Mapper->HasPendingError)
-        {
-            Kind = 1;
-            Msg = Mapper->PendingError;
-            Mapper->HasPendingError = false;
-            Mapper->PendingError.clear();
         }
         else if (Scope.Caught && Scope.Caught->Type)
         {
@@ -1126,8 +1117,6 @@ void FCppObjectMapper::UnInitialize()
     Py_CLEAR(PropDescrType);
 
     CurrentScope = nullptr;
-    HasPendingError = false;
-    PendingError.clear();
     TState = nullptr;
 
     Ref.reset();
