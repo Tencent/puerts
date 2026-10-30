@@ -248,7 +248,7 @@ M4 落地情况（分批进行）：
   - 语义：只有成员在整条原型链上都找不到、且 key 不在 `Object.prototype` 上时才进入 trap。key 为非空字符串（长度小于 1024）时用 `fixName` 修正：取 FName 的 comparison entry（首次注册的大小写，与旧实现的 `FV8Utils::ToV8String(FName)` 一致；`FName::ToString` 走 display entry，会保留请求的大小写，不能用）。修正后的名字与原名不同且能在 receiver 的原型链上找到时，在拥有它的原型上用 `defineProperty` 以请求的名字缓存（访问器保留 get/set，数据属性保留 value/writable，都为 enumerable、configurable），然后转到修正后的名字读写；否则走 `Reflect.get` / `Reflect.set`，给实例新增的属性仍是实例自身的数据属性。PapiQuickjs 后端同样挂这个 Proxy；`uelazyload.js` 里原来只在 QuickJS 下执行的 JS 版修正（`interceptClassProto`，把 `Object.prototype` 包成 Proxy 挂到链尾）已删除，否则链尾会变成那个 Proxy，`instanceof Object` 为 false。
   - 行为变化：`Object.prototype.hasOwnProperty.call(instance, '原型成员')` 由 true 变为 false（旧拦截器对原型成员也答“自有”）；没有父类的 struct 的 `Object.getPrototypeOf(S.prototype)` 不再是 `Object.prototype` 而是 Proxy（再往上才是 `Object.prototype`）。Reflection 补了 `instanceof Object`、`in`、`Object.prototype` 成员、实例新增属性、`then` 等观测。
   - 测试：两条路径 14 个用例全过，Functions、Reflection 基线只有上述两处预期变化；BuildPlugin 通过。基准与 M4-6c 持平，实例模板去掉拦截器后 property.struct_field 由 57ns 降到 47ns / 46ns，array.property_access 也略有下降；new.struct 两轮 283ns / 302ns，其余项在噪声范围内。
-- M4-6e：新增类定义失效 API `pesapi_ffi.invalidate_class(env, type_id)`，追加在函数表末尾。
+- M4-6e：新增类定义失效 API `pesapi_ffi.invalidate_class(env, type_id)`，追加在函数表末尾。（2026-10-30 已删除，连同宏 `PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE`、`RetiredClasses`，同一 FullName 的新 UStruct 固定沿用原 JS 类，见第 9 节。以下为当时的记录。）
   - 语义：丢弃该 env 中 `type_id` 对应的脚本类缓存，下次使用时从 registry 重建；已有对象和已经拿到的旧类继续使用旧类（旧对象 `instanceof` 新类不成立）；不连带子类失效，已经生成的子类仍继承旧类。概念上对应 lua / python 中丢弃缓存的 metatable / 类型对象，与引擎和语言无关。v8 实现转给 `ICppObjectMapper::InvalidateClass`：`FCppObjectMapper` 从 `TypeIdToTemplateMap` 中删除该项；UE 的 `FJsEnvImpl` 还会删除 `TypeToTemplateInfoMap` 中该 wrapper 的项。papi_test 补了对应用例。
   - 版本：暂不提升 `PESAPI_VERSION`。插件入口名带版本号（`pesapi_register_<mod>_v<ver>`），提升会让已编译的插件全部失效，第一阶段新增的 API 都只追加不提升，到统一时一次性提升（待决策项 1 按此执行）。（已调整：2026-10-28 新增 `unbind_native_object` 时提升到 12，见 5.6、5.7。）
   - 定义生命周期：`FStructWrapper` 只持有当前一代定义（`std::shared_ptr<FReflectedClass>`）。`CppObjectMapper::OnTemplateCreated` 改为 `std::function`，`FJsEnvImpl` 在钩子中把生成模板所用的定义存入本 env 的 `ClassesBuilt`，失效时移入 `RetiredClasses`；v8 的 FunctionTemplate 在 isolate 内不会被回收，两者都在 isolate Dispose 之后才释放。这样没有被任何 env 用过的旧一代定义在被替换时立即释放，M4-6c 的定义累积问题解决。
@@ -380,7 +380,7 @@ M2 落地情况（已被方案 B 取代，保留作为记录）：
 | 外部内存上报 | 大对象（容器、结构体）提示 GC | 桥接层 | 新增可选 API |
 | Symbol、Proxy | `UE` 命名空间代理等 | 用 JS 辅助脚本实现 | 同左 |
 
-新增 API 统一以“追加到函数表末尾”的方式进行。原定第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升；3.0 本身就是不兼容的大版本，2026-10-28 新增 `unbind_native_object` 时已提升到 12，2026-10-30 删除 `throw_error`（函数表布局变化）时提升到 13，之后新增 API 照常追加，是否再提升在统一时一并决定。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
+新增 API 统一以“追加到函数表末尾”的方式进行。原定第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升；3.0 本身就是不兼容的大版本，2026-10-28 新增 `unbind_native_object` 时已提升到 12，2026-10-30 删除 `throw_error`、`invalidate_class`（函数表布局变化）时先后提升到 13、14，之后新增 API 照常追加，是否再提升在统一时一并决定。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
 
 新增 API 必须与具体引擎、具体语言无关：papi 不只跨 JS 引擎（v8、quickjs），还跨脚本语言（目前有 js、lua、python）。判断标准是这个概念在 lua、python 里也能自然实现，比如 `get_this` 对应 lua 的 self、python 的 self，`get_own_property_names` 对应 table 的 key、dict 的 key。不满足的能力不进 `pesapi_ffi`，按以下方式处理：
 - UE 宿主专属的（FName 属性名修正、类名、热重载重新注册等）：做成 UE 侧 `CppObjectMapper` 的钩子。
@@ -771,7 +771,7 @@ flowchart LR
 已决策（2026-10-27）：
 
 1. 参考 Unity 新增 `PapiQuickjs` 模块，quickjs-ng 以源码方式编译，提前恢复 QuickJS 后端（见 5.12）；TestProject 的功能用例在 V8 和 QuickJS 下各跑一遍，引擎差异用 `Baseline/Quickjs` 专属基线记录。
-2. 删除 UE 的 JS 热重载，与 Unity 统一：去掉 `hot_reload.js`、`puerts.__reload / forceReload / getModuleByUrl`、后端进程内 Inspector 会话（`__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage`）、`IScriptEnv::ReloadModule / ReloadSource / OnSourceLoaded`、`IPuertsModule::ReloadModule`、`FSourceFileWatcher`、`UFileSystemOperation::PuertsNotifyChange` 及对应用例。热重载改由外部程序经 Inspector 协议 live-edit（V8 原生的 `Debugger.setScriptSource`）。保留远程调试用的 `V8InspectorImpl`、UE C++ 模块热重载（`WITH_HOT_RELOAD` 委托、`HOTRELOADED_` 类）和蓝图重编译用的 `invalidate_class`。
+2. 删除 UE 的 JS 热重载，与 Unity 统一：去掉 `hot_reload.js`、`puerts.__reload / forceReload / getModuleByUrl`、后端进程内 Inspector 会话（`__tgjsSetInspectorCallback / __tgjsDispatchProtocolMessage`）、`IScriptEnv::ReloadModule / ReloadSource / OnSourceLoaded`、`IPuertsModule::ReloadModule`、`FSourceFileWatcher`、`UFileSystemOperation::PuertsNotifyChange` 及对应用例。热重载改由外部程序经 Inspector 协议 live-edit（V8 原生的 `Debugger.setScriptSource`）。保留远程调试用的 `V8InspectorImpl`、UE C++ 模块热重载（`WITH_HOT_RELOAD` 委托、`HOTRELOADED_` 类）和蓝图重编译用的 `invalidate_class`（`invalidate_class` 已于 2026-10-30 删除，见下）。
 3. timer 与 Unity 统一：原生侧只提供 tick。宿主绑定 `__tgjsRegisterTickHandler(fn)`，每个 env 注册一个每帧触发的 core ticker 调用这些 handler（每个 handler 单独开 scope，异常记 `Exception in Tick Handler` 日志）；`setTimeout / setInterval / clearTimeout / clearInterval` 由 `puerts/timer.js` 纯 JS 实现（复制自 Unity `timer.mjs`，由 `FPapiBackendJs` 在 `events.js` 之后加载）。相对 Unity 版本只改了一处：逐个回调 try/catch，一个回调抛异常不影响本帧其他到期 timer（记 `Exception in Timer Callback` 日志）。行为变化：按 `Date.now()` 计时；`setInterval` 最小间隔 10ms；非函数回调在调用时就抛异常；延时缺省或非数字、`clearTimeout` 传非数字不再抛异常。`promises.js` 中给 timer 补额外参数的包装已删除。
 4. 参考 Unity 新增 `PapiLua` 模块，lua 5.4.8 以源码方式编译，作为 `ScriptEnv` 的第三个后端（见 5.13）；TestProject 增加 lua 版功能用例（`tests/lua`，基线在 `Baseline/Lua`），lua 不支持的 JS/TS 特性列在 5.13。
 5. 参考 Unity 新增 `PapiPython` 模块（加上加载引擎 python 动态库的 `PapiPythonPreload`），作为 `ScriptEnv` 的第四个后端（见 5.14）：不自带 python，复用 UE 的 Python3，每个 env 一个子解释器，进程内不 `Py_Finalize`；只在 `bCompilePython` 的目标（默认只有编辑器）且 Win64 / Mac / Linux 上可用。模块由 `puerts/init.py` 在 `sys.meta_path` 末尾追加的 finder 经宿主契约加载。TestProject 增加 python 版功能用例（`tests/python`，基线在 `Baseline/Python`），python 不支持的 JS/TS 特性列在 5.14。
@@ -790,8 +790,9 @@ flowchart LR
 已决策（2026-10-30）：
 
 1. 删除 `pesapi_throw_error(env, msg)`，papi 只保留在原生回调中经 `pesapi_callback_info` 抛异常的 `throw_by_string`：没有脚本调用方时抛异常没有合理的接收者。翻译器（`JsToUE / JsToUEFast / JsToUEOut` 及 InContainer 版本）与 merge 链路（`ObjectMerger::Merge`、`IObjectMapper::Merge`、`PapiUtils::Merge`）增加可为空的 `pesapi_callback_info Info` 参数，`PapiUtils::ThrowException` 有 Info 时抛给脚本调用方，没有时记 `Puerts` Error 日志。原生回调路径（属性 setter、函数调用、容器、结构体构造等）透传 Info；UE 调用脚本（`CallJs`）后转换返回值与 out 参数时传空，转换错误记日志。lua / python 后端随之删除只为它服务的 `PendingError` 机制，`ExecuteModule` 去掉“require is not a function”的预检查，缺少 require 时在 `call_function` 中失败并由宿主 scope 接住。函数表布局变化，`PESAPI_VERSION` 提升到 13。
+2. 删除 `pesapi_invalidate_class`，并去掉宏 `PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE`（按恒为 1 处理）。理由：该宏在 master 上默认就是 1，改成 0 必须手动改代码，`invalidate_class` 只服务于 0 这条路径，而为 0 时的重建路径原本由 TsClass、MakeUClass 覆盖，这两个功能已删除。行为：同一 FullName 的新 UStruct（如蓝图重编译后的类）沿用该 env 已有的 JS 类，只刷新翻译器，与 master 默认行为一致，新增成员不会出现在已有 JS 类上。一并删除 `OnClassInvalidated` 钩子、各后端的 `InvalidateClass`、`RetiredClasses`（一个 type id 在一个 env 中只生成一次类，`ClassesBuilt` 足够保活定义）及 papi_test 对应用例。函数表布局变化，`PESAPI_VERSION` 提升到 14。
 
 待决策：
 
-1. 第 5.7 节新增 API 的命名（第一阶段只在 UE 侧，可边做边定）；`PESAPI_VERSION` 原定第一阶段不提升，已于 2026-10-28 提升到 12、2026-10-30 提升到 13，后续是否再提升在统一时决定。
+1. 第 5.7 节新增 API 的命名（第一阶段只在 UE 侧，可边做边定）；`PESAPI_VERSION` 原定第一阶段不提升，已于 2026-10-28 提升到 12、2026-10-30 提升到 14，后续是否再提升在统一时决定。
 2. 性能回退阈值与基准测试运行环境（是否需要自托管 runner）。
