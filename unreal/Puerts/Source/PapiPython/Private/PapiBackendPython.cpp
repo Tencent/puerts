@@ -207,6 +207,34 @@ void FPapiBackendPython::RegisterBuiltinModule(pesapi_env Env, const char* Name,
     }
 }
 
+pesapi_value FPapiBackendPython::GetOwnKeys(pesapi_env Env, pesapi_value Object)
+{
+    auto Mapper = reinterpret_cast<pyimpl::FCppObjectMapper*>(Env);
+    PyObject* O = reinterpret_cast<PyObject*>(Object);
+    PyObject* Keys = PyList_New(0);
+    if (!Keys)
+    {
+        Mapper->CatchError();
+        return nullptr;
+    }
+    if (O && PyDict_Check(O))
+    {
+        Py_ssize_t Pos = 0;
+        PyObject* Key;
+        PyObject* Value;
+        while (PyDict_Next(O, &Pos, &Key, &Value))
+        {
+            if (PyUnicode_Check(Key) && PyList_Append(Keys, Key) < 0)
+            {
+                Py_DECREF(Keys);
+                Mapper->CatchError();
+                return nullptr;
+            }
+        }
+    }
+    return Mapper->Track(Keys);
+}
+
 static void Collect(PyThreadState* TState)
 {
     if (!TState)
@@ -378,6 +406,11 @@ pesapi_value FPapiBackendPython::ExecuteModule(pesapi_env Env, const char* Speci
 
 void FPapiBackendPython::RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Exports)
 {
+}
+
+pesapi_value FPapiBackendPython::GetOwnKeys(pesapi_env Env, pesapi_value Object)
+{
+    return nullptr;
 }
 
 void FPapiBackendPython::LowMemoryNotification()

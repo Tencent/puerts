@@ -202,6 +202,12 @@ public:
         return true;
     }
 
+    // the property is destroyed or replaced by a new one (a blueprint or user defined struct recompiled in the editor)
+    bool IsPropertyStale() const
+    {
+        return PropertyWeakPtr.Get() != Property;
+    }
+
 private:
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
     TWeakObjectPtr<PropertyMacro> PropertyWeakPtr;

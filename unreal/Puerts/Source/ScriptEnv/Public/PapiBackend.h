@@ -93,6 +93,12 @@ public:
     // a module matched by name before the host is asked to resolve it
     virtual void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Exports) = 0;
 
+    // the own string keys of a plain object of the language (a js object: Object.keys, a lua table, a python dict) as an
+    // array (get_array_length / the 0 based get_property_uint32 of pesapi), used by the conversion of a plain object to a
+    // struct (and puerts.merge). An empty array for a value which is not such an object, nullptr with the exception thrown on
+    // failure. Called inside a scope of the env
+    virtual pesapi_value GetOwnKeys(pesapi_env Env, pesapi_value Object) = 0;
+
     // memory management of the engine instance, called outside of any scope
     virtual void LowMemoryNotification() = 0;
 

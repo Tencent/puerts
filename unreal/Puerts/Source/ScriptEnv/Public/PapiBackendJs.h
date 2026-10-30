@@ -27,6 +27,9 @@ public:
 
     virtual void OnExit(IPapiScriptHost* Host) override;
 
+    // Object.keys (own, enumerable, no symbols)
+    virtual pesapi_value GetOwnKeys(pesapi_env Env, pesapi_value Object) override;
+
     // a js Proxy at the end of the prototype chain of the class
     virtual void InstallNameFixing(pesapi_env Env, pesapi_value Class, pesapi_callback FixName) override;
 
@@ -61,5 +64,8 @@ private:
     pesapi_value_ref NameFixingProxy = nullptr;
 
     pesapi_value_ref SetPrototypeOf = nullptr;
+
+    // Object.keys of GetOwnKeys, released by OnExit
+    pesapi_value_ref ObjectKeys = nullptr;
 };
 }    // namespace PUERTS_NAMESPACE

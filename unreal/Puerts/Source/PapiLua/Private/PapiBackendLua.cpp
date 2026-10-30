@@ -117,6 +117,31 @@ void FPapiBackendLua::RegisterBuiltinModule(pesapi_env Env, const char* Name, pe
     lua_pop(L, 1);
 }
 
+pesapi_value FPapiBackendLua::GetOwnKeys(pesapi_env Env, pesapi_value Object)
+{
+    lua_State* L = StateOf(Env);
+    lua_checkstack(L, 4);
+    const int Idx = static_cast<int>(reinterpret_cast<intptr_t>(Object));
+    lua_newtable(L);
+    const int Keys = lua_gettop(L);
+    if (Idx != 0 && lua_type(L, Idx) == LUA_TTABLE)
+    {
+        lua_Integer N = 0;
+        lua_pushnil(L);
+        while (lua_next(L, Idx) != 0)
+        {
+            // the value is popped, the key is kept for the next iteration
+            lua_pop(L, 1);
+            if (lua_type(L, -1) == LUA_TSTRING)
+            {
+                lua_pushvalue(L, -1);
+                lua_rawseti(L, Keys, ++N);
+            }
+        }
+    }
+    return reinterpret_cast<pesapi_value>(static_cast<intptr_t>(Keys));
+}
+
 void FPapiBackendLua::LowMemoryNotification()
 {
     lua_gc(MainL, LUA_GCCOLLECT, 0);

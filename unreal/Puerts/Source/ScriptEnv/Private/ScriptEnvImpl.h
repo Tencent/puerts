@@ -275,9 +275,29 @@ private:
             for (TFieldIterator<PropertyMacro> It(Struct); It; ++It)
             {
                 PropertyMacro* Property = *It;
-                TStringConversion<TStringConvert<TCHAR, ANSICHAR>> Name(*Property->GetName());
-                Fields[Name.Get()] = FPropertyTranslator::Create(Property);
+                auto Translator = FPropertyTranslator::Create(Property);
+                // the keys are the names of the accessors (the authored names of the members of a user defined struct)
+                FString Name;
+                if (!Translator->GetAccessorName(Name))
+                {
+                    Name = Property->GetName();
+                }
+                TStringConversion<TStringConvert<TCHAR, ANSICHAR>> AnsiName(*Name);
+                Fields[AnsiName.Get()] = std::move(Translator);
             }
+        }
+
+        // the properties of a blueprint class or user defined struct are recreated when it is recompiled in the editor
+        bool IsStale() const
+        {
+            for (auto& KV : Fields)
+            {
+                if (KV.second->IsPropertyStale())
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // merges the own enumerable properties of JsObject into the fields of Ptr, a plain object value of an object / struct
@@ -409,14 +429,7 @@ private:
 
     TMap<UFunction*, FPapiValueRef> MixinFunctionMap;
 
-    // used by ObjectMerger (the js to struct conversion of a plain object), cached by GetCachedJsFunction
-    FPapiValueRef ObjectKeys;
-
     void InstallFNameFixing(pesapi_env Env, pesapi_value Class);
-
-    // evals Code once and caches the function, returns nullptr with the exception pending if the eval fails
-    pesapi_value GetCachedJsFunction(
-        struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path);
 
     // released before CppObjectMapper.UnInitialize
     TArray<FPapiValueRef> TickHandlers;

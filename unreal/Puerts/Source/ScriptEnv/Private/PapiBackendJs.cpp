@@ -108,6 +108,32 @@ void FPapiBackendJs::OnExit(IPapiScriptHost* Host)
         Apis->release_value_ref(SetPrototypeOf);
         SetPrototypeOf = nullptr;
     }
+    if (ObjectKeys)
+    {
+        Apis->release_value_ref(ObjectKeys);
+        ObjectKeys = nullptr;
+    }
+}
+
+pesapi_value FPapiBackendJs::GetOwnKeys(pesapi_env Env, pesapi_value Object)
+{
+    struct pesapi_ffi* Apis = GetApi();
+    if (!Apis->is_object(Env, Object))
+    {
+        return Apis->create_array(Env);
+    }
+    if (!ObjectKeys)
+    {
+        static const char Code[] = "Object.keys";
+        pesapi_value Func = Apis->eval(Env, reinterpret_cast<const uint8_t*>(Code), sizeof(Code) - 1, "puerts/object_keys");
+        if (!Func)
+        {
+            return nullptr;
+        }
+        ObjectKeys = Apis->create_value_ref(Env, Func, 0);
+    }
+    pesapi_value Args[] = {Object};
+    return Apis->call_function(Env, Apis->get_value_from_ref(Env, ObjectKeys), nullptr, 1, Args);
 }
 
 // the proxy at the end of the prototype chain fixes the name by fixName when a member is not found, and caches the member on its

@@ -316,8 +316,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
         MixinFunctionMap.Empty();
 
-        ObjectKeys.Reset();
-
         // the wrappers held by native, the UObjects are released by OnUObjectExit when the backend unbinds them
         NativeTakeJsRefObjects.Empty();
 
@@ -375,11 +373,16 @@ void FScriptEnvImpl::InitExtensionMethodsMap()
 
 std::unique_ptr<FScriptEnvImpl::ObjectMerger>& FScriptEnvImpl::GetObjectMerger(UStruct* Struct)
 {
-    if (ObjectMergers.find(Struct) == ObjectMergers.end())
+    auto& Merger = ObjectMergers[Struct];
+#if WITH_EDITOR
+    if (!Merger || Merger->IsStale())
+#else
+    if (!Merger)
+#endif
     {
-        ObjectMergers[Struct] = std::make_unique<ObjectMerger>(this, Struct);
+        Merger = std::make_unique<ObjectMerger>(this, Struct);
     }
-    return ObjectMergers[Struct];
+    return Merger;
 }
 
 void FScriptEnvImpl::Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des)
@@ -399,18 +402,12 @@ void FScriptEnvImpl::ObjectMerger::Merge(
             return;
         }
     }
-    // papi has no own property enumeration, Object.keys gives the same keys as v8::Object::GetOwnPropertyNames (own,
-    // enumerable, no symbols)
-    pesapi_value Keys = Parent->GetCachedJsFunction(Apis, Env, Parent->ObjectKeys, "Object.keys", "puerts/object_keys");
+    // papi has no own property enumeration, the backend gives the keys of a plain object of its language (Object.keys in js:
+    // own, enumerable, no symbols)
+    pesapi_value Keys = Parent->Backend->GetOwnKeys(Env, JsObject);
     if (!Keys)
     {
-        return;    // the exception propagates to the js caller
-    }
-    pesapi_value KeysArgs[] = {JsObject};
-    Keys = Apis->call_function(Env, Keys, nullptr, 1, KeysArgs);
-    if (!Keys)
-    {
-        return;
+        return;    // the exception propagates to the caller
     }
     const uint32_t KeysLen = Apis->get_array_length(Env, Keys);
     char StackBuf[128];
@@ -608,21 +605,6 @@ void FScriptEnvImpl::RequestMinorGarbageCollectionForTesting()
 void FScriptEnvImpl::RequestFullGarbageCollectionForTesting()
 {
     Backend->RequestFullGarbageCollectionForTesting();
-}
-
-pesapi_value FScriptEnvImpl::GetCachedJsFunction(
-    struct pesapi_ffi* Apis, pesapi_env Env, FPapiValueRef& Cache, const char* Code, const char* Path)
-{
-    if (Cache)
-    {
-        return Cache.Get(Env);
-    }
-    pesapi_value Func = Apis->eval(Env, (const uint8_t*) Code, strlen(Code), Path);
-    if (Func)
-    {
-        Cache.Reset(Apis, Env, Func);
-    }
-    return Func;
 }
 
 FString FScriptEnvImpl::CurrentStackTrace()
@@ -909,6 +891,8 @@ void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, i
 void FScriptEnvImpl::TryReleaseType(UStruct* Struct)
 {
     TypeToTemplateInfoMap.Remove(Struct);
+    // the address may be reused by another struct
+    ObjectMergers.erase(Struct);
 }
 
 // fix ScriptCore.cpp UObject::SkipFunction crash when Function has no parameters

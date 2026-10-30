@@ -50,6 +50,9 @@ public:
 
     virtual void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Exports) override;
 
+    // the string keys of a table (raw, no __pairs)
+    virtual pesapi_value GetOwnKeys(pesapi_env Env, pesapi_value Object) override;
+
     virtual void LowMemoryNotification() override;
 
     virtual bool IdleNotificationDeadline(double DeadlineInSeconds) override;
