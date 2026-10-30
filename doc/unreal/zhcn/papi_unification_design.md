@@ -266,7 +266,7 @@ M4 落地情况（分批进行）：
   - 剩余：`IObjectMapper` 中 UObject 的 `Bind` / `FindOrAdd`、struct 的 `BindStruct` / `FindOrAddStruct`、`Merge`、`IsInstanceOf` 仍在桥接层转调 v8 实现（依赖 `ObjectMap` 的 v8 persistent 和 v8 模板），委托包装的模板和 `DelegateObjectInfo::JSObject` 仍是 v8，随后续批次处理。
 - M4-6g：`IsInstanceOf`、`Merge`、struct 的创建和构造改为 papi。
   - `IsInstanceOf`：struct 用 `FStructWrapper::FromTypeId(get_native_object_typeid)` 判断后 `IsChildOf`，UObject 经 `PapiUtils::GetUObject`（排除 null 和 `RELEASED_UOBJECT`）。删除 v8 版本。
-  - `Merge`（`ObjectMerger`）：papi 没有枚举自有属性的接口，用缓存的 `Object.keys`（`FJsEnvImpl::ObjectKeys`，自有、可枚举、不含 symbol，与原来 v8 默认的 `GetOwnPropertyNames` 一致）取 key，逐个 `get_property` 后按字段 `JsToUEInContainer`；值为普通对象且字段是 UObject / struct 时递归合并，值为 undefined 时跳过。补测试：原型链上的属性、不可枚举属性不合并，undefined 不覆盖。
+  - `Merge`（`ObjectMerger`）：papi 没有枚举自有属性的接口，用缓存的 `Object.keys`（2026-10-30 起改为 `IPapiBackend::GetOwnKeys`，自有、可枚举、不含 symbol，与原来 v8 默认的 `GetOwnPropertyNames` 一致）取 key，逐个 `get_property` 后按字段 `JsToUEInContainer`；值为普通对象且字段是 UObject / struct 时递归合并，值为 undefined 时跳过。补测试：原型链上的属性、不可枚举属性不合并，undefined 不覆盖。
   - `FindOrAddStruct`：改为 `native_object_to_value(env, wrapper, ptr, !PassByPointer)`，借用的 struct 由 `CppObjectMapper` 缓存，持有的由类定义的 Finalize 释放；持有的 struct 不再查缓存（原来会先查一次）。`IObjectMapper::BindStruct` 删除。
   - 构造：`FScriptStructWrapper::New` 改为 papi，返回内存交给后端 `CDataNew` 绑定（与普通 C++ 类相同），`IsConstructCall` 的检查也由 `CDataNew` 负责。
   - POD 优化分支（ArrayBuffer 在 v8 工作线程 GC 时释放内存，只在 `HAS_ARRAYBUFFER_NEW_WITHOUT_STL || WITH_BACKING_STORE_AUTO_FREE` 时启用）是剩余的 v8 依赖，隔离为 `FJsEnvImpl::BindPodStruct`；构造时经 `IObjectMapper::TryBindOwnedStruct(Info, wrapper, ptr)` 由后端决定是否走这条路，只有 POD struct 才调用。编辑器构建中该宏为 0，临时强制为 1 编译并跑测试通过。
@@ -603,7 +603,7 @@ lua 下不支持或行为不同的 JS/TS 特性：
 
 | 方面 | lua 行为 |
 | --- | --- |
-| TS 类与扩展 | 不支持 `mixin`（TS 继承 UE 类与 `makeUClass` 已删除，见决策记录 2026-10-28），`__tgjsMixin` 在 `init.lua` 中置空；FName 大小写修正（原型链末端 Proxy）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| TS 类与扩展 | 不支持 `mixin`（TS 继承 UE 类与 `makeUClass` 已删除，见决策记录 2026-10-28），`__tgjsMixin` 在 `init.lua` 中置空；FName 大小写修正（原型链末端 Proxy）不适用；`puerts.merge` 与普通对象转结构体可用（按 `IPapiBackend::GetOwnKeys` 取 key，2026-10-30 前不可用） |
 | 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主会执行 `puerts/websocketpp.js`，lua 下会报错 |
 | 模块 | 没有 ESM（`import`、`import.meta`、顶层 await），只有同步 `require`；循环 `require` 不受保护（lua 原生行为）；点号与斜杠写法解析到同一文件，但在 `package.loaded` 中是两条记录，会各执行一次、得到两个实例 |
 | 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；在协程里回调宿主属于未覆盖的边缘情况 |
@@ -634,7 +634,7 @@ python 下不支持或行为不同的 JS/TS 特性：
 | 方面 | python 行为 |
 | --- | --- |
 | 可用范围 | 只在 `bCompilePython` 的目标上可用（默认只有编辑器），游戏和独立程序里 `Create` 返回 nullptr；不支持 Android、iOS；依赖 `PapiPythonPreload` 先加载引擎的 python 动态库 |
-| TS 类与扩展 | 不支持 `mixin`（TS 继承 UE 类与 `makeUClass` 已删除，见决策记录 2026-10-28），`init.py` 中没有对应函数；FName 大小写修正（原型链末端 Proxy，`InstallNameFixing`）不适用；`puerts.merge` 可用，但面向 JS 对象的场景不一定完全适用 |
+| TS 类与扩展 | 不支持 `mixin`（TS 继承 UE 类与 `makeUClass` 已删除，见决策记录 2026-10-28），`init.py` 中没有对应函数；FName 大小写修正（原型链末端 Proxy，`InstallNameFixing`）不适用；`puerts.merge` 与普通对象转结构体可用（按 `IPapiBackend::GetOwnKeys` 取 key，2026-10-30 前不可用） |
 | 引擎能力 | 没有 inspector 调试、`LoadAddon`、TriviallyFreed 对象；`.mbc / .cbc` 字节码不适用；`WITH_WEBSOCKET` 打开时宿主执行的 `puerts/websocketpp.js` 在 python 下会报错 |
 | 模块 | 没有 ESM（`import`、`import.meta`、顶层 await、`import()`），只有同步 `require` / `import`；点号路径要求每一级父目录都有 `__init__.py`（真实的包），否则报 `ModuleNotFoundError`；斜杠写法的 `require('a/b')` 会以 `a/b` 为键另存一份，与 `import a.b` 不是同一个实例 |
 | 异步 | 没有 Promise、微任务；没有 `setTimeout / setInterval`（`puerts/timer.js` 不加载）；`asyncio` 没有接入引擎 tick |
@@ -791,6 +791,8 @@ flowchart LR
 
 1. 删除 `pesapi_throw_error(env, msg)`，papi 只保留在原生回调中经 `pesapi_callback_info` 抛异常的 `throw_by_string`：没有脚本调用方时抛异常没有合理的接收者。翻译器（`JsToUE / JsToUEFast / JsToUEOut` 及 InContainer 版本）与 merge 链路（`ObjectMerger::Merge`、`IObjectMapper::Merge`、`PapiUtils::Merge`）增加可为空的 `pesapi_callback_info Info` 参数，`PapiUtils::ThrowException` 有 Info 时抛给脚本调用方，没有时记 `Puerts` Error 日志。原生回调路径（属性 setter、函数调用、容器、结构体构造等）透传 Info；UE 调用脚本（`CallJs`）后转换返回值与 out 参数时传空，转换错误记日志。lua / python 后端随之删除只为它服务的 `PendingError` 机制，`ExecuteModule` 去掉“require is not a function”的预检查，缺少 require 时在 `call_function` 中失败并由宿主 scope 接住。函数表布局变化，`PESAPI_VERSION` 提升到 13。
 2. 删除 `pesapi_invalidate_class`，并去掉宏 `PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE`（按恒为 1 处理）。理由：该宏在 master 上默认就是 1，改成 0 必须手动改代码，`invalidate_class` 只服务于 0 这条路径，而为 0 时的重建路径原本由 TsClass、MakeUClass 覆盖，这两个功能已删除。行为：同一 FullName 的新 UStruct（如蓝图重编译后的类）沿用该 env 已有的 JS 类，只刷新翻译器，与 master 默认行为一致，新增成员不会出现在已有 JS 类上。一并删除 `OnClassInvalidated` 钩子、各后端的 `InvalidateClass`、`RetiredClasses`（一个 type id 在一个 env 中只生成一次类，`ClassesBuilt` 足够保活定义）及 papi_test 对应用例。函数表布局变化，`PESAPI_VERSION` 提升到 14。
+3. 补蓝图 / 用户定义结构体在编辑器中修改并重编译的测试（`tests/blueprint.js` 及 lua / python 版本，测试工具 `UPuertsTestBlueprintUtils` 仅编辑器可用），记录已有 JS 类沿用后的行为：重编译不改变 UClass / UScriptStruct 指针与脚本类；新增成员不出现在脚本类上；删除成员的访问报 `Property is invalid!`，以同名加回（含换类型）仍报 invalid（UE `FFieldPath` 解析失效后不会重新解析）；重编译前创建的实例被重新实例化，旧对象报 invalid object。测试中修了 4 个问题：普通对象转结构体 / `puerts.merge` 按属性内部名匹配，用户定义结构体的字段（内部名带 GUID 后缀）全部被忽略，改为按访问器名（作者命名）匹配；`ObjectMerger` 在重编译后持有已销毁的 `FProperty`，编辑器下检测到属性失效即重建；类型释放时不清理 `ObjectMerger`，地址复用后会用错字段表，改为在 `TryReleaseType` 中删除；`ObjectMerger` 取 key 用 eval `Object.keys`，lua / python 下 table / dict 转结构体与 `merge` 完全不可用，改为 `IPapiBackend::GetOwnKeys`（js 为 `Object.keys`，lua 为 table 的字符串 key，python 为 dict 的 str key），删除 `FScriptEnvImpl::GetCachedJsFunction` 与 `ObjectKeys`。
+4. 容器元素属性缓存（`FContainerMeta::GetObjectProperty`，按 UScriptStruct 缓存 `FStructProperty`）在用户定义结构体修改布局后仍用旧的 `ElementSize`，之后创建的 `TArray / TMap` 元素互相重叠，析构时崩溃（新增的“布局变更后多元素数组 / Map”用例去掉修复即崩溃）。修复：编辑器下检测到缓存属性的 `Struct` 或 `ElementSize` 与当前结构体不一致即重建，旧属性不释放（已创建的容器可能仍在用）；同时把新建的结构体属性从 `PropertyMetaRoot` 的 `ChildProperties` 链表摘除，否则引擎修改用户定义结构体时用 `TAllFieldsIterator` 找到它，UE4.27 报 Error `ReplaceStructWithTempDuplicate unknown owner`，UE5 的部分路径则把它的 `Struct` 换成临时副本。摘除不影响 GC（`PropertyMetaRoot` 的引用只在其 Link 时收集）。修复后 UE5.8 与 UE4.27 的全量测试均通过。
 
 待决策：
 
