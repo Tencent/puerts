@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 13
+#define PESAPI_VERSION 14
 
 #define PESAPI_EXTERN
 
@@ -231,10 +231,6 @@ typedef void (*pesapi_set_env_private_func)(pesapi_env env, const void* ptr);
 
 typedef void (*pesapi_set_registry_func)(pesapi_env env, pesapi_registry registry);
 
-// drop the script class cached for type_id in this env, the next use rebuilds it from the registry. existing objects and
-// references to the old class keep using it, sub classes are not invalidated
-typedef void (*pesapi_invalidate_class_func)(pesapi_env env, const void* type_id);
-
 // the receiver (this) of a callback, for a constructor callback it is the object being constructed
 typedef pesapi_value (*pesapi_get_this_func)(pesapi_callback_info info);
 
@@ -333,7 +329,6 @@ struct pesapi_ffi
     pesapi_get_env_private_func get_env_private;
     pesapi_set_env_private_func set_env_private;
     pesapi_set_registry_func set_registry;
-    pesapi_invalidate_class_func invalidate_class;
     pesapi_get_this_func get_this;
     pesapi_unbind_native_object_func unbind_native_object;
 };

@@ -1353,11 +1353,6 @@ static void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
     GetMapper(StateOf(env))->SetRegistry(reinterpret_cast<ScriptClassRegistry*>(registry));
 }
 
-static void pesapi_invalidate_class(pesapi_env env, const void* type_id)
-{
-    GetMapper(StateOf(env))->InvalidateClass(type_id);
-}
-
 static pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
 {
     auto Info = InfoOf(pinfo);
@@ -1464,7 +1459,6 @@ pesapi_ffi g_pesapi_ffi{
     &pesapi_get_env_private,
     &pesapi_set_env_private,
     &pesapi_set_registry,
-    &pesapi_invalidate_class,
     &pesapi_get_this,
     &pesapi_unbind_native_object,
 };

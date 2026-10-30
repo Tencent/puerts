@@ -1076,11 +1076,6 @@ static void pesapi_set_registry(pesapi_env env, pesapi_registry registry)
     FCppObjectMapper::Get(qjsContextFromPesapiEnv(env))->SetRegistry(reinterpret_cast<ScriptClassRegistry*>(registry));
 }
 
-static void pesapi_invalidate_class(pesapi_env env, const void* type_id)
-{
-    FCppObjectMapper::Get(qjsContextFromPesapiEnv(env))->InvalidateClass(type_id);
-}
-
 static pesapi_value pesapi_get_this(pesapi_callback_info pinfo)
 {
     return pesapiValueFromQjsValue(&infoFromPesapi(pinfo)->this_val);
@@ -1178,7 +1173,6 @@ pesapi_ffi g_pesapi_ffi{
     &pesapi_get_env_private,
     &pesapi_set_env_private,
     &pesapi_set_registry,
-    &pesapi_invalidate_class,
     &pesapi_get_this,
     &pesapi_unbind_native_object,
 };

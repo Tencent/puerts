@@ -74,7 +74,6 @@ struct FCodeCacheHeader
 FPapiBackendV8::FPapiBackendV8(const FParams& InParams)
     : FPapiBackendJs(InParams.Logger), Params(InParams), CppObjectMapper(std::make_unique<FCppObjectMapper>())
 {
-    CppObjectMapper->OnClassInvalidated = Params.OnClassInvalidated;
     CppObjectMapper->OnClassCreated = Params.OnClassCreated;
 }
 

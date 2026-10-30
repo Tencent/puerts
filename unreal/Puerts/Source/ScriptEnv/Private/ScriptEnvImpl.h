@@ -121,9 +121,6 @@ public:
 
     virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override;
 
-    // the class of TypeId is invalidated (pesapi invalidate_class), drops the UE side caches of it
-    void OnClassInvalidated(const void* TypeId);
-
     // IObjectMapper, the papi interface used by the backend independent code
     virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override;
 
@@ -224,7 +221,7 @@ private:
     struct FTemplateInfo
     {
         std::shared_ptr<FStructWrapper> StructWrapper;
-        // the class definition the js class is built from (held by ClassesBuilt / RetiredClasses)
+        // the class definition the js class is built from (held by ClassesBuilt)
         const JSClassDefinition* ClassDefinition = nullptr;
         // per env flags (the wrapper is shared by envs), IsNativeTakeJsRef can be changed by mixin
 #if PUERTS_KEEP_UOBJECT_REFERENCE
@@ -326,12 +323,9 @@ private:
 
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
-    // the class definitions (of FStructWrapper) the js classes of this env are built from, keyed by type id. The classes
-    // reference the definitions and are not collected while the env is alive, so a definition dropped by InvalidateClass is
-    // kept in RetiredClasses, both are released after the env is destroyed
+    // the class definitions (of FStructWrapper) the js classes of this env are built from, keyed by type id. A js class is
+    // built once for a type id and references its definition, so they are released after the env is destroyed
     std::unordered_map<const void*, std::shared_ptr<FReflectedClass>> ClassesBuilt;
-
-    std::vector<std::shared_ptr<FReflectedClass>> RetiredClasses;
 
     // IPapiBackend OnClassCreated
     bool OnReflectedClassCreated(const JSClassDefinition* ClassDefinition);

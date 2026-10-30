@@ -60,9 +60,6 @@ public:
 
     virtual ScriptClassRegistry* GetRegistry() = 0;
 
-    // pesapi invalidate_class: drop the cached script class of TypeId, the next use rebuilds it
-    virtual void InvalidateClass(const void* TypeId) = 0;
-
     virtual ~ICppObjectMapper()
     {
     }
@@ -106,18 +103,6 @@ public:
     {
         return Registry;
     }
-
-    virtual void InvalidateClass(const void* TypeId) override
-    {
-        if (OnClassInvalidated)
-        {
-            OnClassInvalidated(TypeId);
-        }
-        TypeIdToTemplateMap.erase(TypeId);
-    }
-
-    // called by InvalidateClass before the cached class is dropped, lets the host drop its caches of the type
-    std::function<void(const void* TypeId)> OnClassInvalidated;
 
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;

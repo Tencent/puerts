@@ -40,9 +40,6 @@ struct FPapiBackendParams
     // flags of the engine instance (for v8 only --max-old-space-size=<MB> is used)
     FString Flags;
 
-    // called when a class is invalidated (pesapi invalidate_class) before the backend drops it
-    std::function<void(const void* TypeId)> OnClassInvalidated;
-
     // called when the script class of a definition is created, the definition must be kept alive while the env is,
     // returns whether the class is named by its ScriptName
     std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;

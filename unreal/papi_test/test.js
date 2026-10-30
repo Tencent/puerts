@@ -141,19 +141,6 @@ assertThrows(() => puerts.loadCPPType("hello.TestClass"), "load type from an emp
 assertEq(puerts.useEmptyRegistry(false), true, "TestClass in the default registry");
 assertEq(puerts.loadCPPType("hello.TestClass"), TestClass, "load type after switching back to the default registry");
 
-// invalidate_class: the next load rebuilds the class, existing objects keep the old one, the super class is not rebuilt
-puerts.invalidateClass("TestClass");
-const TestClass2 = puerts.loadCPPType("hello.TestClass");
-assert(TestClass2 !== TestClass, "class rebuilt after invalidate_class");
-assertEq(puerts.loadCPPType("hello.TestClass"), TestClass2, "rebuilt class is cached");
-assert(obj instanceof TestClass, "old object still instanceof old class");
-assertEq(obj.X, 96, "old object still works");
-const obj3 = new TestClass2(3, 4);
-assertEq(obj3.X + obj3.Y, 7, "object of rebuilt class");
-assert(obj3 instanceof TestClass2, "instanceof rebuilt class");
-assert(obj3 instanceof BaseClass, "super class kept");
-assertEq(puerts.loadCPPType("hello.BaseClass"), BaseClass, "super class not invalidated");
-
 // unbind_native_object: the script object is detached from (ptr, type_id), the host owns ptr
 (function () {
     const o = new TestClass(5, 6);

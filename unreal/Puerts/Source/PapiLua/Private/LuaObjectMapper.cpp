@@ -749,23 +749,6 @@ void FCppObjectMapper::ReleaseClassEntry(lua_State* L, FClassEntry& Entry)
     }
 }
 
-void FCppObjectMapper::InvalidateClass(const void* TypeId)
-{
-    if (OnClassInvalidated)
-    {
-        OnClassInvalidated(TypeId);
-    }
-    auto It = TypeIdToClassMap.find(TypeId);
-    if (It != TypeIdToClassMap.end())
-    {
-        if (MainL)
-        {
-            ReleaseClassEntry(MainL, It->second);
-        }
-        TypeIdToClassMap.erase(It);
-    }
-}
-
 FLuaCppObject* FCppObjectMapper::NewObject(lua_State* L, FClassEntry* Entry)
 {
     FLuaCppObject* Obj = static_cast<FLuaCppObject*>(lua_newuserdatauv(L, sizeof(FLuaCppObject), 2));

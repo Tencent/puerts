@@ -135,7 +135,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
     BackendParams.Logger = Logger;
     BackendParams.Flags = InFlags;
     BackendParams.OnEnvReleased = [this]() { OnEnvReleased(); };
-    BackendParams.OnClassInvalidated = [this](const void* TypeId) { OnClassInvalidated(TypeId); };
     // an external engine instance is not supported, node is set up by the v8 backend (PapiV8, WITH_NODEJS)
     check(!InExternalRuntime && !InExternalContext);
     // the classes of reflected types (built from the class definitions of FStructWrapper) must be kept alive while the
@@ -334,7 +333,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
     // referenced by the templates, released after the isolate
     ClassesBuilt.clear();
-    RetiredClasses.clear();
 
     GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 }
@@ -1492,7 +1490,7 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
     {
         FTemplateInfo TemplateInfo;
 
-        // the super type first, so that (when classes are not reused) it is rebuilt before the class of InStruct inherits it
+        // the super type first, the flags are inherited from it
         if (auto SuperStruct = InStruct->GetSuperStruct())
         {
             bool Dummy;
@@ -1504,17 +1502,9 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
         }
 
         auto StructWrapper = GetStructWrapper(InStruct);
-#if !PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-        // the template info was released (TryReleaseType), rebuild the js class
-        if (ClassesBuilt.find(StructWrapper.get()) != ClassesBuilt.end())
-        {
-            MainApis->invalidate_class(Env, StructWrapper.get());
-        }
-#endif
         // the definition is shared by envs, the first use of a type in this env refreshes the translators
         auto ClassDefinition = StructWrapper->GetClassDefinition(InStruct, true);
-        // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env unless
-        // PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE is 0
+        // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env
         pesapi_value JsClass = MainApis->create_class(Env, StructWrapper.get());
 
         TemplateInfo.StructWrapper = StructWrapper;
@@ -1580,25 +1570,6 @@ bool FScriptEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value 
     }
 }
 
-void FScriptEnvImpl::OnClassInvalidated(const void* TypeId)
-{
-    // the UE side caches of the type (keyed by UStruct) are dropped too, so the next use goes through the registry
-    for (auto Iter = TypeToTemplateInfoMap.CreateIterator(); Iter; ++Iter)
-    {
-        if (Iter->Value.StructWrapper.get() == TypeId)
-        {
-            Iter.RemoveCurrent();
-        }
-    }
-    auto Built = ClassesBuilt.find(TypeId);
-    if (Built != ClassesBuilt.end())
-    {
-        // the old template (and js class) is still alive
-        RetiredClasses.push_back(std::move(Built->second));
-        ClassesBuilt.erase(Built);
-    }
-}
-
 bool FScriptEnvImpl::OnReflectedClassCreated(const JSClassDefinition* ClassDefinition)
 {
     // only reflected classes are named (as before), the rest keep an empty constructor.name
@@ -1610,12 +1581,7 @@ bool FScriptEnvImpl::OnReflectedClassCreated(const JSClassDefinition* ClassDefin
     auto& Current = static_cast<const FStructWrapper*>(ClassDefinition->TypeId)->GetCurrentClass();
     if (ensure(Current && &Current->Definition == ClassDefinition))
     {
-        auto& Holder = ClassesBuilt[ClassDefinition->TypeId];
-        if (Holder && Holder != Current)
-        {
-            RetiredClasses.push_back(std::move(Holder));
-        }
-        Holder = Current;
+        ClassesBuilt[ClassDefinition->TypeId] = Current;
     }
     return true;
 }

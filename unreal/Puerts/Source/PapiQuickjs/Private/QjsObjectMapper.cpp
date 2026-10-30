@@ -312,21 +312,6 @@ JSValue FCppObjectMapper::FindOrCreateClassByID(const void* TypeId)
     return FindOrCreateClass(clsDef);
 }
 
-void FCppObjectMapper::InvalidateClass(const void* TypeId)
-{
-    if (OnClassInvalidated)
-    {
-        OnClassInvalidated(TypeId);
-    }
-    auto it = TypeIdToFunctionMap.find(TypeId);
-    if (it != TypeIdToFunctionMap.end())
-    {
-        JSValue Ctor = it->second.Ctor;
-        TypeIdToFunctionMap.erase(it);
-        JS_FreeValue(ctx, Ctor);
-    }
-}
-
 JSValue FCppObjectMapper::FindOrAddCppObject(const void* TypeId, void* Ptr, bool PassByPointer)
 {
     if (!Ptr)

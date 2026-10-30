@@ -22,13 +22,6 @@
 #include "PapiDataTransfer.h"
 #include "NamespaceDef.h"
 
-// 1: a new UStruct with the same full name (e.g. a regenerated class) keeps the js class of the env (the template is reused,
-// only the translators are refreshed). 0: the js class is rebuilt (pesapi invalidate_class) when the type is used again
-// after its template info is released (TryReleaseType)
-#ifndef PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
-#define PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE 1
-#endif
-
 namespace PUERTS_NAMESPACE
 {
 // finalizer of a UScriptStruct registered by static binding (pesapi style)
@@ -90,8 +83,8 @@ struct FReflectedClass
 // UStruct, it only holds engine side data.
 // The js class of a UStruct is described by a class definition (FReflectedClass) whose type id is the wrapper, the templates
 // are created from it by the CppObjectMapper of each env. Since the wrapper is kept for a full name, a new UStruct with the
-// same full name (e.g. a regenerated class) keeps the js class of the env (the template is cached by type id) unless
-// PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE is 0, only the translators are refreshed.
+// same full name (e.g. a regenerated class) keeps the js class of the env (the template is cached by type id), only the
+// translators are refreshed.
 // Only the current definition is held by the wrapper, the envs hold the definitions their templates are built from.
 // The type tag is the first base, so a type id (the wrapper) can be checked to be a UClass one (FReflectedTypeTag::IsUClass)
 // without a lookup.

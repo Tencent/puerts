@@ -86,11 +86,6 @@ public:
         return Registry;
     }
 
-    void InvalidateClass(const void* TypeId);
-
-    // called by InvalidateClass before the cached class is dropped
-    std::function<void(const void* TypeId)> OnClassInvalidated;
-
     // called when the script class of a definition is created, returns whether the class is named by its ScriptName
     std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
 

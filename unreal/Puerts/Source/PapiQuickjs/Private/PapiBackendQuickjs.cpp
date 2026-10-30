@@ -18,7 +18,6 @@ namespace PUERTS_NAMESPACE
 FPapiBackendQuickjs::FPapiBackendQuickjs(const FPapiBackendParams& InParams)
     : FPapiBackendJs(InParams.Logger), Params(InParams), CppObjectMapper(std::make_unique<qjsimpl::FCppObjectMapper>())
 {
-    CppObjectMapper->OnClassInvalidated = Params.OnClassInvalidated;
     CppObjectMapper->OnClassCreated = Params.OnClassCreated;
 }
 

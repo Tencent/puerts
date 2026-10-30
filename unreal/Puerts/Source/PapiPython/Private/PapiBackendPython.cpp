@@ -90,7 +90,6 @@ struct FPyThreadScope
 FPapiBackendPython::FPapiBackendPython(const FPapiBackendParams& InParams)
     : Params(InParams), CppObjectMapper(std::make_unique<pyimpl::FCppObjectMapper>())
 {
-    CppObjectMapper->OnClassInvalidated = Params.OnClassInvalidated;
     CppObjectMapper->OnClassCreated = Params.OnClassCreated;
 }
 

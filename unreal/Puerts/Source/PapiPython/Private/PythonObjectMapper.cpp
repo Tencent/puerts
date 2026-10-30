@@ -777,23 +777,6 @@ PyObject* FCppObjectMapper::GetClassByID(const void* TypeId)
     return Entry ? Entry->Type : nullptr;
 }
 
-void FCppObjectMapper::InvalidateClass(const void* TypeId)
-{
-    if (OnClassInvalidated)
-    {
-        OnClassInvalidated(TypeId);
-    }
-    auto It = TypeIdToClassMap.find(TypeId);
-    if (It != TypeIdToClassMap.end())
-    {
-        PyObject* Type = It->second.Type;
-        TypeToEntry().erase(Type);
-        TypeIdToClassMap.erase(It);
-        // the class lives on while its objects are alive
-        Py_XDECREF(Type);
-    }
-}
-
 FPyCppObject* FCppObjectMapper::NewObject(FClassEntry* Entry)
 {
     PyTypeObject* Type = reinterpret_cast<PyTypeObject*>(Entry->Type);
