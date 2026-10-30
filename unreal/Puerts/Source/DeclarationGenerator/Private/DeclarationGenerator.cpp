@@ -378,6 +378,90 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
     }
 }
 
+// The blueprint declaration cache is restored from the previously generated ue_bp.d.ts, so a block can
+// reference a type that is not generated in the current run (plugin disabled, asset failed to load, ...).
+// Replace such references with "any" ("UE.Object" for a base class) to keep the declarations compilable,
+// and keep the version of the package unset so that it is regenerated once the referenced type is back.
+void FTypeScriptDeclarationGenerator::SanitizeBlueprintDeclarations()
+{
+    // names may contain non-ASCII letters (see FilenameToTypeScriptVariableName), \w is unicode aware
+    static const FRegexPattern NamespacePattern(TEXT("namespace\\s+([\\w$.]+)\\s*\\{"));
+    static const FRegexPattern DeclaredTypePattern(TEXT("\\{\\s+(?:(?:class)|(?:enum))\\s+([\\w$]+)"));
+    // group 1: "extends " of a base class, group 2: the reference, group 3: the referenced type name
+    static const FRegexPattern ReferencePattern(TEXT("(\\bextends\\s+)?(\\bUE\\.([\\w$]+(?:\\.[\\w$]+)*))"));
+
+    TSet<FString> KnownTypeNames = ProcessedByName;
+    for (const auto& KV : BlueprintTypeDeclInfoCache)
+    {
+        if (!KV.Value.IsExist)
+        {
+            continue;
+        }
+        for (const auto& NameToDecl : KV.Value.NameToDecl)
+        {
+            FString Namespace;
+            FRegexMatcher NamespaceMatcher(NamespacePattern, NameToDecl.Value);
+            if (NamespaceMatcher.FindNext())
+            {
+                Namespace = NamespaceMatcher.GetCaptureGroup(1) + TEXT(".");
+            }
+            FRegexMatcher DeclaredTypeMatcher(DeclaredTypePattern, NameToDecl.Value);
+            while (DeclaredTypeMatcher.FindNext())
+            {
+                KnownTypeNames.Add(Namespace + DeclaredTypeMatcher.GetCaptureGroup(1));
+            }
+        }
+    }
+
+    for (auto& KV : BlueprintTypeDeclInfoCache)
+    {
+        if (!KV.Value.IsExist)
+        {
+            continue;
+        }
+
+        bool bSanitized = false;
+        for (auto& NameToDecl : KV.Value.NameToDecl)
+        {
+            FString Sanitized;
+            int32 LastIndex = 0;
+            FRegexMatcher ReferenceMatcher(ReferencePattern, NameToDecl.Value);
+            while (ReferenceMatcher.FindNext())
+            {
+                const FString Reference = ReferenceMatcher.GetCaptureGroup(3);
+                if (KnownTypeNames.Contains(Reference))
+                {
+                    continue;
+                }
+
+                const int32 ReferenceBegin = ReferenceMatcher.GetCaptureGroupBeginning(2);
+                const int32 ReferenceEnd = ReferenceMatcher.GetCaptureGroupEnding(2);
+                const bool bIsExtends = ReferenceMatcher.GetCaptureGroupBeginning(1) != INDEX_NONE;
+
+                UE_LOG(LogTemp, Warning, TEXT("replace unknown type %s in blueprint declaration %s of %s"), *Reference,
+                    *NameToDecl.Key.ToString(), *KV.Key.ToString());
+
+                Sanitized += NameToDecl.Value.Mid(LastIndex, ReferenceBegin - LastIndex);
+                Sanitized += bIsExtends ? TEXT("UE.Object") : TEXT("any");
+                LastIndex = ReferenceEnd;
+            }
+
+            if (LastIndex > 0)
+            {
+                Sanitized += NameToDecl.Value.Mid(LastIndex);
+                NameToDecl.Value = Sanitized;
+                bSanitized = true;
+            }
+        }
+
+        if (bSanitized && !KV.Value.IsAssociation)
+        {
+            // the sanitized block is cached in ue_bp.d.ts, force a regeneration in the next run
+            KV.Value.FileVersionString.Reset();
+        }
+    }
+}
+
 void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct, bool InGenEnum)
 {
     Begin();
@@ -453,6 +537,8 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 #endif
 
     FFileHelper::SaveStringToFile(ToString(), *UEDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
+    SanitizeBlueprintDeclarations();
 
     Begin();
     for (auto& KV : BlueprintTypeDeclInfoCache)
