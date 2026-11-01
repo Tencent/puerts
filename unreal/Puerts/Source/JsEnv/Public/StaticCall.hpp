@@ -1349,7 +1349,8 @@ struct PropertyWrapper;
 
 template <typename API, class Ins, class Ret, Ret Ins::*member, typename IncPass>
 struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
-    typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && !IsBoundedArray<Ret>::value>::type>
+    typename std::enable_if<!is_objecttype<std::decay_t<Ret>>::value && !is_uetype<std::decay_t<Ret>>::value &&
+                            !IsBoundedArray<Ret>::value>::type>
 {
     template <typename T>
     using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
@@ -1388,7 +1389,8 @@ struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
 
 template <typename API, class Ins, class Ret, Ret Ins::*member, typename IncPass>
 struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
-    typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && IsBoundedArray<Ret>::value>::type>
+    typename std::enable_if<!is_objecttype<std::decay_t<Ret>>::value && !is_uetype<std::decay_t<Ret>>::value &&
+                            IsBoundedArray<Ret>::value>::type>
 {
     template <typename T>
     using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
@@ -1439,7 +1441,7 @@ struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
 
 template <typename API, class Ins, class Ret, Ret Ins::*member, typename IncPass>
 struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
-    typename std::enable_if<is_objecttype<Ret>::value || is_uetype<Ret>::value>::type>
+    typename std::enable_if<is_objecttype<std::decay_t<Ret>>::value || is_uetype<std::decay_t<Ret>>::value>::type>
 {
     template <typename T>
     using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
