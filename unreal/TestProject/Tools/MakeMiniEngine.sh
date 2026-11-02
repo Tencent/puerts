@@ -13,6 +13,11 @@
 # Usage:
 #   Tools/MakeMiniEngine.sh --full-engine "/Users/Shared/Epic Games/UE_5.8"
 #   Tools/MakeMiniEngine.sh --full-engine ... --steps pack,verify       # reuse an existing manifest
+#   Tools/MakeMiniEngine.sh --full-engine ... --merge-manifest          # keep the entries of the current manifest
+#
+# --merge-manifest: the new manifest is the union of what this tree reads and the manifest already in the tree, so
+# one mini engine serves several branches whose plugins include different engine headers (master / unreal-2.0.x):
+# collect on one branch, copy the manifest to the other, collect there with --merge-manifest, verify on both.
 #
 # Tracking by access time: before a run the atime of every engine file is reset to 2000-01-01, afterwards the files
 # with a newer atime are the ones that were read (APFS updates atime when it is older than mtime). Files only
@@ -27,6 +32,7 @@ FULL_ENGINE=""
 STEPS="collect,pack,verify"
 NAME=""
 ARCH="arm64"
+MERGE_MANIFEST=0
 TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$TOOLS_DIR/.." && pwd)"
 PLUGIN_DIR="$(cd "$PROJECT_DIR/../Puerts" && pwd)"
@@ -36,7 +42,7 @@ TIMEOUT_SEC=2400
 EDITOR_ARGS=(--editor-arg -ddc=Cold)
 
 usage() {
-    sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -48,6 +54,7 @@ while [ $# -gt 0 ]; do
         --arch)        ARCH="${2:?}"; shift 2 ;;
         --work-dir)    WORK_DIR="${2:?}"; shift 2 ;;
         --timeout)     TIMEOUT_SEC="${2:?}"; shift 2 ;;
+        --merge-manifest) MERGE_MANIFEST=1; shift ;;
         -h|--help)     usage 0 ;;
         *) echo "unknown argument: $1" >&2; usage 1 ;;
     esac
@@ -195,10 +202,18 @@ EOF
 step_manifest() {
     local tmp="$WORK_DIR/collect_ue${VER_TAG}"
     [ -f "$tmp/read.txt" ] || die "no $tmp/read.txt, run collect first"
+    # the previous manifest is read before it is overwritten below
+    local prev="$tmp/prev_manifest.txt"
+    : > "$prev"
+    if [ "$MERGE_MANIFEST" -eq 1 ]; then
+        [ -f "$MANIFEST" ] || die "--merge-manifest: no manifest to merge: $MANIFEST"
+        cp "$MANIFEST" "$prev"
+        log "merging $(wc -l < "$prev" | tr -d ' ') entries of the current manifest"
+    fi
     ubt_paths > "$tmp/ubt_paths.txt"
     log "paths from UBT: $(grep -vc '/$' "$tmp/ubt_paths.txt") files, $(grep -c '/$' "$tmp/ubt_paths.txt") directories"
     {
-        cat "$tmp/read.txt" "$tmp/ubt_paths.txt"
+        cat "$tmp/read.txt" "$tmp/ubt_paths.txt" "$prev"
         local w
         for w in "${WHITELIST_DIRS[@]}"; do (cd "$SRC_ENGINE" && find "$w" -type f); done
         for w in "${WHITELIST_FILES[@]}"; do echo "$w"; done
