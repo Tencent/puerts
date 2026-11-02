@@ -2113,23 +2113,27 @@ void FScriptEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_
         }
         if (ByRequire && IsModule)
         {
-            // the esm package required: exports["."] must have an entry for require
-            Entry.Empty();
+            // the esm package required (same as modular.js): exports["."] must have an entry for require, main is used
+            // if there is no exports["."]
             const TSharedPtr<FJsonObject>* Exports = nullptr;
-            const TSharedPtr<FJsonObject>* Dot = nullptr;
-            if (Package->TryGetObjectField(TEXT("exports"), Exports) && (*Exports)->TryGetObjectField(TEXT("."), Dot))
+            if (Package->TryGetObjectField(TEXT("exports"), Exports) && (*Exports)->HasField(TEXT(".")))
             {
-                const TSharedPtr<FJsonObject>* Sub = nullptr;
-                if (!((*Dot)->TryGetObjectField(TEXT("default"), Sub) && (*Sub)->TryGetStringField(TEXT("require"), Entry)) &&
-                    !((*Dot)->TryGetObjectField(TEXT("require"), Sub) && (*Sub)->TryGetStringField(TEXT("default"), Entry)))
+                Entry.Empty();
+                const TSharedPtr<FJsonObject>* Dot = nullptr;
+                if ((*Exports)->TryGetObjectField(TEXT("."), Dot))
                 {
-                    (*Dot)->TryGetStringField(TEXT("require"), Entry);
+                    const TSharedPtr<FJsonObject>* Sub = nullptr;
+                    if (!((*Dot)->TryGetObjectField(TEXT("default"), Sub) && (*Sub)->TryGetStringField(TEXT("require"), Entry)) &&
+                        !((*Dot)->TryGetObjectField(TEXT("require"), Sub) && (*Sub)->TryGetStringField(TEXT("default"), Entry)))
+                    {
+                        (*Dot)->TryGetStringField(TEXT("require"), Entry);
+                    }
                 }
-            }
-            if (Entry.IsEmpty())
-            {
-                Apis->throw_by_string(Info, "can not require a esm in cjs module!");
-                return;
+                if (Entry.IsEmpty())
+                {
+                    Apis->throw_by_string(Info, "can not require a esm in cjs module!");
+                    return;
+                }
             }
         }
         FString PackageDir = FPaths::GetPath(Path);

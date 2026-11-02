@@ -98,7 +98,12 @@ test('package.json', () => {
         return [ns.name, ns.default];
     });
     observe('import esm package', () => imp('esm_pkg_esm.mjs').result);
-    note('require esm package without require entry', catchError(() => req('pkg_esm_noreq')));
+    // without exports["."] the main is the entry for require too, as modular.js does
+    observe('require esm package without exports', () => {
+        const ns = req('pkg_esm_noreq');
+        return [ns.name, ns.default];
+    });
+    note('require esm package without require entry', catchError(() => req('pkg_esm_importonly')));
 });
 
 test('bom', () => {
