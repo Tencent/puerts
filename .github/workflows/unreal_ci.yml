@@ -24,7 +24,7 @@ env:
   # the same for macOS, made by unreal/TestProject/Tools/MakeEnginePack.sh
   EngineRuntimeMac: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini427_mac_editor_runtime.tgz"
   # stand-alone mini UE5.8 for macOS (arm64), made by unreal/TestProject/Tools/MakeMiniEngine.sh
-  EngineMac58: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.1/Mini58_mac.tgz"
+  EngineMac58: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.2/Mini58_mac.tgz"
   V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__241009/v8_bin_9.4.146.24.tgz"
   QJS_URL: "https://github.com/puerts/backend-quickjs/releases/download/QJS_NG_250303/qjs_v8_bin.tgz"
   NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"

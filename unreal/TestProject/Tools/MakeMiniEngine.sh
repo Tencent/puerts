@@ -14,6 +14,9 @@
 #   Tools/MakeMiniEngine.sh --full-engine "/Users/Shared/Epic Games/UE_5.8"
 #   Tools/MakeMiniEngine.sh --full-engine ... --steps pack,verify       # reuse an existing manifest
 #
+# The manifest is merged with the existing one (one package for all plugin branches): run collect on each branch
+# in turn, --fresh-manifest drops the old entries.
+#
 # Tracking by access time: before a run the atime of every engine file is reset to 2000-01-01, afterwards the files
 # with a newer atime are the ones that were read (APFS updates atime when it is older than mtime). Files only
 # stat'ed are not caught: they are added from UBT's JsonExport of the target and a few rules (see step_manifest),
@@ -32,11 +35,12 @@ PROJECT_DIR="$(cd "$TOOLS_DIR/.." && pwd)"
 PLUGIN_DIR="$(cd "$PROJECT_DIR/../Puerts" && pwd)"
 WORK_DIR="$PROJECT_DIR/../../build/enginepack"
 TIMEOUT_SEC=2400
+FRESH_MANIFEST=0
 # an empty DDC, as on CI: data derived from engine content then has to be built from what is in the mini engine
 EDITOR_ARGS=(--editor-arg -ddc=Cold)
 
 usage() {
-    sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -48,6 +52,7 @@ while [ $# -gt 0 ]; do
         --arch)        ARCH="${2:?}"; shift 2 ;;
         --work-dir)    WORK_DIR="${2:?}"; shift 2 ;;
         --timeout)     TIMEOUT_SEC="${2:?}"; shift 2 ;;
+        --fresh-manifest) FRESH_MANIFEST=1; shift ;;
         -h|--help)     usage 0 ;;
         *) echo "unknown argument: $1" >&2; usage 1 ;;
     esac
@@ -187,6 +192,27 @@ def walk(v):
         if os.path.isdir(v): out.add(v[len(root):].rstrip("/") + "/")
         elif os.path.isfile(v): out.add(v[len(root):])
 walk(modules)
+# Headers: a build only reads the ones its sources include, so a plugin branch that includes one more engine header
+# (2.0.x: Commandlet.h, KismetCompiler.h ...) would miss it. Every non-Private header of each module in the target and
+# its UHT generated headers are cheap (~40MB raw, compresses well) and cover any include of a module depended on.
+def add_headers(d, skip_private):
+    for dp, dns, fs in os.walk(d):
+        if skip_private:
+            dns[:] = [x for x in dns if x != "Private"]
+        for f in fs:
+            if f.endswith((".h", ".hpp", ".inl")):
+                out.add(os.path.join(dp, f)[len(root):])
+def plugin_root(d):
+    while d.startswith(root):
+        if any(f.endswith(".uplugin") for f in os.listdir(d)): return d
+        d = os.path.dirname(d)
+for name, m in modules.items():
+    d = m.get("Directory", "")
+    if not d.startswith(root) or not os.path.isdir(d): continue
+    add_headers(d, True)
+    base = plugin_root(d) or os.path.join(root, "Engine")
+    gen = os.path.join(base, "Intermediate", "Build", "Mac", "UnrealEditor", "Inc", name)
+    if os.path.isdir(gen): add_headers(gen, False)
 print("\n".join(sorted(out)))
 EOF
 }
@@ -197,8 +223,14 @@ step_manifest() {
     [ -f "$tmp/read.txt" ] || die "no $tmp/read.txt, run collect first"
     ubt_paths > "$tmp/ubt_paths.txt"
     log "paths from UBT: $(grep -vc '/$' "$tmp/ubt_paths.txt") files, $(grep -c '/$' "$tmp/ubt_paths.txt") directories"
+    # copied first: the '> "$MANIFEST"' below truncates it before the pipeline reads it
+    : > "$tmp/old_manifest.txt"
+    if [ "$FRESH_MANIFEST" -eq 0 ] && [ -f "$MANIFEST" ]; then cp "$MANIFEST" "$tmp/old_manifest.txt"; fi
     {
         cat "$tmp/read.txt" "$tmp/ubt_paths.txt"
+        # one engine package serves several plugin branches (3.0.0, 2.0.x): keep what the other branches' collects
+        # found, --fresh-manifest starts over
+        cat "$tmp/old_manifest.txt"
         local w
         for w in "${WHITELIST_DIRS[@]}"; do (cd "$SRC_ENGINE" && find "$w" -type f); done
         for w in "${WHITELIST_FILES[@]}"; do echo "$w"; done

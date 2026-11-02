@@ -57,3 +57,5 @@ Tools/MakeMiniEngine.sh --full-engine "/Users/Shared/Epic Games/UE_5.8" --steps 
 - UBT 使用精简引擎自带的 dotnet，不需要另外安装 mono 或 dotnet。
 
 换引擎版本时，重新执行 collect 生成新清单，上传新的 tgz，然后更新 `EngineMac58`。
+
+同一个包同时给 unreal-3.0.0 和 unreal-2.0.x 用。清单默认会和已有的清单合并，所以在哪个分支上 collect 或 manifest，都会保留其他分支采集到的文件；需要从头生成时加 `--fresh-manifest`。另外，目标里每个模块的非 Private 头文件和 UHT 生成头文件都会整份打进包里，因为编译时只读到被 include 的那部分头，换个分支多 include 一个引擎头（例如 2.0.x 的 `Commandlet.h`、`KismetCompiler.h`）就会出现 `*.generated.h file not found`。
