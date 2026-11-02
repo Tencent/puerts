@@ -1077,7 +1077,7 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         if (Info.Length() > 1 && !Info[1]->IsNullOrUndefined())
         {
             Outer = FV8Utils::GetUObject(Context, Info[1]);
-            if (FV8Utils::IsReleasedPtr(Outer))
+            if (!Outer || FV8Utils::IsReleasedPtr(Outer))
             {
                 FV8Utils::ThrowException(Isolate, "passing a invalid object");
                 return;
