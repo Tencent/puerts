@@ -57,3 +57,22 @@ Tools/MakeMiniEngine.sh --full-engine "/Users/Shared/Epic Games/UE_5.8" --steps 
 - UBT 使用精简引擎自带的 dotnet，不需要另外安装 mono 或 dotnet。
 
 换引擎版本时，重新执行 collect 生成新清单，上传新的 tgz，然后更新 `EngineMac58`。
+
+## 多分支共用
+
+master（3.0）和 unreal-2.0.x 共用同一个精简引擎，但两边插件 include 的引擎头不同（例如 2.0 的 PuertsEditor 用到 `K2Node_CustomEvent.h`、`KismetCompiler.h`，`Puerts` 模块用到 `Commandlets/Commandlet.h`），只按一个分支收集的清单在另一个分支上会缺 `*.generated.h`。做法是取两边清单的并集：
+
+```bash
+# 两个仓库用同一个 --work-dir，共用完整引擎的克隆和产物
+W=~/enginepack
+# 1. master 上收集
+(cd puerts/unreal/TestProject && Tools/MakeMiniEngine.sh --full-engine "$UE58" --work-dir $W --steps collect)
+# 2. 把清单拷到 unreal-2.0.x，在它基础上收集、打包、验证
+cp puerts/unreal/TestProject/Tools/EnginePack/manifest_mac_5.8.txt puerts_ue2/unreal/TestProject/Tools/EnginePack/
+(cd puerts_ue2/unreal/TestProject && Tools/MakeMiniEngine.sh --full-engine "$UE58" --work-dir $W --merge-manifest)
+# 3. 合并后的清单拷回 master，在 master 上再验证一次
+cp puerts_ue2/unreal/TestProject/Tools/EnginePack/manifest_mac_5.8.txt puerts/unreal/TestProject/Tools/EnginePack/
+(cd puerts/unreal/TestProject && Tools/MakeMiniEngine.sh --full-engine "$UE58" --work-dir $W --steps verify)
+```
+
+两边提交同一份清单，上传 tgz 后两边的 `EngineMac58` 指向同一个地址。
