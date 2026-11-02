@@ -219,11 +219,15 @@ SCRIPTENV_API bool TraceObjectLifecycle(
 #if USING_IN_UNREAL_ENGINE
 SCRIPTENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
-// module internal: the process wide definitions of reflected classes (UClass / UScriptStruct, the object type id is their
-// FStructWrapper) and of the fixed classes (weak / soft object ptr, delegates, TArray / TSet / TMap / fixed size array, value
-// type ids), they are not in the name tables (so not visible to ForeachRegisterClass / loadCPPType) but FindClassByID /
-// LoadClassByID of every registry fall back to them, see StructWrapper.cpp
-const JSClassDefinition* FindReflectedClass(const void* TypeId);
+// module internal: the process wide definitions of the fixed classes (the virtual root of the reflected classes, weak / soft
+// object ptr, delegates, TArray / TSet / TMap / fixed size array, value type ids), they are not in the name tables (so not
+// visible to ForeachRegisterClass / loadCPPType) but FindClassByID / LoadClassByID of every registry fall back to them, see
+// StructWrapper.cpp. The reflected classes (UClass / UScriptStruct, the object type id is their FStructWrapper) are defined in
+// the default registry (FStructWrapper::Define), visible to every registry as well
+const JSClassDefinition* FindBuiltinClass(const void* TypeId);
+
+// module internal: removes the definitions of the reflected classes (object type ids) from Registry, the wrappers are released
+void UnregisterReflectedClasses(ScriptClassRegistry* Registry);
 
 SCRIPTENV_API bool IsEditorOnlyUFunction(const UFunction* Func);
 

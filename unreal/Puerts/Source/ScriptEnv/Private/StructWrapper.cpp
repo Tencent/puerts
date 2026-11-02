@@ -30,17 +30,33 @@ static TMap<FString, std::shared_ptr<FStructWrapper>>& StructWrappers()
     return Wrappers;
 }
 
-// object type ids are the wrappers (see FReflectedTypeTag), value type ids are compared with the fixed classes
-const JSClassDefinition* FindReflectedClass(const void* TypeId)
+// the type id of the virtual root class, a value id (PESAPI_VALUE_TYPE_ID) of the (aligned) tag
+static int RootTypeTag = 0;
+
+const void* FStructWrapper::RootTypeId()
 {
-    if (PESAPI_IS_OBJECT_TYPE_ID(TypeId))
+    return PESAPI_VALUE_TYPE_ID(&RootTypeTag);
+}
+
+const JSClassDefinition* FStructWrapper::RootClassDefinition()
+{
+    // no constructor nor members, unnamed like the other fixed classes
+    static const JSClassDefinition Definition = []()
     {
-        auto Wrapper = FStructWrapper::FromTypeId(TypeId);
-        if (Wrapper && Wrapper->GetCurrentClass())
-        {
-            return &Wrapper->GetCurrentClass()->Definition;
-        }
-        return nullptr;
+        JSClassDefinition Result = JSClassEmptyDefinition;
+        Result.TypeId = RootTypeId();
+        Result.ScriptName = "";
+        return Result;
+    }();
+    return &Definition;
+}
+
+// the fixed classes, value type ids
+const JSClassDefinition* FindBuiltinClass(const void* TypeId)
+{
+    if (TypeId == FStructWrapper::RootTypeId())
+    {
+        return FStructWrapper::RootClassDefinition();
     }
     if (TypeId == FWeakObjectPtrWrapper::TypeId())
     {
@@ -103,6 +119,8 @@ void FStructWrapper::ReleaseAll()
 {
     PendingExtensionMethods().clear();
     ExtensionMethodsInited = false;
+    // the type ids (the wrappers) are about to dangle
+    UnregisterReflectedClasses(GetDefaultClassRegistry());
     StructWrappers().Empty();
 }
 
@@ -226,7 +244,19 @@ void FStructWrapper::RefreshMethod(UFunction* InFunction)
     }
 }
 
-const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, bool Refresh)
+int FStructWrapper::OnClassNotFound(const void* TypeId)
+{
+    auto Wrapper = FromTypeId(TypeId);
+    UStruct* S = Wrapper ? Wrapper->Struct.Get() : nullptr;
+    if (!S)
+    {
+        return 0;
+    }
+    Wrapper->Define(S, false);
+    return 1;
+}
+
+void FStructWrapper::Define(UStruct* InStruct, bool Refresh)
 {
     if (!ExtensionMethodsInited)
     {
@@ -242,72 +272,93 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
 
     Struct = InStruct;
 
-    if (CurrentClass && CurrentClass->Struct.Get() == InStruct)
+    if (DefinedStruct.Get() == InStruct)
     {
         if (Refresh)
         {
             CollectMembers(InStruct, nullptr);
         }
-        return &CurrentClass->Definition;
+        return;
     }
 
-    const void* SuperTypeId = nullptr;
+    const void* SuperTypeId = RootTypeId();
     if (auto SuperStruct = InStruct->GetSuperStruct())
     {
         auto SuperWrapper = FindOrAdd(SuperStruct);
-        SuperWrapper->GetClassDefinition(SuperStruct, false);
+        SuperWrapper->Define(SuperStruct, false);
         SuperTypeId = SuperWrapper.get();
     }
 
     ExternalInitialize = nullptr;
     ExternalFinalize.Reset();
-    // translators are kept in the maps (definitions built before may still reference them), Properties is refilled below
+    // translators are kept in the maps (definitions defined before may still reference them), Properties is refilled below
     Properties.clear();
 
-    auto Out = std::make_shared<FReflectedClass>();
-    Out->Struct = InStruct;
+    FReflectedMembers Members;
+    CollectMembers(InStruct, &Members);
+
 #if WITH_EDITOR
-    Out->ClassName = TCHAR_TO_UTF8(*InStruct->GetPathName());
+    const FString ClassName = InStruct->GetPathName();
 #else
-    Out->ClassName = TCHAR_TO_UTF8(*InStruct->GetName());
+    const FString ClassName = InStruct->GetName();
 #endif
-    CollectMembers(InStruct, Out.get());
+    const bool IsStruct = InStruct->IsA<UScriptStruct>();
 
-    // terminators
-    Out->Methods.push_back(JSFunctionInfo());
-    Out->Functions.push_back(JSFunctionInfo());
-    Out->Properties.push_back(JSPropertyInfo());
-    Out->Variables.push_back(JSPropertyInfo());
-
-    auto& Definition = Out->Definition;
-    // an object type id (see FReflectedTypeTag), the wrapper lives until the module shuts down
-    Definition.TypeId = this;
-    Definition.SuperTypeId = SuperTypeId;
-    Definition.ScriptName = Out->ClassName.c_str();
-    Definition.Initialize = &FStructWrapper::ReflectedConstruct;
-    if (InStruct->IsA<UScriptStruct>())
+    // an object type id (see FReflectedTypeTag), the wrapper lives until the module shuts down. The registry replaces the
+    // previous definition (retired, the templates built from it keep working) and owns the copied names
+    auto Reg = GetPesapiRegistryApi();
+    Reg->define_class(nullptr, this, SuperTypeId, nullptr, TCHAR_TO_UTF8(*ClassName), &FStructWrapper::ReflectedConstruct,
+        IsStruct ? &FScriptStructWrapper::ReflectedFinalize : nullptr, this, 1);
+    Reg->set_property_info_size(nullptr, this, static_cast<int>(Members.Methods.size()), static_cast<int>(Members.Functions.size()),
+        static_cast<int>(Members.Properties.size()), static_cast<int>(Members.Variables.size()));
+    auto SetMethods = [Reg, this](const std::vector<JSFunctionInfo>& Infos, int IsStatic)
     {
-        Definition.Finalize = &FScriptStructWrapper::ReflectedFinalize;
+        for (int i = 0; i < static_cast<int>(Infos.size()); ++i)
+        {
+            Reg->set_method_info(nullptr, this, i, Infos[i].Name, IsStatic, Infos[i].Callback, Infos[i].Data, 1);
+        }
+    };
+    auto SetProperties = [Reg, this](const std::vector<JSPropertyInfo>& Infos, int IsStatic)
+    {
+        for (int i = 0; i < static_cast<int>(Infos.size()); ++i)
+        {
+            Reg->set_property_info(nullptr, this, i, Infos[i].Name, IsStatic, Infos[i].Getter, Infos[i].Setter, Infos[i].GetterData,
+                Infos[i].SetterData, 1);
+        }
+    };
+    SetMethods(Members.Methods, 0);
+    SetMethods(Members.Functions, 1);
+    SetProperties(Members.Properties, 0);
+    SetProperties(Members.Variables, 1);
+
+    // set_method_info drops the reflection info, the static bindings (FindClassByType) need it for fast calls (v8)
+    if (auto Definition = const_cast<JSClassDefinition*>(FindClassByID(GetDefaultClassRegistry(), this)))
+    {
+        for (size_t i = 0; i < Members.Methods.size(); ++i)
+        {
+            Definition->Methods[i].ReflectionInfo = Members.Methods[i].ReflectionInfo;
+        }
+        for (size_t i = 0; i < Members.Functions.size(); ++i)
+        {
+            Definition->Functions[i].ReflectionInfo = Members.Functions[i].ReflectionInfo;
+        }
     }
-    else
+
+    if (!IsStruct)
     {
         // a UObject is never owned by js, the env keeps it alive while it is bound
-        Definition.Finalize = nullptr;
-        Definition.OnEnter = &FClassWrapper::ReflectedOnEnter;
-        Definition.OnExit = &FClassWrapper::ReflectedOnExit;
+        Reg->trace_native_object_lifecycle(nullptr, this, &FClassWrapper::ReflectedOnEnter, &FClassWrapper::ReflectedOnExit);
     }
-    Definition.Methods = Out->Methods.data();
-    Definition.Functions = Out->Functions.data();
-    Definition.Properties = Out->Properties.data();
-    Definition.Variables = Out->Variables.data();
-    Definition.Data = this;
+    else if (!static_cast<UScriptStruct*>(InStruct)->IsNative())
+    {
+        Reg->trace_native_object_lifecycle(
+            nullptr, this, &FScriptStructWrapper::ReflectedOnEnter, &FScriptStructWrapper::ReflectedOnExit);
+    }
 
-    // the previous definition is released here unless an env holds it, FindReflectedClass returns the new one from now on
-    CurrentClass = std::move(Out);
-    return &Definition;
+    DefinedStruct = InStruct;
 }
 
-void FStructWrapper::CollectMembers(UStruct* InStruct, FReflectedClass* Out)
+void FStructWrapper::CollectMembers(UStruct* InStruct, FReflectedMembers* Out)
 {
     TSet<FName> AddedMethods;
     TSet<FName> AddedFunctions;
@@ -659,6 +710,21 @@ void FScriptStructWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr,
 {
     // the class data of a reflected class is its wrapper, it is process wide and outlives the envs
     static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Free(Ptr);
+}
+
+void* FScriptStructWrapper::ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate)
+{
+    auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate);
+    UStruct* S = static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Struct.Get();
+    return ObjectMapper && S ? ObjectMapper->RetainUObject(S) : nullptr;
+}
+
+void FScriptStructWrapper::ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData)
+{
+    if (auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate))
+    {
+        ObjectMapper->ReleaseUObject(UserData);
+    }
 }
 
 void* FClassWrapper::ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate)

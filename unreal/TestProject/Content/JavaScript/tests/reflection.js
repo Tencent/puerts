@@ -39,8 +39,31 @@ test('inheritance', () => {
     assert(Object.getPrototypeOf(UE.PuertsTestDerived.prototype) === UE.PuertsTestObject.prototype, 'class proto chain');
     observe('class constructor chain', () => Object.getPrototypeOf(UE.PuertsTestDerived) === UE.PuertsTestObject);
     observe('struct without super', () => Object.getPrototypeOf(UE.PuertsTestStruct.prototype) === Object.prototype);
-    observe('struct root proto chain ends at Object.prototype', () =>
-        Object.getPrototypeOf(Object.getPrototypeOf(UE.PuertsTestStruct.prototype)) === Object.prototype);
+    // a struct without super derives from the virtual root class (the FName fixing sits at the end of its chain)
+    const protoChainDepth = (proto) => {
+        let depth = 0;
+        for (let p = Object.getPrototypeOf(proto); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) {
+            ++depth;
+        }
+        return depth;
+    };
+    observe('struct root proto chain ends at Object.prototype', () => {
+        let p = UE.PuertsTestStruct.prototype;
+        while (Object.getPrototypeOf(p) && Object.getPrototypeOf(p) !== Object.prototype) {
+            p = Object.getPrototypeOf(p);
+        }
+        return Object.getPrototypeOf(p) === Object.prototype;
+    });
+    observe('struct proto chain depth to Object.prototype', () => protoChainDepth(UE.PuertsTestStruct.prototype));
+    observe('struct and class share the root', () => {
+        const root = (proto) => {
+            while (Object.getPrototypeOf(proto) !== Object.prototype) {
+                proto = Object.getPrototypeOf(proto);
+            }
+            return proto;
+        };
+        return root(UE.PuertsTestStruct.prototype) === root(UE.Object.prototype);
+    });
     observe('instanceof Object', () => new UE.PuertsTestStruct() instanceof Object && new UE.PuertsTestObject() instanceof Object);
     const t = new UE.PuertsTestReflectTarget();
     assert(t instanceof UE.Object, 'instanceof UE.Object');

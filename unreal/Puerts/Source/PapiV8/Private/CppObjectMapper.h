@@ -130,11 +130,6 @@ public:
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition);
 
-    // called when the script class of a definition is created (the template keeps referring to the definition), used by the
-    // host to keep the definitions of reflected classes alive, returns whether the class is named by its ScriptName (the name
-    // shown by debuggers and as constructor.name)
-    std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
-
     struct FPesapiFunctionData
     {
         pesapi_callback Callback;

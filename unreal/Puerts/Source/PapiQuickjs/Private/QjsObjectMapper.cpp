@@ -231,7 +231,8 @@ JSValue FCppObjectMapper::FindOrCreateClass(const JSClassDefinition* ClassDefini
 
     JS_SetConstructorBit(ctx, func, 1);
 
-    if (OnClassCreated && OnClassCreated(ClassDefinition))
+    // only the reflected classes of unreal (object type ids) are named, the rest keep an empty constructor.name
+    if (PESAPI_IS_OBJECT_TYPE_ID(ClassDefinition->TypeId))
     {
 #if WITH_EDITOR || !defined(UE_SHIPPING)
         if (ClassDefinition->ScriptName)

@@ -12,6 +12,8 @@
 #include "ScriptClassRegistry.h"
 #if USING_IN_UNREAL_ENGINE
 #include "UObject/Class.h"
+#include "JSClassRegister.h"
+#include "PapiDataTransfer.h"
 #endif
 #include <map>
 #include <list>
@@ -125,20 +127,26 @@ public:
             ScriptClassDefinitionDelete(ClassDef);
         }
         RetiredClassDefinitions.clear();
-        RetiredNames.clear();
+        OwnedNames.clear();
     }
 
     // unlike unity (first registration wins), unreal replaces the previous definition (behaviour kept from JSClassRegister).
     // The replaced definition is retired instead of deleted: the js classes already created from it (and the native objects
     // bound to them) keep pointing to its function / property arrays and Data, so it lives until the registry is destroyed.
     // Replacing happens in editor only (blueprint / struct recompiling, hot reload), the retired ones are few.
-    // Only value type ids (PESAPI_VALUE_TYPE_ID, e.g. StaticTypeId) can be registered, object type ids are owned by the host
-    // (the FStructWrapper of a reflected class in unreal) and may be cast to the host type
+    // Value type ids (PESAPI_VALUE_TYPE_ID, e.g. StaticTypeId) are registered by name. The only object type ids accepted are
+    // the FStructWrappers of reflected classes in unreal (registered by FStructWrapper::Define, the host may cast the id to the
+    // wrapper), they are not in the name tables (not visible to ForeachRegisterClass / loadCPPType / find_type_id)
     void RegisterClass(const ScriptClassDefinition& ClassDefinition)
     {
         if (ClassDefinition.TypeId && !PESAPI_IS_VALUE_TYPE_ID(ClassDefinition.TypeId))
         {
 #if USING_IN_UNREAL_ENGINE
+            if (FReflectedTypeTag::IsReflected(ClassDefinition.TypeId))
+            {
+                RegisterReflectedClass(ClassDefinition);
+                return;
+            }
             ensureAlwaysMsgf(false, TEXT("register class [%s] with an object type id, use a value type id (PESAPI_VALUE_TYPE_ID)"),
                 ClassDefinition.ScriptName ? UTF8_TO_TCHAR(ClassDefinition.ScriptName) : TEXT(""));
 #endif
@@ -157,8 +165,7 @@ public:
                     CDataNameToClassDefinition.erase(nd_iter);
                 }
                 // its ScriptName points to the key of CDataNameToClassDefinition, keep a copy of its own
-                RetiredNames.push_back(std::move(OldName));
-                Old->ScriptName = RetiredNames.back().c_str();
+                Old->ScriptName = OwnName(OldName.c_str());
                 Retire(Old);
             }
             CDataIdToClassDefinition[ClassDefinition.TypeId] = ScriptClassDefinitionDuplicate(&ClassDefinition);
@@ -218,8 +225,18 @@ public:
         }
         auto Iter = CDataIdToClassDefinition.find(TypeId);
 #if USING_IN_UNREAL_ENGINE
-        // reflected classes (UClass / UScriptStruct) and container classes are process wide and visible to every registry
-        return Iter == CDataIdToClassDefinition.end() ? FindReflectedClass(TypeId) : Iter->second;
+        if (Iter != CDataIdToClassDefinition.end())
+        {
+            return Iter->second;
+        }
+        // reflected classes (UClass / UScriptStruct) are defined in the default registry, the fixed classes (delegates,
+        // containers ...) are process wide, both are visible to every registry
+        if (PESAPI_IS_OBJECT_TYPE_ID(TypeId))
+        {
+            auto Default = GetDefaultClassRegistry();
+            return Default != this ? Default->FindClassByID(TypeId) : nullptr;
+        }
+        return FindBuiltinClass(TypeId);
 #else
         return Iter == CDataIdToClassDefinition.end() ? nullptr : Iter->second;
 #endif
@@ -237,6 +254,14 @@ public:
             return nullptr;
         }
         auto ClassDef = FindClassByID(TypeId);
+#if USING_IN_UNREAL_ENGINE
+        // the reflected classes are loaded by the default registry (FStructWrapper::OnClassNotFound)
+        auto Default = GetDefaultClassRegistry();
+        if (!ClassDef && Default != this && PESAPI_IS_OBJECT_TYPE_ID(TypeId))
+        {
+            return Default->LoadClassByID(TypeId);
+        }
+#endif
         if (!ClassDef && ClassNotFoundCallback)
         {
             if (!ClassNotFoundCallback(TypeId))
@@ -271,16 +296,55 @@ public:
         auto Iter = StructNameToClassDefinition.find(Type->GetName());
         return Iter == StructNameToClassDefinition.end() ? nullptr : Iter->second;
     }
+
+    // the wrappers are released (module shutdown), their definitions must not be found by the dangling type ids
+    void UnregisterReflectedClasses()
+    {
+        for (auto Iter = CDataIdToClassDefinition.begin(); Iter != CDataIdToClassDefinition.end();)
+        {
+            if (PESAPI_IS_OBJECT_TYPE_ID(Iter->first))
+            {
+                Retire(Iter->second);
+                Iter = CDataIdToClassDefinition.erase(Iter);
+            }
+            else
+            {
+                ++Iter;
+            }
+        }
+    }
 #endif
 
 private:
+#if USING_IN_UNREAL_ENGINE
+    // by type id only, the name is owned by the registry (the name passed in may be a temporary, see pesapi_define_class)
+    void RegisterReflectedClass(const ScriptClassDefinition& ClassDefinition)
+    {
+        auto Iter = CDataIdToClassDefinition.find(ClassDefinition.TypeId);
+        if (Iter != CDataIdToClassDefinition.end())
+        {
+            Retire(Iter->second);
+        }
+        auto ClassDef = ScriptClassDefinitionDuplicate(&ClassDefinition);
+        ClassDef->ScriptName = OwnName(ClassDefinition.ScriptName ? ClassDefinition.ScriptName : "");
+        CDataIdToClassDefinition[ClassDefinition.TypeId] = ClassDef;
+    }
+#endif
+
+    const char* OwnName(const char* Name)
+    {
+        OwnedNames.emplace_back(Name);
+        return OwnedNames.back().c_str();
+    }
+
     void Retire(ScriptClassDefinition* ClassDefinition)
     {
         RetiredClassDefinitions.push_back(ClassDefinition);
     }
 
     std::vector<ScriptClassDefinition*> RetiredClassDefinitions;
-    std::list<PString> RetiredNames;
+    // the names of the reflected and retired definitions (a list does not move its elements)
+    std::list<PString> OwnedNames;
     std::map<const void*, ScriptClassDefinition*> CDataIdToClassDefinition;
     std::map<PString, ScriptClassDefinition*> CDataNameToClassDefinition;
     pesapi_class_not_found_callback ClassNotFoundCallback = nullptr;
@@ -361,6 +425,11 @@ bool TraceObjectLifecycle(
 const ScriptClassDefinition* FindClassByType(ScriptClassRegistry* Registry, UStruct* Type)
 {
     return Registry->FindClassByType(Type);
+}
+
+void UnregisterReflectedClasses(ScriptClassRegistry* Registry)
+{
+    Registry->UnregisterReflectedClasses();
 }
 #endif
 

@@ -86,9 +86,6 @@ public:
         return Registry;
     }
 
-    // called when the script class of a definition is created, returns whether the class is named by its ScriptName
-    std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
-
     inline std::weak_ptr<int> GetEnvLifeCycleTracker()
     {
         return std::weak_ptr<int>(Ref);

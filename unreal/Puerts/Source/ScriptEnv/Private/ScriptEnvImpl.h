@@ -221,14 +221,6 @@ private:
     struct FTemplateInfo
     {
         std::shared_ptr<FStructWrapper> StructWrapper;
-        // the class definition the js class is built from (held by ClassesBuilt)
-        const JSClassDefinition* ClassDefinition = nullptr;
-        // per env flags (the wrapper is shared by envs), IsNativeTakeJsRef can be changed by mixin
-#if PUERTS_KEEP_UOBJECT_REFERENCE
-        bool IsNativeTakeJsRef = false;
-#else
-        bool IsNativeTakeJsRef = true;
-#endif
     };
 
     // builds the js class of the type in this env if not yet (called inside a scope of the env)
@@ -344,13 +336,6 @@ private:
 
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
-    // the class definitions (of FStructWrapper) the js classes of this env are built from, keyed by type id. A js class is
-    // built once for a type id and references its definition, so they are released after the env is destroyed
-    std::unordered_map<const void*, std::shared_ptr<FReflectedClass>> ClassesBuilt;
-
-    // IPapiBackend OnClassCreated
-    bool OnReflectedClassCreated(const JSClassDefinition* ClassDefinition);
-
     // A UObject wrapper is a native object of the class definition of its UClass (the type id is the FClassWrapper), the native
     // pointer is the UObject itself and it is not owned by js. The backend caches the wrapper (weakly) by the pointer, and calls
     // OnUObjectEnter / OnUObjectExit when it is bound / unbound: each binding takes a slot of UserObjectPool (the handle is the
@@ -362,8 +347,16 @@ private:
 
     virtual void OnUObjectExit(UObject* UEObject, void* UserData) override;
 
-    // whether the wrapper of Obj (whose class info is Info) is held by native (the UObject does not hold the wrapper)
-    static bool IsNativeTakeJsRefObject(UObject* Obj, const FTemplateInfo* Info);
+    virtual void* RetainUObject(UObject* Object) override;
+
+    virtual void ReleaseUObject(void* UserData) override;
+
+    // whether the wrapper of Obj is held by native (the UObject does not hold the wrapper), by the nearest class of Obj in
+    // NativeTakeJsRefClasses (set by mixin), the default otherwise
+    bool IsNativeTakeJsRefObject(UObject* Obj) const;
+
+    // per env (the wrappers are shared by envs), set by mixin for a class and its subclasses
+    TMap<UClass*, bool> NativeTakeJsRefClasses;
 
     struct FNativeTakeJsRef
     {
@@ -437,8 +430,6 @@ private:
     std::map<void*, DelegateObjectInfo> DelegateMap;
 
     TMap<UFunction*, FPapiValueRef> MixinFunctionMap;
-
-    void InstallFNameFixing(pesapi_env Env, pesapi_value Class);
 
     // released before CppObjectMapper.UnInitialize
     TArray<FPapiValueRef> TickHandlers;

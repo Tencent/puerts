@@ -41,6 +41,12 @@ public:
 
     virtual void OnUObjectExit(UObject* UEObject, void* UserData) = 0;
 
+    // holds Object by a slot of the env until ReleaseUObject(the returned userdata), for the bindings of the objects which
+    // depend on a UObject (e.g. the UScriptStruct of a struct object, see FScriptStructWrapper::ReflectedOnEnter)
+    virtual void* RetainUObject(UObject* Object) = 0;
+
+    virtual void ReleaseUObject(void* UserData) = 0;
+
     // an owned struct created by a constructor (Info), returns true if it is bound to the object being constructed by a
     // backend specific way (e.g. a POD struct freed with an ArrayBuffer on v8), false to let the backend bind the pointer
     // returned by the constructor

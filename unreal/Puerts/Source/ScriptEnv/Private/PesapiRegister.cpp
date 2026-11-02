@@ -103,9 +103,14 @@ static void pesapi_define_class(pesapi_registry registry, const void* type_id, c
     classDef.SuperTypeId = super_type_id;
 
     const char* prefix = GPesapiModuleName ? GPesapiModuleName : module_name;
-    // ScriptName will point to the key stored in class registry after RegisterScriptClass, so a temporary string is safe here
+    // ScriptName will point to the key stored in class registry after RegisterScriptClass, so a temporary string is safe here.
+    // An object type id (a reflected class of unreal) is not in the name tables, the registry keeps a copy of the name
     PUERTS_NAMESPACE::PString ScriptNameWithModuleName;
-    if (prefix && prefix[0] != '\0')
+    if (PESAPI_IS_OBJECT_TYPE_ID(type_id))
+    {
+        classDef.ScriptName = type_name;
+    }
+    else if (prefix && prefix[0] != '\0')
     {
         ScriptNameWithModuleName = prefix;
         ScriptNameWithModuleName += ".";

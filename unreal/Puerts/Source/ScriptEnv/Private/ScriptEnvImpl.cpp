@@ -137,10 +137,8 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
     BackendParams.OnEnvReleased = [this]() { OnEnvReleased(); };
     // an external engine instance is not supported, node is set up by the v8 backend (PapiV8, WITH_NODEJS)
     check(!InExternalRuntime && !InExternalContext);
-    // the classes of reflected types (built from the class definitions of FStructWrapper) must be kept alive while the
-    // classes are, and they are named by the backend
-    BackendParams.OnClassCreated = [this](const JSClassDefinition* ClassDefinition)
-    { return OnReflectedClassCreated(ClassDefinition); };
+    // the classes of reflected types are defined in the default registry on first load (process wide, idempotent)
+    GetPesapiRegistryApi()->on_class_not_found(nullptr, &FStructWrapper::OnClassNotFound);
 
     check(InBackendFactory);
     Backend = InBackendFactory(BackendParams);
@@ -240,6 +238,10 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         RemoveListItem.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__removeListItem"));
 
         GenListApply.Reset(Apis, Env, Apis->get_property(Env, PapiPuertsObj, "__genListApply"));
+
+        // a script name may differ from the FName only in case (FName is case insensitive), the backend fixes the name by
+        // FName when a member is not found (a js Proxy at the end of the prototype chain of the virtual root class)
+        Backend->InstallNameFixing(Env, Apis->create_class(Env, FStructWrapper::RootTypeId()), &FixFNameCase);
     }
 
     DelegateProxiesCheckerHandler =
@@ -332,9 +334,6 @@ FScriptEnvImpl::~FScriptEnvImpl()
     MainEnvRef = nullptr;
     Backend.reset();
     MainApis = nullptr;
-
-    // referenced by the templates, released after the isolate
-    ClassesBuilt.clear();
 
     GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 }
@@ -620,36 +619,43 @@ void* FScriptEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject*
 {
     // called by FClassWrapper::New, JSObject is the object being constructed, the backend binds UEObject to it after the
     // return (and calls OnUObjectEnter)
-    auto Class = static_cast<UClass*>(ClassWrapper->Struct.Get());
-    bool Existed;
-    if (IsNativeTakeJsRefObject(UEObject, GetTemplateInfoOfType(Env, Class, Existed)))
+    if (IsNativeTakeJsRefObject(UEObject))
     {
         NativeTakeJsRefObjects.FindOrAdd(UEObject).Wrapper.Reset(MainApis, Env, JSObject);
     }
     return UEObject;
 }
 
-bool FScriptEnvImpl::IsNativeTakeJsRefObject(UObject* Obj, const FTemplateInfo* Info)
+bool FScriptEnvImpl::IsNativeTakeJsRefObject(UObject* Obj) const
 {
-    if (!Info)
-    {
-        return false;
-    }
 #if PUERTS_KEEP_UOBJECT_REFERENCE
-    return Info->IsNativeTakeJsRef;
+    bool Result = false;
 #else
-    // the flag of the class is only set by mixin
-    if (Obj->IsA<UClass>() || Obj->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+    bool Result = true;
+#endif
+    if (NativeTakeJsRefClasses.Num() > 0)
+    {
+        for (UClass* Class = Obj->GetClass(); Class; Class = Class->GetSuperClass())
+        {
+            if (auto Found = NativeTakeJsRefClasses.Find(Class))
+            {
+                Result = *Found;
+                break;
+            }
+        }
+    }
+#if !PUERTS_KEEP_UOBJECT_REFERENCE
+    if (Result && (Obj->IsA<UClass>() || Obj->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject)))
     {
         return false;
     }
-    return Info->IsNativeTakeJsRef;
 #endif
+    return Result;
 }
 
 void* FScriptEnvImpl::OnUObjectEnter(UObject* UEObject)
 {
-    if (IsNativeTakeJsRefObject(UEObject, TypeToTemplateInfoMap.Find(UEObject->GetClass())))
+    if (IsNativeTakeJsRefObject(UEObject))
     {
         // the wrapper is held by native (Bind / FindOrAdd set it), the slot is filled if js takes the ref (SetJsTakeRef)
         const int32 Handle = UserObjectPool.Add(nullptr);
@@ -679,6 +685,20 @@ void FScriptEnvImpl::OnUObjectExit(UObject* UEObject, void* UserData)
                 Entry->Handle = 0;
             }
         }
+    }
+}
+
+void* FScriptEnvImpl::RetainUObject(UObject* Object)
+{
+    return reinterpret_cast<void*>(static_cast<intptr_t>(UserObjectPool.Add(Object)));
+}
+
+void FScriptEnvImpl::ReleaseUObject(void* UserData)
+{
+    const int32 Handle = static_cast<int32>(reinterpret_cast<intptr_t>(UserData));
+    if (Handle != 0)
+    {
+        UserObjectPool.Remove(Handle);
     }
 }
 
@@ -928,6 +948,7 @@ void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, i
 void FScriptEnvImpl::TryReleaseType(UStruct* Struct)
 {
     TypeToTemplateInfoMap.Remove(Struct);
+    NativeTakeJsRefClasses.Remove(static_cast<UClass*>(Struct));
     // the address may be reused by another struct
     ObjectMergers.erase(Struct);
 }
@@ -1481,7 +1502,8 @@ pesapi_value FScriptEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDef
 bool FScriptEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
 {
     UScriptStruct* Struct = Wrapper->Struct.IsValid() ? Cast<UScriptStruct>(Wrapper->Struct.Get()) : nullptr;
-    return Struct && (Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
+    // the objects of a non native struct hold the struct (on_enter, not called for a trivially freed object)
+    return Struct && Struct->IsNative() && (Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
 }
 
 // the deleter of a pod struct whose memory is freed with its js object (may be called on a gc thread of the backend, safe
@@ -1511,40 +1533,21 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
     {
         FTemplateInfo TemplateInfo;
 
-        // the super type first, the flags are inherited from it
+        // the super type first
         if (auto SuperStruct = InStruct->GetSuperStruct())
         {
             bool Dummy;
-            auto SuperTemplateInfo = GetTemplateInfoOfType(Env, SuperStruct, Dummy);
-            if (InStruct->IsA<UClass>() && SuperTemplateInfo->IsNativeTakeJsRef)
-            {
-                TemplateInfo.IsNativeTakeJsRef = true;
-            }
+            GetTemplateInfoOfType(Env, SuperStruct, Dummy);
         }
 
         auto StructWrapper = GetStructWrapper(InStruct);
-        // the definition is shared by envs, the first use of a type in this env refreshes the translators
-        auto ClassDefinition = StructWrapper->GetClassDefinition(InStruct, true);
+        // the definition is shared by envs, the first use of a type in this env refreshes the translators (UE4 has no
+        // reinstancing notification, so this is where a recompiled type is noticed)
+        StructWrapper->Define(InStruct, true);
         // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env
-        pesapi_value JsClass = MainApis->create_class(Env, StructWrapper.get());
+        MainApis->create_class(Env, StructWrapper.get());
 
         TemplateInfo.StructWrapper = StructWrapper;
-        // the class may be built from a previous definition (kept by this env)
-        auto Built = ClassesBuilt.find(StructWrapper.get());
-        TemplateInfo.ClassDefinition = ensure(Built != ClassesBuilt.end()) ? &Built->second->Definition : ClassDefinition;
-
-        if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
-        {
-            if (!ScriptStruct->IsNative())    //非原生的结构体，可能在实例没有的时候会释放
-            {
-                SysObjectRetainer.Retain(ScriptStruct);
-            }
-        }
-
-        if (!InStruct->GetSuperStruct())
-        {
-            InstallFNameFixing(Env, JsClass);
-        }
 
         Existed = false;
         return &TypeToTemplateInfoMap.Add(InStruct, MoveTemp(TemplateInfo));
@@ -1554,13 +1557,6 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
         Existed = true;
         return TemplateInfoPtr;
     }
-}
-
-// a script name may differ from the FName only in case (FName is case insensitive), the backend fixes the name by FName when a
-// member is not found (a js Proxy at the end of the prototype chain)
-void FScriptEnvImpl::InstallFNameFixing(pesapi_env Env, pesapi_value Class)
-{
-    Backend->InstallNameFixing(Env, Class, &FixFNameCase);
 }
 
 pesapi_value FScriptEnvImpl::GetJsClass(pesapi_env Env, UStruct* InStruct)
@@ -1589,22 +1585,6 @@ bool FScriptEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value 
         }
         return Object->GetClass()->IsChildOf(Struct);
     }
-}
-
-bool FScriptEnvImpl::OnReflectedClassCreated(const JSClassDefinition* ClassDefinition)
-{
-    // only reflected classes are named (as before), the rest keep an empty constructor.name
-    if (ClassDefinition->Initialize != &FStructWrapper::ReflectedConstruct)
-    {
-        return false;
-    }
-    // the type id of a reflected class is its wrapper, and the class is always built from the current definition
-    auto& Current = static_cast<const FStructWrapper*>(ClassDefinition->TypeId)->GetCurrentClass();
-    if (ensure(Current && &Current->Definition == ClassDefinition))
-    {
-        ClassesBuilt[ClassDefinition->TypeId] = Current;
-    }
-    return true;
 }
 
 // the name -> value and value -> name entries of an enum like object (a number key is the same as its string form in js)
@@ -2398,15 +2378,15 @@ void FScriptEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
     MixinClasses.Add(New);
 
-    bool Existed = false;
-    GetTemplateInfoOfType(Env, New, Existed)->IsNativeTakeJsRef = TakeJsObjectRef;
-    for (auto& KV : TypeToTemplateInfoMap)
+    // the nearest entry of the class chain wins, the subclasses mixed in before follow this one
+    for (auto It = NativeTakeJsRefClasses.CreateIterator(); It; ++It)
     {
-        if (New != KV.Key && KV.Key->IsChildOf(New))
+        if (It.Key() != New && It.Key()->IsChildOf(New))
         {
-            KV.Value.IsNativeTakeJsRef = TakeJsObjectRef;
+            It.RemoveCurrent();
         }
     }
+    NativeTakeJsRefClasses.Add(New, TakeJsObjectRef);
     Apis->add_return(Info, FindOrAdd(Env, New->GetClass(), New));
 }
 #endif

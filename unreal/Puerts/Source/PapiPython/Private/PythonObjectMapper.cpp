@@ -749,10 +749,6 @@ FClassEntry* FCppObjectMapper::FindOrCreateClass(const JSClassDefinition* ClassD
     Entry.Mapper = this;
     TypeToEntry()[Cls] = &Entry;
 
-    if (OnClassCreated)
-    {
-        OnClassCreated(ClassDefinition);
-    }
     return &Entry;
 }
 

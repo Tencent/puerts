@@ -22,7 +22,6 @@ static inline lua_State* StateOf(pesapi_env Env)
 FPapiBackendLua::FPapiBackendLua(const FPapiBackendParams& InParams)
     : Params(InParams), CppObjectMapper(std::make_unique<luaimpl::FCppObjectMapper>())
 {
-    CppObjectMapper->OnClassCreated = Params.OnClassCreated;
 }
 
 FPapiBackendLua::~FPapiBackendLua()

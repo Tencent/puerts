@@ -14,6 +14,8 @@ struct name: "/Script/PuertsTest.PuertsTestStruct"
 class constructor chain: false
 struct without super: false
 struct root proto chain ends at Object.prototype: true
+struct proto chain depth to Object.prototype: 2
+struct and class share the root: true
 instanceof Object: true
 toString tag: "[object Object]"
 call without new: Error: only call as Construct is supported!

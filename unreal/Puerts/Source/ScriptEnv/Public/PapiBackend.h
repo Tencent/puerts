@@ -40,10 +40,6 @@ struct FPapiBackendParams
     // flags of the engine instance (for v8 only --max-old-space-size=<MB> is used)
     FString Flags;
 
-    // called when the script class of a definition is created, the definition must be kept alive while the env is,
-    // returns whether the class is named by its ScriptName
-    std::function<bool(const JSClassDefinition* ClassDefinition)> OnClassCreated;
-
     // the cleanup of the host run by DestroyEnvRef after the env is released and before the engine instance is disposed
     std::function<void()> OnEnvReleased;
 };
@@ -180,7 +176,8 @@ public:
         return false;
     }
 
-    // the members of the objects of the script class Class (a root class, created by create_class) whose name is not found
+    // the members of the objects of the script class Class (the virtual root of the reflected classes, created by
+    // create_class) whose name is not found
     // are looked up again by the name FixName returns (FixName(name) -> the fixed name, or the name itself if it can not be
     // fixed), called inside a scope of the env. A backend which does not support it does nothing
     virtual void InstallNameFixing(pesapi_env Env, pesapi_value Class, pesapi_callback FixName)

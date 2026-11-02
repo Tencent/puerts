@@ -45,16 +45,9 @@ struct FExternalFinalizer
     void operator()(void* Ptr) const;
 };
 
-// class definition of a UClass / UScriptStruct, the arrays and names are owned here, Definition points to them
-struct FReflectedClass
+// the members of the class definition of a UClass / UScriptStruct being collected, the names are copied by the registry
+struct FReflectedMembers
 {
-    JSClassDefinition Definition = JSClassEmptyDefinition;
-
-    // the UStruct this definition is built for
-    TWeakObjectPtr<UStruct> Struct;
-
-    std::string ClassName;
-
     // a deque does not move its elements, so the c strings of the names stay valid while names are added
     std::deque<std::string> Names;
 
@@ -81,11 +74,13 @@ struct FReflectedClass
 
 // FStructWrapper (and the translators it owns) is shared by all js envs in the process, keyed by the full name of the
 // UStruct, it only holds engine side data.
-// The js class of a UStruct is described by a class definition (FReflectedClass) whose type id is the wrapper, the templates
-// are created from it by the CppObjectMapper of each env. Since the wrapper is kept for a full name, a new UStruct with the
-// same full name (e.g. a regenerated class) keeps the js class of the env (the template is cached by type id), only the
-// translators are refreshed.
-// Only the current definition is held by the wrapper, the envs hold the definitions their templates are built from.
+// The js class of a UStruct is described by a class definition in the default registry whose type id is the wrapper (an
+// object type id), defined by Define (pesapi define_class / set_*_info) on first use: when a backend loads the type id
+// (OnClassNotFound) or an env uses the UStruct. The templates are created from it by the backend of each env. Since the
+// wrapper is kept for a full name, a new UStruct with the same full name (e.g. a regenerated class) keeps the js class of the
+// env (the template is cached by type id), only the translators are refreshed. A replaced definition is retired by the
+// registry (the templates built from it reference it).
+// The classes without a super struct derive from a virtual root class (RootTypeId), the FName case fixing is installed on it.
 // The type tag is the first base, so a type id (the wrapper) can be checked to be a UClass one (FReflectedTypeTag::IsUClass)
 // without a lookup.
 class FStructWrapper : public FReflectedTypeTag
@@ -112,16 +107,19 @@ public:
     // definitions built afterwards
     static void InitExtensionMethodsMap();
 
-    // the class definition of InStruct (this wrapper must be the one returned by FindOrAdd(InStruct)), built on first use
-    // or when the wrapper is pointed to a new UStruct. With Refresh an existing definition is kept and only the translators
-    // are re-pointed to the current properties / functions (by name)
-    const JSClassDefinition* GetClassDefinition(UStruct* InStruct, bool Refresh);
+    // defines the class of InStruct (this wrapper must be the one returned by FindOrAdd(InStruct)) in the default registry if
+    // not yet or the wrapper is pointed to a new UStruct (the super classes first). With Refresh an existing definition is
+    // kept and only the translators are re-pointed to the current properties / functions (by name)
+    void Define(UStruct* InStruct, bool Refresh);
 
-    // the holder of the current class definition (the last one returned by GetClassDefinition), may be null
-    const std::shared_ptr<FReflectedClass>& GetCurrentClass() const
-    {
-        return CurrentClass;
-    }
+    // the class not found callback of the default registry (pesapi on_class_not_found): defines the class of a wrapper
+    static int OnClassNotFound(const void* TypeId);
+
+    // the type id of the virtual root class of the reflected classes (a value type id, see FindBuiltinClass)
+    static const void* RootTypeId();
+
+    // the definition of the virtual root class
+    static const JSClassDefinition* RootClassDefinition();
 
     // the wrapper if TypeId is the type id of a reflected class (UClass / UScriptStruct), otherwise nullptr
     static FStructWrapper* FromTypeId(const void* TypeId);
@@ -151,7 +149,7 @@ protected:
     void AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods);
 
     // refresh the translators of InStruct, and fill the members of Out if it is not null
-    void CollectMembers(UStruct* InStruct, FReflectedClass* Out);
+    void CollectMembers(UStruct* InStruct, FReflectedMembers* Out);
 
     // Initialize of the class definitions, the object is created and bound by the wrapper, so nullptr is returned
     static void* ReflectedConstruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -170,9 +168,8 @@ protected:
 
     JSFunctionInfo LoadInfo;
 
-    // the current definition, the templates (and js functions) created from a definition reference it, so the env that
-    // creates a template holds the definition (see GetCurrentClass) until the env is disposed
-    std::shared_ptr<FReflectedClass> CurrentClass;
+    // the UStruct the current definition (in the default registry) is defined for
+    TWeakObjectPtr<UStruct> DefinedStruct;
 
     static void StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -202,6 +199,12 @@ public:
     // Finalize of the class definitions of UScriptStructs, the memory of an object owned by js is freed by the
     // CppObjectMapper through it
     static void ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate);
+
+    // OnEnter / OnExit of the class definitions of non native UScriptStructs (a user defined struct may be collected while
+    // its objects are alive): each object holds the UScriptStruct by a slot of the env (IObjectMapper::RetainUObject)
+    static void* ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate);
+
+    static void ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData);
 
     static void* Alloc(UScriptStruct* InScriptStruct);
 

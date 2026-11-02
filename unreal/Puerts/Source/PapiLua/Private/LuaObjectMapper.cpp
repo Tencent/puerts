@@ -651,11 +651,6 @@ FCppObjectMapper::FClassEntry* FCppObjectMapper::FindOrCreateClass(lua_State* L,
     lua_pushvalue(L, ObjMT);
     Entry.ObjMetaRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    if (OnClassCreated)
-    {
-        OnClassCreated(ClassDefinition);
-    }
-
     // registered before the super class, a cyclic super chain ends here (the elements of an unordered_map are stable)
     FClassEntry* Ret = &(TypeIdToClassMap[ClassDefinition->TypeId] = Entry);
 

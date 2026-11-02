@@ -267,7 +267,7 @@ FORCEINLINE void* ContainerOfValue(struct pesapi_ffi* Apis, pesapi_env Env, pesa
     return Holder ? Holder->Container : nullptr;
 }
 
-// module internal: the class definitions of the containers, visible to every registry (see FindReflectedClass)
+// module internal: the class definitions of the containers, visible to every registry (see FindBuiltinClass)
 const JSClassDefinition* FindContainerClass(const void* TypeId);
 
 template <typename T>
