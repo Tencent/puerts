@@ -119,7 +119,7 @@ test('set index semantics', () => {
     idx.forEach((i, v) => eq(s.Get(i), v));
     eq(s.FindIndex(-1), -1);
     const maxIndex = s.GetMaxIndex();
-    // TSet.IsValidIndex returns a number while TArray/TMap return a boolean
+    // TSet.IsValidIndex returns a boolean like TArray/TMap
     observe('set IsValidIndex result', () => s.IsValidIndex(idx[0]));
     const valid = (i) => !!s.IsValidIndex(i);
     eq([valid(-1), valid(maxIndex)], [false, false]);

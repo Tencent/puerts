@@ -35,6 +35,7 @@ test('int64', () => {
     const values = [BigInt(Number.MAX_SAFE_INTEGER), BigInt(Number.MIN_SAFE_INTEGER), INT64_MAX, INT64_MIN];
     eq(roundTrip(t.Int64Array, values), values);
     eq(roundTrip(t.Int64Array, [INT64_MAX + 1n, INT64_MIN - 1n]), [INT64_MIN, INT64_MAX]);
+    // a number is not accepted by int64 (the element keeps 0), the same as a property
     observe('int64 element from number', () => roundTrip(t.Int64Array, [1, -2]));
 });
 
@@ -115,6 +116,7 @@ test('UObject*', () => {
     a.Add(t);
     eq(a.Get(0), t);
     a.Add(null);
+    // a null UObject is undefined in js, the same as a property / return value
     observe('null object element', () => a.Get(1));
 });
 

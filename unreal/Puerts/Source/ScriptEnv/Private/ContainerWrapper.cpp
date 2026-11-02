@@ -453,9 +453,7 @@ void FScriptSetWrapper::IsValidIndex(struct pesapi_ffi* Apis, pesapi_callback_in
     pesapi_env Env = Apis->get_env(Info);
     auto Self = ContainerSelfOf<FScriptSet>(Apis, Info);
     int32 Index = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
-    // kept as a number for compatibility
-    uint32 Result = Self->IsValidIndex(Index);
-    Apis->add_return(Info, Apis->create_uint32(Env, Result));
+    Apis->add_return(Info, Apis->create_boolean(Env, Self->IsValidIndex(Index)));
 }
 
 void FScriptSetWrapper::Empty(struct pesapi_ffi* Apis, pesapi_callback_info Info)
