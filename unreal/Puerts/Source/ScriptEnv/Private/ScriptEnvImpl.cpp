@@ -248,7 +248,7 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
     // every frame, calls the tick handlers (the timers of puerts/timer.js)
     TickHandle = FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FScriptEnvImpl::Tick), 0);
 
-    UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
+    UserObjectPool.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
 
 #ifdef SINGLE_THREAD_VERIFY
@@ -316,8 +316,12 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
         MixinFunctionMap.Empty();
 
-        // the wrappers held by native, the UObjects are released by OnUObjectExit when the backend unbinds them
-        NativeTakeJsRefObjects.Empty();
+        // the wrappers held by native, their slots are freed by OnUObjectExit when the backend unbinds them (moved out first, a
+        // wrapper may be freed synchronously while the refs are released)
+        {
+            TMap<UObject*, FNativeTakeJsRef> Released = MoveTemp(NativeTakeJsRefObjects);
+            NativeTakeJsRefObjects.Empty();
+        }
 
         // the js runtime of the backend stops before the env is released
         Backend->OnExit(this);
@@ -620,7 +624,7 @@ void* FScriptEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject*
     bool Existed;
     if (IsNativeTakeJsRefObject(UEObject, GetTemplateInfoOfType(Env, Class, Existed)))
     {
-        NativeTakeJsRefObjects.Emplace(UEObject, FPapiValueRef(MainApis, Env, JSObject));
+        NativeTakeJsRefObjects.FindOrAdd(UEObject).Wrapper.Reset(MainApis, Env, JSObject);
     }
     return UEObject;
 }
@@ -643,29 +647,53 @@ bool FScriptEnvImpl::IsNativeTakeJsRefObject(UObject* Obj, const FTemplateInfo* 
 #endif
 }
 
-void FScriptEnvImpl::OnUObjectEnter(UObject* UEObject)
+void* FScriptEnvImpl::OnUObjectEnter(UObject* UEObject)
 {
-    EnteredUObject = UEObject;
-    if (!IsNativeTakeJsRefObject(UEObject, TypeToTemplateInfoMap.Find(UEObject->GetClass())))
+    if (IsNativeTakeJsRefObject(UEObject, TypeToTemplateInfoMap.Find(UEObject->GetClass())))
     {
-        // the wrapper holds the UObject
-        UserObjectRetainer.Retain(UEObject);
+        // the wrapper is held by native (Bind / FindOrAdd set it), the slot is filled if js takes the ref (SetJsTakeRef)
+        const int32 Handle = UserObjectPool.Add(nullptr);
+        NativeTakeJsRefObjects.FindOrAdd(UEObject).Handle = Handle;
+        return reinterpret_cast<void*>(static_cast<intptr_t>(Handle));
     }
+    // the wrapper holds the UObject
+    return reinterpret_cast<void*>(static_cast<intptr_t>(UserObjectPool.Add(UEObject)));
 }
 
-void FScriptEnvImpl::OnUObjectExit(UObject* UEObject)
+void FScriptEnvImpl::OnUObjectExit(UObject* UEObject, void* UserData)
 {
-    // UEObject may be being destroyed (UnBind), do not dereference it. Release is a no-op if it is not retained
-    UserObjectRetainer.Release(UEObject);
+    // UEObject may be being destroyed (UnBind), do not dereference it
+    const int32 Handle = static_cast<int32>(reinterpret_cast<intptr_t>(UserData));
+    if (Handle == 0)
+    {
+        return;
+    }
+    UserObjectPool.Remove(Handle);
+    if (NativeTakeJsRefObjects.Num() > 0)
+    {
+        // the wrapper is unbound while native holds it (e.g. created by another path), the slot must not be reused by it
+        if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
+        {
+            if (Entry->Handle == Handle)
+            {
+                Entry->Handle = 0;
+            }
+        }
+    }
 }
 
 void FScriptEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
 {
-    // a bound object is either retained already or its wrapper is held by native, an unbound one is left alone. Retained
-    // before the ref is released: the wrapper may be freed synchronously (quickjs), then OnUObjectExit releases it
-    if (NativeTakeJsRefObjects.Contains(UEObject))
+    // a bound object is either held by its slot already or its wrapper is held by native, an unbound one is left alone. The
+    // UObject is put in the slot before the ref is released: the wrapper may be freed synchronously (quickjs), then
+    // OnUObjectExit frees the slot
+    if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
     {
-        UserObjectRetainer.Retain(UEObject);
+        if (Entry->Handle != 0)
+        {
+            UserObjectPool.Set(Entry->Handle, UEObject);
+        }
+        FNativeTakeJsRef Removed = MoveTemp(*Entry);
         NativeTakeJsRefObjects.Remove(UEObject);
     }
 }
@@ -673,7 +701,7 @@ void FScriptEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
 void FScriptEnvImpl::UnBind(UObject* UEObject)
 {
     // the UObject is destroyed while its wrapper may be still alive: unbind it (any access from js reports an invalid object
-    // from now on), OnUObjectExit releases the UObject
+    // from now on), OnUObjectExit frees its slot
     if (!MainEnvRef || !MainApis)
     {
         return;
@@ -684,7 +712,11 @@ void FScriptEnvImpl::UnBind(UObject* UEObject)
         return;
     }
     MainApis->unbind_native_object(EnvScope.GetEnv(), nullptr, UEObject);
-    NativeTakeJsRefObjects.Remove(UEObject);
+    if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
+    {
+        FNativeTakeJsRef Removed = MoveTemp(*Entry);
+        NativeTakeJsRefObjects.Remove(UEObject);
+    }
 }
 
 pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject)
@@ -696,14 +728,19 @@ pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* U
 
     bool Existed;
     auto TemplateInfoPtr = GetTemplateInfoOfType(Env, UEObject->GetClass(), Existed);
-    EnteredUObject = nullptr;
     // the backend returns the cached wrapper, or creates one (not owned by js) and calls OnUObjectEnter
     pesapi_value Result = MainApis->native_object_to_value(Env, TemplateInfoPtr->StructWrapper.get(), UEObject, false);
-    if (EnteredUObject == UEObject && IsNativeTakeJsRefObject(UEObject, TemplateInfoPtr))
+    if (NativeTakeJsRefObjects.Num() > 0)
     {
-        NativeTakeJsRefObjects.Emplace(UEObject, FPapiValueRef(MainApis, Env, Result));
+        // a new wrapper of a native take js ref object (OnUObjectEnter added the entry), native holds it from now on
+        if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
+        {
+            if (!Entry->Wrapper)
+            {
+                Entry->Wrapper.Reset(MainApis, Env, Result);
+            }
+        }
     }
-    EnteredUObject = nullptr;
     return Result;
 }
 

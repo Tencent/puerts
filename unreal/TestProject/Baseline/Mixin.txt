@@ -15,3 +15,4 @@ js state after gc: 6
 destroyed objectTakeByNative call: throws Error: access a invalid object
 destroyed objectTakeByNative expando: "doomed"
 js object released after the UObject is collected: true
+UObject valid after js drops the taken ref: false

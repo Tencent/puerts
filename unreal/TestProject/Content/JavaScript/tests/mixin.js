@@ -108,7 +108,25 @@ test('setup: mixin objectTakeByNative destroyed', () => {
     UE.PuertsTestReporter.MarkGarbage(o);
 });
 
+test('setup: mixin objectTakeByNative setJsTakeRef', () => {
+    // the wrapper is held by native until js takes the ref, then the wrapper holds the UObject (its reserved slot is filled)
+    const o = UE.NewObject(takeRefState.cls);
+    o.expando = 'js';
+    eq(o.CallImplEvent(7), 7);
+    puerts.setJsTakeRef(o);
+    takeRefState.jsHeld = o;
+    takeRefState.jsHeldWeak = UE.MakeWeakObjectPtr(o);
+});
+
 step(() => {
+    test('mixin objectTakeByNative setJsTakeRef keeps the UObject', () => {
+        const o = takeRefState.jsHeld;
+        eq(takeRefState.jsHeldWeak.IsValid(), true, 'UObject held by the js object');
+        eq(o.expando, 'js');
+        eq(o.CallImplEvent(1), 8, 'js state kept');
+        takeRefState.jsHeld = undefined;
+    });
+
     test('mixin objectTakeByNative keeps js state', () => {
         const o = reporter.Holder;
         observe('same js object after gc', () => o === takeRefState.ref.deref());
@@ -128,6 +146,11 @@ step(() => {
     test('mixin objectTakeByNative released with the UObject', () => {
         // the UObject is collected once native drops it, then the js object is no longer held
         observe('js object released after the UObject is collected', () => takeRefState.ref.deref() === undefined);
+    });
+
+    test('mixin objectTakeByNative setJsTakeRef released with the js object', () => {
+        observe('UObject valid after js drops the taken ref', () => takeRefState.jsHeldWeak.IsValid());
+        takeRefState.jsHeldWeak = undefined;
     });
 });
 

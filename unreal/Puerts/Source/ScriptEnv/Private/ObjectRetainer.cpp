@@ -58,4 +58,54 @@ FObjectRetainer::~FObjectRetainer()
 {
     Clear();
 }
+
+int32 FObjectPool::Add(UObject* Object)
+{
+    int32 Index;
+    if (!FreeIndices.empty())
+    {
+        Index = FreeIndices.back();
+        FreeIndices.pop_back();
+        Objects[Index] = Object;
+    }
+    else
+    {
+        Index = Objects.Add(Object);
+    }
+    return Index + 1;
+}
+
+void FObjectPool::Set(int32 Handle, UObject* Object)
+{
+    if (ensure(Handle > 0 && Handle <= Objects.Num()))
+    {
+        Objects[Handle - 1] = Object;
+    }
+}
+
+void FObjectPool::Remove(int32 Handle)
+{
+    if (ensure(Handle > 0 && Handle <= Objects.Num()))
+    {
+        Objects[Handle - 1] = nullptr;
+        FreeIndices.push_back(Handle - 1);
+    }
+}
+
+void FObjectPool::Clear()
+{
+    Objects.Empty();
+    FreeIndices.clear();
+}
+
+void FObjectPool::AddReferencedObjects(FReferenceCollector& Collector)
+{
+    // the free slots are null
+    Collector.AddReferencedObjects(Objects);
+}
+
+FString FObjectPool::GetReferencerName() const
+{
+    return Name;
+}
 }    // namespace PUERTS_NAMESPACE

@@ -35,10 +35,11 @@ public:
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) = 0;
 
     // UEObject is bound to / unbound from its js object by the backend (on_enter / on_exit of the class definitions of UClasses,
-    // see FClassWrapper), unbound when the js object is garbage collected, the UObject is destroyed or the env is released
-    virtual void OnUObjectEnter(UObject* UEObject) = 0;
+    // see FClassWrapper), unbound when the js object is garbage collected, the UObject is destroyed or the env is released.
+    // OnUObjectEnter returns the userdata the backend keeps for the binding, passed back to OnUObjectExit
+    virtual void* OnUObjectEnter(UObject* UEObject) = 0;
 
-    virtual void OnUObjectExit(UObject* UEObject) = 0;
+    virtual void OnUObjectExit(UObject* UEObject, void* UserData) = 0;
 
     // an owned struct created by a constructor (Info), returns true if it is bound to the object being constructed by a
     // backend specific way (e.g. a POD struct freed with an ArrayBuffer on v8), false to let the backend bind the pointer

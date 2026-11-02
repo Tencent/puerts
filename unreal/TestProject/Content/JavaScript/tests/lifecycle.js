@@ -53,6 +53,20 @@ test('setup: counted structs', () => {
     note('counted live before gc', Counted() - state.countedBase);
 });
 
+test('setup: wrapper slots', () => {
+    // every bound wrapper takes a slot holding its UObject, the slots of collected wrappers are reused. The live delta of the
+    // other cases excludes these objects (slotLive: the unreferenced ones are collected in the next step)
+    const before = Live();
+    state.slotKept = [];
+    for (let i = 0; i < 50; ++i) {
+        const o = new UE.PuertsTestObject();
+        o.IntValue = i;
+        state.slotKept.push(o);
+        new UE.PuertsTestObject().IntValue = -i;
+    }
+    state.slotLive = Live() - before;
+});
+
 test('setup: js-owned objects', () => {
     state.baseLive = Live();
     state.kept = new UE.PuertsTestObject();
@@ -91,8 +105,10 @@ step(() => {
     });
 
     test('unreferenced js-created objects collected', () => {
-        // kept + (doomed may or may not be counted) + objects created in other setup cases
-        note('live delta after gc', Live() - state.baseLive);
+        // kept + (doomed may or may not be counted) + objects created in other setup cases; the unreferenced slot objects
+        // (created before baseLive) are collected, added back so the delta does not depend on them
+        note('live delta after gc', Live() - state.baseLive + (state.slotLive - state.slotKept.length));
+        eq(state.slotLive, 100, 'slot objects created');
     });
 
     test('destroyed object access', () => {
@@ -137,6 +153,17 @@ step(() => {
         reporter.Holder = undefined;
     });
 
+    test('wrapper slots reused', () => {
+        // created before liveBeforeRelease is taken, kept until the last step: the counts of the other cases are not changed
+        state.slotKept.forEach((o, i) => eq(o.IntValue, i, 'kept after gc'));
+        state.slotNew = [];
+        for (let i = 0; i < 50; ++i) {
+            const o = new UE.PuertsTestObject();
+            o.IntValue = 100 + i;
+            state.slotNew.push(o);
+        }
+    });
+
     test('release kept', () => {
         state.liveBeforeRelease = Live();
         state.kept = undefined;
@@ -148,6 +175,13 @@ step(() => {
     test('released objects collected', () => {
         note('collected after release', state.liveBeforeRelease - Live());
         note('counted live after release', Counted() - state.countedBase);
+    });
+
+    test('wrapper slots after reuse', () => {
+        state.slotKept.forEach((o, i) => eq(o.IntValue, i, 'kept after reuse'));
+        state.slotNew.forEach((o, i) => eq(o.IntValue, 100 + i, 'new after gc'));
+        state.slotKept = undefined;
+        state.slotNew = undefined;
     });
 });
 

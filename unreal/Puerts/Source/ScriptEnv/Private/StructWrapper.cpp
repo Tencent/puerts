@@ -665,7 +665,7 @@ void* FClassWrapper::ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPriva
 {
     if (auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate))
     {
-        ObjectMapper->OnUObjectEnter(static_cast<UObject*>(Ptr));
+        return ObjectMapper->OnUObjectEnter(static_cast<UObject*>(Ptr));
     }
     return nullptr;
 }
@@ -674,7 +674,7 @@ void FClassWrapper::ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate
 {
     if (auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate))
     {
-        ObjectMapper->OnUObjectExit(static_cast<UObject*>(Ptr));
+        ObjectMapper->OnUObjectExit(static_cast<UObject*>(Ptr), UserData);
     }
 }
 
