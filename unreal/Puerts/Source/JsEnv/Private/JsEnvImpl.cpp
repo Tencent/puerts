@@ -3483,7 +3483,14 @@ void FJsEnvImpl::SetJsTakeRefInTs(const v8::FunctionCallbackInfo<v8::Value>& Inf
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     CHECK_V8_ARGS(EArgObject);
 
-    UObject* Object = FV8Utils::GetUObject(Context, Info[0]);
+    // only the objects of UObjects (the raw pointer is checked in ObjectMap before dereferenced)
+    void* Ptr = FV8Utils::GetPointer(Context, Info[0]);
+    UObject* Object = Ptr && ObjectMap.Contains(static_cast<UObject*>(Ptr)) ? FV8Utils::GetUObject(Context, Info[0]) : nullptr;
+    if (!Object || Object == RELEASED_UOBJECT)
+    {
+        FV8Utils::ThrowException(Isolate, "passing a invalid object");
+        return;
+    }
 
     bool Existed;
     auto TemplateInfoPtr = GetTemplateInfoOfType(Object->GetClass(), Existed);
