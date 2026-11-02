@@ -1,0 +1,112 @@
+class: add variable keeps the UClass: true
+class: tojs is cached: true
+class: StaticClass: true
+class: has Score: true
+class: instanceof parent: true
+class: instanceof itself: true
+class: instance GetClass: true
+class: merge: <no throw>
+class: merged: [10, 11]
+derived: instanceof base blueprint: true
+derived: prototype chain: true
+struct: tojs is cached: true
+struct: has Value: true
+struct: default Value: 0
+struct: copied into array: 7
+struct: js object into array: <no throw>
+struct: js object element: 3
+struct: merge: <no throw>
+struct: merged: 21
+recompile: same UClass: true
+recompile: same js class: true
+recompile: old instance alive: throws Error: passing a invalid object
+recompile: old instance Score: throws Error: access a invalid object
+recompile: old instance IntValue: throws Error: access a invalid object
+add: same UClass: true
+add: same js class: true
+add: has Label: true
+add: Label on js prototype: false
+add: old instance alive: throws Error: passing a invalid object
+add: old instance Score: throws Error: access a invalid object
+add: old instance Label: undefined
+add: new instance Score: 7
+add: new instance Label: undefined
+add: new instance Label after write: "hello"
+add: new instance GetClass: true
+add: merge after recompile: <no throw>
+add: merged: [12, 13]
+derived after add: same js class: true
+derived after add: has inherited Label: true
+derived after add: new instance Score: 8
+derived after add: new instance Label: undefined
+derived after add: old instance alive: throws Error: passing a invalid object
+gc: first instance alive: throws Error: passing a invalid object
+gc: first instance Score: throws Error: access a invalid object
+gc: second instance alive: true
+gc: second instance Score: 7
+gc: second instance Label: "hello"
+gc: derived instance alive: throws Error: passing a invalid object
+gc: derived instance Score: 8
+remove: same js class: true
+remove: has Score: false
+remove: Score on js prototype: true
+remove: new instance read Score: throws Error: Property is invalid!
+remove: new instance write Score: Error: Property is invalid!
+remove: new instance Label: undefined
+remove: new instance IntValue: 0
+remove: kept instance read Score: throws Error: Property is invalid!
+remove: derived new instance read Score: throws Error: Property is invalid!
+remove: merge: <no throw>
+remove: merged IntValue: 2
+change type: same js class: true
+change type: property type: "IntProperty"
+change type: new instance Label: undefined
+change type: write int: <no throw>
+change type: read after int write: 12
+change type: write string: <no throw>
+change type: read after string write: "x"
+add back: property type: "FloatProperty"
+add back: write: Error: Property is invalid!
+add back: read: throws Error: Property is invalid!
+add back: merge: <no throw>
+add back: merged IntValue: 4
+end: tojs: true
+end: derived tojs: true
+end: derived instanceof: true
+end: derived GetClass: true
+struct add: same js class: true
+struct add: has Extra: true
+struct add: Extra on js prototype: false
+struct add: new instance Value: 2
+struct add: new instance Extra: undefined
+struct add: write Extra: <no throw>
+struct add: read Extra: "e"
+struct add: js object into array: <no throw>
+struct add: element Value: 4
+struct add: element Extra: undefined
+struct add: many elements: "1,2,3,4,5,6,7,8"
+struct add: many elements after remove: "2,3,4,5,6,7,8,9"
+struct add: emptied: 0
+struct add: map values: "10,20,30,40"
+struct rename: same js class: true
+struct rename: has Value: false
+struct rename: has Amount: true
+struct rename: old instance Value: throws Error: Property is invalid!
+struct rename: old instance Amount: undefined
+struct rename: new instance Value: throws Error: Property is invalid!
+struct rename: write Amount: <no throw>
+struct rename: read Amount: 11
+struct rename: new instance Extra: undefined
+struct rename: merge: <no throw>
+struct change type: property type: "IntProperty"
+struct change type: new instance Extra: undefined
+struct change type: write int: <no throw>
+struct change type: read: 5
+struct remove: same js class: true
+struct remove: has Extra: false
+struct remove: read Extra: undefined
+struct remove: write Extra: <no throw>
+struct remove: Value: throws Error: Property is invalid!
+struct remove: Amount: undefined
+struct remove: js object into array: <no throw>
+struct remove: array length: 1

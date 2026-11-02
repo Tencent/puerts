@@ -1,0 +1,5 @@
+__tgjsSetPromiseRejectCallback after bootstrap: "undefined"
+puerts.on: "function"
+events of settle twice: ["kPromiseRejectAfterResolved", "kPromiseResolveAfterResolved"]
+reasons: ["Error: unhandled error", "a string", undefined, "TypeError: in async", "Error: derived"]
+warnings without listener: [["unhandledRejection", "Error: no listener"], ["unhandledRejection", "42"]]
