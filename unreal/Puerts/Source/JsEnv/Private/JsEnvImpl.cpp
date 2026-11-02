@@ -3644,6 +3644,29 @@ std::unordered_multimap<int, FJsEnvImpl::FModuleInfo*>::iterator FJsEnvImpl::Fin
     return HashToModuleInfo.end();
 }
 
+void FJsEnvImpl::DropUnevaluatedModules()
+{
+    for (auto It = PathToModule.CreateIterator(); It; ++It)
+    {
+        if (It.Value().Get(MainIsolate)->GetStatus() != v8::Module::kEvaluated)
+        {
+            It.RemoveCurrent();
+        }
+    }
+    for (auto It = HashToModuleInfo.begin(); It != HashToModuleInfo.end();)
+    {
+        if (It->second->Module.Get(MainIsolate)->GetStatus() != v8::Module::kEvaluated)
+        {
+            delete It->second;
+            It = HashToModuleInfo.erase(It);
+        }
+        else
+        {
+            ++It;
+        }
+    }
+}
+
 v8::MaybeLocal<v8::Module> FJsEnvImpl::ResolveModuleCallback(v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier,
 #if V8_MAJOR_VERSION >= 9
     v8::Local<v8::FixedArray> ImportAttributes,    // not implement yet
@@ -3879,7 +3902,11 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
             }
         }
 
-        auto RefModule = FetchCJSModuleAsESModule(Context, OutPath.EndsWith(TEXT(".cjs")) ? OutPath : RefModuleName);
+        // a resolved file (.cjs, .json, a package.json of a cjs package) is required by its full path, the specifier may be
+        // relative to the importer
+        const bool RequireByPath =
+            OutPath.EndsWith(TEXT(".cjs")) || OutPath.EndsWith(TEXT(".json")) || OutPath.EndsWith(TEXT(".cbc"));
+        auto RefModule = FetchCJSModuleAsESModule(Context, RequireByPath ? OutPath : RefModuleName);
 
         if (RefModule.IsEmpty())
         {
@@ -3923,6 +3950,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
     {
         v8::TryCatch TryCatch(Isolate);
         v8::Local<v8::Module> RootModule;
+        FEsmLoadScope LoadScope(this);
 
         if (!FetchESModuleTree(Context, OutPath).ToLocal(&RootModule))
         {
@@ -3931,9 +3959,19 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
             return;
         }
 
-        if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
+        v8::Local<v8::Value> Result;
+        if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false) &&
+            RootModule->Evaluate(Context).ToLocal(&Result) && Result->IsPromise() &&
+            Result.As<v8::Promise>()->State() == v8::Promise::kRejected)
         {
-            __USE(RootModule->Evaluate(Context));
+            v8::Local<v8::Promise> ResultPromise = Result.As<v8::Promise>();
+            v8::Local<v8::Function> Noop;
+            if (v8::Function::New(Context, [](const v8::FunctionCallbackInfo<v8::Value>&) {}).ToLocal(&Noop))
+            {
+                (void) ResultPromise->Catch(Context, Noop);
+            }
+            ResultPromise->MarkAsHandled();
+            Isolate->ThrowException(ResultPromise->Result());
         }
 
         if (TryCatch.HasCaught())
@@ -3941,6 +3979,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName)
             Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
             return;
         }
+        LoadScope.Succeeded = true;
     }
     else
 #endif
@@ -3991,6 +4030,7 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         FString FullPath = FV8Utils::ToFString(Isolate, Info[3]);
         v8::Local<v8::Module> RootModule;
+        FEsmLoadScope LoadScope(this);
 
         if (!FetchESModuleTree(Context, FullPath).ToLocal(&RootModule))
         {
@@ -4006,18 +4046,33 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 if (Result->IsPromise())
                 {
                     v8::Local<v8::Promise> ResultPromise(Result.As<v8::Promise>());
-                    while (ResultPromise->State() == v8::Promise::kPending)
+                    if (ResultPromise->State() == v8::Promise::kPending)
                     {
+                        // runs all queued microtasks, if still pending the module waits for something else (a timer, io ...),
+                        // which can not be settled in this synchronous call
                         Isolate->PerformMicrotaskCheckpoint();
+                    }
+                    if (ResultPromise->State() == v8::Promise::kPending)
+                    {
+                        FV8Utils::ThrowException(Isolate,
+                            FString::Printf(TEXT("[Puer004] top-level await of %s can not be settled synchronously"), *FullPath));
+                        return;
                     }
 
                     if (ResultPromise->State() == v8::Promise::kRejected)
                     {
+                        // a handler is needed, or the rejection is still reported as unhandled
+                        v8::Local<v8::Function> Noop;
+                        if (v8::Function::New(Context, [](const v8::FunctionCallbackInfo<v8::Value>&) {}).ToLocal(&Noop))
+                        {
+                            (void) ResultPromise->Catch(Context, Noop);
+                        }
                         ResultPromise->MarkAsHandled();
                         Isolate->ThrowException(ResultPromise->Result());
                         return;
                     }
                 }
+                LoadScope.Succeeded = true;
                 Info.GetReturnValue().Set(RootModule->GetModuleNamespace());
             }
         }

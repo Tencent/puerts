@@ -363,6 +363,27 @@ private:
 
     std::unordered_multimap<int, FModuleInfo*>::iterator FindModuleInfo(v8::Local<v8::Module> Module);
 
+    // forget the modules not evaluated (errored, uninstantiated ...) so that a later import retries them
+    void DropUnevaluatedModules();
+
+    // a module graph is loaded by the outermost load, a nested load (an esm required during evaluation) must not drop modules
+    struct FEsmLoadScope
+    {
+        FJsEnvImpl* Env;
+        bool Succeeded = false;
+        explicit FEsmLoadScope(FJsEnvImpl* InEnv) : Env(InEnv)
+        {
+            ++Env->EsmLoadDepth;
+        }
+        ~FEsmLoadScope()
+        {
+            if (--Env->EsmLoadDepth == 0 && !Succeeded)
+            {
+                Env->DropUnevaluatedModules();
+            }
+        }
+    };
+
     static v8::MaybeLocal<v8::Module> ResolveModuleCallback(v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier,
 #if V8_MAJOR_VERSION >= 9
         v8::Local<v8::FixedArray> ImportAttributes,    // not implement yet
@@ -740,6 +761,8 @@ private:
     TMap<FString, v8::Global<v8::Module>> PathToModule;
 
     std::unordered_multimap<int, FModuleInfo*> HashToModuleInfo;
+
+    int32 EsmLoadDepth = 0;
 #endif
 
 #ifdef SINGLE_THREAD_VERIFY
