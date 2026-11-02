@@ -378,6 +378,10 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                 auto This = Info.This();
                 FName RequiredFName(*FV8Utils::ToFString(Info.GetIsolate(), Property));
                 auto FixedPropertyName = FV8Utils::ToV8String(InnerIsolate, RequiredFName);
+                // only intercept names that need a FName case fix, otherwise prototype members would be reported
+                // as own properties (hasOwnProperty)
+                if (Property->StrictEquals(FixedPropertyName))
+                    return;
                 if (This->GetPrototype()->IsObject())
                 {
                     auto Proto = This->GetPrototype().As<v8::Object>();
