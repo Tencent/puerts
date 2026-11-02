@@ -1182,6 +1182,12 @@ public:
     //    value : realvalue
     // }
 
+    // a native object (e.g. a struct passed directly) is not a $ref container, its element 0 may be the memory holder
+    static bool IsRefContainer(const v8::Local<v8::Value>& Value)
+    {
+        return Value->IsObject() && Value.As<v8::Object>()->InternalFieldCount() == 0;
+    }
+
     v8::Local<v8::Value> UEToJs(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
@@ -1193,7 +1199,7 @@ public:
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        if (Value->IsObject())
+        if (IsRefContainer(Value))
         {
             auto Outer = Value->ToObject(Context).ToLocalChecked();
             auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
@@ -1205,7 +1211,7 @@ public:
     virtual bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
         void* TempBuff, void** OutValuePtr) const override
     {
-        if (Value->IsObject())
+        if (IsRefContainer(Value))
         {
             auto Outer = Value->ToObject(Context).ToLocalChecked();
             auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
@@ -1218,7 +1224,7 @@ public:
     void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, const void* ValuePtr,
         bool PassByPointer) const override
     {
-        if (Value->IsObject())
+        if (IsRefContainer(Value))
         {
             auto Outer = Value->ToObject(Context).ToLocalChecked();
             if (Inner->ParamShallowCopySize)
