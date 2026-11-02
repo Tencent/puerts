@@ -173,32 +173,35 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
     }
     else
     {
-        auto OwnerStruct = Property->GetOwnerStruct();
         auto Self = v8::External::New(Isolate, this);
         auto GetterTemplate = v8::FunctionTemplate::New(Isolate, Getter, Self);
         auto SetterTemplate = v8::FunctionTemplate::New(Isolate, Setter, Self);
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        FString PropertyName = OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
-#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-                                                                                     Property->GetAuthoredName()
-#else
-                                                                                     Property->GetDisplayNameText().ToString()
-#endif
-                                                                                     : Property->GetName();
-#ifdef PUERTS_WITH_EDITOR_SUFFIX
-        if (Property->IsEditorOnlyProperty())
-        {
-            PropertyName += EditorOnlyPropertySuffix;
-        }
-#endif
-
         Template->PrototypeTemplate()->SetAccessorProperty(
-            FV8Utils::InternalString(Isolate, PropertyName), GetterTemplate, SetterTemplate, v8::DontDelete);
-#else
-        Template->PrototypeTemplate()->SetAccessorProperty(
-            FV8Utils::InternalString(Isolate, Property->GetName()), GetterTemplate, SetterTemplate, v8::DontDelete);
-#endif
+            FV8Utils::InternalString(Isolate, GetAccessorName()), GetterTemplate, SetterTemplate, v8::DontDelete);
     }
+}
+
+FString FPropertyTranslator::GetAccessorName() const
+{
+#if !defined(ENGINE_INDEPENDENT_JSENV)
+    auto OwnerStruct = Property->GetOwnerStruct();
+    FString PropertyName = OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
+                                                                                 Property->GetAuthoredName()
+#else
+                                                                                 Property->GetDisplayNameText().ToString()
+#endif
+                                                                                 : Property->GetName();
+#ifdef PUERTS_WITH_EDITOR_SUFFIX
+    if (Property->IsEditorOnlyProperty())
+    {
+        PropertyName += EditorOnlyPropertySuffix;
+    }
+#endif
+    return PropertyName;
+#else
+    return Property->GetName();
+#endif
 }
 
 class FInt32PropertyTranslator : public FPropertyTranslator

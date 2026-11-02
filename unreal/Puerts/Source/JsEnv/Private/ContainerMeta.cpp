@@ -189,12 +189,42 @@ PropertyMacro* FContainerMeta::GetBuiltinProperty(BuiltinType type)
     return Ret;
 }
 
+#if WITH_EDITOR && (ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4)
+// editing a user defined struct changes its layout in place (the UScriptStruct pointer is kept), and some engine versions
+// also point FStructProperty::Struct of the struct properties found by TAllFieldsIterator to a temp duplicate meanwhile, so a
+// cached struct property may have a stale ElementSize or Struct
+static bool IsStaleStructProperty(PropertyMacro* Property, UField* Field)
+{
+    auto ScriptStruct = Cast<UScriptStruct>(Field);
+    if (!ScriptStruct)
+    {
+        return false;
+    }
+    auto StructProperty = CastField<StructPropertyMacro>(Property);
+#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
+    const int32 ElementSize = Property->GetElementSize();
+#else
+    const int32 ElementSize = Property->ElementSize;
+#endif
+    // set to PropertiesSize at creation, aligned if linked
+    return !StructProperty || StructProperty->Struct != ScriptStruct ||
+           (ElementSize != ScriptStruct->PropertiesSize &&
+               ElementSize != Align(ScriptStruct->PropertiesSize, ScriptStruct->GetMinAlignment()));
+}
+#endif
+
 PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 {
     auto Iter = ObjectPropertyMap.Find(Field);
     if (Iter)
     {
-        return *Iter;
+#if WITH_EDITOR && (ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4)
+        // a stale one is left (leaked like the others) as the containers created with it may still use it
+        if (!IsStaleStructProperty(*Iter, Field))
+#endif
+        {
+            return *Iter;
+        }
     }
 
     PropertyMacro* Ret = nullptr;
@@ -228,6 +258,18 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
         Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
 #else
         Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, ScriptStruct);
+#endif
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+        // unlink it from the children of PropertyMetaRoot (the constructor adds it to the head): the engine walks the struct
+        // properties of a user defined struct being edited by TAllFieldsIterator, and logs the error
+        // "ReplaceStructWithTempDuplicate unknown owner" (UE4) or points it to a temp duplicate (some UE5 paths) for one owned by
+        // neither a blueprint class nor a user defined struct. gc is not affected, as the references of PropertyMetaRoot are
+        // collected only at its link
+        if (PropertyMetaRoot->ChildProperties == Ret)
+        {
+            PropertyMetaRoot->ChildProperties = Ret->Next;
+            Ret->Next = nullptr;
+        }
 #endif
     }
     else if (auto Enum = Cast<UEnum>(Field))

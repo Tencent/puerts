@@ -412,9 +412,24 @@ private:
             for (TFieldIterator<PropertyMacro> It(Struct); It; ++It)
             {
                 PropertyMacro* Property = *It;
-                TStringConversion<TStringConvert<TCHAR, ANSICHAR>> Name(*Property->GetName());
-                Fields[Name.Get()] = FPropertyTranslator::Create(Property);
+                auto Translator = FPropertyTranslator::Create(Property);
+                // the keys are the names of the accessors (the authored names of the members of a user defined struct)
+                TStringConversion<TStringConvert<TCHAR, ANSICHAR>> Name(*Translator->GetAccessorName());
+                Fields[Name.Get()] = std::move(Translator);
             }
+        }
+
+        // the properties of a blueprint class or user defined struct are recreated when it is recompiled in the editor
+        bool IsStale() const
+        {
+            for (auto& KV : Fields)
+            {
+                if (KV.second->IsPropertyStale())
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> JsObject, void* Ptr)

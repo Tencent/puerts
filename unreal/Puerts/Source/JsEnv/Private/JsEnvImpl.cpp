@@ -991,11 +991,16 @@ void FJsEnvImpl::InitExtensionMethodsMap()
 
 std::unique_ptr<FJsEnvImpl::ObjectMerger>& FJsEnvImpl::GetObjectMerger(UStruct* Struct)
 {
-    if (ObjectMergers.find(Struct) == ObjectMergers.end())
+    auto& Merger = ObjectMergers[Struct];
+#if WITH_EDITOR
+    if (!Merger || Merger->IsStale())
+#else
+    if (!Merger)
+#endif
     {
-        ObjectMergers[Struct] = std::make_unique<ObjectMerger>(this, Struct);
+        Merger = std::make_unique<ObjectMerger>(this, Struct);
     }
-    return ObjectMergers[Struct];
+    return Merger;
 }
 
 void FJsEnvImpl::Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des)
@@ -2181,6 +2186,8 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
 void FJsEnvImpl::TryReleaseType(UStruct* Struct)
 {
     TypeToTemplateInfoMap.Remove(Struct);
+    // the address may be reused by another struct
+    ObjectMergers.erase(Struct);
 }
 
 // fix ScriptCore.cpp UObject::SkipFunction crash when Function has no parameters

@@ -176,6 +176,15 @@ public:
 
     void SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template);
 
+    // name of the accessor on the prototype of the owner (the authored name of a member of a user defined struct)
+    FString GetAccessorName() const;
+
+    // the property is destroyed or replaced by a new one (a blueprint or user defined struct recompiled in the editor)
+    bool IsPropertyStale() const
+    {
+        return PropertyWeakPtr.Get() != Property;
+    }
+
     bool IsPropertyValid()
     {
         if (!PropertyWeakPtr.IsValid())
