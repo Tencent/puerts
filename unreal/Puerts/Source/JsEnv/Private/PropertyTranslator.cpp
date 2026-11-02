@@ -513,7 +513,7 @@ public:
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
+        FSoftObjectPtr* Ptr = FV8Utils::IsolateData<IObjectMapper>(Isolate)->GetSoftObjectPtr(Isolate, Value);
         if (!Ptr)
         {
             FV8Utils::ThrowException(Isolate, "passing a invalid object for FSoftObjectPtr");
@@ -544,7 +544,7 @@ public:
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
+        FSoftObjectPtr* Ptr = FV8Utils::IsolateData<IObjectMapper>(Isolate)->GetSoftObjectPtr(Isolate, Value);
         if (!Ptr)
         {
             FV8Utils::ThrowException(Isolate, "passing a invalid object for FSoftObjectPtr");
@@ -1131,7 +1131,8 @@ public:
         }
         else
         {
-            auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPointer(Context, Value, 0));
+            // only a delegate wrapper (the other wrappers were misread as a FScriptDelegate before)
+            auto Src = FV8Utils::IsolateData<IObjectMapper>(Isolate)->GetDelegatePtr(Isolate, Value);
             if (Des && Src)
             {
                 *Des = *Src;

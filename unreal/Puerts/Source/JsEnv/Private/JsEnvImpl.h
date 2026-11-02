@@ -228,6 +228,10 @@ public:
     virtual v8::Local<v8::Value> AddSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Context> Context,
         FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) override;
 
+    virtual FSoftObjectPtr* GetSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Value> Value) override;
+
+    virtual FScriptDelegate* GetDelegatePtr(v8::Isolate* Isolate, v8::Local<v8::Value> Value) override;
+
     bool CheckDelegateProxies(float Tick);
 
     virtual v8::Local<v8::Value> CreateArray(

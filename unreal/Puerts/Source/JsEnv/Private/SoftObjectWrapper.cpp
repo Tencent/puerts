@@ -21,7 +21,7 @@ static void GenericObjectGet(const v8::FunctionCallbackInfo<v8::Value>& Info, FS
     auto Isolate = Info.GetIsolate();
     auto Context = Isolate->GetCurrentContext();
 
-    FSoftObjectPtr* Ptr = FV8Utils::GetPointerFast<FSoftObjectPtr>(Info.Holder());
+    FSoftObjectPtr* Ptr = FV8Utils::IsolateData<IObjectMapper>(Isolate)->GetSoftObjectPtr(Isolate, Info.Holder());
     if (!Ptr)
     {
         FV8Utils::ThrowException(Isolate, "passing a invalid object for FSoftObjectPtr");

@@ -3281,6 +3281,24 @@ v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(
     return JSObject;
 }
 
+FSoftObjectPtr* FJsEnvImpl::GetSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
+{
+    if (!Value->IsObject() || !SoftObjectPtrTemplate.Get(Isolate)->HasInstance(Value))
+    {
+        return nullptr;
+    }
+    return FV8Utils::GetPointerFast<FSoftObjectPtr>(Value.As<v8::Object>());
+}
+
+FScriptDelegate* FJsEnvImpl::GetDelegatePtr(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
+{
+    if (!Value->IsObject() || !DelegateTemplate.Get(Isolate)->HasInstance(Value))
+    {
+        return nullptr;
+    }
+    return FV8Utils::GetPointerFast<FScriptDelegate>(Value.As<v8::Object>());
+}
+
 v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type)
 {
     if (const auto Struct = Cast<UStruct>(Type))

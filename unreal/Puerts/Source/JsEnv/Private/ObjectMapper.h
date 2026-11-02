@@ -114,6 +114,12 @@ public:
 
     virtual v8::Local<v8::Value> AddSoftObjectPtr(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) = 0;
+
+    // the FSoftObjectPtr of a soft object (class) ptr wrapper, nullptr if Value is not one
+    virtual FSoftObjectPtr* GetSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Value> Value) = 0;
+
+    // the FScriptDelegate of a (single cast) delegate wrapper, nullptr if Value is not one
+    virtual FScriptDelegate* GetDelegatePtr(v8::Isolate* Isolate, v8::Local<v8::Value> Value) = 0;
 };
 #endif
 
