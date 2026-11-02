@@ -77,6 +77,22 @@ int32 UPuertsTestObject::DefaultParam(int32 A, int32 B)
     return A * 100 + B;
 }
 
+FString UPuertsTestObject::DefaultParams(FString Str, int32 I, FVector Vec)
+{
+    return FString::Printf(TEXT("Str=%s I=%d Vec=(%.1f,%.1f,%.1f)"), *Str, I, Vec.X, Vec.Y, Vec.Z);
+}
+
+FString UPuertsTestObject::DefaultParamsNoMeta(FString Str, int32 I)
+{
+    return FString::Printf(TEXT("Str=%s I=%d"), *Str, I);
+}
+
+FVector UPuertsTestObject::VectorRef(FVector& V)
+{
+    V.X = 1024;
+    return V + 1;
+}
+
 UPuertsTestObject* UPuertsTestObject::GetSelf()
 {
     return this;
@@ -162,6 +178,23 @@ bool UPuertsTestObject::CallStepDelegate(int32 Step)
 void UPuertsTestObject::BroadcastMulticast(const FString& Msg)
 {
     Multicast.Broadcast(Msg);
+}
+
+FString UPuertsTestObject::CallRefStringDelegate(const FString& In)
+{
+    FString S = In;
+    RefStringDelegate.ExecuteIfBound(S);
+    return S;
+}
+
+FString UPuertsTestObject::CallStringRetDelegate(const FString& In)
+{
+    return StringRetDelegate.IsBound() ? StringRetDelegate.Execute(In) : TEXT("unbound");
+}
+
+void UPuertsTestObject::BroadcastInt(int32 Value)
+{
+    IntMulticast.Broadcast(Value);
 }
 
 FString UPuertsTestObject::NativeEvent_Implementation(const FString& S)
@@ -369,4 +402,83 @@ int32 UPuertsTestExtension::ExtTriple(UPuertsTestReflectTarget* Target)
 int32 UPuertsTestExtension::ExtStructDouble(const FPuertsTestStruct& S)
 {
     return S.X * 2;
+}
+
+UPuertsTestArrayBufferHolder::UPuertsTestArrayBufferHolder()
+{
+    Buffer.Data = nullptr;
+    Buffer.Length = 0;
+    if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+    {
+        Buffer.Length = 10;
+        Buffer.Data = FMemory::Malloc(Buffer.Length);
+        uint8* Data = static_cast<uint8*>(Buffer.Data);
+        for (size_t i = 0; i < Buffer.Length; ++i)
+        {
+            Data[i] = static_cast<uint8>(2 * (i + 1));
+        }
+    }
+}
+
+void UPuertsTestArrayBufferHolder::BeginDestroy()
+{
+    if (Buffer.Data)
+    {
+        FMemory::Free(Buffer.Data);
+        Buffer.Data = nullptr;
+        Buffer.Length = 0;
+    }
+    Super::BeginDestroy();
+}
+
+int32 UPuertsTestArrayBufferHolder::BufferSum() const
+{
+    return Sum(Buffer);
+}
+
+int32 UPuertsTestArrayBufferHolder::Sum(const FArrayBuffer& Ab) const
+{
+    int32 Ret = 0;
+    const uint8* Data = static_cast<const uint8*>(Ab.Data);
+    for (size_t i = 0; Data && i < Ab.Length; ++i)
+    {
+        Ret += Data[i];
+    }
+    return Ret;
+}
+
+FArrayBuffer UPuertsTestArrayBufferHolder::SkipFirst(const FArrayBuffer& Ab) const
+{
+    if (Ab.Length > 0)
+    {
+        return FArrayBuffer{static_cast<uint8*>(Ab.Data) + 1, Ab.Length - 1};
+    }
+    return Ab;
+}
+
+FArrayBuffer UPuertsTestArrayBufferHolder::SkipFirstCopy(const FArrayBuffer& Ab) const
+{
+    FArrayBuffer Ret = SkipFirst(Ab);
+    Ret.bCopy = true;
+    return Ret;
+}
+
+int32 UPuertsTestArrayBufferHolder::ValueSum(const FArrayBufferValue& Ab) const
+{
+    int32 Ret = 0;
+    for (uint8 B : Ab.Data)
+    {
+        Ret += B;
+    }
+    return Ret;
+}
+
+FArrayBufferValue UPuertsTestArrayBufferHolder::MakeValue(int32 N) const
+{
+    FArrayBufferValue Ret;
+    for (int32 i = 0; i < N; ++i)
+    {
+        Ret.Data.Add(static_cast<uint8>(i + 1));
+    }
+    return Ret;
 }

@@ -97,6 +97,73 @@ test('new containers', () => {
     const objs = UE.NewArray(UE.PuertsTestObject);
     objs.Add(obj);
     assert(objs.Get(0) === obj, 'object element identity');
+    const bools = UE.NewArray(UE.BuiltinBool);
+    bools.Add(true);
+    bools.Add(false);
+    eq([bools.Get(0), bools.Get(1)], [true, false]);
+    const strs = UE.NewArray(UE.BuiltinString);
+    strs.Add('aaa');
+    eq(strs.Get(0), 'aaa');
+    const vecs = UE.NewArray(UE.Vector);
+    vecs.Add(new UE.Vector(1, 2, 3));
+    eq(vecs.Get(0).Z, 3);
+    const strSet = UE.NewSet(UE.BuiltinString);
+    strSet.Add('John');
+    eq([strSet.Contains('John'), strSet.Contains('Che')], [true, false]);
+});
+
+test('set index semantics', () => {
+    const s = UE.NewSet(UE.BuiltinInt);
+    [0, 1, 2].forEach((v) => s.Add(v));
+    const idx = [0, 1, 2].map((v) => s.FindIndex(v));
+    idx.forEach((i, v) => eq(s.Get(i), v));
+    eq(s.FindIndex(-1), -1);
+    const maxIndex = s.GetMaxIndex();
+    // TSet.IsValidIndex returns a number while TArray/TMap return a boolean
+    observe('set IsValidIndex result', () => s.IsValidIndex(idx[0]));
+    const valid = (i) => !!s.IsValidIndex(i);
+    eq([valid(-1), valid(maxIndex)], [false, false]);
+    s.RemoveAt(idx[1]);
+    eq([s.Num(), s.GetMaxIndex(), valid(idx[1]), valid(idx[0])], [2, maxIndex, false, true], 'RemoveAt leaves a hole');
+    s.RemoveAt(idx[0]);
+    s.RemoveAt(idx[2]);
+    eq([s.Num(), s.GetMaxIndex()], [0, maxIndex]);
+    s.Empty();
+    eq(s.GetMaxIndex(), 0, 'only Empty resets max index');
+    observe('set Get removed index', () => s.Get(idx[0]));
+});
+
+test('map index semantics', () => {
+    const m = UE.NewMap(UE.BuiltinInt, UE.BuiltinString);
+    m.Add(0, 'zero');
+    m.Add(5, 'five');
+    m.Add(10, 'ten');
+    m.Add(5, 'FIVE');
+    eq([m.Num(), m.Get(5)], [3, 'FIVE'], 'Add overwrites');
+    eq(m.GetMaxIndex(), 3);
+    eq([m.GetKey(0), m.GetKey(1), m.GetKey(2)], [0, 5, 10]);
+    m.Remove(5);
+    eq([m.Num(), m.GetMaxIndex()], [2, 3]);
+    eq([m.IsValidIndex(0), m.IsValidIndex(1), m.IsValidIndex(2)], [true, false, true]);
+    m.Remove(0);
+    m.Remove(10);
+    eq([m.Num(), m.GetMaxIndex()], [0, 3]);
+    m.Empty();
+    eq(m.GetMaxIndex(), 0, 'only Empty resets max index');
+    observe('map Remove missing key', () => m.Remove(42));
+    observe('map GetKey invalid index', () => m.GetKey(0));
+});
+
+test('FString key hash is case insensitive', () => {
+    const s = UE.NewSet(UE.BuiltinString);
+    ['One', 'Two', 'one', 'TWO'].forEach((v) => s.Add(v));
+    eq([s.Num(), s.Contains('oNe')], [2, true]);
+    const m = UE.NewMap(UE.BuiltinString, UE.BuiltinString);
+    m.Add('One', 'one_one');
+    eq(m.Get('ONE'), 'one_one');
+    m.Add('one', 'x');
+    eq([m.Num(), m.Get('One')], [1, 'x']);
+    observe('map key casing after re-add', () => m.GetKey(0));
 });
 
 test('iteration', () => {

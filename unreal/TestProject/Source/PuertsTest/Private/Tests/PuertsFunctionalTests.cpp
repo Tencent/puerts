@@ -106,6 +106,8 @@ PUERTS_SCRIPT_TEST(Objects, "tests/objects")
 PUERTS_SCRIPT_TEST(Reflection, "tests/reflection")
 PUERTS_SCRIPT_TEST(ModuleLoader, "tests/module_loader")
 PUERTS_SCRIPT_TEST(Promises, "tests/promises")
+PUERTS_SCRIPT_TEST(ArrayBuffer, "tests/array_buffer")
+PUERTS_SCRIPT_TEST(ContainerElementTypes, "tests/container_element_types")
 // blueprints and user defined structs changed and recompiled, needs the editor
 PUERTS_SCRIPT_TEST(Blueprint, "tests/blueprint")
 

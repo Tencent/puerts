@@ -3,6 +3,11 @@ array get out of range: throws Error: invalid index
 set has Remove: "undefined"
 set Get(0): "a"
 map get missing: undefined
+set IsValidIndex result: 1
+set Get removed index: throws Error: invalid index argument
+map Remove missing key: throws Error: invalid key argument
+map GetKey invalid index: throws Error: the argument is an invalid index
+map key casing after re-add: "one"
 array iterable: [1, 2]
 map iterable: [["k", 1]]
 array ctor: ""

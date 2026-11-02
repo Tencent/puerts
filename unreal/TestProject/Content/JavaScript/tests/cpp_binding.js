@@ -1,6 +1,6 @@
 'use strict';
 // Template (static) binding, registered in PuertsTestCppBinding.cpp. Guards M1 (registry / PesapiBackend switch).
-const { UE, test, step, eq, assert, note, observe, catchError, run } = require('./framework');
+const { UE, test, step, eq, near, assert, note, observe, catchError, run } = require('./framework');
 const cpp = require('cpp');
 const C = cpp.FPuertsTestCppClass;
 const state = {};
@@ -58,6 +58,24 @@ test('shape', () => {
     observe('cpp own keys', () => Object.keys(new C()));
     observe('cpp ctor name', () => new C().constructor.name);
     note('wrong ctor args', catchError(() => new C('a', 'b')));
+});
+
+test('builtin FVector binding', () => {
+    // UE.Vector is backed by the plugin's template binding (ScriptEnv/Private/Gen/FVector_Wrap.cpp)
+    const v = new UE.Vector(3, 4, 0);
+    eq(v.Size(), 5);
+    observe('Vector.ToString', () => v.ToString());
+    v.Set(1, 2, 3);
+    eq([v.X, v.Y, v.Z], [1, 2, 3]);
+    const n = new UE.Vector(0, 0, 10);
+    eq(n.Normalize(), true);
+    near(n.Z, 1);
+    const p = new UE.Vector(1, 2, 3).Projection();
+    near(p.X, 1 / 3);
+    near(p.Y, 2 / 3);
+    eq(p.Z, 1);
+    const z = UE.Vector.ZeroVector;
+    eq([z.X, z.Y, z.Z], [0, 0, 0]);
 });
 
 // runs after a full GC so garbage from the tests above does not skew the base count

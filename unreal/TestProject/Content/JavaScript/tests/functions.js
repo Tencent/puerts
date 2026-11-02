@@ -58,6 +58,27 @@ test('default param', () => {
     observe('default param omitted', () => obj.DefaultParam(3));
 });
 
+test('default params of string / struct type', () => {
+    eq(obj.DefaultParams(), 'Str=i am default I=10 Vec=(1.1,2.2,3.3)');
+    eq(obj.DefaultParams('hi'), 'Str=hi I=10 Vec=(1.1,2.2,3.3)');
+    eq(obj.DefaultParams('hi', 3), 'Str=hi I=3 Vec=(1.1,2.2,3.3)');
+    eq(obj.DefaultParams('hi', 3, new UE.Vector(4, 5, 6)), 'Str=hi I=3 Vec=(4.0,5.0,6.0)');
+    observe('default params explicit undefined', () => obj.DefaultParams(undefined, undefined));
+    observe('default params without metadata omitted', () => obj.DefaultParamsNoMeta());
+});
+
+test('ref struct param', () => {
+    const v = $ref(new UE.Vector(1, 2, 3));
+    const ret = obj.VectorRef(v);
+    eq([$unref(v).X, $unref(v).Y, $unref(v).Z], [1024, 2, 3]);
+    eq([ret.X, ret.Y, ret.Z], [1025, 3, 4]);
+    observe('ref struct param passed directly', () => {
+        const d = new UE.Vector(1, 2, 3);
+        obj.VectorRef(d);
+        return d.X;
+    });
+});
+
 test('object return identity', () => {
     assert(obj.GetSelf() === obj, 'GetSelf returns same js object');
     const c = obj.CreateChild();

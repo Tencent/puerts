@@ -5,5 +5,6 @@ cpp instanceof: true
 cpp own keys: []
 cpp ctor name: ""
 wrong ctor args: Error: invalid parameter!
+Vector.ToString: "X=3.000 Y=4.000 Z=0.000"
 instances created: 21
 instances alive after gc: 1

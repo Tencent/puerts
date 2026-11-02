@@ -5,6 +5,7 @@
 #include "UObject/SoftObjectPtr.h"
 #include "ExtensionMethods.h"
 #include "JsObject.h"
+#include "ArrayBuffer.h"
 #include "PuertsTestTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -13,6 +14,29 @@ enum class EPuertsTestEnum : uint8
     A,
     B,
     C = 10
+};
+
+// enums with non uint8 underlying types, used as container elements
+UENUM()
+enum class EPuertsTestEnumInt32 : int32
+{
+    VM1 = -1,
+    V0 = 0,
+    V1 = 1,
+    V2 = 2,
+    V3 = 3
+};
+
+UENUM()
+enum class EPuertsTestEnumInt8Min : int8
+{
+    VINT8_MIN = -128
+};
+
+UENUM()
+enum class EPuertsTestEnumInt8Max : int8
+{
+    VINT8_MAX = 127
 };
 
 USTRUCT(BlueprintType)
@@ -62,6 +86,9 @@ struct PUERTSTEST_API FPuertsTestCountedStruct
 DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(int32, FPuertsTestIntDelegate, int32, Value);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPuertsTestMulticastDelegate, const FString&, Msg);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FPuertsTestStepDelegate, int32, Step);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FPuertsTestRefStringDelegate, FString&, Str);
+DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(FString, FPuertsTestStringRetDelegate, const FString&, In);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPuertsTestIntMulticastDelegate, int32, Value);
 
 UCLASS(BlueprintType, Blueprintable)
 class PUERTSTEST_API UPuertsTestObject : public UObject
@@ -178,6 +205,18 @@ public:
     UFUNCTION(BlueprintCallable)
     int32 DefaultParam(int32 A, int32 B = 5);
 
+    // several defaults of string / int / struct type
+    UFUNCTION(BlueprintCallable)
+    FString DefaultParams(FString Str = TEXT("i am default"), int32 I = 10, FVector Vec = FVector(1.1, 2.2, 3.3));
+
+    // same defaults without BlueprintCallable: UHT keeps no CPP_Default_ metadata, the defaults are invisible to scripts
+    UFUNCTION()
+    FString DefaultParamsNoMeta(FString Str = TEXT("i am default"), int32 I = 10);
+
+    // ref struct param: sets X to 1024 and returns the modified value + 1
+    UFUNCTION(BlueprintCallable)
+    FVector VectorRef(UPARAM(ref) FVector& V);
+
     UFUNCTION(BlueprintCallable)
     UPuertsTestObject* GetSelf();
 
@@ -221,6 +260,25 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void BroadcastMulticast(const FString& Msg);
+
+    UPROPERTY()
+    FPuertsTestRefStringDelegate RefStringDelegate;
+
+    UPROPERTY()
+    FPuertsTestStringRetDelegate StringRetDelegate;
+
+    UPROPERTY(BlueprintAssignable)
+    FPuertsTestIntMulticastDelegate IntMulticast;
+
+    // executes RefStringDelegate with a copy of In and returns the value written back by the delegate
+    UFUNCTION(BlueprintCallable)
+    FString CallRefStringDelegate(const FString& In);
+
+    UFUNCTION(BlueprintCallable)
+    FString CallStringRetDelegate(const FString& In);
+
+    UFUNCTION(BlueprintCallable)
+    void BroadcastInt(int32 Value);
 
     UFUNCTION(BlueprintImplementableEvent)
     int32 ImplEvent(int32 Value);
@@ -385,6 +443,98 @@ public:
 
     UFUNCTION(BlueprintCallable)
     static int32 ExtStructDouble(const FPuertsTestStruct& S);
+};
+
+// Used only by tests/array_buffer.js.
+UCLASS(BlueprintType)
+class PUERTSTEST_API UPuertsTestArrayBufferHolder : public UObject
+{
+    GENERATED_BODY()
+
+public:
+    UPuertsTestArrayBufferHolder();
+
+    virtual void BeginDestroy() override;
+
+    // C++ owned memory (bCopy == false), initialized to 2, 4, ..., 20
+    UPROPERTY()
+    FArrayBuffer Buffer;
+
+    UFUNCTION()
+    int32 BufferSum() const;
+
+    UFUNCTION()
+    int32 Sum(const FArrayBuffer& Ab) const;
+
+    // a view of Ab without the first byte (bCopy == false)
+    UFUNCTION()
+    FArrayBuffer SkipFirst(const FArrayBuffer& Ab) const;
+
+    // same as SkipFirst but bCopy == true
+    UFUNCTION()
+    FArrayBuffer SkipFirstCopy(const FArrayBuffer& Ab) const;
+
+    UFUNCTION()
+    int32 ValueSum(const FArrayBufferValue& Ab) const;
+
+    UFUNCTION()
+    FArrayBufferValue MakeValue(int32 N) const;
+};
+
+// Used only by tests/container_element_types.js: one container per element type.
+UCLASS(BlueprintType)
+class PUERTSTEST_API UPuertsTestContainerElements : public UObject
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY()
+    TArray<int32> Int32Array;
+
+    UPROPERTY()
+    TArray<uint32> UInt32Array;
+
+    UPROPERTY()
+    TArray<int64> Int64Array;
+
+    UPROPERTY()
+    TArray<uint64> UInt64Array;
+
+    UPROPERTY()
+    TArray<float> FloatArray;
+
+    UPROPERTY()
+    TArray<double> DoubleArray;
+
+    UPROPERTY()
+    TArray<bool> BoolArray;
+
+    UPROPERTY()
+    TArray<EPuertsTestEnumInt32> EnumInt32Array;
+
+    UPROPERTY()
+    TArray<EPuertsTestEnumInt8Min> EnumInt8MinArray;
+
+    UPROPERTY()
+    TArray<EPuertsTestEnumInt8Max> EnumInt8MaxArray;
+
+    UPROPERTY()
+    TArray<FString> StringArray;
+
+    UPROPERTY()
+    TArray<FText> TextArray;
+
+    UPROPERTY()
+    TArray<FName> NameArray;
+
+    UPROPERTY()
+    TArray<FVector> VectorArray;
+
+    UPROPERTY()
+    TArray<UObject*> ObjectArray;
+
+    UPROPERTY()
+    TArray<UClass*> ClassArray;
 };
 
 USTRUCT()

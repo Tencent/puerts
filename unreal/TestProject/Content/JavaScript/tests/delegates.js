@@ -1,5 +1,6 @@
 'use strict';
 const { UE, puerts, test, step, eq, observe, run } = require('./framework');
+const { $ref, $unref, $set } = puerts;
 
 const obj = new UE.PuertsTestObject();
 
@@ -35,6 +36,47 @@ test('multicast', () => {
     obj.BroadcastMulticast('d');
     eq(got.slice().sort(), ['1a', '2a', '2b', '2c']);
     observe('multicast IsBound after clear', () => obj.Multicast.IsBound());
+});
+
+test('multicast removes itself while broadcasting', () => {
+    const o = new UE.PuertsTestObject();
+    const got = [];
+    const keep = (v) => got.push('keep' + v);
+    const once = (v) => {
+        got.push('once' + v);
+        o.IntMulticast.Remove(once);
+    };
+    o.IntMulticast.Add(keep);
+    o.IntMulticast.Add(once);
+    o.IntMulticast.Broadcast(1);
+    o.BroadcastInt(2);
+    eq(got.slice().sort(), ['keep1', 'keep2', 'once1']);
+    o.IntMulticast.Clear();
+});
+
+test('delegate with ref param', () => {
+    const o = new UE.PuertsTestObject();
+    let seen;
+    o.RefStringDelegate.Bind((r) => {
+        seen = $unref(r);
+        $set(r, 'written by js');
+    });
+    const r = $ref('666');
+    o.RefStringDelegate.Execute(r);
+    eq(seen, '666');
+    eq($unref(r), 'written by js', 'execute from js writes back');
+    eq(o.CallRefStringDelegate('777'), 'written by js', 'execute from C++ writes back');
+    eq(seen, '777');
+    o.RefStringDelegate.Unbind();
+});
+
+test('delegate with string return', () => {
+    const o = new UE.PuertsTestObject();
+    eq(o.CallStringRetDelegate('a'), 'unbound');
+    o.StringRetDelegate.Bind((s) => '////' + s);
+    eq(o.StringRetDelegate.Execute('console.log("hi")'), '////console.log("hi")');
+    eq(o.CallStringRetDelegate('abc'), '////abc');
+    o.StringRetDelegate.Unbind();
 });
 
 test('delegate shape', () => {
