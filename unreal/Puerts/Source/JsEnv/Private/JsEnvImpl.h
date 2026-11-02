@@ -579,6 +579,10 @@ private:
 
     TMap<void*, FObjectCacheNode> StructCache;
 
+    // the UScriptStructs stored in the internal field 1 of the struct objects (see BindStruct), the field holds other pointers
+    // in other objects (containers, cpp objects...), so it is read as a UScriptStruct only if it is one of these
+    TMap<const void*, TWeakObjectPtr<UScriptStruct>> BoundScriptStructs;
+
     struct ContainerCacheItem
     {
         v8::UniquePersistent<v8::Value> Container;

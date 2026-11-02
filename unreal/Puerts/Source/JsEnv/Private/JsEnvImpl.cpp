@@ -2939,9 +2939,13 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 void FJsEnvImpl::BindStruct(
     FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
+    UScriptStruct* BoundStruct = static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get());
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    DataTransfer::SetPointer(
-        MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);    // add type info
+    DataTransfer::SetPointer(MainIsolate, JSObject, BoundStruct, 1);    // add type info
+    if (BoundStruct && !BoundScriptStructs.Contains(BoundStruct))
+    {
+        BoundScriptStructs.Add(BoundStruct, BoundStruct);
+    }
 
     if (!PassByPointer)
     {
@@ -3226,8 +3230,15 @@ bool FJsEnvImpl::IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject)
     //这里如果外面传一个非uobject或者ustructsrcipt的object,可能会有问题
     if (Cast<UScriptStruct>(Struct))
     {
-        UScriptStruct* ObjectStruct = (UScriptStruct*) FV8Utils::GetPointer(JsObject, 1);
-        return ObjectStruct && ObjectStruct->IsChildOf(Struct);
+        // the internal field 1 is a UScriptStruct in struct objects only
+        auto WeakStructPtr = BoundScriptStructs.Find(FV8Utils::GetPointer(JsObject, 1));
+        UScriptStruct* ObjectStruct = WeakStructPtr ? WeakStructPtr->Get() : nullptr;
+        if (ObjectStruct)
+        {
+            return ObjectStruct->IsChildOf(Struct);
+        }
+        // a struct bound as a cpp type (UsingUStruct, e.g. FVector) uses the UScriptStruct as its type id
+        return CppObjectMapper.IsInstanceOfCppObject(MainIsolate, Struct, JsObject);
     }
     else
     {

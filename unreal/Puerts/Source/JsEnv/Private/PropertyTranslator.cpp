@@ -683,6 +683,13 @@ public:
 
         if (Ptr)
         {
+            // a native object of other type (UObject, container, other struct...) is not a value of the struct
+            if (UNLIKELY(!FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(
+                    StructProperty->Struct, Value->ToObject(Context).ToLocalChecked())))
+            {
+                ThrowInvalidValue(Isolate);
+                return false;
+            }
             if (DeepCopy || !ParamShallowCopySize)
             {
                 StructProperty->CopySingleValue(ValuePtr, Ptr);
@@ -694,10 +701,39 @@ public:
         }
         else if (Value->IsObject())
         {
+            // a native object without pointer is not merged as a plain object
+            if (UNLIKELY(Value.As<v8::Object>()->InternalFieldCount() > 0))
+            {
+                ThrowInvalidValue(Isolate);
+                return false;
+            }
             FV8Utils::IsolateData<IObjectMapper>(Isolate)->Merge(
                 Isolate, Context, Value->ToObject(Context).ToLocalChecked(), StructProperty->Struct, ValuePtr);
         }
         return true;
+    }
+
+    bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* TempBuff,
+        void** OutValuePtr) const override
+    {
+        void* Ptr = FV8Utils::GetPointer(Context, Value);
+
+        // a mismatched object is rejected by JsToUE
+        if (Ptr && FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(
+                       StructProperty->Struct, Value->ToObject(Context).ToLocalChecked()))
+        {
+            *OutValuePtr = Ptr;
+            return true;
+        }
+        *OutValuePtr = TempBuff;
+        return JsToUE(Isolate, Context, Value, TempBuff, false);
+    }
+
+private:
+    void ThrowInvalidValue(v8::Isolate* Isolate) const
+    {
+        FV8Utils::ThrowException(
+            Isolate, FString::Printf(TEXT("passing a invalid object for %s"), *StructProperty->Struct->GetName()));
     }
 };
 
