@@ -359,10 +359,31 @@ type id 分为值型和对象型（2026-11-02，见第 9 节同日第 1 条）�
 
 - 值型 id 最低位为 1，只比较、只作 key，不解引用。由 `pesapi.h` 的 `PESAPI_VALUE_TYPE_ID(addr)` 生成，`addr` 必须是至少 2 字节对齐的静态变量地址（这样或上 1 之后不同变量的 id 仍然不同）。UE 侧所有静态来源都改用它：`StaticTypeId<T>::get()`、`UsingCrossModuleCppType` 查不到时的回退 id、容器 / Weak / Soft / 委托 / 多播委托的固定定义、WebSocket，以及 lua、python、quickjs 后端内部的 `PtrClassDef`。
 - 对象型 id 最低位为 0，是宿主拥有的对象地址（对象天然对齐）。后端不解释它，宿主用 `PESAPI_IS_OBJECT_TYPE_ID` 判断后可以强转成自己的类型。UE 里对象型 id 只有一种，就是反射类型的 `FStructWrapper`（进程级，模块关闭前不释放）。
-- 宿主侧用法：`FReflectedTypeTag::IsUClass / IsUScriptStruct` 先判断是对象型 id 再读 magic（值型 id 指向的可能只是 4 字节的 int，直接读 8 字节 magic 会越界）；`FStructWrapper::FromTypeId` 不再查表，对象型 id 且 magic 有效就强转；registry 在 UE 下的回落（`FindReflectedClass`）按奇偶分流，对象型 id 直接转成 wrapper 取当前定义，值型 id 才去比较固定定义和容器。`ReflectedClassMap` 删除。
-- 注册检查：`RegisterClass` 只接受值型 id（反射定义不经过 registry 注册），收到对象型 id 时拒绝注册并报错，避免外部静态绑定拿自己的对象地址作 id，被宿主误转成 `FStructWrapper`。
-- 反射类型暂不改走 `on_class_not_found`：registry 的 `RegisterClass` 会复制定义（复制数组，不复制字符串），而反射定义由 `FReflectedClass` 持有，各 env 通过 `ClassesBuilt` 保活，进程内所有 registry 共享。改走回调要么让每个 registry 各复制一份，并处理刷新时的替换和悬空；要么给 registry 增加“借用定义”的注册方式。现在 registry 直接按奇偶转换，效果与 Unity 的回调一致（按需、O(1)、不预先注册）。回调化放到第二阶段，在 registry 移入共享 papi 库时一并处理（届时 registry 不能再带 UE 专属的回落）。Unity 侧 `ClassNotFoundCallback` 同样应该先判断是对象型 id 再强转，统一时处理（本阶段不改 `unity/`）。
+- 宿主侧用法：`FReflectedTypeTag::IsUClass / IsUScriptStruct` 先判断是对象型 id 再读 magic（值型 id 指向的可能只是 4 字节的 int，直接读 8 字节 magic 会越界）；`FStructWrapper::FromTypeId` 不再查表，对象型 id 且 magic 有效就强转；registry 在 UE 下的回落（`FindReflectedClass`）按奇偶分流，对象型 id 直接转成 wrapper 取当前定义，值型 id 才去比较固定定义和容器。`ReflectedClassMap` 删除。（2026-11-02 起反射定义注册在默认 registry 中，`FindReflectedClass` 改为只管固定类的 `FindBuiltinClass`，见下文。）
+- 注册检查：`RegisterClass` 只接受值型 id（反射定义不经过 registry 注册），收到对象型 id 时拒绝注册并报错，避免外部静态绑定拿自己的对象地址作 id，被宿主误转成 `FStructWrapper`。（2026-11-02 调整：对象型 id 只接受反射 wrapper，即 `FReflectedTypeTag::IsReflected` 成立的 id，其余仍拒绝，见下文。）
+- 反射类型暂不改走 `on_class_not_found`（已被替代：2026-11-02 改走回调，第一阶段允许 UE 与 Unity 分叉，见下文“反射类型改走 on_class_not_found”）。当时的理由：registry 的 `RegisterClass` 会复制定义（复制数组，不复制字符串），而反射定义由 `FReflectedClass` 持有，各 env 通过 `ClassesBuilt` 保活，进程内所有 registry 共享。改走回调要么让每个 registry 各复制一份，并处理刷新时的替换和悬空；要么给 registry 增加“借用定义”的注册方式。Unity 侧 `ClassNotFoundCallback` 同样应该先判断是对象型 id 再强转，统一时处理（本阶段不改 `unity/`）。
 - 兼容性：旧插件按旧规则生成的偶数 id 会被拒绝注册。约定变化与函数表变化同等对待，`PESAPI_VERSION` 提升到 15，插件入口名随之变化，旧插件会因为找不到入口而加载失败，不会被误用。
+
+对象持有改为池下标（2026-11-02，提交 b87a192b，见第 9 节同日第 2 条），参照 Unity il2cpp 的 `ObjectPool`：
+
+- UObject 包装绑定时，后端调用类定义的 OnEnter（`FClassWrapper::ReflectedOnEnter` -> `FScriptEnvImpl::OnUObjectEnter`），宿主把 UObject 放进本 env 的 `FObjectPool`（`ObjectRetainer.h`，`FGCObject`，空闲下标复用），返回句柄（下标加 1，不为 0）作为该绑定的 userdata；解绑时 OnExit 带回句柄，O(1) 移除。原来的 `UserObjectRetainer`（按 UObject 计数的集合）和 `EnteredUObject` 删除。
+- mixin 中由原生持有 JS 的对象（`NativeTakeJsRefObjects`）在 OnEnter 时预留一个空槽，条目记下句柄，`SetJsTakeRef` 再填入；条目在释放 ref 之前先移出 map（quickjs 可能同步回收包装，OnExit 会查这张表）。
+- 一个 UObject 被多个包装绑定（例如不同 env、unbind 后重新绑定）时各占一个槽，互不影响。
+
+registry 替换定义时挂起旧定义（2026-11-02，提交 02783638）：UE 的 registry 保持 `JSClassRegister` 的行为，同一 type id 再次注册时用新定义替换旧定义（Unity 是先注册的生效）。被替换的定义不释放，移入 `RetiredClassDefinitions`，名字复制一份由 registry 持有（`OwnedNames`，`std::list` 不移动元素），registry 析构时一并释放：已经由它生成的脚本类及绑定在上面的对象仍指向它的函数、属性数组和 `Data`。替换只发生在编辑器下（蓝图 / 结构体重编译、热重载），挂起的定义很少。
+
+反射类型改走 on_class_not_found（2026-11-02，见第 9 节同日第 3 条），参照 Unity il2cpp 的 `ClassNotFoundCallback` + `define_class / set_*_info`：
+
+- 注册：`FStructWrapper::Define(UStruct*, Refresh)` 先递归定义父类，再用 papi 的 `define_class(type_id = wrapper, super_type_id = 父类 wrapper 或虚拟根类, data = wrapper)`、`set_property_info_size`、`set_method_info`、`set_property_info`（`copy_str = 1`）把定义注册进默认 registry，UClass 和非原生 UScriptStruct 再用 `trace_native_object_lifecycle` 挂 OnEnter / OnExit。`FReflectedClass` 改为只在 `Define` 内部使用的 `FReflectedMembers`（收集成员的临时表），`GetClassDefinition`、`GetCurrentClass`、`FindReflectedClass` 的反射分支删除，固定类（容器、Weak / Soft、委托、虚拟根类）由 `FindBuiltinClass` 提供。
+- 加载：`FScriptEnvImpl` 构造时对默认 registry 设置 `on_class_not_found(FStructWrapper::OnClassNotFound)`，后端 `LoadClassByID` 找不到对象型 id 时回调：wrapper 有效且 UStruct 仍在就 `Define` 并返回 1。其它 registry 遇到对象型 id 时回落到默认 registry 的 `FindClassByID` / `LoadClassByID`，值型 id 回落到 `FindBuiltinClass`。模块关闭（`FStructWrapper::ReleaseAll`）时先 `UnregisterReflectedClasses` 挂起全部对象型 id 的定义，避免悬空的 wrapper 地址被查到。
+- 刷新：Unity 依赖程序集重载重建全部类；UE 需要在 UStruct 变化时刷新翻译器，UE4.27 没有 `OnObjectsReinstanced` 一类的通用委托，所以放在 env 首次使用该类型时（`GetTemplateInfoOfType` 调 `Define(Struct, true)`）：同一 UStruct 已定义过就只刷新翻译器，不重新注册；同一 FullName 换了新的 UStruct（重编译）则重新定义，registry 替换并挂起旧定义，已经创建过脚本类的 env 继续用原来的 JS 类（与 2026-10-30 第 2 条一致）。
+- `ReflectionInfo` 回填：`set_method_info` 会把 `ReflectionInfo` 置空，而 v8 的 fast call（`PesapiClassThunks.h`）依赖它，`Define` 注册完成后经 `FindClassByID` 取回定义，按下标把 `Methods` / `Functions` 的 `ReflectionInfo` 补回去。
+- 命名：pesapi 的 `define_class` 对对象型 id 不加模块前缀、不复制，名字由 registry 复制持有（`RegisterReflectedClass`），对象型 id 的定义不进名字表（`ForeachRegisterClass`、`loadCPPType`、`find_type_id` 看不到）。v8 / quickjs 后端只给对象型 id 的类设置类名（编辑器下为路径名），值型 id 的固定类保持匿名，原来的 `OnClassCreated` 钩子（各后端的 mapper 和 `FPapiBackendParams`）删除。
+- 虚拟根类：每个没有父类的反射类型（`UObject` 与没有 super 的 UScriptStruct）都以一个虚拟根类为父类，它是值型 id（`FStructWrapper::RootTypeId`），定义为空（无构造、无成员、`ScriptName` 为空）。FName 大小写修正的 Proxy 只在 env 构造时对根类挂一次（`InstallNameFixing(create_class(env, RootTypeId))`），不再在 `GetTemplateInfoOfType` 中逐个挂到每个根类型的原型上（`InstallFNameFixing` 删除）。原型链由 `S.prototype -> Proxy -> Object.prototype` 变为 `S.prototype -> 根类.prototype -> Proxy -> Object.prototype`，所有反射类型共享同一根；python 的 mro 多出一个 `Anonymous`（lua 无可见变化）。
+- 非原生 struct 保活：原来 `GetTemplateInfoOfType` 用 `SysObjectRetainer` 在 env 生命期内持有用过的 UScriptStruct；现在非原生 struct（用户定义结构体）的 OnEnter 调 `IObjectMapper::RetainUObject` 把 UScriptStruct 放进对象池，OnExit 释放，只在有实例时保活，与 UObject 一致；这类 struct 也不再走 `IsTriviallyFreed`（需要 OnExit）。原生 struct 不挂钩子，不受影响。
+- mixin 标志：`FTemplateInfo` 只剩 `StructWrapper`，`IsNativeTakeJsRef` 改为 env 内的 `NativeTakeJsRefClasses`（`UClass* -> bool`）。查询沿 `GetSuperClass` 链找最近的条目，没有条目时的默认值为：`KEEP` 模式下 false，否则 true（对象本身是 UClass、CDO 或 Archetype 时一律 false）。mixin 时先删除已有的子类条目再写入本类，`TryReleaseType` 时删除该类条目。与旧行为的差异：非 `KEEP` 模式下，对某类 mixin（`TakeJsObjectRef = false`）之后才首次使用的子类，旧实现按默认值为 true，现在继承父类的 false，与“mixin 作用于类及其子类”一致。
+- 与 Unity registry 的差异（第一阶段允许分叉，UE 稳定后统一时再收敛）：同 id 替换并挂起旧定义 vs 先注册的生效；对象型 id 只接受反射 wrapper，不进名字表、不加模块前缀；非默认 registry 对对象型 id 回落到默认 registry、对值型 id 回落到 `FindBuiltinClass`；后端只给对象型 id 的类命名；虚拟根类及其上的 FName 修正；刷新放在 env 首次使用；非原生 struct 经 OnEnter 保活；`ReflectionInfo` 回填。
+- 测试：UE5.8 全量 Functional 37 项、UE4.27 全量 31 项通过。Reflection 的“struct root proto chain ends at Object.prototype”改为沿原型链走到底，补“链深度”（2）和“struct 与 class 共享根”两条观测；Python Properties 基线的 mro 多出 `Anonymous`。基准（UE5.8，与第 1 步 step1_pool 对比）三轮中第一轮 new.uobject、new.struct、mixin.cpp_to_js 偏高约 50%，后两轮回到 1440 到 1473ns、240 到 248ns、395 到 399ns，属于噪声；ufunction.noop 前两轮 89ns，第三轮 77ns，与历史波动范围（59 到 89ns）一致，其余项持平。
 
 M2 落地情况（已被方案 B 取代，保留作为记录）：
 
@@ -805,7 +826,9 @@ flowchart LR
 
 已决策（2026-11-02）：
 
-1. type id 按最低位分为值型（最低位 1，只作 key，由 `PESAPI_VALUE_TYPE_ID` 从至少 2 字节对齐的静态变量地址生成）和对象型（最低位 0，宿主拥有的对象地址，宿主经 `PESAPI_IS_OBJECT_TYPE_ID` 判断后可强转），后端不解释 type id。UE 的对象型 id 只有反射类型的 `FStructWrapper`，其余来源全部改为值型；`FromTypeId` 与 registry 的反射回落改为按奇偶直接转换，删除 `ReflectedClassMap`；`RegisterClass` 拒绝对象型 id。反射类型改走 `on_class_not_found` 留到第二阶段，Unity 的 `ClassNotFoundCallback` 统一时也改为先判断再强转。`PESAPI_VERSION` 提升到 15。详见 5.6。
+1. type id 按最低位分为值型（最低位 1，只作 key，由 `PESAPI_VALUE_TYPE_ID` 从至少 2 字节对齐的静态变量地址生成）和对象型（最低位 0，宿主拥有的对象地址，宿主经 `PESAPI_IS_OBJECT_TYPE_ID` 判断后可强转），后端不解释 type id。UE 的对象型 id 只有反射类型的 `FStructWrapper`，其余来源全部改为值型；`FromTypeId` 与 registry 的反射回落改为按奇偶直接转换，删除 `ReflectedClassMap`；`RegisterClass` 拒绝对象型 id。Unity 的 `ClassNotFoundCallback` 统一时也改为先判断再强转。`PESAPI_VERSION` 提升到 15。详见 5.6。（当时“反射类型改走 `on_class_not_found` 留到第二阶段”的决定已由同日第 3 条取代。）
+2. UObject 包装的持有改为对象池下标，参照 Unity il2cpp：OnEnter 把 UObject 放进 env 的 `FObjectPool` 并返回句柄作为绑定的 userdata，OnExit 凭句柄 O(1) 释放；mixin 原生持有的对象在 OnEnter 时预留空槽。UE 的 registry 同一 type id 再次注册时替换并挂起旧定义（Unity 为先注册的生效），旧定义和名字由 registry 持有到析构。详见 5.6。
+3. 第一阶段即让反射类型改走 `on_class_not_found` 加 `define_class / set_*_info`，不再等第二阶段：第一阶段允许 UE 与 Unity 的代码分叉，可以有重复和少许差异，UE 跑稳定后再考虑共用二进制。随之迁移原来按 env 做的工作：FName 修正改为挂在虚拟根类上，每个 env 一次；刷新放在 env 首次使用类型时（UE4.27 没有 reinstancing 委托）；非原生 struct 的保活改走 OnEnter；mixin 标志改为 env 内的 `NativeTakeJsRefClasses`，最近的类优先。删除 `FReflectedClass`、`ClassesBuilt`、`OnClassCreated`、`InstallFNameFixing` 与 `FindReflectedClass` 的反射分支。与 Unity registry 的差异登记在 5.6。函数表未变，`PESAPI_VERSION` 不提升。
 
 待决策：
 
