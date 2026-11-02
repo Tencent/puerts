@@ -432,8 +432,7 @@ void FScriptSetWrapper::IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& 
 
     auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
     int32 Index = Info[0]->Int32Value(Context).ToChecked();
-    uint32 Result = Self->IsValidIndex(Index);
-    Info.GetReturnValue().Set(Result);
+    Info.GetReturnValue().Set(Self->IsValidIndex(Index));
 }
 
 void FScriptSetWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
