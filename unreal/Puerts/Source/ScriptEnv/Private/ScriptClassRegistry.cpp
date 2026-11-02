@@ -135,14 +135,15 @@ public:
     // bound to them) keep pointing to its function / property arrays and Data, so it lives until the registry is destroyed.
     // Replacing happens in editor only (blueprint / struct recompiling, hot reload), the retired ones are few.
     // Value type ids (PESAPI_VALUE_TYPE_ID, e.g. StaticTypeId) are registered by name. The only object type ids accepted are
-    // the FStructWrappers of reflected classes in unreal (registered by FStructWrapper::Define, the host may cast the id to the
-    // wrapper), they are not in the name tables (not visible to ForeachRegisterClass / loadCPPType / find_type_id)
+    // the FStructWrappers of reflected classes (registered by FStructWrapper::Define) and the FContainerClasses (registered by
+    // FContainerClass::FindOrAdd) in unreal, the host may cast the id to them (see FReflectedTypeTag). They are not in the name
+    // tables (not visible to ForeachRegisterClass / loadCPPType / find_type_id)
     void RegisterClass(const ScriptClassDefinition& ClassDefinition)
     {
         if (ClassDefinition.TypeId && !PESAPI_IS_VALUE_TYPE_ID(ClassDefinition.TypeId))
         {
 #if USING_IN_UNREAL_ENGINE
-            if (FReflectedTypeTag::IsReflected(ClassDefinition.TypeId))
+            if (FReflectedTypeTag::IsTagged(ClassDefinition.TypeId))
             {
                 RegisterReflectedClass(ClassDefinition);
                 return;
@@ -297,7 +298,8 @@ public:
         return Iter == StructNameToClassDefinition.end() ? nullptr : Iter->second;
     }
 
-    // the wrappers are released (module shutdown), their definitions must not be found by the dangling type ids
+    // the wrappers and container classes are released (module shutdown), their definitions must not be found by the dangling
+    // type ids
     void UnregisterReflectedClasses()
     {
         for (auto Iter = CDataIdToClassDefinition.begin(); Iter != CDataIdToClassDefinition.end();)

@@ -908,12 +908,12 @@ public:
             ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
             ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
         }
-        return PapiUtils::FindOrAddContainer(Apis, Env, ArrayProperty->Inner, ScriptArray, ByPointer);
+        return ContainerToValue(Apis, Env, EContainerKind::Array, ScriptArray, ArrayProperty->Inner, nullptr, ByPointer);
     }
 
     void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
     {
-        return ContainerOfValue(Apis, Env, Value, FScriptArrayWrapper::GetClassDefinition()->TypeId);
+        return ContainerOfValue(Apis, Env, Value, EContainerKind::Array);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
@@ -960,12 +960,12 @@ public:
             ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
             SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
         }
-        return PapiUtils::FindOrAddContainer(Apis, Env, SetProperty->ElementProp, ScriptSet, ByPointer);
+        return ContainerToValue(Apis, Env, EContainerKind::Set, ScriptSet, SetProperty->ElementProp, nullptr, ByPointer);
     }
 
     void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
     {
-        return ContainerOfValue(Apis, Env, Value, FScriptSetWrapper::GetClassDefinition()->TypeId);
+        return ContainerOfValue(Apis, Env, Value, EContainerKind::Set);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
@@ -1012,12 +1012,12 @@ public:
             ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
             MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
         }
-        return PapiUtils::FindOrAddContainer(Apis, Env, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
+        return ContainerToValue(Apis, Env, EContainerKind::Map, ScriptMap, MapProperty->KeyProp, MapProperty->ValueProp, ByPointer);
     }
 
     void* NativeValueOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value) const override
     {
-        return ContainerOfValue(Apis, Env, Value, FScriptMapWrapper::GetClassDefinition()->TypeId);
+        return ContainerOfValue(Apis, Env, Value, EContainerKind::Map);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
@@ -1074,7 +1074,8 @@ public:
 
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        return PapiUtils::CreateArray(Apis, Env, Inner.get(), const_cast<void*>(ValuePtr));
+        // borrowed from the outer, the class of the array property holds the element translator
+        return ContainerToValue(Apis, Env, EContainerKind::FixSizeArray, const_cast<void*>(ValuePtr), Property, nullptr, true);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
@@ -1415,6 +1416,21 @@ struct UniquePtrCreator<DoNothingPropertyTranslator>
 std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro* InProperty, bool IgnoreOut)
 {
     return PropertyTranslatorCreator<UniquePtrCreator, std::unique_ptr<FPropertyTranslator>>::Do(InProperty, IgnoreOut, nullptr);
+}
+
+// ArrayDim is ignored, the translator of a single element
+template <typename T>
+struct ElementCreator
+{
+    static std::unique_ptr<FPropertyTranslator> Do(PropertyMacro* InProperty, bool IgnoreOut, void* Ptr)
+    {
+        return std::make_unique<T>(InProperty);
+    }
+};
+
+std::unique_ptr<FPropertyTranslator> FPropertyTranslator::CreateElement(PropertyMacro* InProperty)
+{
+    return PropertyTranslatorCreator<ElementCreator, std::unique_ptr<FPropertyTranslator>>::Do(InProperty, true, nullptr);
 }
 
 template <typename T>

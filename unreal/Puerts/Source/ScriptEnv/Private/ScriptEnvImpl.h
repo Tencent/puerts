@@ -103,11 +103,6 @@ public:
 
     static void FreeTriviallyFreedStruct(void* Ptr, size_t Size, void* DeleterData);
 
-    // a wrapper of the container class (ClassDefinition), the wrapper of a borrowed container (PassByPointer) is cached by the
-    // container, an owned one (deleted with the wrapper) is always new
-    pesapi_value FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr, PropertyMacro* KeyProperty,
-        PropertyMacro* ValueProperty, bool PassByPointer);
-
     virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
@@ -132,29 +127,11 @@ public:
 
     virtual void Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des) override;
 
-    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) override
-    {
-        return FindOrAddContainer(Env, FScriptArrayWrapper::GetClassDefinition(), Ptr, Property, nullptr, PassByPointer);
-    }
-
-    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer) override
-    {
-        return FindOrAddContainer(Env, FScriptSetWrapper::GetClassDefinition(), Ptr, Property, nullptr, PassByPointer);
-    }
-
-    virtual pesapi_value FindOrAddContainer(
-        pesapi_env Env, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer) override
-    {
-        return FindOrAddContainer(Env, FScriptMapWrapper::GetClassDefinition(), Ptr, KeyProperty, ValueProperty, PassByPointer);
-    }
-
     // the wrapper of a delegate is held by DelegateMap (strong) until the delegate is released
     virtual pesapi_value FindOrAddDelegate(
         pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) override;
 
     virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) override;
-
-    virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) override;
 
     virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) override;
 
@@ -227,8 +204,6 @@ private:
     FTemplateInfo* GetTemplateInfoOfType(pesapi_env Env, UStruct* Class, bool& Existed);
 
     pesapi_value GetJsClass(pesapi_env Env, UStruct* Class);
-
-    FPropertyTranslator* GetContainerPropertyTranslator(PropertyMacro* Property);
 
     // __tgjsRegisterTickHandler(fn): fn is called every frame (puerts/timer.js implements the timers on it), as unity
     void RegisterTickHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -371,22 +346,6 @@ private:
     // OnUObjectExit looks the map up
     TMap<UObject*, FNativeTakeJsRef> NativeTakeJsRefObjects;
 
-    // container -> holder of the cached (borrowed) container wrappers, the holders are freed by the finalizer of the container
-    // classes (on gc or when the env is released by the backend), so the map must outlive the env
-    TMap<void*, FContainerHolder*> ContainerHolders;
-
-    struct ContainerPropertyInfo
-    {
-#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
-        TWeakObjectPtr<PropertyMacro> PropertyWeakPtr;
-#else
-        TWeakFieldPtr<PropertyMacro> PropertyWeakPtr;
-#endif
-        std::unique_ptr<FPropertyTranslator> PropertyTranslator;
-    };
-
-    std::map<PropertyMacro*, ContainerPropertyInfo> ContainerPropertyMap;
-
     std::map<UFunction*, std::unique_ptr<FFunctionTranslator>> JsCallbackPrototypeMap;
 
     std::map<UStruct*, std::unique_ptr<ObjectMerger>> ObjectMergers;
@@ -436,8 +395,6 @@ private:
     FUETickDelegateHandle TickHandle;
 
     FUETickDelegateHandle DelegateProxiesCheckerHandler;
-
-    FContainerMeta ContainerMeta;
 
     uint32_t ManualReleaseCallbackId = 0;
 

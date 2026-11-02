@@ -99,16 +99,29 @@ struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::
 };
 
 // The type id of the class definition of a reflected type (UClass / UScriptStruct) is its process wide wrapper (FStructWrapper),
-// which starts with this tag, so the script objects of UObjects can be told by their type ids (see doc/unreal/zhcn/
-// papi_unification_design.md 5.6). Any type id may be passed to IsUClass / IsUScriptStruct: only object type ids
-// (PESAPI_IS_OBJECT_TYPE_ID) are dereferenced, the wrappers are the only object type ids in unreal, and the magics are only set
-// in the wrappers of UClasses / UScriptStructs. Value type ids (e.g. the address of a static int) are never dereferenced.
+// the type id of a container class (the containers of an element type, see FContainerClass) is the process wide container
+// class, both start with this tag, so the script objects of UObjects and containers can be told by their type ids (see
+// doc/unreal/zhcn/papi_unification_design.md 5.6). Any type id may be passed to the Is* functions: only object type ids
+// (PESAPI_IS_OBJECT_TYPE_ID) are dereferenced, the tagged objects are the only object type ids in unreal, and each magic is only
+// set in its own kind. Value type ids (e.g. the address of a static int) are never dereferenced.
 struct FReflectedTypeTag
 {
     static constexpr uint64 UClassMagic = 0x53534C4355455550ull;           // "PUEUCLSS"
     static constexpr uint64 UScriptStructMagic = 0x5452545355455550ull;    // "PUEUSTRT"
+    static constexpr uint64 ContainerMagic = 0x524E544355455550ull;        // "PUEUCTNR"
 
     uint64 Magic = 0;
+
+    FORCEINLINE static bool IsContainer(const void* TypeId)
+    {
+        return PESAPI_IS_OBJECT_TYPE_ID(TypeId) && static_cast<const FReflectedTypeTag*>(TypeId)->Magic == ContainerMagic;
+    }
+
+    // a reflected class or a container class, the object type ids accepted by the registries
+    FORCEINLINE static bool IsTagged(const void* TypeId)
+    {
+        return IsReflected(TypeId) || IsContainer(TypeId);
+    }
 
     FORCEINLINE static bool IsUClass(const void* TypeId)
     {

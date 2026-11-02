@@ -32,6 +32,9 @@ class FPropertyTranslator
 public:
     static std::unique_ptr<FPropertyTranslator> Create(PropertyMacro* InProperty, bool IgnoreOut = false);
 
+    // the translator of an element of a fixed size array property (ArrayDim > 1)
+    static std::unique_ptr<FPropertyTranslator> CreateElement(PropertyMacro* InProperty);
+
     static void CreateOn(PropertyMacro* InProperty, FPropertyTranslator* InOldProperty);
 
     // papi entries, the translators are implemented against these

@@ -142,7 +142,7 @@ inline v8::Isolate* IsolateOf(pesapi_env env);
 | 构造 | constructor 回调创建 UObject 或分配 UStruct 内存 |
 | 析构 | UStruct 由 finalize 释放；UObject 不释放，见 5.6 |
 | 扩展方法（UEExtension） | 注册时合并进 method 列表 |
-| TArray / TSet / TMap | 每类容器一个固定 type_id，native 对象为 `{容器指针, 元素 FProperty*, 是否持有}` 的包装 |
+| TArray / TSet / TMap | 按（容器种类, 元素 / 值 FProperty）拆成进程级子类，对象型 type id 为 `FContainerClass*`，native 对象就是容器本身（与 Unity 的 `List<T>` 按泛型实参各一个类一致，2026-11-02，见第 9 节） |
 | 委托 | JS 函数存为 `pesapi_value_ref`，执行时 `call_function` |
 
 翻译器接口改造：
@@ -258,7 +258,7 @@ M4 落地情况（分批进行）：
   - struct：删除 `FJsEnvImpl::StructCache`，struct 对象经 `CppObjectMapper.BindCppObject` 用生成模板的那份类定义绑定，内存由 `JSClassDefinition::Finalize`（`FScriptStructWrapper::ReflectedFinalize`）释放。internal field 1 的 type id 改为 `FStructWrapper`（原为 UScriptStruct），`FStructWrapper::FromTypeId` 反查。POD struct 的 ArrayBuffer 优化分支保持不变（不缓存）。
   - 释放时机：GC 时，或 env 析构时在 `CppObjectMapper.UnInitialize` 中（isolate Dispose 之前）对仍存活的对象调用 Finalize，原来要等 isolate Dispose 后才能处理的 struct、容器内存现在都在 Dispose 之前释放。
   - `PointerHash` 修复：原来是恒等哈希，msvc 的 `std::unordered_map` 对对齐地址只落到少数桶里，改为混合地址位。
-  - 容器：TArray / TSet / TMap / FixSizeArray 各有一个固定 type id 的进程级类定义（`FScriptArrayWrapper::GetClassDefinition` 等），经 `FindReflectedClass` 回退到 `FindContainerClass` 对所有 registry 可见。native 对象是 `FContainerHolder { 容器指针, type id, 元素和值的翻译器及 FProperty, 所在缓存, 是否持有 }`，即 5.4 中的 `{容器指针, 元素 FProperty*, 是否持有}`，Map 的 field 1 不再需要指向翻译器对。`FJsEnvImpl::ContainerHolders` 以容器指针为键保证对象身份（同一容器、同一元素类型返回同一 JS 对象），命中时用 `native_object_to_value(..., call_finalize = false)` 取缓存的 JS 对象；Finalize 先把 holder 从缓存中摘除，再按“是否持有”删除容器，最后释放 holder。删除容器的 v8 模板、`ContainerCache`、`BindContainer` / `UnBindContainer`。
+  - 容器：TArray / TSet / TMap / FixSizeArray 各有一个固定 type id 的进程级类定义（`FScriptArrayWrapper::GetClassDefinition` 等），经 `FindReflectedClass` 回退到 `FindContainerClass` 对所有 registry 可见。native 对象是 `FContainerHolder { 容器指针, type id, 元素和值的翻译器及 FProperty, 所在缓存, 是否持有 }`，即 5.4 中的 `{容器指针, 元素 FProperty*, 是否持有}`，Map 的 field 1 不再需要指向翻译器对。`FJsEnvImpl::ContainerHolders` 以容器指针为键保证对象身份（同一容器、同一元素类型返回同一 JS 对象），命中时用 `native_object_to_value(..., call_finalize = false)` 取缓存的 JS 对象；Finalize 先把 holder 从缓存中摘除，再按“是否持有”删除容器，最后释放 holder。删除容器的 v8 模板、`ContainerCache`、`BindContainer` / `UnBindContainer`。（2026-11-02 起 `FContainerHolder` 与 `ContainerHolders` 已删除，容器按元素类型拆成进程级类，见第 9 节同日第 4 条。）
   - `FPropertyTranslator::NativeValueOf`：取 JS 值对应的原生值，默认是 `get_native_object_ptr`，容器翻译器覆盖为检查 type id 后从 holder 取容器。`JsToUE`、FastCall（`JsToUEFast`）和 `$ref` 的回写都经过它，否则 FastCall 拿到的是 holder 而不是容器（`SumArray` 用例曾因此崩溃）。
   - Weak / Soft：`FWeakObjectPtrWrapper`、`FSoftObjectWrapper` 同样改为固定 type id 的进程级类定义，JS 对象由 `native_object_to_value(..., call_finalize = true)` 创建，native 对象在 Finalize 中释放。Soft 的 native 对象改为 `FSoftObjectHolder { FSoftObjectPtr, TWeakObjectPtr<UClass>, IsSoftClass }`，不再在 field 1 / 2 存原始 UClass 指针（原 Soft 的 field 2 桥接随之去掉）。`__tgjsMakeWeakObjectPtr` 改为 papi 函数，`IObjectMapper::AddSoftObjectPtr` 删除，翻译器直接调用 `FSoftObjectWrapper::Wrap`。
   - 行为变化：容器方法改由 registry 生成模板，`ConstructorBehavior` 跟随 `CppObjectMapper` 的默认值；`JsToUE` 和 FastCall 对 type id 不匹配的值不再当作容器（原来任何带 field 0 的包装都会被当作容器读取）；Soft 属性只接受 Soft 包装，传入 UObject 或普通对象时抛 "passing a invalid object for FSoftObjectPtr"（原来 UObject 的句柄会被误读成 `FSoftObjectPtr`）。
@@ -829,6 +829,12 @@ flowchart LR
 1. type id 按最低位分为值型（最低位 1，只作 key，由 `PESAPI_VALUE_TYPE_ID` 从至少 2 字节对齐的静态变量地址生成）和对象型（最低位 0，宿主拥有的对象地址，宿主经 `PESAPI_IS_OBJECT_TYPE_ID` 判断后可强转），后端不解释 type id。UE 的对象型 id 只有反射类型的 `FStructWrapper`，其余来源全部改为值型；`FromTypeId` 与 registry 的反射回落改为按奇偶直接转换，删除 `ReflectedClassMap`；`RegisterClass` 拒绝对象型 id。Unity 的 `ClassNotFoundCallback` 统一时也改为先判断再强转。`PESAPI_VERSION` 提升到 15。详见 5.6。（当时“反射类型改走 `on_class_not_found` 留到第二阶段”的决定已由同日第 3 条取代。）
 2. UObject 包装的持有改为对象池下标，参照 Unity il2cpp：OnEnter 把 UObject 放进 env 的 `FObjectPool` 并返回句柄作为绑定的 userdata，OnExit 凭句柄 O(1) 释放；mixin 原生持有的对象在 OnEnter 时预留空槽。UE 的 registry 同一 type id 再次注册时替换并挂起旧定义（Unity 为先注册的生效），旧定义和名字由 registry 持有到析构。详见 5.6。
 3. 第一阶段即让反射类型改走 `on_class_not_found` 加 `define_class / set_*_info`，不再等第二阶段：第一阶段允许 UE 与 Unity 的代码分叉，可以有重复和少许差异，UE 跑稳定后再考虑共用二进制。随之迁移原来按 env 做的工作：FName 修正改为挂在虚拟根类上，每个 env 一次；刷新放在 env 首次使用类型时（UE4.27 没有 reinstancing 委托）；非原生 struct 的保活改走 OnEnter；mixin 标志改为 env 内的 `NativeTakeJsRefClasses`，最近的类优先。删除 `FReflectedClass`、`ClassesBuilt`、`OnClassCreated`、`InstallFNameFixing` 与 `FindReflectedClass` 的反射分支。与 Unity registry 的差异登记在 5.6。函数表未变，`PESAPI_VERSION` 不提升。
+4. 容器按（容器种类, 元素 / 值 `FProperty`）拆成进程级子类，去掉每个 JS 容器对象的 `FContainerHolder` 分配，与 2.0（`JsEnvImpl` 中 native 指针就是容器，翻译器挂在 v8 模板上）和 Unity il2cpp（`List<int>`、`List<string>` 各一个类）一致。容器种类本身不多，类的数量有限。
+   - `FContainerClass` 继承 `FReflectedTypeTag`，Magic 为 `ContainerMagic`（"PUEUCTNR"），对象地址就是对象型 type id；构造时创建元素 / 值翻译器（定长数组用 `CreateElement`），并以 `define_class` 在默认 registry 定义子类。父类为原 TArray / TSet / TMap / FixSizeArray 的固定定义（值型 id），子类只有 Finalize：Array / Set / Map 删除自己持有的容器；定长数组总由外部对象持有，没有 Finalize。`ScriptClassRegistry` 对 `IsTagged` 的对象型 id 一律接受。
+   - 方法只定义在父类上，回调用 `get_native_holder_typeid` 取到子类 id，经 `FContainerClass::FromTypeId` 拿翻译器，`get_native_holder_ptr` 就是容器。借用的容器（属性、参数）用 `native_object_to_value(..., call_finalize = false)` 由后端按 (ptr, type id) 缓存，保持对象身份；定长数组也改为总按指针传递并缓存。
+   - 进程级映射以 (Kind, Inner, Value) 为键；编辑器下元素属性失效（蓝图 / 用户定义结构体重编译）时新建一个类替换映射，旧类不释放（已有对象仍引用），全部在 `FStructWrapper::ReleaseAll` 时释放，与“翻译器进程级共享、不做类定义失效”的约定一致。`FContainerMeta` 同步改为进程级单例，`ObjectPropertyMap` 用弱指针校验 key 对应的 UStruct 未被替换。
+   - 删除 `IObjectMapper` / `PapiUtils` 的 `FindOrAddContainer`、`CreateArray`，`FScriptEnvImpl` 的 `ContainerHolders`、`ContainerMeta` 成员及 `GetContainerPropertyTranslator`。`uelazyload.js` 的迭代器改为注入父类原型。
+   - 行为变化：JS 容器的 `constructor.name` 由 `""` 变为 `"TArray"` 等（Containers 基线改一行），lua / python 不变。测试：UE5.8 全量 41 项、UE4.27 全量 35 项通过；基准相对上一提交 array.num -20%、array.get -11%、map.get -14%（噪声 10% 到 30%，方向一致）。
 
 待决策：
 

@@ -59,13 +59,6 @@ public:
     // Src must be an object, Info is the native callback the merge is done in (nullptr if none), for the errors
     virtual void Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des) = 0;
 
-    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer) = 0;
-
-    virtual pesapi_value FindOrAddContainer(pesapi_env Env, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer) = 0;
-
-    virtual pesapi_value FindOrAddContainer(
-        pesapi_env Env, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer) = 0;
-
     virtual pesapi_value FindOrAddDelegate(
         pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) = 0;
 
@@ -83,8 +76,6 @@ public:
     virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) = 0;
 
     virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) = 0;
-
-    virtual pesapi_value CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr) = 0;
 
     virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) = 0;
 

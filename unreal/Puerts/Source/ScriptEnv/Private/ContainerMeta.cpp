@@ -21,6 +21,12 @@
 
 namespace PUERTS_NAMESPACE
 {
+FContainerMeta& FContainerMeta::Get()
+{
+    static FContainerMeta* Meta = new FContainerMeta();
+    return *Meta;
+}
+
 FContainerMeta::FContainerMeta()
 {
     ::memset(&BuiltinProperty, 0, sizeof(BuiltinProperty));
@@ -51,7 +57,7 @@ FContainerMeta::~FContainerMeta()
     for (auto KV : ObjectPropertyMap)
     {
         // UE_LOG(LogTemp, Warning, TEXT("BuiltinProperty RemoveFromRoot %s"), *KV.Value->GetName());
-        KV.Value->RemoveFromRoot();
+        KV.Value.Property->RemoveFromRoot();
     }
 #endif
 }
@@ -216,15 +222,14 @@ static bool IsStaleStructProperty(PropertyMacro* Property, UField* Field)
 PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 {
     auto Iter = ObjectPropertyMap.Find(Field);
-    if (Iter)
-    {
+    // a stale one is left (leaked like the others) as the containers created with it may still use it
+    if (Iter && Iter->Field.Get() == Field
 #if WITH_EDITOR && (ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4)
-        // a stale one is left (leaked like the others) as the containers created with it may still use it
-        if (!IsStaleStructProperty(*Iter, Field))
+        && !IsStaleStructProperty(Iter->Property, Field)
 #endif
-        {
-            return *Iter;
-        }
+    )
+    {
+        return Iter->Property;
     }
 
     PropertyMacro* Ret = nullptr;
@@ -321,7 +326,7 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
     Ret->AddToRoot();
 #endif
 
-    ObjectPropertyMap.Add(Field, Ret);
+    ObjectPropertyMap.Add(Field, FObjectPropertyInfo{Field, Ret});
     return Ret;
 }
 

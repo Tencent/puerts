@@ -39,9 +39,14 @@ enum BuiltinType
     MaxBuiltinType
 };
 
+// the element properties of the containers created by script (NewArray / NewSet / NewMap), process wide as the container
+// classes (FContainerClass) are keyed by the properties: a property per element type, otherwise each env would add classes
 class FContainerMeta
 {
 public:
+    // never destroyed (the properties may be used by the containers until the process exits)
+    static FContainerMeta& Get();
+
     FContainerMeta();
     ~FContainerMeta();
 
@@ -56,7 +61,14 @@ private:
 
     PropertyMacro* BuiltinProperty[MaxBuiltinType];
 
-    TMap<UField*, PropertyMacro*> ObjectPropertyMap;
+    struct FObjectPropertyInfo
+    {
+        // the type, a destroyed one (whose address may be reused) is detected even if no env is notified
+        TWeakObjectPtr<UField> Field;
+        PropertyMacro* Property;
+    };
+
+    TMap<UField*, FObjectPropertyInfo> ObjectPropertyMap;
 };
 
 }    // namespace PUERTS_NAMESPACE

@@ -122,6 +122,7 @@ void FStructWrapper::ReleaseAll()
     // the type ids (the wrappers) are about to dangle
     UnregisterReflectedClasses(GetDefaultClassRegistry());
     StructWrappers().Empty();
+    FContainerClass::ReleaseAll();
 }
 
 void FStructWrapper::InitExtensionMethodsMap()

@@ -849,14 +849,6 @@ pesapi_value FScriptEnvImpl::FindOrAddDelegate(
     }
 }
 
-pesapi_value FScriptEnvImpl::CreateArray(pesapi_env Env, FPropertyTranslator* Property, void* ArrayPtr)
-{
-    // a fixed size array is a view of its outer, never cached
-    auto Holder = new FContainerHolder{ArrayPtr, FFixSizeArrayWrapper::GetClassDefinition()->TypeId, Property, nullptr,
-        Property->Property, nullptr, nullptr, false};
-    return MainApis->native_object_to_value(Env, Holder->TypeId, Holder, true);
-}
-
 void FScriptEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -928,7 +920,7 @@ void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, i
     UnBind((UObject*) ObjectBase);
 
     MixinFunctionMap.Remove((UFunction*) ObjectBase);
-    ContainerMeta.NotifyElementTypeDeleted((UField*) ObjectBase);
+    FContainerMeta::Get().NotifyElementTypeDeleted((UField*) ObjectBase);
 
     auto CallbacksPtr = AutoReleaseCallbacksMap.Find((UObject*) ObjectBase);
     if (CallbacksPtr)
@@ -1452,53 +1444,6 @@ bool FScriptEnvImpl::CheckDelegateProxies(float Tick)
     return true;
 }
 
-FPropertyTranslator* FScriptEnvImpl::GetContainerPropertyTranslator(PropertyMacro* Property)
-{
-    auto Iter = ContainerPropertyMap.find(Property);
-    // TODO: 如果脚本一直持有蓝图里头的Map，还是有可能有问题的，需要统筹考虑一套机制解决这类问题
-    if (Iter == ContainerPropertyMap.end() || !Iter->second.PropertyWeakPtr.IsValid())
-    {
-        ContainerPropertyInfo Temp{Property, FPropertyTranslator::Create(Property)};
-        ContainerPropertyMap[Property] = std::move(Temp);
-#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
-        if (!Property->IsNative())
-        {
-            SysObjectRetainer.Retain(Property);
-        }
-#endif
-        return ContainerPropertyMap[Property].PropertyTranslator.get();
-    }
-    else
-    {
-        return Iter->second.PropertyTranslator.get();
-    }
-}
-
-pesapi_value FScriptEnvImpl::FindOrAddContainer(pesapi_env Env, const JSClassDefinition* ClassDefinition, void* Ptr,
-    PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, bool PassByPointer)
-{
-    check(Ptr);    // must not null
-    struct pesapi_ffi* Apis = MainApis;
-
-    auto Existed = ContainerHolders.Find(Ptr);
-    if (Existed)
-    {
-        auto Holder = *Existed;
-        if (Holder->TypeId == ClassDefinition->TypeId && Holder->InnerProperty == KeyProperty &&
-            Holder->ValueProperty == ValueProperty)
-        {
-            return Apis->native_object_to_value(Env, Holder->TypeId, Holder, false);
-        }
-        Holder->Cache = nullptr;    // replaced
-    }
-
-    auto Holder = new FContainerHolder{Ptr, ClassDefinition->TypeId, GetContainerPropertyTranslator(KeyProperty),
-        ValueProperty ? GetContainerPropertyTranslator(ValueProperty) : nullptr, KeyProperty, ValueProperty, &ContainerHolders,
-        !PassByPointer};
-    ContainerHolders.Add(Ptr, Holder);
-    return Apis->native_object_to_value(Env, Holder->TypeId, Holder, true);
-}
-
 bool FScriptEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
 {
     UScriptStruct* Struct = Wrapper->Struct.IsValid() ? Cast<UScriptStruct>(Wrapper->Struct.Get()) : nullptr;
@@ -1799,12 +1744,12 @@ bool FScriptEnvImpl::GetContainerTypeProperty(
             *PropertyPtr = nullptr;
             return false;
         }
-        *PropertyPtr = ContainerMeta.GetBuiltinProperty((BuiltinType) Type);
+        *PropertyPtr = FContainerMeta::Get().GetBuiltinProperty((BuiltinType) Type);
         return true;
     }
     else if (auto Field = Cast<UField>(PapiUtils::GetUObject(Apis, Env, Value)))
     {
-        *PropertyPtr = ContainerMeta.GetObjectProperty(Field);
+        *PropertyPtr = FContainerMeta::Get().GetObjectProperty(Field);
         return *PropertyPtr != nullptr;
     }
     else
@@ -1835,13 +1780,13 @@ void FScriptEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info 
         case 0:    // Array
         {
             auto ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));
-            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Apis, Env, Property1, ScriptArray, false));
+            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Array, ScriptArray, Property1, nullptr, false));
             break;
         }
         case 1:    // Set
         {
             auto ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(Property1));
-            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Apis, Env, Property1, ScriptSet, false));
+            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Set, ScriptSet, Property1, nullptr, false));
             break;
         }
         case 2:    // Map
@@ -1852,7 +1797,7 @@ void FScriptEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info 
                 return;
             }
             auto ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(Property1, Property2));
-            Apis->add_return(Info, PapiUtils::FindOrAddContainer(Apis, Env, Property1, Property2, ScriptMap, false));
+            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Map, ScriptMap, Property1, Property2, false));
             break;
         }
         default:

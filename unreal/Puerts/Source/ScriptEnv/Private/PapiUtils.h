@@ -139,24 +139,6 @@ FORCEINLINE void Merge(
     ObjectMapperOf(Apis, Env)->Merge(Env, Info, Src, DesType, Des);
 }
 
-template <typename TContainer>
-FORCEINLINE pesapi_value FindOrAddContainer(
-    struct pesapi_ffi* Apis, pesapi_env Env, PropertyMacro* Property, TContainer* Ptr, bool PassByPointer)
-{
-    return ObjectMapperOf(Apis, Env)->FindOrAddContainer(Env, Property, Ptr, PassByPointer);
-}
-
-FORCEINLINE pesapi_value FindOrAddContainer(struct pesapi_ffi* Apis, pesapi_env Env, PropertyMacro* KeyProperty,
-    PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer)
-{
-    return ObjectMapperOf(Apis, Env)->FindOrAddContainer(Env, KeyProperty, ValueProperty, Ptr, PassByPointer);
-}
-
-FORCEINLINE pesapi_value CreateArray(struct pesapi_ffi* Apis, pesapi_env Env, FPropertyTranslator* Inner, void* ArrayPtr)
-{
-    return ObjectMapperOf(Apis, Env)->CreateArray(Env, Inner, ArrayPtr);
-}
-
 FORCEINLINE pesapi_value FindOrAddDelegate(
     struct pesapi_ffi* Apis, pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {

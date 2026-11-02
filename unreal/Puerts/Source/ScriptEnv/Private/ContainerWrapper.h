@@ -228,62 +228,85 @@ struct ContainerExTypeMapper<FScriptMap>
     using Type = FScriptMapEx;
 };
 
-// the native object of a container wrapper (TArray / TSet / TMap / fixed size array), the js object is a registry class (see
-// the GetClassDefinition of the wrappers), the holder is freed by the Finalize of the class together with the js object
-struct FContainerHolder
+enum class EContainerKind : uint8
 {
-    void* Container;
-    const void* TypeId;            // the container class
-    FPropertyTranslator* Inner;    // the element, the key of a map
-    FPropertyTranslator* Value;    // the value of a map
-    PropertyMacro* InnerProperty;
-    PropertyMacro* ValueProperty;
-    // the container -> holder map of the env if the holder is registered in it (it is removed from the map on finalize)
-    TMap<void*, FContainerHolder*>* Cache;
-    bool Owned;    // the container is deleted on finalize
-
-    FORCEINLINE void Unregister()
-    {
-        if (Cache)
-        {
-            auto Existed = Cache->Find(Container);
-            if (Existed && *Existed == this)
-            {
-                Cache->Remove(Container);
-            }
-            Cache = nullptr;
-        }
-    }
+    Array,
+    Set,
+    Map,
+    FixSizeArray
 };
 
-// the container of a js value if it is a wrapper of the class (TypeId of a container class), otherwise nullptr
-FORCEINLINE void* ContainerOfValue(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, const void* TypeId)
+// The class of the containers of a kind and element type (key and value types of a map), as the List<int> / List<float> of
+// unity. It is process wide like the wrappers of the reflected classes: its address (the tag) is the object type id of the class
+// definition, defined in the default registry (visible to every registry) when built, and holds the element translators, so the
+// native pointer of a container wrapper is the container itself (FScriptArray / FScriptSet / FScriptMap / the memory of a fixed
+// size array) and the methods get the translators by the type id of the holder (get_native_holder_typeid). Its super class is the
+// fixed class of the kind (TArray / TSet / TMap / FixSizeArray, value type ids) which has the methods, the name of the kind is
+// kept. A borrowed container (PassByPointer) is cached by the backend by (pointer, type id), an owned one (FScriptArrayEx ...)
+// is deleted by the finalizer of the class. The element properties are recreated when a blueprint / user defined struct is
+// recompiled in the editor, the class of the stale properties is replaced by a new one (the wrappers of the old class see
+// invalid properties), the classes live until the module shuts down (ReleaseAll)
+class FContainerClass : public FReflectedTypeTag
 {
-    if (Apis->get_native_object_typeid(Env, Value) != TypeId)
+public:
+    // ValueProperty is for a map only, InnerProperty of a fixed size array is the property itself (ArrayDim > 1)
+    static FContainerClass* FindOrAdd(EContainerKind Kind, PropertyMacro* InnerProperty, PropertyMacro* ValueProperty);
+
+    // nullptr if the type id is not a container class
+    FORCEINLINE static FContainerClass* FromTypeId(const void* TypeId)
     {
-        return nullptr;
+        return IsContainer(TypeId) ? static_cast<FContainerClass*>(static_cast<FReflectedTypeTag*>(const_cast<void*>(TypeId)))
+                                   : nullptr;
     }
-    auto Holder = static_cast<FContainerHolder*>(Apis->get_native_object_ptr(Env, Value));
-    return Holder ? Holder->Container : nullptr;
+
+    // module shutdown, after the definitions are unregistered (UnregisterReflectedClasses)
+    static void ReleaseAll();
+
+    FORCEINLINE const void* TypeId() const
+    {
+        return static_cast<const FReflectedTypeTag*>(this);
+    }
+
+    FContainerClass(EContainerKind InKind, PropertyMacro* InnerProperty, PropertyMacro* ValueProperty);
+
+    ~FContainerClass();
+
+    bool IsStale() const;
+
+    EContainerKind Kind;
+    std::unique_ptr<FPropertyTranslator> Inner;    // the element, the key of a map
+    std::unique_ptr<FPropertyTranslator> Value;    // the value of a map
+};
+
+// the script object of a container, owned (deleted with the script object) if not PassByPointer
+FORCEINLINE pesapi_value ContainerToValue(struct pesapi_ffi* Apis, pesapi_env Env, EContainerKind Kind, void* Ptr,
+    PropertyMacro* InnerProperty, PropertyMacro* ValueProperty, bool PassByPointer)
+{
+    check(Ptr);    // must not null
+    auto Class = FContainerClass::FindOrAdd(Kind, InnerProperty, ValueProperty);
+    return Apis->native_object_to_value(Env, Class->TypeId(), Ptr, !PassByPointer);
 }
 
-// module internal: the class definitions of the containers, visible to every registry (see FindBuiltinClass)
+// the container of a js value if it is a wrapper of a container class of the kind, otherwise nullptr
+FORCEINLINE void* ContainerOfValue(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, EContainerKind Kind)
+{
+    auto Class = FContainerClass::FromTypeId(Apis->get_native_object_typeid(Env, Value));
+    return Class && Class->Kind == Kind ? Apis->get_native_object_ptr(Env, Value) : nullptr;
+}
+
+// module internal: the class definitions of the kinds (the super classes of the container classes), visible to every registry
+// (see FindBuiltinClass)
 const JSClassDefinition* FindContainerClass(const void* TypeId);
 
 template <typename T>
 class FContainerWrapper
 {
 public:
+    // the owned containers only (call_finalize)
     static void Finalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
     {
         typedef typename ContainerExTypeMapper<T>::Type ET;
-        auto Holder = static_cast<FContainerHolder*>(Ptr);
-        Holder->Unregister();
-        if (Holder->Owned)
-        {
-            delete static_cast<ET*>(Holder->Container);
-        }
-        delete Holder;
+        delete static_cast<ET*>(Ptr);
     }
 
     static void* New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -297,7 +320,7 @@ public:
     // 返回：容器内元素总数
     static void Num(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     {
-        auto Self = static_cast<T*>(static_cast<FContainerHolder*>(Apis->get_native_holder_ptr(Info))->Container);
+        auto Self = static_cast<T*>(Apis->get_native_holder_ptr(Info));
         Apis->add_return(Info, Apis->create_int32(Apis->get_env(Info), Self->Num()));
     }
 };
@@ -428,14 +451,7 @@ public:
     static const JSClassDefinition* GetClassDefinition();
 
 private:
-    // the array is owned by its outer, only the holder is freed
-    static void Finalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate)
-    {
-        auto Holder = static_cast<FContainerHolder*>(Ptr);
-        Holder->Unregister();
-        delete Holder;
-    }
-
+    // the array is owned by its outer (always PassByPointer), no finalizer
     static void Num(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     static void Get(struct pesapi_ffi* Apis, pesapi_callback_info Info);

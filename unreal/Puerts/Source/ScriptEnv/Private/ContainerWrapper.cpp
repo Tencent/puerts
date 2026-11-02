@@ -9,29 +9,34 @@
 #include "ContainerWrapper.h"
 #include "PropertyTranslator.h"
 #include "PapiDataTransfer.h"
+#include "JSClassRegister.h"
+
+#include <map>
+#include <tuple>
 
 namespace PUERTS_NAMESPACE
 {
-// internal field 0 of a container wrapper is its FContainerHolder, field 1 is the type id of the container class
-static FORCEINLINE FContainerHolder* ContainerHolderOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+// the native pointer of a container wrapper is the container, the type id of its class (a sub class of the kind) is the
+// FContainerClass which holds the element translators
+static FORCEINLINE FContainerClass* ContainerClassOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return static_cast<FContainerHolder*>(Apis->get_native_holder_ptr(Info));
+    return FContainerClass::FromTypeId(Apis->get_native_holder_typeid(Info));
 }
 
 template <typename T>
 static FORCEINLINE T* ContainerSelfOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return static_cast<T*>(ContainerHolderOf(Apis, Info)->Container);
+    return static_cast<T*>(Apis->get_native_holder_ptr(Info));
 }
 
 static FORCEINLINE FPropertyTranslator* ContainerInnerOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return ContainerHolderOf(Apis, Info)->Inner;
+    return ContainerClassOf(Apis, Info)->Inner.get();
 }
 
 static FORCEINLINE FPropertyTranslator* ContainerMapValueOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return ContainerHolderOf(Apis, Info)->Value;
+    return ContainerClassOf(Apis, Info)->Value.get();
 }
 
 static FORCEINLINE bool ContainerCheckArgsLen(struct pesapi_ffi* Apis, pesapi_callback_info Info, int Length)
@@ -51,8 +56,8 @@ static FORCEINLINE void ContainerLinkOuter(struct pesapi_ffi* Apis, pesapi_env E
     PapiDataTransfer::LinkOuter(Apis, Env, Apis->get_this(Info), Inner);
 }
 
-// the type ids of the container classes, value ids (PESAPI_VALUE_TYPE_ID) of the tags, the tags are int (aligned) so the ids
-// stay distinct
+// the type ids of the kinds (the super classes of the container classes, with the methods), value ids (PESAPI_VALUE_TYPE_ID)
+// of the tags, the tags are int (aligned) so the ids stay distinct
 static int ArrayTypeTag = 0;
 static int SetTypeTag = 0;
 static int MapTypeTag = 0;
@@ -63,14 +68,14 @@ static int FixSizeArrayTypeTag = 0;
 #define PUERTS_MAP_TYPE_ID PESAPI_VALUE_TYPE_ID(&MapTypeTag)
 #define PUERTS_FIX_SIZE_ARRAY_TYPE_ID PESAPI_VALUE_TYPE_ID(&FixSizeArrayTypeTag)
 
+// no finalizer: the objects are created by the container classes (sub classes) only
 static JSClassDefinition MakeContainerDefinition(
-    const void* TypeId, const char* Name, JSInitializeFunc Initialize, JSFinalizeFunc Finalize, JSFunctionInfo* Methods)
+    const void* TypeId, const char* Name, JSInitializeFunc Initialize, JSFunctionInfo* Methods)
 {
     JSClassDefinition Definition = JSClassEmptyDefinition;
     Definition.TypeId = TypeId;
     Definition.ScriptName = Name;
     Definition.Initialize = Initialize;
-    Definition.Finalize = Finalize;
     Definition.Methods = Methods;
     return Definition;
 }
@@ -88,6 +93,95 @@ const JSClassDefinition* FindContainerClass(const void* TypeId)
     return nullptr;
 }
 
+//---------------------------------------Container Class-----------------------------------------------
+namespace
+{
+using FContainerClassKey = std::tuple<int, PropertyMacro*, PropertyMacro*>;
+
+struct FContainerClasses
+{
+    std::map<FContainerClassKey, FContainerClass*> Map;
+    // all classes ever created, the stale ones included (the wrappers created before may still use them)
+    std::vector<std::unique_ptr<FContainerClass>> All;
+};
+
+FContainerClasses& ContainerClasses()
+{
+    static FContainerClasses Classes;
+    return Classes;
+}
+}    // namespace
+
+FContainerClass::FContainerClass(EContainerKind InKind, PropertyMacro* InnerProperty, PropertyMacro* ValueProperty) : Kind(InKind)
+{
+    Magic = ContainerMagic;
+    Inner = Kind == EContainerKind::FixSizeArray ? FPropertyTranslator::CreateElement(InnerProperty)
+                                                 : FPropertyTranslator::Create(InnerProperty);
+    if (ValueProperty)
+    {
+        Value = FPropertyTranslator::Create(ValueProperty);
+    }
+
+    const JSClassDefinition* Super = nullptr;
+    JSFinalizeFunc Finalize = nullptr;
+    switch (Kind)
+    {
+        case EContainerKind::Array:
+            Super = FScriptArrayWrapper::GetClassDefinition();
+            Finalize = &FContainerWrapper<FScriptArray>::Finalize;
+            break;
+        case EContainerKind::Set:
+            Super = FScriptSetWrapper::GetClassDefinition();
+            Finalize = &FContainerWrapper<FScriptSet>::Finalize;
+            break;
+        case EContainerKind::Map:
+            Super = FScriptMapWrapper::GetClassDefinition();
+            Finalize = &FContainerWrapper<FScriptMap>::Finalize;
+            break;
+        default:
+            Super = FFixSizeArrayWrapper::GetClassDefinition();    // borrowed only
+            break;
+    }
+
+    // an object type id, defined in the default registry (the other registries fall back to it for the object type ids), the
+    // name of the kind is kept, the methods are on the super class
+    GetPesapiRegistryApi()->define_class(
+        nullptr, TypeId(), Super->TypeId, nullptr, Super->ScriptName, Super->Initialize, Finalize, this, 1);
+}
+
+FContainerClass::~FContainerClass()
+{
+    Magic = 0;
+}
+
+bool FContainerClass::IsStale() const
+{
+    return Inner->IsPropertyStale() || (Value && Value->IsPropertyStale());
+}
+
+FContainerClass* FContainerClass::FindOrAdd(EContainerKind Kind, PropertyMacro* InnerProperty, PropertyMacro* ValueProperty)
+{
+    auto& Classes = ContainerClasses();
+    const FContainerClassKey Key(static_cast<int>(Kind), InnerProperty, ValueProperty);
+    auto Iter = Classes.Map.find(Key);
+    if (Iter != Classes.Map.end() && !Iter->second->IsStale())
+    {
+        return Iter->second;
+    }
+    // new, or the properties are destroyed and the addresses reused: a new class, the old one is kept
+    auto Class = new FContainerClass(Kind, InnerProperty, ValueProperty);
+    Classes.All.emplace_back(Class);
+    Classes.Map[Key] = Class;
+    return Class;
+}
+
+void FContainerClass::ReleaseAll()
+{
+    auto& Classes = ContainerClasses();
+    Classes.Map.clear();
+    Classes.All.clear();
+}
+
 #define PAPI_CONTAINER_CHECK_ARGS_LEN(Length)       \
     if (!ContainerCheckArgsLen(Apis, Info, Length)) \
     {                                               \
@@ -100,7 +194,7 @@ const JSClassDefinition* FScriptArrayWrapper::GetClassDefinition()
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
         {"Contains", &Contains}, {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"IsValidIndex", &IsValidIndex},
         {"Empty", &Empty}, JSFunctionInfo()};
-    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_ARRAY_TYPE_ID, "TArray", &New, &Finalize, Methods);
+    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_ARRAY_TYPE_ID, "TArray", &New, Methods);
     return &Definition;
 }
 
@@ -321,7 +415,7 @@ const JSClassDefinition* FScriptSetWrapper::GetClassDefinition()
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Contains", &Contains},
         {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex},
         {"Empty", &Empty}, JSFunctionInfo()};
-    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_SET_TYPE_ID, "TSet", &New, &Finalize, Methods);
+    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_SET_TYPE_ID, "TSet", &New, Methods);
     return &Definition;
 }
 
@@ -501,7 +595,7 @@ const JSClassDefinition* FScriptMapWrapper::GetClassDefinition()
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
         {"Remove", &Remove}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex}, {"GetKey", &GetKey}, {"Empty", &Empty},
         JSFunctionInfo()};
-    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_MAP_TYPE_ID, "TMap", &New, &Finalize, Methods);
+    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_MAP_TYPE_ID, "TMap", &New, Methods);
     return &Definition;
 }
 
@@ -717,7 +811,7 @@ const JSClassDefinition* FFixSizeArrayWrapper::GetClassDefinition()
 {
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set}, JSFunctionInfo()};
     static const JSClassDefinition Definition =
-        MakeContainerDefinition(PUERTS_FIX_SIZE_ARRAY_TYPE_ID, "FixSizeArray", nullptr, &Finalize, Methods);
+        MakeContainerDefinition(PUERTS_FIX_SIZE_ARRAY_TYPE_ID, "FixSizeArray", nullptr, Methods);
     return &Definition;
 }
 

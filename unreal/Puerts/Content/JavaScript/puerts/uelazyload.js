@@ -284,7 +284,7 @@ var global = global || (function () { return this; }());
 
         var ret = newContainer(0, t1);
         if (!("[Symbol.iterator]" in ret)) {
-            ret.constructor.prototype[Symbol.iterator] = function*() {
+            Object.getPrototypeOf(ret.constructor.prototype)[Symbol.iterator] = function*() {
                 let index = 0;
                 let num = this.Num();
                 while (index < num) {
@@ -301,7 +301,7 @@ var global = global || (function () { return this; }());
         
         var ret = newContainer(1, t1);
         if (!("[Symbol.iterator]" in ret)) {
-            ret.constructor.prototype[Symbol.iterator] = function*() {
+            Object.getPrototypeOf(ret.constructor.prototype)[Symbol.iterator] = function*() {
                 let index = 0;
                 let maxIndex = this.GetMaxIndex();
                 while (index < maxIndex) {
@@ -321,7 +321,7 @@ var global = global || (function () { return this; }());
 
         var ret = newContainer(2, t1, t2);
         if (!("[Symbol.iterator]" in ret)) {
-            ret.constructor.prototype[Symbol.iterator] = function*() {
+            Object.getPrototypeOf(ret.constructor.prototype)[Symbol.iterator] = function*() {
                 let index = 0;
                 let maxIndex = this.GetMaxIndex();
                 while (index < maxIndex) {
