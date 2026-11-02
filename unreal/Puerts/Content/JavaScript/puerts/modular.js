@@ -67,7 +67,7 @@ var global = global || (function () { return this; }());
             debugPath, isESM, fullPath, bytecode
         )
         if (isESM) return wrapped;
-        wrapped(exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
+        wrapped.call(exports, exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
         return module.exports;
     }
     
@@ -105,6 +105,9 @@ var global = global || (function () { return this; }());
     function genRequire(requiringDir, outerIsESM) {
         let localModuleCache = Object.create(null);
         function require(moduleName) {
+            if (typeof moduleName !== 'string') {
+                throw new TypeError('the module name must be a string');
+            }
             if (org_require) {
                 try {
                     return org_require(moduleName);
@@ -186,8 +189,9 @@ var global = global || (function () { return this; }());
                     }
                 }
             } catch(e) {
-                localModuleCache[moduleName] = undefined;
-                moduleCache[key] = undefined;
+                // remove the keys, a retry would read undefined.__forceReload otherwise
+                delete localModuleCache[moduleName];
+                delete moduleCache[key];
                 throw e;
             } finally {
                 tmpModuleStorage[sid] = undefined;
