@@ -4344,12 +4344,12 @@ void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
         // 屏蔽这条只在mocha中出现的警告
         // Logger->Warn(TEXT("Calling ClearInterval with a Null or Undefined."));
     }
-    else
+    else if (Info[0]->IsInt32())
     {
-        CHECK_V8_ARGS(EArgInt32);
         int HandleId = Info[0]->Int32Value(Context).ToChecked();
         RemoveFTickerDelegateHandle(HandleId);
     }
+    // an id that is not a timer id is ignored (same as node)
 }
 
 void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)

@@ -71,13 +71,19 @@ var global = global || (function () { return this; }());
     
     const org_setTimeout = setTimeout;
     function setTimeout_p(handler, timeout, ...args) {
-        return org_setTimeout(() => handler(...args),  timeout);
+        if (typeof handler !== 'function') {
+            throw new Error(`Callback must be a function. Received ${typeof handler}`);
+        }
+        return org_setTimeout(() => handler(...args), timeout > 0 ? Number(timeout) : 0);
     }
     global.setTimeout = setTimeout_p;
     
     const org_setInterval = setInterval;
     function setInterval_p(handler, timeout, ...args) {
-        return org_setInterval(() => handler(...args),  timeout);
+        if (typeof handler !== 'function') {
+            throw new Error(`Callback must be a function. Received ${typeof handler}`);
+        }
+        return org_setInterval(() => handler(...args), timeout > 0 ? Number(timeout) : 0);
     }
     global.setInterval = setInterval_p;
     
