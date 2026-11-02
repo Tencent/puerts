@@ -18,7 +18,14 @@
     <Configurations>Debug;Release;Development</Configurations>
     <RootNamespace>CSharpParamDefaultValueMetas</RootNamespace>
     <AssemblyName>CSharpParamDefaultValueMetas</AssemblyName>
-    <OutputPath>../../../../Binaries/DotNET/UnrealBuildTool/Plugins/CSharpParamDefaultValueMetas/</OutputPath>
+    <!-- Anchor the output to the project file's directory instead of leaving it relative. A bare
+         relative path is resolved by the OS against the real (symlink resolved) directory in some
+         steps, while UBT resolves the same string lexically against the path it found the csproj
+         at, so the two disagree when the plugin is symlinked into the project (macOS). Joining with
+         MSBuildProjectDirectory keeps it lexical everywhere and is identical for a normal install.
+         NormalizeDirectory folds the ".." segments: OutputPath ends up in DefaultItemExcludes, and
+         UBT's up-to-date check (FileSystemGlobbing) rejects patterns with ".." in the middle. -->
+    <OutputPath>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '..', '..', '..', '..', 'Binaries', 'DotNET', 'UnrealBuildTool', 'Plugins', 'CSharpParamDefaultValueMetas'))</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DebugType>pdbonly</DebugType>
     <Nullable>enable</Nullable>
