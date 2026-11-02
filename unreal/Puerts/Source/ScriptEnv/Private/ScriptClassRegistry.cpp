@@ -14,6 +14,8 @@
 #include "UObject/Class.h"
 #endif
 #include <map>
+#include <list>
+#include <vector>
 #include <cstring>
 
 namespace PUERTS_NAMESPACE
@@ -118,9 +120,18 @@ public:
         }
         StructNameToClassDefinition.clear();
 #endif
+        for (auto ClassDef : RetiredClassDefinitions)
+        {
+            ScriptClassDefinitionDelete(ClassDef);
+        }
+        RetiredClassDefinitions.clear();
+        RetiredNames.clear();
     }
 
     // unlike unity (first registration wins), unreal replaces the previous definition (behaviour kept from JSClassRegister).
+    // The replaced definition is retired instead of deleted: the js classes already created from it (and the native objects
+    // bound to them) keep pointing to its function / property arrays and Data, so it lives until the registry is destroyed.
+    // Replacing happens in editor only (blueprint / struct recompiling, hot reload), the retired ones are few.
     // Only value type ids (PESAPI_VALUE_TYPE_ID, e.g. StaticTypeId) can be registered, object type ids are owned by the host
     // (the FStructWrapper of a reflected class in unreal) and may be cast to the host type
     void RegisterClass(const ScriptClassDefinition& ClassDefinition)
@@ -138,7 +149,17 @@ public:
             auto cd_iter = CDataIdToClassDefinition.find(ClassDefinition.TypeId);
             if (cd_iter != CDataIdToClassDefinition.end())
             {
-                ScriptClassDefinitionDelete(cd_iter->second);
+                ScriptClassDefinition* Old = cd_iter->second;
+                PString OldName = Old->ScriptName;
+                auto nd_iter = CDataNameToClassDefinition.find(OldName);
+                if (nd_iter != CDataNameToClassDefinition.end() && nd_iter->second == Old)
+                {
+                    CDataNameToClassDefinition.erase(nd_iter);
+                }
+                // its ScriptName points to the key of CDataNameToClassDefinition, keep a copy of its own
+                RetiredNames.push_back(std::move(OldName));
+                Old->ScriptName = RetiredNames.back().c_str();
+                Retire(Old);
             }
             CDataIdToClassDefinition[ClassDefinition.TypeId] = ScriptClassDefinitionDuplicate(&ClassDefinition);
             PString SN = ClassDefinition.ScriptName;
@@ -152,7 +173,7 @@ public:
             auto ud_iter = StructNameToClassDefinition.find(SN);
             if (ud_iter != StructNameToClassDefinition.end())
             {
-                ScriptClassDefinitionDelete(ud_iter->second);
+                Retire(ud_iter->second);
             }
             StructNameToClassDefinition[SN] = ScriptClassDefinitionDuplicate(&ClassDefinition);
         }
@@ -253,6 +274,13 @@ public:
 #endif
 
 private:
+    void Retire(ScriptClassDefinition* ClassDefinition)
+    {
+        RetiredClassDefinitions.push_back(ClassDefinition);
+    }
+
+    std::vector<ScriptClassDefinition*> RetiredClassDefinitions;
+    std::list<PString> RetiredNames;
     std::map<const void*, ScriptClassDefinition*> CDataIdToClassDefinition;
     std::map<PString, ScriptClassDefinition*> CDataNameToClassDefinition;
     pesapi_class_not_found_callback ClassNotFoundCallback = nullptr;
