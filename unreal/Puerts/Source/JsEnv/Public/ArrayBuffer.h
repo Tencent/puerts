@@ -18,9 +18,9 @@ public:
     GENERATED_USTRUCT_BODY()
 
 public:
-    void* Data;
+    void* Data = nullptr;
 
-    size_t Length;
+    size_t Length = 0;
 
     bool bCopy = false;
 };
