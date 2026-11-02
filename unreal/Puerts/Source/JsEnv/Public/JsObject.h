@@ -32,7 +32,7 @@ public:
     {
     }
 
-    FJsObject(const FJsObject& InOther)
+    FJsObject(const FJsObject& InOther) : Isolate(nullptr)
     {
         if (InOther.JsEnvLifeCycleTracker.expired())
         {
@@ -232,6 +232,10 @@ public:
 private:
     FORCEINLINE v8::Local<v8::Object> GetJsObject() const
     {
+        if (!Isolate)    // never assigned, it is undefined in js
+        {
+            return {};
+        }
         if (JsEnvLifeCycleTracker.expired())
         {
             UE_LOG(Puerts, Error, TEXT("JsEnv associated had release!"));
