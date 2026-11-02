@@ -493,7 +493,7 @@ static void WebSocketPoll(pesapi_ffi* Apis, pesapi_callback_info Info)
 void InitWebsocketPPWrap(pesapi_ffi* Apis, pesapi_env Env, PUERTS_NAMESPACE::ScriptClassRegistry* Registry)
 {
     using namespace PUERTS_NAMESPACE;
-    const void* TypeId = &WebSocketClassTypeId;
+    const void* TypeId = PESAPI_VALUE_TYPE_ID(&WebSocketClassTypeId);
     if (!FindClassByID(Registry, TypeId))
     {
         JSFunctionInfo Methods[] = {{"send", &WebSocketSend}, {"setHandles", &WebSocketSetHandles}, {"close", &WebSocketClose},

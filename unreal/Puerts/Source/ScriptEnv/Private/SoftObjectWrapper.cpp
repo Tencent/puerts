@@ -4,12 +4,13 @@
 
 namespace PUERTS_NAMESPACE
 {
-// the type id of the soft object ptr class (soft object and soft class wrappers share it)
-static const char SoftObjectPtrTypeTag = 0;
+// the type id of the soft object ptr class (soft object and soft class wrappers share it), a value id (PESAPI_VALUE_TYPE_ID) of
+// the (aligned) tag
+static int SoftObjectPtrTypeTag = 0;
 
 const void* FSoftObjectWrapper::TypeId()
 {
-    return &SoftObjectPtrTypeTag;
+    return PESAPI_VALUE_TYPE_ID(&SoftObjectPtrTypeTag);
 }
 
 const JSClassDefinition* FSoftObjectWrapper::GetClassDefinition()
@@ -19,7 +20,7 @@ const JSClassDefinition* FSoftObjectWrapper::GetClassDefinition()
     static const JSClassDefinition Definition = []()
     {
         JSClassDefinition Result = JSClassEmptyDefinition;
-        Result.TypeId = &SoftObjectPtrTypeTag;
+        Result.TypeId = TypeId();
         Result.ScriptName = "TSoftObjectPtr";
         Result.Finalize = &Finalize;
         Result.Methods = Methods;
@@ -37,12 +38,12 @@ pesapi_value FSoftObjectWrapper::Wrap(
     struct pesapi_ffi* Apis, pesapi_env Env, const FSoftObjectPtr& SoftObjectPtr, UClass* Class, bool IsSoftClass)
 {
     auto Holder = new FSoftObjectHolder{SoftObjectPtr, Class, IsSoftClass};
-    return Apis->native_object_to_value(Env, &SoftObjectPtrTypeTag, Holder, true);
+    return Apis->native_object_to_value(Env, TypeId(), Holder, true);
 }
 
 FSoftObjectPtr* FSoftObjectWrapper::SoftObjectPtrOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
 {
-    if (Apis->get_native_object_typeid(Env, Value) != &SoftObjectPtrTypeTag)
+    if (Apis->get_native_object_typeid(Env, Value) != TypeId())
     {
         return nullptr;
     }

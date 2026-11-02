@@ -49,24 +49,24 @@
     }                                          \
     __DefObjectType(TArray<CLS>) __DefCDataPointerConverter(TArray<CLS>)
 
-#define UsingCrossModuleCppType(CLS)                                        \
-    namespace PUERTS_NAMESPACE                                              \
-    {                                                                       \
-    template <>                                                             \
-    struct StaticTypeId<CLS>                                                \
-    {                                                                       \
-        static const void* get()                                            \
-        {                                                                   \
-            static const void* cache_type_id = nullptr;                     \
-            if (!cache_type_id)                                             \
-            {                                                               \
-                auto info = PUERTS_NAMESPACE::FindCppTypeClassByName(#CLS); \
-                cache_type_id = info ? info->TypeId : &cache_type_id;       \
-            }                                                               \
-            return cache_type_id;                                           \
-        }                                                                   \
-    };                                                                      \
-    }                                                                       \
+#define UsingCrossModuleCppType(CLS)                                                        \
+    namespace PUERTS_NAMESPACE                                                              \
+    {                                                                                       \
+    template <>                                                                             \
+    struct StaticTypeId<CLS>                                                                \
+    {                                                                                       \
+        static const void* get()                                                            \
+        {                                                                                   \
+            static const void* cache_type_id = nullptr;                                     \
+            if (!cache_type_id)                                                             \
+            {                                                                               \
+                auto info = PUERTS_NAMESPACE::FindCppTypeClassByName(#CLS);                 \
+                cache_type_id = info ? info->TypeId : PESAPI_VALUE_TYPE_ID(&cache_type_id); \
+            }                                                                               \
+            return cache_type_id;                                                           \
+        }                                                                                   \
+    };                                                                                      \
+    }                                                                                       \
     UsingNamedCppType(CLS, CLS)
 
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4

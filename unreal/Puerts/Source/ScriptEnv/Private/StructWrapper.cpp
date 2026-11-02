@@ -8,7 +8,6 @@
 
 #include "StructWrapper.h"
 #include <algorithm>
-#include <unordered_map>
 #include "ObjectMapper.h"
 #include "PathEscape.h"
 #include "PapiUtils.h"
@@ -31,20 +30,17 @@ static TMap<FString, std::shared_ptr<FStructWrapper>>& StructWrappers()
     return Wrappers;
 }
 
-// type id (the wrapper) -> current class definition of the reflected classes
-static std::unordered_map<const void*, const JSClassDefinition*>& ReflectedClassMap()
-{
-    static std::unordered_map<const void*, const JSClassDefinition*> Map;
-    return Map;
-}
-
+// object type ids are the wrappers (see FReflectedTypeTag), value type ids are compared with the fixed classes
 const JSClassDefinition* FindReflectedClass(const void* TypeId)
 {
-    auto& Map = ReflectedClassMap();
-    auto Iter = Map.find(TypeId);
-    if (Iter != Map.end())
+    if (PESAPI_IS_OBJECT_TYPE_ID(TypeId))
     {
-        return Iter->second;
+        auto Wrapper = FStructWrapper::FromTypeId(TypeId);
+        if (Wrapper && Wrapper->GetCurrentClass())
+        {
+            return &Wrapper->GetCurrentClass()->Definition;
+        }
+        return nullptr;
     }
     if (TypeId == FWeakObjectPtrWrapper::TypeId())
     {
@@ -67,12 +63,9 @@ const JSClassDefinition* FindReflectedClass(const void* TypeId)
 
 FStructWrapper* FStructWrapper::FromTypeId(const void* TypeId)
 {
-    if (!TypeId)
-    {
-        return nullptr;
-    }
-    auto& Map = ReflectedClassMap();
-    return Map.find(TypeId) != Map.end() ? static_cast<FStructWrapper*>(const_cast<void*>(TypeId)) : nullptr;
+    return FReflectedTypeTag::IsReflected(TypeId)
+               ? static_cast<FStructWrapper*>(static_cast<FReflectedTypeTag*>(const_cast<void*>(TypeId)))
+               : nullptr;
 }
 
 // extension methods found by the last scan, taken by the wrapper of the struct when its class definition is built
@@ -108,7 +101,6 @@ std::shared_ptr<FStructWrapper> FStructWrapper::FindOrAdd(UStruct* InStruct)
 
 void FStructWrapper::ReleaseAll()
 {
-    ReflectedClassMap().clear();
     PendingExtensionMethods().clear();
     ExtensionMethodsInited = false;
     StructWrappers().Empty();
@@ -288,6 +280,7 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
     Out->Variables.push_back(JSPropertyInfo());
 
     auto& Definition = Out->Definition;
+    // an object type id (see FReflectedTypeTag), the wrapper lives until the module shuts down
     Definition.TypeId = this;
     Definition.SuperTypeId = SuperTypeId;
     Definition.ScriptName = Out->ClassName.c_str();
@@ -309,8 +302,7 @@ const JSClassDefinition* FStructWrapper::GetClassDefinition(UStruct* InStruct, b
     Definition.Variables = Out->Variables.data();
     Definition.Data = this;
 
-    ReflectedClassMap()[this] = &Definition;
-    // the previous definition is released here unless an env holds it
+    // the previous definition is released here unless an env holds it, FindReflectedClass returns the new one from now on
     CurrentClass = std::move(Out);
     return &Definition;
 }

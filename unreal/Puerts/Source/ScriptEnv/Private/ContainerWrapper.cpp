@@ -51,11 +51,17 @@ static FORCEINLINE void ContainerLinkOuter(struct pesapi_ffi* Apis, pesapi_env E
     PapiDataTransfer::LinkOuter(Apis, Env, Apis->get_this(Info), Inner);
 }
 
-// the type ids of the container classes
-static const char ArrayTypeTag = 0;
-static const char SetTypeTag = 0;
-static const char MapTypeTag = 0;
-static const char FixSizeArrayTypeTag = 0;
+// the type ids of the container classes, value ids (PESAPI_VALUE_TYPE_ID) of the tags, the tags are int (aligned) so the ids
+// stay distinct
+static int ArrayTypeTag = 0;
+static int SetTypeTag = 0;
+static int MapTypeTag = 0;
+static int FixSizeArrayTypeTag = 0;
+
+#define PUERTS_ARRAY_TYPE_ID PESAPI_VALUE_TYPE_ID(&ArrayTypeTag)
+#define PUERTS_SET_TYPE_ID PESAPI_VALUE_TYPE_ID(&SetTypeTag)
+#define PUERTS_MAP_TYPE_ID PESAPI_VALUE_TYPE_ID(&MapTypeTag)
+#define PUERTS_FIX_SIZE_ARRAY_TYPE_ID PESAPI_VALUE_TYPE_ID(&FixSizeArrayTypeTag)
 
 static JSClassDefinition MakeContainerDefinition(
     const void* TypeId, const char* Name, JSInitializeFunc Initialize, JSFinalizeFunc Finalize, JSFunctionInfo* Methods)
@@ -71,13 +77,13 @@ static JSClassDefinition MakeContainerDefinition(
 
 const JSClassDefinition* FindContainerClass(const void* TypeId)
 {
-    if (TypeId == &ArrayTypeTag)
+    if (TypeId == PUERTS_ARRAY_TYPE_ID)
         return FScriptArrayWrapper::GetClassDefinition();
-    if (TypeId == &SetTypeTag)
+    if (TypeId == PUERTS_SET_TYPE_ID)
         return FScriptSetWrapper::GetClassDefinition();
-    if (TypeId == &MapTypeTag)
+    if (TypeId == PUERTS_MAP_TYPE_ID)
         return FScriptMapWrapper::GetClassDefinition();
-    if (TypeId == &FixSizeArrayTypeTag)
+    if (TypeId == PUERTS_FIX_SIZE_ARRAY_TYPE_ID)
         return FFixSizeArrayWrapper::GetClassDefinition();
     return nullptr;
 }
@@ -94,7 +100,7 @@ const JSClassDefinition* FScriptArrayWrapper::GetClassDefinition()
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
         {"Contains", &Contains}, {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"IsValidIndex", &IsValidIndex},
         {"Empty", &Empty}, JSFunctionInfo()};
-    static const JSClassDefinition Definition = MakeContainerDefinition(&ArrayTypeTag, "TArray", &New, &Finalize, Methods);
+    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_ARRAY_TYPE_ID, "TArray", &New, &Finalize, Methods);
     return &Definition;
 }
 
@@ -315,7 +321,7 @@ const JSClassDefinition* FScriptSetWrapper::GetClassDefinition()
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Contains", &Contains},
         {"FindIndex", &FindIndex}, {"RemoveAt", &RemoveAt}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex},
         {"Empty", &Empty}, JSFunctionInfo()};
-    static const JSClassDefinition Definition = MakeContainerDefinition(&SetTypeTag, "TSet", &New, &Finalize, Methods);
+    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_SET_TYPE_ID, "TSet", &New, &Finalize, Methods);
     return &Definition;
 }
 
@@ -497,7 +503,7 @@ const JSClassDefinition* FScriptMapWrapper::GetClassDefinition()
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Add", &Add}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set},
         {"Remove", &Remove}, {"GetMaxIndex", &GetMaxIndex}, {"IsValidIndex", &IsValidIndex}, {"GetKey", &GetKey}, {"Empty", &Empty},
         JSFunctionInfo()};
-    static const JSClassDefinition Definition = MakeContainerDefinition(&MapTypeTag, "TMap", &New, &Finalize, Methods);
+    static const JSClassDefinition Definition = MakeContainerDefinition(PUERTS_MAP_TYPE_ID, "TMap", &New, &Finalize, Methods);
     return &Definition;
 }
 
@@ -713,7 +719,7 @@ const JSClassDefinition* FFixSizeArrayWrapper::GetClassDefinition()
 {
     static JSFunctionInfo Methods[] = {{"Num", &Num}, {"Get", &Get}, {"GetRef", &GetRef}, {"Set", &Set}, JSFunctionInfo()};
     static const JSClassDefinition Definition =
-        MakeContainerDefinition(&FixSizeArrayTypeTag, "FixSizeArray", nullptr, &Finalize, Methods);
+        MakeContainerDefinition(PUERTS_FIX_SIZE_ARRAY_TYPE_ID, "FixSizeArray", nullptr, &Finalize, Methods);
     return &Definition;
 }
 

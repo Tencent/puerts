@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 14
+#define PESAPI_VERSION 15
 
 #define PESAPI_EXTERN
 
@@ -122,6 +122,15 @@ typedef void* (*pesapi_on_native_object_enter)(void* ptr, void* class_data, void
 typedef void (*pesapi_on_native_object_exit)(void* ptr, void* class_data, void* env_private, void* userdata);
 typedef int (*pesapi_class_not_found_callback)(const void* type_id);
 typedef void (*pesapi_func_ptr)(void);
+
+// Type ids are told apart by the lowest bit, the backends never interpret them:
+// - value ids (lowest bit 1) are only compared and used as keys, never dereferenced. Static bindings make them from the address
+//   of a static variable aligned to at least 2 bytes (so the ids of different variables stay distinct) by PESAPI_VALUE_TYPE_ID.
+// - object ids (lowest bit 0) are the addresses of objects owned by the host (e.g. the FStructWrapper of an unreal reflected
+//   class, the Il2CppClass of an unity class), the host may cast an id to its own type after PESAPI_IS_OBJECT_TYPE_ID.
+#define PESAPI_VALUE_TYPE_ID(addr) ((const void*) (((uintptr_t) (addr)) | (uintptr_t) 1))
+#define PESAPI_IS_VALUE_TYPE_ID(type_id) ((((uintptr_t) (type_id)) & (uintptr_t) 1) != 0)
+#define PESAPI_IS_OBJECT_TYPE_ID(type_id) ((type_id) != NULL && !PESAPI_IS_VALUE_TYPE_ID(type_id))
 
 #ifdef BUILDING_PES_EXTENSION
 PESAPI_EXTERN void pesapi_init(pesapi_func_ptr* func_array);

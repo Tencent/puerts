@@ -12,10 +12,11 @@
 
 namespace PUERTS_NAMESPACE
 {
-// the type ids of the delegate classes (different values, so identical constants folding can not merge them)
-static const char DelegateTypeTag = 'D';
+// the type ids of the delegate classes, value ids (PESAPI_VALUE_TYPE_ID) of the tags (aligned, different values so identical
+// constants folding can not merge them)
+static const int DelegateTypeTag = 'D';
 
-static const char MulticastDelegateTypeTag = 'M';
+static const int MulticastDelegateTypeTag = 'M';
 
 static JSClassDefinition DelegateClassDefinition(const void* TypeId, const char* ScriptName, JSFunctionInfo* Methods)
 {
@@ -28,7 +29,7 @@ static JSClassDefinition DelegateClassDefinition(const void* TypeId, const char*
 
 const void* FDelegateWrapper::TypeId()
 {
-    return &DelegateTypeTag;
+    return PESAPI_VALUE_TYPE_ID(&DelegateTypeTag);
 }
 
 const JSClassDefinition* FDelegateWrapper::GetClassDefinition()
@@ -36,7 +37,7 @@ const JSClassDefinition* FDelegateWrapper::GetClassDefinition()
     // the entries are referenced by the class definition, so they must have static storage
     static JSFunctionInfo Methods[] = {
         {"Bind", &Bind}, {"IsBound", &IsBound}, {"Unbind", &Unbind}, {"Execute", &Execute}, JSFunctionInfo()};
-    static const JSClassDefinition Definition = DelegateClassDefinition(&DelegateTypeTag, "FScriptDelegate", Methods);
+    static const JSClassDefinition Definition = DelegateClassDefinition(TypeId(), "FScriptDelegate", Methods);
     return &Definition;
 }
 
@@ -91,15 +92,14 @@ void FDelegateWrapper::Execute(struct pesapi_ffi* Apis, pesapi_callback_info Inf
 
 const void* FMulticastDelegateWrapper::TypeId()
 {
-    return &MulticastDelegateTypeTag;
+    return PESAPI_VALUE_TYPE_ID(&MulticastDelegateTypeTag);
 }
 
 const JSClassDefinition* FMulticastDelegateWrapper::GetClassDefinition()
 {
     static JSFunctionInfo Methods[] = {
         {"Add", &Add}, {"Remove", &Remove}, {"Clear", &Clear}, {"Broadcast", &Broadcast}, JSFunctionInfo()};
-    static const JSClassDefinition Definition =
-        DelegateClassDefinition(&MulticastDelegateTypeTag, "FMulticastScriptDelegate", Methods);
+    static const JSClassDefinition Definition = DelegateClassDefinition(TypeId(), "FMulticastScriptDelegate", Methods);
     return &Definition;
 }
 

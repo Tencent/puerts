@@ -219,10 +219,10 @@ SCRIPTENV_API bool TraceObjectLifecycle(
 #if USING_IN_UNREAL_ENGINE
 SCRIPTENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
-// module internal: the process wide definitions of reflected classes (UClass / UScriptStruct, keyed by their FStructWrapper)
-// and of the container classes (TArray / TSet / TMap / fixed size array, see ContainerWrapper.cpp), they are not in the name
-// tables (so not visible to ForeachRegisterClass / loadCPPType) but FindClassByID / LoadClassByID of every registry fall back
-// to them, see StructWrapper.cpp
+// module internal: the process wide definitions of reflected classes (UClass / UScriptStruct, the object type id is their
+// FStructWrapper) and of the fixed classes (weak / soft object ptr, delegates, TArray / TSet / TMap / fixed size array, value
+// type ids), they are not in the name tables (so not visible to ForeachRegisterClass / loadCPPType) but FindClassByID /
+// LoadClassByID of every registry fall back to them, see StructWrapper.cpp
 const JSClassDefinition* FindReflectedClass(const void* TypeId);
 
 SCRIPTENV_API bool IsEditorOnlyUFunction(const UFunction* Func);

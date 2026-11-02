@@ -13,6 +13,7 @@
 #include "V8FastCall.hpp"
 #endif
 #include "PuertsNamespaceDef.h"
+#include "pesapi.h"
 
 #define __DefScriptTTypeName(CLSNAME, CLS)      \
     namespace PUERTS_NAMESPACE                  \
@@ -229,10 +230,11 @@ struct ScriptTypeName<void>
 template <typename T>
 struct StaticTypeId
 {
+    // a value type id (see PESAPI_VALUE_TYPE_ID), dummy is pointer aligned
     static const void* get()
     {
         static T* dummy = nullptr;
-        return &dummy;
+        return PESAPI_VALUE_TYPE_ID(&dummy);
     }
 };
 

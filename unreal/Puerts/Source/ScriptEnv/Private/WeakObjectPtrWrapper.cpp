@@ -4,12 +4,12 @@
 
 namespace PUERTS_NAMESPACE
 {
-// the type id of the weak object ptr class
-static const char WeakObjectPtrTypeTag = 0;
+// the type id of the weak object ptr class, a value id (PESAPI_VALUE_TYPE_ID) of the (aligned) tag
+static int WeakObjectPtrTypeTag = 0;
 
 const void* FWeakObjectPtrWrapper::TypeId()
 {
-    return &WeakObjectPtrTypeTag;
+    return PESAPI_VALUE_TYPE_ID(&WeakObjectPtrTypeTag);
 }
 
 const JSClassDefinition* FWeakObjectPtrWrapper::GetClassDefinition()
@@ -19,7 +19,7 @@ const JSClassDefinition* FWeakObjectPtrWrapper::GetClassDefinition()
     static const JSClassDefinition Definition = []()
     {
         JSClassDefinition Result = JSClassEmptyDefinition;
-        Result.TypeId = &WeakObjectPtrTypeTag;
+        Result.TypeId = TypeId();
         Result.ScriptName = "TWeakObjectPtr";
         Result.Finalize = &Finalize;
         Result.Methods = Methods;
@@ -50,12 +50,12 @@ void FWeakObjectPtrWrapper::Make(struct pesapi_ffi* Apis, pesapi_callback_info I
         Object = nullptr;
     }
 
-    Apis->add_return(Info, Apis->native_object_to_value(Env, &WeakObjectPtrTypeTag, new TWeakObjectPtr<UObject>(Object), true));
+    Apis->add_return(Info, Apis->native_object_to_value(Env, TypeId(), new TWeakObjectPtr<UObject>(Object), true));
 }
 
 static FORCEINLINE TWeakObjectPtr<UObject>* WeakObjectPtrOf(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    return Apis->get_native_holder_typeid(Info) == &WeakObjectPtrTypeTag
+    return Apis->get_native_holder_typeid(Info) == FWeakObjectPtrWrapper::TypeId()
                ? static_cast<TWeakObjectPtr<UObject>*>(Apis->get_native_holder_ptr(Info))
                : nullptr;
 }

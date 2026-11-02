@@ -406,7 +406,7 @@ void FCppObjectMapper::Initialize(lua_State* L)
         Ref = std::make_shared<int>(0);
     }
 
-    PtrClassDef.TypeId = &PtrClassDef;
+    PtrClassDef.TypeId = PESAPI_VALUE_TYPE_ID(&PtrClassDef);
     PtrClassDef.ScriptName = "__Pointer";
 
     CacheTableRef = NewWeakTable(L, "v");

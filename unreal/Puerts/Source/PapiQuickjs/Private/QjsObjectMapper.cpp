@@ -570,7 +570,7 @@ void FCppObjectMapper::Initialize(JSContext* InCtx)
     JS_NewClassID(rt, &WeakTracerClassId);
     JS_NewClass(rt, WeakTracerClassId, &weak_tracer_cls_def);
 
-    PtrClassDef.TypeId = &PtrClassDef;
+    PtrClassDef.TypeId = PESAPI_VALUE_TYPE_ID(&PtrClassDef);
     PtrClassDef.ScriptName = "__Pointer";
 
     PrivateDataKey = JS_NewAtom(ctx, "__papi_private_data");

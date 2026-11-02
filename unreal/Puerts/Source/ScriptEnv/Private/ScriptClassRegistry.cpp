@@ -120,9 +120,19 @@ public:
 #endif
     }
 
-    // unlike unity (first registration wins), unreal replaces the previous definition (behaviour kept from JSClassRegister)
+    // unlike unity (first registration wins), unreal replaces the previous definition (behaviour kept from JSClassRegister).
+    // Only value type ids (PESAPI_VALUE_TYPE_ID, e.g. StaticTypeId) can be registered, object type ids are owned by the host
+    // (the FStructWrapper of a reflected class in unreal) and may be cast to the host type
     void RegisterClass(const ScriptClassDefinition& ClassDefinition)
     {
+        if (ClassDefinition.TypeId && !PESAPI_IS_VALUE_TYPE_ID(ClassDefinition.TypeId))
+        {
+#if USING_IN_UNREAL_ENGINE
+            ensureAlwaysMsgf(false, TEXT("register class [%s] with an object type id, use a value type id (PESAPI_VALUE_TYPE_ID)"),
+                ClassDefinition.ScriptName ? UTF8_TO_TCHAR(ClassDefinition.ScriptName) : TEXT(""));
+#endif
+            return;
+        }
         if (ClassDefinition.TypeId && ClassDefinition.ScriptName)
         {
             auto cd_iter = CDataIdToClassDefinition.find(ClassDefinition.TypeId);
