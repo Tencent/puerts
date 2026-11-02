@@ -355,6 +355,15 @@ UE 与 C# 的关键差异：UObject 可被显式销毁（Destroy、关卡卸载�
 - 测试：mixin 用例新增 objectTakeByNative 对象被销毁后的访问（调用抛 invalid、expando 保留）以及 UObject 回收后 JS 对象随之释放，Mixin 基线追加三行；其余用例与基线不变，Functional 全部 35 项通过。
 - 基准（同机与 HEAD 对比）：new.uobject 1744 到 1528/1712ns、mixin.cpp_to_js 405 到 365/411ns、delegate.cpp_to_js 248 到 211ns，少了 handle 分配、value ref 和宿主映射的插入删除；return_self 等命中缓存的路径持平。property.get_int / set_int 由 51/52ns 变为 59 到 64 / 58ns，历史波动范围是 52 到 58ns，可确认的新增开销是 getter / setter 多一次 `get_native_holder_typeid` 的 ffi 调用（用于拒绝伪造的 `this`），与 cpp.* 同属 ffi 间接调用开销，一并列入待优化项（例如一次取回指针和 type id 的接口）。
 
+type id 分为值型和对象型（2026-11-02，见第 9 节同日第 1 条）。原先 UE 的 type id 有两种含义：静态绑定、容器、委托等的 id 只是某个静态变量的地址，只用作 key；反射类型的 id 是 `FStructWrapper*`，是有意义的对象。两者混在一起，宿主拿到一个 id 无法直接判断能否强转，只能查 `ReflectedClassMap` 哈希表，也就不能像 Unity 的 `ClassNotFoundCallback` 那样把 id 直接强转成 `Il2CppClass*`。现在用最低位区分：
+
+- 值型 id 最低位为 1，只比较、只作 key，不解引用。由 `pesapi.h` 的 `PESAPI_VALUE_TYPE_ID(addr)` 生成，`addr` 必须是至少 2 字节对齐的静态变量地址（这样或上 1 之后不同变量的 id 仍然不同）。UE 侧所有静态来源都改用它：`StaticTypeId<T>::get()`、`UsingCrossModuleCppType` 查不到时的回退 id、容器 / Weak / Soft / 委托 / 多播委托的固定定义、WebSocket，以及 lua、python、quickjs 后端内部的 `PtrClassDef`。
+- 对象型 id 最低位为 0，是宿主拥有的对象地址（对象天然对齐）。后端不解释它，宿主用 `PESAPI_IS_OBJECT_TYPE_ID` 判断后可以强转成自己的类型。UE 里对象型 id 只有一种，就是反射类型的 `FStructWrapper`（进程级，模块关闭前不释放）。
+- 宿主侧用法：`FReflectedTypeTag::IsUClass / IsUScriptStruct` 先判断是对象型 id 再读 magic（值型 id 指向的可能只是 4 字节的 int，直接读 8 字节 magic 会越界）；`FStructWrapper::FromTypeId` 不再查表，对象型 id 且 magic 有效就强转；registry 在 UE 下的回落（`FindReflectedClass`）按奇偶分流，对象型 id 直接转成 wrapper 取当前定义，值型 id 才去比较固定定义和容器。`ReflectedClassMap` 删除。
+- 注册检查：`RegisterClass` 只接受值型 id（反射定义不经过 registry 注册），收到对象型 id 时拒绝注册并报错，避免外部静态绑定拿自己的对象地址作 id，被宿主误转成 `FStructWrapper`。
+- 反射类型暂不改走 `on_class_not_found`：registry 的 `RegisterClass` 会复制定义（复制数组，不复制字符串），而反射定义由 `FReflectedClass` 持有，各 env 通过 `ClassesBuilt` 保活，进程内所有 registry 共享。改走回调要么让每个 registry 各复制一份，并处理刷新时的替换和悬空；要么给 registry 增加“借用定义”的注册方式。现在 registry 直接按奇偶转换，效果与 Unity 的回调一致（按需、O(1)、不预先注册）。回调化放到第二阶段，在 registry 移入共享 papi 库时一并处理（届时 registry 不能再带 UE 专属的回落）。Unity 侧 `ClassNotFoundCallback` 同样应该先判断是对象型 id 再强转，统一时处理（本阶段不改 `unity/`）。
+- 兼容性：旧插件按旧规则生成的偶数 id 会被拒绝注册。约定变化与函数表变化同等对待，`PESAPI_VERSION` 提升到 15，插件入口名随之变化，旧插件会因为找不到入口而加载失败，不会被误用。
+
 M2 落地情况（已被方案 B 取代，保留作为记录）：
 
 - 对象映射：UE 版 `FCppObjectMapper` 已与 Unity 版基本对齐（含 OnEnter / OnExit），差异只剩依赖 V8 >= 13 的 `PUERTS_LAZYLOAD`，暂不移植。M2 的主体是 UObject 句柄。
@@ -380,7 +389,7 @@ M2 落地情况（已被方案 B 取代，保留作为记录）：
 | 外部内存上报 | 大对象（容器、结构体）提示 GC | 桥接层 | 新增可选 API |
 | Symbol、Proxy | `UE` 命名空间代理等 | 用 JS 辅助脚本实现 | 同左 |
 
-新增 API 统一以“追加到函数表末尾”的方式进行。原定第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升；3.0 本身就是不兼容的大版本，2026-10-28 新增 `unbind_native_object` 时已提升到 12，2026-10-30 删除 `throw_error`、`invalidate_class`（函数表布局变化）时先后提升到 13、14，之后新增 API 照常追加，是否再提升在统一时一并决定。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
+新增 API 统一以“追加到函数表末尾”的方式进行。原定第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升；3.0 本身就是不兼容的大版本，2026-10-28 新增 `unbind_native_object` 时已提升到 12，2026-10-30 删除 `throw_error`、`invalidate_class`（函数表布局变化）时先后提升到 13、14，2026-11-02 type id 约定变化（见 5.6）时提升到 15，之后新增 API 照常追加，是否再提升在统一时一并决定。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
 
 新增 API 必须与具体引擎、具体语言无关：papi 不只跨 JS 引擎（v8、quickjs），还跨脚本语言（目前有 js、lua、python）。判断标准是这个概念在 lua、python 里也能自然实现，比如 `get_this` 对应 lua 的 self、python 的 self，`get_own_property_names` 对应 table 的 key、dict 的 key。不满足的能力不进 `pesapi_ffi`，按以下方式处理：
 - UE 宿主专属的（FName 属性名修正、类名、热重载重新注册等）：做成 UE 侧 `CppObjectMapper` 的钩子。
@@ -794,7 +803,11 @@ flowchart LR
 3. 补蓝图 / 用户定义结构体在编辑器中修改并重编译的测试（`tests/blueprint.js` 及 lua / python 版本，测试工具 `UPuertsTestBlueprintUtils` 仅编辑器可用），记录已有 JS 类沿用后的行为：重编译不改变 UClass / UScriptStruct 指针与脚本类；新增成员不出现在脚本类上；删除成员的访问报 `Property is invalid!`，以同名加回（含换类型）仍报 invalid（UE `FFieldPath` 解析失效后不会重新解析）；重编译前创建的实例被重新实例化，旧对象报 invalid object。测试中修了 4 个问题：普通对象转结构体 / `puerts.merge` 按属性内部名匹配，用户定义结构体的字段（内部名带 GUID 后缀）全部被忽略，改为按访问器名（作者命名）匹配；`ObjectMerger` 在重编译后持有已销毁的 `FProperty`，编辑器下检测到属性失效即重建；类型释放时不清理 `ObjectMerger`，地址复用后会用错字段表，改为在 `TryReleaseType` 中删除；`ObjectMerger` 取 key 用 eval `Object.keys`，lua / python 下 table / dict 转结构体与 `merge` 完全不可用，改为 `IPapiBackend::GetOwnKeys`（js 为 `Object.keys`，lua 为 table 的字符串 key，python 为 dict 的 str key），删除 `FScriptEnvImpl::GetCachedJsFunction` 与 `ObjectKeys`。
 4. 容器元素属性缓存（`FContainerMeta::GetObjectProperty`，按 UScriptStruct 缓存 `FStructProperty`）在用户定义结构体修改布局后仍用旧的 `ElementSize`，之后创建的 `TArray / TMap` 元素互相重叠，析构时崩溃（新增的“布局变更后多元素数组 / Map”用例去掉修复即崩溃）。修复：编辑器下检测到缓存属性的 `Struct` 或 `ElementSize` 与当前结构体不一致即重建，旧属性不释放（已创建的容器可能仍在用）；同时把新建的结构体属性从 `PropertyMetaRoot` 的 `ChildProperties` 链表摘除，否则引擎修改用户定义结构体时用 `TAllFieldsIterator` 找到它，UE4.27 报 Error `ReplaceStructWithTempDuplicate unknown owner`，UE5 的部分路径则把它的 `Struct` 换成临时副本。摘除不影响 GC（`PropertyMetaRoot` 的引用只在其 Link 时收集）。修复后 UE5.8 与 UE4.27 的全量测试均通过。
 
+已决策（2026-11-02）：
+
+1. type id 按最低位分为值型（最低位 1，只作 key，由 `PESAPI_VALUE_TYPE_ID` 从至少 2 字节对齐的静态变量地址生成）和对象型（最低位 0，宿主拥有的对象地址，宿主经 `PESAPI_IS_OBJECT_TYPE_ID` 判断后可强转），后端不解释 type id。UE 的对象型 id 只有反射类型的 `FStructWrapper`，其余来源全部改为值型；`FromTypeId` 与 registry 的反射回落改为按奇偶直接转换，删除 `ReflectedClassMap`；`RegisterClass` 拒绝对象型 id。反射类型改走 `on_class_not_found` 留到第二阶段，Unity 的 `ClassNotFoundCallback` 统一时也改为先判断再强转。`PESAPI_VERSION` 提升到 15。详见 5.6。
+
 待决策：
 
-1. 第 5.7 节新增 API 的命名（第一阶段只在 UE 侧，可边做边定）；`PESAPI_VERSION` 原定第一阶段不提升，已于 2026-10-28 提升到 12、2026-10-30 提升到 14，后续是否再提升在统一时决定。
+1. 第 5.7 节新增 API 的命名（第一阶段只在 UE 侧，可边做边定）；`PESAPI_VERSION` 原定第一阶段不提升，已于 2026-10-28 提升到 12、2026-10-30 提升到 14、2026-11-02 提升到 15，后续是否再提升在统一时决定。
 2. 性能回退阈值与基准测试运行环境（是否需要自托管 runner）。
