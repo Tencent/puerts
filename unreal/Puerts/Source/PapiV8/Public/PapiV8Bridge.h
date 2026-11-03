@@ -10,18 +10,23 @@
 
 // Bridge between pesapi handles and v8 handles, only usable inside the unreal plugin (where the pesapi implementation is
 // v8impl, see PesapiV8Impl.cpp). It lets pesapi_impl converters reuse the v8_impl converters of UE types with no extra
-// overhead, since pesapi_value/pesapi_env are just the reinterpreted v8::Local<v8::Value>/v8::Local<v8::Context>.
+// overhead, since pesapi_value/pesapi_env are just the reinterpreted v8::Local<v8::Value>/v8::Local<v8::Context>. Also used by
+// the engine independent part of PapiV8 (CppObjectMapper.cpp), which papi_test builds without UE.
 
-#include "CoreMinimal.h"
 #include "pesapi.h"
 #include "NamespaceDef.h"
 #include <type_traits>
 
+#if USING_IN_UNREAL_ENGINE
+#include "CoreMinimal.h"
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 MSVC_PRAGMA(warning(push, 0))
 #include "v8.h"
 MSVC_PRAGMA(warning(pop))
 PRAGMA_ENABLE_UNDEFINED_IDENTIFIER_WARNINGS
+#else
+#include "v8.h"
+#endif
 
 namespace PUERTS_NAMESPACE
 {
