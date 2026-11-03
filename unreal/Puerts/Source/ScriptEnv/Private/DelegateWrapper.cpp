@@ -59,7 +59,7 @@ void FDelegateWrapper::Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
     if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
     {
-        if (auto Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
+        if (auto Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
         {
             if (PapiUtils::IsReleasedPtr(Object))
             {
@@ -68,7 +68,7 @@ void FDelegateWrapper::Bind(struct pesapi_ffi* Apis, pesapi_callback_info Info)
             }
             auto DelegatePtr = static_cast<FScriptDelegate*>(Apis->get_native_holder_ptr(Info));
             FScriptDelegate Delegate;
-            Delegate.BindUFunction(Object, FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
+            Delegate.BindUFunction(Object, FName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
             *DelegatePtr = Delegate;
             return;
         }
@@ -115,7 +115,7 @@ void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_inf
     }
     if (ArgCount == 2 && Apis->is_object(Env, Apis->get_arg(Info, 0)) && Apis->is_string(Env, Apis->get_arg(Info, 1)))
     {
-        if (auto Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
+        if (auto Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
         {
             if (PapiUtils::IsReleasedPtr(Object))
             {
@@ -127,7 +127,7 @@ void FMulticastDelegateWrapper::Add(struct pesapi_ffi* Apis, pesapi_callback_inf
                     CastFieldMacro<MulticastDelegatePropertyMacro>(PapiUtils::FindDelegateProperty(Apis, Env, DelegatePtr)))
             {
                 FScriptDelegate Delegate;
-                Delegate.BindUFunction(Object, FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
+                Delegate.BindUFunction(Object, FName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1))));
 
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
                 if (Property->IsA<MulticastSparseDelegatePropertyMacro>())

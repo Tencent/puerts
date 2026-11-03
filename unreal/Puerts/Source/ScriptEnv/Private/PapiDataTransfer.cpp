@@ -7,29 +7,23 @@
  */
 
 #include "PapiDataTransfer.h"
-#include "ObjectMapper.h"
+#include "PapiUtils.h"
 
 namespace PUERTS_NAMESPACE
 {
-// the IObjectMapper of the host is the env private (see PapiUtils::ObjectMapperOf)
-static FORCEINLINE IObjectMapper* HostObjectMapper(struct pesapi_ffi* Apis, pesapi_env Env)
-{
-    return static_cast<IObjectMapper*>(const_cast<void*>(Apis->get_env_private(Env)));
-}
-
 pesapi_value PapiDataTransfer::FindOrAddObject(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UObject* UEObject)
 {
-    return HostObjectMapper(Apis, Env)->FindOrAdd(Env, Class, UEObject);
+    return PapiUtils::ObjectMapperOf(Apis, Env)->FindOrAdd(Env, Class, UEObject);
 }
 
 pesapi_value PapiDataTransfer::FindOrAddStruct(
     struct pesapi_ffi* Apis, pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
-    return HostObjectMapper(Apis, Env)->FindOrAddStruct(Env, ScriptStruct, Ptr, PassByPointer);
+    return PapiUtils::ObjectMapperOf(Apis, Env)->FindOrAddStruct(Env, ScriptStruct, Ptr, PassByPointer);
 }
 
 bool PapiDataTransfer::IsInstanceOf(struct pesapi_ffi* Apis, pesapi_env Env, UStruct* Struct, pesapi_value Value)
 {
-    return Apis->is_object(Env, Value) && HostObjectMapper(Apis, Env)->IsInstanceOf(Env, Struct, Value);
+    return Apis->is_object(Env, Value) && PapiUtils::ObjectMapperOf(Apis, Env)->IsInstanceOf(Env, Struct, Value);
 }
 }    // namespace PUERTS_NAMESPACE

@@ -551,7 +551,7 @@ void FStructWrapper::StaticClass(struct pesapi_ffi* Apis, pesapi_callback_info I
         return;
     }
 
-    Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Env, This->Struct->GetClass(), This->Struct.Get()));
+    Apis->add_return(Info, PapiDataTransfer::FindOrAddObject(Apis, Env, This->Struct->GetClass(), This->Struct.Get()));
 }
 
 void FStructWrapper::Find(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -571,11 +571,11 @@ void FStructWrapper::Find(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 
     if (Class && NameValue && Apis->is_string(Env, NameValue))
     {
-        const FString Name = PapiUtils::ToFString(Apis, Env, NameValue);
+        const FString Name = PapiDataTransfer::ToFString(Apis, Env, NameValue);
         UObject* Object = nullptr;
         if (ArgCount > 1)
         {
-            UObject* Outer = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 1));
+            UObject* Outer = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 1));
 #if ENGINE_MINOR_VERSION >= 7 && ENGINE_MAJOR_VERSION >= 5
             Object = StaticFindObject(Class, Outer, *Name, EFindObjectFlags::None);
 #else
@@ -593,7 +593,7 @@ void FStructWrapper::Find(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 
         if (Object)
         {
-            Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object));
+            Apis->add_return(Info, PapiDataTransfer::FindOrAddObject(Apis, Env, Object->GetClass(), Object));
         }
         else
         {
@@ -628,7 +628,7 @@ void FStructWrapper::Load(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         {
             UnEscape = Apis->get_value_bool(Env, Apis->get_arg(Info, 1)) != 0;
         }
-        auto Path = PapiUtils::ToFString(Apis, Env, PathValue);
+        auto Path = PapiDataTransfer::ToFString(Apis, Env, PathValue);
 
         if (FPackageName::DoesPackageExist(FSoftObjectPath(Path).GetLongPackageName()))
         {
@@ -636,7 +636,7 @@ void FStructWrapper::Load(struct pesapi_ffi* Apis, pesapi_callback_info Info)
                 StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
             if (Object)
             {
-                Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object));
+                Apis->add_return(Info, PapiDataTransfer::FindOrAddObject(Apis, Env, Object->GetClass(), Object));
             }
         }
         else
@@ -761,7 +761,7 @@ void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         pesapi_value OuterValue = Apis->get_arg(Info, 0);
         if (!Apis->is_null(Env, OuterValue) && !Apis->is_undefined(Env, OuterValue))
         {
-            Outer = PapiUtils::GetUObject(Apis, Env, OuterValue);
+            Outer = PapiDataTransfer::GetUObjectOfValue(Apis, Env, OuterValue);
             if (!Outer || PapiUtils::IsReleasedPtr(Outer))
             {
                 Apis->throw_by_string(Info, "passing a invalid object");
@@ -771,7 +771,7 @@ void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
     if (ArgsLen > 1)
     {
-        Name = FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1)));
+        Name = FName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1)));
     }
     if (ArgsLen > 2)
     {

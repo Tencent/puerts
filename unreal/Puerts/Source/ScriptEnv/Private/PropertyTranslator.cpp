@@ -203,16 +203,6 @@ bool FPropertyTranslator::GetAccessorName(FString& OutName) const
 
 // helpers of the papi based translators
 
-static FORCEINLINE FString PapiToFString(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
-{
-    return PapiUtils::ToFString(Apis, Env, Value);
-}
-
-static FORCEINLINE pesapi_value PapiFromFString(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Str)
-{
-    return PapiUtils::FromFString(Apis, Env, Str);
-}
-
 // the same as FV8Utils::ToV8String(FName): comparison entry plus "_N" suffix
 static FORCEINLINE FString NameToFString(const FName& Name)
 {
@@ -406,13 +396,13 @@ public:
 
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        return PapiFromFString(Apis, Env, StringProperty->GetPropertyValue(ValuePtr));
+        return PapiDataTransfer::FromFString(Apis, Env, StringProperty->GetPropertyValue(ValuePtr));
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        StringProperty->SetPropertyValue(ValuePtr, PapiToFString(Apis, Env, Value));
+        StringProperty->SetPropertyValue(ValuePtr, PapiDataTransfer::ToFString(Apis, Env, Value));
         return true;
     }
 };
@@ -426,7 +416,7 @@ public:
 
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        return PapiFromFString(Apis, Env, NameToFString(NameProperty->GetPropertyValue(ValuePtr)));
+        return PapiDataTransfer::FromFString(Apis, Env, NameToFString(NameProperty->GetPropertyValue(ValuePtr)));
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
@@ -443,7 +433,7 @@ public:
                 return true;
             }
         }
-        NameProperty->SetPropertyValue(ValuePtr, FName(*PapiToFString(Apis, Env, Value)));
+        NameProperty->SetPropertyValue(ValuePtr, FName(*PapiDataTransfer::ToFString(Apis, Env, Value)));
         return true;
     }
 };
@@ -458,7 +448,7 @@ public:
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
 #ifndef PUERTS_FTEXT_AS_OBJECT
-        return PapiFromFString(Apis, Env, TextProperty->GetPropertyValue(ValuePtr).ToString());
+        return PapiDataTransfer::FromFString(Apis, Env, TextProperty->GetPropertyValue(ValuePtr).ToString());
 #else
         return Apis->native_object_to_value(Env, StaticTypeId<FText>::get(),
             PassByPointer ? const_cast<void*>(ValuePtr) : new FText(TextProperty->GetPropertyValue(ValuePtr)), !PassByPointer);
@@ -469,7 +459,7 @@ public:
         bool DeepCopy) const override
     {
 #ifndef PUERTS_FTEXT_AS_OBJECT
-        TextProperty->SetPropertyValue(ValuePtr, FText::FromString(PapiToFString(Apis, Env, Value)));
+        TextProperty->SetPropertyValue(ValuePtr, FText::FromString(PapiDataTransfer::ToFString(Apis, Env, Value)));
 #else
         auto TextPtr = static_cast<FText*>(Apis->get_native_object_ptr(Env, Value));
         TextProperty->SetPropertyValue(ValuePtr, TextPtr ? *TextPtr : FText());
@@ -494,13 +484,13 @@ public:
         {
             return Apis->create_undefined(Env);
         }
-        return PapiUtils::FindOrAddUObject(Apis, Env, UEObject->GetClass(), UEObject);
+        return PapiDataTransfer::FindOrAddObject(Apis, Env, UEObject->GetClass(), UEObject);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        auto Object = PapiUtils::GetUObject(Apis, Env, Value);
+        auto Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value);
         if (PapiUtils::IsReleasedPtr(Object))
         {
             PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object");
@@ -581,13 +571,13 @@ public:
 
     pesapi_value UEToJs(struct pesapi_ffi* Apis, pesapi_env Env, const void* ValuePtr, bool PassByPointer) const override
     {
-        return PapiFromFString(Apis, Env, FieldPathProperty->GetPropertyValuePtr(ValuePtr)->ToString());
+        return PapiDataTransfer::FromFString(Apis, Env, FieldPathProperty->GetPropertyValuePtr(ValuePtr)->ToString());
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        auto Path = PapiToFString(Apis, Env, Value);
+        auto Path = PapiDataTransfer::ToFString(Apis, Env, Value);
         FFieldPath FieldPath;
         FieldPath.Generate(*Path);
 
@@ -624,13 +614,13 @@ public:
         {
             return Apis->create_undefined(Env);
         }
-        return PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object);
+        return PapiDataTransfer::FindOrAddObject(Apis, Env, Object->GetClass(), Object);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        UObject* Object = PapiUtils::GetUObject(Apis, Env, Value);
+        UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value);
         if (PapiUtils::IsReleasedPtr(Object))
         {
             PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object");
@@ -683,7 +673,7 @@ public:
             Ptr = FScriptStructWrapper::Alloc(StructProperty->Struct);
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
-        return PapiUtils::FindOrAddStruct(Apis, Env, StructProperty->Struct, Ptr, PassByPointer);
+        return PapiDataTransfer::FindOrAddStruct(Apis, Env, StructProperty->Struct, Ptr, PassByPointer);
     }
 
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
@@ -869,7 +859,7 @@ public:
     bool JsToUE(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        auto Object = PapiUtils::GetUObject(Apis, Env, Value);
+        auto Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value);
         if (PapiUtils::IsReleasedPtr(Object))
         {
             PapiUtils::ThrowException(Apis, Env, Info, "passing a invalid object");
@@ -1134,7 +1124,7 @@ public:
             }
             else if (Des && Apis->is_array(Env, Value))
             {
-                auto Obj = PapiUtils::GetUObject(Apis, Env, Apis->get_property_uint32(Env, Value, 0));
+                auto Obj = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_property_uint32(Env, Value, 0));
                 if (Obj)
                 {
                     if (PapiUtils::IsReleasedPtr(Obj))
@@ -1147,7 +1137,7 @@ public:
                     if (Apis->is_string(Env, Func))
                     {
                         FScriptDelegate Delegate;
-                        Delegate.BindUFunction(Obj, *PapiUtils::ToFString(Apis, Env, Func));
+                        Delegate.BindUFunction(Obj, *PapiDataTransfer::ToFString(Apis, Env, Func));
                         *Des = Delegate;
                     }
                     else if (Apis->is_function(Env, Func))

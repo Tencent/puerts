@@ -19,21 +19,12 @@
 #include "JSLogger.h"
 #include <initializer_list>
 
-// helpers shared by the papi based code of the plugin
+// helpers shared by the papi based code of the plugin. The UE value <-> papi value conversions (strings, UObjects, structs) are
+// in PapiDataTransfer (public, also used by the template binding)
 namespace PUERTS_NAMESPACE
 {
 namespace PapiUtils
 {
-FORCEINLINE FString ToFString(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
-{
-    return PapiDataTransfer::ToFString(Apis, Env, Value);
-}
-
-FORCEINLINE pesapi_value FromFString(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Str)
-{
-    return PapiDataTransfer::FromFString(Apis, Env, Str);
-}
-
 // same as FV8Utils::ToV8StringFromFileContent: UTF-16 with BOM, otherwise UTF-8 (BOM skipped)
 inline pesapi_value FromFileContent(struct pesapi_ffi* Apis, pesapi_env Env, const TArray<uint8>& FileContent)
 {
@@ -44,7 +35,7 @@ inline pesapi_value FromFileContent(struct pesapi_ffi* Apis, pesapi_env Env, con
     {
         FString Content;
         FFileHelper::BufferToString(Content, Buffer, Size);
-        return FromFString(Apis, Env, Content);
+        return PapiDataTransfer::FromFString(Apis, Env, Content);
     }
     if (Size >= 3 && Buffer[0] == 0xef && Buffer[1] == 0xbb && Buffer[2] == 0xbf)
     {
@@ -73,12 +64,6 @@ inline pesapi_value EvalFileContent(struct pesapi_ffi* Apis, pesapi_env Env, con
         Size -= 3;
     }
     return Apis->eval(Env, reinterpret_cast<const uint8_t*>(Buffer), static_cast<size_t>(Size), Path);
-}
-
-// same as FV8Utils::GetUObject(Context, Value): nullptr for a non object value, RELEASED_UOBJECT for a released one
-FORCEINLINE UObject* GetUObject(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
-{
-    return PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value);
 }
 
 // a raw UObject pointer (e.g. the type id of a struct wrapper, which is its UScriptStruct), same as FV8Utils::GetUObject with
@@ -120,17 +105,6 @@ FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_
 FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, const FString& Message)
 {
     ThrowException(Apis, Env, Info, TCHAR_TO_UTF8(*Message));
-}
-
-FORCEINLINE pesapi_value FindOrAddUObject(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UObject* Object)
-{
-    return ObjectMapperOf(Apis, Env)->FindOrAdd(Env, Class, Object);
-}
-
-FORCEINLINE pesapi_value FindOrAddStruct(
-    struct pesapi_ffi* Apis, pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
-{
-    return ObjectMapperOf(Apis, Env)->FindOrAddStruct(Env, ScriptStruct, Ptr, PassByPointer);
 }
 
 FORCEINLINE void Merge(

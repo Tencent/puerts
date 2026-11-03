@@ -53,7 +53,7 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FStri
 static void FNameToArrayBuffer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
-    FName Name(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
+    FName Name(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
     Apis->add_return(Info, Apis->create_binary_by_value(Env, &Name, sizeof(FName)));
 }
 
@@ -99,15 +99,15 @@ static void ToCPtrArray(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 static void GetFNameString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
-    FName RequiredFName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, RequiredFName.ToString()));
+    FName RequiredFName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
+    Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, RequiredFName.ToString()));
 }
 
 // the name with the case of the comparison entry (the first registered case), ToString keeps the case of the display entry
 static void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     pesapi_env Env = Apis->get_env(Info);
-    FName RequiredFName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
+    FName RequiredFName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
     const FNameEntry* Entry = RequiredFName.GetComparisonNameEntry();
     FString Out;
     Entry->AppendNameToString(Out);
@@ -116,7 +116,7 @@ static void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         Out += TEXT('_');
         Out.AppendInt(NAME_INTERNAL_TO_EXTERNAL(RequiredFName.GetNumber()));
     }
-    Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Out));
+    Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, Out));
 }
 
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
@@ -210,7 +210,7 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 #else
             TEXT(".so");
 #endif
-        Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiUtils::FromFString(Apis, Env, DllExt));
+        Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiDataTransfer::FromFString(Apis, Env, DllExt));
 
         PapiMethodBindingHelper<&FScriptEnvImpl::ReleaseManualReleaseDelegate>::Bind(
             Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
@@ -478,7 +478,7 @@ void FScriptEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info I
         PapiUtils::Merge(Apis, Env, Info, Src, Struct, Apis->get_native_object_ptr(Env, Des));
         return;
     }
-    if (auto Object = PapiUtils::GetUObject(Apis, Env, Des))
+    if (auto Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Des))
     {
         if (PapiUtils::IsReleasedPtr(Object))
         {
@@ -506,7 +506,7 @@ void FScriptEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_i
     EObjectFlags ObjectFlags = RF_NoFlags;
 
     UClass* Class = nullptr;
-    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
+    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (PapiUtils::IsReleasedPtr(Object))
         {
@@ -520,7 +520,7 @@ void FScriptEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_i
     {
         if (IsSet(1))
         {
-            Outer = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 1));
+            Outer = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 1));
             if (!Outer || PapiUtils::IsReleasedPtr(Outer))
             {
                 Apis->throw_by_string(Info, "passing a invalid object");
@@ -529,7 +529,7 @@ void FScriptEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_i
         }
         if (IsSet(2))
         {
-            Name = FName(*PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 2)));
+            Name = FName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 2)));
         }
         if (IsSet(3))
         {
@@ -537,7 +537,7 @@ void FScriptEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_i
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
-        auto Result = PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object);
+        auto Result = PapiDataTransfer::FindOrAddObject(Apis, Env, Object->GetClass(), Object);
 #if !PUERTS_KEEP_UOBJECT_REFERENCE
         bool NeedJsTakeRef = true;
         if (IsSet(4))
@@ -565,7 +565,7 @@ void FScriptEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_cal
     pesapi_env Env = Apis->get_env(Info);
 
     UScriptStruct* ScriptStruct = nullptr;
-    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
+    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (PapiUtils::IsReleasedPtr(Object))
         {
@@ -579,7 +579,7 @@ void FScriptEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_cal
     {
         void* Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
 
-        Apis->add_return(Info, PapiUtils::FindOrAddStruct(Apis, Env, ScriptStruct, Ptr, false));
+        Apis->add_return(Info, PapiDataTransfer::FindOrAddStruct(Apis, Env, ScriptStruct, Ptr, false));
     }
     else
     {
@@ -1505,7 +1505,7 @@ bool FScriptEnvImpl::IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value 
     }
     else
     {
-        UObject* Object = PapiUtils::GetUObject(Apis, Env, JsObject);
+        UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, JsObject);
         if (!Object || Object == RELEASED_UOBJECT)
         {
             return false;
@@ -1601,7 +1601,7 @@ void FScriptEnvImpl::LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info In
     PAPI_CHECK_ARGS(EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
-    const FString TypeName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    const FString TypeName = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
 
     UField* Type = FindAnyType<UClass>(TypeName);
 
@@ -1655,7 +1655,7 @@ void FScriptEnvImpl::LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info I
     PAPI_CHECK_ARGS(EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
-    const FString TypeName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    const FString TypeName = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
 
     ScriptClassRegistry* Registry = Backend->GetRegistry();
     if (!Registry)
@@ -1680,7 +1680,7 @@ void FScriptEnvImpl::UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_i
 
     pesapi_env Env = Apis->get_env(Info);
     UField* Type = nullptr;
-    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
+    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (PapiUtils::IsReleasedPtr(Object))
         {
@@ -1705,7 +1705,7 @@ void FScriptEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_i
     PAPI_CHECK_ARGS(EArgObject);
 
     pesapi_env Env = Apis->get_env(Info);
-    UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0));
+    UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0));
     if (!Object || PapiUtils::IsReleasedPtr(Object))
     {
         Apis->throw_by_string(Info, "passing a invalid object");
@@ -1729,7 +1729,7 @@ bool FScriptEnvImpl::GetContainerTypeProperty(
         *PropertyPtr = FContainerMeta::Get().GetBuiltinProperty((BuiltinType) Type);
         return true;
     }
-    else if (auto Field = Cast<UField>(PapiUtils::GetUObject(Apis, Env, Value)))
+    else if (auto Field = Cast<UField>(PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value)))
     {
         *PropertyPtr = FContainerMeta::Get().GetObjectProperty(Field);
         return *PropertyPtr != nullptr;
@@ -1832,8 +1832,8 @@ void FScriptEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair
     for (int i = 0; i < Arguments.Num(); i++)
     {
         auto Object = Arguments[i].Value;
-        pesapi_value Args[2] = {PapiUtils::FromFString(Apis, Env, Arguments[i].Key),
-            PapiUtils::FindOrAddUObject(Apis, Env, Object->GetClass(), Object)};
+        pesapi_value Args[2] = {PapiDataTransfer::FromFString(Apis, Env, Arguments[i].Key),
+            PapiDataTransfer::FindOrAddObject(Apis, Env, Object->GetClass(), Object)};
         Apis->call_function(Env, ArgvAdd, Argv, 2, Args);
     }
 
@@ -1920,7 +1920,7 @@ void FScriptEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     pesapi_env Env = Apis->get_env(Info);
     auto Level = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
 
-    FString Msg = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
+    FString Msg = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     switch (Level)
     {
         case 1:
@@ -1943,7 +1943,7 @@ void FScriptEnvImpl::LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info In
     PAPI_CHECK_ARGS(EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
-    FString Path = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    FString Path = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
     TArray<uint8> Data;
     if (!ModuleLoader->Load(Path, Data))
     {
@@ -1986,9 +1986,9 @@ void FScriptEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_
     PAPI_CHECK_ARGS(EArgString, EArgString, EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
-    FString Specifier = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    FString Referrer = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
-    bool ByRequire = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 2)) == TEXT("require");
+    FString Specifier = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    FString Referrer = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1));
+    bool ByRequire = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 2)) == TEXT("require");
     if (ByRequire && Specifier.StartsWith(TEXT("./")))
     {
         Specifier = Specifier.Mid(2);
@@ -1997,7 +1997,7 @@ void FScriptEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_
     // addons are registered as builtin modules on their first use
     if (Backend->LoadAddon(Env, TCHAR_TO_UTF8(*Specifier)))
     {
-        Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Specifier));
+        Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, Specifier));
         return;
     }
 
@@ -2083,7 +2083,7 @@ void FScriptEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_
     }
 
     ModuleDebugPaths.Add(Path, DebugPath);
-    Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, Path));
+    Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, Path));
 }
 
 // __puer_host_load__(url, by): {kind, content, debugPath}
@@ -2092,8 +2092,8 @@ void FScriptEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_inf
     PAPI_CHECK_ARGS(EArgString, EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
-    FString Url = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    bool ByRequire = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1)) == TEXT("require");
+    FString Url = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
+    bool ByRequire = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1)) == TEXT("require");
     TArray<uint8> Data;
     if (!ModuleLoader->Load(Url, Data))
     {
@@ -2125,9 +2125,9 @@ void FScriptEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_inf
     }
 
     pesapi_value Result = Apis->create_object(Env);
-    Apis->set_property(Env, Result, "kind", PapiUtils::FromFString(Apis, Env, Kind));
+    Apis->set_property(Env, Result, "kind", PapiDataTransfer::FromFString(Apis, Env, Kind));
     Apis->set_property(Env, Result, "content", Content);
-    Apis->set_property(Env, Result, "debugPath", PapiUtils::FromFString(Apis, Env, DebugPath));
+    Apis->set_property(Env, Result, "debugPath", PapiDataTransfer::FromFString(Apis, Env, DebugPath));
     Apis->add_return(Info, Result);
 }
 
@@ -2177,7 +2177,7 @@ void FScriptEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     pesapi_env Env = Apis->get_env(Info);
 
     UClass* To = nullptr;
-    if (UObject* Object = PapiUtils::GetUObject(Apis, Env, Apis->get_arg(Info, 0)))
+    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
     {
         if (PapiUtils::IsReleasedPtr(Object))
         {

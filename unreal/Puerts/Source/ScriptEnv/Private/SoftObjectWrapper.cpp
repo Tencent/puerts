@@ -87,7 +87,7 @@ static void GenericObjectGet(struct pesapi_ffi* Apis, pesapi_callback_info Info,
             return;
         }
 
-        Apis->add_return(Info, PapiUtils::FindOrAddUObject(Apis, Apis->get_env(Info), Obj->GetClass(), Obj));
+        Apis->add_return(Info, PapiDataTransfer::FindOrAddObject(Apis, Apis->get_env(Info), Obj->GetClass(), Obj));
     }
 }
 

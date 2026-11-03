@@ -87,7 +87,7 @@ void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info)
         Apis->throw_by_string(Info, "#0 argument expect a string");
         return;
     }
-    FString Path = PapiUtils::ToFString(Apis, Env, PathArg);
+    FString Path = PapiDataTransfer::ToFString(Apis, Env, PathArg);
 
     auto Iter = LoadedPesapiModules.find(TCHAR_TO_UTF8(*Path));
     if (Iter != LoadedPesapiModules.end())
@@ -99,7 +99,7 @@ void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     FString PreferModuleName;
     if (Apis->get_args_len(Info) > 1 && Apis->is_string(Env, Apis->get_arg(Info, 1)))
     {
-        PreferModuleName = PapiUtils::ToFString(Apis, Env, Apis->get_arg(Info, 1));
+        PreferModuleName = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     }
     if (PreferModuleName.IsEmpty())
     {
@@ -120,7 +120,7 @@ void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     {
         PesapiCallAddonRegister(Init, ModuleName);
         LoadedPesapiModules[TCHAR_TO_UTF8(*Path)] = TCHAR_TO_UTF8(*ModuleName);
-        Apis->add_return(Info, PapiUtils::FromFString(Apis, Env, ModuleName));
+        Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, ModuleName));
     }
     else
     {
