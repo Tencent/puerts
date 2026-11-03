@@ -117,7 +117,10 @@ typedef void (*pesapi_callback)(struct pesapi_ffi* apis, pesapi_callback_info in
 typedef void* (*pesapi_constructor)(struct pesapi_ffi* apis, pesapi_callback_info info);
 typedef void (*pesapi_finalize)(struct pesapi_ffi* apis, void* ptr, void* class_data, void* env_private);
 typedef void (*pesapi_function_finalize)(struct pesapi_ffi* apis, void* data, void* env_private);
-typedef void* (*pesapi_on_native_object_enter)(void* ptr, void* class_data, void* env_private);
+// obj: the script object ptr is just bound to (valid in the current scope, e.g. for create_value_ref), the binding is complete
+// (cached, accessible from the script) when it is called
+typedef void* (*pesapi_on_native_object_enter)(
+    struct pesapi_ffi* apis, pesapi_env env, pesapi_value obj, void* ptr, void* class_data, void* env_private);
 // userdata: return of pesapi_on_native_object_enter
 typedef void (*pesapi_on_native_object_exit)(void* ptr, void* class_data, void* env_private, void* userdata);
 typedef int (*pesapi_class_not_found_callback)(const void* type_id);

@@ -909,7 +909,8 @@ void FCppObjectMapper::BindCppObject(const JSClassDefinition* ClassDefinition, v
 
     if (ClassDefinition->OnEnter)
     {
-        CacheNodePtr->UserData = ClassDefinition->OnEnter(Ptr, ClassDefinition->Data, const_cast<void*>(GetEnvPrivate()));
+        CacheNodePtr->UserData = ClassDefinition->OnEnter(&g_pesapi_ffi, reinterpret_cast<pesapi_env>(this),
+            reinterpret_cast<pesapi_value>(Self), Ptr, ClassDefinition->Data, const_cast<void*>(GetEnvPrivate()));
     }
 }
 

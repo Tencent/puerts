@@ -26,18 +26,14 @@ namespace PUERTS_NAMESPACE
 class IObjectMapper
 {
 public:
-    // binds UEObject to JSObject, the object being constructed by the js class of ClassWrapper, returns the native pointer (the
-    // UObject itself) for the backend to bind to JSObject
-    virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) = 0;
-
     // the js object of UEObject (a native object of the class definition of UEObject->GetClass(), Class is only used for a null
     // UEObject), created on first use
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) = 0;
 
-    // UEObject is bound to / unbound from its js object by the backend (on_enter / on_exit of the class definitions of UClasses,
-    // see FClassWrapper), unbound when the js object is garbage collected, the UObject is destroyed or the env is released.
-    // OnUObjectEnter returns the userdata the backend keeps for the binding, passed back to OnUObjectExit
-    virtual void* OnUObjectEnter(UObject* UEObject) = 0;
+    // UEObject is bound to / unbound from its js object (JSObject) by the backend (on_enter / on_exit of the class definitions
+    // of UClasses, see FClassWrapper), unbound when the js object is garbage collected, the UObject is destroyed or the env is
+    // released. OnUObjectEnter returns the userdata the backend keeps for the binding, passed back to OnUObjectExit
+    virtual void* OnUObjectEnter(pesapi_env Env, pesapi_value JSObject, UObject* UEObject) = 0;
 
     virtual void OnUObjectExit(UObject* UEObject, void* UserData) = 0;
 

@@ -202,7 +202,8 @@ public:
 
     // OnEnter / OnExit of the class definitions of non native UScriptStructs (a user defined struct may be collected while
     // its objects are alive): each object holds the UScriptStruct by a slot of the env (IObjectMapper::RetainUObject)
-    static void* ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate);
+    static void* ReflectedOnEnter(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, void* Ptr, void* ClassData, void* EnvPrivate);
 
     static void ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData);
 
@@ -230,8 +231,10 @@ public:
     }
 
     // OnEnter / OnExit of the class definitions of UClasses: the native pointer of a UObject wrapper is the UObject itself,
-    // it is not owned by js (no finalize), the env (IObjectMapper, the env private) keeps it alive while it is bound
-    static void* ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate);
+    // it is not owned by js (no finalize), the env (IObjectMapper, the env private) keeps it alive while it is bound, or the
+    // UObject keeps the js object (Obj) alive for a native take js ref object
+    static void* ReflectedOnEnter(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, void* Ptr, void* ClassData, void* EnvPrivate);
 
     // may be called when the UObject is being destroyed (IObjectMapper::UnBind), the object must not be dereferenced
     static void ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData);

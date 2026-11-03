@@ -713,7 +713,8 @@ void FScriptStructWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr,
     static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Free(Ptr);
 }
 
-void* FScriptStructWrapper::ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate)
+void* FScriptStructWrapper::ReflectedOnEnter(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, void* Ptr, void* ClassData, void* EnvPrivate)
 {
     auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate);
     UStruct* S = static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Struct.Get();
@@ -728,11 +729,12 @@ void FScriptStructWrapper::ReflectedOnExit(void* Ptr, void* ClassData, void* Env
     }
 }
 
-void* FClassWrapper::ReflectedOnEnter(void* Ptr, void* ClassData, void* EnvPrivate)
+void* FClassWrapper::ReflectedOnEnter(
+    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, void* Ptr, void* ClassData, void* EnvPrivate)
 {
     if (auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate))
     {
-        return ObjectMapper->OnUObjectEnter(static_cast<UObject*>(Ptr));
+        return ObjectMapper->OnUObjectEnter(Env, Obj, static_cast<UObject*>(Ptr));
     }
     return nullptr;
 }
@@ -777,9 +779,7 @@ void* FClassWrapper::New(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     }
     UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
-    // the object being constructed, papi has no accessor of it
-    pesapi_value Self = Apis->get_this(Info);
-    // the object is bound to Self by the backend (not owned by js)
-    return PapiUtils::ObjectMapperOf(Apis, Env)->Bind(Env, this, Object, Self);
+    // the backend binds Object to the object being constructed (not owned by js) and calls ReflectedOnEnter
+    return Object;
 }
 }    // namespace PUERTS_NAMESPACE

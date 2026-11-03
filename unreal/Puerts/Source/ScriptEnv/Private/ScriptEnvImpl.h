@@ -117,8 +117,6 @@ public:
     virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override;
 
     // IObjectMapper, the papi interface used by the backend independent code
-    virtual void* Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject) override;
-
     virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) override;
 
     virtual bool TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr) override;
@@ -315,10 +313,10 @@ private:
     // pointer is the UObject itself and it is not owned by js. The backend caches the wrapper (weakly) by the pointer, and calls
     // OnUObjectEnter / OnUObjectExit when it is bound / unbound: each binding takes a slot of UserObjectPool (the handle is the
     // userdata of the binding) holding the UObject, unless the class is native take js ref (mixin), then the slot is reserved
-    // empty and the wrapper is held strongly by NativeTakeJsRefObjects instead (the slot is filled by SetJsTakeRef). When the
-    // UObject is destroyed it is unbound from its wrapper (UnBind, pesapi unbind_native_object), a later access of the wrapper
-    // sees a released object.
-    virtual void* OnUObjectEnter(UObject* UEObject) override;
+    // empty and the wrapper is held strongly by NativeTakeJsRefObjects instead (by OnUObjectEnter, the slot is filled by
+    // SetJsTakeRef). When the UObject is destroyed it is unbound from its wrapper (UnBind, pesapi unbind_native_object) and the
+    // strong ref is released, a later access of the wrapper sees a released object.
+    virtual void* OnUObjectEnter(pesapi_env Env, pesapi_value JSObject, UObject* UEObject) override;
 
     virtual void OnUObjectExit(UObject* UEObject, void* UserData) override;
 
@@ -335,7 +333,7 @@ private:
 
     struct FNativeTakeJsRef
     {
-        // the wrapper (strong), set by Bind / FindOrAdd
+        // the wrapper (strong), set by OnUObjectEnter
         FPapiValueRef Wrapper;
         // the slot of UserObjectPool reserved by OnUObjectEnter, 0 if the wrapper is unbound
         int32 Handle = 0;

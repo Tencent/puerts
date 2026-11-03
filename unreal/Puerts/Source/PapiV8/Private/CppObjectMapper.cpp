@@ -10,6 +10,7 @@
 #include "DataTransfer.h"
 #include "PString.h"
 #include "PesapiClassThunks.h"
+#include "PapiV8Bridge.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -364,7 +365,8 @@ void FCppObjectMapper::BindCppObject(
 
     if (ClassDefinition->OnEnter)
     {
-        CacheNodePtr->UserData = ClassDefinition->OnEnter(Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
+        CacheNodePtr->UserData = ClassDefinition->OnEnter(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Isolate->GetCurrentContext()),
+            papi_bridge::ToPapi(JSObject), Ptr, ClassDefinition->Data, DataTransfer::GetIsolatePrivateData(Isolate));
     }
 }
 

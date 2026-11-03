@@ -872,7 +872,9 @@ void FCppObjectMapper::BindCppObject(
 
     if (ClassDefinition->OnEnter)
     {
-        CacheNodePtr->UserData = ClassDefinition->OnEnter(Ptr, ClassDefinition->Data, const_cast<void*>(GetEnvPrivate()));
+        CacheNodePtr->UserData = ClassDefinition->OnEnter(&g_pesapi_ffi, reinterpret_cast<pesapi_env>(L),
+            reinterpret_cast<pesapi_value>(static_cast<intptr_t>(lua_absindex(L, ObjIdx))), Ptr, ClassDefinition->Data,
+            const_cast<void*>(GetEnvPrivate()));
     }
 }
 

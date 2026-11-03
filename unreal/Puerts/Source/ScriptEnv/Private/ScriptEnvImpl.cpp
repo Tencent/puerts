@@ -615,17 +615,6 @@ FString FScriptEnvImpl::CurrentStackTrace()
     return Backend->CurrentStackTrace();
 }
 
-void* FScriptEnvImpl::Bind(pesapi_env Env, FClassWrapper* ClassWrapper, UObject* UEObject, pesapi_value JSObject)
-{
-    // called by FClassWrapper::New, JSObject is the object being constructed, the backend binds UEObject to it after the
-    // return (and calls OnUObjectEnter)
-    if (IsNativeTakeJsRefObject(UEObject))
-    {
-        NativeTakeJsRefObjects.FindOrAdd(UEObject).Wrapper.Reset(MainApis, Env, JSObject);
-    }
-    return UEObject;
-}
-
 bool FScriptEnvImpl::IsNativeTakeJsRefObject(UObject* Obj) const
 {
 #if PUERTS_KEEP_UOBJECT_REFERENCE
@@ -653,13 +642,18 @@ bool FScriptEnvImpl::IsNativeTakeJsRefObject(UObject* Obj) const
     return Result;
 }
 
-void* FScriptEnvImpl::OnUObjectEnter(UObject* UEObject)
+void* FScriptEnvImpl::OnUObjectEnter(pesapi_env Env, pesapi_value JSObject, UObject* UEObject)
 {
     if (IsNativeTakeJsRefObject(UEObject))
     {
-        // the wrapper is held by native (Bind / FindOrAdd set it), the slot is filled if js takes the ref (SetJsTakeRef)
+        // native holds the wrapper, the slot is filled if js takes the ref (SetJsTakeRef)
         const int32 Handle = UserObjectPool.Add(nullptr);
-        NativeTakeJsRefObjects.FindOrAdd(UEObject).Handle = Handle;
+        FNativeTakeJsRef& Entry = NativeTakeJsRefObjects.FindOrAdd(UEObject);
+        Entry.Handle = Handle;
+        // a previous wrapper (if any) is released after the entry is updated: it may be freed synchronously (quickjs) and
+        // OnUObjectExit looks the map up
+        FPapiValueRef Previous = MoveTemp(Entry.Wrapper);
+        Entry.Wrapper.Reset(MainApis, Env, JSObject);
         return reinterpret_cast<void*>(static_cast<intptr_t>(Handle));
     }
     // the wrapper holds the UObject
@@ -749,19 +743,7 @@ pesapi_value FScriptEnvImpl::FindOrAdd(pesapi_env Env, UClass* Class, UObject* U
     bool Existed;
     auto TemplateInfoPtr = GetTemplateInfoOfType(Env, UEObject->GetClass(), Existed);
     // the backend returns the cached wrapper, or creates one (not owned by js) and calls OnUObjectEnter
-    pesapi_value Result = MainApis->native_object_to_value(Env, TemplateInfoPtr->StructWrapper.get(), UEObject, false);
-    if (NativeTakeJsRefObjects.Num() > 0)
-    {
-        // a new wrapper of a native take js ref object (OnUObjectEnter added the entry), native holds it from now on
-        if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
-        {
-            if (!Entry->Wrapper)
-            {
-                Entry->Wrapper.Reset(MainApis, Env, Result);
-            }
-        }
-    }
-    return Result;
+    return MainApis->native_object_to_value(Env, TemplateInfoPtr->StructWrapper.get(), UEObject, false);
 }
 
 pesapi_value FScriptEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
