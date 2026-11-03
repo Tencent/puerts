@@ -367,7 +367,8 @@ type id 分为值型和对象型（2026-11-02，见第 9 节同日第 1 条）�
 对象持有改为池下标（2026-11-02，提交 b87a192b，见第 9 节同日第 2 条），参照 Unity il2cpp 的 `ObjectPool`：
 
 - UObject 包装绑定时，后端调用类定义的 OnEnter（`FClassWrapper::ReflectedOnEnter` -> `FScriptEnvImpl::OnUObjectEnter`），宿主把 UObject 放进本 env 的 `FObjectPool`（`ObjectRetainer.h`，`FGCObject`，空闲下标复用），返回句柄（下标加 1，不为 0）作为该绑定的 userdata；解绑时 OnExit 带回句柄，O(1) 移除。原来的 `UserObjectRetainer`（按 UObject 计数的集合）和 `EnteredUObject` 删除。
-- mixin 中由原生持有 JS 的对象（`NativeTakeJsRefObjects`）在 OnEnter 时预留一个空槽，条目记下句柄，`SetJsTakeRef` 再填入；条目在释放 ref 之前先移出 map（quickjs 可能同步回收包装，OnExit 会查这张表）。
+- mixin 中由原生持有 JS 的对象（`NativeTakeJsRefObjects`）在 OnEnter 时预留一个空槽，条目记下句柄，`SetJsTakeRef` 再填入；条目在释放 ref 之前先移出 map（quickjs 可能同步回收包装，OnExit 会查这张表）。对 JS 包装的强引用也在 OnEnter 中创建（2026-11-03，见第 9 节同日条目），UObject 销毁（`UnBind`）或 `SetJsTakeRef` 时释放。
+- OnEnter 签名扩展（2026-11-03）：`pesapi_on_native_object_enter` 增加 `apis`、`env`、`obj` 三个参数，`obj` 是刚绑定的脚本对象，只在本次调用内有效，回调时绑定已完成（已进缓存，脚本可访问），可以对它 `create_value_ref`。四个后端都在 `BindCppObject` 末尾调用，传各自的 env / value 表示（v8 经 `papi_bridge::ToPapi`，quickjs 为 `JSContext*` / `JSValue*`，lua 为 `lua_State*` / 绝对栈下标，python 为 mapper / `PyObject*`）。原来 `FindOrAdd` 在拿到包装后补建强引用、`FClassWrapper::New` 在构造后再调 `IObjectMapper::Bind` 的两段逻辑合并进 `OnUObjectEnter`，`Bind` 删除。这是与 Unity 的 papi 头文件的差异（Unity 仍为 `ptr, class_data, env_private`），第一阶段允许，`PESAPI_VERSION` 不提升（本分支改造尚未完成，统一时一并处理）。
 - 一个 UObject 被多个包装绑定（例如不同 env、unbind 后重新绑定）时各占一个槽，互不影响。
 
 registry 替换定义时挂起旧定义（2026-11-02，提交 02783638）：UE 的 registry 保持 `JSClassRegister` 的行为，同一 type id 再次注册时用新定义替换旧定义（Unity 是先注册的生效）。被替换的定义不释放，移入 `RetiredClassDefinitions`，名字复制一份由 registry 持有（`OwnedNames`，`std::list` 不移动元素），registry 析构时一并释放：已经由它生成的脚本类及绑定在上面的对象仍指向它的函数、属性数组和 `Data`。替换只发生在编辑器下（蓝图 / 结构体重编译、热重载），挂起的定义很少。
@@ -410,7 +411,7 @@ M2 落地情况（已被方案 B 取代，保留作为记录）：
 | 外部内存上报 | 大对象（容器、结构体）提示 GC | 桥接层 | 新增可选 API |
 | Symbol、Proxy | `UE` 命名空间代理等 | 用 JS 辅助脚本实现 | 同左 |
 
-新增 API 统一以“追加到函数表末尾”的方式进行。原定第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升；3.0 本身就是不兼容的大版本，2026-10-28 新增 `unbind_native_object` 时已提升到 12，2026-10-30 删除 `throw_error`、`invalidate_class`（函数表布局变化）时先后提升到 13、14，2026-11-02 type id 约定变化（见 5.6）时提升到 15，之后新增 API 照常追加，是否再提升在统一时一并决定。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
+新增 API 统一以“追加到函数表末尾”的方式进行。原定第一阶段不提升 `PESAPI_VERSION`（提升会改变插件入口名，见 M4-6e），统一时一次性提升；3.0 本身就是不兼容的大版本，2026-10-28 新增 `unbind_native_object` 时已提升到 12，2026-10-30 删除 `throw_error`、`invalidate_class`（函数表布局变化）时先后提升到 13、14，2026-11-02 type id 约定变化（见 5.6）时提升到 15，之后新增 API 照常追加，是否再提升在统一时一并决定。2026-11-03 `pesapi_on_native_object_enter` 增加参数（见 5.6）时不提升：本分支改造尚未完成，版本号与 Unity（11）不同即可区分。第一阶段只在 UE 自带的 PesapiV8Impl 中实现，不同步到 Unity；最终统一时再在 papi-v8、papi-quickjs、papi-nodejs 中补齐。
 
 新增 API 必须与具体引擎、具体语言无关：papi 不只跨 JS 引擎（v8、quickjs），还跨脚本语言（目前有 js、lua、python）。判断标准是这个概念在 lua、python 里也能自然实现，比如 `get_this` 对应 lua 的 self、python 的 self，`get_own_property_names` 对应 table 的 key、dict 的 key。不满足的能力不进 `pesapi_ffi`，按以下方式处理：
 - UE 宿主专属的（FName 属性名修正、类名、热重载重新注册等）：做成 UE 侧 `CppObjectMapper` 的钩子。
@@ -835,6 +836,10 @@ flowchart LR
    - 进程级映射以 (Kind, Inner, Value) 为键；编辑器下元素属性失效（蓝图 / 用户定义结构体重编译）时新建一个类替换映射，旧类不释放（已有对象仍引用），全部在 `FStructWrapper::ReleaseAll` 时释放，与“翻译器进程级共享、不做类定义失效”的约定一致。`FContainerMeta` 同步改为进程级单例，`ObjectPropertyMap` 用弱指针校验 key 对应的 UStruct 未被替换。
    - 删除 `IObjectMapper` / `PapiUtils` 的 `FindOrAddContainer`、`CreateArray`，`FScriptEnvImpl` 的 `ContainerHolders`、`ContainerMeta` 成员及 `GetContainerPropertyTranslator`。`uelazyload.js` 的迭代器改为注入父类原型。
    - 行为变化：JS 容器的 `constructor.name` 由 `""` 变为 `"TArray"` 等（Containers 基线改一行），lua / python 不变。测试：UE5.8 全量 41 项、UE4.27 全量 35 项通过；基准相对上一提交 array.num -20%、array.get -11%、map.get -14%（噪声 10% 到 30%，方向一致）。
+
+已决策（2026-11-03）：
+
+1. `pesapi_on_native_object_enter` 增加 `apis`、`env`、`obj` 参数（`obj` 为刚绑定的脚本对象，回调内有效），mixin 原生持有 JS 包装的强引用改在 `OnUObjectEnter` 中创建，删除 `FindOrAdd` 里的补持有逻辑和 `IObjectMapper::Bind`（`FClassWrapper::New` 不再在构造后调用）。与 Unity 的头文件出现差异，第一阶段允许；`PESAPI_VERSION` 不提升，本分支改造尚未完成，与 Unity 的版本号不同即可。详见 5.6。测试：UE5.8 全量 41 项、UE4.27 全量 35 项通过。
 
 待决策：
 
