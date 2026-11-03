@@ -143,8 +143,6 @@ var global = global || (function () { return this; }());
     puerts.$ref = ref;
     puerts.$unref = unref;
     puerts.$set = setref;
-    puerts.merge = global.__tgjsMergeObject;
-    global.__tgjsMergeObject = undefined;
     
     rawSet(UE, 'FNameLiteral', global.__tgjsFNameToArrayBuffer);
     global.__tgjsFNameToArrayBuffer = undefined;

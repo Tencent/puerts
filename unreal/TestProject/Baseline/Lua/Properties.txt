@@ -4,13 +4,13 @@ name type: "string"
 text type: "string"
 struct property get then modify: 99
 struct property get twice identical: true
-assign uobject to soft object: throws <js-root>/tests/lua/properties.lua:135: passing a invalid object for FSoftObjectPtr
+assign uobject to soft object: throws <js-root>/tests/lua/properties.lua:136: passing a invalid object for FSoftObjectPtr
 type of class: "table"
 type of object: "userdata"
 tostring class: "class /Script/PuertsTest.PuertsTestObject"
 StaticClass name: "PuertsTestObject"
 unknown property: nil
 expando field: 5
-merge empty table: 5
-merge number src: throws <js-root>/tests/lua/properties.lua:201: Bad parameters #1, expect a object.
-struct parameter from table: 8
+assign table to struct property: <js-root>/tests/lua/properties.lua:183: passing a invalid object for PuertsTestStruct
+table as struct parameter: <js-root>/tests/lua/properties.lua:187: passing a invalid object for PuertsTestStruct
+puerts.merge: "nil"

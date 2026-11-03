@@ -132,8 +132,6 @@ function puerts.ref(x) return { x } end
 function puerts.unref(r) return r[1] end
 function puerts.setref(r, x) r[1] = x end
 
-puerts.merge = __tgjsMergeObject
-__tgjsMergeObject = nil
 puerts.setJsTakeRef = __tgjsSetJsTakeRef
 __tgjsSetJsTakeRef = nil
 -- classes of the script can not be injected into UE in lua (no mixin)

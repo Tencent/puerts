@@ -107,12 +107,6 @@ FORCEINLINE void ThrowException(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_
     ThrowException(Apis, Env, Info, TCHAR_TO_UTF8(*Message));
 }
 
-FORCEINLINE void Merge(
-    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des)
-{
-    ObjectMapperOf(Apis, Env)->Merge(Env, Info, Src, DesType, Des);
-}
-
 FORCEINLINE pesapi_value FindOrAddDelegate(
     struct pesapi_ffi* Apis, pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer)
 {

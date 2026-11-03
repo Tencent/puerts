@@ -11,6 +11,13 @@ const tojs = puerts.blueprint.tojs;
 
 const state = {};
 
+// a struct instance of the user defined struct with the given fields (a plain object is not converted to a struct)
+function makeS(fields) {
+    const v = new state.JsS();
+    for (const k of Object.keys(fields)) v[k] = fields[k];
+    return v;
+}
+
 function must(v, what) {
     assert(v, `${what} failed (needs the editor)`);
     return v;
@@ -37,10 +44,6 @@ test('class: create', () => {
     observe('class: instanceof parent', () => a instanceof UE.PuertsTestObject);
     observe('class: instanceof itself', () => a instanceof state.Js);
     observe('class: instance GetClass', () => a.GetClass() === cls);
-    note('class: merge', catchError(() => puerts.merge(a, { Score: 10, IntValue: 11 })));
-    observe('class: merged', () => [a.Score, a.IntValue]);
-    a.Score = 3;
-    a.IntValue = 5;
     state.a0 = a;
 });
 
@@ -88,11 +91,6 @@ step(() => {
         observe('add: new instance Label after write', () => a.Label);
         observe('add: new instance GetClass', () => a.GetClass() === cls);
         state.a1 = a;
-
-        // the merger of the class was created before the recompile, its properties are destroyed
-        const m = new state.Js();
-        note('add: merge after recompile', catchError(() => puerts.merge(m, { Score: 12, IntValue: 13, Label: 'm' })));
-        observe('add: merged', () => [m.Score, m.IntValue]);
     });
 
     test('class: derived after the base changed', () => {
@@ -132,9 +130,6 @@ step(() => {
         observe('remove: new instance IntValue', () => a.IntValue);
         observe('remove: kept instance read Score', () => state.a1.Score);
         observe('remove: derived new instance read Score', () => new state.JsChild().Score);
-        const m = new state.Js();
-        note('remove: merge', catchError(() => puerts.merge(m, { Score: 1, IntValue: 2 })));
-        observe('remove: merged IntValue', () => m.IntValue);
         state.a2 = a;
     });
 });
@@ -163,11 +158,7 @@ step(() => {
         note('add back: write', catchError(() => {
             a.Score = 1.5;
         }));
-        observe('add back: read', () => a.Score);
-        const m = new state.Js();
-        note('add back: merge', catchError(() => puerts.merge(m, { Score: 2.5, Label: 3, IntValue: 4 })));
-        observe('add back: merged IntValue', () => m.IntValue);
-    });
+        observe('add back: read', () => a.Score);    });
 });
 
 step(() => {
@@ -199,10 +190,10 @@ test('struct: create', () => {
     const arr = UE.NewArray(state.JsS);
     arr.Add(v);
     observe('struct: copied into array', () => arr.Get(0).Value);
-    note('struct: js object into array', catchError(() => arr.Add({ Value: 3 })));
-    observe('struct: js object element', () => arr.Get(1).Value);
-    note('struct: merge', catchError(() => puerts.merge(v, { Value: 21 })));
-    observe('struct: merged', () => v.Value);
+        // the message holds the generated UDS name (with a counter suffix), only record whether it is rejected
+        observe('struct: js object into array rejected', () =>
+            /passing a invalid object for/.test(catchError(() => arr.Add({ Value: 3 }))));
+    observe('struct: array length after js object', () => arr.Num());
 });
 
 step(() => {
@@ -220,13 +211,13 @@ step(() => {
         }));
         observe('struct add: read Extra', () => v.Extra);
         const arr = UE.NewArray(state.JsS);
-        note('struct add: js object into array', catchError(() => arr.Add({ Value: 4, Extra: 'x' })));
+        note('struct add: native struct into array', catchError(() => arr.Add(makeS({ Value: 4, Extra: 'x' }))));
         observe('struct add: element Value', () => arr.Get(0).Value);
         observe('struct add: element Extra', () => arr.Get(0).Extra);
         // containers made after the layout change must use the new element size (the element property of a struct is cached),
         // or the elements overlap and the strings of Extra are corrupted (crash at the destruction by Empty)
         const many = UE.NewArray(state.JsS);
-        for (let i = 1; i <= 8; i++) many.Add({ Value: i, Extra: `a string long enough to be allocated ${i}` });
+        for (let i = 1; i <= 8; i++) many.Add(makeS({ Value: i, Extra: `a string long enough to be allocated ${i}` }));
         const values = (a) => {
             const r = [];
             for (let i = 0; i < a.Num(); i++) r.push(a.Get(i).Value);
@@ -234,12 +225,12 @@ step(() => {
         };
         observe('struct add: many elements', () => values(many));
         many.RemoveAt(0);
-        many.Add({ Value: 9, Extra: 'last' });
+        many.Add(makeS({ Value: 9, Extra: 'last' }));
         observe('struct add: many elements after remove', () => values(many));
         many.Empty();
         observe('struct add: emptied', () => many.Num());
         const map = UE.NewMap(UE.BuiltinString, state.JsS);
-        for (let i = 1; i <= 4; i++) map.Add(`k${i}`, { Value: i * 10, Extra: `map value string ${i}` });
+        for (let i = 1; i <= 4; i++) map.Add(`k${i}`, makeS({ Value: i * 10, Extra: `map value string ${i}` }));
         observe('struct add: map values', () => [1, 2, 3, 4].map((i) => map.Get(`k${i}`).Value).join(','));
         map.Empty();
         // kept across the rename, which does not change the layout
@@ -262,8 +253,6 @@ step(() => {
         }));
         observe('struct rename: read Amount', () => v.Amount);
         observe('struct rename: new instance Extra', () => v.Extra);
-        const m = new state.JsS();
-        note('struct rename: merge', catchError(() => puerts.merge(m, { Value: 1, Amount: 2, Extra: 'm' })));
         state.sv = undefined;
     });
 });
@@ -294,7 +283,7 @@ step(() => {
         observe('struct remove: Value', () => v.Value);
         observe('struct remove: Amount', () => v.Amount);
         const arr = UE.NewArray(state.JsS);
-        note('struct remove: js object into array', catchError(() => arr.Add({ Extra: 1 })));
+        note('struct remove: native struct into array', catchError(() => arr.Add(new state.JsS())));
         observe('struct remove: array length', () => arr.Num());
     });
 });

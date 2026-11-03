@@ -13,7 +13,6 @@ StaticClass name: 'PuertsTestObject'
 unknown property: throws AttributeError: 'PuertsTestObject' object has no attribute 'NoSuchProperty'
 expando field: 5
 isinstance: True
-merge empty dict: 5
-merge number src: throws RuntimeError: Bad parameters #1, expect a object.
-merge plain object src: 5
-struct parameter from dict: 8
+assign dict to struct property: RuntimeError: passing a invalid object for PuertsTestStruct
+dict as struct parameter: RuntimeError: passing a invalid object for PuertsTestStruct
+puerts.merge: False

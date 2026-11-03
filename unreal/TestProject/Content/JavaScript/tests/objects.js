@@ -1,5 +1,5 @@
 'use strict';
-// UE.NewObject / UE.NewStruct / puerts.merge / UE.MakeWeakObjectPtr / puerts.setJsTakeRef.
+// UE.NewObject / UE.NewStruct / UE.MakeWeakObjectPtr / puerts.setJsTakeRef.
 // Guards M5 (object creation global functions on papi).
 const { UE, test, step, eq, assert, note, observe, catchError, run } = require('./framework');
 const puerts = require('puerts');
@@ -63,37 +63,15 @@ test('NewStruct bad arguments', () => {
     note('NewStruct class type', catchError(() => UE.NewStruct(UE.PuertsTestObject.StaticClass())));
 });
 
-test('merge', () => {
+test('plain object is not a struct', () => {
     const o = new UE.PuertsTestObject();
-    puerts.merge(o, { IntValue: 5, StringValue: 'merged', NoSuchField: 1 });
-    eq(o.IntValue, 5);
-    eq(o.StringValue, 'merged');
-
-    const s = new UE.PuertsTestStruct();
-    puerts.merge(s, { X: 9, S: 'st' });
-    eq(s.X, 9);
-    eq(s.S, 'st');
-
-    puerts.merge(o, { StructValue: { X: 4 } });
-    eq(o.StructValue.X, 4);
-
-    // only own enumerable properties are merged, undefined values are skipped
-    const src = Object.create({ IntValue: 100 });
-    Object.defineProperty(src, 'StringValue', { value: 'hidden', enumerable: false });
-    src.X = undefined;
-    puerts.merge(o, src);
-    eq(o.IntValue, 5);
-    eq(o.StringValue, 'merged');
-    puerts.merge(s, { X: undefined, S: 'st2' });
-    eq(s.X, 9);
-    eq(s.S, 'st2');
-});
-
-test('merge bad arguments', () => {
-    note('merge no args', catchError(() => puerts.merge()));
-    note('merge number des', catchError(() => puerts.merge(1, {})));
-    note('merge number src', catchError(() => puerts.merge(new UE.PuertsTestObject(), 1)));
-    note('merge plain des', catchError(() => puerts.merge({}, {})));
+    o.StructValue.X = 3;
+    note('assign plain object to struct property', catchError(() => {
+        o.StructValue = { X: 4 };
+    }));
+    eq(o.StructValue.X, 3);
+    observe('puerts.merge', () => typeof puerts.merge);
+    observe('global __tgjsMergeObject', () => typeof globalThis.__tgjsMergeObject);
 });
 
 test('MakeWeakObjectPtr', () => {
@@ -127,7 +105,6 @@ step(() => {
         observe('weak of destroyed object IsValid', () => state.weak.IsValid());
         observe('weak of destroyed object Get', () => state.weak.Get());
         note('NewObject with destroyed outer', catchError(() => UE.NewObject(UE.PuertsTestObject.StaticClass(), state.doomedOuter)));
-        note('merge into destroyed', catchError(() => puerts.merge(state.doomedOuter, { IntValue: 1 })));
         note('object without js take ref after gc', catchError(() => state.notTaken.IntValue));
     });
 });

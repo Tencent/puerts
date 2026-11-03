@@ -8,10 +8,9 @@ NewObject struct type: Error: invalid argument
 NewStruct no args: Error: invalid argument
 NewStruct number: Error: invalid argument
 NewStruct class type: Error: invalid argument
-merge no args: Error: Bad parameters, the function expect 2, but  0 provided.
-merge number des: Error: Bad parameters #0, expect a object.
-merge number src: Error: Bad parameters #1, expect a object.
-merge plain des: Error: Bad parameters #1, expect a native object.
+assign plain object to struct property: Error: passing a invalid object for PuertsTestStruct
+puerts.merge: "undefined"
+global __tgjsMergeObject: "undefined"
 weak typeof: "object"
 weak of plain object IsValid: false
 setJsTakeRef: <no throw>
@@ -21,5 +20,4 @@ setJsTakeRef struct: Error: passing a invalid object
 weak of destroyed object IsValid: false
 weak of destroyed object Get: undefined
 NewObject with destroyed outer: Error: passing a invalid object
-merge into destroyed: Error: passing a invalid object
 object without js take ref after gc: <no throw>

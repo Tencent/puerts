@@ -9,6 +9,15 @@ local Reporter = UE.PuertsTestReporter
 local tojs = puerts.blueprint.tojs
 local state = {}
 
+-- a struct instance of the user defined struct with the given fields (a table is not converted to a struct)
+local function makeS(fields)
+    local v = state.St()
+    for k, x in pairs(fields) do
+        v[k] = x
+    end
+    return v
+end
+
 local function must(v, what)
     assert(v, what .. ' failed (needs the editor)')
     return v
@@ -38,12 +47,6 @@ test('class: create', function()
     eq(a:Add(1, 2), 3)
     observe('class: instance GetClass', function()
         return a:GetClass() == cls
-    end)
-    note('class: merge', catchError(function()
-        puerts.merge(a, { Score = 10, IntValue = 11 })
-    end))
-    observe('class: merged', function()
-        return { a.Score, a.IntValue }
     end)
     state.a0 = a
 end)
@@ -102,13 +105,6 @@ step(function()
             return a.Label
         end)
         state.a1 = a
-        local m = state.Cls()
-        note('add: merge after recompile', catchError(function()
-            puerts.merge(m, { Score = 12, IntValue = 13, Label = 'm' })
-        end))
-        observe('add: merged', function()
-            return { m.Score, m.IntValue }
-        end)
         local c = state.Child()
         c.Score = 8
         observe('add: derived new instance Score', function()
@@ -144,13 +140,6 @@ step(function()
         end))
         observe('remove: kept instance read Score', function()
             return state.a1.Score
-        end)
-        local m = state.Cls()
-        note('remove: merge', catchError(function()
-            puerts.merge(m, { Score = 1, IntValue = 2 })
-        end))
-        observe('remove: merged IntValue', function()
-            return m.IntValue
         end)
     end)
 end)
@@ -223,17 +212,14 @@ test('struct: create', function()
     observe('struct: copied into array', function()
         return arr:Get(0).Value
     end)
-    note('struct: table into array', catchError(function()
-        arr:Add({ Value = 3 })
-    end))
-    observe('struct: table element', function()
-        return arr:Get(1).Value
+    -- the message holds the generated UDS name (with a counter suffix), only record whether it is rejected
+    observe('struct: table into array rejected', function()
+        return string.find(catchError(function()
+            arr:Add({ Value = 3 })
+        end), 'passing a invalid object for', 1, true) ~= nil
     end)
-    note('struct: merge', catchError(function()
-        puerts.merge(v, { Value = 21 })
-    end))
-    observe('struct: merged', function()
-        return v.Value
+    observe('struct: array length after table', function()
+        return arr:Num()
     end)
 end)
 
@@ -252,8 +238,8 @@ step(function()
             return v.Extra
         end)
         local arr = UE.NewArray(state.St)
-        note('struct add: table into array', catchError(function()
-            arr:Add({ Value = 4, Extra = 'x' })
+        note('struct add: native struct into array', catchError(function()
+            arr:Add(makeS({ Value = 4, Extra = 'x' }))
         end))
         observe('struct add: element Value', function()
             return arr:Get(0).Value
@@ -262,7 +248,7 @@ step(function()
         -- Extra are corrupted (crash at the destruction by Empty)
         local many = UE.NewArray(state.St)
         for i = 1, 8 do
-            many:Add({ Value = i, Extra = 'a string long enough to be allocated ' .. i })
+            many:Add(makeS({ Value = i, Extra = 'a string long enough to be allocated ' .. i }))
         end
         local function values(a)
             local r = {}
@@ -275,7 +261,7 @@ step(function()
             return values(many)
         end)
         many:RemoveAt(0)
-        many:Add({ Value = 9, Extra = 'last' })
+        many:Add(makeS({ Value = 9, Extra = 'last' }))
         observe('struct add: many elements after remove', function()
             return values(many)
         end)
@@ -285,7 +271,7 @@ step(function()
         end)
         local map = UE.NewMap(UE.BuiltinString, state.St)
         for i = 1, 4 do
-            map:Add('k' .. i, { Value = i * 10, Extra = 'map value string ' .. i })
+            map:Add('k' .. i, makeS({ Value = i * 10, Extra = 'map value string ' .. i }))
         end
         observe('struct add: map values', function()
             local r = {}
@@ -308,9 +294,6 @@ step(function()
         observe('struct rename: Amount', function()
             return v.Amount
         end)
-        note('struct rename: merge', catchError(function()
-            puerts.merge(v, { Value = 1, Amount = 2 })
-        end))
     end)
 end)
 
@@ -326,8 +309,8 @@ step(function()
             return v.Value
         end)
         local arr = UE.NewArray(state.St)
-        note('struct remove: table into array', catchError(function()
-            arr:Add({ Extra = 1 })
+        note('struct remove: native struct into array', catchError(function()
+            arr:Add(state.St())
         end))
         observe('struct remove: array length', function()
             return arr:Num()

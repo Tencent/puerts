@@ -1,5 +1,5 @@
 'use strict';
-const { UE, puerts, test, eq, assert, observe, run } = require('./framework');
+const { UE, puerts, test, eq, assert, observe, note, catchError, run } = require('./framework');
 const { $ref, $unref } = puerts;
 
 const obj = new UE.PuertsTestObject();
@@ -28,7 +28,7 @@ test('struct param', () => {
     s.Arr.Add(2);
     s.Arr.Add(3);
     eq(obj.StructSum(s), 6);
-    observe('struct param from plain object', () => obj.StructSum({ X: 10, S: '', Arr: undefined }));
+    note('struct param from plain object', catchError(() => obj.StructSum({ X: 10, S: '', Arr: undefined })));
 });
 
 test('out params', () => {
@@ -72,9 +72,11 @@ test('ref struct param', () => {
     const ret = obj.VectorRef(v);
     eq([$unref(v).X, $unref(v).Y, $unref(v).Z], [1024, 2, 3]);
     eq([ret.X, ret.Y, ret.Z], [1025, 3, 4]);
+    // without $ref the value is not written back (v8 rejects a pod struct for its memory holder at [0], quickjs passes a
+    // default value), only the common part is observed
     observe('ref struct param passed directly', () => {
         const d = new UE.Vector(1, 2, 3);
-        obj.VectorRef(d);
+        catchError(() => obj.VectorRef(d));
         return d.X;
     });
 });

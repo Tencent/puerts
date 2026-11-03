@@ -123,8 +123,6 @@ public:
 
     virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;
 
-    virtual void Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des) override;
-
     // the wrapper of a delegate is held by DelegateMap (strong) until the delegate is released
     virtual pesapi_value FindOrAddDelegate(
         pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) override;
@@ -208,8 +206,6 @@ private:
 
     bool Tick(float DeltaTime);
 
-    void MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
     void NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
@@ -222,55 +218,6 @@ private:
     void DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     void IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    struct ObjectMerger;
-
-    std::unique_ptr<ObjectMerger>& GetObjectMerger(UStruct* Struct);
-
-    struct ObjectMerger
-    {
-        std::map<PString, std::unique_ptr<FPropertyTranslator>> Fields;
-        UStruct* Struct;
-        FScriptEnvImpl* Parent;
-
-        ObjectMerger(FScriptEnvImpl* InParent, UStruct* InStruct)
-        {
-            Parent = InParent;
-            Struct = InStruct;
-            for (TFieldIterator<PropertyMacro> It(Struct); It; ++It)
-            {
-                PropertyMacro* Property = *It;
-                auto Translator = FPropertyTranslator::Create(Property);
-                // the keys are the names of the accessors (the authored names of the members of a user defined struct)
-                FString Name;
-                if (!Translator->GetAccessorName(Name))
-                {
-                    Name = Property->GetName();
-                }
-                TStringConversion<TStringConvert<TCHAR, ANSICHAR>> AnsiName(*Name);
-                Fields[AnsiName.Get()] = std::move(Translator);
-            }
-        }
-
-        // the properties of a blueprint class or user defined struct are recreated when it is recompiled in the editor
-        bool IsStale() const
-        {
-            for (auto& KV : Fields)
-            {
-                if (KV.second->IsPropertyStale())
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // merges the own enumerable properties of JsObject into the fields of Ptr, a plain object value of an object / struct
-        // field is merged recursively
-        void Merge(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value JsObject, void* Ptr);
-    };
-
-    friend ObjectMerger;
 
 public:
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -345,8 +292,6 @@ private:
     TMap<UObject*, FNativeTakeJsRef> NativeTakeJsRefObjects;
 
     std::map<UFunction*, std::unique_ptr<FFunctionTranslator>> JsCallbackPrototypeMap;
-
-    std::map<UStruct*, std::unique_ptr<ObjectMerger>> ObjectMergers;
 
     struct DelegateObjectInfo
     {

@@ -174,8 +174,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
         PapiMethodBindingHelper<&FScriptEnvImpl::NewContainer>::Bind(Apis, Env, PapiGlobal, "__tgjsNewContainer", this);
 
-        PapiMethodBindingHelper<&FScriptEnvImpl::MergeObject>::Bind(Apis, Env, PapiGlobal, "__tgjsMergeObject", this);
-
         PapiMethodBindingHelper<&FScriptEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
 
         PapiMethodBindingHelper<&FScriptEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
@@ -372,123 +370,6 @@ void FScriptEnvImpl::InitExtensionMethodsMap()
 #endif
     // the extension methods are kept by the process wide struct wrappers
     FStructWrapper::InitExtensionMethodsMap();
-}
-
-std::unique_ptr<FScriptEnvImpl::ObjectMerger>& FScriptEnvImpl::GetObjectMerger(UStruct* Struct)
-{
-    auto& Merger = ObjectMergers[Struct];
-#if WITH_EDITOR
-    if (!Merger || Merger->IsStale())
-#else
-    if (!Merger)
-#endif
-    {
-        Merger = std::make_unique<ObjectMerger>(this, Struct);
-    }
-    return Merger;
-}
-
-void FScriptEnvImpl::Merge(pesapi_env Env, pesapi_callback_info Info, pesapi_value Src, UStruct* DesType, void* Des)
-{
-    GetObjectMerger(DesType)->Merge(MainApis, Env, Info, Src, Des);
-}
-
-void FScriptEnvImpl::ObjectMerger::Merge(
-    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_callback_info Info, pesapi_value JsObject, void* Ptr)
-{
-    if (auto Class = Cast<UClass>(Struct))
-    {
-        UObject* Object = reinterpret_cast<UObject*>(Ptr);
-        if (!Object->IsValidLowLevel() || UEObjectIsPendingKill(Object) || Object->GetClass() != Class ||
-            Apis->get_native_object_ptr(Env, JsObject))
-        {
-            return;
-        }
-    }
-    // papi has no own property enumeration, the backend gives the keys of a plain object of its language (Object.keys in js:
-    // own, enumerable, no symbols)
-    pesapi_value Keys = Parent->Backend->GetOwnKeys(Env, JsObject);
-    if (!Keys)
-    {
-        return;    // the exception propagates to the caller
-    }
-    const uint32_t KeysLen = Apis->get_array_length(Env, Keys);
-    char StackBuf[128];
-    TArray<char> HeapBuf;
-    for (uint32_t i = 0; i < KeysLen; ++i)
-    {
-        pesapi_value Key = Apis->get_property_uint32(Env, Keys, i);
-        size_t KeyLen = 0;
-        Apis->get_value_string_utf8(Env, Key, nullptr, &KeyLen);
-        char* KeyBuf = StackBuf;
-        if (KeyLen >= sizeof(StackBuf))
-        {
-            HeapBuf.SetNumUninitialized(static_cast<int32>(KeyLen) + 1);
-            KeyBuf = HeapBuf.GetData();
-        }
-        Apis->get_value_string_utf8(Env, Key, KeyBuf, &KeyLen);
-        KeyBuf[KeyLen] = '\0';
-
-        auto Iter = Fields.find(KeyBuf);
-        if (Iter == Fields.end())
-        {
-            continue;
-        }
-        pesapi_value Value = Apis->get_property(Env, JsObject, KeyBuf);
-        if (!Value)
-        {
-            continue;
-        }
-        if (Apis->is_object(Env, Value) && !Apis->get_native_object_ptr(Env, Value))
-        {
-            UStruct* FieldStruct = nullptr;
-            if (auto ObjectPropertyBase = CastFieldMacro<ObjectPropertyBaseMacro>(Iter->second->Property))
-            {
-                FieldStruct = ObjectPropertyBase->PropertyClass;
-            }
-            else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Iter->second->Property))
-            {
-                FieldStruct = StructProperty->Struct;
-            }
-            if (FieldStruct)
-            {
-                Parent->GetObjectMerger(FieldStruct)
-                    ->Merge(Apis, Env, Info, Value, Iter->second->Property->ContainerPtrToValuePtr<void>(Ptr));
-            }
-            continue;
-        }
-        if (!Apis->is_undefined(Env, Value))
-        {
-            Iter->second->JsToUEInContainer(Apis, Env, Info, Value, Ptr, true);
-        }
-    }
-}
-
-void FScriptEnvImpl::MergeObject(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgObject, EArgObject);
-
-    pesapi_env Env = Apis->get_env(Info);
-    pesapi_value Des = Apis->get_arg(Info, 0);
-    pesapi_value Src = Apis->get_arg(Info, 1);
-    // the type id of a reflected object is its wrapper (FScriptStructWrapper or FClassWrapper)
-    auto Wrapper = FStructWrapper::FromTypeId(Apis->get_native_object_typeid(Env, Des));
-    if (auto Struct = Wrapper ? Cast<UScriptStruct>(Wrapper->GetStruct()) : nullptr)
-    {
-        PapiUtils::Merge(Apis, Env, Info, Src, Struct, Apis->get_native_object_ptr(Env, Des));
-        return;
-    }
-    if (auto Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Des))
-    {
-        if (PapiUtils::IsReleasedPtr(Object))
-        {
-            Apis->throw_by_string(Info, "passing a invalid object");
-            return;
-        }
-        PapiUtils::Merge(Apis, Env, Info, Src, Object->GetClass(), Object);
-        return;
-    }
-    Apis->throw_by_string(Info, "Bad parameters #1, expect a native object.");
 }
 
 void FScriptEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -923,8 +804,6 @@ void FScriptEnvImpl::TryReleaseType(UStruct* Struct)
 {
     TypeToTemplateInfoMap.Remove(Struct);
     NativeTakeJsRefClasses.Remove(static_cast<UClass*>(Struct));
-    // the address may be reused by another struct
-    ObjectMergers.erase(Struct);
 }
 
 // fix ScriptCore.cpp UObject::SkipFunction crash when Function has no parameters

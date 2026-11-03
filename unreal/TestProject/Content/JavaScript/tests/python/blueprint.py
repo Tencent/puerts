@@ -10,6 +10,14 @@ tojs = puerts.blueprint.tojs
 state = {}
 
 
+# a struct instance of the user defined struct with the given fields (a dict is not converted to a struct)
+def makeS(fields):
+    v = state['St']()
+    for k, x in fields.items():
+        setattr(v, k, x)
+    return v
+
+
 def must(v, what):
     assert_(v, what + ' failed (needs the editor)')
     return v
@@ -34,8 +42,6 @@ def t_class_create():
     eq(a.Add(1, 2), 3)
     observe('class: isinstance', lambda: isinstance(a, state['Cls']) and isinstance(a, UE.PuertsTestObject))
     observe('class: instance GetClass', lambda: a.GetClass() is cls)
-    note('class: merge', catchError(lambda: puerts.merge(a, {'Score': 10, 'IntValue': 11})))
-    observe('class: merged', lambda: [a.Score, a.IntValue])
     state['a0'] = a
 
 
@@ -85,9 +91,6 @@ def step_recompile():
         note('add: write Label', catchError(write))
         observe('add: read Label after write', lambda: a.Label)
         state['a1'] = a
-        m = state['Cls']()
-        note('add: merge after recompile', catchError(lambda: puerts.merge(m, {'Score': 12, 'IntValue': 13, 'Label': 'm'})))
-        observe('add: merged', lambda: [m.Score, m.IntValue])
         c = state['Child']()
         c.Score = 8
         observe('add: derived new instance Score', lambda: c.Score)
@@ -117,9 +120,6 @@ def step_remove():
 
         note('remove: new instance write Score', catchError(write))
         observe('remove: kept instance read Score', lambda: state['a1'].Score)
-        m = state['Cls']()
-        note('remove: merge', catchError(lambda: puerts.merge(m, {'Score': 1, 'IntValue': 2})))
-        observe('remove: merged IntValue', lambda: m.IntValue)
 
     test('class: remove variable', t_remove)
 
@@ -188,10 +188,10 @@ def t_struct_create():
     arr = UE.NewArray(state['St'])
     arr.Add(v)
     observe('struct: copied into array', lambda: arr.Get(0).Value)
-    note('struct: dict into array', catchError(lambda: arr.Add({'Value': 3})))
-    observe('struct: dict element', lambda: arr.Get(1).Value)
-    note('struct: merge', catchError(lambda: puerts.merge(v, {'Value': 21})))
-    observe('struct: merged', lambda: v.Value)
+    # the message holds the generated UDS name (with a counter suffix), only record whether it is rejected
+    observe('struct: dict into array rejected',
+            lambda: 'passing a invalid object for' in catchError(lambda: arr.Add({'Value': 3})))
+    observe('struct: array length after dict', lambda: arr.Num())
 
 
 test('struct: create', t_struct_create)
@@ -206,26 +206,26 @@ def step_struct_add():
         observe('struct add: Value', lambda: v.Value)
         observe('struct add: Extra', lambda: getattr(v, 'Extra', '<missing>'))
         arr = UE.NewArray(state['St'])
-        note('struct add: dict into array', catchError(lambda: arr.Add({'Value': 4, 'Extra': 'x'})))
+        note('struct add: native struct into array', catchError(lambda: arr.Add(makeS({'Value': 4, 'Extra': 'x'}))))
         observe('struct add: element Value', lambda: arr.Get(0).Value)
         # containers made after the layout change must use the new element size, or the elements overlap and the strings of
         # Extra are corrupted (crash at the destruction by Empty)
         many = UE.NewArray(state['St'])
         for i in range(1, 9):
-            many.Add({'Value': i, 'Extra': 'a string long enough to be allocated %d' % i})
+            many.Add(makeS({'Value': i, 'Extra': 'a string long enough to be allocated %d' % i}))
 
         def values(a):
             return ','.join(str(a.Get(i).Value) for i in range(a.Num()))
 
         observe('struct add: many elements', lambda: values(many))
         many.RemoveAt(0)
-        many.Add({'Value': 9, 'Extra': 'last'})
+        many.Add(makeS({'Value': 9, 'Extra': 'last'}))
         observe('struct add: many elements after remove', lambda: values(many))
         many.Empty()
         observe('struct add: emptied', lambda: many.Num())
         m = UE.NewMap(UE.BuiltinString, state['St'])
         for i in range(1, 5):
-            m.Add('k%d' % i, {'Value': i * 10, 'Extra': 'map value string %d' % i})
+            m.Add('k%d' % i, makeS({'Value': i * 10, 'Extra': 'map value string %d' % i}))
         observe('struct add: map values', lambda: ','.join(str(m.Get('k%d' % i).Value) for i in range(1, 5)))
         m.Empty()
 
@@ -241,7 +241,6 @@ def step_struct_rename():
         v = state['St']()
         observe('struct rename: Value', lambda: v.Value)
         observe('struct rename: Amount', lambda: getattr(v, 'Amount', '<missing>'))
-        note('struct rename: merge', catchError(lambda: puerts.merge(v, {'Value': 1, 'Amount': 2})))
 
     test('struct: rename variable', t_rename)
 
@@ -257,7 +256,7 @@ def step_struct_remove():
         v = state['St']()
         observe('struct remove: Value', lambda: v.Value)
         arr = UE.NewArray(state['St'])
-        note('struct remove: dict into array', catchError(lambda: arr.Add({'Extra': 1})))
+        note('struct remove: native struct into array', catchError(lambda: arr.Add(state['St']())))
         observe('struct remove: array length', lambda: arr.Num())
 
     test('struct: change type and remove', t_remove)

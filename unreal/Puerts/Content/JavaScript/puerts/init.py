@@ -166,7 +166,6 @@ def _puerts_init():
 
     puerts.setref = setref
 
-    puerts.merge = take('__tgjsMergeObject')
     puerts.setJsTakeRef = take('__tgjsSetJsTakeRef')
     # classes of the script can not be injected into UE in python (no mixin)
     take('__tgjsMixin')

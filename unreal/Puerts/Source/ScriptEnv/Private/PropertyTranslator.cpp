@@ -699,13 +699,9 @@ public:
         }
         else if (Apis->is_object(Env, Value))
         {
-            // a native object without pointer (e.g. the object of a destroyed UObject) is not merged as a plain object
-            if (UNLIKELY(Apis->get_native_object_typeid(Env, Value) != nullptr))
-            {
-                ThrowInvalidValue(Apis, Env, Info);
-                return false;
-            }
-            PapiUtils::Merge(Apis, Env, Info, Value, StructProperty->Struct, ValuePtr);
+            // only a native struct object is accepted, a plain object is not converted (no merge since 3.0)
+            ThrowInvalidValue(Apis, Env, Info);
+            return false;
         }
         return true;
     }

@@ -35,8 +35,6 @@ declare module "puerts" {
         getByName(name: string): Object;
     }
     
-    function merge(des: {}, src: {}): void;
-    
     //function requestJitModuleMethod(moduleName: string, methodName: string, callback: (err: Error, result: any)=> void, ... args: any[]): void;
     
     function blueprint<T extends {

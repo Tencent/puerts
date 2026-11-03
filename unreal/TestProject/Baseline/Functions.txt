@@ -1,5 +1,5 @@
 static via instance: "undefined"
-struct param from plain object: 10
+struct param from plain object: Error: passing a invalid object for PuertsTestStruct
 out struct ref undefined: 9
 default param omitted: 305
 default params explicit undefined: "Str=i am default I=10 Vec=(1.1,2.2,3.3)"
