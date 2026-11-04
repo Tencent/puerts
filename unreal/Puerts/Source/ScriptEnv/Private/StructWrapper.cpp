@@ -350,11 +350,6 @@ void FStructWrapper::Define(UStruct* InStruct, bool Refresh)
         // a UObject is never owned by js, the env keeps it alive while it is bound
         Reg->trace_native_object_lifecycle(nullptr, this, &FClassWrapper::ReflectedOnEnter, &FClassWrapper::ReflectedOnExit);
     }
-    else if (!static_cast<UScriptStruct*>(InStruct)->IsNative())
-    {
-        Reg->trace_native_object_lifecycle(
-            nullptr, this, &FScriptStructWrapper::ReflectedOnEnter, &FScriptStructWrapper::ReflectedOnExit);
-    }
 
     DefinedStruct = InStruct;
 }
@@ -711,22 +706,6 @@ void FScriptStructWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr,
 {
     // the class data of a reflected class is its wrapper, it is process wide and outlives the envs
     static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Free(Ptr);
-}
-
-void* FScriptStructWrapper::ReflectedOnEnter(
-    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, void* Ptr, void* ClassData, void* EnvPrivate)
-{
-    auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate);
-    UStruct* S = static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Struct.Get();
-    return ObjectMapper && S ? ObjectMapper->RetainUObject(S) : nullptr;
-}
-
-void FScriptStructWrapper::ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData)
-{
-    if (auto ObjectMapper = static_cast<IObjectMapper*>(EnvPrivate))
-    {
-        ObjectMapper->ReleaseUObject(UserData);
-    }
 }
 
 void* FClassWrapper::ReflectedOnEnter(

@@ -224,8 +224,8 @@ public:
     TSharedPtr<IDynamicInvoker, ESPMode::ThreadSafe> MixinInvoker;
 #endif
 private:
-    // the UObjects held by the wrappers (see OnUObjectEnter)
-    FObjectPool UserObjectPool;
+    // the UObjects held by their wrappers (see OnUObjectEnter)
+    FObjectRetainer UserObjectRetainer;
 
     FObjectRetainer SysObjectRetainer;
 
@@ -258,18 +258,14 @@ private:
 
     // A UObject wrapper is a native object of the class definition of its UClass (the type id is the FClassWrapper), the native
     // pointer is the UObject itself and it is not owned by js. The backend caches the wrapper (weakly) by the pointer, and calls
-    // OnUObjectEnter / OnUObjectExit when it is bound / unbound: each binding takes a slot of UserObjectPool (the handle is the
-    // userdata of the binding) holding the UObject, unless the class is native take js ref (mixin), then the slot is reserved
-    // empty and the wrapper is held strongly by NativeTakeJsRefObjects instead (by OnUObjectEnter, the slot is filled by
-    // SetJsTakeRef). When the UObject is destroyed it is unbound from its wrapper (UnBind, pesapi unbind_native_object) and the
+    // OnUObjectEnter / OnUObjectExit when it is bound / unbound (a UObject has at most one binding in an env: it is always bound
+    // as its own class, enter and exit alternate). Like 2.0, the env holds the UObject (UserObjectRetainer) while it is bound,
+    // unless the class is native take js ref (mixin), then the wrapper is held strongly by NativeTakeJsRefObjects instead until
+    // SetJsTakeRef. When the UObject is destroyed it is unbound from its wrapper (UnBind, pesapi unbind_native_object) and the
     // strong ref is released, a later access of the wrapper sees a released object.
     virtual void* OnUObjectEnter(pesapi_env Env, pesapi_value JSObject, UObject* UEObject) override;
 
     virtual void OnUObjectExit(UObject* UEObject, void* UserData) override;
-
-    virtual void* RetainUObject(UObject* Object) override;
-
-    virtual void ReleaseUObject(void* UserData) override;
 
     // whether the wrapper of Obj is held by native (the UObject does not hold the wrapper), by the nearest class of Obj in
     // NativeTakeJsRefClasses (set by mixin), the default otherwise
@@ -278,18 +274,10 @@ private:
     // per env (the wrappers are shared by envs), set by mixin for a class and its subclasses
     TMap<UClass*, bool> NativeTakeJsRefClasses;
 
-    struct FNativeTakeJsRef
-    {
-        // the wrapper (strong), set by OnUObjectEnter
-        FPapiValueRef Wrapper;
-        // the slot of UserObjectPool reserved by OnUObjectEnter, 0 if the wrapper is unbound
-        int32 Handle = 0;
-    };
-
-    // the wrappers held strongly by native (see SetJsTakeRef), released when the UObject is destroyed or the env is released.
-    // An entry is moved out of the map before its ref is released: the wrapper may be freed synchronously (quickjs) and
-    // OnUObjectExit looks the map up
-    TMap<UObject*, FNativeTakeJsRef> NativeTakeJsRefObjects;
+    // the wrappers held strongly by native (set by OnUObjectEnter), released by SetJsTakeRef, when the UObject is destroyed or
+    // the env is released. An entry is removed from the map before its ref is released (the wrapper may be freed synchronously
+    // on quickjs)
+    TMap<UObject*, FPapiValueRef> NativeTakeJsRefObjects;
 
     std::map<UFunction*, std::unique_ptr<FFunctionTranslator>> JsCallbackPrototypeMap;
 

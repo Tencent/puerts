@@ -248,7 +248,7 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
     // every frame, calls the tick handlers (the timers of puerts/timer.js)
     TickHandle = FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FScriptEnvImpl::Tick), 0);
 
-    UserObjectPool.SetName(TEXT("Puerts_UserObjectRetainer"));
+    UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
 
 #ifdef SINGLE_THREAD_VERIFY
@@ -316,10 +316,9 @@ FScriptEnvImpl::~FScriptEnvImpl()
 
         MixinFunctionMap.Empty();
 
-        // the wrappers held by native, their slots are freed by OnUObjectExit when the backend unbinds them (moved out first, a
-        // wrapper may be freed synchronously while the refs are released)
+        // the wrappers held by native, moved out first (a wrapper may be freed synchronously while the refs are released)
         {
-            TMap<UObject*, FNativeTakeJsRef> Released = MoveTemp(NativeTakeJsRefObjects);
+            TMap<UObject*, FPapiValueRef> Released = MoveTemp(NativeTakeJsRefObjects);
             NativeTakeJsRefObjects.Empty();
         }
 
@@ -527,68 +526,32 @@ void* FScriptEnvImpl::OnUObjectEnter(pesapi_env Env, pesapi_value JSObject, UObj
 {
     if (IsNativeTakeJsRefObject(UEObject))
     {
-        // native holds the wrapper, the slot is filled if js takes the ref (SetJsTakeRef)
-        const int32 Handle = UserObjectPool.Add(nullptr);
-        FNativeTakeJsRef& Entry = NativeTakeJsRefObjects.FindOrAdd(UEObject);
-        Entry.Handle = Handle;
-        // a previous wrapper (if any) is released after the entry is updated: it may be freed synchronously (quickjs) and
-        // OnUObjectExit looks the map up
-        FPapiValueRef Previous = MoveTemp(Entry.Wrapper);
-        Entry.Wrapper.Reset(MainApis, Env, JSObject);
-        return reinterpret_cast<void*>(static_cast<intptr_t>(Handle));
+        // native holds the wrapper until SetJsTakeRef
+        NativeTakeJsRefObjects.FindOrAdd(UEObject).Reset(MainApis, Env, JSObject);
     }
-    // the wrapper holds the UObject
-    return reinterpret_cast<void*>(static_cast<intptr_t>(UserObjectPool.Add(UEObject)));
+    else
+    {
+        // the wrapper holds the UObject
+        UserObjectRetainer.Retain(UEObject);
+    }
+    return nullptr;
 }
 
 void FScriptEnvImpl::OnUObjectExit(UObject* UEObject, void* UserData)
 {
-    // UEObject may be being destroyed (UnBind), do not dereference it
-    const int32 Handle = static_cast<int32>(reinterpret_cast<intptr_t>(UserData));
-    if (Handle == 0)
-    {
-        return;
-    }
-    UserObjectPool.Remove(Handle);
-    if (NativeTakeJsRefObjects.Num() > 0)
-    {
-        // the wrapper is unbound while native holds it (e.g. created by another path), the slot must not be reused by it
-        if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
-        {
-            if (Entry->Handle == Handle)
-            {
-                Entry->Handle = 0;
-            }
-        }
-    }
-}
-
-void* FScriptEnvImpl::RetainUObject(UObject* Object)
-{
-    return reinterpret_cast<void*>(static_cast<intptr_t>(UserObjectPool.Add(Object)));
-}
-
-void FScriptEnvImpl::ReleaseUObject(void* UserData)
-{
-    const int32 Handle = static_cast<int32>(reinterpret_cast<intptr_t>(UserData));
-    if (Handle != 0)
-    {
-        UserObjectPool.Remove(Handle);
-    }
+    // UEObject may be being destroyed (UnBind), it is only used as a key. A native take js ref object is not retained, the
+    // release is a no-op then
+    UserObjectRetainer.Release(UEObject);
 }
 
 void FScriptEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
 {
-    // a bound object is either held by its slot already or its wrapper is held by native, an unbound one is left alone. The
-    // UObject is put in the slot before the ref is released: the wrapper may be freed synchronously (quickjs), then
-    // OnUObjectExit frees the slot
-    if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
+    // a wrapper held by native: the UObject is retained before the ref is released, the wrapper may be freed synchronously
+    // (quickjs) and OnUObjectExit releases the UObject then
+    if (auto Wrapper = NativeTakeJsRefObjects.Find(UEObject))
     {
-        if (Entry->Handle != 0)
-        {
-            UserObjectPool.Set(Entry->Handle, UEObject);
-        }
-        FNativeTakeJsRef Removed = MoveTemp(*Entry);
+        UserObjectRetainer.Retain(UEObject);
+        FPapiValueRef Removed = MoveTemp(*Wrapper);
         NativeTakeJsRefObjects.Remove(UEObject);
     }
 }
@@ -596,7 +559,7 @@ void FScriptEnvImpl::SetJsTakeRef(pesapi_env Env, UObject* UEObject)
 void FScriptEnvImpl::UnBind(UObject* UEObject)
 {
     // the UObject is destroyed while its wrapper may be still alive: unbind it (any access from js reports an invalid object
-    // from now on), OnUObjectExit frees its slot
+    // from now on), OnUObjectExit releases the UObject
     if (!MainEnvRef || !MainApis)
     {
         return;
@@ -607,9 +570,9 @@ void FScriptEnvImpl::UnBind(UObject* UEObject)
         return;
     }
     MainApis->unbind_native_object(EnvScope.GetEnv(), nullptr, UEObject);
-    if (auto Entry = NativeTakeJsRefObjects.Find(UEObject))
+    if (auto Wrapper = NativeTakeJsRefObjects.Find(UEObject))
     {
-        FNativeTakeJsRef Removed = MoveTemp(*Entry);
+        FPapiValueRef Removed = MoveTemp(*Wrapper);
         NativeTakeJsRefObjects.Remove(UEObject);
     }
 }
@@ -1308,7 +1271,7 @@ bool FScriptEnvImpl::CheckDelegateProxies(float Tick)
 bool FScriptEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
 {
     UScriptStruct* Struct = Wrapper->Struct.IsValid() ? Cast<UScriptStruct>(Wrapper->Struct.Get()) : nullptr;
-    // the objects of a non native struct hold the struct (on_enter, not called for a trivially freed object)
+    // only native pod structs (a non native struct may be destroyed by a recompile while a gc thread frees its objects)
     return Struct && Struct->IsNative() && (Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
 }
 
@@ -1352,6 +1315,15 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
         StructWrapper->Define(InStruct, true);
         // cached by type id (the wrapper), a new UStruct with the same full name keeps the js class of this env
         MainApis->create_class(Env, StructWrapper.get());
+
+        // a non native struct (user defined) may be collected while its objects are alive, the env holds it (as 2.0)
+        if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
+        {
+            if (!ScriptStruct->IsNative())
+            {
+                SysObjectRetainer.Retain(ScriptStruct);
+            }
+        }
 
         TemplateInfo.StructWrapper = StructWrapper;
 

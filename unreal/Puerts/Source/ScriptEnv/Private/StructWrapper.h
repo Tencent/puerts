@@ -200,13 +200,6 @@ public:
     // CppObjectMapper through it
     static void ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr, void* ClassData, void* EnvPrivate);
 
-    // OnEnter / OnExit of the class definitions of non native UScriptStructs (a user defined struct may be collected while
-    // its objects are alive): each object holds the UScriptStruct by a slot of the env (IObjectMapper::RetainUObject)
-    static void* ReflectedOnEnter(
-        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, void* Ptr, void* ClassData, void* EnvPrivate);
-
-    static void ReflectedOnExit(void* Ptr, void* ClassData, void* EnvPrivate, void* UserData);
-
     static void* Alloc(UScriptStruct* InScriptStruct);
 
     static void Free(TWeakObjectPtr<UStruct> InStruct, const FExternalFinalizer& InExternalFinalize, void* Ptr);
