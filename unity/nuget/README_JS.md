@@ -149,6 +149,10 @@ env.Dispose();
 
 ## Documentation
 
+### Runnable examples
+
+- [Parallel Search MCP](examples/parallel-search): call free web search and page fetching from a PuerTS JavaScript module on .NET, without an API key.
+
 For full documentation, tutorials and API reference, visit: [https://puerts.github.io/en](https://puerts.github.io/en)
 
 ## License
