@@ -299,6 +299,7 @@ elseif ( ANDROID )
     if ( CMAKE_BUILD_TYPE MATCHES "Release" )
         target_link_options(PapiV8 PRIVATE -s)
     endif ()
+    target_link_options(PapiV8 PRIVATE -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384) # android 16K Pagesize
 
     #set_target_properties( puerts PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/android_version.script)
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/android_version.script")

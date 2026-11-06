@@ -138,3 +138,7 @@ target_compile_options(PapiLua PRIVATE
         /GR-   # 禁用RTTI
     >
 )
+
+if ( ANDROID )
+    target_link_options(PapiLua PRIVATE -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384) # android 16K Pagesize
+endif ()

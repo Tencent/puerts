@@ -114,6 +114,8 @@ if(ANDROID)
             -Wl,--hash-style=both    # Support both sysv and gnu hash for compatibility
             -Wl,--no-undefined
             -Wl,--as-needed
+            -Wl,-z,max-page-size=16384   # android 16K Pagesize
+            -Wl,-z,common-page-size=16384
     )
 endif()
 
