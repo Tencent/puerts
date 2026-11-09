@@ -259,6 +259,16 @@ jobs:
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xfz temp.tgz
         mkdir output
+    - name: Prepare toolchain
+      shell: bash
+      run: |
+        # macos-15 images no longer ship mono, which RunUAT.sh of UE4.27 needs (AutomationTool)
+        if ! command -v mono >/dev/null 2>&1; then
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          brew install mono || { brew uninstall --force mono || true; brew install mono; }
+        fi
+        mono --version | head -n 1
+        clang --version | head -n 1
     - name: Build
       shell: bash
       run: |
