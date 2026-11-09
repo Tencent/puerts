@@ -113,7 +113,7 @@ jobs:
   mac_test:
     needs: urls
     name: Mac Test
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
     - uses: actions/checkout@v3
     - name: Cache engine
@@ -240,7 +240,7 @@ jobs:
   mac_ios_ci:
     needs: urls
     name: Mac and IOS
-    runs-on: macos-14
+    runs-on: macos-15
     strategy:
       matrix:
         cmdinfo:
