@@ -15,6 +15,9 @@
 
 // Ensure libpython is loaded with RTLD_GLOBAL so that Python extension modules
 // (e.g. math, random) can resolve symbols like PyFloat_Type when embedded.
+// Only promote the libpython libPapiPython is already linked against (RTLD_NOLOAD);
+// never load one by name, which could bring a second copy (system Python or a
+// duplicated file) into the process.
 static void EnsureLibPythonGlobal()
 {
     static int s_inited = 0;
@@ -24,16 +27,19 @@ static void EnsureLibPythonGlobal()
     }
     s_inited = 1;
 
-    char soname[64];
-    snprintf(soname, sizeof(soname), "libpython%d.%d.so", PY_MAJOR_VERSION, PY_MINOR_VERSION);
-
-    void* handle = dlopen(soname, RTLD_NOW | RTLD_GLOBAL);
-    if (!handle)
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void*>(&Py_InitializeFromConfig), &info) && info.dli_fname)
     {
-        // Fallback: try a more generic name; if this also fails, Python
-        // initialization will likely fail later and report an error.
-        handle = dlopen("libpython3.so", RTLD_NOW | RTLD_GLOBAL);
+        if (dlopen(info.dli_fname, RTLD_NOW | RTLD_GLOBAL | RTLD_NOLOAD))
+        {
+            return;
+        }
     }
+
+    // Fallback: match by soname, still without loading anything new.
+    char soname[64];
+    snprintf(soname, sizeof(soname), "libpython%d.%d.so.1.0", PY_MAJOR_VERSION, PY_MINOR_VERSION);
+    dlopen(soname, RTLD_NOW | RTLD_GLOBAL | RTLD_NOLOAD);
 }
 #else
 static void EnsureLibPythonGlobal() {}

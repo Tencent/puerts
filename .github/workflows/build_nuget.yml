@@ -32,10 +32,14 @@ on:
         type: boolean
 
 env:
-  # Single source of truth for the bundled macOS Python.
-  # libPapiPython is built against this exact distribution and it is the one shipped in the nuget package.
+  # Single source of truth for the bundled Python on every desktop platform.
+  # libPapiPython is built against these exact distributions and they are the ones shipped in the nuget package.
   PY_MINOR_VERSION: '3.14'
   PY_OSX_ARM64_URL: https://github.com/astral-sh/python-build-standalone/releases/download/20260127/cpython-3.14.2+20260127-aarch64-apple-darwin-install_only.tar.gz
+  PY_LINUX_X64_URL: https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-x86_64_v2-unknown-linux-gnu-install_only_stripped.tar.gz
+  # Windows: build against the official nuget package (has include/ and libs/), ship the official embed zip of the same release
+  PY_WIN_X64_NUGET_URL: https://www.nuget.org/api/v2/package/python/3.14.2
+  PY_WIN_X64_EMBED_URL: https://www.python.org/ftp/python/3.14.2/python-3.14.2-embed-amd64.zip
 
 jobs:
   build:
@@ -57,9 +61,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
       
       - name: Install libc++-dev (Linux only)
         if: runner.os == 'Linux'
@@ -74,6 +75,15 @@ jobs:
           backends="${NATIVE_BACKENDS}"
           repo_root=$(pwd)
 
+          # Download the exact Python distribution that will be bundled, and build papi-python against it
+          py_dir="$RUNNER_TEMP/python-linux-x64"
+          mkdir -p "$py_dir"
+          curl -fsSL "$PY_LINUX_X64_URL" -o "$RUNNER_TEMP/python-linux-x64.tar.gz"
+          tar -xzf "$RUNNER_TEMP/python-linux-x64.tar.gz" -C "$py_dir"
+          export PUERTS_PYTHON_ROOT="$py_dir/python"
+          export PUERTS_PYTHON_VERSION="$PY_MINOR_VERSION"
+          ls -la "$PUERTS_PYTHON_ROOT/lib" "$PUERTS_PYTHON_ROOT/include"
+
           for backend in $backends; do
             echo "Building $backend for ${{ matrix.platform }}-${{ matrix.arch }}"
             cd "$repo_root/unity/native/$backend"
@@ -81,22 +91,22 @@ jobs:
             cd "$repo_root"
           done
 
-          # Copy system Python's lib-dynload directory
-          python_version=$(python3 --version | awk '{print $2}' | cut -d. -f1,2)
-          echo "Python version: $python_version"
-          
-          # Find lib-dynload directory using sysconfig
-          lib_dynload_path=$(python3 -c "import sysconfig; import os; stdlib = sysconfig.get_path('stdlib'); print(os.path.join(stdlib, 'lib-dynload'))")
-          echo "lib-dynload path: $lib_dynload_path"
-          
-          if [ -d "$lib_dynload_path" ]; then
-            dest_path="$repo_root/unity/native/papi-python/build_linux_x64_papi-python/lib-dynload"
-            mkdir -p "$dest_path"
-            cp -r "$lib_dynload_path"/* "$dest_path/"
-            echo "Copied lib-dynload to $dest_path"
-            ls -la "$dest_path"
-          else
-            echo "Warning: lib-dynload directory not found at $lib_dynload_path"
+      - name: Verify Linux libPapiPython dependencies
+        if: runner.os == 'Linux'
+        run: |
+          set -e
+          lib="unity/native/papi-python/build_linux_x64_papi-python/libPapiPython.so"
+          readelf -d "$lib"
+          py_deps=$(readelf -d "$lib" | grep '(NEEDED)' | grep -io 'libpython[^]]*' || true)
+          expected="libpython${PY_MINOR_VERSION}.so.1.0"
+          if [ "$py_deps" != "$expected" ]; then
+            echo "::error::libPapiPython must only depend on $expected, got: $py_deps"
+            exit 1
+          fi
+          rpath=$(readelf -d "$lib" | grep -E '\((RUNPATH|RPATH)\)' | sed -E 's/.*\[(.*)\].*/\1/')
+          if [ "$rpath" != '$ORIGIN' ]; then
+            echo "::error::libPapiPython RUNPATH must be exactly \$ORIGIN, got: $rpath"
+            exit 1
           fi
 
       - name: Build all native backends (macOS)
@@ -128,11 +138,42 @@ jobs:
           $ErrorActionPreference = "Stop"
           $backends = $env:NATIVE_BACKENDS.Split(" ")
           $repoRoot = (Get-Location)
+
+          # Download the official Python nuget package (headers + import libs) of the release that will be bundled
+          $pyDir = Join-Path $env:RUNNER_TEMP "python-win-x64"
+          $pyZip = Join-Path $env:RUNNER_TEMP "python-win-x64.zip"
+          Invoke-WebRequest -Uri $env:PY_WIN_X64_NUGET_URL -OutFile $pyZip
+          Expand-Archive -Path $pyZip -DestinationPath $pyDir -Force
+          $env:PUERTS_PYTHON_ROOT = (Join-Path $pyDir "tools").Replace('\', '/')
+          $env:PUERTS_PYTHON_VERSION = $env:PY_MINOR_VERSION
+          Get-ChildItem "$env:PUERTS_PYTHON_ROOT/libs", "$env:PUERTS_PYTHON_ROOT/include/patchlevel.h"
+
           foreach ($backend in $backends) {
             Write-Host "Building $backend for ${{ matrix.platform }}-${{ matrix.arch }}"
             Set-Location "$repoRoot/unity/native/$backend"
             node ../../cli make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --expose_gc
             Set-Location $repoRoot
+          }
+        shell: pwsh
+
+      - name: Verify Windows PapiPython dependencies
+        if: runner.os == 'Windows'
+        run: |
+          $ErrorActionPreference = "Stop"
+          $lib = "unity/native/papi-python/build_win_x64_papi-python/Release/PapiPython.dll"
+          $objdump = (Get-Command llvm-objdump -ErrorAction SilentlyContinue).Source
+          if (-not $objdump) { $objdump = "C:/Program Files/LLVM/bin/llvm-objdump.exe" }
+          if (-not (Test-Path $objdump)) {
+            Write-Warning "llvm-objdump not found, skip dependency verification"
+            exit 0
+          }
+          $deps = & $objdump -p $lib | Select-String "DLL Name:\s*(\S+)" | ForEach-Object { $_.Matches[0].Groups[1].Value }
+          $deps | ForEach-Object { Write-Host "  $_" }
+          $pyDeps = @($deps | Where-Object { $_ -match '^python' })
+          $expected = "python$($env:PY_MINOR_VERSION.Replace('.', '')).dll"
+          if ($pyDeps.Count -ne 1 -or $pyDeps[0] -ine $expected) {
+            Write-Host "::error::PapiPython.dll must only depend on $expected, got: $($pyDeps -join ', ')"
+            exit 1
           }
         shell: pwsh
       
@@ -229,7 +270,6 @@ jobs:
             
             unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/papi-python/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
-            unity/native/papi-python/build_linux_x64_papi-python/lib-dynload/**
             
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/Release/*.dll
             unity/native/puerts/build_${{ matrix.platform }}_${{ matrix.arch }}_*/lib*.so
@@ -257,52 +297,35 @@ jobs:
       - name: Download Python (Windows)
         run: |
           $destPath = "unity/nuget/downloaded_natives/natives-win-x64/native/papi-python/build_win_x64_papi-python/Release"
-          $downloadedEmbedZip = "$env:TEMP/python-3.14.2-embed-amd64.zip"
-          $downloadUrl = "https://www.python.org/ftp/python/3.14.2/python-3.14.2-embed-amd64.zip"
-          Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadedEmbedZip
+          $downloadedEmbedZip = "$env:TEMP/python-win-x64-embed.zip"
+          Invoke-WebRequest -Uri $env:PY_WIN_X64_EMBED_URL -OutFile $downloadedEmbedZip
           Expand-Archive -Path $downloadedEmbedZip -DestinationPath $destPath -Force
+
+          $pyVerNoDot = $env:PY_MINOR_VERSION.Replace('.', '')
+          if (-not (Test-Path "$destPath/python$pyVerNoDot.dll")) { throw "Missing python$pyVerNoDot.dll" }
+          if (-not (Test-Path "$destPath/python$pyVerNoDot.zip")) { throw "Missing bundled stdlib python$pyVerNoDot.zip" }
         shell: pwsh
       - name: Download Python (Linux)
         run: |
           $destPath = "unity/nuget/downloaded_natives/natives-linux-x64/native/papi-python/build_linux_x64_papi-python"
-          $downloadedEmbedZip = "unity/nuget/cpython-3.14.2+20251217-x86_64_v2-unknown-linux-gnu-install_only_stripped.tar.gz"
-          $downloadUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-x86_64_v2-unknown-linux-gnu-install_only_stripped.tar.gz"
-          Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadedEmbedZip
+          $downloadedEmbedZip = "$env:TEMP/python-linux-x64.tar.gz"
+          Invoke-WebRequest -Uri $env:PY_LINUX_X64_URL -OutFile $downloadedEmbedZip
           tar -xzf $downloadedEmbedZip -C $destPath
 
           # Move $destPath/python3.14 to $destPath/lib
           Move-Item -Path "$destPath/python/lib/*" -Destination $destPath -Force
           mkdir "$destPath/lib"
-          Move-Item -Path "$destPath/python3.14" -Destination "$destPath/lib" -Force
+          Move-Item -Path "$destPath/python$env:PY_MINOR_VERSION" -Destination "$destPath/lib" -Force
           Remove-Item -Path "$destPath/python" -Recurse -Force
 
-          # Copy system lib-dynload files to extracted Python directory
-          $systemLibDynloadPath = "$destPath/lib-dynload"
-          $targetLibDynloadPath = "$destPath/lib/python3.14/lib-dynload"
-          
-          if (Test-Path $systemLibDynloadPath) {
-            Write-Host "Copying system lib-dynload files to $targetLibDynloadPath"
-            if (-not (Test-Path $targetLibDynloadPath)) {
-              New-Item -ItemType Directory -Path $targetLibDynloadPath -Force | Out-Null
-            }
-            
-            Get-ChildItem -Path $systemLibDynloadPath -File | ForEach-Object {
-              $targetFile = Join-Path $targetLibDynloadPath $_.Name
-              if (-not (Test-Path $targetFile)) {
-                Copy-Item -Path $_.FullName -Destination $targetFile -Force
-                Write-Host "Copied $($_.Name)"
-              } else {
-                Write-Host "Skipped $($_.Name) (already exists)"
-              }
-            }
-            
-            # Remove the temporary lib-dynload directory
-            Remove-Item -Path $systemLibDynloadPath -Recurse -Force
-            Write-Host "Removed temporary lib-dynload directory"
-          } else {
-            Write-Host "Warning: System lib-dynload directory not found at $systemLibDynloadPath"
-          }
-          
+          # libPapiPython.so needs libpythonX.Y.so.1.0 (soname). libpythonX.Y.so is a dev symlink in the tarball,
+          # extracting it on Windows may produce a full duplicate, drop it.
+          Remove-Item -Path "$destPath/libpython$env:PY_MINOR_VERSION.so" -Force -ErrorAction SilentlyContinue
+
+          $libpython = "$destPath/libpython$env:PY_MINOR_VERSION.so.1.0"
+          if (-not (Test-Path $libpython)) { throw "Missing $libpython" }
+          if (-not (Test-Path "$destPath/lib/python$env:PY_MINOR_VERSION/os.py")) { throw "Missing bundled stdlib" }
+
         shell: pwsh
       - name: Download Python (macOS)
         run: |

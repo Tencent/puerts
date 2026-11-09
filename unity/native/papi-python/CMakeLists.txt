@@ -66,15 +66,28 @@ if(ANDROID)
     message(STATUS "Python root: ${PYTHON_ANDROID_ROOT}")
     message(STATUS "Python include dir: ${Python3_INCLUDE_DIRS}")
     message(STATUS "Python library: ${Python3_LIBRARIES}")
-elseif(APPLE AND NOT IOS AND PUERTS_PYTHON_ROOT)
-    # macOS: build against the exact Python distribution that will be bundled
-    # (python-build-standalone "install_only" layout), never the system one.
+elseif(PUERTS_PYTHON_ROOT AND NOT IOS)
+    # Desktop (macOS / Linux / Windows): build against the exact Python distribution
+    # that will be bundled, never the system one.
+    #   macOS / Linux: python-build-standalone "install_only" layout
+    #   Windows: python.org nuget package "python", the "tools" directory
     if(NOT PUERTS_PYTHON_VERSION)
         set(PUERTS_PYTHON_VERSION "3.14")
     endif()
+    string(REPLACE "." "" _py_ver_nodot "${PUERTS_PYTHON_VERSION}")
 
-    set(Python3_INCLUDE_DIRS "${PUERTS_PYTHON_ROOT}/include/python${PUERTS_PYTHON_VERSION}")
-    set(_bundled_libpython "${PUERTS_PYTHON_ROOT}/lib/libpython${PUERTS_PYTHON_VERSION}.dylib")
+    if(WIN32)
+        set(Python3_INCLUDE_DIRS "${PUERTS_PYTHON_ROOT}/include")
+        set(_bundled_libpython "${PUERTS_PYTHON_ROOT}/libs/python${_py_ver_nodot}.lib")
+        # pyconfig.h auto-links pythonXY.lib via #pragma comment(lib), make sure it resolves to this copy
+        link_directories("${PUERTS_PYTHON_ROOT}/libs")
+    elseif(APPLE)
+        set(Python3_INCLUDE_DIRS "${PUERTS_PYTHON_ROOT}/include/python${PUERTS_PYTHON_VERSION}")
+        set(_bundled_libpython "${PUERTS_PYTHON_ROOT}/lib/libpython${PUERTS_PYTHON_VERSION}.dylib")
+    else()
+        set(Python3_INCLUDE_DIRS "${PUERTS_PYTHON_ROOT}/include/python${PUERTS_PYTHON_VERSION}")
+        set(_bundled_libpython "${PUERTS_PYTHON_ROOT}/lib/libpython${PUERTS_PYTHON_VERSION}.so")
+    endif()
 
     if(NOT EXISTS "${Python3_INCLUDE_DIRS}/Python.h")
         message(FATAL_ERROR "Bundled Python headers not found: ${Python3_INCLUDE_DIRS}")
@@ -89,20 +102,26 @@ elseif(APPLE AND NOT IOS AND PUERTS_PYTHON_ROOT)
         message(FATAL_ERROR "Bundled Python version mismatch, expect ${PUERTS_PYTHON_VERSION}.x, got: ${_py_ver_line}")
     endif()
 
-    # Link against a private copy whose install name is @rpath/libpythonX.Y.dylib,
-    # so libPapiPython loads the libpython placed next to it at runtime.
-    set(_patched_libpython_dir "${CMAKE_CURRENT_BINARY_DIR}/bundled_python")
-    file(MAKE_DIRECTORY "${_patched_libpython_dir}")
-    set(Python3_LIBRARIES "${_patched_libpython_dir}/libpython${PUERTS_PYTHON_VERSION}.dylib")
-    configure_file("${_bundled_libpython}" "${Python3_LIBRARIES}" COPYONLY)
-    execute_process(
-            COMMAND install_name_tool -id "@rpath/libpython${PUERTS_PYTHON_VERSION}.dylib" "${Python3_LIBRARIES}"
-            RESULT_VARIABLE _int_result
-    )
-    if(NOT _int_result EQUAL 0)
-        message(FATAL_ERROR "install_name_tool -id failed on ${Python3_LIBRARIES}")
+    if(APPLE)
+        # Link against a private copy whose install name is @rpath/libpythonX.Y.dylib,
+        # so libPapiPython loads the libpython placed next to it at runtime.
+        set(_patched_libpython_dir "${CMAKE_CURRENT_BINARY_DIR}/bundled_python")
+        file(MAKE_DIRECTORY "${_patched_libpython_dir}")
+        set(Python3_LIBRARIES "${_patched_libpython_dir}/libpython${PUERTS_PYTHON_VERSION}.dylib")
+        configure_file("${_bundled_libpython}" "${Python3_LIBRARIES}" COPYONLY)
+        execute_process(
+                COMMAND install_name_tool -id "@rpath/libpython${PUERTS_PYTHON_VERSION}.dylib" "${Python3_LIBRARIES}"
+                RESULT_VARIABLE _int_result
+        )
+        if(NOT _int_result EQUAL 0)
+            message(FATAL_ERROR "install_name_tool -id failed on ${Python3_LIBRARIES}")
+        endif()
+        execute_process(COMMAND codesign --force --sign - "${Python3_LIBRARIES}")
+    else()
+        # Linux: soname is libpythonX.Y.so.1.0, resolved through RUNPATH $ORIGIN (set below)
+        # Windows: import lib references pythonXY.dll, resolved from the dll directory at runtime
+        set(Python3_LIBRARIES "${_bundled_libpython}")
     endif()
-    execute_process(COMMAND codesign --force --sign - "${Python3_LIBRARIES}")
     set(PUERTS_PYTHON_BUNDLED ON)
 
     message(STATUS "Using bundled Python root: ${PUERTS_PYTHON_ROOT}")
@@ -175,12 +194,26 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(PapiPython dl)
 endif()
 
-if(PUERTS_PYTHON_BUNDLED)
+if(PUERTS_PYTHON_BUNDLED AND APPLE)
     # libpythonX.Y.dylib is shipped next to libPapiPython.dylib
     target_link_options(PapiPython PRIVATE "-Wl,-rpath,@loader_path")
     add_custom_command(TARGET PapiPython POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${Python3_LIBRARIES}"
+            $<TARGET_FILE_DIR:PapiPython>
+            COMMENT "Copying bundled libpython next to PapiPython"
+    )
+elseif(PUERTS_PYTHON_BUNDLED AND UNIX)
+    # libpythonX.Y.so.1.0 is shipped next to libPapiPython.so; use only $ORIGIN,
+    # never an absolute build-machine path (e.g. /opt/hostedtoolcache/...)
+    set_target_properties(PapiPython PROPERTIES
+            BUILD_WITH_INSTALL_RPATH ON
+            INSTALL_RPATH "$ORIGIN"
+    )
+    # Only the soname file is copied (for local runs); the upload glob lib*.so won't pick it up
+    add_custom_command(TARGET PapiPython POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${PUERTS_PYTHON_ROOT}/lib/libpython${PUERTS_PYTHON_VERSION}.so.1.0"
             $<TARGET_FILE_DIR:PapiPython>
             COMMENT "Copying bundled libpython next to PapiPython"
     )
