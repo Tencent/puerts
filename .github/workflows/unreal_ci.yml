@@ -272,6 +272,8 @@ jobs:
     - name: Build
       shell: bash
       run: |
+        # clang 17 of the macos-15 image rejects the engine headers of UE4.27 without -fno-access-control
+        source unreal/TestProject/Tools/set_clang_compat.sh
         Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
     #- name: Print Log
     #  shell: bash
