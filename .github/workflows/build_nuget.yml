@@ -31,6 +31,12 @@ on:
         default: false
         type: boolean
 
+env:
+  # Single source of truth for the bundled macOS Python.
+  # libPapiPython is built against this exact distribution and it is the one shipped in the nuget package.
+  PY_MINOR_VERSION: '3.14'
+  PY_OSX_ARM64_URL: https://github.com/astral-sh/python-build-standalone/releases/download/20260127/cpython-3.14.2+20260127-aarch64-apple-darwin-install_only.tar.gz
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -100,6 +106,15 @@ jobs:
           backends="${NATIVE_BACKENDS}"
           repo_root=$(pwd)
 
+          # Download the exact Python distribution that will be bundled, and build papi-python against it
+          py_dir="$RUNNER_TEMP/python-osx-arm64"
+          mkdir -p "$py_dir"
+          curl -fsSL "$PY_OSX_ARM64_URL" -o "$RUNNER_TEMP/python-osx-arm64.tar.gz"
+          tar -xzf "$RUNNER_TEMP/python-osx-arm64.tar.gz" -C "$py_dir"
+          export PUERTS_PYTHON_ROOT="$py_dir/python"
+          export PUERTS_PYTHON_VERSION="$PY_MINOR_VERSION"
+          ls "$PUERTS_PYTHON_ROOT/lib" "$PUERTS_PYTHON_ROOT/include"
+
           for backend in $backends; do
             echo "Building $backend for ${{ matrix.platform }}"
             cd "$repo_root/unity/native/$backend"
@@ -137,6 +152,24 @@ jobs:
               done
             fi
           done
+
+      - name: Verify macOS libPapiPython dependencies
+        if: runner.os == 'macOS'
+        run: |
+          set -e
+          lib="unity/upms/python/Plugins/macOS/arm64/libPapiPython.dylib"
+          otool -L "$lib"
+          py_deps=$(otool -L "$lib" | tail -n +2 | awk '{print $1}' | grep -i python | grep -v PapiPython || true)
+          expected="@rpath/libpython${PY_MINOR_VERSION}.dylib"
+          if [ "$py_deps" != "$expected" ]; then
+            echo "::error::libPapiPython must only depend on $expected, got: $py_deps"
+            exit 1
+          fi
+          if ! otool -l "$lib" | grep -A2 LC_RPATH | grep -q '@loader_path'; then
+            echo "::error::libPapiPython is missing LC_RPATH @loader_path"
+            exit 1
+          fi
+          codesign --verify --verbose "$lib"
       
       # puerts\unity\native\papi-nodejs\.backends\papi-nodejs\lib\Linux\libnode.so.93
       # puerts\unity\native\papi-nodejs\.backends\papi-nodejs\lib\Win64\libnode.dll
@@ -158,11 +191,6 @@ jobs:
           }
           if ("${{ matrix.platform }}" -eq "osx" -and (Test-Path "unity/upms/nodejs/Plugins/macOS")) {
             Move-Item -Path "unity/native/papi-nodejs/.backends/papi-nodejs/lib/macOS/libnode.93.dylib" -Destination "unity/upms/nodejs/Plugins/macOS/libnode.93.dylib" -Force
-            
-            $oldPath = "/Library/Frameworks/Python.framework/Versions/3.14/Python"
-            $newPath = "@loader_path/libpython3.14.dylib"
-            $plugin = "unity/upms/python/Plugins/macOS/arm64/libPapiPython.dylib"
-            install_name_tool -change $oldPath $newPath $plugin
           }
           if ("${{ matrix.platform }}" -eq "win") {
             # Remove python's PuertsCore.dll on Windows
@@ -279,8 +307,8 @@ jobs:
       - name: Download Python (macOS)
         run: |
           $destPath = "unity/nuget/downloaded_natives/natives-osx-arm64/upms/python/Plugins/macOS/arm64"
-          $downloadedEmbedZip = "$env:TEMP/cpython-3.14.2+20260127-aarch64-apple-darwin-install_only.tar.gz"
-          $downloadUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/20260127/cpython-3.14.2+20260127-aarch64-apple-darwin-install_only.tar.gz"
+          $downloadedEmbedZip = "$env:TEMP/python-osx-arm64.tar.gz"
+          $downloadUrl = $env:PY_OSX_ARM64_URL
           Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadedEmbedZip
           tree unity/nuget/downloaded_natives
           tar -xzf $downloadedEmbedZip -C $destPath
@@ -288,8 +316,12 @@ jobs:
           # Move $destPath/python3.14 to $destPath/lib
           Move-Item -Path "$destPath/python/lib/*" -Destination $destPath -Force
           mkdir "$destPath/lib"
-          Move-Item -Path "$destPath/python3.14" -Destination "$destPath/lib" -Force
+          Move-Item -Path "$destPath/python$env:PY_MINOR_VERSION" -Destination "$destPath/lib" -Force
           Remove-Item -Path "$destPath/python" -Recurse -Force
+
+          $libpython = "$destPath/libpython$env:PY_MINOR_VERSION.dylib"
+          if (-not (Test-Path $libpython)) { throw "Missing $libpython" }
+          if (-not (Test-Path "$destPath/lib/python$env:PY_MINOR_VERSION/os.py")) { throw "Missing bundled stdlib" }
 
         shell: pwsh
       # Trusted Publishing (https://learn.microsoft.com/zh-cn/nuget/nuget-org/trusted-publishing):

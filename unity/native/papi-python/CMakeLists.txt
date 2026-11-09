@@ -19,6 +19,15 @@ endif ()
 
 add_subdirectory(../puerts ${CMAKE_CURRENT_BINARY_DIR}/puerts)
 
+# Root of the Python distribution to build against (and bundle).
+# Can be passed as -DPUERTS_PYTHON_ROOT=... or via environment variable.
+if(NOT PUERTS_PYTHON_ROOT AND DEFINED ENV{PUERTS_PYTHON_ROOT})
+    set(PUERTS_PYTHON_ROOT "$ENV{PUERTS_PYTHON_ROOT}")
+endif()
+if(NOT PUERTS_PYTHON_VERSION AND DEFINED ENV{PUERTS_PYTHON_VERSION})
+    set(PUERTS_PYTHON_VERSION "$ENV{PUERTS_PYTHON_VERSION}")
+endif()
+
 # Android Python configuration
 if(ANDROID)
     # Determine Python package directory based on Android ABI
@@ -55,6 +64,49 @@ if(ANDROID)
     message(STATUS "Building for Android ABI: ${ANDROID_ABI}")
     message(STATUS "Using Android Python package: ${PYTHON_ANDROID_PACKAGE}")
     message(STATUS "Python root: ${PYTHON_ANDROID_ROOT}")
+    message(STATUS "Python include dir: ${Python3_INCLUDE_DIRS}")
+    message(STATUS "Python library: ${Python3_LIBRARIES}")
+elseif(APPLE AND NOT IOS AND PUERTS_PYTHON_ROOT)
+    # macOS: build against the exact Python distribution that will be bundled
+    # (python-build-standalone "install_only" layout), never the system one.
+    if(NOT PUERTS_PYTHON_VERSION)
+        set(PUERTS_PYTHON_VERSION "3.14")
+    endif()
+
+    set(Python3_INCLUDE_DIRS "${PUERTS_PYTHON_ROOT}/include/python${PUERTS_PYTHON_VERSION}")
+    set(_bundled_libpython "${PUERTS_PYTHON_ROOT}/lib/libpython${PUERTS_PYTHON_VERSION}.dylib")
+
+    if(NOT EXISTS "${Python3_INCLUDE_DIRS}/Python.h")
+        message(FATAL_ERROR "Bundled Python headers not found: ${Python3_INCLUDE_DIRS}")
+    endif()
+    if(NOT EXISTS "${_bundled_libpython}")
+        message(FATAL_ERROR "Bundled libpython not found: ${_bundled_libpython}")
+    endif()
+
+    # Ensure headers really are the expected minor version.
+    file(STRINGS "${Python3_INCLUDE_DIRS}/patchlevel.h" _py_ver_line REGEX "^#define PY_VERSION ")
+    if(NOT _py_ver_line MATCHES "\"${PUERTS_PYTHON_VERSION}\\.")
+        message(FATAL_ERROR "Bundled Python version mismatch, expect ${PUERTS_PYTHON_VERSION}.x, got: ${_py_ver_line}")
+    endif()
+
+    # Link against a private copy whose install name is @rpath/libpythonX.Y.dylib,
+    # so libPapiPython loads the libpython placed next to it at runtime.
+    set(_patched_libpython_dir "${CMAKE_CURRENT_BINARY_DIR}/bundled_python")
+    file(MAKE_DIRECTORY "${_patched_libpython_dir}")
+    set(Python3_LIBRARIES "${_patched_libpython_dir}/libpython${PUERTS_PYTHON_VERSION}.dylib")
+    configure_file("${_bundled_libpython}" "${Python3_LIBRARIES}" COPYONLY)
+    execute_process(
+            COMMAND install_name_tool -id "@rpath/libpython${PUERTS_PYTHON_VERSION}.dylib" "${Python3_LIBRARIES}"
+            RESULT_VARIABLE _int_result
+    )
+    if(NOT _int_result EQUAL 0)
+        message(FATAL_ERROR "install_name_tool -id failed on ${Python3_LIBRARIES}")
+    endif()
+    execute_process(COMMAND codesign --force --sign - "${Python3_LIBRARIES}")
+    set(PUERTS_PYTHON_BUNDLED ON)
+
+    message(STATUS "Using bundled Python root: ${PUERTS_PYTHON_ROOT}")
+    message(STATUS "Python version line: ${_py_ver_line}")
     message(STATUS "Python include dir: ${Python3_INCLUDE_DIRS}")
     message(STATUS "Python library: ${Python3_LIBRARIES}")
 else()
@@ -121,6 +173,17 @@ endif()
 
 if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(PapiPython dl)
+endif()
+
+if(PUERTS_PYTHON_BUNDLED)
+    # libpythonX.Y.dylib is shipped next to libPapiPython.dylib
+    target_link_options(PapiPython PRIVATE "-Wl,-rpath,@loader_path")
+    add_custom_command(TARGET PapiPython POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${Python3_LIBRARIES}"
+            $<TARGET_FILE_DIR:PapiPython>
+            COMMENT "Copying bundled libpython next to PapiPython"
+    )
 endif()
 
 target_compile_definitions(PapiPython PRIVATE EASTL_DLL USING_EASTL)
