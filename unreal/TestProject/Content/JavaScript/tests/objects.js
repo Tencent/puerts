@@ -63,6 +63,28 @@ test('NewStruct bad arguments', () => {
     note('NewStruct class type', catchError(() => UE.NewStruct(UE.PuertsTestObject.StaticClass())));
 });
 
+test('POD struct', () => {
+    // a native plain old data struct is a trivially freed object
+    const v = new UE.Vector(1, 2, 3);
+    eq([v.X, v.Y, v.Z], [1, 2, 3]);
+    const p = UE.NewStruct(UE.Vector.StaticClass());
+    assert(p instanceof UE.Vector, 'NewStruct of a POD struct');
+    p.X = 5;
+    eq(p.X, 5);
+    state.podStruct = v;
+    state.podNewStruct = p;
+});
+
+test('FNameLiteral', () => {
+    const lit = UE.FNameLiteral('PuertsFNameLiteral');
+    assert(lit instanceof ArrayBuffer, 'FNameLiteral is an ArrayBuffer');
+    const o = new UE.PuertsTestObject();
+    o.NameValue = lit;
+    eq(o.NameValue, 'PuertsFNameLiteral');
+    o.NameValue = UE.FNameLiteral('');
+    eq(o.NameValue, 'None');
+});
+
 test('plain object is not a struct', () => {
     const o = new UE.PuertsTestObject();
     o.StructValue.X = 3;
@@ -102,9 +124,12 @@ test('setJsTakeRef', () => {
 step(() => {
     test('after gc', () => {
         eq(state.newStruct.X, 7);
+        eq([state.podStruct.X, state.podStruct.Y, state.podStruct.Z], [1, 2, 3], 'POD struct survives gc');
+        eq(state.podNewStruct.X, 5, 'NewStruct POD struct survives gc');
         observe('weak of destroyed object IsValid', () => state.weak.IsValid());
         observe('weak of destroyed object Get', () => state.weak.Get());
         note('NewObject with destroyed outer', catchError(() => UE.NewObject(UE.PuertsTestObject.StaticClass(), state.doomedOuter)));
+        note('NewStruct with destroyed object', catchError(() => UE.NewStruct(state.doomedOuter)));
         note('object without js take ref after gc', catchError(() => state.notTaken.IntValue));
     });
 });

@@ -298,6 +298,9 @@ FORCEINLINE void* ContainerOfValue(struct pesapi_ffi* Apis, pesapi_env Env, pesa
 // (see FindBuiltinClass)
 const JSClassDefinition* FindContainerClass(const void* TypeId);
 
+// __tgjsNewContainer(kind, type1, type2?): a new (owned) Array (0) / Set (1) / Map (2) of the element types
+void NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
 template <typename T>
 class FContainerWrapper
 {

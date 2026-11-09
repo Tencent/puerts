@@ -97,12 +97,6 @@ public:
     // the UObject was destroyed, it is unbound from its wrapper (if any)
     void UnBind(UObject* UEObject);
 
-    // an owned POD struct, the memory may be freed with the script object by the backend (IPapiBackend::
-    // CreateTriviallyFreedObject) instead of the finalizer of the class definition
-    static bool IsTriviallyFreed(FScriptStructWrapper* Wrapper);
-
-    static void FreeTriviallyFreedStruct(void* Ptr, size_t Size, void* DeleterData);
-
     virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
@@ -183,12 +177,6 @@ private:
 
     void SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    bool GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr);
-
-    void NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct);
-
     // the per env info of a UStruct whose js class is built in this env (the class itself is cached by the backend, keyed by
     // the type id, see pesapi create_class)
     struct FTemplateInfo
@@ -207,8 +195,6 @@ private:
     bool Tick(float DeltaTime);
 
     void NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    void NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     TArray<TWeakObjectPtr<UClass>> MixinClasses;

@@ -15,6 +15,7 @@
 #include "Misc/Paths.h"
 #include "StructWrapper.h"
 #include "PapiUtils.h"
+#include "PapiHostFunctions.h"
 #include "DelegateWrapper.h"
 #include "ContainerWrapper.h"
 #include "SoftObjectWrapper.h"
@@ -48,75 +49,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FStri
     : FScriptEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
           std::make_shared<FDefaultLogger>(), -1, FString(), nullptr, nullptr)
 {
-}
-
-static void FNameToArrayBuffer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    FName Name(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    Apis->add_return(Info, Apis->create_binary_by_value(Env, &Name, sizeof(FName)));
-}
-
-static void ToCString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    pesapi_value Str = Apis->get_arg(Info, 0);
-    if (!Apis->is_string(Env, Str))
-    {
-        Apis->throw_by_string(Info, "expect a string");
-        return;
-    }
-
-    size_t Length = 0;
-    Apis->get_value_string_utf8(Env, Str, nullptr, &Length);
-    TArray<char> Buff;
-    Buff.SetNumUninitialized(Length + 1);
-    Apis->get_value_string_utf8(Env, Str, Buff.GetData(), &Length);
-    Buff[Length] = '\0';
-    Apis->add_return(Info, Apis->create_binary_by_value(Env, Buff.GetData(), Length + 1));
-}
-
-static void ToCPtrArray(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    const int Num = Apis->get_args_len(Info);
-
-    TArray<void*> Buff;
-    Buff.SetNumZeroed(Num);
-    for (int i = 0; i < Num; i++)
-    {
-        pesapi_value Val = Apis->get_arg(Info, i);
-        // an ArrayBuffer or an ArrayBufferView
-        if (Apis->is_binary(Env, Val))
-        {
-            size_t Unused = 0;
-            Buff[i] = Apis->get_value_binary(Env, Val, &Unused);
-        }
-    }
-    Apis->add_return(Info, Apis->create_binary_by_value(Env, Buff.GetData(), sizeof(void*) * Num));
-}
-
-static void GetFNameString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    FName RequiredFName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, RequiredFName.ToString()));
-}
-
-// the name with the case of the comparison entry (the first registered case), ToString keeps the case of the display entry
-static void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-    FName RequiredFName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    const FNameEntry* Entry = RequiredFName.GetComparisonNameEntry();
-    FString Out;
-    Entry->AppendNameToString(Out);
-    if (RequiredFName.GetNumber() != NAME_NO_NUMBER_INTERNAL)
-    {
-        Out += TEXT('_');
-        Out.AppendInt(NAME_INTERNAL_TO_EXTERNAL(RequiredFName.GetNumber()));
-    }
-    Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, Out));
 }
 
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
@@ -168,17 +100,17 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
         PapiMethodBindingHelper<&FScriptEnvImpl::LoadCppType>::Bind(Apis, Env, PapiPuertsObj, "loadCPPType", this);
 
-        PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &GetFNameString);
+        PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &PapiHostFunctions::GetFNameString);
 
         PapiMethodBindingHelper<&FScriptEnvImpl::UEClassToJSClass>::Bind(Apis, Env, PapiGlobal, "__tgjsUEClassToJSClass", this);
 
-        PapiMethodBindingHelper<&FScriptEnvImpl::NewContainer>::Bind(Apis, Env, PapiGlobal, "__tgjsNewContainer", this);
+        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsNewContainer", &NewContainer);
 
         PapiMethodBindingHelper<&FScriptEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
 
         PapiMethodBindingHelper<&FScriptEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
 
-        PapiMethodBindingHelper<&FScriptEnvImpl::NewStructByScriptStruct>::Bind(Apis, Env, PapiGlobal, "__tgjsNewStruct", this);
+        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsNewStruct", &FScriptStructWrapper::NewByScriptStruct);
 
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
 
@@ -192,11 +124,11 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
         PapiMethodBindingHelper<&FScriptEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
         PapiMethodBindingHelper<&FScriptEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
-        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &FNameToArrayBuffer);
+        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &PapiHostFunctions::FNameToArrayBuffer);
 
-        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &ToCString);
+        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &PapiHostFunctions::ToCString);
 
-        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &ToCPtrArray);
+        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &PapiHostFunctions::ToCPtrArray);
 
         PapiBindFunction(Apis, Env, PapiPuertsObj, "load", &LoadPesapiDll);
 
@@ -239,7 +171,7 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 
         // a script name may differ from the FName only in case (FName is case insensitive), the backend fixes the name by
         // FName when a member is not found (a js Proxy at the end of the prototype chain of the virtual root class)
-        Backend->InstallNameFixing(Env, Apis->create_class(Env, FStructWrapper::RootTypeId()), &FixFNameCase);
+        Backend->InstallNameFixing(Env, Apis->create_class(Env, FStructWrapper::RootTypeId()), &PapiHostFunctions::FixFNameCase);
     }
 
     DelegateProxiesCheckerHandler =
@@ -440,33 +372,6 @@ void FScriptEnvImpl::NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_i
     }
 }
 
-void FScriptEnvImpl::NewStructByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    pesapi_env Env = Apis->get_env(Info);
-
-    UScriptStruct* ScriptStruct = nullptr;
-    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
-    {
-        if (PapiUtils::IsReleasedPtr(Object))
-        {
-            Apis->throw_by_string(Info, "passing a invalid object");
-            return;
-        }
-        ScriptStruct = Cast<UScriptStruct>(Object);
-    }
-
-    if (ScriptStruct)
-    {
-        void* Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
-
-        Apis->add_return(Info, PapiDataTransfer::FindOrAddStruct(Apis, Env, ScriptStruct, Ptr, false));
-    }
-    else
-    {
-        Apis->throw_by_string(Info, "invalid argument");
-    }
-}
-
 bool FScriptEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
 {
     return Backend->IdleNotificationDeadline(DeadlineInSeconds);
@@ -603,10 +508,10 @@ pesapi_value FScriptEnvImpl::FindOrAddStruct(pesapi_env Env, UScriptStruct* Scri
     auto TemplateInfoPtr = GetTemplateInfoOfType(Env, ScriptStruct, Existed);
     auto Wrapper = static_cast<FScriptStructWrapper*>(TemplateInfoPtr->StructWrapper.get());
     // the memory of an owned pod struct is freed with the object by the backend (if supported)
-    if (!PassByPointer && IsTriviallyFreed(Wrapper))
+    if (!PassByPointer && Wrapper->IsTriviallyFreed())
     {
         if (auto Result = Backend->CreateTriviallyFreedObject(Env, static_cast<FStructWrapper*>(Wrapper), Ptr,
-                Wrapper->Struct->GetStructureSize(), &FreeTriviallyFreedStruct, Wrapper))
+                Wrapper->Struct->GetStructureSize(), &FScriptStructWrapper::FreeTriviallyFreed, Wrapper))
         {
             return Result;
         }
@@ -769,46 +674,6 @@ void FScriptEnvImpl::TryReleaseType(UStruct* Struct)
     NativeTakeJsRefClasses.Remove(static_cast<UClass*>(Struct));
 }
 
-// fix ScriptCore.cpp UObject::SkipFunction crash when Function has no parameters
-static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
-{
-    uint8* Frame = (uint8*) FMemory_Alloca(Function->PropertiesSize);
-    FMemory::Memzero(Frame, Function->PropertiesSize);
-    for (PropertyMacro* Property = (PropertyMacro*) (
-#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
-             Function->ChildProperties
-#else
-             Function->Children
-#endif
-         );
-         Property && (*Stack.Code != EX_EndFunctionParms); Property = (PropertyMacro*) (Property->Next))
-    {
-        Stack.MostRecentPropertyAddress = NULL;
-        Stack.Step(Stack.Object, (Property->PropertyFlags & CPF_OutParm) ? NULL : Property->ContainerPtrToValuePtr<uint8>(Frame));
-    }
-
-    Stack.Code++;
-
-    for (PropertyMacro* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
-    {
-        if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
-        {
-            Destruct->DestroyValue_InContainer(Frame);
-        }
-    }
-
-    PropertyMacro* ReturnProp = Function->GetReturnProperty();
-    if (ReturnProp != NULL)
-    {
-        ReturnProp->DestroyValue(RESULT_PARAM);
-#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
-        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->GetElementSize());
-#else
-        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->ElementSize);
-#endif
-    }
-}
-
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 void FScriptEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
 {
@@ -820,7 +685,7 @@ void FScriptEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunct
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
             *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-        SkipFunction(Stack, RESULT_PARAM, Function);
+        UJSGeneratedFunction::SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
 
@@ -1268,31 +1133,12 @@ bool FScriptEnvImpl::CheckDelegateProxies(float Tick)
     return true;
 }
 
-bool FScriptEnvImpl::IsTriviallyFreed(FScriptStructWrapper* Wrapper)
-{
-    UScriptStruct* Struct = Wrapper->Struct.IsValid() ? Cast<UScriptStruct>(Wrapper->Struct.Get()) : nullptr;
-    // only native pod structs (a non native struct may be destroyed by a recompile while a gc thread frees its objects)
-    return Struct && Struct->IsNative() && (Struct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
-}
-
-// the deleter of a pod struct whose memory is freed with its js object (may be called on a gc thread of the backend, safe
-// for pod), FScriptStructWrapper is process wide (see FStructWrapper::FindOrAdd), it outlives the env
-void FScriptEnvImpl::FreeTriviallyFreedStruct(void* Ptr, size_t Size, void* DeleterData)
-{
-    FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
-    FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Ptr);
-}
-
 bool FScriptEnvImpl::TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr)
 {
     // not cached, the type id is the wrapper
-    return IsTriviallyFreed(Wrapper) && Backend->BindTriviallyFreedObject(Info, static_cast<FStructWrapper*>(Wrapper), Ptr,
-                                            Wrapper->Struct->GetStructureSize(), &FreeTriviallyFreedStruct, Wrapper);
-}
-
-std::shared_ptr<FStructWrapper> FScriptEnvImpl::GetStructWrapper(UStruct* InStruct)
-{
-    return FStructWrapper::FindOrAdd(InStruct);
+    return Wrapper->IsTriviallyFreed() &&
+           Backend->BindTriviallyFreedObject(Info, static_cast<FStructWrapper*>(Wrapper), Ptr, Wrapper->Struct->GetStructureSize(),
+               &FScriptStructWrapper::FreeTriviallyFreed, Wrapper);
 }
 
 FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env Env, UStruct* InStruct, bool& Existed)
@@ -1309,7 +1155,7 @@ FScriptEnvImpl::FTemplateInfo* FScriptEnvImpl::GetTemplateInfoOfType(pesapi_env 
             GetTemplateInfoOfType(Env, SuperStruct, Dummy);
         }
 
-        auto StructWrapper = GetStructWrapper(InStruct);
+        auto StructWrapper = FStructWrapper::FindOrAdd(InStruct);
         // the definition is shared by envs, the first use of a type in this env refreshes the translators (UE4 has no
         // reinstancing notification, so this is where a recompiled type is noticed)
         StructWrapper->Define(InStruct, true);
@@ -1564,78 +1410,6 @@ void FScriptEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_i
     }
 
     SetJsTakeRef(Env, Object);
-}
-
-bool FScriptEnvImpl::GetContainerTypeProperty(
-    struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr)
-{
-    if (Apis->is_int32(Env, Value))
-    {
-        int Type = Apis->get_value_int32(Env, Value);
-        if (Type < 0 || Type >= MaxBuiltinType)
-        {
-            *PropertyPtr = nullptr;
-            return false;
-        }
-        *PropertyPtr = FContainerMeta::Get().GetBuiltinProperty((BuiltinType) Type);
-        return true;
-    }
-    else if (auto Field = Cast<UField>(PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value)))
-    {
-        *PropertyPtr = FContainerMeta::Get().GetObjectProperty(Field);
-        return *PropertyPtr != nullptr;
-    }
-    else
-    {
-        *PropertyPtr = nullptr;
-        return false;
-    }
-}
-
-void FScriptEnvImpl::NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgInt32);
-
-    pesapi_env Env = Apis->get_env(Info);
-    int ContainerType = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
-
-    PropertyMacro* Property1 = nullptr;
-    PropertyMacro* Property2 = nullptr;
-
-    if (!GetContainerTypeProperty(Apis, Env, Apis->get_arg(Info, 1), &Property1))
-    {
-        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not get first type for %d"), ContainerType)));
-        return;
-    }
-
-    switch (ContainerType)
-    {
-        case 0:    // Array
-        {
-            auto ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));
-            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Array, ScriptArray, Property1, nullptr, false));
-            break;
-        }
-        case 1:    // Set
-        {
-            auto ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(Property1));
-            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Set, ScriptSet, Property1, nullptr, false));
-            break;
-        }
-        case 2:    // Map
-        {
-            if (!GetContainerTypeProperty(Apis, Env, Apis->get_arg(Info, 2), &Property2))
-            {
-                Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not get second type for %d"), ContainerType)));
-                return;
-            }
-            auto ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(Property1, Property2));
-            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Map, ScriptMap, Property1, Property2, false));
-            break;
-        }
-        default:
-            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("invalid container type %d"), ContainerType)));
-    }
 }
 
 void FScriptEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments)
@@ -2152,7 +1926,7 @@ void FScriptEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     else
     {
         To->ClearFunctionMapsCaches();
-        auto StructWrapper = GetStructWrapper(To);
+        auto StructWrapper = FStructWrapper::FindOrAdd(To);
         for (int i = 0; i < ReplaceMethodNames.Num(); i++)
         {
             StructWrapper->RefreshMethod(To->FindFunctionByName(ReplaceMethodNames[i]));

@@ -20,4 +20,5 @@ setJsTakeRef struct: Error: passing a invalid object
 weak of destroyed object IsValid: false
 weak of destroyed object Get: undefined
 NewObject with destroyed outer: Error: passing a invalid object
+NewStruct with destroyed object: Error: passing a invalid object
 object without js take ref after gc: <no throw>

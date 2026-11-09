@@ -7,6 +7,46 @@
  */
 
 #include "JSGeneratedFunction.h"
+#include "Runtime/Launch/Resources/Version.h"
+
+void UJSGeneratedFunction::SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
+{
+    uint8* Frame = (uint8*) FMemory_Alloca(Function->PropertiesSize);
+    FMemory::Memzero(Frame, Function->PropertiesSize);
+    for (PropertyMacro* Property = (PropertyMacro*) (
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+             Function->ChildProperties
+#else
+             Function->Children
+#endif
+         );
+         Property && (*Stack.Code != EX_EndFunctionParms); Property = (PropertyMacro*) (Property->Next))
+    {
+        Stack.MostRecentPropertyAddress = NULL;
+        Stack.Step(Stack.Object, (Property->PropertyFlags & CPF_OutParm) ? NULL : Property->ContainerPtrToValuePtr<uint8>(Frame));
+    }
+
+    Stack.Code++;
+
+    for (PropertyMacro* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
+    {
+        if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
+        {
+            Destruct->DestroyValue_InContainer(Frame);
+        }
+    }
+
+    PropertyMacro* ReturnProp = Function->GetReturnProperty();
+    if (ReturnProp != NULL)
+    {
+        ReturnProp->DestroyValue(RESULT_PARAM);
+#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
+        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->GetElementSize());
+#else
+        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->ElementSize);
+#endif
+    }
+}
 
 DEFINE_FUNCTION(UJSGeneratedFunction::execCallMixin)
 {

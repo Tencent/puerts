@@ -7,6 +7,8 @@
  */
 
 #include "ContainerWrapper.h"
+#include "ContainerMeta.h"
+#include "PapiUtils.h"
 #include "PropertyTranslator.h"
 #include "PapiDataTransfer.h"
 #include "JSClassRegister.h"
@@ -902,6 +904,78 @@ void FFixSizeArrayWrapper::Set(struct pesapi_ffi* Apis, pesapi_callback_info Inf
 #endif
 
     Inner->JsToUE(Apis, Env, Info, Apis->get_arg(Info, 1), Ptr, true);
+}
+
+// the property of an element type: a BuiltinType (int32), or a UField (UClass / UScriptStruct / UEnum)
+static bool GetContainerTypeProperty(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, PropertyMacro** PropertyPtr)
+{
+    if (Apis->is_int32(Env, Value))
+    {
+        int Type = Apis->get_value_int32(Env, Value);
+        if (Type < 0 || Type >= MaxBuiltinType)
+        {
+            *PropertyPtr = nullptr;
+            return false;
+        }
+        *PropertyPtr = FContainerMeta::Get().GetBuiltinProperty((BuiltinType) Type);
+        return true;
+    }
+    else if (auto Field = Cast<UField>(PapiDataTransfer::GetUObjectOfValue(Apis, Env, Value)))
+    {
+        *PropertyPtr = FContainerMeta::Get().GetObjectProperty(Field);
+        return *PropertyPtr != nullptr;
+    }
+    else
+    {
+        *PropertyPtr = nullptr;
+        return false;
+    }
+}
+
+void NewContainer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgInt32);
+
+    pesapi_env Env = Apis->get_env(Info);
+    int ContainerType = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
+
+    PropertyMacro* Property1 = nullptr;
+    PropertyMacro* Property2 = nullptr;
+
+    if (!GetContainerTypeProperty(Apis, Env, Apis->get_arg(Info, 1), &Property1))
+    {
+        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not get first type for %d"), ContainerType)));
+        return;
+    }
+
+    switch (ContainerType)
+    {
+        case 0:    // Array
+        {
+            auto ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));
+            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Array, ScriptArray, Property1, nullptr, false));
+            break;
+        }
+        case 1:    // Set
+        {
+            auto ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(Property1));
+            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Set, ScriptSet, Property1, nullptr, false));
+            break;
+        }
+        case 2:    // Map
+        {
+            if (!GetContainerTypeProperty(Apis, Env, Apis->get_arg(Info, 2), &Property2))
+            {
+                Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not get second type for %d"), ContainerType)));
+                return;
+            }
+            auto ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(Property1, Property2));
+            Apis->add_return(Info, ContainerToValue(Apis, Env, EContainerKind::Map, ScriptMap, Property1, Property2, false));
+            break;
+        }
+        default:
+            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("invalid container type %d"), ContainerType)));
+    }
 }
 
 #undef PAPI_CONTAINER_CHECK_ARGS_LEN

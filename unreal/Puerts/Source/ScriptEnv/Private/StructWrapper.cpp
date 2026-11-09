@@ -708,6 +708,44 @@ void FScriptStructWrapper::ReflectedFinalize(struct pesapi_ffi* Apis, void* Ptr,
     static_cast<FScriptStructWrapper*>(static_cast<FStructWrapper*>(ClassData))->Free(Ptr);
 }
 
+void FScriptStructWrapper::NewByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    pesapi_env Env = Apis->get_env(Info);
+
+    UScriptStruct* ScriptStruct = nullptr;
+    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
+    {
+        if (PapiUtils::IsReleasedPtr(Object))
+        {
+            Apis->throw_by_string(Info, "passing a invalid object");
+            return;
+        }
+        ScriptStruct = Cast<UScriptStruct>(Object);
+    }
+
+    if (ScriptStruct)
+    {
+        void* Ptr = Alloc(ScriptStruct);
+
+        Apis->add_return(Info, PapiDataTransfer::FindOrAddStruct(Apis, Env, ScriptStruct, Ptr, false));
+    }
+    else
+    {
+        Apis->throw_by_string(Info, "invalid argument");
+    }
+}
+
+bool FScriptStructWrapper::IsTriviallyFreed() const
+{
+    UScriptStruct* ScriptStruct = Struct.IsValid() ? Cast<UScriptStruct>(Struct.Get()) : nullptr;
+    return ScriptStruct && ScriptStruct->IsNative() && (ScriptStruct->StructFlags & EStructFlags::STRUCT_IsPlainOldData);
+}
+
+void FScriptStructWrapper::FreeTriviallyFreed(void* Ptr, size_t Size, void* DeleterData)
+{
+    static_cast<FScriptStructWrapper*>(DeleterData)->Free(Ptr);
+}
+
 void* FClassWrapper::ReflectedOnEnter(
     struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, void* Ptr, void* ClassData, void* EnvPrivate)
 {

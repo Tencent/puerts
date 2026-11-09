@@ -137,6 +137,8 @@ test('FName case fixing', () => {
     observe('expando own', () => Object.prototype.hasOwnProperty.call(o, 'MyExpando') && o.MyExpando === 7);
     observe('expando not shared', () => new UE.PuertsTestObject().MyExpando);
     observe('then member', () => typeof o.then);
+    // FName number suffix: "intvalue_1" fixes to "IntValue_1", not a member
+    observe('lower case with number suffix', () => o.intvalue_1);
 });
 
 run();

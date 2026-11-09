@@ -43,3 +43,4 @@ Object.prototype member: "function"
 expando own: true
 expando not shared: undefined
 then member: "undefined"
+lower case with number suffix: undefined

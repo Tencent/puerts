@@ -45,6 +45,10 @@ public:
 
     static constexpr uint8 GEN_FUNC_MAGIC = 107;
 
+    // skips the parameters of the call on the stack when the js function is missing (instead of UObject::SkipFunction of
+    // ScriptCore.cpp, which crashes when Function has no parameters)
+    static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function);
+
     FORCEINLINE static void SetJSGeneratedFunctionToScript(UFunction* InFunc, UJSGeneratedFunction* JsGenFunc)
     {
         JsGenFunc->Script = InFunc->Script;

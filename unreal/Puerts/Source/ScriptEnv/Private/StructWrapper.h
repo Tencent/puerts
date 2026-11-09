@@ -212,6 +212,18 @@ public:
     // the constructor (called by FStructWrapper::ReflectedConstruct), returns the memory for the backend to bind (freed by
     // ReflectedFinalize), or nullptr if the object is bound already (IObjectMapper::TryBindOwnedStruct) or on failure
     void* New(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // __tgjsNewStruct(scriptStruct): a new (owned) struct object of a UScriptStruct
+    static void NewByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // whether the memory of an owned object may be freed with the script object by the backend (IPapiBackend::
+    // CreateTriviallyFreedObject) instead of the finalizer of the class definition: only native pod structs (a non native
+    // struct may be destroyed by a recompile while a gc thread frees its objects)
+    bool IsTriviallyFreed() const;
+
+    // the deleter of such an object (may be called on a gc thread of the backend, safe for pod), DeleterData is the wrapper
+    // (process wide, it outlives the envs)
+    static void FreeTriviallyFreed(void* Ptr, size_t Size, void* DeleterData);
 };
 
 class FClassWrapper : public FStructWrapper

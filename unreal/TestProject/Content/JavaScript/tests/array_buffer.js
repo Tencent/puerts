@@ -1,6 +1,7 @@
 'use strict';
 // FArrayBuffer / FArrayBufferValue conversion (FArrayBufferPropertyTranslator)
-const { UE, test, eq, assert, observe, run } = require('./framework');
+const { UE, test, eq, assert, observe, catchError, run } = require('./framework');
+const puerts = require('puerts');
 
 const holder = new UE.PuertsTestArrayBufferHolder();
 
@@ -41,6 +42,27 @@ test('FArrayBufferValue', () => {
         const r = holder.MakeValue(4);
         return r instanceof ArrayBuffer ? Array.from(new Uint8Array(r)) : r;
     });
+});
+
+test('puerts.toCString', () => {
+    const ab = puerts.toCString('h\u00e9llo');
+    assert(ab instanceof ArrayBuffer, 'returns an ArrayBuffer');
+    eq(Array.from(new Uint8Array(ab)), [0x68, 0xc3, 0xa9, 0x6c, 0x6c, 0x6f, 0], 'utf8 bytes with trailing zero');
+    eq(Array.from(new Uint8Array(puerts.toCString(''))), [0], 'empty string');
+    const err = catchError(() => puerts.toCString(1));
+    assert(String(err).indexOf('expect a string') >= 0, 'non string throws: ' + err);
+});
+
+test('puerts.toCPtrArray', () => {
+    const a = new Uint8Array([1, 2]);
+    const ab = puerts.toCPtrArray(a.buffer, 1, a);
+    assert(ab instanceof ArrayBuffer, 'returns an ArrayBuffer');
+    eq(ab.byteLength, 3 * 8, 'one pointer per argument');
+    const ptrs = new BigUint64Array(ab);
+    assert(ptrs[0] !== 0n, 'ArrayBuffer pointer');
+    eq(ptrs[1] === 0n, true, 'non binary argument is a null pointer');
+    eq(ptrs[2] === ptrs[0], true, 'ArrayBufferView points to the same memory');
+    eq(puerts.toCPtrArray().byteLength, 0, 'no arguments');
 });
 
 run();
