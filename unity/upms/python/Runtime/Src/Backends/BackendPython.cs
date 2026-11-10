@@ -87,7 +87,10 @@ namespace Puerts
         }
 
 #if UNITY_EDITOR
-        private static string FindPackageRoot()
+        /// <summary>
+        /// Editor only: root directory of the com.tencent.puerts.python package.
+        /// </summary>
+        public static string FindPackageRoot()
         {
             var assembly = typeof(BackendPython).Assembly;
             var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(assembly);
@@ -107,6 +110,11 @@ namespace Puerts
             return null;
         }
 #endif
+
+        /// <summary>
+        /// Directory name (under StreamingAssets) the bundled python home is copied to when building a desktop player.
+        /// </summary>
+        public const string PlayerPythonHomeDirName = "PuertsPython";
 
         /// <summary>
         /// Returns the python home to use, or null to fall back to the default python initialization.
@@ -131,6 +139,17 @@ namespace Puerts
             if (System.IO.Directory.Exists(home))
             {
                 resolvedPythonHome = System.IO.Path.GetFullPath(home);
+            }
+#else
+            // copied by PythonBuildProcessor (Editor) when building the player
+            var home = System.IO.Path.Combine(UnityEngine.Application.streamingAssetsPath, PlayerPythonHomeDirName);
+            if (System.IO.Directory.Exists(home))
+            {
+                resolvedPythonHome = System.IO.Path.GetFullPath(home);
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("[Puerts] bundled python not found at " + home + ", falling back to the default python initialization");
             }
 #endif
             return resolvedPythonHome;

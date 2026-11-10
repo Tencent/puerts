@@ -1,0 +1,18 @@
+{
+    "name": "com.tencent.puerts.python.Editor",
+    "rootNamespace": "",
+    "references": [
+        "com.tencent.puerts.python"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

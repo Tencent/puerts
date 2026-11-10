@@ -10,7 +10,8 @@ namespace Puerts.UnitTest
     // 打印当前进程实际加载的 Python，并按运行环境校验来源：
     //   nuget 测试（PUERTS_NUGET_TEST）：必须来自 <输出目录>/runtimes 下 nuget 包自带的 Python
     //   Unity Editor：必须来自包内 PythonHome~/<rid>
-    //   Unity Player：Player 下的 Python 定位尚未实现，只打印并校验版本
+    //   Unity 桌面 Player：必须来自 StreamingAssets/PuertsPython（打包时由 PythonBuildProcessor 复制）
+    //   Unity Android：只打印并校验版本
     //   dotnet 测试（PUERTS_GENERAL）：papi-python 按系统 Python 构建（bundled_python: false），只打印
     // 断言统一用抛异常的方式，兼容 Unity 测试用的简化版 NUnit（Src/TestFramework）和真正的 NUnit。
     [TestFixture]
@@ -63,7 +64,7 @@ namespace Puerts.UnitTest
                 expectedRoot = Path.Combine(AppContext.BaseDirectory, "runtimes");
 #elif PUERTS_GENERAL
                 checkVersion = false;
-#elif UNITY_EDITOR
+#elif UNITY_EDITOR || UNITY_STANDALONE
                 expectedRoot = BackendPython.ResolvePythonHome();
 #endif
 
@@ -103,7 +104,7 @@ namespace Puerts.UnitTest
                 {
                     Check(version.StartsWith(ExpectedVersionPrefix), "Python 版本不是 " + ExpectedVersionPrefix + "x", info);
                 }
-#if PUERTS_NUGET_TEST || (UNITY_EDITOR && !PUERTS_GENERAL)
+#if PUERTS_NUGET_TEST || ((UNITY_EDITOR || UNITY_STANDALONE) && !PUERTS_GENERAL)
                 Check(expectedRoot != null, "没有找到自带的 Python，走了系统 Python", info);
                 Check(IsUnder(prefix, expectedRoot), "sys.prefix 不在自带 Python 目录下", info);
                 Check(IsUnder(basePrefix, expectedRoot), "sys.base_prefix 不在自带 Python 目录下", info);
