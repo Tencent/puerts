@@ -72,6 +72,7 @@ public class TestBuilder
         if (summary.result == BuildResult.Failed)
         {
             Debug.Log("Build failed: " + summary.outputPath);
+            if (Application.isBatchMode) EditorApplication.Exit(1);
         }
     }
     

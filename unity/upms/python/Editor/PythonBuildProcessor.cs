@@ -32,15 +32,28 @@ namespace Puerts.Editor
             }
         }
 
+        // Returns the player's StreamingAssets directory, or null if the player data directory can't be found.
         static string GetStreamingAssetsDir(BuildTarget target, string outputPath)
         {
+            outputPath = Path.GetFullPath(outputPath);
+            string dataDir;
             if (target == BuildTarget.StandaloneOSX)
             {
+                // locationPathName may omit ".app" (e.g. "build/Tester"), but Unity always produces "Tester.app"
+                var app = outputPath.TrimEnd('/', '\\');
+                if (!app.EndsWith(".app") || !Directory.Exists(app))
+                {
+                    if (Directory.Exists(app + ".app")) app = app + ".app";
+                }
                 // Tester.app/Contents/Resources/Data/StreamingAssets
-                return Path.Combine(outputPath, "Contents", "Resources", "Data", "StreamingAssets");
+                dataDir = Path.Combine(app, "Contents", "Resources", "Data");
             }
-            // Tester.exe / Tester.x86_64 -> Tester_Data/StreamingAssets
-            return Path.Combine(Path.GetDirectoryName(outputPath), Path.GetFileNameWithoutExtension(outputPath) + "_Data", "StreamingAssets");
+            else
+            {
+                // Tester.exe / Tester.x86_64 -> Tester_Data/StreamingAssets
+                dataDir = Path.Combine(Path.GetDirectoryName(outputPath), Path.GetFileNameWithoutExtension(outputPath) + "_Data");
+            }
+            return Directory.Exists(dataDir) ? Path.Combine(dataDir, "StreamingAssets") : null;
         }
 
         static void CopyDirectory(string src, string dst)
@@ -75,7 +88,12 @@ namespace Puerts.Editor
                 return;
             }
 
-            var dst = Path.Combine(GetStreamingAssetsDir(target, report.summary.outputPath), BackendPython.PlayerPythonHomeDirName);
+            var streamingAssets = GetStreamingAssetsDir(target, report.summary.outputPath);
+            if (streamingAssets == null)
+            {
+                throw new BuildFailedException("[Puerts] can not find the player data directory for " + report.summary.outputPath + ", bundled python is not copied");
+            }
+            var dst = Path.Combine(streamingAssets, BackendPython.PlayerPythonHomeDirName);
             if (Directory.Exists(dst)) Directory.Delete(dst, true);
             CopyDirectory(src, dst);
             Debug.Log("[Puerts] copied bundled python " + rid + " to " + dst);
