@@ -8,91 +8,72 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstring>
 #include <functional>
 #include "NamespaceDef.h"
 
 namespace PUERTS_NAMESPACE
 {
+// the string used instead of std::string (which crashes on some platforms of UE), binary safe (may contain '\0'), the
+// buffer is allocated by new[] (the allocator of UE in a UE module), nullptr for an empty string
 class PString
 {
 public:
-    // Constructors
+    static constexpr size_t npos = static_cast<size_t>(-1);
+
     PString() : data_(nullptr), size_(0)
     {
-        data_ = new char[1];
-        data_[0] = '\0';
     }
 
     PString(const char* str)
     {
-        if (str)
-        {
-            size_ = std::strlen(str);
-            data_ = new char[size_ + 1];
-#ifdef _MSC_VER
-            strncpy_s(data_, size_ + 1, str, size_);
-#else
-            strncpy(data_, str, size_);
-#endif
-            data_[size_] = '\0';
-        }
-        else
-        {
-            size_ = 0;
-            data_ = new char[1];
-            data_[0] = '\0';
-        }
+        init(str, str ? std::strlen(str) : 0);
     }
 
     PString(const char* str, size_t length)
     {
-        if (str)
-        {
-            size_ = length;
-            data_ = new char[size_ + 1];
-#ifdef _MSC_VER
-            strncpy_s(data_, size_ + 1, str, length);
-#else
-            strncpy(data_, str, length);
-#endif
-            data_[size_] = '\0';
-        }
-        else
-        {
-            size_ = 0;
-            data_ = new char[1];
-            data_[0] = '\0';
-        }
+        init(str, str ? length : 0);
     }
 
     PString(const PString& other)
     {
-        size_ = other.size_;
-        data_ = new char[size_ + 1];
-#ifdef _MSC_VER
-        strncpy_s(data_, size_ + 1, other.data_, size_);
-#else
-        strncpy(data_, other.data_, size_);
-#endif
-        data_[size_] = '\0';
+        init(other.data_, other.size_);
+    }
+
+    PString(PString&& other) noexcept : data_(other.data_), size_(other.size_)
+    {
+        other.data_ = nullptr;
+        other.size_ = 0;
     }
 
     PString& operator=(const PString& other)
     {
         if (this != &other)
         {
-            delete[] data_;
-            size_ = other.size_;
-            data_ = new char[size_ + 1];
-#ifdef _MSC_VER
-            strncpy_s(data_, size_ + 1, other.data_, size_);
-#else
-            strncpy(data_, other.data_, size_);
-#endif
-            data_[size_] = '\0';
+            assign(other.data_, other.size_);
         }
         return *this;
+    }
+
+    PString& operator=(PString&& other) noexcept
+    {
+        if (this != &other)
+        {
+            delete[] data_;
+            data_ = other.data_;
+            size_ = other.size_;
+            other.data_ = nullptr;
+            other.size_ = 0;
+        }
+        return *this;
+    }
+
+    PString& operator=(const char* str)
+    {
+        // str may point into this string
+        PString tmp(str);
+        return *this = static_cast<PString&&>(tmp);
     }
 
     ~PString()
@@ -100,85 +81,75 @@ public:
         delete[] data_;
     }
 
+    void assign(const char* str, size_t length)
+    {
+        // str may point into this string
+        PString tmp(str, length);
+        *this = static_cast<PString&&>(tmp);
+    }
+
+    PString& append(const char* str, size_t length)
+    {
+        if (!str || length == 0)
+        {
+            return *this;
+        }
+        size_t new_size = size_ + length;
+        char* new_data = new char[new_size + 1];
+        if (size_)
+        {
+            std::memcpy(new_data, data_, size_);
+        }
+        std::memcpy(new_data + size_, str, length);
+        new_data[new_size] = '\0';
+        delete[] data_;
+        data_ = new_data;
+        size_ = new_size;
+        return *this;
+    }
+
     PString operator+(const PString& other) const
     {
-        PString result;
-        result.size_ = size_ + other.size_;
-        delete[] result.data_;
-        result.data_ = new char[result.size_ + 1];
-#ifdef _MSC_VER
-        strncpy_s(result.data_, result.size_ + 1, data_, size_);
-        strncpy_s(result.data_ + size_, result.size_ - size_ + 1, other.data_, other.size_);
-#else
-        strncpy(result.data_, data_, size_);
-        strncpy(result.data_ + size_, other.data_, other.size_);
-#endif
-        result.data_[result.size_] = '\0';
+        PString result(*this);
+        result.append(other.data_, other.size_);
         return result;
     }
 
     friend PString operator+(const char* lhs, const PString& rhs)
     {
-        PString result;
-        size_t lhs_size = std::strlen(lhs);
-        result.size_ = lhs_size + rhs.size_;
-        delete[] result.data_;
-        result.data_ = new char[result.size_ + 1];
-#ifdef _MSC_VER
-        strncpy_s(result.data_, result.size_ + 1, lhs, lhs_size);
-        strncpy_s(result.data_ + lhs_size, result.size_ - lhs_size + 1, rhs.data_, rhs.size_);
-#else
-        strncpy(result.data_, lhs, lhs_size);
-        strncpy(result.data_ + lhs_size, rhs.data_, rhs.size_);
-#endif
-        result.data_[result.size_] = '\0';
+        PString result(lhs);
+        result.append(rhs.data_, rhs.size_);
         return result;
     }
 
     PString& operator+=(const PString& other)
     {
-        size_t new_size = size_ + other.size_;
-        char* new_data = new char[new_size + 1];
-#ifdef _MSC_VER
-        strncpy_s(new_data, new_size + 1, data_, size_);
-        strncpy_s(new_data + size_, new_size - size_ + 1, other.data_, other.size_);
-#else
-        strncpy(new_data, data_, size_);
-        strncpy(new_data + size_, other.data_, other.size_);
-#endif
-        new_data[new_size] = '\0';
-
-        delete[] data_;
-        data_ = new_data;
-        size_ = new_size;
-
-        return *this;
+        // a copy if other is this string
+        return this == &other ? append(PString(other).data_, other.size_) : append(other.data_, other.size_);
     }
 
     PString& operator+=(const char* str)
     {
-        if (str)
-        {
-            size_t str_size = std::strlen(str);
-            size_t new_size = size_ + str_size;
-            char* new_data = new char[new_size + 1];
-#ifdef _MSC_VER
-            strncpy_s(new_data, new_size + 1, data_, size_);
-            strncpy_s(new_data + size_, new_size - size_ + 1, str, str_size);
-#else
-            strncpy(new_data, data_, size_);
-            strncpy(new_data + size_, str, str_size);
-#endif
-            new_data[new_size] = '\0';
+        return str ? append(str, std::strlen(str)) : *this;
+    }
 
-            delete[] data_;
-            data_ = new_data;
-            size_ = new_size;
-        }
-        return *this;
+    PString& operator+=(char c)
+    {
+        return append(&c, 1);
     }
 
     const char* c_str() const
+    {
+        return data_ ? data_ : "";
+    }
+
+    const char* data() const
+    {
+        return c_str();
+    }
+
+    // writable, size() chars (nullptr if empty)
+    char* data()
     {
         return data_;
     }
@@ -188,22 +159,127 @@ public:
         return size_;
     }
 
+    size_t length() const
+    {
+        return size_;
+    }
+
     bool empty() const
     {
         return size_ == 0;
     }
 
+    void clear()
+    {
+        delete[] data_;
+        data_ = nullptr;
+        size_ = 0;
+    }
+
+    // truncates, or appends '\0'
+    void resize(size_t new_size)
+    {
+        if (new_size == size_)
+        {
+            return;
+        }
+        if (new_size == 0)
+        {
+            clear();
+            return;
+        }
+        char* new_data = new char[new_size + 1];
+        size_t keep = size_ < new_size ? size_ : new_size;
+        if (keep)
+        {
+            std::memcpy(new_data, data_, keep);
+        }
+        std::memset(new_data + keep, 0, new_size + 1 - keep);
+        delete[] data_;
+        data_ = new_data;
+        size_ = new_size;
+    }
+
+    char operator[](size_t pos) const
+    {
+        return data_[pos];
+    }
+
+    char back() const
+    {
+        return data_[size_ - 1];
+    }
+
+    void pop_back()
+    {
+        resize(size_ - 1);
+    }
+
+    PString substr(size_t pos, size_t count = npos) const
+    {
+        if (pos >= size_)
+        {
+            return PString();
+        }
+        size_t rest = size_ - pos;
+        return PString(data_ + pos, count < rest ? count : rest);
+    }
+
+    // the position of the last char which is one of chars, npos if not found
+    size_t find_last_of(const char* chars) const
+    {
+        for (size_t i = size_; i > 0; --i)
+        {
+            if (std::strchr(chars, data_[i - 1]) && data_[i - 1] != '\0')
+            {
+                return i - 1;
+            }
+        }
+        return npos;
+    }
+
     bool operator<(const PString& other) const
     {
-        return std::strcmp(data_, other.data_) < 0;
+        size_t n = size_ < other.size_ ? size_ : other.size_;
+        int ret = n ? std::memcmp(data_, other.data_, n) : 0;
+        return ret < 0 || (ret == 0 && size_ < other.size_);
     }
 
     bool operator==(const PString& other) const
     {
-        return std::strcmp(data_, other.data_) == 0;
+        return size_ == other.size_ && (size_ == 0 || std::memcmp(data_, other.data_, size_) == 0);
+    }
+
+    bool operator!=(const PString& other) const
+    {
+        return !(*this == other);
+    }
+
+    bool operator==(const char* str) const
+    {
+        size_t len = str ? std::strlen(str) : 0;
+        return size_ == len && (len == 0 || std::memcmp(data_, str, len) == 0);
+    }
+
+    bool operator!=(const char* str) const
+    {
+        return !(*this == str);
     }
 
 private:
+    void init(const char* str, size_t length)
+    {
+        size_ = length;
+        if (length == 0)
+        {
+            data_ = nullptr;
+            return;
+        }
+        data_ = new char[length + 1];
+        std::memcpy(data_, str, length);
+        data_[length] = '\0';
+    }
+
     char* data_;
     size_t size_;
 };
@@ -217,9 +293,10 @@ struct hash<PUERTS_NAMESPACE::PString>
     size_t operator()(const PUERTS_NAMESPACE::PString& str) const
     {
         size_t hash = 5381;    // DJB2
+        const char* data = str.c_str();
         for (size_t i = 0; i < str.size(); ++i)
         {
-            hash = ((hash << 5) + hash) + str.c_str()[i];    // hash * 33 + c
+            hash = ((hash << 5) + hash) + data[i];    // hash * 33 + c
         }
         return hash;
     }

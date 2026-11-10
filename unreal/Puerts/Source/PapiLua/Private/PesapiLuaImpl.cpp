@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
-#include <string>
+#include "PString.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -107,7 +107,7 @@ static int ToStringThunk(lua_State* L)
 }
 
 // the string of a value (tostring of lua), false if __tostring failed
-static bool ToStdString(lua_State* L, int Idx, std::string& Out)
+static bool ToStdString(lua_State* L, int Idx, PString& Out)
 {
     if (Idx == 0)
     {
@@ -147,35 +147,53 @@ static bool ToStdString(lua_State* L, int Idx, std::string& Out)
 
 // ---------------------------------------------------------------- wtf-8 <-> utf-16
 
-static void AppendWtf8(std::string& Out, uint32_t Cp)
+// writes the wtf-8 of Cp to Out (if not null), returns the bytes
+static size_t AppendWtf8(char* Out, uint32_t Cp)
 {
     if (Cp < 0x80)
     {
-        Out.push_back(static_cast<char>(Cp));
+        if (Out)
+        {
+            Out[0] = static_cast<char>(Cp);
+        }
+        return 1;
     }
     else if (Cp < 0x800)
     {
-        Out.push_back(static_cast<char>(0xC0 | (Cp >> 6)));
-        Out.push_back(static_cast<char>(0x80 | (Cp & 0x3F)));
+        if (Out)
+        {
+            Out[0] = static_cast<char>(0xC0 | (Cp >> 6));
+            Out[1] = static_cast<char>(0x80 | (Cp & 0x3F));
+        }
+        return 2;
     }
     else if (Cp < 0x10000)
     {
-        Out.push_back(static_cast<char>(0xE0 | (Cp >> 12)));
-        Out.push_back(static_cast<char>(0x80 | ((Cp >> 6) & 0x3F)));
-        Out.push_back(static_cast<char>(0x80 | (Cp & 0x3F)));
+        if (Out)
+        {
+            Out[0] = static_cast<char>(0xE0 | (Cp >> 12));
+            Out[1] = static_cast<char>(0x80 | ((Cp >> 6) & 0x3F));
+            Out[2] = static_cast<char>(0x80 | (Cp & 0x3F));
+        }
+        return 3;
     }
     else
     {
-        Out.push_back(static_cast<char>(0xF0 | (Cp >> 18)));
-        Out.push_back(static_cast<char>(0x80 | ((Cp >> 12) & 0x3F)));
-        Out.push_back(static_cast<char>(0x80 | ((Cp >> 6) & 0x3F)));
-        Out.push_back(static_cast<char>(0x80 | (Cp & 0x3F)));
+        if (Out)
+        {
+            Out[0] = static_cast<char>(0xF0 | (Cp >> 18));
+            Out[1] = static_cast<char>(0x80 | ((Cp >> 12) & 0x3F));
+            Out[2] = static_cast<char>(0x80 | ((Cp >> 6) & 0x3F));
+            Out[3] = static_cast<char>(0x80 | (Cp & 0x3F));
+        }
+        return 4;
     }
 }
 
-static void Utf16ToWtf8(const uint16_t* Str, size_t Length, std::string& Out)
+// writes the wtf-8 to Out (if not null), returns the bytes
+static size_t Utf16ToWtf8(const uint16_t* Str, size_t Length, char* Out)
 {
-    Out.reserve(Length * 3);
+    size_t Bytes = 0;
     for (size_t i = 0; i < Length; ++i)
     {
         uint32_t C = Str[i];
@@ -185,7 +203,17 @@ static void Utf16ToWtf8(const uint16_t* Str, size_t Length, std::string& Out)
             ++i;
         }
         // a lone surrogate is kept (wtf-8)
-        AppendWtf8(Out, C);
+        Bytes += AppendWtf8(Out ? Out + Bytes : nullptr, C);
+    }
+    return Bytes;
+}
+
+static void Utf16ToWtf8(const uint16_t* Str, size_t Length, PString& Out)
+{
+    Out.resize(Utf16ToWtf8(Str, Length, nullptr));
+    if (!Out.empty())
+    {
+        Utf16ToWtf8(Str, Length, Out.data());
     }
 }
 
@@ -353,7 +381,7 @@ static pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, s
 static pesapi_value pesapi_create_string_utf16(pesapi_env env, const uint16_t* str, size_t length)
 {
     auto L = StateOf(env);
-    std::string Utf8;
+    PString Utf8;
     if (str)
     {
         Utf16ToWtf8(str, length, Utf8);
@@ -542,7 +570,7 @@ static double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
 static const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, char* buf, size_t* bufsize)
 {
     auto L = StateOf(env);
-    std::string Tmp;
+    PString Tmp;
     const char* Str = nullptr;
     size_t Len = 0;
     if (TypeOf(L, pvalue) == LUA_TSTRING)
@@ -579,7 +607,7 @@ static const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pva
 static const uint16_t* pesapi_get_value_string_utf16(pesapi_env env, pesapi_value pvalue, uint16_t* buf, size_t* bufsize)
 {
     auto L = StateOf(env);
-    std::string Tmp;
+    PString Tmp;
     const char* Str = nullptr;
     size_t Len = 0;
     if (TypeOf(L, pvalue) == LUA_TSTRING)
@@ -1310,7 +1338,7 @@ static pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code
         return nullptr;
     }
     Reserve(L, 8);
-    std::string ChunkName = "@";
+    PString ChunkName = "@";
     ChunkName += path ? path : "<eval>";
     if (luaL_loadbufferx(L, reinterpret_cast<const char*>(code), code_size, ChunkName.c_str(), "bt") != LUA_OK)
     {

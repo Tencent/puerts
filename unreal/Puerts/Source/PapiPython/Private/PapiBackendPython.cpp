@@ -18,7 +18,7 @@
 #include "PythonPapiData.h"
 #include "Misc/Paths.h"
 #include <cstring>
-#include <string>
+#include "PString.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -243,9 +243,9 @@ void FPapiBackendPython::RequestFullGarbageCollectionForTesting()
 }
 
 // calls Module.Func() which returns a list of str (or an int), the result joined, an empty string on failure
-static std::string CallModuleFunction(const char* Module, const char* Func, long long* OutInt)
+static PString CallModuleFunction(const char* Module, const char* Func, long long* OutInt)
 {
-    std::string Ret;
+    PString Ret;
     PyObject* Type;
     PyObject* Value;
     PyObject* Traceback;
@@ -300,7 +300,7 @@ FString FPapiBackendPython::CurrentStackTrace()
     {
         return FString();
     }
-    std::string Stack;
+    PString Stack;
     {
         pyimpl::FPyEnvGuard Guard(SubTState);
         Stack = CallModuleFunction("traceback", "format_stack", nullptr);

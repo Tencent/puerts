@@ -9,10 +9,11 @@
 #include "PapiQjsModuleLoader.h"
 #include "QjsPapiData.h"
 #include "quickjs.h"
+#include "PString.h"
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <mutex>
-#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -33,54 +34,75 @@ enum class EKind : char
 struct FRecord
 {
     EKind Kind;
-    std::string Key;
-    std::string Url;
-    std::string DebugPath;
+    PString Key;
+    PString Url;
+    PString DebugPath;
     // the name quickjs finds the module by
-    std::string Name;
+    PString Name;
     // esm: the compiled module; others: the C module created when imported by an esm
     JSModuleDef* Module = nullptr;
     // cjs: the source, released once executed
-    std::string Content;
+    PString Content;
     JSValue CjsModule = JS_UNDEFINED;
     // json / builtin: the value; cjs: module.exports when the C module is created
     JSValue Value = JS_UNDEFINED;
     // the C module: the named exports (own properties of Value when it is created)
-    std::vector<std::string> ExportNames;
+    std::vector<PString> ExportNames;
     bool Executed = false;
 };
 
-std::string MakeKey(EKind Kind, const std::string& Url)
+PString MakeKey(EKind Kind, const PString& Url)
 {
-    return std::string(1, static_cast<char>(Kind)) + Url;
+    PString Key;
+    Key += static_cast<char>(Kind);
+    Key += Url;
+    return Key;
 }
 
-std::string DirName(const std::string& Url)
+// by + referrer + '\0' + specifier
+PString MakeResolveKey(char By, const PString& Referrer, const PString& Specifier)
+{
+    PString Key;
+    Key += By;
+    Key += Referrer;
+    Key += '\0';
+    Key += Specifier;
+    return Key;
+}
+
+PString ToPString(uint64_t Value)
+{
+    char Buf[24];
+    snprintf(Buf, sizeof(Buf), "%llu", static_cast<unsigned long long>(Value));
+    return PString(Buf);
+}
+
+PString DirName(const PString& Url)
 {
     auto Pos = Url.find_last_of("/\\");
-    return Pos == std::string::npos ? std::string() : Url.substr(0, Pos);
+    return Pos == PString::npos ? PString() : Url.substr(0, Pos);
 }
 
-std::string ToStd(JSContext* Ctx, JSValueConst Value)
+PString ToStd(JSContext* Ctx, JSValueConst Value)
 {
     size_t Len = 0;
     const char* Str = JS_ToCStringLen(Ctx, &Len, Value);
     if (!Str)
     {
         JS_FreeValue(Ctx, JS_GetException(Ctx));
-        return std::string();
+        return PString();
     }
-    std::string Ret(Str, Len);
+    PString Ret(Str, Len);
     JS_FreeCString(Ctx, Str);
     return Ret;
 }
 
-JSValue NewStr(JSContext* Ctx, const std::string& Str)
+JSValue NewStr(JSContext* Ctx, const PString& Str)
 {
     return JS_NewStringLen(Ctx, Str.c_str(), Str.size());
 }
 
-void Throw(JSContext* Ctx, const std::string& Message)
+void Throw(JSContext* Ctx, const PString& Message)
 {
     JS_ThrowPlainError(Ctx, "%s", Message.c_str());
 }
@@ -186,27 +208,27 @@ public:
         bool Ok = false;
     };
 
-    FRecord* FindRecord(const std::string& Key)
+    FRecord* FindRecord(const PString& Key)
     {
         auto Iter = Records.find(Key);
         return Iter == Records.end() ? nullptr : Iter->second.get();
     }
 
-    FRecord* AddRecord(EKind Kind, const std::string& Url, const std::string& DebugPath)
+    FRecord* AddRecord(EKind Kind, const PString& Url, const PString& DebugPath)
     {
         auto Record = std::unique_ptr<FRecord>(new FRecord());
         Record->Kind = Kind;
         Record->Key = MakeKey(Kind, Url);
         Record->Url = Url;
         Record->DebugPath = DebugPath;
-        const std::string& ScriptName = DebugPath.empty() ? Url : DebugPath;
+        const PString& ScriptName = DebugPath.empty() ? Url : DebugPath;
         if (Kind == EKind::Esm)
         {
             Record->Name = ScriptName;
         }
         else
         {
-            Record->Name = "<" + std::string(1, static_cast<char>(Kind)) + "#" + std::to_string(++Gen) + ">" + Url;
+            Record->Name = "<" + MakeKey(Kind, "#") + ToPString(++Gen) + ">" + Url;
         }
         if (Kind == EKind::Esm || Kind == EKind::Cjs)
         {
@@ -222,7 +244,7 @@ public:
         return Ret;
     }
 
-    bool EraseRecord(const std::string& Key)
+    bool EraseRecord(const PString& Key)
     {
         auto Iter = Records.find(Key);
         if (Iter == Records.end())
@@ -239,7 +261,7 @@ public:
                 // a module may be freed by quickjs (JS_ResolveModule frees the modules which are not resolved on failure)
                 if (Record->Kind == EKind::Esm && JS_IsLoadedModule(Ctx, Record->Module))
                 {
-                    JS_RenameModule(Ctx, Record->Module, ("<discarded#" + std::to_string(++Gen) + ">" + Record->Name).c_str());
+                    JS_RenameModule(Ctx, Record->Module, ("<discarded#" + ToPString(++Gen) + ">" + Record->Name).c_str());
                 }
             }
         }
@@ -269,7 +291,7 @@ public:
     {
         for (size_t I = AddedKeys.size(); I > Start; --I)
         {
-            const std::string& Key = AddedKeys[I - 1];
+            const PString& Key = AddedKeys[I - 1];
             FRecord* Record = FindRecord(Key);
             // an esm which is not evaluated, or whose evaluation threw (quickjs keeps it as evaluated with the exception,
             // v8 drops an errored module), is discarded so a retry loads it again
@@ -316,7 +338,7 @@ public:
         return false;
     }
 
-    bool CallHostResolve(const std::string& Specifier, const std::string& Referrer, const char* By, std::string& OutUrl)
+    bool CallHostResolve(const PString& Specifier, const PString& Referrer, const char* By, PString& OutUrl)
     {
         JSValue Args[] = {NewStr(Ctx, Specifier), NewStr(Ctx, Referrer), JS_NewString(Ctx, By)};
         JSValue Ret = JS_Call(Ctx, HostResolve, JS_UNDEFINED, 3, Args);
@@ -340,14 +362,14 @@ public:
     }
 
     // the url of the specifier for import.meta.resolve, the module is not loaded
-    bool ResolveUrl(const std::string& Specifier, const std::string& Referrer, std::string& OutUrl)
+    bool ResolveUrl(const PString& Specifier, const PString& Referrer, PString& OutUrl)
     {
         if (FindRecord(MakeKey(EKind::Builtin, Specifier)))
         {
             OutUrl = Specifier;
             return true;
         }
-        std::string CacheKey = "i" + Referrer + '\0' + Specifier;
+        PString CacheKey = MakeResolveKey('i', Referrer, Specifier);
         auto Iter = ResolveCache.find(CacheKey);
         if (Iter != ResolveCache.end())
         {
@@ -362,7 +384,7 @@ public:
         return true;
     }
 
-    FRecord* Resolve(const std::string& Specifier, const std::string& Referrer, bool ByImport)
+    FRecord* Resolve(const PString& Specifier, const PString& Referrer, bool ByImport)
     {
         if (FRecord* Builtin = FindRecord(MakeKey(EKind::Builtin, Specifier)))
         {
@@ -370,8 +392,8 @@ public:
         }
         const char ByChar = ByImport ? 'i' : 'r';
         const char* By = ByImport ? "import" : "require";
-        std::string CacheKey = std::string(1, ByChar) + Referrer + '\0' + Specifier;
-        std::string Url;
+        PString CacheKey = MakeResolveKey(ByChar, Referrer, Specifier);
+        PString Url;
         auto ResolveIter = ResolveCache.find(CacheKey);
         if (ResolveIter != ResolveCache.end())
         {
@@ -389,7 +411,7 @@ public:
         {
             return Builtin;
         }
-        std::string LoadKey = std::string(1, ByChar) + Url;
+        PString LoadKey = MakeKey(static_cast<EKind>(ByChar), Url);
         auto LoadIter = LoadCache.find(LoadKey);
         if (LoadIter != LoadCache.end())
         {
@@ -438,7 +460,7 @@ public:
             return nullptr;
         }
 
-        std::string KindName = ToStd(Ctx, KindValue);
+        PString KindName = ToStd(Ctx, KindValue);
         EKind Kind;
         if (KindName == "esm")
         {
@@ -463,9 +485,9 @@ public:
             Throw(Ctx, "[Puer003] load " + Url + " failed: content must be a string or an ArrayBuffer");
             return nullptr;
         }
-        std::string DebugPath = JS_IsString(DebugPathValue) ? ToStd(Ctx, DebugPathValue) : std::string();
+        PString DebugPath = JS_IsString(DebugPathValue) ? ToStd(Ctx, DebugPathValue) : PString();
 
-        std::string Key = MakeKey(Kind, Url);
+        PString Key = MakeKey(Kind, Url);
         if (FRecord* Existing = FindRecord(Key))
         {
             LoadCache[LoadKey] = Key;
@@ -503,8 +525,8 @@ public:
                     Throw(Ctx, "[Puer003] load " + Url + " failed: content of json must be a string");
                     return nullptr;
                 }
-                std::string Text = ToStd(Ctx, Content);
-                const std::string& FileName = DebugPath.empty() ? Url : DebugPath;
+                PString Text = ToStd(Ctx, Content);
+                const PString& FileName = DebugPath.empty() ? Url : DebugPath;
                 JSValue Value = JS_ParseJSON(Ctx, Text.c_str(), Text.size(), FileName.c_str());
                 if (JS_IsException(Value))
                 {
@@ -519,13 +541,13 @@ public:
         return Record;
     }
 
-    FRecord* FetchEsm(const std::string& Url, const std::string& DebugPath, const std::string& Source)
+    FRecord* FetchEsm(const PString& Url, const PString& DebugPath, const PString& Source)
     {
         // quickjs resolves the imports while compiling a module (JS_Eval calls the normalize / loader hooks), so the
         // record is added first: the hooks find the referrer url by the module name, and a cycle back to this module
         // finds the record (quickjs finds the module itself by name)
         FRecord* Record = AddRecord(EKind::Esm, Url, DebugPath);
-        const std::string Name = Record->Name;
+        const PString Name = Record->Name;
         JSValue Compiled =
             JS_Eval(Ctx, Source.c_str(), Source.size(), Name.c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
         if (JS_IsException(Compiled))
@@ -567,7 +589,7 @@ public:
             // a cycle, the bindings may be in TDZ
             return JS_GetModuleNamespace(Ctx, Module);
         }
-        std::string Url = Record->Url;
+        PString Url = Record->Url;
         JSValue Ret = JS_EvalFunction(Ctx, JS_DupModule(Ctx, Module));
         if (JS_IsException(Ret))
         {
@@ -606,7 +628,7 @@ public:
         return JS_GetModuleNamespace(Ctx, Module);
     }
 
-    JSValue NewRequire(const std::string& Referrer)
+    JSValue NewRequire(const PString& Referrer)
     {
         JSValue Data = NewStr(Ctx, Referrer);
         JSValue Func = JS_NewCFunctionData(Ctx, &RequireCallback, 1, 0, 1, &Data);
@@ -616,8 +638,8 @@ public:
 
     JSValue CompileCjs(FRecord* Record)
     {
-        std::string Source = "(function (exports, require, module, __filename, __dirname) {" + Record->Content + "\n})";
-        const std::string& FileName = Record->DebugPath.empty() ? Record->Url : Record->DebugPath;
+        PString Source = "(function (exports, require, module, __filename, __dirname) {" + Record->Content + "\n})";
+        const PString& FileName = Record->DebugPath.empty() ? Record->Url : Record->DebugPath;
         return JS_Eval(Ctx, Source.c_str(), Source.size(), FileName.c_str(), JS_EVAL_TYPE_GLOBAL);
     }
 
@@ -641,7 +663,7 @@ public:
         }
         Record->Executed = true;
 
-        std::string Key = Record->Key;
+        PString Key = Record->Key;
         JSValue Module = JS_NewObject(Ctx);
         JSValue Exports = JS_NewObject(Ctx);
         JSValue Result = JS_EXCEPTION;
@@ -650,9 +672,8 @@ public:
             JSValue Func = CompileCjs(Record);
             if (!JS_IsException(Func))
             {
-                std::string Url = Record->Url;
+                PString Url = Record->Url;
                 Record->Content.clear();
-                Record->Content.shrink_to_fit();
                 Record->CjsModule = JS_DupValue(Ctx, Module);
                 JSValue Args[] = {Exports, NewRequire(Url), Module, NewStr(Ctx, Url), NewStr(Ctx, DirName(Url))};
                 JSValue Ret = JS_Call(Ctx, Func, Exports, 5, Args);
@@ -684,7 +705,7 @@ public:
         {
             return Record->Module;
         }
-        std::string Key = Record->Key;
+        PString Key = Record->Key;
         if (Record->Kind == EKind::Cjs)
         {
             JSValue Exports = Require(Record);
@@ -786,8 +807,8 @@ public:
         {
             return JS_ThrowTypeError(Ctx, "the module name must be a string");
         }
-        std::string Specifier = ToStd(Ctx, Argv[0]);
-        std::string Referrer = ToStd(Ctx, Data[0]);
+        PString Specifier = ToStd(Ctx, Argv[0]);
+        PString Referrer = ToStd(Ctx, Data[0]);
         FLoadScope Scope(Loader);
         FRecord* Record = Loader->Resolve(Specifier, Referrer, false);
         if (!Record)
@@ -811,7 +832,7 @@ public:
         {
             return JS_ThrowTypeError(Ctx, "the module name must be a string");
         }
-        std::string Url;
+        PString Url;
         if (!Loader->ResolveUrl(ToStd(Ctx, Argv[0]), ToStd(Ctx, Data[0]), Url))
         {
             return JS_EXCEPTION;
@@ -820,11 +841,11 @@ public:
     }
 
     // the url of the script or module named BaseName ("" if unknown, an eval script for example)
-    std::string ReferrerOf(const char* BaseName)
+    PString ReferrerOf(const char* BaseName)
     {
         if (!BaseName)
         {
-            return std::string();
+            return PString();
         }
         auto ScriptIter = ScriptToUrl.find(BaseName);
         if (ScriptIter != ScriptToUrl.end())
@@ -839,7 +860,7 @@ public:
                 return Record->Url;
             }
         }
-        return std::string();
+        return PString();
     }
 
     static char* Normalize(JSContext* Ctx, const char* BaseName, const char* Name, void* Opaque)
@@ -872,7 +893,7 @@ public:
         FRecord* Record = Iter == Loader->NameToKey.end() ? nullptr : Loader->FindRecord(Iter->second);
         if (!Record)
         {
-            Throw(Ctx, std::string("[Puer002] import ") + Name + " failed: module not fetched");
+            Throw(Ctx, PString("[Puer002] import ") + Name + " failed: module not fetched");
             return nullptr;
         }
         FLoadScope Scope(Loader);
@@ -881,18 +902,18 @@ public:
         return Module;
     }
 
-    std::unordered_map<std::string, std::unique_ptr<FRecord>> Records;
+    std::unordered_map<PString, std::unique_ptr<FRecord>> Records;
     // the records added in the current (outermost) load
-    std::vector<std::string> AddedKeys;
+    std::vector<PString> AddedKeys;
     // by char + referrer + '\0' + specifier -> url
-    std::unordered_map<std::string, std::string> ResolveCache;
+    std::unordered_map<PString, PString> ResolveCache;
     // by char + url -> record key
-    std::unordered_map<std::string, std::string> LoadCache;
+    std::unordered_map<PString, PString> LoadCache;
     // module name -> record key
-    std::unordered_map<std::string, std::string> NameToKey;
+    std::unordered_map<PString, PString> NameToKey;
     // script name (debugPath or url) of an esm / cjs -> url
-    std::unordered_map<std::string, std::string> ScriptToUrl;
-    std::unordered_map<JSModuleDef*, std::string> ModuleToKey;
+    std::unordered_map<PString, PString> ScriptToUrl;
+    std::unordered_map<JSModuleDef*, PString> ModuleToKey;
     JSValue HostResolve = JS_UNDEFINED;
     JSValue HostLoad = JS_UNDEFINED;
     int LoadDepth = 0;

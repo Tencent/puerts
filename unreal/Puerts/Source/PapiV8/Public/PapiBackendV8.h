@@ -14,7 +14,6 @@
 #include "NamespaceDef.h"
 #include <functional>
 #include <memory>
-#include <string>
 
 PRAGMA_DISABLE_UNDEFINED_IDENTIFIER_WARNINGS
 MSVC_PRAGMA(warning(push, 0))

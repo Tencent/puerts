@@ -9,10 +9,10 @@
 #include "PapiV8ModuleLoader.h"
 #include "DataTransfer.h"
 #include "PesapiImpl.h"
+#include "PString.h"
 
 #include <cstring>
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -35,9 +35,9 @@ enum class EKind : char
 struct FRecord
 {
     EKind Kind;
-    std::string Key;
-    std::string Url;
-    std::string DebugPath;
+    PString Key;
+    PString Url;
+    PString DebugPath;
     // esm: the module; others: the synthetic module created when imported by an esm
     v8::Global<v8::Module> Module;
     // cjs: the source or bytecode, released once executed
@@ -47,7 +47,7 @@ struct FRecord
     // json / builtin: the value; cjs: module.exports when the synthetic module is created
     v8::Global<v8::Value> Value;
     // esm: specifier -> module, filled while fetching the module tree
-    std::unordered_map<std::string, v8::Global<v8::Module>> Requests;
+    std::unordered_map<PString, v8::Global<v8::Module>> Requests;
     // the synthetic module: the named exports (own properties of Value when it is created)
     std::vector<v8::Global<v8::String>> ExportNames;
     bool Executed = false;
@@ -92,23 +92,23 @@ inline pesapi_env ToPapi(v8::Local<v8::Context> Local)
     return reinterpret_cast<pesapi_env>(*Local);
 }
 
-inline v8::Local<v8::String> Str(v8::Isolate* Isolate, const std::string& S)
+inline v8::Local<v8::String> Str(v8::Isolate* Isolate, const PString& S)
 {
     return v8::String::NewFromUtf8(Isolate, S.c_str(), v8::NewStringType::kNormal, static_cast<int>(S.size())).ToLocalChecked();
 }
 
-inline std::string ToStd(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
+inline PString ToStd(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
 {
     v8::String::Utf8Value Utf8(Isolate, Value);
-    return *Utf8 ? std::string(*Utf8, Utf8.length()) : std::string();
+    return *Utf8 ? PString(*Utf8, Utf8.length()) : PString();
 }
 
-inline void Throw(v8::Isolate* Isolate, const std::string& Message)
+inline void Throw(v8::Isolate* Isolate, const PString& Message)
 {
     Isolate->ThrowException(v8::Exception::Error(Str(Isolate, Message)));
 }
 
-inline v8::ScriptOrigin MakeOrigin(v8::Isolate* Isolate, const std::string& Name, bool IsModule)
+inline v8::ScriptOrigin MakeOrigin(v8::Isolate* Isolate, const PString& Name, bool IsModule)
 {
 #if V8_MAJOR_VERSION > 8
     return v8::ScriptOrigin(Isolate, Str(Isolate, Name), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, IsModule);
@@ -119,17 +119,29 @@ inline v8::ScriptOrigin MakeOrigin(v8::Isolate* Isolate, const std::string& Name
 #endif
 }
 
-std::string MakeKey(EKind Kind, const std::string& Url)
+PString MakeKey(EKind Kind, const PString& Url)
 {
-    std::string Key(1, static_cast<char>(Kind));
+    PString Key;
+    Key += static_cast<char>(Kind);
     Key += Url;
     return Key;
 }
 
-std::string DirName(const std::string& Url)
+// by + referrer + '\0' + specifier
+PString MakeResolveKey(char By, const PString& Referrer, const PString& Specifier)
+{
+    PString Key;
+    Key += By;
+    Key += Referrer;
+    Key += '\0';
+    Key += Specifier;
+    return Key;
+}
+
+PString DirName(const PString& Url)
 {
     auto Pos = Url.find_last_of("/\\");
-    return Pos == std::string::npos ? std::string() : Url.substr(0, Pos);
+    return Pos == PString::npos ? PString() : Url.substr(0, Pos);
 }
 }    // namespace
 
@@ -155,16 +167,16 @@ public:
     // tried before the host for a bare specifier required (not imported), e.g. the require of node (its builtin modules and
     // node_modules), see SetFallbackRequire
     v8::Global<v8::Function> FallbackRequire;
-    std::unordered_map<std::string, std::unique_ptr<FRecord>> Records;
+    std::unordered_map<PString, std::unique_ptr<FRecord>> Records;
     std::unordered_multimap<int, FRecord*> ModuleToRecord;
     // "<by><referrer>\0<specifier>" -> key of the record
-    std::unordered_map<std::string, std::string> ResolveCache;
+    std::unordered_map<PString, PString> ResolveCache;
     // "<by><url>" -> key of the record
-    std::unordered_map<std::string, std::string> LoadCache;
+    std::unordered_map<PString, PString> LoadCache;
     // the resource name (debug path) of the scripts -> url, the referrer of a dynamic import is known by the resource name
-    std::unordered_map<std::string, std::string> DebugPathToUrl;
+    std::unordered_map<PString, PString> DebugPathToUrl;
     // keys of the esm records added by the running loads, the ones not evaluated are removed if the load fails
-    std::vector<std::string> PendingEsm;
+    std::vector<PString> PendingEsm;
     int LoadDepth = 0;
     uint32_t ExpectFlagHash = 0;
     uint32_t ExpectReadOnlySnapshotChecksum = 0;
@@ -213,7 +225,7 @@ public:
         PendingEsm.resize(Start);
     }
 
-    FRecord* AddRecord(EKind Kind, const std::string& Url, const std::string& DebugPath)
+    FRecord* AddRecord(EKind Kind, const PString& Url, const PString& DebugPath)
     {
         auto Key = MakeKey(Kind, Url);
         auto Record = std::make_unique<FRecord>();
@@ -234,7 +246,7 @@ public:
         return Ptr;
     }
 
-    void EraseRecord(const std::string& Key)
+    void EraseRecord(const PString& Key)
     {
         auto It = Records.find(Key);
         if (It == Records.end())
@@ -305,7 +317,7 @@ public:
 
     // the url (a string) returned by the host, EnsureHost is called before
     v8::MaybeLocal<v8::Value> CallHostResolve(
-        v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer, v8::Local<v8::String> By)
+        v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer, v8::Local<v8::String> By)
     {
         v8::Local<v8::Value> ResolveArgs[] = {Str(Isolate, Specifier), Str(Isolate, Referrer), By};
         v8::Local<v8::Value> UrlValue;
@@ -322,16 +334,13 @@ public:
     }
 
     // import.meta.resolve: the url of the specifier imported by Referrer, without loading it
-    v8::MaybeLocal<v8::Value> ResolveUrl(v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer)
+    v8::MaybeLocal<v8::Value> ResolveUrl(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer)
     {
         if (Records.find(MakeKey(EKind::Builtin, Specifier)) != Records.end())
         {
             return Str(Isolate, Specifier).As<v8::Value>();
         }
-        std::string CacheKey(1, 'i');
-        CacheKey += Referrer;
-        CacheKey.push_back('\0');
-        CacheKey += Specifier;
+        PString CacheKey = MakeResolveKey('i', Referrer, Specifier);
         auto CacheIt = ResolveCache.find(CacheKey);
         if (CacheIt != ResolveCache.end() && Records.find(CacheIt->second) != Records.end())
         {
@@ -345,7 +354,7 @@ public:
     }
 
     // resolves and loads (compiles for esm, without evaluating) the module, returns nullptr with an exception thrown
-    FRecord* Resolve(v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer, bool ByImport)
+    FRecord* Resolve(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer, bool ByImport)
     {
         auto BuiltinIt = Records.find(MakeKey(EKind::Builtin, Specifier));
         if (BuiltinIt != Records.end())
@@ -353,10 +362,7 @@ public:
             return BuiltinIt->second.get();
         }
 
-        std::string CacheKey(1, ByImport ? 'i' : 'r');
-        CacheKey += Referrer;
-        CacheKey.push_back('\0');
-        CacheKey += Specifier;
+        PString CacheKey = MakeResolveKey(ByImport ? 'i' : 'r', Referrer, Specifier);
         auto CacheIt = ResolveCache.find(CacheKey);
         if (CacheIt != ResolveCache.end())
         {
@@ -392,7 +398,7 @@ public:
         {
             return nullptr;
         }
-        std::string Url = ToStd(Isolate, UrlValue);
+        PString Url = ToStd(Isolate, UrlValue);
 
         // registered by the host lazily
         BuiltinIt = Records.find(MakeKey(EKind::Builtin, Url));
@@ -403,8 +409,7 @@ public:
         }
 
         // the kind is decided by the host loading it, the same (by, url) is loaded once
-        std::string LoadKey(1, ByImport ? 'i' : 'r');
-        LoadKey += Url;
+        PString LoadKey = MakeKey(static_cast<EKind>(ByImport ? 'i' : 'r'), Url);
         auto LoadIt = LoadCache.find(LoadKey);
         if (LoadIt != LoadCache.end())
         {
@@ -437,7 +442,7 @@ public:
         {
             return nullptr;
         }
-        std::string KindName = ToStd(Isolate, KindValue);
+        PString KindName = ToStd(Isolate, KindValue);
         EKind Kind;
         if (KindName == "esm")
         {
@@ -461,7 +466,7 @@ public:
             Throw(Isolate, "[Puer003] load " + Url + " failed: content must be a string or an ArrayBuffer");
             return nullptr;
         }
-        std::string DebugPath = DebugPathValue->IsString() ? ToStd(Isolate, DebugPathValue) : Url;
+        PString DebugPath = DebugPathValue->IsString() ? ToStd(Isolate, DebugPathValue) : Url;
 
         auto Key = MakeKey(Kind, Url);
         auto ExistingIt = Records.find(Key);
@@ -514,9 +519,8 @@ public:
         auto Header = static_cast<FCodeCacheHeader*>(DataTransfer::GetArrayBufferData(Bytecode));
         static constexpr uint32_t kModuleFlagMask = (1u << 31);
         uint32_t Length = IsModule ? (Header->SourceHash & ~kModuleFlagMask) : Header->SourceHash;
-        std::string Spaces(Length, ' ');
-        return v8::String::NewFromOneByte(
-            Isolate, reinterpret_cast<const uint8_t*>(Spaces.data()), v8::NewStringType::kNormal, static_cast<int>(Spaces.size()))
+        std::vector<uint8_t> Spaces(Length, ' ');
+        return v8::String::NewFromOneByte(Isolate, Spaces.data(), v8::NewStringType::kNormal, static_cast<int>(Spaces.size()))
             .ToLocalChecked();
     }
 
@@ -538,7 +542,7 @@ public:
     }
 #endif
 
-    bool IsBytecodeSupported(const std::string& Url)
+    bool IsBytecodeSupported(const PString& Url)
     {
 #if defined(WITH_V8_BYTECODE)
         return true;
@@ -548,8 +552,7 @@ public:
 #endif
     }
 
-    FRecord* FetchEsm(
-        v8::Local<v8::Context> Context, const std::string& Url, const std::string& DebugPath, v8::Local<v8::Value> Content)
+    FRecord* FetchEsm(v8::Local<v8::Context> Context, const PString& Url, const PString& DebugPath, v8::Local<v8::Value> Content)
     {
         auto Origin = MakeOrigin(Isolate, DebugPath, true);
         v8::Local<v8::Module> Module;
@@ -840,7 +843,7 @@ public:
             Isolate->ThrowException(v8::Exception::TypeError(Str(Isolate, "the module name must be a string")));
             return;
         }
-        auto Referrer = static_cast<std::string*>(Apis->get_userdata(Info));
+        auto Referrer = static_cast<PString*>(Apis->get_userdata(Info));
         auto Loader = Get(Isolate);
         FLoadScope Scope(Loader);
         auto Record = Loader->Resolve(Context, ToStd(Isolate, V8Info[0]), *Referrer, false);
@@ -854,12 +857,12 @@ public:
 
     static void RequireFinalize(struct pesapi_ffi* Apis, void* Data, void* EnvPrivate)
     {
-        delete static_cast<std::string*>(Data);
+        delete static_cast<PString*>(Data);
     }
 
-    v8::MaybeLocal<v8::Function> NewRequire(v8::Local<v8::Context> Context, const std::string& Referrer)
+    v8::MaybeLocal<v8::Function> NewRequire(v8::Local<v8::Context> Context, const PString& Referrer)
     {
-        auto Data = new std::string(Referrer);
+        auto Data = new PString(Referrer);
         auto Func = v8impl::g_pesapi_ffi.create_function(ToPapi(Context), &RequireCallback, Data, &RequireFinalize);
         if (!Func)
         {
@@ -919,7 +922,7 @@ public:
     }
 
     // import semantics (dynamic import): the namespace, or a promise of it when the module has a top-level await
-    v8::MaybeLocal<v8::Value> Import(v8::Local<v8::Context> Context, const std::string& Specifier, const std::string& Referrer)
+    v8::MaybeLocal<v8::Value> Import(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer)
     {
         FLoadScope Scope(this);
         auto Record = Resolve(Context, Specifier, Referrer, true);
@@ -959,8 +962,8 @@ public:
         v8::Isolate* Isolate;
         v8::Global<v8::Context> Context;
         v8::Global<v8::Promise::Resolver> Resolver;
-        std::string Specifier;
-        std::string Referrer;
+        PString Specifier;
+        PString Referrer;
     };
 
     // runs in a microtask as d8 / node, the host is not called inside the callback of v8
@@ -1059,7 +1062,7 @@ static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
             Isolate->ThrowException(v8::Exception::TypeError(Str(Isolate, "the module name must be a string")));
             return;
         }
-        auto Referrer = static_cast<std::string*>(Apis->get_userdata(Info));
+        auto Referrer = static_cast<PString*>(Apis->get_userdata(Info));
         auto Loader = Get(Isolate);
         v8::Local<v8::Value> Url;
         if (Loader && Loader->ResolveUrl(Context, ToStd(Isolate, V8Info[0]), *Referrer).ToLocal(&Url))
@@ -1079,7 +1082,7 @@ static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
             return;
         }
         (void) Meta->CreateDataProperty(Context, Str(Isolate, "url"), Str(Isolate, Record->Url));
-        auto Data = new std::string(Record->Url);
+        auto Data = new PString(Record->Url);
         auto Func = v8impl::g_pesapi_ffi.create_function(ToPapi(Context), &MetaResolveCallback, Data, &RequireFinalize);
         if (!Func)
         {

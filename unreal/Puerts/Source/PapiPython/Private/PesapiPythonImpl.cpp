@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
-#include <string>
+#include "PString.h"
 #include <vector>
 
 namespace PUERTS_NAMESPACE
@@ -385,7 +385,7 @@ static double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
 }
 
 // the utf-8 (surrogates passed) of str(value), false on failure
-static bool ToUtf8(PyObject* O, std::string& Out)
+static bool ToUtf8(PyObject* O, PString& Out)
 {
     PyObject* Tmp = nullptr;
     PyObject* S = O;
@@ -425,7 +425,7 @@ static const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pva
     PyObject* O = Obj(pvalue);
     const char* Str = nullptr;
     size_t Len = 0;
-    std::string Tmp;
+    PString Tmp;
     Py_ssize_t SLen = 0;
     if (PyUnicode_Check(O) && (Str = PyUnicode_AsUTF8AndSize(O, &SLen)) != nullptr)
     {
@@ -1300,7 +1300,7 @@ static pesapi_value pesapi_call_function(
 static pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
 {
     auto Mapper = MapperOf(env);
-    std::string Source(reinterpret_cast<const char*>(code), code ? code_size : 0);
+    PString Source(reinterpret_cast<const char*>(code), code ? code_size : 0);
     PyObject* Code = Py_CompileStringExFlags(Source.c_str(), path ? path : "<eval>", Py_file_input, nullptr, -1);
     if (!Code)
     {

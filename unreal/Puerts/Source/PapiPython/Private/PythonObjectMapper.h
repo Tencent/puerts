@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <string>
+#include "PString.h"
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -56,7 +56,7 @@ struct FFuncData
     bool IsMethod;
     // false once the env is released (the finalize is called by UnInitialize)
     bool Valid;
-    std::string Name;
+    PString Name;
     PyMethodDef Def;
 };
 
@@ -95,7 +95,7 @@ struct FClassEntry
     PyObject* Type;
     // the definition the class is built from (its callbacks refer to it), objects created with the class are bound with it
     const JSClassDefinition* ClassDefinition;
-    std::unordered_map<std::string, FStaticVar> StaticVars;
+    std::unordered_map<PString, FStaticVar> StaticVars;
     FCppObjectMapper* Mapper;
 };
 

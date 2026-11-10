@@ -61,7 +61,7 @@ template <typename F>
 static PyObject* CallNative(FCppObjectMapper* Mapper, void* Data, PyObject* This, PyObject* const* Args, Py_ssize_t Argc, F&& Call)
 {
     int Kind = 0;
-    std::string Msg;
+    PString Msg;
     PyObject* Type = nullptr;
     PyObject* Value = nullptr;
     PyObject* Traceback = nullptr;
@@ -709,7 +709,7 @@ FClassEntry* FCppObjectMapper::FindOrCreateClass(const JSClassDefinition* ClassD
             Dict, FunctionInfo->Name, NewFunction(FunctionInfo->Callback, FunctionInfo->Data, nullptr, FunctionInfo->Name, false));
     }
 
-    std::unordered_map<std::string, FStaticVar> StaticVars;
+    std::unordered_map<PString, FStaticVar> StaticVars;
     for (JSPropertyInfo* PropertyInfo = ClassDefinition->Variables; PropertyInfo && PropertyInfo->Name; ++PropertyInfo)
     {
         FStaticVar Var;

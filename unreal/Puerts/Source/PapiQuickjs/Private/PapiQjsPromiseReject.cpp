@@ -9,7 +9,7 @@
 #include "PapiQjsPromiseReject.h"
 #include "quickjs.h"
 #include <mutex>
-#include <string>
+#include "PString.h"
 #include <unordered_map>
 
 namespace PUERTS_NAMESPACE
@@ -39,7 +39,7 @@ public:
         JSValue Ex = JS_GetException(Ctx);
         if (OnHandlerError)
         {
-            std::string Error = "unknown exception";
+            PString Error = "unknown exception";
             if (const char* Msg = JS_ToCString(Ctx, Ex))
             {
                 Error = Msg;

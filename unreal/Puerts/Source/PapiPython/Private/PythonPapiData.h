@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <string>
+#include "PString.h"
 #include <vector>
 
 // a pesapi_env of the python backend is the mapper of the env, a pesapi_value is a PyObject* (nullptr: None) which lives until
@@ -112,7 +112,7 @@ struct caught_exception_info
     PyObject* Type = nullptr;
     PyObject* Value = nullptr;
     PyObject* Traceback = nullptr;
-    std::string Message;
+    PString Message;
 
     void Clear()
     {
@@ -186,7 +186,7 @@ struct pesapi_callback_info__
     // a new reference (set by add_return, taken by the caller)
     pesapi_value Ret = nullptr;
     bool HasEx = false;
-    std::string ExMsg;
+    PString ExMsg;
 };
 
 }    // namespace pyimpl

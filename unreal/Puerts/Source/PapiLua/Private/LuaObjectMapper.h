@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <string>
+#include "PString.h"
 #include <unordered_map>
 #include <unordered_set>
 
@@ -166,7 +166,7 @@ public:
     pesapi_scope__* CurrentScope = nullptr;
 
     // the traceback of the last error caught by ProtectedCall
-    std::string LastTraceback;
+    PString LastTraceback;
 
     // the weak value table of the weak value refs
     int WeakRefTableRef = LUA_NOREF;

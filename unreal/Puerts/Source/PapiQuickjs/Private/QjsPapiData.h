@@ -16,7 +16,7 @@
 #include <cstring>
 #include <memory>
 #include <new>
-#include <string>
+#include "PString.h"
 #include <vector>
 
 namespace PUERTS_NAMESPACE
@@ -105,7 +105,7 @@ inline void setCurrentScope(JSContext* ctx, pesapi_scope__* scope)
 struct caught_exception_info
 {
     JSValue exception = JS_UNDEFINED;
-    std::string message;
+    PString message;
 };
 
 struct pesapi_scope__

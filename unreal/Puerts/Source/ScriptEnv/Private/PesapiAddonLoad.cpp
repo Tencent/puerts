@@ -14,7 +14,6 @@
 #include "PesapiRegistryImpl.h"
 
 #include <map>
-#include <string>
 
 typedef void (*PesapiAddonRegisterFunc)(struct pesapi_registry_api* registry_api, pesapi_registry registry);
 

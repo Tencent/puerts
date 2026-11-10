@@ -10,7 +10,7 @@
 #include "DataTransfer.h"
 #include "PesapiImpl.h"
 
-#include <string>
+#include "PString.h"
 
 // the module loader takes PESAPI_PRIVATE_DATA_POS_IN_ISOLATE + 1, this is the last slot of v8 (kNumIsolateDataSlots is 4)
 #define PUERTS_PROMISE_REJECT_DATA_POS_IN_ISOLATE (PESAPI_PRIVATE_DATA_POS_IN_ISOLATE + 2)
@@ -52,7 +52,7 @@ public:
             return;
         }
         v8::String::Utf8Value Exception(Isolate, TryCatch.Exception());
-        std::string Error = *Exception ? *Exception : "unknown exception";
+        PString Error = *Exception ? *Exception : "unknown exception";
         v8::Local<v8::Value> Stack;
         if (TryCatch.StackTrace(InContext).ToLocal(&Stack) && Stack->IsString())
         {

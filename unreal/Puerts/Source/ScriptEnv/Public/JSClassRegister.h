@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 Tencent.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -25,8 +25,6 @@
 #endif
 #define UPTRINT uintptr_t
 #endif
-
-#include <string>
 
 #include "PuertsNamespaceDef.h"
 

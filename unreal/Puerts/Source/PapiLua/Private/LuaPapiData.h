@@ -15,7 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <string>
+#include "PString.h"
 
 // a pesapi_value of the lua backend is an absolute index of the stack of the lua state of the env (0: none, the same as an
 // absent argument), the values live until the scope they are created in is closed (its top is restored)
@@ -68,8 +68,8 @@ struct caught_exception_info
 {
     // the registry ref of the error value
     int ExRef = LUA_NOREF;
-    std::string Traceback;
-    std::string Message;
+    PString Traceback;
+    PString Message;
 };
 
 struct pesapi_scope__
@@ -99,7 +99,7 @@ struct pesapi_scope__
     }
 
     // takes the registry ref of the error
-    void SetCaught(int ExRef, const std::string& Traceback)
+    void SetCaught(int ExRef, const PString& Traceback)
     {
         if (!Caught)
         {
@@ -135,7 +135,7 @@ struct pesapi_callback_info__
     // the index the return value is kept in
     int RetSlot;
     bool HasEx = false;
-    std::string ExMsg;
+    PString ExMsg;
 };
 
 // the result of a native callback (the same order as the quickjs backend): the error thrown by throw_by_string, then the one

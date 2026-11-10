@@ -12,8 +12,7 @@
 #include "CppObjectMapper.h"
 #include "PesapiImpl.h"
 
-#include <string>
-#include <sstream>
+#include <cstdio>
 #include <vector>
 #include <cstring>
 #include "PString.h"
@@ -672,21 +671,26 @@ const char* pesapi_get_exception_as_string(pesapi_scope scope, int with_stack)
         v8::Local<v8::Message> message = scope->trycatch.Message();
 
         // 输出 (filename):(line number): (message).
-        std::ostringstream stm;
         v8::String::Utf8Value fileName(isolate, message->GetScriptResourceName());
         int lineNum = message->GetLineNumber(context).FromJust();
-        stm << *fileName << ":" << lineNum << ": " << scope->errinfo.c_str();
-
-        stm << std::endl;
+        char lineBuf[16];
+        snprintf(lineBuf, sizeof(lineBuf), "%d", lineNum);
+        puerts::PString info = *fileName ? *fileName : "";
+        info += ":";
+        info += lineBuf;
+        info += ": ";
+        info += scope->errinfo;
+        info += "\n";
 
         // 输出调用栈信息
         v8::Local<v8::Value> stackTrace;
         if (scope->trycatch.StackTrace(context).ToLocal(&stackTrace))
         {
             v8::String::Utf8Value stackTraceVal(isolate, stackTrace);
-            stm << std::endl << *stackTraceVal;
+            info += "\n";
+            info += *stackTraceVal ? *stackTraceVal : "";
         }
-        scope->errinfo = stm.str().c_str();
+        scope->errinfo = static_cast<puerts::PString&&>(info);
     }
     return scope->errinfo.c_str();
 }

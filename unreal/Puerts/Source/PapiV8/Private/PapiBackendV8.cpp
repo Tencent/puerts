@@ -17,7 +17,6 @@
 #include "PapiEnvScope.h"
 #include "PString.h"
 #include "V8InspectorImpl.h"
-#include <sstream>
 
 #if defined(WITH_NODEJS)
 #include "PapiV8Node.h"
@@ -317,9 +316,9 @@ FString FPapiBackendV8::GetStatisticsLog()
         (uint64) Statistics.number_of_detached_contexts(), (uint64) Statistics.does_zap_garbage());
 }
 
-static PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
+static FString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
-    std::ostringstream stm;
+    FString Ret;
     for (int i = 0; i < InStack->GetFrameCount(); i++)
     {
         v8::Local<v8::StackFrame> StackFrame = InStack->GetFrame(InIsolate, i);
@@ -327,32 +326,31 @@ static PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTra
         v8::String::Utf8Value ScriptName(InIsolate, StackFrame->GetScriptName());
         const int LineNumber = StackFrame->GetLineNumber();
         const int Column = StackFrame->GetColumn();
+        const FString Script = UTF8_TO_TCHAR(*ScriptName ? *ScriptName : "anonymous");
 
         if (StackFrame->IsEval())
         {
             if (StackFrame->GetScriptId() == v8::Message::kNoScriptIdInfo)
             {
-                stm << "    at [eval]:" << LineNumber << ":" << Column << std::endl;
+                Ret += FString::Printf(TEXT("    at [eval]:%d:%d\n"), LineNumber, Column);
             }
             else
             {
-                stm << "    at [eval] (" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << ")"
-                    << std::endl;
+                Ret += FString::Printf(TEXT("    at [eval] (%s:%d:%d)\n"), *Script, LineNumber, Column);
             }
             break;
         }
 
         if (FuncName.length() == 0)
         {
-            stm << "    at " << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column << std::endl;
+            Ret += FString::Printf(TEXT("    at %s:%d:%d\n"), *Script, LineNumber, Column);
         }
         else
         {
-            stm << "    at " << *FuncName << "(" << (*ScriptName ? *ScriptName : "anonymous") << ":" << LineNumber << ":" << Column
-                << ")" << std::endl;
+            Ret += FString::Printf(TEXT("    at %s(%s:%d:%d)\n"), UTF8_TO_TCHAR(*FuncName), *Script, LineNumber, Column);
         }
     }
-    return stm.str().c_str();
+    return Ret;
 }
 
 FString FPapiBackendV8::CurrentStackTrace()
@@ -363,8 +361,7 @@ FString FPapiBackendV8::CurrentStackTrace()
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
 
-    PString StackTrace = StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
-    return UTF8_TO_TCHAR(StackTrace.c_str());
+    return StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
 }
 
 ScriptClassRegistry* FPapiBackendV8::GetRegistry()
