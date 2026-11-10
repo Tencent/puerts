@@ -493,13 +493,12 @@ namespace PUERTS_NAMESPACE
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         auto CallbackData = new FCallbackInfoWithFinalize(false, Callback, Data, Finalize, this);
 
-#if defined(WITH_QUICKJS)
-        auto Template = v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackData));
-#else
-        auto Template = v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackData),  v8::Local<v8::Signature>(), 0,  v8::ConstructorBehavior::kThrow);
-        Template->Set(Isolate, "__do_not_cache", v8::ObjectTemplate::New(Isolate));
-#endif
-        auto Ret = Template->GetFunction(Context);
+ #if defined(WITH_QUICKJS)
+        auto Ret = v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackData))->GetFunction(Context);
+ #else
+        auto Ret = v8::Function::New(Context, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackData), 0, v8::ConstructorBehavior::kThrow);
+ #endif
+        
         if (!Ret.IsEmpty())
         {
             CallbackData->JsFunction.Reset(Isolate, Ret.ToLocalChecked());

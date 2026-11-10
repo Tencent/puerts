@@ -173,9 +173,7 @@ v8::MaybeLocal<v8::Function> FCppObjectMapper::CreateFunction(v8::Local<v8::Cont
     auto CallbackData = new PesapiCallbackData {Callback, Data, this};
     CallbackData->Finalize = Finalize;
     auto V8Data = v8::External::New(Isolate, &CallbackData->Data);
-    auto Template = v8::FunctionTemplate::New(Isolate, PesapiFunctionCallback, V8Data);
-    Template->Set(Isolate, "__do_not_cache", v8::ObjectTemplate::New(Isolate));
-    auto Ret = Template->GetFunction(Context);
+    auto Ret = v8::Function::New(Context, PesapiFunctionCallback, V8Data, 0, v8::ConstructorBehavior::kThrow);
     if (!Ret.IsEmpty())
     {
         CallbackData->JsFunction.Reset(Isolate, Ret.ToLocalChecked());
