@@ -106,7 +106,7 @@ private:
 
     v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
-    std::vector<PesapiCallbackData*> FunctionDatas;
+    std::unordered_set<PesapiCallbackData*> FunctionDatas;
 #if defined(PUERTS_LAZYLOAD) && V8_MAJOR_VERSION >= 13
     std::vector<void*> InterceptorDatas;
     std::unordered_set<const void*, PointerHash, PointerEqual> StaticLazyWrappedTypes;

@@ -31,6 +31,15 @@ namespace Puerts
         private readonly pesapi_class_not_found_callback onTypeNotFoundDelegate;
         internal readonly List<Delegate> callbacksCache = new List<Delegate>();
 
+        // Keeps delegates of functions created by createFunction alive until their js function is collected.
+        // A HashSet keyed by holder reference makes release O(1) (List.Remove was O(n), O(n^2) on mass GC).
+        internal sealed class FunctionCallbackHolder
+        {
+            public Delegate Callback;
+            public Delegate Finalize;
+        }
+        internal readonly HashSet<FunctionCallbackHolder> functionCallbacks = new HashSet<FunctionCallbackHolder>();
+
         internal TypeMapping.RegisterInfoManager RegisterInfoManager = new TypeMapping.RegisterInfoManager();
 
         internal void AddRegisterInfoGetter(Type type, Func<TypeMapping.RegisterInfo> getter)

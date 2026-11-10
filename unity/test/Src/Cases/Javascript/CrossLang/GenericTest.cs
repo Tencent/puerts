@@ -267,6 +267,11 @@ namespace Puerts.UnitTest
         public void CreateFunctionLeakTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
+            // relies on v8.getHeapStatistics and the v8 specific __do_not_cache leak
+            if (!(jsEnv.Backend is BackendV8))
+            {
+                return;
+            }
 
             jsEnv.Eval(@"
                 (function() {
@@ -288,15 +293,15 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 (function() {
-                    // will cause at least 1M leak when using __do_not_cache in createFunction
-                    for (let i = 0; i < 20000; i++)
+                    // will cause about 280KB leak when using __do_not_cache in createFunction
+                    for (let i = 0; i < 5000; i++)
                         puer.createFunction(global.cs_method); // __do_not_cache will leak 56B per call
                 })();
             ");
             jsEnv.Backend.LowMemoryNotification();
             jsEnv.Tick();
             var used_heap_size = jsEnv.Eval<int>(@"v8.getHeapStatistics().used_heap_size;");
-            TestHelper.AssertAndPrint($"increaded heap size: {used_heap_size - last_heap_size}", used_heap_size - last_heap_size < 1024 * 1024);
+            TestHelper.AssertAndPrint($"increaded heap size: {used_heap_size - last_heap_size}", used_heap_size - last_heap_size < 256 * 1024);
         }
     }
 }

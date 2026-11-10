@@ -236,14 +236,20 @@ namespace Puerts
             if (methods.Count > 0)
             {
                 var wrap = ExpressionsWrap.BuildMethodWrap(methods[0].DeclaringType, methods.ToArray(), true);
-                TypeRegister.Instance.callbacksCache.Add(wrap);
-                pesapi_function_finalize functionFinalize = null;
-                functionFinalize = (IntPtr innerApis, IntPtr data, IntPtr env_private) =>
+                var holder = new TypeRegister.FunctionCallbackHolder { Callback = wrap };
+                var functionCallbacks = TypeRegister.Instance.functionCallbacks;
+                pesapi_function_finalize functionFinalize = (IntPtr innerApis, IntPtr data, IntPtr env_private) =>
                 {
-                    TypeRegister.Instance.callbacksCache.Remove(wrap);
-                    TypeRegister.Instance.callbacksCache.Remove(functionFinalize);
+                    lock (functionCallbacks)
+                    {
+                        functionCallbacks.Remove(holder);
+                    }
                 };
-                TypeRegister.Instance.callbacksCache.Add(functionFinalize);
+                holder.Finalize = functionFinalize;
+                lock (functionCallbacks)
+                {
+                    functionCallbacks.Add(holder);
+                }
                 PuertsNative.pesapi_add_return(apis, info, PuertsNative.pesapi_create_function(apis, env, wrap, IntPtr.Zero, functionFinalize));
             }
             else

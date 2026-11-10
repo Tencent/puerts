@@ -151,17 +151,7 @@ void FCppObjectMapper::CallbackDataGarbageCollected(const v8::WeakCallbackInfo<P
     {
         CallbackData->Finalize(&v8impl::g_pesapi_ffi, CallbackData->Data, DataTransfer::GetIsolatePrivateData(Data.GetIsolate()));
     }
-    for (auto it = CallbackData->CppObjectMapper->FunctionDatas.begin(); it != CallbackData->CppObjectMapper->FunctionDatas.end(); )
-    {
-        if (*it == CallbackData)
-        {
-            it = CallbackData->CppObjectMapper->FunctionDatas.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
+    CallbackData->CppObjectMapper->FunctionDatas.erase(CallbackData);
     delete CallbackData;
 }
 
@@ -177,7 +167,7 @@ v8::MaybeLocal<v8::Function> FCppObjectMapper::CreateFunction(v8::Local<v8::Cont
         CallbackData->JsFunction.Reset(Isolate, Ret.ToLocalChecked());
         CallbackData->JsFunction.SetWeak<PesapiCallbackData>(
             CallbackData, CallbackDataGarbageCollected, v8::WeakCallbackType::kInternalFields);
-        FunctionDatas.push_back(CallbackData);
+        FunctionDatas.insert(CallbackData);
     }
     else
     {
@@ -1029,9 +1019,8 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
             PNode = PNode->Next;
         }
     }
-    for(int i = 0;i < FunctionDatas.size(); ++i)
+    for (auto CallbackData : FunctionDatas)
     {
-        auto CallbackData = FunctionDatas[i];
         if (CallbackData->Finalize)
         {
             CallbackData->Finalize(&v8impl::g_pesapi_ffi, CallbackData->Data, PData);
