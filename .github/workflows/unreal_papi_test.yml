@@ -37,7 +37,7 @@ jobs:
             os: ubuntu-22.04
             configure: CC=clang CXX=clang++ cmake -S unreal/papi_test -B build -DCMAKE_BUILD_TYPE=Release
           - name: macOS
-            os: macos-14
+            os: macos-15
             configure: cmake -S unreal/papi_test -B build -DCMAKE_BUILD_TYPE=Release
     steps:
       - uses: actions/checkout@v4
