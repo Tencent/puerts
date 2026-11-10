@@ -262,5 +262,41 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, "hello");
             jsEnv.Tick();
         }
+
+        [Test]
+        public void CreateFunctionLeakTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+
+            jsEnv.Eval(@"
+                (function() {
+                    const cls = puer.$typeof(CS.Puerts.UnitTest.GenericTestClass);
+                    const methods = CS.Puerts.Utils.GetMethodAndOverrideMethodByName(cls, 'StaticGenericMethod');
+                    let overloads = [];
+                    for (let i = 0; i < methods.Length; i++) {
+                        let method = methods.GetValue(i)
+                        overloads.push(method.MakeGenericMethod(puer.$typeof(CS.System.Int32)));
+                    }
+                    global.cs_method = overloads[0];
+                })();
+            ");
+
+            jsEnv.Backend.LowMemoryNotification();
+            jsEnv.Tick();
+
+            var last_heap_size = jsEnv.Eval<int>(@"v8.getHeapStatistics().used_heap_size;");
+
+            jsEnv.Eval(@"
+                (function() {
+                    // will cause at least 1M leak when using __do_not_cache in createFunction
+                    for (let i = 0; i < 20000; i++)
+                        puer.createFunction(global.cs_method); // __do_not_cache will leak 56B per call
+                })();
+            ");
+            jsEnv.Backend.LowMemoryNotification();
+            jsEnv.Tick();
+            var used_heap_size = jsEnv.Eval<int>(@"v8.getHeapStatistics().used_heap_size;");
+            TestHelper.AssertAndPrint($"increaded heap size: {used_heap_size - last_heap_size}", used_heap_size - last_heap_size < 1024 * 1024);
+        }
     }
 }
