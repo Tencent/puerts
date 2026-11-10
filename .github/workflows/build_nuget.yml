@@ -391,6 +391,8 @@ jobs:
         run: |
           cd unity/test/nuget/projects
           dotnet test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test --no-build --filter "FullyQualifiedName~BundledPythonTest" --logger "console;verbosity=detailed"
         shell: pwsh
 
   linux_test:
@@ -410,6 +412,7 @@ jobs:
         run: |
           cd unity/test/nuget/projects
           dotnet test
+          dotnet test --no-build --filter "FullyQualifiedName~BundledPythonTest" --logger "console;verbosity=detailed"
       
   osx_test:
     name: macOS unit test
@@ -428,3 +431,4 @@ jobs:
         run: |
           cd unity/test/nuget/projects
           dotnet test
+          dotnet test --no-build --filter "FullyQualifiedName~BundledPythonTest" --logger "console;verbosity=detailed"

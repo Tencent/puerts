@@ -40,7 +40,7 @@
 
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <DefineConstants>PUER_CONSOLE_TEST;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;PUERTS_REFLECT_ALL_EXTENSION;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
+        <DefineConstants>PUER_CONSOLE_TEST;PUERTS_GENERAL;PUERTS_NUGET_TEST;DISABLE_AUTO_REGISTER;PUERTS_REFLECT_ALL_EXTENSION;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <WarningLevel>0</WarningLevel>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -137,6 +137,9 @@
         </Compile>
     <Compile Include="../../Src/Cases/Python/AccessControlTest.cs">
             <Link>Python\AccessControlTest.cs</Link>
+        </Compile>
+    <Compile Include="../../Src/Cases/Python/BundledPythonTest.cs">
+            <Link>Python\BundledPythonTest.cs</Link>
         </Compile>
     <Compile Include="../../Src/Cases/Python/API/EvalTest.cs">
             <Link>Python\API\EvalTest.cs</Link>

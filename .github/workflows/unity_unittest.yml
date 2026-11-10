@@ -189,6 +189,7 @@ jobs:
           for log_file in "${log_files[@]}"; do
             echo "Processing $log_file"
             grep "ENV_BACKEND" "$log_file" || true
+            sed -n '/==== Bundled Python Info ====/,/==== End Bundled Python Info ====/p' "$log_file" || true
             passed_count=$(grep -c "Passed" "$log_file" || true)
             echo "Passed: $passed_count"
             failed_count=$(grep -c "Failed" "$log_file" || true)

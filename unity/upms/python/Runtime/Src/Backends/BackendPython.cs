@@ -5,11 +5,15 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if (UNITY_EDITOR || UNITY_STANDALONE) && !PUERTS_GENERAL && !PUERTS_NUGET
+#define PUERTS_PYTHON_UNITY_DESKTOP
+#endif
+
 #if UNITY_EDITOR || UNITY_STANDALONE || UNITY_ANDROID || PUERTS_GENERAL || PUERTS_NUGET
 
 using System;
 
-#if PUERTS_NUGET
+#if PUERTS_NUGET || PUERTS_PYTHON_UNITY_DESKTOP
 using System.Runtime.InteropServices;
 #endif
 
@@ -22,10 +26,16 @@ namespace Puerts
         public BackendPython(PythonLoader loader)
         {
             pythonLoader = loader;
+#if PUERTS_PYTHON_UNITY_DESKTOP
+            PreloadBundledPython();
+#endif
         }
         public BackendPython()
         {
             pythonLoader = new PythonDefaultLoader();
+#if PUERTS_PYTHON_UNITY_DESKTOP
+            PreloadBundledPython();
+#endif
         }
         public override int GetApiVersion()
         {
@@ -37,10 +47,145 @@ namespace Puerts
 #if PUERTS_NUGET
             var pythonPrefix = System.IO.Path.Combine(AppContext.BaseDirectory, "runtimes", GetRuntimeIdentifier(), "native");
             PapiPythonNative.InitPythonByHome(pythonPrefix);
+#elif PUERTS_PYTHON_UNITY_DESKTOP
+            var home = ResolvePythonHome();
+            if (home != null)
+            {
+                var ret = PapiPythonNative.InitPythonByHome(home);
+                if (ret != 0)
+                {
+                    UnityEngine.Debug.LogError("[Puerts] init bundled python failed (" + ret + "), home: " + home);
+                }
+            }
 #endif
             envRef = PapiPythonNative.CreatePythonPapiEnvRef();  
             return envRef;
         }
+
+#if PUERTS_PYTHON_UNITY_DESKTOP
+        /// <summary>
+        /// Python home override. When null, the Python bundled in the package (PythonHome~/&lt;rid&gt;) is used.
+        /// Must be set before the first ScriptEnv with BackendPython is created.
+        /// </summary>
+        public static string PythonHome;
+
+        private static bool bundledPythonPreloaded;
+        private static string resolvedPythonHome;
+        private static bool pythonHomeResolved;
+
+        private static string GetBundledPythonRid()
+        {
+#if UNITY_EDITOR_WIN || (!UNITY_EDITOR && UNITY_STANDALONE_WIN)
+            return RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "win-x64" : null;
+#elif UNITY_EDITOR_OSX || (!UNITY_EDITOR && UNITY_STANDALONE_OSX)
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "osx-arm64" : null;
+#elif UNITY_EDITOR_LINUX || (!UNITY_EDITOR && UNITY_STANDALONE_LINUX)
+            return RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "linux-x64" : null;
+#else
+            return null;
+#endif
+        }
+
+#if UNITY_EDITOR
+        private static string FindPackageRoot()
+        {
+            var assembly = typeof(BackendPython).Assembly;
+            var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(assembly);
+            if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.resolvedPath))
+            {
+                return packageInfo.resolvedPath;
+            }
+            // e.g. the package copied into Assets/
+            var asmdefPath = UnityEditor.Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(assembly.GetName().Name);
+            if (string.IsNullOrEmpty(asmdefPath)) return null;
+            var dir = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(asmdefPath));
+            while (!string.IsNullOrEmpty(dir))
+            {
+                if (System.IO.File.Exists(System.IO.Path.Combine(dir, "package.json"))) return dir;
+                dir = System.IO.Path.GetDirectoryName(dir);
+            }
+            return null;
+        }
+#endif
+
+        /// <summary>
+        /// Returns the python home to use, or null to fall back to the default python initialization.
+        /// </summary>
+        public static string ResolvePythonHome()
+        {
+            if (!string.IsNullOrEmpty(PythonHome)) return PythonHome;
+            if (pythonHomeResolved) return resolvedPythonHome;
+            pythonHomeResolved = true;
+
+            var envHome = Environment.GetEnvironmentVariable("PUERTS_PYTHON_HOME");
+            if (!string.IsNullOrEmpty(envHome) && System.IO.Directory.Exists(envHome))
+            {
+                return resolvedPythonHome = envHome;
+            }
+            var rid = GetBundledPythonRid();
+            if (rid == null) return null;
+#if UNITY_EDITOR
+            var packageRoot = FindPackageRoot();
+            if (packageRoot == null) return null;
+            var home = System.IO.Path.Combine(packageRoot, "PythonHome~", rid);
+            if (System.IO.Directory.Exists(home))
+            {
+                resolvedPythonHome = System.IO.Path.GetFullPath(home);
+            }
+#endif
+            return resolvedPythonHome;
+        }
+
+#if UNITY_EDITOR_WIN || (!UNITY_EDITOR && UNITY_STANDALONE_WIN)
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr LoadLibraryExW(string lpLibFileName, IntPtr hFile, uint dwFlags);
+        private const uint LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008;
+#elif UNITY_EDITOR_LINUX || (!UNITY_EDITOR && UNITY_STANDALONE_LINUX)
+        [DllImport("libdl.so.2")]
+        private static extern IntPtr dlopen(string filename, int flags);
+        [DllImport("libdl.so.2")]
+        private static extern IntPtr dlerror();
+        private const int RTLD_NOW = 2;
+        private const int RTLD_GLOBAL = 0x100;
+#endif
+
+        // PapiPython links to python3XY.dll (Windows) / libpython3.X.so.1.0 (Linux), which live in the python home
+        // rather than next to the plugin. Load them by full path before PapiPython is loaded, so that the
+        // loader resolves PapiPython's dependency to the already loaded module.
+        // macOS needs nothing: libpython3.X.dylib sits next to libPapiPython.dylib (@rpath = @loader_path).
+        private static void PreloadBundledPython()
+        {
+            if (bundledPythonPreloaded) return;
+            bundledPythonPreloaded = true;
+            try
+            {
+                var home = ResolvePythonHome();
+                if (home == null) return;
+#if UNITY_EDITOR_WIN || (!UNITY_EDITOR && UNITY_STANDALONE_WIN)
+                foreach (var dll in System.IO.Directory.GetFiles(home, "python3*.dll"))
+                {
+                    if (System.IO.Path.GetFileName(dll).Equals("python3.dll", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (LoadLibraryExW(dll, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH) == IntPtr.Zero)
+                    {
+                        UnityEngine.Debug.LogError("[Puerts] load " + dll + " failed, error: " + Marshal.GetLastWin32Error());
+                    }
+                }
+#elif UNITY_EDITOR_LINUX || (!UNITY_EDITOR && UNITY_STANDALONE_LINUX)
+                foreach (var so in System.IO.Directory.GetFiles(home, "libpython3*.so.1.0"))
+                {
+                    if (dlopen(so, RTLD_NOW | RTLD_GLOBAL) == IntPtr.Zero)
+                    {
+                        UnityEngine.Debug.LogError("[Puerts] load " + so + " failed: " + Marshal.PtrToStringAnsi(dlerror()));
+                    }
+                }
+#endif
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogException(e);
+            }
+        }
+#endif
 
         public override IntPtr GetApi()
         {

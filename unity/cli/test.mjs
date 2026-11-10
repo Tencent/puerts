@@ -228,6 +228,10 @@ async function runTest(cwd, copyConfig, runInReflection, filter = '') {
     // 运行测试
     assert.equal(0, exec(`dotnet build ${testProjectName}.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code);
     assert.equal(0, exec(`dotnet test ${testProjectName}.csproj --blame-hang-timeout 10000ms ${filter ? `--filter ${filter}` : ''}`, { cwd: workdir }).code);
+    if (!filter) {
+        // print the python info (stdout of passed tests is hidden at the default verbosity)
+        assert.equal(0, exec(`dotnet test ${testProjectName}.csproj --no-build --filter "FullyQualifiedName~BundledPythonTest" --logger "console;verbosity=detailed"`, { cwd: workdir }).code);
+    }
 }
 
 function getPlatform() {
@@ -301,7 +305,9 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false,
         config: "Debug",
         arch: process.arch,
         thread_safe: thread_safe,
-        lazyload: lazyload
+        lazyload: lazyload,
+        // the dotnet test host doesn't use the Unity package layout, keep using the system python
+        bundled_python: false
     });
     dlls = dlls.concat(pydlls);
 
