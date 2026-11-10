@@ -159,9 +159,9 @@ jobs:
           modules: android-il2cpp, mac-il2cpp
           cache-installation: true
           #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
-      # v3 从已安装的 editor（UNITY_EDITOR_PATH）推导 Licensing Client，不再读 UNITY_HUB_PATH；
-      # v1 依赖 Hub 的路径去找 Unity.Licensing.Client.exe，而 unity-setup v3 不装 Hub，会拿到 undefined。
-      - uses: RageAgainstThePixel/activate-unity-license@v3
+      # macOS 走 unity-setup@v1（bash + wget，能正常跟随 CDN 的 307 重定向），Hub 会被正常安装
+      # 并导出 UNITY_HUB_PATH，所以这里用 v1 与之配套。
+      - uses: RageAgainstThePixel/activate-unity-license@v1
         with:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
