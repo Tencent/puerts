@@ -2,7 +2,8 @@
     "name": "com.tencent.puerts.python.Editor",
     "rootNamespace": "",
     "references": [
-        "com.tencent.puerts.python"
+        "com.tencent.puerts.python",
+        "com.tencent.puerts.core"
     ],
     "includePlatforms": [
         "Editor"
