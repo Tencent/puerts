@@ -2,6 +2,16 @@ name: unity unittest
 
 on: 
   workflow_dispatch:
+    inputs:
+      unity_platform:
+        description: 'Unity 测试跑在哪个平台（Unity 账号只能同时激活一台机器，所以只跑一个）'
+        required: true
+        default: 'osx'
+        type: choice
+        options:
+          - osx
+          - win
+          - random
   push:
     paths: 
       - unity/upms/**
@@ -36,38 +46,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-#  unittest-win-unity:
-#    runs-on: windows-2022
-#
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Setup Unity
-#        uses: ./.github/workflows/composites/unity-setup/
-#        with:
-#          os: 'win'
-#          version: '2022.3.59f1'
-#          cachekey: 'unity2022x64'
-#          install_path: C:/UNITY
-#          unity_modules: windows-il2cpp
-#          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
-#          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-#          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-#      - name: UnitTest
-#        run: |
-#          cd unity
-#          npm i
-#          cd test/unity
-#          node ../../cli unity-test --unity C:/UNITY/2022.3.59f1/Editor/Unity.exe
-#      - name: TestResult
-##        if: always()
-#        shell: bash
-#        run: |
-#          cd unity/test/unity
-#          echo "testresult in v2(reflection)"
-#          cat log2.txt | grep "Failed\|Passed" 
-#          echo "testresult in v2"
-#          cat log3.txt | grep "Failed\|Passed" 
-
 #  unittest-osx-unity:
 #    runs-on: macos-latest
 #    steps:
@@ -117,7 +95,29 @@ jobs:
 #            echo
 #          done
           
+  # Unity 账号（Personal 授权）同一时间只能激活一台机器，macOS 和 Windows 的 Unity 测试每次只跑一个：
+  # 手动触发按 unity_platform 选项；push / pull_request 随机选一个。
+  select-unity-platform:
+    runs-on: ubuntu-latest
+    outputs:
+      platform: ${{ steps.pick.outputs.platform }}
+    steps:
+      - id: pick
+        shell: bash
+        env:
+          REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.unity_platform || 'random' }}
+        run: |
+          platform="$REQUESTED"
+          if [ "$platform" != "osx" ] && [ "$platform" != "win" ]; then
+            if [ $((RANDOM % 2)) -eq 0 ]; then platform=osx; else platform=win; fi
+          fi
+          echo "Unity test platform: $platform (requested: $REQUESTED)"
+          echo "Unity test platform: **$platform** (requested: $REQUESTED)" >> "$GITHUB_STEP_SUMMARY"
+          echo "platform=$platform" >> "$GITHUB_OUTPUT"
+
   unittest-run-testcase-and-build-android:
+    needs: select-unity-platform
+    if: needs.select-unity-platform.outputs.platform == 'osx'
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -211,9 +211,105 @@ jobs:
           name: puerts_test
           path: unity/test/unity/build/puerts_test.apk
 
+  # Windows 版，步骤与上面的 macOS 版一致
+  unittest-run-testcase-and-build-android-win:
+    needs: select-unity-platform
+    if: needs.select-unity-platform.outputs.platform == 'win'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Android Plugin # 得先构建Android插件，如果先运行UT会导致meta被Editor删除
+        shell: bash
+        run: |
+          cd unity
+          npm i
+          cd native/puerts
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../papi-v8
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../papi-quickjs
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../papi-lua 
+          node ../../cli make --platform android --arch x64 --config Debug
+          cd ../wsppaddon
+          node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
+          cd ../papi-python
+          curl -fsSL -o python-3.14.0-x86_64-linux-android.tar.gz https://www.python.org/ftp/python/3.14.0/python-3.14.0-x86_64-linux-android.tar.gz
+          mkdir -p python-3.14.0-x86_64-linux-android
+          # 包里有几个符号链接（pkgconfig、libsqlite3.so.0），Windows 上解压可能失败，且都用不到，直接排除
+          tar -xzf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android --exclude='*/pkgconfig' --exclude='*.so.0'
+          node ../../cli make --platform android --arch x64 --config Debug
+          cp python-3.14.0-x86_64-linux-android/prefix/lib/lib*.so ../../upms/python/Plugins/Android/libs/x86_64
+          mkdir -p python/lib
+          cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
+          # Git Bash 没有 zip，用 Windows 自带的 bsdtar 打 zip
+          /c/Windows/System32/tar.exe -a -cf python.zip python
+          mkdir -p ../../test/unity/Assets/StreamingAssets/
+          cp python.zip ../../test/unity/Assets/StreamingAssets/
+      - name: Setup Unity
+        uses: RageAgainstThePixel/unity-setup@v1
+        with:
+          unity-version: 2022.3.59f1
+          build-targets: StandaloneWindows64, Android
+          modules: android-il2cpp, windows-il2cpp
+          cache-installation: true
+      - uses: RageAgainstThePixel/activate-unity-license@v1
+        with:
+          license: 'Personal'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - name: UnitTest
+        shell: bash
+        run: |
+          cd unity
+          npm i
+          cd test/unity
+          node ../../cli unity-test --unity "$UNITY_EDITOR_PATH"
+      - name: TestResult
+        shell: bash
+        run: |
+          cd unity/test/unity
+          log_files=(
+            "log_reflection.txt"
+            "log_qjs_reflection.txt"
+            "log_nodejs_reflection.txt"
+            "log_minimum_reflection.txt"
+            "log_qjs_minimum_reflection.txt"
+            "log_nodejs_minimum_reflection.txt"
+            "log_full_wrapper.txt"
+            "log_qjs_full_wrapper.txt"
+            "log_nodejs_full_wrapper.txt"
+          )
+          for log_file in "${log_files[@]}"; do
+            echo "Processing $log_file"
+            grep "ENV_BACKEND" "$log_file" || true
+            sed -n '/==== Bundled Python Info ====/,/==== End Bundled Python Info ====/p' "$log_file" || true
+            passed_count=$(grep -c "Passed" "$log_file" || true)
+            echo "Passed: $passed_count"
+            failed_count=$(grep -c "Failed" "$log_file" || true)
+            echo "Failed: $failed_count"
+            grep "Failed" "$log_file" || true
+            echo
+          done
+      - name: Build Android APK
+        shell: bash
+        run: |
+          cd unity/test/unity
+          echo "-define:FORCE_TEST_PYTHON" > Assets/csc.rsp
+          "$UNITY_EDITOR_PATH" -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
+          "$UNITY_EDITOR_PATH" -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
+      - name: Upload apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: puerts_test
+          path: unity/test/unity/build/puerts_test.apk
+
   unittest-run-android-in-linux:
     runs-on: ubuntu-latest
-    needs: [unittest-run-testcase-and-build-android]
+    # 两个平台每次只会跑一个，另一个是 skipped，所以要显式判断
+    needs: [unittest-run-testcase-and-build-android, unittest-run-testcase-and-build-android-win]
+    if: ${{ !cancelled() && (needs.unittest-run-testcase-and-build-android.result == 'success' || needs.unittest-run-testcase-and-build-android-win.result == 'success') }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v4
