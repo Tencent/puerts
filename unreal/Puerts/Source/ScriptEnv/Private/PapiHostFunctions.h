@@ -13,8 +13,6 @@
 #include "ArrayBuffer.h"
 #include "pesapi.h"
 
-#include <string>
-
 // the host functions bound to the script (methods of the global scriptEnv) that do not depend on the state of an env
 namespace PUERTS_NAMESPACE
 {
@@ -24,7 +22,7 @@ namespace PapiHostFunctions
 FArrayBufferValue FNameToArrayBuffer(const FString& Name);
 
 // scriptEnv.toCString(str) (puerts.toCString): the null terminated utf8 string as an ArrayBuffer
-FArrayBufferValue ToCString(const std::string& Str);
+FArrayBufferValue ToCString(const FString& Str);
 
 // scriptEnv.toCPtrArray(...buffers) (puerts.toCPtrArray): the array of the pointers of the buffers as an ArrayBuffer
 void ToCPtrArray(struct pesapi_ffi* Apis, pesapi_callback_info Info);

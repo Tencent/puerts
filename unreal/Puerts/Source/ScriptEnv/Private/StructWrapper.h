@@ -10,7 +10,6 @@
 
 #include <deque>
 #include <memory>
-#include <string>
 #include <vector>
 #include <map>
 
@@ -49,7 +48,7 @@ struct FExternalFinalizer
 struct FReflectedMembers
 {
     // a deque does not move its elements, so the c strings of the names stay valid while names are added
-    std::deque<std::string> Names;
+    std::deque<PString> Names;
 
     std::vector<JSFunctionInfo> Methods;
 

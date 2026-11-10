@@ -22,11 +22,13 @@ FArrayBufferValue FNameToArrayBuffer(const FString& Name)
     return Ret;
 }
 
-FArrayBufferValue ToCString(const std::string& Str)
+FArrayBufferValue ToCString(const FString& Str)
 {
+    FTCHARToUTF8 Utf8(*Str);
     FArrayBufferValue Ret;
-    // with the null terminator
-    Ret.Data.Append(reinterpret_cast<const uint8*>(Str.c_str()), Str.size() + 1);
+    Ret.Data.Append(reinterpret_cast<const uint8*>(Utf8.Get()), Utf8.Length());
+    // the null terminator
+    Ret.Data.Add(0);
     return Ret;
 }
 
