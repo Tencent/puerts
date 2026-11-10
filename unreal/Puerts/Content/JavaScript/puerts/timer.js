@@ -85,8 +85,7 @@ class PriorityQueue {
 const removing_timers = new Set();
 const timers = new PriorityQueue([], (a, b) => a.next_time - b.next_time);
 let next = 0;
-global.__tgjsRegisterTickHandler(timerUpdate)
-global.__tgjsRegisterTickHandler = undefined;
+global.scriptEnv.registerTickHandler(timerUpdate)
 
 function timerUpdate() {
     let now = null;

@@ -57,6 +57,18 @@ test('loadUEType', () => {
     note('UE missing', catchError(() => UE.NoSuchType_xyz));
 });
 
+test('scriptEnv', () => {
+    // the methods of the env, puerts.xxx are bound to them
+    assert(scriptEnv.loadUEType('PuertsTestObject') === UE.PuertsTestObject, 'loadUEType');
+    assert(scriptEnv.loadCPPType('FPuertsTestCppClass') === require('cpp').FPuertsTestCppClass, 'loadCPPType');
+    observe('isQuickJS', () => typeof scriptEnv.isQuickJS());
+    observe('dumpStatisticsLog', () => scriptEnv.dumpStatisticsLog());
+    note('no args', catchError(() => scriptEnv.loadUEType()));
+    note('wrong receiver', catchError(() => scriptEnv.loadUEType.call({}, 'PuertsTestObject')));
+    observe('host globals removed', () => ['__tgjsLog', '__tgjsNewObject', '__tgjsMixin', '__tgjsRegisterTickHandler',
+        'dumpStatisticsLog', 'isQuickJS'].filter(k => k in globalThis));
+});
+
 test('puerts.load errors', () => {
     // puerts.load expands the name per platform: dir\name.dll, dir/libname.dylib, dir/libname.so
     const dllName = (s) => s.replace(/([\\/])(?:lib)?(not_exist_addon_xyz)\.(?:dll|dylib|so)\b/g, '/$2<dll-ext>');

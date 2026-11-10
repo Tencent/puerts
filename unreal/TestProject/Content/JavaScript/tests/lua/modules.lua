@@ -69,7 +69,10 @@ test('globals', function()
         return type(console.log)
     end)
     observe('host globals removed', function()
-        return { __tgjsNewObject == nil, __tgjsMixin == nil }
+        return { __tgjsNewObject == nil, __tgjsMixin == nil, __tgjsLog == nil }
+    end)
+    observe('scriptEnv', function()
+        return { scriptEnv:loadUEType('PuertsTestObject') == UE.PuertsTestObject, type(scriptEnv:isQuickJS()) }
     end)
 end)
 

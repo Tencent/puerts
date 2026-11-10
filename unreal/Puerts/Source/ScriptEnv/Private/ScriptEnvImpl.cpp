@@ -7,6 +7,8 @@
  */
 
 #include "ScriptEnvImpl.h"
+#include "Binding.hpp"
+#include "UEDataBinding.hpp"
 #include "DynamicDelegateProxy.h"
 #include "Misc/FileHelper.h"
 #include "Dom/JsonObject.h"
@@ -41,9 +43,54 @@
 void InitWebsocketPPWrap(pesapi_ffi* Apis, pesapi_env Env, PUERTS_NAMESPACE::ScriptClassRegistry* Registry);
 #endif
 
+// the type of the global scriptEnv of the scripts
+UsingNamedCppType(PUERTS_NAMESPACE::FScriptEnvImpl, PuertsScriptEnv);
+
 namespace PUERTS_NAMESPACE
 {
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+template <FScriptEnvImpl::PapiMethodCallback Method>
+void FScriptEnvImpl::PapiMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    if (Apis->get_native_holder_typeid(Info) != StaticTypeId<FScriptEnvImpl>::get())
+    {
+        Apis->throw_by_string(Info, "the receiver is not scriptEnv");
+        return;
+    }
+    (static_cast<FScriptEnvImpl*>(Apis->get_native_holder_ptr(Info))->*Method)(Apis, Info);
+}
+
+void FScriptEnvImpl::RegisterScriptEnvClass()
+{
+    static bool Registered = false;
+    if (Registered)
+    {
+        return;
+    }
+    Registered = true;
+    DefineClass<FScriptEnvImpl>()
+        .Method("log", MakeFunction(&FScriptEnvImpl::Log))
+        .Method("loadModule", &PapiMethod<&FScriptEnvImpl::LoadModule>, nullptr)
+        .Method("loadUEType", &PapiMethod<&FScriptEnvImpl::LoadUEType>, nullptr)
+        .Method("loadCPPType", &PapiMethod<&FScriptEnvImpl::LoadCppType>, nullptr)
+        .Method("ueClassToJSClass", &PapiMethod<&FScriptEnvImpl::UEClassToJSClass>, nullptr)
+        .Method("newObject", &PapiMethod<&FScriptEnvImpl::NewObjectByClass>, nullptr)
+        .Method("setJsTakeRef", &PapiMethod<&FScriptEnvImpl::SetJsTakeRefInTs>, nullptr)
+#if !defined(ENGINE_INDEPENDENT_JSENV)
+        .Method("mixin", &PapiMethod<&FScriptEnvImpl::Mixin>, nullptr)
+#endif
+        // the timers are implemented in js (puerts/timer.js) on the tick, as unity
+        .Method("registerTickHandler", &PapiMethod<&FScriptEnvImpl::RegisterTickHandler>, nullptr)
+        .Method("releaseManualReleaseDelegate", &PapiMethod<&FScriptEnvImpl::ReleaseManualReleaseDelegate>, nullptr)
+        // the host part of the module system: resolving and loading the source, the rest is done by the backend
+        .Method("hostResolveModule", &PapiMethod<&FScriptEnvImpl::HostResolveModule>, nullptr)
+        .Method("hostLoadModule", &PapiMethod<&FScriptEnvImpl::HostLoadModule>, nullptr)
+        .Method("dumpStatisticsLog", MakeFunction(&FScriptEnvImpl::DumpStatisticsLog))
+        .Method("isQuickJS", MakeFunction(&FScriptEnvImpl::IsQuickJS))
+        // the env is owned by the host
+        .Register(nullptr);
+}
 
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot)
     : FScriptEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
@@ -92,38 +139,19 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         pesapi_value PapiPuertsObj = Apis->create_object(Env);
         Apis->set_property(Env, PapiGlobal, "puerts", PapiPuertsObj);
 
-        PapiMethodBindingHelper<&FScriptEnvImpl::Log>::Bind(Apis, Env, PapiGlobal, "__tgjsLog", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::LoadModule>::Bind(Apis, Env, PapiPuertsObj, "loadModule", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::LoadUEType>::Bind(Apis, Env, PapiPuertsObj, "loadUEType", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::LoadCppType>::Bind(Apis, Env, PapiPuertsObj, "loadCPPType", this);
+        // the methods of the env called by the scripts, the env is not owned by the script
+        RegisterScriptEnvClass();
+        Apis->set_property(
+            Env, PapiGlobal, "scriptEnv", Apis->native_object_to_value(Env, StaticTypeId<FScriptEnvImpl>::get(), this, false));
 
         PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &PapiHostFunctions::GetFNameString);
 
-        PapiMethodBindingHelper<&FScriptEnvImpl::UEClassToJSClass>::Bind(Apis, Env, PapiGlobal, "__tgjsUEClassToJSClass", this);
-
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsNewContainer", &NewContainer);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::NewObjectByClass>::Bind(Apis, Env, PapiGlobal, "__tgjsNewObject", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::SetJsTakeRefInTs>::Bind(Apis, Env, PapiGlobal, "__tgjsSetJsTakeRef", this);
 
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsNewStruct", &FScriptStructWrapper::NewByScriptStruct);
 
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        PapiMethodBindingHelper<&FScriptEnvImpl::Mixin>::Bind(Apis, Env, PapiGlobal, "__tgjsMixin", this);
-#endif
-
-        // the timers are implemented in js (puerts/timer.js) on the tick, as unity
-        PapiMethodBindingHelper<&FScriptEnvImpl::RegisterTickHandler>::Bind(
-            Apis, Env, PapiGlobal, "__tgjsRegisterTickHandler", this);
-
-        PapiMethodBindingHelper<&FScriptEnvImpl::DumpStatisticsLog>::Bind(Apis, Env, PapiGlobal, "dumpStatisticsLog", this);
-        PapiMethodBindingHelper<&FScriptEnvImpl::IsQuickJS>::Bind(Apis, Env, PapiGlobal, "isQuickJS", this);
         PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &PapiHostFunctions::FNameToArrayBuffer);
 
         PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &PapiHostFunctions::ToCString);
@@ -142,12 +170,12 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
 #endif
         Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiDataTransfer::FromFString(Apis, Env, DllExt));
 
-        PapiMethodBindingHelper<&FScriptEnvImpl::ReleaseManualReleaseDelegate>::Bind(
-            Apis, Env, PapiPuertsObj, "releaseManualReleaseDelegate", this);
-
-        // the host part of the module system: resolving and loading the source, the rest is done by the backend
-        PapiMethodBindingHelper<&FScriptEnvImpl::HostResolveModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_resolve__", this);
-        PapiMethodBindingHelper<&FScriptEnvImpl::HostLoadModule>::Bind(Apis, Env, PapiGlobal, "__puer_host_load__", this);
+        // read by the module loader of the backend (PapiV8ModuleLoader / PapiQjsModuleLoader), the same as
+        // scriptEnv.hostResolveModule / scriptEnv.hostLoadModule
+        Apis->set_property(Env, PapiGlobal, "__puer_host_resolve__",
+            Apis->create_function(Env, &PapiUserdataMethod<&FScriptEnvImpl::HostResolveModule>, this, nullptr));
+        Apis->set_property(Env, PapiGlobal, "__puer_host_load__",
+            Apis->create_function(Env, &PapiUserdataMethod<&FScriptEnvImpl::HostLoadModule>, this, nullptr));
 
         DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
         MixinInvoker = DynamicInvoker;
@@ -1538,14 +1566,8 @@ pesapi_value FScriptEnvImpl::RequireModule(struct pesapi_ffi* Apis, pesapi_env E
     return Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", false);
 }
 
-void FScriptEnvImpl::Log(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::Log(int32 Level, const FString& Msg)
 {
-    PAPI_CHECK_ARGS(EArgInt32, EArgString);
-
-    pesapi_env Env = Apis->get_env(Info);
-    auto Level = Apis->get_value_int32(Env, Apis->get_arg(Info, 0));
-
-    FString Msg = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1));
     switch (Level)
     {
         case 1:
@@ -1789,9 +1811,9 @@ bool FScriptEnvImpl::Tick(float DeltaTime)
     return true;
 }
 
-void FScriptEnvImpl::IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+bool FScriptEnvImpl::IsQuickJS() const
 {
-    Apis->add_return(Info, Apis->create_boolean(Apis->get_env(Info), Backend->IsQuickJS()));
+    return Backend->IsQuickJS();
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -1947,7 +1969,7 @@ void FScriptEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 }
 #endif
 
-void FScriptEnvImpl::DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+void FScriptEnvImpl::DumpStatisticsLog() const
 {
     Logger->Info(Backend->GetStatisticsLog());
 }

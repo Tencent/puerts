@@ -17,6 +17,7 @@ def _puerts_init():
     import sys
 
     puerts = builtins.puerts
+    script_env = builtins.scriptEnv
 
     def take(name):
         # a function bound by the host to builtins, removed from there
@@ -37,7 +38,7 @@ def _puerts_init():
     # -------------------------------------------------------------------------------------------------------------------
     # log
     # -------------------------------------------------------------------------------------------------------------------
-    tgjs_log = getattr(builtins, '__tgjsLog')
+    tgjs_log = script_env.log
 
     def make_log(level):
         def log(*args, sep=' ', end=None, file=None, flush=False):
@@ -58,8 +59,8 @@ def _puerts_init():
     # module system: the sources are resolved and loaded by the host (the same module loader as js), the name of a module
     # is its specifier ('a/b/c', or 'a.b.c' if a and a.b are packages, a/__init__.py and a/b/__init__.py)
     # -------------------------------------------------------------------------------------------------------------------
-    host_resolve = getattr(builtins, '__puer_host_resolve__')
-    host_load = getattr(builtins, '__puer_host_load__')
+    host_resolve = script_env.hostResolveModule
+    host_load = script_env.hostLoadModule
 
     class PuertsLoader(importlib.abc.Loader):
         def __init__(self, url):
@@ -144,15 +145,21 @@ def _puerts_init():
 
         return type(type_name, (), {'__getattr__': getattr_, '__repr__': lambda self: '<' + type_name + '>'})()
 
-    UE = lazy_namespace('UE', puerts.loadUEType)
-    CPP = lazy_namespace('CPP', puerts.loadCPPType)
+    # the public api of puerts, implemented by the methods of scriptEnv
+    puerts.loadUEType = script_env.loadUEType
+    puerts.loadCPPType = script_env.loadCPPType
+    puerts.loadModule = script_env.loadModule
+    puerts.releaseManualReleaseDelegate = script_env.releaseManualReleaseDelegate
+
+    UE = lazy_namespace('UE', script_env.loadUEType)
+    CPP = lazy_namespace('CPP', script_env.loadCPPType)
 
     sys.modules['ue'] = UE
     sys.modules['cpp'] = CPP
     builtins.UE = UE
     builtins.CPP = CPP
 
-    UE.NewObject = take('__tgjsNewObject')
+    UE.NewObject = script_env.newObject
     UE.NewStruct = take('__tgjsNewStruct')
     UE.MakeWeakObjectPtr = take('__tgjsMakeWeakObjectPtr')
     UE.FNameLiteral = take('__tgjsFNameToArrayBuffer')
@@ -166,11 +173,10 @@ def _puerts_init():
 
     puerts.setref = setref
 
-    puerts.setJsTakeRef = take('__tgjsSetJsTakeRef')
+    puerts.setJsTakeRef = script_env.setJsTakeRef
     # classes of the script can not be injected into UE in python (no mixin)
-    take('__tgjsMixin')
 
-    ue_class_to_js_class = take('__tgjsUEClassToJSClass')
+    ue_class_to_js_class = script_env.ueClassToJSClass
 
     # blueprint
     TNAMESPACE, TENUM, TBLUEPRINT, TSTRUCT = 0, 1, 2, 3

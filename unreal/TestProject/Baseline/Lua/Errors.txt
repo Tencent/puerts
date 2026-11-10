@@ -6,6 +6,6 @@ object from number: <no throw>
 struct from UObject: <js-root>/tests/lua/errors.lua:26: passing a invalid object for PuertsTestStruct
 struct arg from UObject: <js-root>/tests/lua/errors.lua:29: passing a invalid object for PuertsTestStruct
 call missing method: <js-root>/tests/lua/errors.lua:35: attempt to call a nil value (method 'NoSuchMethod')
-unknown class: <js-root>/puerts/init.lua:102: can not find type:NoSuchClassAnywhere
+unknown class: <js-root>/puerts/init.lua:121: can not find type:NoSuchClassAnywhere
 error with table: <thrown {code: 1}>
 error with level 0: plain

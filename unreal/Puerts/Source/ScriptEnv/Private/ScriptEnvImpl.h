@@ -157,7 +157,9 @@ private:
     // require of the module system (the module loader of the backend), returns nullptr with the exception pending on failure
     pesapi_value RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName);
 
-    void Log(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+    // the methods of the global scriptEnv (see RegisterScriptEnvClass), called by the bootstrap scripts
+    // scriptEnv.log(level, msg): 1 info, 2 warn, 3 error, log otherwise
+    void Log(int32 Level, const FString& Msg);
 
     void LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
@@ -189,7 +191,7 @@ private:
 
     pesapi_value GetJsClass(pesapi_env Env, UStruct* Class);
 
-    // __tgjsRegisterTickHandler(fn): fn is called every frame (puerts/timer.js implements the timers on it), as unity
+    // scriptEnv.registerTickHandler(fn): fn is called every frame (puerts/timer.js implements the timers on it), as unity
     void RegisterTickHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     bool Tick(float DeltaTime);
@@ -201,9 +203,13 @@ private:
     void Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 #endif
 
-    void DumpStatisticsLog(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+    void DumpStatisticsLog() const;
 
-    void IsQuickJS(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+    bool IsQuickJS() const;
+
+    // the class definition of FScriptEnvImpl in the default registry (once per process), the global scriptEnv of the scripts is
+    // a native object of it that is not owned by the script (no finalize)
+    static void RegisterScriptEnvClass();
 
 public:
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -325,21 +331,16 @@ private:
 
     typedef void (FScriptEnvImpl::*PapiMethodCallback)(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    // binds a member function as a papi function (pesapi create_function), This is passed as the userdata
-    template <PapiMethodCallback callback>
-    struct PapiMethodBindingHelper
-    {
-        static void Callback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-        {
-            auto Self = static_cast<FScriptEnvImpl*>(Apis->get_userdata(Info));
-            (Self->*callback)(Apis, Info);
-        }
+    // a method of scriptEnv that handles the papi callback info itself, the env is the receiver (this)
+    template <PapiMethodCallback Method>
+    static void PapiMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-        static void Bind(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, FScriptEnvImpl* This)
-        {
-            Apis->set_property(Env, Obj, Key, Apis->create_function(Env, &Callback, This, nullptr));
-        }
-    };
+    // a global function of the host called without a receiver (the module loader of the backend), the env is the userdata
+    template <PapiMethodCallback Method>
+    static void PapiUserdataMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+    {
+        (static_cast<FScriptEnvImpl*>(Apis->get_userdata(Info))->*Method)(Apis, Info);
+    }
 
     static void PapiBindFunction(
         struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, pesapi_callback Callback)

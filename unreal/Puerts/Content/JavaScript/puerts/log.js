@@ -13,10 +13,10 @@ var global = global || (function () { return this; }());
 
     let sendRequestSync = puerts.sendRequestSync;
     
-    let tgjsLog = global.__tgjsLog || function(nlevel, msg) {
+    const scriptEnv = global.scriptEnv;
+    let tgjsLog = scriptEnv ? (nlevel, msg) => scriptEnv.log(nlevel, msg) : function(nlevel, msg) {
         sendRequestSync(levels[nlevel], msg);
     }
-    global.__tgjsLog = undefined;
 
     const console_org = global.console;
     var console = {}

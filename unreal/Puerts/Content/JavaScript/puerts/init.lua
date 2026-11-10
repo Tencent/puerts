@@ -10,14 +10,33 @@ This file is subject to the terms and conditions defined in file 'LICENSE', whic
 -- called with a dot (UE.KismetSystemLibrary.PrintString(...)), methods with a colon (obj:GetName())
 
 local puerts = puerts
+local scriptEnv = scriptEnv
 local rawget, rawset, setmetatable, type, tostring, select, pcall, error, load =
     rawget, rawset, setmetatable, type, tostring, select, pcall, error, load
-local concat, tremove, unpack = table.concat, table.remove, table.unpack
+local concat, tremove, unpack, pack = table.concat, table.remove, table.unpack, table.pack
+
+-- a function calling the method `name` of scriptEnv, its errors are raised at the caller (as if the method was called directly)
+local function bindEnv(name)
+    local method = scriptEnv[name]
+    return function(...)
+        local r = pack(pcall(method, scriptEnv, ...))
+        if r[1] then
+            return unpack(r, 2, r.n)
+        end
+        local e = r[2]
+        if type(e) == 'string' then
+            e = (e:gsub('^[^\n]-:%d+: ', '', 1))
+        end
+        error(e, 2)
+    end
+end
 
 ---------------------------------------------------------------------------------------------------------------------------
 -- log
 ---------------------------------------------------------------------------------------------------------------------------
-local tgjsLog = __tgjsLog
+local function tgjsLog(level, msg)
+    scriptEnv:log(level, msg)
+end
 
 local function format_args(...)
     local n = select('#', ...)
@@ -42,20 +61,17 @@ console = {
 ---------------------------------------------------------------------------------------------------------------------------
 -- module system: the sources are resolved and loaded by the host (the same module loader as js)
 ---------------------------------------------------------------------------------------------------------------------------
-local host_resolve = __puer_host_resolve__
-local host_load = __puer_host_load__
-
 local function puerts_searcher(name)
     local spec = name
     if not spec:match('%.lua$') then
         spec = spec:gsub('%.', '/') .. '.lua'
     end
-    local ok, url = pcall(host_resolve, spec, '', 'require')
+    local ok, url = pcall(scriptEnv.hostResolveModule, scriptEnv, spec, '', 'require')
     if not ok then
         return '\n\t[puerts] ' .. tostring(url)
     end
     return function(modname, path)
-        local m = host_load(path, 'require')
+        local m = scriptEnv:hostLoadModule(path, 'require')
         local chunk, err = load(m.content, '@' .. m.debugPath, 'bt')
         if not chunk then
             error(err, 0)
@@ -94,12 +110,15 @@ end
 ---------------------------------------------------------------------------------------------------------------------------
 -- UE / CPP
 ---------------------------------------------------------------------------------------------------------------------------
-local loadUEType = puerts.loadUEType
-local loadCPPType = puerts.loadCPPType
+-- the public api of puerts, implemented by the methods of scriptEnv
+puerts.loadUEType = bindEnv('loadUEType')
+puerts.loadCPPType = bindEnv('loadCPPType')
+puerts.loadModule = bindEnv('loadModule')
+puerts.releaseManualReleaseDelegate = bindEnv('releaseManualReleaseDelegate')
 
 local UE = setmetatable({}, {
     __index = function(t, name)
-        local cls = loadUEType(name)
+        local cls = scriptEnv:loadUEType(name)
         rawset(t, name, cls)
         return cls
     end,
@@ -107,7 +126,7 @@ local UE = setmetatable({}, {
 
 local CPP = setmetatable({}, {
     __index = function(t, name)
-        local cls = loadCPPType(name)
+        local cls = scriptEnv:loadCPPType(name)
         rawset(t, name, cls)
         return cls
     end,
@@ -118,8 +137,7 @@ package.loaded.cpp = CPP
 _G.UE = UE
 _G.CPP = CPP
 
-rawset(UE, 'NewObject', __tgjsNewObject)
-__tgjsNewObject = nil
+rawset(UE, 'NewObject', bindEnv('newObject'))
 rawset(UE, 'NewStruct', __tgjsNewStruct)
 __tgjsNewStruct = nil
 rawset(UE, 'MakeWeakObjectPtr', __tgjsMakeWeakObjectPtr)
@@ -132,13 +150,10 @@ function puerts.ref(x) return { x } end
 function puerts.unref(r) return r[1] end
 function puerts.setref(r, x) r[1] = x end
 
-puerts.setJsTakeRef = __tgjsSetJsTakeRef
-__tgjsSetJsTakeRef = nil
+puerts.setJsTakeRef = bindEnv('setJsTakeRef')
 -- classes of the script can not be injected into UE in lua (no mixin)
-__tgjsMixin = nil
 
-local UEClassToJSClass = __tgjsUEClassToJSClass
-__tgjsUEClassToJSClass = nil
+local UEClassToJSClass = bindEnv('ueClassToJSClass')
 
 -- blueprint
 local TNAMESPACE, TENUM, TBLUEPRINT, TSTRUCT = 0, 1, 2, 3

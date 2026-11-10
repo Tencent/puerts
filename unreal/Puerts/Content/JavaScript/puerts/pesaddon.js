@@ -37,7 +37,7 @@ var global = global || (function () { return this; }());
             moduleCache[filepath] = new Proxy({__name : module_name}, {
                 get: function(classCache, className) {
                     if (!(className in classCache)) {
-                        classCache[className] = puerts.loadCPPType(`${module_name}.${className}`);
+                        classCache[className] = global.scriptEnv.loadCPPType(`${module_name}.${className}`);
                     }
                     return classCache[className];
                 }

@@ -111,7 +111,7 @@ test('bom', () => {
 });
 
 test('dumpStatisticsLog', () => {
-    dumpStatisticsLog();
+    scriptEnv.dumpStatisticsLog();
 });
 
 // dynamic import: started in the first step, checked in the next one (timers fire and microtasks run in between)

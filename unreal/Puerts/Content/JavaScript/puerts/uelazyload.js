@@ -9,9 +9,13 @@ var global = global || (function () { return this; }());
 (function (global) {
     "use strict";
     
-    let loadUEType = global.puerts.loadUEType;
+    const scriptEnv = global.scriptEnv;
     
-    let loadCPPType = global.puerts.loadCPPType;
+    // the public api of puerts, implemented by the methods of scriptEnv
+    puerts.loadUEType = scriptEnv.loadUEType.bind(scriptEnv);
+    puerts.loadCPPType = scriptEnv.loadCPPType.bind(scriptEnv);
+    puerts.loadModule = scriptEnv.loadModule.bind(scriptEnv);
+    puerts.releaseManualReleaseDelegate = scriptEnv.releaseManualReleaseDelegate.bind(scriptEnv);
     
     let getFNameString = global.puerts.getFNameString;
     
@@ -43,7 +47,7 @@ var global = global || (function () { return this; }());
     let UE_proxy = new Proxy(UE, {
         get : function(UE, name)
         {
-            let cls = loadUEType(name);
+            let cls = scriptEnv.loadUEType(name);
             rawSet(UE, name, cls);
             interceptClass(cls);
             return cls;
@@ -108,7 +112,7 @@ var global = global || (function () { return this; }());
     let CPP = Object.create(null);
     let CPP_proxy = new Proxy(CPP, {
         get: function(CPP, name) {
-            let cls = loadCPPType(name);
+            let cls = scriptEnv.loadCPPType(name);
             rawSet(CPP, name, cls);
             return cls;
         }
@@ -131,8 +135,8 @@ var global = global || (function () { return this; }());
         x[0] = val;
     }
     
-    rawSet(UE, 'NewObject', global.__tgjsNewObject);
-    global.__tgjsNewObject = undefined;
+    rawSet(UE, 'NewObject', scriptEnv.newObject.bind(scriptEnv));
+    
     
     rawSet(UE, 'NewStruct', global.__tgjsNewStruct);
     global.__tgjsNewStruct = undefined;
@@ -147,11 +151,9 @@ var global = global || (function () { return this; }());
     rawSet(UE, 'FNameLiteral', global.__tgjsFNameToArrayBuffer);
     global.__tgjsFNameToArrayBuffer = undefined;
 
-    puerts.setJsTakeRef = global.__tgjsSetJsTakeRef
-    global.__tgjsSetJsTakeRef = undefined
+    puerts.setJsTakeRef = scriptEnv.setJsTakeRef.bind(scriptEnv);
     
-    let UEClassToJSClass = global.__tgjsUEClassToJSClass;
-    global.__tgjsUEClassToJSClass = undefined;
+    const UEClassToJSClass = scriptEnv.ueClassToJSClass.bind(scriptEnv);
     
     function blueprint(path) {
         console.warn('deprecated! use blueprint.tojs instead');
@@ -167,9 +169,6 @@ var global = global || (function () { return this; }());
     
     blueprint.tojs = UEClassToJSClass;
     
-    let __tgjsMixin = global.__tgjsMixin;
-    global.__tgjsMixin = undefined;
-    
     function mixin(to, mixinClass, config) {
         config = config || {};
         let mixinMethods = Object.create(null);
@@ -181,7 +180,7 @@ var global = global || (function () { return this; }());
                  mixinMethods[name] = mixinClass.prototype[name];
             }
         }
-        let cls = __tgjsMixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit, config.noMixinedWarning);
+        let cls = scriptEnv.mixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit, config.noMixinedWarning);
         
         let jsCls = UEClassToJSClass(cls);
         Object.getOwnPropertyNames(mixinMethods).forEach(name => {
@@ -204,7 +203,7 @@ var global = global || (function () { return this; }());
     blueprint.mixin = mixin;
     
     function unmixin(to) {
-        __tgjsMixin(to.StaticClass(), {}, undefined, undefined, undefined, true);
+        scriptEnv.mixin(to.StaticClass(), {}, undefined, undefined, undefined, true);
     }
     
     blueprint.unmixin = unmixin;

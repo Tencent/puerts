@@ -136,7 +136,7 @@ public:
         return nullptr;
     }
 
-    // whether the script engine is quickjs (the global isQuickJS() of the scripts)
+    // whether the script engine is quickjs (scriptEnv.isQuickJS() of the scripts)
     virtual bool IsQuickJS()
     {
         return false;
