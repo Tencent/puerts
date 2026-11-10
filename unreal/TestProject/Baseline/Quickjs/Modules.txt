@@ -19,6 +19,8 @@ dumpStatisticsLog: undefined
 no args: Error: Bad parameters, the function expect 1, but  0 provided.
 wrong receiver: Error: the receiver is not scriptEnv
 host globals removed: []
+getFNameString: "none"
+host function globals: ["undefined", "undefined", "undefined", "undefined"]
 number: TypeError: not a function
 no args: TypeError: cannot read property 'match' of undefined
 missing dll: Error: dlopen fail for not_exist_dir/not_exist_addon_xyz<dll-ext>

@@ -21,7 +21,7 @@ var global = global || (function () { return this; }());
         return match ? (match[1] || '.').replace(/[\/\\]$/, '') : '.';
     }
     
-    const org_load = global.puerts.load;
+    const org_load = global.scriptEnv.load.bind(global.scriptEnv);
     const dll_ext = global.puerts.dll_ext;
     const moduleCache = {};
     

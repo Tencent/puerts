@@ -431,9 +431,10 @@ struct Converter<FArrayBuffer>
 template <>
 struct Converter<FArrayBufferValue>
 {
-    static pesapi_value toScript(PApiCallbackEnv env, FArrayBufferValue& value)
+    static pesapi_value toScript(PApiCallbackEnv env, const FArrayBufferValue& value)
     {
-        return env.apis->create_binary_by_value(env.env, value.Data.GetData(), value.Data.Num());
+        // create_binary_by_value copies the memory, it never writes it
+        return env.apis->create_binary_by_value(env.env, const_cast<uint8*>(value.Data.GetData()), value.Data.Num());
     }
 
     static FArrayBufferValue toCpp(PApiCallbackEnv env, pesapi_value value)

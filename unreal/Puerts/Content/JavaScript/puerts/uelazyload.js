@@ -16,8 +16,11 @@ var global = global || (function () { return this; }());
     puerts.loadCPPType = scriptEnv.loadCPPType.bind(scriptEnv);
     puerts.loadModule = scriptEnv.loadModule.bind(scriptEnv);
     puerts.releaseManualReleaseDelegate = scriptEnv.releaseManualReleaseDelegate.bind(scriptEnv);
+    puerts.getFNameString = scriptEnv.getFNameString.bind(scriptEnv);
+    puerts.toCString = scriptEnv.toCString.bind(scriptEnv);
+    puerts.toCPtrArray = scriptEnv.toCPtrArray.bind(scriptEnv);
     
-    let getFNameString = global.puerts.getFNameString;
+    const getFNameString = puerts.getFNameString;
     
     function rawSet(obj, key, val) {
         Object.defineProperty(obj, key, {
@@ -138,18 +141,16 @@ var global = global || (function () { return this; }());
     rawSet(UE, 'NewObject', scriptEnv.newObject.bind(scriptEnv));
     
     
-    rawSet(UE, 'NewStruct', global.__tgjsNewStruct);
-    global.__tgjsNewStruct = undefined;
+    rawSet(UE, 'NewStruct', scriptEnv.newStruct.bind(scriptEnv));
     
-    rawSet(UE, 'MakeWeakObjectPtr', global.__tgjsMakeWeakObjectPtr);
-    global.__tgjsMakeWeakObjectPtr = undefined;
+    rawSet(UE, 'MakeWeakObjectPtr', scriptEnv.makeWeakObjectPtr.bind(scriptEnv));
     
     puerts.$ref = ref;
     puerts.$unref = unref;
     puerts.$set = setref;
     
-    rawSet(UE, 'FNameLiteral', global.__tgjsFNameToArrayBuffer);
-    global.__tgjsFNameToArrayBuffer = undefined;
+    rawSet(UE, 'FNameLiteral', scriptEnv.fnameToArrayBuffer.bind(scriptEnv));
+
 
     puerts.setJsTakeRef = scriptEnv.setJsTakeRef.bind(scriptEnv);
     
@@ -261,8 +262,7 @@ var global = global || (function () { return this; }());
     
     puerts.blueprint = blueprint;
     
-    const newContainer = global.__tgjsNewContainer;
-    global.__tgjsNewContainer = undefined;
+    const newContainer = scriptEnv.newContainer.bind(scriptEnv);
     
     function translateType(t) {
         if (typeof t !== 'number') {

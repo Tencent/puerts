@@ -50,6 +50,17 @@ namespace PUERTS_NAMESPACE
 {
 void LoadPesapiDll(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
+// a statically bound function whose arguments are checked first, with the same messages as the other methods of scriptEnv
+// (MakeFunction does not check them)
+template <typename F, F Func, ArgType... TypesExpect>
+static void CheckedFunction(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    if (PapiUtils::CheckArguments(Apis, Info, {TypesExpect...}))
+    {
+        FuncCallWrapper<PUERTS_BINDING_API, F, Func, false>::call(Apis, Info);
+    }
+}
+
 template <FScriptEnvImpl::PapiMethodCallback Method>
 void FScriptEnvImpl::PapiMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
@@ -88,6 +99,18 @@ void FScriptEnvImpl::RegisterScriptEnvClass()
         .Method("hostLoadModule", &PapiMethod<&FScriptEnvImpl::HostLoadModule>, nullptr)
         .Method("dumpStatisticsLog", MakeFunction(&FScriptEnvImpl::DumpStatisticsLog))
         .Method("isQuickJS", MakeFunction(&FScriptEnvImpl::IsQuickJS))
+        // the host functions not using the env (PapiHostFunctions.h), bound as the methods of scriptEnv as well
+        // the names of getFNameString may be symbols (the proxies of uelazyload.js), not checked as before
+        .Method("getFNameString", MakeFunction(&PapiHostFunctions::GetFNameString))
+        .Method("fnameToArrayBuffer", MakeFunction(&PapiHostFunctions::FNameToArrayBuffer))
+        .Method("toCString", &CheckedFunction<decltype(&PapiHostFunctions::ToCString), &PapiHostFunctions::ToCString, EArgString>,
+            nullptr)
+        // these return a dynamically typed value (or throw by their own messages), so they handle the callback info
+        .Method("toCPtrArray", &PapiHostFunctions::ToCPtrArray, nullptr)
+        .Method("newStruct", &FScriptStructWrapper::NewByScriptStruct, nullptr)
+        .Method("makeWeakObjectPtr", &FWeakObjectPtrWrapper::Make, nullptr)
+        .Method("newContainer", &NewContainer, nullptr)
+        .Method("load", &LoadPesapiDll, nullptr)
         // the env is owned by the host
         .Register(nullptr);
 }
@@ -143,22 +166,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         RegisterScriptEnvClass();
         Apis->set_property(
             Env, PapiGlobal, "scriptEnv", Apis->native_object_to_value(Env, StaticTypeId<FScriptEnvImpl>::get(), this, false));
-
-        PapiBindFunction(Apis, Env, PapiPuertsObj, "getFNameString", &PapiHostFunctions::GetFNameString);
-
-        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsNewContainer", &NewContainer);
-
-        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsNewStruct", &FScriptStructWrapper::NewByScriptStruct);
-
-        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsMakeWeakObjectPtr", &FWeakObjectPtrWrapper::Make);
-
-        PapiBindFunction(Apis, Env, PapiGlobal, "__tgjsFNameToArrayBuffer", &PapiHostFunctions::FNameToArrayBuffer);
-
-        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCString", &PapiHostFunctions::ToCString);
-
-        PapiBindFunction(Apis, Env, PapiPuertsObj, "toCPtrArray", &PapiHostFunctions::ToCPtrArray);
-
-        PapiBindFunction(Apis, Env, PapiPuertsObj, "load", &LoadPesapiDll);
 
         FString DllExt =
 #if PLATFORM_WINDOWS

@@ -10,3 +10,10 @@ searchers count: 2
 console: "function"
 host globals removed: [true, true, true]
 scriptEnv: [true, "boolean"]
+NewStruct number: <js-root>/tests/lua/modules.lua:84: invalid argument
+NewStruct class type: <js-root>/tests/lua/modules.lua:87: invalid argument
+MakeWeakObjectPtr: [true, true, false]
+FNameLiteral: "PuertsFNameLiteral"
+getFNameString: "none"
+toCString: "userdata"
+toCPtrArray: "userdata"

@@ -69,6 +69,12 @@ test('scriptEnv', () => {
         'dumpStatisticsLog', 'isQuickJS'].filter(k => k in globalThis));
 });
 
+test('host functions', () => {
+    observe('getFNameString', () => puerts.getFNameString('none'));
+    observe('host function globals', () => ['__tgjsNewStruct', '__tgjsMakeWeakObjectPtr', '__tgjsFNameToArrayBuffer',
+        '__tgjsNewContainer'].map(k => typeof globalThis[k]));
+});
+
 test('puerts.load errors', () => {
     // puerts.load expands the name per platform: dir\name.dll, dir/libname.dylib, dir/libname.so
     const dllName = (s) => s.replace(/([\\/])(?:lib)?(not_exist_addon_xyz)\.(?:dll|dylib|so)\b/g, '/$2<dll-ext>');

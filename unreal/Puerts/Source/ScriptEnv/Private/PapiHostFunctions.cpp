@@ -14,30 +14,20 @@ namespace PUERTS_NAMESPACE
 {
 namespace PapiHostFunctions
 {
-void FNameToArrayBuffer(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+FArrayBufferValue FNameToArrayBuffer(const FString& Name)
 {
-    pesapi_env Env = Apis->get_env(Info);
-    FName Name(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    Apis->add_return(Info, Apis->create_binary_by_value(Env, &Name, sizeof(FName)));
+    FName Value(*Name);
+    FArrayBufferValue Ret;
+    Ret.Data.Append(reinterpret_cast<const uint8*>(&Value), sizeof(FName));
+    return Ret;
 }
 
-void ToCString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+FArrayBufferValue ToCString(const std::string& Str)
 {
-    pesapi_env Env = Apis->get_env(Info);
-    pesapi_value Str = Apis->get_arg(Info, 0);
-    if (!Apis->is_string(Env, Str))
-    {
-        Apis->throw_by_string(Info, "expect a string");
-        return;
-    }
-
-    size_t Length = 0;
-    Apis->get_value_string_utf8(Env, Str, nullptr, &Length);
-    TArray<char> Buff;
-    Buff.SetNumUninitialized(Length + 1);
-    Apis->get_value_string_utf8(Env, Str, Buff.GetData(), &Length);
-    Buff[Length] = '\0';
-    Apis->add_return(Info, Apis->create_binary_by_value(Env, Buff.GetData(), Length + 1));
+    FArrayBufferValue Ret;
+    // with the null terminator
+    Ret.Data.Append(reinterpret_cast<const uint8*>(Str.c_str()), Str.size() + 1);
+    return Ret;
 }
 
 void ToCPtrArray(struct pesapi_ffi* Apis, pesapi_callback_info Info)
@@ -60,11 +50,9 @@ void ToCPtrArray(struct pesapi_ffi* Apis, pesapi_callback_info Info)
     Apis->add_return(Info, Apis->create_binary_by_value(Env, Buff.GetData(), sizeof(void*) * Num));
 }
 
-void GetFNameString(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+FString GetFNameString(const FString& Name)
 {
-    pesapi_env Env = Apis->get_env(Info);
-    FName RequiredFName(*PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0)));
-    Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, RequiredFName.ToString()));
+    return FName(*Name).ToString();
 }
 
 void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info)

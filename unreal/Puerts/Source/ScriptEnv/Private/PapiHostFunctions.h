@@ -8,25 +8,29 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include "NamespaceDef.h"
+#include "ArrayBuffer.h"
 #include "pesapi.h"
 
-// the host functions bound to the script (papi callbacks) that do not depend on the state of an env
+#include <string>
+
+// the host functions bound to the script (methods of the global scriptEnv) that do not depend on the state of an env
 namespace PUERTS_NAMESPACE
 {
 namespace PapiHostFunctions
 {
-// __tgjsFNameToArrayBuffer(name): the FName of name as an ArrayBuffer
-void FNameToArrayBuffer(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+// scriptEnv.fnameToArrayBuffer(name) (UE.FNameLiteral): the FName of name as an ArrayBuffer
+FArrayBufferValue FNameToArrayBuffer(const FString& Name);
 
-// puerts.toCString(str): the null terminated utf8 string as an ArrayBuffer
-void ToCString(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+// scriptEnv.toCString(str) (puerts.toCString): the null terminated utf8 string as an ArrayBuffer
+FArrayBufferValue ToCString(const std::string& Str);
 
-// puerts.toCPtrArray(...buffers): the array of the pointers of the buffers as an ArrayBuffer
+// scriptEnv.toCPtrArray(...buffers) (puerts.toCPtrArray): the array of the pointers of the buffers as an ArrayBuffer
 void ToCPtrArray(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-// puerts.getFNameString(name): the string of the FName of name
-void GetFNameString(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+// scriptEnv.getFNameString(name) (puerts.getFNameString): the string of the FName of name
+FString GetFNameString(const FString& Name);
 
 // the name with the case of the comparison entry (the first registered case), ToString keeps the case of the display entry
 void FixFNameCase(struct pesapi_ffi* Apis, pesapi_callback_info Info);

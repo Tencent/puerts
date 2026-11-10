@@ -19,15 +19,6 @@ def _puerts_init():
     puerts = builtins.puerts
     script_env = builtins.scriptEnv
 
-    def take(name):
-        # a function bound by the host to builtins, removed from there
-        value = getattr(builtins, name, None)
-        try:
-            delattr(builtins, name)
-        except AttributeError:
-            pass
-        return value
-
     def rawget(obj, name):
         # the attribute of the object itself (not inherited from a base class)
         d = getattr(obj, '__dict__', None)
@@ -160,9 +151,14 @@ def _puerts_init():
     builtins.CPP = CPP
 
     UE.NewObject = script_env.newObject
-    UE.NewStruct = take('__tgjsNewStruct')
-    UE.MakeWeakObjectPtr = take('__tgjsMakeWeakObjectPtr')
-    UE.FNameLiteral = take('__tgjsFNameToArrayBuffer')
+    UE.NewStruct = script_env.newStruct
+    UE.MakeWeakObjectPtr = script_env.makeWeakObjectPtr
+    UE.FNameLiteral = script_env.fnameToArrayBuffer
+
+    puerts.getFNameString = script_env.getFNameString
+    puerts.toCString = script_env.toCString
+    puerts.toCPtrArray = script_env.toCPtrArray
+    puerts.load = script_env.load
 
     # a ref is a list with the value at [0] (index 0 of js)
     puerts.ref = lambda x: [x]
@@ -263,7 +259,7 @@ def _puerts_init():
     puerts.blueprint = Blueprint()
 
     # containers
-    new_container = take('__tgjsNewContainer')
+    new_container = script_env.newContainer
 
     def translate_type(t):
         if isinstance(t, int):

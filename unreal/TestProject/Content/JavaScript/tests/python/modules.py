@@ -103,4 +103,27 @@ def t_globals():
 
 test('globals', t_globals)
 
+
+def t_host_functions():
+    s = UE.NewStruct(UE.PuertsTestStruct.StaticClass())
+    s.X = 7
+    eq(s.X, 7)
+    note('NewStruct number', catchError(lambda: UE.NewStruct(1)))
+    note('NewStruct class type', catchError(lambda: UE.NewStruct(UE.PuertsTestObject.StaticClass())))
+    o = UE.PuertsTestObject()
+    w = UE.MakeWeakObjectPtr(o)
+    observe('MakeWeakObjectPtr', lambda: [w.IsValid(), w.Get() is o, UE.MakeWeakObjectPtr(None).IsValid()])
+
+    def fname_literal():
+        o.NameValue = UE.FNameLiteral('PuertsFNameLiteral')
+        return o.NameValue
+
+    observe('FNameLiteral', fname_literal)
+    observe('getFNameString', lambda: puerts.getFNameString('none'))
+    observe('toCString', lambda: type(puerts.toCString('ab')).__name__)
+    observe('toCPtrArray', lambda: type(puerts.toCPtrArray()).__name__)
+
+
+test('host functions', t_host_functions)
+
 f.run()

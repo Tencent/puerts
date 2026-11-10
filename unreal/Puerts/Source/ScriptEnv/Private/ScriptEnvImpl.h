@@ -341,12 +341,6 @@ private:
     {
         (static_cast<FScriptEnvImpl*>(Apis->get_userdata(Info))->*Method)(Apis, Info);
     }
-
-    static void PapiBindFunction(
-        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Obj, const char* Key, pesapi_callback Callback)
-    {
-        Apis->set_property(Env, Obj, Key, Apis->create_function(Env, Callback, nullptr, nullptr));
-    }
 };
 
 }    // namespace PUERTS_NAMESPACE

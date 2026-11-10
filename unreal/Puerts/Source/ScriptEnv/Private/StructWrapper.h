@@ -213,7 +213,7 @@ public:
     // ReflectedFinalize), or nullptr if the object is bound already (IObjectMapper::TryBindOwnedStruct) or on failure
     void* New(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    // __tgjsNewStruct(scriptStruct): a new (owned) struct object of a UScriptStruct
+    // scriptEnv.newStruct(scriptStruct): a new (owned) struct object of a UScriptStruct
     static void NewByScriptStruct(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // whether the memory of an owned object may be freed with the script object by the backend (IPapiBackend::

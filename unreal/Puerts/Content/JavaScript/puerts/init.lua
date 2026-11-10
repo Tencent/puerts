@@ -138,12 +138,14 @@ _G.UE = UE
 _G.CPP = CPP
 
 rawset(UE, 'NewObject', bindEnv('newObject'))
-rawset(UE, 'NewStruct', __tgjsNewStruct)
-__tgjsNewStruct = nil
-rawset(UE, 'MakeWeakObjectPtr', __tgjsMakeWeakObjectPtr)
-__tgjsMakeWeakObjectPtr = nil
-rawset(UE, 'FNameLiteral', __tgjsFNameToArrayBuffer)
-__tgjsFNameToArrayBuffer = nil
+rawset(UE, 'NewStruct', bindEnv('newStruct'))
+rawset(UE, 'MakeWeakObjectPtr', bindEnv('makeWeakObjectPtr'))
+rawset(UE, 'FNameLiteral', bindEnv('fnameToArrayBuffer'))
+
+puerts.getFNameString = bindEnv('getFNameString')
+puerts.toCString = bindEnv('toCString')
+puerts.toCPtrArray = bindEnv('toCPtrArray')
+puerts.load = bindEnv('load')
 
 -- a ref is a table with the value at [1] (index 0 of js)
 function puerts.ref(x) return { x } end
@@ -251,8 +253,7 @@ blueprint.tojs = UEClassToJSClass
 puerts.blueprint = blueprint
 
 -- containers
-local newContainer = __tgjsNewContainer
-__tgjsNewContainer = nil
+local newContainer = bindEnv('newContainer')
 
 local function translateType(t)
     if type(t) == 'number' then

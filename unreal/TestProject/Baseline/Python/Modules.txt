@@ -14,3 +14,10 @@ console: 'function'
 host globals removed: [True, True, True]
 scriptEnv: [True, 'bool']
 _puerts_init left in __main__: False
+NewStruct number: RuntimeError: invalid argument
+NewStruct class type: RuntimeError: invalid argument
+MakeWeakObjectPtr: [True, True, False]
+FNameLiteral: 'PuertsFNameLiteral'
+getFNameString: 'none'
+toCString: 'bytearray'
+toCPtrArray: 'bytearray'
