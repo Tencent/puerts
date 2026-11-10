@@ -157,6 +157,7 @@ jobs:
           unity-version: 2022.3.59f1
           build-targets: StandaloneOSX, Android 
           modules: android-il2cpp, mac-il2cpp
+          cache-installation: true
           #version-file: 'unity/test/unity/ProjectSettings/ProjectVersion.txt'
       - uses: RageAgainstThePixel/activate-unity-license@v1
         with:
