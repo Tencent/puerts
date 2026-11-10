@@ -154,7 +154,7 @@ jobs:
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
         with:
-          unity-version: 2022.3.59f1
+          unity-version: 2022.3.62f3
           build-targets: StandaloneOSX, Android 
           modules: android-il2cpp, mac-il2cpp
           cache-installation: true
@@ -250,10 +250,11 @@ jobs:
       # v3 不再依赖 Unity Hub 的 UnityHubSetup.exe（v1 就是卡在这个包上：官方 CDN 现在 307
       # 重定向到 unitychina.cn，而 v1 用 PowerShell WebClient 下载、不跟随重定向，稳定 404）。
       # v3 改为下载官方 Unity CLI，其 DownloadFile 显式处理 301/302/303/307/308 并校验 integrity。
+      # 2022.3.59f1 带 Unity 安全公告（sept-2025-01），v3 默认强制拦截，官方补丁版是 2022.3.62f3。
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v3
         with:
-          unity-version: 2022.3.59f1
+          unity-version: 2022.3.62f3
           build-targets: StandaloneWindows64, Android
           modules: android-il2cpp, windows-il2cpp
           cache-installation: true
