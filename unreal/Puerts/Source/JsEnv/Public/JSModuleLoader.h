@@ -11,9 +11,14 @@
 #include "PuertsNamespaceDef.h"
 
 #include "CoreMinimal.h"
+#include "ScriptFileLoader.h"
+
+#include <memory>
 
 namespace PUERTS_NAMESPACE
 {
+// the module loader of the old versions, kept for compatibility (FJsEnv / FJsEnvGroup wrap it as an IScriptFileLoader). A new
+// loader should implement IScriptFileLoader, the module system no longer searches the modules
 class IJSModuleLoader
 {
 public:
@@ -28,7 +33,7 @@ public:
     }
 };
 
-class SCRIPTENV_API DefaultJSModuleLoader : public IJSModuleLoader
+class JSENV_API DefaultJSModuleLoader : public IJSModuleLoader
 {
 public:
     explicit DefaultJSModuleLoader(const FString& InScriptRoot) : ScriptRoot(InScriptRoot)
@@ -48,6 +53,20 @@ public:
     virtual bool SearchModuleWithExtInDir(const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath);
 
     FString ScriptRoot;
+};
+
+// an IScriptFileLoader reading the files by an IJSModuleLoader: the path is searched from the root (Search("", Path)) and the
+// file found is loaded
+class JSENV_API FJSModuleLoaderAdapter : public IScriptFileLoader
+{
+public:
+    explicit FJSModuleLoaderAdapter(std::shared_ptr<IJSModuleLoader> InModuleLoader) : ModuleLoader(std::move(InModuleLoader))
+    {
+    }
+
+    virtual bool ReadFile(const FString& Path, TArray<uint8>& OutContent, FString& OutDebugPath) override;
+
+    std::shared_ptr<IJSModuleLoader> ModuleLoader;
 };
 
 }    // namespace PUERTS_NAMESPACE

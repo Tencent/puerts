@@ -1,6 +1,6 @@
 'use strict';
 // Template (static) binding, registered in PuertsTestCppBinding.cpp. Guards M1 (registry / PesapiBackend switch).
-const { UE, test, step, eq, near, assert, note, observe, catchError, run } = require('./framework');
+const { UE, test, step, eq, near, assert, note, observe, catchError, run } = require('./framework.js');
 const cpp = require('cpp');
 const C = cpp.FPuertsTestCppClass;
 const state = {};

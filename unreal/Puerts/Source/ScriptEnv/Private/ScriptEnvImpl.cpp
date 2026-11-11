@@ -10,10 +10,6 @@
 #include "Binding.hpp"
 #include "UEDataBinding.hpp"
 #include "DynamicDelegateProxy.h"
-#include "Misc/FileHelper.h"
-#include "Dom/JsonObject.h"
-#include "Serialization/JsonReader.h"
-#include "Serialization/JsonSerializer.h"
 #include "Misc/Paths.h"
 #include "StructWrapper.h"
 #include "PapiUtils.h"
@@ -94,9 +90,8 @@ void FScriptEnvImpl::RegisterScriptEnvClass()
         // the timers are implemented in js (puerts/timer.js) on the tick, as unity
         .Method("registerTickHandler", &PapiMethod<&FScriptEnvImpl::RegisterTickHandler>, nullptr)
         .Method("releaseManualReleaseDelegate", &PapiMethod<&FScriptEnvImpl::ReleaseManualReleaseDelegate>, nullptr)
-        // the host part of the module system: resolving and loading the source, the rest is done by the backend
-        .Method("hostResolveModule", &PapiMethod<&FScriptEnvImpl::HostResolveModule>, nullptr)
-        .Method("hostLoadModule", &PapiMethod<&FScriptEnvImpl::HostLoadModule>, nullptr)
+        // reads a script file by the file loader of the env (the module systems of lua / python)
+        .Method("loadFile", &PapiMethod<&FScriptEnvImpl::LoadFileMethod>, nullptr)
         .Method("dumpStatisticsLog", MakeFunction(&FScriptEnvImpl::DumpStatisticsLog))
         .Method("isQuickJS", MakeFunction(&FScriptEnvImpl::IsQuickJS))
         // the host functions not using the env (PapiHostFunctions.h), bound as the methods of scriptEnv as well
@@ -116,19 +111,19 @@ void FScriptEnvImpl::RegisterScriptEnvClass()
 }
 
 FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot)
-    : FScriptEnvImpl(std::move(InBackendFactory), std::make_shared<DefaultJSModuleLoader>(ScriptRoot),
+    : FScriptEnvImpl(std::move(InBackendFactory), std::make_shared<FDefaultScriptFileLoader>(ScriptRoot),
           std::make_shared<FDefaultLogger>(), -1, FString(), nullptr, nullptr)
 {
 }
 
-FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IScriptFileLoader> InFileLoader,
     std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
     Started = false;
 
-    ModuleLoader = std::move(InModuleLoader);
+    FileLoader = InFileLoader ? std::move(InFileLoader) : std::make_shared<FDefaultScriptFileLoader>();
     Logger = InLogger;
 
     // the backend of the env, created by the factory given by the caller (see PapiBackend.h), the host only uses the papi
@@ -137,6 +132,18 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
     BackendParams.Logger = Logger;
     BackendParams.Flags = InFlags;
     BackendParams.OnEnvReleased = [this]() { OnEnvReleased(); };
+    // the module systems of the backend read the files by the file loader of the env
+    BackendParams.LoadFile = [this](pesapi_env Env, const char* Path, PString& OutDebugPath) -> pesapi_value
+    {
+        FString DebugPath;
+        pesapi_value Content = LoadFileContent(MainApis, Env, UTF8_TO_TCHAR(Path), DebugPath);
+        if (Content)
+        {
+            FTCHARToUTF8 DebugPathUtf8(*DebugPath);
+            OutDebugPath = PString(DebugPathUtf8.Get(), DebugPathUtf8.Length());
+        }
+        return Content;
+    };
     // an external engine instance is not supported, node is set up by the v8 backend (PapiV8, WITH_NODEJS)
     check(!InExternalRuntime && !InExternalContext);
     // the classes of reflected types are defined in the default registry on first load (process wide, idempotent)
@@ -176,13 +183,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
             TEXT(".so");
 #endif
         Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiDataTransfer::FromFString(Apis, Env, DllExt));
-
-        // read by the module loader of the backend (PapiV8ModuleLoader / PapiQjsModuleLoader), the same as
-        // scriptEnv.hostResolveModule / scriptEnv.hostLoadModule
-        Apis->set_property(Env, PapiGlobal, "__puer_host_resolve__",
-            Apis->create_function(Env, &PapiUserdataMethod<&FScriptEnvImpl::HostResolveModule>, this, nullptr));
-        Apis->set_property(Env, PapiGlobal, "__puer_host_load__",
-            Apis->create_function(Env, &PapiUserdataMethod<&FScriptEnvImpl::HostLoadModule>, this, nullptr));
 
         DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
         MixinInvoker = DynamicInvoker;
@@ -1505,36 +1505,84 @@ void FScriptEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair
     Started = true;
 }
 
-bool FScriptEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath,
-    TArray<uint8>& Data, FString& ErrInfo)
+bool FScriptEnvImpl::ReadScriptFile(const FString& Path, FString& OutPath, TArray<uint8>& OutData, FString& OutDebugPath)
 {
-    if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath))
+    OutPath = Path;
+    if (FileLoader->ReadFile(Path, OutData, OutDebugPath))
     {
-        if (!ModuleLoader->Load(OutPath, Data))
+        return true;
+    }
+#if defined(WITH_V8_BYTECODE)
+    // the source may be stripped in the release build, the bytecode of it is loaded instead
+    if (Path.EndsWith(TEXT(".js")) || Path.EndsWith(TEXT(".mjs")))
+    {
+        OutPath = FPaths::ChangeExtension(Path, Path.EndsWith(TEXT(".js")) ? TEXT("cbc") : TEXT("mbc"));
+        OutData.Reset();
+        OutDebugPath.Empty();
+        if (FileLoader->ReadFile(OutPath, OutData, OutDebugPath))
         {
-            ErrInfo = FString::Printf(TEXT("can not load [%s]"), *ModuleName);
-            return false;
+            return true;
         }
     }
-    else
+#endif
+    OutPath = Path;
+    return false;
+}
+
+pesapi_value FScriptEnvImpl::LoadFileContent(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Path, FString& OutDebugPath)
+{
+    FString FilePath;
+    TArray<uint8> Data;
+    if (!ReadScriptFile(Path, FilePath, Data, OutDebugPath))
     {
-        ErrInfo = FString::Printf(TEXT("can not find [%s]"), *ModuleName);
-        return false;
+        return nullptr;
     }
-    return true;
+    if (OutDebugPath.IsEmpty() || OutDebugPath.StartsWith(TEXT("Pak: ")))
+    {
+        OutDebugPath = FilePath;
+    }
+#if PLATFORM_WINDOWS
+    // the inspector matches the urls of breakpoints with backslashes
+    OutDebugPath = OutDebugPath.Replace(TEXT("/"), TEXT("\\"));
+#endif
+    if (FilePath.EndsWith(TEXT(".mbc")) || FilePath.EndsWith(TEXT(".cbc")))
+    {
+        return Apis->create_binary_by_value(Env, Data.GetData(), Data.Num());
+    }
+    return PapiUtils::FromFileContent(Apis, Env, Data);
 }
 
 void FScriptEnvImpl::ExecuteModule(const FString& ModuleName)
 {
+    if (ModuleName.EndsWith(TEXT(".mjs")))
+    {
+        // an esm is evaluated by the module loader of the backend
+        struct pesapi_ffi* Apis = MainApis;
+        FPapiEnvScope EnvScope(Apis, MainEnvRef);
+        if (!EnvScope)
+        {
+            return;
+        }
+        pesapi_env Env = EnvScope.GetEnv();
+        if (!Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", true) || EnvScope.HasCaught())
+        {
+            Logger->Error(EnvScope.HasCaught() ? FString(UTF8_TO_TCHAR(EnvScope.GetExceptionAsString()))
+                                               : FString::Printf(TEXT("execute module [%s] fail"), *ModuleName));
+        }
+        return;
+    }
+
     FString OutPath;
     FString DebugPath;
     TArray<uint8> Data;
-
-    FString ErrInfo;
-    if (!LoadFile(TEXT(""), ModuleName, OutPath, DebugPath, Data, ErrInfo))
+    if (!ReadScriptFile(ModuleName, OutPath, Data, DebugPath))
     {
-        Logger->Error(ErrInfo);
+        Logger->Error(FString::Printf(TEXT("can not load [%s]"), *ModuleName));
         return;
+    }
+    if (DebugPath.IsEmpty() || DebugPath.StartsWith(TEXT("Pak: ")))
+    {
+        DebugPath = OutPath;
     }
 
     struct pesapi_ffi* Apis = MainApis;
@@ -1544,16 +1592,6 @@ void FScriptEnvImpl::ExecuteModule(const FString& ModuleName)
         return;
     }
     pesapi_env Env = EnvScope.GetEnv();
-    if (OutPath.EndsWith(".mjs"))
-    {
-        // an esm is evaluated by the module loader of the backend
-        if (!Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", true) || EnvScope.HasCaught())
-        {
-            Logger->Error(EnvScope.HasCaught() ? FString(UTF8_TO_TCHAR(EnvScope.GetExceptionAsString()))
-                                               : FString::Printf(TEXT("execute module [%s] fail"), *ModuleName));
-        }
-        return;
-    }
     // the bootstrap scripts (puerts/*.js) are classic scripts, their top-level declarations (`var global`) are globals
 #if PLATFORM_WINDOWS
     // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
@@ -1592,194 +1630,37 @@ void FScriptEnvImpl::Log(int32 Level, const FString& Msg)
     }
 }
 
+// puerts.loadModule(path): the content of the file of the path (relative to the script root), a string, or an ArrayBuffer for
+// the bytecode
 void FScriptEnvImpl::LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
     PAPI_CHECK_ARGS(EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
     FString Path = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    TArray<uint8> Data;
-    if (!ModuleLoader->Load(Path, Data))
+    FString DebugPath;
+    pesapi_value Content = LoadFileContent(Apis, Env, Path, DebugPath);
+    if (!Content)
     {
         Apis->throw_by_string(Info, "can not load module");
         return;
     }
-#if defined(WITH_V8_BYTECODE)
-    if (Path.EndsWith(TEXT(".cbc")) || Path.EndsWith(TEXT(".mbc")))
-    {
-        Apis->add_return(Info, Apis->create_binary_by_value(Env, Data.GetData(), Data.Num()));
-    }
-    else
-#endif
-    {
-        Apis->add_return(Info, PapiUtils::FromFileContent(Apis, Env, Data));
-    }
+    Apis->add_return(Info, Content);
 }
 
-// the kind of a module by its extension, a .js is an esm when imported and a cjs when required
-static const TCHAR* ModuleKindOfPath(const FString& Path, bool ByRequire)
+void FScriptEnvImpl::LoadFileMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info)
 {
-    if (Path.EndsWith(TEXT(".mjs")) || Path.EndsWith(TEXT(".mbc")))
-    {
-        return TEXT("esm");
-    }
-    if (Path.EndsWith(TEXT(".cjs")) || Path.EndsWith(TEXT(".cbc")))
-    {
-        return TEXT("cjs");
-    }
-    if (Path.EndsWith(TEXT(".json")))
-    {
-        return TEXT("json");
-    }
-    return ByRequire ? TEXT("cjs") : TEXT("esm");
-}
-
-// __puer_host_resolve__(specifier, referrer, by): the url (path) of the module, or the name of a builtin module
-void FScriptEnvImpl::HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgString, EArgString, EArgString);
+    PAPI_CHECK_ARGS(EArgString);
 
     pesapi_env Env = Apis->get_env(Info);
-    FString Specifier = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    FString Referrer = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1));
-    bool ByRequire = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 2)) == TEXT("require");
-    if (ByRequire && Specifier.StartsWith(TEXT("./")))
-    {
-        Specifier = Specifier.Mid(2);
-    }
-
-    // addons are registered as builtin modules on their first use
-    if (Backend->LoadAddon(Env, TCHAR_TO_UTF8(*Specifier)))
-    {
-        Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, Specifier));
-        return;
-    }
-
-    FString Dir = FPaths::GetPath(Referrer);
-    FString Path;
+    FString Path = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
     FString DebugPath;
-    if (!ModuleLoader->Search(Dir, Specifier, Path, DebugPath))
+    pesapi_value Content = LoadFileContent(Apis, Env, Path, DebugPath);
+    if (!Content)
     {
-        FString Message = ByRequire ? FString::Printf(TEXT("can not find %s in %s"), *Specifier, *Dir)
-                                    : FString::Printf(TEXT("can not resolve [%s], import by [%s]"), *Specifier, *Referrer);
-        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*Message));
         return;
     }
-
-    if (Path.EndsWith(TEXT("package.json")))
-    {
-        TArray<uint8> Data;
-        if (!ModuleLoader->Load(Path, Data))
-        {
-            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not load [%s]"), *Path)));
-            return;
-        }
-        FString Text;
-        FFileHelper::BufferToString(Text, Data.GetData(), Data.Num());
-        TSharedPtr<FJsonObject> Package;
-        auto Reader = TJsonReaderFactory<>::Create(Text);
-        if (!FJsonSerializer::Deserialize(Reader, Package) || !Package.IsValid())
-        {
-            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("invalid package.json: %s"), *Path)));
-            return;
-        }
-        FString Type;
-        Package->TryGetStringField(TEXT("type"), Type);
-        bool IsModule = Type == TEXT("module");
-        FString Entry;
-        Package->TryGetStringField(TEXT("main"), Entry);
-        if (Entry.IsEmpty())
-        {
-            Entry = TEXT("index.js");
-        }
-        if (ByRequire && IsModule)
-        {
-            // the esm package required (same as modular.js): exports["."] must have an entry for require, main is used
-            // if there is no exports["."]
-            const TSharedPtr<FJsonObject>* Exports = nullptr;
-            if (Package->TryGetObjectField(TEXT("exports"), Exports) && (*Exports)->HasField(TEXT(".")))
-            {
-                Entry.Empty();
-                const TSharedPtr<FJsonObject>* Dot = nullptr;
-                if ((*Exports)->TryGetObjectField(TEXT("."), Dot))
-                {
-                    const TSharedPtr<FJsonObject>* Sub = nullptr;
-                    if (!((*Dot)->TryGetObjectField(TEXT("default"), Sub) && (*Sub)->TryGetStringField(TEXT("require"), Entry)) &&
-                        !((*Dot)->TryGetObjectField(TEXT("require"), Sub) && (*Sub)->TryGetStringField(TEXT("default"), Entry)))
-                    {
-                        (*Dot)->TryGetStringField(TEXT("require"), Entry);
-                    }
-                }
-                if (Entry.IsEmpty())
-                {
-                    Apis->throw_by_string(Info, "can not require a esm in cjs module!");
-                    return;
-                }
-            }
-        }
-        FString PackageDir = FPaths::GetPath(Path);
-        FString EntryPath;
-        FString EntryDebugPath;
-        if (!ModuleLoader->Search(PackageDir, Entry, EntryPath, EntryDebugPath))
-        {
-            Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not find %s in %s"), *Entry, *PackageDir)));
-            return;
-        }
-        // an esm package required is loaded as esm, a cjs package imported is loaded by the rules of require
-        const TCHAR* ForcedKind =
-            ByRequire ? (IsModule ? TEXT("esm") : nullptr) : (IsModule ? nullptr : ModuleKindOfPath(EntryPath, true));
-        if (ForcedKind)
-        {
-            ForcedModuleKinds.Add((ByRequire ? TEXT("r") : TEXT("i")) + EntryPath, ForcedKind);
-        }
-        Path = EntryPath;
-        DebugPath = EntryDebugPath;
-    }
-
-    ModuleDebugPaths.Add(Path, DebugPath);
-    Apis->add_return(Info, PapiDataTransfer::FromFString(Apis, Env, Path));
-}
-
-// __puer_host_load__(url, by): {kind, content, debugPath}
-void FScriptEnvImpl::HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgString, EArgString);
-
-    pesapi_env Env = Apis->get_env(Info);
-    FString Url = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 0));
-    bool ByRequire = PapiDataTransfer::ToFString(Apis, Env, Apis->get_arg(Info, 1)) == TEXT("require");
-    TArray<uint8> Data;
-    if (!ModuleLoader->Load(Url, Data))
-    {
-        Apis->throw_by_string(Info, TCHAR_TO_UTF8(*FString::Printf(TEXT("can not load [%s]"), *Url)));
-        return;
-    }
-
-    const FString* Forced = ForcedModuleKinds.Find((ByRequire ? TEXT("r") : TEXT("i")) + Url);
-    FString Kind = Forced ? *Forced : FString(ModuleKindOfPath(Url, ByRequire));
-
-    FString DebugPath = ModuleDebugPaths.FindRef(Url);
-    if (DebugPath.IsEmpty() || DebugPath.StartsWith(TEXT("Pak: ")))
-    {
-        DebugPath = Url;
-    }
-#if PLATFORM_WINDOWS
-    // the inspector matches the urls of breakpoints with backslashes
-    DebugPath = DebugPath.Replace(TEXT("/"), TEXT("\\"));
-#endif
-
-    pesapi_value Content;
-    if (Url.EndsWith(TEXT(".mbc")) || Url.EndsWith(TEXT(".cbc")))
-    {
-        Content = Apis->create_binary_by_value(Env, Data.GetData(), Data.Num());
-    }
-    else
-    {
-        Content = PapiUtils::FromFileContent(Apis, Env, Data);
-    }
-
     pesapi_value Result = Apis->create_object(Env);
-    Apis->set_property(Env, Result, "kind", PapiDataTransfer::FromFString(Apis, Env, Kind));
     Apis->set_property(Env, Result, "content", Content);
     Apis->set_property(Env, Result, "debugPath", PapiDataTransfer::FromFString(Apis, Env, DebugPath));
     Apis->add_return(Info, Result);

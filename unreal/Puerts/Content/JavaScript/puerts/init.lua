@@ -59,25 +59,25 @@ console = {
 }
 
 ---------------------------------------------------------------------------------------------------------------------------
--- module system: the sources are resolved and loaded by the host (the same module loader as js)
+-- module system: a.b.c is the file a/b/c.lua relative to the root, read by the file loader of the host
 ---------------------------------------------------------------------------------------------------------------------------
 local function puerts_searcher(name)
     local spec = name
     if not spec:match('%.lua$') then
         spec = spec:gsub('%.', '/') .. '.lua'
     end
-    local ok, url = pcall(scriptEnv.hostResolveModule, scriptEnv, spec, '', 'require')
+    local ok, m = pcall(scriptEnv.loadFile, scriptEnv, spec)
     if not ok then
-        return '\n\t[puerts] ' .. tostring(url)
+        return '\n\t[puerts] ' .. tostring(m)
     end
-    return function(modname, path)
-        local m = scriptEnv:hostLoadModule(path, 'require')
-        local chunk, err = load(m.content, '@' .. m.debugPath, 'bt')
-        if not chunk then
-            error(err, 0)
-        end
-        return chunk(modname, path)
-    end, url
+    if m == nil then
+        return '\n\t[puerts] no file \'' .. spec .. '\''
+    end
+    local chunk, err = load(m.content, '@' .. m.debugPath, 'bt')
+    if not chunk then
+        error(err, 0)
+    end
+    return chunk, m.debugPath
 end
 
 package.path = ''

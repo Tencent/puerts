@@ -1,5 +1,5 @@
 'use strict';
-const { UE, puerts, reporter, test, step, eq, observe, run } = require('./framework');
+const { UE, puerts, reporter, test, step, eq, observe, run } = require('./framework.js');
 const { blueprint } = puerts;
 
 class MixinImpl {

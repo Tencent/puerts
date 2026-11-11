@@ -1,5 +1,5 @@
 'use strict';
-const { UE, puerts, test, step, eq, observe, run } = require('./framework');
+const { UE, puerts, test, step, eq, observe, run } = require('./framework.js');
 const { $ref, $unref, $set } = puerts;
 
 const obj = new UE.PuertsTestObject();

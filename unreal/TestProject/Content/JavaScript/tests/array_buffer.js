@@ -1,6 +1,6 @@
 'use strict';
 // FArrayBuffer / FArrayBufferValue conversion (FArrayBufferPropertyTranslator)
-const { UE, test, eq, assert, observe, catchError, run } = require('./framework');
+const { UE, test, eq, assert, observe, catchError, run } = require('./framework.js');
 const puerts = require('puerts');
 
 const holder = new UE.PuertsTestArrayBufferHolder();

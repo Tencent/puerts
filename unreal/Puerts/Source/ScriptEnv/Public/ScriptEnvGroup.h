@@ -20,7 +20,7 @@ class SCRIPTENV_API FScriptEnvGroup
 public:
     explicit FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, const FString& ScriptRoot = TEXT("JavaScript"));
 
-    FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+    FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, std::shared_ptr<IScriptFileLoader> InFileLoader,
         std::shared_ptr<ILogger> InLogger, int InDebugStartPort, const FString InFlags = FString(),
         void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 

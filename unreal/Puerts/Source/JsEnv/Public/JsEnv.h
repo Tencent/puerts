@@ -9,6 +9,7 @@
 #pragma once
 
 #include "ScriptEnv.h"
+#include "JSModuleLoader.h"
 
 namespace PUERTS_NAMESPACE
 {
@@ -20,6 +21,10 @@ class JSENV_API FJsEnv : public FScriptEnv
 public:
     explicit FJsEnv(const FString& ScriptRoot = TEXT("JavaScript"));
 
+    FJsEnv(std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+        const FString InFlags = FString(), void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
+
+    // the module loader of the old versions, wrapped by FJSModuleLoaderAdapter
     FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
         const FString InFlags = FString(), void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 };

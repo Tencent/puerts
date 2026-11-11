@@ -1,6 +1,6 @@
 'use strict';
 // Error behaviour visible to scripts. Messages are recorded in the baseline rather than asserted.
-const { UE, puerts, test, note, assert, catchError, run } = require('./framework');
+const { UE, puerts, test, note, assert, catchError, run } = require('./framework.js');
 const { $ref } = puerts;
 const obj = new UE.PuertsTestObject();
 
@@ -38,7 +38,7 @@ test('lookup errors', () => {
     note('unknown class', catchError(() => UE.NoSuchClassXYZ.StaticClass()));
     note('unknown member', String(obj.NoSuchMember));
     note('unknown cpp class', catchError(() => require('cpp').NoSuchCppClass.Foo()));
-    note('require missing module', catchError(() => require('./no_such_module')));
+    note('require missing module', catchError(() => require('./no_such_module.js', true)));
 });
 
 test('container errors', () => {

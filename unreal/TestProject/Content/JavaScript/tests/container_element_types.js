@@ -1,6 +1,6 @@
 'use strict';
 // value conversion of each container element type: range, overflow wraparound, string encodings, reference types
-const { UE, test, eq, assert, observe, run } = require('./framework');
+const { UE, test, eq, assert, observe, run } = require('./framework.js');
 
 const t = new UE.PuertsTestContainerElements();
 

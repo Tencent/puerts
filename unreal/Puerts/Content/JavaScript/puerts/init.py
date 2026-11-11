@@ -47,35 +47,36 @@ def _puerts_init():
     builtins.console = Console()
 
     # -------------------------------------------------------------------------------------------------------------------
-    # module system: the sources are resolved and loaded by the host (the same module loader as js), the name of a module
-    # is its specifier ('a/b/c', or 'a.b.c' if a and a.b are packages, a/__init__.py and a/b/__init__.py)
+    # module system: the name of a module is its path relative to the root ('a/b/c', or 'a.b.c' if a and a.b are packages,
+    # a/__init__.py and a/b/__init__.py), the files are read by the file loader of the host
     # -------------------------------------------------------------------------------------------------------------------
-    host_resolve = script_env.hostResolveModule
-    host_load = script_env.hostLoadModule
+    load_file = script_env.loadFile
 
     class PuertsLoader(importlib.abc.Loader):
-        def __init__(self, url):
-            self.url = url
+        def __init__(self, path, file):
+            self.path = path
+            self.file = file
 
         def create_module(self, spec):
             return None
 
         def exec_module(self, module):
-            m = host_load(self.url, 'require')
+            # the file read by find_spec is used once, a reload reads it again
+            m = self.file if self.file is not None else load_file(self.path)
+            self.file = None
+            if m is None:
+                raise ImportError('no file %s' % self.path, name=module.__name__)
             code = compile(m.content, m.debugPath, 'exec', dont_inherit=True)
             exec(code, module.__dict__)
 
     class PuertsFinder(importlib.abc.MetaPathFinder):
         def find_spec(self, fullname, path=None, target=None):
             base = fullname.replace('.', '/')
-            errors = []
             for spec, is_package in ((base + '.py', False), (base + '/__init__.py', True)):
-                try:
-                    url = host_resolve(spec, '', 'require')
-                except Exception as e:
-                    errors.append(str(e))
+                m = load_file(spec)
+                if m is None:
                     continue
-                module_spec = importlib.util.spec_from_loader(fullname, PuertsLoader(url), origin=url,
+                module_spec = importlib.util.spec_from_loader(fullname, PuertsLoader(spec, m), origin=m.debugPath,
                                                               is_package=is_package)
                 module_spec.has_location = True
                 if is_package:
@@ -83,7 +84,8 @@ def _puerts_init():
                     # (which would read the files directly and write __pycache__)
                     module_spec.submodule_search_locations = []
                 return module_spec
-            raise ModuleNotFoundError('No module named %r: %s' % (fullname, errors[0] if errors else ''), name=fullname)
+            raise ModuleNotFoundError('No module named %r: no file %s.py or %s/__init__.py' % (fullname, base, base),
+                                      name=fullname)
 
     sys.meta_path.append(PuertsFinder())
 

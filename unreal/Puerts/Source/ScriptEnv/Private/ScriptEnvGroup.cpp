@@ -59,16 +59,16 @@ FScriptEnvGroup::FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size,
     Init();
 }
 
-FScriptEnvGroup::FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+FScriptEnvGroup::FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, std::shared_ptr<IScriptFileLoader> InFileLoader,
     std::shared_ptr<ILogger> InLogger, int InDebugStartPort, const FString InFlags, void* InExternalRuntime,
     void* InExternalContext)
 {
     check(Size > 1);
-    std::shared_ptr<IJSModuleLoader> SharedModuleLoader = std::move(InModuleLoader);
+    std::shared_ptr<IScriptFileLoader> SharedFileLoader = std::move(InFileLoader);
     for (int i = 0; i < Size; i++)
     {
         JsEnvList.push_back(std::make_shared<FScriptEnvImpl>(
-            InBackendFactory, SharedModuleLoader, InLogger, InDebugStartPort + i, InFlags, InExternalRuntime, InExternalContext));
+            InBackendFactory, SharedFileLoader, InLogger, InDebugStartPort + i, InFlags, InExternalRuntime, InExternalContext));
     }
     Init();
 }

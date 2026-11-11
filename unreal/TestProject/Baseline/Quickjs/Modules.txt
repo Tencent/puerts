@@ -1,13 +1,20 @@
+set a lazy module: Error: readonly property value
+lazy missing: <no throw>
+lazy missing used: Error: load tests/modules_data/not_exist_xyz.js fail!
 require json: 42
 cpp module typeof: "object"
-require mjs: <no throw>
+require mjs: "esm"
+require mjs default: "hello esm"
 dynamic import type: "function"
 utf8 bom: "中文 utf8 bom"
 utf8 bom length: 2
 utf16 bom: "中文 utf16 bom"
 no bom: "中文 no bom"
-require missing: Error: can not find modules_data/not_exist_xyz in <js-root>/tests
-require missing bare: Error: can not find not_exist_module_xyz in <js-root>/tests
+require missing: Error: load tests/modules_data/not_exist_xyz.js fail!
+require missing bare: Error: load tests/not_exist_module_xyz fail!
+require without extension: Error: load tests/modules_data/mod_b fail!
+bad specifier: TypeError: the specifier of require must be a string, got number
+module api: ["clearModuleCache", "createRequire", "deleteModuleCache", "dirname", "gcModuleCache", "hasModuleCache", "joinPath", "loadFile", "setDefaultAutoRelease", "setResolveHook", "statModuleCache"]
 enum: "object"
 by path: true
 missing type: Error: can not find type:NoSuchType_xyz
@@ -28,8 +35,10 @@ missing dll again: Error: dlopen fail for not_exist_dir/not_exist_addon_xyz<dll-
 setTimeout: "function"
 setInterval: "function"
 console.log: "function"
-puerts keys: ["$ref", "$set", "$unref", "__genListApply", "__removeListItem", "argv", "blueprint", "console", "dll_ext", "emit", "genRequire", "getFNameString", "load", "loadCPPType", "loadModule", "loadUEType", "off", "on", "registerBuildinModule", "releaseManualReleaseDelegate", "requestJitModuleMethod", "setJsTakeRef", "toCPtrArray", "toCString", "toDelegate", "toManualReleaseDelegate"]
+puerts keys: ["$ref", "$set", "$unref", "__genListApply", "__removeListItem", "argv", "blueprint", "console", "dll_ext", "emit", "genRequire", "getFNameString", "load", "loadCPPType", "loadModule", "loadUEType", "module", "off", "on", "registerBuildinModule", "releaseManualReleaseDelegate", "requestJitModuleMethod", "setJsTakeRef", "toCPtrArray", "toCString", "toDelegate", "toManualReleaseDelegate"]
 globalThis.UE: true
 Promise: "function"
 WeakRef: "function"
 FinalizationRegistry: "function"
+weak cached after gc: true
+strong cached after gc: true

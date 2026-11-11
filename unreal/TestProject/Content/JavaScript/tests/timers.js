@@ -1,7 +1,7 @@
 'use strict';
 // setTimeout / setInterval / clearTimeout / clearInterval (puerts/timer.js, on the tick of the env). The runner waits
 // a little and ticks between steps, so callbacks registered in one step fire before the next one.
-const { test, step, eq, assert, note, observe, catchError, run } = require('./framework');
+const { test, step, eq, assert, note, observe, catchError, run } = require('./framework.js');
 const state = { once: 0, interval: 0, cleared: 0, selfCleared: 0, afterThrow: 0, args: null, self: null };
 
 test('register', () => {

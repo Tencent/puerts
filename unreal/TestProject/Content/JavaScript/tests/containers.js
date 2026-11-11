@@ -1,5 +1,5 @@
 'use strict';
-const { UE, test, eq, assert, note, observe, catchError, run } = require('./framework');
+const { UE, test, eq, assert, note, observe, catchError, run } = require('./framework.js');
 
 const obj = new UE.PuertsTestObject();
 

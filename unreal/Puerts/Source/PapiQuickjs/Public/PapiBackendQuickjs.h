@@ -48,8 +48,6 @@ public:
 
     virtual void DestroyEnvRef(pesapi_env_ref EnvRef) override;
 
-    virtual pesapi_value ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport) override;
-
     virtual void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Exports) override;
 
     virtual void LowMemoryNotification() override;
@@ -76,7 +74,13 @@ protected:
 
     virtual void StopRuntime() override;
 
-    virtual pesapi_value CreateRequire(pesapi_env Env, const char* Referrer) override;
+    virtual pesapi_value ImportModule(pesapi_env Env, const char* Specifier, const char* Referrer) override;
+
+    virtual pesapi_value GetBuiltinModule(pesapi_env Env, const char* Name) override;
+
+    virtual void SetModuleHooks(pesapi_env Env, pesapi_value Require, pesapi_value Resolve) override;
+
+    virtual pesapi_value CompileCjs(pesapi_env Env, pesapi_value Content, const char* DebugPath, const char* Path) override;
 
     virtual void SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler) override;
 

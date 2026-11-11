@@ -22,6 +22,7 @@
 #include "CoreMinimal.h"
 #include "pesapi.h"
 #include "NamespaceDef.h"
+#include "PString.h"
 #include <functional>
 #include <memory>
 
@@ -42,6 +43,12 @@ struct FPapiBackendParams
 
     // the cleanup of the host run by DestroyEnvRef after the env is released and before the engine instance is disposed
     std::function<void()> OnEnvReleased;
+
+    // reads a script file for the module system of the backend, called inside a scope of the env. Path is relative to the
+    // script root, '/' separated, with the extension. Returns the content (a string, or an ArrayBuffer of bytecode) and sets
+    // OutDebugPath (the name of the script in the stack traces and the debugger), nullptr (no exception thrown) if the file is
+    // not found
+    std::function<pesapi_value(pesapi_env Env, const char* Path, PString& OutDebugPath)> LoadFile;
 };
 
 // creates the backend of an env, the only place the script engine is chosen (FJsEnv of the JsEnv module creates a v8 one)

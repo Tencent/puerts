@@ -16,7 +16,7 @@
 namespace PUERTS_NAMESPACE
 {
 FPapiBackendQuickjs::FPapiBackendQuickjs(const FPapiBackendParams& InParams)
-    : FPapiBackendJs(InParams.Logger), Params(InParams), CppObjectMapper(std::make_unique<qjsimpl::FCppObjectMapper>())
+    : FPapiBackendJs(InParams), Params(InParams), CppObjectMapper(std::make_unique<qjsimpl::FCppObjectMapper>())
 {
 }
 
@@ -85,11 +85,6 @@ void FPapiBackendQuickjs::DestroyEnvRef(pesapi_env_ref EnvRef)
     Context = nullptr;
     JS_FreeRuntime(Runtime);
     Runtime = nullptr;
-}
-
-pesapi_value FPapiBackendQuickjs::ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport)
-{
-    return papi_qjs::ExecuteModule(Env, Specifier, Referrer, ByImport);
 }
 
 void FPapiBackendQuickjs::RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Exports)
@@ -184,7 +179,8 @@ ScriptClassRegistry* FPapiBackendQuickjs::GetRegistry()
 
 void FPapiBackendQuickjs::StartRuntime(pesapi_env Env)
 {
-    ModuleLoader = papi_qjs::CreateModuleLoader(Env);
+    ModuleLoader =
+        papi_qjs::CreateModuleLoader(Env, LoadFile, [this](pesapi_env InEnv, const char* Name) { return LoadAddon(InEnv, Name); });
     PromiseRejectTracker = papi_qjs::CreatePromiseRejectTracker(Env, &OnPromiseRejectHandlerError, Logger.get());
 }
 
@@ -196,9 +192,24 @@ void FPapiBackendQuickjs::StopRuntime()
     ModuleLoader = nullptr;
 }
 
-pesapi_value FPapiBackendQuickjs::CreateRequire(pesapi_env Env, const char* Referrer)
+pesapi_value FPapiBackendQuickjs::ImportModule(pesapi_env Env, const char* Specifier, const char* Referrer)
 {
-    return papi_qjs::CreateRequire(Env, Referrer);
+    return papi_qjs::ImportModule(Env, Specifier, Referrer);
+}
+
+pesapi_value FPapiBackendQuickjs::GetBuiltinModule(pesapi_env Env, const char* Name)
+{
+    return papi_qjs::GetBuiltinModule(Env, Name);
+}
+
+void FPapiBackendQuickjs::SetModuleHooks(pesapi_env Env, pesapi_value Require, pesapi_value Resolve)
+{
+    papi_qjs::SetHooks(Env, Require, Resolve);
+}
+
+pesapi_value FPapiBackendQuickjs::CompileCjs(pesapi_env Env, pesapi_value Content, const char* DebugPath, const char* Path)
+{
+    return papi_qjs::CompileCjs(Env, Content, DebugPath, Path);
 }
 
 void FPapiBackendQuickjs::SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler)

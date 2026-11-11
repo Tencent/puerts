@@ -2,7 +2,7 @@
 // WebSocketPP (the native binding behind puerts/websocketpp.js), only available when the plugin is built with WITH_WEBSOCKET.
 // There is no server in the test, so it covers construction, argument checks, polling, handler calls and the swallowing of
 // handler exceptions with a refused connection. No baseline: the result depends on the build options.
-const { test, step, eq, assert, catchError, run } = require('./framework');
+const { test, step, eq, assert, catchError, run } = require('./framework.js');
 
 const enabled = typeof WebSocketPP === 'function';
 

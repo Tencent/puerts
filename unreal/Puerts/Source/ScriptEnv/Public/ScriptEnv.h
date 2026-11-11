@@ -13,7 +13,7 @@
 
 #include "CoreMinimal.h"
 #include "JSLogger.h"
-#include "JSModuleLoader.h"
+#include "ScriptFileLoader.h"
 #include "PString.h"
 #include "PapiBackend.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -52,7 +52,7 @@ class SCRIPTENV_API FScriptEnv    // : public TSharedFromThis<FScriptEnv> // onl
 public:
     explicit FScriptEnv(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot = TEXT("JavaScript"));
 
-    FScriptEnv(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+    FScriptEnv(FPapiBackendFactory InBackendFactory, std::shared_ptr<IScriptFileLoader> InFileLoader,
         std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags = FString(), void* InExternalRuntime = nullptr,
         void* InExternalContext = nullptr);
 

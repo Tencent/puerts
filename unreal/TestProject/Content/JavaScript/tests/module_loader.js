@@ -1,16 +1,16 @@
 'use strict';
-// the module loader of the backend (PapiV8ModuleLoader), the require of every module since it replaces modular.js (M7-2)
-const { test, step, eq, assert, note, observe, catchError, normalizePath, run } = require('./framework');
+// the module loader of the backend (esm) and puerts/module.js (cjs), the paths are joined without searching
+const { test, step, eq, assert, note, observe, catchError, normalizePath, run } = require('./framework.js');
 
 const D = './module_loader_data/';
 
 function req(spec) {
-    return require(D + spec);
+    return require(D + spec, true);
 }
 
 // an esm evaluated synchronously (require semantics), the dynamic import is checked in the next step
 function imp(spec) {
-    return require(D + spec);
+    return require(D + spec, true);
 }
 
 function slash(s) {
@@ -20,21 +20,21 @@ function slash(s) {
 puerts.registerBuildinModule('ml_builtin', { v: 7 });
 
 test('cjs', () => {
-    const a = req('cjs_a');
+    const a = req('cjs_a.js');
     eq(a.name, 'a');
     eq(a.b.name, 'b');
     eq(a.b.count, 1);
     eq(a.selfIsPartial, true, 'self require during execution');
-    assert(req('cjs_a') === a, 'module cache');
-    assert(req('cjs_b') === a.b, 'shared by url');
-    assert(req('./cjs_b') === a.b, 'path normalized');
+    assert(req('cjs_a.js') === a, 'module cache');
+    assert(req('cjs_b.js') === a.b, 'shared by url');
+    assert(req('./cjs_b.js') === a.b, 'path normalized');
     eq(slash(a.filename).endsWith('tests/module_loader_data/cjs_a.js'), true, '__filename');
     eq(slash(a.dirname).endsWith('tests/module_loader_data'), true, '__dirname');
     eq(a.thisIsExports, true, 'this');
 });
 
 test('cjs cycle', () => {
-    const c = req('cycle_a');
+    const c = req('cycle_a.js');
     eq(c.name, 'a');
     eq(c.peer, 'b');
     eq(c.peerSawA, 'a');
@@ -49,7 +49,7 @@ test('esm', () => {
 });
 
 test('cjs require esm', () => {
-    const r = req('req_esm');
+    const r = req('req_esm.js');
     eq(r.x, 1);
     eq(r.d, 'dep-default');
 });
@@ -68,11 +68,11 @@ test('retry after failure', () => {
     globalThis.__mlFlaky = true;
     note('flaky esm', catchError(() => imp('flaky.mjs')));
     note('flaky esm parent', catchError(() => imp('flaky_parent.mjs')));
-    note('flaky cjs', catchError(() => req('flaky_cjs')));
+    note('flaky cjs', catchError(() => req('flaky_cjs.js')));
     globalThis.__mlFlaky = false;
     eq(imp('flaky.mjs').ok, true);
     eq(imp('flaky_parent.mjs').ok, true);
-    eq(req('flaky_cjs'), 'ok');
+    eq(req('flaky_cjs.js'), 'ok');
 });
 
 test('top-level await', () => {
@@ -81,33 +81,17 @@ test('top-level await', () => {
 });
 
 test('errors', () => {
-    note('require missing', catchError(() => req('not_exist_xyz')));
+    note('require missing', catchError(() => req('not_exist_xyz.js')));
     note('import missing', catchError(() => imp('not_exist_xyz.mjs')));
     note('esm import missing', catchError(() => imp('esm_missing.mjs')));
     note('esm syntax error', catchError(() => imp('syntax_err.mjs')));
     note('esm syntax error again', catchError(() => imp('syntax_err.mjs')));
-    note('cjs throws', catchError(() => req('throws')));
+    note('cjs throws', catchError(() => req('throws.js')));
     note('bad specifier', catchError(() => require(1)));
 });
 
-test('package.json', () => {
-    observe('require cjs package', () => req('pkg_cjs'));
-    observe('import cjs package', () => imp('esm_pkg.mjs').result);
-    observe('require esm package', () => {
-        const ns = req('pkg_esm');
-        return [ns.name, ns.default];
-    });
-    observe('import esm package', () => imp('esm_pkg_esm.mjs').result);
-    // without exports["."] the main is the entry for require too, as modular.js does
-    observe('require esm package without exports', () => {
-        const ns = req('pkg_esm_noreq');
-        return [ns.name, ns.default];
-    });
-    note('require esm package without require entry', catchError(() => req('pkg_esm_importonly')));
-});
-
 test('bom', () => {
-    eq(req('bom'), 'bom');
+    eq(req('bom.js'), 'bom');
 });
 
 test('dumpStatisticsLog', () => {

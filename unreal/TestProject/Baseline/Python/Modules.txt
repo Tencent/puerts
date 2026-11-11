@@ -1,11 +1,11 @@
-dotted name without packages: ModuleNotFoundError: No module named 'tests': can not find tests.py in 
+dotted name without packages: ModuleNotFoundError: No module named 'tests': no file tests.py or tests/__init__.py
 submodule is an attribute of the package: True
 relative import in the package: 'helper'
 require with .py: 2
 __import__: 2
 path: <js-root>/tests/python/modules_data/args.py
 stdlib: '[1]'
-missing: ModuleNotFoundError: No module named 'tests/python/modules_data/no_such_module': can not find tests/python/modules_data/no_such_module.py in 
+missing: ModuleNotFoundError: No module named 'tests/python/modules_data/no_such_module': no file tests/python/modules_data/no_such_module.py or tests/python/modules_data/no_such_module/__init__.py
 syntax error: SyntaxError: invalid syntax (syntax_err.py, line 1)
 throws: RuntimeError: module boom
 not cached after throw: None

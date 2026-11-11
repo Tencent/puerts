@@ -19,6 +19,10 @@ class JSENV_API FJsEnvGroup : public FScriptEnvGroup
 public:
     explicit FJsEnvGroup(int Size, const FString& ScriptRoot = TEXT("JavaScript"));
 
+    FJsEnvGroup(int Size, std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger, int InDebugStartPort,
+        const FString InFlags = FString(), void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
+
+    // the module loader of the old versions, wrapped by FJSModuleLoaderAdapter
     FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugStartPort,
         const FString InFlags = FString(), void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 };

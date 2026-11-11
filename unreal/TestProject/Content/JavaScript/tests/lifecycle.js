@@ -1,6 +1,6 @@
 'use strict';
 // Object identity and lifetime. These cases guard the M2 change (object mapping + UObject handle scheme).
-const { UE, reporter, test, step, eq, assert, note, observe, catchError, run } = require('./framework');
+const { UE, reporter, test, step, eq, assert, note, observe, catchError, run } = require('./framework.js');
 const Reporter = UE.PuertsTestReporter;
 const Live = () => UE.PuertsTestObject.GetLiveCount();
 const Counted = () => UE.PuertsTestObject.GetCountedLiveCount();

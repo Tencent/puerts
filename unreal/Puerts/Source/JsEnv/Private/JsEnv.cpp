@@ -16,10 +16,17 @@ FJsEnv::FJsEnv(const FString& ScriptRoot) : FScriptEnv(&FPapiBackendV8::Create, 
 {
 }
 
-FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+FJsEnv::FJsEnv(std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
     const FString InFlags, void* InExternalRuntime, void* InExternalContext)
     : FScriptEnv(
-          &FPapiBackendV8::Create, std::move(InModuleLoader), InLogger, InDebugPort, InFlags, InExternalRuntime, InExternalContext)
+          &FPapiBackendV8::Create, std::move(InFileLoader), InLogger, InDebugPort, InFlags, InExternalRuntime, InExternalContext)
+{
+}
+
+FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnv(&FPapiBackendV8::Create, std::make_shared<FJSModuleLoaderAdapter>(std::move(InModuleLoader)), InLogger,
+          InDebugPort, InFlags, InExternalRuntime, InExternalContext)
 {
 }
 
@@ -28,10 +35,17 @@ FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot) : FScriptEnvGroup(
 {
 }
 
+FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger,
+    int InDebugStartPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::move(InFileLoader), InLogger, InDebugStartPort, InFlags,
+          InExternalRuntime, InExternalContext)
+{
+}
+
 FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
     int InDebugStartPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
-    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::move(InModuleLoader), InLogger, InDebugStartPort, InFlags,
-          InExternalRuntime, InExternalContext)
+    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::make_shared<FJSModuleLoaderAdapter>(std::move(InModuleLoader)), InLogger,
+          InDebugStartPort, InFlags, InExternalRuntime, InExternalContext)
 {
 }
 #endif

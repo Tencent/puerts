@@ -71,7 +71,7 @@ struct FCodeCacheHeader
 #endif
 
 FPapiBackendV8::FPapiBackendV8(const FParams& InParams)
-    : FPapiBackendJs(InParams.Logger), Params(InParams), CppObjectMapper(std::make_unique<FCppObjectMapper>())
+    : FPapiBackendJs(InParams), Params(InParams), CppObjectMapper(std::make_unique<FCppObjectMapper>())
 {
 }
 
@@ -200,11 +200,6 @@ void FPapiBackendV8::DestroyEnvRef(pesapi_env_ref EnvRef)
     }
     Isolate = nullptr;
     Node.reset();
-}
-
-pesapi_value FPapiBackendV8::ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport)
-{
-    return papi_v8::ExecuteModule(Env, Specifier, Referrer, ByImport);
 }
 
 void FPapiBackendV8::RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Exports)
@@ -437,16 +432,21 @@ bool FPapiBackendV8::BindTriviallyFreedObject(
 
 void FPapiBackendV8::StartRuntime(pesapi_env Env)
 {
-    ModuleLoader = papi_v8::CreateModuleLoader(Env);
+    ModuleLoader =
+        papi_v8::CreateModuleLoader(Env, LoadFile, [this](pesapi_env InEnv, const char* Name) { return LoadAddon(InEnv, Name); });
     PromiseRejectTracker = papi_v8::CreatePromiseRejectTracker(Env, &OnPromiseRejectHandlerError, Logger.get());
 #if defined(WITH_NODEJS)
-    // the require of node (its builtin modules and node_modules) is tried first for bare names, as modular.js did. Taken
-    // before the global require is replaced by the one of the loader
+    // the require of node (its builtin modules and node_modules), tried by puerts/module.js for the names not found
     {
-        v8::Local<v8::Value> NodeRequire = Node->GetRequire(papi_bridge::ToV8(Env));
-        if (!NodeRequire.IsEmpty())
+        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+        v8::Local<v8::Value> NodeRequire = Node->GetRequire(Context);
+        v8::Local<v8::Value> PuertsObj;
+        if (!NodeRequire.IsEmpty() &&
+            Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "puerts").ToLocalChecked()).ToLocal(&PuertsObj) &&
+            PuertsObj->IsObject())
         {
-            papi_v8::SetFallbackRequire(Env, papi_bridge::ToPapi(NodeRequire));
+            (void) PuertsObj.As<v8::Object>()->Set(
+                Context, v8::String::NewFromUtf8(Isolate, "__nodeRequire").ToLocalChecked(), NodeRequire);
         }
     }
 #endif
@@ -478,9 +478,24 @@ void FPapiBackendV8::StopRuntime()
     ModuleLoader = nullptr;
 }
 
-pesapi_value FPapiBackendV8::CreateRequire(pesapi_env Env, const char* Referrer)
+pesapi_value FPapiBackendV8::ImportModule(pesapi_env Env, const char* Specifier, const char* Referrer)
 {
-    return papi_v8::CreateRequire(Env, Referrer);
+    return papi_v8::ImportModule(Env, Specifier, Referrer);
+}
+
+pesapi_value FPapiBackendV8::GetBuiltinModule(pesapi_env Env, const char* Name)
+{
+    return papi_v8::GetBuiltinModule(Env, Name);
+}
+
+void FPapiBackendV8::SetModuleHooks(pesapi_env Env, pesapi_value Require, pesapi_value Resolve)
+{
+    papi_v8::SetHooks(Env, Require, Resolve);
+}
+
+pesapi_value FPapiBackendV8::CompileCjs(pesapi_env Env, pesapi_value Content, const char* DebugPath, const char* Path)
+{
+    return papi_v8::CompileCjs(Env, Content, DebugPath, Path);
 }
 
 void FPapiBackendV8::SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler)

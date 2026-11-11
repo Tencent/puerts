@@ -2,7 +2,7 @@
 // Promise rejection tracking: the reject events of the engine are forwarded to puerts/promises.js by the backend
 // (papi_v8::SetPromiseRejectHandler), which emits 'unhandledRejection' after the microtasks. Guards M7-5b.
 // The microtasks run when the call into js returns, so the events of one step are checked in the next one.
-const { puerts, test, step, eq, assert, note, observe, run } = require('./framework');
+const { puerts, test, step, eq, assert, note, observe, run } = require('./framework.js');
 const state = { got: [], warned: [], errored: [] };
 
 function listener(reason, promise) {

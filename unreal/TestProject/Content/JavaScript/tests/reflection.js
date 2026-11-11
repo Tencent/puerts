@@ -2,7 +2,7 @@
 // UClass / UScriptStruct binding shape: what the generated js classes expose (prototype members, statics, Find / Load,
 // constructor arguments, extension and interface methods, FName case fixing of member names).
 // Guards M4-6 (UClass / UScriptStruct templates moved into the registry).
-const { UE, test, eq, assert, note, observe, catchError, run } = require('./framework');
+const { UE, test, eq, assert, note, observe, catchError, run } = require('./framework.js');
 
 const sortedOwnNames = (o) => Object.getOwnPropertyNames(o).sort().join(',');
 

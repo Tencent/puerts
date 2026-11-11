@@ -56,7 +56,7 @@ public:
     FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot);
 
     // InExternalRuntime / InExternalContext: not supported (must be null), node is set up by the v8 backend
-    FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+    FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IScriptFileLoader> InFileLoader,
         std::shared_ptr<ILogger> InLogger, int InPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext);
 
     virtual ~FScriptEnvImpl() override;
@@ -145,8 +145,13 @@ public:
     void TryReleaseType(UStruct* Struct);
 
 private:
-    bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath,
-        TArray<uint8>& Data, FString& ErrInfo);
+    // reads the file of Path (relative to the script root, with the extension) by the file loader, the content is a string, or
+    // an ArrayBuffer for the bytecode (.cbc / .mbc). Returns nullptr if the file can not be read. OutDebugPath is the path for
+    // the stack traces and the debugger (Path if the loader gives none)
+    pesapi_value LoadFileContent(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Path, FString& OutDebugPath);
+
+    // reads the file by the file loader, with the fallback to the bytecode (.cbc / .mbc) on WITH_V8_BYTECODE
+    bool ReadScriptFile(const FString& Path, FString& OutPath, TArray<uint8>& OutData, FString& OutDebugPath);
 
     // IPapiScriptHost
     virtual void ExecuteModule(const FString& ModuleName) override;
@@ -163,10 +168,8 @@ private:
 
     void LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-    // the host side of the module loader of the backend (PapiV8ModuleLoader): finds and reads a module
-    void HostResolveModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    void HostLoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+    // scriptEnv.loadFile(path): {content, debugPath}, undefined if the file can not be read (the module systems of lua / python)
+    void LoadFileMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     // the js class of a UStruct, an object of the values for a UEnum, undefined otherwise
     pesapi_value UETypeToJsClass(pesapi_env Env, UField* Type);
@@ -221,13 +224,7 @@ private:
 
     FObjectRetainer SysObjectRetainer;
 
-    std::shared_ptr<IJSModuleLoader> ModuleLoader;
-
-    // "<by><path>" -> kind, the modules whose kind is decided by the package.json requiring them
-    TMap<FString, FString> ForcedModuleKinds;
-
-    // path -> debug path, filled by HostResolveModule
-    TMap<FString, FString> ModuleDebugPaths;
+    std::shared_ptr<IScriptFileLoader> FileLoader;
 
     std::shared_ptr<ILogger> Logger;
 
@@ -334,13 +331,6 @@ private:
     // a method of scriptEnv that handles the papi callback info itself, the env is the receiver (this)
     template <PapiMethodCallback Method>
     static void PapiMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-
-    // a global function of the host called without a receiver (the module loader of the backend), the env is the userdata
-    template <PapiMethodCallback Method>
-    static void PapiUserdataMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-    {
-        (static_cast<FScriptEnvImpl*>(Apis->get_userdata(Info))->*Method)(Apis, Info);
-    }
 };
 
 }    // namespace PUERTS_NAMESPACE

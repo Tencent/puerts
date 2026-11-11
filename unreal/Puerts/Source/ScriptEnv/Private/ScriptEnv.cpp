@@ -16,11 +16,11 @@ FScriptEnv::FScriptEnv(FPapiBackendFactory InBackendFactory, const FString& Scri
     GameScript = std::make_unique<FScriptEnvImpl>(std::move(InBackendFactory), ScriptRoot);
 }
 
-FScriptEnv::FScriptEnv(FPapiBackendFactory InBackendFactory, std::shared_ptr<IJSModuleLoader> InModuleLoader,
+FScriptEnv::FScriptEnv(FPapiBackendFactory InBackendFactory, std::shared_ptr<IScriptFileLoader> InFileLoader,
     std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
 {
-    GameScript = std::make_unique<FScriptEnvImpl>(std::move(InBackendFactory), std::move(InModuleLoader), InLogger, InDebugPort,
-        InFlags, InExternalRuntime, InExternalContext);
+    GameScript = std::make_unique<FScriptEnvImpl>(
+        std::move(InBackendFactory), std::move(InFileLoader), InLogger, InDebugPort, InFlags, InExternalRuntime, InExternalContext);
 }
 
 void FScriptEnv::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments)

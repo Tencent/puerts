@@ -17,7 +17,8 @@ puerts.registerRequestHandler('requestModuleMethod', (data, onFinished) => {
     let invokeArgs = data.substring(split2 + 1);
     let module = loadedModules[moduleName];
     if (!module) {
-        module = require(moduleName);
+        // the module name is relative to the script root
+        module = puerts.genRequire('')(moduleName, true);
         loadedModules[moduleName] = module;
     }
     let method = module[moduleMethodName];

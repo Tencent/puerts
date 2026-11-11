@@ -19,7 +19,7 @@ call method unbound: Error: access a null object
 unknown class: Error: can not find type:NoSuchClassXYZ
 unknown member: undefined
 unknown cpp class: Error: can not find type: NoSuchCppClass
-require missing module: Error: can not find no_such_module in <js-root>/tests
+require missing module: Error: load tests/no_such_module.js fail!
 array add wrong type: <no throw>
 array set out of range: Error: invalid index
 map key wrong type: <no throw>

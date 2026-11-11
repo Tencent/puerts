@@ -9,7 +9,6 @@
 #include "PapiV8ModuleLoader.h"
 #include "DataTransfer.h"
 #include "PesapiImpl.h"
-#include "PString.h"
 
 #include <cstring>
 #include <memory>
@@ -27,9 +26,9 @@ namespace
 enum class EKind : char
 {
     Esm = 'e',
-    Cjs = 'c',
-    Json = 'j',
-    Builtin = 'b'
+    Builtin = 'b',
+    // a file other than esm imported, required by the require hook
+    Synthetic = 's'
 };
 
 struct FRecord
@@ -37,20 +36,14 @@ struct FRecord
     EKind Kind;
     PString Key;
     PString Url;
-    PString DebugPath;
     // esm: the module; others: the synthetic module created when imported by an esm
     v8::Global<v8::Module> Module;
-    // cjs: the source or bytecode, released once executed
-    v8::Global<v8::Value> Content;
-    // cjs: the `module` object
-    v8::Global<v8::Object> CjsModule;
-    // json / builtin: the value; cjs: module.exports when the synthetic module is created
+    // builtin: the value; synthetic: the exports, set when the synthetic module is created
     v8::Global<v8::Value> Value;
     // esm: specifier -> module, filled while fetching the module tree
     std::unordered_map<PString, v8::Global<v8::Module>> Requests;
     // the synthetic module: the named exports (own properties of Value when it is created)
     std::vector<v8::Global<v8::String>> ExportNames;
-    bool Executed = false;
 };
 
 #if defined(WITH_V8_BYTECODE)
@@ -97,7 +90,7 @@ inline v8::Local<v8::String> Str(v8::Isolate* Isolate, const PString& S)
     return v8::String::NewFromUtf8(Isolate, S.c_str(), v8::NewStringType::kNormal, static_cast<int>(S.size())).ToLocalChecked();
 }
 
-inline PString ToStd(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
+inline PString ToPString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
 {
     v8::String::Utf8Value Utf8(Isolate, Value);
     return *Utf8 ? PString(*Utf8, Utf8.length()) : PString();
@@ -127,28 +120,89 @@ PString MakeKey(EKind Kind, const PString& Url)
     return Key;
 }
 
-// by + referrer + '\0' + specifier
-PString MakeResolveKey(char By, const PString& Referrer, const PString& Specifier)
-{
-    PString Key;
-    Key += By;
-    Key += Referrer;
-    Key += '\0';
-    Key += Specifier;
-    return Key;
-}
-
 PString DirName(const PString& Url)
 {
     auto Pos = Url.find_last_of("/\\");
     return Pos == PString::npos ? PString() : Url.substr(0, Pos);
+}
+
+// joins the segments of Path ('/' or '\\' separated), removes the empty and "." segments and resolves ".."
+PString Normalize(const PString& Path)
+{
+    PString Ret;
+    size_t Start = 0;
+    const size_t Size = Path.size();
+    for (size_t i = 0; i <= Size; ++i)
+    {
+        if (i < Size && Path[i] != '/' && Path[i] != '\\')
+        {
+            continue;
+        }
+        PString Segment = Path.substr(Start, i - Start);
+        Start = i + 1;
+        if (Segment.empty() || Segment == ".")
+        {
+            continue;
+        }
+        if (Segment == "..")
+        {
+            auto Pos = Ret.find_last_of("/");
+            PString Last = Pos == PString::npos ? Ret : Ret.substr(Pos + 1);
+            if (!Ret.empty() && Last != "..")
+            {
+                Ret.resize(Pos == PString::npos ? 0 : Pos);
+                continue;
+            }
+        }
+        if (!Ret.empty())
+        {
+            Ret += '/';
+        }
+        Ret += Segment;
+    }
+    return Ret;
+}
+
+bool StartsWith(const PString& S, const char* Prefix)
+{
+    size_t Len = strlen(Prefix);
+    return S.size() >= Len && memcmp(S.c_str(), Prefix, Len) == 0;
+}
+
+bool EndsWith(const PString& S, const char* Suffix)
+{
+    size_t Len = strlen(Suffix);
+    return S.size() >= Len && memcmp(S.c_str() + S.size() - Len, Suffix, Len) == 0;
+}
+
+// a name of a builtin module (or an addon): no '.' and '/'
+bool IsBareName(const PString& S)
+{
+    if (S.empty())
+    {
+        return false;
+    }
+    for (size_t i = 0; i < S.size(); ++i)
+    {
+        if (S[i] == '.' || S[i] == '/' || S[i] == '\\')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void FinalizePString(struct pesapi_ffi* Apis, void* Data, void* EnvPrivate)
+{
+    delete static_cast<PString*>(Data);
 }
 }    // namespace
 
 class FModuleLoader
 {
 public:
-    explicit FModuleLoader(v8::Isolate* InIsolate) : Isolate(InIsolate)
+    FModuleLoader(v8::Isolate* InIsolate, FLoadFileFunc InLoadFile, FLoadAddonFunc InLoadAddon)
+        : Isolate(InIsolate), LoadFile(std::move(InLoadFile)), LoadAddon(std::move(InLoadAddon))
     {
     }
 
@@ -156,23 +210,18 @@ public:
     {
         Records.clear();
         ModuleToRecord.clear();
-        HostResolve.Reset();
-        HostLoad.Reset();
-        FallbackRequire.Reset();
+        RequireHook.Reset();
+        ResolveHook.Reset();
     }
 
     v8::Isolate* const Isolate;
-    v8::Global<v8::Function> HostResolve;
-    v8::Global<v8::Function> HostLoad;
-    // tried before the host for a bare specifier required (not imported), e.g. the require of node (its builtin modules and
-    // node_modules), see SetFallbackRequire
-    v8::Global<v8::Function> FallbackRequire;
+    FLoadFileFunc LoadFile;
+    FLoadAddonFunc LoadAddon;
+    // see SetHooks
+    v8::Global<v8::Function> RequireHook;
+    v8::Global<v8::Function> ResolveHook;
     std::unordered_map<PString, std::unique_ptr<FRecord>> Records;
     std::unordered_multimap<int, FRecord*> ModuleToRecord;
-    // "<by><referrer>\0<specifier>" -> key of the record
-    std::unordered_map<PString, PString> ResolveCache;
-    // "<by><url>" -> key of the record
-    std::unordered_map<PString, PString> LoadCache;
     // the resource name (debug path) of the scripts -> url, the referrer of a dynamic import is known by the resource name
     std::unordered_map<PString, PString> DebugPathToUrl;
     // keys of the esm records added by the running loads, the ones not evaluated are removed if the load fails
@@ -225,25 +274,26 @@ public:
         PendingEsm.resize(Start);
     }
 
-    FRecord* AddRecord(EKind Kind, const PString& Url, const PString& DebugPath)
+    FRecord* AddRecord(EKind Kind, const PString& Url)
     {
         auto Key = MakeKey(Kind, Url);
         auto Record = std::make_unique<FRecord>();
         Record->Kind = Kind;
         Record->Key = Key;
         Record->Url = Url;
-        Record->DebugPath = DebugPath;
         auto Ptr = Record.get();
         Records[Key] = std::move(Record);
         if (Kind == EKind::Esm)
         {
             PendingEsm.push_back(Key);
         }
-        if (Kind == EKind::Esm || Kind == EKind::Cjs)
-        {
-            DebugPathToUrl[DebugPath] = Url;
-        }
         return Ptr;
+    }
+
+    FRecord* FindRecord(EKind Kind, const PString& Url)
+    {
+        auto It = Records.find(MakeKey(Kind, Url));
+        return It == Records.end() ? nullptr : It->second.get();
     }
 
     void EraseRecord(const PString& Key)
@@ -288,228 +338,108 @@ public:
         return nullptr;
     }
 
-    bool EnsureHost(v8::Local<v8::Context> Context)
+    // the builtin module of the name, an addon is loaded on its first use
+    FRecord* FindBuiltin(v8::Local<v8::Context> Context, const PString& Name)
     {
-        if (!HostResolve.IsEmpty())
+        auto Record = FindRecord(EKind::Builtin, Name);
+        if (!Record && LoadAddon && IsBareName(Name) && LoadAddon(ToPapi(Context), Name.c_str()))
         {
-            return true;
+            Record = FindRecord(EKind::Builtin, Name);
         }
-        auto Global = Context->Global();
-        auto ResolveName = Str(Isolate, "__puer_host_resolve__");
-        auto LoadName = Str(Isolate, "__puer_host_load__");
-        v8::Local<v8::Value> Resolve;
-        v8::Local<v8::Value> Load;
-        if (!Global->Get(Context, ResolveName).ToLocal(&Resolve) || !Global->Get(Context, LoadName).ToLocal(&Load))
-        {
-            return false;
-        }
-        if (!Resolve->IsFunction() || !Load->IsFunction())
-        {
-            Throw(Isolate, "[Puer001] __puer_host_resolve__ or __puer_host_load__ is not registered");
-            return false;
-        }
-        HostResolve.Reset(Isolate, Resolve.As<v8::Function>());
-        HostLoad.Reset(Isolate, Load.As<v8::Function>());
-        (void) Global->Delete(Context, ResolveName);
-        (void) Global->Delete(Context, LoadName);
-        return true;
+        return Record;
     }
 
-    // the url (a string) returned by the host, EnsureHost is called before
-    v8::MaybeLocal<v8::Value> CallHostResolve(
-        v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer, v8::Local<v8::String> By)
+    // the path of the specifier by the resolve hook (called with the directory of the referrer) or the default rules, false
+    // with an exception thrown
+    bool ResolvePath(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer, PString& OutPath)
     {
-        v8::Local<v8::Value> ResolveArgs[] = {Str(Isolate, Specifier), Str(Isolate, Referrer), By};
-        v8::Local<v8::Value> UrlValue;
-        if (!HostResolve.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 3, ResolveArgs).ToLocal(&UrlValue))
+        if (!ResolveHook.IsEmpty())
         {
-            return v8::MaybeLocal<v8::Value>();
-        }
-        if (!UrlValue->IsString())
-        {
-            Throw(Isolate, "[Puer002] import " + Specifier + " failed: module not found");
-            return v8::MaybeLocal<v8::Value>();
-        }
-        return UrlValue;
-    }
-
-    // import.meta.resolve: the url of the specifier imported by Referrer, without loading it
-    v8::MaybeLocal<v8::Value> ResolveUrl(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer)
-    {
-        if (Records.find(MakeKey(EKind::Builtin, Specifier)) != Records.end())
-        {
-            return Str(Isolate, Specifier).As<v8::Value>();
-        }
-        PString CacheKey = MakeResolveKey('i', Referrer, Specifier);
-        auto CacheIt = ResolveCache.find(CacheKey);
-        if (CacheIt != ResolveCache.end() && Records.find(CacheIt->second) != Records.end())
-        {
-            return Str(Isolate, CacheIt->second.substr(1)).As<v8::Value>();
-        }
-        if (!EnsureHost(Context))
-        {
-            return v8::MaybeLocal<v8::Value>();
-        }
-        return CallHostResolve(Context, Specifier, Referrer, Str(Isolate, "import"));
-    }
-
-    // resolves and loads (compiles for esm, without evaluating) the module, returns nullptr with an exception thrown
-    FRecord* Resolve(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer, bool ByImport)
-    {
-        auto BuiltinIt = Records.find(MakeKey(EKind::Builtin, Specifier));
-        if (BuiltinIt != Records.end())
-        {
-            return BuiltinIt->second.get();
-        }
-
-        PString CacheKey = MakeResolveKey(ByImport ? 'i' : 'r', Referrer, Specifier);
-        auto CacheIt = ResolveCache.find(CacheKey);
-        if (CacheIt != ResolveCache.end())
-        {
-            auto It = Records.find(CacheIt->second);
-            if (It != Records.end())
+            v8::Local<v8::Value> Args[] = {Str(Isolate, Specifier), Str(Isolate, DirName(Referrer))};
+            v8::Local<v8::Value> Path;
+            if (!ResolveHook.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 2, Args).ToLocal(&Path))
             {
-                return It->second.get();
+                return false;
+            }
+            if (Path->IsString())
+            {
+                OutPath = ToPString(Isolate, Path);
+                return true;
             }
         }
-
-        if (!EnsureHost(Context))
+        if (StartsWith(Specifier, "./") || StartsWith(Specifier, "../"))
         {
-            return nullptr;
-        }
-
-        if (!ByImport && !FallbackRequire.IsEmpty() && !Specifier.empty() && Specifier[0] != '.' && Specifier[0] != '/')
-        {
-            // found by the fallback: kept as a builtin module of the name, so it is matched first next time
-            v8::TryCatch TryCatch(Isolate);
-            v8::Local<v8::Value> Arg = Str(Isolate, Specifier);
-            v8::Local<v8::Value> Exports;
-            if (FallbackRequire.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, &Arg).ToLocal(&Exports))
-            {
-                auto Record = AddRecord(EKind::Builtin, Specifier, Specifier);
-                Record->Value.Reset(Isolate, Exports);
-                return Record;
-            }
-        }
-
-        auto By = Str(Isolate, ByImport ? "import" : "require");
-        v8::Local<v8::Value> UrlValue;
-        if (!CallHostResolve(Context, Specifier, Referrer, By).ToLocal(&UrlValue))
-        {
-            return nullptr;
-        }
-        PString Url = ToStd(Isolate, UrlValue);
-
-        // registered by the host lazily
-        BuiltinIt = Records.find(MakeKey(EKind::Builtin, Url));
-        if (BuiltinIt != Records.end())
-        {
-            ResolveCache[CacheKey] = BuiltinIt->first;
-            return BuiltinIt->second.get();
-        }
-
-        // the kind is decided by the host loading it, the same (by, url) is loaded once
-        PString LoadKey = MakeKey(static_cast<EKind>(ByImport ? 'i' : 'r'), Url);
-        auto LoadIt = LoadCache.find(LoadKey);
-        if (LoadIt != LoadCache.end())
-        {
-            auto It = Records.find(LoadIt->second);
-            if (It != Records.end())
-            {
-                ResolveCache[CacheKey] = It->first;
-                return It->second.get();
-            }
-        }
-
-        v8::Local<v8::Value> LoadArgs[] = {UrlValue, By};
-        v8::Local<v8::Value> Loaded;
-        if (!HostLoad.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 2, LoadArgs).ToLocal(&Loaded))
-        {
-            return nullptr;
-        }
-        if (!Loaded->IsObject())
-        {
-            Throw(Isolate, "[Puer003] load " + Url + " failed");
-            return nullptr;
-        }
-        auto LoadedObj = Loaded.As<v8::Object>();
-        v8::Local<v8::Value> KindValue;
-        v8::Local<v8::Value> Content;
-        v8::Local<v8::Value> DebugPathValue;
-        if (!LoadedObj->Get(Context, Str(Isolate, "kind")).ToLocal(&KindValue) ||
-            !LoadedObj->Get(Context, Str(Isolate, "content")).ToLocal(&Content) ||
-            !LoadedObj->Get(Context, Str(Isolate, "debugPath")).ToLocal(&DebugPathValue))
-        {
-            return nullptr;
-        }
-        PString KindName = ToStd(Isolate, KindValue);
-        EKind Kind;
-        if (KindName == "esm")
-        {
-            Kind = EKind::Esm;
-        }
-        else if (KindName == "cjs")
-        {
-            Kind = EKind::Cjs;
-        }
-        else if (KindName == "json")
-        {
-            Kind = EKind::Json;
+            PString Dir = DirName(Referrer);
+            OutPath = Normalize(Dir.empty() ? Specifier : Dir + "/" + Specifier);
         }
         else
         {
-            Throw(Isolate, "[Puer003] load " + Url + " failed: invalid kind '" + KindName + "'");
+            OutPath = Normalize(Specifier);
+        }
+        return true;
+    }
+
+    // import.meta.resolve: the path of the specifier imported by Referrer (the name of a builtin module), without loading it
+    v8::MaybeLocal<v8::Value> ResolveUrl(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer)
+    {
+        if (FindRecord(EKind::Builtin, Specifier))
+        {
+            return Str(Isolate, Specifier).As<v8::Value>();
+        }
+        PString Path;
+        if (!ResolvePath(Context, Specifier, Referrer, Path))
+        {
+            return v8::MaybeLocal<v8::Value>();
+        }
+        return Str(Isolate, Path).As<v8::Value>();
+    }
+
+    // resolves and loads (compiles for esm, without evaluating) the module, returns nullptr with an exception thrown
+    FRecord* Resolve(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer)
+    {
+        if (auto Builtin = FindBuiltin(Context, Specifier))
+        {
+            return Builtin;
+        }
+
+        PString Path;
+        if (!ResolvePath(Context, Specifier, Referrer, Path))
+        {
             return nullptr;
         }
+
+        if (!EndsWith(Path, ".mjs") && !EndsWith(Path, ".mbc"))
+        {
+            // required by the require hook when imported (ModuleForImport)
+            if (auto Record = FindRecord(EKind::Synthetic, Path))
+            {
+                return Record;
+            }
+            return AddRecord(EKind::Synthetic, Path);
+        }
+
+        if (auto Record = FindRecord(EKind::Esm, Path))
+        {
+            return Record;
+        }
+        PString DebugPath;
+        pesapi_value ContentValue = LoadFile ? LoadFile(ToPapi(Context), Path.c_str(), DebugPath) : nullptr;
+        if (!ContentValue)
+        {
+            if (!Isolate->IsExecutionTerminating())
+            {
+                Throw(Isolate, Referrer.empty() ? "[Puer002] can not find module " + Path
+                                                : "[Puer002] can not find module " + Path + " imported by " + Referrer);
+            }
+            return nullptr;
+        }
+        auto Content = ToV8(ContentValue);
         if (!Content->IsString() && !Content->IsArrayBuffer())
         {
-            Throw(Isolate, "[Puer003] load " + Url + " failed: content must be a string or an ArrayBuffer");
+            Throw(Isolate, "[Puer003] load " + Path + " failed: content must be a string or an ArrayBuffer");
             return nullptr;
         }
-        PString DebugPath = DebugPathValue->IsString() ? ToStd(Isolate, DebugPathValue) : Url;
-
-        auto Key = MakeKey(Kind, Url);
-        auto ExistingIt = Records.find(Key);
-        if (ExistingIt != Records.end())
-        {
-            ResolveCache[CacheKey] = Key;
-            LoadCache[LoadKey] = Key;
-            return ExistingIt->second.get();
-        }
-
-        FRecord* Record = nullptr;
-        switch (Kind)
-        {
-            case EKind::Esm:
-                Record = FetchEsm(Context, Url, DebugPath, Content);
-                break;
-            case EKind::Cjs:
-                Record = AddRecord(Kind, Url, DebugPath);
-                Record->Content.Reset(Isolate, Content);
-                break;
-            default:
-            {
-                if (!Content->IsString())
-                {
-                    Throw(Isolate, "[Puer003] load " + Url + " failed: content of json must be a string");
-                    return nullptr;
-                }
-                v8::Local<v8::Value> Value;
-                if (!v8::JSON::Parse(Context, Content.As<v8::String>()).ToLocal(&Value))
-                {
-                    return nullptr;
-                }
-                Record = AddRecord(Kind, Url, DebugPath);
-                Record->Value.Reset(Isolate, Value);
-                break;
-            }
-        }
-        if (Record)
-        {
-            ResolveCache[CacheKey] = Key;
-            LoadCache[LoadKey] = Key;
-        }
-        return Record;
+        return FetchEsm(Context, Path, DebugPath.empty() ? Path : DebugPath, Content);
     }
 
 #if defined(WITH_V8_BYTECODE)
@@ -585,7 +515,8 @@ public:
             }
         }
 
-        auto Record = AddRecord(EKind::Esm, Url, DebugPath);
+        auto Record = AddRecord(EKind::Esm, Url);
+        DebugPathToUrl[DebugPath] = Url;
         BindModule(Record, Module);
 
 #if V8_MAJOR_VERSION >= 9
@@ -593,17 +524,17 @@ public:
         for (int i = 0, Length = ModuleRequests->Length(); i < Length; ++i)
         {
             auto Specifier =
-                ToStd(Isolate, ModuleRequests->Get(Context, i).As<v8::ModuleRequest>()->GetSpecifier().As<v8::Value>());
+                ToPString(Isolate, ModuleRequests->Get(Context, i).As<v8::ModuleRequest>()->GetSpecifier().As<v8::Value>());
 #else
         for (int i = 0, Length = Module->GetModuleRequestsLength(); i < Length; ++i)
         {
-            auto Specifier = ToStd(Isolate, Module->GetModuleRequest(i));
+            auto Specifier = ToPString(Isolate, Module->GetModuleRequest(i));
 #endif
             if (Record->Requests.find(Specifier) != Record->Requests.end())
             {
                 continue;
             }
-            auto Dep = Resolve(Context, Specifier, Url, true);
+            auto Dep = Resolve(Context, Specifier, Url);
             if (!Dep)
             {
                 return nullptr;
@@ -622,7 +553,7 @@ public:
     {
         auto Isolate = Context->GetIsolate();
         auto Loader = Get(Isolate);
-        auto Record = Loader->FindRecord(Module);
+        auto Record = Loader ? Loader->FindRecord(Module) : nullptr;
         if (!Record)
         {
             Throw(Isolate, "[Puer005] module record not found");
@@ -647,6 +578,42 @@ public:
         return v8::MaybeLocal<v8::Value>(v8::True(Isolate));
     }
 
+    // the exports of the file required by the require hook, the record is removed on failure
+    bool RequireSynthetic(v8::Local<v8::Context> Context, FRecord* Record)
+    {
+        if (!Record->Value.IsEmpty())
+        {
+            return true;
+        }
+        auto Key = Record->Key;
+        auto Url = Record->Url;
+        if (RequireHook.IsEmpty())
+        {
+            EraseRecord(Key);
+            Throw(Isolate, "[Puer001] can not import " + Url + ": the require hook is not set");
+            return false;
+        }
+        v8::Local<v8::Value> Arg = Str(Isolate, Url);
+        v8::Local<v8::Value> Exports;
+        if (!RequireHook.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, &Arg).ToLocal(&Exports))
+        {
+            EraseRecord(Key);
+            return false;
+        }
+        // the record may be released by the module required (a builtin module registered again is the only case)
+        auto It = Records.find(Key);
+        if (It == Records.end() || It->second.get() != Record)
+        {
+            Throw(Isolate, "[Puer005] module record not found: " + Url);
+            return false;
+        }
+        if (Record->Value.IsEmpty())
+        {
+            Record->Value.Reset(Isolate, Exports);
+        }
+        return true;
+    }
+
     // esm import of other kinds: a synthetic module, `default` is the value and its own properties are named exports
     v8::MaybeLocal<v8::Module> ModuleForImport(v8::Local<v8::Context> Context, FRecord* Record)
     {
@@ -658,26 +625,13 @@ public:
         Throw(Isolate, "V8_MAJOR_VERSION < 8 not support import [" + Record->Url + "] from ESM");
         return v8::MaybeLocal<v8::Module>();
 #else
-        if (Record->Kind == EKind::Cjs)
+        if (Record->Kind == EKind::Synthetic && !RequireSynthetic(Context, Record))
         {
-            auto Key = Record->Key;
-            v8::Local<v8::Value> Exports;
-            if (!Require(Context, Record).ToLocal(&Exports))
-            {
-                return v8::MaybeLocal<v8::Module>();
-            }
-            auto It = Records.find(Key);
-            if (It == Records.end())
-            {
-                Throw(Isolate, "[Puer005] module record not found: " + Key.substr(1));
-                return v8::MaybeLocal<v8::Module>();
-            }
-            Record = It->second.get();
-            if (!Record->Module.IsEmpty())
-            {
-                return Record->Module.Get(Isolate);
-            }
-            Record->Value.Reset(Isolate, Exports);
+            return v8::MaybeLocal<v8::Module>();
+        }
+        if (!Record->Module.IsEmpty())
+        {
+            return Record->Module.Get(Isolate);
         }
 
         auto Value = Record->Value.Get(Isolate);
@@ -723,8 +677,8 @@ public:
     {
         auto Isolate = Context->GetIsolate();
         auto Loader = Get(Isolate);
-        auto Record = Loader->FindRecord(Referrer);
-        auto Name = ToStd(Isolate, Specifier);
+        auto Record = Loader ? Loader->FindRecord(Referrer) : nullptr;
+        auto Name = ToPString(Isolate, Specifier);
         if (Record)
         {
             auto It = Record->Requests.find(Name);
@@ -749,7 +703,7 @@ public:
         }
         if (Module->GetStatus() == v8::Module::kEvaluating)
         {
-            // required by a module it imports (a cycle), the bindings not evaluated yet are in TDZ
+            // imported synchronously by a module it imports (a cycle), the bindings not evaluated yet are in TDZ
             return Module->GetModuleNamespace();
         }
         v8::Local<v8::Value> Result;
@@ -786,13 +740,44 @@ public:
         return Module->GetModuleNamespace();
     }
 
-    v8::MaybeLocal<v8::Function> CompileCjs(v8::Local<v8::Context> Context, FRecord* Record)
+    // synchronous import: the namespace of an esm, the value of the others
+    v8::MaybeLocal<v8::Value> ImportSync(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer)
     {
-        auto Content = Record->Content.Get(Isolate);
-        auto Origin = MakeOrigin(Isolate, Record->DebugPath, false);
+        FLoadScope Scope(this);
+        auto Record = Resolve(Context, Specifier, Referrer);
+        if (!Record)
+        {
+            return v8::MaybeLocal<v8::Value>();
+        }
+        v8::Local<v8::Value> Result;
+        if (Record->Kind == EKind::Esm)
+        {
+            if (!EvaluateEsm(Context, Record).ToLocal(&Result))
+            {
+                return v8::MaybeLocal<v8::Value>();
+            }
+        }
+        else
+        {
+            if (Record->Kind == EKind::Synthetic && !RequireSynthetic(Context, Record))
+            {
+                return v8::MaybeLocal<v8::Value>();
+            }
+            Result = Record->Value.Get(Isolate);
+        }
+        Scope.Succeeded = true;
+        return Result;
+    }
+
+    v8::MaybeLocal<v8::Function> CompileCjs(
+        v8::Local<v8::Context> Context, v8::Local<v8::Value> Content, const PString& DebugPath, const PString& Path)
+    {
+        auto Origin = MakeOrigin(Isolate, DebugPath, false);
+        // the dynamic imports in the module are relative to its path
+        DebugPathToUrl[DebugPath] = Path;
         if (Content->IsArrayBuffer())
         {
-            if (!IsBytecodeSupported(Record->Url))
+            if (!IsBytecodeSupported(Path))
             {
                 return v8::MaybeLocal<v8::Function>();
             }
@@ -807,7 +792,7 @@ public:
             }
             if (Source.GetCachedData()->rejected)
             {
-                Throw(Isolate, "invalid bytecode: " + Record->Url);
+                Throw(Isolate, "invalid bytecode: " + Path);
                 return v8::MaybeLocal<v8::Function>();
             }
             v8::Local<v8::Value> Func;
@@ -817,7 +802,7 @@ public:
             }
             if (!Func->IsFunction())
             {
-                Throw(Isolate, "invalid bytecode: " + Record->Url + " is not a commonjs module");
+                Throw(Isolate, "invalid bytecode: " + Path + " is not a commonjs module");
                 return v8::MaybeLocal<v8::Function>();
             }
             return Func.As<v8::Function>();
@@ -833,89 +818,6 @@ public:
 #endif
     }
 
-    static void RequireCallback(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-    {
-        const auto& V8Info = *reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(Info);
-        auto Isolate = V8Info.GetIsolate();
-        auto Context = Isolate->GetCurrentContext();
-        if (V8Info.Length() < 1 || !V8Info[0]->IsString())
-        {
-            Isolate->ThrowException(v8::Exception::TypeError(Str(Isolate, "the module name must be a string")));
-            return;
-        }
-        auto Referrer = static_cast<PString*>(Apis->get_userdata(Info));
-        auto Loader = Get(Isolate);
-        FLoadScope Scope(Loader);
-        auto Record = Loader->Resolve(Context, ToStd(Isolate, V8Info[0]), *Referrer, false);
-        v8::Local<v8::Value> Result;
-        if (Record && Loader->Require(Context, Record).ToLocal(&Result))
-        {
-            Scope.Succeeded = true;
-            V8Info.GetReturnValue().Set(Result);
-        }
-    }
-
-    static void RequireFinalize(struct pesapi_ffi* Apis, void* Data, void* EnvPrivate)
-    {
-        delete static_cast<PString*>(Data);
-    }
-
-    v8::MaybeLocal<v8::Function> NewRequire(v8::Local<v8::Context> Context, const PString& Referrer)
-    {
-        auto Data = new PString(Referrer);
-        auto Func = v8impl::g_pesapi_ffi.create_function(ToPapi(Context), &RequireCallback, Data, &RequireFinalize);
-        if (!Func)
-        {
-            delete Data;
-            return v8::MaybeLocal<v8::Function>();
-        }
-        return ToV8(Func).As<v8::Function>();
-    }
-
-    // require semantics: the value of the module, executes a cjs module on its first require
-    v8::MaybeLocal<v8::Value> Require(v8::Local<v8::Context> Context, FRecord* Record)
-    {
-        switch (Record->Kind)
-        {
-            case EKind::Esm:
-                return EvaluateEsm(Context, Record);
-            case EKind::Cjs:
-                break;
-            default:
-                return Record->Value.Get(Isolate);
-        }
-
-        auto ExportsName = Str(Isolate, "exports");
-        if (Record->Executed)
-        {
-            // loaded, or a cycle (the exports may be incomplete)
-            return Record->CjsModule.Get(Isolate)->Get(Context, ExportsName);
-        }
-        Record->Executed = true;
-
-        auto Key = Record->Key;
-        auto Module = v8::Object::New(Isolate);
-        auto Exports = v8::Object::New(Isolate);
-        v8::Local<v8::Function> Func;
-        v8::Local<v8::Function> RequireFunc;
-        v8::Local<v8::Value> Result;
-        if (Module->Set(Context, ExportsName, Exports).FromMaybe(false) && CompileCjs(Context, Record).ToLocal(&Func) &&
-            NewRequire(Context, Record->Url).ToLocal(&RequireFunc))
-        {
-            Record->Content.Reset();
-            Record->CjsModule.Reset(Isolate, Module);
-            auto Url = Record->Url;
-            v8::Local<v8::Value> Args[] = {Exports, RequireFunc, Module, Str(Isolate, Url), Str(Isolate, DirName(Url))};
-            if (Func->Call(Context, Exports, 5, Args).ToLocal(&Result) && Module->Get(Context, ExportsName).ToLocal(&Result))
-            {
-                return Result;
-            }
-        }
-        // removed so a later require loads it again
-        EraseRecord(Key);
-        return v8::MaybeLocal<v8::Value>();
-    }
-
     static void ReturnData(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         Info.GetReturnValue().Set(Info.Data());
@@ -925,7 +827,7 @@ public:
     v8::MaybeLocal<v8::Value> Import(v8::Local<v8::Context> Context, const PString& Specifier, const PString& Referrer)
     {
         FLoadScope Scope(this);
-        auto Record = Resolve(Context, Specifier, Referrer, true);
+        auto Record = Resolve(Context, Specifier, Referrer);
         v8::Local<v8::Module> Module;
         if (!Record || !ModuleForImport(Context, Record).ToLocal(&Module))
         {
@@ -1017,11 +919,11 @@ public:
         Import->Isolate = Isolate;
         Import->Context.Reset(Isolate, Context);
         Import->Resolver.Reset(Isolate, Resolver);
-        Import->Specifier = ToStd(Isolate, Specifier);
+        Import->Specifier = ToPString(Isolate, Specifier);
         // a script not loaded as a module (the bootstrap scripts, eval) imports relative to the root
         if (!ResourceName.IsEmpty() && ResourceName->IsString())
         {
-            auto It = Loader->DebugPathToUrl.find(ToStd(Isolate, ResourceName));
+            auto It = Loader->DebugPathToUrl.find(ToPString(Isolate, ResourceName));
             if (It != Loader->DebugPathToUrl.end())
             {
                 Import->Referrer = It->second;
@@ -1065,13 +967,13 @@ static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
         auto Referrer = static_cast<PString*>(Apis->get_userdata(Info));
         auto Loader = Get(Isolate);
         v8::Local<v8::Value> Url;
-        if (Loader && Loader->ResolveUrl(Context, ToStd(Isolate, V8Info[0]), *Referrer).ToLocal(&Url))
+        if (Loader && Loader->ResolveUrl(Context, ToPString(Isolate, V8Info[0]), *Referrer).ToLocal(&Url))
         {
             V8Info.GetReturnValue().Set(Url);
         }
     }
 
-    // import.meta: url (the url given by the host) and resolve(specifier)
+    // import.meta: url (the path of the module) and resolve(specifier)
     static void HostInitializeImportMeta(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> Meta)
     {
         auto Isolate = Context->GetIsolate();
@@ -1083,7 +985,7 @@ static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
         }
         (void) Meta->CreateDataProperty(Context, Str(Isolate, "url"), Str(Isolate, Record->Url));
         auto Data = new PString(Record->Url);
-        auto Func = v8impl::g_pesapi_ffi.create_function(ToPapi(Context), &MetaResolveCallback, Data, &RequireFinalize);
+        auto Func = v8impl::g_pesapi_ffi.create_function(ToPapi(Context), &MetaResolveCallback, Data, &FinalizePString);
         if (!Func)
         {
             delete Data;
@@ -1093,10 +995,10 @@ static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
     }
 };
 
-FModuleLoader* CreateModuleLoader(pesapi_env Env)
+FModuleLoader* CreateModuleLoader(pesapi_env Env, FLoadFileFunc LoadFile, FLoadAddonFunc LoadAddon)
 {
     auto Isolate = ToV8(Env)->GetIsolate();
-    auto Loader = new FModuleLoader(Isolate);
+    auto Loader = new FModuleLoader(Isolate, std::move(LoadFile), std::move(LoadAddon));
     Isolate->SetData(PUERTS_MODULE_LOADER_DATA_POS_IN_ISOLATE, Loader);
     Isolate->SetHostImportModuleDynamicallyCallback(&FModuleLoader::HostImportModuleDynamically);
     Isolate->SetHostInitializeImportMetaObjectCallback(&FModuleLoader::HostInitializeImportMeta);
@@ -1112,53 +1014,73 @@ void DestroyModuleLoader(FModuleLoader* Loader)
     }
 }
 
-pesapi_value ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport)
+pesapi_value ImportModule(pesapi_env Env, const char* Specifier, const char* Referrer)
 {
     auto Context = ToV8(Env);
     auto Loader = FModuleLoader::Get(Context->GetIsolate());
-    FModuleLoader::FLoadScope Scope(Loader);
-    auto Record = Loader->Resolve(Context, Specifier, Referrer ? Referrer : "", ByImport);
+    if (!Loader)
+    {
+        Throw(Context->GetIsolate(), "[Puer001] the module loader is destroyed");
+        return nullptr;
+    }
     v8::Local<v8::Value> Result;
-    if (!Record || !Loader->Require(Context, Record).ToLocal(&Result))
+    if (!Loader->ImportSync(Context, Specifier, Referrer ? Referrer : "").ToLocal(&Result))
     {
         return nullptr;
     }
-    Scope.Succeeded = true;
     return ToPapi(Result);
-}
-
-pesapi_value CreateRequire(pesapi_env Env, const char* Referrer)
-{
-    auto Context = ToV8(Env);
-    auto Loader = FModuleLoader::Get(Context->GetIsolate());
-    v8::Local<v8::Function> Func;
-    if (!Loader->NewRequire(Context, Referrer ? Referrer : "").ToLocal(&Func))
-    {
-        return nullptr;
-    }
-    return ToPapi(Func.As<v8::Value>());
 }
 
 void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value)
 {
     auto Context = ToV8(Env);
     auto Loader = FModuleLoader::Get(Context->GetIsolate());
-    auto Key = MakeKey(EKind::Builtin, Name);
-    Loader->EraseRecord(Key);
-    auto Record = Loader->AddRecord(EKind::Builtin, Name, Name);
+    Loader->EraseRecord(MakeKey(EKind::Builtin, Name));
+    auto Record = Loader->AddRecord(EKind::Builtin, Name);
     Record->Value.Reset(Loader->Isolate, ToV8(Value));
 }
 
-void SetFallbackRequire(pesapi_env Env, pesapi_value Require)
+pesapi_value GetBuiltinModule(pesapi_env Env, const char* Name)
+{
+    auto Context = ToV8(Env);
+    auto Loader = FModuleLoader::Get(Context->GetIsolate());
+    auto Record = Loader ? Loader->FindRecord(EKind::Builtin, Name) : nullptr;
+    return Record ? ToPapi(Record->Value.Get(Loader->Isolate)) : nullptr;
+}
+
+void SetHooks(pesapi_env Env, pesapi_value Require, pesapi_value Resolve)
 {
     auto Loader = FModuleLoader::Get(ToV8(Env)->GetIsolate());
-    auto Value = ToV8(Require);
-    if (Value.IsEmpty() || !Value->IsFunction())
+    auto RequireValue = Require ? ToV8(Require) : v8::Local<v8::Value>();
+    auto ResolveValue = Resolve ? ToV8(Resolve) : v8::Local<v8::Value>();
+    if (!RequireValue.IsEmpty() && RequireValue->IsFunction())
     {
-        Loader->FallbackRequire.Reset();
-        return;
+        Loader->RequireHook.Reset(Loader->Isolate, RequireValue.As<v8::Function>());
     }
-    Loader->FallbackRequire.Reset(Loader->Isolate, Value.As<v8::Function>());
+    else
+    {
+        Loader->RequireHook.Reset();
+    }
+    if (!ResolveValue.IsEmpty() && ResolveValue->IsFunction())
+    {
+        Loader->ResolveHook.Reset(Loader->Isolate, ResolveValue.As<v8::Function>());
+    }
+    else
+    {
+        Loader->ResolveHook.Reset();
+    }
+}
+
+pesapi_value CompileCjs(pesapi_env Env, pesapi_value Content, const char* DebugPath, const char* Path)
+{
+    auto Context = ToV8(Env);
+    auto Loader = FModuleLoader::Get(Context->GetIsolate());
+    v8::Local<v8::Function> Func;
+    if (!Loader->CompileCjs(Context, ToV8(Content), DebugPath, Path).ToLocal(&Func))
+    {
+        return nullptr;
+    }
+    return ToPapi(Func.As<v8::Value>());
 }
 
 void SetCodeCacheExpect(pesapi_env Env, uint32_t FlagHash, uint32_t ReadOnlySnapshotChecksum)

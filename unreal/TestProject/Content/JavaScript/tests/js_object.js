@@ -2,7 +2,7 @@
 // FJsObject: a USTRUCT holding a js object, passed through reflection (property / param / return value) and the template
 // binding, accessed from C++ with Get / Set / Func / Action. Access after the env is destroyed is covered by
 // FPuertsTest_JsObject in C++ (the holder is kept in reporter.Holder).
-const { UE, reporter, test, step, eq, assert, run } = require('./framework');
+const { UE, reporter, test, step, eq, assert, run } = require('./framework.js');
 const cpp = require('cpp');
 const C = cpp.FPuertsTestCppClass;
 const state = {};

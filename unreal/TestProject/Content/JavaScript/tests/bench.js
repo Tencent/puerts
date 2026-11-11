@@ -1,6 +1,6 @@
 'use strict';
 // Micro benchmarks for the paths affected by the papi migration. Results in ns/op.
-const { UE, puerts, reporter, test, eq, run } = require('./framework');
+const { UE, puerts, reporter, test, eq, run } = require('./framework.js');
 const Now = UE.PuertsTestReporter.NowSeconds;
 const cpp = require('cpp');
 

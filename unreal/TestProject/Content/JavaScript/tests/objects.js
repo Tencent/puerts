@@ -1,7 +1,7 @@
 'use strict';
 // UE.NewObject / UE.NewStruct / UE.MakeWeakObjectPtr / puerts.setJsTakeRef.
 // Guards M5 (object creation global functions on papi).
-const { UE, test, step, eq, assert, note, observe, catchError, run } = require('./framework');
+const { UE, test, step, eq, assert, note, observe, catchError, run } = require('./framework.js');
 const puerts = require('puerts');
 const Reporter = UE.PuertsTestReporter;
 

@@ -9,7 +9,6 @@
 #include "PapiQjsModuleLoader.h"
 #include "QjsPapiData.h"
 #include "quickjs.h"
-#include "PString.h"
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -26,9 +25,9 @@ namespace
 enum class EKind : char
 {
     Esm = 'e',
-    Cjs = 'c',
-    Json = 'j',
-    Builtin = 'b'
+    Builtin = 'b',
+    // a file other than esm imported, required by the require hook
+    Synthetic = 's'
 };
 
 struct FRecord
@@ -36,19 +35,15 @@ struct FRecord
     EKind Kind;
     PString Key;
     PString Url;
-    PString DebugPath;
     // the name quickjs finds the module by
     PString Name;
     // esm: the compiled module; others: the C module created when imported by an esm
     JSModuleDef* Module = nullptr;
-    // cjs: the source, released once executed
-    PString Content;
-    JSValue CjsModule = JS_UNDEFINED;
-    // json / builtin: the value; cjs: module.exports when the C module is created
+    // builtin: the value; synthetic: the exports, set when required
     JSValue Value = JS_UNDEFINED;
+    bool HasValue = false;
     // the C module: the named exports (own properties of Value when it is created)
     std::vector<PString> ExportNames;
-    bool Executed = false;
 };
 
 PString MakeKey(EKind Kind, const PString& Url)
@@ -56,17 +51,6 @@ PString MakeKey(EKind Kind, const PString& Url)
     PString Key;
     Key += static_cast<char>(Kind);
     Key += Url;
-    return Key;
-}
-
-// by + referrer + '\0' + specifier
-PString MakeResolveKey(char By, const PString& Referrer, const PString& Specifier)
-{
-    PString Key;
-    Key += By;
-    Key += Referrer;
-    Key += '\0';
-    Key += Specifier;
     return Key;
 }
 
@@ -81,6 +65,72 @@ PString DirName(const PString& Url)
 {
     auto Pos = Url.find_last_of("/\\");
     return Pos == PString::npos ? PString() : Url.substr(0, Pos);
+}
+
+// joins the segments of Path ('/' or '\\' separated), removes the empty and "." segments and resolves ".."
+PString Normalize(const PString& Path)
+{
+    PString Ret;
+    size_t Start = 0;
+    const size_t Size = Path.size();
+    for (size_t i = 0; i <= Size; ++i)
+    {
+        if (i < Size && Path[i] != '/' && Path[i] != '\\')
+        {
+            continue;
+        }
+        PString Segment = Path.substr(Start, i - Start);
+        Start = i + 1;
+        if (Segment.empty() || Segment == ".")
+        {
+            continue;
+        }
+        if (Segment == "..")
+        {
+            auto Pos = Ret.find_last_of("/");
+            PString Last = Pos == PString::npos ? Ret : Ret.substr(Pos + 1);
+            if (!Ret.empty() && Last != "..")
+            {
+                Ret.resize(Pos == PString::npos ? 0 : Pos);
+                continue;
+            }
+        }
+        if (!Ret.empty())
+        {
+            Ret += '/';
+        }
+        Ret += Segment;
+    }
+    return Ret;
+}
+
+bool StartsWith(const PString& S, const char* Prefix)
+{
+    size_t Len = strlen(Prefix);
+    return S.size() >= Len && memcmp(S.c_str(), Prefix, Len) == 0;
+}
+
+bool EndsWith(const PString& S, const char* Suffix)
+{
+    size_t Len = strlen(Suffix);
+    return S.size() >= Len && memcmp(S.c_str() + S.size() - Len, Suffix, Len) == 0;
+}
+
+// a name of a builtin module (or an addon): no '.' and '/'
+bool IsBareName(const PString& S)
+{
+    if (S.empty())
+    {
+        return false;
+    }
+    for (size_t i = 0; i < S.size(); ++i)
+    {
+        if (S[i] == '.' || S[i] == '/' || S[i] == '\\')
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 PString ToStd(JSContext* Ctx, JSValueConst Value)
@@ -130,6 +180,7 @@ void RunPendingJobs(JSContext* Ctx)
     }
 }
 
+// takes the ownership of Value, the result lives in the current scope
 pesapi_value ToPesapi(JSContext* Ctx, JSValue Value)
 {
     auto Scope = qjsimpl::getCurrentScope(Ctx);
@@ -141,6 +192,11 @@ pesapi_value ToPesapi(JSContext* Ctx, JSValue Value)
     JSValue* Ret = Scope->allocValue();
     *Ret = Value;
     return reinterpret_cast<pesapi_value>(Ret);
+}
+
+inline JSValueConst ToQjs(pesapi_value Value)
+{
+    return Value ? *reinterpret_cast<JSValue*>(Value) : JS_UNDEFINED;
 }
 
 const char* const DestroyedMessage = "[Puer001] the module loader is destroyed";
@@ -165,7 +221,8 @@ static FModuleLoader* FindLoader(JSContext* Ctx)
 class FModuleLoader
 {
 public:
-    explicit FModuleLoader(JSContext* InCtx) : Ctx(InCtx)
+    FModuleLoader(JSContext* InCtx, FLoadFileFunc InLoadFile, FLoadAddonFunc InLoadAddon)
+        : Ctx(InCtx), LoadFile(std::move(InLoadFile)), LoadAddon(std::move(InLoadAddon))
     {
     }
 
@@ -173,17 +230,21 @@ public:
     {
         for (auto& Pair : Records)
         {
-            JS_FreeValue(Ctx, Pair.second->CjsModule);
             JS_FreeValue(Ctx, Pair.second->Value);
         }
         Records.clear();
-        JS_FreeValue(Ctx, HostResolve);
-        JS_FreeValue(Ctx, HostLoad);
+        JS_FreeValue(Ctx, RequireHook);
+        JS_FreeValue(Ctx, ResolveHook);
     }
 
     JSContext* const Ctx;
+    FLoadFileFunc LoadFile;
+    FLoadAddonFunc LoadAddon;
+    // see SetHooks
+    JSValue RequireHook = JS_UNDEFINED;
+    JSValue ResolveHook = JS_UNDEFINED;
 
-    // the esm records of a failed load are removed (the modules which are not evaluated)
+    // the records added in a load are rolled back when it fails, so a later load of the same module can retry
     struct FLoadScope
     {
         explicit FLoadScope(FModuleLoader* InLoader) : Loader(InLoader), Start(InLoader->AddedKeys.size())
@@ -214,34 +275,48 @@ public:
         return Iter == Records.end() ? nullptr : Iter->second.get();
     }
 
+    FRecord* FindRecord(EKind Kind, const PString& Url)
+    {
+        return FindRecord(MakeKey(Kind, Url));
+    }
+
     FRecord* AddRecord(EKind Kind, const PString& Url, const PString& DebugPath)
     {
         auto Record = std::unique_ptr<FRecord>(new FRecord());
         Record->Kind = Kind;
         Record->Key = MakeKey(Kind, Url);
         Record->Url = Url;
-        Record->DebugPath = DebugPath;
-        const PString& ScriptName = DebugPath.empty() ? Url : DebugPath;
         if (Kind == EKind::Esm)
         {
-            Record->Name = ScriptName;
+            Record->Name = DebugPath.empty() ? Url : DebugPath;
+            ScriptToUrl[Record->Name] = Url;
         }
         else
         {
             Record->Name = "<" + MakeKey(Kind, "#") + ToPString(++Gen) + ">" + Url;
         }
-        if (Kind == EKind::Esm || Kind == EKind::Cjs)
-        {
-            ScriptToUrl[ScriptName] = Url;
-        }
         NameToKey[Record->Name] = Record->Key;
-        if (LoadDepth > 0)
+        if (LoadDepth > 0 && Kind == EKind::Esm)
         {
             AddedKeys.push_back(Record->Key);
         }
         auto Ret = Record.get();
         Records[Record->Key] = std::move(Record);
         return Ret;
+    }
+
+    void UnbindModule(FRecord* Record)
+    {
+        if (!Record->Module)
+        {
+            return;
+        }
+        auto ModuleIter = ModuleToKey.find(Record->Module);
+        if (ModuleIter != ModuleToKey.end() && ModuleIter->second == Record->Key)
+        {
+            ModuleToKey.erase(ModuleIter);
+        }
+        Record->Module = nullptr;
     }
 
     bool EraseRecord(const PString& Key)
@@ -252,36 +327,17 @@ public:
             return false;
         }
         FRecord* Record = Iter->second.get();
-        if (Record->Module)
+        // a module may be freed by quickjs (JS_ResolveModule frees the modules which are not resolved on failure)
+        if (Record->Kind == EKind::Esm && Record->Module && JS_IsLoadedModule(Ctx, Record->Module))
         {
-            auto ModuleIter = ModuleToKey.find(Record->Module);
-            if (ModuleIter != ModuleToKey.end() && ModuleIter->second == Key)
-            {
-                ModuleToKey.erase(ModuleIter);
-                // a module may be freed by quickjs (JS_ResolveModule frees the modules which are not resolved on failure)
-                if (Record->Kind == EKind::Esm && JS_IsLoadedModule(Ctx, Record->Module))
-                {
-                    JS_RenameModule(Ctx, Record->Module, ("<discarded#" + ToPString(++Gen) + ">" + Record->Name).c_str());
-                }
-            }
+            JS_RenameModule(Ctx, Record->Module, ("<discarded#" + ToPString(++Gen) + ">" + Record->Name).c_str());
         }
+        UnbindModule(Record);
         auto NameIter = NameToKey.find(Record->Name);
         if (NameIter != NameToKey.end() && NameIter->second == Key)
         {
             NameToKey.erase(NameIter);
         }
-        for (auto LoadIter = LoadCache.begin(); LoadIter != LoadCache.end();)
-        {
-            if (LoadIter->second == Key)
-            {
-                LoadIter = LoadCache.erase(LoadIter);
-            }
-            else
-            {
-                ++LoadIter;
-            }
-        }
-        JS_FreeValue(Ctx, Record->CjsModule);
         JS_FreeValue(Ctx, Record->Value);
         Records.erase(Iter);
         return true;
@@ -291,261 +347,162 @@ public:
     {
         for (size_t I = AddedKeys.size(); I > Start; --I)
         {
-            const PString& Key = AddedKeys[I - 1];
+            const PString Key = AddedKeys[I - 1];
             FRecord* Record = FindRecord(Key);
             // an esm which is not evaluated, or whose evaluation threw (quickjs keeps it as evaluated with the exception,
             // v8 drops an errored module), is discarded so a retry loads it again
-            if (Record && Record->Kind == EKind::Esm &&
-                (!Record->Module || !JS_IsLoadedModule(Ctx, Record->Module) ||
-                    JS_GetModuleStatus(Record->Module) != ModuleStatusEvaluated || JS_ModuleHasException(Record->Module)))
+            if (Record && (!Record->Module || !JS_IsLoadedModule(Ctx, Record->Module) ||
+                              JS_GetModuleStatus(Record->Module) != ModuleStatusEvaluated || JS_ModuleHasException(Record->Module)))
             {
                 EraseRecord(Key);
             }
         }
         AddedKeys.resize(Start);
-    }
-
-    bool EnsureHost()
-    {
-        if (JS_IsFunction(Ctx, HostResolve) && JS_IsFunction(Ctx, HostLoad))
+        // the C modules freed by quickjs (not resolved) are created again when imported next time
+        for (auto& Pair : Records)
         {
-            return true;
-        }
-        JSValue Global = JS_GetGlobalObject(Ctx);
-        JSValue Resolve = JS_GetPropertyStr(Ctx, Global, "__puer_host_resolve__");
-        JSValue Load = JS_GetPropertyStr(Ctx, Global, "__puer_host_load__");
-        if (JS_IsFunction(Ctx, Resolve) && JS_IsFunction(Ctx, Load))
-        {
-            HostResolve = Resolve;
-            HostLoad = Load;
-            for (const char* Name : {"__puer_host_resolve__", "__puer_host_load__"})
+            FRecord* Record = Pair.second.get();
+            if (Record->Kind != EKind::Esm && Record->Module && !JS_IsLoadedModule(Ctx, Record->Module))
             {
-                JSAtom Atom = JS_NewAtom(Ctx, Name);
-                JS_DeleteProperty(Ctx, Global, Atom, 0);
-                JS_FreeAtom(Ctx, Atom);
+                UnbindModule(Record);
             }
-            JS_FreeValue(Ctx, Global);
-            return true;
         }
-        JS_FreeValue(Ctx, Resolve);
-        JS_FreeValue(Ctx, Load);
-        JS_FreeValue(Ctx, Global);
-        if (JS_HasException(Ctx))
-        {
-            JS_FreeValue(Ctx, JS_GetException(Ctx));
-        }
-        Throw(Ctx, "[Puer001] __puer_host_resolve__ or __puer_host_load__ is not registered");
-        return false;
     }
 
-    bool CallHostResolve(const PString& Specifier, const PString& Referrer, const char* By, PString& OutUrl)
+    // the builtin module of the name, an addon is loaded on its first use
+    FRecord* FindBuiltin(const PString& Name)
     {
-        JSValue Args[] = {NewStr(Ctx, Specifier), NewStr(Ctx, Referrer), JS_NewString(Ctx, By)};
-        JSValue Ret = JS_Call(Ctx, HostResolve, JS_UNDEFINED, 3, Args);
-        for (auto& Arg : Args)
+        FRecord* Record = FindRecord(EKind::Builtin, Name);
+        if (!Record && LoadAddon && IsBareName(Name))
         {
-            JS_FreeValue(Ctx, Arg);
+            bool Loaded;
+            {
+                qjsimpl::pesapi_scope__ Scope(Ctx);
+                Loaded = LoadAddon(reinterpret_cast<pesapi_env>(Ctx), Name.c_str());
+            }
+            if (Loaded)
+            {
+                Record = FindRecord(EKind::Builtin, Name);
+            }
         }
-        if (JS_IsException(Ret))
+        return Record;
+    }
+
+    // the path of the specifier by the resolve hook (called with the directory of the referrer) or the default rules, false
+    // with an exception thrown
+    bool ResolvePath(const PString& Specifier, const PString& Referrer, PString& OutPath)
+    {
+        if (JS_IsFunction(Ctx, ResolveHook))
         {
-            return false;
+            JSValue Args[] = {NewStr(Ctx, Specifier), NewStr(Ctx, DirName(Referrer))};
+            JSValue Path = JS_Call(Ctx, ResolveHook, JS_UNDEFINED, 2, Args);
+            JS_FreeValue(Ctx, Args[0]);
+            JS_FreeValue(Ctx, Args[1]);
+            if (JS_IsException(Path))
+            {
+                return false;
+            }
+            const bool IsString = JS_IsString(Path) != 0;
+            if (IsString)
+            {
+                OutPath = ToStd(Ctx, Path);
+            }
+            JS_FreeValue(Ctx, Path);
+            if (IsString)
+            {
+                return true;
+            }
         }
-        if (!JS_IsString(Ret))
+        if (StartsWith(Specifier, "./") || StartsWith(Specifier, "../"))
         {
-            JS_FreeValue(Ctx, Ret);
-            Throw(Ctx, "[Puer002] import " + Specifier + " failed: module not found");
-            return false;
+            PString Dir = DirName(Referrer);
+            OutPath = Normalize(Dir.empty() ? Specifier : Dir + "/" + Specifier);
         }
-        OutUrl = ToStd(Ctx, Ret);
-        JS_FreeValue(Ctx, Ret);
+        else
+        {
+            OutPath = Normalize(Specifier);
+        }
         return true;
     }
 
-    // the url of the specifier for import.meta.resolve, the module is not loaded
+    // import.meta.resolve: the path of the specifier imported by Referrer (the name of a builtin module), without loading it
     bool ResolveUrl(const PString& Specifier, const PString& Referrer, PString& OutUrl)
     {
-        if (FindRecord(MakeKey(EKind::Builtin, Specifier)))
+        if (FindRecord(EKind::Builtin, Specifier))
         {
             OutUrl = Specifier;
             return true;
         }
-        PString CacheKey = MakeResolveKey('i', Referrer, Specifier);
-        auto Iter = ResolveCache.find(CacheKey);
-        if (Iter != ResolveCache.end())
-        {
-            OutUrl = Iter->second;
-            return true;
-        }
-        if (!EnsureHost() || !CallHostResolve(Specifier, Referrer, "import", OutUrl))
-        {
-            return false;
-        }
-        ResolveCache[CacheKey] = OutUrl;
-        return true;
+        return ResolvePath(Specifier, Referrer, OutUrl);
     }
 
-    FRecord* Resolve(const PString& Specifier, const PString& Referrer, bool ByImport)
+    // resolves and loads (compiles for esm, without evaluating) the module, returns nullptr with an exception thrown
+    FRecord* Resolve(const PString& Specifier, const PString& Referrer)
     {
-        if (FRecord* Builtin = FindRecord(MakeKey(EKind::Builtin, Specifier)))
+        if (FRecord* Builtin = FindBuiltin(Specifier))
         {
             return Builtin;
         }
-        const char ByChar = ByImport ? 'i' : 'r';
-        const char* By = ByImport ? "import" : "require";
-        PString CacheKey = MakeResolveKey(ByChar, Referrer, Specifier);
-        PString Url;
-        auto ResolveIter = ResolveCache.find(CacheKey);
-        if (ResolveIter != ResolveCache.end())
-        {
-            Url = ResolveIter->second;
-        }
-        else
-        {
-            if (!EnsureHost() || !CallHostResolve(Specifier, Referrer, By, Url))
-            {
-                return nullptr;
-            }
-            ResolveCache[CacheKey] = Url;
-        }
-        if (FRecord* Builtin = FindRecord(MakeKey(EKind::Builtin, Url)))
-        {
-            return Builtin;
-        }
-        PString LoadKey = MakeKey(static_cast<EKind>(ByChar), Url);
-        auto LoadIter = LoadCache.find(LoadKey);
-        if (LoadIter != LoadCache.end())
-        {
-            if (FRecord* Cached = FindRecord(LoadIter->second))
-            {
-                return Cached;
-            }
-        }
-        if (!EnsureHost())
+
+        PString Path;
+        if (!ResolvePath(Specifier, Referrer, Path))
         {
             return nullptr;
         }
 
-        JSValue Args[] = {NewStr(Ctx, Url), JS_NewString(Ctx, By)};
-        JSValue Loaded = JS_Call(Ctx, HostLoad, JS_UNDEFINED, 2, Args);
-        JS_FreeValue(Ctx, Args[0]);
-        JS_FreeValue(Ctx, Args[1]);
-        if (JS_IsException(Loaded))
+        if (!EndsWith(Path, ".mjs") && !EndsWith(Path, ".mbc"))
         {
-            return nullptr;
-        }
-        if (!JS_IsObject(Loaded))
-        {
-            JS_FreeValue(Ctx, Loaded);
-            Throw(Ctx, "[Puer003] load " + Url + " failed");
-            return nullptr;
-        }
-        JSValue KindValue = JS_GetPropertyStr(Ctx, Loaded, "kind");
-        JSValue Content = JS_GetPropertyStr(Ctx, Loaded, "content");
-        JSValue DebugPathValue = JS_GetPropertyStr(Ctx, Loaded, "debugPath");
-        JS_FreeValue(Ctx, Loaded);
-        struct FValues
-        {
-            JSContext* Ctx;
-            JSValue* Values[3];
-            ~FValues()
+            // required by the require hook when imported (ModuleForImport)
+            if (FRecord* Record = FindRecord(EKind::Synthetic, Path))
             {
-                for (auto Value : Values)
-                {
-                    JS_FreeValue(Ctx, *Value);
-                }
+                return Record;
             }
-        } Holder{Ctx, {&KindValue, &Content, &DebugPathValue}};
-        if (JS_IsException(KindValue) || JS_IsException(Content) || JS_IsException(DebugPathValue))
-        {
-            return nullptr;
+            return AddRecord(EKind::Synthetic, Path, "");
         }
 
-        PString KindName = ToStd(Ctx, KindValue);
-        EKind Kind;
-        if (KindName == "esm")
+        if (FRecord* Record = FindRecord(EKind::Esm, Path))
         {
-            Kind = EKind::Esm;
+            return Record;
         }
-        else if (KindName == "cjs")
+        PString DebugPath;
+        JSValue Content = JS_UNDEFINED;
+        bool Found = false;
+        if (LoadFile)
         {
-            Kind = EKind::Cjs;
-        }
-        else if (KindName == "json")
-        {
-            Kind = EKind::Json;
-        }
-        else
-        {
-            Throw(Ctx, "[Puer003] load " + Url + " failed: invalid kind '" + KindName + "'");
-            return nullptr;
-        }
-        const bool IsString = JS_IsString(Content) != 0;
-        if (!IsString && !JS_IsArrayBuffer(Content))
-        {
-            Throw(Ctx, "[Puer003] load " + Url + " failed: content must be a string or an ArrayBuffer");
-            return nullptr;
-        }
-        PString DebugPath = JS_IsString(DebugPathValue) ? ToStd(Ctx, DebugPathValue) : PString();
-
-        PString Key = MakeKey(Kind, Url);
-        if (FRecord* Existing = FindRecord(Key))
-        {
-            LoadCache[LoadKey] = Key;
-            return Existing;
-        }
-
-        FRecord* Record = nullptr;
-        switch (Kind)
-        {
-            case EKind::Esm:
-                if (!IsString)
-                {
-                    Throw(Ctx, "[Puer003] load " + Url + " failed: bytecode is not supported");
-                    return nullptr;
-                }
-                Record = FetchEsm(Url, DebugPath, ToStd(Ctx, Content));
-                if (!Record)
-                {
-                    return nullptr;
-                }
-                break;
-            case EKind::Cjs:
-                if (!IsString)
-                {
-                    Throw(Ctx, "[Puer003] load " + Url + " failed: bytecode is not supported");
-                    return nullptr;
-                }
-                Record = AddRecord(EKind::Cjs, Url, DebugPath);
-                Record->Content = ToStd(Ctx, Content);
-                break;
-            default:
+            qjsimpl::pesapi_scope__ Scope(Ctx);
+            pesapi_value Value = LoadFile(reinterpret_cast<pesapi_env>(Ctx), Path.c_str(), DebugPath);
+            if (Value)
             {
-                if (!IsString)
-                {
-                    Throw(Ctx, "[Puer003] load " + Url + " failed: content of json must be a string");
-                    return nullptr;
-                }
-                PString Text = ToStd(Ctx, Content);
-                const PString& FileName = DebugPath.empty() ? Url : DebugPath;
-                JSValue Value = JS_ParseJSON(Ctx, Text.c_str(), Text.size(), FileName.c_str());
-                if (JS_IsException(Value))
-                {
-                    return nullptr;
-                }
-                Record = AddRecord(EKind::Json, Url, DebugPath);
-                Record->Value = Value;
-                break;
+                Content = JS_DupValue(Ctx, ToQjs(Value));
+                Found = true;
             }
         }
-        LoadCache[LoadKey] = Key;
-        return Record;
+        if (!Found)
+        {
+            if (!JS_HasException(Ctx))
+            {
+                Throw(Ctx, Referrer.empty() ? "[Puer002] can not find module " + Path
+                                            : "[Puer002] can not find module " + Path + " imported by " + Referrer);
+            }
+            return nullptr;
+        }
+        if (!JS_IsString(Content))
+        {
+            const bool IsBytecode = JS_IsArrayBuffer(Content) != 0;
+            JS_FreeValue(Ctx, Content);
+            Throw(Ctx, IsBytecode ? "[Puer003] load " + Path + " failed: bytecode is not supported"
+                                  : "[Puer003] load " + Path + " failed: content must be a string");
+            return nullptr;
+        }
+        PString Source = ToStd(Ctx, Content);
+        JS_FreeValue(Ctx, Content);
+        return FetchEsm(Path, DebugPath, Source);
     }
 
     FRecord* FetchEsm(const PString& Url, const PString& DebugPath, const PString& Source)
     {
-        // quickjs resolves the imports while compiling a module (JS_Eval calls the normalize / loader hooks), so the
-        // record is added first: the hooks find the referrer url by the module name, and a cycle back to this module
-        // finds the record (quickjs finds the module itself by name)
+        // quickjs resolves the imports through the normalize / loader hooks, so the record is added first: the hooks find the
+        // referrer url by the module name, and a cycle back to this module finds the record (quickjs finds the module by name)
         FRecord* Record = AddRecord(EKind::Esm, Url, DebugPath);
         const PString Name = Record->Name;
         JSValue Compiled =
@@ -586,7 +543,7 @@ public:
         JSModuleDef* Module = Record->Module;
         if (JS_GetModuleStatus(Module) == ModuleStatusEvaluating)
         {
-            // a cycle, the bindings may be in TDZ
+            // imported synchronously by a module it imports (a cycle), the bindings not evaluated yet are in TDZ
             return JS_GetModuleNamespace(Ctx, Module);
         }
         PString Url = Record->Url;
@@ -628,77 +585,90 @@ public:
         return JS_GetModuleNamespace(Ctx, Module);
     }
 
-    JSValue NewRequire(const PString& Referrer)
+    // the exports of the file required by the require hook, the record is removed on failure
+    bool RequireSynthetic(FRecord* Record)
     {
-        JSValue Data = NewStr(Ctx, Referrer);
-        JSValue Func = JS_NewCFunctionData(Ctx, &RequireCallback, 1, 0, 1, &Data);
-        JS_FreeValue(Ctx, Data);
-        return Func;
-    }
-
-    JSValue CompileCjs(FRecord* Record)
-    {
-        PString Source = "(function (exports, require, module, __filename, __dirname) {" + Record->Content + "\n})";
-        const PString& FileName = Record->DebugPath.empty() ? Record->Url : Record->DebugPath;
-        return JS_Eval(Ctx, Source.c_str(), Source.size(), FileName.c_str(), JS_EVAL_TYPE_GLOBAL);
-    }
-
-    // a new reference of the value of the module, JS_EXCEPTION on failure
-    JSValue Require(FRecord* Record)
-    {
-        switch (Record->Kind)
+        if (Record->HasValue)
         {
-            case EKind::Esm:
-                return EvaluateEsm(Record);
-            case EKind::Cjs:
-                break;
-            default:
-                return JS_DupValue(Ctx, Record->Value);
+            return true;
         }
-
-        if (Record->Executed)
-        {
-            // loaded, or a cycle (the exports may be incomplete)
-            return JS_GetPropertyStr(Ctx, Record->CjsModule, "exports");
-        }
-        Record->Executed = true;
-
         PString Key = Record->Key;
-        JSValue Module = JS_NewObject(Ctx);
-        JSValue Exports = JS_NewObject(Ctx);
-        JSValue Result = JS_EXCEPTION;
-        if (JS_SetPropertyStr(Ctx, Module, "exports", JS_DupValue(Ctx, Exports)) >= 0)
+        PString Url = Record->Url;
+        if (!JS_IsFunction(Ctx, RequireHook))
         {
-            JSValue Func = CompileCjs(Record);
-            if (!JS_IsException(Func))
-            {
-                PString Url = Record->Url;
-                Record->Content.clear();
-                Record->CjsModule = JS_DupValue(Ctx, Module);
-                JSValue Args[] = {Exports, NewRequire(Url), Module, NewStr(Ctx, Url), NewStr(Ctx, DirName(Url))};
-                JSValue Ret = JS_Call(Ctx, Func, Exports, 5, Args);
-                JS_FreeValue(Ctx, Args[1]);
-                JS_FreeValue(Ctx, Args[3]);
-                JS_FreeValue(Ctx, Args[4]);
-                JS_FreeValue(Ctx, Func);
-                if (!JS_IsException(Ret))
-                {
-                    JS_FreeValue(Ctx, Ret);
-                    Result = JS_GetPropertyStr(Ctx, Module, "exports");
-                }
-            }
-        }
-        JS_FreeValue(Ctx, Module);
-        JS_FreeValue(Ctx, Exports);
-        if (JS_IsException(Result))
-        {
-            // removed so a later require loads it again
             EraseRecord(Key);
+            Throw(Ctx, "[Puer001] can not import " + Url + ": the require hook is not set");
+            return false;
         }
-        return Result;
+        JSValue Arg = NewStr(Ctx, Url);
+        JSValue Exports = JS_Call(Ctx, RequireHook, JS_UNDEFINED, 1, &Arg);
+        JS_FreeValue(Ctx, Arg);
+        if (JS_IsException(Exports))
+        {
+            EraseRecord(Key);
+            return false;
+        }
+        // the record may be released by the module required (a builtin module registered again is the only case)
+        auto Iter = Records.find(Key);
+        if (Iter == Records.end() || Iter->second.get() != Record)
+        {
+            JS_FreeValue(Ctx, Exports);
+            Throw(Ctx, "[Puer005] module record not found: " + Url);
+            return false;
+        }
+        if (Record->HasValue)
+        {
+            JS_FreeValue(Ctx, Exports);
+        }
+        else
+        {
+            Record->Value = Exports;
+            Record->HasValue = true;
+        }
+        return true;
     }
 
-    // the module imported by an esm, nullptr with the exception thrown on failure
+    // synchronous import: the namespace of an esm, the value of the others
+    JSValue ImportSync(const PString& Specifier, const PString& Referrer)
+    {
+        FLoadScope Scope(this);
+        FRecord* Record = Resolve(Specifier, Referrer);
+        if (!Record)
+        {
+            return JS_EXCEPTION;
+        }
+        JSValue Ret;
+        if (Record->Kind == EKind::Esm)
+        {
+            Ret = EvaluateEsm(Record);
+        }
+        else if (Record->Kind == EKind::Synthetic && !RequireSynthetic(Record))
+        {
+            Ret = JS_EXCEPTION;
+        }
+        else
+        {
+            Ret = JS_DupValue(Ctx, Record->Value);
+        }
+        Scope.Ok = !JS_IsException(Ret);
+        return Ret;
+    }
+
+    JSValue CompileCjs(JSValueConst Content, const PString& DebugPath, const PString& Path)
+    {
+        if (!JS_IsString(Content))
+        {
+            Throw(Ctx, "[Puer003] load " + Path + " failed: bytecode is not supported");
+            return JS_EXCEPTION;
+        }
+        // the dynamic imports in the module are relative to its path
+        ScriptToUrl[DebugPath] = Path;
+        PString Source = "(function (exports, require, module, __filename, __dirname) {" + ToStd(Ctx, Content) + "\n})";
+        return JS_Eval(Ctx, Source.c_str(), Source.size(), DebugPath.c_str(), JS_EVAL_TYPE_GLOBAL);
+    }
+
+    // the module imported by an esm (a C module for the others: `default` is the value and its own properties are named
+    // exports), nullptr with the exception thrown on failure
     JSModuleDef* ModuleForImport(FRecord* Record)
     {
         if (Record->Kind == EKind::Esm || Record->Module)
@@ -706,22 +676,13 @@ public:
             return Record->Module;
         }
         PString Key = Record->Key;
-        if (Record->Kind == EKind::Cjs)
+        if (Record->Kind == EKind::Synthetic && !RequireSynthetic(Record))
         {
-            JSValue Exports = Require(Record);
-            if (JS_IsException(Exports))
-            {
-                return nullptr;
-            }
-            Record = FindRecord(Key);
-            if (!Record)
-            {
-                JS_FreeValue(Ctx, Exports);
-                Throw(Ctx, "[Puer005] module record not found: " + Key.substr(1));
-                return nullptr;
-            }
-            JS_FreeValue(Ctx, Record->Value);
-            Record->Value = Exports;
+            return nullptr;
+        }
+        if (Record->Module)
+        {
+            return Record->Module;
         }
 
         Record->ExportNames.clear();
@@ -795,31 +756,6 @@ public:
         return 0;
     }
 
-    static JSValue RequireCallback(JSContext* Ctx, JSValueConst ThisVal, int Argc, JSValueConst* Argv, int Magic, JSValue* Data)
-    {
-        FModuleLoader* Loader = FindLoader(Ctx);
-        if (!Loader)
-        {
-            Throw(Ctx, DestroyedMessage);
-            return JS_EXCEPTION;
-        }
-        if (Argc < 1 || !JS_IsString(Argv[0]))
-        {
-            return JS_ThrowTypeError(Ctx, "the module name must be a string");
-        }
-        PString Specifier = ToStd(Ctx, Argv[0]);
-        PString Referrer = ToStd(Ctx, Data[0]);
-        FLoadScope Scope(Loader);
-        FRecord* Record = Loader->Resolve(Specifier, Referrer, false);
-        if (!Record)
-        {
-            return JS_EXCEPTION;
-        }
-        JSValue Ret = Loader->Require(Record);
-        Scope.Ok = !JS_IsException(Ret);
-        return Ret;
-    }
-
     static JSValue MetaResolveCallback(JSContext* Ctx, JSValueConst ThisVal, int Argc, JSValueConst* Argv, int Magic, JSValue* Data)
     {
         FModuleLoader* Loader = FindLoader(Ctx);
@@ -840,7 +776,8 @@ public:
         return NewStr(Ctx, Url);
     }
 
-    // the url of the script or module named BaseName ("" if unknown, an eval script for example)
+    // the path of the script or module named BaseName ("" if unknown: a script not loaded as a module imports relative to
+    // the root)
     PString ReferrerOf(const char* BaseName)
     {
         if (!BaseName)
@@ -863,7 +800,7 @@ public:
         return PString();
     }
 
-    static char* Normalize(JSContext* Ctx, const char* BaseName, const char* Name, void* Opaque)
+    static char* NormalizeHook(JSContext* Ctx, const char* BaseName, const char* Name, void* Opaque)
     {
         auto Loader = static_cast<FModuleLoader*>(Opaque);
         if (!Loader)
@@ -872,7 +809,7 @@ public:
             return nullptr;
         }
         FLoadScope Scope(Loader);
-        FRecord* Record = Loader->Resolve(Name, Loader->ReferrerOf(BaseName), true);
+        FRecord* Record = Loader->Resolve(Name, Loader->ReferrerOf(BaseName));
         if (!Record)
         {
             return nullptr;
@@ -881,7 +818,7 @@ public:
         return js_strdup(Ctx, Record->Name.c_str());
     }
 
-    static JSModuleDef* LoadModule(JSContext* Ctx, const char* Name, void* Opaque)
+    static JSModuleDef* LoadModuleHook(JSContext* Ctx, const char* Name, void* Opaque)
     {
         auto Loader = static_cast<FModuleLoader*>(Opaque);
         if (!Loader)
@@ -903,36 +840,30 @@ public:
     }
 
     std::unordered_map<PString, std::unique_ptr<FRecord>> Records;
-    // the records added in the current (outermost) load
+    // keys of the esm records added by the running loads, the ones not evaluated are removed if the load fails
     std::vector<PString> AddedKeys;
-    // by char + referrer + '\0' + specifier -> url
-    std::unordered_map<PString, PString> ResolveCache;
-    // by char + url -> record key
-    std::unordered_map<PString, PString> LoadCache;
     // module name -> record key
     std::unordered_map<PString, PString> NameToKey;
-    // script name (debugPath or url) of an esm / cjs -> url
+    // script name (the debug path) of an esm / cjs -> path, the referrer of an import is known by the script name
     std::unordered_map<PString, PString> ScriptToUrl;
     std::unordered_map<JSModuleDef*, PString> ModuleToKey;
-    JSValue HostResolve = JS_UNDEFINED;
-    JSValue HostLoad = JS_UNDEFINED;
     int LoadDepth = 0;
     uint64_t Gen = 0;
 };
 
-FModuleLoader* CreateModuleLoader(pesapi_env Env)
+FModuleLoader* CreateModuleLoader(pesapi_env Env, FLoadFileFunc LoadFile, FLoadAddonFunc LoadAddon)
 {
     JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
     if (FindLoader(Ctx))
     {
         return nullptr;
     }
-    auto Loader = new FModuleLoader(Ctx);
+    auto Loader = new FModuleLoader(Ctx, std::move(LoadFile), std::move(LoadAddon));
     {
         std::lock_guard<std::mutex> Lock(GLoadersMutex);
         GLoaders[Ctx] = Loader;
     }
-    JS_SetModuleLoaderFunc(JS_GetRuntime(Ctx), &FModuleLoader::Normalize, &FModuleLoader::LoadModule, Loader);
+    JS_SetModuleLoaderFunc(JS_GetRuntime(Ctx), &FModuleLoader::NormalizeHook, &FModuleLoader::LoadModuleHook, Loader);
     return Loader;
 }
 
@@ -943,7 +874,7 @@ void DestroyModuleLoader(FModuleLoader* Loader)
         return;
     }
     // the hooks stay installed (an import throws "the module loader is destroyed")
-    JS_SetModuleLoaderFunc(JS_GetRuntime(Loader->Ctx), &FModuleLoader::Normalize, &FModuleLoader::LoadModule, nullptr);
+    JS_SetModuleLoaderFunc(JS_GetRuntime(Loader->Ctx), &FModuleLoader::NormalizeHook, &FModuleLoader::LoadModuleHook, nullptr);
     {
         std::lock_guard<std::mutex> Lock(GLoadersMutex);
         GLoaders.erase(Loader->Ctx);
@@ -951,7 +882,7 @@ void DestroyModuleLoader(FModuleLoader* Loader)
     delete Loader;
 }
 
-pesapi_value ExecuteModule(pesapi_env Env, const char* Specifier, const char* Referrer, bool ByImport)
+pesapi_value ImportModule(pesapi_env Env, const char* Specifier, const char* Referrer)
 {
     JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
     FModuleLoader* Loader = FindLoader(Ctx);
@@ -960,30 +891,12 @@ pesapi_value ExecuteModule(pesapi_env Env, const char* Specifier, const char* Re
         Throw(Ctx, DestroyedMessage);
         return nullptr;
     }
-    FModuleLoader::FLoadScope Scope(Loader);
-    FRecord* Record = Loader->Resolve(Specifier ? Specifier : "", Referrer ? Referrer : "", ByImport);
-    if (!Record)
-    {
-        return nullptr;
-    }
-    JSValue Ret = Loader->Require(Record);
+    JSValue Ret = Loader->ImportSync(Specifier ? Specifier : "", Referrer ? Referrer : "");
     if (JS_IsException(Ret))
     {
         return nullptr;
     }
-    Scope.Ok = true;
     return ToPesapi(Ctx, Ret);
-}
-
-pesapi_value CreateRequire(pesapi_env Env, const char* Referrer)
-{
-    JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
-    FModuleLoader* Loader = FindLoader(Ctx);
-    if (!Loader)
-    {
-        return nullptr;
-    }
-    return ToPesapi(Ctx, Loader->NewRequire(Referrer ? Referrer : ""));
 }
 
 void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value)
@@ -996,7 +909,49 @@ void RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Value)
     }
     Loader->EraseRecord(MakeKey(EKind::Builtin, Name));
     FRecord* Record = Loader->AddRecord(EKind::Builtin, Name, "");
-    Record->Value = Value ? JS_DupValue(Ctx, *reinterpret_cast<JSValue*>(Value)) : JS_UNDEFINED;
+    Record->Value = JS_DupValue(Ctx, ToQjs(Value));
+    Record->HasValue = true;
+}
+
+pesapi_value GetBuiltinModule(pesapi_env Env, const char* Name)
+{
+    JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
+    FModuleLoader* Loader = FindLoader(Ctx);
+    FRecord* Record = Loader && Name ? Loader->FindRecord(EKind::Builtin, Name) : nullptr;
+    return Record ? ToPesapi(Ctx, JS_DupValue(Ctx, Record->Value)) : nullptr;
+}
+
+void SetHooks(pesapi_env Env, pesapi_value Require, pesapi_value Resolve)
+{
+    JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
+    FModuleLoader* Loader = FindLoader(Ctx);
+    if (!Loader)
+    {
+        return;
+    }
+    JS_FreeValue(Ctx, Loader->RequireHook);
+    JS_FreeValue(Ctx, Loader->ResolveHook);
+    JSValueConst RequireValue = ToQjs(Require);
+    JSValueConst ResolveValue = ToQjs(Resolve);
+    Loader->RequireHook = JS_IsFunction(Ctx, RequireValue) ? JS_DupValue(Ctx, RequireValue) : JS_UNDEFINED;
+    Loader->ResolveHook = JS_IsFunction(Ctx, ResolveValue) ? JS_DupValue(Ctx, ResolveValue) : JS_UNDEFINED;
+}
+
+pesapi_value CompileCjs(pesapi_env Env, pesapi_value Content, const char* DebugPath, const char* Path)
+{
+    JSContext* Ctx = reinterpret_cast<JSContext*>(Env);
+    FModuleLoader* Loader = FindLoader(Ctx);
+    if (!Loader)
+    {
+        Throw(Ctx, DestroyedMessage);
+        return nullptr;
+    }
+    JSValue Func = Loader->CompileCjs(ToQjs(Content), DebugPath ? DebugPath : "", Path ? Path : "");
+    if (JS_IsException(Func))
+    {
+        return nullptr;
+    }
+    return ToPesapi(Ctx, Func);
 }
 }    // namespace papi_qjs
 }    // namespace PUERTS_NAMESPACE

@@ -4,7 +4,7 @@
 // js class was created are not on it, removed members throw when accessed. The observed behaviour is in the baseline.
 // A struct instance must not live across a layout change (its memory has the old layout), so the struct cases create
 // their instances after the change, the ones of the previous step are freed by the gc between the steps.
-const { puerts, UE, test, step, eq, assert, note, observe, catchError, run } = require('./framework');
+const { puerts, UE, test, step, eq, assert, note, observe, catchError, run } = require('./framework.js');
 const BP = UE.PuertsTestBlueprintUtils;
 const Reporter = UE.PuertsTestReporter;
 const tojs = puerts.blueprint.tojs;
