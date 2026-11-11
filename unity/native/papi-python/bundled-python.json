@@ -1,0 +1,22 @@
+{
+    "comment": "Single source of truth for the Python bundled into the Unity package. libPapiPython is built against these exact distributions and they are the ones shipped in upms/python. Keep in sync with PY_* in .github/workflows/build_nuget.yml.",
+    "version": "3.14.2",
+    "minor": "3.14",
+    "dists": {
+        "win-x64": {
+            "url": "https://www.nuget.org/api/v2/package/python/3.14.2",
+            "format": "zip",
+            "root": "tools"
+        },
+        "osx-arm64": {
+            "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260127/cpython-3.14.2+20260127-aarch64-apple-darwin-install_only.tar.gz",
+            "format": "tar.gz",
+            "root": "python"
+        },
+        "linux-x64": {
+            "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20251217/cpython-3.14.2+20251217-x86_64_v2-unknown-linux-gnu-install_only_stripped.tar.gz",
+            "format": "tar.gz",
+            "root": "python"
+        }
+    }
+}

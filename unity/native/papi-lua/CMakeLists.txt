@@ -6,7 +6,10 @@
 
 cmake_minimum_required(VERSION 3.9)
 
-if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID)
+# /MT、/MTd 是 MSVC 专有的静态运行库选项。Windows 上交叉编译 Android 时 WIN32 仍为真，
+# 但编译器是带 --target= 的 clang，传 /MTd 会被当成输入文件（如 "C:/Program Files/Git/MTd"）。
+# 所以这里必须同时判断编译器是 MSVC，而不是只判断目标平台。
+if ( WIN32 AND MSVC AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID)
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT" CACHE STRING "")
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd" CACHE STRING "")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT" CACHE STRING "")

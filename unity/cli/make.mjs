@@ -3,6 +3,7 @@ import { cd, cp, exec, mkdir, mv, rm } from "@puerts/shell-util";
 import { basename, join, normalize, dirname } from "path";
 import * as assert from "assert";
 import downloadBackend from "./backend.mjs";
+import { prepareBundledPython, stageBundledPythonForUnity } from "./bundled-python.mjs";
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
 import * as process from "process";
@@ -446,7 +447,12 @@ async function runPuertsMake(cwd, options) {
 	if (options.cmake_args) {
 		CmakeDArgs += ` ${options.cmake_args}`;
 	}
-	if (options.backend == 'papi-python' && options.platform == "win") {
+	// papi-python on desktop: build against (and bundle) a known Python, see bundled-python.mjs
+	let bundledPython = null;
+	if (options.backend == 'papi-python' && options.bundled_python !== false) {
+		bundledPython = await prepareBundledPython(cwd, options.platform, options.arch);
+	}
+	if (options.backend == 'papi-python' && options.platform == "win" && !bundledPython) {
 		const pyInfo = tryGetPythonFromPath();
 		if (pyInfo && pyInfo.exe) {
 	        CmakeDArgs +=  ` -DPython3_EXECUTABLE="${pyInfo.exe}"`;
@@ -479,6 +485,10 @@ async function runPuertsMake(cwd, options) {
         }
         cp(filepath, OUTPUT_PATH);
     });
+
+    if (bundledPython) {
+        stageBundledPythonForUnity(bundledPython, join(cwd, '../../upms/python'), OUTPUT_PATH, CMAKE_BUILD_PATH);
+    }
 
     return copyConfig;
 }

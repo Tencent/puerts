@@ -50,6 +50,7 @@ runs:
           ./unity/upms/nodejs/Plugins/**/*
           ./unity/upms/lua/Plugins/**/*
           ./unity/upms/python/Plugins/**/*
+          ./unity/upms/python/PythonHome~/**/*
           ./unity/upms/quickjs/Plugins/**/*
         name: Unity_Plugins_${{ inputs.backend }}_${{ inputs.config }}_window
     - name: Clean
@@ -60,4 +61,5 @@ runs:
         rm -rf ./unity/upms/nodejs/Plugins/**/*
         rm -rf ./unity/upms/lua/Plugins/**/*
         rm -rf ./unity/upms/python/Plugins/**/*
+        rm -rf ./unity/upms/python/PythonHome~
         rm -rf ./unity/upms/quickjs/Plugins/**/*

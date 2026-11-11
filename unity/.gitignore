@@ -27,6 +27,8 @@
 /native/*/.backends
 /native/*/build*
 /native/papi-python/python*android
+/native/papi-python/.python-dist
+/upms/python/PythonHome~
 /upms/webgl/Javascripts~/PuertsDLLMock/output
 node_modules
 *.so
