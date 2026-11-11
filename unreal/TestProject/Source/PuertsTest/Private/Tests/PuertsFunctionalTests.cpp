@@ -105,6 +105,8 @@ PUERTS_SCRIPT_TEST(Modules, "tests/modules")
 PUERTS_SCRIPT_TEST(Objects, "tests/objects")
 PUERTS_SCRIPT_TEST(Reflection, "tests/reflection")
 PUERTS_SCRIPT_TEST(ModuleLoader, "tests/module_loader")
+// puerts/module_node.js, the optional node style resolution
+PUERTS_SCRIPT_TEST(ModuleNode, "tests/module_node")
 PUERTS_SCRIPT_TEST(Promises, "tests/promises")
 PUERTS_SCRIPT_TEST(ArrayBuffer, "tests/array_buffer")
 PUERTS_SCRIPT_TEST(ContainerElementTypes, "tests/container_element_types")

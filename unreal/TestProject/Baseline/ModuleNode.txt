@@ -1,0 +1,12 @@
+without extension before loaded: Error: load tests/module_node_data/noext fail!
+without extension: "noext"
+with extension: "noext"
+json without extension: 42
+directory index: "dir_index"
+package main: {name: "pkg_cjs", hasModule: true}
+package exports: "exports_pkg/r"
+bare names: ["nm_pkg", "nm_file", "sibling"]
+lazy: 5
+missing: Error: load tests/module_node_data/not_exist_xyz fail!
+missing bare: Error: load tests/not_exist_module_xyz fail!
+import package: {name: "pkg_cjs", hasModule: true}

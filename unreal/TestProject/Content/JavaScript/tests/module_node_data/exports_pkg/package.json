@@ -1,0 +1,1 @@
+{ "main": "main.js", "exports": { ".": { "import": "./i.js", "require": "./r.js" } } }
