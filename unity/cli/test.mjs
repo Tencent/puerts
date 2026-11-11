@@ -338,9 +338,16 @@ export async function unityTest(cwd, unityPath, lazyload = false) {
         return [join(home, '.config', 'unity3d', 'Editor.log'), join(home, '.config', 'unity3d', 'Unity', 'Unity.Licensing.Client.log')];
     }
 
+    let editorRunIndex = 0;
+    for (const f of glob.sync('log_editor_*.txt', { cwd })) {
+        try { rm("-f", join(cwd, f)); } catch (e) { }
+    }
+
     function execUnityEditor(args) {
-        const logFile = join(cwd, 'log.txt');
-        rm("-f", logFile);
+        // 每次调用用独立的日志文件：Windows 上 Unity 退出后，它拉起的子进程（bee_backend、ILPP Runner、
+        // Licensing Client 等）可能还持有日志句柄，复用并删除同一个 log.txt 会报 EBUSY
+        const method = (args.match(/-executeMethod\s+(\S+)/) || [])[1] || 'unity';
+        const logFile = join(cwd, `log_editor_${++editorRunIndex}_${method.replace(/[^\w.-]/g, '_')}.txt`);
         // 直接传参数数组启动，不经过 shell，避免 Windows 上 "C:\Program Files\..." 这类路径的引号问题
         const argv = ['-batchmode', '-nographics', '-quit', '-projectPath', cwd, '-logFile', logFile].concat(args.split(' ').filter(s => s));
         console.log(`"${unityPath}" ${argv.map(a => a.includes(' ') ? `"${a}"` : a).join(' ')}`);
