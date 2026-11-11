@@ -326,13 +326,45 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false,
 }
 
 export async function unityTest(cwd, unityPath, lazyload = false) {
-    function execUnityEditor(args) {
-        const unityBatchModeBase = `"${unityPath}" -batchmode -nographics -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`;
-        const code = exec(`${unityBatchModeBase} ${args}`).code;
-        if (code != 0) {
-            throw new Error(`ExecUnity failed: ${readFileSync(cwd + "/log.txt", 'utf-8')}`);
+    // Unity 的默认日志位置。-logFile 还没生效 Unity 就退出时（比如授权失败、缺 DLL），只能从这些文件里找原因
+    function getUnityFallbackLogs() {
+        const home = process.env.HOME || process.env.USERPROFILE || '';
+        if (process.platform == 'win32') {
+            const local = process.env.LOCALAPPDATA || join(home, 'AppData', 'Local');
+            return [join(local, 'Unity', 'Editor', 'Editor.log'), join(local, 'Unity', 'Editor', 'upm.log'), join(local, 'Unity', 'Unity.Licensing.Client.log'), join(local, 'Unity', 'Unity.Entitlements.Audit.log')];
+        } else if (process.platform == 'darwin') {
+            return [join(home, 'Library', 'Logs', 'Unity', 'Editor.log'), join(home, 'Library', 'Logs', 'Unity', 'Unity.Licensing.Client.log')];
         }
-        return;
+        return [join(home, '.config', 'unity3d', 'Editor.log'), join(home, '.config', 'unity3d', 'Unity', 'Unity.Licensing.Client.log')];
+    }
+
+    function execUnityEditor(args) {
+        const logFile = join(cwd, 'log.txt');
+        rm("-f", logFile);
+        // 直接传参数数组启动，不经过 shell，避免 Windows 上 "C:\Program Files\..." 这类路径的引号问题
+        const argv = ['-batchmode', '-nographics', '-quit', '-projectPath', cwd, '-logFile', logFile].concat(args.split(' ').filter(s => s));
+        console.log(`"${unityPath}" ${argv.map(a => a.includes(' ') ? `"${a}"` : a).join(' ')}`);
+        const result = spawnSync(unityPath, argv, { stdio: 'inherit' });
+        if (result.error || result.status !== 0) {
+            const status = result.status;
+            const statusText = status == null ? `signal ${result.signal}` : `${status} (0x${(status >>> 0).toString(16)})`;
+            console.error(`[Puer] Unity exited with ${statusText}${result.error ? ', error: ' + result.error.message : ''}`);
+            if (existsSync(logFile)) {
+                console.error(readFileSync(logFile, 'utf-8'));
+            } else {
+                console.error(`[Puer] ${logFile} was not created, Unity exited before opening the project. Default Unity logs:`);
+                for (const f of getUnityFallbackLogs()) {
+                    if (!existsSync(f)) {
+                        console.error(`---- ${f} (not found)`);
+                        continue;
+                    }
+                    const content = readFileSync(f, 'utf-8');
+                    console.error(`---- ${f} (last 200 lines)`);
+                    console.error(content.split(/\r?\n/).slice(-200).join('\n'));
+                }
+            }
+            throw new Error(`ExecUnity failed: ${args}, exit ${statusText}`);
+        }
     }
     
     // Helper function to check test result and log if needed
