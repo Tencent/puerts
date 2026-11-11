@@ -266,6 +266,56 @@ jobs:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
+      # Unity.exe 曾以 0xC0000135 (STATUS_DLL_NOT_FOUND) 退出，连 Editor.log 都没生成，
+      # 这里递归扫描 Editor 目录内二进制的导入表，列出找不到的 DLL，并直接跑一次 -version 看退出码。
+      - name: Diagnose Unity Editor
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $exe = $env:UNITY_EDITOR_PATH
+          $dir = Split-Path $exe
+          Write-Host "UNITY_EDITOR_PATH=$exe"
+          $files = Get-ChildItem $dir -Recurse -File -ErrorAction SilentlyContinue
+          Write-Host ("Editor dir files: {0}, size: {1:N0} MB" -f $files.Count, (($files | Measure-Object Length -Sum).Sum / 1MB))
+          Get-ChildItem $dir -Filter *.dll | Select-Object Name, Length | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $dumpbin = & $vswhere -latest -products * -find 'VC\Tools\MSVC\**\bin\Hostx64\x64\dumpbin.exe' | Select-Object -First 1
+          Write-Host "dumpbin=$dumpbin"
+          $searchDirs = @($dir, "$env:WINDIR\System32", $env:WINDIR) + ($env:PATH -split ';' | Where-Object { $_ })
+          $seen = @{}
+          $missing = @()
+          $queue = New-Object System.Collections.Queue
+          $queue.Enqueue($exe)
+          while ($queue.Count -gt 0) {
+            $bin = $queue.Dequeue()
+            $section = ''
+            foreach ($line in (& $dumpbin /nologo /dependents $bin 2>&1)) {
+              $t = $line.ToString().Trim()
+              if ($t -match 'delay load dependencies') { $section = 'delay'; continue }
+              if ($t -match 'following dependencies') { $section = 'static'; continue }
+              if ($section -eq '' -or $t -notmatch '^[\w\.\-]+\.dll$') { continue }
+              $key = $t.ToLower()
+              if ($key -like 'api-ms-win-*' -or $key -like 'ext-ms-*' -or $seen.ContainsKey($key)) { continue }
+              $found = $null
+              foreach ($s in $searchDirs) {
+                try { $p = Join-Path $s $t } catch { continue }
+                if (Test-Path -LiteralPath $p) { $found = $p; break }
+              }
+              $seen[$key] = $found
+              if ($found) {
+                if ($found.StartsWith($dir, [System.StringComparison]::OrdinalIgnoreCase)) { $queue.Enqueue($found) }
+              } else {
+                $missing += "$t ($section) <- $bin"
+              }
+            }
+          }
+          Write-Host "Scanned $($seen.Count) dlls"
+          if ($missing.Count) { Write-Host "::warning::Missing DLLs found"; $missing | ForEach-Object { Write-Host "  MISSING $_" } } else { Write-Host "No missing DLL found" }
+          $p = Start-Process -FilePath $exe -ArgumentList '-version' -NoNewWindow -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(120000)) { Write-Host "Unity -version timed out"; $p.Kill() }
+          else { Write-Host ("Unity -version exit code: {0} (0x{0:x8})" -f $p.ExitCode) }
       - name: UnitTest
         shell: bash
         run: |
