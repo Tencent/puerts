@@ -266,6 +266,13 @@ jobs:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
+      # Unity 2022.3 Editor 自带的 OpenRL.dll 静态依赖 VC++ 2010 运行时（MSVCP100.dll / MSVCR100.dll），
+      # windows-2022 runner 镜像里没有，缺失时 Unity.exe 直接以 0xC0000135 (STATUS_DLL_NOT_FOUND) 退出。
+      - name: Install VC++ 2010 Redistributable
+        shell: pwsh
+        run: |
+          choco install vcredist2010 -y --no-progress
+          if (-not (Test-Path "$env:WINDIR\System32\MSVCP100.dll")) { throw "MSVCP100.dll still missing after installing vcredist2010" }
       # Unity.exe 曾以 0xC0000135 (STATUS_DLL_NOT_FOUND) 退出，连 Editor.log 都没生成，
       # 这里递归扫描 Editor 目录内二进制的导入表，列出找不到的 DLL，并直接跑一次 -version 看退出码。
       - name: Diagnose Unity Editor
