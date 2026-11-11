@@ -1,3 +1,20 @@
+### v3.0.0（未发布）
+
+#### 变更
+
+* CommonJS 模块系统改为 JS 实现（`puerts/module.js`，移植自 Unity），规则与 Unity 一致：模块路径是把 specifier 拼接到发起 require 的模块所在目录，不做搜索，因此必须写全扩展名（`require('./foo.js')`，不能写 `require('./foo')`），也不再查找 `node_modules` 和 `package.json`。全局 `require`（以及 `puerts.genRequire('')`）相对脚本根目录解析。
+* `require` 默认惰性加载：返回一个代理，首次使用时才加载模块；`require(specifier, true)` 立即加载。
+* V8 下模块导出默认弱缓存（没有被引用的模块会被卸载，下次 `require` 时重新执行），模块导出 `__auto_release: false` 可改为强缓存，`puerts.module.setDefaultAutoRelease(false)` 可修改默认值。QuickJS 基于引用计数，对象没有引用时会被立即释放，因此 QuickJS 下默认强缓存。
+* ESM 同样只做路径拼接：`./`、`../` 相对发起 import 的模块，其余相对脚本根目录。文件直接由 C++ 加载器读取，`import.meta.resolve` 不再检查文件是否存在；被 ESM import 的非 `.mjs` 文件按 CommonJS 模块加载。
+* 入口模块没有扩展名时自动补 `.js`。可通过 `puerts.module.setResolveHook(fn(specifier, requiringDir))` 自定义 `require` 和 `import` 的解析。
+* 新增文件加载接口 `IScriptFileLoader` 及默认实现 `FDefaultScriptFileLoader`（ScriptEnv 模块），只负责按相对脚本根目录的路径读取文件，`ScriptEnv` 只接受新接口。`IJSModuleLoader` / `DefaultJSModuleLoader` 移到 JsEnv 模块并保留兼容：接收它们的 `FJsEnv` / `FJsEnvGroup` 构造函数仍可使用，内部用 `FJSModuleLoaderAdapter` 包装，但只会以空目录调用 `Search`，再调用 `Load`。
+* Lua、Python 后端也通过同一个文件加载器读取模块。
+* 模块加载相关的错误信息有变化。
+
+#### 新增特性
+
+* 新增可选扩展 `puerts/module_node.js`（默认不加载），恢复类 node 的解析规则：省略扩展名、目录 index、`package.json`（`exports["."]` / `main`），以及在脚本根目录范围内查找发起模块所在目录及其上级目录的 `node_modules`。在入口模块开头加载一次即可：`puerts.genRequire('')('puerts/module_node.js', true)`。大型第三方包仍建议用 webpack 等工具打包；脚本根目录之外（例如项目根目录）的 `node_modules` 不会被查找。
+
 ### v1.0.9 2025年7月15日
 
 ####  新增特性

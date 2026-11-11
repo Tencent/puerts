@@ -464,6 +464,8 @@ papi-v8 的实现（PesapiV8Impl、CppObjectMapper、BackendEnv、DataTransfer�
 
 #### 5.10.4 宿主契约（约定名的全局函数）
 
+> 2026-11 修订：本节的 `__puer_host_resolve__` / `__puer_host_load__` 已去掉。CJS 改为 JS 实现的 `puerts/module.js`（移植自 Unity module.mjs，惰性加载、弱缓存，QuickJS 下默认强缓存）；ESM 只做路径拼接（`./`、`../` 相对 referrer，其余相对脚本根目录），文件由后端拿到的 C++ 回调经 `IScriptFileLoader::ReadFile` 读取，`.mjs`/`.mbc` 之外的文件被 import 时经 `puerts/module.js` 的 hook 按 CJS 加载。node 规则（省略扩展名、package.json、node_modules）移到可选扩展 `puerts/module_node.js`，默认不加载。`IJSModuleLoader` 移到 JsEnv，经 `FJSModuleLoaderAdapter` 兼容。下文保留作为历史记录。
+
 宿主在 env 创建后、执行第一个模块前，用 `pesapi_create_function` 创建并设置到 global 上。后端首次用到时按名字取出，用 `v8::Global` 持有（QuickJS 后端用 JSValue 引用），随后从 global 上删除，避免业务脚本调用或篡改。
 
 ```js

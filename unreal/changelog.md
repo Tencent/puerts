@@ -1,3 +1,20 @@
+### v3.0.0 (unreleased)
+
+#### Changes
+
+* The commonjs module system is reimplemented in JS (`puerts/module.js`, ported from Unity) and follows the Unity rules. The path of a module is the specifier joined to the directory of the requiring module without searching, so the extension must be written (`require('./foo.js')`, not `require('./foo')`), and `node_modules` / `package.json` are not looked up. The global `require` (and `puerts.genRequire('')`) resolves relative to the script root.
+* `require` is lazy by default: a proxy is returned and the module is loaded on its first use, `require(specifier, true)` loads it immediately.
+* The exports of a module are cached weakly by default on V8 (a module nobody refers to is unloaded and executed again on the next `require`), a module exports `__auto_release: false` to be cached strongly, `puerts.module.setDefaultAutoRelease(false)` changes the default. They are cached strongly by default on QuickJS, whose reference counting frees an object as soon as nobody refers to it.
+* ESM is resolved by joining paths too: `./` and `../` are relative to the importing module, other specifiers are relative to the script root. The files are read by the C++ loader directly, `import.meta.resolve` no longer checks whether the file exists, and a non-`.mjs` file imported by an ESM is loaded as a commonjs module.
+* An entry module without an extension gets `.js` appended. `puerts.module.setResolveHook(fn(specifier, requiringDir))` customizes the resolution of both `require` and `import`.
+* New file loader interface `IScriptFileLoader` with the default implementation `FDefaultScriptFileLoader` (ScriptEnv module), which only reads a file by its path relative to the script root. `ScriptEnv` only accepts the new interface. `IJSModuleLoader` / `DefaultJSModuleLoader` are moved to the JsEnv module and kept for compatibility: the `FJsEnv` / `FJsEnvGroup` constructors taking them still work, the loader is wrapped by `FJSModuleLoaderAdapter`, but only its `Search` with an empty directory and `Load` are used.
+* The Lua and Python backends read the modules through the same file loader.
+* The texts of the module loading errors are changed.
+
+#### New Features
+
+* Optional extension `puerts/module_node.js` (not loaded by default) restores the node-like resolution: omitted extensions, directory index, `package.json` (`exports["."]` / `main`), and `node_modules` of the requiring directory and its ancestors within the script root. Load it once at the beginning of the entry module: `puerts.genRequire('')('puerts/module_node.js', true)`. Bundling the large third party packages (e.g. with webpack) is still recommended; `node_modules` outside the script root (e.g. at the project root) is not searched.
+
 ### v1.0.9 2025/7/15
 
 #### New Features  
