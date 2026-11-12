@@ -154,7 +154,7 @@ jobs:
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v1
         with:
-          unity-version: 2022.3.62f3
+          unity-version: 6000.6.8f1
           build-targets: StandaloneOSX, Android 
           modules: android-il2cpp, mac-il2cpp
           cache-installation: true
@@ -256,7 +256,7 @@ jobs:
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v3
         with:
-          unity-version: 2022.3.62f3
+          unity-version: 6000.6.8f1
           build-targets: StandaloneWindows64, Android
           modules: android-il2cpp, windows-il2cpp
           cache-installation: true
