@@ -5,13 +5,18 @@ using System.Linq;
 using System.Reflection;
 using System.Collections;
 using System;
-using NUnit.Framework;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using Puerts;
 
 public class Tester : MonoBehaviour {
+
+    // 用例使用 com.tencent.puerts.unittest 里的简化 NUnit 特性，Unity 6 的 Test Framework 自带的
+    // nunit.framework 也会被 Assembly-CSharp 引用，两边类型同名同命名空间（CS0433），
+    // 所以不用 typeof，按类型全名匹配，哪个程序集的特性都能识别。
+    const string TestFixtureAttributeName = "NUnit.Framework.TestFixtureAttribute";
+    const string TestAttributeName = "NUnit.Framework.TestAttribute";
 
     public Text m_ContentText;
     public Button m_StartBtn;
@@ -195,7 +200,7 @@ public class Tester : MonoBehaviour {
         var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
                     // where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                     from type in assembly.GetTypes()
-                    where type.IsDefined(typeof(TestFixtureAttribute), false)
+                    where type.GetCustomAttributes(false).Any(a => a.GetType().FullName == TestFixtureAttributeName)
                     select type;
 
         foreach (var type in types)
@@ -208,7 +213,7 @@ public class Tester : MonoBehaviour {
                 foreach (var ca in method.GetCustomAttributes(false))
                 {
                     yield return null;
-                    if (IsTesting && ca.GetType() == typeof(TestAttribute)) 
+                    if (IsTesting && ca.GetType().FullName == TestAttributeName) 
                     {
                         // if (method.Name != "DateTimeTest") continue;
                         // if (!method.DeclaringType.Name.Contains("AccessControlTest")) continue;
