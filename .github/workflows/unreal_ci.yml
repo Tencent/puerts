@@ -268,9 +268,21 @@ jobs:
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xfz temp.tgz
         mkdir output
+    - name: Prepare toolchain
+      shell: bash
+      run: |
+        # macos-15 images no longer ship mono, which RunUAT.sh of UE4.27 needs (AutomationTool)
+        if ! command -v mono >/dev/null 2>&1; then
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          brew install mono || { brew uninstall --force mono || true; brew install mono; }
+        fi
+        mono --version | head -n 1
+        clang --version | head -n 1
     - name: Build
       shell: bash
       run: |
+        # clang 17 of the macos-15 image rejects the engine headers of UE4.27 without -fno-access-control
+        source unreal/TestProject/Tools/set_clang_compat.sh
         Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
     #- name: Print Log
     #  shell: bash
