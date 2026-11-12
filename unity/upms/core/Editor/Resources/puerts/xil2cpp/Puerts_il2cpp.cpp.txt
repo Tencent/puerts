@@ -50,11 +50,14 @@ static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
 using namespace il2cpp::vm;
 
 // il2cpp::vm::Object::Unbox was removed in Unity 6000.6 (replaced by Object::GetRawData).
-// Both just return the address right after the object header, so do it directly to stay
-// compatible with all Unity versions.
+// Both return the address right after the object header.
 static inline void* PuertsUnbox(Il2CppObject* obj)
 {
+#ifdef UNITY_6000_6_OR_NEWER
+    return il2cpp::vm::Object::GetRawData(obj);
+#else
     return reinterpret_cast<uint8_t*>(obj) + sizeof(Il2CppObject);
+#endif
 }
 
 namespace puerts

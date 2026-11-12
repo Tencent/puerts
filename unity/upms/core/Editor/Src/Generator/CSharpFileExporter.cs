@@ -456,6 +456,9 @@ return new List<Instruction>();
 #if UNITY_6000_0_OR_NEWER
                 "UNITY_6000_0_OR_NEWER",
 #endif
+#if UNITY_6000_6_OR_NEWER
+                "UNITY_6000_6_OR_NEWER",
+#endif
 #if !UNITY_IPHONE && !UNITY_WEBGL && !UNITY_SWITCH
                 "PUERTS_SHARED",
 #endif

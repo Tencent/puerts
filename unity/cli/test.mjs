@@ -376,13 +376,19 @@ export async function unityTest(cwd, unityPath, lazyload = false) {
     
     // Helper function to check test result and log if needed
     function checkTestResult(exitCode, logFile) {
-        if (exitCode !== 0) {
-            try {
-                const logContent = readFileSync(logFile, 'utf-8');
-                console.error(logContent);
-            } catch (e) {
-                console.error(`Failed to read log file: ${e.message}`);
-            }
+        let logContent = null;
+        try {
+            logContent = readFileSync(logFile, 'utf-8');
+        } catch (e) {
+            console.error(`Failed to read log file: ${e.message}`);
+        }
+        // Player 崩溃时退出码不一定非 0，用 Tester 结束时输出的 "End RunTest" 判断是否真正跑完
+        if (exitCode === 0 && logContent !== null && logContent.indexOf('End RunTest') === -1) {
+            console.error(`[Puer] "End RunTest" not found in ${logFile}, the player may have crashed.`);
+            exitCode = -1;
+        }
+        if (exitCode !== 0 && logContent !== null) {
+            console.error(logContent);
         }
         return exitCode;
     }

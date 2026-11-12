@@ -198,6 +198,14 @@ jobs:
             failed_count=$(grep -c "Failed" "$log_file" || true)
             echo "Failed: $failed_count"
             grep "Failed" "$log_file" || true
+            started_count=$(grep -c "Started: TestCase" "$log_file" || true)
+            echo "Started: $started_count"
+            if ! grep -q "End RunTest" "$log_file"; then
+              echo "!!! End RunTest not found in $log_file, last started cases:"
+              grep "Started: TestCase" "$log_file" | tail -n 5 || true
+              echo "----- tail of $log_file -----"
+              tail -n 200 "$log_file" || true
+            fi
             echo
           done
       - name: Build Android APK
@@ -354,6 +362,14 @@ jobs:
             failed_count=$(grep -c "Failed" "$log_file" || true)
             echo "Failed: $failed_count"
             grep "Failed" "$log_file" || true
+            started_count=$(grep -c "Started: TestCase" "$log_file" || true)
+            echo "Started: $started_count"
+            if ! grep -q "End RunTest" "$log_file"; then
+              echo "!!! End RunTest not found in $log_file, last started cases:"
+              grep "Started: TestCase" "$log_file" | tail -n 5 || true
+              echo "----- tail of $log_file -----"
+              tail -n 200 "$log_file" || true
+            fi
             echo
           done
       - name: Build Android APK
