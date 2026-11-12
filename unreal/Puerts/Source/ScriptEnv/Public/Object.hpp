@@ -44,6 +44,27 @@ struct SI2A<1, N, Chars...>
 template <std::size_t N>
 using SI2A_T = typename SI2A<NumDigits(N), N>::type;
 
+// the declaration of a std::function parameter, matches how it is passed to script (see ScriptCallArg.hpp): a non-const
+// reference of a non object type is a $Ref, others are declared as the type itself
+template <typename T, typename Enable = void>
+struct StdFunctionParamDecl
+{
+    static constexpr auto Get()
+    {
+        return ScriptTypeNameWithNamespace<typename std::remove_cv<typename std::remove_reference<T>::type>::type>::value();
+    }
+};
+
+template <typename T>
+struct StdFunctionParamDecl<T&,
+    typename std::enable_if<!std::is_const<T>::value && !is_objecttype<T>::value && !is_uetype<T>::value>::type>
+{
+    static constexpr auto Get()
+    {
+        return Literal("$Ref<") + ScriptTypeNameWithNamespace<T>::value() + Literal(">");
+    }
+};
+
 template <size_t N, typename... Rest>
 struct ParamsDecl
 {
@@ -63,7 +84,7 @@ struct ParamsDecl<N, T>
 {
     static constexpr auto Get()
     {
-        return Literal("p") + Literal(SI2A_T<N>().Str) + Literal(":") + ScriptTypeNameWithNamespace<T>::value();
+        return Literal("p") + Literal(SI2A_T<N>().Str) + Literal(":") + StdFunctionParamDecl<T>::Get();
     }
 };
 

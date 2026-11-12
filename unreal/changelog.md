@@ -15,6 +15,10 @@
 
 * Optional extension `puerts/module_node.js` (not loaded by default) restores the node-like resolution: omitted extensions, directory index, `package.json` (`exports["."]` / `main`), and `node_modules` of the requiring directory and its ancestors within the script root. Load it once at the beginning of the entry module: `puerts.genRequire('')('puerts/module_node.js', true)`. Bundling the large third party packages (e.g. with webpack) is still recommended; `node_modules` outside the script root (e.g. at the project root) is not searched.
 
+#### Bug Fixes
+
+* A script function converted to `std::function` (static binding) now honors the reference parameters of the signature: a non-const reference of a bound C++ type / container (`UsingCppType`, `UsingContainer` ...) is passed without copying and modified in place, other non-const references (number, string ...) are passed as `$Ref` and written back after the call, and the generated declaration uses `$Ref<...>` for them. Previously the arguments were copied several times and the modifications were lost (#2273)
+
 ### v1.0.9 2025/7/15
 
 #### New Features  

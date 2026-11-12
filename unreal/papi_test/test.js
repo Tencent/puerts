@@ -119,6 +119,23 @@ assertEq(obj2.StdFunctionTest((x, y) => {
     return x + y;
 }), 88 + 99, "std::function callback");
 assertEq(obj2.FunctionTest((x, y) => x * 10 + y), 1001, "puerts::Function callback");
+
+// std::function with reference parameters: a non-const object reference is passed without copying (modified in place),
+// a non-const primitive / string reference is passed as $ref and written back
+assertEq(obj2.StdFunctionRefTest((o, i, s) => {
+    assertEq(o.Value, 1, "std::function object ref in");
+    assertEq($unref(i), 2, "std::function int ref in");
+    assertEq($unref(s), "s", "std::function string ref in");
+    o.Value = 11;
+    i[0] = 22;
+    s[0] = "ss";
+}), "obj=11,i=22,s=ss,copies=0", "std::function ref params written back without copies");
+assertEq(obj2.StdFunctionRefRetTest((i) => {
+    const v = $unref(i);
+    i[0] = v + 4;
+    return v;
+}), 3 * 100 + 7, "std::function ref param with return value");
+assertEq(obj2.StdFunctionConstRefTest((a, b) => a.Value + b.Value), 30, "std::function const ref / by value object");
 const jsobj = { x: 21 };
 assertEq(obj2.ObjectTest(jsobj), 21, "puerts::Object get");
 assertEq(jsobj.y, 42, "puerts::Object set");

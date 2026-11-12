@@ -27,6 +27,7 @@ public:
     FPuertsTestCppClass(const FPuertsTestCppClass& Other) : X(Other.X), Y(Other.Y)
     {
         ++InstanceCount;
+        ++CopyCount;
     }
 
     FPuertsTestCppClass& operator=(const FPuertsTestCppClass& Other) = default;
@@ -96,12 +97,46 @@ public:
     {
         return Obj;
     }
+
+    // std::function with reference parameters: the object and the container are passed without copying (modified in
+    // place), the int and the FString are passed as $ref and written back after the call
+    static FString CallRefCallback(std::function<void(FPuertsTestCppClass&, TArray<int>&, int&, FString&)> Callback)
+    {
+        FPuertsTestCppClass Obj(1, 2);
+        TArray<int> Arr = {1, 2, 3};
+        int I = 5;
+        FString S = TEXT("s");
+        const int InstancesBefore = InstanceCount;
+        Callback(Obj, Arr, I, S);
+        // copies of Obj made for the call (all released by now unless still held by js)
+        const int Copies = CopyCount;
+        CopyCount = 0;
+        FString ArrStr;
+        for (int V : Arr)
+        {
+            ArrStr += FString::Printf(TEXT("%s%d"), ArrStr.IsEmpty() ? TEXT("") : TEXT("|"), V);
+        }
+        return FString::Printf(TEXT("obj=(%d,%d),arr=%s,i=%d,s=%s,copies=%d,leaked=%d"), Obj.X, Obj.Y, *ArrStr, I, *S, Copies,
+            InstanceCount - InstancesBefore);
+    }
+
+    // std::function with a return value and a reference parameter, returns Ret * 100 + I
+    static int CallRefFunc(std::function<int(int&)> Callback)
+    {
+        int I = 3;
+        int Ret = Callback(I);
+        return Ret * 100 + I;
+    }
+
+    static int CopyCount;
 };
 
 int FPuertsTestCppClass::InstanceCount = 0;
+int FPuertsTestCppClass::CopyCount = 0;
 
 UsingCppType(FPuertsTestCppClass);
 UsingUClass(UPuertsTestObject);
+UsingContainer(TArray<int>);
 
 namespace
 {
@@ -125,7 +160,10 @@ struct FAutoRegisterPuertsTestCppClass
             .Function("CreateRaw", MakeFunction(&FPuertsTestCppClass::CreateRaw))
             .Function("ReadJsObjectX", MakeFunction(&FPuertsTestCppClass::ReadJsObjectX))
             .Function("EchoJsObject", MakeFunction(&FPuertsTestCppClass::EchoJsObject))
+            .Function("CallRefCallback", MakeFunction(&FPuertsTestCppClass::CallRefCallback))
+            .Function("CallRefFunc", MakeFunction(&FPuertsTestCppClass::CallRefFunc))
             .Register();
+        RegisterTArray(int);
     }
 };
 

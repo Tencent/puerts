@@ -60,6 +60,26 @@ test('shape', () => {
     note('wrong ctor args', catchError(() => new C('a', 'b')));
 });
 
+test('std::function ref params', () => {
+    const { $unref, $set } = puerts;
+    const ret = C.CallRefCallback((obj, arr, i, s) => {
+        eq([obj.X, obj.Y], [1, 2]);
+        eq([arr.Num(), arr.Get(0)], [3, 1]);
+        eq($unref(i), 5);
+        eq($unref(s), 's');
+        obj.X = 7;
+        arr.Add(4);
+        $set(i, 55);
+        $set(s, 'ss');
+    });
+    eq(ret, 'obj=(7,2),arr=1|2|3|4,i=55,s=ss,copies=0,leaked=0');
+    eq(C.CallRefFunc((i) => {
+        const v = $unref(i);
+        $set(i, v + 4);
+        return v;
+    }), 3 * 100 + 7);
+});
+
 test('builtin FVector binding', () => {
     // UE.Vector is backed by the plugin's template binding (ScriptEnv/Private/Gen/FVector_Wrap.cpp)
     const v = new UE.Vector(3, 4, 0);

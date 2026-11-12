@@ -8,9 +8,12 @@ UsingCppType(BaseClass);
 UsingCppType(TestClass);
 UsingCppType(AdvanceTestClass);
 UsingCppType(LifeCycleClass);
+UsingCppType(CopyCountClass);
 
 static void Init()
 {
+    puerts::DefineClass<CopyCountClass>().Constructor().Property("Value", MakeProperty(&CopyCountClass::Value)).Register();
+
     puerts::DefineClass<NoDeleteClass>().Constructor().Register();
 
     puerts::DefineClass<BaseClass>()
@@ -49,6 +52,9 @@ static void Init()
         .Constructor<int>()    // if only one Constructor
         .Property("A", MakeProperty(&AdvanceTestClass::A))
         .Method("StdFunctionTest", MakeFunction(&AdvanceTestClass::StdFunctionTest))
+        .Method("StdFunctionRefTest", MakeFunction(&AdvanceTestClass::StdFunctionRefTest))
+        .Method("StdFunctionRefRetTest", MakeFunction(&AdvanceTestClass::StdFunctionRefRetTest))
+        .Method("StdFunctionConstRefTest", MakeFunction(&AdvanceTestClass::StdFunctionConstRefTest))
         .Method("FunctionTest", MakeFunction(&AdvanceTestClass::FunctionTest))
         .Method("ObjectTest", MakeFunction(&AdvanceTestClass::ObjectTest))
         .Register();

@@ -15,6 +15,10 @@
 
 * 新增可选扩展 `puerts/module_node.js`（默认不加载），恢复类 node 的解析规则：省略扩展名、目录 index、`package.json`（`exports["."]` / `main`），以及在脚本根目录范围内查找发起模块所在目录及其上级目录的 `node_modules`。在入口模块开头加载一次即可：`puerts.genRequire('')('puerts/module_node.js', true)`。大型第三方包仍建议用 webpack 等工具打包；脚本根目录之外（例如项目根目录）的 `node_modules` 不会被查找。
 
+#### bug修复
+
+* 脚本函数转成 `std::function`（静态绑定）时按签名处理引用参数：已绑定 C++ 类型 / 容器（`UsingCppType`、`UsingContainer` 等）的非 const 引用不再拷贝，脚本里直接修改原对象；其他非 const 引用（数字、字符串等）以 `$Ref` 传入，调用后回写，生成的声明也对应为 `$Ref<...>`。此前参数会被多次拷贝且修改无法传回 (#2273)
+
 ### v1.0.9 2025年7月15日
 
 ####  新增特性

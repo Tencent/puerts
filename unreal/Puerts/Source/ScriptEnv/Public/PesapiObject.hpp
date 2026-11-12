@@ -157,6 +157,8 @@ private:
     }
 };
 
+#include "ScriptCallArg.hpp"
+
 class Function : public Object
 {
 public:
@@ -164,8 +166,23 @@ public:
     {
     }
 
+    // arguments are passed to script by value (copies)
     template <typename... Args>
     void Action(Args... cppArgs) const
+    {
+        ActionWithSignature<const Args&...>(cppArgs...);
+    }
+
+    template <typename Ret, typename... Args>
+    Ret Func(Args... cppArgs) const
+    {
+        return FuncWithSignature<Ret, const Args&...>(cppArgs...);
+    }
+
+    // arguments are passed by the parameter types of a c++ signature (see ScriptCallArg.hpp), e.g. for
+    // void(FMyClass&, int&): the object is passed without copying, the int is passed as $Ref and written back
+    template <typename... ParamTypes>
+    void ActionWithSignature(ParamTypes&&... cppArgs) const
     {
         if (!env_holder || !value_holder)
             return;
@@ -173,7 +190,7 @@ public:
         auto env = apis_->get_env_from_ref(env_holder);
         auto object = apis_->get_value_from_ref(env, value_holder);
 
-        auto _un_used = invokeHelper(env, object, cppArgs...);
+        auto _un_used = invokeHelper<ParamTypes...>(env, ValueScope.scope, object, cppArgs...);
         (void) _un_used;
 
         if (apis_->has_caught(ValueScope.scope))
@@ -182,8 +199,8 @@ public:
         }
     }
 
-    template <typename Ret, typename... Args>
-    Ret Func(Args... cppArgs) const
+    template <typename Ret, typename... ParamTypes>
+    Ret FuncWithSignature(ParamTypes&&... cppArgs) const
     {
         if (!env_holder || !value_holder)
             return {};
@@ -191,7 +208,7 @@ public:
         auto env = apis_->get_env_from_ref(env_holder);
         auto object = apis_->get_value_from_ref(env, value_holder);
 
-        auto ret = invokeHelper(env, object, cppArgs...);
+        auto ret = invokeHelper<ParamTypes...>(env, ValueScope.scope, object, cppArgs...);
 
         if (apis_->has_caught(ValueScope.scope))
         {
@@ -229,16 +246,23 @@ public:
     }
 
 private:
-    template <typename... Args>
-    pesapi_value invokeHelper(pesapi_env env, pesapi_value func, Args... CppArgs) const
+    template <typename... ParamTypes>
+    pesapi_value invokeHelper(pesapi_env env, pesapi_scope scope, pesapi_value func,
+        typename std::add_lvalue_reference<ParamTypes>::type... cppArgs) const
     {
-        pesapi_value argv[sizeof...(Args)]{pesapi_impl::Converter<Args>::toScript(PApiCallbackEnv{apis_, env}, CppArgs)...};
-        return apis_->call_function(env, func, nullptr, sizeof...(Args), argv);
-    }
-
-    pesapi_value invokeHelper(pesapi_env env, pesapi_value func) const
-    {
-        return apis_->call_function(env, func, nullptr, 0, nullptr);
+        PApiCallbackEnv context{apis_, env};
+        (void) context;
+        pesapi_value argv[sizeof...(ParamTypes) > 0 ? sizeof...(ParamTypes) : 1]{
+            ScriptCallArg<ParamTypes>::toScript(context, cppArgs)...};
+        auto ret = apis_->call_function(env, func, nullptr, sizeof...(ParamTypes), argv);
+        if (!apis_->has_caught(scope))
+        {
+            int i = 0;
+            (void) i;
+            int _dummy[] = {0, (ScriptCallArg<ParamTypes>::writeBack(context, argv[i++], cppArgs), 0)...};
+            (void) _dummy;
+        }
+        return ret;
     }
 
     friend struct pesapi_impl::Converter<Function>;
