@@ -6,6 +6,7 @@
  * which is part of this source code package.
  */
 #pragma once
+// the arguments of a std::function are passed to script by its parameter types, see ScriptCallArg.hpp
 template <typename R, typename... Args>
 struct Converter<std::function<R(Args...)>>
 {
@@ -19,7 +20,7 @@ struct Converter<std::function<R(Args...)>>
         if (API::IsNullOrUndefined(context, value))
             return nullptr;
         Function _Func(context, value);
-        return [=](Args... cppArgs) -> R { return _Func.Func<R>(cppArgs...); };
+        return [=](Args... cppArgs) -> R { return _Func.template FuncWithSignature<R, Args...>(std::forward<Args>(cppArgs)...); };
     }
 
     static bool accept(API::ContextType context, const API::ValueType value)
@@ -41,7 +42,7 @@ struct Converter<std::function<void(Args...)>>
         if (API::IsNullOrUndefined(context, value))
             return nullptr;
         Function PF(context, value);
-        return [=](Args... cppArgs) -> void { PF.Action(cppArgs...); };
+        return [=](Args... cppArgs) -> void { PF.template ActionWithSignature<Args...>(std::forward<Args>(cppArgs)...); };
     }
 
     static bool accept(API::ContextType context, const API::ValueType value)

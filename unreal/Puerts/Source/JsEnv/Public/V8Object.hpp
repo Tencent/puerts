@@ -211,6 +211,8 @@ public:
     friend struct PUERTS_NAMESPACE::v8_impl::Converter<Object>;
 };
 
+#include "ScriptCallArg.hpp"
+
 class Function : public Object
 {
 public:
@@ -222,8 +224,23 @@ public:
     {
     }
 
+    // arguments are passed to script by value (copies)
     template <typename... Args>
     void Action(Args... cppArgs) const
+    {
+        ActionWithSignature<const Args&...>(cppArgs...);
+    }
+
+    template <typename Ret, typename... Args>
+    Ret Func(Args... cppArgs) const
+    {
+        return FuncWithSignature<Ret, const Args&...>(cppArgs...);
+    }
+
+    // arguments are passed by the parameter types of a c++ signature (see ScriptCallArg.hpp), e.g. for
+    // void(FMyClass&, int&): the object is passed without copying, the int is passed as $Ref and written back
+    template <typename... ParamTypes>
+    void ActionWithSignature(ParamTypes&&... cppArgs) const
     {
         if (JsEnvLifeCycleTracker.expired())
         {
@@ -241,7 +258,7 @@ public:
 
         v8::TryCatch TryCatch(Isolate);
 
-        auto _UnUsed = InvokeHelper(Context, Object, cppArgs...);
+        auto _UnUsed = InvokeHelper<ParamTypes...>(Context, Object, cppArgs...);
 
         if (TryCatch.HasCaught())
         {
@@ -249,8 +266,8 @@ public:
         }
     }
 
-    template <typename Ret, typename... Args>
-    Ret Func(Args... cppArgs) const
+    template <typename Ret, typename... ParamTypes>
+    Ret FuncWithSignature(ParamTypes&&... cppArgs) const
     {
         if (JsEnvLifeCycleTracker.expired())
         {
@@ -268,7 +285,7 @@ public:
 
         v8::TryCatch TryCatch(Isolate);
 
-        auto MaybeRet = InvokeHelper(Context, Object, cppArgs...);
+        auto MaybeRet = InvokeHelper<ParamTypes...>(Context, Object, cppArgs...);
 
         if (TryCatch.HasCaught())
         {
@@ -298,16 +315,21 @@ public:
     }
 
 private:
-    template <typename... Args>
-    auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
+    template <typename... ParamTypes>
+    v8::MaybeLocal<v8::Value> InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object,
+        typename std::add_lvalue_reference<ParamTypes>::type... CppArgs) const
     {
-        v8::Local<v8::Value> Argv[sizeof...(Args)]{v8_impl::Converter<Args>::toScript(Context, CppArgs)...};
-        return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
-    }
-
-    auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object) const
-    {
-        return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), 0, nullptr);
+        v8::Local<v8::Value> Argv[sizeof...(ParamTypes) > 0 ? sizeof...(ParamTypes) : 1]{
+            ScriptCallArg<ParamTypes>::toScript(Context, CppArgs)...};
+        auto MaybeRet = Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(ParamTypes), Argv);
+        if (!MaybeRet.IsEmpty())
+        {
+            int I = 0;
+            (void) I;
+            int _Dummy[] = {0, (ScriptCallArg<ParamTypes>::writeBack(Context, Argv[I++], CppArgs), 0)...};
+            (void) _Dummy;
+        }
+        return MaybeRet;
     }
 
     friend struct PUERTS_NAMESPACE::v8_impl::Converter<Function>;
