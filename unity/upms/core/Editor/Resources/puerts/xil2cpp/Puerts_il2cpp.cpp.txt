@@ -49,6 +49,14 @@ static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
 
 using namespace il2cpp::vm;
 
+// il2cpp::vm::Object::Unbox was removed in Unity 6000.6 (replaced by Object::GetRawData).
+// Both just return the address right after the object header, so do it directly to stay
+// compatible with all Unity versions.
+static inline void* PuertsUnbox(Il2CppObject* obj)
+{
+    return reinterpret_cast<uint8_t*>(obj) + sizeof(Il2CppObject);
+}
+
 namespace puerts
 {
 struct CSharpMethodInfo
@@ -99,7 +107,7 @@ static void* ObjectAllocate(Il2CppClass *klass)
         if (klass->has_references)
         {
             auto obj = il2cpp::vm::Object::New(klass);
-            return il2cpp::vm::Object::Unbox(obj);
+            return PuertsUnbox(obj);
         }
         else
         {
@@ -591,7 +599,7 @@ static void MethodCallback(struct pesapi_ffi* apis, pesapi_callback_info info)
                     {
                         // resolved to a struct override (e.g. Object.ToString -> Vector3.ToString):
                         // the direct method body expects an unboxed this pointer
-                        callSelf = il2cpp::vm::Object::Unbox(obj);
+                        callSelf = PuertsUnbox(obj);
                         methodPointer = GetMethodPointer(method);
                     }
                     else
@@ -765,7 +773,7 @@ void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
 #else
     Il2CppObject* defaultValue = Parameter::GetDefaultParameterValueObject(method, &method->parameters[index], &isExplicitySetNullDefaultValue);
 #endif
-    return (defaultValue && il2cpp::vm::Class::IsValuetype(il2cpp::vm::Class::FromIl2CppType(il2cpp::vm::Method::GetParam(method, index), false))) ? Object::Unbox(defaultValue) : defaultValue;
+    return (defaultValue && il2cpp::vm::Class::IsValuetype(il2cpp::vm::Class::FromIl2CppType(il2cpp::vm::Method::GetParam(method, index), false))) ? PuertsUnbox(defaultValue) : defaultValue;
 }
 
 typedef void(*LogCallbackFunc)(const char* value);
@@ -1071,7 +1079,7 @@ static pesapi_value TryTranslatePrimitiveWithClass(struct pesapi_ffi* apis, pesa
             int32_t utf16len = il2cpp::utils::StringUtils::GetLength((Il2CppString*)obj);
             return ${invokePapi('create_string_utf16')}(env, reinterpret_cast<const uint16_t *>(utf16), utf16len);
         }
-        void* ptr = Object::Unbox(obj);
+        void* ptr = PuertsUnbox(obj);
         return TryTranslatePrimitivePtr(apis, env, type->type, ptr);
     }
     
@@ -1086,7 +1094,7 @@ pesapi_value TranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppC
         len = targetClass->instance_size - sizeof(Il2CppObject);
     }
 
-    return DataTransfer::CopyValueType(apis, env, targetClass, Object::Unbox(obj), len);
+    return DataTransfer::CopyValueType(apis, env, targetClass, PuertsUnbox(obj), len);
 }
 
 pesapi_value TryTranslateValueType(struct pesapi_ffi* apis, pesapi_env env, Il2CppObject* obj)
