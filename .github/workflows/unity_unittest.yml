@@ -174,7 +174,7 @@ jobs:
           cd test/unity
           node ../../cli unity-test --unity ${{ env.UNITY_EDITOR_PATH }}
       - name: TestResult
-#        if: always()
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           cd unity/test/unity
@@ -191,6 +191,11 @@ jobs:
           )
           for log_file in "${log_files[@]}"; do
             echo "Processing $log_file"
+            if [ ! -f "$log_file" ]; then
+              echo "!!! $log_file not found (this round did not run)"
+              echo
+              continue
+            fi
             grep "ENV_BACKEND" "$log_file" || true
             sed -n '/==== Bundled Python Info ====/,/==== End Bundled Python Info ====/p' "$log_file" || true
             passed_count=$(grep -c "Passed" "$log_file" || true)
@@ -339,6 +344,7 @@ jobs:
           cd test/unity
           node ../../cli unity-test --unity "$UNITY_EDITOR_PATH"
       - name: TestResult
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           cd unity/test/unity
@@ -355,6 +361,11 @@ jobs:
           )
           for log_file in "${log_files[@]}"; do
             echo "Processing $log_file"
+            if [ ! -f "$log_file" ]; then
+              echo "!!! $log_file not found (this round did not run)"
+              echo
+              continue
+            fi
             grep "ENV_BACKEND" "$log_file" || true
             sed -n '/==== Bundled Python Info ====/,/==== End Bundled Python Info ====/p' "$log_file" || true
             passed_count=$(grep -c "Passed" "$log_file" || true)
