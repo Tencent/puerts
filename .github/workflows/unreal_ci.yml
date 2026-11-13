@@ -194,7 +194,10 @@ jobs:
     - name: Run tests
       shell: bash
       run: |
-        unreal/TestProject/RunTests.sh --engine "$GITHUB_WORKSPACE/ue58" --timeout 1200
+        # The mini engine ships no usable zenserver, so ZenLocal never comes up on CI; its health/perf-evaluation
+        # threads then keep polling localhost:8558 through DevHttp/curl and can crash the editor
+        # (CURLM_WAKEUP_FAILURE assertion). Use the graph the engine itself recommends when Zen is unavailable.
+        unreal/TestProject/RunTests.sh --engine "$GITHUB_WORKSPACE/ue58" --timeout 1200 --editor-arg -ddc=NoZenLocalFallback
     - name: Upload logs
       if: always()
       uses: actions/upload-artifact@v4
