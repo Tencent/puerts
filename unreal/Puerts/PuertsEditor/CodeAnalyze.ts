@@ -704,8 +704,15 @@ function watch(configFilePath:string) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = tsi.getDirectoryPath(moduleFileName);
                         let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass as UE.Class, 0, 0);
+                        if (!bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass as UE.Class, 0, 0)) {
+                            console.error(`[CodeAnalyze] can not load or create blueprint for [${type.symbol.getName()}], skip using it as a base class`);
+                            return undefined;
+                        }
                         bp.Save();
+                        if (!bp.GeneratedClass) {
+                            console.error(`[CodeAnalyze] blueprint of [${type.symbol.getName()}] has no generated class after saving, skip using it as a base class`);
+                            return undefined;
+                        }
                         return bp.GeneratedClass;
                     }
                 }
@@ -937,7 +944,11 @@ function watch(configFilePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let lsFunctionLibrary:boolean =  baseTypeUClass && baseTypeUClass.GetName() === "BlueprintFunctionLibrary";
                 let bp = new UE.PEBlueprintAsset();
-                bp.LoadOrCreateWithMetaData(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0, uemeta.compileClassMetaData(type));
+                if (!bp.LoadOrCreateWithMetaData(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0, uemeta.compileClassMetaData(type))) {
+                    // Continuing would call AddFunction/AddMemberVariable against a null GeneratedClass and crash the editor.
+                    console.error(`[CodeAnalyze] can not load or create blueprint for [${type.getSymbol().getName()}], skip generating it`);
+                    return;
+                }
                 let hasConstructor = false;
                 let properties: ts.Symbol[] = [];
                 type.symbol.valueDeclaration.forEachChild(x  => {

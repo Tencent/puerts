@@ -175,6 +175,13 @@ public:
     void Save();
 
 private:
+    /**
+     * @brief Whether Blueprint / GeneratedClass are usable, i.e. a previous LoadOrCreate[WithMetaData] succeeded.
+     *        Logs and returns false otherwise, so the TypeScript driven Add / Setup calls degrade instead of crashing.
+     * @param InOperation Name of the caller, used for the error log only
+     */
+    bool IsAssetReady(const TCHAR* InOperation);
+
     TSet<FName> ComponentsAdded;
 
     TSet<FName> MemberVariableAdded;
