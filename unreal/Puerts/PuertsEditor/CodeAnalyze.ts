@@ -1012,7 +1012,20 @@ function watch(configFilePath:string) {
                                     flags |= Number(getDecoratorFlagsValue(symbol.valueDeclaration, "set_flags", FunctionFlags));
                                     clearFlags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "clear_flags", FunctionFlags));
                                 }
-                                
+
+                                // static methods are only allowed on BlueprintFunctionLibrary derived classes
+                                // (enforced above). Map the static modifier to FUNC_Static, otherwise the
+                                // generated UFunction is an instance function: blueprint call nodes then
+                                // require a Target pin, and the runtime only wires JS dispatch for
+                                // FUNC_Static functions, so the TS implementation would never be invoked.
+                                // Explicitly clear the flag for non-static methods so regeneration
+                                // converges when the static modifier is added or removed.
+                                if (ts.getCombinedModifierFlags(symbol.valueDeclaration) & ts.ModifierFlags.Static) {
+                                    flags |= FunctionFlags.FUNC_Static;
+                                } else {
+                                    clearFlags |= FunctionFlags.FUNC_Static;
+                                }
+
                                 if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
                                     // bp.AddFunction(symbol.getName(), true, undefined, undefined, flags, clearFlags);
                                     bp.AddFunctionWithMetaData(symbol.getName(), true, undefined, undefined, flags, clearFlags, uemeta.compileFunctionMetaData(symbol));
