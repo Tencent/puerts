@@ -2434,6 +2434,13 @@ struct JsEnvPrivate
             //PLog("CleanupPendingKillScriptObjects: %p", valueRef);
             Il2CppGCHandle* store = reinterpret_cast<Il2CppGCHandle*>(${invokePapi('get_ref_internal_fields')}(valueRef, &fieldCount));
             Il2CppGCHandle handle = *store;
+            if (!handle)
+            {
+                // handle 从未写入：set_private 失败（如 quickjs 下不可扩展的 module namespace），
+                // value_ref 没有挂到 js 对象上，只需释放。Unity 6000.6 起 GCHandle 是指针编码，GetTarget(0) 会崩溃
+                ${invokePapi('release_value_ref')}(valueRef);
+                continue;
+            }
             if (nullptr == il2cpp::gc::GCHandle::GetTarget(handle)) //假如不为空代表已经重新被绑定了
             {
                 il2cpp::gc::GCHandle::Free(handle);
