@@ -177,6 +177,7 @@ protected:
     static void Load(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
     friend class FScriptEnvImpl;
+    friend class FScriptEnvMixin;
 };
 
 class FScriptStructWrapper : public FStructWrapper

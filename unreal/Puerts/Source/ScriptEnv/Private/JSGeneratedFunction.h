@@ -12,7 +12,7 @@
 
 #include "NamespaceDef.h"
 
-#include "DynamicInvoker.h"
+#include "ScriptEnvMixin.h"
 #include "FunctionTranslator.h"
 
 #include "CoreMinimal.h"
@@ -30,12 +30,10 @@ class UJSGeneratedFunction : public UFunction
 public:
     DECLARE_FUNCTION(execCallMixin);
 
-    // the js functions of mixin are kept in FScriptEnvImpl::MixinFunctionMap
-    TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
+    // the js functions of mixin are kept in FScriptEnvMixin::MixinFunctionMap
+    TWeakPtr<PUERTS_NAMESPACE::IMixinInvoker, ESPMode::ThreadSafe> MixinInvoker;
 
     std::unique_ptr<PUERTS_NAMESPACE::FFunctionTranslator> FunctionTranslator;
-
-    bool TakeJsObjectRef;
 
     UFunction* Original = nullptr;
 

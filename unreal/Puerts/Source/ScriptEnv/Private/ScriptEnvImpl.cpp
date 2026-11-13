@@ -20,11 +20,6 @@
 #include "WeakObjectPtrWrapper.h"
 #include "ObjectMapper.h"
 #include "JSLogger.h"
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "JSGeneratedClass.h"
-#include "JSGeneratedFunction.h"
-#include "Blueprint/WidgetBlueprintGeneratedClass.h"
-#endif
 #include "JSClassRegister.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Engine/UserDefinedEnum.h"
@@ -84,9 +79,9 @@ void FScriptEnvImpl::RegisterScriptEnvClass()
         .Method("ueClassToJSClass", &PapiMethod<&FScriptEnvImpl::UEClassToJSClass>, nullptr)
         .Method("newObject", &PapiMethod<&FScriptEnvImpl::NewObjectByClass>, nullptr)
         .Method("setJsTakeRef", &PapiMethod<&FScriptEnvImpl::SetJsTakeRefInTs>, nullptr)
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        .Method("mixin", &PapiMethod<&FScriptEnvImpl::Mixin>, nullptr)
-#endif
+        // setNativeTakeJsRef(cls, isNativeTakeJsRef): whether the wrappers of the objects of cls and its subclasses are held by
+        // native (the mixin of puerts/mixin.js sets it by objectTakeByNative)
+        .Method("setNativeTakeJsRef", &PapiMethod<&FScriptEnvImpl::SetNativeTakeJsRefInTs>, nullptr)
         // the timers are implemented in js (puerts/timer.js) on the tick, as unity
         .Method("registerTickHandler", &PapiMethod<&FScriptEnvImpl::RegisterTickHandler>, nullptr)
         .Method("releaseManualReleaseDelegate", &PapiMethod<&FScriptEnvImpl::ReleaseManualReleaseDelegate>, nullptr)
@@ -185,7 +180,6 @@ FScriptEnvImpl::FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared
         Apis->set_property(Env, PapiPuertsObj, "dll_ext", PapiDataTransfer::FromFString(Apis, Env, DllExt));
 
         DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
-        MixinInvoker = DynamicInvoker;
     }
 
     // before the bootstrap scripts, so the inspector sees all the scripts (hot reload looks them up by url)
@@ -281,7 +275,10 @@ FScriptEnvImpl::~FScriptEnvImpl()
             }
         }
 
-        MixinFunctionMap.Empty();
+        for (auto& Extension : Extensions)
+        {
+            Extension->OnEnvExit();
+        }
 
         // the wrappers held by native, moved out first (a wrapper may be freed synchronously while the refs are released)
         {
@@ -313,17 +310,29 @@ void FScriptEnvImpl::OnEnvReleased()
     }
 
     DynamicInvoker.Reset();
-    MixinInvoker.Reset();
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    for (size_t i = 0; i < MixinClasses.Num(); i++)
+    for (auto& Extension : Extensions)
     {
-        if (MixinClasses[i].IsValid())
+        Extension->OnEnvReleased();
+    }
+}
+
+void FScriptEnvImpl::AddExtension(std::unique_ptr<IScriptEnvExtension> Extension)
+{
+    check(Extension && !FindExtension(Extension->GetExtensionName()));
+    Extensions.push_back(std::move(Extension));
+}
+
+IScriptEnvExtension* FScriptEnvImpl::FindExtension(FName Name) const
+{
+    for (auto& Extension : Extensions)
+    {
+        if (Extension->GetExtensionName() == Name)
         {
-            UJSGeneratedClass::Restore(MixinClasses[i].Get());
+            return Extension.get();
         }
     }
-#endif
+    return nullptr;
 }
 
 void FScriptEnvImpl::InitExtensionMethodsMap()
@@ -685,7 +694,10 @@ void FScriptEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, i
 
     UnBind((UObject*) ObjectBase);
 
-    MixinFunctionMap.Remove((UFunction*) ObjectBase);
+    for (auto& Extension : Extensions)
+    {
+        Extension->NotifyUObjectDeleted(ObjectBase);
+    }
     FContainerMeta::Get().NotifyElementTypeDeleted((UField*) ObjectBase);
 
     auto CallbacksPtr = AutoReleaseCallbacksMap.Find((UObject*) ObjectBase);
@@ -708,40 +720,6 @@ void FScriptEnvImpl::TryReleaseType(UStruct* Struct)
     TypeToTemplateInfoMap.Remove(Struct);
     NativeTakeJsRefClasses.Remove(static_cast<UClass*>(Struct));
 }
-
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
-{
-#ifdef SINGLE_THREAD_VERIFY
-    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
-#endif
-    auto JsFuncPtr = MixinFunctionMap.Find(Function);
-    if (!JsFuncPtr || !*JsFuncPtr)
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
-            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-        UJSGeneratedFunction::SkipFunction(Stack, RESULT_PARAM, Function);
-        return;
-    }
-
-    struct pesapi_ffi* Apis = MainApis;
-    pesapi_env_ref EnvRef = Apis->get_ref_associated_env(JsFuncPtr->GetRef());
-    pesapi_scope_memory ScopeMemory;
-    pesapi_scope Scope = Apis->open_scope_placement(EnvRef, &ScopeMemory);
-    pesapi_env Env = Apis->get_env_from_ref(EnvRef);
-
-    pesapi_value Self = FindOrAdd(Env, ContextObject->GetClass(), ContextObject);
-
-    Function->FunctionTranslator->CallJs(Apis, Env, JsFuncPtr->Get(Env), Self, ContextObject, Stack, RESULT_PARAM);
-
-    if (Apis->has_caught(Scope))
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
-            *Function->GetName(), ContextObject, UTF8_TO_TCHAR(Apis->get_exception_as_string(Scope, true))));
-    }
-    Apis->close_scope_placement(Scope);
-}
-#endif
 
 void FScriptEnvImpl::ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr)
 {
@@ -1447,6 +1425,44 @@ void FScriptEnvImpl::SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_i
     SetJsTakeRef(Env, Object);
 }
 
+void FScriptEnvImpl::SetNativeTakeJsRef(UClass* Class, bool IsNativeTakeJsRef)
+{
+    // the nearest entry of the class chain wins, the subclasses set before follow this one
+    for (auto It = NativeTakeJsRefClasses.CreateIterator(); It; ++It)
+    {
+        if (It.Key() != Class && It.Key()->IsChildOf(Class))
+        {
+            It.RemoveCurrent();
+        }
+    }
+    NativeTakeJsRefClasses.Add(Class, IsNativeTakeJsRef);
+}
+
+void FScriptEnvImpl::SetNativeTakeJsRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info)
+{
+    PAPI_CHECK_ARGS(EArgObject);
+
+    pesapi_env Env = Apis->get_env(Info);
+    UClass* Class = nullptr;
+    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
+    {
+        if (PapiUtils::IsReleasedPtr(Object))
+        {
+            Apis->throw_by_string(Info, "passing a invalid object");
+            return;
+        }
+        Class = Cast<UClass>(Object);
+    }
+    if (!Class)
+    {
+        Apis->throw_by_string(Info, "#0 parameter expect a UClass");
+        return;
+    }
+
+    pesapi_value Arg = Apis->get_arg(Info, 1);
+    SetNativeTakeJsRef(Class, Apis->is_boolean(Env, Arg) && Apis->get_value_bool(Env, Arg));
+}
+
 void FScriptEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -1703,159 +1719,6 @@ bool FScriptEnvImpl::IsQuickJS() const
 {
     return Backend->IsQuickJS();
 }
-
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-void FScriptEnvImpl::Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info)
-{
-    PAPI_CHECK_ARGS(EArgObject, EArgObject);
-
-    pesapi_env Env = Apis->get_env(Info);
-
-    UClass* To = nullptr;
-    if (UObject* Object = PapiDataTransfer::GetUObjectOfValue(Apis, Env, Apis->get_arg(Info, 0)))
-    {
-        if (PapiUtils::IsReleasedPtr(Object))
-        {
-            Apis->throw_by_string(Info, "passing a invalid object");
-            return;
-        }
-        To = Cast<UClass>(Object);
-    }
-
-    if (!To)
-    {
-        Apis->throw_by_string(Info, "#0 parameter expect a Blueprint UClass");
-        return;
-    }
-
-    auto BoolArg = [Apis, Env, Info](int Index)
-    {
-        pesapi_value Arg = Apis->get_arg(Info, Index);
-        return Apis->is_boolean(Env, Arg) && Apis->get_value_bool(Env, Arg);
-    };
-
-    // release
-    if (BoolArg(5))
-    {
-        MixinClasses.Remove(To);
-        UJSGeneratedClass::Restore(To);
-        return;
-    }
-
-    if (MixinClasses.Contains(To))
-    {
-        Apis->throw_by_string(Info, "had mixin");
-        return;
-    }
-
-    pesapi_value MixinMethods = Apis->get_arg(Info, 1);
-
-    bool TakeJsObjectRef = BoolArg(2);
-
-    bool Inherit = BoolArg(3);
-
-    bool NoWarning = BoolArg(4);
-
-    UClass* New = To;
-
-    if (Inherit)
-    {
-        New = NewObject<UClass>(To->GetOuter(), To->GetClass(),
-            MakeUniqueObjectName(To->GetOuter(), To->GetClass(), *(To->GetName() + TEXT("_MixinGen_"))));
-        New->PropertyLink = To->PropertyLink;
-        New->ClassWithin = To->ClassWithin;
-        New->ClassConfigName = To->ClassConfigName;
-        New->ClassFlags = To->ClassFlags;
-        New->ClassCastFlags = To->ClassCastFlags;
-        New->ClassConstructor = To->ClassConstructor;
-        New->ClassFlags = New->ClassFlags | EClassFlags::CLASS_Transient;
-        New->ClassFlags = New->ClassFlags & (~EClassFlags::CLASS_Intrinsic);
-        New->SetFlags(EObjectFlags::RF_Transient);
-        New->SetSuperStruct(To);
-    }
-
-    // papi has no own property enumeration, use Object.getOwnPropertyNames (mixin is not a hot path)
-    static const char GetNamesCode[] = "Object.getOwnPropertyNames";
-    pesapi_value GetNames = Apis->eval(Env, (const uint8_t*) GetNamesCode, sizeof(GetNamesCode) - 1, "puerts/mixin_names");
-    pesapi_value GetNamesArgs[] = {MixinMethods};
-    pesapi_value Keys = GetNames ? Apis->call_function(Env, GetNames, nullptr, 1, GetNamesArgs) : nullptr;
-    if (!Keys)
-    {
-        return;    // the exception propagates to the js caller
-    }
-    TArray<FName> ReplaceMethodNames;
-    const uint32_t KeysLen = Apis->get_array_length(Env, Keys);
-    TArray<char> KeyBuf;
-    for (uint32_t i = 0; i < KeysLen; ++i)
-    {
-        pesapi_value Key = Apis->get_property_uint32(Env, Keys, i);
-        size_t KeyLen = 0;
-        Apis->get_value_string_utf8(Env, Key, nullptr, &KeyLen);
-        KeyBuf.SetNumUninitialized(static_cast<int32>(KeyLen) + 1);
-        Apis->get_value_string_utf8(Env, Key, KeyBuf.GetData(), &KeyLen);
-        KeyBuf[static_cast<int32>(KeyLen)] = '\0';
-        FName MethodName = UTF8_TO_TCHAR(KeyBuf.GetData());
-        auto Function = To->FindFunctionByName(MethodName);
-        if (Function)
-        {
-            pesapi_value JsFunc = Apis->get_property(Env, MixinMethods, KeyBuf.GetData());
-            auto MixinedFunc = UJSGeneratedClass::Mixin(New, Function, MixinInvoker, TakeJsObjectRef, !NoWarning);
-            MixinFunctionMap.Emplace(MixinedFunc, FPapiValueRef(Apis, Env, JsFunc));
-            ReplaceMethodNames.Add(MethodName);
-        }
-    }
-
-    if (Inherit)
-    {
-        New->Bind();
-        New->StaticLink(true);
-
-        auto CDO = New->GetDefaultObject();
-        if (auto WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(New))
-        {
-            WidgetClass->UpdateCustomPropertyListForPostConstruction();
-        }
-        else if (auto BPClass = Cast<UBlueprintGeneratedClass>(New))
-        {
-            BPClass->UpdateCustomPropertyListForPostConstruction();
-        }
-
-        if (CDO->IsA<AActor>())
-        {
-            if (UBlueprintGeneratedClass* BPGClass = Cast<UBlueprintGeneratedClass>(New))
-            {
-                BPGClass->bCooked = true;
-            }
-        }
-
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 12
-        // 拷贝创建的Class需要手动重新创建ReferenceTokenStream
-        New->AssembleReferenceTokenStream(true);
-#endif
-    }
-    else
-    {
-        To->ClearFunctionMapsCaches();
-        auto StructWrapper = FStructWrapper::FindOrAdd(To);
-        for (int i = 0; i < ReplaceMethodNames.Num(); i++)
-        {
-            StructWrapper->RefreshMethod(To->FindFunctionByName(ReplaceMethodNames[i]));
-        }
-    }
-    MixinClasses.Add(New);
-
-    // the nearest entry of the class chain wins, the subclasses mixed in before follow this one
-    for (auto It = NativeTakeJsRefClasses.CreateIterator(); It; ++It)
-    {
-        if (It.Key() != New && It.Key()->IsChildOf(New))
-        {
-            It.RemoveCurrent();
-        }
-    }
-    NativeTakeJsRefClasses.Add(New, TakeJsObjectRef);
-    Apis->add_return(Info, FindOrAdd(Env, New->GetClass(), New));
-}
-#endif
 
 void FScriptEnvImpl::DumpStatisticsLog() const
 {

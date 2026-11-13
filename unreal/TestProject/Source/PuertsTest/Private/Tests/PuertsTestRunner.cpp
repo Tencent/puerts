@@ -1,6 +1,7 @@
 #include "PuertsTestRunner.h"
 
 #include "ScriptEnv.h"
+#include "ScriptEnvMixinApi.h"
 #include "PapiBackendV8.h"
 #include "PapiBackendQuickjs.h"
 #include "PapiBackendLua.h"
@@ -138,6 +139,11 @@ UPuertsTestReporter* RunScript(FAutomationTestBase& Test, EBackend Backend, cons
 
     {
         auto Env = MakeUnique<PUERTS_NAMESPACE::FScriptEnv>(BackendFactory(Backend));
+        // blueprint.mixin of the js scripts (tests/mixin.js), the env does not have it by default
+        if (Backend == EBackend::V8 || Backend == EBackend::Quickjs)
+        {
+            PUERTS_NAMESPACE::EnableMixin(*Env);
+        }
         TArray<TPair<FString, UObject*>> Arguments;
         Arguments.Add(TPair<FString, UObject*>(TEXT("Reporter"), Reporter));
         Env->Start(Module, Arguments);

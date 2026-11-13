@@ -25,6 +25,9 @@ public:
     // the module loader of the old versions, wrapped by FJSModuleLoaderAdapter
     FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugStartPort,
         const FString InFlags = FString(), void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
+
+    // the selector of the env a mixin method is called in (the first by default), as the old versions
+    void SetJsEnvSelector(std::function<int(UObject*, int)> InSelector);
 };
 
 }    // namespace PUERTS_NAMESPACE

@@ -9,11 +9,14 @@
 #include "JsEnv.h"
 #include "JsEnvGroup.h"
 #include "PapiBackendV8.h"
+#include "ScriptEnvMixinApi.h"
 
 namespace PUERTS_NAMESPACE
 {
+// FJsEnv / FJsEnvGroup are the envs of the old versions, so they always have blueprint.mixin
 FJsEnv::FJsEnv(const FString& ScriptRoot) : FScriptEnv(&FPapiBackendV8::Create, ScriptRoot)
 {
+    EnableMixin(*this);
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
@@ -21,6 +24,7 @@ FJsEnv::FJsEnv(std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<
     : FScriptEnv(
           &FPapiBackendV8::Create, std::move(InFileLoader), InLogger, InDebugPort, InFlags, InExternalRuntime, InExternalContext)
 {
+    EnableMixin(*this);
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
@@ -28,11 +32,13 @@ FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<
     : FScriptEnv(&FPapiBackendV8::Create, std::make_shared<FJSModuleLoaderAdapter>(std::move(InModuleLoader)), InLogger,
           InDebugPort, InFlags, InExternalRuntime, InExternalContext)
 {
+    EnableMixin(*this);
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot) : FScriptEnvGroup(&FPapiBackendV8::Create, Size, ScriptRoot)
 {
+    EnableMixin(*this);
 }
 
 FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger,
@@ -40,6 +46,7 @@ FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IScriptFileLoader> InFileLoad
     : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::move(InFileLoader), InLogger, InDebugStartPort, InFlags,
           InExternalRuntime, InExternalContext)
 {
+    EnableMixin(*this);
 }
 
 FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
@@ -47,6 +54,12 @@ FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoad
     : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::make_shared<FJSModuleLoaderAdapter>(std::move(InModuleLoader)), InLogger,
           InDebugStartPort, InFlags, InExternalRuntime, InExternalContext)
 {
+    EnableMixin(*this);
+}
+
+void FJsEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)
+{
+    SetMixinSelector(*this, InSelector);
 }
 #endif
 

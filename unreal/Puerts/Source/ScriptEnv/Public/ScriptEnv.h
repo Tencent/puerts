@@ -75,6 +75,12 @@ public:
 
     void InitExtensionMethodsMap();
 
+    // the env implementation, for the optional features added from outside (e.g. EnableMixin of ScriptEnvMixinApi.h)
+    IScriptEnv* GetScriptEnv() const
+    {
+        return GameScript.get();
+    }
+
 private:
     std::unique_ptr<IScriptEnv> GameScript;
 };

@@ -30,12 +30,14 @@ public:
 
     std::shared_ptr<IScriptEnv> Get(int Index);
 
-    void SetJsEnvSelector(std::function<int(UObject*, int)> InSelector);
+    // the number of the envs
+    int Num() const
+    {
+        return static_cast<int>(JsEnvList.size());
+    }
 
 private:
     std::vector<std::shared_ptr<IScriptEnv>> JsEnvList;
-
-    void Init();
 };
 
 }    // namespace PUERTS_NAMESPACE

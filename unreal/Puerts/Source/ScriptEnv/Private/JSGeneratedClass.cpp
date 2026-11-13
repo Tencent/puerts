@@ -20,8 +20,8 @@
 
 #define MIXIN_METHOD_SUFFIX "__puerts_mixin__"
 
-UFunction* UJSGeneratedClass::Mixin(UClass* Class, UFunction* Super,
-    TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
+UFunction* UJSGeneratedClass::Mixin(
+    UClass* Class, UFunction* Super, TSharedPtr<PUERTS_NAMESPACE::IMixinInvoker, ESPMode::ThreadSafe> MixinInvoker, bool Warning)
 {
     bool Existed = Super->GetOuter() == Class;
 
@@ -78,9 +78,8 @@ UFunction* UJSGeneratedClass::Mixin(UClass* Class, UFunction* Super,
 
     Function->SetSuperStruct(Super->GetSuperStruct());
 
-    Function->DynamicInvoker = DynamicInvoker;
+    Function->MixinInvoker = MixinInvoker;
     Function->FunctionTranslator = std::make_unique<PUERTS_NAMESPACE::FFunctionTranslator>(Super, false);
-    Function->TakeJsObjectRef = TakeJsObjectRef;
 
     Function->Next = Class->Children;
     Class->Children = Function;

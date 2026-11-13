@@ -14,10 +14,8 @@
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #include "ObjectRetainer.h"
-#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "DynamicInvoker.h"
-#include "JSGeneratedFunction.h"
-#endif
+#include "ScriptEnvExtension.h"
 #include "UECompatible.h"
 #include "ContainerMeta.h"
 #include "ContainerWrapper.h"
@@ -129,9 +127,29 @@ public:
 
     void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
-#endif
+    // the extensions of the env (e.g. the mixin, FScriptEnvMixin), owned by the env, added before Start. Their hooks are called
+    // by the env (see IScriptEnvExtension)
+    void AddExtension(std::unique_ptr<IScriptEnvExtension> Extension);
+
+    IScriptEnvExtension* FindExtension(FName Name) const;
+
+    struct pesapi_ffi* GetApis() const
+    {
+        return MainApis;
+    }
+
+    pesapi_env_ref GetMainEnvRef() const
+    {
+        return MainEnvRef;
+    }
+
+    std::shared_ptr<ILogger> GetLogger() const
+    {
+        return Logger;
+    }
+
+    // whether the wrappers of the objects of Class and its subclasses are held by native (see NativeTakeJsRefClasses)
+    void SetNativeTakeJsRef(UClass* Class, bool IsNativeTakeJsRef);
 
 public:
 #if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
@@ -182,6 +200,9 @@ private:
 
     void SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
+    // scriptEnv.setNativeTakeJsRef(cls, isNativeTakeJsRef)
+    void SetNativeTakeJsRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
     // the per env info of a UStruct whose js class is built in this env (the class itself is cached by the backend, keyed by
     // the type id, see pesapi create_class)
     struct FTemplateInfo
@@ -201,11 +222,6 @@ private:
 
     void NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    TArray<TWeakObjectPtr<UClass>> MixinClasses;
-    void Mixin(struct pesapi_ffi* Apis, pesapi_callback_info Info);
-#endif
-
     void DumpStatisticsLog() const;
 
     bool IsQuickJS() const;
@@ -214,10 +230,6 @@ private:
     // a native object of it that is not owned by the script (no finalize)
     static void RegisterScriptEnvClass();
 
-public:
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    TSharedPtr<IDynamicInvoker, ESPMode::ThreadSafe> MixinInvoker;
-#endif
 private:
     // the UObjects held by their wrappers (see OnUObjectEnter)
     FObjectRetainer UserObjectRetainer;
@@ -257,10 +269,10 @@ private:
     virtual void OnUObjectExit(UObject* UEObject, void* UserData) override;
 
     // whether the wrapper of Obj is held by native (the UObject does not hold the wrapper), by the nearest class of Obj in
-    // NativeTakeJsRefClasses (set by mixin), the default otherwise
+    // NativeTakeJsRefClasses (set by setNativeTakeJsRef, the mixin of puerts/mixin.js), the default otherwise
     bool IsNativeTakeJsRefObject(UObject* Obj) const;
 
-    // per env (the wrappers are shared by envs), set by mixin for a class and its subclasses
+    // per env (the wrappers are shared by envs), set by setNativeTakeJsRef for a class and its subclasses
     TMap<UClass*, bool> NativeTakeJsRefClasses;
 
     // the wrappers held strongly by native (set by OnUObjectEnter), released by SetJsTakeRef, when the UObject is destroyed or
@@ -294,21 +306,14 @@ private:
             if (Parent)
                 Parent->InvokeDelegateCallback(Proxy, Params);
         }
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-        virtual void InvokeMixinMethod(
-            UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
-        {
-            if (Parent)
-                Parent->InvokeMixinMethod(ContextObject, Function, Stack, RESULT_PARAM);
-        }
-#endif
         FScriptEnvImpl* Parent;
     };
     TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 
-    TMap<UFunction*, FPapiValueRef> MixinFunctionMap;
+    // destroyed after the backend (the env is released)
+    std::vector<std::unique_ptr<IScriptEnvExtension>> Extensions;
 
     // released before CppObjectMapper.UnInitialize
     TArray<FPapiValueRef> TickHandlers;

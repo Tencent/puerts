@@ -170,44 +170,7 @@ var global = global || (function () { return this; }());
     
     blueprint.tojs = UEClassToJSClass;
     
-    function mixin(to, mixinClass, config) {
-        config = config || {};
-        let mixinMethods = Object.create(null);
-        let names = Object.getOwnPropertyNames(mixinClass.prototype);
-        for(var i = 0; i < names.length; ++i) {
-            let name = names[i];
-            let descriptor = Object.getOwnPropertyDescriptor(mixinClass.prototype, name);
-            if (typeof descriptor.value === 'function' && name != "constructor") {
-                 mixinMethods[name] = mixinClass.prototype[name];
-            }
-        }
-        let cls = scriptEnv.mixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit, config.noMixinedWarning);
-        
-        let jsCls = UEClassToJSClass(cls);
-        Object.getOwnPropertyNames(mixinMethods).forEach(name => {
-            if (!jsCls.prototype.hasOwnProperty(name)) {
-                Object.defineProperty(
-                    jsCls.prototype,
-                    name,
-                    Object.getOwnPropertyDescriptor(mixinMethods, name) ||
-                    Object.create(null)
-                );
-            }
-        });
-                
-        if (config.inherit) {
-            config.generatedClass = cls;
-        }
-        return jsCls;
-    }
-    
-    blueprint.mixin = mixin;
-    
-    function unmixin(to) {
-        scriptEnv.mixin(to.StaticClass(), {}, undefined, undefined, undefined, true);
-    }
-    
-    blueprint.unmixin = unmixin;
+    // blueprint.mixin / blueprint.unmixin are added by puerts/mixin.js when the mixin is enabled (EnableMixin of ScriptEnvMixinApi.h)
     
     const bpns = new Set(['Game']);
     

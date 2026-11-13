@@ -10,7 +10,7 @@
 
 #include "NamespaceDef.h"
 
-#include "DynamicInvoker.h"
+#include "ScriptEnvMixin.h"
 
 #include "CoreMinimal.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -26,7 +26,7 @@ class UJSGeneratedClass : public UBlueprintGeneratedClass
 
 public:
     static UFunction* Mixin(UClass* Class, UFunction* Super,
-        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning);
+        TSharedPtr<PUERTS_NAMESPACE::IMixinInvoker, ESPMode::ThreadSafe> MixinInvoker, bool Warning);
 
     static void Restore(UClass* Class);
 };

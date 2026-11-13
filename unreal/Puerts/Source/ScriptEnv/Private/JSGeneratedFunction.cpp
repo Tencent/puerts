@@ -62,10 +62,10 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallMixin)
 
     if (JsFunc)
     {
-        auto PinedDynamicInvoker = JsFunc->DynamicInvoker.Pin();
-        if (PinedDynamicInvoker)
+        auto PinedMixinInvoker = JsFunc->MixinInvoker.Pin();
+        if (PinedMixinInvoker)
         {
-            PinedDynamicInvoker->InvokeMixinMethod(Context, JsFunc, Stack, RESULT_PARAM);
+            PinedMixinInvoker->InvokeMixinMethod(Context, JsFunc, Stack, RESULT_PARAM);
         }
     }
 #endif

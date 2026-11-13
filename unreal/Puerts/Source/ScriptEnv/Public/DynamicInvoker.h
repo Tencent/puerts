@@ -14,17 +14,13 @@
 #include "pesapi.h"
 
 class UDynamicDelegateProxy;
-class UJSGeneratedFunction;
 namespace PUERTS_NAMESPACE
 {
+// calls the js callbacks of a delegate proxy (the mixin methods are called by IMixinInvoker of ScriptEnvMixin.h)
 class IDynamicInvoker
 {
 public:
     virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) = 0;
-
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    virtual void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) = 0;
-#endif
 };
 
 }    // namespace PUERTS_NAMESPACE
