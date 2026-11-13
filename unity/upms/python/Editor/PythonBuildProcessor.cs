@@ -52,6 +52,19 @@ namespace Puerts.Editor
             {
                 // Tester.exe / Tester.x86_64 -> Tester_Data/StreamingAssets
                 dataDir = Path.Combine(Path.GetDirectoryName(outputPath), Path.GetFileNameWithoutExtension(outputPath) + "_Data");
+                if (!Directory.Exists(dataDir) && Directory.Exists(outputPath))
+                {
+                    // Windows "Create Visual Studio Solution": outputPath is a directory and the data lives in
+                    // <outputPath>/build/bin/<productName>_Data
+                    dataDir = Path.Combine(outputPath, "build", "bin", PlayerSettings.productName + "_Data");
+                    if (!Directory.Exists(dataDir))
+                    {
+                        foreach (var d in Directory.GetDirectories(outputPath, "*_Data", SearchOption.AllDirectories))
+                        {
+                            if (File.Exists(Path.Combine(d, "globalgamemanagers"))) { dataDir = d; break; }
+                        }
+                    }
+                }
             }
             return Directory.Exists(dataDir) ? Path.Combine(dataDir, "StreamingAssets") : null;
         }
