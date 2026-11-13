@@ -74,6 +74,14 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class DelegateLeak
     {
+        // Not only the LeakTarget itself: the discarded Action delegate and its ScriptObject target can also
+        // be pinned by stale pointers (il2cpp bdwgc scans stacks conservatively). A pinned delegate never runs
+        // its finalizer, so its value_ref is never released and the JS closure keeps its LeakTarget alive.
+        // CI hit "but 2" with 5 targets. Use many targets and tolerate a few pinned ones: a real leak (the
+        // closure is never released) keeps every target alive, so it is still detected.
+        const int TargetCount = 64;
+        const int PinTolerance = 4;
+
         [Test]
         public void DelegateLeakTest()
         {
@@ -93,7 +101,7 @@ namespace Puerts.UnitTest
 
             env.Eval(@"
 (function () {{
-    for (let i = 0; i < 5; i++) {{
+    for (let i = 0; i < " + TargetCount + @"; i++) {{
         let o = new CS.Puerts.UnitTest.LeakTarget();
         CS.Puerts.UnitTest.Probe.Track(o);
         let cb = () => o;                      // ±Õ°ü²¶»ñ o
@@ -127,11 +135,9 @@ namespace Puerts.UnitTest
             {
                 Console.WriteLine("LeakTarget remain " + alive + " after release, maybe pinned by conservative stack scan");
             }
-            // A real leak (the closure keeping the target alive) leaves all 5 objects alive, so
-            // tolerating a single pinned object still detects it.
-            if (alive > 1)
+            if (alive > PinTolerance)
             {
-                throw new Exception("expect at most 1 LeakTarget alive, but " + alive);
+                throw new Exception("expect at most " + PinTolerance + " of " + TargetCount + " LeakTarget alive, but " + alive);
             }
         }
     }
