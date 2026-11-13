@@ -463,10 +463,11 @@ namespace Puerts.UnitTest
         public void TestLuaGCTest()
         {
             var luaEnv = new ScriptEnv(new BackendLua());
+            var placeholders = GCTestHelper.AllocPlaceholders();
             TestGC.ObjCount = 0;
             var objCount = luaEnv.Eval<int>(@"
                 local CS = require('csharp')
-                local randomCount = math.random(50) + 1
+                local randomCount = " + GCTestHelper.ObjCount + @"
                 objs = {}
                 for i = 1, randomCount do
                     objs[i] = CS.Puerts.UnitTest.TestGC()
@@ -474,26 +475,19 @@ namespace Puerts.UnitTest
                 return randomCount
             ");
 
-            luaEnv.Eval("collectgarbage('collect')");
+            Action luaGC = () => luaEnv.Eval("collectgarbage('collect')");
+            GCTestHelper.FullGC(luaGC);
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
+            // Lua 持有期间一个都不能被回收
+            Assert.AreEqual(GCTestHelper.ObjCount, objCount);
             Assert.AreEqual(objCount, TestGC.ObjCount);
-            Assert.True(objCount > 0);
 
             luaEnv.Eval("objs = nil");
-            luaEnv.Eval("collectgarbage('collect')");
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            // 释放后允许极少量被 il2cpp 保守栈扫描钉住，见 Javascript/CrossLang/CrossLangTest.cs 的 TestJsGC 说明
+            GCTestHelper.AssertTestGCReleased(luaGC);
 
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
-            Assert.AreEqual(0, TestGC.ObjCount);
-
+            GC.KeepAlive(placeholders);
             luaEnv.Dispose();
         }
 
@@ -501,10 +495,11 @@ namespace Puerts.UnitTest
         public void TestLuaStructGCTest()
         {
             var luaEnv = new ScriptEnv(new BackendLua());
+            var placeholders = GCTestHelper.AllocPlaceholders();
             TestGC.ObjCount = 0;
             var objCount = luaEnv.Eval<int>(@"
                 local CS = require('csharp')
-                local randomCount = math.random(50) + 1
+                local randomCount = " + GCTestHelper.ObjCount + @"
                 objs = {}
                 for i = 1, randomCount do
                     objs[i] = CS.Puerts.UnitTest.TakeTestGC(1)
@@ -512,26 +507,19 @@ namespace Puerts.UnitTest
                 return randomCount
             ");
 
-            luaEnv.Eval("collectgarbage('collect')");
+            Action luaGC = () => luaEnv.Eval("collectgarbage('collect')");
+            GCTestHelper.FullGC(luaGC);
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
+            // Lua 持有期间一个都不能被回收
+            Assert.AreEqual(GCTestHelper.ObjCount, objCount);
             Assert.AreEqual(objCount, TestGC.ObjCount);
-            Assert.True(objCount > 0);
 
             luaEnv.Eval("objs = nil");
-            luaEnv.Eval("collectgarbage('collect')");
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            // 释放后允许极少量被 il2cpp 保守栈扫描钉住，见 Javascript/CrossLang/CrossLangTest.cs 的 TestJsGC 说明
+            GCTestHelper.AssertTestGCReleased(luaGC);
 
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 Javascript/CrossLang/CrossLangTest.cs 的 TestObjectFieldRefAStruct 说明）
-            Assert.AreEqual(0, TestGC.ObjCount);
-
+            GC.KeepAlive(placeholders);
             luaEnv.Dispose();
         }
 #endif

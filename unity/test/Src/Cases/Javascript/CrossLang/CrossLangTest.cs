@@ -12,19 +12,27 @@ namespace Puerts.UnitTest
     [UnityEngine.Scripting.Preserve]
     public class TestGC
     {
-        public static int ObjCount = 0;
+        // ctor 在主线程、终结器在 Finalizer 线程，用 Interlocked 计数。
+        // 注意不要给 TestGC 加实例字段：GCTestHelper.AllocPlaceholders 依赖它和 new object() 同大小（同一个 GC 空闲链表）
+        private static int count = 0;
+
+        public static int ObjCount
+        {
+            get { return System.Threading.Volatile.Read(ref count); }
+            set { System.Threading.Interlocked.Exchange(ref count, value); }
+        }
 
         [UnityEngine.Scripting.Preserve]
         public TestGC()
         {
-            ++ObjCount;
+            System.Threading.Interlocked.Increment(ref count);
         }
 
         [UnityEngine.Scripting.Preserve]
 
         ~TestGC()
         {
-            --ObjCount;
+            System.Threading.Interlocked.Decrement(ref count);
         }
     }
 
@@ -38,6 +46,50 @@ namespace Puerts.UnitTest
         }
 
         public TestGC testGC;
+    }
+
+    // 脚本引用 C# 对象的 GC 用例公共逻辑，原因说明见 Javascript CrossLangTest.TestJsGC 前的注释
+    public static class GCTestHelper
+    {
+        public const int ObjCount = 64;
+        public const int PinTolerance = 2;
+
+        // 与 TestGC 同大小（无引用字段）的占位对象，持有到用例结束，先消耗掉可能被栈上残留指针指着的空闲块
+        public static object[] AllocPlaceholders()
+        {
+            var placeholders = new object[1024];
+            for (int i = 0; i < placeholders.Length; i++)
+            {
+                placeholders[i] = new object();
+            }
+            return placeholders;
+        }
+
+        public static void FullGC(Action scriptGC)
+        {
+            if (scriptGC != null) scriptGC();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        public static void AssertTestGCReleased(Action scriptGC)
+        {
+            for (int i = 0; i < 10 && TestGC.ObjCount != 0; i++)
+            {
+                FullGC(scriptGC);
+                if (TestGC.ObjCount != 0)
+                {
+                    System.Threading.Thread.Sleep(20);
+                }
+            }
+            int remain = TestGC.ObjCount;
+            if (remain != 0)
+            {
+                Console.WriteLine("TestGC remain " + remain + " after release, maybe pinned by conservative stack scan");
+            }
+            Assert.True(remain >= -PinTolerance && remain <= PinTolerance);
+        }
     }
 
     [UnityEngine.Scripting.Preserve]
@@ -1966,6 +2018,27 @@ namespace Puerts.UnitTest
             });
         }
 
+        // GC 相关用例在 il2cpp 下偶发"释放后还剩 1 个"（expect [0] == [1]），原因不是 puerts 泄漏，也不是终结器时序：
+        // il2cpp 用的 bdwgc 会保守扫描线程栈。实测（Unity 6000.6，VS 工程 Release）在进入 TestJsGC 时，
+        // 调用方栈帧（测试框架反射调用的 Runtime::InvokeArray / InvokeConvertArgs）里就已经残留一个指针，
+        // 指向 bdwgc 线程本地空闲链表里的某个 16 字节空闲块。随后 JS 里 new 的某个 TestGC 恰好分配在这块内存上，
+        // 就被这个用例之外的残留值一直钉住：JS 已释放、ObjectPool 已 Remove，sleep、再 GC、清 64KB 栈都回收不掉。
+        // 6000.6 的 libil2cpp/编译器让这条反射调用路径的栈布局和寄存器溢出位置变了，Release 下残留值不再被覆盖，所以概率明显升高。
+        // 应对（见 GCTestHelper）：
+        // 1. 先在本线程分配一批与 TestGC 同大小（无引用字段）的占位对象并持有到用例结束，
+        //    把"被残留指针指着的空闲块"先消耗掉，后续 TestGC 就不会落在上面；
+        // 2. 释放后轮询 GC，直到计数归零或超时，消除终结器线程时序的影响；
+        // 3. 对象数固定为较大值，仍允许极少量（PinTolerance）被保守扫描钉住，真正的泄漏（脚本未释放）会剩下全部或大部分，依然能测出来；
+        // 4. 之前用例被钉住的 TestGC 可能在本用例里才被终结，导致计数略小于 0，同样在容忍范围内。
+        static Action JsGC(ScriptEnv jsEnv, Backend backend)
+        {
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
+            {
+                return () => jsEnv.Eval("gc()");
+            }
+            return null;
+        }
+
         //看上去GC.Collect()对webgl无效，先去掉
         [Test]
         public void TestJsGC()
@@ -1977,44 +2050,27 @@ namespace Puerts.UnitTest
             var backend = new Puerts.BackendV8(new DefaultLoader());
             var jsEnv = new ScriptEnv(backend);
 #endif
+            var placeholders = GCTestHelper.AllocPlaceholders();
             TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
-            const randomCount = Math.floor(Math.random() * 50) + 1;
-
             var objs = []
-            for (let i = 0; i < randomCount; i++) {
+            for (let i = 0; i < " + GCTestHelper.ObjCount + @"; i++) {
                 objs.push(new CS.Puerts.UnitTest.TestGC())
             }
-            randomCount;
+            objs.length;
             ");
 
-            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
-            {
-                jsEnv.Eval("gc()");
-            }
+            GCTestHelper.FullGC(JsGC(jsEnv, backend));
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 TestObjectFieldRefAStruct 的说明）
+            // JS 持有期间一个都不能被回收
+            Assert.AreEqual(GCTestHelper.ObjCount, objCount);
             Assert.AreEqual(objCount, TestGC.ObjCount);
-            Assert.True(objCount > 0);
 
             jsEnv.Eval("objs = undefined");
 
-            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
-            {
-                jsEnv.Eval("gc()");
-            }
+            GCTestHelper.AssertTestGCReleased(JsGC(jsEnv, backend));
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 TestObjectFieldRefAStruct 的说明）
-            Assert.AreEqual(0, TestGC.ObjCount);
-
+            GC.KeepAlive(placeholders);
             jsEnv.Dispose();
         }
 
@@ -2028,44 +2084,27 @@ namespace Puerts.UnitTest
             var backend = new Puerts.BackendV8(new DefaultLoader());
             var jsEnv = new ScriptEnv(backend);
 #endif
+            var placeholders = GCTestHelper.AllocPlaceholders();
             TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
-            const randomCount = Math.floor(Math.random() * 50) + 1;
-
             var objs = []
-            for (let i = 0; i < randomCount; i++) {
+            for (let i = 0; i < " + GCTestHelper.ObjCount + @"; i++) {
                 objs.push(new CS.Puerts.UnitTest.TakeTestGC(1))
             }
-            randomCount;
+            objs.length;
             ");
 
-            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
-            {
-                jsEnv.Eval("gc()");
-            }
+            GCTestHelper.FullGC(JsGC(jsEnv, backend));
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 TestObjectFieldRefAStruct 的说明）
+            // JS 持有期间一个都不能被回收
+            Assert.AreEqual(GCTestHelper.ObjCount, objCount);
             Assert.AreEqual(objCount, TestGC.ObjCount);
-            Assert.True(objCount > 0);
 
             jsEnv.Eval("objs = undefined");
 
-            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
-            {
-                jsEnv.Eval("gc()");
-            }
+            GCTestHelper.AssertTestGCReleased(JsGC(jsEnv, backend));
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            // il2cpp下有概率失败（WaitForPendingFinalizers 提前返回，见 TestObjectFieldRefAStruct 的说明）
-            Assert.AreEqual(0, TestGC.ObjCount);
-
+            GC.KeepAlive(placeholders);
             jsEnv.Dispose();
         }
 #endif
@@ -2744,7 +2783,8 @@ __PDUOTF;");
         //   "FieldClass2 expect equals but failed: got 0 == 1!"（或 FieldClass，取决于终结队列里谁排在最后）
         // 因为只差这一个对象的终结器，重跑一次基本就能过；机器核少/调度抖动大时概率更高（CI 的 macos 上出现过）。
         // 要真消除只能改成轮询等待计数达到期望值（超时后再断言），这里保持原样，仅说明原因。
-        // 其它"WaitForPendingFinalizers 之后立刻断言终结器计数"的用例（TestJsGC、TestJsStructGC、Lua/Python 的 GC 用例）同理。
+        // 注意：TestJsGC/TestJsStructGC 的"释放后还剩 1 个"不是这个原因（实测 sleep、重复 GC 后仍剩 1 个），
+        // 而是 bdwgc 保守栈扫描把对象钉住了，详见 TestJsGC 前的说明。
         [Test]
         public void TestObjectFieldRefAStruct()
         {
