@@ -29,7 +29,9 @@ const TCHAR* BackendName(EBackend Backend);
 // writes the backend file only when the notes differ from the shared baseline. Lua and Python (other languages) only use
 // Baseline/<Backend>/<BaselineName>.txt.
 // Returns the reporter (rooted, caller must call RemoveFromRoot) or nullptr.
-UPuertsTestReporter* RunScript(FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName);
+// bJsEnv: runs in a FJsEnv (the v8 env of the JsEnv module, with blueprint.mixin and puerts/module_node.js) instead.
+UPuertsTestReporter* RunScript(
+    FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName, bool bJsEnv = false);
 
 void CollectAllGarbage();
 }    // namespace PuertsTest

@@ -5,8 +5,9 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-// an optional extension of puerts/module.js, not loaded by default: resolves the modules as node (and the old loader of
-// puerts) does, for both require and import. Load it once at the beginning of the entry module, e.g.
+// an extension of puerts/module.js: resolves the modules as node (and the old loader of puerts) does, for both require
+// and import. FJsEnv / FJsEnvGroup (the JsEnv module) load it by default, FScriptEnv does not, load it once before Start
+// (FScriptEnv::PreloadModule(TEXT("puerts/module_node.js"))) or at the beginning of the entry module, e.g.
 //     puerts.genRequire('')('puerts/module_node.js', true);
 // - the extension can be omitted: path, path.js, path.mjs, path.cjs, path.json (path.mbc, path.cbc for bytecode)
 // - a directory: the entry of its package.json ("exports"["."] or "main"), or its index.js

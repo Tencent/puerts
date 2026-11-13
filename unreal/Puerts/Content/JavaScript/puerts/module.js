@@ -7,7 +7,8 @@
 
 // the commonjs module system, ported from unity (upms/core/Runtime/Resources/puerts/module.mjs):
 // - the path of a module is the specifier joined to the directory of the requiring module, without searching, the
-//   extension must be written ("./foo.js", not "./foo"), puerts/module_node.js is an optional extension of node rules
+//   extension must be written ("./foo.js", not "./foo"), puerts/module_node.js is an extension of node rules (loaded by
+//   default in FJsEnv / FJsEnvGroup)
 // - require is lazy by default: a proxy is returned and the module is loaded on its first use, require(specifier, true)
 //   loads it immediately
 // - the exports are cached weakly by default (a module is unloaded if no one refers to it, and loaded again on the next

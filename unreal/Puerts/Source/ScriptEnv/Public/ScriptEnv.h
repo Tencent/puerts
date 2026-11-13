@@ -41,6 +41,9 @@ public:
 
     virtual void InitExtensionMethodsMap() = 0;
 
+    // requires a (commonjs) module at once, the exception is logged, e.g. puerts/module_node.js before Start
+    virtual void PreloadModule(const FString& ModuleName) = 0;
+
     virtual ~IScriptEnv()
     {
     }
@@ -74,6 +77,10 @@ public:
     FString CurrentStackTrace();
 
     void InitExtensionMethodsMap();
+
+    // requires a (commonjs) module at once, e.g. PreloadModule(TEXT("puerts/module_node.js")) before Start for the node style
+    // module resolution (node_modules, no extension, package.json), FJsEnv does it by default
+    void PreloadModule(const FString& ModuleName);
 
     // the env implementation, for the optional features added from outside (e.g. EnableMixin of ScriptEnvMixinApi.h)
     IScriptEnv* GetScriptEnv() const

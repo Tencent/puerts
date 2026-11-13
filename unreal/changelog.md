@@ -13,7 +13,7 @@
 
 #### New Features
 
-* Optional extension `puerts/module_node.js` (not loaded by default) restores the node-like resolution: omitted extensions, directory index, `package.json` (`exports["."]` / `main`), and `node_modules` of the requiring directory and its ancestors within the script root. Load it once at the beginning of the entry module: `puerts.genRequire('')('puerts/module_node.js', true)`. Bundling the large third party packages (e.g. with webpack) is still recommended; `node_modules` outside the script root (e.g. at the project root) is not searched.
+* Extension `puerts/module_node.js` restores the node-like resolution of the old `DefaultJSModuleLoader`: omitted extensions, directory index, `package.json` (`exports["."]` / `main`), and `node_modules` of the requiring directory and its ancestors within the script root. `FJsEnv` / `FJsEnvGroup` load it by default; `FScriptEnv` does not, call `FScriptEnv::PreloadModule(TEXT("puerts/module_node.js"))` before `Start`, or load it once at the beginning of the entry module: `puerts.genRequire('')('puerts/module_node.js', true)`. Bundling the large third party packages (e.g. with webpack) is still recommended; `node_modules` outside the script root (e.g. at the project root) is not searched.
 
 #### Bug Fixes
 

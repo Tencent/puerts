@@ -13,7 +13,7 @@
 
 #### 新增特性
 
-* 新增可选扩展 `puerts/module_node.js`（默认不加载），恢复类 node 的解析规则：省略扩展名、目录 index、`package.json`（`exports["."]` / `main`），以及在脚本根目录范围内查找发起模块所在目录及其上级目录的 `node_modules`。在入口模块开头加载一次即可：`puerts.genRequire('')('puerts/module_node.js', true)`。大型第三方包仍建议用 webpack 等工具打包；脚本根目录之外（例如项目根目录）的 `node_modules` 不会被查找。
+* 新增扩展 `puerts/module_node.js`，恢复旧 `DefaultJSModuleLoader` 的类 node 解析规则：省略扩展名、目录 index、`package.json`（`exports["."]` / `main`），以及在脚本根目录范围内查找发起模块所在目录及其上级目录的 `node_modules`。`FJsEnv` / `FJsEnvGroup` 默认加载；`FScriptEnv` 默认不加载，可在 `Start` 前调用 `FScriptEnv::PreloadModule(TEXT("puerts/module_node.js"))`，或在入口模块开头加载一次：`puerts.genRequire('')('puerts/module_node.js', true)`。大型第三方包仍建议用 webpack 等工具打包；脚本根目录之外（例如项目根目录）的 `node_modules` 不会被查找。
 
 #### bug修复
 

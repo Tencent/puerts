@@ -117,6 +117,10 @@ PUERTS_TEST(WebSocket, RunWebSocket(*this, B))
 PUERTS_TEST(Timers, RunTimers(*this, B))
 PUERTS_TEST(JsObject, RunJsObject(*this, B))
 
+// FJsEnv (v8 only) loads puerts/module_node.js and has blueprint.mixin by default, as the env of the old versions
+PUERTS_BACKEND_TEST(
+    V8, JsEnvDefaults, Finish(*this, PuertsTest::RunScript(*this, B, TEXT("tests/jsenv_defaults"), TEXT("JsEnvDefaults"), true)))
+
 // the lua tests (tests/lua/*.lua) run with the lua backend only, baselines are Baseline/Lua/<Name>.txt
 #define PUERTS_LUA_TEST(Name, Module) PUERTS_BACKEND_TEST(Lua, Name, RunPlain(*this, B, TEXT(Module), TEXT(#Name)))
 

@@ -63,4 +63,9 @@ void FScriptEnv::InitExtensionMethodsMap()
     GameScript->InitExtensionMethodsMap();
 }
 
+void FScriptEnv::PreloadModule(const FString& ModuleName)
+{
+    GameScript->PreloadModule(ModuleName);
+}
+
 }    // namespace PUERTS_NAMESPACE

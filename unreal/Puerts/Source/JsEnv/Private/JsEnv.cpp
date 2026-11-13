@@ -13,10 +13,14 @@
 
 namespace PUERTS_NAMESPACE
 {
-// FJsEnv / FJsEnvGroup are the envs of the old versions, so they always have blueprint.mixin
+// FJsEnv / FJsEnvGroup are the envs of the old versions, so they always have blueprint.mixin and the node style module
+// resolution (node_modules, no extension, package.json) of the old DefaultJSModuleLoader
+static const TCHAR* NodeModuleResolver = TEXT("puerts/module_node.js");
+
 FJsEnv::FJsEnv(const FString& ScriptRoot) : FScriptEnv(&FPapiBackendV8::Create, ScriptRoot)
 {
     EnableMixin(*this);
+    PreloadModule(NodeModuleResolver);
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
@@ -25,6 +29,7 @@ FJsEnv::FJsEnv(std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<
           &FPapiBackendV8::Create, std::move(InFileLoader), InLogger, InDebugPort, InFlags, InExternalRuntime, InExternalContext)
 {
     EnableMixin(*this);
+    PreloadModule(NodeModuleResolver);
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
@@ -33,12 +38,22 @@ FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<
           InDebugPort, InFlags, InExternalRuntime, InExternalContext)
 {
     EnableMixin(*this);
+    PreloadModule(NodeModuleResolver);
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
+static void PreloadNodeModuleResolver(FScriptEnvGroup& Group)
+{
+    for (int i = 0; i < Group.Num(); i++)
+    {
+        Group.Get(i)->PreloadModule(NodeModuleResolver);
+    }
+}
+
 FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot) : FScriptEnvGroup(&FPapiBackendV8::Create, Size, ScriptRoot)
 {
     EnableMixin(*this);
+    PreloadNodeModuleResolver(*this);
 }
 
 FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger,
@@ -47,6 +62,7 @@ FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IScriptFileLoader> InFileLoad
           InExternalRuntime, InExternalContext)
 {
     EnableMixin(*this);
+    PreloadNodeModuleResolver(*this);
 }
 
 FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
@@ -55,6 +71,7 @@ FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoad
           InDebugStartPort, InFlags, InExternalRuntime, InExternalContext)
 {
     EnableMixin(*this);
+    PreloadNodeModuleResolver(*this);
 }
 
 void FJsEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)

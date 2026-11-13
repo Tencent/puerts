@@ -1,6 +1,7 @@
 #include "PuertsTestRunner.h"
 
 #include "ScriptEnv.h"
+#include "JsEnv.h"
 #include "ScriptEnvMixinApi.h"
 #include "PapiBackendV8.h"
 #include "PapiBackendQuickjs.h"
@@ -132,18 +133,30 @@ static PUERTS_NAMESPACE::FPapiBackendFactory BackendFactory(EBackend Backend)
     }
 }
 
-UPuertsTestReporter* RunScript(FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName)
+UPuertsTestReporter* RunScript(
+    FAutomationTestBase& Test, EBackend Backend, const FString& Module, const FString& BaselineName, bool bJsEnv)
 {
     UPuertsTestReporter* Reporter = NewObject<UPuertsTestReporter>();
     Reporter->AddToRoot();
 
     {
-        auto Env = MakeUnique<PUERTS_NAMESPACE::FScriptEnv>(BackendFactory(Backend));
-        // blueprint.mixin of the js scripts (tests/mixin.js), the env does not have it by default
-        if (Backend == EBackend::V8 || Backend == EBackend::Quickjs)
+        // FJsEnv (v8) has blueprint.mixin and puerts/module_node.js by default, FScriptEnv has none of them
+        TUniquePtr<PUERTS_NAMESPACE::FJsEnv> JsEnv;
+        TUniquePtr<PUERTS_NAMESPACE::FScriptEnv> ScriptEnv;
+        if (bJsEnv)
         {
-            PUERTS_NAMESPACE::EnableMixin(*Env);
+            JsEnv = MakeUnique<PUERTS_NAMESPACE::FJsEnv>();
         }
+        else
+        {
+            ScriptEnv = MakeUnique<PUERTS_NAMESPACE::FScriptEnv>(BackendFactory(Backend));
+            // blueprint.mixin of the js scripts (tests/mixin.js), the env does not have it by default
+            if (Backend == EBackend::V8 || Backend == EBackend::Quickjs)
+            {
+                PUERTS_NAMESPACE::EnableMixin(*ScriptEnv);
+            }
+        }
+        PUERTS_NAMESPACE::FScriptEnv* Env = bJsEnv ? static_cast<PUERTS_NAMESPACE::FScriptEnv*>(JsEnv.Get()) : ScriptEnv.Get();
         TArray<TPair<FString, UObject*>> Arguments;
         Arguments.Add(TPair<FString, UObject*>(TEXT("Reporter"), Reporter));
         Env->Start(Module, Arguments);
@@ -164,7 +177,8 @@ UPuertsTestReporter* RunScript(FAutomationTestBase& Test, EBackend Backend, cons
         }
 
         Reporter->OnStep.Clear();
-        Env.Reset();
+        JsEnv.Reset();
+        ScriptEnv.Reset();
     }
     CollectAllGarbage();
 

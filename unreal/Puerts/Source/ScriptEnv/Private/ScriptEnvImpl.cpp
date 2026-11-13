@@ -1627,6 +1627,25 @@ pesapi_value FScriptEnvImpl::RequireModule(struct pesapi_ffi* Apis, pesapi_env E
     return Backend->ExecuteModule(Env, TCHAR_TO_UTF8(*ModuleName), "", false);
 }
 
+void FScriptEnvImpl::PreloadModule(const FString& ModuleName)
+{
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
+    struct pesapi_ffi* Apis = MainApis;
+    FPapiEnvScope EnvScope(Apis, MainEnvRef);
+    if (!EnvScope)
+    {
+        Logger->Error("the env is gone!");
+        return;
+    }
+    RequireModule(Apis, EnvScope.GetEnv(), ModuleName);
+    if (EnvScope.HasCaught())
+    {
+        Logger->Error(UTF8_TO_TCHAR(EnvScope.GetExceptionAsString()));
+    }
+}
+
 void FScriptEnvImpl::Log(int32 Level, const FString& Msg)
 {
     switch (Level)

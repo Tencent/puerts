@@ -89,6 +89,8 @@ public:
 
     virtual void InitExtensionMethodsMap() override;
 
+    virtual void PreloadModule(const FString& ModuleName) override;
+
 public:
     void SetJsTakeRef(pesapi_env Env, UObject* UEObject);
 
