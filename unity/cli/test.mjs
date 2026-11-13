@@ -390,7 +390,37 @@ export async function unityTest(cwd, unityPath, lazyload = false) {
         if (exitCode !== 0 && logContent !== null) {
             console.error(logContent);
         }
+        if (exitCode !== 0) {
+            dumpPlayerCrashBacktrace(logFile);
+        }
         return exitCode;
+    }
+
+    // Player 崩溃时日志里只有 "Received signal SIGSEGV"，没有原生调用栈。
+    // macOS 上用 lldb 以相同参数和环境变量（SwitchToQJS 等）重跑一次，崩溃时打印所有线程的调用栈。
+    function dumpPlayerCrashBacktrace(logFile) {
+        if (process.platform != 'darwin') {
+            console.error(`[Puer] native backtrace capture is only supported on macOS, skipped.`);
+            return;
+        }
+        const player = `${cwd}/build/v2/Tester${exeSuffix}`;
+        const lldbLogFile = logFile.replace(/\.txt$/, '') + '_lldb.txt';
+        console.error(`[Puer] Rerunning player under lldb to capture native backtrace (player log: ${lldbLogFile})`);
+        const result = spawnSync('lldb', [
+            '--batch',
+            '-o', 'run',
+            '-k', 'thread backtrace all',
+            '-k', 'quit 1',
+            '--', player, '-batchmode', '-nographics', '-logFile', lldbLogFile
+        ], { stdio: 'inherit', timeout: 15 * 60 * 1000 });
+        if (result.error) {
+            console.error(`[Puer] lldb failed: ${result.error.message}`);
+        }
+        if (existsSync(lldbLogFile)) {
+            const content = readFileSync(lldbLogFile, 'utf-8');
+            console.error(`---- ${lldbLogFile} (last 100 lines)`);
+            console.error(content.split(/\r?\n/).slice(-100).join('\n'));
+        }
     }
     
     const platform = getPlatform();
