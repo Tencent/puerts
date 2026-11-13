@@ -258,13 +258,18 @@ jobs:
           npm i
           cd test/unity
           node ../../cli unity-test --unity "$UNITY_EDITOR_PATH" --export-vs
-          echo "----- build/vs -----"
-          ls -la build/vs || true
+      - name: List Build Output
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          cd unity/test/unity
+          find build -maxdepth 4 | head -n 200 || true
       - name: Upload VS Solution
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: puerts_test_vs_solution
-          path: unity/test/unity/build/vs
+          path: unity/test/unity/build
           if-no-files-found: error
       - name: Upload Editor Logs
         if: ${{ !cancelled() }}

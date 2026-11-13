@@ -56,7 +56,8 @@ public class TestBuilder
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
         buildPlayerOptions.target = BuildTarget.StandaloneWindows64;
-        buildPlayerOptions.locationPathName = "build/vs";
+        // Unity 6 导出 VS 工程时把 locationPathName 当作 exe 路径，取其父目录作为工程根（写 build/vs 会导出到 build/）
+        buildPlayerOptions.locationPathName = "build/vs/Tester.exe";
         buildPlayerOptions.options = BuildOptions.Development;
 
         BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
