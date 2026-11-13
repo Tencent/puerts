@@ -96,9 +96,20 @@ public class TestBuilder
             Debug.Log("Build succeeded: " + summary.outputPath + " with " + summary.totalSize + " bytes");
         }
 
-        if (summary.result == BuildResult.Failed)
+        if (summary.result != BuildResult.Succeeded)
         {
-            Debug.Log("Build failed: " + summary.outputPath);
+            Debug.Log("Build failed: result=" + summary.result + ", errors=" + summary.totalErrors + ", output=" + summary.outputPath);
+            foreach (var step in report.steps)
+            {
+                foreach (var msg in step.messages)
+                {
+                    if (msg.type == LogType.Error || msg.type == LogType.Exception)
+                    {
+                        Debug.Log("[BuildAndroid] step '" + step.name + "': " + msg.content);
+                    }
+                }
+            }
+            if (Application.isBatchMode) EditorApplication.Exit(1);
         }
     }
 }

@@ -214,17 +214,43 @@ jobs:
             echo
           done
       - name: Build Android APK
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           cd unity/test/unity
           echo "-define:FORCE_TEST_PYTHON" > Assets/csc.rsp
           ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
           ${{ env.UNITY_EDITOR_PATH }} -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
+          ls -la build || true
+          test -f build/puerts_test.apk
+      - name: Android Build Log
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          cd unity/test/unity
+          for f in log1.txt log2.txt; do
+            echo "===== errors in $f ====="
+            [ -f "$f" ] || { echo "$f not found"; continue; }
+            grep -n -iE "error|exception|Build failed|\[BuildAndroid\]" "$f" | grep -v -iE "LogError\(|warning" | head -n 200 || true
+            echo "===== tail of $f ====="
+            tail -n 150 "$f"
+          done
+      - name: Upload Android Build Logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android_build_logs_osx
+          path: |
+            unity/test/unity/log1.txt
+            unity/test/unity/log2.txt
+            unity/test/unity/Library/Bee/Android/Prj/IL2CPP/Gradle/**/*.log
+          if-no-files-found: warn
       - name: Upload apk
         uses: actions/upload-artifact@v4
         with:
           name: puerts_test
           path: unity/test/unity/build/puerts_test.apk
+          if-no-files-found: error
 
   # Windows 版，步骤与上面的 macOS 版一致
   unittest-run-testcase-and-build-android-win:
@@ -384,17 +410,43 @@ jobs:
             echo
           done
       - name: Build Android APK
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           cd unity/test/unity
           echo "-define:FORCE_TEST_PYTHON" > Assets/csc.rsp
           "$UNITY_EDITOR_PATH" -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
           "$UNITY_EDITOR_PATH" -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
+          ls -la build || true
+          test -f build/puerts_test.apk
+      - name: Android Build Log
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          cd unity/test/unity
+          for f in log1.txt log2.txt; do
+            echo "===== errors in $f ====="
+            [ -f "$f" ] || { echo "$f not found"; continue; }
+            grep -n -iE "error|exception|Build failed|\[BuildAndroid\]" "$f" | grep -v -iE "LogError\(|warning" | head -n 200 || true
+            echo "===== tail of $f ====="
+            tail -n 150 "$f"
+          done
+      - name: Upload Android Build Logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android_build_logs_win
+          path: |
+            unity/test/unity/log1.txt
+            unity/test/unity/log2.txt
+            unity/test/unity/Library/Bee/Android/Prj/IL2CPP/Gradle/**/*.log
+          if-no-files-found: warn
       - name: Upload apk
         uses: actions/upload-artifact@v4
         with:
           name: puerts_test
           path: unity/test/unity/build/puerts_test.apk
+          if-no-files-found: error
 
   unittest-run-android-in-linux:
     runs-on: ubuntu-latest
