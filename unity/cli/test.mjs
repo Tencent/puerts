@@ -325,7 +325,7 @@ export async function dotnetTest(cwd, backend, filter = '', thread_safe = false,
     await runTest(cwd, dlls, false, filter);
 }
 
-export async function unityTest(cwd, unityPath, lazyload = false) {
+export async function unityTest(cwd, unityPath, lazyload = false, exportVS = false) {
     // Unity 的默认日志位置。-logFile 还没生效 Unity 就退出时（比如授权失败、缺 DLL），只能从这些文件里找原因
     function getUnityFallbackLogs() {
         const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -519,6 +519,14 @@ export async function unityTest(cwd, unityPath, lazyload = false) {
     console.log('-------------------------Without Wrapper test-------------------------');
     execUnityEditor(`-executeMethod TestBuilder.GenV2WithoutWrapper`);
     rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+
+    if (exportVS) {
+        // 只导出 IL2CPP 的 Visual Studio 工程（与第一轮 Without Wrapper 测试相同的配置），供本地调试
+        console.log("[Puer] Exporting Visual Studio solution");
+        mkdir("-p", `${cwd}/build/vs`);
+        execUnityEditor(`-executeMethod TestBuilder.ExportWindowsVSProjectV2`);
+        return;
+    }
 
     console.log("[Puer] Building testplayer");
     mkdir("-p", `${cwd}/build/v2`);

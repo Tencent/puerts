@@ -164,8 +164,9 @@ program
     .command('unity-test')
     .requiredOption("--unity <pathToUnity>")
     .option('-ll, --lazyload', 'enable lazyload')
+    .option('--export-vs', 'only export IL2CPP Visual Studio solution to build/vs (Windows), do not run tests')
     .action((options) => {
-        unityTest(cwd, options.unity, options.lazyload);
+        unityTest(cwd, options.unity, options.lazyload, options.exportVs);
     });
 
 program.parse(process.argv);

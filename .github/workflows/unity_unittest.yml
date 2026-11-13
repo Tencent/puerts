@@ -107,11 +107,9 @@ jobs:
         env:
           REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.unity_platform || 'random' }}
         run: |
-          platform="$REQUESTED"
-          if [ "$platform" != "osx" ] && [ "$platform" != "win" ]; then
-            if [ $((RANDOM % 2)) -eq 0 ]; then platform=osx; else platform=win; fi
-          fi
-          echo "Unity test platform: $platform (requested: $REQUESTED)"
+          # 临时：固定在 Windows 上导出 IL2CPP VS 工程，用于本地调试 Unity 6000.6 崩溃
+          platform=win
+          echo "Unity test platform: $platform (requested: $REQUESTED, forced to win)"
           echo "Unity test platform: **$platform** (requested: $REQUESTED)" >> "$GITHUB_STEP_SUMMARY"
           echo "platform=$platform" >> "$GITHUB_OUTPUT"
 
@@ -226,7 +224,7 @@ jobs:
           name: puerts_test
           path: unity/test/unity/build/puerts_test.apk
 
-  # Windows 版，步骤与上面的 macOS 版一致
+  # 临时：Windows 上不跑测试，只导出 IL2CPP 的 Visual Studio 工程（第一轮 Without Wrapper 配置）并上传，下载到本地调试
   unittest-run-testcase-and-build-android-win:
     needs: select-unity-platform
     if: needs.select-unity-platform.outputs.platform == 'win'
@@ -234,173 +232,53 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v3
-      - name: Build Android Plugin # 得先构建Android插件，如果先运行UT会导致meta被Editor删除
-        shell: bash
-        run: |
-          cd unity
-          npm i
-          cd native/puerts
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../papi-v8
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../papi-quickjs
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../papi-lua 
-          node ../../cli make --platform android --arch x64 --config Debug
-          cd ../wsppaddon
-          node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
-          cd ../papi-python
-          curl -fsSL -o python-3.14.0-x86_64-linux-android.tar.gz https://www.python.org/ftp/python/3.14.0/python-3.14.0-x86_64-linux-android.tar.gz
-          mkdir -p python-3.14.0-x86_64-linux-android
-          # 包里有几个符号链接（pkgconfig、libsqlite3.so.0），Windows 上解压可能失败，且都用不到，直接排除
-          tar -xzf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android --exclude='*/pkgconfig' --exclude='*.so.0'
-          node ../../cli make --platform android --arch x64 --config Debug
-          cp python-3.14.0-x86_64-linux-android/prefix/lib/lib*.so ../../upms/python/Plugins/Android/libs/x86_64
-          mkdir -p python/lib
-          cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
-          # Git Bash 没有 zip，用 Windows 自带的 bsdtar 打 zip
-          /c/Windows/System32/tar.exe -a -cf python.zip python
-          mkdir -p ../../test/unity/Assets/StreamingAssets/
-          cp python.zip ../../test/unity/Assets/StreamingAssets/
       # v3 不再依赖 Unity Hub 的 UnityHubSetup.exe（v1 就是卡在这个包上：官方 CDN 现在 307
       # 重定向到 unitychina.cn，而 v1 用 PowerShell WebClient 下载、不跟随重定向，稳定 404）。
-      # v3 改为下载官方 Unity CLI，其 DownloadFile 显式处理 301/302/303/307/308 并校验 integrity。
-      # 2022.3.59f1 带 Unity 安全公告（sept-2025-01），v3 默认强制拦截，官方补丁版是 2022.3.62f3。
       - name: Setup Unity
         uses: RageAgainstThePixel/unity-setup@v3
         with:
           unity-version: 6000.6.8f1
-          build-targets: StandaloneWindows64, Android
-          modules: android-il2cpp, windows-il2cpp
+          build-targets: StandaloneWindows64
+          modules: windows-il2cpp
           cache-installation: true
-      # 同上：v3 用 UNITY_EDITOR_PATH 定位 Licensing Client，v1 依赖 Unity Hub 路径会拿到 undefined。
       - uses: RageAgainstThePixel/activate-unity-license@v3
         with:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      # Unity 2022.3 Editor 自带的 OpenRL.dll 静态依赖 VC++ 2010 运行时（MSVCP100.dll / MSVCR100.dll），
-      # windows-2022 runner 镜像里没有，缺失时 Unity.exe 直接以 0xC0000135 (STATUS_DLL_NOT_FOUND) 退出。
       - name: Install VC++ 2010 Redistributable
         shell: pwsh
         run: |
           choco install vcredist2010 -y --no-progress
           if (-not (Test-Path "$env:WINDIR\System32\MSVCP100.dll")) { throw "MSVCP100.dll still missing after installing vcredist2010" }
-      # Unity.exe 曾以 0xC0000135 (STATUS_DLL_NOT_FOUND) 退出，连 Editor.log 都没生成，
-      # 这里递归扫描 Editor 目录内二进制的导入表，列出找不到的 DLL，并直接跑一次 -version 看退出码。
-      - name: Diagnose Unity Editor
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Continue'
-          $exe = $env:UNITY_EDITOR_PATH
-          $dir = Split-Path $exe
-          Write-Host "UNITY_EDITOR_PATH=$exe"
-          $files = Get-ChildItem $dir -Recurse -File -ErrorAction SilentlyContinue
-          Write-Host ("Editor dir files: {0}, size: {1:N0} MB" -f $files.Count, (($files | Measure-Object Length -Sum).Sum / 1MB))
-          Get-ChildItem $dir -Filter *.dll | Select-Object Name, Length | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $dumpbin = & $vswhere -latest -products * -find 'VC\Tools\MSVC\**\bin\Hostx64\x64\dumpbin.exe' | Select-Object -First 1
-          Write-Host "dumpbin=$dumpbin"
-          $searchDirs = @($dir, "$env:WINDIR\System32", $env:WINDIR) + ($env:PATH -split ';' | Where-Object { $_ })
-          $seen = @{}
-          $missing = @()
-          $queue = New-Object System.Collections.Queue
-          $queue.Enqueue($exe)
-          while ($queue.Count -gt 0) {
-            $bin = $queue.Dequeue()
-            $section = ''
-            foreach ($line in (& $dumpbin /nologo /dependents $bin 2>&1)) {
-              $t = $line.ToString().Trim()
-              if ($t -match 'delay load dependencies') { $section = 'delay'; continue }
-              if ($t -match 'following dependencies') { $section = 'static'; continue }
-              if ($section -eq '' -or $t -notmatch '^[\w\.\-]+\.dll$') { continue }
-              $key = $t.ToLower()
-              if ($key -like 'api-ms-win-*' -or $key -like 'ext-ms-*' -or $seen.ContainsKey($key)) { continue }
-              $found = $null
-              foreach ($s in $searchDirs) {
-                try { $p = Join-Path $s $t } catch { continue }
-                if (Test-Path -LiteralPath $p) { $found = $p; break }
-              }
-              $seen[$key] = $found
-              if ($found) {
-                if ($found.StartsWith($dir, [System.StringComparison]::OrdinalIgnoreCase)) { $queue.Enqueue($found) }
-              } else {
-                $missing += "$t ($section) <- $bin"
-              }
-            }
-          }
-          Write-Host "Scanned $($seen.Count) dlls"
-          if ($missing.Count) { Write-Host "::warning::Missing DLLs found"; $missing | ForEach-Object { Write-Host "  MISSING $_" } } else { Write-Host "No missing DLL found" }
-          $p = Start-Process -FilePath $exe -ArgumentList '-version' -NoNewWindow -PassThru
-          $null = $p.Handle
-          if (-not $p.WaitForExit(120000)) { Write-Host "Unity -version timed out"; $p.Kill() }
-          else { Write-Host ("Unity -version exit code: {0} (0x{0:x8})" -f $p.ExitCode) }
-      - name: UnitTest
+      - name: Export VS Solution
         shell: bash
         run: |
           cd unity
           npm i
           cd test/unity
-          node ../../cli unity-test --unity "$UNITY_EDITOR_PATH"
-      - name: TestResult
-        if: ${{ !cancelled() }}
-        shell: bash
-        run: |
-          cd unity/test/unity
-          log_files=(
-            "log_reflection.txt"
-            "log_qjs_reflection.txt"
-            "log_nodejs_reflection.txt"
-            "log_minimum_reflection.txt"
-            "log_qjs_minimum_reflection.txt"
-            "log_nodejs_minimum_reflection.txt"
-            "log_full_wrapper.txt"
-            "log_qjs_full_wrapper.txt"
-            "log_nodejs_full_wrapper.txt"
-          )
-          for log_file in "${log_files[@]}"; do
-            echo "Processing $log_file"
-            if [ ! -f "$log_file" ]; then
-              echo "!!! $log_file not found (this round did not run)"
-              echo
-              continue
-            fi
-            grep "ENV_BACKEND" "$log_file" || true
-            sed -n '/==== Bundled Python Info ====/,/==== End Bundled Python Info ====/p' "$log_file" || true
-            passed_count=$(grep -c "Passed" "$log_file" || true)
-            echo "Passed: $passed_count"
-            failed_count=$(grep -c "Failed" "$log_file" || true)
-            echo "Failed: $failed_count"
-            grep "Failed" "$log_file" || true
-            started_count=$(grep -c "Started: TestCase" "$log_file" || true)
-            echo "Started: $started_count"
-            if ! grep -q "End RunTest" "$log_file"; then
-              echo "!!! End RunTest not found in $log_file, last started cases:"
-              grep "Started: TestCase" "$log_file" | tail -n 5 || true
-              echo "----- tail of $log_file -----"
-              tail -n 200 "$log_file" || true
-            fi
-            echo
-          done
-      - name: Build Android APK
-        shell: bash
-        run: |
-          cd unity/test/unity
-          echo "-define:FORCE_TEST_PYTHON" > Assets/csc.rsp
-          "$UNITY_EDITOR_PATH" -batchmode -nographics -quit -projectPath . -logFile log1.txt -executeMethod TestBuilder.GenMinimumWrappersAndBridge
-          "$UNITY_EDITOR_PATH" -batchmode -nographics -quit -projectPath . -logFile log2.txt -executeMethod TestBuilder.BuildAndroid
-      - name: Upload apk
+          node ../../cli unity-test --unity "$UNITY_EDITOR_PATH" --export-vs
+          echo "----- build/vs -----"
+          ls -la build/vs || true
+      - name: Upload VS Solution
         uses: actions/upload-artifact@v4
         with:
-          name: puerts_test
-          path: unity/test/unity/build/puerts_test.apk
+          name: puerts_test_vs_solution
+          path: unity/test/unity/build/vs
+          if-no-files-found: error
+      - name: Upload Editor Logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor_logs
+          path: unity/test/unity/log_editor_*.txt
 
   unittest-run-android-in-linux:
     runs-on: ubuntu-latest
     # 两个平台每次只会跑一个，另一个是 skipped，所以要显式判断
     needs: [unittest-run-testcase-and-build-android, unittest-run-testcase-and-build-android-win]
-    if: ${{ !cancelled() && (needs.unittest-run-testcase-and-build-android.result == 'success' || needs.unittest-run-testcase-and-build-android-win.result == 'success') }}
+    # 临时：Windows job 只导出 VS 工程，不再产出 apk，禁用此 job
+    if: ${{ false }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v4

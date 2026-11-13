@@ -32,6 +32,37 @@ public class TestBuilder
     }
     [MenuItem("PuerTS/Tester/BuildV2")]
     public static void BuildWindowsV2() { BuildWindows(true); }
+
+    // 导出 IL2CPP 的 Visual Studio 工程（Build Settings 里的 "Create Visual Studio Solution"），用于本地调试 player
+    [MenuItem("PuerTS/Tester/ExportVSProjectV2")]
+    public static void ExportWindowsVSProjectV2()
+    {
+        // UnityEditor.WindowsStandalone.UserBuildSettings 只在装了 Windows 支持模块时存在，用反射设置，失败再走通用接口
+        var userBuildSettings = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetType("UnityEditor.WindowsStandalone.UserBuildSettings"))
+            .FirstOrDefault(t => t != null);
+        var createSolution = userBuildSettings == null ? null : userBuildSettings.GetProperty("createSolution");
+        if (createSolution != null)
+        {
+            createSolution.SetValue(null, true);
+        }
+        else
+        {
+            EditorUserBuildSettings.SetPlatformSettings("Standalone", "CreateSolution", "true");
+        }
+        Debug.Log("CreateSolution set via " + (createSolution != null ? "UserBuildSettings" : "SetPlatformSettings"));
+
+        PlayerSettings.SetScriptingBackend(BuildTargetGroup.Standalone, ScriptingImplementation.IL2CPP);
+        BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
+        buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
+        buildPlayerOptions.target = BuildTarget.StandaloneWindows64;
+        buildPlayerOptions.locationPathName = "build/vs";
+        buildPlayerOptions.options = BuildOptions.Development;
+
+        BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
+        Debug.Log("Export VS solution " + report.summary.result + ": " + report.summary.outputPath);
+        if (report.summary.result != BuildResult.Succeeded && Application.isBatchMode) EditorApplication.Exit(1);
+    }
 #endif
 
     public static void BuildWindows(bool withV2)
