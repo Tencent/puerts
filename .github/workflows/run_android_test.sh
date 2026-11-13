@@ -69,6 +69,15 @@ echo ""
 
 adb shell setprop log.tag.linker DEBUG
 
+# The apk is arm64-v8a only; on an x86_64 emulator it relies on ARM translation (API 30+ images)
+ABI_LIST=$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')
+echo "Device ABI list: $ABI_LIST"
+echo "Native bridge: $(adb shell getprop ro.dalvik.vm.native.bridge | tr -d '\r')"
+case ",$ABI_LIST," in
+  *,arm64-v8a,*) ;;
+  *) echo "ERROR: device does not support arm64-v8a (no ARM translation in this system image)"; exit 1 ;;
+esac
+
 echo "Installing APK..."
 adb install -r puerts_test.apk
 
@@ -83,11 +92,11 @@ adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActi
 
 echo "Waiting for app to start..."
 COUNTER=0
+PID=""
 while [ $COUNTER -lt 60 ]; do
-  PS_LINE=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
-  if [ -n "$PS_LINE" ]; then
-    # Extract PID (second column) using sed
-    PID=$(echo "$PS_LINE" | sed 's/^[^ ]* *\([^ ]*\).*/\1/')
+  # Android 8+ `ps` only lists the shell user's processes, use pidof instead
+  PID=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
+  if [ -n "$PID" ]; then
     echo "App PID: $PID"
     echo "App started in $COUNTER seconds"
     break
@@ -105,13 +114,13 @@ echo "Starting logcat capture..."
 adb logcat -v time > logcat.txt &
 LOGCAT_BG_PID=$!
 
-echo "Waiting for app to complete (timeout: 300s)..."
-TIMEOUT=300
+echo "Waiting for app to complete (timeout: 1200s, arm64 runs under ARM translation)..."
+TIMEOUT=1200
 ELAPSED=0
 APP_EXITED=false
 while [ $ELAPSED -lt $TIMEOUT ]; do
-  # Check if process still exists by looking for the PID
-  PS_CHECK=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
+  # Check if process still exists
+  PS_CHECK=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
   if [ -z "$PS_CHECK" ]; then
     echo "App exited after $ELAPSED seconds"
     APP_EXITED=true
@@ -122,7 +131,7 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
 done
 
 # Double check if app is still running
-PS_FINAL=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
+PS_FINAL=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
 if [ -n "$PS_FINAL" ]; then
   echo "App did not exit in time, killing..."
   adb shell am force-stop com.tencent.puerts_test

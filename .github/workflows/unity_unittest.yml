@@ -131,23 +131,23 @@ jobs:
           cd unity
           npm i
           cd native/puerts
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../papi-v8
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../papi-quickjs
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../papi-lua 
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../wsppaddon
-          node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
+          node ../../cli make --platform android --arch arm64 --websocket 2 --config Debug
           cd ../papi-python
-          wget -O python-3.14.0-x86_64-linux-android.tar.gz -q https://www.python.org/ftp/python/3.14.0/python-3.14.0-x86_64-linux-android.tar.gz
-          mkdir -p python-3.14.0-x86_64-linux-android
-          tar -xzf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android
-          node ../../cli make --platform android --arch x64 --config Debug
-          cp python-3.14.0-x86_64-linux-android/prefix/lib/lib*.so ../../upms/python/Plugins/Android/libs/x86_64
+          wget -O python-3.14.0-aarch64-linux-android.tar.gz -q https://www.python.org/ftp/python/3.14.0/python-3.14.0-aarch64-linux-android.tar.gz
+          mkdir -p python-3.14.0-aarch64-linux-android
+          tar -xzf python-3.14.0-aarch64-linux-android.tar.gz -C python-3.14.0-aarch64-linux-android
+          node ../../cli make --platform android --arch arm64 --config Debug
+          cp python-3.14.0-aarch64-linux-android/prefix/lib/lib*.so ../../upms/python/Plugins/Android/libs/arm64-v8a
           mkdir -p python/lib
-          cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
+          cp -r python-3.14.0-aarch64-linux-android/prefix/lib/python3.14 python/lib/
           zip -r -q python.zip python/
           mkdir -p ../../test/unity/Assets/StreamingAssets/
           cp python.zip ../../test/unity/Assets/StreamingAssets/
@@ -266,24 +266,24 @@ jobs:
           cd unity
           npm i
           cd native/puerts
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../papi-v8
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../papi-quickjs
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../papi-lua 
-          node ../../cli make --platform android --arch x64 --config Debug
+          node ../../cli make --platform android --arch arm64 --config Debug
           cd ../wsppaddon
-          node ../../cli make --platform android --arch x64 --websocket 2 --config Debug
+          node ../../cli make --platform android --arch arm64 --websocket 2 --config Debug
           cd ../papi-python
-          curl -fsSL -o python-3.14.0-x86_64-linux-android.tar.gz https://www.python.org/ftp/python/3.14.0/python-3.14.0-x86_64-linux-android.tar.gz
-          mkdir -p python-3.14.0-x86_64-linux-android
+          curl -fsSL -o python-3.14.0-aarch64-linux-android.tar.gz https://www.python.org/ftp/python/3.14.0/python-3.14.0-aarch64-linux-android.tar.gz
+          mkdir -p python-3.14.0-aarch64-linux-android
           # 包里有几个符号链接（pkgconfig、libsqlite3.so.0），Windows 上解压可能失败，且都用不到，直接排除
-          tar -xzf python-3.14.0-x86_64-linux-android.tar.gz -C python-3.14.0-x86_64-linux-android --exclude='*/pkgconfig' --exclude='*.so.0'
-          node ../../cli make --platform android --arch x64 --config Debug
-          cp python-3.14.0-x86_64-linux-android/prefix/lib/lib*.so ../../upms/python/Plugins/Android/libs/x86_64
+          tar -xzf python-3.14.0-aarch64-linux-android.tar.gz -C python-3.14.0-aarch64-linux-android --exclude='*/pkgconfig' --exclude='*.so.0'
+          node ../../cli make --platform android --arch arm64 --config Debug
+          cp python-3.14.0-aarch64-linux-android/prefix/lib/lib*.so ../../upms/python/Plugins/Android/libs/arm64-v8a
           mkdir -p python/lib
-          cp -r python-3.14.0-x86_64-linux-android/prefix/lib/python3.14 python/lib/
+          cp -r python-3.14.0-aarch64-linux-android/prefix/lib/python3.14 python/lib/
           # Git Bash 没有 zip，用 Windows 自带的 bsdtar 打 zip
           /c/Windows/System32/tar.exe -a -cf python.zip python
           mkdir -p ../../test/unity/Assets/StreamingAssets/
@@ -473,12 +473,15 @@ jobs:
       - name: Start emulator and run commands
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 24
-          target: default
+          # Unity 6.5+ 只能出 arm64 的包（x86_64 已移除，最低 API 26）。GitHub 托管的 arm64 runner
+          # （macos-latest / ubuntu-24.04-arm）都跑不了 Android 模拟器，所以继续用 x86_64 镜像，
+          # 靠 API 30+ 镜像自带的 ARM 指令转译（libndk_translation）运行 arm64 apk
+          api-level: 30
+          target: google_apis
           arch: x86_64
-          profile: Nexus 6
-          emulator-options: -no-window -no-boot-anim -no-audio -no-snapshot-load
-          disable-linux-hw-accel: true
+          profile: pixel_5
+          ram-size: 4096M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-boot-anim -no-audio -no-snapshot
           script: bash .github/workflows/run_android_test.sh
 
       - name: Upload logs

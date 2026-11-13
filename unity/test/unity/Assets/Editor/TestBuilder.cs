@@ -80,7 +80,8 @@ public class TestBuilder
     {
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.tencent.puerts_test");
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
+        // Unity 6.5+ removed the Android x86_64 target; the CI emulator (x86_64, API 30+) runs this arm64 apk via ARM translation
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
