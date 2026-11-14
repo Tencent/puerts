@@ -197,11 +197,16 @@ public class Tester : MonoBehaviour {
 #endif
 
         UnityEngine.Debug.Log("Start RunTest");
-        var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
+        var types = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
                     // where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                     from type in assembly.GetTypes()
                     where type.GetCustomAttributes(false).Any(a => a.GetType().Name == TestFixtureAttributeName)
-                    select type;
+                    select type).ToList();
+        UnityEngine.Debug.Log($"Found {types.Count} test fixtures, unittest assembly loaded: {AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "com.tencent.puerts.unittest")}");
+        if (types.Count == 0)
+        {
+            OnFail("NoTestFixtureFound", new Exception("no [TestFixture] type found, test assembly may be stripped"));
+        }
 
         foreach (var type in types)
         {
