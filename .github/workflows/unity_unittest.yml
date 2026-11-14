@@ -475,12 +475,15 @@ jobs:
         with:
           # Unity 6.5+ 只能出 arm64 的包（x86_64 已移除，最低 API 26）。GitHub 托管的 arm64 runner
           # （macos-latest / ubuntu-24.04-arm）都跑不了 Android 模拟器，所以继续用 x86_64 镜像，
-          # 靠 API 30+ 镜像自带的 ARM 指令转译（libndk_translation）运行 arm64 apk
-          api-level: 30
+          # 靠 API 30+ 镜像自带的 ARM 指令转译（libndk_translation）运行 arm64 apk。
+          # API 30 镜像的 ndk_translation 0.2.2 不支持 libunity.so 里的 `fcvtzs d1, d8`（0x5ee1b901），
+          # 启动后即 SIGILL，所以用更新的 API 34 镜像
+          api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_5
           ram-size: 4096M
+          cores: 2
           emulator-options: -no-window -gpu swiftshader_indirect -no-boot-anim -no-audio -no-snapshot
           script: bash .github/workflows/run_android_test.sh
 
