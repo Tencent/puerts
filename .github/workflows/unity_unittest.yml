@@ -484,8 +484,9 @@ jobs:
           profile: pixel_5
           ram-size: 4096M
           cores: 2
-          # GLESDynamicVersion 让 swiftshader 暴露 GLES 3.1（默认只有 3.0，Unity 会先报 EGL_BAD_CONFIG 再回退）
-          emulator-options: -no-window -gpu swiftshader_indirect -feature GLESDynamicVersion -no-boot-anim -no-audio -no-snapshot
+          # swiftshader_indirect 只提供 GLES 3.0（加 -feature GLESDynamicVersion 也无效），Unity 在 API 34 上
+          # 放弃 Vulkan 回退到 GLES 3.0 后主线程卡死。swangle_indirect（ANGLE on SwiftShader Vulkan）可提供 GLES 3.1
+          emulator-options: -no-window -gpu swangle_indirect -no-boot-anim -no-audio -no-snapshot
           script: bash .github/workflows/run_android_test.sh
 
       - name: Upload logs

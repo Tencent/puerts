@@ -69,6 +69,14 @@ echo ""
 
 adb shell setprop log.tag.linker DEBUG
 
+# Root adbd now (google_apis images are userdebug) so debuggerd can dump app stacks later
+# without restarting adbd, which would kill the background logcat capture
+adb root >/dev/null 2>&1 || true
+sleep 3
+adb wait-for-device
+echo "adb user: $(adb shell id -u | tr -d '\r')"
+echo "GLES: $(adb shell dumpsys SurfaceFlinger 2>/dev/null | grep -m1 -E '^GLES:' | tr -d '\r')"
+
 # The apk is arm64-v8a only; on an x86_64 emulator it relies on ARM translation (API 30+ images)
 ABI_LIST=$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')
 echo "Device ABI list: $ABI_LIST"
@@ -147,6 +155,13 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
     APP_HUNG=true
     break
   fi
+  if [ $ELAPSED -eq 10 ] || [ $ELAPSED -eq 30 ]; then
+    # Early sample: the app may be stuck and then kill itself (e.g. Unity pause timeout) before the stall watchdog fires
+    echo "===== stack sample at ${ELAPSED}s =====" >> hang_stacks.txt
+    adb shell debuggerd -b "$PID" >> hang_stacks.txt 2>&1 || true
+    echo "[${ELAPSED}s] native stack sample of main / Unity threads:"
+    awk '/^===== stack sample at '"$ELAPSED"'s/{f=1} f' hang_stacks.txt | grep -A12 -E '^"(ent.puerts_test|UnityMain|Unity Main|UnityGfx)' | head -60 || true
+  fi
   sleep 2
   ELAPSED=$((ELAPSED+2))
 done
@@ -161,11 +176,7 @@ dump_hang_info() {
   adb shell dumpsys activity activities 2>/dev/null | grep -E "mResumedActivity|topResumedActivity|mFocusedApp" || true
   adb shell dumpsys window 2>/dev/null | grep -E "mCurrentFocus|mFocusedApp" || true
   adb shell screencap -p /sdcard/hang.png && adb pull /sdcard/hang.png hang.png >/dev/null 2>&1 || true
-  # debuggerd needs root, google_apis images are userdebug so adb root works
-  adb root >/dev/null 2>&1 || true
-  adb wait-for-device
-  sleep 2
-  adb shell debuggerd -b "$PID" > hang_stacks.txt 2>&1 || true
+  adb shell debuggerd -b "$PID" >> hang_stacks.txt 2>&1 || true
   adb shell debuggerd -j "$PID" >> hang_stacks.txt 2>&1 || true
   echo ""
   echo "---------- Stacks (full dump in hang_stacks.txt artifact) ----------"
@@ -200,6 +211,11 @@ dump_crash_info() {
   grep -E "\( *$PID\)" logcat.txt | tail -150 || true
   echo "-----------------------------------------"
   dump_exit_info
+  if [ -f hang_stacks.txt ]; then
+    echo ""
+    echo "---------- Early stack samples (full dump in hang_stacks.txt artifact) ----------"
+    grep -E '^=====|^"|^    #0[0-9]' hang_stacks.txt | head -200 || true
+  fi
 }
 
 # Android 11+ records why each process died (reason / signal / description), even for a silent self-kill
