@@ -139,6 +139,16 @@ if [ -n "$PS_FINAL" ]; then
 fi
 
 # If app exited, check for abnormal exit
+dump_crash_info() {
+  echo ""
+  echo "---------- Fatal / crash lines ----------"
+  grep -E "Fatal signal|F DEBUG|F/DEBUG|E/AndroidRuntime|E/CRASH|FATAL EXCEPTION|signal [0-9]+ \(SIG|Abort message|backtrace:| #[0-9]+ pc " logcat.txt | head -150 || true
+  echo ""
+  echo "---------- Last 150 log lines of app pid $PID ----------"
+  grep -E "\( *$PID\)" logcat.txt | tail -150 || true
+  echo "-----------------------------------------"
+}
+
 if [ "$APP_EXITED" = true ]; then
   echo "Checking exit status..."
   sleep 2  # Wait for system to flush logs
@@ -168,6 +178,7 @@ if [ "$APP_EXITED" = true ]; then
       echo "Recent activity before crash:"
       grep -B 5 "Process com.tencent.puerts_test.*has died" logcat.txt | tail -20 || true
       echo ""
+      dump_crash_info
       
       exit 1
     fi
@@ -193,6 +204,7 @@ if [ "$APP_EXITED" = true ]; then
         echo "Context around process death:"
         echo "$DIED_CONTEXT"
         echo ""
+        dump_crash_info
         exit 1
       fi
     fi
