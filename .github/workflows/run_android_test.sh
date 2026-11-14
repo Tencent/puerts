@@ -87,6 +87,11 @@ adb shell logcat -G 16M
 adb shell setprop log.tag.Unity I
 adb shell setprop log.tag.TestRunner I
 
+# Start capturing before launching so that early startup logs are never missed
+echo "Starting logcat capture..."
+adb logcat -v time > logcat.txt &
+LOGCAT_BG_PID=$!
+
 echo "Starting app..."
 adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActivity
 
@@ -107,12 +112,9 @@ done
 
 if [ -z "$PID" ]; then
   echo "App did not start in time (waited $COUNTER seconds)"
+  kill $LOGCAT_BG_PID || true
   exit 1
 fi
-
-echo "Starting logcat capture..."
-adb logcat -v time > logcat.txt &
-LOGCAT_BG_PID=$!
 
 echo "Waiting for app to complete (timeout: 1200s, arm64 runs under ARM translation)..."
 TIMEOUT=1200
@@ -146,6 +148,15 @@ dump_crash_info() {
   echo ""
   echo "---------- Last 150 log lines of app pid $PID ----------"
   grep -E "\( *$PID\)" logcat.txt | tail -150 || true
+  echo "-----------------------------------------"
+  dump_exit_info
+}
+
+# Android 11+ records why each process died (reason / signal / description), even for a silent self-kill
+dump_exit_info() {
+  echo ""
+  echo "---------- ApplicationExitInfo ----------"
+  adb shell dumpsys activity exit-info com.tencent.puerts_test 2>/dev/null | head -60 || true
   echo "-----------------------------------------"
 }
 
@@ -228,6 +239,13 @@ echo "Test Results Summary:"
 echo "Passed: $PASSED_COUNT"
 echo "Failed: $FAILED_COUNT"
 echo "=========================================="
+
+# No test case result at all means the app quit before running the tests
+if [ "$PASSED_COUNT" -eq 0 ] && [ "$FAILED_COUNT" -eq 0 ]; then
+  echo "ERROR: no test case result found in logcat, the app exited before running tests"
+  dump_crash_info
+  exit 1
+fi
 
 # Print failed test cases if any
 if [ $FAILED_COUNT -gt 0 ]; then
