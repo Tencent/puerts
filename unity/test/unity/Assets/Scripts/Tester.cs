@@ -14,9 +14,10 @@ public class Tester : MonoBehaviour {
 
     // 用例使用 com.tencent.puerts.unittest 里的简化 NUnit 特性，Unity 6 的 Test Framework 自带的
     // nunit.framework 也会被 Assembly-CSharp 引用，两边类型同名同命名空间（CS0433），
-    // 所以不用 typeof，按类型名匹配，哪个程序集的特性都能识别。
-    const string TestFixtureAttributeName = "TestFixtureAttribute";
-    const string TestAttributeName = "TestAttribute";
+    // 所以通过测试程序集里的 TestFrameworkTypes 拿特性类型；这个引用同时让 IL2CPP 裁剪保留特性，
+    // 否则 UnityLinker 会把用例上的 [Test]/[TestFixture] 裁掉，反射一个用例都找不到。
+    static readonly Type TestFixtureAttributeType = Puerts.UnitTest.TestFrameworkTypes.TestFixture;
+    static readonly Type TestAttributeType = Puerts.UnitTest.TestFrameworkTypes.Test;
 
     public Text m_ContentText;
     public Button m_StartBtn;
@@ -200,12 +201,20 @@ public class Tester : MonoBehaviour {
         var types = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
                     // where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                     from type in assembly.GetTypes()
-                    where type.GetCustomAttributes(false).Any(a => a.GetType().Name == TestFixtureAttributeName)
+                    where type.IsDefined(TestFixtureAttributeType, false)
                     select type).ToList();
-        UnityEngine.Debug.Log($"Found {types.Count} test fixtures, unittest assembly loaded: {AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "com.tencent.puerts.unittest")}");
+        UnityEngine.Debug.Log($"Found {types.Count} test fixtures");
         if (types.Count == 0)
         {
-            OnFail("NoTestFixtureFound", new Exception("no [TestFixture] type found, test assembly may be stripped"));
+            var testAssembly = TestFixtureAttributeType.Assembly;
+            var assemblyTypes = testAssembly.GetTypes();
+            UnityEngine.Debug.Log($"[diag] {testAssembly.GetName().Name}: {assemblyTypes.Length} types");
+            foreach (var t in assemblyTypes.Where(t => t.Name.EndsWith("Test")).Take(5))
+            {
+                var attrs = string.Join(", ", t.GetCustomAttributes(false).Select(a => a.GetType().AssemblyQualifiedName));
+                UnityEngine.Debug.Log($"[diag] {t.FullName} attrs: [{attrs}]");
+            }
+            OnFail("NoTestFixtureFound", new Exception("no [TestFixture] type found"));
         }
 
         foreach (var type in types)
@@ -218,7 +227,7 @@ public class Tester : MonoBehaviour {
                 foreach (var ca in method.GetCustomAttributes(false))
                 {
                     yield return null;
-                    if (IsTesting && ca.GetType().Name == TestAttributeName) 
+                    if (IsTesting && ca.GetType() == TestAttributeType) 
                     {
                         // if (method.Name != "DateTimeTest") continue;
                         // if (!method.DeclaringType.Name.Contains("AccessControlTest")) continue;
