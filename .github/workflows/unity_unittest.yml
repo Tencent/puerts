@@ -470,6 +470,19 @@ jobs:
           distribution: 'adopt'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
+      - name: Patch apk for ARM translation
+        # 模拟器的 libndk_translation 不支持 libunity.so 自旋等待里的 SEVL/WFE（SIGILL: Undefined instruction 0xd50320bf），
+        # 仅 CI 中把它们替换为 NOP（二者架构上都是 hint，可视作 NOP），然后重新 zipalign + 签名
+        run: |
+          set -e
+          sdkmanager "build-tools;35.0.0" > /dev/null
+          BT=$ANDROID_HOME/build-tools/35.0.0
+          python3 .github/workflows/patch_apk_for_ndk_translation.py puerts_test.apk patched_unsigned.apk lib/arm64-v8a/libunity.so
+          $BT/zipalign -f -P 16 4 patched_unsigned.apk patched_aligned.apk
+          keytool -genkeypair -keystore ci_debug.keystore -storepass android -keypass android -alias ci -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=CI" > /dev/null 2>&1
+          $BT/apksigner sign --ks ci_debug.keystore --ks-pass pass:android --key-pass pass:android --out puerts_test.apk patched_aligned.apk
+          $BT/apksigner verify puerts_test.apk
+          rm -f patched_unsigned.apk patched_aligned.apk puerts_test.apk.idsig
       - name: Start emulator and run commands
         uses: reactivecircus/android-emulator-runner@v2
         with:
