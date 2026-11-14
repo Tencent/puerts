@@ -484,7 +484,8 @@ jobs:
           profile: pixel_5
           ram-size: 4096M
           cores: 2
-          emulator-options: -no-window -gpu swiftshader_indirect -no-boot-anim -no-audio -no-snapshot
+          # GLESDynamicVersion 让 swiftshader 暴露 GLES 3.1（默认只有 3.0，Unity 会先报 EGL_BAD_CONFIG 再回退）
+          emulator-options: -no-window -gpu swiftshader_indirect -feature GLESDynamicVersion -no-boot-anim -no-audio -no-snapshot
           script: bash .github/workflows/run_android_test.sh
 
       - name: Upload logs
@@ -492,7 +493,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: logcat
-          path: logcat.txt
+          path: |
+            logcat.txt
+            hang_stacks.txt
+            hang.png
+          if-no-files-found: ignore
 
 #  unittest-linux-unity:
 #    runs-on: ubuntu-latest

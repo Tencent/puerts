@@ -118,8 +118,13 @@ fi
 
 echo "Waiting for app to complete (timeout: 1200s, arm64 runs under ARM translation)..."
 TIMEOUT=1200
+# Treat as hung if the app prints nothing for this long
+STALL_TIMEOUT=600
 ELAPSED=0
 APP_EXITED=false
+APP_HUNG=false
+LAST_LINES=-1
+LAST_PROGRESS=0
 while [ $ELAPSED -lt $TIMEOUT ]; do
   # Check if process still exists
   PS_CHECK=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
@@ -128,15 +133,60 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
     APP_EXITED=true
     break
   fi
+  APP_LINES=$(grep -c -E "\( *$PID\)" logcat.txt || true)
+  if [ "$APP_LINES" != "$LAST_LINES" ]; then
+    LAST_LINES=$APP_LINES
+    LAST_PROGRESS=$ELAPSED
+  fi
+  if [ $((ELAPSED % 60)) -eq 0 ]; then
+    CPU=$(adb shell top -b -n 1 -p "$PID" 2>/dev/null | tr -d '\r' | awk -v p="$PID" '$1==p {print $9"%"}')
+    echo "[${ELAPSED}s] app log lines: $APP_LINES, cpu: ${CPU:-?}, last: $(grep -E "\( *$PID\)" logcat.txt | tail -1 | cut -c1-160)"
+  fi
+  if [ $((ELAPSED - LAST_PROGRESS)) -ge $STALL_TIMEOUT ]; then
+    echo "No app log output for ${STALL_TIMEOUT}s, treating as hung"
+    APP_HUNG=true
+    break
+  fi
   sleep 2
   ELAPSED=$((ELAPSED+2))
 done
 
+# Collect evidence of where the app is stuck: per-thread cpu, all thread stacks, a screenshot
+dump_hang_info() {
+  echo ""
+  echo "---------- Threads of pid $PID ----------"
+  adb shell top -H -b -n 1 -p "$PID" 2>/dev/null | head -60 || true
+  echo ""
+  echo "---------- Activity / window state ----------"
+  adb shell dumpsys activity activities 2>/dev/null | grep -E "mResumedActivity|topResumedActivity|mFocusedApp" || true
+  adb shell dumpsys window 2>/dev/null | grep -E "mCurrentFocus|mFocusedApp" || true
+  adb shell screencap -p /sdcard/hang.png && adb pull /sdcard/hang.png hang.png >/dev/null 2>&1 || true
+  # debuggerd needs root, google_apis images are userdebug so adb root works
+  adb root >/dev/null 2>&1 || true
+  adb wait-for-device
+  sleep 2
+  adb shell debuggerd -b "$PID" > hang_stacks.txt 2>&1 || true
+  adb shell debuggerd -j "$PID" >> hang_stacks.txt 2>&1 || true
+  echo ""
+  echo "---------- Stacks (full dump in hang_stacks.txt artifact) ----------"
+  grep -E '^"|^----- pid|^Cmd line|^  native: #0[0-9]|^  at |^    #0[0-9]' hang_stacks.txt | head -300 || true
+  echo "-----------------------------------------"
+}
+
 # Double check if app is still running
 PS_FINAL=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
 if [ -n "$PS_FINAL" ]; then
-  echo "App did not exit in time, killing..."
+  if [ "$APP_HUNG" = true ]; then
+    echo "App hung, collecting diagnostics..."
+  else
+    echo "App did not exit in time, collecting diagnostics..."
+  fi
+  dump_hang_info
+  echo ""
+  echo "---------- Last 150 log lines of app pid $PID ----------"
+  grep -E "\( *$PID\)" logcat.txt | tail -150 || true
   adb shell am force-stop com.tencent.puerts_test
+  kill $LOGCAT_BG_PID || true
   exit 1
 fi
 
