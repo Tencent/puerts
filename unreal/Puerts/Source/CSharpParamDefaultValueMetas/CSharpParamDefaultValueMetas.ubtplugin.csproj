@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="CSharpParamDefaultValueMetas.ubtplugin.csproj.props" Condition="Exists('CSharpParamDefaultValueMetas.ubtplugin.csproj.props')" />
   <Import Project="$(EngineDir)\Source\Programs\Shared\UnrealEngine.csproj.props" />
-  <Import Project="DotNetTarget.csproj.props" />
+  <!-- UE 5.6 reads this file with its own parser when generating IDE projects. -->
+  <Import Project="DotNetTarget.csproj.props" Condition="!('$(MSBuildProjectFullPath)' == '')" />
 
   <PropertyGroup>
     
@@ -11,6 +12,7 @@
     <TargetFramework Condition="!$(EngineVersionFileContent.Contains('++UE5+Release-5.5'))">net6.0</TargetFramework-->
     
     <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
     <OutputType>Library</OutputType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -18,29 +20,28 @@
     <Configurations>Debug;Release;Development</Configurations>
     <RootNamespace>CSharpParamDefaultValueMetas</RootNamespace>
     <AssemblyName>CSharpParamDefaultValueMetas</AssemblyName>
-    <!-- Anchor the output to the project file's directory instead of leaving it relative. A bare
-         relative path is resolved by the OS against the real (symlink resolved) directory in some
-         steps, while UBT resolves the same string lexically against the path it found the csproj
-         at, so the two disagree when the plugin is symlinked into the project (macOS). Joining with
-         MSBuildProjectDirectory keeps it lexical everywhere and is identical for a normal install.
-         NormalizeDirectory folds the ".." segments: OutputPath ends up in DefaultItemExcludes, and
-         UBT's up-to-date check (FileSystemGlobbing) rejects patterns with ".." in the middle. -->
-    <OutputPath>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '..', '..', '..', '..', 'Binaries', 'DotNET', 'UnrealBuildTool', 'Plugins', 'CSharpParamDefaultValueMetas'))</OutputPath>
+    <OutputPath>../../../../Binaries/DotNET/UnrealBuildTool/Plugins/CSharpParamDefaultValueMetas</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DebugType>pdbonly</DebugType>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- 通过读取引擎 Build.version 判断是否为 UE5.5+, 以选择 UHT API -->
-  <!-- (5.5+ 用 Session.Modules, 更早用 Session.Packages) -->
-  <PropertyGroup>
-    <UeVersionFile>$(EngineDir)\Build\Build.version</UeVersionFile>
-    <UeVersionJson Condition="Exists('$(UeVersionFile)')">$([System.IO.File]::ReadAllText('$(UeVersionFile)'))</UeVersionJson>
-    <UeMajor>$([System.Text.RegularExpressions.Regex]::Match('$(UeVersionJson)', '&quot;MajorVersion&quot;\s*:\s*(\d+)').Groups[1].Value)</UeMajor>
-    <UeMinor>$([System.Text.RegularExpressions.Regex]::Match('$(UeVersionJson)', '&quot;MinorVersion&quot;\s*:\s*(\d+)').Groups[1].Value)</UeMinor>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(UeMajor)' != '' AND ($(UeMajor) &gt; 5 OR ($(UeMajor) == 5 AND $(UeMinor) &gt;= 5)) ">
-    <DefineConstants>$(DefineConstants);UE_5_5_OR_LATER</DefineConstants>
-  </PropertyGroup>
+  <Choose>
+    <When Condition="!('$(MSBuildProjectFullPath)' == '')">
+      <PropertyGroup>
+        <!-- Keep the output anchored at the project path for symlinked plugins.
+             Normalize '..' segments for UBT's DefaultItemExcludes globbing. -->
+        <OutputPath>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)'))</OutputPath>
+        <!-- UE 5.5+ uses Session.Modules in UHT. Earlier versions use Session.Packages. -->
+        <UeVersionFile>$(EngineDir)\Build\Build.version</UeVersionFile>
+        <UeVersionJson Condition="Exists('$(UeVersionFile)')">$([System.IO.File]::ReadAllText('$(UeVersionFile)'))</UeVersionJson>
+        <UeMajor>$([System.Text.RegularExpressions.Regex]::Match('$(UeVersionJson)', '&quot;MajorVersion&quot;\s*:\s*(\d+)').Groups[1].Value)</UeMajor>
+        <UeMinor>$([System.Text.RegularExpressions.Regex]::Match('$(UeVersionJson)', '&quot;MinorVersion&quot;\s*:\s*(\d+)').Groups[1].Value)</UeMinor>
+      </PropertyGroup>
+      <PropertyGroup Condition=" '$(UeMajor)' != '' AND ($(UeMajor) &gt; 5 OR ($(UeMajor) == 5 AND $(UeMinor) &gt;= 5)) ">
+        <DefineConstants>$(DefineConstants);UE_5_5_OR_LATER</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Development|AnyCPU' ">
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <Optimize>true</Optimize>
