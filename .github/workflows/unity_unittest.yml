@@ -510,6 +510,8 @@ jobs:
           path: |
             logcat.txt
             hang_stacks.txt
+            logcat_attempt*.txt
+            hang_stacks_attempt*.txt
             hang.png
           if-no-files-found: ignore
 

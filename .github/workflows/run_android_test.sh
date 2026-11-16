@@ -49,6 +49,22 @@ if [ "$PM_READY" = false ]; then
 fi
 echo "Package manager ready"
 
+# sys.boot_completed only means BOOT_COMPLETED was sent; on a cold emulator its ~100 receivers can take
+# another 30s+ to run. While that is in progress the launched activity may not get window focus and
+# may get destroyed when the system settles (seen with Unity 2022: its player only starts native code
+# after onWindowFocusChanged(true), and UnityPlayer.destroy() kills the process). Wait until idle.
+echo "Waiting for broadcast queues to become idle..."
+if command -v timeout >/dev/null 2>&1; then
+  timeout 300 adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || echo "wait-for-broadcast-idle failed or timed out, continuing"
+else
+  adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || true
+fi
+
+# Keep the screen on and unlocked so the activity is resumed and focused
+adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+adb shell svc power stayon true >/dev/null 2>&1 || true
+adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
+
 # Give system services extra time to stabilize (GPU, OpenGL, etc.)
 echo "Waiting for system services to stabilize..."
 sleep 10
@@ -88,17 +104,34 @@ esac
 
 echo "Installing APK..."
 adb install -r puerts_test.apk
+# Let PACKAGE_ADDED etc. be delivered before launching, so the system is quiet while the app starts
+adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || true
+
+adb shell setprop log.tag.Unity I
+adb shell setprop log.tag.TestRunner I
+
+# The app may be torn down by the system before the Unity player even starts (no Unity log at all),
+# which has nothing to do with the tests. Retry the launch once in that case.
+MAX_ATTEMPTS=2
+ATTEMPT=0
+while true; do
+ATTEMPT=$((ATTEMPT + 1))
+echo "==========================================="
+echo "Launch attempt $ATTEMPT/$MAX_ATTEMPTS"
+echo "==========================================="
+rm -f hang_stacks.txt
 
 echo "Clearing logcat..."
 adb logcat -c
 adb shell logcat -G 16M
-adb shell setprop log.tag.Unity I
-adb shell setprop log.tag.TestRunner I
 
 # Start capturing before launching so that early startup logs are never missed
 echo "Starting logcat capture..."
 adb logcat -v time > logcat.txt &
 LOGCAT_BG_PID=$!
+
+adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
 
 echo "Starting app..."
 adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActivity
@@ -157,6 +190,7 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
   fi
   if [ $ELAPSED -eq 10 ] || [ $ELAPSED -eq 30 ]; then
     # Early sample: the app may be stuck and then kill itself (e.g. Unity pause timeout) before the stall watchdog fires
+    echo "[${ELAPSED}s] window focus: $(adb shell dumpsys window 2>/dev/null | grep -m1 mCurrentFocus | tr -d '\r')"
     echo "===== stack sample at ${ELAPSED}s =====" >> hang_stacks.txt
     adb shell debuggerd -b "$PID" >> hang_stacks.txt 2>&1 || true
     echo "[${ELAPSED}s] native stack sample of main / Unity threads:"
@@ -164,6 +198,23 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
   fi
   sleep 2
   ELAPSED=$((ELAPSED+2))
+done
+
+UNITY_LINES=$(grep -c -E "/Unity *\( *$PID\)" logcat.txt || true)
+if [ "$APP_EXITED" = true ] && [ "$UNITY_LINES" -eq 0 ] && [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+  echo "WARNING: app exited before the Unity player produced any log, retrying the launch"
+  echo "---------- Last 30 log lines of app pid $PID ----------"
+  grep -E "\( *$PID\)" logcat.txt | tail -30 || true
+  adb shell dumpsys activity exit-info com.tencent.puerts_test 2>/dev/null | grep -m5 -E "reason|description" || true
+  kill $LOGCAT_BG_PID || true
+  sleep 1
+  mv logcat.txt "logcat_attempt${ATTEMPT}.txt" || true
+  [ -f hang_stacks.txt ] && mv hang_stacks.txt "hang_stacks_attempt${ATTEMPT}.txt" || true
+  adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || true
+  sleep 5
+  continue
+fi
+break
 done
 
 # Collect evidence of where the app is stuck: per-thread cpu, all thread stacks, a screenshot
