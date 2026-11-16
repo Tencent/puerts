@@ -89,6 +89,8 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     void RestoreBlueprintTypeDeclInfos(const FString& FileContent, bool InGenFull);
 
+    void SanitizeBlueprintDeclarations();
+
     void LoadAllWidgetBlueprint(FName InSearchPath, bool InGenFull);
 
     void InitExtensionMethodsMap();
