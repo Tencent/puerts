@@ -25,7 +25,7 @@ public class JsEnv : ModuleRules
             "Core", "CoreUObject", "Engine", "ScriptEnv", "PapiV8"
         });
 
-        // JsEnv/Private 下保留了一份 Unity 共用的源文件（V8InspectorImpl.cpp、WebSocketImpl.cpp 等），
+        // JsEnv/Private 下保留了一份 Unity 共用的源文件（V8InspectorImpl.cpp 等），
         // UE 编译的是 PapiV8 / ScriptEnv 中的版本，这里通过宏跳过，避免重复定义。
         PrivateDefinitions.Add("PUERTS_JSENV_SKIP_UNITY_SHARED_SOURCES");
 
