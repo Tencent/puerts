@@ -55,7 +55,6 @@ include_directories(
     ${ThirdParty}/Include/websocketpp
     ${ThirdParty}/Include/asio
     ${PROJECT_SOURCE_DIR}/../papi-v8/include
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private
     ${BACKEND_INC_NAMES}
     ${PROJECT_SOURCE_DIR}/../puerts/include
 )
@@ -65,8 +64,8 @@ set ( PUERTS_INC
     ${PROJECT_SOURCE_DIR}/../papi-v8/include/BackendEnv.h
     ${PROJECT_SOURCE_DIR}/../papi-v8/include/JSEngine.h
     ${PROJECT_SOURCE_DIR}/../papi-v8/include/V8Utils.h
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+    ${PROJECT_SOURCE_DIR}/../papi-v8/include/V8InspectorImpl.h
+    ${PROJECT_SOURCE_DIR}/../papi-v8/include/PromiseRejectCallback.hpp
 )
 
 set ( PUERTS_SRC
@@ -76,7 +75,7 @@ set ( PUERTS_SRC
     ${PROJECT_SOURCE_DIR}/../papi-v8/source/CppObjectMapper.cpp
     ${PROJECT_SOURCE_DIR}/../papi-v8/source/DataTransfer.cpp
     ${PROJECT_SOURCE_DIR}/../papi-v8/source/PesapiV8Impl.cpp
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+    ${PROJECT_SOURCE_DIR}/../papi-v8/source/V8InspectorImpl.cpp
 )
 
 set(PUERTS_COMPILE_DEFINITIONS)

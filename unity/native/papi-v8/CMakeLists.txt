@@ -55,7 +55,6 @@ include_directories(
     ${ThirdParty}/Include/websocketpp
     ${ThirdParty}/Include/asio
     include
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private
     ${BACKEND_INC_NAMES}
     ${PROJECT_SOURCE_DIR}/../puerts/include
 )
@@ -65,8 +64,8 @@ set ( PUERTS_INC
     include/BackendEnv.h
     include/JSEngine.h
     include/V8Utils.h
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+    include/V8InspectorImpl.h
+    include/PromiseRejectCallback.hpp
 )
 
 set ( PUERTS_SRC
@@ -76,7 +75,7 @@ set ( PUERTS_SRC
     source/CppObjectMapper.cpp
     source/DataTransfer.cpp
     source/PesapiV8Impl.cpp
-    ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+    source/V8InspectorImpl.cpp
 )
 
 # Build this translation unit without RTTI to match V8 builds that disable RTTI.
@@ -84,7 +83,7 @@ set ( PUERTS_SRC
 # `typeinfo for v8_inspector::V8InspectorClient` and fail to link when V8 is built with -fno-rtti.
 if(APPLE OR UNIX)
     set_source_files_properties(
-        ${PROJECT_SOURCE_DIR}/../../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+        source/V8InspectorImpl.cpp
         PROPERTIES COMPILE_OPTIONS "-fno-rtti"
     )
 endif()

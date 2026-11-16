@@ -18,9 +18,6 @@ on:
       - unity/test/**
       - unity/native/**
       - unity/cli/**
-      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
-      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
-      - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
       - .github/workflows/run_android_test.sh
       - .github/workflows/composites/**
@@ -30,9 +27,6 @@ on:
       - unity/test/**
       - unity/native/**
       - unity/cli/**
-      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
-      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
-      - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/unity_unittest.yml
       - .github/workflows/run_android_test.sh
       - .github/workflows/composites/**
