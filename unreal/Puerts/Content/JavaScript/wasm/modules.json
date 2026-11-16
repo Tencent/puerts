@@ -1,6 +1,0 @@
-{
-	"WasmMain" : {
-				"LinkCategory" : 0,
-				"GlobalNameInTs" : "WasmMain"
-			}
-}

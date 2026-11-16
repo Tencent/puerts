@@ -33,7 +33,7 @@ public class DeclarationGenerator : ModuleRules
                 "InputCore",
                 "Projects",
                 "JsEnv",
-                "Puerts",
+                "ScriptEnv",
 #if UE_5_0_OR_LATER
                 "ToolMenus",
 #endif
@@ -50,9 +50,13 @@ public class DeclarationGenerator : ModuleRules
             );
         }
         
+        // ISettingsModule is used through its interface only, the header is enough (no link to the Settings module)
+        PrivateIncludePathModuleNames.Add("Settings");
+
         if (JsEnv.WithSourceControl)
         {
-            PrivateDependencyModuleNames.Add("PuertsEditor");
+            PrivateDependencyModuleNames.Add("SourceControl");
+            PrivateDefinitions.Add("PUERTS_WITH_SOURCE_CONTROL");
         }
 
         //PublicDefinitions.Add(string.Format("DECL_OUTPUT_PATH={0}", Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content", "Scripts"))));

@@ -1,0 +1,43 @@
+﻿/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#pragma once
+
+#include <vector>
+
+#include "CoreMinimal.h"
+#include "ScriptEnv.h"
+
+namespace PUERTS_NAMESPACE
+{
+class SCRIPTENV_API FScriptEnvGroup
+{
+public:
+    explicit FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, const FString& ScriptRoot = TEXT("JavaScript"));
+
+    FScriptEnvGroup(FPapiBackendFactory InBackendFactory, int Size, std::shared_ptr<IScriptFileLoader> InFileLoader,
+        std::shared_ptr<ILogger> InLogger, int InDebugStartPort, const FString InFlags = FString(),
+        void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
+
+    ~FScriptEnvGroup();
+
+    void InitExtensionMethodsMap();
+
+    std::shared_ptr<IScriptEnv> Get(int Index);
+
+    // the number of the envs
+    int Num() const
+    {
+        return static_cast<int>(JsEnvList.size());
+    }
+
+private:
+    std::vector<std::shared_ptr<IScriptEnv>> JsEnvList;
+};
+
+}    // namespace PUERTS_NAMESPACE

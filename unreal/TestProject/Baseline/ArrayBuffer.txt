@@ -1,0 +1,5 @@
+js write visible to C++: 208
+non buffer argument: 0
+bCopy == false aliases the argument: 50
+value param: 6
+value return: [1, 2, 3, 4]

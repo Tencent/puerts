@@ -1,0 +1,147 @@
+{
+	"time": "2026-10-22T09:06:13.818Z",
+	"config": "Development",
+	"cpu": "AMD Ryzen 9 9950X 16-Core Processor",
+	"metrics": [
+		{
+			"name": "ufunction.noop",
+			"value": 73.102597147226334,
+			"unit": "ns/op"
+		},
+		{
+			"name": "ufunction.identity_int",
+			"value": 111.33649945259094,
+			"unit": "ns/op"
+		},
+		{
+			"name": "ufunction.three_args",
+			"value": 242.36679822206497,
+			"unit": "ns/op"
+		},
+		{
+			"name": "ufunction.return_string",
+			"value": 152.50159800052643,
+			"unit": "ns/op"
+		},
+		{
+			"name": "ufunction.static_noop",
+			"value": 54.850101470947266,
+			"unit": "ns/op"
+		},
+		{
+			"name": "ufunction.struct_param",
+			"value": 136.05459779500961,
+			"unit": "ns/op"
+		},
+		{
+			"name": "ufunction.return_struct",
+			"value": 694.69433277845383,
+			"unit": "ns/op"
+		},
+		{
+			"name": "ufunction.return_self",
+			"value": 102.82469913363457,
+			"unit": "ns/op"
+		},
+		{
+			"name": "property.get_int",
+			"value": 60.716051608324051,
+			"unit": "ns/op"
+		},
+		{
+			"name": "property.set_int",
+			"value": 64.711200073361397,
+			"unit": "ns/op"
+		},
+		{
+			"name": "property.get_string",
+			"value": 76.480802148580551,
+			"unit": "ns/op"
+		},
+		{
+			"name": "property.set_string",
+			"value": 107.93790221214294,
+			"unit": "ns/op"
+		},
+		{
+			"name": "property.get_struct",
+			"value": 67.711599171161652,
+			"unit": "ns/op"
+		},
+		{
+			"name": "property.struct_field",
+			"value": 47.954101115465164,
+			"unit": "ns/op"
+		},
+		{
+			"name": "array.get",
+			"value": 60.4124516248703,
+			"unit": "ns/op"
+		},
+		{
+			"name": "array.num",
+			"value": 19.704099744558334,
+			"unit": "ns/op"
+		},
+		{
+			"name": "array.property_access",
+			"value": 63.515797257423401,
+			"unit": "ns/op"
+		},
+		{
+			"name": "map.get",
+			"value": 162.69329935312271,
+			"unit": "ns/op"
+		},
+		{
+			"name": "new.uobject",
+			"value": 1529.9999713897705,
+			"unit": "ns/op"
+		},
+		{
+			"name": "new.struct",
+			"value": 231.76833987236023,
+			"unit": "ns/op"
+		},
+		{
+			"name": "new.cpp",
+			"value": 183.68133654197058,
+			"unit": "ns/op"
+		},
+		{
+			"name": "cpp.method_noop",
+			"value": 14.345049858093262,
+			"unit": "ns/op"
+		},
+		{
+			"name": "cpp.method_int",
+			"value": 18.056599423289299,
+			"unit": "ns/op"
+		},
+		{
+			"name": "cpp.property_get",
+			"value": 19.568849354982376,
+			"unit": "ns/op"
+		},
+		{
+			"name": "cpp.static",
+			"value": 13.4458988904953,
+			"unit": "ns/op"
+		},
+		{
+			"name": "cpp.overload",
+			"value": 36.808401346206665,
+			"unit": "ns/op"
+		},
+		{
+			"name": "delegate.cpp_to_js",
+			"value": 210.80320328474045,
+			"unit": "ns/op"
+		},
+		{
+			"name": "mixin.cpp_to_js",
+			"value": 348.80699962377548,
+			"unit": "ns/op"
+		}
+	]
+}

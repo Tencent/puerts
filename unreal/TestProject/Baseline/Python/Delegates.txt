@@ -1,0 +1,10 @@
+multicast IsBound after clear: throws AttributeError: 'FMulticastScriptDelegate' object has no attribute 'IsBound'
+delegate same view: True
+ufunction bound IsBound: True
+manual release bound method: 6
+execute unbound single: throws RuntimeError: can not execute an unbound delegate!
+broadcast empty multicast: None
+same function added twice: 2
+after removing once: 3
+multicast IsBound after removing all: throws AttributeError: 'FMulticastScriptDelegate' object has no attribute 'IsBound'
+auto release call: -1

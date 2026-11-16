@@ -1,0 +1,510 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#include "PapiBackendV8.h"
+#include "PesapiImpl.h"
+#include "PapiV8Bridge.h"
+#include "PapiV8ModuleLoader.h"
+#include "PapiV8PromiseReject.h"
+#include "CppObjectMapper.h"
+#include "DataTransfer.h"
+#include "V8Utils.h"
+#include "PapiEnvScope.h"
+#include "PString.h"
+#include "V8InspectorImpl.h"
+
+#if defined(WITH_NODEJS)
+#include "PapiV8Node.h"
+#else
+namespace PUERTS_NAMESPACE
+{
+// never created without node, only completes the type of the member
+class FPapiV8Node
+{
+};
+}    // namespace PUERTS_NAMESPACE
+#endif
+
+// the memory of a pod struct can be freed with the backing store of an ArrayBuffer (see CreateTriviallyFreedObject)
+#if V8_MAJOR_VERSION < 8 || defined(WITH_NODEJS) || (WITH_EDITOR && !defined(FORCE_USE_STATIC_V8_LIB))
+#define WITH_BACKING_STORE_AUTO_FREE 0
+#else
+#define WITH_BACKING_STORE_AUTO_FREE 1
+#endif
+
+#if !defined(WITH_NODEJS) && V8_MAJOR_VERSION < 8
+#if PLATFORM_WINDOWS
+#include "Blob/Win64/NativesBlob.h"
+#elif PLATFORM_ANDROID_ARM
+#include "Blob/Android/armv7a/NativesBlob.h"
+#elif PLATFORM_ANDROID_ARM64
+#include "Blob/Android/arm64/NativesBlob.h"
+#elif PLATFORM_MAC
+#include "Blob/macOS/NativesBlob.h"
+#elif PLATFORM_IOS
+#include "Blob/iOS/arm64/NativesBlob.h"
+#elif PLATFORM_LINUX
+#include "Blob/Linux/NativesBlob.h"
+#endif
+#endif
+
+namespace PUERTS_NAMESPACE
+{
+#if defined(WITH_V8_BYTECODE)
+struct FCodeCacheHeader
+{
+    uint32_t MagicNumber;
+    uint32_t VersionHash;
+    uint32_t SourceHash;
+    uint32_t FlagHash;
+#if V8_MAJOR_VERSION >= 11
+    uint32_t ReadOnlySnapshotChecksum;
+#endif
+    uint32_t PayloadLength;
+    uint32_t Checksum;
+};
+#endif
+
+FPapiBackendV8::FPapiBackendV8(const FParams& InParams)
+    : FPapiBackendJs(InParams), Params(InParams), CppObjectMapper(std::make_unique<FCppObjectMapper>())
+{
+}
+
+FPapiBackendV8::~FPapiBackendV8()
+{
+    check(!Isolate);
+}
+
+std::unique_ptr<IPapiBackend> FPapiBackendV8::Create(const FPapiBackendParams& InParams)
+{
+    return std::make_unique<FPapiBackendV8>(FParams(InParams));
+}
+
+int FPapiBackendV8::GetApiVersion()
+{
+    return PESAPI_VERSION;
+}
+
+struct pesapi_ffi* FPapiBackendV8::GetApi()
+{
+    return &v8impl::g_pesapi_ffi;
+}
+
+pesapi_env_ref FPapiBackendV8::CreateEnvRef()
+{
+    check(!Isolate);
+#if defined(WITH_NODEJS)
+    // the isolate is created by node and registered to its platform (the platform of the PapiV8 module)
+    Node = std::make_unique<FPapiV8Node>(Logger);
+    Isolate = Node->NewIsolate();
+    if (!Isolate)
+    {
+        Node.reset();
+        return nullptr;
+    }
+    OwnsIsolate = true;
+#else
+    {
+        TArray<FString> FlagArray;
+        Params.Flags.ParseIntoArray(FlagArray, TEXT(" "));
+        for (auto& Flag : FlagArray)
+        {
+            static FString Max_Old_Space_Size_Name(TEXT("--max-old-space-size="));
+            if (Flag.StartsWith(Max_Old_Space_Size_Name))
+            {
+                size_t Val = FCString::Atoi(*Flag.Mid(Max_Old_Space_Size_Name.Len()));
+                CreateParams.constraints.set_max_old_generation_size_in_bytes(Val * 1024 * 1024);
+            }
+        }
+#if V8_MAJOR_VERSION < 8
+        std::unique_ptr<v8::StartupData> NativesBlob = std::make_unique<v8::StartupData>();
+        NativesBlob->data = (const char*) NativesBlobCode;
+        NativesBlob->raw_size = sizeof(NativesBlobCode);
+        v8::V8::SetNativesDataBlob(NativesBlob.get());
+#endif
+        CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+        Isolate = v8::Isolate::New(CreateParams);
+        OwnsIsolate = true;
+    }
+#endif
+
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    // the object mapping used by the v8 implementation of pesapi
+    Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(CppObjectMapper.get()));
+
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+#if defined(WITH_NODEJS)
+    v8::Local<v8::Context> Context = Node->NewContext();
+#else
+    v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+#endif
+    v8::Context::Scope ContextScope(Context);
+
+    CppObjectMapper->Initialize(Isolate, Context);
+    // after the mapper is initialized: the ref tracks the life cycle of the env, which starts there
+    MainEnvRef = v8impl::g_pesapi_ffi.create_env_ref(papi_bridge::ToPapi(Context));
+#if defined(WITH_NODEJS)
+    Node->StartPolling(&v8impl::g_pesapi_ffi, MainEnvRef);
+#endif
+    return MainEnvRef;
+}
+
+void FPapiBackendV8::DestroyEnvRef(pesapi_env_ref EnvRef)
+{
+    if (!Isolate)
+    {
+        return;
+    }
+#if defined(WITH_NODEJS)
+    // no uv callback runs after this
+    Node->StopPolling();
+#endif
+    // the inspector references the context
+    CloseRemoteDebugger();
+    {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        if (EnvRef)
+        {
+            v8impl::g_pesapi_ffi.release_env_ref(EnvRef);
+        }
+        MainEnvRef = nullptr;
+        // invalidates the refs of the env
+        CppObjectMapper->UnInitialize(Isolate);
+        if (Params.OnEnvReleased)
+        {
+            Params.OnEnvReleased();
+        }
+#if defined(WITH_NODEJS)
+        // the node environment is released while the isolate is alive
+        Node->FreeEnvironment();
+#endif
+    }
+
+    if (OwnsIsolate)
+    {
+        Isolate->Dispose();
+        delete CreateParams.array_buffer_allocator;
+        CreateParams.array_buffer_allocator = nullptr;
+    }
+    Isolate = nullptr;
+    Node.reset();
+}
+
+void FPapiBackendV8::RegisterBuiltinModule(pesapi_env Env, const char* Name, pesapi_value Exports)
+{
+    papi_v8::RegisterBuiltinModule(Env, Name, Exports);
+}
+
+void FPapiBackendV8::LowMemoryNotification()
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    Isolate->LowMemoryNotification();
+}
+
+bool FPapiBackendV8::IdleNotificationDeadline(double DeadlineInSeconds)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    return Isolate->IdleNotificationDeadline(DeadlineInSeconds);
+}
+
+void FPapiBackendV8::RequestMinorGarbageCollectionForTesting()
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    Isolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
+}
+
+void FPapiBackendV8::RequestFullGarbageCollectionForTesting()
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    Isolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
+}
+
+void FPapiBackendV8::OpenRemoteDebugger(int32 Port)
+{
+    if (Inspector)
+    {
+        return;
+    }
+    FPapiEnvScope EnvScope(GetApi(), MainEnvRef);
+    if (!EnvScope)
+    {
+        return;
+    }
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(EnvScope.GetEnv());
+    Inspector = CreateV8Inspector(Port, &Context);
+}
+
+bool FPapiBackendV8::DebuggerTick()
+{
+    if (!Inspector)
+    {
+        return true;
+    }
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    return Inspector->Tick();
+}
+
+void FPapiBackendV8::CloseRemoteDebugger()
+{
+    if (!Inspector)
+    {
+        return;
+    }
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    delete Inspector;
+    Inspector = nullptr;
+}
+
+FString FPapiBackendV8::GetStatisticsLog()
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::HeapStatistics Statistics;
+    Isolate->GetHeapStatistics(&Statistics);
+
+    return FString::Printf(TEXT("------------------------\n"
+                                "Dump Statistics of V8:\n"
+                                "total_heap_size: %llu\n"
+                                "total_heap_size_executable: %llu\n"
+                                "total_physical_size: %llu\n"
+                                "total_available_size: %llu\n"
+                                "used_heap_size: %llu\n"
+                                "heap_size_limit: %llu\n"
+                                "malloced_memory: %llu\n"
+                                "external_memory: %llu\n"
+                                "peak_malloced_memory: %llu\n"
+                                "number_of_native_contexts: %llu\n"
+                                "number_of_detached_contexts: %llu\n"
+                                "does_zap_garbage: %llu\n"
+                                "------------------------\n"),
+        (uint64) Statistics.total_heap_size(), (uint64) Statistics.total_heap_size_executable(),
+        (uint64) Statistics.total_physical_size(), (uint64) Statistics.total_available_size(), (uint64) Statistics.used_heap_size(),
+        (uint64) Statistics.heap_size_limit(), (uint64) Statistics.malloced_memory(), (uint64) Statistics.external_memory(),
+        (uint64) Statistics.peak_malloced_memory(), (uint64) Statistics.number_of_native_contexts(),
+        (uint64) Statistics.number_of_detached_contexts(), (uint64) Statistics.does_zap_garbage());
+}
+
+static FString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
+{
+    FString Ret;
+    for (int i = 0; i < InStack->GetFrameCount(); i++)
+    {
+        v8::Local<v8::StackFrame> StackFrame = InStack->GetFrame(InIsolate, i);
+        v8::String::Utf8Value FuncName(InIsolate, StackFrame->GetFunctionName());
+        v8::String::Utf8Value ScriptName(InIsolate, StackFrame->GetScriptName());
+        const int LineNumber = StackFrame->GetLineNumber();
+        const int Column = StackFrame->GetColumn();
+        const FString Script = UTF8_TO_TCHAR(*ScriptName ? *ScriptName : "anonymous");
+
+        if (StackFrame->IsEval())
+        {
+            if (StackFrame->GetScriptId() == v8::Message::kNoScriptIdInfo)
+            {
+                Ret += FString::Printf(TEXT("    at [eval]:%d:%d\n"), LineNumber, Column);
+            }
+            else
+            {
+                Ret += FString::Printf(TEXT("    at [eval] (%s:%d:%d)\n"), *Script, LineNumber, Column);
+            }
+            break;
+        }
+
+        if (FuncName.length() == 0)
+        {
+            Ret += FString::Printf(TEXT("    at %s:%d:%d\n"), *Script, LineNumber, Column);
+        }
+        else
+        {
+            Ret += FString::Printf(TEXT("    at %s(%s:%d:%d)\n"), UTF8_TO_TCHAR(*FuncName), *Script, LineNumber, Column);
+        }
+    }
+    return Ret;
+}
+
+FString FPapiBackendV8::CurrentStackTrace()
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+
+    return StackTraceToString(Isolate, v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
+}
+
+ScriptClassRegistry* FPapiBackendV8::GetRegistry()
+{
+    return CppObjectMapper->GetRegistry();
+}
+
+bool FPapiBackendV8::LoadAddon(pesapi_env Env, const char* Name)
+{
+    auto Func = FindAddonRegisterFunc(Name);
+    if (!Func)
+    {
+        return false;
+    }
+    struct pesapi_ffi* Apis = GetApi();
+    pesapi_value Exports = Apis->create_object(Env);
+    Func(papi_bridge::ToV8(Env), papi_bridge::ToV8(Exports).As<v8::Object>());
+    RegisterBuiltinModule(Env, Name, Exports);
+    return true;
+}
+
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+// not cached: the pointer and the type id are set as a native object of the class (so the class callbacks work), and the
+// memory is held by an ArrayBuffer (at index 0) which is freed with the object, possibly on a v8 worker thread
+static void BindTriviallyFreed(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> JSObject,
+    const void* TypeId, void* Ptr, size_t Size, IPapiBackend::FTriviallyFreedDeleter Deleter, void* DeleterData)
+{
+    DataTransfer::SetPointer(Isolate, JSObject, Ptr, 0);
+    DataTransfer::SetPointer(Isolate, JSObject, TypeId, 1);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(Isolate, Ptr, Size, Deleter, DeleterData);
+#else
+    auto Backing = v8::ArrayBuffer::NewBackingStore(Ptr, Size, Deleter, DeleterData);
+    auto MemoryHolder = v8::ArrayBuffer::New(Isolate, std::move(Backing));
+#endif
+    (void) JSObject->Set(Context, 0, MemoryHolder);
+}
+#endif
+
+pesapi_value FPapiBackendV8::CreateTriviallyFreedObject(
+    pesapi_env Env, const void* TypeId, void* Ptr, size_t Size, FTriviallyFreedDeleter Deleter, void* DeleterData)
+{
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    auto ClassDefinition = LoadClassByID(CppObjectMapper->GetRegistry(), TypeId);
+    if (!ClassDefinition)
+    {
+        return nullptr;
+    }
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+    v8::Local<v8::Object> Result;
+    if (!CppObjectMapper->GetTemplateOfClass(Isolate, ClassDefinition)->InstanceTemplate()->NewInstance(Context).ToLocal(&Result))
+    {
+        return nullptr;
+    }
+    BindTriviallyFreed(Isolate, Context, Result, TypeId, Ptr, Size, Deleter, DeleterData);
+    return papi_bridge::ToPapi(Result);
+#else
+    return nullptr;
+#endif
+}
+
+bool FPapiBackendV8::BindTriviallyFreedObject(
+    pesapi_callback_info Info, const void* TypeId, void* Ptr, size_t Size, FTriviallyFreedDeleter Deleter, void* DeleterData)
+{
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL) || WITH_BACKING_STORE_AUTO_FREE
+    const v8::FunctionCallbackInfo<v8::Value>& CallbackInfo = papi_bridge::ToV8(Info);
+    BindTriviallyFreed(Isolate, Isolate->GetCurrentContext(), CallbackInfo.This(), TypeId, Ptr, Size, Deleter, DeleterData);
+    return true;
+#else
+    return false;
+#endif
+}
+
+void FPapiBackendV8::StartRuntime(pesapi_env Env)
+{
+    ModuleLoader =
+        papi_v8::CreateModuleLoader(Env, LoadFile, [this](pesapi_env InEnv, const char* Name) { return LoadAddon(InEnv, Name); });
+    PromiseRejectTracker = papi_v8::CreatePromiseRejectTracker(Env, &OnPromiseRejectHandlerError, Logger.get());
+#if defined(WITH_NODEJS)
+    // the require of node (its builtin modules and node_modules), tried by puerts/module.js for the names not found
+    {
+        v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+        v8::Local<v8::Value> NodeRequire = Node->GetRequire(Context);
+        v8::Local<v8::Value> PuertsObj;
+        if (!NodeRequire.IsEmpty() &&
+            Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "puerts").ToLocalChecked()).ToLocal(&PuertsObj) &&
+            PuertsObj->IsObject())
+        {
+            (void) PuertsObj.As<v8::Object>()->Set(
+                Context, v8::String::NewFromUtf8(Isolate, "__nodeRequire").ToLocalChecked(), NodeRequire);
+        }
+    }
+#endif
+
+#if defined(WITH_V8_BYTECODE)
+    // the header fields of the bytecode the running v8 accepts, taken from the code cache of an empty script
+    v8::Local<v8::Context> Context = papi_bridge::ToV8(Env);
+    auto Script = v8::Script::Compile(Context, v8::String::NewFromUtf8(Isolate, "").ToLocalChecked()).ToLocalChecked();
+    auto CachedCode = v8::ScriptCompiler::CreateCodeCache(Script->GetUnboundScript());
+    const FCodeCacheHeader* CodeCacheHeader = (const FCodeCacheHeader*) CachedCode->data;
+    papi_v8::SetCodeCacheExpect(Env, CodeCacheHeader->FlagHash,
+#if V8_MAJOR_VERSION >= 11
+        CodeCacheHeader->ReadOnlySnapshotChecksum
+#else
+        0
+#endif
+    );
+#if !WITH_EDITOR
+    delete CachedCode;    //编辑器下是v8.dll分配的，ue里的delete被重载了，这delete会有问题
+#endif
+#endif
+}
+
+void FPapiBackendV8::StopRuntime()
+{
+    papi_v8::DestroyPromiseRejectTracker(PromiseRejectTracker);
+    PromiseRejectTracker = nullptr;
+    papi_v8::DestroyModuleLoader(ModuleLoader);
+    ModuleLoader = nullptr;
+}
+
+pesapi_value FPapiBackendV8::ImportModule(pesapi_env Env, const char* Specifier, const char* Referrer)
+{
+    return papi_v8::ImportModule(Env, Specifier, Referrer);
+}
+
+pesapi_value FPapiBackendV8::GetBuiltinModule(pesapi_env Env, const char* Name)
+{
+    return papi_v8::GetBuiltinModule(Env, Name);
+}
+
+void FPapiBackendV8::SetModuleHooks(pesapi_env Env, pesapi_value Require, pesapi_value Resolve)
+{
+    papi_v8::SetHooks(Env, Require, Resolve);
+}
+
+pesapi_value FPapiBackendV8::CompileCjs(pesapi_env Env, pesapi_value Content, const char* DebugPath, const char* Path)
+{
+    return papi_v8::CompileCjs(Env, Content, DebugPath, Path);
+}
+
+void FPapiBackendV8::SetPromiseRejectHandler(pesapi_env Env, pesapi_value Handler)
+{
+    papi_v8::SetPromiseRejectHandler(Env, Handler);
+}
+
+void FPapiBackendV8::OnPromiseRejectHandlerError(void* UserData, const char* Error)
+{
+    static_cast<ILogger*>(UserData)->Error(FString::Printf(TEXT("promise reject handler exception %s"), UTF8_TO_TCHAR(Error)));
+}
+}    // namespace PUERTS_NAMESPACE

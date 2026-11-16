@@ -7,88 +7,77 @@
  */
 
 #include "JsEnv.h"
-#include "JsEnvImpl.h"
+#include "JsEnvGroup.h"
+#include "PapiBackendV8.h"
+#include "ScriptEnvMixinApi.h"
 
 namespace PUERTS_NAMESPACE
 {
-FJsEnv::FJsEnv(const FString& ScriptRoot)
+// FJsEnv / FJsEnvGroup are the envs of the old versions, so they always have blueprint.mixin and the node style module
+// resolution (node_modules, no extension, package.json) of the old DefaultJSModuleLoader
+static const TCHAR* NodeModuleResolver = TEXT("puerts/module_node.js");
+
+FJsEnv::FJsEnv(const FString& ScriptRoot) : FScriptEnv(&FPapiBackendV8::Create, ScriptRoot)
 {
-    GameScript = std::make_unique<FJsEnvImpl>(ScriptRoot);
+    EnableMixin(*this);
+    PreloadModule(NodeModuleResolver);
+}
+
+FJsEnv::FJsEnv(std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnv(
+          &FPapiBackendV8::Create, std::move(InFileLoader), InLogger, InDebugPort, InFlags, InExternalRuntime, InExternalContext)
+{
+    EnableMixin(*this);
+    PreloadModule(NodeModuleResolver);
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
-    std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
-    void* InExternalContext)
+    const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnv(&FPapiBackendV8::Create, std::make_shared<FJSModuleLoaderAdapter>(std::move(InModuleLoader)), InLogger,
+          InDebugPort, InFlags, InExternalRuntime, InExternalContext)
 {
-    GameScript = std::make_unique<FJsEnvImpl>(
-        std::move(InModuleLoader), InLogger, InDebugPort, InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext);
-}
-
-void FJsEnv::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments)
-{
-    GameScript->Start(ModuleName, Arguments);
-}
-
-bool FJsEnv::IdleNotificationDeadline(double DeadlineInSeconds)
-{
-    return GameScript->IdleNotificationDeadline(DeadlineInSeconds);
-}
-
-void FJsEnv::LowMemoryNotification()
-{
-    GameScript->LowMemoryNotification();
-}
-
-void FJsEnv::RequestMinorGarbageCollectionForTesting()
-{
-    GameScript->RequestMinorGarbageCollectionForTesting();
-}
-
-void FJsEnv::RequestFullGarbageCollectionForTesting()
-{
-    GameScript->RequestFullGarbageCollectionForTesting();
-}
-
-void FJsEnv::WaitDebugger(double timeout)
-{
-    GameScript->WaitDebugger(timeout);
+    EnableMixin(*this);
+    PreloadModule(NodeModuleResolver);
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnv::TryBindJs(const class UObjectBase* InObject)
+static void PreloadNodeModuleResolver(FScriptEnvGroup& Group)
 {
-    GameScript->TryBindJs(InObject);
+    for (int i = 0; i < Group.Num(); i++)
+    {
+        Group.Get(i)->PreloadModule(NodeModuleResolver);
+    }
 }
 
-void FJsEnv::RebindJs()
+FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot) : FScriptEnvGroup(&FPapiBackendV8::Create, Size, ScriptRoot)
 {
-    GameScript->RebindJs();
+    EnableMixin(*this);
+    PreloadNodeModuleResolver(*this);
+}
+
+FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IScriptFileLoader> InFileLoader, std::shared_ptr<ILogger> InLogger,
+    int InDebugStartPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::move(InFileLoader), InLogger, InDebugStartPort, InFlags,
+          InExternalRuntime, InExternalContext)
+{
+    EnableMixin(*this);
+    PreloadNodeModuleResolver(*this);
+}
+
+FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
+    int InDebugStartPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext)
+    : FScriptEnvGroup(&FPapiBackendV8::Create, Size, std::make_shared<FJSModuleLoaderAdapter>(std::move(InModuleLoader)), InLogger,
+          InDebugStartPort, InFlags, InExternalRuntime, InExternalContext)
+{
+    EnableMixin(*this);
+    PreloadNodeModuleResolver(*this);
+}
+
+void FJsEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)
+{
+    SetMixinSelector(*this, InSelector);
 }
 #endif
-
-FString FJsEnv::CurrentStackTrace()
-{
-    return GameScript->CurrentStackTrace();
-}
-
-void FJsEnv::InitExtensionMethodsMap()
-{
-    GameScript->InitExtensionMethodsMap();
-}
-
-void FJsEnv::ReloadModule(FName ModuleName, const FString& JsSource)
-{
-    GameScript->ReloadModule(ModuleName, JsSource);
-}
-
-void FJsEnv::ReloadSource(const FString& Path, const PString& JsSource)
-{
-    GameScript->ReloadSource(Path, JsSource);
-}
-
-void FJsEnv::OnSourceLoaded(std::function<void(const FString&)> Callback)
-{
-    GameScript->OnSourceLoaded(Callback);
-}
 
 }    // namespace PUERTS_NAMESPACE

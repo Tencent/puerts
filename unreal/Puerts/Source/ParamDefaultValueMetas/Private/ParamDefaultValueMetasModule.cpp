@@ -36,7 +36,7 @@ public:
     }
     virtual FString GetGeneratedCodeModuleName() const override
     {
-        return TEXT("JsEnv");
+        return TEXT("ScriptEnv");
     }
     virtual bool SupportsTarget(const FString& TargetName) const override
     {

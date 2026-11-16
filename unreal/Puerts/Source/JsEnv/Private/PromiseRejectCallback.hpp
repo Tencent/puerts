@@ -70,8 +70,15 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
     JsEngine->JsPromiseRejectCallback.Reset(Isolate, Args[0].As<v8::Function>());
 }
 
+#if defined(UE_GAME) || defined(UE_EDITOR) || defined(UE_SERVER) || defined(USING_IN_UNREAL_ENGINE)
+#define PUERTS_PROMISE_REJECT_CALLBACK_USING_UE 1
+#else
+#define PUERTS_PROMISE_REJECT_CALLBACK_USING_UE 0
+#endif
+
 // TODO: rename this file
-#ifndef WITH_QUICKJS
+// used by unity (papi-v8 / papi-nodejs), the unreal plugin has its own copy in PapiBackendV8.cpp
+#if !PUERTS_PROMISE_REJECT_CALLBACK_USING_UE && !defined(WITH_QUICKJS)
 PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
     std::ostringstream stm;
@@ -110,5 +117,6 @@ PString StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InS
     return stm.str().c_str();
 }
 #endif
+#undef PUERTS_PROMISE_REJECT_CALLBACK_USING_UE
 
 }    // namespace PUERTS_NAMESPACE

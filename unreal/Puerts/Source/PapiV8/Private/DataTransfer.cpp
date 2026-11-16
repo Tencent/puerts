@@ -1,0 +1,85 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#include "DataTransfer.h"
+#include "CppObjectMapper.h"
+#if USING_IN_UNREAL_ENGINE
+#include "V8Utils.h"
+#include "PapiV8Bridge.h"
+#include "PapiDataTransfer.h"
+#include "PesapiImpl.h"
+#endif
+
+namespace PUERTS_NAMESPACE
+{
+v8::Local<v8::Value> DataTransfer::FindOrAddCData(
+    v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer)
+{
+    return IsolateData<ICppObjectMapper>(Isolate)->FindOrAddCppObject(
+        Isolate, Context, TypeId, const_cast<void*>(Ptr), PassByPointer);
+}
+
+bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Value> JsObject)
+{
+    return JsObject->IsObject() &&
+           IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(Isolate, TypeId, JsObject.As<v8::Object>());
+}
+
+v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value)
+{
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Local<v8::Value> ReturnValue = Value->ToObject(Context).ToLocalChecked()->Get(Context, 0).ToLocalChecked();
+
+    return ReturnValue;
+}
+
+void DataTransfer::UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value)
+{
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    auto Ret = Outer->ToObject(Context).ToLocalChecked()->Set(Context, 0, Value);
+}
+
+std::weak_ptr<int> DataTransfer::GetJsEnvLifeCycleTracker(v8::Isolate* Isolate)
+{
+    return IsolateData<ICppObjectMapper>(Isolate)->GetJsEnvLifeCycleTracker();
+}
+
+#if USING_IN_UNREAL_ENGINE
+// the v8 flavor of PapiDataTransfer (the env private of the env is the IObjectMapper of the host)
+FString DataTransfer::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
+{
+    return FV8Utils::ToFString(Isolate, Value);
+}
+
+v8::Local<v8::Value> DataTransfer::FindOrAddObject(
+    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject)
+{
+    return papi_bridge::ToV8(
+        PapiDataTransfer::FindOrAddObject(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), Class, UEObject));
+}
+
+v8::Local<v8::Value> DataTransfer::FindOrAddStruct(
+    v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
+{
+    return papi_bridge::ToV8(
+        PapiDataTransfer::FindOrAddStruct(&v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Context), ScriptStruct, Ptr, PassByPointer));
+}
+
+bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local<v8::Value> JsObject)
+{
+    return PapiDataTransfer::IsInstanceOf(
+        &v8impl::g_pesapi_ffi, papi_bridge::ToPapi(Isolate->GetCurrentContext()), Struct, papi_bridge::ToPapi(JsObject));
+}
+
+void DataTransfer::ThrowException(v8::Isolate* Isolate, const char* Message)
+{
+    FV8Utils::ThrowException(Isolate, Message);
+}
+#endif
+}    // namespace PUERTS_NAMESPACE

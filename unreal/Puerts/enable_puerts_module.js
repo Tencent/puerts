@@ -1,14 +1,11 @@
 const path = require('path');
 const fs = require('fs');
-const execSync = require('child_process').execSync;
 
 //console.log(__dirname)
 
 const jsSourcePath = path.join(__dirname, 'Content/JavaScript');
 const jsBasePath = path.join(__dirname, '../../Content/JavaScript');
-const tsModulePath = path.join(jsBasePath, 'PuertsEditor/node_modules/typescript');
 const tsconfigFilePath =  path.join(__dirname, '../../tsconfig.json');
-const puertsConfigPath = path.join(__dirname, '../../Config/DefaultPuerts.ini');
 const tsSroucePath = path.join(__dirname, '../../TypeScript');
 
 const jsDefaultConfig = {
@@ -29,14 +26,6 @@ const jsDefaultConfig = {
     "TypeScript/**/*"
   ]
 }
-
-const puertsConfig = `
-
-
-[/Script/Puerts.PuertsSetting]
-AutoModeEnable=True
-
-`
 
 function copyFileSync( source, target ) {
 
@@ -85,19 +74,8 @@ if (!fs.existsSync(tsconfigFilePath)) {
     console.warn('Warning: ' + tsconfigFilePath + " existed!");
 }
 
-if (!fs.existsSync(puertsConfigPath)) {
-    console.log('emit DefaultPuerts.ini');
-    fs.writeFileSync(puertsConfigPath, puertsConfig);
-}
-
 if (!fs.existsSync(tsSroucePath)) {
     console.log('create TypeScript folder');
     fs.mkdirSync( tsSroucePath );
 }
 
-if (!fs.existsSync(tsModulePath)) {
-    console.log('npm install , please wait...');
-    process.chdir(path.join(jsBasePath, 'PuertsEditor'));
-    const output = execSync('npm install .', { encoding: 'utf-8' });  // the default is 'buffer'
-    console.log(output);
-}

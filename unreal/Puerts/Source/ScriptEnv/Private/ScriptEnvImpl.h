@@ -1,0 +1,343 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#pragma once
+
+#include "ScriptEnv.h"
+#include "DynamicDelegateProxy.h"
+#include "StructWrapper.h"
+#include "ObjectMapper.h"
+#include "JSLogger.h"
+#include "ObjectRetainer.h"
+#include "DynamicInvoker.h"
+#include "ScriptEnvExtension.h"
+#include "UECompatible.h"
+#include "ContainerMeta.h"
+#include "ContainerWrapper.h"
+#include <unordered_map>
+
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+#include "UObject/WeakFieldPtr.h"
+#endif
+
+#include "NamespaceDef.h"
+
+#include "PapiValueRef.h"
+#include "PapiEnvScope.h"
+#include "PapiBackend.h"
+#include <memory>
+
+namespace PUERTS_NAMESPACE
+{
+class JSError
+{
+public:
+    FString Message;
+
+    JSError()
+    {
+    }
+
+    explicit JSError(const FString& m) : Message(m)
+    {
+    }
+};
+
+class FScriptEnvImpl : public IScriptEnv, IObjectMapper, public FUObjectArray::FUObjectDeleteListener, public IPapiScriptHost
+{
+public:
+    FScriptEnvImpl(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot);
+
+    // InExternalRuntime / InExternalContext: not supported (must be null), node is set up by the v8 backend
+    FScriptEnvImpl(FPapiBackendFactory InBackendFactory, std::shared_ptr<IScriptFileLoader> InFileLoader,
+        std::shared_ptr<ILogger> InLogger, int InPort, const FString InFlags, void* InExternalRuntime, void* InExternalContext);
+
+    virtual ~FScriptEnvImpl() override;
+
+    virtual void Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments) override;
+
+    virtual bool IdleNotificationDeadline(double DeadlineInSeconds) override;
+
+    virtual void LowMemoryNotification() override;
+
+    virtual void RequestMinorGarbageCollectionForTesting() override;
+
+    virtual void RequestFullGarbageCollectionForTesting() override;
+
+    virtual void WaitDebugger(double timeout) override
+    {
+        const auto startTime = FDateTime::Now();
+        while (!Backend->DebuggerTick())
+        {
+            if (timeout > 0)
+            {
+                auto now = FDateTime::Now();
+                if ((now - startTime).GetTotalSeconds() >= timeout)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    virtual FString CurrentStackTrace() override;
+
+    virtual void InitExtensionMethodsMap() override;
+
+    virtual void PreloadModule(const FString& ModuleName) override;
+
+public:
+    void SetJsTakeRef(pesapi_env Env, UObject* UEObject);
+
+    // the UObject was destroyed, it is unbound from its wrapper (if any)
+    void UnBind(UObject* UEObject);
+
+    virtual bool AddToDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
+
+    virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
+
+    virtual FScriptDelegate NewDelegate(
+        pesapi_env Env, UObject* Owner, pesapi_value JsFunction, UFunction* SignatureFunction) override;
+
+    void ReleaseManualReleaseDelegate(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    virtual bool RemoveFromDelegate(pesapi_env Env, void* DelegatePtr, pesapi_value JsFunction) override;
+
+    virtual bool ClearDelegate(pesapi_env Env, void* DelegatePtr) override;
+
+    // IObjectMapper, the papi interface used by the backend independent code
+    virtual pesapi_value FindOrAdd(pesapi_env Env, UClass* Class, UObject* UEObject) override;
+
+    virtual bool TryBindOwnedStruct(pesapi_callback_info Info, FScriptStructWrapper* Wrapper, void* Ptr) override;
+
+    virtual pesapi_value FindOrAddStruct(pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;
+
+    // the wrapper of a delegate is held by DelegateMap (strong) until the delegate is released
+    virtual pesapi_value FindOrAddDelegate(
+        pesapi_env Env, UObject* Owner, PropertyMacro* Property, void* DelegatePtr, bool PassByPointer) override;
+
+    virtual void ExecuteDelegate(pesapi_env Env, pesapi_callback_info Info, void* DelegatePtr) override;
+
+    virtual bool IsInstanceOf(pesapi_env Env, UStruct* Struct, pesapi_value JsObject) override;
+
+    bool CheckDelegateProxies(float Tick);
+
+    void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
+
+    // the extensions of the env (e.g. the mixin, FScriptEnvMixin), owned by the env, added before Start. Their hooks are called
+    // by the env (see IScriptEnvExtension)
+    void AddExtension(std::unique_ptr<IScriptEnvExtension> Extension);
+
+    IScriptEnvExtension* FindExtension(FName Name) const;
+
+    struct pesapi_ffi* GetApis() const
+    {
+        return MainApis;
+    }
+
+    pesapi_env_ref GetMainEnvRef() const
+    {
+        return MainEnvRef;
+    }
+
+    std::shared_ptr<ILogger> GetLogger() const
+    {
+        return Logger;
+    }
+
+    // whether the wrappers of the objects of Class and its subclasses are held by native (see NativeTakeJsRefClasses)
+    void SetNativeTakeJsRef(UClass* Class, bool IsNativeTakeJsRef);
+
+public:
+#if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
+    virtual void OnUObjectArrayShutdown() override
+    {
+        GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+    }
+#endif
+    virtual void NotifyUObjectDeleted(const class UObjectBase* Object, int32 Index) override;
+
+    void TryReleaseType(UStruct* Struct);
+
+private:
+    // reads the file of Path (relative to the script root, with the extension) by the file loader, the content is a string, or
+    // an ArrayBuffer for the bytecode (.cbc / .mbc). Returns nullptr if the file can not be read. OutDebugPath is the path for
+    // the stack traces and the debugger (Path if the loader gives none)
+    pesapi_value LoadFileContent(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Path, FString& OutDebugPath);
+
+    // reads the file by the file loader, with the fallback to the bytecode (.cbc / .mbc) on WITH_V8_BYTECODE
+    bool ReadScriptFile(const FString& Path, FString& OutPath, TArray<uint8>& OutData, FString& OutDebugPath);
+
+    // IPapiScriptHost
+    virtual void ExecuteModule(const FString& ModuleName) override;
+
+    // the cleanup of the host after the env is released by the backend, before its isolate is disposed
+    void OnEnvReleased();
+
+    // require of the module system (the module loader of the backend), returns nullptr with the exception pending on failure
+    pesapi_value RequireModule(struct pesapi_ffi* Apis, pesapi_env Env, const FString& ModuleName);
+
+    // the methods of the global scriptEnv (see RegisterScriptEnvClass), called by the bootstrap scripts
+    // scriptEnv.log(level, msg): 1 info, 2 warn, 3 error, log otherwise
+    void Log(int32 Level, const FString& Msg);
+
+    void LoadModule(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // scriptEnv.loadFile(path): {content, debugPath}, undefined if the file can not be read (the module systems of lua / python)
+    void LoadFileMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // the js class of a UStruct, an object of the values for a UEnum, undefined otherwise
+    pesapi_value UETypeToJsClass(pesapi_env Env, UField* Type);
+
+    void LoadUEType(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    void LoadCppType(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    void UEClassToJSClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    void SetJsTakeRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // scriptEnv.setNativeTakeJsRef(cls, isNativeTakeJsRef)
+    void SetNativeTakeJsRefInTs(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // the per env info of a UStruct whose js class is built in this env (the class itself is cached by the backend, keyed by
+    // the type id, see pesapi create_class)
+    struct FTemplateInfo
+    {
+        std::shared_ptr<FStructWrapper> StructWrapper;
+    };
+
+    // builds the js class of the type in this env if not yet (called inside a scope of the env)
+    FTemplateInfo* GetTemplateInfoOfType(pesapi_env Env, UStruct* Class, bool& Existed);
+
+    pesapi_value GetJsClass(pesapi_env Env, UStruct* Class);
+
+    // scriptEnv.registerTickHandler(fn): fn is called every frame (puerts/timer.js implements the timers on it), as unity
+    void RegisterTickHandler(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    bool Tick(float DeltaTime);
+
+    void NewObjectByClass(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    void DumpStatisticsLog() const;
+
+    bool IsQuickJS() const;
+
+    // the class definition of FScriptEnvImpl in the default registry (once per process), the global scriptEnv of the scripts is
+    // a native object of it that is not owned by the script (no finalize)
+    static void RegisterScriptEnvClass();
+
+private:
+    // the UObjects held by their wrappers (see OnUObjectEnter)
+    FObjectRetainer UserObjectRetainer;
+
+    FObjectRetainer SysObjectRetainer;
+
+    std::shared_ptr<IScriptFileLoader> FileLoader;
+
+    std::shared_ptr<ILogger> Logger;
+
+    bool Started;
+
+private:
+    // the backend of the env (engine and language), the env only uses it and the pesapi table it returns
+    std::unique_ptr<IPapiBackend> Backend;
+
+    struct pesapi_ffi* MainApis = nullptr;
+
+    // the ref of the default env, the entries from the host open their papi scopes with it (FPapiEnvScope)
+    pesapi_env_ref MainEnvRef = nullptr;
+
+    FPapiValueRef RemoveListItem;
+
+    FPapiValueRef GenListApply;
+
+    TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
+
+    // A UObject wrapper is a native object of the class definition of its UClass (the type id is the FClassWrapper), the native
+    // pointer is the UObject itself and it is not owned by js. The backend caches the wrapper (weakly) by the pointer, and calls
+    // OnUObjectEnter / OnUObjectExit when it is bound / unbound (a UObject has at most one binding in an env: it is always bound
+    // as its own class, enter and exit alternate). Like 2.0, the env holds the UObject (UserObjectRetainer) while it is bound,
+    // unless the class is native take js ref (mixin), then the wrapper is held strongly by NativeTakeJsRefObjects instead until
+    // SetJsTakeRef. When the UObject is destroyed it is unbound from its wrapper (UnBind, pesapi unbind_native_object) and the
+    // strong ref is released, a later access of the wrapper sees a released object.
+    virtual void* OnUObjectEnter(pesapi_env Env, pesapi_value JSObject, UObject* UEObject) override;
+
+    virtual void OnUObjectExit(UObject* UEObject, void* UserData) override;
+
+    // whether the wrapper of Obj is held by native (the UObject does not hold the wrapper), by the nearest class of Obj in
+    // NativeTakeJsRefClasses (set by setNativeTakeJsRef, the mixin of puerts/mixin.js), the default otherwise
+    bool IsNativeTakeJsRefObject(UObject* Obj) const;
+
+    // per env (the wrappers are shared by envs), set by setNativeTakeJsRef for a class and its subclasses
+    TMap<UClass*, bool> NativeTakeJsRefClasses;
+
+    // the wrappers held strongly by native (set by OnUObjectEnter), released by SetJsTakeRef, when the UObject is destroyed or
+    // the env is released. An entry is removed from the map before its ref is released (the wrapper may be freed synchronously
+    // on quickjs)
+    TMap<UObject*, FPapiValueRef> NativeTakeJsRefObjects;
+
+    std::map<UFunction*, std::unique_ptr<FFunctionTranslator>> JsCallbackPrototypeMap;
+
+    struct DelegateObjectInfo
+    {
+        FPapiValueRef JSObject;           // the wrapper of the delegate (strong), function to proxy save here
+        TWeakObjectPtr<UObject> Owner;    //可用于自动清理
+        DelegatePropertyMacro* DelegateProperty;
+        MulticastDelegatePropertyMacro* MulticastDelegateProperty;
+        UFunction* SignatureFunction;
+        bool PassByPointer;
+        TWeakObjectPtr<UDynamicDelegateProxy> Proxy;
+        FPapiValueRef JsCallbacks;    // js array of the bound functions, the proxy's apply function reads it
+    };
+
+    class DynamicInvokerImpl : public IDynamicInvoker
+    {
+    public:
+        DynamicInvokerImpl(FScriptEnvImpl* InParent) : Parent(InParent)
+        {
+        }
+
+        virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) override
+        {
+            if (Parent)
+                Parent->InvokeDelegateCallback(Proxy, Params);
+        }
+        FScriptEnvImpl* Parent;
+    };
+    TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
+
+    std::map<void*, DelegateObjectInfo> DelegateMap;
+
+    // destroyed after the backend (the env is released)
+    std::vector<std::unique_ptr<IScriptEnvExtension>> Extensions;
+
+    // released before CppObjectMapper.UnInitialize
+    TArray<FPapiValueRef> TickHandlers;
+    FUETickDelegateHandle TickHandle;
+
+    FUETickDelegateHandle DelegateProxiesCheckerHandler;
+
+    uint32_t ManualReleaseCallbackId = 0;
+
+    TMap<uint32_t, TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbacks;
+
+    TMap<UObject*, TArray<TWeakObjectPtr<UDynamicDelegateProxy>>> AutoReleaseCallbacksMap;
+
+#ifdef SINGLE_THREAD_VERIFY
+    uint32 BoundThreadId;
+#endif
+
+    typedef void (FScriptEnvImpl::*PapiMethodCallback)(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+
+    // a method of scriptEnv that handles the papi callback info itself, the env is the receiver (this)
+    template <PapiMethodCallback Method>
+    static void PapiMethod(struct pesapi_ffi* Apis, pesapi_callback_info Info);
+};
+
+}    // namespace PUERTS_NAMESPACE

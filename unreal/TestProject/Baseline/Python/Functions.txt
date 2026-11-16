@@ -1,0 +1,10 @@
+static via instance: 9
+out struct ref None: 9
+default param omitted: 305
+impl event without override: 0
+method type: 'method'
+method called on the class: 3
+method called on the class without instance: throws TypeError: method Add requires an instance
+static function type: 'builtin_function_or_method'
+keyword arguments: throws TypeError: PyCapsule.Add() takes no keyword arguments
+GameplayStatics available: True

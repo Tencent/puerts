@@ -1,0 +1,18 @@
+esm result: {x: 1, d: "dep-default", cjsName: "c", name: "c", fnResult: 42, answer: 42, list: [1, 2], builtinV: 7, v: 7}
+esm namespace keys: ["depNs", "result"]
+flaky esm: Error: flaky esm
+flaky esm parent: Error: flaky esm dep
+flaky cjs: Error: flaky cjs
+tla timer: Error: [Puer004] top-level await of tests/module_loader_data/tla_timer.mjs can not be settled synchronously
+require missing: Error: load tests/module_loader_data/not_exist_xyz.js fail!
+import missing: Error: [Puer002] can not find module tests/module_loader_data/not_exist_xyz.mjs
+esm import missing: Error: [Puer002] can not find module tests/module_loader_data/not_exist_dep_xyz.mjs imported by tests/module_loader_data/esm_missing.mjs
+esm syntax error: SyntaxError: Unexpected token '='
+esm syntax error again: SyntaxError: Unexpected token '='
+cjs throws: Error: cjs boom
+bad specifier: TypeError: the specifier of require must be a string, got number
+dynamic esm result: {x: 1, d: "dep-default", cjsName: "c", name: "c", fnResult: 42, answer: 42, list: [1, 2], builtinV: 7, v: 7}
+import.meta.resolve missing: tests/module_loader_data/not_exist_meta_xyz.mjs
+dynamic import missing: Error: [Puer002] can not find module tests/module_loader_data/not_exist_xyz.mjs imported by tests/module_loader.js
+dynamic import dep missing: Error: [Puer002] can not find module tests/module_loader_data/not_exist_dep_xyz.mjs imported by tests/module_loader_data/esm_missing.mjs
+dynamic import syntax error: SyntaxError: Unexpected token '='

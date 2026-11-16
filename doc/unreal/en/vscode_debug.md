@@ -1,19 +1,8 @@
 # Debugging
 ## Table Of Contents
-- [Automatic Binding Mode](#automatic-binding-mode)
 - [Starting A New JavaScript Virtual Machine](#starting-a-new-javascript-virtual-machine)
 - [Intergrating With VSCode](#intergrating-with-vscode)
 - [Notes](#notes)
-
-## Automatic binding mode
-To enable debugging for automatic binding mode, its as simple as turning it on inside of the project settings.
-
-1. Open the project settings `Edit -> Project Settings`
-2. Navigate to Puerts settings `Plugins -> Puerts Settings`
-3. Enabled `Debug Enable`
-4. Configure the `Debug Port` (Optional)
-
-![puerts_conf](../..//pic/puerts_conf.png)
 
 ## Starting A New JavaScript Virtual Machine
 Upon creating an instance of FJSEnv, there are a couple of extra parameters we can specify to start the virtual machine in debug mode.
@@ -40,14 +29,8 @@ To debug puerts code with VSCode, a `launch.json` file needs to be created insid
     [
     {
         "type": "node",
-        "name": "Puerts Manual Mode Debugger",
+        "name": "Puerts Debugger",
         "port": 1337,
-        "request": "attach"
-    },
-    {
-        "type": "node",
-        "name": "Puerts Automatic Binding Mode",
-        "port": 8080,
         "request": "attach"
     }
     ]
@@ -68,16 +51,7 @@ After creating this file, start your PuerTS code and attach the `Puerts Debugger
 ### Waiting For Debugger Attachment
 If you wish for your debugger (i.e. VSCode) to hit breakpoints on code that happens upon entering the JavaScript virtual environment, you will need to wait for your debugger to attach.
 
-#### Automatic Binding Mode
-If you wish to wait for the debugger to attach during automatic binding mode, simply enable `Wait Debugger` in the project settings.
-
-1. Open the project settings `Edit -> Project Settings`
-2. Navigate to Puerts settings `Plugins -> Puerts Settings`
-3. Enabled `Wait Debugger`
-4. Configure the `Wait Debugger Timeout` (Optional)
-
-#### Starting A New JavaScript Virtual Machine
-If you wish to wait for the debugger to attach on manually started virtual machines, simply call `WaitDebugger` before starting your JavaScirpt environment.
+Simply call `WaitDebugger` before starting your JavaScirpt environment.
 
 ``` c++
 auto JsEnv = MakeShared<puerts::FJsEnv>(
@@ -99,3 +73,4 @@ By default, Unreal comes with `Use Less CPU when in Background` enabled. This sl
 1. Open the editor preferences settings `Editor Preferences`
 2. Navigate to the performance settings `General -> Performance`
 3. Disable `Use Less CPU when in Background`
+

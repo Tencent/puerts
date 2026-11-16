@@ -1,0 +1,8 @@
+int32 MAX_SAFE_INTEGER, MIN_SAFE_INTEGER: [-1, 1]
+uint32 MAX_SAFE_INTEGER, MIN_SAFE_INTEGER: [4294967295, 1]
+int64 element from number: [0n, 0n]
+uint64 MIN_SAFE_INTEGER: [18437736874454810625n]
+float overflow: [Infinity, Infinity, -Infinity, Infinity]
+bool from non boolean: [true, false, true]
+EPuertsTestEnumInt32_MAX: 4
+null object element: undefined

@@ -69,7 +69,8 @@ bool DefaultJSModuleLoader::SearchModuleInDir(
     const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath)
 {
     FString Extension = FPaths::GetExtension(RequiredModule);
-    bool IsJs = Extension == TEXT("js") || Extension == TEXT("mjs") || Extension == TEXT("cjs") || Extension == TEXT("json");
+    bool IsJs = Extension == TEXT("js") || Extension == TEXT("mjs") || Extension == TEXT("cjs") || Extension == TEXT("json") ||
+                Extension == TEXT("lua") || Extension == TEXT("py");
     if (IsJs && SearchModuleWithExtInDir(Dir, RequiredModule, Path, AbsolutePath))
         return true;
     return SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
@@ -142,6 +143,19 @@ bool DefaultJSModuleLoader::Load(const FString& Path, TArray<uint8>& Content)
 FString& DefaultJSModuleLoader::GetScriptRoot()
 {
     return ScriptRoot;
+}
+
+bool FJSModuleLoaderAdapter::ReadFile(const FString& Path, TArray<uint8>& OutContent, FString& OutDebugPath)
+{
+    FString FoundPath;
+    FString AbsolutePath;
+    if (!ModuleLoader || !ModuleLoader->Search(TEXT(""), Path, FoundPath, AbsolutePath) ||
+        !ModuleLoader->Load(FoundPath, OutContent))
+    {
+        return false;
+    }
+    OutDebugPath = AbsolutePath;
+    return true;
 }
 
 }    // namespace PUERTS_NAMESPACE

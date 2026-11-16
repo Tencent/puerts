@@ -1,0 +1,52 @@
+/*
+ * Tencent is pleased to support the open source community by making puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+// NOTE: no include guard, this file is included inside the backend namespaces (v8_impl / pesapi_impl), once for each
+// the arguments of a std::function are passed to script by its parameter types, see ScriptCallArg.hpp
+template <typename R, typename... Args>
+struct Converter<std::function<R(Args...)>>
+{
+    static API::ValueType toScript(API::ContextType context, std::function<R(Args...)> value)
+    {
+        return API::GetUndefined(context);
+    }
+
+    static std::function<R(Args...)> toCpp(API::ContextType context, const API::ValueType value)
+    {
+        if (API::IsNullOrUndefined(context, value))
+            return nullptr;
+        Function _Func(context, value);
+        return [=](Args... cppArgs) -> R { return _Func.template FuncWithSignature<R, Args...>(std::forward<Args>(cppArgs)...); };
+    }
+
+    static bool accept(API::ContextType context, const API::ValueType value)
+    {
+        return API::IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
+    }
+};
+
+template <typename... Args>
+struct Converter<std::function<void(Args...)>>
+{
+    static API::ValueType toScript(API::ContextType context, std::function<void(Args...)> value)
+    {
+        return API::GetUndefined(context);
+    }
+
+    static std::function<void(Args...)> toCpp(API::ContextType context, const API::ValueType value)
+    {
+        if (API::IsNullOrUndefined(context, value))
+            return nullptr;
+        Function PF(context, value);
+        return [=](Args... cppArgs) -> void { PF.template ActionWithSignature<Args...>(std::forward<Args>(cppArgs)...); };
+    }
+
+    static bool accept(API::ContextType context, const API::ValueType value)
+    {
+        return API::IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
+    }
+};

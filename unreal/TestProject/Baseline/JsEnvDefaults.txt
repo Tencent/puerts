@@ -1,0 +1,6 @@
+without extension: "noext"
+json without extension: 42
+directory index: "dir_index"
+package main: {name: "pkg_cjs", hasModule: true}
+bare names: ["nm_pkg", "nm_file", "sibling"]
+import package: {name: "pkg_cjs", hasModule: true}

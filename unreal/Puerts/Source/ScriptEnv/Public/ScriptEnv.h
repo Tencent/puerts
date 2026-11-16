@@ -1,0 +1,95 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#pragma once
+
+#include <functional>
+#include <memory>
+
+#include "CoreMinimal.h"
+#include "JSLogger.h"
+#include "ScriptFileLoader.h"
+#include "PString.h"
+#include "PapiBackend.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
+#include "ExtensionMethods.h"
+#endif
+
+namespace PUERTS_NAMESPACE
+{
+class SCRIPTENV_API IScriptEnv
+{
+public:
+    virtual void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments) = 0;
+
+    virtual bool IdleNotificationDeadline(double DeadlineInSeconds) = 0;
+
+    virtual void LowMemoryNotification() = 0;
+
+    virtual void RequestMinorGarbageCollectionForTesting() = 0;
+
+    virtual void RequestFullGarbageCollectionForTesting() = 0;
+
+    virtual void WaitDebugger(double Timeout) = 0;
+
+    virtual FString CurrentStackTrace() = 0;
+
+    virtual void InitExtensionMethodsMap() = 0;
+
+    // requires a (commonjs) module at once, the exception is logged, e.g. puerts/module_node.js before Start
+    virtual void PreloadModule(const FString& ModuleName) = 0;
+
+    virtual ~IScriptEnv()
+    {
+    }
+};
+
+// an env running on whatever backend the factory creates, FJsEnv of the JsEnv module is the one with the v8 backend
+class SCRIPTENV_API FScriptEnv    // : public TSharedFromThis<FScriptEnv> // only a wrapper
+{
+public:
+    explicit FScriptEnv(FPapiBackendFactory InBackendFactory, const FString& ScriptRoot = TEXT("JavaScript"));
+
+    FScriptEnv(FPapiBackendFactory InBackendFactory, std::shared_ptr<IScriptFileLoader> InFileLoader,
+        std::shared_ptr<ILogger> InLogger, int InDebugPort, const FString InFlags = FString(), void* InExternalRuntime = nullptr,
+        void* InExternalContext = nullptr);
+
+    void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments = TArray<TPair<FString, UObject*>>());
+
+    bool IdleNotificationDeadline(double DeadlineInSeconds);
+
+    void LowMemoryNotification();
+
+    // equivalent to Isolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection)
+    // It is only valid to call this function if --expose_gc was specified
+    void RequestMinorGarbageCollectionForTesting();
+
+    // equivalent to Isolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection)
+    void RequestFullGarbageCollectionForTesting();
+
+    void WaitDebugger(double Timeout = 0);
+
+    FString CurrentStackTrace();
+
+    void InitExtensionMethodsMap();
+
+    // requires a (commonjs) module at once, e.g. PreloadModule(TEXT("puerts/module_node.js")) before Start for the node style
+    // module resolution (node_modules, no extension, package.json), FJsEnv does it by default
+    void PreloadModule(const FString& ModuleName);
+
+    // the env implementation, for the optional features added from outside (e.g. EnableMixin of ScriptEnvMixinApi.h)
+    IScriptEnv* GetScriptEnv() const
+    {
+        return GameScript.get();
+    }
+
+private:
+    std::unique_ptr<IScriptEnv> GameScript;
+};
+
+}    // namespace PUERTS_NAMESPACE

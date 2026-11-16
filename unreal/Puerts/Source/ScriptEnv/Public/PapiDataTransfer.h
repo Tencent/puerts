@@ -1,0 +1,245 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#pragma once
+
+// the engine independent (papi) part of DataTransfer.h, used by the UE type converters of the pesapi binding
+#include "CoreMinimal.h"
+#include "UObject/Package.h"
+#include "UObject/Class.h"
+#include "UECompatible.h"
+#include "NamespaceDef.h"
+#include "pesapi.h"
+#include <type_traits>
+
+#ifndef RELEASED_UOBJECT
+#define RELEASED_UOBJECT ((UObject*) 12)
+#endif
+#ifndef RELEASED_UOBJECT_MEMBER
+#define RELEASED_UOBJECT_MEMBER ((void*) 12)
+#endif
+
+namespace PUERTS_NAMESPACE
+{
+FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR* Name)
+{
+    static UPackage* CoreUObjectPkg = FindObjectChecked<UPackage>(nullptr, TEXT("/Script/CoreUObject"));
+    return FindObjectChecked<UScriptStruct>(CoreUObjectPkg, Name);
+}
+
+template <class T, typename Enable = void>
+struct TScriptStructTraits
+{
+};
+
+#define PUERTS_BASE_STRUCTURE_TRAITS(T)      \
+    template <>                              \
+    struct TScriptStructTraits<T>            \
+    {                                        \
+        static UScriptStruct* Get()          \
+        {                                    \
+            return TBaseStructure<T>::Get(); \
+        }                                    \
+    };
+
+#define PUERTS_CORE_UOBJECT_STRUCT_TRAITS(T, Name)           \
+    template <>                                              \
+    struct TScriptStructTraits<T>                            \
+    {                                                        \
+        static UScriptStruct* Get()                          \
+        {                                                    \
+            return GetScriptStructInCoreUObject(TEXT(Name)); \
+        }                                                    \
+    };
+
+PUERTS_BASE_STRUCTURE_TRAITS(FVector)
+PUERTS_BASE_STRUCTURE_TRAITS(FVector2D)
+PUERTS_BASE_STRUCTURE_TRAITS(FVector4)
+PUERTS_BASE_STRUCTURE_TRAITS(FRotator)
+PUERTS_BASE_STRUCTURE_TRAITS(FQuat)
+PUERTS_BASE_STRUCTURE_TRAITS(FTransform)
+PUERTS_BASE_STRUCTURE_TRAITS(FLinearColor)
+PUERTS_BASE_STRUCTURE_TRAITS(FColor)
+PUERTS_BASE_STRUCTURE_TRAITS(FGuid)
+PUERTS_BASE_STRUCTURE_TRAITS(FBox2D)
+PUERTS_CORE_UOBJECT_STRUCT_TRAITS(FIntPoint, "IntPoint")
+PUERTS_CORE_UOBJECT_STRUCT_TRAITS(FIntVector, "IntVector")
+PUERTS_CORE_UOBJECT_STRUCT_TRAITS(FPlane, "Plane")
+PUERTS_CORE_UOBJECT_STRUCT_TRAITS(FMatrix, "Matrix")
+PUERTS_CORE_UOBJECT_STRUCT_TRAITS(FIntVector4, "IntVector4")
+
+#undef PUERTS_BASE_STRUCTURE_TRAITS
+#undef PUERTS_CORE_UOBJECT_STRUCT_TRAITS
+
+template <class...>
+using ToVoid = void;
+
+template <typename T, typename = void>
+struct HasStaticStructHelper : std::false_type
+{
+};
+
+template <typename T>
+struct HasStaticStructHelper<T, ToVoid<decltype(&T::StaticStruct)>> : std::true_type
+{
+};
+
+template <typename T>
+struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::value>::type>
+{
+    static UScriptStruct* Get()
+    {
+        return T::StaticStruct();
+    }
+};
+
+// The type id of the class definition of a reflected type (UClass / UScriptStruct) is its process wide wrapper (FStructWrapper),
+// the type id of a container class (the containers of an element type, see FContainerClass) is the process wide container
+// class, both start with this tag, so the script objects of UObjects and containers can be told by their type ids (see
+// doc/unreal/zhcn/papi_unification_design.md 5.6). Any type id may be passed to the Is* functions: only object type ids
+// (PESAPI_IS_OBJECT_TYPE_ID) are dereferenced, the tagged objects are the only object type ids in unreal, and each magic is only
+// set in its own kind. Value type ids (e.g. the address of a static int) are never dereferenced.
+struct FReflectedTypeTag
+{
+    static constexpr uint64 UClassMagic = 0x53534C4355455550ull;           // "PUEUCLSS"
+    static constexpr uint64 UScriptStructMagic = 0x5452545355455550ull;    // "PUEUSTRT"
+    static constexpr uint64 ContainerMagic = 0x524E544355455550ull;        // "PUEUCTNR"
+
+    uint64 Magic = 0;
+
+    FORCEINLINE static bool IsContainer(const void* TypeId)
+    {
+        return PESAPI_IS_OBJECT_TYPE_ID(TypeId) && static_cast<const FReflectedTypeTag*>(TypeId)->Magic == ContainerMagic;
+    }
+
+    // a reflected class or a container class, the object type ids accepted by the registries
+    FORCEINLINE static bool IsTagged(const void* TypeId)
+    {
+        return IsReflected(TypeId) || IsContainer(TypeId);
+    }
+
+    FORCEINLINE static bool IsUClass(const void* TypeId)
+    {
+        return PESAPI_IS_OBJECT_TYPE_ID(TypeId) && static_cast<const FReflectedTypeTag*>(TypeId)->Magic == UClassMagic;
+    }
+
+    FORCEINLINE static bool IsUScriptStruct(const void* TypeId)
+    {
+        return PESAPI_IS_OBJECT_TYPE_ID(TypeId) && static_cast<const FReflectedTypeTag*>(TypeId)->Magic == UScriptStructMagic;
+    }
+
+    // UClass or UScriptStruct
+    FORCEINLINE static bool IsReflected(const void* TypeId)
+    {
+        if (!PESAPI_IS_OBJECT_TYPE_ID(TypeId))
+        {
+            return false;
+        }
+        const auto Magic = static_cast<const FReflectedTypeTag*>(TypeId)->Magic;
+        return Magic == UClassMagic || Magic == UScriptStructMagic;
+    }
+};
+
+// UE value <-> papi value helpers, the env private of the env must be the IObjectMapper of the host
+class SCRIPTENV_API PapiDataTransfer
+{
+public:
+    // UObject of a script object by its type id and native pointer (pesapi get_native_object_typeid / get_native_object_ptr, or
+    // get_native_holder_typeid / get_native_holder_ptr). The native pointer of the object of a UObject is the UObject itself
+    // (the type id is the wrapper of a UClass), it is unbound (the pointer becomes null) by the env when the UObject is
+    // destroyed. Returns nullptr if the value is not a native object, RELEASED_UOBJECT if the UObject is destroyed, unreachable
+    // or pending kill (unless EvenIfPendingKill), or the object is not the object of a UObject
+    FORCEINLINE static UObject* GetUObjectOfNativePtr(const void* TypeId, void* Ptr, bool EvenIfPendingKill = false)
+    {
+        if (UNLIKELY(!Ptr))
+        {
+            return TypeId ? RELEASED_UOBJECT : nullptr;
+        }
+        if (UNLIKELY(!FReflectedTypeTag::IsUClass(TypeId)))
+        {
+            return RELEASED_UOBJECT;
+        }
+        UObject* Ret = static_cast<UObject*>(Ptr);
+        if (UNLIKELY(Ret->IsUnreachable() || (!EvenIfPendingKill && UEObjectIsPendingKill(Ret))))
+        {
+            return RELEASED_UOBJECT;
+        }
+        return Ret;
+    }
+
+    // UObject of a script object, see GetUObjectOfNativePtr
+    FORCEINLINE static UObject* GetUObjectOfValue(
+        struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value, bool EvenIfPendingKill = false)
+    {
+        return GetUObjectOfNativePtr(
+            Apis->get_native_object_typeid(Env, Value), Apis->get_native_object_ptr(Env, Value), EvenIfPendingKill);
+    }
+
+    // UObject of the holder (this) of a callback, see GetUObjectOfNativePtr
+    FORCEINLINE static UObject* GetUObjectOfHolder(
+        struct pesapi_ffi* Apis, pesapi_callback_info Info, bool EvenIfPendingKill = false)
+    {
+        return GetUObjectOfNativePtr(Apis->get_native_holder_typeid(Info), Apis->get_native_holder_ptr(Info), EvenIfPendingKill);
+    }
+
+    FORCEINLINE static FString ToFString(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
+    {
+        FString Ret;
+        size_t Len = 0;
+        Apis->get_value_string_utf16(Env, Value, nullptr, &Len);
+        if (Len > 0)
+        {
+            TArray<TCHAR>& CharArray = Ret.GetCharArray();
+            CharArray.SetNumUninitialized(static_cast<int32>(Len) + 1);
+            Apis->get_value_string_utf16(Env, Value, reinterpret_cast<uint16_t*>(CharArray.GetData()), &Len);
+            CharArray[static_cast<int32>(Len)] = TEXT('\0');
+        }
+        return Ret;
+    }
+
+    FORCEINLINE static pesapi_value FromFString(struct pesapi_ffi* Apis, pesapi_env Env, const FString& Str)
+    {
+        static_assert(sizeof(TCHAR) == sizeof(uint16_t), "TCHAR must be UTF-16");
+        return Apis->create_string_utf16(Env, reinterpret_cast<const uint16_t*>(*Str), static_cast<size_t>(Str.Len()));
+    }
+
+    // keeps Outer alive while Inner (a struct / container which points into Outer) is alive
+    FORCEINLINE static void LinkOuter(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Outer, pesapi_value Inner)
+    {
+#ifdef WITH_OUTER_LINK
+        Apis->set_property_uint32(Env, Inner, 0, Outer);
+#endif
+    }
+
+    template <typename T>
+    FORCEINLINE static pesapi_value FindOrAddObject(struct pesapi_ffi* Apis, pesapi_env Env, T* UEObject)
+    {
+        return FindOrAddObject(Apis, Env, UEObject == nullptr ? T::StaticClass() : UEObject->GetClass(), UEObject);
+    }
+
+    static pesapi_value FindOrAddObject(struct pesapi_ffi* Apis, pesapi_env Env, UClass* Class, UObject* UEObject);
+
+    template <typename T>
+    FORCEINLINE static pesapi_value FindOrAddStruct(struct pesapi_ffi* Apis, pesapi_env Env, void* Ptr, bool PassByPointer)
+    {
+        return FindOrAddStruct(Apis, Env, TScriptStructTraits<T>::Get(), Ptr, PassByPointer);
+    }
+
+    static pesapi_value FindOrAddStruct(
+        struct pesapi_ffi* Apis, pesapi_env Env, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer);
+
+    template <typename T>
+    FORCEINLINE static bool IsInstanceOf(struct pesapi_ffi* Apis, pesapi_env Env, pesapi_value Value)
+    {
+        return IsInstanceOf(Apis, Env, TScriptStructTraits<T>::Get(), Value);
+    }
+
+    // false for a non object value
+    static bool IsInstanceOf(struct pesapi_ffi* Apis, pesapi_env Env, UStruct* Struct, pesapi_value Value);
+};
+}    // namespace PUERTS_NAMESPACE

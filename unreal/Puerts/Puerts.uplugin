@@ -14,10 +14,40 @@
   "CanBeUsedWithUnrealHeaderTool" : true,
   "Modules": [
     {
-      "Name": "WasmCore",
+      "Name": "ScriptEnv",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
       "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
+    },
+    {
+      "Name": "PapiV8",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
+    },
+    {
+      "Name": "PapiQuickjs",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
+    },
+    {
+      "Name": "PapiLua",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
+    },
+    {
+      "Name": "PapiPythonPreload",
+      "Type": "Runtime",
+      "LoadingPhase": "EarliestPossible",
+      "WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
+    },
+    {
+      "Name": "PapiPython",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
     },
     {
       "Name": "JsEnv",
@@ -34,17 +64,6 @@
       "Name": "ParamDefaultValueMetas",
       "Type": "Program",
       "LoadingPhase": "PostConfigInit"
-    },
-    {
-      "Name": "Puerts",
-      "Type": "Runtime",
-      "LoadingPhase": "PostEngineInit",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
-    },
-    {
-      "Name": "PuertsEditor",
-      "Type": "Editor",
-      "LoadingPhase": "PostEngineInit"
     }
   ]
 }

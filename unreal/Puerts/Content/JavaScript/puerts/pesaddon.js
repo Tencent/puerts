@@ -21,7 +21,7 @@ var global = global || (function () { return this; }());
         return match ? (match[1] || '.').replace(/[\/\\]$/, '') : '.';
     }
     
-    const org_load = global.puerts.load;
+    const org_load = global.scriptEnv.load.bind(global.scriptEnv);
     const dll_ext = global.puerts.dll_ext;
     const moduleCache = {};
     
@@ -37,7 +37,7 @@ var global = global || (function () { return this; }());
             moduleCache[filepath] = new Proxy({__name : module_name}, {
                 get: function(classCache, className) {
                     if (!(className in classCache)) {
-                        classCache[className] = puerts.loadCPPType(`${module_name}.${className}`);
+                        classCache[className] = global.scriptEnv.loadCPPType(`${module_name}.${className}`);
                     }
                     return classCache[className];
                 }

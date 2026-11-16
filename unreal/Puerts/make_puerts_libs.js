@@ -15,9 +15,9 @@ const lib_path = path.resolve(__dirname, 'puerts_libs');
 fs.mkdirSync(path.join(lib_path, 'include'), { recursive: true });
 fs.mkdirSync(path.join(lib_path, 'src'), { recursive: true });
 
-headers.forEach((name) => fs.writeFileSync(path.join(lib_path, 'include', name), fs.readFileSync(path.join('Source/JsEnv/Public', name))))
+headers.forEach((name) => fs.writeFileSync(path.join(lib_path, 'include', name), fs.readFileSync(path.join('Source/ScriptEnv/Public', name))))
 
-const pesapi_header_path = path.resolve(__dirname, 'Source/JsEnv/Public/pesapi.h')
+const pesapi_header_path = path.resolve(__dirname, 'Source/ScriptEnv/Public/pesapi.h')
 
 var lines = fs.readFileSync(pesapi_header_path, 'utf8').split(/[\n\r]/);
 var funcIndex = 0;

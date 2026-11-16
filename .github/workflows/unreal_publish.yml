@@ -12,7 +12,6 @@ env:
   V8_84: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_230822/v8_bin_8.4.371.19.tgz"
   V8_94: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24__251225/v8_bin_9.4.146.24.tar.gz"
   V8_118: "https://github.com/puerts/backend-v8/releases/download/V8_11.8.172__251225/v8_bin_11.8.172.tar.gz"
-  quickjs: "https://github.com/puerts/backend-quickjs/releases/download/QJS_NG_250303/qjs_v8_bin.tgz"
   nodejs: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
 jobs:
@@ -35,22 +34,22 @@ jobs:
           wget -O v8_118.tar.gz -q  ${{env.V8_118}} 
           tar xvfz v8_118.tar.gz -C unreal/Puerts/ThirdParty
           cd unreal
-          cp Puerts/Source/JsEnv/JsEnv.Build.cs ..
-          sed -i '/^#if UE_4_25_OR_LATER/ { N; s/\(\s*\)SupportedV8Versions\.V9_4_146_24;/\1SupportedV8Versions.V11_8_172;/; }' Puerts/Source/JsEnv/JsEnv.Build.cs
+          cp Puerts/Source/PapiV8/PapiV8.Build.cs ..
+          sed -i '/^#if UE_4_25_OR_LATER/ { N; s/\(\s*\)SupportedV8Versions\.V9_4_146_24;/\1SupportedV8Versions.V11_8_172;/; }' Puerts/Source/PapiV8/PapiV8.Build.cs
           tar cvfz puerts_v8_118.tgz Puerts README.md LICENSE doc
           mv puerts_v8_118.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8_9.4.146.24
-          cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
+          cp PapiV8.Build.cs unreal/Puerts/Source/PapiV8/PapiV8.Build.cs
           wget -O v8_for_ue425.tgz -q  ${{env.V8_84}} 
           tar xvfz v8_for_ue425.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          sed -i '/^#if UE_4_25_OR_LATER/ { N; s/\(\s*\)SupportedV8Versions\.V9_4_146_24;/\1SupportedV8Versions.V8_4_371_19;/; }' Puerts/Source/JsEnv/JsEnv.Build.cs
+          sed -i '/^#if UE_4_25_OR_LATER/ { N; s/\(\s*\)SupportedV8Versions\.V9_4_146_24;/\1SupportedV8Versions.V8_4_371_19;/; }' Puerts/Source/PapiV8/PapiV8.Build.cs
           tar cvfz puerts_v8_84.tgz Puerts README.md LICENSE doc
           mv puerts_v8_84.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8
-          cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
+          cp PapiV8.Build.cs unreal/Puerts/Source/PapiV8/PapiV8.Build.cs
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
           tar xvfz v8_for_ue424.tgz -C unreal/Puerts/ThirdParty
           cd unreal
@@ -58,20 +57,11 @@ jobs:
           mv puerts_v8_for_ue424_or_below.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8_for_ue424_or_below
-          wget -O quickjs.tgz -q  ${{env.quickjs}}
-          tar xvfz quickjs.tgz -C unreal/Puerts/ThirdParty
-          cd unreal
-          sed -i 's/UseQuickjs = false/UseQuickjs = true/g' Puerts/Source/JsEnv/JsEnv.Build.cs
-          tar cvfz puerts_quickjs.tgz Puerts README.md LICENSE doc
-          mv puerts_quickjs.tgz ..
-          cd ..
-          rm -r unreal/Puerts/ThirdParty/quickjs
-          cp JsEnv.Build.cs unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
           git checkout .
           wget -O nodejs_bin.tgz -q  ${{env.nodejs}}
           tar xvfz nodejs_bin.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          sed -i 's/UseNodejs = false/UseNodejs = true/g' Puerts/Source/JsEnv/JsEnv.Build.cs
+          sed -i 's/UseNodejs = false/UseNodejs = true/g' Puerts/Source/PapiV8/PapiV8.Build.cs
           tar cvfz puerts_nodejs.tgz Puerts README.md LICENSE doc
           mv puerts_nodejs.tgz ..
           
@@ -123,17 +113,6 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./puerts_v8_for_ue424_or_below.tgz
           asset_name: puerts_v8_for_ue424_or_below.tgz
-          asset_content_type: application/tgz
-          
-      - name: Upload Puerts Plugins With Quickjs Backend
-        #id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./puerts_quickjs.tgz
-          asset_name: puerts_quickjs.tgz
           asset_content_type: application/tgz
 
       - name: Upload Puerts Plugins With Nodejs Backend

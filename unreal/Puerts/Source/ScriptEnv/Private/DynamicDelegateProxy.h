@@ -1,0 +1,52 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#pragma once
+
+#include "NamespaceDef.h"
+
+#include "DynamicInvoker.h"
+#include "pesapi.h"
+
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
+#include "DynamicDelegateProxy.generated.h"
+
+/**
+ *
+ */
+UCLASS()
+class UDynamicDelegateProxy : public UObject
+{
+    GENERATED_BODY()
+public:
+    virtual UWorld* GetWorld() const override;
+
+    virtual void BeginDestroy() override;
+
+    UFUNCTION(BlueprintCallable, Category = "TGameJS")
+    void Fire();
+
+    void ProcessEvent(UFunction*, void* Parms) override;
+
+    // keeps a strong papi reference to Function, the previous one is released
+    void SetJsFunction(struct pesapi_ffi* InApis, pesapi_env Env, pesapi_value Function);
+
+    void ResetJsFunction();
+
+    TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
+
+    TWeakObjectPtr<UFunction> SignatureFunction;
+
+    // So, only uobject's delelgate is supported!
+    TWeakObjectPtr<UObject> Owner;
+
+    struct pesapi_ffi* Apis = nullptr;
+
+    pesapi_value_ref JsFunction = nullptr;
+};

@@ -1,0 +1,349 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
+
+#include "ContainerMeta.h"
+#include "UObject/Package.h"
+
+// UE 5.8 deprecated the (Owner, Name, EObjectFlags) FField/FProperty constructors, and
+// FField::FlagsPrivate itself (superseded by FProperty::PropertyFlags, which this file already
+// sets via CPF_* below) -- so dropping RF_Transient for 5.8+ matches Epic's own migration
+// guidance, not just a warning suppression. Pre-5.8 engines keep the existing behavior.
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+#define PUERTS_NEW_PROPERTY(Type, Owner, Name) new Type(Owner, Name)
+#else
+#define PUERTS_NEW_PROPERTY(Type, Owner, Name) new Type(Owner, Name, RF_Transient)
+#endif
+
+namespace PUERTS_NAMESPACE
+{
+FContainerMeta& FContainerMeta::Get()
+{
+    static FContainerMeta* Meta = new FContainerMeta();
+    return *Meta;
+}
+
+FContainerMeta::FContainerMeta()
+{
+    ::memset(&BuiltinProperty, 0, sizeof(BuiltinProperty));
+
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+    PropertyMetaRoot = FindObject<UScriptStruct>(nullptr, TEXT("/Script/ScriptEnv.PropertyMetaRoot"));
+#else
+    PropertyMetaRoot = FindObject<UScriptStruct>(ANY_PACKAGE, TEXT("PropertyMetaRoot"));
+#endif
+}
+
+FContainerMeta::~FContainerMeta()
+{
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+    // for (auto KV : ObjectPropertyMap)
+    //{
+    //    delete KV.Value;
+    //}
+#else
+    for (int i = 0; i < MaxBuiltinType; i++)
+    {
+        if (BuiltinProperty[i])
+        {
+            // UE_LOG(LogTemp, Warning, TEXT("BuiltinProperty RemoveFromRoot %s"), *BuiltinProperty[i]->GetName());
+            BuiltinProperty[i]->RemoveFromRoot();
+        }
+    }
+    for (auto KV : ObjectPropertyMap)
+    {
+        // UE_LOG(LogTemp, Warning, TEXT("BuiltinProperty RemoveFromRoot %s"), *KV.Value->GetName());
+        KV.Value.Property->RemoveFromRoot();
+    }
+#endif
+}
+
+PropertyMacro* FContainerMeta::GetBuiltinProperty(BuiltinType type)
+{
+    PropertyMacro* Ret = nullptr;
+
+    if (type >= 0 && type < MaxBuiltinType)
+    {
+        if (BuiltinProperty[type])
+        {
+            return BuiltinProperty[type];
+        }
+
+        switch (type)
+        {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+            case TBool:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UBoolProperty(FObjectInitializer(), EC_CppProperty, 0, (EPropertyFlags) 0, 0xFF, 1, true);
+                break;
+            case TByte:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UByteProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TInt:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UIntProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TFloat:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UFloatProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TDouble:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UDoubleProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TInt64:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UInt64Property(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TString:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UStrProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TText:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UNameProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TName:
+                Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+                    UTextProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
+                break;
+#elif ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
+            case TBool:
+                Ret = PUERTS_NEW_PROPERTY(FBoolProperty, PropertyMetaRoot, NAME_None);
+                static_cast<FBoolProperty*>(Ret)->SetBoolSize(1, true, 0xFF);
+                break;
+            case TByte:
+                Ret = PUERTS_NEW_PROPERTY(FByteProperty, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case TInt:
+                Ret = PUERTS_NEW_PROPERTY(FIntProperty, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case TFloat:
+                Ret = PUERTS_NEW_PROPERTY(FFloatProperty, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case TDouble:
+                Ret = PUERTS_NEW_PROPERTY(FDoubleProperty, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case TInt64:
+                Ret = PUERTS_NEW_PROPERTY(FInt64Property, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case TString:
+                Ret = PUERTS_NEW_PROPERTY(FStrProperty, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case TText:
+                Ret = PUERTS_NEW_PROPERTY(FTextProperty, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case TName:
+                Ret = PUERTS_NEW_PROPERTY(FNameProperty, PropertyMetaRoot, NAME_None);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+#else
+            case TBool:
+                Ret = new FBoolProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, (EPropertyFlags) 0, 0xFF, 1, true);
+                break;
+            case TByte:
+                Ret = new FByteProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TInt:
+                Ret = new FIntProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TFloat:
+                Ret = new FFloatProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TDouble:
+                Ret = new FDoubleProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TInt64:
+                Ret = new FInt64Property(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TString:
+                Ret = new FStrProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TText:
+                Ret = new FTextProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+            case TName:
+                Ret = new FNameProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash);
+                break;
+#endif
+            case MaxBuiltinType:
+                break;
+            default:
+                break;
+        }
+        if (Ret)
+        {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+            Ret->AddToRoot();
+#endif
+            BuiltinProperty[type] = Ret;
+        }
+    }
+
+    return Ret;
+}
+
+#if WITH_EDITOR && (ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4)
+// editing a user defined struct changes its layout in place (the UScriptStruct pointer is kept), and some engine versions
+// also point FStructProperty::Struct of the struct properties found by TAllFieldsIterator to a temp duplicate meanwhile, so a
+// cached struct property may have a stale ElementSize or Struct
+static bool IsStaleStructProperty(PropertyMacro* Property, UField* Field)
+{
+    auto ScriptStruct = Cast<UScriptStruct>(Field);
+    if (!ScriptStruct)
+    {
+        return false;
+    }
+    auto StructProperty = CastField<StructPropertyMacro>(Property);
+#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
+    const int32 ElementSize = Property->GetElementSize();
+#else
+    const int32 ElementSize = Property->ElementSize;
+#endif
+    // set to PropertiesSize at creation, aligned if linked
+    return !StructProperty || StructProperty->Struct != ScriptStruct ||
+           (ElementSize != ScriptStruct->PropertiesSize &&
+               ElementSize != Align(ScriptStruct->PropertiesSize, ScriptStruct->GetMinAlignment()));
+}
+#endif
+
+PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
+{
+    auto Iter = ObjectPropertyMap.Find(Field);
+    // a stale one is left (leaked like the others) as the containers created with it may still use it
+    if (Iter && Iter->Field.Get() == Field
+#if WITH_EDITOR && (ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4)
+        && !IsStaleStructProperty(Iter->Property, Field)
+#endif
+    )
+    {
+        return Iter->Property;
+    }
+
+    PropertyMacro* Ret = nullptr;
+
+    if (auto Class = Cast<UClass>(Field))
+    {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+        Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+            UObjectProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, Class);
+#elif ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
+        Ret = PUERTS_NEW_PROPERTY(FObjectProperty, PropertyMetaRoot, NAME_None);
+        static_cast<FObjectProperty*>(Ret)->PropertyClass = Class;
+        Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+#else
+        Ret = new FObjectProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, Class);
+#endif
+    }
+    else if (auto ScriptStruct = Cast<UScriptStruct>(Field))
+    {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+        Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
+            UStructProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, ScriptStruct);
+#elif ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
+        Ret = PUERTS_NEW_PROPERTY(FStructProperty, PropertyMetaRoot, NAME_None);
+        static_cast<FStructProperty*>(Ret)->Struct = ScriptStruct;
+#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
+        Ret->SetElementSize(ScriptStruct->PropertiesSize);
+#else
+        Ret->ElementSize = ScriptStruct->PropertiesSize;
+#endif
+        Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+#else
+        Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, ScriptStruct);
+#endif
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+        // unlink it from the children of PropertyMetaRoot (the constructor adds it to the head): the engine walks the struct
+        // properties of a user defined struct being edited by TAllFieldsIterator, and logs the error
+        // "ReplaceStructWithTempDuplicate unknown owner" (UE4) or points it to a temp duplicate (some UE5 paths) for one owned by
+        // neither a blueprint class nor a user defined struct. gc is not affected, as the references of PropertyMetaRoot are
+        // collected only at its link
+        if (PropertyMetaRoot->ChildProperties == Ret)
+        {
+            PropertyMetaRoot->ChildProperties = Ret->Next;
+            Ret->Next = nullptr;
+        }
+#endif
+    }
+    else if (auto Enum = Cast<UEnum>(Field))
+    {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+        UEnumProperty* EnumProp = new (EC_InternalUseOnlyConstructor, ScriptStruct, NAME_None, RF_Transient)
+            UEnumProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, Enum);
+        UNumericProperty* UnderlyingProp = NewObject<UByteProperty>(EnumProp, TEXT("UnderlyingType"));
+        EnumProp->AddCppProperty(UnderlyingProp);
+        Ret = EnumProp;
+#else
+        if (Enum->GetCppForm() == UEnum::ECppForm::EnumClass)
+        {
+            FEnumProperty* EnumProp =
+#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 4    // 5.5+
+                PUERTS_NEW_PROPERTY(FEnumProperty, PropertyMetaRoot, NAME_None);
+            EnumProp->SetEnum(Enum);
+#else
+                new FEnumProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, Enum);
+#endif
+            FNumericProperty* UnderlyingProp = PUERTS_NEW_PROPERTY(FByteProperty, EnumProp, TEXT("UnderlyingType"));
+            EnumProp->AddCppProperty(UnderlyingProp);
+#if ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5
+            EnumProp->SetElementSize(UnderlyingProp->GetElementSize());
+#else
+            EnumProp->ElementSize = UnderlyingProp->ElementSize;
+#endif
+            EnumProp->PropertyFlags |= CPF_IsPlainOldData | CPF_NoDestructor | CPF_ZeroConstructor;
+
+            Ret = EnumProp;
+        }
+        else
+        {
+            FByteProperty* ByteProp = PUERTS_NEW_PROPERTY(FByteProperty, PropertyMetaRoot, NAME_None);
+            ByteProp->Enum = Enum;
+
+            Ret = ByteProp;
+        }
+
+        Ret->SetPropertyFlags(CPF_HasGetValueTypeHash);
+#endif
+    }
+    else
+    {
+        return nullptr;
+    }
+
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+    Ret->AddToRoot();
+#endif
+
+    ObjectPropertyMap.Add(Field, FObjectPropertyInfo{Field, Ret});
+    return Ret;
+}
+
+#undef PUERTS_NEW_PROPERTY
+
+void FContainerMeta::NotifyElementTypeDeleted(const UField* Field)
+{
+    auto Iter = ObjectPropertyMap.Find(Field);
+    if (Iter)
+    {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+        (const_cast<UField*>(Field))->RemoveFromRoot();
+#else
+        // delete *Iter;
+#endif
+        ObjectPropertyMap.Remove(Field);
+    }
+}
+
+}    // namespace PUERTS_NAMESPACE
