@@ -2,8 +2,13 @@ using System;
 
 namespace NUnit {
     namespace Framework {
+        // 不能继承 PreserveAttribute：UnityLinker 把 Preserve 及其子类当作仅供裁剪用的标记，输出程序集时会把它们从
+        // 类型/方法上删掉，IL2CPP 包里反射就拿不到 [Test]/[TestFixture]（Unity 6000.6 Android 上一个用例都找不到）。
+        // 用例类和方法的保留交给 link.xml 里对 com.tencent.puerts.unittest 的 preserve="all"；
+        // RequireAttributeUsages 让被保留的类型/方法上的这个特性在高裁剪级别下也一起保留。
         [System.AttributeUsage(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-        public sealed class TestAttribute : UnityEngine.Scripting.PreserveAttribute
+        [UnityEngine.Scripting.RequireAttributeUsages]
+        public sealed class TestAttribute : System.Attribute
         {
             public int priority { get; private set; }
 
@@ -17,7 +22,8 @@ namespace NUnit {
         }
 
         [System.AttributeUsage(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-        public sealed class TestFixtureAttribute : UnityEngine.Scripting.PreserveAttribute
+        [UnityEngine.Scripting.RequireAttributeUsages]
+        public sealed class TestFixtureAttribute : System.Attribute
         {
             public int priority { get; private set; }
 

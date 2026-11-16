@@ -80,7 +80,8 @@ public class TestBuilder
     {
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.tencent.puerts_test");
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
+        // Unity 6.5+ removed the Android x86_64 target; the CI emulator (x86_64, API 30+) runs this arm64 apk via ARM translation
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = new[] { "Assets/Scenes/Test.unity" };
@@ -96,9 +97,20 @@ public class TestBuilder
             Debug.Log("Build succeeded: " + summary.outputPath + " with " + summary.totalSize + " bytes");
         }
 
-        if (summary.result == BuildResult.Failed)
+        if (summary.result != BuildResult.Succeeded)
         {
-            Debug.Log("Build failed: " + summary.outputPath);
+            Debug.Log("Build failed: result=" + summary.result + ", errors=" + summary.totalErrors + ", output=" + summary.outputPath);
+            foreach (var step in report.steps)
+            {
+                foreach (var msg in step.messages)
+                {
+                    if (msg.type == LogType.Error || msg.type == LogType.Exception)
+                    {
+                        Debug.Log("[BuildAndroid] step '" + step.name + "': " + msg.content);
+                    }
+                }
+            }
+            if (Application.isBatchMode) EditorApplication.Exit(1);
         }
     }
 }

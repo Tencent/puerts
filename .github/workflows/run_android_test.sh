@@ -49,6 +49,22 @@ if [ "$PM_READY" = false ]; then
 fi
 echo "Package manager ready"
 
+# sys.boot_completed only means BOOT_COMPLETED was sent; on a cold emulator its ~100 receivers can take
+# another 30s+ to run. While that is in progress the launched activity may not get window focus and
+# may get destroyed when the system settles (seen with Unity 2022: its player only starts native code
+# after onWindowFocusChanged(true), and UnityPlayer.destroy() kills the process). Wait until idle.
+echo "Waiting for broadcast queues to become idle..."
+if command -v timeout >/dev/null 2>&1; then
+  timeout 300 adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || echo "wait-for-broadcast-idle failed or timed out, continuing"
+else
+  adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || true
+fi
+
+# Keep the screen on and unlocked so the activity is resumed and focused
+adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+adb shell svc power stayon true >/dev/null 2>&1 || true
+adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
+
 # Give system services extra time to stabilize (GPU, OpenGL, etc.)
 echo "Waiting for system services to stabilize..."
 sleep 10
@@ -69,25 +85,64 @@ echo ""
 
 adb shell setprop log.tag.linker DEBUG
 
+# Root adbd now (google_apis images are userdebug) so debuggerd can dump app stacks later
+# without restarting adbd, which would kill the background logcat capture
+adb root >/dev/null 2>&1 || true
+sleep 3
+adb wait-for-device
+echo "adb user: $(adb shell id -u | tr -d '\r')"
+echo "GLES: $(adb shell dumpsys SurfaceFlinger 2>/dev/null | grep -m1 -E '^GLES:' | tr -d '\r')"
+
+# The apk is arm64-v8a only; on an x86_64 emulator it relies on ARM translation (API 30+ images)
+ABI_LIST=$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')
+echo "Device ABI list: $ABI_LIST"
+echo "Native bridge: $(adb shell getprop ro.dalvik.vm.native.bridge | tr -d '\r')"
+case ",$ABI_LIST," in
+  *,arm64-v8a,*) ;;
+  *) echo "ERROR: device does not support arm64-v8a (no ARM translation in this system image)"; exit 1 ;;
+esac
+
 echo "Installing APK..."
 adb install -r puerts_test.apk
+# Let PACKAGE_ADDED etc. be delivered before launching, so the system is quiet while the app starts
+adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || true
+
+adb shell setprop log.tag.Unity I
+adb shell setprop log.tag.TestRunner I
+
+# The app may be torn down by the system before the Unity player even starts (no Unity log at all),
+# which has nothing to do with the tests. Retry the launch once in that case.
+MAX_ATTEMPTS=2
+ATTEMPT=0
+while true; do
+ATTEMPT=$((ATTEMPT + 1))
+echo "==========================================="
+echo "Launch attempt $ATTEMPT/$MAX_ATTEMPTS"
+echo "==========================================="
+rm -f hang_stacks.txt
 
 echo "Clearing logcat..."
 adb logcat -c
 adb shell logcat -G 16M
-adb shell setprop log.tag.Unity I
-adb shell setprop log.tag.TestRunner I
+
+# Start capturing before launching so that early startup logs are never missed
+echo "Starting logcat capture..."
+adb logcat -v time > logcat.txt &
+LOGCAT_BG_PID=$!
+
+adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
 
 echo "Starting app..."
 adb shell am start -n com.tencent.puerts_test/com.unity3d.player.UnityPlayerActivity
 
 echo "Waiting for app to start..."
 COUNTER=0
+PID=""
 while [ $COUNTER -lt 60 ]; do
-  PS_LINE=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
-  if [ -n "$PS_LINE" ]; then
-    # Extract PID (second column) using sed
-    PID=$(echo "$PS_LINE" | sed 's/^[^ ]* *\([^ ]*\).*/\1/')
+  # Android 8+ `ps` only lists the shell user's processes, use pidof instead
+  PID=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
+  if [ -n "$PID" ]; then
     echo "App PID: $PID"
     echo "App started in $COUNTER seconds"
     break
@@ -98,38 +153,130 @@ done
 
 if [ -z "$PID" ]; then
   echo "App did not start in time (waited $COUNTER seconds)"
+  kill $LOGCAT_BG_PID || true
   exit 1
 fi
 
-echo "Starting logcat capture..."
-adb logcat -v time > logcat.txt &
-LOGCAT_BG_PID=$!
-
-echo "Waiting for app to complete (timeout: 300s)..."
-TIMEOUT=300
+echo "Waiting for app to complete (timeout: 1200s, arm64 runs under ARM translation)..."
+TIMEOUT=1200
+# Treat as hung if the app prints nothing for this long
+STALL_TIMEOUT=600
 ELAPSED=0
 APP_EXITED=false
+APP_HUNG=false
+LAST_LINES=-1
+LAST_PROGRESS=0
 while [ $ELAPSED -lt $TIMEOUT ]; do
-  # Check if process still exists by looking for the PID
-  PS_CHECK=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
+  # Check if process still exists
+  PS_CHECK=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
   if [ -z "$PS_CHECK" ]; then
     echo "App exited after $ELAPSED seconds"
     APP_EXITED=true
     break
   fi
+  APP_LINES=$(grep -c -E "\( *$PID\)" logcat.txt || true)
+  if [ "$APP_LINES" != "$LAST_LINES" ]; then
+    LAST_LINES=$APP_LINES
+    LAST_PROGRESS=$ELAPSED
+  fi
+  if [ $((ELAPSED % 60)) -eq 0 ]; then
+    CPU=$(adb shell top -b -n 1 -p "$PID" 2>/dev/null | tr -d '\r' | awk -v p="$PID" '$1==p {print $9"%"}')
+    echo "[${ELAPSED}s] app log lines: $APP_LINES, cpu: ${CPU:-?}, last: $(grep -E "\( *$PID\)" logcat.txt | tail -1 | cut -c1-160)"
+  fi
+  if [ $((ELAPSED - LAST_PROGRESS)) -ge $STALL_TIMEOUT ]; then
+    echo "No app log output for ${STALL_TIMEOUT}s, treating as hung"
+    APP_HUNG=true
+    break
+  fi
+  if [ $ELAPSED -eq 10 ] || [ $ELAPSED -eq 30 ]; then
+    # Early sample: the app may be stuck and then kill itself (e.g. Unity pause timeout) before the stall watchdog fires
+    echo "[${ELAPSED}s] window focus: $(adb shell dumpsys window 2>/dev/null | grep -m1 mCurrentFocus | tr -d '\r')"
+    echo "===== stack sample at ${ELAPSED}s =====" >> hang_stacks.txt
+    adb shell debuggerd -b "$PID" >> hang_stacks.txt 2>&1 || true
+    echo "[${ELAPSED}s] native stack sample of main / Unity threads:"
+    awk '/^===== stack sample at '"$ELAPSED"'s/{f=1} f' hang_stacks.txt | grep -A12 -E '^"(ent.puerts_test|UnityMain|Unity Main|UnityGfx)' | head -60 || true
+  fi
   sleep 2
   ELAPSED=$((ELAPSED+2))
 done
 
+UNITY_LINES=$(grep -c -E "/Unity *\( *$PID\)" logcat.txt || true)
+if [ "$APP_EXITED" = true ] && [ "$UNITY_LINES" -eq 0 ] && [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+  echo "WARNING: app exited before the Unity player produced any log, retrying the launch"
+  echo "---------- Last 30 log lines of app pid $PID ----------"
+  grep -E "\( *$PID\)" logcat.txt | tail -30 || true
+  adb shell dumpsys activity exit-info com.tencent.puerts_test 2>/dev/null | grep -m5 -E "reason|description" || true
+  kill $LOGCAT_BG_PID || true
+  sleep 1
+  mv logcat.txt "logcat_attempt${ATTEMPT}.txt" || true
+  [ -f hang_stacks.txt ] && mv hang_stacks.txt "hang_stacks_attempt${ATTEMPT}.txt" || true
+  adb shell am wait-for-broadcast-idle >/dev/null 2>&1 || true
+  sleep 5
+  continue
+fi
+break
+done
+
+# Collect evidence of where the app is stuck: per-thread cpu, all thread stacks, a screenshot
+dump_hang_info() {
+  echo ""
+  echo "---------- Threads of pid $PID ----------"
+  adb shell top -H -b -n 1 -p "$PID" 2>/dev/null | head -60 || true
+  echo ""
+  echo "---------- Activity / window state ----------"
+  adb shell dumpsys activity activities 2>/dev/null | grep -E "mResumedActivity|topResumedActivity|mFocusedApp" || true
+  adb shell dumpsys window 2>/dev/null | grep -E "mCurrentFocus|mFocusedApp" || true
+  adb shell screencap -p /sdcard/hang.png && adb pull /sdcard/hang.png hang.png >/dev/null 2>&1 || true
+  adb shell debuggerd -b "$PID" >> hang_stacks.txt 2>&1 || true
+  adb shell debuggerd -j "$PID" >> hang_stacks.txt 2>&1 || true
+  echo ""
+  echo "---------- Stacks (full dump in hang_stacks.txt artifact) ----------"
+  grep -E '^"|^----- pid|^Cmd line|^  native: #0[0-9]|^  at |^    #0[0-9]' hang_stacks.txt | head -300 || true
+  echo "-----------------------------------------"
+}
+
 # Double check if app is still running
-PS_FINAL=$(adb shell "ps | grep com.tencent.puerts_test | grep -v grep" | tr -d '\r')
+PS_FINAL=$(adb shell pidof com.tencent.puerts_test 2>/dev/null | tr -d '\r')
 if [ -n "$PS_FINAL" ]; then
-  echo "App did not exit in time, killing..."
+  if [ "$APP_HUNG" = true ]; then
+    echo "App hung, collecting diagnostics..."
+  else
+    echo "App did not exit in time, collecting diagnostics..."
+  fi
+  dump_hang_info
+  echo ""
+  echo "---------- Last 150 log lines of app pid $PID ----------"
+  grep -E "\( *$PID\)" logcat.txt | tail -150 || true
   adb shell am force-stop com.tencent.puerts_test
+  kill $LOGCAT_BG_PID || true
   exit 1
 fi
 
 # If app exited, check for abnormal exit
+dump_crash_info() {
+  echo ""
+  echo "---------- Fatal / crash lines ----------"
+  grep -E "Fatal signal|F DEBUG|F/DEBUG|E/AndroidRuntime|E/CRASH|FATAL EXCEPTION|signal [0-9]+ \(SIG|Abort message|backtrace:| #[0-9]+ pc " logcat.txt | head -150 || true
+  echo ""
+  echo "---------- Last 150 log lines of app pid $PID ----------"
+  grep -E "\( *$PID\)" logcat.txt | tail -150 || true
+  echo "-----------------------------------------"
+  dump_exit_info
+  if [ -f hang_stacks.txt ]; then
+    echo ""
+    echo "---------- Early stack samples (full dump in hang_stacks.txt artifact) ----------"
+    grep -E '^=====|^"|^    #0[0-9]' hang_stacks.txt | head -200 || true
+  fi
+}
+
+# Android 11+ records why each process died (reason / signal / description), even for a silent self-kill
+dump_exit_info() {
+  echo ""
+  echo "---------- ApplicationExitInfo ----------"
+  adb shell dumpsys activity exit-info com.tencent.puerts_test 2>/dev/null | head -60 || true
+  echo "-----------------------------------------"
+}
+
 if [ "$APP_EXITED" = true ]; then
   echo "Checking exit status..."
   sleep 2  # Wait for system to flush logs
@@ -159,6 +306,7 @@ if [ "$APP_EXITED" = true ]; then
       echo "Recent activity before crash:"
       grep -B 5 "Process com.tencent.puerts_test.*has died" logcat.txt | tail -20 || true
       echo ""
+      dump_crash_info
       
       exit 1
     fi
@@ -184,6 +332,7 @@ if [ "$APP_EXITED" = true ]; then
         echo "Context around process death:"
         echo "$DIED_CONTEXT"
         echo ""
+        dump_crash_info
         exit 1
       fi
     fi
@@ -207,6 +356,13 @@ echo "Test Results Summary:"
 echo "Passed: $PASSED_COUNT"
 echo "Failed: $FAILED_COUNT"
 echo "=========================================="
+
+# No test case result at all means the app quit before running the tests
+if [ "$PASSED_COUNT" -eq 0 ] && [ "$FAILED_COUNT" -eq 0 ]; then
+  echo "ERROR: no test case result found in logcat, the app exited before running tests"
+  dump_crash_info
+  exit 1
+fi
 
 # Print failed test cases if any
 if [ $FAILED_COUNT -gt 0 ]; then

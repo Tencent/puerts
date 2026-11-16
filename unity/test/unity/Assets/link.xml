@@ -9,10 +9,7 @@
          <type fullname="PuertsTest.TestStruct" preserve="all"/>
          <type fullname="PuertsTest.TestObject" preserve="all"/>
      </assembly>
-     <assembly fullname="com.tencent.puerts.unittest">
-         <type fullname="Puerts.UnitTest.TestObject" preserve="all"/>
-         <type fullname="Puerts.UnitTest.TestStruct" preserve="all"/>
-         <type fullname="Puerts.UnitTest.TestHelper" preserve="all"/>
-     </assembly>
+     <!-- 用例全靠反射发现和调用，Tester 里也不再 typeof 引用该程序集的类型，整个程序集都不能裁 -->
+     <assembly fullname="com.tencent.puerts.unittest" preserve="all"/>
  
 </linker>

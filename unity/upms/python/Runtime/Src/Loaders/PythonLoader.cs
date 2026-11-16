@@ -15,6 +15,10 @@ namespace Puerts
 {
     public class PythonLoader : ILoader
     {
+        // 只有 Python 脚本（BackendPython.OnEnter 里的 PesapiFinder）通过反射访问，C# 侧没有引用，IL2CPP 裁剪会删掉
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
         public static NamespaceManager NamespaceManager { get; } = new NamespaceManager();
 
         public bool FileExists(string filepath)
@@ -28,6 +32,9 @@ namespace Puerts
         }
     }
 
+#if ENABLE_IL2CPP
+    [UnityEngine.Scripting.Preserve]
+#endif
     public class NamespaceManager
     {
         private readonly HashSet<string> namespaces = new HashSet<string>(StringComparer.Ordinal);
@@ -140,6 +147,9 @@ namespace Puerts
             }
         }
 
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
         public bool IsValidNamespace(string namespaceName)
         {
             lock (@lock)
@@ -152,6 +162,9 @@ namespace Puerts
         //  1 => T, T<...>
         //  0 => T
         // -1 => Not exist
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
         public int GetTypeParameterStateByPrefix(string typeNamePrefix)
         {
             if (string.IsNullOrEmpty(typeNamePrefix))
