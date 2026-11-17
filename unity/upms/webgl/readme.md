@@ -55,7 +55,7 @@ use demo project to know puerts-webgl ｜ 利用demo项目了解PuerTS-WebGL
 
 #### install in your own project | 在你自己的项目中安装
 
-1. [Install puerts](https://github.com/Tencent/puerts/blob/master/doc/unity/install.md) first | 首先[安装puerts本体](https://github.com/Tencent/puerts/blob/master/doc/unity/install.md) ：
+1. [Install puerts](https://github.com/Tencent/puerts/blob/master/doc/unity/en/install.md) first | 首先[安装puerts本体](https://github.com/Tencent/puerts/blob/master/doc/unity/zhcn/install.md) ：
 
 2. Install puerts-webgl | 安装PuerTS-WebGL支持：
     <details>
@@ -74,7 +74,7 @@ use demo project to know puerts-webgl ｜ 利用demo项目了解PuerTS-WebGL
     - open Package Manager
     - click `+`
     - select `Add from File`
-    - select [your cloned path]/unity/Assets/webgl/upm
+    - select [your cloned path]/unity/upms/webgl
     - click `Add`
     </details>
     
