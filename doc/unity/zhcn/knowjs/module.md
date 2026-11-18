@@ -69,4 +69,4 @@ void Start() {
 ### CommonJS
 在比较古老的PuerTS版本里，曾经也支持过CommonJS模块规范。但在`2.0`版本之后，PuerTS不再默认支持CommonJS，转为建议使用更为流行的ESM规范，
 
-不过，PuerTS依旧提供了单独的第三方包，如果你在切换ESM中遇到任何困难，可以通过添加这个支持包来恢复CommonJS支持，参见：[PuerTS.CommonJS](https://github.com/Tencent/puerts/tree/master/unity/Assets/commonjs/upm)
+不过，PuerTS依旧提供了单独的第三方包，如果你在切换ESM中遇到任何困难，可以通过添加这个支持包来恢复CommonJS支持，参见：[PuerTS.CommonJS](https://github.com/Tencent/puerts/tree/master/unity/upms/commonjs)
