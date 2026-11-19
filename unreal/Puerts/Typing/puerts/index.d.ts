@@ -30,6 +30,9 @@ declare module "puerts" {
     
     function $set<T>(x: $Ref<T> | $InRef<T>, val:T) : void;
     
+    /**
+     * @deprecated Temporary transitional API. It will be removed in a future version; do not use it in new code.
+     */
     const argv : {
         getByIndex(index: number): Object;
         getByName(name: string): Object;
@@ -42,12 +45,21 @@ declare module "puerts" {
     }>(path:string): T;
 
     namespace blueprint {
+        /**
+         * @deprecated Temporary transitional API. It will be removed in a future version; do not use it in new code.
+         */
         type MixinConfig = { objectTakeByNative?:boolean, inherit?:boolean, generatedClass?: Class, noMixinedWarning?:boolean};
         function tojs<T extends typeof Object>(cls:Class): T;
+        /**
+         * @deprecated Temporary transitional API. It will be removed in a future version; do not use it in new code.
+         */
         function mixin<T extends typeof Object, R extends InstanceType<T>>(to:T, mixinMethods:new (...args: any) => R, config?: MixinConfig) : {
             new (Outer?: Object, Name?: string, ObjectFlags?: number) : R;
             StaticClass(): Class;
         };
+        /**
+         * @deprecated Temporary transitional API. It will be removed in a future version; do not use it in new code.
+         */
         function unmixin<T extends typeof Object>(to:T): void
         function load(cls: any): void
         function unload(cls: any): void
