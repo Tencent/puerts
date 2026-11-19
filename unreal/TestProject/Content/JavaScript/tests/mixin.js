@@ -191,4 +191,24 @@ test('mixin blueprint inheritance chain', () => {
     blueprint.unmixin(JsB);
 });
 
+// the methods inherited from a ts parent are mixin'd as well when only the derived class is mixed (the "unlua" style)
+test('mixin ts inheritance chain', () => {
+    const BP_A = BP.CreateBlueprintClass(UE.PuertsTestMixinTarget.StaticClass());
+    const BP_B = BP.CreateBlueprintClass(BP_A);
+    assert(BP_A && BP_B, 'blueprint chain created (needs the editor)');
+    const JsB = tojs(BP_B);
+
+    class C {
+        ImplEvent(v) {
+            return v + 100;
+        }
+    }
+    class D extends C {}
+    blueprint.mixin(JsB, D);
+
+    const b = new JsB();
+    eq(b.CallImplEvent(1), 101, 'native dispatch to the inherited method');
+    blueprint.unmixin(JsB);
+});
+
 run();

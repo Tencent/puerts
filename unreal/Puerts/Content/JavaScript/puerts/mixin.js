@@ -23,12 +23,24 @@ var global = global || (function () { return this; }());
     function mixin(to, mixinClass, config) {
         config = config || {};
         let mixinMethods = Object.create(null);
-        let names = Object.getOwnPropertyNames(mixinClass.prototype);
-        for(var i = 0; i < names.length; ++i) {
-            let name = names[i];
-            let descriptor = Object.getOwnPropertyDescriptor(mixinClass.prototype, name);
-            if (typeof descriptor.value === 'function' && name != "constructor") {
-                 mixinMethods[name] = mixinClass.prototype[name];
+        // the methods of the ts class chain are collected, the ones of the derived class win: a ts class derived from
+        // another ts class (the "unlua" style) mixin's the methods of its parents as well. The walk stops before the
+        // prototype of a UE class (its methods are not mixin methods)
+        for (let proto = mixinClass.prototype; proto && proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
+            let ctor = proto.constructor;
+            if (typeof ctor === 'function' && typeof ctor.StaticClass === 'function') {
+                break;
+            }
+            let names = Object.getOwnPropertyNames(proto);
+            for (var i = 0; i < names.length; ++i) {
+                let name = names[i];
+                if (name == "constructor" || name in mixinMethods) {
+                    continue;
+                }
+                let descriptor = Object.getOwnPropertyDescriptor(proto, name);
+                if (typeof descriptor.value === 'function') {
+                    mixinMethods[name] = descriptor.value;
+                }
             }
         }
         let cls = nativeMixin.mixin(to.StaticClass(), mixinMethods, config.inherit, config.noMixinedWarning);
