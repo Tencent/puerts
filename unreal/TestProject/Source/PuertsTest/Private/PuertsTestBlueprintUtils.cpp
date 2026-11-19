@@ -254,6 +254,22 @@ FString UPuertsTestBlueprintUtils::PropertyTypeOf(UStruct* Struct, const FString
     return Property ? Property->GetClass()->GetName() : FString();
 }
 
+bool UPuertsTestBlueprintUtils::HasNullNativeFunc(UClass* Class, const FString& Name)
+{
+    if (!Class)
+    {
+        return false;
+    }
+    for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::ExcludeSuper); It; ++It)
+    {
+        if (It->GetFName() == FName(*Name))
+        {
+            return It->HasAnyFunctionFlags(FUNC_Native) && It->GetNativeFunc() == nullptr;
+        }
+    }
+    return false;
+}
+
 #else
 
 UClass* UPuertsTestBlueprintUtils::CreateBlueprintClass(UClass* Parent)
@@ -314,6 +330,11 @@ bool UPuertsTestBlueprintUtils::HasOwnProperty(UStruct* Struct, const FString& N
 FString UPuertsTestBlueprintUtils::PropertyTypeOf(UStruct* Struct, const FString& Name)
 {
     return FString();
+}
+
+bool UPuertsTestBlueprintUtils::HasNullNativeFunc(UClass* Class, const FString& Name)
+{
+    return false;
 }
 
 #endif

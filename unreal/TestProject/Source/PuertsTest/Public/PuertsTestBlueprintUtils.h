@@ -58,4 +58,10 @@ public:
     // the reflection name of the property type ("IntProperty", ...) of the property Name, "" if there is none
     UFUNCTION()
     static FString PropertyTypeOf(UStruct* Struct, const FString& Name);
+
+    // whether Class (not its super) has a function named Name declared native (FUNC_Native) while its native function
+    // pointer is null: calling it crashes with a null function pointer. A mixin of a derived blueprint that reuses the
+    // mixed function of its base leaves this broken state behind (Tencent/puerts#2362)
+    UFUNCTION()
+    static bool HasNullNativeFunc(UClass* Class, const FString& Name);
 };

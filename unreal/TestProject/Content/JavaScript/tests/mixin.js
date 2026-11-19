@@ -1,6 +1,8 @@
 'use strict';
-const { UE, puerts, reporter, test, step, eq, observe, run } = require('./framework.js');
+const { UE, puerts, reporter, test, step, eq, assert, observe, run } = require('./framework.js');
 const { blueprint } = puerts;
+const BP = UE.PuertsTestBlueprintUtils;
+const tojs = puerts.blueprint.tojs;
 
 class MixinImpl {
     ImplEvent(v) {
@@ -152,6 +154,39 @@ step(() => {
         observe('UObject valid after js drops the taken ref', () => takeRefState.jsHeldWeak.IsValid());
         takeRefState.jsHeldWeak = undefined;
     });
+});
+
+// Tencent/puerts#2362: a TS class chain mixin'd onto a blueprint chain (blueprint B derived from blueprint A, both
+// derived from the native mixin target). B must get its own mixin instead of reusing the mixed function of A: the
+// duplicate of a mixed function carries the js generated function magic (and FUNC_Native) but no native function
+// pointer, so calling it on B crashes with a null function pointer, and the rebind overwrites the binding of A
+test('mixin blueprint inheritance chain', () => {
+    const BP_A = BP.CreateBlueprintClass(UE.PuertsTestMixinTarget.StaticClass());
+    const BP_B = BP.CreateBlueprintClass(BP_A);
+    assert(BP_A && BP_B, 'blueprint chain created (needs the editor)');
+    const JsA = tojs(BP_A);
+    const JsB = tojs(BP_B);
+
+    class C {
+        ImplEvent(v) {
+            return v + 1;
+        }
+    }
+    class D extends C {
+        ImplEvent(v) {
+            return super.ImplEvent(v) * 10;
+        }
+    }
+    blueprint.mixin(JsA, C);
+    blueprint.mixin(JsB, D);
+
+    assert(!BP.HasNullNativeFunc(BP_B, 'ImplEvent'), 'B::ImplEvent is native with a null function pointer');
+    const a = new JsA();
+    eq(a.CallImplEvent(1), 2, 'A instance dispatches to C');
+    const b = new JsB();
+    eq(b.CallImplEvent(1), 20, 'B instance dispatches to D');
+    blueprint.unmixin(JsA);
+    blueprint.unmixin(JsB);
 });
 
 run();
