@@ -158,8 +158,9 @@ step(() => {
 
 // Tencent/puerts#2362: a TS class chain mixin'd onto a blueprint chain (blueprint B derived from blueprint A, both
 // derived from the native mixin target). B must get its own mixin instead of reusing the mixed function of A: the
-// duplicate of a mixed function carries the js generated function magic (and FUNC_Native) but no native function
-// pointer, so calling it on B crashes with a null function pointer, and the rebind overwrites the binding of A
+// duplicate of a mixed function carries the js generated function magic of the parent, so the mixin of B rebinds the
+// js function of A, and the objects of both classes then dispatch to the methods of the wrong TS class (the shared
+// function also breaks the restore of B once the js function of A is orphaned)
 test('mixin blueprint inheritance chain', () => {
     const BP_A = BP.CreateBlueprintClass(UE.PuertsTestMixinTarget.StaticClass());
     const BP_B = BP.CreateBlueprintClass(BP_A);
@@ -180,9 +181,10 @@ test('mixin blueprint inheritance chain', () => {
     blueprint.mixin(JsA, C);
     blueprint.mixin(JsB, D);
 
-    assert(!BP.HasNullNativeFunc(BP_B, 'ImplEvent'), 'B::ImplEvent is native with a null function pointer');
+    const info = BP.DescribeFunction(BP_B, 'ImplEvent');
     const a = new JsA();
-    eq(a.CallImplEvent(1), 2, 'A instance dispatches to C');
+    // the rebind of the shared generated function of A must not have overwritten the binding of A (got 20 = D's method)
+    eq(a.CallImplEvent(1), 2, `A instance dispatches to C [B::ImplEvent: ${info}]`);
     const b = new JsB();
     eq(b.CallImplEvent(1), 20, 'B instance dispatches to D');
     blueprint.unmixin(JsA);

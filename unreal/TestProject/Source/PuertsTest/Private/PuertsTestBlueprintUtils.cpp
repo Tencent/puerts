@@ -254,20 +254,22 @@ FString UPuertsTestBlueprintUtils::PropertyTypeOf(UStruct* Struct, const FString
     return Property ? Property->GetClass()->GetName() : FString();
 }
 
-bool UPuertsTestBlueprintUtils::HasNullNativeFunc(UClass* Class, const FString& Name)
+FString UPuertsTestBlueprintUtils::DescribeFunction(UClass* Class, const FString& Name)
 {
     if (!Class)
     {
-        return false;
+        return TEXT("no class");
     }
     for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::ExcludeSuper); It; ++It)
     {
         if (It->GetFName() == FName(*Name))
         {
-            return It->HasAnyFunctionFlags(FUNC_Native) && It->GetNativeFunc() == nullptr;
+            return FString::Printf(TEXT("flags=0x%x native=%d funcNull=%d outer=%s outerIsClass=%d"), It->FunctionFlags,
+                It->HasAnyFunctionFlags(FUNC_Native), It->GetNativeFunc() == nullptr, *It->GetOuter()->GetName(),
+                It->GetOuter() == Class);
         }
     }
-    return false;
+    return TEXT("missing");
 }
 
 #else
@@ -332,9 +334,9 @@ FString UPuertsTestBlueprintUtils::PropertyTypeOf(UStruct* Struct, const FString
     return FString();
 }
 
-bool UPuertsTestBlueprintUtils::HasNullNativeFunc(UClass* Class, const FString& Name)
+FString UPuertsTestBlueprintUtils::DescribeFunction(UClass* Class, const FString& Name)
 {
-    return false;
+    return TEXT("no editor");
 }
 
 #endif
