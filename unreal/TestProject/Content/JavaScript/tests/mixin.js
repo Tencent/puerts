@@ -1,6 +1,8 @@
 'use strict';
-const { UE, puerts, reporter, test, step, eq, observe, run } = require('./framework.js');
+const { UE, puerts, reporter, test, step, eq, assert, observe, run } = require('./framework.js');
 const { blueprint } = puerts;
+const BP = UE.PuertsTestBlueprintUtils;
+const tojs = puerts.blueprint.tojs;
 
 class MixinImpl {
     ImplEvent(v) {
@@ -152,6 +154,61 @@ step(() => {
         observe('UObject valid after js drops the taken ref', () => takeRefState.jsHeldWeak.IsValid());
         takeRefState.jsHeldWeak = undefined;
     });
+});
+
+// Tencent/puerts#2362: a TS class chain mixin'd onto a blueprint chain (blueprint B derived from blueprint A, both
+// derived from the native mixin target). B must get its own mixin instead of reusing the mixed function of A: the
+// duplicate of a mixed function carries the js generated function magic of the parent, so the mixin of B rebinds the
+// js function of A, and the objects of both classes then dispatch to the methods of the wrong TS class (the shared
+// function also breaks the restore of B once the js function of A is orphaned)
+test('mixin blueprint inheritance chain', () => {
+    const BP_A = BP.CreateBlueprintClass(UE.PuertsTestMixinTarget.StaticClass());
+    const BP_B = BP.CreateBlueprintClass(BP_A);
+    assert(BP_A && BP_B, 'blueprint chain created (needs the editor)');
+    const JsA = tojs(BP_A);
+    const JsB = tojs(BP_B);
+
+    class C {
+        ImplEvent(v) {
+            return v + 1;
+        }
+    }
+    class D extends C {
+        ImplEvent(v) {
+            return super.ImplEvent(v) * 10;
+        }
+    }
+    blueprint.mixin(JsA, C);
+    blueprint.mixin(JsB, D);
+
+    const info = BP.DescribeFunction(BP_B, 'ImplEvent');
+    const a = new JsA();
+    // the rebind of the shared generated function of A must not have overwritten the binding of A (got 20 = D's method)
+    eq(a.CallImplEvent(1), 2, `A instance dispatches to C [B::ImplEvent: ${info}]`);
+    const b = new JsB();
+    eq(b.CallImplEvent(1), 20, 'B instance dispatches to D');
+    blueprint.unmixin(JsA);
+    blueprint.unmixin(JsB);
+});
+
+// the methods inherited from a ts parent are mixin'd as well when only the derived class is mixed (the "unlua" style)
+test('mixin ts inheritance chain', () => {
+    const BP_A = BP.CreateBlueprintClass(UE.PuertsTestMixinTarget.StaticClass());
+    const BP_B = BP.CreateBlueprintClass(BP_A);
+    assert(BP_A && BP_B, 'blueprint chain created (needs the editor)');
+    const JsB = tojs(BP_B);
+
+    class C {
+        ImplEvent(v) {
+            return v + 100;
+        }
+    }
+    class D extends C {}
+    blueprint.mixin(JsB, D);
+
+    const b = new JsB();
+    eq(b.CallImplEvent(1), 101, 'native dispatch to the inherited method');
+    blueprint.unmixin(JsB);
 });
 
 run();

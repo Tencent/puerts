@@ -58,4 +58,9 @@ public:
     // the reflection name of the property type ("IntProperty", ...) of the property Name, "" if there is none
     UFUNCTION()
     static FString PropertyTypeOf(UStruct* Struct, const FString& Name);
+
+    // "missing" or "flags=0x.. native=.. funcNull=.. outer=.. outerIsClass=.." of the function Name owned by Class
+    // (not its super), for test failure messages
+    UFUNCTION()
+    static FString DescribeFunction(UClass* Class, const FString& Name);
 };

@@ -25,6 +25,7 @@ UFunction* UJSGeneratedClass::Mixin(
 {
     bool Existed = Super->GetOuter() == Class;
 
+    UFunction* Tmp = Super;
     if (!Existed)
     {
         // the duplicate binds its native function by name on the class (UE4 warns "Failed to bind native function" otherwise)
@@ -32,8 +33,7 @@ UFunction* UJSGeneratedClass::Mixin(
         {
             Class->AddNativeFunction(*Super->GetName(), Super->GetNativeFunc());
         }
-        UFunction* Tmp =
-            Cast<UFunction>(StaticDuplicateObject(Super, Class, Super->GetFName(), RF_AllFlags, UFunction::StaticClass()));
+        Tmp = Cast<UFunction>(StaticDuplicateObject(Super, Class, Super->GetFName(), RF_AllFlags, UFunction::StaticClass()));
         Tmp->SetSuperStruct(Super);
         Tmp->Next = Class->Children;
         Class->Children = Tmp;
@@ -48,7 +48,7 @@ UFunction* UJSGeneratedClass::Mixin(
     {
         MaybeJSFunction = UJSGeneratedFunction::GetJSGeneratedFunctionFromScript(Super);
     }
-    if (MaybeJSFunction)
+    if (MaybeJSFunction && Existed)
     {
         if (Warning)
         {
@@ -56,6 +56,26 @@ UFunction* UJSGeneratedClass::Mixin(
                 *Super->GetName());
         }
         return MaybeJSFunction;
+    }
+    if (MaybeJSFunction)
+    {
+        // the duplicate of a function already mixin'd on a parent class (blueprint inheritance chain) carries the js
+        // generated function magic, the flags and the native function of the parent: reusing the parent function would
+        // rebind its js function onto this class, and the objects of both classes would then dispatch to the methods of
+        // the wrong ts class (Tencent/puerts#2362). Restore the state of the original function so that this class gets
+        // its own mixin
+        if (!MaybeJSFunction->Original)
+        {
+            if (Warning)
+            {
+                UE_LOG(Puerts, Warning, TEXT("Try to mixin a function[%s:%s] already mixin by anthor vm"), *Class->GetName(),
+                    *Super->GetName());
+            }
+            return MaybeJSFunction;
+        }
+        Tmp->Script = MaybeJSFunction->Script;
+        Tmp->FunctionFlags = MaybeJSFunction->OriginalFunctionFlags;
+        Tmp->SetNativeFunc(MaybeJSFunction->OriginalFunc);
     }
 
     const FString FunctionName = *FString::Printf(TEXT("%s%s"), *Super->GetName(), TEXT(MIXIN_METHOD_SUFFIX));
