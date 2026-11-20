@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 [english version](./changelog.md)
 
+## [3.0.4] - 2026-11-20
+1. Unity 内置 Python 3.14；Python 后端自带 Python 运行时（PythonHome~），编辑器和桌面/玩家构建均不再依赖系统安装的 Python
+2. 修复 LowMemoryNotification 集中回收时 `createFunction` 批量回调回收的 O(n^2) 性能问题
+3. 修复低版本 V8（如 9.4）下每次创建函数泄漏一个空对象（`__do_not_cache`）的问题 fix #1945
+4. 修复低版本 V8 下 ScriptObject/Delegate 引用的 JS 对象无法释放的问题，原因是 `v8::Persistent` 析构时不会自动 Reset（改为使用 `v8::Global`）
+5. 新增 Unity 6000.6 兼容修复：用 il2cpp `Object::GetRawData` 替换被移除的 `Object::Unbox`；对从未绑定过的 script object 引用跳过 GCHandle 操作，避免崩溃
+6. 修复 il2cpp 下的崩溃：对值类型直接调用 `System.ValueType` 上的方法，以及 `System.Object` 虚方法调用解析到结构体 override 时（改为传入 unbox 后的 `this`）
+7. PInvoke 的 `ArrayBuffer` null 值处理与 il2cpp 保持一致
+8. 为 Unity 所有 native 插件补齐 Android 16K Pagesize 链接选项（V8、Node.js、Python、Lua）
+9. 修复为 Python 导出 Windows Visual Studio 解决方案时定位 player data 目录的问题
+
 ## [3.0.3] - 2026-09-04
 1. 新增成员粒度的lazyload（编译选项 `--lazyload`，V8 13及以上生效），支持实例方法/属性、静态方法、只读静态属性的按需加载 (#2324) fix #2138
 2. PuerTS Agent/MCP：MCP的http server改为C#实现，不再依赖nodejs；支持多会话；解决重启MCP后连不上、没启动Agent时mcp获取unity log失败的问题
