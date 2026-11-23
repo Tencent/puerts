@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 7. PInvoke 的 `ArrayBuffer` null 值处理与 il2cpp 保持一致
 8. 为 Unity 所有 native 插件补齐 Android 16K Pagesize 链接选项（V8、Node.js、Python、Lua）
 9. 修复为 Python 导出 Windows Visual Studio 解决方案时定位 player data 目录的问题
+10. 新增WebGL的Unity 6000.6 兼容修复
 
 ## [3.0.3] - 2026-09-04
 1. 新增成员粒度的lazyload（编译选项 `--lazyload`，V8 13及以上生效），支持实例方法/属性、静态方法、只读静态属性的按需加载 (#2324) fix #2138

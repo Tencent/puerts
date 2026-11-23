@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 7. Synchronized PInvoke `ArrayBuffer` null handling with il2cpp
 8. Completed the Android 16K Pagesize link options for all Unity native plugins (V8, Node.js, Python, Lua)
 9. Fixed detection of the player data directory when exporting a Windows Visual Studio solution for Python
+10. Unity 6000.6 compatibility fixes for WebGL backend
 
 ## [3.0.3] - 2026-09-04
 1. Added member-level lazyload (build option `--lazyload`, requires V8 13 or above), supporting on-demand loading of instance methods/properties, static methods and readonly static properties (#2324) fix #2138
