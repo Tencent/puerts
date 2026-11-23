@@ -1,39 +1,77 @@
+// Unity 6 ships a newer Emscripten where
+//   - updateGlobalBufferAndViews(buf) was renamed to updateMemoryViews()
+//   - UTF16ToString / stringToUTF16 / lengthBytesUTF16 / getWasmTableEntry became library
+//     functions that are only linked in when some __deps asks for them
+//   - _setTempRet0 / stackAlloc / addFunction / removeFunction may be gone (unused by the runtime)
+// The deps list is filtered against what this Emscripten's library actually has, so the same
+// file also links on Unity 2022 (where those helpers live in the preamble).
+var puertsInitDeps = ['$UTF16ToString', '$stringToUTF16', '$lengthBytesUTF16', '$getWasmTableEntry'].filter(function (n) {
+    return typeof LibraryManager != 'undefined' && LibraryManager.library && Object.prototype.hasOwnProperty.call(LibraryManager.library, n);
+});
+
 var exportDLL = {
+    InitPuertsWebGL__deps: puertsInitDeps,
     InitPuertsWebGL: function () {
         var global = typeof global != 'undefined' ? global : window;
         if (!global.PuertsWebGL) {
             throw new Error('cannot found PuertsWebGL script. please find some way to load puerts-runtime.js');
         }
-        let oldUpdateGlobalBufferAndViews = updateGlobalBufferAndViews;
-        updateGlobalBufferAndViews = function (buf) {
-            oldUpdateGlobalBufferAndViews(buf);
-            global.PuertsWebGL.updateGlobalBufferAndViews(
-                HEAP8,
-                HEAPU8,
-                HEAP32,
-                HEAPF32,
-                HEAPF64
-            );
+        var notifyHeap = function () {
+            global.PuertsWebGL.updateGlobalBufferAndViews(HEAP8, HEAPU8, HEAP32, HEAPF32, HEAPF64);
+        };
+        if (typeof updateMemoryViews == 'function') {
+            var oldUpdateMemoryViews = updateMemoryViews;
+            updateMemoryViews = function () {
+                var r = oldUpdateMemoryViews.apply(this, arguments);
+                notifyHeap();
+                return r;
+            };
+        } else if (typeof updateGlobalBufferAndViews == 'function') {
+            var oldUpdateGlobalBufferAndViews = updateGlobalBufferAndViews;
+            updateGlobalBufferAndViews = function (buf) {
+                var r = oldUpdateGlobalBufferAndViews.apply(this, arguments);
+                notifyHeap();
+                return r;
+            };
+        } else {
+            console.warn('[puerts] no memory-view update hook found; heap growth may break puerts');
         }
+
+        // Fallbacks in case this Emscripten has neither the preamble nor the library version.
+        var utf16ToString = typeof UTF16ToString == 'function' ? UTF16ToString : function (ptr, maxBytesToRead) {
+            var end = ptr >> 1, maxIdx = end + (maxBytesToRead === undefined ? Infinity : maxBytesToRead / 2), s = '';
+            while (end < maxIdx && HEAPU16[end]) ++end;
+            for (var i = ptr >> 1; i < end; i += 4096) s += String.fromCharCode.apply(null, HEAPU16.subarray(i, Math.min(i + 4096, end)));
+            return s;
+        };
+        var stringToUtf16 = typeof stringToUTF16 == 'function' ? stringToUTF16 : function (str, outPtr, maxBytesToWrite) {
+            if (maxBytesToWrite === undefined) maxBytesToWrite = 0x7FFFFFFF;
+            if (maxBytesToWrite < 2) return 0;
+            maxBytesToWrite -= 2;
+            var start = outPtr, n = Math.min(str.length, maxBytesToWrite >> 1);
+            for (var i = 0; i < n; ++i) { HEAP16[outPtr >> 1] = str.charCodeAt(i); outPtr += 2; }
+            HEAP16[outPtr >> 1] = 0;
+            return outPtr - start;
+        };
+        var lengthBytesUtf16 = typeof lengthBytesUTF16 == 'function' ? lengthBytesUTF16 : function (str) { return str.length * 2; };
+        var tableEntry = typeof getWasmTableEntry == 'function' ? getWasmTableEntry : function (funcPtr) { return wasmTable.get(funcPtr); };
 
         global.PuertsWebGL.Init({
             UTF8ToString,
-            UTF16ToString,
+            UTF16ToString: utf16ToString,
             _malloc,
             _free,
-            _setTempRet0,
+            _setTempRet0: typeof _setTempRet0 != 'undefined' ? _setTempRet0 : (typeof setTempRet0 != 'undefined' ? setTempRet0 : undefined),
             stringToUTF8,
             lengthBytesUTF8,
-            stringToUTF16,
-            lengthBytesUTF16,
-            stackAlloc,
-            stackSave,
-            stackRestore,
-            getWasmTableEntry: (typeof getWasmTableEntry != 'undefined') ? getWasmTableEntry : function(funcPtr) {
-                return wasmTable.get(funcPtr);
-            },
-            addFunction,
-            removeFunction,
+            stringToUTF16: stringToUtf16,
+            lengthBytesUTF16: lengthBytesUtf16,
+            stackAlloc: typeof stackAlloc != 'undefined' ? stackAlloc : undefined,
+            stackSave: typeof stackSave != 'undefined' ? stackSave : undefined,
+            stackRestore: typeof stackRestore != 'undefined' ? stackRestore : undefined,
+            getWasmTableEntry: tableEntry,
+            addFunction: typeof addFunction != 'undefined' ? addFunction : undefined,
+            removeFunction: typeof removeFunction != 'undefined' ? removeFunction : undefined,
             _CallCSharpFunctionCallback: Module._CallCSharpFunctionCallback,
             _CallCSharpConstructorCallback: Module._CallCSharpConstructorCallback,
             _CallCSharpDestructorCallback: Module._CallCSharpDestructorCallback,
