@@ -68,7 +68,7 @@ namespace Puerts
 #if !UNITY_EDITOR && UNITY_WEBGL
             if (backendExpect == BackendType.WebGL)
             {
-                Backend = Activator.CreateInstance(PuertsIl2cpp.TypeUtils.GetType("Puerts.BackendWebGL"), loader) as Backend;
+                Backend = Activator.CreateInstance(Puerts.TypeUtils.GetType("Puerts.BackendWebGL"), loader) as Backend;
             }
 #else
             if (backendExpect == BackendType.V8)

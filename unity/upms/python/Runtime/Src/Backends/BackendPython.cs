@@ -319,29 +319,21 @@ class _p_cs_type_Wrapped:
         setattr(self._cls, name, value)
 
     def __getitem__(self, item):
-        # System.Collections.Generic.List^item Count
-        # List[System.String] => System.Collections.Generic.List^1 and make Generic
-        generic_type_name = self._p_cs_type.FullName + '`' + str(len(item) if isinstance(item, tuple) else 1)
+        generic_type_name = self._p_cs_type.FullName + '`' + str(len(item) if isinstance(item, tuple) else 1) # List[System.String] => System.Collections.Generic.List`1, then make generic
         try:
-            # note: *args, so we need to make item a tuple if it's not already
-            return _p_LoadGenericType(generic_type_name, *item if isinstance(item, tuple) else (item,))
+            return _p_LoadGenericType(generic_type_name, *item if isinstance(item, tuple) else (item,)) # *args: make item a tuple if it's not already
         except Exception as e:
             raise ModuleNotFoundError(f'Error loading type {generic_type_name} with {item} in __getitem__ of _p_cs_type_Wrapped: {e}')
 
-# for puerts.__generic
-# type_name: List`1
-def _p_LoadGenericType(type_name, *args):
+def _p_LoadGenericType(type_name, *args): # for puerts.__generic, type_name: List`1
     cs_type = scriptEnv.GetTypeByString(type_name)
     return puerts._puerts__generic(cs_type, *args)
 
 class _p_Import_Generic_Wrapper:
     def __init__(self, type_name_prefix):
-        # System.Collections.Generic.List
-        self.__p_type_name_prefix = type_name_prefix
+        self.__p_type_name_prefix = type_name_prefix # e.g. System.Collections.Generic.List
     def __getitem__(self, item):
-        # System.Collections.Generic.List^item Count
-        # List[System.String] => System.Collections.Generic.List^1 and make Generic
-        generic_type_name = self.__p_type_name_prefix + '`' + str(len(item) if isinstance(item, tuple) else 1)
+        generic_type_name = self.__p_type_name_prefix + '`' + str(len(item) if isinstance(item, tuple) else 1) # List[System.String] => System.Collections.Generic.List`1, then make generic
         try:
             return _p_LoadGenericType(generic_type_name, *(item if isinstance(item, tuple) else (item,)))
         except Exception as e:
@@ -356,23 +348,19 @@ class puerts:
         :param type_name: The full name of the C# type to load. For generic type definitions, the type name should not include the arity (e.g. `List` instead of `List`1). For nested types, the type name should use dot as separator (e.g. `OuterClass.NestedClass`).
         :return: The loaded C# class or generic type definition
         """"""
-        #  2 => T<...>
-        #  1 => T, T<...>
-        #  0 => T
-        # -1 => Not exist
         shouldAddGetItem = False
         match _p_loader.NamespaceManager.GetTypeParameterStateByPrefix(type_name):
-            case 0: # go load type
+            case 0: # T => go load type
                 pass
-            case 2: # return builder
+            case 2: # T<...> => return builder
                 if type_name in _csGenericTypeBuilderCache_:
                     return _csGenericTypeBuilderCache_[type_name]
                 generic_builder = _p_Import_Generic_Wrapper(type_name)
                 _csGenericTypeBuilderCache_[type_name] = generic_builder
                 return generic_builder
-            case 1: # go load type and add __class_getitem__ for build GenericType
+            case 1: # T, T<...> => go load type and add __class_getitem__ for build GenericType
                 shouldAddGetItem = True
-            case -1:
+            case -1: # not exist
                 pass
 
         if type_name in _csTypeCache_:

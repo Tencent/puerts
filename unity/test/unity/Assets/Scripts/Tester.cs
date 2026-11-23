@@ -219,7 +219,17 @@ public class Tester : MonoBehaviour {
 
         foreach (var type in types)
         {
-            var testInstance = System.Activator.CreateInstance(type);
+            object testInstance;
+            try
+            {
+                testInstance = System.Activator.CreateInstance(type);
+            }
+            catch (Exception e)
+            {
+                // 协程里未捕获的异常会让 Unity 直接终止整个协程，后续用例全部不跑，所以这里只记失败并跳过该类
+                OnFail($"{type.FullName} (create fixture instance)", e is TargetInvocationException ? e.GetBaseException() : e);
+                continue;
+            }
 
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public
                 | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))

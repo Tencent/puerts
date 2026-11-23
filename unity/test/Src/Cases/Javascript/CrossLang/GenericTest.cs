@@ -268,7 +268,7 @@ namespace Puerts.UnitTest
         {
             var jsEnv = UnitTestEnv.GetEnv();
             // relies on v8.getHeapStatistics and the v8 specific __do_not_cache leak
-            if (!(jsEnv.Backend is BackendV8))
+            if (jsEnv.Backend.GetType().Name != "BackendV8")
             {
                 return;
             }
